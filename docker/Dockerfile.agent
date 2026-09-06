@@ -1,0 +1,84 @@
+# Containerized Antigravity CI Agent
+# Provides full parity between local execution and GitHub Actions CI.
+
+FROM python:3.12-slim-bookworm
+
+LABEL maintainer="marius-patrik"
+LABEL description="Containerized Google Antigravity Agent environment with Python 3.12, dev tools, and GitHub CLI."
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# 1. Install base utilities, D-Bus, Secret Service, and GitHub CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    jq \
+    ca-certificates \
+    gnupg \
+    dbus-x11 \
+    gnome-keyring \
+    libsecret-tools \
+    tmux \
+    && mkdir -p -m 755 /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/* \
+    && git config --global --add safe.directory '*'
+
+# 2. Install Node.js, the runtime several agent CLIs ship on
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version
+
+# 3. Install the agent harnesses.
+#
+# Each installs into its own layer and is allowed to fail: the runner resolves harnesses from PATH
+# at dispatch time (see .github/scripts/harnesses.py), so an image carrying four of seven CLIs is a
+# working image with a shorter fallback chain. A hard failure here would make one upstream outage
+# break every build, which is exactly the fragility the harness registry exists to remove.
+# The manifest step below records what actually landed, so the chain is never a guess.
+
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin || true
+RUN npm install -g @anthropic-ai/claude-code || true
+RUN npm install -g @openai/codex || true
+RUN npm install -g @moonshot-ai/kimi-cli || true
+RUN npm install -g opencode-ai || true
+RUN curl -fsSL https://cursor.com/install | bash || true
+RUN curl -fsSL https://raw.githubusercontent.com/xai-org/grok-cli/main/install.sh | bash || true
+
+# Record which harnesses are present so the build log answers "what can this image drive?"
+RUN set -eux; \
+    echo "=== agent harnesses in this image ==="; \
+    for bin in agy claude codex kimi grok cursor-agent opencode; do \
+      if command -v "$bin" >/dev/null 2>&1; then \
+        echo "  present: $bin -> $(command -v "$bin")"; \
+      else \
+        echo "  ABSENT:  $bin"; \
+      fi; \
+    done
+
+# 4. Setup project workspace and install Python test / build dependencies
+WORKDIR /workspace
+
+COPY pyproject.toml requirements-dev.txt /workspace/
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements-dev.txt
+
+# 5. Create the Antigravity home and configuration directory
+RUN mkdir -p /root/.gemini/antigravity-cli
+
+# 6. Copy runner entrypoint and scripts
+COPY .github/scripts/ /usr/local/share/darkfactory-scripts/
+COPY .github/scripts/agent_runner.py /usr/local/bin/darkfactory-agent-runner
+RUN ln -s /usr/local/share/darkfactory-scripts /usr/local/share/omnis-scripts \
+    && ln -s /usr/local/bin/darkfactory-agent-runner /usr/local/bin/omnis-agent-runner \
+    && chmod +x /usr/local/bin/darkfactory-agent-runner
+
+ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/usr/local/share/omnis-scripts:/workspace/.github/scripts:${PYTHONPATH}"
+
+ENTRYPOINT ["dbus-run-session", "--", "python3", "/usr/local/bin/darkfactory-agent-runner"]

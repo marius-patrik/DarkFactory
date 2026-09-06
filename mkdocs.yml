@@ -1,0 +1,66 @@
+site_name: DarkFactory
+site_description: >-
+  Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory').
+site_author: marius-patrik
+repo_name: marius-patrik/DarkFactory
+repo_url: https://github.com/marius-patrik/DarkFactory
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+nav:
+  - Overview: index.md
+  - Architecture: architecture.md
+  - Roadmap: roadmap.md
+  - Contributing & Agent Rules: agents.md
+  - Vision (reference only): vision.md
+  - Notes:
+      - Architecture decisions: notes/architecture_decisions.md
+      - Vision capture: notes/vision_capture.md
+      - Bootstrap runbook: notes/bootstrap.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+hooks:
+  - .github/scripts/mkdocs_hooks.py

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+build/
+dist/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / Bun
+node_modules/
+.bun/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+
+# MkDocs
+site/
+
+# Agent pipeline
+.antigravity_checkpoint.json
+
+# IDE / Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

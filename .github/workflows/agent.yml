@@ -1,0 +1,63 @@
+name: Autonomous Agent
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  repository-projects: write
+  actions: write
+
+jobs:
+  run-agent:
+    # The agent stays off until at least one harness has credentials. Set the repository variable
+    # AGENT_ENABLED to "true" once a harness secret is configured; until then every issue would
+    # otherwise start a container build that cannot authenticate. `secrets` is not available in a
+    # job-level `if`, which is why this gate is a variable and the runner re-checks at dispatch.
+    if: vars.AGENT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build agent container
+        run: |
+          docker build -t darkfactory-agent -f docker/Dockerfile.agent .
+
+      - name: Dispatch agent in container
+        run: |
+          docker run --rm \
+            -e AGENT_HARNESS_CHAIN="${{ vars.AGENT_HARNESS_CHAIN }}" \
+            -e AGENT_HARNESS_CONFIG="${{ vars.AGENT_HARNESS_CONFIG }}" \
+            -e AGENT_MODEL_CHAIN="${{ vars.AGENT_MODEL_CHAIN }}" \
+            -e ANTIGRAVITY_REFRESH_TOKEN="${{ secrets.ANTIGRAVITY_REFRESH_TOKEN }}" \
+            -e ANTIGRAVITY_CLIENT_ID="${{ secrets.ANTIGRAVITY_CLIENT_ID }}" \
+            -e ANTIGRAVITY_CLIENT_SECRET="${{ secrets.ANTIGRAVITY_CLIENT_SECRET }}" \
+            -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            -e CLAUDE_CODE_OAUTH_TOKEN="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" \
+            -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            -e MOONSHOT_API_KEY="${{ secrets.MOONSHOT_API_KEY }}" \
+            -e KIMI_API_KEY="${{ secrets.KIMI_API_KEY }}" \
+            -e XAI_API_KEY="${{ secrets.XAI_API_KEY }}" \
+            -e GROK_API_KEY="${{ secrets.GROK_API_KEY }}" \
+            -e CURSOR_API_KEY="${{ secrets.CURSOR_API_KEY }}" \
+            -e OPENCODE_API_KEY="${{ secrets.OPENCODE_API_KEY }}" \
+            -e GH_TOKEN="${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+            -e GITHUB_EVENT_PATH="/workspace/event.json" \
+            -e GITHUB_EVENT_NAME="${{ github.event_name }}" \
+            -e GITHUB_REPOSITORY="${{ github.repository }}" \
+            -e GITHUB_REPOSITORY_OWNER="${{ github.repository_owner }}" \
+            -e PROJECT_NUMBER="${{ vars.PROJECT_NUMBER || 1 }}" \
+            -v "${{ github.event_path }}:/workspace/event.json:ro" \
+            -v "${{ github.workspace }}:/workspace" \
+            darkfactory-agent dispatch

@@ -1,0 +1,66 @@
+name: Open Pull Request
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Head branch name (e.g. feature/my-feature)'
+        required: true
+        type: string
+      title:
+        description: 'Pull Request title'
+        required: true
+        type: string
+      body:
+        description: 'Pull Request description'
+        required: true
+        type: string
+      base:
+        description: 'Target base branch'
+        required: false
+        default: 'main'
+        type: string
+      draft:
+        description: 'Create as draft PR'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or Update Pull Request as GitHub Actions Bot
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ inputs.branch }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          BASE: ${{ inputs.base }}
+          IS_DRAFT: ${{ inputs.draft }}
+        run: |
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number -q '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Pull request #$EXISTING_PR already exists for $BRANCH. Updating title and body..."
+            gh pr edit "$EXISTING_PR" --title "$TITLE" --body "$BODY"
+            exit 0
+          fi
+
+          DRAFT_ARG=""
+          if [ "$IS_DRAFT" = "true" ] || [ "$IS_DRAFT" = "True" ]; then
+            DRAFT_ARG="--draft"
+          fi
+
+          echo "Creating PR for $BRANCH -> $BASE with draft=$DRAFT_ARG..."
+          gh pr create \
+            --head "$BRANCH" \
+            --base "$BASE" \
+            --title "$TITLE" \
+            --body "$BODY" \
+            $DRAFT_ARG

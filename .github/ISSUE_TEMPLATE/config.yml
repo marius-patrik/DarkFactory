@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Architecture (normative)
+    url: https://github.com/marius-patrik/omnis/blob/main/ARCHITECTURE.md
+    about: Process topology, crate boundaries, the capability matrix, and the open decisions D1-D8.
+  - name: Roadmap
+    url: https://github.com/marius-patrik/omnis/blob/main/ROADMAP.md
+    about: Epics, their entry gates, and the sequencing rationale.
+  - name: Contribution rules
+    url: https://github.com/marius-patrik/omnis/blob/main/AGENTS.md
+    about: The binding rules for humans and agents - branches, PRs, plans, approvals, taxonomy.

@@ -1,0 +1,60 @@
+name: "Epic"
+description: "A container issue tracking a whole area of work. Epics are never implemented directly."
+title: "Epic: "
+labels: ["epic", "Backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An epic holds scope, acceptance criteria for the whole area, and a checklist of child
+        `Request` issues. Per `AGENTS.md` rule 13, epics are never implemented directly - only their
+        children are - and every epic must have a matching row in `ROADMAP.md`.
+
+  - type: input
+    id: roadmap_id
+    attributes:
+      label: "Roadmap ID"
+      description: "The identifier from `ROADMAP.md` (e.g. E3). Add the row first if it is missing."
+      placeholder: "E3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: "Scope"
+      description: "What this epic covers, and - just as importantly - what it does not."
+    validations:
+      required: true
+
+  - type: textarea
+    id: gate
+    attributes:
+      label: "Entry Gate"
+      description: >
+        What must be true before this epic may leave `Backlog`: decisions resolved (D1-D8 in
+        `ARCHITECTURE.md`), epics completed, spikes measured.
+      placeholder: "Blocked by D4 (platform matrix) and E10 (view model)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Acceptance Criteria"
+      description: "How we know the whole epic is done, not just any single child."
+      placeholder: |
+        - [ ] Adding a new brand preset requires zero code changes
+        - [ ] Performance budget from D7 is met and measured in CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: children
+    attributes:
+      label: "Child Requests"
+      description: "Checklist of child `Request` issues. Fill in as they are filed."
+      placeholder: |
+        - [ ] #0 Request: ...
+    validations:
+      required: false

@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+# Every job below always reports a conclusion, even while the product tree is still a scaffold:
+# language-specific steps are guarded by `hashFiles`, so the job succeeds with skipped steps rather
+# than being skipped itself. A skipped job never satisfies a required status check, which would
+# block every merge forever.
+jobs:
+  pipeline:
+    name: pipeline
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Check formatting
+        run: black --check --diff .
+
+      - name: Run repository automation tests
+        run: pytest -v
+
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Rust workspace
+        id: detect
+        run: echo "present=${{ hashFiles('Cargo.toml') != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust toolchain
+        if: steps.detect.outputs.present == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo artifacts
+        if: steps.detect.outputs.present == 'true'
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        if: steps.detect.outputs.present == 'true'
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        if: steps.detect.outputs.present == 'true'
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        if: steps.detect.outputs.present == 'true'
+        run: cargo test --workspace
+
+      - name: No Rust workspace yet
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No Cargo.toml at the repository root; nothing to build. See ROADMAP.md epic E1."
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect web workspace
+        id: detect
+        run: echo "present=${{ hashFiles('package.json') != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Bun
+        if: steps.detect.outputs.present == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        if: steps.detect.outputs.present == 'true'
+        run: bun run --if-present lint
+
+      - name: Typecheck
+        if: steps.detect.outputs.present == 'true'
+        run: bun run --if-present typecheck
+
+      - name: Test
+        if: steps.detect.outputs.present == 'true'
+        run: bun run --if-present test
+
+      - name: No web workspace yet
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No package.json at the repository root; nothing to build. See ROADMAP.md epic E2."
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Build documentation
+        run: mkdocs build --strict

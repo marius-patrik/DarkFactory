@@ -1,0 +1,55 @@
+name: "Architecture Decision"
+description: "An open decision that blocks work until it is resolved and recorded as an ADR."
+title: "Decision: "
+labels: ["decision", "area:docs", "Backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Decisions are resolved by discussion, not by code. Closing this issue requires a numbered
+        ADR in `notes/architecture_decisions.md` and, where the decision changes the normative
+        architecture, an update to `ARCHITECTURE.md`.
+
+  - type: input
+    id: decision_id
+    attributes:
+      label: "Decision ID"
+      description: "The identifier from `ARCHITECTURE.md` §7 (e.g. D4)."
+      placeholder: "D4"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "The Question"
+      description: "State it so that a yes/no or a named choice answers it. No essays."
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocks
+    attributes:
+      label: "What This Blocks"
+      description: "Epics and requests that cannot start until this is settled."
+      placeholder: "E2 (Tauri shell), E3 (terminal renderer)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: "Options Under Consideration"
+      description: "Each option with its cost, its risk, and what it forecloses."
+    validations:
+      required: false
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "Constraints & Evidence"
+      description: >
+        Facts that narrow the choice: platform limits, licence terms, measured numbers, prior art.
+        Distinguish measured from assumed.
+    validations:
+      required: false
