@@ -187,6 +187,12 @@
       "organization": {
         "projects": "write"
       }
-    }
+    },
+    "installation_id": 159771550,
+    "installed_on": [
+      "marius-patrik/DarkFactory",
+      "marius-patrik/omnis",
+      "marius-patrik/ChessWithQuests"
+    ]
   }
 }

@@ -354,3 +354,31 @@ def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
     assert "docs_plan" in content
     assert "run: mkdocs build" not in content
     assert "run: properdocs build" not in content
+
+
+def test_the_deploy_workflow_is_callable():
+    """Consumers share the theme and the hooks rather than each carrying a copy."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "workflow_call" in triggers
+    assert "pipeline-ref" in triggers["workflow_call"]["inputs"]
+
+
+def test_shared_documentation_assets_never_overwrite_a_consumers_own():
+    """A repository that has its own theme keeps it; the copy only ever fills a gap."""
+    content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    assert "[ -d theme ] || cp -r .pipeline/theme theme" in content
+    assert "cp -r .pipeline/theme theme\n" not in content.replace(
+        "[ -d theme ] || cp -r .pipeline/theme theme\n", ""
+    ), "the copy must always be guarded"
+
+
+def test_the_app_installation_is_recorded():
+    """The installation id is what a token request needs, and it is not a secret."""
+    import manifest as manifest_module
+
+    app = manifest_module.load(REPO_ROOT).app
+    assert app["installation_id"] == 159771550
+    assert "marius-patrik/omnis" in app["installed_on"]
