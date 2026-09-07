@@ -29,6 +29,30 @@ on:
   # Consumers call this rather than copying it, so the scripts it runs live in one place.
   workflow_call:
     inputs:
+      # The dispatch inputs are repeated here because a called workflow receives nothing from the
+      # caller's own `inputs` context automatically; a caller must forward each one by name.
+      branch:
+        description: 'Head branch name (e.g. feature/my-feature)'
+        required: true
+        type: string
+      title:
+        description: 'Pull Request title'
+        required: true
+        type: string
+      body:
+        description: 'Pull Request description'
+        required: true
+        type: string
+      base:
+        description: 'Target base branch'
+        required: false
+        default: 'main'
+        type: string
+      draft:
+        description: 'Create as draft PR'
+        required: false
+        default: true
+        type: boolean
       pipeline-ref:
         description: "Commit SHA of the pipeline repository to run. Empty means this repository."
         required: false

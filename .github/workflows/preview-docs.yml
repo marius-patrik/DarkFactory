@@ -1,0 +1,168 @@
+name: Preview Documentation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+# Previews publish to the `gh-pages` branch under `pr-<N>/`, and register a GitHub deployment so the
+# link appears in the pull request itself rather than only in a comment.
+  # Consumers call this rather than copying it, so previews and the version switcher they feed
+  # come from one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts and theme."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+
+permissions:
+  contents: write
+  deployments: write
+  pull-requests: write
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: preview
+    # A fork's token cannot write to this repository, so a preview would fail rather than be
+    # unavailable. Skip it and say nothing rather than reporting a red check for something the
+    # contributor cannot fix.
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      # The theme addresses every asset through the `url` filter, which emits page-relative paths,
+      # so a preview served from a subdirectory needs no site-url override.
+      - name: Materialise the shared documentation assets
+        run: |
+          if [ -d .pipeline ]; then
+            [ -d theme ] || cp -r .pipeline/theme theme
+            for f in docs_hooks environment manifest docs_versions; do
+              [ -f .github/scripts/$f.py ] || cp .pipeline/.github/scripts/$f.py .github/scripts/$f.py
+            done
+          fi
+
+      - name: Build documentation
+        # The engine is the caller's choice, exactly as in deploy-docs.yml.
+        run: |
+          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
+          import environment
+
+          plan = environment.configure(".").docs_plan()
+          for entry in plan.values():
+              if entry.get("command"):
+                  print(entry["command"])
+                  break
+          PY
+          )
+          [ -n "$COMMAND" ] || { echo "No documentation build configured."; exit 1; }
+          echo "Preview build: $COMMAND"
+          eval "$COMMAND"
+
+      - name: Disable Jekyll processing
+        run: touch site/.nojekyll
+
+      - name: Start deployment
+        id: start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          id=$(gh api "repos/${{ github.repository }}/deployments" \
+            -f ref='${{ github.event.pull_request.head.sha }}' \
+            -f environment='pr-${{ github.event.pull_request.number }}' \
+            -f description='Documentation preview' \
+            -F auto_merge=false \
+            -F transient_environment=true \
+            -f 'required_contexts[]' \
+            --jq '.id')
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: Publish preview
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: site
+          target-folder: pr-${{ github.event.pull_request.number }}
+          commit-message: "docs(preview): publish preview for #${{ github.event.pull_request.number }}"
+
+      - name: Finish deployment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
+        run: |
+          state=${{ job.status == 'success' && 'success' || 'failure' }}
+          gh api "repos/${{ github.repository }}/deployments/${{ steps.start.outputs.id }}/statuses" \
+            -f state="$state" \
+            -f environment_url="$URL" \
+            -f description='Documentation preview'
+
+  teardown:
+    name: preview-teardown
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove the preview directory
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # No checkout in this job, so there is no `origin` to query with git. Ask the API.
+          if ! gh api "repos/${{ github.repository }}/branches/gh-pages" >/dev/null 2>&1; then
+            echo "No gh-pages branch; nothing to clean up."
+            exit 0
+          fi
+          git clone --depth 1 --branch gh-pages \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" pages
+          cd pages
+          if [ ! -d "pr-${PR}" ]; then
+            echo "No preview published for #${PR}; nothing to remove."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -rq "pr-${PR}"
+          git commit -m "docs(preview): remove preview for #${PR}"
+          git push origin gh-pages
+
+      - name: Deactivate the environment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/deployments?environment=pr-${{ github.event.pull_request.number }}" \
+            --jq '.[].id' | while read -r id; do
+              gh api "repos/${{ github.repository }}/deployments/$id/statuses" \
+                -f state='inactive' -f description='Preview removed' || true
+            done
