@@ -1,0 +1,23 @@
+{
+  "current": "",
+  "versions": [
+    {
+      "name": "darkfactory",
+      "path": ""
+    }
+  ],
+  "projects": [
+    {
+      "name": "DarkFactory",
+      "url": "https://marius-patrik.github.io/DarkFactory/"
+    },
+    {
+      "name": "Omnis",
+      "url": "https://marius-patrik.github.io/omnis/"
+    },
+    {
+      "name": "ChessWithQuests",
+      "url": "https://marius-patrik.github.io/ChessWithQuests/"
+    }
+  ]
+}
