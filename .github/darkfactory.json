@@ -167,5 +167,26 @@
         "url": "https://marius-patrik.github.io/ChessWithQuests/"
       }
     ]
+  },
+  "app": {
+    "$comment": "The pipeline's own GitHub App. The id and client id are public identifiers, not secrets; the private key lives in the DARKFACTORY_APP_PRIVATE_KEY repository secret. Note that a GitHub App cannot write user-owned Projects v2 - GitHub scopes project permissions to organizations - so board work still uses GH_PROJECT_TOKEN until these repositories move under an organization.",
+    "slug": "darkfactory-pipeline",
+    "app_id": 4861004,
+    "client_id": "Iv23li8qwSbe1MpF9kxX",
+    "private_key_secret": "DARKFACTORY_APP_PRIVATE_KEY",
+    "permissions": {
+      "repository": {
+        "actions": "write",
+        "checks": "write",
+        "contents": "write",
+        "issues": "write",
+        "metadata": "read",
+        "pull_requests": "write",
+        "workflows": "write"
+      },
+      "organization": {
+        "projects": "write"
+      }
+    }
   }
 }

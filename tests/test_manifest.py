@@ -202,3 +202,23 @@ class TestRequiredChecks:
         _write_manifest(tmp_path, {})
         loaded = manifest_module.load(str(tmp_path))
         assert loaded.required_checks == list(manifest_module.DEFAULT_REQUIRED_CHECKS)
+
+
+class TestApp:
+    """The App is the pipeline's own identity, recorded so nothing has to guess at it."""
+
+    def test_the_app_identity_is_recorded(self):
+        app = manifest_module.load(REPO_ROOT).app
+        assert app["slug"] == "darkfactory-pipeline"
+        assert isinstance(app["app_id"], int)
+
+    def test_the_private_key_is_named_but_never_stored(self):
+        app = manifest_module.load(REPO_ROOT).app
+        assert app["private_key_secret"] == "DARKFACTORY_APP_PRIVATE_KEY"
+        serialised = json.dumps(app)
+        assert "BEGIN RSA PRIVATE KEY" not in serialised
+        assert "BEGIN PRIVATE KEY" not in serialised
+
+    def test_a_repository_without_an_app_is_fine(self, tmp_path):
+        _write_manifest(tmp_path, {})
+        assert manifest_module.load(str(tmp_path)).app == {}
