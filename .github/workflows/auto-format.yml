@@ -52,7 +52,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "style(ci): auto-format codebase via GitHub Actions bot [skip ci]"
-          if [ "${{ github.ref_name }}" != "main" ]; then
+          if [ "${{ github.ref_name }}" != "darkfactory" ]; then
             git push origin "${{ github.ref_name }}"
           else
             echo "Branch is main; direct push skipped to comply with branch protection."

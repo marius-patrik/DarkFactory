@@ -6,6 +6,7 @@
     "display_name": "DarkFactory",
     "project_title": "DarkFactory",
     "agent_slug": "darkfactory-agent",
+    "default_branch": "darkfactory",
     "description": "Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, and project board delivery.",
     "topics": [
       "agentic-coding",

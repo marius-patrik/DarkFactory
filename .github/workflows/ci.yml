@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["darkfactory"]
   pull_request:
-    branches: ["main"]
+    branches: ["darkfactory"]
   workflow_dispatch:
   # The same file is this repository's own CI and the reusable workflow every consumer calls, so
   # the two cannot drift. A consumer's caller stub is six lines and pins `pipeline-ref` to a SHA;

@@ -2,7 +2,7 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: ["main"]
+    branches: ["darkfactory"]
   workflow_dispatch:
 
 # Published to the `gh-pages` branch rather than through the Pages build action, so that per-pull-

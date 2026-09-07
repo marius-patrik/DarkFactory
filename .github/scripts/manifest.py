@@ -107,6 +107,18 @@ class Manifest:
         return str(self._identity.get("project_title") or self.display_name)
 
     @property
+    def default_branch(self) -> str:
+        """Returns the branch protection and the pipeline's own triggers apply to.
+
+        DarkFactory's default branch is named after the repository rather than `main`, so a
+        consumer that adds it as a remote gets a `darkfactory` branch without renaming anything.
+
+        Returns:
+            The declared default branch, or `main`.
+        """
+        return str(self._identity.get("default_branch") or "main")
+
+    @property
     def agent_slug(self) -> str:
         """Returns the marker used to recognise this pipeline's own comments.
 

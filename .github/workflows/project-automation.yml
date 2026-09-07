@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [opened, edited, closed, ready_for_review, reopened]
   push:
-    branches: [main]
+    branches: [darkfactory]
   workflow_dispatch:
 
 permissions:

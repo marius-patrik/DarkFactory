@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: ["main"]
+    branches: ["darkfactory"]
   workflow_dispatch:
     inputs:
       bump:

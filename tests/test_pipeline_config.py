@@ -291,3 +291,27 @@ def test_the_pipeline_checkout_is_skipped_when_running_in_place():
     """Checking this repository out into .pipeline from itself would be circular."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "if: inputs.pipeline-ref != ''" in content
+
+
+def test_workflows_trigger_on_the_declared_default_branch():
+    """DarkFactory's default branch is named after itself, so a consumer that adds it as a
+    remote gets a `darkfactory` branch with nothing to rename. Workflows that still watch
+    `main` would simply never fire.
+    """
+    import manifest as manifest_module
+
+    branch = manifest_module.load(REPO_ROOT).default_branch
+    for name in ("ci.yml", "deploy-docs.yml", "release.yml", "project-automation.yml"):
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        if "branches:" not in content:
+            continue
+        assert (
+            f'["{branch}"]' in content or f"[{branch}]" in content or "**" in content
+        ), f"{name} does not trigger on {branch!r}"
+
+
+def test_branch_protection_targets_the_declared_default_branch():
+    """Protecting a branch that is not the default protects nothing."""
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert "branches/main/protection" not in content, "the branch must not be hardcoded"
+    assert "MANIFEST.default_branch" in content

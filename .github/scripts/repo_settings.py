@@ -489,10 +489,10 @@ def apply_branch_protection(run: Runner) -> None:
     Args:
         run: Command runner.
     """
-    print("\n== Branch protection (main) ==")
+    print(f"\n== Branch protection ({MANIFEST.default_branch}) ==")
     run.api(
         "PUT",
-        f"repos/{SLUG}/branches/main/protection",
+        f"repos/{SLUG}/branches/{MANIFEST.default_branch}/protection",
         {
             "required_status_checks": {"strict": True, "contexts": REQUIRED_CHECKS},
             "enforce_admins": False,
