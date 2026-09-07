@@ -40,7 +40,26 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Build documentation
-        run: mkdocs build --strict
+        # The command comes from this repository's declared environment rather than being fixed
+        # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
+        # properdocs migration fail with `mkdocs: command not found`.
+        run: |
+          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
+          import environment
+
+          plan = environment.configure(".").docs_plan()
+          for entry in plan.values():
+              if entry.get("command"):
+                  print(entry["command"])
+                  break
+          PY
+          )
+          if [ -z "$COMMAND" ]; then
+            echo "No documentation build is configured for this repository."
+            exit 1
+          fi
+          echo "Documentation build: $COMMAND"
+          eval "$COMMAND"
 
       - name: Disable Jekyll processing
         run: touch site/.nojekyll

@@ -333,3 +333,24 @@ def test_the_docs_job_tolerates_a_repository_with_no_documentation():
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[content.index("  docs:") :]
     assert "exit 0" in docs_job
+
+
+def test_repo_settings_can_configure_a_consumer_checkout():
+    """Consumers carry no copy of these scripts, so the script must target another repository.
+
+    Without this the shared settings could only ever be applied to the repository that happens to
+    hold the file, which is the one repository that least needs it.
+    """
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert "DARKFACTORY_REPO_ROOT" in content
+    assert "manifest_module.load(REPO_ROOT)" in content
+
+
+def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
+    """ci.yml was fixed for this and deploy-docs.yml was not, so the merge built fine and the
+    deploy then failed with `mkdocs: command not found`. Both read the declared command now.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    assert "docs_plan" in content
+    assert "run: mkdocs build" not in content
+    assert "run: properdocs build" not in content
