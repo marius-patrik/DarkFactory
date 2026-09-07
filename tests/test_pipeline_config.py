@@ -344,3 +344,13 @@ def test_repo_settings_can_configure_a_consumer_checkout():
     content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
     assert "DARKFACTORY_REPO_ROOT" in content
     assert "manifest_module.load(REPO_ROOT)" in content
+
+
+def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
+    """ci.yml was fixed for this and deploy-docs.yml was not, so the merge built fine and the
+    deploy then failed with `mkdocs: command not found`. Both read the declared command now.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    assert "docs_plan" in content
+    assert "run: mkdocs build" not in content
+    assert "run: properdocs build" not in content
