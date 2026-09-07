@@ -3,6 +3,22 @@ name: Release
 on:
   push:
     branches: ["darkfactory"]
+  workflow_call:
+    inputs:
+      bump:
+        description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
+        required: false
+        type: string
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
   workflow_dispatch:
     inputs:
       bump:
@@ -31,6 +47,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .pipeline/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -47,7 +79,7 @@ jobs:
         env:
           REQUESTED_BUMP: ${{ inputs.bump }}
         run: |
-          python .github/scripts/release.py \
+          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
             --repo-root . \
             --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
           cat "$RUNNER_TEMP/release.json"
@@ -103,7 +135,7 @@ jobs:
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os
           import sys
-          sys.path.insert(0, ".github/scripts")
+          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
           import release
           data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
           found = release.collect_assets(".", data["steps"])

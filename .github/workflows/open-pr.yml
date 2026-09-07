@@ -26,6 +26,22 @@ on:
         default: true
         type: boolean
 
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      GH_PROJECT_TOKEN: {required: false}
+
 permissions:
   contents: write
   pull-requests: write

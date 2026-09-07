@@ -111,7 +111,7 @@ jobs:
 
       - name: Write the version manifest
         run: |
-          python .github/scripts/docs_versions.py \
+          python "${PIPELINE_SCRIPTS:-.github/scripts}/docs_versions.py" \
             --site-root .published \
             --repo-root . \
             --current "${{ github.ref_name }}" \

@@ -9,6 +9,22 @@ on:
     branches: [darkfactory]
   workflow_dispatch:
 
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      GH_PROJECT_TOKEN: {required: false}
+
 permissions:
   contents: read
   issues: write
@@ -22,6 +38,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .pipeline/.github/scripts ]; then
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,7 +63,7 @@ jobs:
 
       - name: Run Project Board Automation
         run: |
-          python3 .github/scripts/project_automation.py
+          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
         env:
           GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           PROJECT_OWNER: ${{ github.repository_owner }}

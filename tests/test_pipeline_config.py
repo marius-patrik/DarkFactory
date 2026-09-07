@@ -24,7 +24,7 @@ EXPECTED_WORKFLOWS = [
 EXPECTED_SCRIPTS = [
     "agent_runner.py",
     "handle_pr_approval.py",
-    "mkdocs_hooks.py",
+    "docs_hooks.py",
     "open_pr.py",
     "project_automation.py",
     "repo_settings.py",
@@ -418,3 +418,35 @@ def test_the_agent_image_is_built_from_the_pipeline():
     content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
     assert 'CONTEXT=".pipeline"' in content
     assert "$CONTEXT/docker/Dockerfile.agent" in content
+
+
+def test_every_shared_workflow_is_callable():
+    """A workflow a consumer cannot call is a workflow every consumer copies."""
+    yaml = pytest.importorskip("yaml")
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        if not name.endswith(".yml"):
+            continue
+        with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
+            document = yaml.safe_load(handle)
+        triggers = document[True] if True in document else document["on"]
+        assert "workflow_call" in triggers, f"{name} cannot be shared"
+
+
+def test_script_paths_resolve_against_the_pinned_pipeline():
+    """A consumer carries none of these scripts, so a hardcoded path finds nothing there.
+
+    The fallback keeps this repository working unchanged: unset, `PIPELINE_SCRIPTS` resolves to the
+    local directory, which is exactly where the scripts are when the pipeline runs on itself.
+    """
+    import re as _re
+
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        if not name.endswith(".yml"):
+            continue
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        for line in content.splitlines():
+            if _re.search(r"python3?\s+\.github/scripts/", line):
+                raise AssertionError(
+                    f"{name} invokes a script by hardcoded path, which a consumer does not have: "
+                    f"{line.strip()}"
+                )
