@@ -481,3 +481,25 @@ def test_preview_takes_the_build_command_from_the_caller():
     assert "docs_plan" in content
     assert "run: properdocs build" not in content
     assert "run: mkdocs build" not in content
+
+
+def test_a_failed_project_lookup_never_creates_a_board():
+    """A transient failure that reads as absence makes the script create a duplicate board.
+
+    That happened: one timed-out listing during a reconcile produced a second board titled
+    `Global`, which then appeared twice in two repositories' Projects tabs. Every lookup must
+    distinguish "the listing says it is not there" from "the listing could not be read".
+    """
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert "class LookupFailed" in content
+    assert content.count("except LookupFailed") >= 3, "every caller must handle it"
+
+    import repo_settings
+
+    class _Failing(repo_settings.Runner):
+        def gh(self, args, **kwargs):
+            return None
+
+    runner = _Failing(apply=True)
+    with pytest.raises(repo_settings.LookupFailed):
+        repo_settings.find_project_number(runner, "Global")

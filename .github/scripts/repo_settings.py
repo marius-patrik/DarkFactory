@@ -330,6 +330,16 @@ def apply_labels(run: Runner) -> None:
     print(f"  {len(LABELS)} labels reconciled")
 
 
+class LookupFailed(Exception):
+    """Raised when the board listing could not be read at all.
+
+    Distinct from "the board does not exist": a transient API failure that reads as absence makes
+    the caller create a second board with the same title. That is not hypothetical - one timeout
+    during a reconcile produced a duplicate `Global` board that then appeared twice in two
+    repositories' Projects tabs.
+    """
+
+
 def find_project_number(run: Runner, title: Optional[str] = None) -> Optional[int]:
     """Looks up a project board number by title for the owner.
 
@@ -338,7 +348,10 @@ def find_project_number(run: Runner, title: Optional[str] = None) -> Optional[in
         title: Board title to find. Defaults to this repository's own board.
 
     Returns:
-        The project number, or ``None`` when it does not exist yet.
+        The project number, or ``None`` when the listing was read and the board is not in it.
+
+    Raises:
+        LookupFailed: If the listing could not be read, so absence cannot be concluded.
     """
     wanted = title or PROJECT_TITLE
     listing = run.gh(
@@ -346,6 +359,8 @@ def find_project_number(run: Runner, title: Optional[str] = None) -> Optional[in
         allow_fail=True,
     )
     if not listing:
+        if run.apply:
+            raise LookupFailed(f"could not list projects for {OWNER}")
         return None
     for project in json.loads(listing).get("projects", []):
         if project.get("title") == wanted:
@@ -363,7 +378,13 @@ def apply_project_board(run: Runner) -> Optional[int]:
         The project number, or ``None`` in plan mode.
     """
     print("\n== Project board ==")
-    number = find_project_number(run)
+    try:
+        number = find_project_number(run)
+    except LookupFailed as error:
+        # Same reasoning as the global board: a failed listing is not evidence of absence, and
+        # acting on it creates a duplicate that then shows twice in the Projects tab.
+        print(f"  skipped: {error}")
+        return None
     if number is None:
         created = run.gh(
             ["project", "create", "--owner", OWNER, "--title", PROJECT_TITLE, "--format", "json"]
@@ -539,7 +560,14 @@ def apply_global_board(run: Runner) -> None:
     if not title:
         return
     print("\n== Global project board ==")
-    if find_project_number(run, title) is not None:
+    try:
+        existing = find_project_number(run, title)
+    except LookupFailed as error:
+        # Creating on a failed lookup is how a duplicate board gets made. Skipping is always safe:
+        # the next run reconciles it.
+        print(f"  skipped: {error}")
+        return
+    if existing is not None:
         print(f"  {title!r} already exists")
         return
     run.gh(
@@ -575,7 +603,11 @@ def apply_board_links(run: Runner) -> None:
         return
 
     for title in titles:
-        number = find_project_number(run, title)
+        try:
+            number = find_project_number(run, title)
+        except LookupFailed as error:
+            print(f"  skipped {title!r}: {error}")
+            continue
         if number is None:
             print(f"  board {title!r} not found; skipping")
             continue
