@@ -315,3 +315,21 @@ def test_branch_protection_targets_the_declared_default_branch():
     content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
     assert "branches/main/protection" not in content, "the branch must not be hardcoded"
     assert "MANIFEST.default_branch" in content
+
+
+def test_the_docs_job_does_not_hardcode_a_documentation_engine():
+    """Consumers do not share one. This repository builds with mkdocs and omnis with properdocs,
+    so a hardcoded command fails in whichever repository chose the other - which is exactly how
+    the first pinned run failed, with `mkdocs: command not found`.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    docs_job = content[content.index("  docs:") :]
+    assert "docs_plan" in docs_job, "the docs command must come from the caller's environment"
+    assert "run: mkdocs build" not in docs_job
+
+
+def test_the_docs_job_tolerates_a_repository_with_no_documentation():
+    """A repository that publishes no site must not fail the check that builds one."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    docs_job = content[content.index("  docs:") :]
+    assert "exit 0" in docs_job

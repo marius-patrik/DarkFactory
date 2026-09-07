@@ -154,6 +154,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -166,4 +174,27 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Build documentation
-        run: mkdocs build --strict
+        # The command comes from the *caller's* environment, not from this file. Consumers do not
+        # share a documentation engine - this repository builds with mkdocs and omnis with
+        # properdocs - so hardcoding one here fails in every repository that chose the other.
+        run: |
+          SCRIPTS=".github/scripts"
+          [ -d .pipeline/.github/scripts ] && SCRIPTS=".pipeline/.github/scripts"
+          COMMAND=$(PYTHONPATH="$SCRIPTS" python - <<'PY'
+          import environment
+
+          plan = environment.configure(".").docs_plan()
+          # One repository, one documentation site: the first ecosystem that declares a build owns
+          # it. A polyglot repository publishes one site from several inline sources.
+          for entry in plan.values():
+              if entry.get("command"):
+                  print(entry["command"])
+                  break
+          PY
+          )
+          if [ -z "$COMMAND" ]; then
+            echo "No documentation build is configured for this repository."
+            exit 0
+          fi
+          echo "Documentation build: $COMMAND"
+          eval "$COMMAND"
