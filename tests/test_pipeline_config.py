@@ -259,3 +259,35 @@ def test_every_workflow_is_valid_yaml():
         if name.endswith((".yml", ".yaml")):
             with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
                 yaml.safe_load(handle)
+
+
+def test_ci_is_callable_as_a_reusable_workflow():
+    """Consumers call this file rather than copying it, so the two cannot drift apart."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "ci.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "workflow_call" in triggers
+    assert "pipeline-ref" in triggers["workflow_call"]["inputs"], "the pin must be an input"
+
+
+def test_ci_still_runs_for_this_repository_itself():
+    """A file that only ran when called would leave the upstream repository untested."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "ci.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "push" in triggers and "pull_request" in triggers
+
+
+def test_a_consumer_needs_no_pipeline_scripts_of_its_own():
+    """The point of the pin is that shared code lives in one repository, not three."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    assert "path: .pipeline" in content, "the pinned pipeline must be checked out separately"
+    assert "PYTHONPATH" in content, "the pinned scripts must be importable"
+
+
+def test_the_pipeline_checkout_is_skipped_when_running_in_place():
+    """Checking this repository out into .pipeline from itself would be circular."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    assert "if: inputs.pipeline-ref != ''" in content

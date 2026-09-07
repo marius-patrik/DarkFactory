@@ -6,6 +6,22 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+  # The same file is this repository's own CI and the reusable workflow every consumer calls, so
+  # the two cannot drift. A consumer's caller stub is six lines and pins `pipeline-ref` to a SHA;
+  # everything below then runs against the *caller's* checkout, because `github.repository` in a
+  # called workflow is the caller.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
 
 # Every job below always reports a conclusion, even while the product tree is still a scaffold:
 # language-specific steps are guarded by `hashFiles`, so the job succeeds with skipped steps rather
@@ -23,6 +39,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        # Only when called from another repository: the shared scripts live in the pipeline
+        # repository at a pinned SHA, so a consumer carries none of them in its own tree.
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .pipeline/.github/scripts ]; then
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
