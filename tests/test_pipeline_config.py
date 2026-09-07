@@ -450,3 +450,34 @@ def test_script_paths_resolve_against_the_pinned_pipeline():
                     f"{name} invokes a script by hardcoded path, which a consumer does not have: "
                     f"{line.strip()}"
                 )
+
+
+def test_open_pr_forwards_its_dispatch_inputs_to_callers():
+    """A called workflow receives nothing from the caller's own `inputs` context automatically.
+
+    Every value the dispatch form collects has to be declared on `workflow_call` too, or a caller
+    can invoke it but never tell it what pull request to open.
+    """
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "open-pr.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    dispatch = set(triggers["workflow_dispatch"]["inputs"])
+    called = set(triggers["workflow_call"]["inputs"])
+    assert dispatch <= called, f"not forwardable to callers: {sorted(dispatch - called)}"
+
+
+def test_preview_deploys_and_tears_down_in_one_workflow():
+    """A preview left behind after merge accumulates forever, and the switcher then offers it."""
+    content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
+    assert "target-folder: pr-" in content, "previews live under pr-<N>/ beside the site"
+    assert "closed" in content and "git rm" in content, "the preview must be removed on close"
+    assert "branch: gh-pages" in content, "preview and deploy must share one Pages source"
+
+
+def test_preview_takes_the_build_command_from_the_caller():
+    """Consumers do not share a documentation engine; the preview must not assume one."""
+    content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
+    assert "docs_plan" in content
+    assert "run: properdocs build" not in content
+    assert "run: mkdocs build" not in content
