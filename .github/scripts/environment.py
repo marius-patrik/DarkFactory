@@ -167,6 +167,34 @@ DOC_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     "go": {None: "go doc ./..."},
 }
 
+#: Default release-build command per ecosystem, keyed by package manager where it decides.
+BUILD_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
+    "python": {
+        "uv": "uv build",
+        "poetry": "poetry build",
+        None: "python -m build",
+    },
+    "node": {
+        "bun": "bun run build",
+        "pnpm": "pnpm run build",
+        "yarn": "yarn build",
+        "npm": "npm run build",
+        None: "npm run build",
+    },
+    "deno": {None: "deno compile -A"},
+    "rust": {None: "cargo build --release --workspace"},
+    "go": {None: "go build ./..."},
+}
+
+#: Where each ecosystem leaves the artifacts a release should attach, relative to the package.
+ARTIFACT_GLOBS: Dict[str, List[str]] = {
+    "python": ["dist/*.whl", "dist/*.tar.gz"],
+    "node": ["dist/**", "build/**"],
+    "deno": ["dist/**"],
+    "rust": ["target/release/*.tar.gz", "target/release/*.zip"],
+    "go": ["bin/*"],
+}
+
 #: Marker files that name a formatter outright, overriding the package-manager default.
 FORMATTER_MARKERS: Sequence[tuple] = (
     ("biome.json", "node", "npx @biomejs/biome format --write ."),
@@ -412,6 +440,23 @@ class Environment:
             entry["source"] = settings.get("source") or DOC_SOURCES.get(ecosystem)
         return plan
 
+    def build_plan(self) -> Dict[str, Dict[str, Any]]:
+        """Works out how to build each ecosystem's release artifacts.
+
+        Returns:
+            Mapping of ecosystem to `command`, `versions`, `manager` and `artifacts`, where
+            `artifacts` are globs relative to each package directory.
+        """
+        plan = self._plan("release", BUILD_COMMANDS)
+        declared = self.declared.get("release", {}) or {}
+        for ecosystem, entry in plan.items():
+            settings = declared.get(ecosystem, {}) or {}
+            entry["artifacts"] = [
+                str(glob)
+                for glob in (settings.get("artifacts") or ARTIFACT_GLOBS.get(ecosystem, []))
+            ]
+        return plan
+
     def as_dict(self) -> Dict[str, Any]:
         """Returns the whole environment as plain data.
 
@@ -428,6 +473,7 @@ class Environment:
             "test_plan": self.test_plan(),
             "format_plan": self.format_plan(),
             "docs_plan": self.docs_plan(),
+            "build_plan": self.build_plan(),
         }
 
 

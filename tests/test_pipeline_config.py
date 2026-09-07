@@ -217,3 +217,45 @@ def test_pages_deploy_does_not_clobber_pull_request_previews():
     if "clean: true" in workflow:
         assert "clean-exclude" in workflow, "a clean deploy must exclude the preview directories"
         assert "pr-*" in workflow
+
+
+def test_release_workflow_fetches_full_history():
+    """Tags decide the current version, so a shallow clone computes the wrong next one."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "fetch-depth: 0" in content
+
+
+def test_release_workflow_is_idempotent_on_an_existing_tag():
+    """`push` and `workflow_dispatch` can both fire for one commit; the second must not fail."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "git rev-parse" in content, "the workflow must check whether the tag already exists"
+
+
+def test_release_workflow_blocks_on_metadata_disagreement():
+    """A tag that contradicts the artifact's own metadata is worse than no release."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "metadata_problems" in content
+    assert "sys.exit(1)" in content, "a disagreement must fail the release, not just warn"
+
+
+def test_release_workflow_offers_an_explicit_bump():
+    """PrideVer's PROUD component cannot be derived, so a human must be able to ask for it."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "workflow_dispatch" in content
+    assert "bump" in content
+    assert "REQUESTED_BUMP" in content
+
+
+def test_release_workflow_tolerates_a_repository_with_no_build():
+    """A template repository releases a tag and notes, not a failure."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "no assets" in content or "Nothing to build" in content
+
+
+def test_every_workflow_is_valid_yaml():
+    """A malformed workflow is silently ignored by GitHub rather than reported."""
+    yaml = pytest.importorskip("yaml")
+    for name in os.listdir(WORKFLOW_DIR):
+        if name.endswith((".yml", ".yaml")):
+            with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
+                yaml.safe_load(handle)

@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
+        required: false
+        type: string
+
+# The version, the notes, the assets and the metadata check are all decided by
+# `.github/scripts/release.py`, which reads the mode from `.github/darkfactory.json`. This workflow
+# only sequences them, so changing versioning scheme never means editing a workflow.
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # Tags decide the current version, so a shallow clone would compute the wrong next one.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Resolve the next release
+        id: resolve
+        env:
+          REQUESTED_BUMP: ${{ inputs.bump }}
+        run: |
+          python .github/scripts/release.py \
+            --repo-root . \
+            --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
+          cat "$RUNNER_TEMP/release.json"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          print(f"version={data['version'] or ''}")
+          print(f"tag={data['tag'] or ''}")
+          print(f"warranted={'true' if data['version'] else 'false'}")
+          PY
+
+      - name: Report that no release is warranted
+        if: steps.resolve.outputs.warranted != 'true'
+        run: |
+          echo "No release-worthy commits since the last tag." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify package metadata agrees with the release
+        if: steps.resolve.outputs.warranted == 'true'
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          problems = data["metadata_problems"]
+          if problems:
+              print("Package metadata disagrees with the release version:")
+              for problem in problems:
+                  print(f"  - {problem}")
+              sys.exit(1)
+          print("Package metadata is conformant.")
+          PY
+
+      - name: Build release assets
+        if: steps.resolve.outputs.warranted == 'true'
+        run: |
+          python - <<'PY' > "$RUNNER_TEMP/steps.sh"
+          import json, os, shlex
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          for step in data["steps"]:
+              if step.get("command"):
+                  print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
+          PY
+          if [ -s "$RUNNER_TEMP/steps.sh" ]; then
+            echo "Build steps:"; cat "$RUNNER_TEMP/steps.sh"
+            bash -euxo pipefail "$RUNNER_TEMP/steps.sh"
+          else
+            echo "Nothing to build; this release carries no assets."
+          fi
+
+      - name: Collect release assets
+        if: steps.resolve.outputs.warranted == 'true'
+        id: assets
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          import sys
+          sys.path.insert(0, ".github/scripts")
+          import release
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          found = release.collect_assets(".", data["steps"])
+          print("files<<EOF")
+          for path in found:
+              print(path)
+          print("EOF")
+          PY
+
+      - name: Create the tag and the release
+        if: steps.resolve.outputs.warranted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists; nothing to do."
+            exit 0
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          mapfile -t ASSETS < <(printf '%s' "${{ steps.assets.outputs.files }}" | sed '/^$/d')
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${ASSETS[@]}"
+
+          {
+            echo "## Released \`$TAG\`"
+            echo
+            echo "Assets: ${#ASSETS[@]}"
+          } >> "$GITHUB_STEP_SUMMARY"
