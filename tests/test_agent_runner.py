@@ -23,20 +23,23 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @pytest.mark.parametrize(
     "text,expected_area",
     [
-        ("Add a cell-grid renderer for the terminal UI", "area:term"),
-        ("Sixel output is misaligned", "area:term"),
-        ("Bridge the AXTree from Chromium into the pane", "area:browser"),
         ("Define the provider adapter contract for the agent harness", "area:agents"),
-        ("Sandbox the extension host", "area:ext"),
-        ("Add a migration for the settings schema", "area:data"),
-        ("Version the substrate bus IPC frames", "area:core"),
-        ("Titlebar vibrancy is wrong on Windows", "area:ui"),
-        ("Fix the mkdocs build", "area:docs"),
+        ("The quota fallback picks the wrong model", "area:agents"),
+        ("Tighten branch protection and the board taxonomy", "area:governance"),
+        ("Every label should come from one declaration", "area:governance"),
+        ("Pick the versioning mode per repository", "area:release"),
+        ("Attach build artifacts to the tag", "area:release"),
+        ("Fix the properdocs build", "area:docs"),
+        ("The theme is unreadable in dark mode", "area:docs"),
         ("Harden the docker runner workflow", "area:ci"),
+        ("Something entirely unclassifiable", "area:ci"),
     ],
 )
 def test_classify_area(text: str, expected_area: str):
-    """The classifier routes requests to the Omnis area taxonomy.
+    """The classifier routes requests to the repository's declared area taxonomy.
+
+    The taxonomy comes from `.github/darkfactory.json`, so these cases assert DarkFactory's own
+    areas; a repository adopting the pipeline declares its own and gets its own routing.
 
     Args:
         text: Issue title or body.

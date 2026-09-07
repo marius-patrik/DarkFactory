@@ -17,36 +17,29 @@ scopes. Branch protection needs admin on the repository.
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Sequence
 
-OWNER = "marius-patrik"
-REPO = "DarkFactory"
-SLUG = f"{OWNER}/{REPO}"
-PROJECT_TITLE = "DarkFactory"
+import manifest as manifest_module
 
-DESCRIPTION = (
-    "Turn-key template repository for autonomous, governed software engineering pipelines "
-    "('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, "
-    "and project board delivery."
+#: Everything repository-specific comes from `.github/darkfactory.json`, so this script is
+#: identical in every repository that uses the pipeline.
+MANIFEST = manifest_module.load(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-HOMEPAGE = f"https://{OWNER}.github.io/{REPO}/"
+OWNER = MANIFEST.owner
+REPO = MANIFEST.repo
+SLUG = MANIFEST.slug
+PROJECT_TITLE = MANIFEST.project_title
 
-TOPICS: List[str] = [
-    "agentic-coding",
-    "agentic-development",
-    "ai-agents",
-    "autonomous-agents",
-    "automation",
-    "dark-factory",
-    "developer-tools",
-    "orchestration",
-    "template",
-    "template-repository",
-    "workspace",
-]
+DESCRIPTION = MANIFEST.description
+
+HOMEPAGE = MANIFEST.homepage
+
+TOPICS: List[str] = MANIFEST.topics
 
 #: Project board Status options, in column order. Mirrors AGENTS.md rule 9 and
 #: ``project_automation.STATUS_NAMES``; the test suite asserts the two stay in sync.
@@ -83,16 +76,8 @@ LABELS: List[Sequence[str]] = [
     ("test", "c5def5", "Test suite additions or fixes"),
     ("chore", "bfdadc", "Maintenance or tooling changes"),
     ("ci", "1d76db", "CI/CD workflows and automation"),
-    # Areas - mirror AGENTS.md rule 15 and agent_runner.AREA_LABELS.
-    ("area:core", "5319e7", "Microkernel, IPC/substrate bus, daemon, configuration"),
-    ("area:ui", "1f883d", "DOM renderer, layout, theming, brand presets, settings surfaces"),
-    ("area:term", "0052cc", "Terminal cell-grid renderer, ANSI pipeline, PTY integration"),
-    ("area:agents", "a2eeef", "Harness orchestration, providers, personas, approvals"),
-    ("area:browser", "f9d0c4", "Embedded browser engine, CDP bridge, render modes"),
-    ("area:data", "c2e0c6", "Schema, persistence, migrations, sync, local-first storage"),
-    ("area:ext", "e99695", "Extension host, plugin API, compatibility shims"),
-    ("area:ci", "006b75", "GitHub Actions, containers, runner scripts, repo automation"),
-    ("area:docs", "0075ca", "Documentation, MkDocs configuration, architecture notes"),
+    # Areas come from the manifest, so the taxonomy is per-repository rather than baked in here;
+    # they are appended below.
     # General triage.
     ("good first issue", "7057ff", "Good for newcomers"),
     ("help wanted", "008672", "Extra attention is needed"),
@@ -101,18 +86,14 @@ LABELS: List[Sequence[str]] = [
     ("accessibility", "f143ab", "Barrier affecting people with disabilities"),
 ]
 
-#: Status check contexts required on `main`. Only jobs that always report a conclusion belong here;
-#: a job that can be skipped will block every merge forever.
-REQUIRED_CHECKS: List[str] = [
-    "pipeline (3.10)",
-    "pipeline (3.11)",
-    "pipeline (3.12)",
-    "pipeline (3.13)",
-    "rust",
-    "web",
-    "docs",
-    "verify-bound-issue",
-]
+# The area taxonomy is repository-specific, so it is declared in the manifest rather than here.
+# `agent_runner` and the Conventional Commit scopes read the same list, so the three cannot drift.
+LABELS.extend(MANIFEST.area_labels)
+
+#: Status check contexts required on the default branch. Declared in the manifest, because a
+#: repository that calls the pipeline as a reusable workflow sees every check name prefixed with
+#: its caller job's name and would otherwise require contexts nothing ever reports.
+REQUIRED_CHECKS: List[str] = MANIFEST.required_checks
 
 
 class Runner:
@@ -191,6 +172,58 @@ class Runner:
             self.failures.append(printable)
             return None
         return result.stdout.strip()
+
+    def graphql(
+        self, query: str, variables: Dict[str, Any], **kwargs: Any
+    ) -> Optional[Dict[str, Any]]:
+        """Runs a GraphQL query or mutation.
+
+        Projects v2 has no REST surface for linking a board to a repository, so board work goes
+        through GraphQL while everything else stays on REST.
+
+        Args:
+            query: The GraphQL document.
+            variables: Variables to bind, all sent as strings.
+            **kwargs: Forwarded to :meth:`gh`.
+
+        Returns:
+            The decoded ``data`` object, or ``None``.
+        """
+        args = ["api", "graphql", "-f", f"query={query}"]
+        for key, value in variables.items():
+            # `-f` sends a String; `-F` preserves the JSON type, which Int! arguments require.
+            flag = "-f" if isinstance(value, str) else "-F"
+            args += [flag, f"{key}={value}"]
+        if not self.apply:
+            print(f"  would call: graphql {query.split('{')[0].strip()} {variables}")
+            return None
+        output = self.gh(args, **kwargs)
+        if not output:
+            return None
+        try:
+            return json.loads(output).get("data")
+        except ValueError:
+            return None
+
+    def graphql_project_id(self, number: int, **kwargs: Any) -> Optional[str]:
+        """Resolves a project board's node id from its number.
+
+        Args:
+            number: The board number.
+            **kwargs: Forwarded to :meth:`graphql`.
+
+        Returns:
+            The node id, or ``None``.
+        """
+        data = self.graphql(
+            "query($owner:String!,$number:Int!){user(login:$owner)"
+            "{projectV2(number:$number){id}}}",
+            {"owner": OWNER, "number": number},
+            **kwargs,
+        )
+        if not data:
+            return None
+        return (data.get("user") or {}).get("projectV2", {}).get("id")
 
 
 def apply_repository_settings(run: Runner) -> None:
@@ -291,15 +324,17 @@ def apply_labels(run: Runner) -> None:
     print(f"  {len(LABELS)} labels reconciled")
 
 
-def find_project_number(run: Runner) -> Optional[int]:
-    """Looks up the Omnis project number for the owner.
+def find_project_number(run: Runner, title: Optional[str] = None) -> Optional[int]:
+    """Looks up a project board number by title for the owner.
 
     Args:
         run: Command runner.
+        title: Board title to find. Defaults to this repository's own board.
 
     Returns:
         The project number, or ``None`` when it does not exist yet.
     """
+    wanted = title or PROJECT_TITLE
     listing = run.gh(
         ["project", "list", "--owner", OWNER, "--limit", "100", "--format", "json"],
         allow_fail=True,
@@ -307,7 +342,7 @@ def find_project_number(run: Runner) -> Optional[int]:
     if not listing:
         return None
     for project in json.loads(listing).get("projects", []):
-        if project.get("title") == PROJECT_TITLE:
+        if project.get("title") == wanted:
             return int(project["number"])
     return None
 
@@ -446,10 +481,10 @@ def apply_branch_protection(run: Runner) -> None:
     Args:
         run: Command runner.
     """
-    print("\n== Branch protection (main) ==")
+    print(f"\n== Branch protection ({MANIFEST.default_branch}) ==")
     run.api(
         "PUT",
-        f"repos/{SLUG}/branches/main/protection",
+        f"repos/{SLUG}/branches/{MANIFEST.default_branch}/protection",
         {
             "required_status_checks": {"strict": True, "contexts": REQUIRED_CHECKS},
             "enforce_admins": False,
@@ -470,14 +505,85 @@ def apply_branch_protection(run: Runner) -> None:
 
 
 def apply_pages(run: Runner) -> None:
-    """Enables GitHub Pages with the Actions build type.
+    """Enables GitHub Pages using the source declared in the manifest.
+
+    Pages must be enabled *before* the first documentation deploy, or `actions/deploy-pages`
+    fails with an opaque `HttpError: Not Found` and a 404 that names no cause. This ran after
+    the first deploy once, which is why that failure is worth codifying rather than clicking.
 
     Args:
         run: Command runner.
     """
     print("\n== GitHub Pages ==")
-    run.api("POST", f"repos/{SLUG}/pages", {"build_type": "workflow"}, allow_fail=True)
-    run.api("PUT", f"repos/{SLUG}/pages", {"build_type": "workflow"}, allow_fail=True)
+    payload = MANIFEST.pages_payload()
+    run.api("POST", f"repos/{SLUG}/pages", payload, allow_fail=True)
+    run.api("PUT", f"repos/{SLUG}/pages", payload, allow_fail=True)
+
+
+def apply_global_board(run: Runner) -> None:
+    """Ensures the board that aggregates every repository exists.
+
+    A Projects v2 board can hold issues from any repository the owner can see, so one global board
+    gives a single view across the whole fleet while each repository keeps its own focused board.
+
+    Args:
+        run: Command runner.
+    """
+    title = MANIFEST.global_board_title
+    if not title:
+        return
+    print("\n== Global project board ==")
+    if find_project_number(run, title) is not None:
+        print(f"  {title!r} already exists")
+        return
+    run.gh(
+        ["project", "create", "--owner", OWNER, "--title", title, "--format", "json"],
+        allow_fail=True,
+    )
+    print(f"  created {title!r}")
+
+
+def apply_board_links(run: Runner) -> None:
+    """Links every declared project board to this repository.
+
+    Boards are owned by the account, not by a repository, so a board only appears in a
+    repository's Projects tab once it is explicitly linked. Linking every board here is what
+    makes one repository the place all of them are visible from.
+
+    Args:
+        run: Command runner.
+    """
+    print("\n== Project board links ==")
+    titles = MANIFEST.linked_boards
+    if not titles:
+        print("  no boards declared")
+        return
+
+    raw = run.gh(["api", f"repos/{SLUG}", "--jq", ".node_id"], allow_fail=True)
+    repository_id = raw.strip() if raw else None
+    if not repository_id:
+        if run.apply:
+            print("  could not resolve the repository node id; skipping")
+        else:
+            print(f"  would link {len(titles)} board(s): {', '.join(titles)}")
+        return
+
+    for title in titles:
+        number = find_project_number(run, title)
+        if number is None:
+            print(f"  board {title!r} not found; skipping")
+            continue
+        project_id = run.graphql_project_id(number)
+        if not project_id:
+            continue
+        run.graphql(
+            "mutation($project:ID!,$repo:ID!){"
+            "linkProjectV2ToRepository(input:{projectId:$project,repositoryId:$repo})"
+            "{repository{nameWithOwner}}}",
+            {"project": project_id, "repo": repository_id},
+            allow_fail=True,
+        )
+        print(f"  linked {title!r}")
 
 
 def report_required_secrets(run: Runner) -> None:
@@ -510,7 +616,9 @@ def report_required_secrets(run: Runner) -> None:
 
 def main() -> None:
     """Entry point."""
-    parser = argparse.ArgumentParser(description="Apply GitHub UI-only settings for Omnis")
+    parser = argparse.ArgumentParser(
+        description=f"Apply GitHub UI-only settings for {MANIFEST.display_name}"
+    )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--apply", action="store_true", help="Execute the changes")
     mode.add_argument("--plan", action="store_true", help="Print the changes without applying")
@@ -528,6 +636,8 @@ def main() -> None:
     apply_actions_permissions(run)
     apply_labels(run)
     apply_project_board(run)
+    apply_global_board(run)
+    apply_board_links(run)
     apply_pages(run)
     if not args.skip_protection:
         apply_branch_protection(run)

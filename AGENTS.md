@@ -184,15 +184,15 @@ An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.
 - **Format**: `<type>(<scope>): <description>` (e.g. `feat(term): add cell matrix buffer`).
 - **Allowed Types**: `feat`, `fix` (mapped from `bug`), `chore`, `docs`, `refactor`, `test`, `ci`.
 - **Allowed Area Scopes & Labels**:
-  - `area:core`: Microkernel, process topology, IPC/substrate bus, daemon lifecycle, config.
-  - `area:ui`: DOM renderer, layout topology, theming, profiles, settings surfaces.
-  - `area:term`: Terminal cell-grid renderer, ANSI/TrueColor pipeline, PTY integration.
+  The taxonomy is **per repository**, declared in `.github/darkfactory.json` under `areas`. The
+  labels, the permitted commit scopes, and the agent's request classifier all read that one
+  declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
+  block with its own domains; the areas below are DarkFactory's own.
   - `area:agents`: Harness orchestration, provider adapters, personas, approvals.
-  - `area:browser`: Embedded browser engine, CDP bridge, semantic and pixel render modes.
-  - `area:data`: Schema, persistence, migrations, sync, local-first storage.
-  - `area:ext`: Extension host, plugin API, compatibility shims.
+  - `area:governance`: Agent rules, branch protection, required checks, project board taxonomy.
+  - `area:release`: Versioning modes, tagging, asset packaging, release notes.
+  - `area:docs`: Documentation site, theme, architecture notes.
   - `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation.
-  - `area:docs`: Documentation, MkDocs configuration, architecture notes.
 
 ### 16. Security & Secrets
 No credential, token, refresh token, cookie, or private key is ever committed, echoed into workflow

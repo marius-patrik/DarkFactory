@@ -1,4 +1,9 @@
 pytest>=8.0.0
 black>=24.0.0
-mkdocs>=1.6.0
-mkdocs-material>=9.5.0
+properdocs>=1.6.7
+# Provides the pymdownx.* extensions and the highlighter, previously transitive via
+# mkdocs-material; declared explicitly now that the theme is first-party.
+pymdown-extensions>=10.0
+Pygments>=2.17
+tomli>=2.0; python_version < "3.11"
+PyYAML>=6.0

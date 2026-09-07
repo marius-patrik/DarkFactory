@@ -1,0 +1,27 @@
+{#-
+  Version and project switcher.
+
+  The site is published to the `gh-pages` branch, where the root holds the current documentation
+  and every other build lives under a prefix: `pr-<N>/` for a live pull request preview and
+  `branch/<name>/` for a branch build. A `versions.json` written at the site root by the deploy
+  workflow lists what is actually there, so this control never offers a build that does not exist.
+
+  It is fetched rather than templated because the set of live previews changes every time a pull
+  request opens or closes, long after any given page was built. A page that hardcoded the list at
+  build time would go stale within the hour.
+
+  Two axes are offered. `Version` moves between builds of this project; `Project` moves between
+  the sites of the repositories sharing this pipeline, so the shared documentation is one hop away
+  from any of them. Both degrade to nothing if `versions.json` is missing, which is what a site
+  built before this existed looks like.
+-#}
+<div class="switcher" data-switcher hidden>
+  <label class="switcher__group">
+    <span class="switcher__label">Version</span>
+    <select class="switcher__select" data-switcher-versions aria-label="Documentation version"></select>
+  </label>
+  <label class="switcher__group" data-switcher-projects-group hidden>
+    <span class="switcher__label">Project</span>
+    <select class="switcher__select" data-switcher-projects aria-label="Project"></select>
+  </label>
+</div>

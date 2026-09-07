@@ -1,0 +1,171 @@
+{
+  "$comment": "Everything about this repository that the shared pipeline needs and cannot detect. The pipeline itself is identical across every repository that uses it; this file is the only thing that differs, so the workflows and scripts can be distributed byte-for-byte.",
+  "identity": {
+    "owner": "marius-patrik",
+    "repo": "DarkFactory",
+    "display_name": "DarkFactory",
+    "project_title": "DarkFactory",
+    "agent_slug": "darkfactory-agent",
+    "default_branch": "darkfactory",
+    "description": "Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, and project board delivery.",
+    "topics": [
+      "agentic-coding",
+      "agentic-development",
+      "ai-agents",
+      "autonomous-agents",
+      "automation",
+      "dark-factory",
+      "developer-tools",
+      "orchestration",
+      "template",
+      "template-repository",
+      "workspace"
+    ]
+  },
+  "upstream": {
+    "$comment": "DarkFactory is its own upstream. Consumer repositories set repo to marius-patrik/DarkFactory and pin ref to a commit SHA.",
+    "repo": null,
+    "ref": null
+  },
+  "versioning": {
+    "mode": "semver",
+    "tag_prefix": "v",
+    "initial": "0.1.0"
+  },
+  "environment": {
+    "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
+    "packages": [
+      {
+        "path": ".",
+        "ecosystem": "python",
+        "manifest": "pyproject.toml",
+        "name": "darkfactory"
+      }
+    ],
+    "testing": {
+      "python": {
+        "command": "pytest",
+        "versions": [
+          "3.10",
+          "3.11",
+          "3.12",
+          "3.13"
+        ]
+      }
+    },
+    "formatting": {
+      "python": {
+        "command": "black --line-length 100 ."
+      }
+    },
+    "documentation": {
+      "python": {
+        "command": "properdocs build --strict",
+        "source": "docstrings"
+      }
+    }
+  },
+  "areas": {
+    "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
+    "$default": "ci",
+    "agents": {
+      "description": "Harness orchestration, provider adapters, personas, approvals",
+      "keywords": [
+        "agent",
+        "harness",
+        "persona",
+        "provider",
+        "llm",
+        "prompt",
+        "approval",
+        "model",
+        "quota"
+      ]
+    },
+    "governance": {
+      "description": "Agent rules, branch protection, required checks, project board taxonomy",
+      "keywords": [
+        "governance",
+        "rule",
+        "protection",
+        "policy",
+        "board",
+        "taxonomy",
+        "label",
+        "permission"
+      ]
+    },
+    "release": {
+      "description": "Versioning modes, tagging, asset packaging, release notes",
+      "keywords": [
+        "release",
+        "version",
+        "versioning",
+        "tag",
+        "semver",
+        "changelog",
+        "package",
+        "artifact"
+      ]
+    },
+    "docs": {
+      "description": "Documentation site, theme, architecture notes",
+      "keywords": [
+        "doc",
+        "docs",
+        "documentation",
+        "mkdocs",
+        "properdocs",
+        "theme",
+        "site",
+        "readme"
+      ]
+    },
+    "ci": {
+      "description": "GitHub Actions workflows, containers, runner scripts, repository automation",
+      "keywords": [
+        "ci",
+        "action",
+        "workflow",
+        "pipeline",
+        "docker",
+        "runner",
+        "automation",
+        "container"
+      ]
+    }
+  },
+  "board": {
+    "$comment": "Boards are owned by the account, not by a repository. Every board listed here is linked to this repository so it appears in its Projects tab; the global board aggregates issues from every repository using this pipeline.",
+    "global_title": "Global",
+    "link_boards": [
+      "Global",
+      "DarkFactory",
+      "Omnis",
+      "ChessWithQuests"
+    ]
+  },
+  "pages": {
+    "$comment": "Branch source rather than the Actions build type, so per-pull-request previews can live under pr-<N>/ on the same site. GitHub Pages has exactly one source.",
+    "build_type": "legacy",
+    "branch": "gh-pages",
+    "path": "/"
+  },
+  "documentation": {
+    "$comment": "Sites offered by the documentation switcher's Project axis, so the shared pipeline docs are one hop from any consumer.",
+    "projects": [
+      {
+        "name": "DarkFactory",
+        "url": "https://marius-patrik.github.io/DarkFactory/"
+      },
+      {
+        "name": "Omnis",
+        "url": "https://marius-patrik.github.io/omnis/"
+      },
+      {
+        "name": "ChessWithQuests",
+        "url": "https://marius-patrik.github.io/ChessWithQuests/"
+      }
+    ]
+  }
+}

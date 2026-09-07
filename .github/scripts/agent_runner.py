@@ -41,7 +41,13 @@ for _d in _CANDIDATE_DIRS:
         sys.path.insert(0, _d)
 
 import harnesses
+import manifest as _manifest_module
 from harnesses import Harness, resolve_attempts
+
+#: Repository-specific configuration, read once at import.
+_MANIFEST = _manifest_module.load(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 try:
     from project_automation import PROJECT_NUMBER, PROJECT_OWNER
@@ -94,17 +100,10 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
 ]
 
 TYPE_LABELS = ["feat", "bug", "chore", "refactor", "test", "ci", "docs"]
-AREA_LABELS = [
-    "area:core",
-    "area:ui",
-    "area:term",
-    "area:agents",
-    "area:browser",
-    "area:data",
-    "area:ext",
-    "area:ci",
-    "area:docs",
-]
+# The area taxonomy is a property of the repository, not of the pipeline, so it comes from
+# `.github/darkfactory.json`. `repo_settings` creates the labels from the same source, which is
+# what keeps the labels the agent applies and the labels that exist from drifting apart.
+AREA_LABELS = [name for name, _colour, _description in _MANIFEST.area_labels]
 
 
 def refresh_google_oauth_token(
@@ -320,35 +319,16 @@ def classify_type_and_area(text: str) -> Tuple[str, str]:
     elif re.search(r"\b(chore|dependency|deps|bump)\b", lower):
         t_label = "chore"
 
-    # Determine area label. Ordered most-specific first: a request naming both "terminal" and
-    # "renderer" belongs to area:term, not area:ui.
-    a_label = "area:ci"
-    if re.search(r"\b(terminal|cell[- ]?grid|ansi|sixel|braille|pty|tui|glyph|monospace)\b", lower):
-        a_label = "area:term"
-    elif re.search(r"\b(browser|chromium|cdp|axtree|webview|screencast|devtools)\b", lower):
-        a_label = "area:browser"
-    elif re.search(r"\b(agent|harness|persona|provider|llm|prompt|approval)\b", lower):
-        a_label = "area:agents"
-    elif re.search(r"\b(extension|plugin|addon|sandbox|shim)\b", lower):
-        a_label = "area:ext"
-    elif re.search(r"\b(schema|migration|persistence|storage|database|sync|drizzle)\b", lower):
-        a_label = "area:data"
-    elif re.search(
-        r"\b(daemon|omnisd|kernel|microkernel|ipc|bus|substrate|socket|process|topology"
-        r"|config|settings|capability)\b",
-        lower,
-    ):
-        a_label = "area:core"
-    elif re.search(
-        r"\b(ui|gui|window|titlebar|chrome|theme|brand|icon|layout|dockview|typography"
-        r"|vibrancy|render|display|screen|palette)\b",
-        lower,
-    ):
-        a_label = "area:ui"
-    elif re.search(r"\b(doc|docs|documentation|mkdocs|material)\b", lower):
-        a_label = "area:docs"
-    elif re.search(r"\b(ci|action|workflow|pipeline|docker|runner|automation)\b", lower):
-        a_label = "area:ci"
+    # Determine the area label from the repository's own taxonomy. Declaration order is match
+    # order, so a repository puts its most specific areas first and the first hit wins.
+    a_label = f"area:{_MANIFEST.default_area}"
+    for area, keywords in _MANIFEST.area_keywords.items():
+        if not keywords:
+            continue
+        pattern = r"\b(" + "|".join(re.escape(word) for word in keywords) + r")\b"
+        if re.search(pattern, lower):
+            a_label = f"area:{area}"
+            break
 
     return t_label, a_label
 

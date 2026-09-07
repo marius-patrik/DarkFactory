@@ -181,3 +181,155 @@ def test_gitignore_excludes_agent_checkpoint():
 
     content = _read(os.path.join(REPO_ROOT, ".gitignore"))
     assert agent_runner.CHECKPOINT_FILENAME in content
+
+
+def test_pages_source_matches_the_deploy_workflow():
+    """The manifest and the deploy workflow must agree, or the first deploy silently 404s.
+
+    This is not hypothetical. The first push to this repository built the documentation
+    successfully and then failed with `HttpError: Not Found` from `actions/deploy-pages`, because
+    Pages had never been enabled. Codifying the source is only half the fix; the other half is
+    that the codified source and the workflow that publishes to it cannot disagree.
+    """
+    import manifest as manifest_module
+
+    payload = manifest_module.load(REPO_ROOT).pages_payload()
+    workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+
+    if payload["build_type"] == "legacy":
+        branch = payload["source"]["branch"]
+        assert f"branch: {branch}" in workflow, (
+            f"the manifest publishes Pages from {branch!r}, but deploy-docs.yml does not "
+            "push to it"
+        )
+        assert "upload-pages-artifact" not in workflow, (
+            "the manifest declares a branch source, so the workflow must not also use the "
+            "Actions build type; Pages has exactly one source"
+        )
+    else:
+        assert "upload-pages-artifact" in workflow
+        assert "deploy-pages" in workflow
+
+
+def test_pages_deploy_does_not_clobber_pull_request_previews():
+    """A full replace of the branch would delete every live preview on each merge."""
+    workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    if "clean: true" in workflow:
+        assert "clean-exclude" in workflow, "a clean deploy must exclude the preview directories"
+        assert "pr-*" in workflow
+
+
+def test_release_workflow_fetches_full_history():
+    """Tags decide the current version, so a shallow clone computes the wrong next one."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "fetch-depth: 0" in content
+
+
+def test_release_workflow_is_idempotent_on_an_existing_tag():
+    """`push` and `workflow_dispatch` can both fire for one commit; the second must not fail."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "git rev-parse" in content, "the workflow must check whether the tag already exists"
+
+
+def test_release_workflow_blocks_on_metadata_disagreement():
+    """A tag that contradicts the artifact's own metadata is worse than no release."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "metadata_problems" in content
+    assert "sys.exit(1)" in content, "a disagreement must fail the release, not just warn"
+
+
+def test_release_workflow_offers_an_explicit_bump():
+    """PrideVer's PROUD component cannot be derived, so a human must be able to ask for it."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "workflow_dispatch" in content
+    assert "bump" in content
+    assert "REQUESTED_BUMP" in content
+
+
+def test_release_workflow_tolerates_a_repository_with_no_build():
+    """A template repository releases a tag and notes, not a failure."""
+    content = _read(os.path.join(WORKFLOW_DIR, "release.yml"))
+    assert "no assets" in content or "Nothing to build" in content
+
+
+def test_every_workflow_is_valid_yaml():
+    """A malformed workflow is silently ignored by GitHub rather than reported."""
+    yaml = pytest.importorskip("yaml")
+    for name in os.listdir(WORKFLOW_DIR):
+        if name.endswith((".yml", ".yaml")):
+            with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
+                yaml.safe_load(handle)
+
+
+def test_ci_is_callable_as_a_reusable_workflow():
+    """Consumers call this file rather than copying it, so the two cannot drift apart."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "ci.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "workflow_call" in triggers
+    assert "pipeline-ref" in triggers["workflow_call"]["inputs"], "the pin must be an input"
+
+
+def test_ci_still_runs_for_this_repository_itself():
+    """A file that only ran when called would leave the upstream repository untested."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "ci.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "push" in triggers and "pull_request" in triggers
+
+
+def test_a_consumer_needs_no_pipeline_scripts_of_its_own():
+    """The point of the pin is that shared code lives in one repository, not three."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    assert "path: .pipeline" in content, "the pinned pipeline must be checked out separately"
+    assert "PYTHONPATH" in content, "the pinned scripts must be importable"
+
+
+def test_the_pipeline_checkout_is_skipped_when_running_in_place():
+    """Checking this repository out into .pipeline from itself would be circular."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    assert "if: inputs.pipeline-ref != ''" in content
+
+
+def test_workflows_trigger_on_the_declared_default_branch():
+    """DarkFactory's default branch is named after itself, so a consumer that adds it as a
+    remote gets a `darkfactory` branch with nothing to rename. Workflows that still watch
+    `main` would simply never fire.
+    """
+    import manifest as manifest_module
+
+    branch = manifest_module.load(REPO_ROOT).default_branch
+    for name in ("ci.yml", "deploy-docs.yml", "release.yml", "project-automation.yml"):
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        if "branches:" not in content:
+            continue
+        assert (
+            f'["{branch}"]' in content or f"[{branch}]" in content or "**" in content
+        ), f"{name} does not trigger on {branch!r}"
+
+
+def test_branch_protection_targets_the_declared_default_branch():
+    """Protecting a branch that is not the default protects nothing."""
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert "branches/main/protection" not in content, "the branch must not be hardcoded"
+    assert "MANIFEST.default_branch" in content
+
+
+def test_the_docs_job_does_not_hardcode_a_documentation_engine():
+    """Consumers do not share one. This repository builds with mkdocs and omnis with properdocs,
+    so a hardcoded command fails in whichever repository chose the other - which is exactly how
+    the first pinned run failed, with `mkdocs: command not found`.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    docs_job = content[content.index("  docs:") :]
+    assert "docs_plan" in docs_job, "the docs command must come from the caller's environment"
+    assert "run: mkdocs build" not in docs_job
+
+
+def test_the_docs_job_tolerates_a_repository_with_no_documentation():
+    """A repository that publishes no site must not fail the check that builds one."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    docs_job = content[content.index("  docs:") :]
+    assert "exit 0" in docs_job
