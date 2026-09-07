@@ -333,3 +333,14 @@ def test_the_docs_job_tolerates_a_repository_with_no_documentation():
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[content.index("  docs:") :]
     assert "exit 0" in docs_job
+
+
+def test_repo_settings_can_configure_a_consumer_checkout():
+    """Consumers carry no copy of these scripts, so the script must target another repository.
+
+    Without this the shared settings could only ever be applied to the repository that happens to
+    hold the file, which is the one repository that least needs it.
+    """
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert "DARKFACTORY_REPO_ROOT" in content
+    assert "manifest_module.load(REPO_ROOT)" in content

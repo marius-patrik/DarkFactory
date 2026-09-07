@@ -26,9 +26,15 @@ import manifest as manifest_module
 
 #: Everything repository-specific comes from `.github/darkfactory.json`, so this script is
 #: identical in every repository that uses the pipeline.
-MANIFEST = manifest_module.load(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+#:
+#: Consumers carry no copy of these scripts - they call the pipeline at a pinned commit - so the
+#: repository being configured is not necessarily the one holding this file. `DARKFACTORY_REPO_ROOT`
+#: points it at a consumer checkout; unset, it configures the repository it lives in.
+REPO_ROOT = os.environ.get("DARKFACTORY_REPO_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
+
+MANIFEST = manifest_module.load(REPO_ROOT)
 
 OWNER = MANIFEST.owner
 REPO = MANIFEST.repo
