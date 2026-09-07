@@ -382,3 +382,39 @@ def test_the_app_installation_is_recorded():
     app = manifest_module.load(REPO_ROOT).app
     assert app["installation_id"] == 159771550
     assert "marius-patrik/omnis" in app["installed_on"]
+
+
+def test_the_agent_is_callable_and_declares_every_credential():
+    """Secrets do not cross a workflow_call boundary on their own.
+
+    A called workflow sees the caller's secrets only when they are passed, so every credential the
+    runner can use has to be declared here or a consumer's agent silently loses that harness.
+    """
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "agent.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    assert "workflow_call" in triggers
+
+    declared = set(triggers["workflow_call"]["secrets"])
+    body = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
+    used = set(re.findall(r"secrets\.([A-Z_]+)", body)) - {"GITHUB_TOKEN"}
+    missing = used - declared
+    assert not missing, f"credentials used but not declared for callers: {sorted(missing)}"
+
+
+def test_every_agent_credential_is_optional():
+    """A repository with three of the twelve harnesses gets a shorter chain, not a failure."""
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "agent.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    triggers = document[True] if True in document else document["on"]
+    for name, spec in triggers["workflow_call"]["secrets"].items():
+        assert spec.get("required") is False, f"{name} must be optional"
+
+
+def test_the_agent_image_is_built_from_the_pipeline():
+    """Consumers must run the same runner, not whatever Dockerfile they happen to carry."""
+    content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
+    assert 'CONTEXT=".pipeline"' in content
+    assert "$CONTEXT/docker/Dockerfile.agent" in content

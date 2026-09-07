@@ -8,6 +8,41 @@ on:
   pull_request_review_comment:
     types: [created]
   workflow_dispatch:
+  # Consumers call this rather than copying the runner. Secrets do not cross a workflow_call
+  # boundary on their own - a called workflow sees the caller's secrets only when they are passed -
+  # so every credential the agent can use is declared here and marked optional. A repository that
+  # has three of the twelve gets a shorter fallback chain, not a failure.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the runner and the container definition."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+      agent-enabled:
+        description: "Whether the agent should run. Mirrors the AGENT_ENABLED repository variable."
+        required: false
+        type: string
+        default: ""
+    secrets:
+      GH_PROJECT_TOKEN: {required: false}
+      ANTIGRAVITY_REFRESH_TOKEN: {required: false}
+      ANTIGRAVITY_CLIENT_ID: {required: false}
+      ANTIGRAVITY_CLIENT_SECRET: {required: false}
+      ANTHROPIC_API_KEY: {required: false}
+      CLAUDE_CODE_OAUTH_TOKEN: {required: false}
+      OPENAI_API_KEY: {required: false}
+      MOONSHOT_API_KEY: {required: false}
+      KIMI_API_KEY: {required: false}
+      XAI_API_KEY: {required: false}
+      GROK_API_KEY: {required: false}
+      CURSOR_API_KEY: {required: false}
+      OPENCODE_API_KEY: {required: false}
 
 permissions:
   contents: write
@@ -22,7 +57,7 @@ jobs:
     # AGENT_ENABLED to "true" once a harness secret is configured; until then every issue would
     # otherwise start a container build that cannot authenticate. `secrets` is not available in a
     # job-level `if`, which is why this gate is a variable and the runner re-checks at dispatch.
-    if: vars.AGENT_ENABLED == 'true'
+    if: vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,9 +65,21 @@ jobs:
         with:
           token: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
       - name: Build agent container
+        # The image is built from the pipeline's definition, so every consumer runs the same
+        # runner; the repository being worked on is still the caller's checkout, mounted below.
         run: |
-          docker build -t darkfactory-agent -f docker/Dockerfile.agent .
+          CONTEXT="."
+          [ -d .pipeline ] && CONTEXT=".pipeline"
+          docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
 
       - name: Dispatch agent in container
         run: |
