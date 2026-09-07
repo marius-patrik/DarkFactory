@@ -24,6 +24,19 @@ DEFAULT_AREAS: Dict[str, str] = {
     "docs": "Documentation site, theme, architecture notes",
 }
 
+#: Status checks required when a repository declares none. Only jobs that always report a
+#: conclusion belong here; a job that can be skipped blocks every merge forever.
+DEFAULT_REQUIRED_CHECKS: Tuple[str, ...] = (
+    "pipeline (3.10)",
+    "pipeline (3.11)",
+    "pipeline (3.12)",
+    "pipeline (3.13)",
+    "rust",
+    "web",
+    "docs",
+    "verify-bound-issue",
+)
+
 #: Colours cycled through when assigning one to an area label that has no explicit colour.
 AREA_COLOURS: Tuple[str, ...] = (
     "5319e7",
@@ -252,6 +265,25 @@ class Manifest:
             Bare area names, sorted.
         """
         return sorted(self.areas)
+
+    # -- required checks --------------------------------------------------------------------
+
+    @property
+    def required_checks(self) -> List[str]:
+        """Returns the status checks that must pass before a merge.
+
+        Calling a reusable workflow prefixes every check name with the *caller's* job name, so a
+        consumer's checks are `<caller job> / <called job>` rather than the bare names this
+        repository produces. That renaming is invisible until branch protection starts blocking
+        every merge against contexts nothing reports, so the list is declared per repository.
+
+        Returns:
+            Declared contexts, or this repository's own defaults.
+        """
+        declared = self.data.get("required_checks")
+        if declared:
+            return [str(entry) for entry in declared]
+        return list(DEFAULT_REQUIRED_CHECKS)
 
     # -- board ------------------------------------------------------------------------------
 

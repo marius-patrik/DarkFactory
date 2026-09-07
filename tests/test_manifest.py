@@ -179,3 +179,26 @@ class TestNoForeignIdentityLeaks:
     def test_the_area_taxonomy_is_not_another_projects(self):
         areas = set(manifest_module.load(REPO_ROOT).areas)
         assert not areas & {"term", "browser", "ext", "ui"}, "omnis's areas are still declared"
+
+
+class TestRequiredChecks:
+    """Calling a reusable workflow renames every check, and protection must follow."""
+
+    def test_this_repository_uses_the_bare_names(self):
+        checks = manifest_module.load(REPO_ROOT).required_checks
+        assert "pipeline (3.12)" in checks
+        assert "verify-bound-issue" in checks
+
+    def test_a_consumer_declares_the_prefixed_names(self, tmp_path):
+        _write_manifest(
+            tmp_path, {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]}
+        )
+        assert manifest_module.load(str(tmp_path)).required_checks == [
+            "pipeline / pipeline (3.12)",
+            "pipeline / docs",
+        ]
+
+    def test_declaring_none_falls_back_to_the_defaults(self, tmp_path):
+        _write_manifest(tmp_path, {})
+        loaded = manifest_module.load(str(tmp_path))
+        assert loaded.required_checks == list(manifest_module.DEFAULT_REQUIRED_CHECKS)

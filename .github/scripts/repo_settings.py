@@ -90,18 +90,10 @@ LABELS: List[Sequence[str]] = [
 # `agent_runner` and the Conventional Commit scopes read the same list, so the three cannot drift.
 LABELS.extend(MANIFEST.area_labels)
 
-#: Status check contexts required on `main`. Only jobs that always report a conclusion belong here;
-#: a job that can be skipped will block every merge forever.
-REQUIRED_CHECKS: List[str] = [
-    "pipeline (3.10)",
-    "pipeline (3.11)",
-    "pipeline (3.12)",
-    "pipeline (3.13)",
-    "rust",
-    "web",
-    "docs",
-    "verify-bound-issue",
-]
+#: Status check contexts required on the default branch. Declared in the manifest, because a
+#: repository that calls the pipeline as a reusable workflow sees every check name prefixed with
+#: its caller job's name and would otherwise require contexts nothing ever reports.
+REQUIRED_CHECKS: List[str] = MANIFEST.required_checks
 
 
 class Runner:
