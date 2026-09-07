@@ -266,6 +266,26 @@ class Manifest:
         """
         return sorted(self.areas)
 
+    # -- app ----------------------------------------------------------------------------------
+
+    @property
+    def app(self) -> Dict[str, Any]:
+        """Returns the pipeline's GitHub App identity.
+
+        The app id and client id are public identifiers; only the private key is a secret, and it
+        lives in a repository secret named by `private_key_secret`.
+
+        A GitHub App cannot write user-owned Projects v2 - GitHub scopes project permissions to
+        organizations - so board work continues to use a personal access token until these
+        repositories move under one. That is a GitHub limitation, not a configuration gap.
+
+        Returns:
+            The `app` block, or an empty mapping when no App is configured.
+        """
+        declared = dict(self.data.get("app", {}) or {})
+        declared.pop("$comment", None)
+        return declared
+
     # -- required checks --------------------------------------------------------------------
 
     @property
