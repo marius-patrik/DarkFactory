@@ -45,6 +45,24 @@ jobs:
       - name: Disable Jekyll processing
         run: touch site/.nojekyll
 
+      - name: Fetch the published site to see which builds exist
+        # The switcher lists what is really on `gh-pages`, not what this run believes it
+        # published, so a preview torn down by hand disappears on the next deploy.
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          rm -rf .published && mkdir -p .published
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git --work-tree=.published checkout origin/gh-pages -- . 2>/dev/null || true
+          fi
+
+      - name: Write the version manifest
+        run: |
+          python .github/scripts/docs_versions.py \
+            --site-root .published \
+            --repo-root . \
+            --current "${{ github.ref_name }}" \
+            --out site/versions.json
+
       - name: Publish to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:

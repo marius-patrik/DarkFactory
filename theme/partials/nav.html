@@ -1,0 +1,25 @@
+{#-
+  Recursive navigation.
+
+  Sections render as a labelled group; pages render as links. A section containing the active page
+  stays expanded, so the reader never loses their place after navigating.
+-#}
+{% macro render(items, depth) %}
+<ul class="nav nav--depth-{{ depth }}">
+  {%- for item in items %}
+    {%- if item.children %}
+    <li class="nav__section{% if item.active %} nav__section--active{% endif %}">
+      <span class="nav__label">{{ item.title }}</span>
+      {{ render(item.children, depth + 1) }}
+    </li>
+    {%- else %}
+    <li class="nav__item">
+      <a class="nav__link{% if item.active %} nav__link--active{% endif %}"
+         href="{{ item.url|url }}">{{ item.title }}</a>
+    </li>
+    {%- endif %}
+  {%- endfor %}
+</ul>
+{% endmacro %}
+
+{{ render(nav, 0) }}

@@ -11,10 +11,10 @@ ADR-NNNN`. An ADR only binds the implementation once it is `Accepted`.
 
 | # | Title | Status | Resolves |
 |---|---|---|---|
-| [0001](#adr-0001--the-agent-pipeline-is-harness-agnostic) | The agent pipeline is harness-agnostic | Accepted | — |
-| [0002](#adr-0002--repository-identity-is-data-not-code) | Repository identity is data, not code | Accepted | — |
-| [0003](#adr-0003--the-repository-environment-is-detected-declaration-is-the-exception) | The repository environment is detected; declaration is the exception | Accepted | — |
-| [0004](#adr-0004--the-versioning-scheme-is-a-per-repository-choice) | The versioning scheme is a per-repository choice | Accepted | — |
+| [0001](#adr-0001-the-agent-pipeline-is-harness-agnostic) | The agent pipeline is harness-agnostic | Accepted | — |
+| [0002](#adr-0002-repository-identity-is-data-not-code) | Repository identity is data, not code | Accepted | — |
+| [0003](#adr-0003-the-repository-environment-is-detected-declaration-is-the-exception) | The repository environment is detected; declaration is the exception | Accepted | — |
+| [0004](#adr-0004-the-versioning-scheme-is-a-per-repository-choice) | The versioning scheme is a per-repository choice | Accepted | — |
 
 ---
 

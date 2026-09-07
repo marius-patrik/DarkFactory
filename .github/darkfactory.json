@@ -45,7 +45,12 @@
     "testing": {
       "python": {
         "command": "pytest",
-        "versions": ["3.10", "3.11", "3.12", "3.13"]
+        "versions": [
+          "3.10",
+          "3.11",
+          "3.12",
+          "3.13"
+        ]
       }
     },
     "formatting": {
@@ -55,7 +60,7 @@
     },
     "documentation": {
       "python": {
-        "command": "mkdocs build --strict",
+        "command": "properdocs build --strict",
         "source": "docstrings"
       }
     }
@@ -65,34 +70,102 @@
     "$default": "ci",
     "agents": {
       "description": "Harness orchestration, provider adapters, personas, approvals",
-      "keywords": ["agent", "harness", "persona", "provider", "llm", "prompt", "approval", "model", "quota"]
+      "keywords": [
+        "agent",
+        "harness",
+        "persona",
+        "provider",
+        "llm",
+        "prompt",
+        "approval",
+        "model",
+        "quota"
+      ]
     },
     "governance": {
       "description": "Agent rules, branch protection, required checks, project board taxonomy",
-      "keywords": ["governance", "rule", "protection", "policy", "board", "taxonomy", "label", "permission"]
+      "keywords": [
+        "governance",
+        "rule",
+        "protection",
+        "policy",
+        "board",
+        "taxonomy",
+        "label",
+        "permission"
+      ]
     },
     "release": {
       "description": "Versioning modes, tagging, asset packaging, release notes",
-      "keywords": ["release", "version", "versioning", "tag", "semver", "changelog", "package", "artifact"]
+      "keywords": [
+        "release",
+        "version",
+        "versioning",
+        "tag",
+        "semver",
+        "changelog",
+        "package",
+        "artifact"
+      ]
     },
     "docs": {
       "description": "Documentation site, theme, architecture notes",
-      "keywords": ["doc", "docs", "documentation", "mkdocs", "properdocs", "theme", "site", "readme"]
+      "keywords": [
+        "doc",
+        "docs",
+        "documentation",
+        "mkdocs",
+        "properdocs",
+        "theme",
+        "site",
+        "readme"
+      ]
     },
     "ci": {
       "description": "GitHub Actions workflows, containers, runner scripts, repository automation",
-      "keywords": ["ci", "action", "workflow", "pipeline", "docker", "runner", "automation", "container"]
+      "keywords": [
+        "ci",
+        "action",
+        "workflow",
+        "pipeline",
+        "docker",
+        "runner",
+        "automation",
+        "container"
+      ]
     }
   },
   "board": {
     "$comment": "Boards are owned by the account, not by a repository. Every board listed here is linked to this repository so it appears in its Projects tab; the global board aggregates issues from every repository using this pipeline.",
     "global_title": "Global",
-    "link_boards": ["Global", "DarkFactory", "Omnis", "ChessWithQuests"]
+    "link_boards": [
+      "Global",
+      "DarkFactory",
+      "Omnis",
+      "ChessWithQuests"
+    ]
   },
   "pages": {
     "$comment": "Branch source rather than the Actions build type, so per-pull-request previews can live under pr-<N>/ on the same site. GitHub Pages has exactly one source.",
     "build_type": "legacy",
     "branch": "gh-pages",
     "path": "/"
+  },
+  "documentation": {
+    "$comment": "Sites offered by the documentation switcher's Project axis, so the shared pipeline docs are one hop from any consumer.",
+    "projects": [
+      {
+        "name": "DarkFactory",
+        "url": "https://marius-patrik.github.io/DarkFactory/"
+      },
+      {
+        "name": "Omnis",
+        "url": "https://marius-patrik.github.io/omnis/"
+      },
+      {
+        "name": "ChessWithQuests",
+        "url": "https://marius-patrik.github.io/ChessWithQuests/"
+      }
+    ]
   }
 }
