@@ -105,7 +105,7 @@ Autonomous agents must not drift into unapproved scope. DarkFactory enforces two
 | **PR Approval & Auto-Merge** | `.github/scripts/handle_pr_approval.py` | Listens for maintainer review approval, performs auto-merge, and reconciles bound issues. |
 | **PR Dispatcher** | `.github/scripts/open_pr.py` | Bot PR authoring via GitHub API or workflow dispatch. |
 | **Settings as Code** | `.github/scripts/repo_settings.py` | Programmatic synchronization of labels, rulesets, branch protection, and Pages. |
-| **Documentation Virtualizer** | `.github/scripts/mkdocs_hooks.py` | Dynamically mounts canonical root markdown files into MkDocs without static file duplication. |
+| **Documentation Virtualizer** | `.github/scripts/docs_hooks.py` | Dynamically mounts canonical root markdown files into the documentation site without static duplication. |
 | **Container Sandbox** | `docker/Dockerfile.agent` | Hermetic execution environment isolating agent toolchains from host runners. |
 
 ---
