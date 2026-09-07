@@ -2,23 +2,28 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
+# Published to the `gh-pages` branch rather than through the Pages build action, so that per-pull-
+# request previews can live under `pr-<N>/` on the same site. GitHub Pages has one source, so the
+# two cannot use different mechanisms. `.github/darkfactory.json` declares the same source, and
+# `tests/test_pipeline_config.py` fails if the two disagree - the first deploy 404s otherwise.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
+  deployments: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  build-docs:
+  deploy:
+    name: deploy-docs
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,24 +39,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Build documentation with MkDocs
-        run: |
-          mkdocs build --strict
+      - name: Build documentation
+        run: mkdocs build --strict
 
-      - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
+      - name: Disable Jekyll processing
+        run: touch site/.nojekyll
+
+      - name: Publish to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: site/
-
-  deploy-pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build-docs
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          branch: gh-pages
+          folder: site
+          # Replace the site, but never a live pull request preview.
+          clean: true
+          clean-exclude: |
+            pr-*
+          commit-message: "docs: publish site from ${{ github.sha }}"

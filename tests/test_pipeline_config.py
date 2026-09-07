@@ -181,3 +181,39 @@ def test_gitignore_excludes_agent_checkpoint():
 
     content = _read(os.path.join(REPO_ROOT, ".gitignore"))
     assert agent_runner.CHECKPOINT_FILENAME in content
+
+
+def test_pages_source_matches_the_deploy_workflow():
+    """The manifest and the deploy workflow must agree, or the first deploy silently 404s.
+
+    This is not hypothetical. The first push to this repository built the documentation
+    successfully and then failed with `HttpError: Not Found` from `actions/deploy-pages`, because
+    Pages had never been enabled. Codifying the source is only half the fix; the other half is
+    that the codified source and the workflow that publishes to it cannot disagree.
+    """
+    import manifest as manifest_module
+
+    payload = manifest_module.load(REPO_ROOT).pages_payload()
+    workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+
+    if payload["build_type"] == "legacy":
+        branch = payload["source"]["branch"]
+        assert f"branch: {branch}" in workflow, (
+            f"the manifest publishes Pages from {branch!r}, but deploy-docs.yml does not "
+            "push to it"
+        )
+        assert "upload-pages-artifact" not in workflow, (
+            "the manifest declares a branch source, so the workflow must not also use the "
+            "Actions build type; Pages has exactly one source"
+        )
+    else:
+        assert "upload-pages-artifact" in workflow
+        assert "deploy-pages" in workflow
+
+
+def test_pages_deploy_does_not_clobber_pull_request_previews():
+    """A full replace of the branch would delete every live preview on each merge."""
+    workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    if "clean: true" in workflow:
+        assert "clean-exclude" in workflow, "a clean deploy must exclude the preview directories"
+        assert "pr-*" in workflow
