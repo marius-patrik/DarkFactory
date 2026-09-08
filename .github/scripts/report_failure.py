@@ -27,6 +27,14 @@ import subprocess
 import sys
 from typing import List, Optional
 
+#: Set when this script could not do its job, so `main` can exit non-zero.
+#:
+#: Reporting a failure is itself a pipeline step, and a step that swallows its own errors is the
+#: very thing this script exists to surface. Filing an issue can fail for ordinary reasons - a
+#: missing label, a revoked token - and if that were logged and forgotten the pipeline would once
+#: again be quietly unable to tell anyone it is broken.
+FAILED = False
+
 #: Label carried by every issue this script opens, so they can be found and filtered as a set.
 FAILURE_LABEL = "pipeline-failure"
 
@@ -35,6 +43,17 @@ FAILURE_LABEL = "pipeline-failure"
 #: Identity lives in the body rather than the title so that renaming an issue by hand - or an
 #: agent rewording it - does not cause the next failure to open a second one.
 MARKER = "<!-- pipeline-failure: {workflow} -->"
+
+
+def _record(message: str) -> None:
+    """Reports that this script could not do its job, and remembers it.
+
+    Args:
+        message: What could not be done.
+    """
+    global FAILED
+    FAILED = True
+    print(f"Error: {message}", file=sys.stderr)
 
 
 def _gh(args: List[str]) -> str:
@@ -81,7 +100,7 @@ def find_open_issue(repo: str, workflow: str) -> Optional[int]:
             ]
         )
     except subprocess.CalledProcessError as exc:
-        print(f"Could not list issues: {exc}", file=sys.stderr)
+        _record(f"could not list issues on {repo}: {exc}")
         return None
     for issue in json.loads(output or "[]"):
         if marker in (issue.get("body") or ""):
@@ -139,7 +158,7 @@ def report(repo: str, workflow: str, run_url: str, run_id: str) -> Optional[int]
             print(f"Commented on #{existing} for {workflow}.")
             return existing
         except subprocess.CalledProcessError as exc:
-            print(f"Could not comment on #{existing}: {exc}", file=sys.stderr)
+            _record(f"could not comment on #{existing}: {exc}")
             return None
 
     try:
@@ -160,7 +179,7 @@ def report(repo: str, workflow: str, run_url: str, run_id: str) -> Optional[int]
         print(f"Opened {url} for {workflow}.")
         return int(url.rstrip("/").rsplit("/", 1)[-1])
     except subprocess.CalledProcessError as exc:
-        print(f"Could not open an issue: {exc}", file=sys.stderr)
+        _record(f"could not open an issue for {workflow}: {exc}")
         return None
 
 
@@ -188,7 +207,7 @@ def resolve(repo: str, workflow: str) -> None:
         )
         print(f"Closed #{existing}: {workflow} is green again.")
     except subprocess.CalledProcessError as exc:
-        print(f"Could not close #{existing}: {exc}", file=sys.stderr)
+        _record(f"could not close #{existing}: {exc}")
 
 
 def main() -> None:  # pragma: no cover - thin CLI wrapper
@@ -203,6 +222,9 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
         report(repo, workflow, os.environ.get("RUN_URL", ""), os.environ.get("RUN_ID", ""))
     else:
         resolve(repo, workflow)
+
+    if FAILED:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

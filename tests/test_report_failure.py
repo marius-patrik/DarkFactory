@@ -5,6 +5,7 @@ issue that gains comments, not an issue per push.
 """
 
 import json
+import subprocess
 from typing import Any, Dict, List
 
 import pytest
@@ -93,3 +94,28 @@ def test_success_with_nothing_open_does_nothing(gh):
     """A workflow that was never broken must not be commented on."""
     report_failure.resolve("o/r", "CI")
     assert gh.named("issue", "close") == []
+
+
+class TestFailingLoudly:
+    """Reporting a failure is itself a step; swallowing its errors defeats the whole point."""
+
+    def setup_method(self):
+        """Clears the flag left by an earlier test."""
+        report_failure.FAILED = False
+
+    def test_being_unable_to_file_is_not_silent(self, monkeypatch):
+        """A missing label or revoked token must not be reported as a successful run."""
+
+        def boom(args):
+            if args[:2] == ["issue", "list"]:
+                return "[]"
+            raise subprocess.CalledProcessError(1, args, stderr="label not found")
+
+        monkeypatch.setattr(report_failure, "_gh", boom)
+        assert report_failure.report("o/r", "CI", "https://run/1", "1") is None
+        assert report_failure.FAILED is True
+
+    def test_a_successful_filing_leaves_the_flag_clear(self, gh):
+        """The flag must mean something, so the ordinary path must not set it."""
+        report_failure.report("o/r", "CI", "https://run/1", "1")
+        assert report_failure.FAILED is False

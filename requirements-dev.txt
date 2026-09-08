@@ -1,5 +1,7 @@
 pytest>=8.0.0
 black>=24.0.0
+# BUILD_COMMANDS defaults a Python release to `python -m build`, so the release job needs it.
+build>=1.2.0
 properdocs>=1.6.7
 # Provides the pymdownx.* extensions and the highlighter, previously transitive via
 # mkdocs-material; declared explicitly now that the theme is first-party.
