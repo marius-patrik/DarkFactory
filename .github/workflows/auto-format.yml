@@ -55,7 +55,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install formatter
         run: |
@@ -63,6 +62,8 @@ jobs:
           pip install "black>=24.0.0"
 
       - name: Format Python
+        # Only where there is Python to format; a paper repository has none.
+        if: hashFiles('**/*.py') != ''
         run: black .
 
       - name: Format Rust
