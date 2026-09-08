@@ -1,0 +1,77 @@
+name: "Configure the pipeline"
+description: "Change what installation could not decide: areas, credentials, publishing, protection."
+title: "Configure the DarkFactory pipeline"
+labels: ["Request", "area:ci", "ToDo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <!-- darkfactory: configuration -->
+
+        The install workflow opens one of these on a repository's first install. Raise another
+        whenever the configuration needs to change - areas gained a new domain, a credential was
+        rotated, the repository is finally ready for branch protection.
+
+        Everything derivable is generated. These four are the ones that need a person.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: "What is changing"
+      options:
+        - label: "**Areas** — the domains in `.github/darkfactory.json`"
+        - label: "**Credentials** — secrets and the variables that switch the agent on"
+        - label: "**Publishing** — GitHub Pages and its deployment branch policy"
+        - label: "**Branch protection** — the required checks on the default branch"
+    validations:
+      required: true
+
+  - type: textarea
+    id: areas
+    attributes:
+      label: "Areas"
+      description: >
+        Areas drive labels, Conventional Commit scopes and agent routing from one declaration, so
+        they cannot disagree. Declaration order is match order: specific areas before general ones.
+      placeholder: |
+        agents      — harness orchestration, providers, personas
+        governance  — rules, protection, required checks, board taxonomy
+        ci          — workflows, containers, runner scripts
+    validations:
+      required: false
+
+  - type: textarea
+    id: credentials
+    attributes:
+      label: "Credentials"
+      description: >
+        Name what should be set; never paste a value into an issue. `GITHUB_TOKEN` cannot write
+        user-owned Projects v2, so board automation needs `GH_PROJECT_TOKEN`.
+      placeholder: |
+        GH_PROJECT_TOKEN     — board writes
+        ANTHROPIC_API_KEY    — agent runner
+        AGENT_ENABLED=true   — switch the runner on
+    validations:
+      required: false
+
+  - type: textarea
+    id: publishing
+    attributes:
+      label: "Publishing"
+      description: >
+        Pages must be enabled on `gh-pages` and the default branch must be permitted to deploy to
+        the `github-pages` environment. A deploy from a branch the environment forbids fails with
+        no steps and no error text, which is hard to read as a permissions problem.
+    validations:
+      required: false
+
+  - type: textarea
+    id: protection
+    attributes:
+      label: "Branch protection"
+      description: >
+        Turn it on only once CI has reported green at least once, so the required contexts are ones
+        that actually exist. Protection requiring a check nothing reports blocks every merge.
+      placeholder: "Ready to lock down; CI has been green since <run link>."
+    validations:
+      required: false

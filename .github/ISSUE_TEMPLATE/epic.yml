@@ -34,7 +34,7 @@ body:
       description: >
         What must be true before this epic may leave `Backlog`: decisions resolved (D1-D8 in
         `ARCHITECTURE.md`), epics completed, spikes measured.
-      placeholder: "Blocked by D4 (platform matrix) and E10 (view model)."
+      placeholder: "Blocked by D4 (sandbox isolation) and E1 (harness registry)."
     validations:
       required: true
 

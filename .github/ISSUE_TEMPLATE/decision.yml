@@ -32,7 +32,7 @@ body:
     attributes:
       label: "What This Blocks"
       description: "Epics and requests that cannot start until this is settled."
-      placeholder: "E2 (Tauri shell), E3 (terminal renderer)"
+      placeholder: "E2 (quota fallback ladder), E3 (sandbox verification)"
     validations:
       required: true
 
