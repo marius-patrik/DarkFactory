@@ -62,6 +62,30 @@ MANIFESTS: Dict[str, str] = {
     "deno.jsonc": "deno",
 }
 
+#: Ecosystem -> the domain it belongs to.
+#:
+#: An ecosystem says which toolchain a package needs; a domain says what kind of governance it
+#: answers to. Python and Rust differ in toolchain but are both *code*: they are tested and
+#: packaged. Typst and LaTeX are two ways to reach the same artifact, a PDF, and are both *paper*:
+#: they are typeset and published. Keeping the two levels apart is what lets one repository hold a
+#: thesis and the software it documents and have both governed, each on its own terms.
+DOMAINS: Dict[str, str] = {
+    "python": "code",
+    "node": "code",
+    "deno": "code",
+    "rust": "code",
+    "go": "code",
+    "typst": "paper",
+    "latex": "paper",
+    "lean": "math",
+}
+
+#: Domain assumed for an ecosystem that `DOMAINS` does not name.
+#:
+#: A repository may declare an ecosystem of its own making - a bare `make` target, say - and such a
+#: package must still be planned rather than crash for want of a domain.
+DEFAULT_DOMAIN = "code"
+
 #: Ecosystem -> its lockfiles paired with the manager that writes them, most specific first.
 #:
 #: Scoped per ecosystem rather than kept in one flat table: a polyglot repository root holds several
@@ -210,6 +234,7 @@ class Package:
     Attributes:
         path: Directory holding the package, relative to the repository root (`"."` for the root).
         ecosystem: One of the values in `MANIFESTS`.
+        domain: The kind of governance the package answers to, derived from its ecosystem.
         manifest: The manifest file, relative to the repository root.
         name: Declared package name, when the manifest states one.
         version: Declared version, when the manifest states one.
@@ -235,6 +260,15 @@ class Package:
         self.is_workspace_root = is_workspace_root
         self.members = members or []
 
+    @property
+    def domain(self) -> str:
+        """Returns the domain this package belongs to.
+
+        Returns:
+            The mapped domain, or `DEFAULT_DOMAIN` for an ecosystem `DOMAINS` does not name.
+        """
+        return DOMAINS.get(self.ecosystem, DEFAULT_DOMAIN)
+
     def as_dict(self) -> Dict[str, Any]:
         """Returns the package as plain data, for a workflow step to consume.
 
@@ -244,6 +278,7 @@ class Package:
         return {
             "path": self.path,
             "ecosystem": self.ecosystem,
+            "domain": self.domain,
             "manifest": self.manifest,
             "name": self.name,
             "version": self.version,
@@ -282,6 +317,50 @@ class Environment:
             Ecosystem names, e.g. `{"python", "rust"}`.
         """
         return {package.ecosystem for package in self.packages}
+
+    @property
+    def domains(self) -> Set[str]:
+        """Returns the distinct domains present.
+
+        Returns:
+            Domain names, e.g. `{"code", "paper"}`.
+        """
+        return {package.domain for package in self.packages}
+
+    @property
+    def is_multi_domain(self) -> bool:
+        """Reports whether the repository spans more than one domain.
+
+        The companion to being polyglot. A repository is polyglot when it holds several ecosystems
+        within one domain, and multi-domain when it holds several kinds of work at once - a thesis
+        beside the software it documents - each of which must be governed on its own terms.
+
+        Returns:
+            True when packages from more than one domain were found.
+        """
+        return len(self.domains) > 1
+
+    def packages_in(self, domain: str) -> List["Package"]:
+        """Selects the packages belonging to one domain.
+
+        Args:
+            domain: Domain name.
+
+        Returns:
+            Matching packages, in discovery order.
+        """
+        return [package for package in self.packages if package.domain == domain]
+
+    def has_domain(self, domain: str) -> bool:
+        """Reports whether a domain is present.
+
+        Args:
+            domain: Domain name.
+
+        Returns:
+            True when at least one package belongs to it.
+        """
+        return domain in self.domains
 
     @property
     def is_monorepo(self) -> bool:
@@ -465,7 +544,9 @@ class Environment:
         """
         return {
             "ecosystems": sorted(self.ecosystems),
+            "domains": sorted(self.domains),
             "is_monorepo": self.is_monorepo,
+            "is_multi_domain": self.is_multi_domain,
             "packages": [package.as_dict() for package in self.packages],
             "package_managers": {
                 ecosystem: self.package_manager(ecosystem) for ecosystem in sorted(self.ecosystems)

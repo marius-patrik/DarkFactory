@@ -308,3 +308,47 @@ class TestPlans:
         payload = environment.configure(str(polyglot)).as_dict()
         assert json.loads(json.dumps(payload)) == payload
         assert set(payload) >= {"test_plan", "format_plan", "docs_plan"}
+
+
+class TestDomains:
+    """A domain says what kind of governance a package answers to, above its toolchain."""
+
+    def test_every_code_ecosystem_maps_to_the_code_domain(self, polyglot):
+        """Node and Rust differ in toolchain but are both code."""
+        env = environment.configure(str(polyglot))
+        assert env.domains == {"code"}
+        assert env.is_multi_domain is False
+
+    def test_an_undeclared_ecosystem_still_gets_a_domain(self, tmp_path):
+        """A repository may invent an ecosystem; planning it must not crash for want of a domain."""
+        _manifest(tmp_path, {"packages": [{"path": "weird", "ecosystem": "make", "name": "weird"}]})
+        env = environment.configure(str(tmp_path))
+        assert env.packages[0].domain == environment.DEFAULT_DOMAIN
+        assert env.domains == {"code"}
+
+    def test_a_thesis_beside_its_software_is_multi_domain(self, tmp_path):
+        """The case the layer exists for: a paper and the code it documents, in one repository."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _manifest(
+            tmp_path,
+            {
+                "packages": [
+                    {"path": ".", "ecosystem": "python", "name": "engine", "version": "0.1.0"},
+                    {"path": "paper", "ecosystem": "typst", "name": "thesis"},
+                ]
+            },
+        )
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"code", "paper"}
+        assert env.is_multi_domain is True
+        assert [p.path for p in env.packages_in("paper")] == ["paper"]
+        assert [p.path for p in env.packages_in("code")] == ["."]
+        assert env.has_domain("paper") and not env.has_domain("math")
+
+    def test_the_domain_is_reported_as_plain_data(self, tmp_path):
+        """Workflows branch on the domain, so it must survive the JSON round trip."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        payload = environment.configure(str(tmp_path)).as_dict()
+        assert payload["domains"] == ["code"]
+        assert payload["is_multi_domain"] is False
+        assert payload["packages"][0]["domain"] == "code"
