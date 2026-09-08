@@ -60,6 +60,11 @@ MANIFESTS: Dict[str, str] = {
     "go.mod": "go",
     "deno.json": "deno",
     "deno.jsonc": "deno",
+    "typst.toml": "typst",
+    # LaTeX has no manifest convention as settled as the others. `.latexmkrc` is the closest thing
+    # to one and is already read by latexmk, so a repository that builds with latexmk is detected
+    # without being asked to carry a file it would not otherwise have.
+    ".latexmkrc": "latex",
 }
 
 #: Ecosystem -> the domain it belongs to.
@@ -130,6 +135,10 @@ TEST_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     "deno": {None: "deno test -A"},
     "rust": {None: "cargo test --all-features --workspace"},
     "go": {None: "go test ./..."},
+    # For a paper, typesetting *is* the test: a document that does not compile is the equivalent of
+    # a program that does not build, and an unresolved reference is its failing assertion.
+    "typst": {None: "typst compile main.typ out/paper.pdf"},
+    "latex": {None: "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex"},
 }
 
 #: Default runtime matrix per ecosystem. Empty means "one job, whatever the runner provides".
@@ -139,6 +148,8 @@ TEST_MATRIX: Dict[str, List[str]] = {
     "deno": [],
     "rust": [],
     "go": [],
+    "typst": [],
+    "latex": [],
 }
 
 #: Default formatter per ecosystem, keyed by package manager where the manager decides it.
@@ -158,6 +169,8 @@ FORMAT_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     "deno": {None: "deno fmt"},
     "rust": {None: "cargo fmt --all"},
     "go": {None: "gofmt -w ."},
+    "typst": {None: "typstyle --inplace ."},
+    "latex": {None: "latexindent --overwrite --silent main.tex"},
 }
 
 #: Where each ecosystem's API documentation is extracted from, and the tool that extracts it.
@@ -208,6 +221,9 @@ BUILD_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     "deno": {None: "deno compile -A"},
     "rust": {None: "cargo build --release --workspace"},
     "go": {None: "go build ./..."},
+    # Same command as the test: there is no separate release build of a document.
+    "typst": {None: "typst compile main.typ out/paper.pdf"},
+    "latex": {None: "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex"},
 }
 
 #: Where each ecosystem leaves the artifacts a release should attach, relative to the package.
@@ -217,6 +233,10 @@ ARTIFACT_GLOBS: Dict[str, List[str]] = {
     "deno": ["dist/**"],
     "rust": ["target/release/*.tar.gz", "target/release/*.zip"],
     "go": ["bin/*"],
+    # The document itself is the release. `out/` is where both engines are told to put it above;
+    # the bare glob catches a repository that typesets in place.
+    "typst": ["out/*.pdf", "*.pdf"],
+    "latex": ["out/*.pdf", "*.pdf"],
 }
 
 #: Marker files that name a formatter outright, overriding the package-manager default.
@@ -645,6 +665,20 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
         members = [str(entry) for entry in workspace.get("members", [])]
         if not name and not members:
             return None
+
+    elif filename == "typst.toml":
+        # Typst declares a package the same way Cargo does, under a [package] table. A document is
+        # not obliged to declare one - `typst.toml` is optional for a plain paper - so an empty
+        # table still yields a package, unlike Cargo above.
+        data = _load_toml(absolute)
+        package = data.get("package", {})
+        name = package.get("name")
+        version = package.get("version")
+
+    elif filename == ".latexmkrc":
+        # A latexmk configuration is Perl, not a manifest: it names no package and carries no
+        # version. Its presence is the whole signal.
+        pass
 
     elif filename == "go.mod":
         try:

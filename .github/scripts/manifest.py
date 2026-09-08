@@ -32,6 +32,7 @@ DEFAULT_REQUIRED_CHECKS: Tuple[str, ...] = (
     "pipeline (3.12)",
     "pipeline (3.13)",
     "rust",
+    "paper",
     "web",
     "docs",
     "verify-bound-issue",
