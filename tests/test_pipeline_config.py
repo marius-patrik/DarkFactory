@@ -159,8 +159,36 @@ def test_repo_settings_enables_bot_pr_approval():
 def test_issue_templates_present():
     """Request, epic, and decision templates all exist, plus the chooser config."""
     template_dir = os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE")
-    for name in ("request.yml", "epic.yml", "decision.yml", "config.yml"):
+    for name in ("request.yml", "epic.yml", "decision.yml", "config.yml", "configure.yml"):
         assert os.path.isfile(os.path.join(template_dir, name)), f"{name} must exist"
+
+
+def test_issue_templates_point_at_this_repository():
+    """A template linking elsewhere sends contributors to another project's rules.
+
+    The chooser's contact links pointed at omnis for long enough that every reader of this
+    repository's issue chooser was handed omnis's architecture, roadmap and contribution rules.
+    """
+    import manifest
+
+    loaded = manifest.load(REPO_ROOT)
+    slug = f"{loaded.owner}/{loaded.repo}"
+    for name in sorted(os.listdir(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE"))):
+        if not name.endswith(".yml"):
+            continue
+        content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", name))
+        for match in re.finditer(r"https://github\.com/(?P<slug>[^/\s]+/[^/\s]+)", content):
+            assert (
+                match.group("slug") == slug
+            ), f"{name} links to {match.group('slug')}, but this is {slug}"
+
+
+def test_the_configuration_template_carries_the_install_marker():
+    """The install workflow finds the issue by marker, so a reinstall files no duplicate."""
+    import install
+
+    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "configure.yml"))
+    assert install.CONFIG_MARKER in content
 
 
 def test_request_template_requires_verbatim_wording():
