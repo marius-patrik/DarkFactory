@@ -7,6 +7,7 @@ import pytest
 
 import agent_runner
 from agent_runner import (
+    is_bot_or_agent_comment,
     AREA_LABELS,
     TYPE_LABELS,
     calculate_backoff,
@@ -181,3 +182,66 @@ def test_runner_defaults_to_this_repository():
         source = f.read()
     assert "ChessWithQuests" not in source
     assert "marius-patrik/DarkFactory" in source
+
+
+def _read_runner_source() -> str:
+    """Returns the runner's source, for assertions about what it emits.
+
+    Returns:
+        The file contents.
+    """
+    import agent_runner
+
+    with open(agent_runner.__file__, encoding="utf-8") as handle:
+        return handle.read()
+
+
+class TestQuotaDetection:
+    """A limit the runner cannot recognise is a limit it fails on instead of escalating past."""
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Error: 429 Too Many Requests",
+            "RESOURCE_EXHAUSTED: quota exceeded for this model",
+            "You have hit your rate limit",
+            "quota exhausted",
+            "Antigravity: daily limit reached",
+            "Your weekly limit has been reached",
+            "usage limit for this account",
+            "You are out of credits",
+            "insufficient credits remaining",
+            "Please upgrade your plan to continue",
+        ],
+    )
+    def test_a_limit_is_recognised_however_it_is_phrased(self, message):
+        """Providers word exhaustion differently; the ladder must escalate past all of them."""
+        assert is_quota_exhausted(message) is True
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "TypeError: cannot read property of undefined",
+            "fatal: not a git repository",
+            "the diff exceeded the review limit of lines we display",
+        ],
+    )
+    def test_an_ordinary_failure_is_not_mistaken_for_a_limit(self, message):
+        """Escalating on a real bug would hide it behind a second harness failing the same way."""
+        assert is_quota_exhausted(message) is False
+
+
+def test_new_agent_comments_are_branded_for_this_pipeline():
+    """The notice said Omnis, which is a different project."""
+    source = _read_runner_source()
+    assert "darkfactory-agent -->" in source
+    written = [
+        l for l in source.split("\n") if "omnis-agent -->" in l and l.strip().startswith('"')
+    ]
+    assert not written, f"the old marker must not be written any more: {written}"
+
+
+def test_legacy_agent_comments_are_still_recognised():
+    """Comments already posted carry the old marker and must not become invisible."""
+    assert is_bot_or_agent_comment("someone", "<!-- omnis-agent -->\nold notice")
+    assert is_bot_or_agent_comment("someone", "<!-- darkfactory-agent -->\nnew notice")

@@ -95,6 +95,20 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
         re.IGNORECASE,
     ),
     re.compile(r"\btoo\s*many\s*requests\b", re.IGNORECASE),
+    # A provider that says "daily limit reached" without the words quota or rate limit was not
+    # detected as exhausted, so the runner failed instead of escalating to the next harness. That
+    # is the most common way a limit is actually reported.
+    re.compile(
+        r"\b(?:daily|weekly|monthly|hourly|usage|credit|token|message)\s*limits?\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\blimits?\b(?:\s+\S+){0,3}\s+\b(?:reached|exceeded|hit|exhausted)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bout\s*of\s*credits?\b", re.IGNORECASE),
+    re.compile(r"\binsufficient\s*credits?\b", re.IGNORECASE),
+    re.compile(r"\bupgrade\s*(?:your\s*)?plan\b", re.IGNORECASE),
     re.compile(r"\b(?:model|service|endpoint)\s*(?:is\s*)?unavailable\b", re.IGNORECASE),
     re.compile(r"\b(?:model|server|service)\s*(?:is\s*)?overloaded\b", re.IGNORECASE),
 ]
@@ -809,8 +823,8 @@ def checkpoint_and_notify_exhaustion(
     models_formatted = harnesses.describe_chain()
 
     comment_body = (
-        "<!-- omnis-agent -->\n"
-        "### ⚠️ Omnis Agent Quota Exhaustion Notice\n\n"
+        "<!-- darkfactory-agent -->\n"
+        "### ⚠️ DarkFactory Agent Quota Exhaustion Notice\n\n"
         "Execution has paused because API quota was exhausted across every configured "
         "harness and model:\n"
         f"{models_formatted}\n\n"
@@ -872,14 +886,14 @@ def run_agent_prompt(
 
     Returns:
         Agent text output, or an explicit error description prefixed
-        ``[Omnis Agent Execution Error]``.
+        ``[DarkFactory Agent Execution Error]``.
     """
     chain = fallback_models or ([model] if model else None)
     attempts = resolve_attempts(model_chain=chain)
 
     if not attempts:
         err = (
-            "[Omnis Agent Execution Error]: No usable harness. "
+            "[DarkFactory Agent Execution Error]: No usable harness. "
             "No CLI from AGENT_HARNESS_CHAIN is on PATH with credentials."
         )
         print(err, file=sys.stderr)
@@ -916,7 +930,7 @@ def run_agent_prompt(
 
                 if not is_quota_exhausted(detail):
                     err = (
-                        f"[Omnis Agent Execution Error]: `{harness.binary}` invocation failed "
+                        f"[DarkFactory Agent Execution Error]: `{harness.binary}` invocation failed "
                         f"(exit code {e.returncode}): {detail}"
                     )
                     print(err, file=sys.stderr)
@@ -942,12 +956,12 @@ def run_agent_prompt(
                 )
                 break
             except Exception as e:  # noqa: BLE001 - surface anything unexpected verbatim
-                err = f"[Omnis Agent Execution Error]: Unexpected failure executing {label}: {e}"
+                err = f"[DarkFactory Agent Execution Error]: Unexpected failure executing {label}: {e}"
                 print(err, file=sys.stderr)
                 return err
 
     err = (
-        f"[Omnis Agent Execution Error]: Quota exhausted across every harness and model "
+        f"[DarkFactory Agent Execution Error]: Quota exhausted across every harness and model "
         f"({', '.join(tried)}): {last_error_detail}"
     )
     print(err, file=sys.stderr)
@@ -1001,14 +1015,16 @@ def handle_interpret(issue_number: int, repo: str):
     if is_quota_exhausted(interpretation):
         return
 
-    if interpretation.startswith("[Omnis Agent Execution Error]"):
+    if interpretation.startswith("[DarkFactory Agent Execution Error]"):
         comment = (
-            "<!-- omnis-agent -->\n" f"### Omnis Agent Execution Error\n\n" f"{interpretation}\n"
+            "<!-- darkfactory-agent -->\n"
+            f"### DarkFactory Agent Execution Error\n\n"
+            f"{interpretation}\n"
         )
     else:
         comment = (
-            "<!-- omnis-agent -->\n"
-            f"### Omnis Agent Interpretation\n\n"
+            "<!-- darkfactory-agent -->\n"
+            f"### DarkFactory Agent Interpretation\n\n"
             f"{interpretation}\n\n"
             f"---\n*Assigned Labels: `{t_label}`, `{a_label}`. Waiting for user approval (`approve`) to create branch and plan.*"
         )
@@ -1101,16 +1117,16 @@ def handle_plan(request_number: int, plan_number: int, repo: str):
     if is_quota_exhausted(plan_body):
         return
 
-    if plan_body.startswith("[Omnis Agent Execution Error]"):
+    if plan_body.startswith("[DarkFactory Agent Execution Error]"):
         comment = (
-            "<!-- omnis-agent -->\n"
-            f"### Omnis Agent Execution Error\n\n"
+            "<!-- darkfactory-agent -->\n"
+            f"### DarkFactory Agent Execution Error\n\n"
             f"- **Parent Request**: #{request_number}\n\n"
             f"{plan_body}\n"
         )
     else:
         comment = (
-            "<!-- omnis-agent -->\n"
+            "<!-- darkfactory-agent -->\n"
             "### Implementation Plan (Autogenerated by the Omnis Agent)\n\n"
             f"- **Parent Request**: #{request_number}\n\n"
             f"{plan_body}\n\n"
@@ -1139,10 +1155,10 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
     if is_quota_exhausted(response):
         return
 
-    if response.startswith("[Omnis Agent Execution Error]"):
-        body = f"<!-- omnis-agent -->\n### Omnis Agent Execution Error\n\n{response}"
+    if response.startswith("[DarkFactory Agent Execution Error]"):
+        body = f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{response}"
     else:
-        body = f"<!-- omnis-agent -->\n### Antigravity Agent Response\n\n{response}"
+        body = f"<!-- darkfactory-agent -->\n### Antigravity Agent Response\n\n{response}"
 
     if is_pr:
         run_gh(["pr", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
@@ -1428,7 +1444,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 "comment",
                 str(plan_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Omnis Agent Execution Error\n\n{err_msg}",
+                f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{err_msg}",
             ],
             repo=repo,
         )
@@ -1509,14 +1525,14 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         if is_quota_exhausted(impl_result):
             return
 
-        if impl_result.startswith("[Omnis Agent Execution Error]"):
+        if impl_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
                 [
                     "issue",
                     "comment",
                     str(plan_number),
                     "--body",
-                    f"<!-- omnis-agent -->\n### Omnis Agent Execution Error\n\n{impl_result}",
+                    f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{impl_result}",
                 ],
                 repo=repo,
             )
@@ -1545,7 +1561,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         )
         if is_quota_exhausted(fix_result):
             return
-        if not fix_result.startswith("[Omnis Agent Execution Error]"):
+        if not fix_result.startswith("[DarkFactory Agent Execution Error]"):
             format_repository(cwd)
             completed_steps.append("Resolved automated test fixes")
 
@@ -1566,7 +1582,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                     "comment",
                     str(plan_number),
                     "--body",
-                    "<!-- omnis-agent -->\n### Antigravity Agent Notice\n\n"
+                    "<!-- darkfactory-agent -->\n### Antigravity Agent Notice\n\n"
                     "No file changes produced by implementation. Please review the plan scope.",
                 ],
                 repo=repo,
@@ -1593,7 +1609,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 "comment",
                 str(plan_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Omnis Agent Execution Error\n\n{err_msg}",
+                f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{err_msg}",
             ],
             repo=repo,
         )
@@ -1752,14 +1768,14 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
         if is_quota_exhausted(review_result):
             return
 
-        if review_result.startswith("[Omnis Agent Execution Error]"):
+        if review_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
                 [
                     "pr",
                     "comment",
                     str(pr_number),
                     "--body",
-                    f"<!-- omnis-agent -->\n### Self-Review Error (Iteration {iteration})\n\n{review_result}",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Error (Iteration {iteration})\n\n{review_result}",
                 ],
                 repo=repo,
             )
@@ -1773,7 +1789,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                     "comment",
                     str(pr_number),
                     "--body",
-                    f"<!-- omnis-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n"
+                    f"<!-- darkfactory-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n"
                     f"✅ No actionable findings. Code review passed.",
                 ],
                 repo=repo,
@@ -1788,7 +1804,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 "comment",
                 str(pr_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n{review_result}",
+                f"<!-- darkfactory-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n{review_result}",
             ],
             repo=repo,
         )
@@ -1808,14 +1824,14 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 )
                 if is_quota_exhausted(deviation_text):
                     return
-                if not deviation_text.startswith("[Omnis Agent Execution Error]"):
+                if not deviation_text.startswith("[DarkFactory Agent Execution Error]"):
                     run_gh(
                         [
                             "issue",
                             "comment",
                             str(request_number),
                             "--body",
-                            f"<!-- omnis-agent -->\n### Plan Deviation\n\n{deviation_text}",
+                            f"<!-- darkfactory-agent -->\n### Plan Deviation\n\n{deviation_text}",
                         ],
                         repo=repo,
                     )
@@ -1825,7 +1841,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                             "comment",
                             str(plan_number),
                             "--body",
-                            f"<!-- omnis-agent -->\n### Scope Amendment\n\n{deviation_text}",
+                            f"<!-- darkfactory-agent -->\n### Scope Amendment\n\n{deviation_text}",
                         ],
                         repo=repo,
                     )
@@ -1842,14 +1858,14 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
         if is_quota_exhausted(fix_result):
             return
 
-        if fix_result.startswith("[Omnis Agent Execution Error]"):
+        if fix_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
                 [
                     "pr",
                     "comment",
                     str(pr_number),
                     "--body",
-                    f"<!-- omnis-agent -->\n### Self-Review Fix Error (Iteration {iteration})\n\n{fix_result}",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Fix Error (Iteration {iteration})\n\n{fix_result}",
                 ],
                 repo=repo,
             )
@@ -1876,7 +1892,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                         "comment",
                         str(pr_number),
                         "--body",
-                        f"<!-- omnis-agent -->\n### Self-Review Fix (Iteration {iteration})\n\n{fix_result[:2000]}",
+                        f"<!-- darkfactory-agent -->\n### Self-Review Fix (Iteration {iteration})\n\n{fix_result[:2000]}",
                     ],
                     repo=repo,
                 )
@@ -1957,14 +1973,14 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
     if is_quota_exhausted(alignment_result):
         return
 
-    if alignment_result.startswith("[Omnis Agent Execution Error]"):
+    if alignment_result.startswith("[DarkFactory Agent Execution Error]"):
         run_gh(
             [
                 "issue",
                 "comment",
                 str(plan_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Plan Alignment Error\n\n{alignment_result}",
+                f"<!-- darkfactory-agent -->\n### Plan Alignment Error\n\n{alignment_result}",
             ],
             repo=repo,
         )
@@ -1978,7 +1994,7 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
                 "comment",
                 str(plan_number),
                 "--body",
-                "<!-- omnis-agent -->\n### Implementation Review\n\n"
+                "<!-- darkfactory-agent -->\n### Implementation Review\n\n"
                 "**Matches Plan**: Yes\n\nAll changes in the PR align with the plan scope.",
             ],
             repo=repo,
@@ -2006,7 +2022,7 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
                 "comment",
                 str(request_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Plan Alignment\n\n{alignment_result}",
+                f"<!-- darkfactory-agent -->\n### Plan Alignment\n\n{alignment_result}",
             ],
             repo=repo,
         )
@@ -2017,7 +2033,7 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
                 "comment",
                 str(plan_number),
                 "--body",
-                f"<!-- omnis-agent -->\n### Implementation Review\n\n"
+                f"<!-- darkfactory-agent -->\n### Implementation Review\n\n"
                 f"**Matches Plan**: No\n\n{alignment_result}",
             ],
             repo=repo,
@@ -2134,6 +2150,21 @@ def dispatch_event(event_path: str, event_name: str):
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
 
 
+def _manifest_slug() -> str:
+    """Returns `owner/name` from the repository manifest.
+
+    Returns:
+        The slug, or an empty string when the manifest cannot be read.
+    """
+    try:
+        import manifest
+
+        loaded = manifest.load(".")
+        return f"{loaded.owner}/{loaded.repo}"
+    except Exception:  # noqa: BLE001 - a missing manifest must not stop the CLI parsing
+        return ""
+
+
 def main():
     parser = argparse.ArgumentParser(description="Antigravity CI Agent Runner")
     parser.add_argument(
@@ -2155,7 +2186,13 @@ def main():
     parser.add_argument("--request-issue", type=int, help="Parent request issue number")
     parser.add_argument("--plan-issue", type=int, help="Child plan issue number")
     parser.add_argument("--pr-number", type=int, help="Pull request number")
-    parser.add_argument("--repo", default="marius-patrik/omnis", help="Repository full name")
+    # Defaulting to a named repository sends a stray invocation at somebody else's project. The
+    # environment says where this is running; the manifest says what the repository calls itself.
+    parser.add_argument(
+        "--repo",
+        default=os.environ.get("GITHUB_REPOSITORY") or _manifest_slug(),
+        help="Repository full name; defaults to GITHUB_REPOSITORY, then the manifest",
+    )
     parser.add_argument("--comment", help="Comment body for respond command")
     parser.add_argument("--is-pr", action="store_true", help="Flag if comment is on pull request")
 
