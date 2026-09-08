@@ -455,3 +455,39 @@ class TestDeclarationComments:
         _manifest(tmp_path, {"release": {"python": {"enabled": False}}})
         assert environment.configure(str(tmp_path)).build_plan() == {}
         assert "python" in environment.configure(str(tmp_path)).test_plan()
+
+
+class TestSubmodulesAreNotThisRepository:
+    """A submodule is a separate repository with its own pipeline, checks and releases."""
+
+    def test_a_submodule_is_not_detected_as_a_package(self, tmp_path):
+        """A super-repository must not claim work that is already built elsewhere."""
+        _write(tmp_path, "prace/typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "e"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            ".gitmodules",
+            '[submodule "prace"]\n\tpath = prace\n\turl = https://github.com/o/p.git\n',
+        )
+        env = environment.configure(str(tmp_path))
+        assert [p.path for p in env.packages] == ["engine"], "only the repository's own package"
+        assert env.domains == {"code"}
+
+    def test_a_repository_of_nothing_but_submodules_declares_nothing(self, tmp_path):
+        """The super-repository case: everything it holds belongs to someone else."""
+        _write(tmp_path, "prace/typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "e"\nversion = "0.1.0"\n')
+        _write(
+            tmp_path,
+            ".gitmodules",
+            '[submodule "prace"]\n\tpath = prace\n\turl = https://github.com/o/p.git\n'
+            '[submodule "engine"]\n\tpath = engine\n\turl = https://github.com/o/e.git\n',
+        )
+        env = environment.configure(str(tmp_path))
+        assert env.packages == []
+        assert env.build_plan() == {}, "nothing of its own to release"
+
+    def test_a_repository_without_gitmodules_is_unaffected(self, tmp_path):
+        """The overwhelming majority of repositories have no submodules at all."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "e"\nversion = "0.1.0"\n')
+        assert [p.path for p in environment.configure(str(tmp_path)).packages] == ["."]
