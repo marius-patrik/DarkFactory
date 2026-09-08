@@ -126,15 +126,11 @@ Maps directly to Conventional Commit specifications:
 
 ### 4.2 Area Taxonomy
 Scopes the subsystem affected by the change:
-- `area:core`: Microkernel, IPC, substrate bus, daemon, configuration, runtime architecture.
-- `area:ui`: User interface, DOM layout, theming, visual components.
-- `area:term`: Terminal cell-grid renderer, ANSI pipeline, PTY integration, TUI surfaces.
-- `area:agents`: Multi-harness orchestration, agent harnesses, provider adapters, personas, prompt templates.
-- `area:browser`: Embedded browser engine, CDP bridge, render pipelines.
-- `area:data`: Database schema, persistence, migrations, sync, storage.
-- `area:ext`: Extension host, plugin API, capability sandboxing.
-- `area:ci`: GitHub Actions, container definitions, runner scripts, repo automation.
-- `area:docs`: Documentation, MkDocs configuration, architecture notes.
+- `area:agents`: Harness orchestration, provider adapters, personas, approvals.
+- `area:governance`: Agent rules, branch protection, required checks, project board taxonomy.
+- `area:release`: Versioning modes, tagging, asset packaging, release notes.
+- `area:docs`: Documentation site, theme, architecture notes.
+- `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation.
 
 ---
 
