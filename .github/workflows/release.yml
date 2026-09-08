@@ -111,6 +111,32 @@ jobs:
           print("Package metadata is conformant.")
           PY
 
+      - name: Detect the paper domain
+        if: steps.resolve.outputs.warranted == 'true'
+        id: paper
+        # The release job builds the same artifacts CI does, so it needs the same toolchains. A
+        # paper's asset is its PDF, which cannot be produced without a typesetting engine.
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, sys
+          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
+          import environment
+
+          env = environment.configure(".")
+          print(f"typst={str(env.has('typst')).lower()}")
+          print(f"latex={str(env.has('latex')).lower()}")
+          PY
+
+      - name: Set up Typst
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
+        uses: typst-community/setup-typst@v4
+
+      - name: Set up TeX Live
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'
+        uses: teatimeguest/setup-texlive-action@v3
+        with:
+          packages: scheme-medium latexmk
+
       - name: Build release assets
         if: steps.resolve.outputs.warranted == 'true'
         run: |
