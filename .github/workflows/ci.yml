@@ -58,22 +58,37 @@ jobs:
             echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
           fi
 
+      - name: Detect a Python project
+        id: detect
+        # A consumer need not contain Python at all - a paper repository does not - and this job
+        # is a required check, so it has to report a conclusion rather than fail on a missing
+        # requirements file.
+        run: echo "present=${{ hashFiles('requirements-dev.txt') != '' }}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python ${{ matrix.python-version }}
+        if: steps.detect.outputs.present == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
       - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
       - name: Check formatting
+        if: steps.detect.outputs.present == 'true'
         run: black --check --diff .
 
       - name: Run repository automation tests
+        if: steps.detect.outputs.present == 'true'
         run: pytest -v
+
+      - name: No Python in this repository
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No requirements-dev.txt; nothing for the pipeline job to test."
 
   rust:
     name: rust
@@ -268,12 +283,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install dependencies
+        # A repository with no Python has no requirements file and nothing for pip to cache, which
+        # is every paper. The pipeline scripts themselves need only the standard library, so the
+        # documentation plan can still be read and a paper still typesets.
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          else
+            echo "No requirements-dev.txt; this repository declares no Python documentation engine."
+          fi
 
       - name: Build documentation
         # The command comes from the *caller's* environment, not from this file. Consumers do not
