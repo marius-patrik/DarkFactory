@@ -18,6 +18,7 @@ EXPECTED_WORKFLOWS = [
     "open-pr.yml",
     "pr-approval-automerge.yml",
     "project-automation.yml",
+    "report-failure.yml",
     "verify-pr-issue.yml",
 ]
 
