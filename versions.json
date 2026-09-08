@@ -4,6 +4,30 @@
     {
       "name": "darkfactory",
       "path": ""
+    },
+    {
+      "name": "PR #37",
+      "path": "pr-37"
+    },
+    {
+      "name": "PR #35",
+      "path": "pr-35"
+    },
+    {
+      "name": "PR #34",
+      "path": "pr-34"
+    },
+    {
+      "name": "PR #33",
+      "path": "pr-33"
+    },
+    {
+      "name": "PR #31",
+      "path": "pr-31"
+    },
+    {
+      "name": "PR #27",
+      "path": "pr-27"
     }
   ],
   "projects": [
