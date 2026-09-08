@@ -56,6 +56,8 @@ jobs:
         # only ever fills a gap, it never overwrites.
         run: |
           if [ -d .pipeline ]; then
+            # A consumer carries none of the pipeline, so the destination may not exist yet.
+            mkdir -p .github/scripts
             [ -d theme ] || cp -r .pipeline/theme theme
             [ -f .github/scripts/docs_hooks.py ] || cp .pipeline/.github/scripts/docs_hooks.py .github/scripts/docs_hooks.py
             [ -f .github/scripts/environment.py ] || cp .pipeline/.github/scripts/environment.py .github/scripts/environment.py
