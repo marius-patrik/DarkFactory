@@ -617,12 +617,50 @@ def process_event(
         reconcile_unassigned_statuses(client)
 
 
-def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
-    """Gives every open board item without a status the one its labels imply.
+#: Statuses an item may legitimately hold once it is closed.
+#:
+#: A closed item is finished, abandoned or outranked. Any other status on a closed item is a
+#: leftover from the moment before it closed, and says the board disagrees with the repository.
+TERMINAL_STATUSES = frozenset({"Done", "Dropped", "Superseded"})
 
-    An item can reach the board without passing through a lifecycle event — added by hand, or added
-    while the automation lacked a token that can write to Projects v2. Defaulting all of those to
-    ``ToDo`` would silently promote backlog items into the ready queue, so the labels decide.
+
+def settled_status(closed: bool, merged: bool, labels: List[str]) -> Optional[str]:
+    """Decides the status an item should hold, or `None` to leave it alone.
+
+    An open item's status is a matter of judgement and is left to the lifecycle events. A closed
+    one is not: it is finished if it merged, and otherwise whatever its labels say, falling back to
+    `Dropped` for something closed without implementation.
+
+    Args:
+        closed: Whether the item is closed.
+        merged: Whether a pull request was merged.
+        labels: The item's labels.
+
+    Returns:
+        The status it should hold, or `None` when nothing can be concluded.
+    """
+    if not closed:
+        return None
+    if merged:
+        return "Done"
+    labelled = determine_status_from_labels(labels)
+    return labelled if labelled in TERMINAL_STATUSES else "Dropped"
+
+
+def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
+    """Brings every board item's status back into agreement with the repository.
+
+    Two things drift. An item can reach the board without passing through a lifecycle event - added
+    by hand, or added while the automation lacked a token that can write to Projects v2 - and an
+    item can be closed while the board still shows the status it held beforehand, because the event
+    that would have moved it was lost, cancelled, or swallowed.
+
+    The first case is filled from the labels: defaulting to `ToDo` would silently promote backlog
+    items into the ready queue. The second is corrected outright, because a closed item showing
+    `In Progress` is the board contradicting the repository rather than expressing a judgement.
+
+    Open items are never overridden. Their status is exactly the judgement the board exists to
+    record.
 
     Args:
         client: Project client.
@@ -643,11 +681,26 @@ def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
         )
         for item in json.loads(raw_items).get("items", []):
             content = item.get("content", {})
-            if item.get("status") or not item.get("id") or content.get("closed", False):
+            item_id = item.get("id")
+            if not item_id:
                 continue
-            status = determine_status_from_labels(item.get("labels", []) or [])
-            client.edit_status(item["id"], status)
-            print(f"Self-healed item {item['id']} ({content.get('title')}) to {status}")
+            current = item.get("status")
+            labels = item.get("labels", []) or []
+            closed = bool(content.get("closed", False))
+            merged = str(content.get("state", "")).upper() == "MERGED"
+
+            if not closed:
+                if current:
+                    continue
+                wanted = determine_status_from_labels(labels)
+            else:
+                wanted = settled_status(closed, merged, labels)
+                if wanted is None or wanted == current:
+                    continue
+
+            client.edit_status(item_id, wanted)
+            was = current or "no status"
+            print(f"Reconciled item {item_id} ({content.get('title')}): {was} -> {wanted}")
     except Exception as exc:  # noqa: BLE001 - reconciliation is best-effort
         print(f"Status reconciliation notice: {exc}", file=sys.stderr)
 
