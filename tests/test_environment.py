@@ -308,3 +308,124 @@ class TestPlans:
         payload = environment.configure(str(polyglot)).as_dict()
         assert json.loads(json.dumps(payload)) == payload
         assert set(payload) >= {"test_plan", "format_plan", "docs_plan"}
+
+
+class TestDomains:
+    """A domain says what kind of governance a package answers to, above its toolchain."""
+
+    def test_every_code_ecosystem_maps_to_the_code_domain(self, polyglot):
+        """Node and Rust differ in toolchain but are both code."""
+        env = environment.configure(str(polyglot))
+        assert env.domains == {"code"}
+        assert env.is_multi_domain is False
+
+    def test_an_undeclared_ecosystem_still_gets_a_domain(self, tmp_path):
+        """A repository may invent an ecosystem; planning it must not crash for want of a domain."""
+        _manifest(tmp_path, {"packages": [{"path": "weird", "ecosystem": "make", "name": "weird"}]})
+        env = environment.configure(str(tmp_path))
+        assert env.packages[0].domain == environment.DEFAULT_DOMAIN
+        assert env.domains == {"code"}
+
+    def test_a_thesis_beside_its_software_is_multi_domain(self, tmp_path):
+        """The case the layer exists for: a paper and the code it documents, in one repository."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _manifest(
+            tmp_path,
+            {
+                "packages": [
+                    {"path": ".", "ecosystem": "python", "name": "engine", "version": "0.1.0"},
+                    {"path": "paper", "ecosystem": "typst", "name": "thesis"},
+                ]
+            },
+        )
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"code", "paper"}
+        assert env.is_multi_domain is True
+        assert [p.path for p in env.packages_in("paper")] == ["paper"]
+        assert [p.path for p in env.packages_in("code")] == ["."]
+        assert env.has_domain("paper") and not env.has_domain("math")
+
+    def test_the_domain_is_reported_as_plain_data(self, tmp_path):
+        """Workflows branch on the domain, so it must survive the JSON round trip."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        payload = environment.configure(str(tmp_path)).as_dict()
+        assert payload["domains"] == ["code"]
+        assert payload["is_multi_domain"] is False
+        assert payload["packages"][0]["domain"] == "code"
+
+
+class TestPaperDomain:
+    """A paper is typeset rather than tested, and the document is the artifact."""
+
+    def test_typst_is_detected_and_lands_in_the_paper_domain(self, tmp_path):
+        """`typst.toml` is to a paper what `Cargo.toml` is to a crate."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"typst"}
+        assert env.domains == {"paper"}
+        assert env.packages[0].name == "thesis"
+        assert env.packages[0].version == "1.0.0"
+
+    def test_latexmkrc_is_detected_even_though_it_names_nothing(self, tmp_path):
+        """A latexmk configuration carries no name or version; its presence is the whole signal."""
+        _write(tmp_path, ".latexmkrc", "$pdf_mode = 1;\n")
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"latex"}
+        assert env.domains == {"paper"}
+        assert env.packages[0].name is None
+
+    def test_typesetting_is_the_test_and_the_build(self, tmp_path):
+        """There is no separate release build of a document."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.test_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
+        assert env.build_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
+        assert env.build_plan()["typst"]["artifacts"] == ["out/*.pdf", "*.pdf"]
+
+    def test_a_paper_needs_no_api_documentation(self, tmp_path):
+        """A document has no inline source to extract a reference from."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        assert environment.configure(str(tmp_path)).docs_plan()["typst"]["command"] is None
+
+    def test_a_thesis_beside_its_software_plans_both(self, tmp_path):
+        """The motivating case: detection alone, with no declaration, finds both domains."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"paper", "code"}
+        assert env.is_multi_domain is True
+        plan = env.test_plan()
+        assert plan["typst"]["command"].startswith("typst compile")
+        assert plan["python"]["command"] == "pytest"
+
+
+class TestMathDomain:
+    """Building a Lean project is checking its proofs; the compiler is the proof checker."""
+
+    def test_a_lakefile_lands_in_the_math_domain(self, tmp_path):
+        """The Lean form of the build file is a program, so its presence is the whole signal."""
+        _write(tmp_path, "lakefile.lean", "import Lake\nopen Lake DSL\npackage proofs\n")
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"lean"}
+        assert env.domains == {"math"}
+
+    def test_the_toml_form_still_names_its_package(self, tmp_path):
+        """`lakefile.toml` is data rather than a program, so the name is worth reading."""
+        _write(tmp_path, "lakefile.toml", 'name = "proofs"\nversion = "0.2.0"\n')
+        package = environment.configure(str(tmp_path)).packages[0]
+        assert (package.name, package.version) == ("proofs", "0.2.0")
+
+    def test_building_is_the_proof_check_and_releases_nothing(self, tmp_path):
+        """A proof's value is that it checked, not that it produced a file."""
+        _write(tmp_path, "lakefile.toml", 'name = "proofs"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.test_plan()["lean"]["command"] == "lake build"
+        assert env.build_plan()["lean"]["artifacts"] == []
+
+    def test_a_paper_with_its_proofs_spans_both_domains(self, tmp_path):
+        """Formalised mathematics beside the paper that presents it."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "proofs/lakefile.toml", 'name = "proofs"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"paper", "math"}
+        assert env.is_multi_domain is True

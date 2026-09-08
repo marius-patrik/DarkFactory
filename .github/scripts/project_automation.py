@@ -1,7 +1,12 @@
 """GitHub Project board automation.
 
-Adds issues and pull requests to the Omnis project board and moves them between statuses in
-response to lifecycle events (open, label, close, merge, push to main).
+Adds issues and pull requests to every project board this repository is linked to, and moves them
+between statuses in response to lifecycle events (open, label, close, merge, push to main).
+
+Which boards those are comes from the repository manifest - `board.link_boards` names them and
+`board.global_title` names the one aggregating every repository - not from a project number in the
+environment. A number in the environment cannot express "this repository's own board and the global
+one", and silently pointed every repository at project 1 when it was left unset.
 
 Unlike a hardcoded-ID implementation, the Status field id and its single-select option ids are
 resolved from the GitHub API at runtime and cached for the process lifetime. Recreating the board,
@@ -10,7 +15,7 @@ change. Environment variables may still pin the ids explicitly for offline or ai
 
 Environment:
     PROJECT_OWNER: Project owner login (default: repository owner).
-    PROJECT_NUMBER: Project number (default: 1).
+    PROJECT_NUMBER: Fallback project number, used only when the manifest names no boards.
     PROJECT_STATUS_FIELD_ID: Optional explicit Status field id, skipping discovery.
     GH_TOKEN: Token with `project`, `repo`, and `issues` scopes.
 """
@@ -104,6 +109,82 @@ def determine_status_from_labels(labels: List[str]) -> str:
         if candidates & normalized:
             return status
     return "ToDo"
+
+
+#: Board writes that failed during this run.
+#:
+#: Board access used to be best-effort throughout: every failure was caught, logged to stderr and
+#: the run reported success. A pipeline that swallows its own failures cannot tell anyone it is
+#: broken, and this one did not for days. Failures are still not raised where they occur - one
+#: unreachable board must not stop the others being updated - but they are remembered, and `main`
+#: exits non-zero if any occurred.
+FAILURES: List[str] = []
+
+
+def _fail(message: str) -> None:
+    """Records a board failure and reports it.
+
+    Args:
+        message: What could not be done.
+    """
+    FAILURES.append(message)
+    print(f"Error: {message}", file=sys.stderr)
+
+
+def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
+    """Finds the project numbers of every board this repository is linked to.
+
+    An item belongs on two boards: this repository's own, and the one aggregating every repository.
+    That is deliberately *not* `linked_boards`, which is the wider set shown in the Projects tab -
+    linking a board so it is visible from here must not start writing this repository's issues onto
+    another repository's board.
+
+    Boards are owned by the account rather than the repository, so they are named in the manifest
+    and looked up by title. A title that resolves to nothing is a failure rather than a silent
+    skip: the board exists in the declaration, so its absence is a fault worth reporting.
+
+    Args:
+        owner: Project owner login.
+
+    Returns:
+        Project numbers, in declaration order, without duplicates.
+    """
+    try:
+        import manifest as manifest_module
+
+        loaded = manifest_module.load(".")
+        titles = [loaded.project_title]
+        if loaded.global_board_title and loaded.global_board_title not in titles:
+            titles.append(loaded.global_board_title)
+    except Exception as exc:  # noqa: BLE001 - a missing manifest must not stop the run
+        print(f"Could not read the board declaration: {exc}", file=sys.stderr)
+        titles = []
+
+    if not titles:
+        print(f"No boards declared; falling back to project {PROJECT_NUMBER}.")
+        return [PROJECT_NUMBER]
+
+    try:
+        output = subprocess.run(
+            ["gh", "project", "list", "--owner", owner, "--limit", "100", "--format", "json"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        by_title = {p["title"]: p["number"] for p in json.loads(output).get("projects", [])}
+    except Exception as exc:  # noqa: BLE001 - reported below, not raised here
+        _fail(f"could not list projects for {owner}: {exc}")
+        return []
+
+    numbers: List[int] = []
+    for title in titles:
+        number = by_title.get(title)
+        if number is None:
+            _fail(f"no project board titled {title!r} for {owner}")
+            continue
+        if number not in numbers:
+            numbers.append(number)
+    return numbers
 
 
 class GitHubProjectClient:
@@ -206,6 +287,17 @@ class GitHubProjectClient:
         assert self._status_options is not None
         return self._status_options.get(status_name)
 
+    def track(self, url: str, status: str) -> None:
+        """Adds a url to this board and sets its status.
+
+        Args:
+            url: Issue or pull request html url.
+            status: Target status name.
+        """
+        item_id = self.add_item(url)
+        if item_id and self.edit_status(item_id, status):
+            print(f"{url} -> {status} (project {self.project_number})")
+
     def add_item(self, url: str) -> Optional[str]:
         """Adds an issue or pull request to the project, returning its item id.
 
@@ -233,8 +325,8 @@ class GitHubProjectClient:
                 ]
             )
             return json.loads(output).get("id")
-        except Exception as exc:  # noqa: BLE001 - board access is best-effort
-            print(f"Error adding item {url}: {exc}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
+            _fail(f"adding {url} to project {self.project_number}: {exc}")
             return None
 
     def edit_status(self, item_id: str, status_name: str) -> bool:
@@ -345,6 +437,62 @@ def _labels_of(payload_entity: Dict[str, Any]) -> List[str]:
     ]
 
 
+class BoardGroup:
+    """Several boards addressed as one.
+
+    Presents the same surface as a single client so every call site is unchanged. An item belongs
+    on its repository's own board *and* on the board aggregating every repository, and those are
+    different projects holding different item ids for the same issue.
+    """
+
+    def __init__(self, clients: List[GitHubProjectClient]) -> None:
+        """Initializes the group.
+
+        Args:
+            clients: One client per board.
+        """
+        self.clients = clients
+
+    def track(self, url: str, status: str) -> None:
+        """Adds a url to every board and sets its status on each.
+
+        Args:
+            url: Issue or pull request html url.
+            status: Target status name.
+        """
+        for client in self.clients:
+            client.track(url, status)
+
+    def set_status_label(self, repo: str, number: int, status: str) -> None:
+        """Applies the status label once, since labels belong to the issue, not to a board.
+
+        Args:
+            repo: `owner/name` of the repository.
+            number: Issue number.
+            status: Target status name.
+        """
+        if self.clients:
+            self.clients[0].set_status_label(repo, number, status)
+
+    def close_issue(self, repo: str, number: int) -> None:
+        """Closes an issue once, for the same reason.
+
+        Args:
+            repo: `owner/name` of the repository.
+            number: Issue number.
+        """
+        if self.clients:
+            self.clients[0].close_issue(repo, number)
+
+    def open_items(self) -> List[Dict[str, Any]]:
+        """Returns the open items of the first board, for reconciliation.
+
+        Returns:
+            Board items.
+        """
+        return self.clients[0].open_items() if self.clients else []
+
+
 def _track(client: GitHubProjectClient, url: Optional[str], status: str) -> None:
     """Adds a url to the board and sets its status.
 
@@ -355,9 +503,7 @@ def _track(client: GitHubProjectClient, url: Optional[str], status: str) -> None
     """
     if not url:
         return
-    item_id = client.add_item(url)
-    if item_id and client.edit_status(item_id, status):
-        print(f"{url} -> {status}")
+    client.track(url, status)
 
 
 def _handle_issue_event(payload: Dict[str, Any], client: GitHubProjectClient) -> None:
@@ -458,7 +604,8 @@ def process_event(
         client: Optional injected client, used by tests.
     """
     if client is None:
-        client = GitHubProjectClient()
+        numbers = resolve_boards()
+        client = BoardGroup([GitHubProjectClient(project_number=n) for n in numbers])
 
     if event_name == "issues":
         _handle_issue_event(payload, client)
@@ -518,6 +665,12 @@ def main() -> None:
         payload = json.load(handle)
 
     process_event(event_name, payload)
+
+    if FAILURES:
+        print(f"\n{len(FAILURES)} board operation(s) failed:", file=sys.stderr)
+        for failure in FAILURES:
+            print(f"  - {failure}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

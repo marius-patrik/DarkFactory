@@ -89,11 +89,11 @@ def test_classify_type(text: str, expected_type: str):
 
 def test_format_conventional_commit_maps_bug_to_fix():
     """`bug` is a label; `fix` is the commit type. The mapping must not leak."""
-    assert format_conventional_commit("bug", "area:core", "Correct the codec") == (
-        "fix(core): correct the codec"
+    assert format_conventional_commit("bug", "area:governance", "Correct the codec") == (
+        "fix(governance): correct the codec"
     )
-    assert format_conventional_commit("feat", "area:term", "Add cell buffer") == (
-        "feat(term): add cell buffer"
+    assert format_conventional_commit("feat", "area:agents", "Add cell buffer") == (
+        "feat(agents): add cell buffer"
     )
 
 

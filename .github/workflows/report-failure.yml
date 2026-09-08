@@ -1,15 +1,19 @@
-name: Project Board Automation
+name: Report Pipeline Failure
 
+# Runs after another workflow finishes, rather than inside it: a workflow that fails partway
+# through cannot be relied on to report its own failure, and a job appended to each one would have
+# to be repeated in every workflow.
 on:
-  issues:
-    types: [opened, labeled, unlabeled, closed, reopened]
-  pull_request:
-    types: [opened, edited, closed, ready_for_review, reopened]
-  push:
-    branches: [darkfactory]
-  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - CI
+      - Deploy Documentation
+      - Project Board Automation
+      - Release
+      - Agent
+    types: [completed]
 
-  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  # Consumers call this rather than copying it, so the script it runs lives in one place.
   workflow_call:
     inputs:
       pipeline-ref:
@@ -28,11 +32,15 @@ on:
 permissions:
   contents: read
   issues: write
-  pull-requests: write
-  repository-projects: write
+
+concurrency:
+  # One at a time per workflow, so two runs finishing together cannot both open an issue.
+  group: report-failure-${{ github.event.workflow_run.name || github.workflow }}
+  cancel-in-progress: false
 
 jobs:
-  automate-project:
+  report:
+    name: report-failure
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -49,10 +57,8 @@ jobs:
       - name: Put the pipeline scripts on the path
         run: |
           if [ -d .pipeline/.github/scripts ]; then
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
             echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
           else
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
             echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
           fi
 
@@ -61,14 +67,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run Project Board Automation
-        run: |
-          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
+      - name: File or resolve the failure issue
+        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/report_failure.py"
         env:
           GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-          PROJECT_OWNER: ${{ github.repository_owner }}
-          # Only a fallback now: which boards to write to comes from the manifest, so an unset
-          # variable no longer silently points every repository at project 1.
-          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_ID: ${{ github.event.workflow_run.id }}

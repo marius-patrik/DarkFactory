@@ -18,6 +18,7 @@ EXPECTED_WORKFLOWS = [
     "open-pr.yml",
     "pr-approval-automerge.yml",
     "project-automation.yml",
+    "report-failure.yml",
     "verify-pr-issue.yml",
 ]
 
@@ -165,6 +166,55 @@ def test_request_template_requires_verbatim_wording():
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
     assert "Verbatim User Request" in content
     assert 'labels: ["Request"]' in content
+
+
+def _declared_areas() -> Dict[str, str]:
+    """Reads the area taxonomy from the repository manifest.
+
+    Returns:
+        Mapping of bare area name to description, in declaration order.
+    """
+    import manifest
+
+    return manifest.load(REPO_ROOT).areas
+
+
+@pytest.mark.parametrize(
+    "path, pattern",
+    [
+        (
+            os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
+            r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$',
+        ),
+        (
+            os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
+            r"^- \[ \] `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
+        ),
+        (
+            "ARCHITECTURE.md",
+            r"^- `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
+        ),
+    ],
+)
+def test_area_lists_match_the_manifest(path, pattern):
+    """Every hand-written area list must agree with the one declaration of the taxonomy.
+
+    The dropdown, the capability matrix and the architecture reference are static files GitHub
+    renders itself, so they cannot be generated at render time the way the documentation nav is.
+    Without this test they simply drift again - which is exactly how they came to list another
+    repository's areas.
+    """
+    declared = _declared_areas()
+    content = _read(os.path.join(REPO_ROOT, path))
+    found = {
+        match.group("name"): match.group("description")
+        for match in re.finditer(pattern, content, re.MULTILINE)
+    }
+    assert found, f"{path} lists no areas at all"
+    assert found == declared, (
+        f"{path} disagrees with .github/darkfactory.json; "
+        f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
+    )
 
 
 def test_pull_request_template_enforces_binding_and_matrix_rule():

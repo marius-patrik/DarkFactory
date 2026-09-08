@@ -258,3 +258,25 @@ class TestResolveRelease:
         _write(tmp_path, "package.json", json.dumps({"name": "a", "version": "9.9.9"}))
         resolved = release.resolve_release(str(tmp_path))
         assert resolved["metadata_problems"], "a package at 9.9.9 cannot ship as 0.1.0 unnoticed"
+
+
+class TestPaperReleases:
+    """A paper releases its PDF, and its version lives in `typst.toml` like any other manifest."""
+
+    def test_the_pdf_is_planned_as_a_release_asset(self, tmp_path):
+        """`plan_assets` derives assets from the build plan, so the document comes along."""
+        (tmp_path / "typst.toml").write_text(
+            '[package]\nname = "thesis"\nversion = "1.0.0"\n', encoding="utf-8"
+        )
+        steps = release.plan_assets(str(tmp_path))
+        assert any("out/*.pdf" in step["globs"] for step in steps)
+        assert any(step["command"].startswith("typst compile") for step in steps)
+
+    def test_a_paper_takes_part_in_version_tagging(self, tmp_path):
+        """`typst.toml` must agree with the release the same way `pyproject.toml` does."""
+        (tmp_path / "typst.toml").write_text(
+            '[package]\nname = "thesis"\nversion = "1.0.0"\n', encoding="utf-8"
+        )
+        assert release.check_metadata(str(tmp_path), "1.0.0") == []
+        problems = release.check_metadata(str(tmp_path), "2.0.0")
+        assert len(problems) == 1 and "typst.toml" in problems[0]
