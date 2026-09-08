@@ -20,6 +20,7 @@ EXPECTED_WORKFLOWS = [
     "project-automation.yml",
     "report-failure.yml",
     "update-submodules.yml",
+    "install.yml",
     "verify-pr-issue.yml",
 ]
 
@@ -471,11 +472,18 @@ def test_the_agent_image_is_built_from_the_pipeline():
     assert "$CONTEXT/docker/Dockerfile.agent" in content
 
 
+#: Workflows that run *in* this repository rather than being called from another.
+#:
+#: `install.yml` reaches into a consumer to write its callers, so a consumer calling it would be
+#: asking to be installed into itself. It is the one workflow that is deliberately not shared.
+NOT_CALLABLE = {"install.yml"}
+
+
 def test_every_shared_workflow_is_callable():
     """A workflow a consumer cannot call is a workflow every consumer copies."""
     yaml = pytest.importorskip("yaml")
     for name in sorted(os.listdir(WORKFLOW_DIR)):
-        if not name.endswith(".yml"):
+        if not name.endswith(".yml") or name in NOT_CALLABLE:
             continue
         with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
             document = yaml.safe_load(handle)
