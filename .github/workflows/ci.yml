@@ -177,11 +177,16 @@ jobs:
 
       - name: Typeset with Typst
         if: steps.detect.outputs.typst == 'true'
-        run: ${{ steps.detect.outputs.typst_command }}
+        # Neither engine creates its output directory, and the artifact globs expect out/.
+        run: |
+          mkdir -p out
+          ${{ steps.detect.outputs.typst_command }}
 
       - name: Typeset with LaTeX
         if: steps.detect.outputs.latex == 'true'
-        run: ${{ steps.detect.outputs.latex_command }}
+        run: |
+          mkdir -p out
+          ${{ steps.detect.outputs.latex_command }}
 
       - name: Upload the typeset document
         if: steps.detect.outputs.present == 'true'

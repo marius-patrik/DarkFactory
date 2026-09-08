@@ -148,6 +148,7 @@ jobs:
               if step.get("command"):
                   print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
           PY
+          mkdir -p out
           if [ -s "$RUNNER_TEMP/steps.sh" ]; then
             echo "Build steps:"; cat "$RUNNER_TEMP/steps.sh"
             bash -euxo pipefail "$RUNNER_TEMP/steps.sh"
