@@ -100,6 +100,37 @@ jobs:
         if: steps.generate.outputs.written != 'true'
         run: echo "Every file was already present; this repository is installed."
 
+      - name: Open the configuration issue
+        if: steps.generate.outputs.written == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          TARGET_REPOSITORY: ${{ inputs.repository }}
+          PIPELINE_REPO: ${{ github.repository }}
+          TARGET_ROOT: ${{ github.workspace }}/target
+        run: |
+          # A reinstall must not file a second one, so the marker in the body is the identity.
+          EXISTING=$(gh issue list --repo "${{ inputs.repository }}" --state all --limit 100             --search "darkfactory: configuration in:body" --json number --jq '.[0].number // ""')
+          if [ -n "$EXISTING" ]; then
+            echo "Configuration issue already open at #$EXISTING."
+            exit 0
+          fi
+          python3 - > "$RUNNER_TEMP/config-issue.md" <<'PY'
+          import os
+          import install
+
+          print(
+              install.configuration_issue(
+                  os.environ["TARGET_REPOSITORY"],
+                  os.environ["PIPELINE_REPO"],
+                  needs_submodules=os.path.isfile(
+                      os.path.join(os.environ["TARGET_ROOT"], ".gitmodules")
+                  ),
+              )
+          )
+          PY
+          gh issue create --repo "${{ inputs.repository }}"             --title "Configure the DarkFactory pipeline"             --body-file "$RUNNER_TEMP/config-issue.md"
+
       - name: Reconcile labels, board and settings
         if: inputs.apply-settings
         working-directory: target

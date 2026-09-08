@@ -77,3 +77,30 @@ def test_writing_never_overwrites_what_is_already_there(tmp_path):
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
     assert (target / "ci.yml").read_text(encoding="utf-8") == "name: mine\n"
     assert (tmp_path / ".github" / "darkfactory.json").is_file(), "the rest is still written"
+
+
+class TestConfigurationIssue:
+    """Installation ends by asking a person for what it could not decide."""
+
+    def test_the_marker_makes_a_reinstall_find_it_rather_than_duplicate(self):
+        """Identity lives in the body so a retitled issue is still recognised."""
+        body = install.configuration_issue("o/r", "o/p")
+        assert install.CONFIG_MARKER in body
+
+    def test_it_asks_for_exactly_what_cannot_be_derived(self):
+        """Areas, credentials, publishing and lock-down: the four human decisions."""
+        body = install.configuration_issue("o/r", "o/p")
+        for topic in ("Areas", "GH_PROJECT_TOKEN", "Pages", "Branch protection"):
+            assert topic in body, f"the issue must cover {topic}"
+
+    def test_submodules_are_mentioned_only_when_there_are_some(self):
+        """A repository without submodules should not be told to check its .gitmodules."""
+        assert "update-submodules" not in install.configuration_issue("o/r", "o/p")
+        assert "update-submodules" in install.configuration_issue(
+            "o/r", "o/p", needs_submodules=True
+        )
+
+    def test_it_explains_why_protection_is_left_off(self):
+        """Turning it on too early blocks every merge on a context nothing reports."""
+        body = install.configuration_issue("o/r", "o/p")
+        assert "green" in body and "blocks every merge" in body
