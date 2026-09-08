@@ -264,7 +264,10 @@ def test_reconciliation_uses_labels_not_a_blanket_todo(monkeypatch: pytest.Monke
 
     client = Recorder()
     reconcile_unassigned_statuses(client)
-    assert client.writes == [("i1", "Backlog"), ("i2", "ToDo")]
+    # i3 already holds a status and is open, so it is left alone. i4 is closed with nothing to
+    # say it finished, so it is settled as Dropped rather than skipped: a closed item's status is
+    # a fact the board must agree with, not a judgement to preserve.
+    assert client.writes == [("i1", "Backlog"), ("i2", "ToDo"), ("i4", "Dropped")]
 
 
 def test_status_field_ids_are_not_hardcoded():
@@ -348,3 +351,28 @@ class TestBoardResolution:
         """The whole point: a broken board must not report success."""
         project_automation._fail("adding https://example/1 to project 16: boom")
         assert project_automation.FAILURES
+
+
+class TestSettledStatus:
+    """A closed item's status is not a judgement; it is a fact the board must agree with."""
+
+    def test_an_open_item_is_never_overridden(self):
+        """An open item's status is exactly the judgement the board exists to record."""
+        assert project_automation.settled_status(False, False, ["In Progress"]) is None
+
+    def test_a_merged_pull_request_is_done(self):
+        """Merging is the definition of finished."""
+        assert project_automation.settled_status(True, True, []) == "Done"
+
+    def test_closed_without_merging_is_dropped(self):
+        """Closed without implementation is dropped, not done."""
+        assert project_automation.settled_status(True, False, []) == "Dropped"
+
+    @pytest.mark.parametrize("label", ["Done", "Superseded", "Dropped"])
+    def test_a_terminal_label_is_believed(self, label):
+        """An item closed as superseded must not be flattened into dropped."""
+        assert project_automation.settled_status(True, False, [label]) == label
+
+    def test_a_stale_in_progress_label_does_not_survive_closing(self):
+        """The exact drift found on the board: closed items still showing In Progress."""
+        assert project_automation.settled_status(True, False, ["In Progress"]) == "Dropped"
