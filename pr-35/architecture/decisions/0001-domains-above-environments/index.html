@@ -4,12 +4,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Overview · DarkFactory</title>
+    <title>ADR-0001 — Domains sit above environments · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-    <link rel="stylesheet" href="../../assets/theme.css"><script>
+    <link rel="stylesheet" href="../../../assets/theme.css"><script>
       (function () {
         try {
           var stored = localStorage.getItem("docs-theme");
@@ -30,7 +30,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
 
-        <a class="header__brand" href="../..">
+        <a class="header__brand" href="../../..">
           <span class="header__mark" aria-hidden="true"></span>
           <span class="header__name">DarkFactory</span>
         </a>
@@ -80,7 +80,7 @@
 <ul class="nav nav--depth-0">
     <li class="nav__item">
       <a class="nav__link"
-         href="../..">Overview</a>
+         href="../../..">Overview</a>
     </li>
     <li class="nav__section nav__section--active">
       <span class="nav__label">Architecture</span>
@@ -88,23 +88,23 @@
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../">Overview</a>
+         href="../../">Overview</a>
     </li>
     <li class="nav__section nav__section--active">
       <span class="nav__label">Decisions</span>
       
 <ul class="nav nav--depth-2">
     <li class="nav__item">
+      <a class="nav__link"
+         href="../">Overview</a>
+    </li>
+    <li class="nav__item">
       <a class="nav__link nav__link--active"
-         href="./">Overview</a>
+         href="./">ADR-0001 — Domains sit above environments</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="process/">Process</a>
+         href="../process/">Process</a>
     </li>
 </ul>
 
@@ -114,11 +114,11 @@
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="../../roadmap/">Roadmap</a>
+         href="../../../roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="../../agents/">Contributing & Agent Rules</a>
+         href="../../../agents/">Contributing & Agent Rules</a>
     </li>
     <li class="nav__section">
       <span class="nav__label">Notes</span>
@@ -126,11 +126,11 @@
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../../notes/bootstrap/">Bootstrap runbook</a>
+         href="../../../notes/bootstrap/">Bootstrap runbook</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="../../notes/vision_capture/">Capture provenance</a>
+         href="../../../notes/vision_capture/">Capture provenance</a>
     </li>
 </ul>
 
@@ -141,39 +141,54 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="architecture-decisions">Architecture decisions<a class="headerlink" href="#architecture-decisions" title="Permanent link">&para;</a></h1>
-<p>Every decision that binds the implementation, one record per page. This index is generated
-from the files in <code>notes/adr/</code> at build time - it is never hand-maintained
-(<code>AGENTS.md</code> rule 2).</p>
-<p>See <a href="process/">the process</a> for when an ADR is required and how to write one.</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Decision</th>
-<th>Status</th>
-<th>Resolves</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="0001-domains-above-environments/">0001</a></td>
-<td><a href="0001-domains-above-environments/">Domains sit above environments</a></td>
-<td>Accepted</td>
-<td>#18</td>
-</tr>
-</tbody>
-</table>
-<p>1 records — 1 accepted, 0 proposed. Records are append-only: a decision that turns out wrong is superseded by a new one, never edited away.</p>
+          <h1 id="adr-0001-domains-sit-above-environments">ADR-0001 — Domains sit above environments<a class="headerlink" href="#adr-0001-domains-sit-above-environments" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted · 2026-09-08</p>
+<p><strong>Resolves</strong>: #18</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p><code>environment.py</code> answers one question for the whole pipeline: what is this repository made of.
+It answered it with a single level, the <em>ecosystem</em> — <code>python</code>, <code>node</code>, <code>rust</code>, <code>go</code>, <code>deno</code> —
+where each ecosystem is a row across the command and artifact tables plus a guarded job in CI.</p>
+<p>That level was enough while every repository held code. It stopped being enough when written work
+came under the pipeline: a thesis typeset with Typst, whose practical part is a working codebase.
+Installed as it was, the pipeline would run a Python job against a repository containing no Python
+and package no artifact for a repository whose entire output is one PDF.</p>
+<p>Adding <code>typst</code> as one more ecosystem row would have made that repository build. It would not have
+expressed the thing that actually differs. Python and Rust are not two kinds of work; they are two
+toolchains for the same kind. Typst and LaTeX are likewise two toolchains — for a different kind.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Introduce a level above the ecosystem: the <strong>domain</strong>.</p>
+<ul>
+<li>An <strong>environment</strong> (the existing ecosystem) says which toolchain a package needs.</li>
+<li>A <strong>domain</strong> says what kind of governance it answers to: code is tested and packaged, a paper is
+  typeset and published, math is proved.</li>
+</ul>
+<p><code>DOMAINS</code> maps each ecosystem to its domain, and <code>DEFAULT_DOMAIN</code> covers an ecosystem a repository
+invented for itself, so declaring one never crashes for want of a mapping.</p>
+<p><code>Environment</code> gains <code>domains</code>, <code>packages_in</code>, <code>has_domain</code> and <code>is_multi_domain</code>, mirroring the
+existing <code>ecosystems</code>, <code>packages_for</code> and <code>has</code> exactly — the new level is navigated the same way
+as the old one, so there is nothing extra to learn.</p>
+<p>Environments keep their own rows. <code>typst</code> and <code>latex</code> are separate entries in the command tables,
+not one <code>paper</code> entry with an engine argument, because they are genuinely different toolchains.
+The alternative considered was carrying the engine in the existing <code>package_manager</code> slot; it was
+rejected because a typesetting engine is not a package manager and no lockfile identifies one, so
+the slot would have meant two different things depending on the row.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>Repositories become <strong>multi-domain</strong> as well as polyglot. Polyglot means several environments
+inside one domain and already worked; multi-domain means several kinds of work at once, and is what
+lets a thesis and the software it documents live in one repository with both governed properly.</p>
+<p>CI gains one guarded job per new domain rather than per environment, so a repository using both
+Typst and LaTeX does not accumulate a required check per engine.</p>
+<p>Existing repositories are unaffected: every ecosystem they use maps to <code>code</code>, and every table row
+they rely on is untouched.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../">
             <span class="pager__label">Previous</span>
             <span class="pager__title">Overview</span>
           </a>
-          <a class="pager__link pager__link--next" href="0001-domains-above-environments/">
+          <a class="pager__link pager__link--next" href="../process/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">ADR-0001 — Domains sit above environments</span>
+            <span class="pager__title">Process</span>
           </a>
         </nav>
 
@@ -182,12 +197,21 @@ from the files in <code>notes/adr/</code> at build time - it is never hand-maint
         </footer>
       </main>
 
-      <aside class="toc toc--empty">
+      <aside class="toc">
+        <div class="toc__title">On this page</div>
+        <ul class="toc__list">
+          <li><a href="#context">Context</a>
+          </li>
+          <li><a href="#decision">Decision</a>
+          </li>
+          <li><a href="#consequences">Consequences</a>
+          </li>
+        </ul>
       </aside>
     </div>
 
-    <script id="search-base" type="application/json">"../.."</script>
-    <script src="../../assets/theme.js" defer></script>
-    <script src="../../search/main.js" defer></script>
+    <script id="search-base" type="application/json">"../../.."</script>
+    <script src="../../../assets/theme.js" defer></script>
+    <script src="../../../search/main.js" defer></script>
   </body>
 </html>
