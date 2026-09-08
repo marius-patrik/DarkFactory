@@ -17,15 +17,11 @@
 
 ## Area Affected
 <!-- Check all that apply using [x]. Must match the commit scope. -->
-- [ ] `area:core`: Microkernel, IPC/substrate bus, daemon, configuration
-- [ ] `area:ui`: DOM renderer, layout, theming, brand presets, settings surfaces
-- [ ] `area:term`: Terminal cell-grid renderer, ANSI pipeline, PTY integration
-- [ ] `area:agents`: Harness orchestration, providers, personas, approvals
-- [ ] `area:browser`: Embedded browser engine, CDP bridge, render modes
-- [ ] `area:data`: Schema, persistence, migrations, sync, local-first storage
-- [ ] `area:ext`: Extension host, plugin API, compatibility shims
-- [ ] `area:ci`: GitHub Actions, containers, runner scripts, repository automation
-- [ ] `area:docs`: Documentation, MkDocs configuration, architecture notes
+- [ ] `area:agents`: Harness orchestration, provider adapters, personas, approvals
+- [ ] `area:governance`: Agent rules, branch protection, required checks, project board taxonomy
+- [ ] `area:release`: Versioning modes, tagging, asset packaging, release notes
+- [ ] `area:docs`: Documentation site, theme, architecture notes
+- [ ] `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation
 
 ## Verification Checklist
 - [ ] All commits follow Conventional Commits: `<type>(<scope>): <description>`
