@@ -764,6 +764,34 @@ def _pnpm_members(root: str) -> List[str]:
     return globs
 
 
+def submodule_paths(root: str) -> Set[str]:
+    """Reads the submodule paths declared in `.gitmodules`.
+
+    A submodule is a separate repository with its own pipeline, its own required checks and its own
+    releases. Detecting its packages here would make a super-repository claim work that is already
+    built elsewhere - typesetting the same thesis twice, and publishing two copies that can
+    disagree.
+
+    Args:
+        root: Absolute repository root.
+
+    Returns:
+        Repository-relative submodule paths, empty when there are none.
+    """
+    path = os.path.join(root, ".gitmodules")
+    if not os.path.isfile(path):
+        return set()
+    try:
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+    except OSError:
+        return set()
+    return {
+        match.group("path").strip()
+        for match in re.finditer(r"^\s*path\s*=\s*(?P<path>.+?)\s*$", content, re.M)
+    }
+
+
 def detect(root: str) -> List[Package]:
     """Walks a repository and reports every package manifest it holds.
 
@@ -774,10 +802,15 @@ def detect(root: str) -> List[Package]:
         Packages, root-level ones first, then by path.
     """
     root = os.path.abspath(root)
+    submodules = submodule_paths(root)
     found: List[Package] = []
     for current, directories, filenames in os.walk(root):
         directories[:] = [
-            entry for entry in directories if entry not in PRUNED and not entry.startswith(".")
+            entry
+            for entry in directories
+            if entry not in PRUNED
+            and not entry.startswith(".")
+            and os.path.relpath(os.path.join(current, entry), root) not in submodules
         ]
         relative = os.path.relpath(current, root)
         depth = 0 if relative == "." else relative.count(os.sep) + 1
