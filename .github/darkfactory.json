@@ -192,7 +192,10 @@
     "installed_on": [
       "marius-patrik/DarkFactory",
       "marius-patrik/omnis",
-      "marius-patrik/ChessWithQuests"
+      "marius-patrik/ChessWithQuests",
+      "marius-patrik/OdbornaPrace",
+      "marius-patrik/template-OdbornaPrace",
+      "marius-patrik/mono-OdbornaPrace"
     ]
   }
 }
