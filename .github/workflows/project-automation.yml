@@ -67,6 +67,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           PROJECT_OWNER: ${{ github.repository_owner }}
-          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || 1 }}
+          # Only a fallback now: which boards to write to comes from the manifest, so an unset
+          # variable no longer silently points every repository at project 1.
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}

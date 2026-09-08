@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 
+import project_automation
 from project_automation import (
     STATUS_NAMES,
     GitHubProjectClient,
@@ -26,6 +27,11 @@ class FakeProjectClient:
         self.status_labels: List[Tuple[str, int, str]] = []
         self.added_labels: List[Tuple[str, int, str]] = []
         self.closed_issues: List[Tuple[str, int]] = []
+
+    def track(self, url: str, status: str) -> None:
+        """Adds an item and sets its status, as the real client does."""
+        item_id = self.add_item(url)
+        self.edit_status(item_id, status)
 
     def add_item(self, url: str) -> str:
         """Records an item addition and returns a synthetic id."""
@@ -289,3 +295,56 @@ def test_client_caches_discovery_lookups(monkeypatch: pytest.MonkeyPatch):
     assert client.status_option_id("Done") == "o2"
     assert client.status_field_id == "F1"
     assert sum(1 for args in calls if args[1] == "field-list") == 1
+
+
+class TestBoardResolution:
+    """Boards come from the declaration, and a failed write is never reported as success."""
+
+    def setup_method(self):
+        """Clears failures recorded by an earlier test."""
+        project_automation.FAILURES.clear()
+
+    def test_an_item_reaches_every_declared_board(self):
+        """A repository's own board and the global one are different projects."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        group = project_automation.BoardGroup([first, second])
+        group.track("https://github.com/o/r/issues/1", "In Progress")
+        assert [url for url, _ in first.added_items] == ["https://github.com/o/r/issues/1"]
+        assert [url for url, _ in second.added_items] == ["https://github.com/o/r/issues/1"]
+
+    def test_labels_and_closures_happen_once_not_once_per_board(self):
+        """A label belongs to the issue, not to a board; applying it twice is wrong."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        group = project_automation.BoardGroup([first, second])
+        group.set_status_label(REPO, 7, "Done")
+        group.close_issue(REPO, 7)
+        assert first.status_labels == [(REPO, 7, "Done")] and second.status_labels == []
+        assert first.closed_issues == [(REPO, 7)] and second.closed_issues == []
+
+    def test_a_declared_board_that_does_not_exist_is_a_failure(self, monkeypatch):
+        """Silence here is what let every write fail unnoticed for days."""
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R", (), {"stdout": '{"projects": [{"title": "Global", "number": 17}]}'}
+            )(),
+        )
+
+        class Loaded:
+            project_title = "DarkFactory"
+            global_board_title = "Global"
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+        numbers = project_automation.resolve_boards("marius-patrik")
+        assert numbers == [17]
+        assert any("DarkFactory" in failure for failure in project_automation.FAILURES)
+
+    def test_a_recorded_failure_makes_the_run_fail(self):
+        """The whole point: a broken board must not report success."""
+        project_automation._fail("adding https://example/1 to project 16: boom")
+        assert project_automation.FAILURES
