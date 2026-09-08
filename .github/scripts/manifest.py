@@ -163,6 +163,24 @@ class Manifest:
         return f"https://{self.owner}.github.io/{self.repo}/"
 
     @property
+    def license(self) -> Dict[str, str]:
+        """Returns the declared licence.
+
+        A licence is configuration rather than content: chosen once, identical for everyone who
+        chooses it, and wrong in a legal sense rather than a stylistic one if it drifts. Declaring
+        it here lets the file be written from canonical text instead of pasted in and forgotten.
+
+        Returns:
+            Mapping with `spdx`, `holder` and `year`; `spdx` is `"NONE"` when none is declared.
+        """
+        block = self.data.get("license", {}) or {}
+        return {
+            "spdx": str(block.get("spdx", "NONE")),
+            "holder": str(block.get("holder", "")),
+            "year": str(block.get("year", "")),
+        }
+
+    @property
     def topics(self) -> List[str]:
         """Returns the repository topics.
 

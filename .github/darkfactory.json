@@ -22,6 +22,12 @@
       "workspace"
     ]
   },
+  "license": {
+    "$comment": "The licence is declared here and the file is written from GitHub's canonical text, so it cannot drift from the wording it claims to be. `spdx` must be one of the identifiers licensing.OFFERED lists; NONE means deliberately not licensed for reuse, which is different from having forgotten to choose.",
+    "spdx": "GPL-3.0",
+    "holder": "Patrik Marius",
+    "year": "2026"
+  },
   "upstream": {
     "$comment": "DarkFactory is its own upstream. Consumer repositories set repo to marius-patrik/DarkFactory and pin ref to a commit SHA.",
     "repo": null,

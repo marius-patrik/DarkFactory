@@ -72,6 +72,13 @@ jobs:
           PIPELINE_REF: ${{ inputs.ref || github.sha }}
         run: python3 .pipeline/.github/scripts/install.py
 
+      - name: Apply the declared licence
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          TARGET_ROOT: ${{ github.workspace }}/target
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: python3 .pipeline/.github/scripts/licensing.py
+
       - name: Open a pull request on the target
         if: steps.generate.outputs.written == 'true'
         working-directory: target
