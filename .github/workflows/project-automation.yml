@@ -23,6 +23,7 @@ on:
         type: string
         default: "marius-patrik/DarkFactory"
     secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
 
 permissions:
@@ -56,6 +57,18 @@ jobs:
             echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
           fi
 
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Only
+        # Projects v2 needs a person's token, because GitHub scopes project permissions to
+        # organisations and these boards are user-owned.
+        id: app-token
+        if: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -65,7 +78,8 @@ jobs:
         run: |
           python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
         env:
-          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
           PROJECT_OWNER: ${{ github.repository_owner }}
           # Only a fallback now: which boards to write to comes from the manifest, so an unset
           # variable no longer silently points every repository at project 1.
