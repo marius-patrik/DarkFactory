@@ -1,6 +1,8 @@
-# 1. Domains sit above environments
+# ADR-0001 — Domains sit above environments
 
-**Status:** Accepted — 2026-09-08
+**Status**: Accepted · 2026-09-08
+
+**Resolves**: #18
 
 ## Context
 
