@@ -178,9 +178,9 @@ def test_issue_templates_point_at_this_repository():
             continue
         content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", name))
         for match in re.finditer(r"https://github\.com/(?P<slug>[^/\s]+/[^/\s]+)", content):
-            assert match.group("slug") == slug, (
-                f"{name} links to {match.group('slug')}, but this is {slug}"
-            )
+            assert (
+                match.group("slug") == slug
+            ), f"{name} links to {match.group('slug')}, but this is {slug}"
 
 
 def test_the_configuration_template_carries_the_install_marker():
