@@ -19,6 +19,7 @@ EXPECTED_WORKFLOWS = [
     "pr-approval-automerge.yml",
     "project-automation.yml",
     "report-failure.yml",
+    "update-submodules.yml",
     "verify-pr-issue.yml",
 ]
 
