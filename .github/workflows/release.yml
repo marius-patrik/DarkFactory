@@ -129,13 +129,14 @@ jobs:
 
       - name: Set up Typst
         if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
-        uses: typst-community/setup-typst@v4
+        uses: typst-community/setup-typst@v5
 
       - name: Set up TeX Live
         if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'
-        uses: teatimeguest/setup-texlive-action@v3
-        with:
-          packages: scheme-medium latexmk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
 
       - name: Build release assets
         if: steps.resolve.outputs.warranted == 'true'
