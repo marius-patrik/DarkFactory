@@ -469,6 +469,8 @@ class Environment:
         plan: Dict[str, Dict[str, Any]] = {}
         for ecosystem in sorted(self.ecosystems):
             settings = declared.get(ecosystem, {}) or {}
+            if not isinstance(settings, dict):
+                settings = {}
             if settings.get("enabled") is False:
                 continue
             manager = self.package_manager(ecosystem)
@@ -484,7 +486,11 @@ class Environment:
                 "manager": manager,
             }
         for ecosystem, settings in declared.items():
-            if ecosystem not in plan and settings and settings.get("enabled") is not False:
+            # `$comment` keys carry prose rather than settings, and every block in the manifest may
+            # hold one; treating a string as an ecosystem crashes the plan.
+            if ecosystem.startswith("$") or not isinstance(settings, dict):
+                continue
+            if ecosystem not in plan and settings.get("enabled") is not False:
                 if settings.get("command"):
                     plan[ecosystem] = {
                         "command": settings["command"],

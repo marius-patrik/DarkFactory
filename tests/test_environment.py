@@ -429,3 +429,29 @@ class TestMathDomain:
         env = environment.configure(str(tmp_path))
         assert env.domains == {"paper", "math"}
         assert env.is_multi_domain is True
+
+
+class TestDeclarationComments:
+    """Every block in the manifest may carry prose beside its settings."""
+
+    def test_a_comment_key_is_not_mistaken_for_an_ecosystem(self, tmp_path):
+        """`$comment` holds a string, and treating it as settings crashed the whole plan."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _manifest(
+            tmp_path,
+            {
+                "release": {
+                    "$comment": "why this repository releases nothing",
+                    "python": {"enabled": False},
+                }
+            },
+        )
+        env = environment.configure(str(tmp_path))
+        assert env.build_plan() == {}
+
+    def test_disabling_a_build_yields_a_release_with_no_assets(self, tmp_path):
+        """A pipeline or a template is tagged without anything being packaged."""
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        _manifest(tmp_path, {"release": {"python": {"enabled": False}}})
+        assert environment.configure(str(tmp_path)).build_plan() == {}
+        assert "python" in environment.configure(str(tmp_path)).test_plan()
