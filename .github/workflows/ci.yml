@@ -182,6 +182,38 @@ jobs:
         if: steps.detect.outputs.present != 'true'
         run: echo "No typst.toml or .latexmkrc; nothing to typeset."
 
+  math:
+    name: math
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect the math domain
+        id: detect
+        run: |
+          present=false
+          for marker in lakefile.lean lakefile.toml; do
+            [ -f "$marker" ] && present=true
+          done
+          echo "present=$present" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Lean
+        if: steps.detect.outputs.present == 'true'
+        uses: leanprover/lean-action@v1
+        with:
+          build: false
+          test: false
+
+      - name: Check the proofs
+        # Building is the proof check; there is no separate test step.
+        if: steps.detect.outputs.present == 'true'
+        run: lake build
+
+      - name: No proofs in this repository
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No lakefile; nothing to prove."
+
   web:
     name: web
     runs-on: ubuntu-latest

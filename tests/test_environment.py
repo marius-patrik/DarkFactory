@@ -397,3 +397,35 @@ class TestPaperDomain:
         plan = env.test_plan()
         assert plan["typst"]["command"].startswith("typst compile")
         assert plan["python"]["command"] == "pytest"
+
+
+class TestMathDomain:
+    """Building a Lean project is checking its proofs; the compiler is the proof checker."""
+
+    def test_a_lakefile_lands_in_the_math_domain(self, tmp_path):
+        """The Lean form of the build file is a program, so its presence is the whole signal."""
+        _write(tmp_path, "lakefile.lean", "import Lake\nopen Lake DSL\npackage proofs\n")
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"lean"}
+        assert env.domains == {"math"}
+
+    def test_the_toml_form_still_names_its_package(self, tmp_path):
+        """`lakefile.toml` is data rather than a program, so the name is worth reading."""
+        _write(tmp_path, "lakefile.toml", 'name = "proofs"\nversion = "0.2.0"\n')
+        package = environment.configure(str(tmp_path)).packages[0]
+        assert (package.name, package.version) == ("proofs", "0.2.0")
+
+    def test_building_is_the_proof_check_and_releases_nothing(self, tmp_path):
+        """A proof's value is that it checked, not that it produced a file."""
+        _write(tmp_path, "lakefile.toml", 'name = "proofs"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.test_plan()["lean"]["command"] == "lake build"
+        assert env.build_plan()["lean"]["artifacts"] == []
+
+    def test_a_paper_with_its_proofs_spans_both_domains(self, tmp_path):
+        """Formalised mathematics beside the paper that presents it."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "proofs/lakefile.toml", 'name = "proofs"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"paper", "math"}
+        assert env.is_multi_domain is True

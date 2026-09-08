@@ -60,6 +60,8 @@ MANIFESTS: Dict[str, str] = {
     "go.mod": "go",
     "deno.json": "deno",
     "deno.jsonc": "deno",
+    "lakefile.lean": "lean",
+    "lakefile.toml": "lean",
     "typst.toml": "typst",
     # LaTeX has no manifest convention as settled as the others. `.latexmkrc` is the closest thing
     # to one and is already read by latexmk, so a repository that builds with latexmk is detected
@@ -139,6 +141,9 @@ TEST_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     # a program that does not build, and an unresolved reference is its failing assertion.
     "typst": {None: "typst compile main.typ out/paper.pdf"},
     "latex": {None: "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex"},
+    # Building a Lean project *is* checking its proofs: the compiler is the proof checker, so there
+    # is no separate test step to run afterwards.
+    "lean": {None: "lake build"},
 }
 
 #: Default runtime matrix per ecosystem. Empty means "one job, whatever the runner provides".
@@ -150,6 +155,7 @@ TEST_MATRIX: Dict[str, List[str]] = {
     "go": [],
     "typst": [],
     "latex": [],
+    "lean": [],
 }
 
 #: Default formatter per ecosystem, keyed by package manager where the manager decides it.
@@ -237,6 +243,8 @@ ARTIFACT_GLOBS: Dict[str, List[str]] = {
     # the bare glob catches a repository that typesets in place.
     "typst": ["out/*.pdf", "*.pdf"],
     "latex": ["out/*.pdf", "*.pdf"],
+    # A proof releases nothing: its value is that it checked, not that it produced a file.
+    "lean": [],
 }
 
 #: Marker files that name a formatter outright, overriding the package-manager default.
@@ -674,6 +682,14 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
         package = data.get("package", {})
         name = package.get("name")
         version = package.get("version")
+
+    elif filename in ("lakefile.lean", "lakefile.toml"):
+        # A Lean build file names its targets in Lean or TOML respectively. Only the TOML form is
+        # worth parsing; the Lean form is a program, and its presence is the signal.
+        if filename == "lakefile.toml":
+            data = _load_toml(absolute)
+            name = data.get("name")
+            version = data.get("version")
 
     elif filename == ".latexmkrc":
         # A latexmk configuration is Perl, not a manifest: it names no package and carries no
