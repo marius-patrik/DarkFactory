@@ -352,3 +352,48 @@ class TestDomains:
         assert payload["domains"] == ["code"]
         assert payload["is_multi_domain"] is False
         assert payload["packages"][0]["domain"] == "code"
+
+
+class TestPaperDomain:
+    """A paper is typeset rather than tested, and the document is the artifact."""
+
+    def test_typst_is_detected_and_lands_in_the_paper_domain(self, tmp_path):
+        """`typst.toml` is to a paper what `Cargo.toml` is to a crate."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"typst"}
+        assert env.domains == {"paper"}
+        assert env.packages[0].name == "thesis"
+        assert env.packages[0].version == "1.0.0"
+
+    def test_latexmkrc_is_detected_even_though_it_names_nothing(self, tmp_path):
+        """A latexmk configuration carries no name or version; its presence is the whole signal."""
+        _write(tmp_path, ".latexmkrc", "$pdf_mode = 1;\n")
+        env = environment.configure(str(tmp_path))
+        assert env.ecosystems == {"latex"}
+        assert env.domains == {"paper"}
+        assert env.packages[0].name is None
+
+    def test_typesetting_is_the_test_and_the_build(self, tmp_path):
+        """There is no separate release build of a document."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.test_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
+        assert env.build_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
+        assert env.build_plan()["typst"]["artifacts"] == ["out/*.pdf", "*.pdf"]
+
+    def test_a_paper_needs_no_api_documentation(self, tmp_path):
+        """A document has no inline source to extract a reference from."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        assert environment.configure(str(tmp_path)).docs_plan()["typst"]["command"] is None
+
+    def test_a_thesis_beside_its_software_plans_both(self, tmp_path):
+        """The motivating case: detection alone, with no declaration, finds both domains."""
+        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
+        _write(tmp_path, "engine/pyproject.toml", '[project]\nname = "engine"\nversion = "0.1.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert env.domains == {"paper", "code"}
+        assert env.is_multi_domain is True
+        plan = env.test_plan()
+        assert plan["typst"]["command"].startswith("typst compile")
+        assert plan["python"]["command"] == "pytest"

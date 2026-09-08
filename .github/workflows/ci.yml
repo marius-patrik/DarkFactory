@@ -112,6 +112,76 @@ jobs:
         if: steps.detect.outputs.present != 'true'
         run: echo "No Cargo.toml at the repository root; nothing to build. See ROADMAP.md epic E1."
 
+  paper:
+    name: paper
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .pipeline
+
+      - name: Detect the paper domain
+        id: detect
+        # Which engines are present decides which toolchains to install: a Typst-only paper must
+        # not pull down a TeX distribution to prove it typesets.
+        run: |
+          SCRIPTS=".github/scripts"
+          [ -d .pipeline/.github/scripts ] && SCRIPTS=".pipeline/.github/scripts"
+          PYTHONPATH="$SCRIPTS" python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import environment
+
+          env = environment.configure(".")
+          plan = env.test_plan()
+          print(f"present={str(env.has_domain('paper')).lower()}")
+          print(f"typst={str('typst' in plan).lower()}")
+          print(f"latex={str('latex' in plan).lower()}")
+          for engine in ("typst", "latex"):
+              if engine in plan:
+                  print(f"{engine}_command={plan[engine]['command']}")
+          PY
+
+      - name: Set up Typst
+        if: steps.detect.outputs.typst == 'true'
+        uses: typst-community/setup-typst@v5
+
+      - name: Set up TeX Live
+        # Installed from the distribution rather than through an action: the popular LaTeX actions
+        # compile a document themselves, which would bypass the command the repository declared.
+        if: steps.detect.outputs.latex == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+
+      - name: Typeset with Typst
+        if: steps.detect.outputs.typst == 'true'
+        run: ${{ steps.detect.outputs.typst_command }}
+
+      - name: Typeset with LaTeX
+        if: steps.detect.outputs.latex == 'true'
+        run: ${{ steps.detect.outputs.latex_command }}
+
+      - name: Upload the typeset document
+        if: steps.detect.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper
+          path: |
+            out/*.pdf
+            *.pdf
+          if-no-files-found: error
+
+      - name: No paper in this repository
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No typst.toml or .latexmkrc; nothing to typeset."
+
   web:
     name: web
     runs-on: ubuntu-latest
