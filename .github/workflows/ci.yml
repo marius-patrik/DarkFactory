@@ -149,13 +149,16 @@ jobs:
 
       - name: Set up Typst
         if: steps.detect.outputs.typst == 'true'
-        uses: typst-community/setup-typst@v4
+        uses: typst-community/setup-typst@v5
 
       - name: Set up TeX Live
+        # Installed from the distribution rather than through an action: the popular LaTeX actions
+        # compile a document themselves, which would bypass the command the repository declared.
         if: steps.detect.outputs.latex == 'true'
-        uses: teatimeguest/setup-texlive-action@v3
-        with:
-          packages: scheme-medium latexmk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
 
       - name: Typeset with Typst
         if: steps.detect.outputs.typst == 'true'
