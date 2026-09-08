@@ -153,7 +153,12 @@ jobs:
               if step.get("command"):
                   print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
           PY
-          mkdir -p out
+          # Only where a document is going to be written; an unconditional mkdir leaves a stray
+          # directory that setuptools then discovers as a rival top-level package.
+          if [ "${{ steps.paper.outputs.typst }}" = "true" ] \
+             || [ "${{ steps.paper.outputs.latex }}" = "true" ]; then
+            mkdir -p out
+          fi
           if [ -s "$RUNNER_TEMP/steps.sh" ]; then
             echo "Build steps:"; cat "$RUNNER_TEMP/steps.sh"
             bash -euxo pipefail "$RUNNER_TEMP/steps.sh"
