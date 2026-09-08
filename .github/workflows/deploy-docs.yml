@@ -123,6 +123,7 @@ jobs:
             # command - but it is still worth publishing. Its site is the document itself.
             if [ "${{ steps.paper.outputs.present }}" = "true" ]; then
               echo "No documentation engine; publishing the typeset document instead."
+              mkdir -p out
               for engine_command in "${{ steps.paper.outputs.typst_command }}" \
                                     "${{ steps.paper.outputs.latex_command }}"; do
                 [ -n "$engine_command" ] && eval "$engine_command"
