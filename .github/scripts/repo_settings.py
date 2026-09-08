@@ -74,6 +74,7 @@ LABELS: List[Sequence[str]] = [
     ("Plan", "006b75", "Implementation plan child issue"),
     ("epic", "b60205", "Container issue tracking a whole area of work"),
     ("decision", "5319e7", "Architecture decision requiring an ADR"),
+    ("pipeline-failure", "b91c1c", "Opened by the pipeline when one of its own workflows failed"),
     # Conventional Commit types.
     ("feat", "0e8a16", "New feature"),
     ("bug", "d73a4a", "Something isn't working"),
