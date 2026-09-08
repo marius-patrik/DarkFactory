@@ -56,12 +56,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install dependencies
+        # A repository with no Python has no requirements file, which is every paper. The pipeline
+        # scripts need only the standard library, so the plan is still readable.
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          else
+            echo "No requirements-dev.txt; nothing to install."
+          fi
 
       # The theme addresses every asset through the `url` filter, which emits page-relative paths,
       # so a preview served from a subdirectory needs no site-url override.
