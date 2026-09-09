@@ -123,6 +123,27 @@ def determine_status_from_labels(labels: List[str]) -> str:
 FAILURES: List[str] = []
 
 
+def _detail(exc: BaseException) -> str:
+    """Renders an exception together with the output that actually explains it.
+
+    `str()` of a `CalledProcessError` names the command and the exit status and nothing else, so
+    every `gh` failure in this module was logged without the one line saying what went wrong. That
+    is not a cosmetic loss: `gh project list` reports an exhausted rate limit as `unknown owner
+    type`, and neither string ever reached the log - the board simply "failed", for days.
+
+    Args:
+        exc: The exception to render.
+
+    Returns:
+        The exception, followed by the first line of its captured output when it has any.
+    """
+    captured = getattr(exc, "stderr", None) or getattr(exc, "stdout", None) or ""
+    if isinstance(captured, bytes):
+        captured = captured.decode("utf-8", "replace")
+    lines = [line for line in str(captured).strip().splitlines() if line.strip()]
+    return f"{exc} ({lines[0].strip()})" if lines else str(exc)
+
+
 def _fail(message: str) -> None:
     """Records a board failure and reports it.
 
@@ -159,7 +180,7 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         if loaded.global_board_title and loaded.global_board_title not in titles:
             titles.append(loaded.global_board_title)
     except Exception as exc:  # noqa: BLE001 - a missing manifest must not stop the run
-        print(f"Could not read the board declaration: {exc}", file=sys.stderr)
+        print(f"Could not read the board declaration: {_detail(exc)}", file=sys.stderr)
         titles = []
 
     if not titles:
@@ -181,7 +202,7 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         ).stdout
         by_title = {p["title"]: p["number"] for p in json.loads(output).get("projects", [])}
     except Exception as exc:  # noqa: BLE001 - reported below, not raised here
-        _fail(f"could not list projects for {owner}: {exc}")
+        _fail(f"could not list projects for {owner}: {_detail(exc)}")
         return []
 
     numbers: List[int] = []
@@ -271,7 +292,7 @@ class GitHubProjectClient:
                 )
                 self._project_id = json.loads(output).get("id")
             except Exception as exc:  # noqa: BLE001 - board access is best-effort
-                print(f"Could not resolve project id: {exc}", file=sys.stderr)
+                print(f"Could not resolve project id: {_detail(exc)}", file=sys.stderr)
         return self._project_id
 
     def _load_status_field(self) -> None:
@@ -301,7 +322,7 @@ class GitHubProjectClient:
                     self._status_options[option["name"]] = option["id"]
                 break
         except Exception as exc:  # noqa: BLE001 - board access is best-effort
-            print(f"Could not resolve Status field: {exc}", file=sys.stderr)
+            print(f"Could not resolve Status field: {_detail(exc)}", file=sys.stderr)
 
     @property
     def status_field_id(self) -> Optional[str]:
@@ -361,7 +382,7 @@ class GitHubProjectClient:
             )
             return json.loads(output).get("id")
         except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
-            _fail(f"adding {url} to project {self.project_number}: {exc}")
+            _fail(f"adding {url} to project {self.project_number}: {_detail(exc)}")
             return None
 
     def edit_status(self, item_id: str, status_name: str) -> bool:
@@ -403,7 +424,7 @@ class GitHubProjectClient:
             )
             return True
         except Exception as exc:  # noqa: BLE001 - board access is best-effort
-            print(f"Error updating item status: {exc}", file=sys.stderr)
+            print(f"Error updating item status: {_detail(exc)}", file=sys.stderr)
             return False
 
     def set_status_label(self, repo: str, issue_number: int, status_name: str) -> None:
@@ -424,7 +445,7 @@ class GitHubProjectClient:
         try:
             self.run_gh(args)
         except Exception as exc:  # noqa: BLE001 - label edits are best-effort
-            print(f"Error setting status label on #{issue_number}: {exc}", file=sys.stderr)
+            print(f"Error setting status label on #{issue_number}: {_detail(exc)}", file=sys.stderr)
 
     def add_issue_label(self, repo: str, issue_number: int, label: str) -> None:
         """Adds a single label to an issue or pull request.
@@ -440,7 +461,7 @@ class GitHubProjectClient:
         try:
             self.run_gh(["issue", "edit", str(issue_number), "--repo", repo, "--add-label", label])
         except Exception as exc:  # noqa: BLE001 - label edits are best-effort
-            print(f"Error adding label to issue #{issue_number}: {exc}", file=sys.stderr)
+            print(f"Error adding label to issue #{issue_number}: {_detail(exc)}", file=sys.stderr)
 
     def close_issue(self, repo: str, issue_number: int) -> None:
         """Closes an issue as completed, ignoring failures.
@@ -454,7 +475,7 @@ class GitHubProjectClient:
                 ["issue", "close", str(issue_number), "--repo", repo, "--reason", "completed"]
             )
         except Exception as exc:  # noqa: BLE001 - close is best-effort
-            print(f"Notice: issue #{issue_number} close attempt: {exc}", file=sys.stderr)
+            print(f"Notice: issue #{issue_number} close attempt: {_detail(exc)}", file=sys.stderr)
 
 
 def _labels_of(payload_entity: Dict[str, Any]) -> List[str]:
@@ -721,7 +742,7 @@ def reconcile_membership(client: GitHubProjectClient, repo: str) -> int:
                 ]
             )
         except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
-            _fail(f"could not list open {kind}s in {repo}: {exc}")
+            _fail(f"could not list open {kind}s in {repo}: {_detail(exc)}")
             continue
 
         for entry in json.loads(raw or "[]"):
@@ -791,7 +812,7 @@ def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
             was = current or "no status"
             print(f"Reconciled item {item_id} ({content.get('title')}): {was} -> {wanted}")
     except Exception as exc:  # noqa: BLE001 - reconciliation is best-effort
-        print(f"Status reconciliation notice: {exc}", file=sys.stderr)
+        print(f"Status reconciliation notice: {_detail(exc)}", file=sys.stderr)
 
 
 def main() -> None:
