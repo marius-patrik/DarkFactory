@@ -60,6 +60,10 @@ jobs:
     # job-level `if`, which is why this gate is a variable and the runner re-checks at dispatch.
     if: vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true'
     runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test
+      # is hoisted to the job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -91,7 +95,7 @@ jobs:
         # Projects v2 is the exception: GitHub scopes project permissions to organisations, so a
         # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
         id: app-token
-        if: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+        if: env.HAS_APP_KEY == 'true'
         uses: actions/create-github-app-token@v1
         continue-on-error: true
         with:

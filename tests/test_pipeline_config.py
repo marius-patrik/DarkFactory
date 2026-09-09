@@ -163,6 +163,28 @@ def test_issue_templates_present():
         assert os.path.isfile(os.path.join(template_dir, name)), f"{name} must exist"
 
 
+def test_no_step_condition_reads_the_secrets_context():
+    """The secrets context is not available in a step-level `if`.
+
+    A workflow that tries fails at startup with no jobs, no steps and no readable error - the run
+    is even listed by file path rather than by name, because the name could not be parsed. That is
+    expensive to diagnose from the outside, so it is caught here instead.
+    """
+    yaml = pytest.importorskip("yaml")
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        if not name.endswith(".yml"):
+            continue
+        with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
+            document = yaml.safe_load(handle)
+        for job_name, job in (document.get("jobs") or {}).items():
+            for step in job.get("steps", []) or []:
+                condition = str(step.get("if", ""))
+                assert "secrets." not in condition, (
+                    f"{name}:{job_name} reads the secrets context in a step condition; "
+                    f"hoist it to a job-level env instead"
+                )
+
+
 def test_issue_templates_point_at_this_repository():
     """A template linking elsewhere sends contributors to another project's rules.
 
