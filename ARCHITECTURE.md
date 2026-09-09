@@ -150,11 +150,14 @@ The GitHub Project v2 board tracks seven mutually exclusive states:
 ## 6. Resilience, Quota Exhaustion & Fallback Ladder
 
 When an agent harness encounters quota exhaustion (e.g. HTTP 429, `RESOURCE_EXHAUSTED`, rate limits):
+Every rung of the ladder is a **quota** move — somewhere with capacity the last attempt did not have. Answering an exhausted quota with a weaker model is not a rung: it finds no capacity, it only answers worse, so models are configured per node and never degraded here.
+
 1. **Detection**: `is_quota_exhausted` parses stderr and exit diagnostics.
-2. **Exponential Backoff**: Delays scale progressively via `calculate_backoff`.
-3. **Model Fallback**: Shifts down the model chain within the active harness.
-4. **Harness Fallback**: Transitions to the next harness in `AGENT_HARNESS_CHAIN` (e.g. Antigravity → Claude → Codex → Kimi).
-5. **State Checkpointing**: If all harnesses and models are exhausted, the pipeline serializes working state into `.agent_runner_checkpoint.json`, moves the board item to `Blocked`, and posts an alert comment.
+2. **Account Rotation**: The same harness and model on the next account. A harness may hold several, numbered (`X`, `X_2`, `X_3`); adding one is adding a secret. This is the innermost rung because it is the cheapest fresh quota available.
+3. **Pool Rotation**: The next model that bills against a *separate pool*. Only Antigravity has more than one — its Gemini and Claude models draw on different quotas — which is why it declares two and Claude declares one.
+4. **Harness Fallback**: The next harness in `AGENT_HARNESS_CHAIN` (e.g. Antigravity → Claude → Codex → Kimi).
+5. **Exponential Backoff**: Reserved for the *last* attempt, via `calculate_backoff`. An unused account is always a better answer than sleeping, so waiting happens only when there is nothing left to rotate to.
+6. **State Checkpointing**: If every account of every pool of every harness is exhausted, the pipeline serializes working state into `.agent_runner_checkpoint.json`, moves the board item to `Blocked`, and posts an alert comment.
 6. **Resume**: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.
 
 ---
@@ -172,4 +175,4 @@ The eight foundational architecture decisions gating the DarkFactory model:
 | D5 | **Conventional Commits & Automated Formatting** | Strict commit grammar enforced by CI; zero review cycles spent on formatting via automated bot committers. |
 | D6 | **Pure-Code Repository Settings** | All GitHub repository metadata, branch protections, labels, and permissions are declared as code in `repo_settings.py`. |
 | D7 | **Virtual Documentation Publishing** | Root normative documents are mounted at build time into properdocs virtual pages, eliminating copy-paste documentation decay. |
-| D8 | **Multi-Tier Fallback & Quota Ladder** | Graceful degradation across models and CLI harnesses with automated state checkpointing on total exhaustion. |
+| D8 | **Multi-Tier Fallback & Quota Ladder** | Rotation across accounts, quota pools and CLI harnesses — every rung a fresh quota rather than a weaker answer — with automated state checkpointing on total exhaustion. |

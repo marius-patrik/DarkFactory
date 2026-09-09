@@ -11,7 +11,7 @@ flag rename never requires a code change or a container rebuild:
 .. code-block:: json
 
     {
-      "claude": {"model_chain": ["claude-opus-5"], "extra_args": ["--add-dir", "/workspace"]},
+      "claude": {"pools": ["claude-opus-5"], "extra_args": ["--add-dir", "/workspace"]},
       "grok":   {"binary": "grok-cli"}
     }
 
@@ -55,6 +55,11 @@ class Auth:
         kind: ``"static"`` when the environment already holds a usable credential, or
             ``"oauth_refresh"`` when it holds a *refresh* token to be exchanged first.
         env: Environment variable holding that credential.
+        accounts: How many accounts of this provider the pipeline can carry. Accounts are
+            numbered: the first uses the declared names, and the *n*-th appends ``_n`` to each of
+            them. Adding an account is therefore adding a secret. This is a ceiling, not a count -
+            a workflow cannot pass secrets that might exist, so it has to name a bounded set, and
+            the runner uses whichever of them are actually populated.
         alternatives: Further variables that satisfy the same need, tried in order after ``env``.
             Several providers accept either of two names - Kimi reads ``MOONSHOT_API_KEY`` or
             ``KIMI_API_KEY`` - and expressing that was the only reason a harness could not be
@@ -72,6 +77,7 @@ class Auth:
 
     kind: str = "static"
     env: str = ""
+    accounts: int = 3
     alternatives: Sequence[str] = ()
     token_url: str = ""
     client_id_env: str = ""
@@ -79,16 +85,50 @@ class Auth:
     rotates: bool = False
     note: str = ""
 
-    def env_names(self) -> Tuple[str, ...]:
-        """Returns every variable that can authenticate the harness, in preference order.
+    @staticmethod
+    def _numbered(names: Sequence[str], account: int) -> Tuple[str, ...]:
+        """Renames a set of variables for one account.
+
+        The first account uses the declared names unchanged, so every repository configured before
+        accounts existed keeps working with the secrets it already holds.
+
+        Args:
+            names: Declared variable names.
+            account: 1-based account number.
 
         Returns:
-            ``env`` followed by ``alternatives``, with empty entries dropped.
+            The names for that account.
         """
-        return tuple(name for name in (self.env, *self.alternatives) if name)
+        if account <= 1:
+            return tuple(names)
+        return tuple(f"{name}_{account}" for name in names)
+
+    def env_names(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns every variable that can authenticate one account, in preference order.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            ``env`` followed by ``alternatives``, renamed for the account, empties dropped.
+        """
+        declared = tuple(name for name in (self.env, *self.alternatives) if name)
+        return self._numbered(declared, account)
+
+    def companion_names(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns the OAuth companions for one account.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            Client id and secret variable names, renamed for the account.
+        """
+        declared = tuple(name for name in (self.client_id_env, self.client_secret_env) if name)
+        return self._numbered(declared, account)
 
     def secret_names(self) -> Tuple[str, ...]:
-        """Returns every variable a caller must be able to pass, credentials and companions alike.
+        """Returns every variable a caller must be able to pass, for every account.
 
         The client id and secret are companions rather than alternatives: neither authenticates on
         its own, so neither belongs in :meth:`env_names`, but a workflow passing secrets by name
@@ -96,19 +136,25 @@ class Auth:
         :meth:`is_satisfied` stay correct while the secrets block stays complete.
 
         Returns:
-            Credentials in preference order, then the OAuth companions.
+            Credentials and companions, account by account, in order.
         """
-        companions = (self.client_id_env, self.client_secret_env)
-        return self.env_names() + tuple(name for name in companions if name)
+        names: List[str] = []
+        for account in range(1, max(1, self.accounts) + 1):
+            names.extend(self.env_names(account))
+            names.extend(self.companion_names(account))
+        return tuple(names)
 
-    def is_satisfied(self) -> bool:
-        """Reports whether the environment holds what this method needs.
+    def is_satisfied(self, account: int = 1) -> bool:
+        """Reports whether the environment holds what this method needs for one account.
+
+        Args:
+            account: 1-based account number.
 
         Returns:
             ``True`` when any declared variable is populated, or when nothing is declared and the
             harness authenticates by other means.
         """
-        names = self.env_names()
+        names = self.env_names(account)
         return True if not names else any(os.environ.get(name) for name in names)
 
 
@@ -121,8 +167,13 @@ class Harness:
         binary: Executable name looked up on ``PATH``.
         template: argv template after the binary, using the ``PROMPT``/``MODEL``/``TIMEOUT``
             placeholders.
-        model_chain: Models tried in order within this harness before moving to the next harness.
-            Empty means "run the harness default once".
+        pools: Models that draw on *separate quota pools*, tried in order. This is not a model
+            fallback chain and must not be used as one: dropping from a stronger model to a weaker
+            one on the same pool buys nothing, because the pool is what ran out. Antigravity is the
+            case that makes the distinction real - its Gemini and Claude models bill against two
+            different pools, so moving between them is a quota move exactly like moving to another
+            account. Claude's own opus and sonnet share one pool, so it declares one model.
+            A node's configured model replaces this list. Empty means "run the harness default".
         env_keys: Overrides the credential variables derived from ``auth``. Left empty in the
             registry - the declaration is the source - and kept as a field because
             ``AGENT_HARNESS_CONFIG`` can set it, which is the point of the registry being
@@ -140,7 +191,7 @@ class Harness:
     name: str
     binary: str
     template: Sequence[str]
-    model_chain: Sequence[str] = ()
+    pools: Sequence[str] = ()
     env_keys: Sequence[str] = ()
     extra_args: Sequence[str] = ()
     auth: Optional["Auth"] = None
@@ -163,23 +214,52 @@ class Harness:
         """
         return shutil.which(self.binary) is not None
 
-    @property
-    def credentials(self) -> Tuple[str, ...]:
-        """Returns the environment variables that can authenticate this harness.
+    def credentials_for(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns the environment variables that can authenticate one account.
 
         The answer comes from the ``auth`` declaration, so a harness names its credentials once.
         An explicit ``env_keys`` still wins, because a runtime override exists precisely to
-        contradict what is compiled in.
+        contradict what is compiled in - and an override names one account, since a person writing
+        `AGENT_HARNESS_CONFIG` is describing the credential they hold.
+
+        Args:
+            account: 1-based account number.
 
         Returns:
             Credential variable names in preference order.
         """
         if self.env_keys:
-            return tuple(self.env_keys)
-        return self.auth.env_names() if self.auth else ()
+            return tuple(self.env_keys) if account <= 1 else ()
+        return self.auth.env_names(account) if self.auth else ()
+
+    @property
+    def credentials(self) -> Tuple[str, ...]:
+        """Returns the first account's credential variables."""
+        return self.credentials_for(1)
+
+    def accounts(self) -> Tuple[int, ...]:
+        """Returns the accounts this harness actually holds a credential for.
+
+        Declared accounts are a ceiling; which of them exist is a question about the environment,
+        answered here rather than assumed, so a repository holding one key behaves exactly as it
+        did before accounts existed.
+
+        Returns:
+            1-based account numbers, in order, or ``(1,)`` for a harness naming no credentials at
+            all - which authenticates by other means and must not be skipped.
+        """
+        declared = max(1, self.auth.accounts if self.auth and not self.env_keys else 1)
+        present = [
+            account
+            for account in range(1, declared + 1)
+            if any(os.environ.get(name) for name in self.credentials_for(account))
+        ]
+        if present:
+            return tuple(present)
+        return () if self.credentials_for(1) else (1,)
 
     def is_authenticated(self) -> bool:
-        """Reports whether at least one of the harness's credential variables is populated.
+        """Reports whether the harness holds a credential for at least one account.
 
         A harness naming no credentials is assumed to authenticate by other means (an OAuth file,
         a keyring entry) and reports ``True``.
@@ -187,10 +267,7 @@ class Harness:
         Returns:
             ``True`` when the harness looks usable.
         """
-        names = self.credentials
-        if not names:
-            return True
-        return any(os.environ.get(name) for name in names)
+        return bool(self.accounts())
 
     def build_argv(self, prompt: str, model: Optional[str], timeout: str) -> List[str]:
         """Renders the argv for one invocation.
@@ -248,7 +325,8 @@ REGISTRY: Dict[str, Harness] = {
             "--print-timeout",
             TIMEOUT,
         ],
-        model_chain=("gemini-3.8-flash-high", "claude-opus-4-6-thinking"),
+        # Two pools, not two tiers: these bill separately, so exhausting one leaves the other.
+        pools=("gemini-3.8-flash-high", "claude-opus-4-6-thinking"),
         auth=Auth(
             kind="oauth_refresh",
             env="ANTIGRAVITY_REFRESH_TOKEN",
@@ -276,7 +354,8 @@ REGISTRY: Dict[str, Harness] = {
             "text",
             "--dangerously-skip-permissions",
         ],
-        model_chain=("opus", "sonnet"),
+        # One pool. Dropping opus to sonnet does not find quota, it just answers worse.
+        pools=("opus",),
         auth=Auth(
             kind="static",
             env="CLAUDE_CODE_OAUTH_TOKEN",
@@ -300,7 +379,7 @@ REGISTRY: Dict[str, Harness] = {
             "--dangerously-bypass-approvals-and-sandbox",
             "--skip-git-repo-check",
         ],
-        model_chain=(),
+        pools=(),
         auth=Auth(
             kind="static",
             env="OPENAI_API_KEY",
@@ -313,7 +392,7 @@ REGISTRY: Dict[str, Harness] = {
         install="npm install -g @moonshot-ai/kimi-cli",
         binary="kimi",
         template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
-        model_chain=(),
+        pools=(),
         auth=Auth(
             kind="static",
             env="MOONSHOT_API_KEY",
@@ -327,7 +406,7 @@ REGISTRY: Dict[str, Harness] = {
         install="curl -fsSL https://raw.githubusercontent.com/xai-org/grok-cli/main/install.sh | bash",
         binary="grok",
         template=["--single", PROMPT, "--model", MODEL, "--always-approve"],
-        model_chain=(),
+        pools=(),
         auth=Auth(
             kind="static",
             env="XAI_API_KEY",
@@ -341,7 +420,7 @@ REGISTRY: Dict[str, Harness] = {
         install="curl -fsSL https://cursor.com/install | bash",
         binary="cursor-agent",
         template=["--print", PROMPT, "--model", MODEL, "--force"],
-        model_chain=(),
+        pools=(),
         auth=Auth(
             kind="static",
             env="CURSOR_API_KEY",
@@ -354,7 +433,7 @@ REGISTRY: Dict[str, Harness] = {
         install="npm install -g opencode-ai",
         binary="opencode",
         template=["run", PROMPT, "--model", MODEL, "--auto"],
-        model_chain=(),
+        pools=(),
         auth=Auth(
             kind="static",
             env="OPENCODE_API_KEY",
@@ -415,7 +494,7 @@ def get_harness(name: str) -> Optional[Harness]:
     for key in ("binary", "description"):
         if key in override:
             fields[key] = override[key]
-    for key in ("template", "model_chain", "env_keys", "extra_args"):
+    for key in ("template", "pools", "env_keys", "extra_args"):
         if key in override:
             fields[key] = tuple(override[key])
     return replace(base, **fields) if fields else base
@@ -455,24 +534,53 @@ def configured_order() -> List[str]:
     return ORDER + [name for name in _overrides() if name not in ORDER]
 
 
+@dataclass(frozen=True)
+class Attempt:
+    """One invocation the runner may make: a harness, a model, and an account to pay for it.
+
+    Attributes:
+        harness: The harness to run.
+        model: Model id, or ``None`` to use the harness default.
+        account: 1-based account whose credential this attempt uses.
+    """
+
+    harness: Harness
+    model: Optional[str]
+    account: int = 1
+
+    @property
+    def label(self) -> str:
+        """Renders the attempt for logs, naming the account but never its credential."""
+        model = f"/{self.model}" if self.model else ""
+        account = f" (account {self.account})" if self.account > 1 else ""
+        return f"{self.harness.name}{model}{account}"
+
+
 def resolve_attempts(
-    model_chain: Optional[Sequence[str]] = None,
+    model: Optional[str] = None,
     require_available: bool = True,
-) -> List[tuple]:
+) -> List[Attempt]:
     """Flattens the configured harnesses into an ordered list of attempts.
 
-    Each attempt is one ``(harness, model)`` pair. A harness with an empty model chain yields a
-    single attempt with ``model=None``, meaning "use the harness default".
+    Every rung of this ladder is a *quota* move. The account is innermost, so an exhausted quota is
+    answered by the same harness and model on a different account before anything else is tried; an
+    exhausted account is not an exhausted harness, and falling through to another harness while an
+    unused account sits in the environment is the wrong move.
+
+    Pools come next, and only where a harness genuinely has more than one - Antigravity's Gemini
+    and Claude models bill separately. This is deliberately not a model fallback: answering an
+    exhausted quota with a weaker model on the same pool does not find capacity, it just answers
+    worse, so models are configured per node rather than degraded here.
 
     Args:
-        model_chain: Overrides the model chain of the first available harness. Used so a caller can
-            pin models without knowing which harness will run.
+        model: The model to run, from the node's configuration. Replaces the pools of the first
+            available harness, so a caller can pin a model without knowing which harness will run.
         require_available: Skip harnesses whose binary is absent from ``PATH``.
 
     Returns:
-        Ordered ``(Harness, Optional[str])`` pairs.
+        Ordered attempts.
     """
-    attempts: List[tuple] = []
+    attempts: List[Attempt] = []
     override_applied = False
 
     for name in configured_order():
@@ -483,18 +591,21 @@ def resolve_attempts(
         if require_available and not harness.is_available():
             print(f"Harness {name!r} unavailable ({harness.binary} not on PATH); skipping.")
             continue
-        if not harness.is_authenticated():
+
+        accounts = harness.accounts()
+        if not accounts:
             print(f"Harness {name!r} has no credentials in {list(harness.credentials)}; skipping.")
             continue
 
-        models: Sequence[Optional[str]]
-        if model_chain and not override_applied:
-            models = list(model_chain)
+        pools: Sequence[Optional[str]]
+        if model and not override_applied:
+            pools = [model]
             override_applied = True
         else:
-            models = list(harness.model_chain) or [None]
+            pools = list(harness.pools) or [None]
 
-        attempts.extend((harness, model) for model in models)
+        for pool in pools:
+            attempts.extend(Attempt(harness, pool, account) for account in accounts)
 
     return attempts
 
@@ -509,6 +620,8 @@ def describe_chain() -> str:
     if not attempts:
         return "No harness is available: no configured CLI is on PATH with credentials."
     lines = []
-    for harness, model in attempts:
-        lines.append(f"- `{harness.name}` ({harness.binary}){f' model `{model}`' if model else ''}")
+    for attempt in attempts:
+        model = f" model `{attempt.model}`" if attempt.model else ""
+        account = f" account {attempt.account}" if attempt.account > 1 else ""
+        lines.append(f"- `{attempt.harness.name}` ({attempt.harness.binary}){model}{account}")
     return "\n".join(lines)

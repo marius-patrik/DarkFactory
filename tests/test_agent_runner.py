@@ -8,6 +8,7 @@ from typing import List
 import pytest
 
 import agent_runner
+import harnesses
 from agent_runner import (
     prepare_credentials,
     is_bot_or_agent_comment,
@@ -577,3 +578,158 @@ class TestRotatedTokenPersistence:
             module, "persist_rotated_token", lambda *a: pytest.fail("must not write")
         )
         module.prepare_credentials(harnesses.get_harness("antigravity"))
+
+
+class TestTheAccountsCredentialReachesTheCli:
+    """A CLI reads the name it knows, so account two's secret has to arrive under account one's."""
+
+    def _attempt(self, name: str, account: int):
+        """Builds an attempt against a registry harness.
+
+        Args:
+            name: Registry key.
+            account: 1-based account number.
+
+        Returns:
+            The attempt.
+        """
+        return harnesses.Attempt(harnesses.REGISTRY[name], None, account)
+
+    def test_the_second_accounts_key_arrives_under_the_canonical_name(self, monkeypatch):
+        """Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_2", "second")
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 2))
+        assert env["CLAUDE_CODE_OAUTH_TOKEN"] == "second"
+
+    def test_the_other_accounts_names_are_cleared(self, monkeypatch):
+        """Leaving the first account's key in place means the rotation achieves nothing, silently.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "first-account")
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_2", "second")
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 2))
+        assert env["CLAUDE_CODE_OAUTH_TOKEN"] == "second"
+        assert env["ANTHROPIC_API_KEY"] == "second"
+        assert "CLAUDE_CODE_OAUTH_TOKEN_2" not in env
+
+    def test_no_credential_survives_from_an_account_that_is_not_running(self, monkeypatch):
+        """Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "first")
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_3", "third")
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 3))
+        assert env["CLAUDE_CODE_OAUTH_TOKEN"] == "third"
+        assert "CLAUDE_CODE_OAUTH_TOKEN_3" not in env
+
+    def test_oauth_companions_move_with_their_account(self, monkeypatch):
+        """A second Google account has its own client, and the exchange needs it.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("ANTIGRAVITY_CLIENT_ID_2", "client-two")
+        monkeypatch.setenv("ANTIGRAVITY_CLIENT_SECRET_2", "secret-two")
+        monkeypatch.setenv("ANTIGRAVITY_REFRESH_TOKEN_2", "refresh-two")
+        monkeypatch.setattr(
+            agent_runner, "exchange_refresh_token", lambda *a, **k: {"access_token": "fresh"}
+        )
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("antigravity", 2))
+        assert env["ANTIGRAVITY_CLIENT_ID"] == "client-two"
+        assert env["ANTIGRAVITY_CLIENT_SECRET"] == "secret-two"
+
+    def test_a_harness_declaring_no_auth_is_passed_through_untouched(self):
+        """A harness defined entirely through configuration may authenticate however it likes."""
+        harness = harnesses.Harness(name="x", binary="x", template=[], auth=None)
+        base = {"SOMETHING": "kept"}
+        assert agent_runner.credential_env(base, harnesses.Attempt(harness, None, 1)) == base
+
+
+class TestExhaustionRotatesBeforeItWaits:
+    """An unused account is always a better answer than sleeping."""
+
+    def _two_accounts(self, monkeypatch):
+        """Puts two Claude accounts in the environment and pretends the binary exists.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["claude"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "one")
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_2", "two")
+
+    def test_the_second_account_is_tried_and_nothing_sleeps(self, monkeypatch):
+        """This is the whole point of holding a second account.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_accounts(monkeypatch)
+        slept: List[float] = []
+        monkeypatch.setattr(agent_runner.time, "sleep", lambda s: slept.append(s))
+
+        seen: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
+            if len(seen) == 1:
+                raise subprocess.CalledProcessError(1, argv, stderr="rate limit exceeded")
+            return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "done"
+        assert seen == ["one", "two"], "the second attempt must use the second account"
+        assert slept == [], "there was an unused account; nothing should have waited"
+
+    def test_the_backoff_still_applies_when_there_is_nothing_to_rotate_to(self, monkeypatch):
+        """The last attempt is the only place waiting can possibly help.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["claude"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "only")
+
+        slept: List[float] = []
+        monkeypatch.setattr(agent_runner.time, "sleep", lambda s: slept.append(s))
+        calls: List[int] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(1)
+            if len(calls) < 3:
+                raise subprocess.CalledProcessError(1, argv, stderr="rate limit exceeded")
+            return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "done"
+        assert slept, "with one account and nothing else to try, backoff is all there is"
+
+    def test_a_real_bug_is_not_answered_by_burning_every_account(self, monkeypatch):
+        """Falling through on a genuine error would spend every account on the same broken prompt.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_accounts(monkeypatch)
+        calls: List[int] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(1)
+            raise subprocess.CalledProcessError(2, argv, stderr="syntax error in prompt file")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        result = agent_runner.run_agent_prompt("do it")
+        assert "[DarkFactory Agent Execution Error]" in result
+        assert len(calls) == 1

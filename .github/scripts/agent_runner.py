@@ -171,7 +171,7 @@ def refresh_google_oauth_token(
         raise RuntimeError(f"Unexpected error during token refresh: {e}") from e
 
 
-def prepare_credentials(harness: Any) -> Optional[str]:
+def prepare_credentials(harness: Any, account: int = 1) -> Optional[str]:
     """Obtains a usable credential for a harness from what it declares.
 
     The runner used to know, by name, that one harness exchanges a Google refresh token and that
@@ -181,6 +181,7 @@ def prepare_credentials(harness: Any) -> Optional[str]:
 
     Args:
         harness: The harness to authenticate, carrying an optional ``auth`` declaration.
+        account: 1-based account whose credential to prepare.
 
     Returns:
         A usable credential, or ``None`` when the harness declares none and authenticates by other
@@ -190,30 +191,31 @@ def prepare_credentials(harness: Any) -> Optional[str]:
         RuntimeError: When an exchange was declared and could not be completed.
     """
     auth = getattr(harness, "auth", None)
-    if auth is None or not auth.env_names():
+    if auth is None or not auth.env_names(account):
         return None
 
     if auth.kind == "static":
         # Several providers accept either of two variable names, so the credential is whichever of
         # the declared names is actually populated rather than the first one declared.
-        for name in auth.env_names():
+        for name in auth.env_names(account):
             value = os.environ.get(name, "")
             if value:
                 return value
         return None
 
-    stored = os.environ.get(auth.env, "")
+    stored = os.environ.get(auth.env_names(account)[0], "")
     if not stored:
         return None
 
     if auth.kind != "oauth_refresh":
         raise RuntimeError(f"{harness.name}: unknown auth kind {auth.kind!r}")
 
+    companions = auth.companion_names(account)
     response = exchange_refresh_token(
         stored,
         auth.token_url,
-        os.environ.get(auth.client_id_env, ""),
-        os.environ.get(auth.client_secret_env, ""),
+        os.environ.get(companions[0], "") if companions else "",
+        os.environ.get(companions[1], "") if len(companions) > 1 else "",
     )
 
     # A provider that rotates issues a new refresh token on every exchange. Reading only the access
@@ -223,9 +225,57 @@ def prepare_credentials(harness: Any) -> Optional[str]:
     if auth.rotates and response.get("refresh_token"):
         rotated = response["refresh_token"]
         if rotated != stored:
-            os.environ[auth.env] = rotated
-            persist_rotated_token(auth.env, rotated)
+            # Written back under this account's own name: rotating account two's token into
+            # account one's secret would strand both.
+            name = auth.env_names(account)[0]
+            os.environ[name] = rotated
+            persist_rotated_token(name, rotated)
     return response.get("access_token")
+
+
+def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
+    """Builds the environment one attempt runs in, holding that account's credential and no other.
+
+    Two things had to be true and only one was. A CLI reads its credential from the name it knows -
+    ``CLAUDE_CODE_OAUTH_TOKEN``, never ``CLAUDE_CODE_OAUTH_TOKEN_2`` - so account two's secret has
+    to arrive under account one's name. And the names the account does *not* use must be cleared:
+    leaving `ANTHROPIC_API_KEY` in place while running account two means the CLI may authenticate
+    with the first account's key and the rotation achieves nothing, silently.
+
+    ``prepare_credentials`` was written to be the single place a credential is obtained and was
+    never called from the run path, so a declared OAuth exchange never happened outside its tests.
+    This is where it is called.
+
+    Args:
+        base: Environment to derive from.
+        attempt: The attempt about to be made.
+
+    Returns:
+        A copy of ``base`` carrying exactly this account's credential.
+
+    Raises:
+        RuntimeError: When an exchange was declared and could not be completed.
+    """
+    env = dict(base)
+    harness = attempt.harness
+    auth = getattr(harness, "auth", None)
+    if auth is None:
+        return env
+
+    # Every name this harness could authenticate with, across every account, is cleared first, so
+    # what remains is what this attempt chose.
+    for name in auth.secret_names():
+        env.pop(name, None)
+
+    credential = prepare_credentials(harness, attempt.account)
+    if credential:
+        # Under the *first* account's names, because that is what the CLI reads.
+        for name in auth.env_names(1):
+            env[name] = credential
+    for source, target in zip(auth.companion_names(attempt.account), auth.companion_names(1)):
+        if base.get(source):
+            env[target] = base[source]
+    return env
 
 
 def persist_rotated_token(secret: str, value: str) -> bool:
@@ -1024,32 +1074,32 @@ def run_agent_prompt(
     max_retries: int = 2,
     base_delay: float = 1.0,
     backoff_factor: float = 2.0,
-    fallback_models: Optional[List[str]] = None,
     checkpoint_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Executes a prompt non-interactively against the first harness that succeeds.
 
-    Walks the resolved harness chain (see :mod:`harnesses`), trying each harness and each of its
-    models in order. Transient quota errors are retried with exponential backoff; a persistent quota
-    error falls through to the next attempt; any other failure returns immediately, because falling
-    through on a genuine bug would burn every harness on the same broken prompt.
+    Walks the resolved chain (see :mod:`harnesses`), where every rung is a quota move: another
+    account, then another pool, then another harness. A quota error moves to the next attempt
+    immediately - an unused account is always a better answer than sleeping - and the exponential
+    backoff is kept for the last attempt, the only point at which there is nothing left to rotate
+    to. Any other failure returns at once, because falling through on a genuine bug would burn
+    every harness on the same broken prompt.
 
     Args:
         prompt: Instruction prompt to execute.
-        model: Optional model pinned onto the first available harness.
+        model: The model to run, from the node's configuration, pinned onto the first available
+            harness.
         timeout: Print-mode timeout as a Go duration string.
         max_retries: Transient retry attempts per attempt before escalating.
         base_delay: Initial retry delay in seconds.
         backoff_factor: Exponential backoff multiplier.
-        fallback_models: Optional explicit model chain, overriding the first harness's own.
         checkpoint_context: Optional context for checkpointing when every attempt is exhausted.
 
     Returns:
         Agent text output, or an explicit error description prefixed
         ``[DarkFactory Agent Execution Error]``.
     """
-    chain = fallback_models or ([model] if model else None)
-    attempts = resolve_attempts(model_chain=chain)
+    attempts = resolve_attempts(model=model)
 
     if not attempts:
         err = (
@@ -1059,17 +1109,30 @@ def run_agent_prompt(
         print(err, file=sys.stderr)
         return err
 
-    env = os.environ.copy()
-    env.setdefault("TERM", "xterm-256color")
+    base_env = os.environ.copy()
+    base_env.setdefault("TERM", "xterm-256color")
     last_error_detail = ""
     tried: List[str] = []
 
-    for harness, current_model in attempts:
-        label = f"{harness.name}" + (f"/{current_model}" if current_model else "")
+    for index, attempt in enumerate(attempts):
+        harness, current_model = attempt.harness, attempt.model
+        label = attempt.label
         tried.append(label)
         argv = harness.build_argv(prompt, current_model, timeout)
 
-        for attempt in range(max_retries + 1):
+        try:
+            env = credential_env(base_env, attempt)
+        except Exception as exc:  # noqa: BLE001 - an unusable account is not a fatal error
+            print(f"Could not authenticate {label}: {exc}", file=sys.stderr)
+            last_error_detail = str(exc)
+            continue
+
+        # An unused account or harness is always a better answer than sleeping, so the backoff is
+        # reserved for the last attempt in the chain - the only point at which there is nothing
+        # else to try.
+        rotation_available = index < len(attempts) - 1
+
+        for retry in range(max_retries + 1):
             try:
                 res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
                 if len(tried) > 1:
@@ -1096,13 +1159,21 @@ def run_agent_prompt(
                     print(err, file=sys.stderr)
                     return err
 
-                if attempt < max_retries:
+                if rotation_available:
+                    print(
+                        f"Quota exhausted on {label}: {detail}. "
+                        f"Moving to the next account/model/harness rather than waiting.",
+                        file=sys.stderr,
+                    )
+                    break
+
+                if retry < max_retries:
                     delay = calculate_backoff(
-                        attempt, base_delay=base_delay, backoff_factor=backoff_factor
+                        retry, base_delay=base_delay, backoff_factor=backoff_factor
                     )
                     print(
-                        f"Transient rate limit on {label} "
-                        f"(attempt {attempt + 1}/{max_retries + 1}): {detail}. "
+                        f"Transient rate limit on {label}, and nothing left to rotate to "
+                        f"(attempt {retry + 1}/{max_retries + 1}): {detail}. "
                         f"Retrying in {delay:.2f}s...",
                         file=sys.stderr,
                     )
@@ -1110,8 +1181,8 @@ def run_agent_prompt(
                     continue
 
                 print(
-                    f"Quota exhausted on {label} after {max_retries + 1} attempts. "
-                    f"Escalating to the next harness/model in the chain...",
+                    f"Quota exhausted on {label} after {max_retries + 1} attempts, "
+                    f"with no account, model or harness left to try.",
                     file=sys.stderr,
                 )
                 break
