@@ -28,7 +28,7 @@ import json
 import os
 import shutil
 from dataclasses import dataclass, field, replace
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 #: Placeholder substituted with the prompt text when building argv.
 PROMPT = "{{PROMPT}}"
@@ -38,40 +38,6 @@ MODEL = "{{MODEL}}"
 
 #: Placeholder substituted with the print-mode timeout (Go duration string, e.g. ``15m0s``).
 TIMEOUT = "{{TIMEOUT}}"
-
-
-@dataclass(frozen=True)
-class Auth:
-    """How a harness obtains a usable credential.
-
-    Authentication was special-cased: one harness exchanged a Google refresh token in
-    ``agent_runner``, and every other harness was assumed to find its own credential in the
-    environment. Adding a harness that refreshes therefore meant editing the runner, which is the
-    opposite of the registry being the place a harness is described.
-
-    Declaring it here keeps the answer beside the harness. ``static`` means the environment already
-    holds something usable; ``oauth_refresh`` means the environment holds a *refresh* token to be
-    exchanged at ``token_url`` for a short-lived one.
-
-    Attributes:
-        kind: ``"static"`` or ``"oauth_refresh"``.
-        env: Environment variable holding the credential, static or refresh.
-        token_url: Token endpoint, for ``oauth_refresh``.
-        client_id_env: Environment variable holding the OAuth client id, where one is required.
-        client_secret_env: Environment variable holding the OAuth client secret, likewise.
-        writes_back: Whether the provider rotates the refresh token on use, so a caller must
-            persist the new one. Declared rather than assumed: getting it wrong silently strands
-            the credential after the first refresh.
-        note: Human-readable explanation for logs and documentation.
-    """
-
-    kind: str = "static"
-    env: str = ""
-    token_url: str = ""
-    client_id_env: str = ""
-    client_secret_env: str = ""
-    writes_back: bool = False
-    note: str = ""
 
 
 @dataclass(frozen=True)
@@ -89,6 +55,10 @@ class Auth:
         kind: ``"static"`` when the environment already holds a usable credential, or
             ``"oauth_refresh"`` when it holds a *refresh* token to be exchanged first.
         env: Environment variable holding that credential.
+        alternatives: Further variables that satisfy the same need, tried in order after ``env``.
+            Several providers accept either of two names - Kimi reads ``MOONSHOT_API_KEY`` or
+            ``KIMI_API_KEY`` - and expressing that was the only reason a harness could not be
+            described by a declaration.
         token_url: Token endpoint, for ``oauth_refresh``.
         client_id_env: Environment variable holding the OAuth client id, where one is required.
         client_secret_env: Environment variable holding the client secret, likewise.
@@ -102,20 +72,44 @@ class Auth:
 
     kind: str = "static"
     env: str = ""
+    alternatives: Sequence[str] = ()
     token_url: str = ""
     client_id_env: str = ""
     client_secret_env: str = ""
     rotates: bool = False
     note: str = ""
 
+    def env_names(self) -> Tuple[str, ...]:
+        """Returns every variable that can authenticate the harness, in preference order.
+
+        Returns:
+            ``env`` followed by ``alternatives``, with empty entries dropped.
+        """
+        return tuple(name for name in (self.env, *self.alternatives) if name)
+
+    def secret_names(self) -> Tuple[str, ...]:
+        """Returns every variable a caller must be able to pass, credentials and companions alike.
+
+        The client id and secret are companions rather than alternatives: neither authenticates on
+        its own, so neither belongs in :meth:`env_names`, but a workflow passing secrets by name
+        has to pass them or the exchange cannot be made. Keeping the two lists apart is what lets
+        :meth:`is_satisfied` stay correct while the secrets block stays complete.
+
+        Returns:
+            Credentials in preference order, then the OAuth companions.
+        """
+        companions = (self.client_id_env, self.client_secret_env)
+        return self.env_names() + tuple(name for name in companions if name)
+
     def is_satisfied(self) -> bool:
         """Reports whether the environment holds what this method needs.
 
         Returns:
-            ``True`` when the declared variable is populated, or when nothing is declared and the
+            ``True`` when any declared variable is populated, or when nothing is declared and the
             harness authenticates by other means.
         """
-        return True if not self.env else bool(os.environ.get(self.env))
+        names = self.env_names()
+        return True if not names else any(os.environ.get(name) for name in names)
 
 
 @dataclass(frozen=True)
@@ -129,10 +123,13 @@ class Harness:
             placeholders.
         model_chain: Models tried in order within this harness before moving to the next harness.
             Empty means "run the harness default once".
-        env_keys: Environment variables the harness needs; a harness missing all of them is
-            reported as unauthenticated rather than silently failing mid-run.
-        auth: How the credential is obtained. ``None`` means the environment already holds
-            something usable, which is true of every harness that takes a plain API key.
+        env_keys: Overrides the credential variables derived from ``auth``. Left empty in the
+            registry - the declaration is the source - and kept as a field because
+            ``AGENT_HARNESS_CONFIG`` can set it, which is the point of the registry being
+            overridable without a rebuild.
+        auth: How the credential is obtained. Every harness declares one; ``None`` is reserved for
+            a harness defined entirely through ``AGENT_HARNESS_CONFIG``, which may authenticate by
+            means the registry has never heard of.
         install: Shell that installs the binary into the agent image. Declared here so adding a
             harness is one entry rather than an entry plus a Dockerfile edit that can disagree
             with it.
@@ -166,18 +163,34 @@ class Harness:
         """
         return shutil.which(self.binary) is not None
 
+    @property
+    def credentials(self) -> Tuple[str, ...]:
+        """Returns the environment variables that can authenticate this harness.
+
+        The answer comes from the ``auth`` declaration, so a harness names its credentials once.
+        An explicit ``env_keys`` still wins, because a runtime override exists precisely to
+        contradict what is compiled in.
+
+        Returns:
+            Credential variable names in preference order.
+        """
+        if self.env_keys:
+            return tuple(self.env_keys)
+        return self.auth.env_names() if self.auth else ()
+
     def is_authenticated(self) -> bool:
         """Reports whether at least one of the harness's credential variables is populated.
 
-        A harness with no declared ``env_keys`` is assumed to authenticate by other means (an OAuth
-        file, a keyring entry) and reports ``True``.
+        A harness naming no credentials is assumed to authenticate by other means (an OAuth file,
+        a keyring entry) and reports ``True``.
 
         Returns:
             ``True`` when the harness looks usable.
         """
-        if not self.env_keys:
+        names = self.credentials
+        if not names:
             return True
-        return any(os.environ.get(key) for key in self.env_keys)
+        return any(os.environ.get(name) for name in names)
 
     def build_argv(self, prompt: str, model: Optional[str], timeout: str) -> List[str]:
         """Renders the argv for one invocation.
@@ -236,7 +249,6 @@ REGISTRY: Dict[str, Harness] = {
             TIMEOUT,
         ],
         model_chain=("gemini-3.8-flash-high", "claude-opus-4-6-thinking"),
-        env_keys=("ANTIGRAVITY_REFRESH_TOKEN",),
         auth=Auth(
             kind="oauth_refresh",
             env="ANTIGRAVITY_REFRESH_TOKEN",
@@ -265,10 +277,10 @@ REGISTRY: Dict[str, Harness] = {
             "--dangerously-skip-permissions",
         ],
         model_chain=("opus", "sonnet"),
-        env_keys=("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"),
         auth=Auth(
             kind="static",
             env="CLAUDE_CODE_OAUTH_TOKEN",
+            alternatives=("ANTHROPIC_API_KEY",),
             # `claude setup-token` mints a long-lived token against a subscription, so there is
             # nothing to exchange and nothing to rotate. An ANTHROPIC_API_KEY works too and bills
             # per token instead.
@@ -289,7 +301,11 @@ REGISTRY: Dict[str, Harness] = {
             "--skip-git-repo-check",
         ],
         model_chain=(),
-        env_keys=("OPENAI_API_KEY",),
+        auth=Auth(
+            kind="static",
+            env="OPENAI_API_KEY",
+            note="OpenAI API key.",
+        ),
         description="OpenAI Codex CLI",
     ),
     "kimi": Harness(
@@ -298,7 +314,12 @@ REGISTRY: Dict[str, Harness] = {
         binary="kimi",
         template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
         model_chain=(),
-        env_keys=("MOONSHOT_API_KEY", "KIMI_API_KEY"),
+        auth=Auth(
+            kind="static",
+            env="MOONSHOT_API_KEY",
+            alternatives=("KIMI_API_KEY",),
+            note="Moonshot API key, under either of the two names the CLI accepts.",
+        ),
         description="Moonshot Kimi CLI",
     ),
     "grok": Harness(
@@ -307,7 +328,12 @@ REGISTRY: Dict[str, Harness] = {
         binary="grok",
         template=["--single", PROMPT, "--model", MODEL, "--always-approve"],
         model_chain=(),
-        env_keys=("XAI_API_KEY", "GROK_API_KEY"),
+        auth=Auth(
+            kind="static",
+            env="XAI_API_KEY",
+            alternatives=("GROK_API_KEY",),
+            note="xAI API key, under either of the two names the CLI accepts.",
+        ),
         description="xAI Grok Build",
     ),
     "cursor": Harness(
@@ -316,7 +342,11 @@ REGISTRY: Dict[str, Harness] = {
         binary="cursor-agent",
         template=["--print", PROMPT, "--model", MODEL, "--force"],
         model_chain=(),
-        env_keys=("CURSOR_API_KEY",),
+        auth=Auth(
+            kind="static",
+            env="CURSOR_API_KEY",
+            note="Cursor API key.",
+        ),
         description="Cursor CLI (cursor-agent)",
     ),
     "opencode": Harness(
@@ -325,7 +355,14 @@ REGISTRY: Dict[str, Harness] = {
         binary="opencode",
         template=["run", PROMPT, "--model", MODEL, "--auto"],
         model_chain=(),
-        env_keys=("OPENCODE_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"),
+        auth=Auth(
+            kind="static",
+            env="OPENCODE_API_KEY",
+            alternatives=("ANTHROPIC_API_KEY", "OPENAI_API_KEY"),
+            # opencode routes to whichever provider the model names, so any one of the
+            # three is enough and which one depends on the model, not on the harness.
+            note="Any provider key opencode can route with.",
+        ),
         description="opencode (model given as provider/model)",
     ),
 }
@@ -384,6 +421,28 @@ def get_harness(name: str) -> Optional[Harness]:
     return replace(base, **fields) if fields else base
 
 
+def credential_env_names() -> List[str]:
+    """Returns every secret name the registry can use, in chain order, without repeats.
+
+    Three places used to spell this list out - the registry, ``agent.yml``'s ``workflow_call``
+    secrets, and every consumer's hand-written caller - with nothing keeping them equal. A workflow
+    that forgets a name does not fail; it silently shortens the fallback chain, which is the least
+    visible way for this to go wrong. Deriving the list is what makes the guard test possible.
+
+    Returns:
+        Credential and OAuth companion variable names, in the order harnesses are tried.
+    """
+    names: List[str] = []
+    for name in ORDER:
+        harness = REGISTRY.get(name)
+        if harness is None or harness.auth is None:
+            continue
+        for env_name in harness.auth.secret_names():
+            if env_name not in names:
+                names.append(env_name)
+    return names
+
+
 def configured_order() -> List[str]:
     """Returns the harness order from the environment, falling back to :data:`ORDER`.
 
@@ -425,7 +484,7 @@ def resolve_attempts(
             print(f"Harness {name!r} unavailable ({harness.binary} not on PATH); skipping.")
             continue
         if not harness.is_authenticated():
-            print(f"Harness {name!r} has no credentials in {list(harness.env_keys)}; skipping.")
+            print(f"Harness {name!r} has no credentials in {list(harness.credentials)}; skipping.")
             continue
 
         models: Sequence[Optional[str]]
