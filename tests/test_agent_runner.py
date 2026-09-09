@@ -2,6 +2,7 @@
 
 import json
 import os
+import subprocess
 from typing import List
 
 import pytest
@@ -523,3 +524,56 @@ class TestPlansPostedBeforeTheMarker:
     def test_discussion_about_a_plan_is_not_a_plan(self, body):
         """Otherwise a comment mentioning the plan would advance the gate."""
         assert not agent_runner_module()._is_plan_comment(body)
+
+
+class TestRotatedTokenPersistence:
+    """A rotating provider invalidates the old token as it issues the new one."""
+
+    def test_a_rotated_token_is_written_back(self, monkeypatch):
+        """Exchanging and then forgetting spends the credential: this run works, the next cannot."""
+        module = agent_runner_module()
+        seen = {}
+
+        def fake_run(cmd, **kwargs):
+            seen["cmd"] = cmd
+            seen["input"] = kwargs.get("input")
+            return type("R", (), {"stdout": "", "stderr": ""})()
+
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+        monkeypatch.setattr(module.subprocess, "run", fake_run)
+        assert module.persist_rotated_token("ROTATING_TOKEN", "new-value") is True
+        assert "new-value" not in " ".join(seen["cmd"]), "the value must not appear in argv"
+        assert seen["input"] == "new-value"
+
+    def test_without_a_repository_it_says_so_rather_than_failing_silently(self, monkeypatch):
+        """Silence here means the next run fails to authenticate for no visible reason."""
+        module = agent_runner_module()
+        monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+        assert module.persist_rotated_token("ROTATING_TOKEN", "v") is False
+
+    def test_a_failed_write_is_reported(self, monkeypatch):
+        """The credential is already spent by then, so the run must not look successful."""
+        module = agent_runner_module()
+
+        def boom(cmd, **kwargs):
+            raise subprocess.CalledProcessError(1, cmd, stderr="denied")
+
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+        monkeypatch.setattr(module.subprocess, "run", boom)
+        assert module.persist_rotated_token("ROTATING_TOKEN", "v") is False
+
+    def test_a_non_rotating_provider_writes_nothing(self, monkeypatch):
+        """Google does not rotate; writing a secret on every run would be noise and risk."""
+        import harnesses
+
+        module = agent_runner_module()
+        monkeypatch.setenv("ANTIGRAVITY_REFRESH_TOKEN", "stored")
+        monkeypatch.setattr(
+            module,
+            "exchange_refresh_token",
+            lambda *a, **k: {"access_token": "fresh", "refresh_token": "unexpected"},
+        )
+        monkeypatch.setattr(
+            module, "persist_rotated_token", lambda *a: pytest.fail("must not write")
+        )
+        module.prepare_credentials(harnesses.get_harness("antigravity"))

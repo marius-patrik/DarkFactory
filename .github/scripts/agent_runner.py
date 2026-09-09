@@ -217,11 +217,59 @@ def prepare_credentials(harness: Any) -> Optional[str]:
         rotated = response["refresh_token"]
         if rotated != stored:
             os.environ[auth.env] = rotated
-            print(
-                f"{harness.name}: the provider rotated its refresh token; "
-                f"the stored {auth.env} must be replaced or the next run will fail."
-            )
+            persist_rotated_token(auth.env, rotated)
     return response.get("access_token")
+
+
+def persist_rotated_token(secret: str, value: str) -> bool:
+    """Writes a rotated refresh token back to the repository secret it came from.
+
+    A rotating provider invalidates the old refresh token as it issues the new one, so a run that
+    exchanges and then forgets has spent the credential: this run works, and every run afterwards
+    fails to authenticate. The failure appears later, on a different issue, and looks like the
+    harness being unconfigured rather than like a token that was thrown away.
+
+    The value is piped rather than passed as an argument, so it cannot appear in a process listing
+    or a log.
+
+    Args:
+        secret: Name of the repository secret holding the refresh token.
+        value: The new refresh token.
+
+    Returns:
+        True when the secret was updated.
+    """
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if not repo:
+        print(
+            f"{secret} was rotated but GITHUB_REPOSITORY is unset, so it cannot be written back; "
+            "the next run will fail to authenticate.",
+            file=sys.stderr,
+        )
+        return False
+    try:
+        subprocess.run(
+            ["gh", "secret", "set", secret, "--repo", repo],
+            input=value,
+            text=True,
+            capture_output=True,
+            check=True,
+            # Writing a secret is repository administration, which the App token cannot do; the
+            # person's token is the one with the rights, exactly as for Projects v2.
+            env={
+                **os.environ,
+                "GH_TOKEN": os.environ.get("GH_PROJECT_TOKEN") or os.environ.get("GH_TOKEN", ""),
+            },
+        )
+        print(f"{secret} was rotated by the provider and has been written back.")
+        return True
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"{secret} was rotated but could not be written back ({exc.stderr.strip()[:80]}); "
+            "the next run will fail to authenticate.",
+            file=sys.stderr,
+        )
+        return False
 
 
 def exchange_refresh_token(
