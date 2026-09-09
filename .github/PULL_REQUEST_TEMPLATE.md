@@ -27,7 +27,7 @@
 - [ ] All commits follow Conventional Commits: `<type>(<scope>): <description>`
 - [ ] Unit tests added or updated for every behavior introduced
 - [ ] All CI jobs pass (`pipeline`, `rust`, `web`, `docs`, `verify-bound-issue`)
-- [ ] `mkdocs build --strict` completes with zero warnings and zero errors
+- [ ] `properdocs build --strict` completes with zero warnings and zero errors
 - [ ] Implementation matches the approved child Plan issue, or a `Plan Alignment:` comment records
       every deviation and has been approved
 - [ ] No feature branches on a preset *name* — only on capability-matrix axis values
