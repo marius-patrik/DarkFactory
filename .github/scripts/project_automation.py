@@ -646,7 +646,8 @@ def process_event(
         _handle_pull_request_event(payload, client)
     elif event_name == "push":
         _handle_push_event(payload, client)
-    elif event_name == "workflow_dispatch":
+    elif event_name in ("workflow_dispatch", "schedule"):
+        reconcile_membership(client, os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO))
         reconcile_unassigned_statuses(client)
 
 
@@ -678,6 +679,59 @@ def settled_status(closed: bool, merged: bool, labels: List[str]) -> Optional[st
         return "Done"
     labelled = determine_status_from_labels(labels)
     return labelled if labelled in TERMINAL_STATUSES else "Dropped"
+
+
+def reconcile_membership(client: GitHubProjectClient, repo: str) -> int:
+    """Puts every open issue and pull request of a repository onto its boards.
+
+    An item reaches a board only by passing through a lifecycle event, so anything opened before
+    the automation worked - or while it lacked a token, or while its run was cancelled - is simply
+    absent, and stays absent forever because nothing ever looks again.
+
+    That is how the aggregate board came to hold one repository's work and almost none of anyone
+    else's: it was never wrong, it was only ever incomplete, which is harder to notice.
+
+    Adding is idempotent on GitHub's side, so a repository already fully present costs one listing
+    and no writes.
+
+    Args:
+        client: Project client, or a group covering several boards.
+        repo: `owner/name` of the repository to reconcile.
+
+    Returns:
+        How many items were tracked.
+    """
+    tracked = 0
+    for kind in ("issue", "pr"):
+        try:
+            raw = client.run_gh(
+                [
+                    kind,
+                    "list",
+                    "--repo",
+                    repo,
+                    "--state",
+                    "open",
+                    "--limit",
+                    "200",
+                    "--json",
+                    "number,url,labels,isDraft" if kind == "pr" else "number,url,labels",
+                ]
+            )
+        except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
+            _fail(f"could not list open {kind}s in {repo}: {exc}")
+            continue
+
+        for entry in json.loads(raw or "[]"):
+            labels = [l.get("name", "") for l in entry.get("labels", []) or []]
+            status = determine_status_from_labels(labels)
+            if kind == "pr" and status == "ToDo":
+                # An open pull request is work in flight, whatever its labels say.
+                status = "In Progress"
+            client.track(entry["url"], status)
+            tracked += 1
+    print(f"Reconciled membership for {repo}: {tracked} open item(s) tracked.")
+    return tracked
 
 
 def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
@@ -744,6 +798,12 @@ def main() -> None:
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
 
     if not event_path or not os.path.exists(event_path):
+        # A scheduled run has no webhook payload, but reconciliation needs none.
+        if event_name in ("schedule", "workflow_dispatch"):
+            process_event(event_name, {})
+            if FAILURES:
+                sys.exit(1)
+            return
         print(f"No GITHUB_EVENT_PATH found for event {event_name!r}")
         return
 

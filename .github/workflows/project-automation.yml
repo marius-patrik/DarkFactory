@@ -7,6 +7,11 @@ on:
     types: [opened, edited, closed, ready_for_review, reopened]
   push:
     branches: [darkfactory]
+  # Membership is reconciled on a schedule as well as on demand. An item reaches a board only by
+  # passing through a lifecycle event, so anything opened while the automation was unable to write
+  # is absent and stays absent - the boards are never wrong, only quietly incomplete.
+  schedule:
+    - cron: "43 5 * * *"
   workflow_dispatch:
 
   # Consumers call this rather than copying it, so the scripts it runs live in one place.
