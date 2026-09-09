@@ -89,6 +89,38 @@ def test_architecture_lists_open_decisions_with_identifiers():
     assert {"1", "2", "3", "4", "5", "6", "7", "8"} <= identifiers
 
 
+def test_dockerfile_enforces_non_root_user():
+    """D4 claims agent processes execute with non-root privileges.
+
+    The Dockerfile must contain a ``USER agent`` directive so the claim is
+    enforced by the container runtime, not merely asserted in prose.  Without
+    this test the directive could be silently removed and D4 would revert to
+    being false — the exact failure mode that surfaced when Claude Code refused
+    ``--dangerously-skip-permissions`` as root.
+    """
+    dockerfile = _read("docker", "Dockerfile.agent")
+    # Match a standalone USER directive (ignoring inline comments).  The regex
+    # anchors to a line start so it cannot match a comment or a RUN echo.
+    assert re.search(r"(?m)^USER\s+agent\b", dockerfile), (
+        "docker/Dockerfile.agent must contain a 'USER agent' directive "
+        "to enforce D4's non-root execution claim"
+    )
+
+
+def test_dockerfile_agent_uid_matches_runner():
+    """The agent uid is 1001, matching the GitHub runner's own user.
+
+    This keeps the bind-mounted workspace writable without loosening its
+    permissions.  If someone changes the uid they must also update
+    ``ARCHITECTURE.md`` D4 and the runner configuration.
+    """
+    dockerfile = _read("docker", "Dockerfile.agent")
+    assert re.search(r"(?m)^ARG\s+AGENT_UID\s*=\s*1001\b", dockerfile), (
+        "docker/Dockerfile.agent must define AGENT_UID=1001 "
+        "(matching the GitHub runner uid for workspace bind-mount compatibility)"
+    )
+
+
 def test_roadmap_epics_are_addressable():
     """Every epic has an `E<n>` identifier that issues and gates can cite."""
     roadmap = _read("ROADMAP.md")
