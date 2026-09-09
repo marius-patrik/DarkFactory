@@ -347,7 +347,7 @@ maintainer approval is received.</p>
 <tr>
 <td>D4</td>
 <td><strong>Containerized Sandbox Isolation</strong></td>
-<td>Autonomous agent processes execute inside a hermetic container with non-root privileges and strict env scoping.</td>
+<td>Autonomous agent processes execute inside a hermetic container with non-root privileges and strict env scoping. Non-root execution is enforced by a <code>USER agent</code> directive in <code>docker/Dockerfile.agent</code>. The unprivileged user is created with uid 1001, matching the GitHub runner's own user so the bind-mounted workspace stays writable without loosening its permissions. <code>tests/test_governance.py</code> asserts the directive is present to prevent silent regression.</td>
 </tr>
 <tr>
 <td>D5</td>
