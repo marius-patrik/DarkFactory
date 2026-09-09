@@ -127,7 +127,10 @@ jobs:
           EXISTING=$(gh issue list --repo "${{ inputs.repository }}" --state open --limit 100 \
             --search "darkfactory: installation in:body" --json number --jq '.[0].number // ""')
           if [ -z "$EXISTING" ]; then
-            EXISTING=$(gh issue create --repo "${{ inputs.repository }}" \
+            # `gh issue create` has no --json: it prints the issue URL, and the number is its last
+            # path segment. Asking for --json made it fail, the fallback searched an index that had
+            # not seen the new issue yet, and the binding came out as a bare `Closes #`.
+            URL=$(gh issue create --repo "${{ inputs.repository }}" \
               --title "Install the DarkFactory pipeline" \
               --body "$MARKER
           Adds the caller workflows and the manifest, pinned to \`${{ inputs.ref || github.sha }}\`.
@@ -136,12 +139,19 @@ jobs:
           pipeline commit, so adopting an update is a one-line change here.
 
           Filed by the install workflow so its pull request has something to bind. Configuring the
-          pipeline is a separate, standing issue." \
-              --json number --jq .number 2>/dev/null \
-              || gh issue list --repo "${{ inputs.repository }}" --state open --limit 1 \
-                   --search "darkfactory: installation in:body" --json number --jq '.[0].number')
+          pipeline is a separate, standing issue.")
+            EXISTING="${URL##*/}"
           fi
-          echo "number=${EXISTING##*/}" >> "$GITHUB_OUTPUT"
+
+          # An empty binding is worse than none: the pull request opens, `verify-bound-issue` fails
+          # on `Closes #`, and the cause is three steps upstream.
+          case "$EXISTING" in
+            ''|*[!0-9]*)
+              echo "Could not determine the installation issue number (got '$EXISTING')." >&2
+              exit 1
+              ;;
+          esac
+          echo "number=$EXISTING" >> "$GITHUB_OUTPUT"
 
       - name: Open a pull request on the target
         if: steps.generate.outputs.written == 'true'
