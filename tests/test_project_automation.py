@@ -1,6 +1,7 @@
 """Unit tests for the project board automation."""
 
 import os
+import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
@@ -467,3 +468,30 @@ class TestMembershipReconciliation:
 
         project_automation.reconcile_membership(Broken(), "o/r")
         assert project_automation.FAILURES
+
+
+class TestFailuresSayWhatWentWrong:
+    """`str()` of a subprocess failure names the command and the exit status and nothing else."""
+
+    def test_captured_stderr_reaches_the_message(self):
+        """The line explaining the failure is the line that was being dropped."""
+        exc = subprocess.CalledProcessError(
+            1, ["gh", "project", "list"], stderr="unknown owner type\n"
+        )
+        detail = project_automation._detail(exc)
+        assert "unknown owner type" in detail
+        assert "returned non-zero exit status 1" in detail
+
+    def test_stdout_is_used_when_there_is_no_stderr(self):
+        """`gh` does not always fail on stderr."""
+        exc = subprocess.CalledProcessError(1, ["gh"], output="API rate limit already exceeded")
+        assert "API rate limit already exceeded" in project_automation._detail(exc)
+
+    def test_bytes_output_does_not_break_the_message(self):
+        """A failure reported without `text=True` must still be readable."""
+        exc = subprocess.CalledProcessError(1, ["gh"], stderr=b"boom\n")
+        assert "boom" in project_automation._detail(exc)
+
+    def test_an_exception_with_no_output_renders_as_itself(self):
+        """Most exceptions carry nothing captured, and must not gain empty parentheses."""
+        assert project_automation._detail(ValueError("plain")) == "plain"
