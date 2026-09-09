@@ -1062,3 +1062,49 @@ def test_the_install_issue_number_is_validated_before_it_is_used():
     )
     assert "--json number --jq .number" not in step, "gh issue create has no --json"
     assert "exit 1" in step, "an unusable number must stop the run, not reach the pull request"
+
+
+class TestTheFormatterDoesNotBlockItsOwnChecks:
+    """Its commit becomes the head of a pull request, so what it does to that head matters."""
+
+    def _step(self) -> str:
+        """Returns the commands of the formatter's commit step, without its comments.
+
+        The comments explain what must not be there, and quote it to do so, so a test reading them
+        would fail on the explanation rather than on the behaviour.
+
+        Returns:
+            The step's command lines.
+        """
+        step = (
+            _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
+            .split("Commit and push formatting changes", 1)[1]
+            .split("\n      - name:", 1)[0]
+        )
+        return "\n".join(line for line in step.splitlines() if not line.strip().startswith("#"))
+
+    def test_the_commit_does_not_skip_ci(self):
+        """A head that skipped CI can never satisfy a required check.
+
+        The previous head's green runs do not carry over, so the pull request sits BLOCKED with
+        every check reported against a commit that is no longer current — and nothing in the UI
+        explains it. Both protected consumers were stuck exactly there.
+        """
+        assert "[skip ci]" not in self._step()
+
+    def test_submodules_are_not_staged(self):
+        """`git add -A` staged a gitlink the formatter had not touched.
+
+        The checked-out submodule differed from the recorded pointer, so every run committed that
+        difference, and the next run found it again. A formatter that never converges keeps moving
+        the head of every pull request it touches.
+        """
+        step = self._step()
+        assert "git add -A" not in step
+        assert "exclude,attr:submodule" in step
+
+    def test_the_default_branch_is_not_hardcoded(self):
+        """A consumer's default branch is not this repository's."""
+        step = self._step()
+        assert '"darkfactory"' not in step
+        assert "default_branch" in step
