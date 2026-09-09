@@ -390,3 +390,27 @@ def test_every_generated_caller_pins_a_commit():
             if ".yml@" in line:
                 ref = line.rsplit("@", 1)[1].strip()
                 assert re.fullmatch(r"[0-9a-f]{7,40}", ref), f"{path} pins {ref!r}, not a commit"
+
+
+class TestThePipelineIsNotItsOwnConsumer:
+    """DarkFactory runs these workflows directly; it does not call them."""
+
+    def test_installing_into_the_pipeline_is_refused(self):
+        """Both generated values are wrong for the pipeline repository, in different ways."""
+        with pytest.raises(install.SelfInstall):
+            install.plan("marius-patrik", "DarkFactory", "abc", root=".")
+
+    def test_the_comparison_ignores_case(self):
+        """Repository names are case-insensitive on GitHub, and a refusal must be too."""
+        with pytest.raises(install.SelfInstall):
+            install.plan("MARIUS-PATRIK", "darkfactory", "abc", root=".")
+
+    def test_a_real_consumer_is_unaffected(self):
+        """The refusal must be narrow enough to be invisible in normal use."""
+        assert install.plan("marius-patrik", "ChessWithQuests", "abc", root=".")
+
+    def test_a_different_pipeline_can_install_into_darkfactory(self):
+        """The name is not what is refused; being one's own upstream is."""
+        assert install.plan(
+            "marius-patrik", "DarkFactory", "abc", root=".", pipeline_repo="someone/Other"
+        )

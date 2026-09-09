@@ -370,6 +370,40 @@ def render_manifest(
     return json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
 
 
+class SelfInstall(Exception):
+    """Raised when the pipeline is asked to install itself as though it were a consumer."""
+
+
+def refuse_self_install(owner: str, repo: str, pipeline_repo: str) -> None:
+    """Stops an installation whose target is the pipeline repository itself.
+
+    DarkFactory is not a consumer of DarkFactory, and treating it as one does real damage in two
+    specific ways. `upstream.ref` is `null` deliberately - this repository *is* the upstream, so
+    pinning it to a commit of itself means nothing. And the generated `required_checks` are prefixed
+    with the caller job that reports them, which is right for a repository calling the pipeline as a
+    reusable workflow and wrong for the one that runs those workflows directly: it reports
+    `pipeline (3.10)`, not `ci / pipeline (3.10)`.
+
+    Applying them protected this repository's default branch against ten contexts nothing here will
+    ever report, and blocked every merge until the protection was restored by hand. Refusing is
+    cheap; noticing was not.
+
+    Args:
+        owner: Target repository owner.
+        repo: Target repository name.
+        pipeline_repo: `owner/name` of the repository holding the pipeline.
+
+    Raises:
+        SelfInstall: When the target is the pipeline itself.
+    """
+    if f"{owner}/{repo}".lower() == (pipeline_repo or "").lower():
+        raise SelfInstall(
+            f"{pipeline_repo} is the pipeline, not a consumer of it: it runs these workflows "
+            "directly rather than calling them, so a generated manifest would pin it to itself "
+            "and protect it against check names it never reports."
+        )
+
+
 def plan(
     owner: str,
     repo: str,
@@ -393,6 +427,7 @@ def plan(
     Returns:
         Mapping of repository-relative path to file contents.
     """
+    refuse_self_install(owner, repo, pipeline_repo)
     installed = relevant_workflows(root)
     files = {
         f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
