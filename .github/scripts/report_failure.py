@@ -129,6 +129,71 @@ def body_for(workflow: str, run_url: str, run_id: str) -> str:
     )
 
 
+def _close_duplicates(repo: str, workflow: str, keep: int) -> int:
+    """Closes any extra issues covering the same workflow.
+
+    Two runs finishing together both find nothing open and both file, because the check and the
+    create are not atomic. A concurrency group would serialise them, but a queued run is cancelled
+    when another joins its group, and a cancelled observer is a failure nobody hears about - which
+    is the thing this workflow exists to prevent.
+
+    So filing stays unserialised and the duplicate is cleaned up afterwards. The lowest number is
+    kept, because that is the one whose comments people will have replied to.
+
+    Args:
+        repo: `owner/name` of the repository.
+        workflow: Workflow name.
+        keep: Issue number to keep.
+
+    Returns:
+        How many duplicates were closed.
+    """
+    marker = MARKER.format(workflow=workflow)
+    try:
+        output = _gh(
+            [
+                "issue",
+                "list",
+                "--repo",
+                repo,
+                "--state",
+                "open",
+                "--label",
+                FAILURE_LABEL,
+                "--limit",
+                "100",
+                "--json",
+                "number,body",
+            ]
+        )
+    except subprocess.CalledProcessError as exc:
+        _record(f"could not list issues while de-duplicating {workflow}: {exc}")
+        return 0
+
+    closed = 0
+    for issue in json.loads(output or "[]"):
+        number = int(issue["number"])
+        if number == keep or marker not in (issue.get("body") or ""):
+            continue
+        try:
+            _gh(
+                [
+                    "issue",
+                    "close",
+                    str(number),
+                    "--repo",
+                    repo,
+                    "--comment",
+                    f"Duplicate of #{keep}; both runs filed before either saw the other.",
+                ]
+            )
+            print(f"Closed duplicate #{number} of #{keep}.")
+            closed += 1
+        except subprocess.CalledProcessError as exc:
+            _record(f"could not close duplicate #{number}: {exc}")
+    return closed
+
+
 def report(repo: str, workflow: str, run_url: str, run_id: str) -> Optional[int]:
     """Opens or updates the issue for a failing workflow.
 
@@ -176,8 +241,11 @@ def report(repo: str, workflow: str, run_url: str, run_id: str) -> Optional[int]
                 body_for(workflow, run_url, run_id),
             ]
         )
+        number = int(url.rstrip("/").rsplit("/", 1)[-1])
         print(f"Opened {url} for {workflow}.")
-        return int(url.rstrip("/").rsplit("/", 1)[-1])
+        # Another run may have filed between the check above and this create.
+        _close_duplicates(repo, workflow, keep=number)
+        return number
     except subprocess.CalledProcessError as exc:
         _record(f"could not open an issue for {workflow}: {exc}")
         return None
