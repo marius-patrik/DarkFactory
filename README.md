@@ -126,6 +126,25 @@ From this moment on, your repository operates as an autonomous Dark Factory!
 
 ---
 
+## The `darkfactory` command
+
+One front door for a deployment. Every subcommand delegates to the module that already implements
+it, so there is one implementation of each behaviour and the two cannot drift.
+
+```bash
+ln -s "$(pwd)/bin/darkfactory" /usr/local/bin/darkfactory
+
+darkfactory status                  # why is nothing happening
+darkfactory describe                # what is this repository made of
+darkfactory auth --repo owner/name  # set harness credentials from this machine
+darkfactory license                 # apply the licence the manifest declares
+darkfactory submodules              # pin and update submodules
+```
+
+`status` answers the question an operator actually has, by checking the things that are silently
+absent rather than loudly broken - a missing credential, an agent that was never switched on, a
+repository where the pipeline was never installed.
+
 ## Local Development & Testing
 
 ```bash
