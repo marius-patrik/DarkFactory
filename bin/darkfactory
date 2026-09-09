@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Front door for a DarkFactory deployment. Install with:
+#   ln -s "$(pwd)/bin/darkfactory" /usr/local/bin/darkfactory
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec python3 "$here/.github/scripts/darkfactory.py" "$@"
