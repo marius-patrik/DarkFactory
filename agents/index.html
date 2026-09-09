@@ -285,19 +285,26 @@ issues labeled <code>Request</code> before any planning, branching, or code chan
 <strong>harness-agnostic</strong>: no pipeline code knows which coding-agent CLI is executing.
 - <strong>Harness registry</strong>: <code>.github/scripts/harnesses.py</code> declares each CLI — Antigravity (<code>agy</code>),
   Claude Code (<code>claude</code>), OpenAI Codex (<code>codex</code>), Kimi (<code>kimi</code>), Grok (<code>grok</code>), Cursor
-  (<code>cursor-agent</code>), and opencode (<code>opencode</code>) — as a binary, an argv template, and a model chain.
-  Adding a harness is a data change; changing one is a configuration change.
+  (<code>cursor-agent</code>), and opencode (<code>opencode</code>) — as a binary, an argv template, the credentials it
+  accepts, and its quota pools. Adding a harness is a data change; changing one is a configuration
+  change.
 - <strong>No hardcoded invocation</strong>: every field is overridable at runtime through the
   <code>AGENT_HARNESS_CONFIG</code> repository variable, and the order through <code>AGENT_HARNESS_CHAIN</code>, so an
   upstream flag rename never requires a code change or a container rebuild.
 - <strong>Graceful degradation</strong>: harnesses whose binary is absent from <code>PATH</code>, or whose credentials are
   unset, are skipped rather than failed. An image carrying four of seven CLIs is a working image
   with a shorter fallback chain.
-- <strong>Fallback across harnesses, not just models</strong>: quota exhaustion on one harness escalates to the
-  next harness in the chain. Only when every harness and model is exhausted does the agent
-  checkpoint and block.
-- <strong>Authentication</strong>: Provider credentials are supplied through repository secrets only. The runner
-  performs a pre-flight token exchange on every run; no credentials are ever committed.
+- <strong>Every rung of the ladder is a fresh quota</strong>: exhaustion moves to the next <em>account</em>, then the
+  next <em>pool</em>, then the next harness. A harness may hold several accounts, numbered (<code>X</code>, <code>X_2</code>),
+  so adding one is adding a secret. Pools are models that bill separately — Antigravity's Gemini and
+  Claude models — and are not a model fallback: dropping to a weaker model on the same pool finds no
+  capacity, so models are configured per node instead. Backoff is reserved for the last attempt,
+  because an unused account is always a better answer than sleeping. Only when every account of
+  every pool of every harness is spent does the agent checkpoint and block.
+- <strong>Authentication</strong>: Provider credentials are supplied through repository secrets only, and each
+  harness declares which it accepts, so the runner performs any pre-flight token exchange from the
+  declaration rather than by name. The account being run is named in the log; its credential never
+  is. No credentials are ever committed.
 - <strong>Auto-Detection &amp; Interpretation</strong>: Incoming unlabelled issues are automatically tagged
   <code>Request</code>, classified with type and area labels, and answered with an interpretation comment.
 - <strong>Conversational Feedback Loop</strong>: The agent monitors comments on Request issues and

@@ -311,12 +311,16 @@ maintainer approval is received.</p>
 <hr />
 <h2 id="6-resilience-quota-exhaustion-fallback-ladder">6. Resilience, Quota Exhaustion &amp; Fallback Ladder<a class="headerlink" href="#6-resilience-quota-exhaustion-fallback-ladder" title="Permanent link">&para;</a></h2>
 <p>When an agent harness encounters quota exhaustion (e.g. HTTP 429, <code>RESOURCE_EXHAUSTED</code>, rate limits):
-1. <strong>Detection</strong>: <code>is_quota_exhausted</code> parses stderr and exit diagnostics.
-2. <strong>Exponential Backoff</strong>: Delays scale progressively via <code>calculate_backoff</code>.
-3. <strong>Model Fallback</strong>: Shifts down the model chain within the active harness.
-4. <strong>Harness Fallback</strong>: Transitions to the next harness in <code>AGENT_HARNESS_CHAIN</code> (e.g. Antigravity → Claude → Codex → Kimi).
-5. <strong>State Checkpointing</strong>: If all harnesses and models are exhausted, the pipeline serializes working state into <code>.agent_runner_checkpoint.json</code>, moves the board item to <code>Blocked</code>, and posts an alert comment.
-6. <strong>Resume</strong>: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.</p>
+Every rung of the ladder is a <strong>quota</strong> move — somewhere with capacity the last attempt did not have. Answering an exhausted quota with a weaker model is not a rung: it finds no capacity, it only answers worse, so models are configured per node and never degraded here.</p>
+<ol>
+<li><strong>Detection</strong>: <code>is_quota_exhausted</code> parses stderr and exit diagnostics.</li>
+<li><strong>Account Rotation</strong>: The same harness and model on the next account. A harness may hold several, numbered (<code>X</code>, <code>X_2</code>, <code>X_3</code>); adding one is adding a secret. This is the innermost rung because it is the cheapest fresh quota available.</li>
+<li><strong>Pool Rotation</strong>: The next model that bills against a <em>separate pool</em>. Only Antigravity has more than one — its Gemini and Claude models draw on different quotas — which is why it declares two and Claude declares one.</li>
+<li><strong>Harness Fallback</strong>: The next harness in <code>AGENT_HARNESS_CHAIN</code> (e.g. Antigravity → Claude → Codex → Kimi).</li>
+<li><strong>Exponential Backoff</strong>: Reserved for the <em>last</em> attempt, via <code>calculate_backoff</code>. An unused account is always a better answer than sleeping, so waiting happens only when there is nothing left to rotate to.</li>
+<li><strong>State Checkpointing</strong>: If every account of every pool of every harness is exhausted, the pipeline serializes working state into <code>.agent_runner_checkpoint.json</code>, moves the board item to <code>Blocked</code>, and posts an alert comment.</li>
+<li><strong>Resume</strong>: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.</li>
+</ol>
 <hr />
 <h2 id="7-foundational-architecture-decisions">7. Foundational Architecture Decisions<a class="headerlink" href="#7-foundational-architecture-decisions" title="Permanent link">&para;</a></h2>
 <p>The eight foundational architecture decisions gating the DarkFactory model:</p>
@@ -367,7 +371,7 @@ maintainer approval is received.</p>
 <tr>
 <td>D8</td>
 <td><strong>Multi-Tier Fallback &amp; Quota Ladder</strong></td>
-<td>Graceful degradation across models and CLI harnesses with automated state checkpointing on total exhaustion.</td>
+<td>Rotation across accounts, quota pools and CLI harnesses — every rung a fresh quota rather than a weaker answer — with automated state checkpointing on total exhaustion.</td>
 </tr>
 </tbody>
 </table>
