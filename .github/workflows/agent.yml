@@ -30,6 +30,7 @@ on:
         type: string
         default: ""
     secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
       ANTIGRAVITY_REFRESH_TOKEN: {required: false}
       ANTIGRAVITY_CLIENT_ID: {required: false}
@@ -81,6 +82,22 @@ jobs:
           [ -d .pipeline ] && CONTEXT=".pipeline"
           docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
 
+      - name: Mint an installation token for the App
+        # Repository work - reading an issue, commenting, opening a pull request - is what the App
+        # is installed for, and an installation has its own rate limit. Doing it with a person's
+        # token spends a quota shared with everything else that person runs, which is how the agent
+        # came to fail on `gh issue view` while a human was working in the same account.
+        #
+        # Projects v2 is the exception: GitHub scopes project permissions to organisations, so a
+        # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
+        id: app-token
+        if: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Dispatch agent in container
         run: |
           docker run --rm \
@@ -99,7 +116,8 @@ jobs:
             -e GROK_API_KEY="${{ secrets.GROK_API_KEY }}" \
             -e CURSOR_API_KEY="${{ secrets.CURSOR_API_KEY }}" \
             -e OPENCODE_API_KEY="${{ secrets.OPENCODE_API_KEY }}" \
-            -e GH_TOKEN="${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+            -e GH_TOKEN="${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
+            -e GH_PROJECT_TOKEN="${{ secrets.GH_PROJECT_TOKEN }}" \
             -e GITHUB_EVENT_PATH="/workspace/event.json" \
             -e GITHUB_EVENT_NAME="${{ github.event_name }}" \
             -e GITHUB_REPOSITORY="${{ github.repository }}" \

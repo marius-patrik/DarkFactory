@@ -41,6 +41,40 @@ TIMEOUT = "{{TIMEOUT}}"
 
 
 @dataclass(frozen=True)
+class Auth:
+    """How a harness obtains a usable credential.
+
+    Authentication was special-cased: one harness exchanged a Google refresh token in
+    ``agent_runner``, and every other harness was assumed to find its own credential in the
+    environment. Adding a harness that refreshes therefore meant editing the runner, which is the
+    opposite of the registry being the place a harness is described.
+
+    Declaring it here keeps the answer beside the harness. ``static`` means the environment already
+    holds something usable; ``oauth_refresh`` means the environment holds a *refresh* token to be
+    exchanged at ``token_url`` for a short-lived one.
+
+    Attributes:
+        kind: ``"static"`` or ``"oauth_refresh"``.
+        env: Environment variable holding the credential, static or refresh.
+        token_url: Token endpoint, for ``oauth_refresh``.
+        client_id_env: Environment variable holding the OAuth client id, where one is required.
+        client_secret_env: Environment variable holding the OAuth client secret, likewise.
+        writes_back: Whether the provider rotates the refresh token on use, so a caller must
+            persist the new one. Declared rather than assumed: getting it wrong silently strands
+            the credential after the first refresh.
+        note: Human-readable explanation for logs and documentation.
+    """
+
+    kind: str = "static"
+    env: str = ""
+    token_url: str = ""
+    client_id_env: str = ""
+    client_secret_env: str = ""
+    writes_back: bool = False
+    note: str = ""
+
+
+@dataclass(frozen=True)
 class Harness:
     """One coding-agent CLI the pipeline can drive.
 
