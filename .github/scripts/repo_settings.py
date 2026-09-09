@@ -103,6 +103,41 @@ LABELS.extend(MANIFEST.area_labels)
 REQUIRED_CHECKS: List[str] = MANIFEST.required_checks
 
 
+#: Operations an installation token cannot perform, so they authenticate as the person.
+#:
+#: Projects v2 is scoped to organisations; repository administration (`/pages`) needs
+#: `administration`; listing secrets needs `secrets`. The App holds none of the three. Everything
+#: else it does hold, and should use, because rate limits are per *user* and shared across every
+#: token a person holds - so a whole step authenticating as the person spends the person's quota on
+#: work the App could have done. That is not hypothetical: `gh label list` is a GraphQL call, and it
+#: is what failed every install today while the App's own limit sat untouched.
+USER_TOKEN_OPERATIONS = ("project", "secret")
+
+#: API paths that need the same, matched as substrings of the path argument.
+USER_TOKEN_PATHS = ("/pages",)
+
+
+def _env_for(args: List[str]) -> Dict[str, str]:
+    """Chooses the token one ``gh`` invocation should authenticate with.
+
+    Args:
+        args: Arguments following the ``gh`` executable.
+
+    Returns:
+        The environment to run it in.
+    """
+    env = dict(os.environ)
+    user_token = env.get("GH_PROJECT_TOKEN", "")
+    if not user_token:
+        return env
+
+    needs_user = bool(args) and args[0] in USER_TOKEN_OPERATIONS
+    needs_user = needs_user or any(path in arg for arg in args for path in USER_TOKEN_PATHS)
+    if needs_user:
+        env["GH_TOKEN"] = user_token
+    return env
+
+
 class Runner:
     """Executes ``gh`` commands, or prints them in plan mode."""
 
@@ -129,7 +164,7 @@ class Runner:
         if not self.apply:
             print(f"  would run: gh {printable}")
             return None
-        result = subprocess.run(["gh"] + args, capture_output=True, text=True)
+        result = subprocess.run(["gh"] + args, capture_output=True, text=True, env=_env_for(args))
         if result.returncode != 0:
             message = (result.stderr or result.stdout).strip().splitlines()
             detail = message[0] if message else "unknown error"
@@ -168,6 +203,7 @@ class Runner:
             input=json.dumps(fields),
             capture_output=True,
             text=True,
+            env=_env_for(args),
         )
         if result.returncode != 0:
             detail = (result.stderr or result.stdout).strip().splitlines()
