@@ -1,5 +1,6 @@
 """Unit tests for the autonomous agent runner's pure helpers."""
 
+import json
 import os
 from typing import List
 
@@ -334,3 +335,55 @@ class TestDeclarativeCredentials:
         )
         prepare_credentials(harnesses.get_harness("antigravity"))
         assert os.environ["ANTIGRAVITY_REFRESH_TOKEN"] == "stored"
+
+
+class TestPlanIssuesAreNotInterpreted:
+    """A Plan issue is the pipeline's own output, not a new request to be interpreted."""
+
+    def _payload(self, labels):
+        """Builds an `issues: opened` payload.
+
+        Args:
+            labels: Label names on the issue.
+
+        Returns:
+            The webhook payload.
+        """
+        return {
+            "action": "opened",
+            "issue": {"number": 92, "labels": [{"name": n} for n in labels]},
+            "repository": {"full_name": "marius-patrik/DarkFactory"},
+        }
+
+    def test_a_plan_issue_is_left_to_its_parent(self, monkeypatch, tmp_path):
+        """Interpreting it answers a question nobody asked, on the issue the plan lands on."""
+        called = []
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(self._payload(["Plan"])), encoding="utf-8")
+        module.dispatch_event(str(path), "issues")
+        assert called == [], "a Plan issue must not be interpreted"
+
+    def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
+        """The ordinary path must be untouched."""
+        called = []
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(self._payload(["Request"])), encoding="utf-8")
+        module.dispatch_event(str(path), "issues")
+        assert called == [92]
+
+
+def test_no_agent_output_names_another_project():
+    """Comments the agent writes appear on this repository's issues, under its own name."""
+    source = _read_runner_source()
+    written = [
+        line
+        for line in source.split("\n")
+        if "Omnis" in line and not line.strip().startswith(("or ", "#"))
+    ]
+    assert not written, f"agent output still names Omnis: {written}"
