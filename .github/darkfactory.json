@@ -31,7 +31,7 @@
   "upstream": {
     "$comment": "DarkFactory is its own upstream. Consumer repositories set repo to marius-patrik/DarkFactory and pin ref to a commit SHA.",
     "repo": null,
-    "ref": null
+    "ref": "fea7480e24f96db7584a4ebf56396503807b234c"
   },
   "versioning": {
     "mode": "semver",
@@ -209,5 +209,18 @@
       "marius-patrik/template-OdbornaPrace",
       "marius-patrik/mono-OdbornaPrace"
     ]
-  }
+  },
+  "$comment_required_checks": "Written rather than defaulted: calling the pipeline as a reusable workflow prefixes every check with the caller's job name, so the unprefixed defaults would protect the branch against contexts nothing reports.",
+  "required_checks": [
+    "ci / pipeline (3.10)",
+    "ci / pipeline (3.11)",
+    "ci / pipeline (3.12)",
+    "ci / pipeline (3.13)",
+    "ci / rust",
+    "ci / paper",
+    "ci / math",
+    "ci / web",
+    "ci / docs",
+    "verify-pr-issue / verify-bound-issue"
+  ]
 }
