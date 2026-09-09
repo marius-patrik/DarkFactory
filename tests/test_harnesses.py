@@ -212,3 +212,105 @@ def test_describe_chain_reports_emptiness_honestly(monkeypatch: pytest.MonkeyPat
     """
     monkeypatch.setattr(harnesses.shutil, "which", lambda binary: None)
     assert "No harness is available" in harnesses.describe_chain()
+
+
+#: What each harness's `env_keys` named before credentials moved into the `auth` declaration.
+#: The refactor must not change which variables authenticate a harness, and this is what says so.
+CREDENTIALS_BEFORE = {
+    "antigravity": {"ANTIGRAVITY_REFRESH_TOKEN"},
+    "claude": {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"},
+    "codex": {"OPENAI_API_KEY"},
+    "kimi": {"MOONSHOT_API_KEY", "KIMI_API_KEY"},
+    "grok": {"XAI_API_KEY", "GROK_API_KEY"},
+    "cursor": {"CURSOR_API_KEY"},
+    "opencode": {"OPENCODE_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"},
+}
+
+
+@pytest.mark.parametrize("name", EXPECTED_HARNESSES)
+def test_every_harness_declares_its_credentials(name: str):
+    """Auth is uniform: no harness is left to find its key by luck.
+
+    Args:
+        name: Registry key.
+    """
+    harness = REGISTRY[name]
+    assert harness.auth is not None, f"{name} declares no auth"
+    assert harness.auth.env_names(), f"{name} declares an auth naming no variable"
+
+
+@pytest.mark.parametrize("name", EXPECTED_HARNESSES)
+def test_declared_credentials_match_what_env_keys_named(name: str):
+    """Moving credentials into the declaration changed no harness's answer.
+
+    Args:
+        name: Registry key.
+    """
+    assert set(REGISTRY[name].credentials) == CREDENTIALS_BEFORE[name]
+
+
+def test_the_registry_names_credentials_in_one_place():
+    """`env_keys` is the override hook, so the registry itself must not use it."""
+    assert all(not harness.env_keys for harness in REGISTRY.values())
+
+
+def test_an_alternative_name_authenticates_on_its_own(monkeypatch: pytest.MonkeyPatch):
+    """Kimi's second accepted variable is as good as its first.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
+    monkeypatch.setenv("KIMI_API_KEY", "sk-test")
+    assert REGISTRY["kimi"].is_authenticated()
+    assert REGISTRY["kimi"].auth.is_satisfied()
+
+
+def test_env_keys_override_still_wins_over_the_declaration(monkeypatch: pytest.MonkeyPatch):
+    """The registry is overridable without a rebuild, credentials included.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    monkeypatch.setenv(
+        "AGENT_HARNESS_CONFIG", json.dumps({"cursor": {"env_keys": ["CURSOR_TOKEN"]}})
+    )
+    harness = get_harness("cursor")
+    assert harness is not None
+    assert list(harness.credentials) == ["CURSOR_TOKEN"]
+    assert list(REGISTRY["cursor"].credentials) == ["CURSOR_API_KEY"]
+
+
+def test_oauth_companions_are_secrets_but_not_credentials():
+    """A client id cannot authenticate alone, yet a caller still has to pass it."""
+    auth = REGISTRY["antigravity"].auth
+    assert "ANTIGRAVITY_CLIENT_ID" not in auth.env_names()
+    assert "ANTIGRAVITY_CLIENT_ID" in auth.secret_names()
+    assert "ANTIGRAVITY_CLIENT_SECRET" in auth.secret_names()
+
+
+def test_credential_env_names_covers_every_harness_without_repeats():
+    """The derived list is what workflows and the installer are meant to read."""
+    names = harnesses.credential_env_names()
+    assert len(names) == len(set(names))
+    for harness in REGISTRY.values():
+        assert set(harness.auth.secret_names()) <= set(names)
+
+
+def test_agent_workflow_passes_exactly_the_declared_credentials():
+    """A workflow missing a secret does not fail; it silently shortens the fallback chain.
+
+    So the secrets block of `agent.yml` is asserted against the registry rather than trusted. The
+    two GitHub secrets are the pipeline's own and are not harness credentials.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8") as handle:
+        workflow = handle.read()
+
+    block = workflow.split("    secrets:\n", 1)[1].split("\npermissions:", 1)[0]
+    declared = {
+        line.strip().split(":", 1)[0] for line in block.splitlines() if ": {required" in line
+    }
+    assert declared - {"DARKFACTORY_APP_PRIVATE_KEY", "GH_PROJECT_TOKEN"} == set(
+        harnesses.credential_env_names()
+    )

@@ -190,14 +190,21 @@ def prepare_credentials(harness: Any) -> Optional[str]:
         RuntimeError: When an exchange was declared and could not be completed.
     """
     auth = getattr(harness, "auth", None)
-    if auth is None or not auth.env:
+    if auth is None or not auth.env_names():
+        return None
+
+    if auth.kind == "static":
+        # Several providers accept either of two variable names, so the credential is whichever of
+        # the declared names is actually populated rather than the first one declared.
+        for name in auth.env_names():
+            value = os.environ.get(name, "")
+            if value:
+                return value
         return None
 
     stored = os.environ.get(auth.env, "")
     if not stored:
         return None
-    if auth.kind == "static":
-        return stored
 
     if auth.kind != "oauth_refresh":
         raise RuntimeError(f"{harness.name}: unknown auth kind {auth.kind!r}")
