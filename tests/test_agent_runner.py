@@ -474,3 +474,14 @@ def test_no_agent_heading_names_a_single_provider():
         line for line in source.split("\n") if "### Antigravity" in line or "### Omnis" in line
     ]
     assert not offenders, f"agent headings name a provider: {offenders}"
+
+
+def test_pull_requests_target_the_declared_default_branch():
+    """`pr create --base main` fails outright where the trunk is called something else.
+
+    The failure is reached only at the very end of an implementation run, after the agent has done
+    all of the work, so it is worth catching in the source rather than in a run.
+    """
+    source = _read_runner_source()
+    assert '"main",' not in source, "the base branch must come from the manifest, not a literal"
+    assert "default_branch()" in source

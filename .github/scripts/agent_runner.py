@@ -1604,7 +1604,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 "--head",
                 branch_name,
                 "--base",
-                "main",
+                default_branch(),
                 "--state",
                 "open",
                 "--json",
@@ -1785,7 +1785,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                     "--head",
                     branch_name,
                     "--base",
-                    "main",
+                    default_branch(),
                     "--title",
                     commit_title,
                     "--body",
@@ -1810,7 +1810,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                     "--head",
                     branch_name,
                     "--base",
-                    "main",
+                    default_branch(),
                     "--state",
                     "open",
                     "--json",
@@ -2299,6 +2299,25 @@ def dispatch_event(event_path: str, event_name: str):
                     return
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
+
+
+def default_branch() -> str:
+    """Returns the branch pull requests are opened against.
+
+    Hardcoding `main` is wrong wherever a repository calls its trunk anything else, and this
+    repository calls it `darkfactory`. The failure is not subtle once reached - `pr create --base
+    main` against a repository with no `main` simply fails - but it is reached only at the very end
+    of an implementation run, after the agent has done all of the work.
+
+    Returns:
+        The declared default branch, falling back to `main` for a repository with no manifest.
+    """
+    try:
+        import manifest
+
+        return manifest.load(".").default_branch
+    except Exception:  # noqa: BLE001 - a missing manifest must not stop a pull request opening
+        return "main"
 
 
 def _manifest_slug() -> str:

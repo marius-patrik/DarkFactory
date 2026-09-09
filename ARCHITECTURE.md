@@ -171,5 +171,5 @@ The eight foundational architecture decisions gating the DarkFactory model:
 | D4 | **Containerized Sandbox Isolation** | Autonomous agent processes execute inside a hermetic container with non-root privileges and strict env scoping. |
 | D5 | **Conventional Commits & Automated Formatting** | Strict commit grammar enforced by CI; zero review cycles spent on formatting via automated bot committers. |
 | D6 | **Pure-Code Repository Settings** | All GitHub repository metadata, branch protections, labels, and permissions are declared as code in `repo_settings.py`. |
-| D7 | **Virtual Documentation Publishing** | Root normative documents are mounted at build time into MkDocs virtual pages, eliminating copy-paste documentation decay. |
+| D7 | **Virtual Documentation Publishing** | Root normative documents are mounted at build time into properdocs virtual pages, eliminating copy-paste documentation decay. |
 | D8 | **Multi-Tier Fallback & Quota Ladder** | Graceful degradation across models and CLI harnesses with automated state checkpointing on total exhaustion. |
