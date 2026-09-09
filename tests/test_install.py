@@ -414,3 +414,52 @@ class TestThePipelineIsNotItsOwnConsumer:
         assert install.plan(
             "marius-patrik", "DarkFactory", "abc", root=".", pipeline_repo="someone/Other"
         )
+
+
+def test_an_unquoted_pipeline_ref_is_repinned(tmp_path):
+    """A hand-written caller need not quote its inputs, and omnis's did not.
+
+    Its `pipeline-ref:` therefore kept a commit sixteen versions older than the `uses:` line above
+    it, and the pipeline's own drift test failed on the repository the repin had just "updated" —
+    which is a worse outcome than not repinning at all, because it looks done.
+
+    Args:
+        tmp_path: Pytest temporary directory.
+    """
+    root = str(tmp_path)
+    os.makedirs(os.path.join(root, ".github", "workflows"))
+    path = os.path.join(root, ".github", "workflows", "ci.yml")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(
+            "jobs:\n  ci:\n"
+            "    uses: o/p/.github/workflows/ci.yml@aaaaaaa\n"
+            "    with:\n"
+            "      pipeline-ref: aaaaaaa\n"
+        )
+
+    install.retarget(root, "bbbbbbb")
+    with open(path, encoding="utf-8") as handle:
+        after = handle.read()
+    assert "aaaaaaa" not in after
+    assert after.count("bbbbbbb") == 2
+    assert "pipeline-ref: bbbbbbb" in after, "an unquoted input stays unquoted"
+
+
+def test_a_quoted_pipeline_ref_keeps_its_quotes(tmp_path):
+    """Rewriting the style as well as the value would put churn in every consumer's diff.
+
+    Args:
+        tmp_path: Pytest temporary directory.
+    """
+    root = str(tmp_path)
+    os.makedirs(os.path.join(root, ".github", "workflows"))
+    path = os.path.join(root, ".github", "workflows", "ci.yml")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(
+            '    uses: o/p/.github/workflows/ci.yml@aaaaaaa\n    pipeline-ref: "aaaaaaa"\n'
+        )
+
+    install.retarget(root, "bbbbbbb")
+    with open(path, encoding="utf-8") as handle:
+        after = handle.read()
+    assert 'pipeline-ref: "bbbbbbb"' in after
