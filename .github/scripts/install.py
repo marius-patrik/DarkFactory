@@ -475,9 +475,14 @@ this repository pins a commit of it in `.github/darkfactory.json`, and bumping t
 """
 
 
-#: Matches the pinned commit in a caller's `uses:` line and its `pipeline-ref:` input.
-PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>[0-9a-f]{7,40})")
-REF_INPUT_PATTERN = re.compile(r'(?P<prefix>pipeline-ref:\s*")(?P<ref>[0-9a-f]{7,40})(?P<suffix>")')
+#: Matches whatever a caller's `uses:` line pins, and its `pipeline-ref:` input.
+#:
+#: Deliberately not restricted to a commit SHA. Some callers were generated pinning a *branch*
+#: (`...ci.yml@darkfactory`), which is not a pin at all - it silently follows whatever lands there,
+#: so the diff a bump is supposed to show never exists. A pattern that only matched SHAs left those
+#: exactly as they were, which is the one case that most needed fixing.
+PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\S+)")
+REF_INPUT_PATTERN = re.compile(r'(?P<prefix>pipeline-ref:\s*")(?P<ref>[^"]*)(?P<suffix>")')
 
 
 def retarget(root: str, ref: str) -> List[str]:
