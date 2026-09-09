@@ -107,6 +107,32 @@ def test_dockerfile_enforces_non_root_user():
     )
 
 
+def test_the_user_directive_is_effective_where_it_sits():
+    """A `USER` directive at the top would pass a substring check and break the build.
+
+    Its position is what makes it work: after the last `RUN`, so package installation still has the
+    root it needs, and before `ENTRYPOINT`, so every agent process inherits the unprivileged user.
+    The plan for this change called for the assertion and it was not written, so it is added here.
+    """
+    dockerfile = _read("docker", "Dockerfile.agent")
+    lines = dockerfile.split("\n")
+    user_at = next(i for i, line in enumerate(lines) if re.match(r"^USER\s+agent\b", line))
+    last_run = max(i for i, line in enumerate(lines) if line.startswith("RUN "))
+    entrypoint_at = next(i for i, line in enumerate(lines) if line.startswith("ENTRYPOINT"))
+    assert (
+        last_run < user_at < entrypoint_at
+    ), "USER agent must follow the last RUN layer and precede ENTRYPOINT"
+
+
+def test_architecture_names_the_directive_that_enforces_d4():
+    """The document and the image must not be able to drift apart independently."""
+    architecture = _read("ARCHITECTURE.md")
+    d4 = next(line for line in architecture.split("\n") if line.startswith("| D4 "))
+    assert "USER agent" in d4, "D4 must name what enforces it"
+    assert "1001" in d4, "D4 must record the uid and therefore the reason for it"
+    assert "env scoping" in d4, "D4's second claim must not be lost while documenting the first"
+
+
 def test_dockerfile_agent_uid_matches_runner():
     """The agent uid is 1001, matching the GitHub runner's own user.
 

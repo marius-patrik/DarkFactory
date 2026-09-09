@@ -41,3 +41,6 @@ site/
 *.swo
 .DS_Store
 Thumbs.db
+
+# The runner mounts the webhook payload into the workspace; it is not repository content.
+event.json
