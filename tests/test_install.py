@@ -266,3 +266,90 @@ def test_every_default_check_has_a_caller_that_reports_it():
     installed = install.relevant_workflows(".")
     covered = {c.partition(" / ")[2] for c in install.required_contexts(installed)}
     assert covered == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
+
+
+class TestReinstallingAdoptsTheUpdate:
+    """Never overwriting a file meant a reinstall could not update anything either."""
+
+    def _installed(self, tmp_path, ref="aaaaaaa"):
+        """Writes a first installation into a temporary directory.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+            ref: Pipeline commit to pin.
+
+        Returns:
+            The root path as a string.
+        """
+        root = str(tmp_path)
+        install.write(install.plan("o", "r", ref, root=root), root)
+        return root
+
+    def test_the_pin_moves(self, tmp_path):
+        """Adopting a pipeline release is the one thing a reinstall most needs to do.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._installed(tmp_path)
+        changed = install.retarget(root, "bbbbbbb")
+        assert changed, "every caller pins the ref twice and both must move"
+
+        with open(os.path.join(root, ".github", "workflows", "ci.yml"), encoding="utf-8") as f:
+            content = f.read()
+        assert "aaaaaaa" not in content
+        assert content.count("bbbbbbb") == 2
+
+    def test_nothing_else_in_a_customised_caller_is_touched(self, tmp_path):
+        """The rule that made reinstalling safe must survive the change that made it useful.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._installed(tmp_path)
+        path = os.path.join(root, ".github", "workflows", "ci.yml")
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+        customised = content.replace("permissions:", "# a local edit\npermissions:", 1)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(customised)
+
+        install.retarget(root, "bbbbbbb")
+        with open(path, encoding="utf-8") as handle:
+            after = handle.read()
+        assert "# a local edit" in after
+        assert after == customised.replace("aaaaaaa", "bbbbbbb")
+
+    def test_a_missing_manifest_key_is_filled_in(self, tmp_path):
+        """An installation written before `required_checks` existed protects against nothing.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._installed(tmp_path)
+        path = os.path.join(root, ".github", "darkfactory.json")
+        with open(path, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        del manifest["required_checks"]
+        manifest["identity"]["display_name"] = "Chosen By Hand"
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle)
+
+        planned = install.render_manifest("o", "r", "bbbbbbb", root=root)
+        assert install.reconcile_manifest(root, "bbbbbbb", planned)
+
+        with open(path, encoding="utf-8") as handle:
+            after = json.load(handle)
+        assert after["required_checks"], "the missing key is filled in"
+        assert after["identity"]["display_name"] == "Chosen By Hand", "choices are not overwritten"
+        assert after["upstream"]["ref"] == "bbbbbbb", "the pin is what a reinstall exists to move"
+
+    def test_an_up_to_date_manifest_is_left_alone(self, tmp_path):
+        """A reinstall that changes nothing must produce no diff to review.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._installed(tmp_path, ref="bbbbbbb")
+        planned = install.render_manifest("o", "r", "bbbbbbb", root=root)
+        assert not install.reconcile_manifest(root, "bbbbbbb", planned)
