@@ -1025,3 +1025,24 @@ def test_a_formatting_commit_can_still_be_checked():
     assert "create-github-app-token" in content, "the formatter must be able to push as the App"
     checkout = content.split("Checkout repository", 1)[1].split("\n      - name:", 1)[0]
     assert "app-token.outputs.token" in checkout, "and must check out with that token"
+
+
+def test_no_gh_call_in_repo_settings_bypasses_the_token_chooser():
+    """Reaching for subprocess directly is how a call comes to use the wrong token.
+
+    It happened twice now — once in `project_automation`, and again here, where the board's Status
+    options were written as the App and failed with `Resource not accessible by integration`. That
+    reads like a missing permission rather than the wrong identity, which is what makes it expensive
+    to find.
+    """
+    source = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    calls = [
+        block
+        for block in source.split("subprocess.run(")[1:]
+        # The definition of the chooser itself is not a call site.
+        if "def _env_for" not in block[:200]
+    ]
+    assert calls, "there are gh calls to check"
+    for block in calls:
+        head = block[: block.index("\n    )") if "\n    )" in block else 400]
+        assert "env=_env_for(" in head, f"a gh call chooses no token: {head[:120]!r}"
