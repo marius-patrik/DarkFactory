@@ -340,15 +340,29 @@
 </code></pre></div></p>
 <p>From this moment on, your repository operates as an autonomous Dark Factory!</p>
 <hr />
+<h2 id="the-darkfactory-command">The <code>darkfactory</code> command<a class="headerlink" href="#the-darkfactory-command" title="Permanent link">&para;</a></h2>
+<p>One front door for a deployment. Every subcommand delegates to the module that already implements
+it, so there is one implementation of each behaviour and the two cannot drift.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ln<span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">/bin/darkfactory"</span><span class="w"> </span>/usr/local/bin/darkfactory
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>darkfactory<span class="w"> </span>status<span class="w">                  </span><span class="c1"># why is nothing happening</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>darkfactory<span class="w"> </span>describe<span class="w">                </span><span class="c1"># what is this repository made of</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>darkfactory<span class="w"> </span>auth<span class="w"> </span>--repo<span class="w"> </span>owner/name<span class="w">  </span><span class="c1"># set harness credentials from this machine</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>darkfactory<span class="w"> </span>license<span class="w">                 </span><span class="c1"># apply the licence the manifest declares</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>darkfactory<span class="w"> </span>submodules<span class="w">              </span><span class="c1"># pin and update submodules</span>
+</code></pre></div>
+<p><code>status</code> answers the question an operator actually has, by checking the things that are silently
+absent rather than loudly broken - a missing credential, an agent that was never switched on, a
+repository where the pipeline was never installed.</p>
 <h2 id="local-development-testing">Local Development &amp; Testing<a class="headerlink" href="#local-development-testing" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Run unit tests</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pytest<span class="w"> </span>-v
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Check formatting</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>black<span class="w"> </span>--check<span class="w"> </span>.
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Serve documentation locally</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>mkdocs<span class="w"> </span>serve
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Run unit tests</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>pytest<span class="w"> </span>-v
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Check formatting</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>black<span class="w"> </span>--check<span class="w"> </span>.
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Serve documentation locally</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>mkdocs<span class="w"> </span>serve
 </code></pre></div>
 <hr />
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
@@ -386,6 +400,8 @@
               <li><a href="#4-create-your-project-board-and-set-secrets">4. Create your Project board and set secrets</a></li>
               <li><a href="#5-apply-branch-protection">5. Apply branch protection</a></li>
             </ul>
+          </li>
+          <li><a href="#the-darkfactory-command">The darkfactory command</a>
           </li>
           <li><a href="#local-development-testing">Local Development &amp; Testing</a>
           </li>
