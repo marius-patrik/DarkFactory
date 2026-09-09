@@ -18,6 +18,9 @@ on:
         required: false
         type: string
         default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
 
 permissions:
   contents: write
@@ -25,13 +28,33 @@ permissions:
 jobs:
   format:
     runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
 
     steps:
+      - name: Mint an installation token for the App
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Checkout repository
+        # Checked out with the App's token so that the formatting commit triggers the checks.
+        # GitHub deliberately runs no workflow for a push made with GITHUB_TOKEN, so a formatting
+        # commit pushed that way advances the pull request's head to a commit **nothing ever
+        # checks** - and a protected branch then waits forever for contexts that will never report.
+        # Every consumer's installation pull request sat in exactly that state: green checks on the
+        # commit before, none at all on the head, and no way to tell from the pull request why.
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''

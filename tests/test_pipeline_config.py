@@ -659,6 +659,7 @@ def test_the_documentation_command_is_the_one_this_repository_uses():
 #: only within their own repository with `GITHUB_TOKEN`, which has its own quota and needs no App.
 APP_AUTHENTICATED_WORKFLOWS = [
     "agent.yml",
+    "auto-format.yml",
     "install.yml",
     "open-pr.yml",
     "pr-approval-automerge.yml",
@@ -1010,3 +1011,17 @@ def test_a_reinstall_updates_the_pull_request_it_finds():
     )
     assert "gh pr edit" in step, "an existing pull request must be updated, not skipped"
     assert "already exists" not in step, "reporting it and moving on is what left them unmergeable"
+
+
+def test_a_formatting_commit_can_still_be_checked():
+    """GitHub runs no workflow for a push made with `GITHUB_TOKEN`.
+
+    So a formatting commit pushed that way advances a pull request's head to a commit **nothing
+    ever checks**, and a protected branch then waits forever for contexts that will never report.
+    Every consumer's installation pull request sat in that state: green checks on the commit before,
+    none at all on the head, and nothing in the pull request explaining it.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
+    assert "create-github-app-token" in content, "the formatter must be able to push as the App"
+    checkout = content.split("Checkout repository", 1)[1].split("\n      - name:", 1)[0]
+    assert "app-token.outputs.token" in checkout, "and must check out with that token"
