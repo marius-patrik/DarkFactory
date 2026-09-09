@@ -399,3 +399,71 @@ class TestTokenSelection:
         monkeypatch.setenv("GH_TOKEN", "only")
         monkeypatch.delenv("GH_PROJECT_TOKEN", raising=False)
         assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "only"
+
+
+class TestMembershipReconciliation:
+    """A board is never wrong, only quietly incomplete; nothing looked twice until now."""
+
+    def setup_method(self):
+        """Clears failures recorded by an earlier test."""
+        project_automation.FAILURES.clear()
+
+    def _client(self, issues, prs):
+        """Builds a recorder returning canned listings.
+
+        Args:
+            issues: Open issues to return.
+            prs: Open pull requests to return.
+
+        Returns:
+            A client double recording every track call.
+        """
+
+        class Recorder(FakeProjectClient):
+            def __init__(self):
+                super().__init__()
+                self.tracked = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(issues if args[0] == "issue" else prs)
+
+            def track(self, url, status):
+                self.tracked.append((url, status))
+
+        return Recorder()
+
+    def test_every_open_item_reaches_the_boards(self):
+        """Both boards, because track goes through the group covering own and global."""
+        client = self._client(
+            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [{"number": 2, "url": "https://x/pull/2", "labels": [], "isDraft": False}],
+        )
+        assert project_automation.reconcile_membership(client, "o/r") == 2
+        assert ("https://x/issues/1", "Backlog") in client.tracked
+
+    def test_an_open_pull_request_is_work_in_flight(self):
+        """Whatever its labels say, an open pull request is not merely ToDo."""
+        client = self._client([], [{"number": 2, "url": "https://x/pull/2", "labels": []}])
+        project_automation.reconcile_membership(client, "o/r")
+        assert client.tracked == [("https://x/pull/2", "In Progress")]
+
+    def test_a_repository_with_nothing_open_tracks_nothing(self):
+        """Reconciling a quiet repository must cost a listing and no writes."""
+        client = self._client([], [])
+        assert project_automation.reconcile_membership(client, "o/r") == 0
+        assert client.tracked == []
+
+    def test_a_failed_listing_is_recorded_rather_than_swallowed(self):
+        """A silent failure here leaves a board incomplete and says nothing."""
+
+        class Broken(FakeProjectClient):
+            def run_gh(self, args):
+                raise RuntimeError("boom")
+
+            def track(self, url, status):
+                pass
+
+        project_automation.reconcile_membership(Broken(), "o/r")
+        assert project_automation.FAILURES
