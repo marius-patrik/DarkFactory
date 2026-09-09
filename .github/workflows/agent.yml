@@ -65,10 +65,29 @@ jobs:
       # is hoisted to the job, where it can.
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
+      - name: Mint an installation token for the App
+        # Repository work - reading an issue, commenting, opening a pull request - is what the App
+        # is installed for, and an installation has its own rate limit. Doing it with a person's
+        # token spends a quota shared with everything else that person runs, which is how the agent
+        # came to fail on `gh issue view` while a human was working in the same account.
+        #
+        # Projects v2 is the exception: GitHub scopes project permissions to organisations, so a
+        # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Checkout repository
+        # Checked out with the App's token, so the branches the agent pushes are pushed by the App
+        # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
+        # which is why a person's token was reached for here in the first place.
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''
@@ -85,22 +104,6 @@ jobs:
           CONTEXT="."
           [ -d .pipeline ] && CONTEXT=".pipeline"
           docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
-
-      - name: Mint an installation token for the App
-        # Repository work - reading an issue, commenting, opening a pull request - is what the App
-        # is installed for, and an installation has its own rate limit. Doing it with a person's
-        # token spends a quota shared with everything else that person runs, which is how the agent
-        # came to fail on `gh issue view` while a human was working in the same account.
-        #
-        # Projects v2 is the exception: GitHub scopes project permissions to organisations, so a
-        # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
-        id: app-token
-        if: env.HAS_APP_KEY == 'true'
-        uses: actions/create-github-app-token@v1
-        continue-on-error: true
-        with:
-          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
-          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
 
       - name: Dispatch agent in container
         run: |
