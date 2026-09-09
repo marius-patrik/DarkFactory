@@ -16,6 +16,7 @@ from elsewhere. Generating them is the closest thing to installing nothing.
 
 import json
 import os
+import re
 from typing import Dict, List, Optional
 
 import environment
@@ -474,6 +475,97 @@ this repository pins a commit of it in `.github/darkfactory.json`, and bumping t
 """
 
 
+#: Matches the pinned commit in a caller's `uses:` line and its `pipeline-ref:` input.
+PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>[0-9a-f]{7,40})")
+REF_INPUT_PATTERN = re.compile(r'(?P<prefix>pipeline-ref:\s*")(?P<ref>[0-9a-f]{7,40})(?P<suffix>")')
+
+
+def retarget(root: str, ref: str) -> List[str]:
+    """Repoints an existing installation at a new pipeline commit.
+
+    Installing never overwrites a file that is already there, because a repository may have
+    customised a caller and a reinstall must not silently discard that. The cost of that rule was
+    that a reinstall could not *update* anything either: the callers kept their old pin, so the one
+    thing a consumer most needs from a reinstall - adopting a pipeline release - was the one thing
+    it could not do.
+
+    So the pin is edited rather than the file replaced. Only the commit SHA in the `uses:` line and
+    the `pipeline-ref:` input change; every other line a repository has written stays exactly as it
+    is.
+
+    Args:
+        root: Repository root.
+        ref: Pipeline commit to point at.
+
+    Returns:
+        Paths whose pin changed.
+    """
+    if not ref:
+        return []
+
+    changed: List[str] = []
+    directory = os.path.join(root, ".github", "workflows")
+    if not os.path.isdir(directory):
+        return []
+
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith(".yml"):
+            continue
+        path = os.path.join(directory, name)
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+
+        updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
+        updated = REF_INPUT_PATTERN.sub(
+            lambda m: m.group("prefix") + ref + m.group("suffix"), updated
+        )
+        if updated != content:
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(updated)
+            print(f"  repinned .github/workflows/{name}")
+            changed.append(f".github/workflows/{name}")
+    return changed
+
+
+def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
+    """Fills in manifest keys an older installation never wrote, without touching its choices.
+
+    A manifest is a repository's own declaration, so this adds and never replaces - except the
+    upstream pin, which is what a reinstall exists to move. `required_checks` is the key that
+    matters: an installation written before the pipeline generated it protects the branch against
+    contexts nothing reports.
+
+    Args:
+        root: Repository root.
+        ref: Pipeline commit to pin.
+        planned: The manifest this installation would have generated.
+
+    Returns:
+        True when the manifest on disk changed.
+    """
+    path = os.path.join(root, ".github", "darkfactory.json")
+    if not os.path.isfile(path):
+        return False
+
+    with open(path, encoding="utf-8") as handle:
+        current = json.load(handle)
+    before = json.dumps(current, sort_keys=True)
+
+    for key, value in json.loads(planned).items():
+        if key not in current:
+            current[key] = value
+
+    if ref:
+        current.setdefault("upstream", {})["ref"] = ref
+
+    if json.dumps(current, sort_keys=True) == before:
+        return False
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
+    print("  reconciled .github/darkfactory.json")
+    return True
+
+
 def write(files: Dict[str, str], root: str = ".") -> List[str]:
     """Writes the planned files, creating directories as needed.
 
@@ -505,18 +597,22 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     """Entry point: writes the installation into the checked-out repository."""
     root = os.environ.get("TARGET_ROOT", ".")
     owner, _, repo = os.environ.get("TARGET_REPOSITORY", "/").partition("/")
-    written = write(
-        plan(
-            owner=owner,
-            repo=repo,
-            ref=os.environ.get("PIPELINE_REF", ""),
-            root=root,
-            branch=os.environ.get("TARGET_BRANCH", "main"),
-            description=os.environ.get("TARGET_DESCRIPTION", ""),
-            pipeline_repo=os.environ.get("PIPELINE_REPO", "marius-patrik/DarkFactory"),
-        ),
-        root,
+    ref = os.environ.get("PIPELINE_REF", "")
+    files = plan(
+        owner=owner,
+        repo=repo,
+        ref=ref,
+        root=root,
+        branch=os.environ.get("TARGET_BRANCH", "main"),
+        description=os.environ.get("TARGET_DESCRIPTION", ""),
+        pipeline_repo=os.environ.get("PIPELINE_REPO", "marius-patrik/DarkFactory"),
     )
+    written = write(files, root)
+    # A first install writes everything and has nothing to repoint; a reinstall is mostly the
+    # opposite, and both go through the same path so neither is a special case.
+    written += retarget(root, ref)
+    if reconcile_manifest(root, ref, files[".github/darkfactory.json"]):
+        written.append(".github/darkfactory.json")
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
             handle.write(f"written={'true' if written else 'false'}\n")
