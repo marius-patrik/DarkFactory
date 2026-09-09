@@ -524,11 +524,17 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
         print(f"  would set Status options to {STATUS_OPTIONS}")
         return
 
+    # Through `_env_for` like every other call. Reaching for subprocess directly is how this one
+    # came to authenticate as the App, which cannot write a user-owned Projects v2 board - it failed
+    # as `Resource not accessible by integration`, which reads like a missing permission rather than
+    # the wrong token.
+    args = ["api", "graphql", "--input", "-"]
     result = subprocess.run(
-        ["gh", "api", "graphql", "--input", "-"],
+        ["gh"] + args,
         input=json.dumps(payload),
         capture_output=True,
         text=True,
+        env=_env_for(args),
     )
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip().splitlines()
