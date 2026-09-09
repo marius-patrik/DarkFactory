@@ -376,3 +376,26 @@ class TestSettledStatus:
     def test_a_stale_in_progress_label_does_not_survive_closing(self):
         """The exact drift found on the board: closed items still showing In Progress."""
         assert project_automation.settled_status(True, False, ["In Progress"]) == "Dropped"
+
+
+class TestTokenSelection:
+    """Only Projects v2 needs a person's token; everything else belongs to the App."""
+
+    def test_board_calls_use_the_project_token(self, monkeypatch):
+        """Projects v2 permissions are org-scoped, so a user-owned board needs the user's token."""
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "user"
+
+    @pytest.mark.parametrize("args", [["issue", "edit"], ["api", "repos/o/r"], ["pr", "view"]])
+    def test_repository_calls_use_the_app_token(self, args, monkeypatch):
+        """The quota that starved the automation was spent on exactly these calls."""
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
+        assert project_automation._env_for(args)["GH_TOKEN"] == "app"
+
+    def test_without_a_project_token_nothing_is_overridden(self, monkeypatch):
+        """A repository that never configured one must still work as it did before."""
+        monkeypatch.setenv("GH_TOKEN", "only")
+        monkeypatch.delenv("GH_PROJECT_TOKEN", raising=False)
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "only"

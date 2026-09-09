@@ -187,6 +187,31 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
     return numbers
 
 
+def _env_for(args: List[str]) -> Dict[str, str]:
+    """Chooses the token a ``gh`` invocation should authenticate with.
+
+    Almost everything here is ordinary repository work - labelling an issue, closing one - which
+    the GitHub App is installed to do and which draws on the installation's own rate limit. Only
+    Projects v2 needs a person's token, because GitHub scopes project permissions to organisations
+    and these boards are owned by a user.
+
+    Splitting them matters beyond tidiness: while both went through one person's token, a busy
+    hour of ordinary work exhausted the quota the board writes needed, and the automation failed
+    with a rate limit rather than anything to do with boards.
+
+    Args:
+        args: Arguments following the ``gh`` executable.
+
+    Returns:
+        The environment to run under, with ``GH_TOKEN`` set appropriately.
+    """
+    env = dict(os.environ)
+    project_token = env.get("GH_PROJECT_TOKEN", "")
+    if args and args[0] == "project" and project_token:
+        env["GH_TOKEN"] = project_token
+    return env
+
+
 class GitHubProjectClient:
     """Thin wrapper over ``gh`` for project board mutations with runtime field discovery."""
 
@@ -215,7 +240,9 @@ class GitHubProjectClient:
         Raises:
             subprocess.CalledProcessError: If the command exits non-zero.
         """
-        result = subprocess.run(["gh"] + args, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["gh"] + args, capture_output=True, text=True, check=True, env=_env_for(args)
+        )
         return result.stdout.strip()
 
     @property
