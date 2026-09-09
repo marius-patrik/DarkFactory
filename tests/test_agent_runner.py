@@ -429,3 +429,46 @@ class TestOneIssueTwoGates:
 
         monkeypatch.setattr(module, "run_gh", boom)
         assert module.has_plan(91, REPO_SLUG) is False
+
+
+class TestApprovalRecognition:
+    """The approval is the gate the whole pipeline waits on, so recognising it must be right."""
+
+    @pytest.mark.parametrize("text", ["approve", "Approve", "  approve  ", "lgtm", "/approve"])
+    def test_a_bare_approval_is_recognised(self, text):
+        """The ordinary case."""
+        assert agent_runner_module().APPROVAL_PATTERN.search(text)
+
+    def test_an_explained_approval_is_still_an_approval(self):
+        """The pattern required the comment to be nothing but the word.
+
+        A reviewer who said why they approved had not approved - so the most careful review was
+        the one silently ignored, and the pipeline waited on a gate that had already been passed.
+        """
+        body = "Checked it against the tree; the claim holds.\n\nOne correction below.\n\napprove"
+        assert agent_runner_module().APPROVAL_PATTERN.search(body)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "I would approve this once the test exists",
+            "do not approve yet",
+            "approval pending",
+            "this needs work before I approve it",
+        ],
+    )
+    def test_the_word_in_a_sentence_is_not_an_approval(self, text):
+        """Approval must stay deliberate; a mention of the word is not a decision."""
+        assert not agent_runner_module().APPROVAL_PATTERN.search(text)
+
+
+def test_no_agent_heading_names_a_single_provider():
+    """Headings named Antigravity whichever harness answered - here, Claude.
+
+    The pipeline is harness-agnostic by design, so its own output should not claim otherwise.
+    """
+    source = _read_runner_source()
+    offenders = [
+        line for line in source.split("\n") if "### Antigravity" in line or "### Omnis" in line
+    ]
+    assert not offenders, f"agent headings name a provider: {offenders}"
