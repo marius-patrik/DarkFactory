@@ -216,7 +216,7 @@ def handle_pr_approval() -> None:
     """Entry point: gates on the actor, then readies, approves, and auto-merges the PR."""
     actor = os.environ.get("GITHUB_ACTOR", "")
     repo_owner = os.environ.get("REPO_OWNER", "")
-    repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/omnis")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
 
     allowed_users = {u for u in {repo_owner.lower(), "marius-patrik"} if u}
     if actor.lower() not in allowed_users:

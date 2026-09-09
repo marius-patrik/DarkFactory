@@ -33,7 +33,6 @@ _CANDIDATE_DIRS = [
     os.path.dirname(os.path.abspath(__file__)),
     os.path.join(os.environ.get("GITHUB_WORKSPACE", "/workspace"), ".github", "scripts"),
     "/usr/local/share/darkfactory-scripts",
-    "/usr/local/share/omnis-scripts",
     "/workspace/.github/scripts",
 ]
 for _d in _CANDIDATE_DIRS:

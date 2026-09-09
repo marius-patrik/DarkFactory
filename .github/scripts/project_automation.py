@@ -36,7 +36,9 @@ try:
 except (ValueError, TypeError):
     PROJECT_NUMBER = 1
 
-DEFAULT_REPO = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/omnis")
+#: Repository acted upon. A default naming another project aims a stray run at somebody
+#: else's repository, so there is none: outside Actions the caller must say.
+DEFAULT_REPO = os.environ.get("GITHUB_REPOSITORY", "")
 
 STATUS_FIELD_NAME = "Status"
 
