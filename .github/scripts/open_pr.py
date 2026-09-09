@@ -73,12 +73,32 @@ def open_pr_as_bot(
     return ""
 
 
+def _default_base() -> str:
+    """Returns the branch a pull request should target by default.
+
+    Returns:
+        The declared default branch, or `main` when no manifest can be read.
+    """
+    try:
+        import manifest
+
+        return manifest.load(".").default_branch
+    except Exception:  # noqa: BLE001 - the CLI must still parse without a manifest
+        return "main"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Open PR authored by github-actions[bot]")
     parser.add_argument("--branch", required=True, help="Head branch name")
     parser.add_argument("--title", required=True, help="Pull request title")
     parser.add_argument("--body", required=True, help="Pull request description")
-    parser.add_argument("--base", default="main", help="Target base branch (default: main)")
+    # Defaulting to `main` is wrong wherever a repository calls its trunk something else, and the
+    # manifest already records what this one calls it.
+    parser.add_argument(
+        "--base",
+        default=_default_base(),
+        help="Target base branch; defaults to the branch the manifest declares",
+    )
     parser.add_argument("--ready", action="store_true", help="Open as ready instead of draft")
 
     args = parser.parse_args()

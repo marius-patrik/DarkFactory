@@ -644,6 +644,7 @@ def test_the_documentation_command_is_the_one_this_repository_uses():
     """
     for relative in (
         "AGENTS.md",
+        "ARCHITECTURE.md",
         os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
         os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
     ):
