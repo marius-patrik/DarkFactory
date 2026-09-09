@@ -439,14 +439,16 @@ class TestApprovalRecognition:
         """The ordinary case."""
         assert agent_runner_module().APPROVAL_PATTERN.search(text)
 
-    def test_an_explained_approval_is_still_an_approval(self):
-        """The pattern required the comment to be nothing but the word.
+    def test_an_explained_approval_does_not_approve(self):
+        """Feedback and approval are separate acts, and collapsing them loses the distinction.
 
-        A reviewer who said why they approved had not approved - so the most careful review was
-        the one silently ignored, and the pipeline waited on a gate that had already been passed.
+        A comment carrying anything besides the word is feedback: it reaches `handle_respond`, the
+        agent answers or amends, and the reviewer approves cleanly once satisfied. Accepting
+        "three concerns, and approve" would leave nobody able to tell whether the concerns were
+        meant to be addressed first.
         """
         body = "Checked it against the tree; the claim holds.\n\nOne correction below.\n\napprove"
-        assert agent_runner_module().APPROVAL_PATTERN.search(body)
+        assert not agent_runner_module().APPROVAL_PATTERN.search(body)
 
     @pytest.mark.parametrize(
         "text",
