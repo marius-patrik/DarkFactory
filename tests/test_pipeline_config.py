@@ -969,3 +969,44 @@ def test_the_settings_step_carries_both_tokens():
     )
     assert "GH_TOKEN:" in step and "GH_PROJECT_TOKEN:" in step
     assert "app-token.outputs.token" in step.split("GH_TOKEN:", 1)[1].splitlines()[0]
+
+
+def test_the_installation_pull_request_binds_an_issue():
+    """`verify-bound-issue` is a required check, so an unbound install can never merge.
+
+    That is what happened to ChessWithQuests: the install pull request sat blocked on a check that
+    could not pass, in the one repository whose branch was protected.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+    pr_step = content.split("Open a pull request on the target", 1)[1].split("\n      - name:", 1)[
+        0
+    ]
+    assert "Closes #" in pr_step, "the installation pull request must bind its issue"
+    assert "steps.install-issue.outputs.number" in pr_step
+
+
+def test_the_bound_issue_is_not_the_configuration_issue():
+    """The configuration issue is a standing invitation and must not be closed by installing."""
+    content = _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+    assert "darkfactory: installation" in content
+    assert "darkfactory: configuration" in content
+    pr_step = content.split("Open a pull request on the target", 1)[1].split("\n      - name:", 1)[
+        0
+    ]
+    assert "darkfactory: configuration" not in pr_step
+
+
+def test_a_reinstall_updates_the_pull_request_it_finds():
+    """A reinstall pushes to the same branch, so the pull request is usually already open.
+
+    Skipping it leaves the body as it was, and the body carries the issue binding — so a pull
+    request opened before that binding existed stays unmergeable forever behind a required check it
+    can never satisfy. All five consumer installations were in exactly that state.
+    """
+    step = (
+        _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+        .split("Open a pull request on the target", 1)[1]
+        .split("\n      - name:", 1)[0]
+    )
+    assert "gh pr edit" in step, "an existing pull request must be updated, not skipped"
+    assert "already exists" not in step, "reporting it and moving on is what left them unmergeable"
