@@ -671,18 +671,14 @@ APP_AUTHENTICATED_WORKFLOWS = [
 #: Workflows holding a line that deliberately prefers the user's token, and how many such lines.
 #: An installation token cannot do these, so the exception is recorded rather than left looking like
 #: an oversight - and the count is asserted, so a second one in the same file is still caught.
-USER_TOKEN_EXCEPTIONS = {
-    # Repository administration and secret listing need `administration` and `secrets`, which the
-    # App does not hold: `POST /repos/.../pages` and `gh secret list` both 403 as the installation.
-    # Granting the App those permissions is the alternative, and needs a person to approve them.
-    "install.yml": 1,
-}
+USER_TOKEN_EXCEPTIONS: Dict[str, int] = {}
 
-#: Projects v2 is the other thing an installation token cannot do, but it is not an exception to
-#: this rule: `agent.yml` and `project-automation.yml` authenticate as the App and pass the user's
-#: token through in a *separate* variable that only board calls read. Preferring a token and
+#: There are three things an installation token cannot do - write a user-owned Projects v2 board,
+#: administer a repository (`/pages`), and list secrets - and none of them is an exception to this
+#: rule. Every workflow authenticates as the App and carries the user's token in a *separate*
+#: variable that only those calls read, so the narrow thing stays narrow. Preferring a token and
 #: carrying one for a specific purpose are different things, and only the first is a licence worth
-#: policing.
+#: policing - which is why this map is empty and should stay that way.
 
 
 def _user_first_lines(name: str) -> List[str]:
@@ -897,3 +893,70 @@ class TestExistingProtectionIsKeptConsistent:
         run = self._Runner(current)
         repo_settings.sync_protected_checks(run)
         assert not [c for c in run.calls if c[0] == "PATCH"]
+
+
+class TestSettingsSpendTheRightQuota:
+    """Rate limits are per user, so work the App can do must not be charged to the person."""
+
+    def test_project_calls_use_the_person(self, monkeypatch):
+        """Projects v2 permissions are scoped to organisations.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        import repo_settings
+
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
+        assert repo_settings._env_for(["project", "list"])["GH_TOKEN"] == "person"
+
+    def test_pages_and_secret_calls_use_the_person(self, monkeypatch):
+        """`administration` and `secrets` are permissions the App does not hold.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        import repo_settings
+
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
+        assert repo_settings._env_for(["api", "-X", "POST", "repos/o/r/pages"])["GH_TOKEN"] == (
+            "person"
+        )
+        assert repo_settings._env_for(["secret", "list"])["GH_TOKEN"] == "person"
+
+    def test_everything_else_uses_the_app(self, monkeypatch):
+        """`gh label list` is a GraphQL call, and it is what failed every install today.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        import repo_settings
+
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
+        for args in (["label", "list"], ["api", "-X", "PATCH", "repos/o/r"], ["repo", "edit"]):
+            assert repo_settings._env_for(args)["GH_TOKEN"] == "app", args
+
+    def test_without_a_user_token_nothing_is_swapped(self, monkeypatch):
+        """A repository holding only the App key must still get as far as it can.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        import repo_settings
+
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.delenv("GH_PROJECT_TOKEN", raising=False)
+        assert repo_settings._env_for(["project", "list"])["GH_TOKEN"] == "app"
+
+
+def test_the_settings_step_carries_both_tokens():
+    """The split only works if the step is given both to choose between."""
+    step = (
+        _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+        .split("Reconcile labels, board and settings", 1)[1]
+        .split("\n      - name:", 1)[0]
+    )
+    assert "GH_TOKEN:" in step and "GH_PROJECT_TOKEN:" in step
+    assert "app-token.outputs.token" in step.split("GH_TOKEN:", 1)[1].splitlines()[0]
