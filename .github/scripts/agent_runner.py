@@ -501,6 +501,18 @@ def is_bot_or_agent_comment(user_login: str, body: str) -> bool:
     return False
 
 
+#: Recognises an approval, including one a reviewer explained.
+#:
+#: The pattern required the comment to consist of nothing but the word, anchored at both ends, so
+#: a reviewer who said *why* they approved had not approved. That is the wrong way round: the
+#: careful review is the one that gets silently ignored, and the approval is the gate the whole
+#: pipeline waits on. The word must still stand on a line of its own, so approval stays deliberate
+#: and cannot be triggered by the word appearing mid-sentence.
+APPROVAL_PATTERN = re.compile(
+    r"(?im)^\s*(?:/approve|approve|approved|good|lgtm|/resume|resume)\s*$"
+)
+
+
 def is_quota_exhausted(error_message: str) -> bool:
     """Detects whether an error indicates quota or rate limit exhaustion.
 
@@ -1279,7 +1291,7 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
     if response.startswith("[DarkFactory Agent Execution Error]"):
         body = f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{response}"
     else:
-        body = f"<!-- darkfactory-agent -->\n### Antigravity Agent Response\n\n{response}"
+        body = f"<!-- darkfactory-agent -->\n### DarkFactory Agent Response\n\n{response}"
 
     if is_pr:
         run_gh(["pr", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
@@ -1703,7 +1715,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                     "comment",
                     str(plan_number),
                     "--body",
-                    "<!-- darkfactory-agent -->\n### Antigravity Agent Notice\n\n"
+                    "<!-- darkfactory-agent -->\n### DarkFactory Agent Notice\n\n"
                     "No file changes produced by implementation. Please review the plan scope.",
                 ],
                 repo=repo,
@@ -2227,9 +2239,7 @@ def dispatch_event(event_path: str, event_name: str):
             ]
             is_request = any(l.lower() == "request" for l in labels)
             is_plan = any(l.lower() == "plan" for l in labels)
-            if re.search(
-                r"(?i)^\s*(?:/approve|approve|good|lgtm|/resume|resume)\s*$", comment_body
-            ):
+            if re.search(APPROVAL_PATTERN, comment_body):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
                 load_checkpoint(cwd=WORKSPACE_DIR)
                 if is_request:
@@ -2280,9 +2290,7 @@ def dispatch_event(event_path: str, event_name: str):
                     f"Skipping PR review comment on #{pr_num} authored by bot/agent ({comment_user})."
                 )
                 return
-            if re.search(
-                r"(?i)^\s*(?:/approve|approve|good|lgtm|/resume|resume)\s*$", comment_body
-            ):
+            if re.search(APPROVAL_PATTERN, comment_body):
                 unblock_entity(pr_num, repo, is_pr=True, target_status="In Progress")
                 plan_num = find_plan_issue_for_pr(pr_num, repo)
                 if plan_num:
