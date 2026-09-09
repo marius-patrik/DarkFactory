@@ -216,12 +216,14 @@ warnings</code>) are blocking.</p>
 <li><code>Dropped</code>: Items closed without implementation or cancelled.</li>
 </ul>
 <h3 id="10-pre-implementation-planning-plan-review">10. Pre-Implementation Planning &amp; Plan Review<a class="headerlink" href="#10-pre-implementation-planning-plan-review" title="Permanent link">&para;</a></h3>
-<p>Before implementation begins on any task, the implementation plan must be documented in a dedicated
-child issue with the <code>Plan</code> label, natively linked as a sub-issue of its parent <code>Request</code> issue
-(<code>--parent &lt;request_id&gt;</code>). The plan must detail objectives, architectural and code changes, and
-verification steps.
+<p>Before implementation begins on any task, the implementation plan must be posted as a comment on the
+same <code>Request</code> issue and approved there. The plan must detail objectives, architectural and code
+changes, and verification steps.</p>
+<p>Both approval gates remain: the interpretation is approved before a plan is written, and the plan is
+approved before any code is. What changed is that they no longer need an issue each - one unit of
+work is one issue, so a pull request binds one thing and closing it closes one thing.
 - <strong>Implementation Review Gate</strong>: Prior to merging the bound pull request, an implementation review
-  must be conducted and commented on the child Plan issue confirming the implementation matches the
+  must be conducted and commented on the same issue, confirming the implementation matches the
   plan exactly (<code>Matches Plan: Yes</code>).
 - <strong>Plan Alignment</strong>: If the implementation diverged from the plan, an alignment comment
   (<code>Plan Alignment:</code>) detailing all deviations must be posted and explicitly approved before the
@@ -255,7 +257,8 @@ issues labeled <code>Request</code> before any planning, branching, or code chan
   and the proposed verification.
 - <strong>Confirmation Gate</strong>: The interpretation requires explicit user confirmation (commenting
   <code>approve</code>) before any implementation plan is made.
-- <strong>Child Plan Issues</strong>: Once confirmed, a child issue with the <code>Plan</code> label is created and natively
+- <strong>Two gates, one issue</strong>: Once the interpretation is approved, the plan is posted as a comment on
+  the same issue and approved there. Both gates remain; what changed is that they no longer need
   linked via GitHub sub-issues (<code>--parent &lt;request_id&gt;</code>) containing the detailed implementation
   plan. All subsequent branches and pull requests bind to the plan issue.</p>
 <h3 id="13-specification-sequence-when-issues-may-exist">13. Specification Sequence &amp; When Issues May Exist<a class="headerlink" href="#13-specification-sequence-when-issues-may-exist" title="Permanent link">&para;</a></h3>
@@ -297,7 +300,7 @@ issues labeled <code>Request</code> before any planning, branching, or code chan
   performs a pre-flight token exchange on every run; no credentials are ever committed.
 - <strong>Auto-Detection &amp; Interpretation</strong>: Incoming unlabelled issues are automatically tagged
   <code>Request</code>, classified with type and area labels, and answered with an interpretation comment.
-- <strong>Conversational Feedback Loop</strong>: The agent monitors comments on Request issues, Plan issues, and
+- <strong>Conversational Feedback Loop</strong>: The agent monitors comments on Request issues and
   Pull Requests, responds to human feedback, and executes requested adjustments. Bot and agent
   comments are ignored to prevent self-reply loops.
 - <strong>Autonomous Implementation &amp; Review</strong>: On plan approval (<code>approve</code>), the agent creates the
