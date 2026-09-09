@@ -668,6 +668,45 @@ APP_AUTHENTICATED_WORKFLOWS = [
 ]
 
 
+#: Workflows holding a line that deliberately prefers the user's token, and how many such lines.
+#: An installation token cannot do these, so the exception is recorded rather than left looking like
+#: an oversight - and the count is asserted, so a second one in the same file is still caught.
+USER_TOKEN_EXCEPTIONS = {
+    # Repository administration and secret listing need `administration` and `secrets`, which the
+    # App does not hold: `POST /repos/.../pages` and `gh secret list` both 403 as the installation.
+    # Granting the App those permissions is the alternative, and needs a person to approve them.
+    "install.yml": 1,
+}
+
+#: Projects v2 is the other thing an installation token cannot do, but it is not an exception to
+#: this rule: `agent.yml` and `project-automation.yml` authenticate as the App and pass the user's
+#: token through in a *separate* variable that only board calls read. Preferring a token and
+#: carrying one for a specific purpose are different things, and only the first is a licence worth
+#: policing.
+
+
+def _user_first_lines(name: str) -> List[str]:
+    """Returns the token lines in one workflow that reach for the user's token before the App's.
+
+    Args:
+        name: Workflow file name.
+
+    Returns:
+        The offending lines, stripped.
+    """
+    lines = []
+    for line in _read(os.path.join(WORKFLOW_DIR, name)).splitlines():
+        stripped = line.strip()
+        if not stripped.startswith(("GH_TOKEN:", "token:")):
+            continue
+        if "GH_PROJECT_TOKEN" not in stripped:
+            continue
+        app = stripped.find("app-token.outputs.token")
+        if app == -1 or app > stripped.index("GH_PROJECT_TOKEN"):
+            lines.append(stripped)
+    return lines
+
+
 @pytest.mark.parametrize("name", APP_AUTHENTICATED_WORKFLOWS)
 def test_github_writes_prefer_the_installation_token(name: str):
     """Rate limits are per user and shared across every token a person holds.
@@ -683,15 +722,26 @@ def test_github_writes_prefer_the_installation_token(name: str):
     content = _read(os.path.join(WORKFLOW_DIR, name))
     assert "create-github-app-token" in content, f"{name} never mints an installation token"
 
-    for line in content.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith(("GH_TOKEN:", "token:")):
-            continue
-        if "GH_PROJECT_TOKEN" not in stripped:
-            continue
-        assert stripped.index("app-token.outputs.token") < stripped.index(
-            "GH_PROJECT_TOKEN"
-        ), f"{name} prefers the user token over the App in: {stripped}"
+    offenders = _user_first_lines(name)
+    allowed = USER_TOKEN_EXCEPTIONS.get(name, 0)
+    assert len(offenders) <= allowed, (
+        f"{name} prefers the user token over the App in {len(offenders)} place(s), "
+        f"{allowed} of which are declared exceptions: {offenders}"
+    )
+
+
+def test_every_declared_user_token_exception_is_a_real_one():
+    """An exception nobody uses is a licence left open for the next person to take.
+
+    Asserted both ways: every declared exception must actually appear, and no workflow outside the
+    list may prefer the user's token at all.
+    """
+    actual = {
+        name: len(_user_first_lines(name))
+        for name in sorted(os.listdir(WORKFLOW_DIR))
+        if _user_first_lines(name)
+    }
+    assert actual == USER_TOKEN_EXCEPTIONS
 
 
 @pytest.mark.parametrize("name", APP_AUTHENTICATED_WORKFLOWS)
@@ -756,3 +806,23 @@ def test_same_repository_workflows_do_not_narrow_their_token(name: str):
     content = _read(os.path.join(WORKFLOW_DIR, name))
     block = content.split("create-github-app-token", 1)[1].split("- name:", 1)[0]
     assert "repositories:" not in block, f"{name} acts on its own repository and must not scope"
+
+
+def test_the_installer_tells_the_settings_script_which_repository_to_configure():
+    """`repo_settings.py` otherwise falls back to the directory it lives in - the pipeline.
+
+    This is the failure with no symptom: the install reports success, having reconciled DarkFactory
+    against itself while the repository being installed into is left exactly as it was. It ran that
+    way for every `apply-settings` install until the logs were read closely enough to notice the
+    API calls naming the wrong repository.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+    step = content.split("Reconcile labels, board and settings", 1)[1].split("- name:", 1)[0]
+    assert "DARKFACTORY_REPO_ROOT:" in step, "the settings step must name its target"
+    assert "target" in step.split("DARKFACTORY_REPO_ROOT:", 1)[1].splitlines()[0]
+
+
+def test_the_settings_script_honours_that_variable():
+    """The workflow and the script have to agree on the name, and only a test says so."""
+    source = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert 'os.environ.get("DARKFACTORY_REPO_ROOT")' in source

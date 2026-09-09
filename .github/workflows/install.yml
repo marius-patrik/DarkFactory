@@ -173,7 +173,17 @@ jobs:
         if: inputs.apply-settings
         working-directory: target
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          # Repository administration and secret listing need `administration` and `secrets`, which
+          # the App does not hold - `POST /repos/.../pages` and `gh secret list` both 403 as the
+          # installation. This is the same class of exception as Projects v2: something an
+          # installation token genuinely cannot do, so it is named here rather than left to look
+          # like an oversight. Granting the App those permissions is the alternative and needs a
+          # person to approve them on the installation.
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN || steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          # Which repository is being configured. `repo_settings.py` reads this and otherwise falls
+          # back to the directory it lives in - the pipeline checkout - so without it every install
+          # reconciled DarkFactory against itself and reported success.
+          DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
           PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
         run: |
           python3 "${{ github.workspace }}/.pipeline/.github/scripts/repo_settings.py" \
