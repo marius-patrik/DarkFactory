@@ -172,6 +172,100 @@ def refresh_google_oauth_token(
         raise RuntimeError(f"Unexpected error during token refresh: {e}") from e
 
 
+def prepare_credentials(harness: Any) -> Optional[str]:
+    """Obtains a usable credential for a harness from what it declares.
+
+    The runner used to know, by name, that one harness exchanges a Google refresh token and that
+    every other one finds an API key already in the environment. Adding a harness that refreshes
+    therefore meant editing the runner rather than the registry, which is where a harness is
+    otherwise described.
+
+    Args:
+        harness: The harness to authenticate, carrying an optional ``auth`` declaration.
+
+    Returns:
+        A usable credential, or ``None`` when the harness declares none and authenticates by other
+        means.
+
+    Raises:
+        RuntimeError: When an exchange was declared and could not be completed.
+    """
+    auth = getattr(harness, "auth", None)
+    if auth is None or not auth.env:
+        return None
+
+    stored = os.environ.get(auth.env, "")
+    if not stored:
+        return None
+    if auth.kind == "static":
+        return stored
+
+    if auth.kind != "oauth_refresh":
+        raise RuntimeError(f"{harness.name}: unknown auth kind {auth.kind!r}")
+
+    response = exchange_refresh_token(
+        stored,
+        auth.token_url,
+        os.environ.get(auth.client_id_env, ""),
+        os.environ.get(auth.client_secret_env, ""),
+    )
+
+    # A provider that rotates issues a new refresh token on every exchange. Reading only the access
+    # token, as this code did, is correct while the provider does not rotate and silently strands
+    # the credential the moment one does - so the declaration decides, and the new value is
+    # surfaced for the caller to persist rather than dropped.
+    if auth.rotates and response.get("refresh_token"):
+        rotated = response["refresh_token"]
+        if rotated != stored:
+            os.environ[auth.env] = rotated
+            print(
+                f"{harness.name}: the provider rotated its refresh token; "
+                f"the stored {auth.env} must be replaced or the next run will fail."
+            )
+    return response.get("access_token")
+
+
+def exchange_refresh_token(
+    refresh_token: str,
+    token_url: str,
+    client_id: str = "",
+    client_secret: str = "",
+) -> Dict[str, Any]:
+    """Exchanges a refresh token for an access token at any OAuth token endpoint.
+
+    Args:
+        refresh_token: The stored refresh token.
+        token_url: Token endpoint declared by the harness.
+        client_id: OAuth client id, where the provider requires one.
+        client_secret: OAuth client secret, likewise.
+
+    Returns:
+        The parsed token response.
+
+    Raises:
+        RuntimeError: When the endpoint rejects the exchange or cannot be reached.
+    """
+    fields = {"refresh_token": refresh_token, "grant_type": "refresh_token"}
+    if client_id:
+        fields["client_id"] = client_id
+    if client_secret:
+        fields["client_secret"] = client_secret
+
+    request = urllib.request.Request(
+        token_url,
+        data=urllib.parse.urlencode(fields).encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"token refresh failed ({exc.code}): {body}") from exc
+    except Exception as exc:  # noqa: BLE001 - surfaced with context rather than swallowed
+        raise RuntimeError(f"unexpected error during token refresh: {exc}") from exc
+
+
 def setup_antigravity_credentials(
     access_token: str,
     refresh_token: str,

@@ -75,6 +75,50 @@ class Auth:
 
 
 @dataclass(frozen=True)
+class Auth:
+    """How a harness obtains a usable credential.
+
+    Authentication was special-cased. One harness exchanged a Google refresh token in
+    ``agent_runner``, and every other harness was assumed to find something usable already sitting
+    in the environment. Adding a harness that refreshes therefore meant editing the runner, which
+    is the opposite of the registry being the place a harness is described.
+
+    Declaring it keeps the answer beside the harness that needs it.
+
+    Attributes:
+        kind: ``"static"`` when the environment already holds a usable credential, or
+            ``"oauth_refresh"`` when it holds a *refresh* token to be exchanged first.
+        env: Environment variable holding that credential.
+        token_url: Token endpoint, for ``oauth_refresh``.
+        client_id_env: Environment variable holding the OAuth client id, where one is required.
+        client_secret_env: Environment variable holding the client secret, likewise.
+        rotates: Whether the provider issues a new refresh token on each exchange, so the stored
+            one must be replaced. Declared rather than assumed: the existing implementation reads
+            only ``access_token`` from the response and passes the original refresh token straight
+            back, which is correct for a provider that does not rotate and silently strands the
+            credential for one that does.
+        note: Human-readable explanation, for logs and documentation.
+    """
+
+    kind: str = "static"
+    env: str = ""
+    token_url: str = ""
+    client_id_env: str = ""
+    client_secret_env: str = ""
+    rotates: bool = False
+    note: str = ""
+
+    def is_satisfied(self) -> bool:
+        """Reports whether the environment holds what this method needs.
+
+        Returns:
+            ``True`` when the declared variable is populated, or when nothing is declared and the
+            harness authenticates by other means.
+        """
+        return True if not self.env else bool(os.environ.get(self.env))
+
+
+@dataclass(frozen=True)
 class Harness:
     """One coding-agent CLI the pipeline can drive.
 
@@ -87,6 +131,8 @@ class Harness:
             Empty means "run the harness default once".
         env_keys: Environment variables the harness needs; a harness missing all of them is
             reported as unauthenticated rather than silently failing mid-run.
+        auth: How the credential is obtained. ``None`` means the environment already holds
+            something usable, which is true of every harness that takes a plain API key.
         extra_args: Appended verbatim to every invocation.
         description: Human-readable note for logs and documentation.
     """
@@ -97,6 +143,7 @@ class Harness:
     model_chain: Sequence[str] = ()
     env_keys: Sequence[str] = ()
     extra_args: Sequence[str] = ()
+    auth: Optional["Auth"] = None
     description: str = ""
 
     def is_available(self) -> bool:
@@ -177,6 +224,18 @@ REGISTRY: Dict[str, Harness] = {
         ],
         model_chain=("gemini-3.8-flash-high", "claude-opus-4-6-thinking"),
         env_keys=("ANTIGRAVITY_REFRESH_TOKEN",),
+        auth=Auth(
+            kind="oauth_refresh",
+            env="ANTIGRAVITY_REFRESH_TOKEN",
+            token_url="https://oauth2.googleapis.com/token",
+            client_id_env="ANTIGRAVITY_CLIENT_ID",
+            client_secret_env="ANTIGRAVITY_CLIENT_SECRET",
+            # Google does not issue a new refresh token on a refresh_token grant, so the stored one
+            # stays valid. Stated rather than relied upon, because the code that assumed it also
+            # discarded the field it would have arrived in.
+            rotates=False,
+            note="Google OAuth; exchanged for a short-lived access token each run.",
+        ),
         description="Google Antigravity CLI",
     ),
     "claude": Harness(
@@ -193,6 +252,14 @@ REGISTRY: Dict[str, Harness] = {
         ],
         model_chain=("opus", "sonnet"),
         env_keys=("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"),
+        auth=Auth(
+            kind="static",
+            env="CLAUDE_CODE_OAUTH_TOKEN",
+            # `claude setup-token` mints a long-lived token against a subscription, so there is
+            # nothing to exchange and nothing to rotate. An ANTHROPIC_API_KEY works too and bills
+            # per token instead.
+            note="Long-lived subscription token, or an API key.",
+        ),
         description="Anthropic Claude Code",
     ),
     "codex": Harness(
