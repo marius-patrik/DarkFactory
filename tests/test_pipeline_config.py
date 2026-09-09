@@ -826,3 +826,74 @@ def test_the_settings_script_honours_that_variable():
     """The workflow and the script have to agree on the name, and only a test says so."""
     source = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
     assert 'os.environ.get("DARKFACTORY_REPO_ROOT")' in source
+
+
+class TestExistingProtectionIsKeptConsistent:
+    """Installing must not switch protection on, and must not leave an existing one broken."""
+
+    class _Runner:
+        """Records what would be called, and answers the protection read."""
+
+        def __init__(self, protection: str):
+            """Args:
+            protection: JSON the protection endpoint should return, or "" for unprotected.
+            """
+            self.protection = protection
+            self.calls = []
+            self.failures = []
+
+        def gh(self, args, allow_fail=False):
+            """Args:
+            args: Command arguments.
+            allow_fail: Ignored.
+
+            Returns:
+                The canned protection payload.
+            """
+            self.calls.append(("gh", tuple(args)))
+            return self.protection
+
+        def api(self, method, path, payload=None):
+            """Args:
+            method: HTTP method.
+            path: API path.
+            payload: Request body.
+            """
+            self.calls.append((method, path, payload))
+
+    def test_an_unprotected_branch_is_left_unprotected(self):
+        """A repository that has not asked for protection must not be given it by an install."""
+        import repo_settings
+
+        run = self._Runner("")
+        repo_settings.sync_protected_checks(run)
+        assert not [c for c in run.calls if c[0] in ("PUT", "PATCH")]
+
+    def test_stale_contexts_are_replaced(self):
+        """This is what blocked every merge on ChessWithQuests after a re-install."""
+        import json as json_module
+
+        import repo_settings
+
+        stale = json_module.dumps(
+            {"required_status_checks": {"contexts": ["pipeline / pipeline (3.10)"]}}
+        )
+        run = self._Runner(stale)
+        repo_settings.sync_protected_checks(run)
+
+        patches = [c for c in run.calls if c[0] == "PATCH"]
+        assert len(patches) == 1
+        assert patches[0][2]["contexts"] == repo_settings.REQUIRED_CHECKS
+
+    def test_correct_contexts_are_left_alone(self):
+        """An idempotent run must be a quiet one."""
+        import json as json_module
+
+        import repo_settings
+
+        current = json_module.dumps(
+            {"required_status_checks": {"contexts": list(repo_settings.REQUIRED_CHECKS)}}
+        )
+        run = self._Runner(current)
+        repo_settings.sync_protected_checks(run)
+        assert not [c for c in run.calls if c[0] == "PATCH"]

@@ -19,6 +19,7 @@ import os
 from typing import Dict, List, Optional
 
 import environment
+import manifest
 
 #: Workflow file name -> (display name, `on:` block, `permissions:` block).
 #:
@@ -139,6 +140,38 @@ STARTER_AREAS: Dict[str, object] = {
         "keywords": ["doc", "docs", "documentation", "readme", "site"],
     },
 }
+
+
+#: Unprefixed check name -> the caller whose job reports it.
+#:
+#: A repository calling the pipeline as a reusable workflow sees every check prefixed with the
+#: caller's job name, so `pipeline (3.12)` arrives as `ci / pipeline (3.12)`. Branch protection
+#: matches contexts by string, and a protected branch waiting on a name nothing reports blocks
+#: every merge - which is exactly what a *re-install* did to ChessWithQuests, whose protection still
+#: named the job the previous caller happened to use.
+CHECK_SOURCES: Dict[str, str] = {
+    "verify-bound-issue": "verify-pr-issue",
+}
+
+#: The caller reporting every check not named above.
+DEFAULT_CHECK_SOURCE = "ci"
+
+
+def required_contexts(installed: List[str]) -> List[str]:
+    """Returns the status check contexts a protected branch should require.
+
+    Args:
+        installed: Workflow file names being installed.
+
+    Returns:
+        Contexts, prefixed with the caller job that reports each, for the checks installed.
+    """
+    contexts = []
+    for check in manifest.DEFAULT_REQUIRED_CHECKS:
+        caller = CHECK_SOURCES.get(check, DEFAULT_CHECK_SOURCE)
+        if caller in installed:
+            contexts.append(f"{caller} / {check}")
+    return contexts
 
 
 def relevant_workflows(root: str = ".") -> List[str]:
@@ -307,6 +340,9 @@ def render_manifest(
             "holder": "",
             "year": "",
         },
+        "$comment_required_checks": "Written rather than defaulted: calling the pipeline as a "
+        "reusable workflow prefixes every check with the caller's job name, so the unprefixed "
+        "defaults would protect the branch against contexts nothing reports.",
         "upstream": {
             "$comment": "`ref` is the pin: bump it to adopt a pipeline update.",
             "repo": pipeline_repo,
@@ -316,6 +352,7 @@ def render_manifest(
             "global_title": "Global",
             "link_boards": ["Global"],
         },
+        "required_checks": required_contexts(relevant_workflows(root)),
         "areas": STARTER_AREAS,
     }
 

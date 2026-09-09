@@ -532,6 +532,47 @@ def apply_branch_protection(run: Runner) -> None:
     )
 
 
+def sync_protected_checks(run: Runner) -> None:
+    """Brings an existing branch protection's required contexts up to date, and nothing else.
+
+    Deliberately narrower than :func:`apply_branch_protection`. Installing must not switch
+    protection on for a repository that has not asked for it - but where protection already exists,
+    leaving it demanding contexts that no longer report is worse than not touching it at all: every
+    merge blocks, and the reason is a string mismatch nothing surfaces.
+
+    That is what a re-install did to ChessWithQuests. Its protection required
+    `pipeline / pipeline (3.10)` from the caller job the previous installation happened to name,
+    the new caller reports `ci / pipeline (3.10)`, and the pull request sat unmergeable with nine
+    checks "expected" and nine green ones ignored.
+
+    Args:
+        run: Command runner.
+    """
+    print(f"\n== Required checks ({MANIFEST.default_branch}) ==")
+    path = f"repos/{SLUG}/branches/{MANIFEST.default_branch}/protection"
+    existing = run.gh(["api", path], allow_fail=True)
+    if not existing:
+        print("  not protected; leaving it that way")
+        return
+
+    try:
+        current = json.loads(existing)["required_status_checks"]["contexts"]
+    except (ValueError, KeyError, TypeError):
+        print("  protected, but no required checks are configured; leaving them alone")
+        return
+
+    if sorted(current) == sorted(REQUIRED_CHECKS):
+        print("  already correct")
+        return
+
+    print(f"  {sorted(current)} -> {sorted(REQUIRED_CHECKS)}")
+    run.api(
+        "PATCH",
+        f"{path}/required_status_checks",
+        {"strict": True, "contexts": REQUIRED_CHECKS},
+    )
+
+
 def apply_pages(run: Runner) -> None:
     """Enables GitHub Pages using the source declared in the manifest.
 
@@ -682,6 +723,9 @@ def main() -> None:
         apply_branch_protection(run)
     else:
         print("\n== Branch protection (main) ==\n  skipped by --skip-protection")
+        # Skipping protection must not mean leaving a protected branch broken by the workflows
+        # this run just wrote.
+        sync_protected_checks(run)
     report_required_secrets(run)
 
     if run.failures:
