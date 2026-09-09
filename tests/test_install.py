@@ -6,6 +6,7 @@ about what gets derived correctly and what is deliberately left for a person to 
 
 import json
 import os
+import re
 
 import pytest
 import yaml
@@ -353,3 +354,39 @@ class TestReinstallingAdoptsTheUpdate:
         root = self._installed(tmp_path, ref="bbbbbbb")
         planned = install.render_manifest("o", "r", "bbbbbbb", root=root)
         assert not install.reconcile_manifest(root, "bbbbbbb", planned)
+
+
+def test_a_caller_pinned_to_a_branch_is_repinned_to_the_commit(tmp_path):
+    """A branch is not a pin: it follows whatever lands there, so the bump diff never exists.
+
+    Several callers were generated this way, and a repin that matched only commit SHAs left exactly
+    those alone - the case that most needed fixing.
+
+    Args:
+        tmp_path: Pytest temporary directory.
+    """
+    root = str(tmp_path)
+    install.write(install.plan("o", "r", "aaaaaaa", root=root), root)
+    path = os.path.join(root, ".github", "workflows", "ci.yml")
+    with open(path, encoding="utf-8") as handle:
+        content = handle.read()
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(content.replace("ci.yml@aaaaaaa", "ci.yml@darkfactory"))
+
+    install.retarget(root, "bbbbbbb")
+    with open(path, encoding="utf-8") as handle:
+        after = handle.read()
+    assert "@darkfactory" not in after
+    assert after.count("bbbbbbb") == 2
+
+
+def test_every_generated_caller_pins_a_commit():
+    """The generator itself must never produce a branch pin."""
+    files = install.plan("o", "r", "0123456789abcdef0123456789abcdef01234567", root=".")
+    for path, content in files.items():
+        if not path.endswith(".yml"):
+            continue
+        for line in content.splitlines():
+            if ".yml@" in line:
+                ref = line.rsplit("@", 1)[1].strip()
+                assert re.fullmatch(r"[0-9a-f]{7,40}", ref), f"{path} pins {ref!r}, not a commit"
