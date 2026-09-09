@@ -572,6 +572,56 @@ def retarget(root: str, ref: str) -> List[str]:
     return changed
 
 
+def ensure_secrets_pass(root: str) -> List[str]:
+    """Adds `secrets: inherit` to a caller that passes none.
+
+    A called workflow sees none of its caller's secrets unless they are passed, and a caller written
+    before that mattered passes nothing. The failure is silent and specific: `auto-format` cannot
+    mint an installation token without `DARKFACTORY_APP_PRIVATE_KEY`, so it pushes its formatting
+    commit with `GITHUB_TOKEN` - and GitHub runs no workflow for such a push, so the pull request's
+    head becomes a commit nothing checks and a protected branch waits forever.
+
+    Generated callers have always emitted this line. It is repaired here because a repository whose
+    callers predate it cannot be fixed by writing files that already exist.
+
+    Args:
+        root: Repository root.
+
+    Returns:
+        Paths that gained the line.
+    """
+    changed: List[str] = []
+    directory = os.path.join(root, ".github", "workflows")
+    if not os.path.isdir(directory):
+        return []
+
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith(".yml"):
+            continue
+        path = os.path.join(directory, name)
+        with open(path, encoding="utf-8") as handle:
+            lines = handle.readlines()
+
+        if not any(".github/workflows/" in line and "uses:" in line for line in lines):
+            continue
+        if any(line.strip().startswith("secrets:") for line in lines):
+            continue
+
+        # After the last input, which every caller ends with, so the line lands inside the job.
+        last_input = max(
+            (i for i, line in enumerate(lines) if "pipeline-ref:" in line), default=None
+        )
+        if last_input is None:
+            continue
+        indent = " " * (len(lines[last_input]) - len(lines[last_input].lstrip()) - 2)
+        lines.insert(last_input + 1, f"{indent}secrets: inherit\n")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.writelines(lines)
+        print(f"  passed secrets in .github/workflows/{name}")
+        changed.append(f".github/workflows/{name}")
+    return changed
+
+
 def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     """Fills in manifest keys an older installation never wrote, without touching its choices.
 
@@ -656,6 +706,7 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     # A first install writes everything and has nothing to repoint; a reinstall is mostly the
     # opposite, and both go through the same path so neither is a special case.
     written += retarget(root, ref)
+    written += ensure_secrets_pass(root)
     if reconcile_manifest(root, ref, files[".github/darkfactory.json"]):
         written.append(".github/darkfactory.json")
     if os.environ.get("GITHUB_OUTPUT"):
