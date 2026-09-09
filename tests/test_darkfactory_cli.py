@@ -40,8 +40,14 @@ def test_describe_json_is_the_whole_environment(tmp_path, capsys):
 
 
 def test_auth_without_a_repository_is_a_usage_error(tmp_path, monkeypatch, capsys):
-    """Guessing which repository to write credentials to would be the wrong kind of helpful."""
+    """Guessing which repository to write credentials to would be the wrong kind of helpful.
+
+    `GITHUB_REPOSITORY` has to be cleared explicitly. Inside Actions it is always set, and the
+    manifest falls back to it - which is correct there and hid this test's premise entirely, so it
+    passed on a developer machine and failed in CI.
+    """
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
     assert darkfactory.main(["auth"]) == 2
     assert "pass --repo" in capsys.readouterr().err
 
