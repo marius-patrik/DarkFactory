@@ -463,3 +463,83 @@ def test_a_quoted_pipeline_ref_keeps_its_quotes(tmp_path):
     with open(path, encoding="utf-8") as handle:
         after = handle.read()
     assert 'pipeline-ref: "bbbbbbb"' in after
+
+
+class TestACallerMustPassItsSecrets:
+    """A called workflow sees none of its caller's secrets unless they are passed."""
+
+    def _caller(self, tmp_path, body):
+        """Writes one caller workflow.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+            body: File contents.
+
+        Returns:
+            The repository root.
+        """
+        root = str(tmp_path)
+        os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
+        with open(
+            os.path.join(root, ".github", "workflows", "auto-format.yml"), "w", encoding="utf-8"
+        ) as handle:
+            handle.write(body)
+        return root
+
+    def test_a_caller_passing_nothing_is_repaired(self, tmp_path):
+        """This is why formatting commits were pushed with GITHUB_TOKEN and checked nothing.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._caller(
+            tmp_path,
+            "jobs:\n  run:\n"
+            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    with:\n"
+            "      pipeline-repo: o/p\n"
+            "      pipeline-ref: aaaaaaa\n",
+        )
+        assert install.ensure_secrets_pass(root)
+
+        with open(
+            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+        ) as handle:
+            after = handle.read()
+        assert "    secrets: inherit\n" in after
+        assert after.index("secrets: inherit") > after.index("pipeline-ref:")
+
+    def test_a_caller_that_already_passes_is_untouched(self, tmp_path):
+        """Repeating the line would be churn, and a narrower `secrets:` block must not be widened.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        body = (
+            "jobs:\n  run:\n"
+            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    with:\n      pipeline-ref: aaaaaaa\n"
+            "    secrets:\n      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}\n"
+        )
+        root = self._caller(tmp_path, body)
+        assert install.ensure_secrets_pass(root) == []
+
+        with open(
+            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+        ) as handle:
+            assert handle.read() == body
+
+    def test_a_file_that_is_not_a_caller_is_ignored(self, tmp_path):
+        """A repository's own workflow is not the pipeline's to edit.
+
+        Args:
+            tmp_path: Pytest temporary directory.
+        """
+        root = self._caller(tmp_path, "jobs:\n  build:\n    runs-on: ubuntu-latest\n")
+        assert install.ensure_secrets_pass(root) == []
+
+    def test_every_generated_caller_already_passes(self):
+        """The repair exists for callers written before this mattered, not for new ones."""
+        for path, content in install.plan("o", "r", "abc", root=".").items():
+            if path.endswith(".yml"):
+                assert "secrets: inherit" in content, path
