@@ -43,13 +43,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # break every build, which is exactly the fragility the harness registry exists to remove.
 # The manifest step below records what actually landed, so the chain is never a guess.
 
-RUN curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin || true
-RUN npm install -g @anthropic-ai/claude-code || true
-RUN npm install -g @openai/codex || true
-RUN npm install -g @moonshot-ai/kimi-cli || true
-RUN npm install -g opencode-ai || true
-RUN curl -fsSL https://cursor.com/install | bash || true
-RUN curl -fsSL https://raw.githubusercontent.com/xai-org/grok-cli/main/install.sh | bash || true
+# Harnesses are installed from the registry that already describes them, so adding one is a single
+# declaration rather than a Dockerfile edit that can disagree with it. Failures are reported by
+# name instead of being swallowed by `|| true`, and a missing *required* harness fails the build.
+COPY .github/scripts/harnesses.py .github/scripts/install_harnesses.py /usr/local/share/darkfactory-scripts/
+RUN PYTHONPATH=/usr/local/share/darkfactory-scripts \
+    python3 /usr/local/share/darkfactory-scripts/install_harnesses.py
 
 # Record which harnesses are present so the build log answers "what can this image drive?"
 RUN set -eux; \
