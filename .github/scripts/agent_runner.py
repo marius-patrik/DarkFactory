@@ -501,16 +501,16 @@ def is_bot_or_agent_comment(user_login: str, body: str) -> bool:
     return False
 
 
-#: Recognises an approval, including one a reviewer explained.
+#: Recognises an approval, which must be the whole comment.
 #:
-#: The pattern required the comment to consist of nothing but the word, anchored at both ends, so
-#: a reviewer who said *why* they approved had not approved. That is the wrong way round: the
-#: careful review is the one that gets silently ignored, and the approval is the gate the whole
-#: pipeline waits on. The word must still stand on a line of its own, so approval stays deliberate
-#: and cannot be triggered by the word appearing mid-sentence.
-APPROVAL_PATTERN = re.compile(
-    r"(?im)^\s*(?:/approve|approve|approved|good|lgtm|/resume|resume)\s*$"
-)
+#: Deliberately strict, and it was briefly loosened by mistake. A comment carrying anything besides
+#: the word is feedback, and feedback has its own path: it reaches `handle_respond`, the agent
+#: answers or amends, and the reviewer then approves cleanly once satisfied.
+#:
+#: Accepting "three concerns, and approve" would collapse those two acts into one ambiguous
+#: message - nobody can tell whether the concerns were meant to be addressed first. Requiring the
+#: word to stand alone is what keeps a decision distinguishable from a discussion.
+APPROVAL_PATTERN = re.compile(r"(?i)^\s*(?:/approve|approve|good|lgtm|/resume|resume)\s*$")
 
 
 def is_quota_exhausted(error_message: str) -> bool:
