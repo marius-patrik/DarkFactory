@@ -1046,3 +1046,19 @@ def test_no_gh_call_in_repo_settings_bypasses_the_token_chooser():
     for block in calls:
         head = block[: block.index("\n    )") if "\n    )" in block else 400]
         assert "env=_env_for(" in head, f"a gh call chooses no token: {head[:120]!r}"
+
+
+def test_the_install_issue_number_is_validated_before_it_is_used():
+    """An empty binding is worse than none: the failure surfaces three steps downstream.
+
+    `gh issue create` has no `--json`; it prints the issue URL. Asking for one made the command
+    fail, the fallback searched an index that had not yet seen the new issue, and the pull request
+    was opened with a bare `Closes #` that `verify-bound-issue` rejected.
+    """
+    step = (
+        _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+        .split("File the issue the installation pull request binds", 1)[1]
+        .split("\n      - name:", 1)[0]
+    )
+    assert "--json number --jq .number" not in step, "gh issue create has no --json"
+    assert "exit 1" in step, "an unusable number must stop the run, not reach the pull request"
