@@ -483,7 +483,17 @@ def test_pull_requests_target_the_declared_default_branch():
     all of the work, so it is worth catching in the source rather than in a run.
     """
     source = _read_runner_source()
-    assert '"main",' not in source, "the base branch must come from the manifest, not a literal"
+    # Checking only for `"main",` missed `origin/main` in the branch creation, so the whole run
+    # failed at its first git command after the pull request calls had been fixed.
+    offenders = [
+        line
+        for line in source.split("\n")
+        if ("origin/main" in line or '"main"' in line) and not line.strip().startswith("#")
+        # `default_branch()` falls back to "main" for a repository with no manifest, which is the
+        # one place the literal is right.
+        and line.strip() != 'return "main"'
+    ]
+    assert not offenders, f"a branch name is hardcoded: {offenders}"
     assert "default_branch()" in source
 
 

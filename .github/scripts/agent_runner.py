@@ -1586,7 +1586,10 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             if branch_name in local_branches:
                 run_git(["checkout", branch_name], cwd=cwd)
             else:
-                run_git(["checkout", "-b", branch_name, "origin/main"], cwd=cwd)
+                # Branching from origin/main fails outright where the trunk is called something
+                # else. #107 replaced the literals in the pull request calls and missed this one,
+                # because the guard test looked for `"main",` and this reads `origin/main`.
+                run_git(["checkout", "-b", branch_name, f"origin/{default_branch()}"], cwd=cwd)
     except subprocess.CalledProcessError as e:
         err_msg = f"Failed to create/checkout branch {branch_name}: {e.stderr or e.stdout}"
         print(err_msg, file=sys.stderr)
