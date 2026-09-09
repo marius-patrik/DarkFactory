@@ -517,7 +517,12 @@ this repository pins a commit of it in `.github/darkfactory.json`, and bumping t
 #: so the diff a bump is supposed to show never exists. A pattern that only matched SHAs left those
 #: exactly as they were, which is the one case that most needed fixing.
 PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\S+)")
-REF_INPUT_PATTERN = re.compile(r'(?P<prefix>pipeline-ref:\s*")(?P<ref>[^"]*)(?P<suffix>")')
+#: The quotes are optional because a hand-written caller need not use them, and omnis's did not -
+#: so its `pipeline-ref:` kept a commit sixteen versions older than the `uses:` line above it, and
+#: the pipeline's own drift test failed on the repository the repin had just "updated".
+REF_INPUT_PATTERN = re.compile(
+    r'(?P<prefix>pipeline-ref:\s*)(?P<quote>"?)(?P<ref>[^"\s]*)(?P=quote)'
+)
 
 
 def retarget(root: str, ref: str) -> List[str]:
@@ -557,7 +562,7 @@ def retarget(root: str, ref: str) -> List[str]:
 
         updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
         updated = REF_INPUT_PATTERN.sub(
-            lambda m: m.group("prefix") + ref + m.group("suffix"), updated
+            lambda m: f'{m.group("prefix")}{m.group("quote")}{ref}{m.group("quote")}', updated
         )
         if updated != content:
             with open(path, "w", encoding="utf-8") as handle:
