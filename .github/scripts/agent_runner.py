@@ -1222,7 +1222,26 @@ def has_plan(issue_number: int, repo: str) -> bool:
         print(f"Could not read comments on #{issue_number}: {exc}", file=sys.stderr)
         return False
     comments = json.loads(raw or "{}").get("comments", []) or []
-    return any(PLAN_MARKER in (c.get("body") or "") for c in comments)
+    return any(_is_plan_comment(c.get("body") or "") for c in comments)
+
+
+def _is_plan_comment(body: str) -> bool:
+    """Reports whether a comment carries an implementation plan.
+
+    The marker is the reliable signal, but it was introduced when the two approval gates were
+    merged onto one issue. Plans posted before that carry only the heading, and an issue whose plan
+    predates the marker would be planned a second time on approval - which is precisely what
+    happened to the first issue to run through the merged flow.
+
+    Args:
+        body: Comment body.
+
+    Returns:
+        True when the comment is a plan.
+    """
+    if PLAN_MARKER in body:
+        return True
+    return "### Implementation Plan" in body or body.lstrip().startswith("## Implementation Plan")
 
 
 def handle_plan(request_number: int, plan_number: int, repo: str):
