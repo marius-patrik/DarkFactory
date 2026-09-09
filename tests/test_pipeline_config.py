@@ -612,3 +612,23 @@ def test_a_failed_project_lookup_never_creates_a_board():
     runner = _Failing(apply=True)
     with pytest.raises(repo_settings.LookupFailed):
         repo_settings.find_project_number(runner, "Global")
+
+
+def test_no_script_defaults_to_another_repository():
+    """A default naming another project aims a stray run at somebody else's repository.
+
+    Each of these only applies when `GITHUB_REPOSITORY` is unset, which never happens inside
+    Actions - which is exactly why they survived. The failure would appear the first time a script
+    ran outside a workflow, pointed somewhere nobody intended.
+    """
+    import manifest
+
+    loaded = manifest.load(REPO_ROOT)
+    slug = f"{loaded.owner}/{loaded.repo}"
+    for name in sorted(os.listdir(SCRIPT_DIR)):
+        if not name.endswith(".py"):
+            continue
+        content = _read(os.path.join(SCRIPT_DIR, name))
+        for match in re.finditer(r'"(?P<slug>marius-patrik/[A-Za-z0-9_.-]+)"', content):
+            found = match.group("slug")
+            assert found == slug, f"{name} names {found}, but this repository is {slug}"

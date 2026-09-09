@@ -69,16 +69,33 @@ COPY pyproject.toml requirements-dev.txt /workspace/
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements-dev.txt
 
-# 5. Create the Antigravity home and configuration directory
-RUN mkdir -p /root/.gemini/antigravity-cli
+# 5. Create the unprivileged user the agent runs as
+#
+# ARCHITECTURE.md D4 states that agent processes execute with non-root privileges. The image had
+# no USER directive, so they ran as root, and the claim went unchallenged until Claude Code
+# refused to start: it will not accept --dangerously-skip-permissions as root, which is a sensible
+# refusal and the reason the gap surfaced at all.
+#
+# uid 1001 matches the GitHub runner's own user, so the bind-mounted workspace is writable without
+# relaxing its permissions.
+ARG AGENT_UID=1001
+ARG AGENT_GID=1001
+RUN groupadd --gid ${AGENT_GID} agent \
+    && useradd --uid ${AGENT_UID} --gid ${AGENT_GID} --create-home --shell /bin/bash agent \
+    && mkdir -p /home/agent/.gemini/antigravity-cli /home/agent/.claude /home/agent/.config \
+    && chown -R agent:agent /home/agent /workspace
+
+ENV HOME=/home/agent
 
 # 6. Copy runner entrypoint and scripts
 COPY .github/scripts/ /usr/local/share/darkfactory-scripts/
 COPY .github/scripts/agent_runner.py /usr/local/bin/darkfactory-agent-runner
-RUN ln -s /usr/local/share/darkfactory-scripts /usr/local/share/omnis-scripts \
-    && ln -s /usr/local/bin/darkfactory-agent-runner /usr/local/bin/omnis-agent-runner \
-    && chmod +x /usr/local/bin/darkfactory-agent-runner
+RUN chmod +x /usr/local/bin/darkfactory-agent-runner
 
-ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/usr/local/share/omnis-scripts:/workspace/.github/scripts:${PYTHONPATH}"
+ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:${PYTHONPATH}"
+
+# Everything below runs unprivileged. Placed after the installs so package managers still have
+# the root they need at build time.
+USER agent
 
 ENTRYPOINT ["dbus-run-session", "--", "python3", "/usr/local/bin/darkfactory-agent-runner"]
