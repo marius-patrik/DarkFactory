@@ -126,7 +126,7 @@ jobs:
             -e GITHUB_EVENT_NAME="${{ github.event_name }}" \
             -e GITHUB_REPOSITORY="${{ github.repository }}" \
             -e GITHUB_REPOSITORY_OWNER="${{ github.repository_owner }}" \
-            -e PROJECT_NUMBER="${{ vars.PROJECT_NUMBER || 1 }}" \
+            -e PROJECT_NUMBER="${{ vars.PROJECT_NUMBER }}" \
             -v "${{ github.event_path }}:/workspace/event.json:ro" \
             -v "${{ github.workspace }}:/workspace" \
             darkfactory-agent dispatch

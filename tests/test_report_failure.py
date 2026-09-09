@@ -119,3 +119,39 @@ class TestFailingLoudly:
         """The flag must mean something, so the ordinary path must not set it."""
         report_failure.report("o/r", "CI", "https://run/1", "1")
         assert report_failure.FAILED is False
+
+
+class TestDuplicateCleanup:
+    """Filing is not serialised, so two runs can both file; the extra is cleaned up after."""
+
+    def setup_method(self):
+        """Clears the failure flag left by an earlier test."""
+        report_failure.FAILED = False
+
+    def test_a_second_issue_for_the_same_workflow_is_closed(self, monkeypatch):
+        """The exact outcome observed: three runs finished together and filed three issues."""
+        marker = report_failure.MARKER.format(workflow="CI")
+        fake = FakeGh([{"number": 7, "body": marker}, {"number": 9, "body": marker}])
+        monkeypatch.setattr(report_failure, "_gh", fake)
+        assert report_failure._close_duplicates("o/r", "CI", keep=7) == 1
+        closed = fake.named("issue", "close")
+        assert len(closed) == 1 and "9" in closed[0], "the later issue is the duplicate"
+
+    def test_the_kept_issue_is_never_closed(self, monkeypatch):
+        """Its comments are the ones people will have replied to."""
+        marker = report_failure.MARKER.format(workflow="CI")
+        fake = FakeGh([{"number": 7, "body": marker}])
+        monkeypatch.setattr(report_failure, "_gh", fake)
+        assert report_failure._close_duplicates("o/r", "CI", keep=7) == 0
+        assert fake.named("issue", "close") == []
+
+    def test_another_workflows_issue_is_left_alone(self, monkeypatch):
+        """Only issues carrying this workflow's marker are duplicates of it."""
+        fake = FakeGh(
+            [
+                {"number": 7, "body": report_failure.MARKER.format(workflow="CI")},
+                {"number": 8, "body": report_failure.MARKER.format(workflow="Release")},
+            ]
+        )
+        monkeypatch.setattr(report_failure, "_gh", fake)
+        assert report_failure._close_duplicates("o/r", "CI", keep=7) == 0

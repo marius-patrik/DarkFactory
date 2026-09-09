@@ -165,11 +165,17 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         return [PROJECT_NUMBER]
 
     try:
+        # Listing boards is a Projects v2 call, so it needs the person's token like every other
+        # one. Reaching for subprocess directly here bypassed that and authenticated as the App,
+        # which cannot see user-owned projects - the listing came back empty and every declared
+        # board was reported missing.
+        args = ["project", "list", "--owner", owner, "--limit", "100", "--format", "json"]
         output = subprocess.run(
-            ["gh", "project", "list", "--owner", owner, "--limit", "100", "--format", "json"],
+            ["gh", *args],
             capture_output=True,
             text=True,
             check=True,
+            env=_env_for(args),
         ).stdout
         by_title = {p["title"]: p["number"] for p in json.loads(output).get("projects", [])}
     except Exception as exc:  # noqa: BLE001 - reported below, not raised here
