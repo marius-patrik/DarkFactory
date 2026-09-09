@@ -652,3 +652,79 @@ def test_the_documentation_command_is_the_one_this_repository_uses():
         assert (
             "mkdocs build" not in content
         ), f"{relative} names mkdocs, but this repository builds with properdocs"
+
+
+#: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
+#: App. `ci`, `auto-format`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
+#: only within their own repository with `GITHUB_TOKEN`, which has its own quota and needs no App.
+APP_AUTHENTICATED_WORKFLOWS = [
+    "agent.yml",
+    "install.yml",
+    "open-pr.yml",
+    "pr-approval-automerge.yml",
+    "project-automation.yml",
+    "report-failure.yml",
+    "update-submodules.yml",
+]
+
+
+@pytest.mark.parametrize("name", APP_AUTHENTICATED_WORKFLOWS)
+def test_github_writes_prefer_the_installation_token(name: str):
+    """Rate limits are per user and shared across every token a person holds.
+
+    A workflow reaching for the maintainer's token first competes with the maintainer's own session
+    for one quota, which is how a pipeline run comes to fail while the App's own limit is untouched.
+    The user token stays as a fallback, because a repository without the App installed must keep
+    working.
+
+    Args:
+        name: Workflow file name.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, name))
+    assert "create-github-app-token" in content, f"{name} never mints an installation token"
+
+    for line in content.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith(("GH_TOKEN:", "token:")):
+            continue
+        if "GH_PROJECT_TOKEN" not in stripped:
+            continue
+        assert stripped.index("app-token.outputs.token") < stripped.index(
+            "GH_PROJECT_TOKEN"
+        ), f"{name} prefers the user token over the App in: {stripped}"
+
+
+@pytest.mark.parametrize("name", APP_AUTHENTICATED_WORKFLOWS)
+def test_app_authenticated_workflows_can_receive_the_private_key(name: str):
+    """A called workflow sees none of its caller's secrets unless they are passed by name.
+
+    Args:
+        name: Workflow file name.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, name))
+    if "workflow_call:" not in content:
+        return
+    assert (
+        "DARKFACTORY_APP_PRIVATE_KEY"
+        in content.split("workflow_call:", 1)[1].split("\npermissions:", 1)[0]
+    ), f"{name} cannot be given the App key by a caller"
+
+
+def test_only_board_writes_reach_for_the_user_token_alone():
+    """`GH_PROJECT_TOKEN` on its own is reserved for the one thing an App cannot do.
+
+    GitHub scopes Projects v2 permissions to organisations, so a user-owned board is unreachable
+    with an installation token. Everything else has an App path and must use it.
+    """
+    offenders = []
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        for line in content.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith(("GH_TOKEN:", "token:")):
+                continue
+            if "GH_PROJECT_TOKEN" in stripped and "app-token.outputs.token" not in stripped:
+                offenders.append(f"{name}: {stripped}")
+    assert offenders == [], "these authenticate as the user with no App path:\n" + "\n".join(
+        offenders
+    )

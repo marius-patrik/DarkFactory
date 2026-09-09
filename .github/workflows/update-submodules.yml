@@ -22,6 +22,7 @@ on:
         type: string
         default: "marius-patrik/DarkFactory"
     secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
 
 permissions:
@@ -36,13 +37,31 @@ jobs:
   update:
     name: update-submodules
     runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Rate limits
+        # are per *user*, shared across every token a person holds, so a busy session used to
+        # exhaust the pipeline's quota along with the person's. Only Projects v2 still needs a
+        # person's token, because GitHub scopes project permissions to organisations and these
+        # boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-          token: ${{ secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Check out the pinned pipeline
         if: inputs.pipeline-ref != ''
