@@ -71,7 +71,7 @@ body:
       placeholder: |
         - [ ] Behaviour is reachable by toggling a documented setting, not by brand-specific code
         - [ ] Unit tests cover the new behaviour
-        - [ ] `mkdocs build --strict` passes with zero warnings
+        - [ ] `properdocs build --strict` passes with zero warnings
     validations:
       required: false
 
