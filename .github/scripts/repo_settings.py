@@ -103,18 +103,25 @@ LABELS.extend(MANIFEST.area_labels)
 REQUIRED_CHECKS: List[str] = MANIFEST.required_checks
 
 
-#: Operations an installation token cannot perform, so they authenticate as the person.
+#: What an installation token *can* do here, rather than what it cannot.
 #:
-#: Projects v2 is scoped to organisations; repository administration (`/pages`) needs
-#: `administration`; listing secrets needs `secrets`. The App holds none of the three. Everything
-#: else it does hold, and should use, because rate limits are per *user* and shared across every
-#: token a person holds - so a whole step authenticating as the person spends the person's quota on
-#: work the App could have done. That is not hypothetical: `gh label list` is a GraphQL call, and it
-#: is what failed every install today while the App's own limit sat untouched.
-USER_TOKEN_OPERATIONS = ("project", "secret")
+#: This module is an administration tool, and `administration` is the one permission the App does
+#: not hold: repository settings, topics, Actions permissions, branch protection and `/pages` all
+#: 403 as the installation. Listing secrets needs `secrets`, and Projects v2 is scoped to
+#: organisations. What is left for the App is label work, which is most of the API calls by count
+#: and all of the GraphQL ones - and GraphQL is where a person's quota actually runs out.
+#:
+#: The list is written this way round deliberately. Enumerating the exceptions meant every new call
+#: silently defaulted to the App and 403'd; enumerating the capability means a new call defaults to
+#: the token that works, and widening it is a decision someone has to write down.
+#:
+#: Granting the App `administration: write` and `secrets: read` would let this run without a
+#: personal token at all, which is the version of "install is as simple as installing the App" worth
+#: having. It needs a person to approve the permissions on the installation.
+APP_CAPABLE_OPERATIONS = ("label", "issue")
 
-#: API paths that need the same, matched as substrings of the path argument.
-USER_TOKEN_PATHS = ("/pages",)
+#: API paths the App may call, matched as substrings.
+APP_CAPABLE_PATHS = ("/labels", "/issues")
 
 
 def _env_for(args: List[str]) -> Dict[str, str]:
@@ -131,9 +138,9 @@ def _env_for(args: List[str]) -> Dict[str, str]:
     if not user_token:
         return env
 
-    needs_user = bool(args) and args[0] in USER_TOKEN_OPERATIONS
-    needs_user = needs_user or any(path in arg for arg in args for path in USER_TOKEN_PATHS)
-    if needs_user:
+    app_capable = bool(args) and args[0] in APP_CAPABLE_OPERATIONS
+    app_capable = app_capable or any(path in arg for arg in args for path in APP_CAPABLE_PATHS)
+    if not app_capable:
         env["GH_TOKEN"] = user_token
     return env
 

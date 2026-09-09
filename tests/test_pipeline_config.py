@@ -896,22 +896,10 @@ class TestExistingProtectionIsKeptConsistent:
 
 
 class TestSettingsSpendTheRightQuota:
-    """Rate limits are per user, so work the App can do must not be charged to the person."""
+    """Every administration call needs a person; label work does not, and it is the GraphQL half."""
 
-    def test_project_calls_use_the_person(self, monkeypatch):
-        """Projects v2 permissions are scoped to organisations.
-
-        Args:
-            monkeypatch: Pytest monkeypatch fixture.
-        """
-        import repo_settings
-
-        monkeypatch.setenv("GH_TOKEN", "app")
-        monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
-        assert repo_settings._env_for(["project", "list"])["GH_TOKEN"] == "person"
-
-    def test_pages_and_secret_calls_use_the_person(self, monkeypatch):
-        """`administration` and `secrets` are permissions the App does not hold.
+    def test_administration_calls_use_the_person(self, monkeypatch):
+        """`administration` is the permission the App does not hold, and this module is admin.
 
         Args:
             monkeypatch: Pytest monkeypatch fixture.
@@ -920,13 +908,19 @@ class TestSettingsSpendTheRightQuota:
 
         monkeypatch.setenv("GH_TOKEN", "app")
         monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
-        assert repo_settings._env_for(["api", "-X", "POST", "repos/o/r/pages"])["GH_TOKEN"] == (
-            "person"
-        )
-        assert repo_settings._env_for(["secret", "list"])["GH_TOKEN"] == "person"
+        for args in (
+            ["project", "list"],
+            ["secret", "list"],
+            ["api", "-X", "POST", "repos/o/r/pages"],
+            ["api", "-X", "PATCH", "repos/o/r"],
+            ["api", "-X", "PUT", "repos/o/r/topics"],
+            ["api", "-X", "PUT", "repos/o/r/actions/permissions"],
+            ["api", "repos/o/r/branches/main/protection"],
+        ):
+            assert repo_settings._env_for(args)["GH_TOKEN"] == "person", args
 
-    def test_everything_else_uses_the_app(self, monkeypatch):
-        """`gh label list` is a GraphQL call, and it is what failed every install today.
+    def test_label_work_uses_the_app(self, monkeypatch):
+        """`gh label list` is a GraphQL call, and GraphQL is where a person's quota runs out.
 
         Args:
             monkeypatch: Pytest monkeypatch fixture.
@@ -935,8 +929,23 @@ class TestSettingsSpendTheRightQuota:
 
         monkeypatch.setenv("GH_TOKEN", "app")
         monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
-        for args in (["label", "list"], ["api", "-X", "PATCH", "repos/o/r"], ["repo", "edit"]):
+        for args in (["label", "list"], ["label", "create", "x"], ["api", "repos/o/r/labels"]):
             assert repo_settings._env_for(args)["GH_TOKEN"] == "app", args
+
+    def test_an_unknown_call_defaults_to_the_token_that_works(self, monkeypatch):
+        """Enumerating exceptions meant every new call silently defaulted to a 403.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        import repo_settings
+
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "person")
+        assert (
+            repo_settings._env_for(["api", "-X", "PUT", "repos/o/r/something-new"])["GH_TOKEN"]
+            == "person"
+        )
 
     def test_without_a_user_token_nothing_is_swapped(self, monkeypatch):
         """A repository holding only the App key must still get as far as it can.
