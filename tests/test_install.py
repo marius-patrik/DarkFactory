@@ -232,3 +232,37 @@ def test_every_watched_name_is_a_workflow_that_exists():
     for path, watched in watchers.items():
         unknown = [w for w in watched if w not in names]
         assert unknown == [], f"{path} watches workflows that do not exist: {unknown}"
+
+
+def test_the_generated_manifest_requires_contexts_that_will_actually_report():
+    """Branch protection matches contexts by string, and a mismatch blocks every merge silently.
+
+    A repository calling the pipeline as a reusable workflow sees every check prefixed with the
+    caller's job name, so the unprefixed defaults would protect a branch against names nothing
+    reports.
+    """
+    manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
+    contexts = manifest["required_checks"]
+    assert contexts, "a generated manifest must declare its own contexts"
+
+    installed = install.relevant_workflows(".")
+    for context in contexts:
+        caller, _, check = context.partition(" / ")
+        assert caller in installed, f"{context} names a caller this install does not write"
+        assert check, f"{context} is not a prefixed context"
+
+
+def test_no_required_context_comes_from_a_workflow_that_is_not_installed():
+    """Requiring a check nothing runs is the same failure in a different shape."""
+    contexts = install.required_contexts(["ci"])
+    assert all(c.startswith("ci / ") for c in contexts)
+    assert not any("verify-bound-issue" in c for c in contexts)
+
+
+def test_every_default_check_has_a_caller_that_reports_it():
+    """A check with no source would be dropped from protection without anyone noticing."""
+    import manifest as manifest_module
+
+    installed = install.relevant_workflows(".")
+    covered = {c.partition(" / ")[2] for c in install.required_contexts(installed)}
+    assert covered == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
