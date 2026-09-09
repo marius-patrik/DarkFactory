@@ -24,13 +24,39 @@ def test_every_generated_workflow_is_valid_yaml_with_permissions():
         assert parsed["jobs"], f"{path} must call something"
 
 
-def test_workflow_names_match_what_the_reporter_watches():
-    """`report-failure` watches workflows by name; a renamed caller is one it cannot see."""
-    watched = {"CI", "Deploy Documentation", "Release", "Update Submodules"}
-    names = {
-        yaml.safe_load(install.render_caller(w, "o/p", "abc"))["name"] for w in install.WORKFLOWS
+def _triggers(document: dict) -> dict:
+    """Returns a workflow's `on:` block.
+
+    PyYAML reads the bare key `on` as the boolean `True`, so both spellings are tried.
+
+    Args:
+        document: Parsed workflow.
+
+    Returns:
+        The trigger mapping.
+    """
+    return document.get(True) or document["on"]
+
+
+def test_the_reporter_watches_every_workflow_it_installs():
+    """`report-failure` matches by display name, and a name matching nothing never fires.
+
+    The previous version of this test asserted a hardcoded set was a *subset* of the names, which
+    is true of any list that names real workflows and says nothing about the ones it omits. It
+    passed for as long as the reporter watched four workflows out of eleven.
+    """
+    installed = install.relevant_workflows(".")
+    caller = yaml.safe_load(
+        install.render_caller("report-failure", "o/p", "abc", installed=installed)
+    )
+    watched = set(_triggers(caller)["workflow_run"]["workflows"])
+
+    expected = {
+        yaml.safe_load(install.render_caller(name, "o/p", "abc", installed=installed))["name"]
+        for name in installed
+        if name != "report-failure"
     }
-    assert watched <= names
+    assert watched == expected
 
 
 def test_the_pin_reaches_both_places_it_is_needed():
@@ -113,3 +139,96 @@ def test_the_generated_manifest_makes_the_licence_a_visible_choice():
     manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
     assert manifest["license"]["spdx"] == "NONE"
     assert "$comment" in manifest["license"], "it must say what NONE means"
+
+
+def _pipeline_workflow(name: str) -> dict:
+    """Loads one of the pipeline's own workflow files.
+
+    Args:
+        name: Workflow file name without its suffix.
+
+    Returns:
+        The parsed workflow.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, ".github", "workflows", f"{name}.yml"), encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def test_an_installation_includes_the_agent():
+    """A repository with no agent reports on work it cannot do.
+
+    This is what `mono-OdbornaPrace` was: a manifest, a board, CI, releases and docs, and two
+    issues that sat untouched because no workflow on the default branch listens for them.
+    """
+    installed = install.relevant_workflows(".")
+    for name in ("agent", "open-pr", "pr-approval-automerge", "verify-pr-issue", "auto-format"):
+        assert name in installed, f"an installation without {name} cannot run the governed flow"
+
+
+def test_the_agent_caller_can_be_switched_off_without_a_commit():
+    """`AGENT_ENABLED` gates the job, so the caller has to forward it."""
+    caller = yaml.safe_load(install.render_caller("agent", "o/p", "abc"))
+    assert caller["jobs"]["agent"]["with"]["agent-enabled"] == "${{ vars.AGENT_ENABLED }}"
+
+
+def test_open_pr_declares_and_forwards_every_input():
+    """A called workflow receives nothing from the caller's `inputs` context automatically."""
+    caller = yaml.safe_load(install.render_caller("open-pr", "o/p", "abc"))
+    upstream = _triggers(_pipeline_workflow("open-pr"))["workflow_call"]["inputs"]
+    expected = {k for k in upstream if not k.startswith("pipeline-")}
+
+    declared = set(_triggers(caller)["workflow_dispatch"]["inputs"])
+    assert declared == expected
+    for name in expected:
+        assert caller["jobs"]["open-pr"]["with"][name] == f"${{{{ inputs.{name} }}}}"
+
+
+@pytest.mark.parametrize("name", sorted(install.WORKFLOWS))
+def test_every_caller_targets_a_callable_pipeline_workflow(name: str):
+    """A caller pointing at a workflow that does not accept calls fails only at run time.
+
+    Args:
+        name: Workflow file name without its suffix.
+    """
+    upstream = _pipeline_workflow(name)
+    assert "workflow_call" in _triggers(upstream), f"{name} does not accept being called"
+
+    caller = yaml.safe_load(install.render_caller(name, "o/p", "abc"))
+    job = next(iter(caller["jobs"].values()))
+    assert job["uses"].endswith(f".github/workflows/{name}.yml@abc")
+
+
+@pytest.mark.parametrize("name", sorted(install.WORKFLOWS))
+def test_every_forwarded_value_is_an_input_the_workflow_declares(name: str):
+    """Passing an undeclared input is an error; omitting a required one is a failure at run time.
+
+    Args:
+        name: Workflow file name without its suffix.
+    """
+    upstream = _triggers(_pipeline_workflow(name))["workflow_call"].get("inputs") or {}
+    caller = yaml.safe_load(install.render_caller(name, "o/p", "abc"))
+    passed = next(iter(caller["jobs"].values())).get("with") or {}
+
+    assert set(passed) <= set(upstream), f"{name} is passed inputs it does not declare"
+    required = {k for k, v in upstream.items() if v.get("required")}
+    assert required <= set(passed), f"{name} is not given inputs it requires"
+
+
+def test_every_watched_name_is_a_workflow_that_exists():
+    """The pipeline's own reporter watches by display name too, and had one that matched nothing."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    directory = os.path.join(root, ".github", "workflows")
+    names = set()
+    watchers = {}
+    for entry in sorted(os.listdir(directory)):
+        document = _pipeline_workflow(entry[:-4])
+        names.add(document["name"])
+        run = _triggers(document).get("workflow_run")
+        if run:
+            watchers[entry] = run["workflows"]
+
+    assert watchers, "the pipeline must watch something"
+    for path, watched in watchers.items():
+        unknown = [w for w in watched if w not in names]
+        assert unknown == [], f"{path} watches workflows that do not exist: {unknown}"

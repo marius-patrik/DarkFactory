@@ -54,16 +54,74 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
     },
     "report-failure": {
         "name": "Report Pipeline Failure",
-        "on": (
-            "workflow_run:\n    workflows: [CI, Deploy Documentation, Release, Update Submodules]\n"
-            "    types: [completed]"
-        ),
+        # The watch list is filled in by `render_caller` from the workflows actually installed.
+        # `workflow_run` matches by *display name* and a name that matches nothing is not an error,
+        # it simply never fires - which is how agent failures went unreported for as long as the
+        # pipeline watched a workflow called "Agent" that had been renamed "Autonomous Agent".
+        "on": "workflow_run:\n    workflows: [{watched}]\n    types: [completed]",
         "permissions": "contents: read\n  issues: write",
     },
     "update-submodules": {
         "name": "Update Submodules",
         "on": 'schedule:\n    - cron: "17 4 * * *"\n  workflow_dispatch:',
         "permissions": "contents: write\n  pull-requests: write",
+    },
+    "agent": {
+        "name": "Autonomous Agent",
+        "on": (
+            "issues:\n    types: [opened]\n"
+            "  issue_comment:\n    types: [created]\n"
+            "  pull_request_review_comment:\n    types: [created]\n"
+            "  workflow_dispatch:"
+        ),
+        "permissions": (
+            "contents: write\n  issues: write\n  pull-requests: write\n"
+            "  repository-projects: write\n  actions: write"
+        ),
+        # `AGENT_ENABLED` is a repository variable rather than a manifest key: it is a switch a
+        # person flips to stop the agent, and a switch that needs a commit is not a switch.
+        "with": {"agent-enabled": "${{ vars.AGENT_ENABLED }}"},
+    },
+    "auto-format": {
+        "name": "Auto Format",
+        "on": 'push:\n    branches: ["**"]\n  workflow_dispatch:',
+        "permissions": "contents: write",
+    },
+    "verify-pr-issue": {
+        "name": "Verify Bound Issue",
+        "on": "pull_request:\n    types: [opened, edited, synchronize, reopened]",
+        "permissions": "contents: read",
+    },
+    "pr-approval-automerge": {
+        "name": "PR Approval and Auto-Merge",
+        "on": (
+            "pull_request_review:\n    types: [submitted]\n"
+            "  issue_comment:\n    types: [created]\n"
+            "  workflow_dispatch:"
+        ),
+        "permissions": (
+            "pull-requests: write\n  contents: write\n  issues: write\n"
+            "  repository-projects: write"
+        ),
+    },
+    "preview-docs": {
+        "name": "Preview Documentation",
+        "on": "pull_request:\n    types: [opened, synchronize, reopened, closed]",
+        "permissions": "contents: write\n  deployments: write\n  pull-requests: write",
+    },
+    "open-pr": {
+        "name": "Open Pull Request",
+        # Dispatch-only, and the only workflow whose inputs a caller has to declare and forward by
+        # name: a called workflow receives nothing from the caller's `inputs` context on its own.
+        "on": "workflow_dispatch:",
+        "permissions": "contents: write\n  pull-requests: write\n  actions: write",
+        "inputs": {
+            "branch": ("Head branch name (e.g. feature/my-feature)", "string", True, None),
+            "title": ("Pull Request title", "string", True, None),
+            "body": ("Pull Request description", "string", True, None),
+            "base": ("Target base branch", "string", False, "{branch}"),
+            "draft": ("Create as draft PR", "boolean", False, "true"),
+        },
     },
 }
 
@@ -93,13 +151,77 @@ def relevant_workflows(root: str = ".") -> List[str]:
         Workflow file names, without the `.yml` suffix.
 
     """
-    chosen = ["ci", "deploy-docs", "release", "project-automation", "report-failure"]
+    chosen = [
+        # The governed flow. Without these an installation reports on work it cannot do: issues get
+        # no interpretation, because no workflow on the default branch is listening for them.
+        "agent",
+        "open-pr",
+        "pr-approval-automerge",
+        "verify-pr-issue",
+        "auto-format",
+        # The reporting half.
+        "ci",
+        "deploy-docs",
+        "preview-docs",
+        "release",
+        "project-automation",
+        "report-failure",
+    ]
     if os.path.isfile(os.path.join(root, ".gitmodules")):
         chosen.append("update-submodules")
     return chosen
 
 
-def render_caller(workflow: str, pipeline_repo: str, ref: str, branch: str = "main") -> str:
+def watched_workflows(installed: List[str]) -> List[str]:
+    """Returns the display names `report-failure` should watch.
+
+    Args:
+        installed: Workflow file names being installed.
+
+    Returns:
+        Display names, excluding the reporter itself - watching its own failures would loop.
+    """
+    return [
+        WORKFLOWS[name]["name"]
+        for name in installed
+        if name != "report-failure" and name in WORKFLOWS
+    ]
+
+
+def render_dispatch_inputs(spec: Dict[str, object], branch: str) -> str:
+    """Renders the `workflow_dispatch` inputs a caller has to declare.
+
+    Args:
+        spec: The workflow's entry in :data:`WORKFLOWS`.
+        branch: Default branch of the consuming repository, substituted into defaults.
+
+    Returns:
+        The indented input block, or `""` when the workflow takes none.
+    """
+    inputs = spec.get("inputs") or {}
+    if not inputs:
+        return ""
+    lines = ["    inputs:"]
+    for name, (description, kind, required, default) in inputs.items():  # type: ignore[misc]
+        lines.append(f"      {name}:")
+        lines.append(f"        description: {description!r}")
+        lines.append(f"        required: {str(required).lower()}")
+        lines.append(f"        type: {kind}")
+        if default is not None:
+            rendered = default.format(branch=branch)
+            # A boolean default must not be quoted; a string one must be, or a branch called
+            # `true` or `2.0` would be read as something other than a string.
+            lines.append(f"        default: {rendered if kind == 'boolean' else repr(rendered)}")
+    return "\n".join(lines) + "\n"
+
+
+def render_caller(
+    workflow: str,
+    pipeline_repo: str,
+    ref: str,
+    branch: str = "main",
+    installed: Optional[List[str]] = None,
+) -> str:
     """Renders one caller workflow.
 
     Args:
@@ -107,20 +229,33 @@ def render_caller(workflow: str, pipeline_repo: str, ref: str, branch: str = "ma
         pipeline_repo: `owner/name` of the repository holding the pipeline.
         ref: Commit the caller pins.
         branch: Default branch of the consuming repository.
+        installed: The workflows being installed alongside this one, which is what
+            `report-failure` watches. Defaults to the full set.
 
     Returns:
         The file contents.
     """
     spec = WORKFLOWS[workflow]
+    watched = watched_workflows(installed if installed is not None else relevant_workflows())
+    trigger = str(spec["on"]).format(branch=branch, watched=", ".join(watched))
+
+    # A called workflow receives nothing from the caller's `inputs` context automatically, so a
+    # dispatch input has to be declared here and forwarded by name.
+    forwarded = {name: f"${{{{ inputs.{name} }}}}" for name in (spec.get("inputs") or {})}
+    forwarded.update(spec.get("with") or {})  # type: ignore[arg-type]
+    extras = "".join(f"      {key}: {value}\n" for key, value in forwarded.items())
+
     return (
         f"name: {spec['name']}\n\n"
         "# A caller, not a copy: every job body comes from the pinned pipeline commit, so adopting\n"
         "# an update is a one-line change here and the diff shows exactly what moved.\n"
-        f"on:\n  {spec['on'].format(branch=branch)}\n\n"
+        f"on:\n  {trigger}\n"
+        f"{render_dispatch_inputs(spec, branch)}\n"
         f"permissions:\n  {spec['permissions']}\n\n"
         f"jobs:\n  {workflow}:\n"
         f"    uses: {pipeline_repo}/.github/workflows/{workflow}.yml@{ref}\n"
         "    with:\n"
+        f"{extras}"
         f"      pipeline-repo: {pipeline_repo}\n"
         f'      pipeline-ref: "{ref}"\n'
         "    secrets: inherit\n"
@@ -220,9 +355,10 @@ def plan(
     Returns:
         Mapping of repository-relative path to file contents.
     """
+    installed = relevant_workflows(root)
     files = {
-        f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch)
-        for name in relevant_workflows(root)
+        f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
+        for name in installed
     }
     files[".github/darkfactory.json"] = render_manifest(
         owner, repo, ref, root, branch, description, pipeline_repo
