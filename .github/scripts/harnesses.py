@@ -133,6 +133,9 @@ class Harness:
             reported as unauthenticated rather than silently failing mid-run.
         auth: How the credential is obtained. ``None`` means the environment already holds
             something usable, which is true of every harness that takes a plain API key.
+        install: Shell that installs the binary into the agent image. Declared here so adding a
+            harness is one entry rather than an entry plus a Dockerfile edit that can disagree
+            with it.
         extra_args: Appended verbatim to every invocation.
         description: Human-readable note for logs and documentation.
     """
@@ -144,7 +147,16 @@ class Harness:
     env_keys: Sequence[str] = ()
     extra_args: Sequence[str] = ()
     auth: Optional["Auth"] = None
+    install: str = ""
     description: str = ""
+
+    def install_command(self) -> str:
+        """Returns the shell that installs this harness, or an empty string when it declares none.
+
+        Returns:
+            A shell command, or `""` for a harness the image does not install.
+        """
+        return self.install
 
     def is_available(self) -> bool:
         """Reports whether the harness binary is present on ``PATH``.
@@ -212,6 +224,7 @@ class Harness:
 REGISTRY: Dict[str, Harness] = {
     "antigravity": Harness(
         name="antigravity",
+        install="curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin",
         binary="agy",
         template=[
             "--print",
@@ -240,6 +253,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "claude": Harness(
         name="claude",
+        install="npm install -g @anthropic-ai/claude-code",
         binary="claude",
         template=[
             "--print",
@@ -264,6 +278,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "codex": Harness(
         name="codex",
+        install="npm install -g @openai/codex",
         binary="codex",
         template=[
             "exec",
@@ -279,6 +294,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "kimi": Harness(
         name="kimi",
+        install="npm install -g @moonshot-ai/kimi-cli",
         binary="kimi",
         template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
         model_chain=(),
@@ -287,6 +303,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "grok": Harness(
         name="grok",
+        install="curl -fsSL https://raw.githubusercontent.com/xai-org/grok-cli/main/install.sh | bash",
         binary="grok",
         template=["--single", PROMPT, "--model", MODEL, "--always-approve"],
         model_chain=(),
@@ -295,6 +312,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "cursor": Harness(
         name="cursor",
+        install="curl -fsSL https://cursor.com/install | bash",
         binary="cursor-agent",
         template=["--print", PROMPT, "--model", MODEL, "--force"],
         model_chain=(),
@@ -303,6 +321,7 @@ REGISTRY: Dict[str, Harness] = {
     ),
     "opencode": Harness(
         name="opencode",
+        install="npm install -g opencode-ai",
         binary="opencode",
         template=["run", PROMPT, "--model", MODEL, "--auto"],
         model_chain=(),
