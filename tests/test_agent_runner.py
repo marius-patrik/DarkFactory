@@ -387,3 +387,45 @@ def test_no_agent_output_names_another_project():
         if "Omnis" in line and not line.strip().startswith(("or ", "#"))
     ]
     assert not written, f"agent output still names Omnis: {written}"
+
+
+REPO_SLUG = "marius-patrik/DarkFactory"
+
+
+class TestOneIssueTwoGates:
+    """Both approvals live on one issue; which gate an approval answers is read from the issue."""
+
+    def test_no_plan_yet_means_the_interpretation_was_approved(self, monkeypatch):
+        """The first approval is of the interpretation, so a plan is what follows."""
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: json.dumps({"comments": []}))
+        assert module.has_plan(91, REPO_SLUG) is False
+
+    def test_a_posted_plan_means_the_plan_is_what_is_approved(self, monkeypatch):
+        """The second approval is of the plan, so implementation is what follows."""
+        module = agent_runner_module()
+        body = f"{module.PLAN_MARKER}\n### Implementation Plan"
+        monkeypatch.setattr(
+            module, "run_gh", lambda *a, **k: json.dumps({"comments": [{"body": body}]})
+        )
+        assert module.has_plan(91, REPO_SLUG) is True
+
+    def test_an_ordinary_comment_is_not_mistaken_for_a_plan(self, monkeypatch):
+        """Discussion on the issue must not advance the gate."""
+        module = agent_runner_module()
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda *a, **k: json.dumps({"comments": [{"body": "Looks good, one thought:"}]}),
+        )
+        assert module.has_plan(91, REPO_SLUG) is False
+
+    def test_an_unreadable_issue_re_plans_rather_than_implementing(self, monkeypatch):
+        """Failing towards planning is safe; failing towards implementing writes code unasked."""
+        module = agent_runner_module()
+
+        def boom(*a, **k):
+            raise RuntimeError("unreachable")
+
+        monkeypatch.setattr(module, "run_gh", boom)
+        assert module.has_plan(91, REPO_SLUG) is False

@@ -84,12 +84,15 @@ warnings`) are blocking.
   - `Dropped`: Items closed without implementation or cancelled.
 
 ### 10. Pre-Implementation Planning & Plan Review
-Before implementation begins on any task, the implementation plan must be documented in a dedicated
-child issue with the `Plan` label, natively linked as a sub-issue of its parent `Request` issue
-(`--parent <request_id>`). The plan must detail objectives, architectural and code changes, and
-verification steps.
+Before implementation begins on any task, the implementation plan must be posted as a comment on the
+same `Request` issue and approved there. The plan must detail objectives, architectural and code
+changes, and verification steps.
+
+Both approval gates remain: the interpretation is approved before a plan is written, and the plan is
+approved before any code is. What changed is that they no longer need an issue each - one unit of
+work is one issue, so a pull request binds one thing and closing it closes one thing.
 - **Implementation Review Gate**: Prior to merging the bound pull request, an implementation review
-  must be conducted and commented on the child Plan issue confirming the implementation matches the
+  must be conducted and commented on the same issue, confirming the implementation matches the
   plan exactly (`Matches Plan: Yes`).
 - **Plan Alignment**: If the implementation diverged from the plan, an alignment comment
   (`Plan Alignment:`) detailing all deviations must be posted and explicitly approved before the
@@ -125,7 +128,8 @@ issues labeled `Request` before any planning, branching, or code changes begin.
   and the proposed verification.
 - **Confirmation Gate**: The interpretation requires explicit user confirmation (commenting
   `approve`) before any implementation plan is made.
-- **Child Plan Issues**: Once confirmed, a child issue with the `Plan` label is created and natively
+- **Two gates, one issue**: Once the interpretation is approved, the plan is posted as a comment on
+  the same issue and approved there. Both gates remain; what changed is that they no longer need
   linked via GitHub sub-issues (`--parent <request_id>`) containing the detailed implementation
   plan. All subsequent branches and pull requests bind to the plan issue.
 
@@ -170,7 +174,7 @@ An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.
   performs a pre-flight token exchange on every run; no credentials are ever committed.
 - **Auto-Detection & Interpretation**: Incoming unlabelled issues are automatically tagged
   `Request`, classified with type and area labels, and answered with an interpretation comment.
-- **Conversational Feedback Loop**: The agent monitors comments on Request issues, Plan issues, and
+- **Conversational Feedback Loop**: The agent monitors comments on Request issues and
   Pull Requests, responds to human feedback, and executes requested adjustments. Bot and agent
   comments are ignored to prevent self-reply loops.
 - **Autonomous Implementation & Review**: On plan approval (`approve`), the agent creates the
