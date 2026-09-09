@@ -5,12 +5,23 @@ name: Report Pipeline Failure
 # to be repeated in every workflow.
 on:
   workflow_run:
+    # Matched by *display name*. A name matching no workflow is not an error - it simply never
+    # fires - which is how failures of the agent went unreported for as long as this said "Agent"
+    # and the workflow had been renamed "Autonomous Agent". A test now checks every name here
+    # against the workflows that exist.
     workflows:
+      - Autonomous Agent
+      - Auto Format
       - CI
       - Deploy Documentation
+      - Install Pipeline
+      - Open Pull Request
+      - PR Approval and Auto-Merge
+      - Preview Documentation
       - Project Board Automation
       - Release
-      - Agent
+      - Update Submodules
+      - Verify Bound Issue
     types: [completed]
 
   # Consumers call this rather than copying it, so the script it runs lives in one place.
