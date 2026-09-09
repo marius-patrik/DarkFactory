@@ -30,21 +30,49 @@ on:
         type: string
         default: ""
     secrets:
+    # Generated from the harness registry - `harnesses.credential_env_names()` - and asserted
+    # against it by a test. A workflow that omits a credential does not fail; it silently
+    # shortens the fallback chain. The numbered names are further accounts of the same
+    # provider: holding a second is how an exhausted quota is answered without waiting, and
+    # adding one is adding a secret.
       DARKFACTORY_APP_PRIVATE_KEY: {required: false}
       GH_PROJECT_TOKEN: {required: false}
       ANTIGRAVITY_REFRESH_TOKEN: {required: false}
       ANTIGRAVITY_CLIENT_ID: {required: false}
       ANTIGRAVITY_CLIENT_SECRET: {required: false}
-      ANTHROPIC_API_KEY: {required: false}
+      ANTIGRAVITY_REFRESH_TOKEN_2: {required: false}
+      ANTIGRAVITY_CLIENT_ID_2: {required: false}
+      ANTIGRAVITY_CLIENT_SECRET_2: {required: false}
+      ANTIGRAVITY_REFRESH_TOKEN_3: {required: false}
+      ANTIGRAVITY_CLIENT_ID_3: {required: false}
+      ANTIGRAVITY_CLIENT_SECRET_3: {required: false}
       CLAUDE_CODE_OAUTH_TOKEN: {required: false}
+      ANTHROPIC_API_KEY: {required: false}
+      CLAUDE_CODE_OAUTH_TOKEN_2: {required: false}
+      ANTHROPIC_API_KEY_2: {required: false}
+      CLAUDE_CODE_OAUTH_TOKEN_3: {required: false}
+      ANTHROPIC_API_KEY_3: {required: false}
       OPENAI_API_KEY: {required: false}
+      OPENAI_API_KEY_2: {required: false}
+      OPENAI_API_KEY_3: {required: false}
       MOONSHOT_API_KEY: {required: false}
       KIMI_API_KEY: {required: false}
+      MOONSHOT_API_KEY_2: {required: false}
+      KIMI_API_KEY_2: {required: false}
+      MOONSHOT_API_KEY_3: {required: false}
+      KIMI_API_KEY_3: {required: false}
       XAI_API_KEY: {required: false}
       GROK_API_KEY: {required: false}
+      XAI_API_KEY_2: {required: false}
+      GROK_API_KEY_2: {required: false}
+      XAI_API_KEY_3: {required: false}
+      GROK_API_KEY_3: {required: false}
       CURSOR_API_KEY: {required: false}
+      CURSOR_API_KEY_2: {required: false}
+      CURSOR_API_KEY_3: {required: false}
       OPENCODE_API_KEY: {required: false}
-
+      OPENCODE_API_KEY_2: {required: false}
+      OPENCODE_API_KEY_3: {required: false}
 permissions:
   contents: write
   issues: write
