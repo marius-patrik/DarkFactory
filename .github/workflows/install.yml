@@ -37,6 +37,12 @@ jobs:
       # job, where it can.
       HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
+      - name: Name the target repository
+        # `repositories:` takes bare names, and the input is `owner/name`.
+        run: echo "TARGET_NAME=${TARGET#*/}" >> "$GITHUB_ENV"
+        env:
+          TARGET: ${{ inputs.repository }}
+
       - name: Mint an installation token for the App
         # Issue and pull request work belongs to the App, which has its own rate limit. Rate limits
         # are per *user*, shared across every token a person holds, so a busy session used to
@@ -50,6 +56,13 @@ jobs:
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          # This is the one workflow that writes to a repository other than the one it runs in, so
+          # it is the one that has to say which. An installation token is scoped to the running
+          # repository unless a target is named, and a token scoped to DarkFactory pushing to a
+          # consumer fails as `Permission to <target> denied to darkfactory-pipeline[bot]` - which
+          # reads like a missing installation rather than a token that was never asked to cover it.
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.TARGET_NAME }}
 
       - name: Check out the pipeline
         uses: actions/checkout@v4

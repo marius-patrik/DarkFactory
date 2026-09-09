@@ -728,3 +728,31 @@ def test_only_board_writes_reach_for_the_user_token_alone():
     assert offenders == [], "these authenticate as the user with no App path:\n" + "\n".join(
         offenders
     )
+
+
+def test_the_cross_repository_workflow_scopes_its_token_to_its_target():
+    """An installation token covers only the repository it was minted in unless told otherwise.
+
+    `install.yml` is the one workflow that writes somewhere else. A token scoped to DarkFactory
+    pushing to a consumer fails as `Permission to <target> denied to darkfactory-pipeline[bot]`,
+    which reads like a missing installation rather than a token that was never asked to cover it.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+    block = content.split("create-github-app-token", 1)[1].split("- name:", 1)[0]
+    assert "repositories:" in block, "install.yml must scope its token to the target repository"
+    assert "owner:" in block, "scoping by repository name requires naming the owner too"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [w for w in APP_AUTHENTICATED_WORKFLOWS if w != "install.yml"],
+)
+def test_same_repository_workflows_do_not_narrow_their_token(name: str):
+    """Naming repositories on a workflow that works in its own is a way to lock yourself out.
+
+    Args:
+        name: Workflow file name.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, name))
+    block = content.split("create-github-app-token", 1)[1].split("- name:", 1)[0]
+    assert "repositories:" not in block, f"{name} acts on its own repository and must not scope"
