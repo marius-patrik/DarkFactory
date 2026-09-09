@@ -104,3 +104,12 @@ class TestConfigurationIssue:
         """Turning it on too early blocks every merge on a context nothing reports."""
         body = install.configuration_issue("o/r", "o/p")
         assert "green" in body and "blocks every merge" in body
+
+
+def test_the_generated_manifest_makes_the_licence_a_visible_choice():
+    """An absent licence block reads as an oversight; NONE reads as a decision."""
+    import json
+
+    manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
+    assert manifest["license"]["spdx"] == "NONE"
+    assert "$comment" in manifest["license"], "it must say what NONE means"

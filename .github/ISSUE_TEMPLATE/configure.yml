@@ -12,7 +12,17 @@ body:
         whenever the configuration needs to change - areas gained a new domain, a credential was
         rotated, the repository is finally ready for branch protection.
 
-        Everything derivable is generated. These four are the ones that need a person.
+        Everything in `.github/darkfactory.json` is configurable here. Some of it is detected
+        automatically and only needs an entry when the detection is wrong; the rest is a decision
+        nobody can make for you.
+
+        | Block | Detected? |
+        | :--- | :--- |
+        | `environment` — packages, test and build commands | **yes**, override only when wrong |
+        | `identity` — description, topics, default branch | partly, from the repository |
+        | `license` | no — a choice |
+        | `areas` | no — a choice |
+        | `board`, `pages`, `versioning` | no — conventions |
 
   - type: checkboxes
     id: scope
@@ -20,6 +30,9 @@ body:
       label: "What is changing"
       options:
         - label: "**Areas** — the domains in `.github/darkfactory.json`"
+        - label: "**Licence** — which licence this repository is under"
+        - label: "**Environment** — override what detection concluded"
+        - label: "**Identity** — description, topics, default branch"
         - label: "**Credentials** — secrets and the variables that switch the agent on"
         - label: "**Publishing** — GitHub Pages and its deployment branch policy"
         - label: "**Branch protection** — the required checks on the default branch"
@@ -37,6 +50,60 @@ body:
         agents      — harness orchestration, providers, personas
         governance  — rules, protection, required checks, board taxonomy
         ci          — workflows, containers, runner scripts
+    validations:
+      required: false
+
+  - type: dropdown
+    id: license
+    attributes:
+      label: "Licence"
+      description: >
+        Written from GitHub's canonical text, so it cannot drift from the wording it claims to be.
+        `NONE` means deliberately not licensed for reuse - a thesis, say - which is a different
+        thing from having forgotten to choose.
+      options:
+        - "unchanged"
+        - "GPL-3.0"
+        - "AGPL-3.0"
+        - "LGPL-2.1"
+        - "Apache-2.0"
+        - "MIT"
+        - "BSD-3-Clause"
+        - "MPL-2.0"
+        - "CC0-1.0"
+        - "Unlicense"
+        - "NONE - deliberately unlicensed"
+    validations:
+      required: false
+
+  - type: input
+    id: license_holder
+    attributes:
+      label: "Copyright holder"
+      description: "Only used by licences that name one, such as MIT and BSD."
+      placeholder: "Patrik Marius"
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment overrides"
+      description: >
+        Detection reads the repository and is usually right; declare only what it cannot see. A
+        vendored toolchain means the build command is not the ecosystem default, and a repository
+        whose pyproject.toml carries only tooling configuration packages nothing.
+      placeholder: |
+        testing.typst.command  = typst compile --font-path fonts main.typ out/prace.pdf
+        release.python.enabled = false
+    validations:
+      required: false
+
+  - type: textarea
+    id: identity
+    attributes:
+      label: "Identity"
+      description: "Description, topics and default branch. Taken from the repository unless stated."
     validations:
       required: false
 

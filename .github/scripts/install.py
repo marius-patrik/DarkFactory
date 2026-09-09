@@ -164,6 +164,14 @@ def render_manifest(
             "description": description,
             "topics": [],
         },
+        "license": {
+            "$comment": "Written from GitHub's canonical text, so it cannot drift from the "
+            "wording it claims to be. NONE means deliberately not licensed for reuse, which is "
+            "different from having forgotten to choose. Change it through a configuration issue.",
+            "spdx": "NONE",
+            "holder": "",
+            "year": "",
+        },
         "upstream": {
             "$comment": "`ref` is the pin: bump it to adopt a pipeline update.",
             "repo": pipeline_repo,
