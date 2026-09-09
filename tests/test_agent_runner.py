@@ -7,6 +7,7 @@ import pytest
 
 import agent_runner
 from agent_runner import (
+    prepare_credentials,
     is_bot_or_agent_comment,
     AREA_LABELS,
     TYPE_LABELS,
@@ -245,3 +246,91 @@ def test_legacy_agent_comments_are_still_recognised():
     """Comments already posted carry the old marker and must not become invisible."""
     assert is_bot_or_agent_comment("someone", "<!-- omnis-agent -->\nold notice")
     assert is_bot_or_agent_comment("someone", "<!-- darkfactory-agent -->\nnew notice")
+
+
+def agent_runner_module():
+    """Returns the runner module, for monkeypatching module-level functions.
+
+    Returns:
+        The imported module.
+    """
+    import agent_runner
+
+    return agent_runner
+
+
+class TestDeclarativeCredentials:
+    """A harness declares how it authenticates; the runner stops knowing any of them by name."""
+
+    def test_a_harness_declaring_nothing_needs_nothing(self):
+        """Most harnesses take an API key straight from the environment."""
+        import harnesses
+
+        assert prepare_credentials(harnesses.get_harness("codex")) is None
+
+    def test_a_static_declaration_is_returned_as_is(self, monkeypatch):
+        """A subscription token minted by `claude setup-token` needs no exchange."""
+        import harnesses
+
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat-live")
+        assert prepare_credentials(harnesses.get_harness("claude")) == "sk-ant-oat-live"
+
+    def test_an_absent_credential_is_not_an_error(self, monkeypatch):
+        """A harness without its secret is skipped by the ladder, not failed on."""
+        import harnesses
+
+        monkeypatch.delenv("ANTIGRAVITY_REFRESH_TOKEN", raising=False)
+        assert prepare_credentials(harnesses.get_harness("antigravity")) is None
+
+    def test_a_refresh_declaration_is_exchanged(self, monkeypatch):
+        """The exchange is driven by the declared endpoint, not by the harness's name."""
+        import harnesses
+
+        monkeypatch.setenv("ANTIGRAVITY_REFRESH_TOKEN", "stored")
+        seen = {}
+
+        def fake(refresh_token, token_url, client_id="", client_secret=""):
+            seen.update(refresh_token=refresh_token, token_url=token_url)
+            return {"access_token": "fresh"}
+
+        monkeypatch.setattr(agent_runner_module(), "exchange_refresh_token", fake)
+        assert prepare_credentials(harnesses.get_harness("antigravity")) == "fresh"
+        assert seen["refresh_token"] == "stored"
+        assert "oauth2.googleapis.com" in seen["token_url"]
+
+    def test_a_rotated_token_replaces_the_stored_one(self, monkeypatch):
+        """The failure this prevents: reading only access_token strands a rotating credential."""
+        import harnesses
+
+        rotating = harnesses.Harness(
+            name="rotating",
+            binary="x",
+            template=[],
+            auth=harnesses.Auth(
+                kind="oauth_refresh",
+                env="ROTATING_TOKEN",
+                token_url="https://x/token",
+                rotates=True,
+            ),
+        )
+        monkeypatch.setenv("ROTATING_TOKEN", "old")
+        monkeypatch.setattr(
+            agent_runner_module(),
+            "exchange_refresh_token",
+            lambda *a, **k: {"access_token": "fresh", "refresh_token": "new"},
+        )
+        assert prepare_credentials(rotating) == "fresh"
+        assert os.environ["ROTATING_TOKEN"] == "new", "the rotated token must not be discarded"
+
+    def test_a_non_rotating_provider_keeps_its_stored_token(self, monkeypatch):
+        """Google does not rotate, so nothing should be replaced behind the caller's back."""
+        import harnesses
+
+        monkeypatch.setenv("ANTIGRAVITY_REFRESH_TOKEN", "stored")
+        monkeypatch.setattr(
+            agent_runner_module(),
+            "exchange_refresh_token",
+            lambda *a, **k: {"access_token": "fresh", "refresh_token": "unexpected"},
+        )
+        prepare_credentials(harnesses.get_harness("antigravity"))
+        assert os.environ["ANTIGRAVITY_REFRESH_TOKEN"] == "stored"
