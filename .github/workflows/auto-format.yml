@@ -99,17 +99,27 @@ jobs:
 
       - name: Commit and push formatting changes
         run: |
-          if [ -z "$(git status --porcelain)" ]; then
+          # Tracked files only, and never submodules. `git add -A` staged the `.pipeline` gitlink
+          # whenever the checked-out submodule differed from the recorded pointer, so the formatter
+          # committed a change it had not made - and did it again on the next run, and the next,
+          # because the difference was still there. A formatter that never converges keeps moving
+          # the head of every pull request it touches.
+          git add -u -- . ':(exclude,attr:submodule)'
+          if git diff --cached --quiet; then
             echo "No formatting changes needed. Codebase is clean."
             exit 0
           fi
-          echo "Formatting changes detected. Committing via the Actions bot..."
+          echo "Formatting changes detected. Committing..."
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "style(ci): auto-format codebase via GitHub Actions bot [skip ci]"
-          if [ "${{ github.ref_name }}" != "darkfactory" ]; then
+          # Deliberately no `[skip ci]`. This commit becomes the head of the pull request, and a
+          # head that skipped CI can never satisfy a required check: the previous head's green runs
+          # do not carry over, so the pull request sits BLOCKED with every check reported against a
+          # commit that is no longer current, and nothing in the UI explains it. Both protected
+          # consumers were stuck exactly there.
+          git commit -m "style(ci): auto-format codebase"
+          if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
             git push origin "${{ github.ref_name }}"
           else
-            echo "Branch is main; direct push skipped to comply with branch protection."
+            echo "Default branch; direct push skipped to comply with branch protection."
           fi
