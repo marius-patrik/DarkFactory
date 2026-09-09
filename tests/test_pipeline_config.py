@@ -994,3 +994,19 @@ def test_the_bound_issue_is_not_the_configuration_issue():
         0
     ]
     assert "darkfactory: configuration" not in pr_step
+
+
+def test_a_reinstall_updates_the_pull_request_it_finds():
+    """A reinstall pushes to the same branch, so the pull request is usually already open.
+
+    Skipping it leaves the body as it was, and the body carries the issue binding — so a pull
+    request opened before that binding existed stays unmergeable forever behind a required check it
+    can never satisfy. All five consumer installations were in exactly that state.
+    """
+    step = (
+        _read(os.path.join(WORKFLOW_DIR, "install.yml"))
+        .split("Open a pull request on the target", 1)[1]
+        .split("\n      - name:", 1)[0]
+    )
+    assert "gh pr edit" in step, "an existing pull request must be updated, not skipped"
+    assert "already exists" not in step, "reporting it and moving on is what left them unmergeable"
