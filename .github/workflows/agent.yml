@@ -121,6 +121,7 @@ jobs:
         with:
           app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
           private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Delegate to Central DarkFactory
         id: delegate
