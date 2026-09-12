@@ -733,3 +733,42 @@ class TestExhaustionRotatesBeforeItWaits:
         result = agent_runner.run_agent_prompt("do it")
         assert "[DarkFactory Agent Execution Error]" in result
         assert len(calls) == 1
+
+
+class TestGhCliHandling:
+    """The agent runner must survive non-fatal gh command failures."""
+
+    def test_run_gh_includes_stderr_in_called_process_error(self, monkeypatch):
+        """CalledProcessError must convey the error output from gh."""
+        module = agent_runner_module()
+
+        def fail_run(cmd, **kwargs):
+            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="HTTP 404: Not Found")
+
+        monkeypatch.setattr(module.subprocess, "run", fail_run)
+        with pytest.raises(subprocess.CalledProcessError) as exc_info:
+            module.run_gh(["issue", "view", "1"])
+        assert "HTTP 404: Not Found" in str(exc_info.value.stderr)
+
+    def test_try_gh_returns_stdout_on_success(self, monkeypatch):
+        """Successful execution returns stripped stdout."""
+        module = agent_runner_module()
+
+        def ok_run(cmd, **kwargs):
+            return subprocess.CompletedProcess(cmd, 0, stdout="hello world\n", stderr="")
+
+        monkeypatch.setattr(module.subprocess, "run", ok_run)
+        assert module.try_gh(["status"]) == "hello world"
+
+    def test_try_gh_returns_none_on_error_without_raising(self, monkeypatch, capsys):
+        """A failure does not raise and logs to stderr."""
+        module = agent_runner_module()
+
+        def fail_run(cmd, **kwargs):
+            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="label does not exist")
+
+        monkeypatch.setattr(module.subprocess, "run", fail_run)
+        result = module.try_gh(["issue", "edit", "12", "--add-label", "ci"], doing="label #12")
+        assert result is None
+        err = capsys.readouterr().err
+        assert "Could not label #12: label does not exist" in err
