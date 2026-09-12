@@ -509,6 +509,34 @@ class BoardGroup:
         """
         self.clients = clients
 
+    def run_gh(self, args: List[str]) -> str:
+        """Runs a ``gh`` command and returns stripped stdout.
+
+        Delegates to the first client if available, or executes directly under the appropriate env.
+
+        Args:
+            args: Arguments following the ``gh`` executable.
+
+        Returns:
+            Command stdout with surrounding whitespace removed.
+        """
+        if self.clients:
+            return self.clients[0].run_gh(args)
+        result = subprocess.run(
+            ["gh"] + args, capture_output=True, text=True, check=True, env=_env_for(args)
+        )
+        return result.stdout.strip()
+
+    @property
+    def owner(self) -> str:
+        """Owner of the first board, or default owner."""
+        return self.clients[0].owner if self.clients else PROJECT_OWNER
+
+    @property
+    def project_number(self) -> int:
+        """Project number of the first board, or default project number."""
+        return self.clients[0].project_number if self.clients else PROJECT_NUMBER
+
     def track(self, url: str, status: str) -> None:
         """Adds a url to every board and sets its status on each.
 
@@ -529,6 +557,17 @@ class BoardGroup:
         """
         if self.clients:
             self.clients[0].set_status_label(repo, number, status)
+
+    def add_issue_label(self, repo: str, number: int, label: str) -> None:
+        """Adds a label once, since labels belong to the issue, not to a board.
+
+        Args:
+            repo: `owner/name` of the repository.
+            number: Issue number.
+            label: Label to add.
+        """
+        if self.clients:
+            self.clients[0].add_issue_label(repo, number, label)
 
     def close_issue(self, repo: str, number: int) -> None:
         """Closes an issue once, for the same reason.
@@ -704,7 +743,7 @@ def settled_status(closed: bool, merged: bool, labels: List[str]) -> Optional[st
     return labelled if labelled in TERMINAL_STATUSES else "Dropped"
 
 
-def reconcile_membership(client: GitHubProjectClient, repo: str) -> int:
+def reconcile_membership(client: Any, repo: str) -> int:
     """Puts every open issue and pull request of a repository onto its boards.
 
     An item reaches a board only by passing through a lifecycle event, so anything opened before
@@ -757,7 +796,7 @@ def reconcile_membership(client: GitHubProjectClient, repo: str) -> int:
     return tracked
 
 
-def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
+def reconcile_unassigned_statuses(client: Any) -> None:
     """Brings every board item's status back into agreement with the repository.
 
     Two things drift. An item can reach the board without passing through a lifecycle event - added
@@ -773,8 +812,13 @@ def reconcile_unassigned_statuses(client: GitHubProjectClient) -> None:
     record.
 
     Args:
-        client: Project client.
+        client: Project client or board group.
     """
+    if isinstance(client, BoardGroup):
+        for member in client.clients:
+            reconcile_unassigned_statuses(member)
+        return
+
     try:
         raw_items = client.run_gh(
             [

@@ -271,6 +271,41 @@ def test_reconciliation_uses_labels_not_a_blanket_todo(monkeypatch: pytest.Monke
     assert client.writes == [("i1", "Backlog"), ("i2", "ToDo"), ("i4", "Dropped")]
 
 
+def test_reconciliation_with_board_group():
+    """Status reconciliation iterates over all boards in a BoardGroup."""
+    from project_automation import BoardGroup, reconcile_unassigned_statuses
+
+    items = {
+        "items": [
+            {"id": "i1", "labels": ["Backlog"], "content": {"title": "item1"}},
+        ]
+    }
+
+    class Recorder(GitHubProjectClient):
+        def __init__(self, num: int) -> None:
+            super().__init__(owner="o", project_number=num)
+            self.writes: List[Tuple[str, str]] = []
+
+        def run_gh(self, args: List[str]) -> str:
+            import json as _json
+
+            return _json.dumps(items)
+
+        def edit_status(self, item_id: str, status_name: str) -> bool:
+            self.writes.append((item_id, status_name))
+            return True
+
+    b1, b2 = Recorder(1), Recorder(2)
+    group = BoardGroup([b1, b2])
+    reconcile_unassigned_statuses(group)
+    assert b1.writes == [("i1", "Backlog")]
+    assert b2.writes == [("i1", "Backlog")]
+
+    # Empty BoardGroup completes without raising
+    empty_group = BoardGroup([])
+    reconcile_unassigned_statuses(empty_group)
+
+
 def test_status_field_ids_are_not_hardcoded():
     """Board ids are resolved at runtime; a hardcoded id breaks on every board rebuild."""
     path = os.path.join(REPO_ROOT, ".github", "scripts", "project_automation.py")
@@ -324,6 +359,43 @@ class TestBoardResolution:
         group.close_issue(REPO, 7)
         assert first.status_labels == [(REPO, 7, "Done")] and second.status_labels == []
         assert first.closed_issues == [(REPO, 7)] and second.closed_issues == []
+
+    def test_board_group_delegates_run_gh(self):
+        """A board group delegates command execution to its first client."""
+        calls = []
+
+        class RecordingClient(FakeProjectClient):
+            def run_gh(self, args):
+                calls.append(args)
+                return "ok"
+
+        group = project_automation.BoardGroup([RecordingClient()])
+        assert group.run_gh(["issue", "list"]) == "ok"
+        assert calls == [["issue", "list"]]
+
+    def test_empty_board_group_run_gh_executes_subprocess(self, monkeypatch):
+        """When no clients are present, BoardGroup executes subprocess directly."""
+        seen = []
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda cmd, **kwargs: seen.append(cmd) or type("R", (), {"stdout": "done\n"})(),
+        )
+        group = project_automation.BoardGroup([])
+        assert group.run_gh(["issue", "list"]) == "done"
+        assert seen == [["gh", "issue", "list"]]
+
+    def test_board_group_properties_and_single_actions(self):
+        """BoardGroup forwards owner and project_number and adds labels once."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        first.owner = "custom-owner"
+        first.project_number = 42
+        group = project_automation.BoardGroup([first, second])
+        assert group.owner == "custom-owner"
+        assert group.project_number == 42
+        group.add_issue_label(REPO, 10, "area:ci")
+        assert first.added_labels == [(REPO, 10, "area:ci")]
+        assert second.added_labels == []
 
     def test_a_declared_board_that_does_not_exist_is_a_failure(self, monkeypatch):
         """Silence here is what let every write fail unnoticed for days."""
@@ -468,6 +540,28 @@ class TestMembershipReconciliation:
 
         project_automation.reconcile_membership(Broken(), "o/r")
         assert project_automation.FAILURES
+
+    def test_membership_reconciliation_tracks_all_boards_in_group(self):
+        """Membership reconciliation works with BoardGroup, tracking across all clients."""
+        first = self._client(
+            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [],
+        )
+        second = self._client([], [])
+        group = project_automation.BoardGroup([first, second])
+        assert project_automation.reconcile_membership(group, "o/r") == 1
+        assert ("https://x/issues/1", "Backlog") in first.tracked
+        assert ("https://x/issues/1", "Backlog") in second.tracked
+
+    def test_membership_reconciliation_with_empty_group(self, monkeypatch):
+        """Reconciling with an empty BoardGroup runs without error."""
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda cmd, **kwargs: type("R", (), {"stdout": "[]"})(),
+        )
+        group = project_automation.BoardGroup([])
+        assert project_automation.reconcile_membership(group, "o/r") == 0
 
 
 class TestFailuresSayWhatWentWrong:
