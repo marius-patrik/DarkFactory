@@ -589,3 +589,67 @@ class TestFailuresSayWhatWentWrong:
     def test_an_exception_with_no_output_renders_as_itself(self):
         """Most exceptions carry nothing captured, and must not gain empty parentheses."""
         assert project_automation._detail(ValueError("plain")) == "plain"
+
+
+class TestRateLimitingAndIncrementalBudget:
+    """Rate limits must pause cleanly without failing, and writes must be idempotent and budgeted."""
+
+    def test_is_rate_limited_recognises_indicators(self):
+        """Standard rate-limit messages across GraphQL and REST are detected."""
+        for phrase in [
+            "unknown owner type",
+            "API rate limit exceeded",
+            "secondary rate limit",
+            "was submitted too quickly",
+            "too many requests",
+            "quota exceeded",
+        ]:
+            exc = subprocess.CalledProcessError(1, ["gh"], stderr=phrase)
+            assert project_automation.is_rate_limited(exc)
+
+    def test_resolve_boards_pauses_on_rate_limit(self, monkeypatch):
+        """When listing projects hits a rate limit, RATE_LIMITED is set and FAILURES is empty."""
+        monkeypatch.setattr(project_automation, "FAILURES", [])
+        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: (_ for _ in ()).throw(
+                subprocess.CalledProcessError(1, ["gh"], stderr="unknown owner type")
+            ),
+        )
+        boards = project_automation.resolve_boards()
+        assert boards == []
+        assert project_automation.RATE_LIMITED is True
+        assert project_automation.FAILURES == []
+
+    def test_track_skips_when_item_already_matches(self, monkeypatch):
+        """Check-before-write idempotency: no mutations when status already matches."""
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {"https://github.com/o/r/issues/1": ("item-1", "Done")}
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: pytest.fail("should not mutate")
+        )
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
+        client.track("https://github.com/o/r/issues/1", "Done")
+
+    def test_track_edits_without_add_when_status_differs(self, monkeypatch):
+        """When an item is already present with a different status, only edit_status is called."""
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {"https://github.com/o/r/issues/1": ("item-1", "ToDo")}
+        edited = []
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+        )
+        client.track("https://github.com/o/r/issues/1", "In Progress")
+        assert edited == [("item-1", "In Progress")]
+
+    def test_track_respects_mutation_budget(self, monkeypatch):
+        """When the mutation budget is reached, further writes are deferred."""
+        monkeypatch.setattr(project_automation, "MUTATIONS_PERFORMED", 5)
+        monkeypatch.setattr(project_automation, "MUTATION_BUDGET", 5)
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {}
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("budget exceeded"))
+        client.track("https://github.com/o/r/issues/99", "ToDo")

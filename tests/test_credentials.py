@@ -76,3 +76,36 @@ def test_a_failed_set_is_reported_not_swallowed(monkeypatch):
 
     monkeypatch.setattr(credentials.subprocess, "run", fake_run)
     assert credentials.set_secret("o/r", "NAME", "v") is False
+
+
+def test_a_json_file_is_dug_into(tmp_path):
+    """Token files stored on disk as JSON can be queried via json_path."""
+    token_file = tmp_path / "token.json"
+    token_file.write_text(json.dumps({"token": {"refresh_token": "disk-secret"}}))
+    source = credentials.Source(
+        secret="X", describe="x", file=str(token_file), json_path="token.refresh_token"
+    )
+    assert credentials.read(source) == "disk-secret"
+
+
+def test_a_go_keyring_base64_entry_is_decoded(monkeypatch):
+    """go-keyring stores base64-encoded JSON payloads."""
+    import base64
+
+    payload = json.dumps({"token": {"refresh_token": "keyring-secret"}})
+    encoded = "go-keyring-base64:" + base64.b64encode(payload.encode("utf-8")).decode("utf-8")
+    source = credentials.Source(
+        secret="X",
+        describe="x",
+        keychain="gemini",
+        keychain_account="antigravity",
+        json_path="token.refresh_token",
+    )
+    monkeypatch.setattr(credentials.sys, "platform", "darwin")
+    monkeypatch.setattr(credentials.shutil, "which", lambda name: "/usr/bin/security")
+    monkeypatch.setattr(
+        credentials.subprocess,
+        "run",
+        lambda *a, **k: type("R", (), {"stdout": encoded})(),
+    )
+    assert credentials.read(source) == "keyring-secret"

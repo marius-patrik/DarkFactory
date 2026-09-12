@@ -25,7 +25,7 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_OWNER = os.environ.get(
     "PROJECT_OWNER", os.environ.get("GITHUB_REPOSITORY_OWNER", "marius-patrik")
@@ -122,6 +122,39 @@ def determine_status_from_labels(labels: List[str]) -> str:
 #: exits non-zero if any occurred.
 FAILURES: List[str] = []
 
+#: Rate limit detection and graceful backoff flag.
+RATE_LIMITED = False
+
+#: Mutation cap per execution to ensure incremental progress without rate-limit spikes.
+try:
+    MUTATION_BUDGET = int(os.environ.get("PROJECT_MUTATION_BUDGET", "25"))
+except (ValueError, TypeError):
+    MUTATION_BUDGET = 25
+
+MUTATIONS_PERFORMED = 0
+
+
+def is_rate_limited(exc: BaseException) -> bool:
+    """Checks whether an exception represents a rate limit, quota exhaustion, or throttling.
+
+    Args:
+        exc: Exception to inspect.
+
+    Returns:
+        True when the error indicates rate limiting or quota exhaustion.
+    """
+    text = _detail(exc).lower()
+    indicators = (
+        "unknown owner type",
+        "rate limit",
+        "rate_limit",
+        "too many requests",
+        "secondary rate limit",
+        "was submitted too quickly",
+        "quota exceeded",
+    )
+    return any(ind in text for ind in indicators)
+
 
 def _detail(exc: BaseException) -> str:
     """Renders an exception together with the output that actually explains it.
@@ -202,6 +235,14 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         ).stdout
         by_title = {p["title"]: p["number"] for p in json.loads(output).get("projects", [])}
     except Exception as exc:  # noqa: BLE001 - reported below, not raised here
+        if is_rate_limited(exc):
+            global RATE_LIMITED
+            RATE_LIMITED = True
+            print(
+                f"Notice: Project board rate limit reached resolving boards for {owner}; pausing until next window.",
+                file=sys.stderr,
+            )
+            return []
         _fail(f"could not list projects for {owner}: {_detail(exc)}")
         return []
 
@@ -256,6 +297,7 @@ class GitHubProjectClient:
         self._project_id: Optional[str] = None
         self._status_field_id: Optional[str] = os.environ.get("PROJECT_STATUS_FIELD_ID") or None
         self._status_options: Optional[Dict[str, str]] = None
+        self._items_cache: Optional[Dict[str, Tuple[str, Optional[str]]]] = None
 
     def run_gh(self, args: List[str]) -> str:
         """Runs a ``gh`` command and returns stripped stdout.
@@ -292,7 +334,15 @@ class GitHubProjectClient:
                 )
                 self._project_id = json.loads(output).get("id")
             except Exception as exc:  # noqa: BLE001 - board access is best-effort
-                print(f"Could not resolve project id: {_detail(exc)}", file=sys.stderr)
+                if is_rate_limited(exc):
+                    global RATE_LIMITED
+                    RATE_LIMITED = True
+                    print(
+                        f"Notice: Project board rate limit reached resolving project id for project {self.project_number}; pausing.",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(f"Could not resolve project id: {_detail(exc)}", file=sys.stderr)
         return self._project_id
 
     def _load_status_field(self) -> None:
@@ -322,7 +372,15 @@ class GitHubProjectClient:
                     self._status_options[option["name"]] = option["id"]
                 break
         except Exception as exc:  # noqa: BLE001 - board access is best-effort
-            print(f"Could not resolve Status field: {_detail(exc)}", file=sys.stderr)
+            if is_rate_limited(exc):
+                global RATE_LIMITED
+                RATE_LIMITED = True
+                print(
+                    f"Notice: Project board rate limit reached resolving Status field for project {self.project_number}; pausing.",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"Could not resolve Status field: {_detail(exc)}", file=sys.stderr)
 
     @property
     def status_field_id(self) -> Optional[str]:
@@ -343,16 +401,80 @@ class GitHubProjectClient:
         assert self._status_options is not None
         return self._status_options.get(status_name)
 
+    def load_existing_items(self) -> Dict[str, Tuple[str, Optional[str]]]:
+        """Loads and caches existing board items mapped by content URL to (item_id, status)."""
+        if self._items_cache is not None:
+            return self._items_cache
+        self._items_cache = {}
+        try:
+            raw = self.run_gh(
+                [
+                    "project",
+                    "item-list",
+                    str(self.project_number),
+                    "--owner",
+                    self.owner,
+                    "--format",
+                    "json",
+                    "--limit",
+                    "500",
+                ]
+            )
+            for item in json.loads(raw or "{}").get("items", []):
+                item_id = item.get("id")
+                content_url = item.get("content", {}).get("url")
+                item_status = item.get("status")
+                if content_url and item_id:
+                    self._items_cache[content_url] = (item_id, item_status)
+        except Exception as exc:  # noqa: BLE001 - best-effort pre-check
+            if is_rate_limited(exc):
+                global RATE_LIMITED
+                RATE_LIMITED = True
+                print(
+                    f"Notice: Project board rate limit reached reading items for project {self.project_number}; pausing.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"Could not load items for project {self.project_number}: {_detail(exc)}",
+                    file=sys.stderr,
+                )
+        return self._items_cache
+
     def track(self, url: str, status: str) -> None:
-        """Adds a url to this board and sets its status.
+        """Adds a url to this board and sets its status with check-before-write idempotency.
 
         Args:
             url: Issue or pull request html url.
             status: Target status name.
         """
+        global MUTATIONS_PERFORMED, RATE_LIMITED
+        if RATE_LIMITED:
+            return
+        if MUTATIONS_PERFORMED >= MUTATION_BUDGET:
+            print(
+                f"Notice: Mutation budget reached ({MUTATION_BUDGET}); deferring {url} to next run."
+            )
+            return
+
+        existing = self.load_existing_items()
+        if url in existing:
+            item_id, current_status = existing[url]
+            if current_status == status:
+                return
+            if self.edit_status(item_id, status):
+                existing[url] = (item_id, status)
+                MUTATIONS_PERFORMED += 1
+                print(f"{url} -> {status} (project {self.project_number})")
+            return
+
         item_id = self.add_item(url)
-        if item_id and self.edit_status(item_id, status):
-            print(f"{url} -> {status} (project {self.project_number})")
+        if item_id:
+            MUTATIONS_PERFORMED += 1
+            if self.edit_status(item_id, status):
+                MUTATIONS_PERFORMED += 1
+                existing[url] = (item_id, status)
+                print(f"{url} -> {status} (project {self.project_number})")
 
     def add_item(self, url: str) -> Optional[str]:
         """Adds an issue or pull request to the project, returning its item id.
@@ -382,6 +504,14 @@ class GitHubProjectClient:
             )
             return json.loads(output).get("id")
         except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
+            if is_rate_limited(exc):
+                global RATE_LIMITED
+                RATE_LIMITED = True
+                print(
+                    f"Notice: Project board rate limit reached adding {url} to project {self.project_number}; pausing.",
+                    file=sys.stderr,
+                )
+                return None
             _fail(f"adding {url} to project {self.project_number}: {_detail(exc)}")
             return None
 
@@ -424,6 +554,14 @@ class GitHubProjectClient:
             )
             return True
         except Exception as exc:  # noqa: BLE001 - board access is best-effort
+            if is_rate_limited(exc):
+                global RATE_LIMITED
+                RATE_LIMITED = True
+                print(
+                    f"Notice: Project board rate limit reached updating item {item_id}; pausing.",
+                    file=sys.stderr,
+                )
+                return False
             print(f"Error updating item status: {_detail(exc)}", file=sys.stderr)
             return False
 
@@ -685,7 +823,6 @@ def _handle_push_event(payload: Dict[str, Any], client: GitHubProjectClient) -> 
             client.set_status_label(repo, issue_num, "Done")
             _track(client, f"https://github.com/{repo}/issues/{issue_num}", "Done")
             client.close_issue(repo, issue_num)
-    reconcile_unassigned_statuses(client)
 
 
 def process_event(
@@ -781,6 +918,14 @@ def reconcile_membership(client: Any, repo: str) -> int:
                 ]
             )
         except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
+            if is_rate_limited(exc):
+                global RATE_LIMITED
+                RATE_LIMITED = True
+                print(
+                    f"Notice: Rate limit reached listing open {kind}s in {repo}; pausing.",
+                    file=sys.stderr,
+                )
+                break
             _fail(f"could not list open {kind}s in {repo}: {_detail(exc)}")
             continue
 
@@ -856,11 +1001,20 @@ def reconcile_unassigned_statuses(client: Any) -> None:
             was = current or "no status"
             print(f"Reconciled item {item_id} ({content.get('title')}): {was} -> {wanted}")
     except Exception as exc:  # noqa: BLE001 - reconciliation is best-effort
+        if is_rate_limited(exc):
+            global RATE_LIMITED
+            RATE_LIMITED = True
+            print(
+                f"Notice: Rate limit reached during status reconciliation; pausing.",
+                file=sys.stderr,
+            )
+            return
         print(f"Status reconciliation notice: {_detail(exc)}", file=sys.stderr)
 
 
 def main() -> None:
     """Entry point: reads the webhook payload from the environment and processes it."""
+    global RATE_LIMITED
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
 
@@ -868,6 +1022,9 @@ def main() -> None:
         # A scheduled run has no webhook payload, but reconciliation needs none.
         if event_name in ("schedule", "workflow_dispatch"):
             process_event(event_name, {})
+            if RATE_LIMITED:
+                print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+                sys.exit(0)
             if FAILURES:
                 sys.exit(1)
             return
@@ -878,6 +1035,10 @@ def main() -> None:
         payload = json.load(handle)
 
     process_event(event_name, payload)
+
+    if RATE_LIMITED:
+        print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+        sys.exit(0)
 
     if FAILURES:
         print(f"\n{len(FAILURES)} board operation(s) failed:", file=sys.stderr)
