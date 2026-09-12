@@ -144,25 +144,41 @@ jobs:
       - name: Resolve target environment
         id: target-env
         if: steps.delegate.outputs.delegated != 'true'
+        env:
+          INPUT_TARGET_REPO: ${{ inputs.target-repo }}
+          INPUT_EVENT_NAME: ${{ inputs.event-name }}
         run: |
-          TARGET_REPO="${{ github.event.client_payload.repository || inputs.target-repo || github.repository }}"
-          EVENT_NAME="${{ github.event.client_payload.event_name || inputs.event-name || github.event_name }}"
-          OWNER="${TARGET_REPO%%/*}"
+          python3 - << 'PY'
+          import json, os
 
-          if [ "${{ github.event_name }}" = "repository_dispatch" ] && [ -n "${{ github.event.client_payload.payload }}" ]; then
-            cat << 'EOF' > /tmp/event.json
-          ${{ toJson(github.event.client_payload.payload) }}
-          EOF
-            EVENT_PATH="/tmp/event.json"
-          else
-            EVENT_PATH="${{ github.event_path }}"
-          fi
+          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
+              event = json.load(f)
 
-          echo "repo=$TARGET_REPO" >> "$GITHUB_OUTPUT"
-          echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
-          echo "event_name=$EVENT_NAME" >> "$GITHUB_OUTPUT"
-          echo "event_path=$EVENT_PATH" >> "$GITHUB_OUTPUT"
-          echo "is_external=$([ "$TARGET_REPO" != "${{ github.repository }}" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          payload = event.get("client_payload", {}) if isinstance(event, dict) else {}
+          target_repo = payload.get("repository") or os.environ.get("INPUT_TARGET_REPO") or os.environ.get("GITHUB_REPOSITORY") or ""
+          event_name = payload.get("event_name") or os.environ.get("INPUT_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or ""
+          owner = target_repo.partition("/")[0] if target_repo else ""
+
+          if event.get("action") == "agent-dispatch" or "client_payload" in event:
+              inner = payload.get("payload")
+              if inner:
+                  with open("/tmp/event.json", "w", encoding="utf-8") as f:
+                      json.dump(inner, f)
+                  event_path = "/tmp/event.json"
+              else:
+                  event_path = os.environ["GITHUB_EVENT_PATH"]
+          else:
+              event_path = os.environ["GITHUB_EVENT_PATH"]
+
+          is_external = "true" if target_repo != os.environ.get("GITHUB_REPOSITORY") else "false"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"repo={target_repo}\n")
+              f.write(f"owner={owner}\n")
+              f.write(f"event_name={event_name}\n")
+              f.write(f"event_path={event_path}\n")
+              f.write(f"is_external={is_external}\n")
+          PY
 
       - name: Checkout repository
         # Checked out with the App's token, so the branches the agent pushes are pushed by the App
