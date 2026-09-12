@@ -53,12 +53,12 @@ jobs:
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .pipeline
+          path: .darkfactory
 
       - name: Put the pipeline scripts on the path
         run: |
-          if [ -d .pipeline/.github/scripts ]; then
-            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.pipeline/.github/scripts" >> "$GITHUB_ENV"
+          if [ -d .darkfactory/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory/.github/scripts" >> "$GITHUB_ENV"
           else
             echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
           fi
