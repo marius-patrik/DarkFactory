@@ -1,0 +1,464 @@
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview · DarkFactory</title>
+    <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="../assets/theme.css"><script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("docs-theme");
+          if (stored) document.documentElement.setAttribute("data-theme", stored);
+          else if (window.matchMedia("(prefers-color-scheme: light)").matches)
+            document.documentElement.setAttribute("data-theme", "light");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="header">
+      <div class="header__inner">
+        <button class="icon-button header__menu" aria-label="Toggle navigation" data-nav-toggle>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+
+        <a class="header__brand" href="..">
+          <span class="header__mark" aria-hidden="true"></span>
+          <span class="header__name">DarkFactory</span>
+        </a>
+
+        <div class="header__search">
+          <svg class="header__search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input type="search" id="search-input" placeholder="Search documentation…"
+                 autocomplete="off" spellcheck="false" aria-label="Search documentation">
+          <kbd class="header__kbd">/</kbd>
+          <div class="search-results" id="search-results" hidden></div>
+        </div>
+
+        <div class="header__actions">
+          <button class="icon-button" data-theme-toggle aria-label="Toggle colour scheme">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+            </svg>
+          </button>
+          <a class="icon-button" href="https://github.com/marius-patrik/DarkFactory" aria-label="marius-patrik/DarkFactory">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 5.2 4.9 4.9 0 0 0 19.9 1.6S18.7 1.2 16 3a13.4 13.4 0 0 0-7 0C6.3 1.2 5.1 1.6 5.1 1.6A4.9 4.9 0 0 0 5 5.2 5.2 5.2 0 0 0 3.6 8.8c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" data-nav><div class="switcher" data-switcher hidden>
+  <label class="switcher__group">
+    <span class="switcher__label">Version</span>
+    <select class="switcher__select" data-switcher-versions aria-label="Documentation version"></select>
+  </label>
+  <label class="switcher__group" data-switcher-projects-group hidden>
+    <span class="switcher__label">Project</span>
+    <select class="switcher__select" data-switcher-projects aria-label="Project"></select>
+  </label>
+</div><nav aria-label="Documentation">
+
+
+<ul class="nav nav--depth-0">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="..">Overview</a>
+    </li>
+    <li class="nav__section nav__section--active">
+      <span class="nav__label">Architecture</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link nav__link--active"
+         href="./">Overview</a>
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Decisions</span>
+      
+<ul class="nav nav--depth-2">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="decisions/">Overview</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="decisions/0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="decisions/process/">Process</a>
+    </li>
+</ul>
+
+    </li>
+</ul>
+
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../roadmap/">Roadmap</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../agents/">Contributing & Agent Rules</a>
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Notes</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../notes/bootstrap/">Bootstrap runbook</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../notes/vision_capture/">Capture provenance</a>
+    </li>
+</ul>
+
+    </li>
+</ul>
+</nav>
+      </aside>
+
+      <main class="content" id="content">
+        <article class="prose">
+          <h1 id="darkfactory-architecture">DarkFactory — Architecture<a class="headerlink" href="#darkfactory-architecture" title="Permanent link">&para;</a></h1>
+<p><strong>Status: NORMATIVE.</strong> This document is the single normative source of truth for the DarkFactory
+process topology, autonomous pipeline contracts, harness abstractions, and repository governance.
+<code>VISION.md</code> is non-normative reference material and never overrides this document. Architectural
+changes require an Approved Architecture Decision Record (ADR) in <code>notes/architecture_decisions.md</code>.</p>
+<hr />
+<h2 id="1-system-thesis">1. System Thesis<a class="headerlink" href="#1-system-thesis" title="Permanent link">&para;</a></h2>
+<p>DarkFactory is an <strong>autonomous software engineering factory template</strong> ("Lights-Out Software Engineering").
+In manufacturing, a dark factory operates with fully automated machinery without human intervention on the floor.
+In software development, DarkFactory provides an end-to-end autonomous pipeline that ingests user requests,
+classifies and interprets requirements, formulates implementation plans, executes code edits, runs tests and
+linters, performs recursive self-reviews, opens bot-authored pull requests, and merges them automatically once
+maintainer approval is received.</p>
+<h3 id="core-tenet-two-explicit-human-gates">Core Tenet: Two Explicit Human Gates<a class="headerlink" href="#core-tenet-two-explicit-human-gates" title="Permanent link">&para;</a></h3>
+<p>Autonomous agents must not drift into unapproved scope. DarkFactory enforces two non-negotiable human gates:
+1. <strong>Interpretation Gate</strong>: The user/maintainer explicitly approves the agent's interpretation of the verbatim
+   request before any planning begins.
+2. <strong>Plan Gate</strong>: The user/maintainer explicitly approves the formal implementation plan before any code is modified.</p>
+<hr />
+<h2 id="2-process-topology-execution-flow">2. Process Topology &amp; Execution Flow<a class="headerlink" href="#2-process-topology-execution-flow" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                      │              GitHub Issue Event              │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                      │  (labeled `Request` with verbatim wording)   │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                             │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                             ▼
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                      │         Stage 1: Interpretation              │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                      │   Agent interprets request scope &amp; semantics │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                                             │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                                             ▼
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                      │       Human Gate 1: Maintainer Approval      │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                      │      Maintainer comments `approve`           │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                                             │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                                             ▼
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>                      │            Stage 2: Planning                 │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>                      │   Agent creates child issue with `Plan`      │
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>                                             │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>                                             ▼
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>                      │       Human Gate 2: Maintainer Approval      │
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                      │      Maintainer comments `approve`           │
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>                                             │
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>                                             ▼
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>                      │         Stage 3: Implementation              │
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>                      │  Agent checks out branch, writes code/tests  │
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                                             │
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>                                             ▼
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>                      │          Stage 4: Self-Review Loop           │
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>                      │  Autonomous static analysis &amp; fix iterations │
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>                                             │
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>                                             ▼
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>                      │         Stage 5: Plan Alignment              │
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>                      │  Verifies code matches plan or logs diff     │
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>                                             │
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>                                             ▼
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>                      │         Stage 6: Draft Pull Request          │
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>                      │  Opened by github-actions[bot] with Closes # │
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>                                             │
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>                                             ▼
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>                      │    Human Review Gate: Maintainer Approval    │
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>                      │  Maintainer submits GitHub PR Review Approve │
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>                      └──────────────────────┬───────────────────────┘
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>                                             │
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>                                             ▼
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>                      ┌──────────────────────────────────────────────┐
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>                      │       Stage 7: Auto-Merge &amp; Reconcile        │
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>                      │  Squash-merge PR, delete branch, Done status │
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>                      └──────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="3-subsystem-decomposition">3. Subsystem Decomposition<a class="headerlink" href="#3-subsystem-decomposition" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Source Component</th>
+<th>Responsibilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Agent Runner Pipeline</strong></td>
+<td><code>.github/scripts/agent_runner.py</code></td>
+<td>Multi-phase pipeline orchestrator (interpret, plan, implement, review, align), credential preparation, and checkpointed quota ladder.</td>
+</tr>
+<tr>
+<td><strong>Harness Abstraction</strong></td>
+<td><code>.github/scripts/harnesses.py</code></td>
+<td>CLI execution wrappers for Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with multi-account and companion secret resolution.</td>
+</tr>
+<tr>
+<td><strong>Project Board Client</strong></td>
+<td><code>.github/scripts/project_automation.py</code></td>
+<td>GraphQL interface to GitHub Projects v2; manages lifecycle state mutations with incremental budgeting and rate-limit backoff.</td>
+</tr>
+<tr>
+<td><strong>PR Approval &amp; Auto-Merge</strong></td>
+<td><code>.github/scripts/handle_pr_approval.py</code></td>
+<td>Listens for maintainer review approval, performs auto-merge, and reconciles bound issues.</td>
+</tr>
+<tr>
+<td><strong>PR Dispatcher</strong></td>
+<td><code>.github/scripts/open_pr.py</code></td>
+<td>Bot PR authoring via GitHub API or workflow dispatch.</td>
+</tr>
+<tr>
+<td><strong>Settings as Code</strong></td>
+<td><code>.github/scripts/repo_settings.py</code></td>
+<td>Programmatic synchronization of labels, rulesets, branch protection, and Pages.</td>
+</tr>
+<tr>
+<td><strong>Documentation Virtualizer</strong></td>
+<td><code>.github/scripts/docs_hooks.py</code></td>
+<td>Dynamically mounts canonical root markdown files into the documentation site without static duplication.</td>
+</tr>
+<tr>
+<td><strong>Container Sandbox</strong></td>
+<td><code>docker/Dockerfile.agent</code></td>
+<td>Hermetic execution environment isolating agent toolchains from host runners.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-capability-matrix-classification-taxonomy">4. Capability Matrix &amp; Classification Taxonomy<a class="headerlink" href="#4-capability-matrix-classification-taxonomy" title="Permanent link">&para;</a></h2>
+<p>Requests are classified into two orthogonal taxonomy axes: <strong>Type</strong> and <strong>Area</strong>.</p>
+<h3 id="41-type-taxonomy">4.1 Type Taxonomy<a class="headerlink" href="#41-type-taxonomy" title="Permanent link">&para;</a></h3>
+<p>Maps directly to Conventional Commit specifications:
+- <code>feat</code>: New feature or capability addition.
+- <code>bug</code>: Defect fix or error resolution.
+- <code>refactor</code>: Structural or algorithmic improvement without behavioral change.
+- <code>docs</code>: Documentation, docstrings, or architectural notes.
+- <code>test</code>: Addition or modification of unit, integration, or regression tests.
+- <code>chore</code>: Maintenance, dependency bump, or tooling adjustment.
+- <code>ci</code>: CI/CD workflows, runners, or repository automation.</p>
+<h3 id="42-area-taxonomy">4.2 Area Taxonomy<a class="headerlink" href="#42-area-taxonomy" title="Permanent link">&para;</a></h3>
+<p>Scopes the subsystem affected by the change:
+- <code>area:agents</code>: Harness orchestration, provider adapters, personas, approvals.
+- <code>area:governance</code>: Agent rules, branch protection, required checks, project board taxonomy.
+- <code>area:release</code>: Versioning modes, tagging, asset packaging, release notes.
+- <code>area:docs</code>: Documentation site, theme, architecture notes.
+- <code>area:ci</code>: GitHub Actions workflows, containers, runner scripts, repository automation.</p>
+<hr />
+<h2 id="5-project-board-state-taxonomy">5. Project Board State Taxonomy<a class="headerlink" href="#5-project-board-state-taxonomy" title="Permanent link">&para;</a></h2>
+<p>The GitHub Project v2 board tracks seven mutually exclusive states:
+1. <code>Backlog</code>: Staged items awaiting prioritization or human review.
+2. <code>ToDo</code>: Items with approved interpretations and plans, ready for active implementation.
+3. <code>In Progress</code>: Items with active topic branches, drafts, or running agent containers.
+4. <code>Blocked</code>: Impeded items (external dependency, missing secret, or agent quota exhaustion).
+5. <code>Done</code>: Merged PRs, closed issues, and successfully deployed changes.
+6. <code>Superseded</code>: Items rendered obsolete or overridden by subsequent decisions.
+7. <code>Dropped</code>: Items rejected, abandoned, or closed without implementation.</p>
+<hr />
+<h2 id="6-resilience-quota-exhaustion-fallback-ladder">6. Resilience, Quota Exhaustion &amp; Fallback Ladder<a class="headerlink" href="#6-resilience-quota-exhaustion-fallback-ladder" title="Permanent link">&para;</a></h2>
+<p>When an agent harness or automation subsystem encounters quota exhaustion (e.g. HTTP 429, <code>RESOURCE_EXHAUSTED</code>, secondary rate limits):
+Every rung of the ladder is a <strong>quota</strong> move — somewhere with capacity the last attempt did not have. Answering an exhausted quota with a weaker model is not a rung: it finds no capacity, it only answers worse, so models are configured per node and never degraded here.</p>
+<h3 id="61-multi-tier-quota-ladder">6.1 Multi-Tier Quota Ladder<a class="headerlink" href="#61-multi-tier-quota-ladder" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Detection</strong>: <code>is_quota_exhausted</code> parses stderr and exit diagnostics for quota exhaustion indicators.</li>
+<li><strong>Account Rotation</strong>: The same harness and model on the next account. A harness may hold several, numbered (<code>X</code>, <code>X_2</code>, <code>X_3</code>); adding one is adding a secret. This is the innermost rung because it is the cheapest fresh quota available.</li>
+<li><strong>Pool Rotation</strong>: The next model that bills against a <em>separate pool</em>. Only Antigravity has more than one — its Gemini and Claude models draw on different quotas — which is why it declares two and Claude declares one.</li>
+<li><strong>Harness Fallback</strong>: The next harness in <code>AGENT_HARNESS_CHAIN</code> (e.g. Antigravity → Claude → Codex → Kimi).</li>
+<li><strong>Exponential Backoff</strong>: Reserved for the <em>last</em> attempt, via <code>calculate_backoff</code>. An unused account is always a better answer than sleeping, so waiting happens only when there is nothing left to rotate to.</li>
+<li><strong>State Checkpointing</strong>: If every account of every pool of every harness is exhausted, the pipeline serializes working state into <code>.agent_runner_checkpoint.json</code>, moves the board item to <code>Blocked</code>, and posts an alert comment.</li>
+<li><strong>Resume</strong>: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.</li>
+</ol>
+<h3 id="62-secondary-accounts-companion-secrets">6.2 Secondary Accounts &amp; Companion Secrets<a class="headerlink" href="#62-secondary-accounts-companion-secrets" title="Permanent link">&para;</a></h3>
+<p>Provider harnesses authenticate through credentials and companion parameters declared in <code>.github/scripts/harnesses.py</code>. Secondary accounts and companion secrets provide fallback across quota boundaries without pipeline disruption:</p>
+<ul>
+<li><strong>Numbered Account Secrets</strong>: Multiple accounts for any harness are configured by appending integer suffixes to secret names (for example, <code>CLAUDE_CODE_OAUTH_TOKEN_2</code>, <code>ANTHROPIC_API_KEY_2</code>, or <code>GEMINI_API_KEY_2</code>). Adding or rotating an account requires only adding a repository secret; no workflow, CLI harness, or pipeline code changes are needed.</li>
+<li><strong>Companion Secrets</strong>: Certain harnesses (such as OAuth-authenticated CLIs) require companion parameters alongside primary tokens—specifically client IDs and client secrets (e.g., <code>CLAUDE_CLIENT_ID</code> and <code>CLAUDE_CLIENT_SECRET</code>). Companion secrets are numbered symmetrically for secondary accounts (<code>CLAUDE_CLIENT_ID_2</code>, <code>CLAUDE_CLIENT_SECRET_2</code>). While companion parameters do not authenticate on their own and are excluded from standalone satisfaction checks (<code>is_satisfied</code>), the harness registry tracks them via <code>companion_names</code> and <code>secret_names</code> to guarantee complete parameter bundles during OAuth token exchange.</li>
+<li><strong>Environment Isolation &amp; Alias Mapping (<code>credential_env</code>)</strong>: Underlying CLI tools only inspect canonical, unnumbered environment variable names (e.g., <code>CLAUDE_CODE_OAUTH_TOKEN</code>, <code>ANTHROPIC_API_KEY</code>). When rotating to a secondary account:</li>
+<li>The runner purges all candidate credential and companion variables across all accounts from the process environment, preventing credential cross-contamination or inadvertent fallback to exhausted primary keys.</li>
+<li>The selected account's secret is injected under the primary environment variable name (<code>auth.env_names(1)</code>).</li>
+<li>Associated companion secrets (<code>auth.companion_names(attempt.account)</code>) are mapped to the primary companion variable names (<code>auth.companion_names(1)</code>).
+  Because of this transparent aliasing, CLI harnesses operate unaware of account rotation, providing seamless fallback without pipeline disruption, binary reconfiguration, or container rebuilds.</li>
+<li><strong>OAuth Refresh &amp; Token Persistence (<code>prepare_credentials</code>, <code>persist_rotated_token</code>)</strong>: Providers that issue rotating refresh tokens during OAuth exchange invalidate previous tokens. Discarding rotated tokens would strand the credential for subsequent runs. The runner performs dynamic token exchange via <code>prepare_credentials</code>, updates the environment, and writes refreshed tokens back to GitHub repository secrets under that account's specific secret name via <code>persist_rotated_token</code>.</li>
+</ul>
+<h3 id="63-quota-backoff-state-checkpointing">6.3 Quota Backoff &amp; State Checkpointing<a class="headerlink" href="#63-quota-backoff-state-checkpointing" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Exponential Backoff with Jitter (<code>calculate_backoff</code>)</strong>: Delay intervals follow exponential backoff with additive jitter (<code>base_delay * (backoff_factor ** attempt)</code> plus random jitter bounded by <code>max_delay</code>). Backoff is strictly reserved for the final attempt on the last available harness: an unused secondary account or alternative harness is always prioritized over sleeping.</li>
+<li><strong>Clean Checkpointing</strong>: When all rungs of the fallback ladder are exhausted, the agent runner serializes execution state into <code>.agent_runner_checkpoint.json</code>, moves the GitHub Project board item to <code>Blocked</code>, posts an issue comment detailing resume instructions, and exits cleanly (exit status 0) without triggering workflow failures. Commenting <code>resume</code> restores the serialized state and continues execution from the exact step where quota paused.</li>
+</ul>
+<h3 id="64-incremental-project-automation-rate-limit-backoff">6.4 Incremental Project Automation &amp; Rate-Limit Backoff<a class="headerlink" href="#64-incremental-project-automation-rate-limit-backoff" title="Permanent link">&para;</a></h3>
+<p>GitHub Projects v2 operations interact with GitHub GraphQL and REST rate limits. To maintain reliable board synchronization without hitting API rate limits or triggering abuse bans:</p>
+<ul>
+<li><strong>Dual-Token Isolation (<code>_env_for</code>)</strong>: Projects v2 board mutations require user-scoped permissions (<code>GH_PROJECT_TOKEN</code>), whereas repository operations (issues, pull requests, labels, comments) run under the GitHub App token (<code>GH_TOKEN</code>). Splitting these tokens prevents high-volume repository activity from exhausting the project board's GraphQL quota.</li>
+<li><strong>Incremental Mutation Budget (<code>MUTATION_BUDGET</code> / <code>PROJECT_MUTATION_BUDGET</code>)</strong>: Project automation enforces a configurable mutation budget per execution run (default 25, configurable via <code>PROJECT_MUTATION_BUDGET</code>). This caps the maximum number of GraphQL mutations in a single workflow step.</li>
+<li><strong>Check-Before-Write Idempotency (<code>load_existing_items</code>)</strong>: The project client queries and caches existing board items and their current statuses. If an issue or pull request already resides on the board with the desired status, no write mutation is issued, preserving mutation budget.</li>
+<li><strong>Quota-Safe Deferral</strong>: When the mutation budget is reached during event handling or status reconciliation, remaining items are deferred to subsequent workflow runs. This produces smooth, incremental board updates without burst rate-limit spikes.</li>
+<li><strong>Rate-Limit Detection &amp; Graceful Backoff (<code>is_rate_limited</code>, <code>RATE_LIMITED</code>)</strong>:</li>
+<li>The automation inspects stderr and command outputs for throttling signatures (such as <code>"unknown owner type"</code>, <code>"rate limit"</code>, <code>"secondary rate limit"</code>, <code>"too many requests"</code>, <code>"was submitted too quickly"</code>, or <code>"quota exceeded"</code>).</li>
+<li>Upon detection, the client sets <code>RATE_LIMITED = True</code> and suspends further board mutations for the current execution window.</li>
+<li>The process exits cleanly with exit code 0, allowing pending synchronizations to resume on the next scheduled run without failing CI workflows or incurring secondary rate limit penalties.</li>
+<li><strong>Failure Aggregation (<code>FAILURES</code>)</strong>: Board write errors are collected in <code>FAILURES</code> rather than aborting immediately, ensuring that temporary failure on one board does not block updates to other linked boards. Non-rate-limit errors are reported at completion, exiting non-zero to surface real infrastructure faults.</li>
+</ul>
+<hr />
+<h2 id="7-foundational-architecture-decisions">7. Foundational Architecture Decisions<a class="headerlink" href="#7-foundational-architecture-decisions" title="Permanent link">&para;</a></h2>
+<p>The eight foundational architecture decisions gating the DarkFactory model:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td><strong>Harness-Agnostic Agent Pipeline</strong></td>
+<td>The agent runner interacts with providers through an abstract harness contract (<code>Harness</code>), allowing drop-in replacement of CLIs.</td>
+</tr>
+<tr>
+<td>D2</td>
+<td><strong>Two-Gate Human Approval Contract</strong></td>
+<td>Non-negotiable human approvals on interpretation and planning prevent autonomous scope drift.</td>
+</tr>
+<tr>
+<td>D3</td>
+<td><strong>GitHub-Native State Synchronization</strong></td>
+<td>Lifecycle states are synchronized directly to GitHub Projects v2 via GraphQL, maintaining single-source truth.</td>
+</tr>
+<tr>
+<td>D4</td>
+<td><strong>Containerized Sandbox Isolation</strong></td>
+<td>Autonomous agent processes execute inside a hermetic container with non-root privileges and strict env scoping. Non-root execution is enforced by a <code>USER agent</code> directive in <code>docker/Dockerfile.agent</code>. The unprivileged user is created with uid 1001, matching the GitHub runner's own user so the bind-mounted workspace stays writable without loosening its permissions. <code>tests/test_governance.py</code> asserts the directive is present to prevent silent regression.</td>
+</tr>
+<tr>
+<td>D5</td>
+<td><strong>Conventional Commits &amp; Automated Formatting</strong></td>
+<td>Strict commit grammar enforced by CI; zero review cycles spent on formatting via automated bot committers.</td>
+</tr>
+<tr>
+<td>D6</td>
+<td><strong>Pure-Code Repository Settings</strong></td>
+<td>All GitHub repository metadata, branch protections, labels, and permissions are declared as code in <code>repo_settings.py</code>.</td>
+</tr>
+<tr>
+<td>D7</td>
+<td><strong>Virtual Documentation Publishing</strong></td>
+<td>Root normative documents are mounted at build time into properdocs virtual pages, eliminating copy-paste documentation decay.</td>
+</tr>
+<tr>
+<td>D8</td>
+<td><strong>Multi-Tier Fallback &amp; Quota Ladder</strong></td>
+<td>Rotation across accounts, quota pools and CLI harnesses — every rung a fresh quota rather than a weaker answer — with automated state checkpointing on total exhaustion.</td>
+</tr>
+</tbody>
+</table>
+        </article>
+        <nav class="pager" aria-label="Page navigation">
+          <a class="pager__link pager__link--prev" href="..">
+            <span class="pager__label">Previous</span>
+            <span class="pager__title">Overview</span>
+          </a>
+          <a class="pager__link pager__link--next" href="decisions/">
+            <span class="pager__label">Next</span>
+            <span class="pager__title">Overview</span>
+          </a>
+        </nav>
+
+        <footer class="footer">
+          <span>DarkFactory</span>
+        </footer>
+      </main>
+
+      <aside class="toc">
+        <div class="toc__title">On this page</div>
+        <ul class="toc__list">
+          <li><a href="#1-system-thesis">1. System Thesis</a>
+            <ul>
+              <li><a href="#core-tenet-two-explicit-human-gates">Core Tenet: Two Explicit Human Gates</a></li>
+            </ul>
+          </li>
+          <li><a href="#2-process-topology-execution-flow">2. Process Topology &amp; Execution Flow</a>
+          </li>
+          <li><a href="#3-subsystem-decomposition">3. Subsystem Decomposition</a>
+          </li>
+          <li><a href="#4-capability-matrix-classification-taxonomy">4. Capability Matrix &amp; Classification Taxonomy</a>
+            <ul>
+              <li><a href="#41-type-taxonomy">4.1 Type Taxonomy</a></li>
+              <li><a href="#42-area-taxonomy">4.2 Area Taxonomy</a></li>
+            </ul>
+          </li>
+          <li><a href="#5-project-board-state-taxonomy">5. Project Board State Taxonomy</a>
+          </li>
+          <li><a href="#6-resilience-quota-exhaustion-fallback-ladder">6. Resilience, Quota Exhaustion &amp; Fallback Ladder</a>
+            <ul>
+              <li><a href="#61-multi-tier-quota-ladder">6.1 Multi-Tier Quota Ladder</a></li>
+              <li><a href="#62-secondary-accounts-companion-secrets">6.2 Secondary Accounts &amp; Companion Secrets</a></li>
+              <li><a href="#63-quota-backoff-state-checkpointing">6.3 Quota Backoff &amp; State Checkpointing</a></li>
+              <li><a href="#64-incremental-project-automation-rate-limit-backoff">6.4 Incremental Project Automation &amp; Rate-Limit Backoff</a></li>
+            </ul>
+          </li>
+          <li><a href="#7-foundational-architecture-decisions">7. Foundational Architecture Decisions</a>
+          </li>
+        </ul>
+      </aside>
+    </div>
+
+    <script id="search-base" type="application/json">".."</script>
+    <script src="../assets/theme.js" defer></script>
+    <script src="../search/main.js" defer></script>
+  </body>
+</html>
