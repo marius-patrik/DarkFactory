@@ -1958,7 +1958,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 "-f",
                 f"body={pr_body}",
                 "-f",
-                "base=main",
+                f"base={default_branch()}",
                 "-f",
                 "draft=true",
             ],
