@@ -32,6 +32,8 @@ class Source(NamedTuple):
         env: Environment variable to read instead, when one is set.
         file: Path to a file holding it, when it lives on disk.
         advice: What to run when it cannot be found.
+        keychain_account: Account attribute in keychain, when needed.
+        default: Static default value when not discovered elsewhere.
     """
 
     secret: str
@@ -41,6 +43,7 @@ class Source(NamedTuple):
     env: str = ""
     file: str = ""
     advice: str = ""
+    keychain_account: str = ""
 
 
 #: Credentials this can collect, in the order the harness ladder tries them.
@@ -64,11 +67,57 @@ SOURCES: List[Source] = [
     ),
     Source(
         secret="ANTIGRAVITY_REFRESH_TOKEN",
-        describe="Antigravity refresh token",
+        describe="Antigravity refresh token (primary account)",
+        file="~/.gemini/antigravity-cli/antigravity-oauth-token",
         keychain="antigravity-cli",
         json_path="token.refresh_token",
         env="ANTIGRAVITY_REFRESH_TOKEN",
         advice="sign in with the Antigravity CLI, or export ANTIGRAVITY_REFRESH_TOKEN",
+    ),
+    Source(
+        secret="ANTIGRAVITY_CLIENT_ID",
+        describe="Antigravity client id",
+        env="ANTIGRAVITY_CLIENT_ID",
+        advice="export ANTIGRAVITY_CLIENT_ID",
+    ),
+    Source(
+        secret="ANTIGRAVITY_CLIENT_SECRET",
+        describe="Antigravity client secret",
+        env="ANTIGRAVITY_CLIENT_SECRET",
+        advice="export ANTIGRAVITY_CLIENT_SECRET",
+    ),
+    Source(
+        secret="ANTIGRAVITY_REFRESH_TOKEN_2",
+        describe="Antigravity refresh token (secondary account)",
+        keychain="gemini",
+        keychain_account="antigravity",
+        json_path="token.refresh_token",
+        env="ANTIGRAVITY_REFRESH_TOKEN_2",
+        advice="sign in with secondary Antigravity account, or export ANTIGRAVITY_REFRESH_TOKEN_2",
+    ),
+    Source(
+        secret="ANTIGRAVITY_CLIENT_ID_2",
+        describe="Antigravity client id (secondary account)",
+        env="ANTIGRAVITY_CLIENT_ID_2",
+        advice="export ANTIGRAVITY_CLIENT_ID_2",
+    ),
+    Source(
+        secret="ANTIGRAVITY_CLIENT_SECRET_2",
+        describe="Antigravity client secret (secondary account)",
+        env="ANTIGRAVITY_CLIENT_SECRET_2",
+        advice="export ANTIGRAVITY_CLIENT_SECRET_2",
+    ),
+    Source(
+        secret="CLAUDE_CODE_OAUTH_TOKEN_2",
+        describe="Claude subscription token (secondary account)",
+        env="CLAUDE_CODE_OAUTH_TOKEN_2",
+        advice="run `claude setup-token` on secondary account and export CLAUDE_CODE_OAUTH_TOKEN_2",
+    ),
+    Source(
+        secret="ANTHROPIC_API_KEY_2",
+        describe="Anthropic API key (secondary account)",
+        env="ANTHROPIC_API_KEY_2",
+        advice="export ANTHROPIC_API_KEY_2",
     ),
     Source(
         secret="OPENAI_API_KEY",
@@ -120,24 +169,43 @@ def read(source: Source) -> Optional[str]:
         with open(os.path.expanduser(source.file), encoding="utf-8") as handle:
             value = handle.read().strip()
         if value:
-            return value
+            if source.json_path:
+                try:
+                    parsed = _dig(json.loads(value), source.json_path)
+                    if parsed:
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
+            else:
+                return value
 
     if source.keychain and sys.platform == "darwin" and shutil.which("security"):
+        account_args = ["-a", source.keychain_account] if source.keychain_account else []
         try:
             raw = subprocess.run(
-                ["security", "find-generic-password", "-s", source.keychain, "-w"],
+                ["security", "find-generic-password", "-s", source.keychain, *account_args, "-w"],
                 capture_output=True,
                 text=True,
                 check=True,
             ).stdout.strip()
         except subprocess.CalledProcessError:
-            return None
-        if not source.json_path:
-            return raw or None
-        try:
-            return _dig(json.loads(raw), source.json_path)
-        except json.JSONDecodeError:
-            return None
+            raw = ""
+        if raw.startswith("go-keyring-base64:"):
+            try:
+                import base64
+
+                raw = base64.b64decode(raw.split(":", 1)[1]).decode("utf-8")
+            except Exception:
+                pass
+        if raw:
+            if not source.json_path:
+                return raw
+            try:
+                parsed = _dig(json.loads(raw), source.json_path)
+                if parsed:
+                    return parsed
+            except json.JSONDecodeError:
+                pass
     return None
 
 

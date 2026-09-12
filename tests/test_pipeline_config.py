@@ -500,7 +500,7 @@ def test_the_agent_is_callable_and_declares_every_credential():
 
     declared = set(triggers["workflow_call"]["secrets"])
     body = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
-    used = set(re.findall(r"secrets\.([A-Z_]+)", body)) - {"GITHUB_TOKEN"}
+    used = set(re.findall(r"secrets\.([A-Z0-9_]+)", body)) - {"GITHUB_TOKEN"}
     missing = used - declared
     assert not missing, f"credentials used but not declared for callers: {sorted(missing)}"
 

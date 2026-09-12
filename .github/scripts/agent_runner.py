@@ -1160,6 +1160,19 @@ def run_agent_prompt(
 
         try:
             env = credential_env(base_env, attempt)
+            if harness.name == "antigravity":
+                refresh_name = (
+                    harness.auth.env_names(attempt.account)[0]
+                    if getattr(harness, "auth", None)
+                    else "ANTIGRAVITY_REFRESH_TOKEN"
+                )
+                refresh_val = base_env.get(refresh_name, "")
+                access_val = env.get("ANTIGRAVITY_REFRESH_TOKEN", "")
+                if access_val and refresh_val:
+                    try:
+                        setup_antigravity_credentials(access_val, refresh_val)
+                    except Exception as e:
+                        print(f"Antigravity setup notice: {e}", file=sys.stderr)
         except Exception as exc:  # noqa: BLE001 - an unusable account is not a fatal error
             print(f"Could not authenticate {label}: {exc}", file=sys.stderr)
             last_error_detail = str(exc)
