@@ -48,21 +48,21 @@ jobs:
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .pipeline
+          path: .darkfactory
 
       - name: Materialise the shared documentation assets
         # The theme and the hooks are part of the pipeline, not of each repository, so a consumer
         # that carries neither gets the shared ones. A consumer that has its own keeps it: this
         # only ever fills a gap, it never overwrites.
         run: |
-          if [ -d .pipeline ]; then
+          if [ -d .darkfactory ]; then
             # A consumer carries none of the pipeline, so the destination may not exist yet.
             mkdir -p .github/scripts
-            [ -d theme ] || cp -r .pipeline/theme theme
-            [ -f .github/scripts/docs_hooks.py ] || cp .pipeline/.github/scripts/docs_hooks.py .github/scripts/docs_hooks.py
-            [ -f .github/scripts/environment.py ] || cp .pipeline/.github/scripts/environment.py .github/scripts/environment.py
-            [ -f .github/scripts/manifest.py ] || cp .pipeline/.github/scripts/manifest.py .github/scripts/manifest.py
-            [ -f .github/scripts/docs_versions.py ] || cp .pipeline/.github/scripts/docs_versions.py .github/scripts/docs_versions.py
+            [ -d theme ] || cp -r .darkfactory/theme theme
+            [ -f .github/scripts/docs_hooks.py ] || cp .darkfactory/.github/scripts/docs_hooks.py .github/scripts/docs_hooks.py
+            [ -f .github/scripts/environment.py ] || cp .darkfactory/.github/scripts/environment.py .github/scripts/environment.py
+            [ -f .github/scripts/manifest.py ] || cp .darkfactory/.github/scripts/manifest.py .github/scripts/manifest.py
+            [ -f .github/scripts/docs_versions.py ] || cp .darkfactory/.github/scripts/docs_versions.py .github/scripts/docs_versions.py
           fi
 
       - name: Set up Python

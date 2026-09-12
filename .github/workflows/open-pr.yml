@@ -104,7 +104,18 @@ jobs:
           BASE: ${{ inputs.base }}
           IS_DRAFT: ${{ inputs.draft }}
         run: |
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number -q '.[0].number')
+          TARGET_BASE="$BASE"
+          if [ -z "$TARGET_BASE" ] || [ "$TARGET_BASE" = "main" ]; then
+            if ! gh api "repos/$GH_REPO/branches/$TARGET_BASE" --silent 2>/dev/null; then
+              DETECTED_BASE=$(gh repo view "$GH_REPO" --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || true)
+              if [ -n "$DETECTED_BASE" ]; then
+                echo "Base branch '$TARGET_BASE' not found; falling back to default branch '$DETECTED_BASE'"
+                TARGET_BASE="$DETECTED_BASE"
+              fi
+            fi
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --base "$TARGET_BASE" --state open --json number -q '.[0].number')
           if [ -n "$EXISTING_PR" ]; then
             echo "Pull request #$EXISTING_PR already exists for $BRANCH. Updating title and body..."
             gh pr edit "$EXISTING_PR" --title "$TITLE" --body "$BODY"
@@ -116,10 +127,10 @@ jobs:
             DRAFT_ARG="--draft"
           fi
 
-          echo "Creating PR for $BRANCH -> $BASE with draft=$DRAFT_ARG..."
+          echo "Creating PR for $BRANCH -> $TARGET_BASE with draft=$DRAFT_ARG..."
           gh pr create \
             --head "$BRANCH" \
-            --base "$BASE" \
+            --base "$TARGET_BASE" \
             --title "$TITLE" \
             --body "$BODY" \
             $DRAFT_ARG

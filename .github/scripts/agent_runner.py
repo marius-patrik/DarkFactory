@@ -573,12 +573,50 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
 
     Returns:
         Output string.
+
+    Raises:
+        subprocess.CalledProcessError: When the command fails, carrying the reason in its message.
     """
     cmd = ["gh"] + args
     if repo:
         cmd.extend(["--repo", repo])
-    res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        # `str()` of a CalledProcessError names the command and the exit status and nothing else,
+        # so an agent crash used to end in a traceback that did not say why. `gh issue edit` failing
+        # on an exhausted quota and failing because a label does not exist look identical from the
+        # outside, and cost an hour to tell apart.
+        detail = (res.stderr or res.stdout).strip().splitlines()
+        raise subprocess.CalledProcessError(
+            res.returncode,
+            cmd,
+            output=res.stdout,
+            stderr=detail[0] if detail else "no output",
+        )
     return res.stdout.strip()
+
+
+def try_gh(args: List[str], repo: Optional[str] = None, doing: str = "") -> Optional[str]:
+    """Runs a `gh` command whose failure must not end the run.
+
+    Classification is the clearest case: an agent that cannot apply a label has still read the
+    issue, can still interpret it, and can still be useful. Aborting there threw away the whole run
+    and filed a pipeline-failure issue whose only content was a traceback.
+
+    Args:
+        args: Arguments following the `gh` executable.
+        repo: Optional repository slug.
+        doing: What was being attempted, for the message.
+
+    Returns:
+        Command stdout, or `None` when it failed.
+    """
+    try:
+        return run_gh(args, repo=repo)
+    except subprocess.CalledProcessError as exc:
+        what = doing or " ".join(args[:2])
+        print(f"Could not {what}: {exc.stderr or exc}", file=sys.stderr)
+        return None
 
 
 def is_bot_or_agent_comment(user_login: str, body: str) -> bool:
@@ -1222,7 +1260,11 @@ def handle_interpret(issue_number: int, repo: str):
     body = data.get("body", "")
 
     t_label, a_label = classify_type_and_area(f"{title} {body}")
-    run_gh(["issue", "edit", str(issue_number), "--add-label", f"{t_label},{a_label}"], repo=repo)
+    try_gh(
+        ["issue", "edit", str(issue_number), "--add-label", f"{t_label},{a_label}"],
+        repo=repo,
+        doing=f"label #{issue_number} as {t_label},{a_label}",
+    )
 
     prompt = (
         f"Analyze this user request issue:\nTitle: {title}\nBody: {body}\n\n"
@@ -1916,7 +1958,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 "-f",
                 f"body={pr_body}",
                 "-f",
-                "base=main",
+                f"base={default_branch()}",
                 "-f",
                 "draft=true",
             ],
@@ -2363,8 +2405,18 @@ def dispatch_event(event_path: str, event_name: str):
                 return
 
             if not lowered & {"request", "plan"}:
-                run_gh(["issue", "edit", str(issue_num), "--add-label", "Request"], repo=repo)
-                print(f"Auto-labeled issue #{issue_num} as Request")
+                # Not fatal. An agent that cannot apply a label has still read the issue and can
+                # still interpret it; aborting here threw the whole run away and filed a
+                # pipeline-failure issue whose only content was a traceback.
+                if (
+                    try_gh(
+                        ["issue", "edit", str(issue_num), "--add-label", "Request"],
+                        repo=repo,
+                        doing=f"label #{issue_num} as Request",
+                    )
+                    is not None
+                ):
+                    print(f"Auto-labeled issue #{issue_num} as Request")
             handle_interpret(issue_num, repo)
 
     elif event_name == "issue_comment":

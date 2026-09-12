@@ -509,17 +509,32 @@ class TestACallerMustPassItsSecrets:
         assert "    secrets: inherit\n" in after
         assert after.index("secrets: inherit") > after.index("pipeline-ref:")
 
-    def test_a_caller_that_already_passes_is_untouched(self, tmp_path):
-        """Repeating the line would be churn, and a narrower `secrets:` block must not be widened.
-
-        Args:
-            tmp_path: Pytest temporary directory.
-        """
+    def test_an_explicit_secrets_list_gains_the_app_key(self, tmp_path):
+        """An explicit list must carry the App key so the workflow can mint an installation token."""
         body = (
             "jobs:\n  run:\n"
             "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
             "    with:\n      pipeline-ref: aaaaaaa\n"
             "    secrets:\n      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}\n"
+        )
+        root = self._caller(tmp_path, body)
+        assert install.ensure_secrets_pass(root) == [".github/workflows/auto-format.yml"]
+
+        with open(
+            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+        ) as handle:
+            after = handle.read()
+        assert "DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}" in after
+
+    def test_a_caller_that_already_passes_is_untouched(self, tmp_path):
+        """Repeating the line would be churn, and a caller already carrying the App key is untouched."""
+        body = (
+            "jobs:\n  run:\n"
+            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    with:\n      pipeline-ref: aaaaaaa\n"
+            "    secrets:\n"
+            "      DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}\n"
+            "      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}\n"
         )
         root = self._caller(tmp_path, body)
         assert install.ensure_secrets_pass(root) == []

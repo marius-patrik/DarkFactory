@@ -604,7 +604,30 @@ def ensure_secrets_pass(root: str) -> List[str]:
 
         if not any(".github/workflows/" in line and "uses:" in line for line in lines):
             continue
-        if any(line.strip().startswith("secrets:") for line in lines):
+        explicit = next(
+            (i for i, line in enumerate(lines) if line.strip().startswith("secrets:")), None
+        )
+        if explicit is not None:
+            if lines[explicit].strip() != "secrets:":
+                continue  # `secrets: inherit`, which already passes everything.
+            if any("DARKFACTORY_APP_PRIVATE_KEY" in line for line in lines):
+                continue
+
+            # An explicit list is a deliberate choice and is not widened - except for the App key,
+            # which is not a preference but the difference between a workflow that can mint an
+            # installation token and one that silently falls back to a person's quota. ChessWithQuests
+            # listed its credentials by hand before the App existed, so its agent ran with
+            # HAS_APP_KEY false and died on `gh issue edit` against an exhausted user quota.
+            indent = " " * (len(lines[explicit]) - len(lines[explicit].lstrip()) + 2)
+            lines.insert(
+                explicit + 1,
+                f"{indent}DARKFACTORY_APP_PRIVATE_KEY: "
+                "${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}\n",
+            )
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.writelines(lines)
+            print(f"  passed the App key in .github/workflows/{name}")
+            changed.append(f".github/workflows/{name}")
             continue
 
         # After the last input, which every caller ends with, so the line lands inside the job.

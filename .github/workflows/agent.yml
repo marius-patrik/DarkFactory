@@ -123,14 +123,14 @@ jobs:
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .pipeline
+          path: .darkfactory
 
       - name: Build agent container
         # The image is built from the pipeline's definition, so every consumer runs the same
         # runner; the repository being worked on is still the caller's checkout, mounted below.
         run: |
           CONTEXT="."
-          [ -d .pipeline ] && CONTEXT=".pipeline"
+          [ -d .darkfactory ] && CONTEXT=".darkfactory"
           docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
 
       - name: Dispatch agent in container
