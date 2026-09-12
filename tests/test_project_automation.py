@@ -653,3 +653,116 @@ class TestRateLimitingAndIncrementalBudget:
         client._items_cache = {}
         monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("budget exceeded"))
         client.track("https://github.com/o/r/issues/99", "ToDo")
+
+    def test_historical_closed_items_reconciliation(self):
+        """Reconciliation tracks historical closed issues and PRs with settled statuses."""
+        issues = [
+            {
+                "number": 1,
+                "url": "https://x/issues/1",
+                "state": "CLOSED",
+                "stateReason": "COMPLETED",
+                "labels": [{"name": "Done"}],
+            },
+            {
+                "number": 2,
+                "url": "https://x/issues/2",
+                "state": "CLOSED",
+                "stateReason": "NOT_PLANNED",
+                "labels": [],
+            },
+            {
+                "number": 3,
+                "url": "https://x/issues/3",
+                "state": "OPEN",
+                "labels": [{"name": "Backlog"}],
+            },
+        ]
+        prs = [
+            {
+                "number": 4,
+                "url": "https://x/pull/4",
+                "state": "MERGED",
+                "mergedAt": "2026-01-01T00:00:00Z",
+                "labels": [],
+            },
+            {
+                "number": 5,
+                "url": "https://x/pull/5",
+                "state": "CLOSED",
+                "labels": [],
+            },
+        ]
+
+        class Recorder(FakeProjectClient):
+            def __init__(self):
+                super().__init__()
+                self.tracked = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(issues if args[0] == "issue" else prs)
+
+            def track(self, url, status):
+                self.tracked.append((url, status))
+
+        client = Recorder()
+        count = project_automation.reconcile_membership(client, "o/r")
+        assert count == 5
+        assert ("https://x/issues/1", "Done") in client.tracked
+        assert ("https://x/issues/2", "Dropped") in client.tracked
+        assert ("https://x/issues/3", "Backlog") in client.tracked
+        assert ("https://x/pull/4", "Done") in client.tracked
+        assert ("https://x/pull/5", "Dropped") in client.tracked
+
+    def test_reconcile_unassigned_statuses_overrides_stale_in_progress_with_done_label(self):
+        """Stale In Progress on a completed item with Done label is updated to Done."""
+        from project_automation import reconcile_unassigned_statuses
+
+        items = {
+            "items": [
+                {
+                    "id": "item-96",
+                    "status": "In Progress",
+                    "labels": ["Request", "Done"],
+                    "content": {"title": "record in architecture", "number": 96},
+                },
+                {
+                    "id": "item-196",
+                    "status": "In Progress",
+                    "labels": ["Done"],
+                    "content": {"title": "secondary harness tokens", "number": 196},
+                },
+            ]
+        }
+
+        class Recorder(GitHubProjectClient):
+            def __init__(self):
+                super().__init__(owner="o", project_number=17)
+                self.writes = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(items)
+
+            def edit_status(self, item_id, status_name):
+                self.writes.append((item_id, status_name))
+                return True
+
+        client = Recorder()
+        reconcile_unassigned_statuses(client)
+        assert client.writes == [("item-96", "Done"), ("item-196", "Done")]
+
+    def test_push_to_darkfactory_branch_closes_issues(self):
+        """Pushes to darkfactory branch are recognized when default_branch is darkfactory."""
+        client = FakeProjectClient()
+        payload = {
+            "ref": "refs/heads/darkfactory",
+            "repository": {"full_name": REPO, "default_branch": "darkfactory"},
+            "commits": [{"message": "fix(ci): fix darkfactory automation\n\nCloses #68"}],
+        }
+        process_event("push", payload, client=client)
+        assert client.status_labels == [(REPO, 68, "Done")]
+        assert client.closed_issues == [(REPO, 68)]

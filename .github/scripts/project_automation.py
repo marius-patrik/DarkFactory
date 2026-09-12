@@ -815,9 +815,16 @@ def _handle_push_event(payload: Dict[str, Any], client: GitHubProjectClient) -> 
         payload: Webhook payload.
         client: Project client.
     """
-    if payload.get("ref") != "refs/heads/main":
+    ref = payload.get("ref", "")
+    repo_data = payload.get("repository", {})
+    default_branch = repo_data.get("default_branch", "main")
+    allowed_refs = {f"refs/heads/{default_branch}", "refs/heads/main"}
+    if default_branch == "darkfactory" or "darkfactory" in ref:
+        allowed_refs.add("refs/heads/darkfactory")
+
+    if ref not in allowed_refs:
         return
-    repo = payload.get("repository", {}).get("full_name", DEFAULT_REPO)
+    repo = repo_data.get("full_name", DEFAULT_REPO)
     for commit in payload.get("commits", []):
         for issue_num in extract_bound_issues(commit.get("message", "")):
             client.set_status_label(repo, issue_num, "Done")
@@ -846,7 +853,21 @@ def process_event(
     elif event_name == "push":
         _handle_push_event(payload, client)
     elif event_name in ("workflow_dispatch", "schedule"):
-        reconcile_membership(client, os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO))
+        repos_to_reconcile = [os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)]
+        try:
+            import manifest as manifest_module
+
+            loaded = manifest_module.load(".")
+            installed = [str(r) for r in (loaded.data.get("app", {}) or {}).get("installed_on", [])]
+            for r in installed:
+                if r and r not in repos_to_reconcile:
+                    repos_to_reconcile.append(r)
+        except Exception:
+            pass
+
+        for r in repos_to_reconcile:
+            if r:
+                reconcile_membership(client, r)
         reconcile_unassigned_statuses(client)
 
 
@@ -857,17 +878,23 @@ def process_event(
 TERMINAL_STATUSES = frozenset({"Done", "Dropped", "Superseded"})
 
 
-def settled_status(closed: bool, merged: bool, labels: List[str]) -> Optional[str]:
+def settled_status(
+    closed: bool,
+    merged: bool,
+    labels: List[str],
+    state_reason: Optional[str] = None,
+) -> Optional[str]:
     """Decides the status an item should hold, or `None` to leave it alone.
 
     An open item's status is a matter of judgement and is left to the lifecycle events. A closed
     one is not: it is finished if it merged, and otherwise whatever its labels say, falling back to
-    `Dropped` for something closed without implementation.
+    `Done` for items closed as completed, or `Dropped` for items closed without implementation.
 
     Args:
         closed: Whether the item is closed.
         merged: Whether a pull request was merged.
         labels: The item's labels.
+        state_reason: Optional GitHub stateReason ('COMPLETED', 'NOT_PLANNED', etc.).
 
     Returns:
         The status it should hold, or `None` when nothing can be concluded.
@@ -877,18 +904,23 @@ def settled_status(closed: bool, merged: bool, labels: List[str]) -> Optional[st
     if merged:
         return "Done"
     labelled = determine_status_from_labels(labels)
-    return labelled if labelled in TERMINAL_STATUSES else "Dropped"
+    if labelled in TERMINAL_STATUSES:
+        return labelled
+    if state_reason:
+        reason = str(state_reason).upper()
+        if reason == "COMPLETED":
+            return "Done"
+        if reason == "NOT_PLANNED":
+            return "Dropped"
+    return "Dropped"
 
 
 def reconcile_membership(client: Any, repo: str) -> int:
-    """Puts every open issue and pull request of a repository onto its boards.
+    """Puts every issue and pull request of a repository onto its boards.
 
-    An item reaches a board only by passing through a lifecycle event, so anything opened before
-    the automation worked - or while it lacked a token, or while its run was cancelled - is simply
-    absent, and stays absent forever because nothing ever looks again.
-
-    That is how the aggregate board came to hold one repository's work and almost none of anyone
-    else's: it was never wrong, it was only ever incomplete, which is harder to notice.
+    An item reaches a board by passing through a lifecycle event or through reconciliation.
+    Tracking historical items ensures that aggregate and local boards accurately reflect the entire
+    project history rather than being quietly incomplete.
 
     Adding is idempotent on GitHub's side, so a repository already fully present costs one listing
     and no writes.
@@ -903,6 +935,11 @@ def reconcile_membership(client: Any, repo: str) -> int:
     tracked = 0
     for kind in ("issue", "pr"):
         try:
+            json_fields = (
+                "number,url,labels,state,isDraft,mergedAt"
+                if kind == "pr"
+                else "number,url,labels,state,stateReason"
+            )
             raw = client.run_gh(
                 [
                     kind,
@@ -910,11 +947,11 @@ def reconcile_membership(client: Any, repo: str) -> int:
                     "--repo",
                     repo,
                     "--state",
-                    "open",
+                    "all",
                     "--limit",
-                    "200",
+                    "500",
                     "--json",
-                    "number,url,labels,isDraft" if kind == "pr" else "number,url,labels",
+                    json_fields,
                 ]
             )
         except Exception as exc:  # noqa: BLE001 - recorded, then reported by `main`
@@ -922,22 +959,38 @@ def reconcile_membership(client: Any, repo: str) -> int:
                 global RATE_LIMITED
                 RATE_LIMITED = True
                 print(
-                    f"Notice: Rate limit reached listing open {kind}s in {repo}; pausing.",
+                    f"Notice: Rate limit reached listing {kind}s in {repo}; pausing.",
                     file=sys.stderr,
                 )
                 break
-            _fail(f"could not list open {kind}s in {repo}: {_detail(exc)}")
+            _fail(f"could not list {kind}s in {repo}: {_detail(exc)}")
             continue
 
         for entry in json.loads(raw or "[]"):
             labels = [l.get("name", "") for l in entry.get("labels", []) or []]
-            status = determine_status_from_labels(labels)
-            if kind == "pr" and status == "ToDo":
-                # An open pull request is work in flight, whatever its labels say.
-                status = "In Progress"
+            state = str(entry.get("state", "")).upper()
+            is_closed = state in ("CLOSED", "MERGED")
+
+            if not is_closed:
+                status = determine_status_from_labels(labels)
+                if kind == "pr" and status == "ToDo":
+                    # An open pull request is work in flight, whatever its labels say.
+                    status = "In Progress"
+            else:
+                is_merged = state == "MERGED" or bool(entry.get("mergedAt"))
+                state_reason = entry.get("stateReason")
+                status = settled_status(
+                    closed=True,
+                    merged=is_merged,
+                    labels=labels,
+                    state_reason=state_reason,
+                )
+                if not status:
+                    status = "Done" if is_merged else "Dropped"
+
             client.track(entry["url"], status)
             tracked += 1
-    print(f"Reconciled membership for {repo}: {tracked} open item(s) tracked.")
+    print(f"Reconciled membership for {repo}: {tracked} item(s) tracked.")
     return tracked
 
 
@@ -953,8 +1006,7 @@ def reconcile_unassigned_statuses(client: Any) -> None:
     items into the ready queue. The second is corrected outright, because a closed item showing
     `In Progress` is the board contradicting the repository rather than expressing a judgement.
 
-    Open items are never overridden. Their status is exactly the judgement the board exists to
-    record.
+    Open items are never overridden unless their labels carry an explicit terminal status.
 
     Args:
         client: Project client or board group.
@@ -988,14 +1040,19 @@ def reconcile_unassigned_statuses(client: Any) -> None:
             closed = bool(content.get("closed", False))
             merged = str(content.get("state", "")).upper() == "MERGED"
 
-            if not closed:
-                if current:
-                    continue
-                wanted = determine_status_from_labels(labels)
-            else:
+            labelled = determine_status_from_labels(labels)
+            if closed:
                 wanted = settled_status(closed, merged, labels)
                 if wanted is None or wanted == current:
                     continue
+            elif labelled in TERMINAL_STATUSES and current != labelled:
+                # A terminal status label (Done, Dropped, Superseded) on the item must override
+                # an active board status (e.g. stale In Progress on a closed/completed item).
+                wanted = labelled
+            elif not current:
+                wanted = labelled
+            else:
+                continue
 
             client.edit_status(item_id, wanted)
             was = current or "no status"
@@ -1019,9 +1076,9 @@ def main() -> None:
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
 
     if not event_path or not os.path.exists(event_path):
-        # A scheduled run has no webhook payload, but reconciliation needs none.
-        if event_name in ("schedule", "workflow_dispatch"):
-            process_event(event_name, {})
+        # A scheduled or manual run has no webhook payload, but reconciliation needs none.
+        if not event_name or event_name in ("schedule", "workflow_dispatch"):
+            process_event(event_name or "workflow_dispatch", {})
             if RATE_LIMITED:
                 print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
                 sys.exit(0)
