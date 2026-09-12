@@ -2386,6 +2386,14 @@ def dispatch_event(event_path: str, event_name: str):
     with open(event_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
 
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            pass
+    if not isinstance(payload, dict):
+        payload = {}
+
     repo_raw = payload.get("repository")
     if isinstance(repo_raw, dict):
         repo = repo_raw.get("full_name") or os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")

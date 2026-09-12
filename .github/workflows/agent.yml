@@ -162,8 +162,16 @@ jobs:
           if event.get("action") == "agent-dispatch" or "client_payload" in event:
               inner = payload.get("payload")
               if inner:
+                  if isinstance(inner, str):
+                      try:
+                          inner = json.loads(inner)
+                      except Exception:
+                          pass
                   with open("/tmp/event.json", "w", encoding="utf-8") as f:
-                      json.dump(inner, f)
+                      if isinstance(inner, (dict, list)):
+                          json.dump(inner, f)
+                      else:
+                          f.write(str(inner))
                   event_path = "/tmp/event.json"
               else:
                   event_path = os.environ["GITHUB_EVENT_PATH"]
