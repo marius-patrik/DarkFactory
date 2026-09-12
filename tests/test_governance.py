@@ -198,3 +198,36 @@ def test_core_documents_are_present_and_substantial(document: str):
     """
     content = _read(document)
     assert len(content) > 500, f"{document} looks like a placeholder"
+
+
+def test_architecture_documents_secondary_accounts_and_companion_secrets() -> None:
+    """ARCHITECTURE.md must document how secondary accounts and companion secrets provide fallback.
+
+    This ensures that multi-account secrets, OAuth companion parameters, and transparent alias
+    mapping without pipeline disruption are explicitly specified in the normative architecture.
+    """
+    architecture = _read("ARCHITECTURE.md")
+    assert "Secondary Accounts & Companion Secrets" in architecture
+    assert "companion secrets" in architecture.lower()
+    assert "numbered account secrets" in architecture.lower()
+    assert "credential_env" in architecture
+    assert "prepare_credentials" in architecture
+    assert "persist_rotated_token" in architecture
+    assert "without pipeline disruption" in architecture.lower()
+
+
+def test_architecture_documents_incremental_project_automation_and_rate_limit_backoff() -> None:
+    """ARCHITECTURE.md must document incremental project automation and rate-limit backoff behaviour.
+
+    This ensures mutation budgeting, check-before-write idempotency, rate-limit detection,
+    and graceful backoff are explicitly specified in the normative architecture.
+    """
+    architecture = _read("ARCHITECTURE.md")
+    assert "Incremental Project Automation & Rate-Limit Backoff" in architecture
+    assert "MUTATION_BUDGET" in architecture
+    assert "load_existing_items" in architecture
+    assert "is_rate_limited" in architecture
+    assert "RATE_LIMITED" in architecture
+    assert "calculate_backoff" in architecture
+    assert "checkpoint" in architecture.lower()
+    assert "_env_for" in architecture
