@@ -210,6 +210,7 @@ jobs:
       - name: Dispatch agent in container
         if: steps.delegate.outputs.delegated != 'true'
         run: |
+          cp "${{ steps.target-env.outputs.event_path }}" "${{ github.workspace }}/event.json"
           docker run --rm \
             -e AGENT_HARNESS_CHAIN="${{ vars.AGENT_HARNESS_CHAIN }}" \
             -e AGENT_HARNESS_CONFIG="${{ vars.AGENT_HARNESS_CONFIG }}" \
@@ -257,6 +258,6 @@ jobs:
             -e GITHUB_REPOSITORY="${{ steps.target-env.outputs.repo }}" \
             -e GITHUB_REPOSITORY_OWNER="${{ steps.target-env.outputs.owner }}" \
             -e PROJECT_NUMBER="${{ vars.PROJECT_NUMBER }}" \
-            -v "${{ steps.target-env.outputs.event_path }}:/workspace/event.json:ro" \
             -v "${{ github.workspace }}:/workspace" \
             darkfactory-agent dispatch
+

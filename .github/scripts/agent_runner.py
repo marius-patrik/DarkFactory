@@ -2386,7 +2386,13 @@ def dispatch_event(event_path: str, event_name: str):
     with open(event_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
 
-    repo = payload.get("repository", {}).get("full_name", "marius-patrik/DarkFactory")
+    repo_raw = payload.get("repository")
+    if isinstance(repo_raw, dict):
+        repo = repo_raw.get("full_name") or os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
+    elif isinstance(repo_raw, str) and repo_raw:
+        repo = repo_raw
+    else:
+        repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
     refresh_tok = os.environ.get("ANTIGRAVITY_REFRESH_TOKEN")
 
     if refresh_tok:
