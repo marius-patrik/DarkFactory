@@ -240,17 +240,17 @@ maintainer approval is received.</p>
 <tr>
 <td><strong>Agent Runner Pipeline</strong></td>
 <td><code>.github/scripts/agent_runner.py</code></td>
-<td>Multi-phase pipeline orchestrator (interpret, plan, implement, review, align).</td>
+<td>Multi-phase pipeline orchestrator (interpret, plan, implement, review, align), credential preparation, and checkpointed quota ladder.</td>
 </tr>
 <tr>
 <td><strong>Harness Abstraction</strong></td>
 <td><code>.github/scripts/harnesses.py</code></td>
-<td>CLI execution wrappers for Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, and Opencode.</td>
+<td>CLI execution wrappers for Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with multi-account and companion secret resolution.</td>
 </tr>
 <tr>
 <td><strong>Project Board Client</strong></td>
 <td><code>.github/scripts/project_automation.py</code></td>
-<td>GraphQL interface to GitHub Projects v2; manages lifecycle state mutations.</td>
+<td>GraphQL interface to GitHub Projects v2; manages lifecycle state mutations with incremental budgeting and rate-limit backoff.</td>
 </tr>
 <tr>
 <td><strong>PR Approval &amp; Auto-Merge</strong></td>
@@ -310,10 +310,11 @@ maintainer approval is received.</p>
 7. <code>Dropped</code>: Items rejected, abandoned, or closed without implementation.</p>
 <hr />
 <h2 id="6-resilience-quota-exhaustion-fallback-ladder">6. Resilience, Quota Exhaustion &amp; Fallback Ladder<a class="headerlink" href="#6-resilience-quota-exhaustion-fallback-ladder" title="Permanent link">&para;</a></h2>
-<p>When an agent harness encounters quota exhaustion (e.g. HTTP 429, <code>RESOURCE_EXHAUSTED</code>, rate limits):
+<p>When an agent harness or automation subsystem encounters quota exhaustion (e.g. HTTP 429, <code>RESOURCE_EXHAUSTED</code>, secondary rate limits):
 Every rung of the ladder is a <strong>quota</strong> move — somewhere with capacity the last attempt did not have. Answering an exhausted quota with a weaker model is not a rung: it finds no capacity, it only answers worse, so models are configured per node and never degraded here.</p>
+<h3 id="61-multi-tier-quota-ladder">6.1 Multi-Tier Quota Ladder<a class="headerlink" href="#61-multi-tier-quota-ladder" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Detection</strong>: <code>is_quota_exhausted</code> parses stderr and exit diagnostics.</li>
+<li><strong>Detection</strong>: <code>is_quota_exhausted</code> parses stderr and exit diagnostics for quota exhaustion indicators.</li>
 <li><strong>Account Rotation</strong>: The same harness and model on the next account. A harness may hold several, numbered (<code>X</code>, <code>X_2</code>, <code>X_3</code>); adding one is adding a secret. This is the innermost rung because it is the cheapest fresh quota available.</li>
 <li><strong>Pool Rotation</strong>: The next model that bills against a <em>separate pool</em>. Only Antigravity has more than one — its Gemini and Claude models draw on different quotas — which is why it declares two and Claude declares one.</li>
 <li><strong>Harness Fallback</strong>: The next harness in <code>AGENT_HARNESS_CHAIN</code> (e.g. Antigravity → Claude → Codex → Kimi).</li>
@@ -321,6 +322,36 @@ Every rung of the ladder is a <strong>quota</strong> move — somewhere with cap
 <li><strong>State Checkpointing</strong>: If every account of every pool of every harness is exhausted, the pipeline serializes working state into <code>.agent_runner_checkpoint.json</code>, moves the board item to <code>Blocked</code>, and posts an alert comment.</li>
 <li><strong>Resume</strong>: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.</li>
 </ol>
+<h3 id="62-secondary-accounts-companion-secrets">6.2 Secondary Accounts &amp; Companion Secrets<a class="headerlink" href="#62-secondary-accounts-companion-secrets" title="Permanent link">&para;</a></h3>
+<p>Provider harnesses authenticate through credentials and companion parameters declared in <code>.github/scripts/harnesses.py</code>. Secondary accounts and companion secrets provide fallback across quota boundaries without pipeline disruption:</p>
+<ul>
+<li><strong>Numbered Account Secrets</strong>: Multiple accounts for any harness are configured by appending integer suffixes to secret names (for example, <code>CLAUDE_CODE_OAUTH_TOKEN_2</code>, <code>ANTHROPIC_API_KEY_2</code>, or <code>GEMINI_API_KEY_2</code>). Adding or rotating an account requires only adding a repository secret; no workflow, CLI harness, or pipeline code changes are needed.</li>
+<li><strong>Companion Secrets</strong>: Certain harnesses (such as OAuth-authenticated CLIs) require companion parameters alongside primary tokens—specifically client IDs and client secrets (e.g., <code>CLAUDE_CLIENT_ID</code> and <code>CLAUDE_CLIENT_SECRET</code>). Companion secrets are numbered symmetrically for secondary accounts (<code>CLAUDE_CLIENT_ID_2</code>, <code>CLAUDE_CLIENT_SECRET_2</code>). While companion parameters do not authenticate on their own and are excluded from standalone satisfaction checks (<code>is_satisfied</code>), the harness registry tracks them via <code>companion_names</code> and <code>secret_names</code> to guarantee complete parameter bundles during OAuth token exchange.</li>
+<li><strong>Environment Isolation &amp; Alias Mapping (<code>credential_env</code>)</strong>: Underlying CLI tools only inspect canonical, unnumbered environment variable names (e.g., <code>CLAUDE_CODE_OAUTH_TOKEN</code>, <code>ANTHROPIC_API_KEY</code>). When rotating to a secondary account:</li>
+<li>The runner purges all candidate credential and companion variables across all accounts from the process environment, preventing credential cross-contamination or inadvertent fallback to exhausted primary keys.</li>
+<li>The selected account's secret is injected under the primary environment variable name (<code>auth.env_names(1)</code>).</li>
+<li>Associated companion secrets (<code>auth.companion_names(attempt.account)</code>) are mapped to the primary companion variable names (<code>auth.companion_names(1)</code>).
+  Because of this transparent aliasing, CLI harnesses operate unaware of account rotation, providing seamless fallback without pipeline disruption, binary reconfiguration, or container rebuilds.</li>
+<li><strong>OAuth Refresh &amp; Token Persistence (<code>prepare_credentials</code>, <code>persist_rotated_token</code>)</strong>: Providers that issue rotating refresh tokens during OAuth exchange invalidate previous tokens. Discarding rotated tokens would strand the credential for subsequent runs. The runner performs dynamic token exchange via <code>prepare_credentials</code>, updates the environment, and writes refreshed tokens back to GitHub repository secrets under that account's specific secret name via <code>persist_rotated_token</code>.</li>
+</ul>
+<h3 id="63-quota-backoff-state-checkpointing">6.3 Quota Backoff &amp; State Checkpointing<a class="headerlink" href="#63-quota-backoff-state-checkpointing" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Exponential Backoff with Jitter (<code>calculate_backoff</code>)</strong>: Delay intervals follow exponential backoff with additive jitter (<code>base_delay * (backoff_factor ** attempt)</code> plus random jitter bounded by <code>max_delay</code>). Backoff is strictly reserved for the final attempt on the last available harness: an unused secondary account or alternative harness is always prioritized over sleeping.</li>
+<li><strong>Clean Checkpointing</strong>: When all rungs of the fallback ladder are exhausted, the agent runner serializes execution state into <code>.agent_runner_checkpoint.json</code>, moves the GitHub Project board item to <code>Blocked</code>, posts an issue comment detailing resume instructions, and exits cleanly (exit status 0) without triggering workflow failures. Commenting <code>resume</code> restores the serialized state and continues execution from the exact step where quota paused.</li>
+</ul>
+<h3 id="64-incremental-project-automation-rate-limit-backoff">6.4 Incremental Project Automation &amp; Rate-Limit Backoff<a class="headerlink" href="#64-incremental-project-automation-rate-limit-backoff" title="Permanent link">&para;</a></h3>
+<p>GitHub Projects v2 operations interact with GitHub GraphQL and REST rate limits. To maintain reliable board synchronization without hitting API rate limits or triggering abuse bans:</p>
+<ul>
+<li><strong>Dual-Token Isolation (<code>_env_for</code>)</strong>: Projects v2 board mutations require user-scoped permissions (<code>GH_PROJECT_TOKEN</code>), whereas repository operations (issues, pull requests, labels, comments) run under the GitHub App token (<code>GH_TOKEN</code>). Splitting these tokens prevents high-volume repository activity from exhausting the project board's GraphQL quota.</li>
+<li><strong>Incremental Mutation Budget (<code>MUTATION_BUDGET</code> / <code>PROJECT_MUTATION_BUDGET</code>)</strong>: Project automation enforces a configurable mutation budget per execution run (default 25, configurable via <code>PROJECT_MUTATION_BUDGET</code>). This caps the maximum number of GraphQL mutations in a single workflow step.</li>
+<li><strong>Check-Before-Write Idempotency (<code>load_existing_items</code>)</strong>: The project client queries and caches existing board items and their current statuses. If an issue or pull request already resides on the board with the desired status, no write mutation is issued, preserving mutation budget.</li>
+<li><strong>Quota-Safe Deferral</strong>: When the mutation budget is reached during event handling or status reconciliation, remaining items are deferred to subsequent workflow runs. This produces smooth, incremental board updates without burst rate-limit spikes.</li>
+<li><strong>Rate-Limit Detection &amp; Graceful Backoff (<code>is_rate_limited</code>, <code>RATE_LIMITED</code>)</strong>:</li>
+<li>The automation inspects stderr and command outputs for throttling signatures (such as <code>"unknown owner type"</code>, <code>"rate limit"</code>, <code>"secondary rate limit"</code>, <code>"too many requests"</code>, <code>"was submitted too quickly"</code>, or <code>"quota exceeded"</code>).</li>
+<li>Upon detection, the client sets <code>RATE_LIMITED = True</code> and suspends further board mutations for the current execution window.</li>
+<li>The process exits cleanly with exit code 0, allowing pending synchronizations to resume on the next scheduled run without failing CI workflows or incurring secondary rate limit penalties.</li>
+<li><strong>Failure Aggregation (<code>FAILURES</code>)</strong>: Board write errors are collected in <code>FAILURES</code> rather than aborting immediately, ensuring that temporary failure on one board does not block updates to other linked boards. Non-rate-limit errors are reported at completion, exiting non-zero to surface real infrastructure faults.</li>
+</ul>
 <hr />
 <h2 id="7-foundational-architecture-decisions">7. Foundational Architecture Decisions<a class="headerlink" href="#7-foundational-architecture-decisions" title="Permanent link">&para;</a></h2>
 <p>The eight foundational architecture decisions gating the DarkFactory model:</p>
@@ -413,6 +444,12 @@ Every rung of the ladder is a <strong>quota</strong> move — somewhere with cap
           <li><a href="#5-project-board-state-taxonomy">5. Project Board State Taxonomy</a>
           </li>
           <li><a href="#6-resilience-quota-exhaustion-fallback-ladder">6. Resilience, Quota Exhaustion &amp; Fallback Ladder</a>
+            <ul>
+              <li><a href="#61-multi-tier-quota-ladder">6.1 Multi-Tier Quota Ladder</a></li>
+              <li><a href="#62-secondary-accounts-companion-secrets">6.2 Secondary Accounts &amp; Companion Secrets</a></li>
+              <li><a href="#63-quota-backoff-state-checkpointing">6.3 Quota Backoff &amp; State Checkpointing</a></li>
+              <li><a href="#64-incremental-project-automation-rate-limit-backoff">6.4 Incremental Project Automation &amp; Rate-Limit Backoff</a></li>
+            </ul>
           </li>
           <li><a href="#7-foundational-architecture-decisions">7. Foundational Architecture Decisions</a>
           </li>
