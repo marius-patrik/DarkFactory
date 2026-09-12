@@ -490,7 +490,8 @@ def test_pull_requests_target_the_declared_default_branch():
     offenders = [
         line
         for line in source.split("\n")
-        if ("origin/main" in line or '"main"' in line) and not line.strip().startswith("#")
+        if ("origin/main" in line or '"main"' in line or "base=main" in line)
+        and not line.strip().startswith("#")
         # `default_branch()` falls back to "main" for a repository with no manifest, which is the
         # one place the literal is right.
         and line.strip() != 'return "main"'
