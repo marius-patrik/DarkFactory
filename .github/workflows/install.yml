@@ -67,7 +67,7 @@ jobs:
       - name: Check out the pipeline
         uses: actions/checkout@v4
         with:
-          path: .pipeline
+          path: .darkfactory
 
       - name: Check out the target repository
         uses: actions/checkout@v4
@@ -94,21 +94,21 @@ jobs:
       - name: Generate the installation
         id: generate
         env:
-          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory/.github/scripts
           TARGET_ROOT: ${{ github.workspace }}/target
           TARGET_REPOSITORY: ${{ inputs.repository }}
           TARGET_BRANCH: ${{ steps.target.outputs.branch }}
           TARGET_DESCRIPTION: ${{ steps.target.outputs.description }}
           PIPELINE_REPO: ${{ github.repository }}
           PIPELINE_REF: ${{ inputs.ref || github.sha }}
-        run: python3 .pipeline/.github/scripts/install.py
+        run: python3 .darkfactory/.github/scripts/install.py
 
       - name: Apply the declared licence
         env:
-          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory/.github/scripts
           TARGET_ROOT: ${{ github.workspace }}/target
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-        run: python3 .pipeline/.github/scripts/licensing.py
+        run: python3 .darkfactory/.github/scripts/licensing.py
 
       - name: File the issue the installation pull request binds
         id: install-issue
@@ -193,7 +193,7 @@ jobs:
         if: steps.generate.outputs.written == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
-          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory/.github/scripts
           TARGET_REPOSITORY: ${{ inputs.repository }}
           PIPELINE_REPO: ${{ github.repository }}
           TARGET_ROOT: ${{ github.workspace }}/target
@@ -234,7 +234,7 @@ jobs:
           # back to the directory it lives in - the pipeline checkout - so without it every install
           # reconciled DarkFactory against itself and reported success.
           DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
-          PYTHONPATH: ${{ github.workspace }}/.pipeline/.github/scripts
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory/.github/scripts
         run: |
-          python3 "${{ github.workspace }}/.pipeline/.github/scripts/repo_settings.py" \
+          python3 "${{ github.workspace }}/.darkfactory/.github/scripts/repo_settings.py" \
             --apply --skip-protection

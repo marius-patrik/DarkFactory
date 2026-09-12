@@ -50,7 +50,7 @@ jobs:
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .pipeline
+          path: .darkfactory
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -72,10 +72,10 @@ jobs:
       # so a preview served from a subdirectory needs no site-url override.
       - name: Materialise the shared documentation assets
         run: |
-          if [ -d .pipeline ]; then
-            [ -d theme ] || cp -r .pipeline/theme theme
+          if [ -d .darkfactory ]; then
+            [ -d theme ] || cp -r .darkfactory/theme theme
             for f in docs_hooks environment manifest docs_versions; do
-              [ -f .github/scripts/$f.py ] || cp .pipeline/.github/scripts/$f.py .github/scripts/$f.py
+              [ -f .github/scripts/$f.py ] || cp .darkfactory/.github/scripts/$f.py .github/scripts/$f.py
             done
           fi
 
