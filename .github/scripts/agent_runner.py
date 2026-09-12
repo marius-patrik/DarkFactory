@@ -2396,7 +2396,9 @@ def dispatch_event(event_path: str, event_name: str):
 
     repo_raw = payload.get("repository")
     if isinstance(repo_raw, dict):
-        repo = repo_raw.get("full_name") or os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
+        repo = repo_raw.get("full_name") or os.environ.get(
+            "GITHUB_REPOSITORY", "marius-patrik/DarkFactory"
+        )
     elif isinstance(repo_raw, str) and repo_raw:
         repo = repo_raw
     else:
