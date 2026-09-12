@@ -183,7 +183,11 @@ class Harness:
             means the registry has never heard of.
         install: Shell that installs the binary into the agent image. Declared here so adding a
             harness is one entry rather than an entry plus a Dockerfile edit that can disagree
-            with it.
+            with it.  Kept for non-Nix fallback; the Nix flake is the primary installer.
+        nix_attr: Attribute name in the Nix flake's ``packages`` output that installs this
+            harness.  Defaults to the harness name.  The test suite asserts that every harness
+            with a ``nix_attr`` has a corresponding flake package and vice versa, so the
+            declaration and the build cannot disagree.
         extra_args: Appended verbatim to every invocation.
         description: Human-readable note for logs and documentation.
     """
@@ -196,6 +200,7 @@ class Harness:
     extra_args: Sequence[str] = ()
     auth: Optional["Auth"] = None
     install: str = ""
+    nix_attr: str = ""
     description: str = ""
 
     def install_command(self) -> str:
@@ -315,6 +320,7 @@ REGISTRY: Dict[str, Harness] = {
     "antigravity": Harness(
         name="antigravity",
         install="curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin",
+        nix_attr="antigravity",
         binary="agy",
         template=[
             "--print",
@@ -344,6 +350,7 @@ REGISTRY: Dict[str, Harness] = {
     "claude": Harness(
         name="claude",
         install="npm install -g @anthropic-ai/claude-code",
+        nix_attr="claude",
         binary="claude",
         template=[
             "--print",
