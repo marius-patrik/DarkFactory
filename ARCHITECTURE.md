@@ -99,9 +99,9 @@ Autonomous agents must not drift into unapproved scope. DarkFactory enforces two
 
 | Subsystem | Source Component | Responsibilities |
 |---|---|---|
-| **Agent Runner Pipeline** | `.github/scripts/agent_runner.py` | Multi-phase pipeline orchestrator (interpret, plan, implement, review, align). |
-| **Harness Abstraction** | `.github/scripts/harnesses.py` | CLI execution wrappers for Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, and Opencode. |
-| **Project Board Client** | `.github/scripts/project_automation.py` | GraphQL interface to GitHub Projects v2; manages lifecycle state mutations. |
+| **Agent Runner Pipeline** | `.github/scripts/agent_runner.py` | Multi-phase pipeline orchestrator (interpret, plan, implement, review, align), credential preparation, and checkpointed quota ladder. |
+| **Harness Abstraction** | `.github/scripts/harnesses.py` | CLI execution wrappers for Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with multi-account and companion secret resolution. |
+| **Project Board Client** | `.github/scripts/project_automation.py` | GraphQL interface to GitHub Projects v2; manages lifecycle state mutations with incremental budgeting and rate-limit backoff. |
 | **PR Approval & Auto-Merge** | `.github/scripts/handle_pr_approval.py` | Listens for maintainer review approval, performs auto-merge, and reconciles bound issues. |
 | **PR Dispatcher** | `.github/scripts/open_pr.py` | Bot PR authoring via GitHub API or workflow dispatch. |
 | **Settings as Code** | `.github/scripts/repo_settings.py` | Programmatic synchronization of labels, rulesets, branch protection, and Pages. |
@@ -149,16 +149,50 @@ The GitHub Project v2 board tracks seven mutually exclusive states:
 
 ## 6. Resilience, Quota Exhaustion & Fallback Ladder
 
-When an agent harness encounters quota exhaustion (e.g. HTTP 429, `RESOURCE_EXHAUSTED`, rate limits):
+When an agent harness or automation subsystem encounters quota exhaustion (e.g. HTTP 429, `RESOURCE_EXHAUSTED`, secondary rate limits):
 Every rung of the ladder is a **quota** move — somewhere with capacity the last attempt did not have. Answering an exhausted quota with a weaker model is not a rung: it finds no capacity, it only answers worse, so models are configured per node and never degraded here.
 
-1. **Detection**: `is_quota_exhausted` parses stderr and exit diagnostics.
+### 6.1 Multi-Tier Quota Ladder
+
+1. **Detection**: `is_quota_exhausted` parses stderr and exit diagnostics for quota exhaustion indicators.
 2. **Account Rotation**: The same harness and model on the next account. A harness may hold several, numbered (`X`, `X_2`, `X_3`); adding one is adding a secret. This is the innermost rung because it is the cheapest fresh quota available.
 3. **Pool Rotation**: The next model that bills against a *separate pool*. Only Antigravity has more than one — its Gemini and Claude models draw on different quotas — which is why it declares two and Claude declares one.
 4. **Harness Fallback**: The next harness in `AGENT_HARNESS_CHAIN` (e.g. Antigravity → Claude → Codex → Kimi).
 5. **Exponential Backoff**: Reserved for the *last* attempt, via `calculate_backoff`. An unused account is always a better answer than sleeping, so waiting happens only when there is nothing left to rotate to.
 6. **State Checkpointing**: If every account of every pool of every harness is exhausted, the pipeline serializes working state into `.agent_runner_checkpoint.json`, moves the board item to `Blocked`, and posts an alert comment.
-6. **Resume**: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.
+7. **Resume**: Subsequent dispatches check for checkpoints and resume seamlessly from the exact step where quota paused.
+
+### 6.2 Secondary Accounts & Companion Secrets
+
+Provider harnesses authenticate through credentials and companion parameters declared in `.github/scripts/harnesses.py`. Secondary accounts and companion secrets provide fallback across quota boundaries without pipeline disruption:
+
+- **Numbered Account Secrets**: Multiple accounts for any harness are configured by appending integer suffixes to secret names (for example, `CLAUDE_CODE_OAUTH_TOKEN_2`, `ANTHROPIC_API_KEY_2`, or `GEMINI_API_KEY_2`). Adding or rotating an account requires only adding a repository secret; no workflow, CLI harness, or pipeline code changes are needed.
+- **Companion Secrets**: Certain harnesses (such as OAuth-authenticated CLIs) require companion parameters alongside primary tokens—specifically client IDs and client secrets (e.g., `CLAUDE_CLIENT_ID` and `CLAUDE_CLIENT_SECRET`). Companion secrets are numbered symmetrically for secondary accounts (`CLAUDE_CLIENT_ID_2`, `CLAUDE_CLIENT_SECRET_2`). While companion parameters do not authenticate on their own and are excluded from standalone satisfaction checks (`is_satisfied`), the harness registry tracks them via `companion_names` and `secret_names` to guarantee complete parameter bundles during OAuth token exchange.
+- **Environment Isolation & Alias Mapping (`credential_env`)**: Underlying CLI tools only inspect canonical, unnumbered environment variable names (e.g., `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`). When rotating to a secondary account:
+  1. The runner purges all candidate credential and companion variables across all accounts from the process environment, preventing credential cross-contamination or inadvertent fallback to exhausted primary keys.
+  2. The selected account's secret is injected under the primary environment variable name (`auth.env_names(1)`).
+  3. Associated companion secrets (`auth.companion_names(attempt.account)`) are mapped to the primary companion variable names (`auth.companion_names(1)`).
+  Because of this transparent aliasing, CLI harnesses operate unaware of account rotation, providing seamless fallback without pipeline disruption, binary reconfiguration, or container rebuilds.
+- **OAuth Refresh & Token Persistence (`prepare_credentials`, `persist_rotated_token`)**: Providers that issue rotating refresh tokens during OAuth exchange invalidate previous tokens. Discarding rotated tokens would strand the credential for subsequent runs. The runner performs dynamic token exchange via `prepare_credentials`, updates the environment, and writes refreshed tokens back to GitHub repository secrets under that account's specific secret name via `persist_rotated_token`.
+
+### 6.3 Quota Backoff & State Checkpointing
+
+- **Exponential Backoff with Jitter (`calculate_backoff`)**: Delay intervals follow exponential backoff with additive jitter (`base_delay * (backoff_factor ** attempt)` plus random jitter bounded by `max_delay`). Backoff is strictly reserved for the final attempt on the last available harness: an unused secondary account or alternative harness is always prioritized over sleeping.
+- **Clean Checkpointing**: When all rungs of the fallback ladder are exhausted, the agent runner serializes execution state into `.agent_runner_checkpoint.json`, moves the GitHub Project board item to `Blocked`, posts an issue comment detailing resume instructions, and exits cleanly (exit status 0) without triggering workflow failures. Commenting `resume` restores the serialized state and continues execution from the exact step where quota paused.
+
+### 6.4 Incremental Project Automation & Rate-Limit Backoff
+
+GitHub Projects v2 operations interact with GitHub GraphQL and REST rate limits. To maintain reliable board synchronization without hitting API rate limits or triggering abuse bans:
+
+- **Dual-Token Isolation (`_env_for`)**: Projects v2 board mutations require user-scoped permissions (`GH_PROJECT_TOKEN`), whereas repository operations (issues, pull requests, labels, comments) run under the GitHub App token (`GH_TOKEN`). Splitting these tokens prevents high-volume repository activity from exhausting the project board's GraphQL quota.
+- **Incremental Mutation Budget (`MUTATION_BUDGET` / `PROJECT_MUTATION_BUDGET`)**: Project automation enforces a configurable mutation budget per execution run (default 25, configurable via `PROJECT_MUTATION_BUDGET`). This caps the maximum number of GraphQL mutations in a single workflow step.
+- **Check-Before-Write Idempotency (`load_existing_items`)**: The project client queries and caches existing board items and their current statuses. If an issue or pull request already resides on the board with the desired status, no write mutation is issued, preserving mutation budget.
+- **Quota-Safe Deferral**: When the mutation budget is reached during event handling or status reconciliation, remaining items are deferred to subsequent workflow runs. This produces smooth, incremental board updates without burst rate-limit spikes.
+- **Rate-Limit Detection & Graceful Backoff (`is_rate_limited`, `RATE_LIMITED`)**:
+  - The automation inspects stderr and command outputs for throttling signatures (such as `"unknown owner type"`, `"rate limit"`, `"secondary rate limit"`, `"too many requests"`, `"was submitted too quickly"`, or `"quota exceeded"`).
+  - Upon detection, the client sets `RATE_LIMITED = True` and suspends further board mutations for the current execution window.
+  - The process exits cleanly with exit code 0, allowing pending synchronizations to resume on the next scheduled run without failing CI workflows or incurring secondary rate limit penalties.
+- **Failure Aggregation (`FAILURES`)**: Board write errors are collected in `FAILURES` rather than aborting immediately, ensuring that temporary failure on one board does not block updates to other linked boards. Non-rate-limit errors are reported at completion, exiting non-zero to surface real infrastructure faults.
 
 ---
 
