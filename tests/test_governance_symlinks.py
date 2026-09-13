@@ -1,8 +1,9 @@
 """Tests that the agent-governance aliases are committed as symlinks, not as text files.
 
 `AGENTS.md` is the single canonical governance document. Every other entry point an agent might
-open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, and the mirrors under `.agents/` -
-is a symlink pointing back at it, so there is exactly one copy of the rules.
+open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, the mirrors under `.agents/`, and
+the root `notes` / `rules` aliases - is a symlink pointing back at the canonical source, so there
+is exactly one copy of the rules and the notes.
 
 Checking the working tree is not enough. Git stores a symlink as mode `120000` and a regular file
 as `100644`; when the mode is wrong the checkout is a small text file whose *content* is the target
@@ -28,7 +29,8 @@ EXPECTED_LINKS: Dict[str, str] = {
     ".agents/AGENTS.md": "../AGENTS.md",
     ".agents/CLAUDE.md": "../AGENTS.md",
     ".agents/README.md": "../README.md",
-    ".agents/notes": "../notes",
+    "notes": ".agents/notes",
+    "rules": ".agents/rules",
 }
 
 #: Git's file mode for a symbolic link.

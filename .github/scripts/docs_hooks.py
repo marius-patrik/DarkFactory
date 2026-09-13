@@ -42,15 +42,11 @@ LINK_REWRITES: Dict[str, str] = {
     ".agents/notes/architecture_decisions.md": "architecture/decisions/process.md",
     ".agents/notes/vision_capture.md": "notes/vision_capture.md",
     ".agents/notes/bootstrap.md": "notes/bootstrap.md",
-    "notes/architecture_decisions.md": "architecture/decisions/process.md",
-    "notes/vision_capture.md": "notes/vision_capture.md",
-    "notes/bootstrap.md": "notes/bootstrap.md",
     "architecture_decisions.md": "architecture/decisions/process.md",
     "vision_capture.md": "notes/vision_capture.md",
     "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
-    "notes/adr/": "architecture/decisions/index.md",
 }
 
 #: A repository may publish one reference file verbatim, wrapped in a code fence so the
@@ -77,7 +73,7 @@ def _declaration_source(root: str) -> Optional[str]:
 
 
 #: Where ADR records live, and where they are published.
-ADR_SOURCE_DIR = os.path.join("notes", "adr")
+ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")
 ADR_DEST_PREFIX = "architecture/decisions"
 
 _LINK_PATTERN = re.compile(r"\]\((?!https?://)(?P<target>[^)\s#]+)(?P<anchor>#[^)]*)?\)")
@@ -164,7 +160,7 @@ def render_adr_index(records: List[Dict[str, str]]) -> str:
         "# Architecture decisions",
         "",
         "Every decision that binds the implementation, one record per page. This index is generated",
-        "from the files in `notes/adr/` at build time - it is never hand-maintained",
+        "from the files in `.agents/notes/adr/` at build time - it is never hand-maintained",
         "(`.agents/rules/002-inline-docs-and-generated-documentation.md`).",
         "",
         "See [the process](process.md) for when an ADR is required and how to write one.",
@@ -244,9 +240,10 @@ def _rewrite_links(markdown: str, dest_path: str) -> str:
 
         replacement = LINK_REWRITES.get(normalized)
         if replacement is None:
-            # Records are addressed as `notes/adr/NNNN-slug.md` from the repository root and as
-            # `adr/NNNN-slug.md` from within notes/; both publish under the decisions section.
-            adr_match = re.fullmatch(r"(?:notes/)?adr/(?P<slug>[^/]+\.md)", normalized)
+            # Records are addressed as `.agents/notes/adr/NNNN-slug.md` from the repository root;
+            # links from other repositories resolved through the root `notes` alias and from within
+            # .agents/notes/ use the same pattern and publish under the decisions section.
+            adr_match = re.fullmatch(r"(?:\.agents/notes/)?adr/(?P<slug>[^/]+\.md)", normalized)
             if adr_match:
                 replacement = f"{ADR_DEST_PREFIX}/{adr_match.group('slug')}"
 
@@ -261,7 +258,7 @@ def on_config(config: Any) -> Any:
     """Injects the Architecture section, including one entry per ADR, into ``nav``.
 
     Navigation is built here rather than declared in ``properdocs.yml`` so that adding a record to
-    ``notes/adr/`` is the only step required to publish it.
+    ``.agents/notes/adr/`` is the only step required to publish it.
 
     Args:
         config: ProperDocs configuration.
