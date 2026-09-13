@@ -148,6 +148,9 @@ CLI is running. Providers, models, and accounts are manifest declarations, never
   repository-policy overlay before the aggregate is generated.
 - PRD and notes content are never propagated to consumers; only the rules, adapters, and
   directory conventions are managed, and project-specific knowledge stays owned by the consumer.
+- A consumer repository that keeps notes adopts `.agents/notes` (runbooks, captures, and one ADR
+  per decision under `.agents/notes/adr/`) exactly as DarkFactory does; the layout convention is
+  what is shared, never the notes themselves.
 
 ## 9. Identity, security, and secrets
 
