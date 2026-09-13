@@ -33,8 +33,8 @@ lifecycle view for humans and the agent, exactly one system-owned schema.
 
 - `.github/scripts/project_automation.py` moves statuses; `repo_settings.py` wires auto-merge and
   deletion.
-- `.github/workflows/verify-bound-issue.yml` and `PULL_REQUEST_TEMPLATE.md` enforce the binding
-  pattern; `tests/test_governance.py::test_issue_binding_markers`-style tests pin the template.
+- `.github/workflows/verify-pr-issue.yml` and `PULL_REQUEST_TEMPLATE.md` enforce the binding
+  pattern.
 
 ## Exceptions
 

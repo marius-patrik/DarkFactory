@@ -26,17 +26,20 @@ def _read(*parts: str) -> str:
 
 
 def test_agents_file_exists_and_is_the_canonical_source():
-    """`AGENTS.md` is real and `CLAUDE.md` / `CONTRIBUTING.md` point at it."""
-    assert os.path.isfile(os.path.join(REPO_ROOT, "AGENTS.md"))
-    for alias in ("CLAUDE.md", "CONTRIBUTING.md"):
-        path = os.path.join(REPO_ROOT, alias)
-        assert os.path.exists(path), f"{alias} must exist"
-        # On platforms without symlink support git materializes the link as a text file whose
-        # content is the target path; accept either form.
-        target = os.path.realpath(path)
-        if os.path.basename(target) != "AGENTS.md":
-            with open(path, encoding="utf-8") as handle:
-                assert handle.read().strip() == "AGENTS.md", f"{alias} must resolve to AGENTS.md"
+    """`AGENTS.md` is real; `CLAUDE.md` imports it and `CONTRIBUTING.md` links to it."""
+    content = _read("AGENTS.md")
+    assert len(content) > 1000
+    assert os.path.isfile(os.path.join(REPO_ROOT, "CLAUDE.md"))
+    assert _read("CLAUDE.md").strip() == "@AGENTS.md"
+    path = os.path.join(REPO_ROOT, "CONTRIBUTING.md")
+    assert os.path.exists(path), "CONTRIBUTING.md must exist"
+    # On platforms without symlink support git materializes the link as a text file whose
+    # content is the target path; accept either form.
+    target = os.path.realpath(path)
+    if os.path.basename(target) != "AGENTS.md":
+        assert (
+            _read("CONTRIBUTING.md").strip() == "AGENTS.md"
+        ), "CONTRIBUTING.md must resolve to AGENTS.md"
 
 
 def test_agents_mandates_branches_prs_ci_and_protection():
@@ -187,3 +190,133 @@ def test_prd_does_not_duplicate_manifest_taxonomy_or_graph() -> None:
     assert "GRAPHQL_REMAINING" not in prd
     assert "MUTATION_BUDGET" not in prd
     assert "agent_runner.py" not in prd
+
+
+RULES_DIR = os.path.join(".agents", "rules")
+
+
+def _rule_files() -> list:
+    """Returns the sorted basenames of the canonical rule files."""
+    return sorted(
+        name for name in os.listdir(os.path.join(REPO_ROOT, RULES_DIR)) if name.endswith(".md")
+    )
+
+
+def _front_matter(path: str) -> dict:
+    """Parses a rule file's YAML front matter into a dict."""
+    text = _read(path)
+    if not text.startswith("---\n"):
+        return {}
+    _, body = text.split("---\n", 1)
+    front, _rest = body.split("\n---\n", 1)
+    fields = {}
+    for line in front.splitlines():
+        if ":" in line:
+            key, _, value = line.partition(":")
+            fields[key.strip()] = value.strip().strip('"')
+    return fields
+
+
+def test_every_rule_has_unique_stable_id_and_required_sections():
+    """Each rule file is one canonical, complete, size-bounded document."""
+    files = _rule_files()
+    assert len(files) == 16, f"expected exactly sixteen rules, found {files}"
+    seen = set()
+    for name in files:
+        path = os.path.join(RULES_DIR, name)
+        number, _, slug = name.partition("-")
+        assert slug.endswith(".md"), f"{name} must be NNN-slug.md"
+        meta = _front_matter(path)
+        assert meta.get("status") == "normative", f"{name} must be status: normative"
+        stable_id = f"DF-RULE-{number}"
+        assert meta.get("id") == stable_id, f"{name} front matter id must be {stable_id}"
+        assert stable_id not in seen, f"duplicate id {stable_id}"
+        seen.add(stable_id)
+        for field in ("title", "applies_to", "activation", "owners"):
+            assert meta.get(field), f"{name} front matter must declare {field}"
+        body = _read(path)
+        for section in (
+            "## Requirement",
+            "## Rationale",
+            "## Enforcement",
+            "## Exceptions",
+            "## Change control",
+        ):
+            assert section in body, f"{name} must carry a {section!r} section"
+        assert len(body) < 12000, f"{name} exceeds Antigravity's 12,000-character file limit"
+
+
+def _index_rows(agents: str) -> dict:
+    """Parses the AGENTS.md index into {stable_id: canonical file}."""
+    rows = {}
+    pattern = re.compile(
+        r"^\| `(DF-RULE-\d{3})` \| .+? \| `(\.agents/rules/\d{3}-[a-z0-9-]+\.md)` \|$"
+    )
+    for line in agents.splitlines():
+        match = pattern.match(line)
+        if match:
+            rows[match.group(1)] = match.group(2)
+    return rows
+
+
+def test_agents_projection_matches_rule_sources():
+    """The AGENTS.md projection carries every canonical rule, exactly once."""
+    agents = _read("AGENTS.md")
+    assert len(agents) < 32 * 1024, "Codex enforces a cumulative 32 KiB AGENTS.md limit"
+    index = _index_rows(agents)
+    assert len(index) == 16, "the projection index must list all sixteen rules"
+    for name in _rule_files():
+        number = name.split("-", 1)[0]
+        stable_id = f"DF-RULE-{number}"
+        assert (
+            index.get(stable_id) == f".agents/rules/{name}"
+        ), f"{stable_id} index row must resolve to {name}"
+        # The mandatory behavior text is embedded, not linked away.
+        path = os.path.join(RULES_DIR, name)
+        requirement = _read(path).split("## Requirement\n", 1)[1].split("\n## Rationale\n", 1)[0]
+        assert _normalize(requirement) in _normalize(
+            agents
+        ), f"{name} requirement must be projected"
+    assert agents.count("### Rule ") == 16, "every canonical rule must have a projected heading"
+
+
+def _normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def test_rule_enforcement_pointers_resolve_or_say_unenforced():
+    """Every enforcement pointer is real, or the rule says it is unenforced."""
+    bases = (
+        REPO_ROOT,
+        os.path.join(REPO_ROOT, ".github"),
+        os.path.join(REPO_ROOT, ".github", "scripts"),
+        os.path.join(REPO_ROOT, ".github", "workflows"),
+    )
+    for name in _rule_files():
+        body = _read(os.path.join(RULES_DIR, name))
+        enforcement = body.split("## Enforcement\n", 1)[1].split("\n## Exceptions\n", 1)[0]
+        if "unenforced" in enforcement.lower():
+            continue
+        for token in re.findall(r"`([^`]+)`", enforcement):
+            pointer = re.sub(r"^\./", "", token.split("::", 1)[0].strip())
+            if not pointer or "." not in pointer or pointer.startswith("Area"):
+                continue
+            assert any(
+                os.path.exists(os.path.join(base, pointer)) for base in bases
+            ), f"{name} enforcement pointer {pointer!r} does not resolve"
+
+
+def test_runtime_references_use_canonical_agent_paths():
+    """Automation never traverses the root `notes` / `rules` aliases."""
+    scripts_dir = os.path.join(REPO_ROOT, ".github", "scripts")
+    for name in sorted(os.listdir(scripts_dir)):
+        if not name.endswith(".py"):
+            continue
+        source = _read(os.path.relpath(scripts_dir, REPO_ROOT), name)
+        for alias in ("notes", "rules"):
+            assert (
+                re.search(rf'os\.path\.join\(\s*"{alias}"', source) is None
+            ), f"{name} must use the canonical .agents path, not the root {alias} alias"
+    assert 'ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")' in _read(
+        ".github", "scripts", "docs_hooks.py"
+    ), "docs_hooks must discover ADRs under the canonical directory"
