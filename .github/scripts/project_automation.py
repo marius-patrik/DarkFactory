@@ -26,7 +26,7 @@ Environment:
     PROJECT_STATUS_FIELD_ID: Optional explicit Status field id, skipping discovery.
     GH_TOKEN: GitHub App installation token for repository REST operations.
     GH_PROJECT_TOKEN: User personal access token for Projects v2 GraphQL operations.
-    PROJECT_MUTATION_BUDGET: Max mutations per execution (default: 25).
+    PROJECT_QUOTA_MINIMUM: Live GraphQL quota reserve below which mutations pause (default: 50).
 """
 
 import json
@@ -151,12 +151,8 @@ try:
 except (ValueError, TypeError):
     QUOTA_MINIMUM = 50
 
-#: Mutation cap per execution to ensure incremental progress without rate-limit spikes.
-try:
-    MUTATION_BUDGET = int(os.environ.get("PROJECT_MUTATION_BUDGET", "25"))
-except (ValueError, TypeError):
-    MUTATION_BUDGET = 25
-
+#: Board writes completed in this execution, retained for operational observability only. There is
+#: no cap tied to this counter - the only write gate is the live GraphQL quota reserve above.
 MUTATIONS_PERFORMED = 0
 
 
@@ -179,12 +175,16 @@ def record_mutation() -> None:
 
 
 def can_mutate() -> bool:
-    """Checks whether further mutations are permitted within budget and rate limits."""
+    """Checks whether further mutations are permitted given rate limits and the live quota reserve.
+
+    There is no artificial per-run mutation cap: a reconciliation run may write as many items as
+    the live GraphQL quota allows, pausing only once the reserve (`QUOTA_MINIMUM`) is reached.
+    """
     if RATE_LIMITED:
         return False
     if GRAPHQL_REMAINING is not None and GRAPHQL_REMAINING <= QUOTA_MINIMUM:
         return False
-    return MUTATIONS_PERFORMED < MUTATION_BUDGET
+    return True
 
 
 def can_reconcile() -> bool:
@@ -564,7 +564,11 @@ class GitHubGraphQLClient:
                         if val <= QUOTA_MINIMUM:
                             mark_rate_limited(f"GraphQL quota exhausted ({val} remaining)")
                     except ValueError:
-                        pass
+                        # A malformed remaining value must not be read as "quota unknown, so
+                        # unlimited" - with no mutation-count fallback left, this reserve is the
+                        # only write gate, so an unparseable header pauses mutations instead.
+                        _fail(f"malformed GraphQL rate-limit header: {rem!r}")
+                        mark_rate_limited("Malformed GraphQL rate-limit header")
                 content = resp.read().decode("utf-8")
                 parsed = json.loads(content) if content else {}
         except urllib.error.HTTPError as exc:
@@ -1291,7 +1295,8 @@ class GitHubProjectClient:
         Path 2 (Historical Reconciliation):
             When fast_path=False, checks in-memory cache populated by load_existing_items().
             If status already matches, returns immediately (0 mutations, 0 queries).
-            Only out-of-date or missing items incur mutations within MUTATION_BUDGET.
+            Only out-of-date or missing items incur mutations, gated solely by the live GraphQL
+            quota reserve (`can_mutate`) - there is no fixed per-run mutation count.
 
         Args:
             url: Issue or pull request html url.
@@ -1300,9 +1305,12 @@ class GitHubProjectClient:
             fast_path: If True, executes direct single-item addition without loading board items.
         """
         if not can_mutate():
-            if MUTATIONS_PERFORMED >= MUTATION_BUDGET:
+            if RATE_LIMITED:
+                print(f"Notice: rate limited; deferring {url} to next run.")
+            else:
                 print(
-                    f"Notice: Mutation budget reached ({MUTATION_BUDGET}); deferring {url} to next run."
+                    f"Notice: GraphQL quota reserve reached "
+                    f"({GRAPHQL_REMAINING} <= {QUOTA_MINIMUM}); deferring {url} to next run."
                 )
             return
 

@@ -611,8 +611,8 @@ class TestFailuresSayWhatWentWrong:
         assert project_automation._detail(ValueError("plain")) == "plain"
 
 
-class TestRateLimitingAndIncrementalBudget:
-    """Rate limits must pause cleanly without failing, and writes must be idempotent and budgeted."""
+class TestRateLimitingAndQuotaReserve:
+    """Rate limits pause cleanly; a run may write freely except for the live quota safety reserve."""
 
     def test_is_rate_limited_recognises_indicators(self):
         """Standard rate-limit messages across GraphQL and REST are detected."""
@@ -665,14 +665,84 @@ class TestRateLimitingAndIncrementalBudget:
         client.track("https://github.com/o/r/issues/1", "In Progress")
         assert edited == [("item-1", "In Progress")]
 
-    def test_track_respects_mutation_budget(self, monkeypatch):
-        """When the mutation budget is reached, further writes are deferred."""
-        monkeypatch.setattr(project_automation, "MUTATIONS_PERFORMED", 5)
-        monkeypatch.setattr(project_automation, "MUTATION_BUDGET", 5)
+    def test_long_reconciliation_is_not_truncated_by_an_artificial_cap(self, monkeypatch):
+        """No fixed per-run mutation count remains: a long run processes every item it is given."""
+        assert not hasattr(project_automation, "MUTATION_BUDGET")
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
         client = GitHubProjectClient(project_number=10)
         client._items_cache = {}
-        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("budget exceeded"))
-        client.track("https://github.com/o/r/issues/99", "ToDo")
+        monkeypatch.setattr(client, "load_existing_items", lambda: {})
+        added = []
+        edited = []
+        monkeypatch.setattr(
+            client,
+            "add_item",
+            lambda url, content_id=None: added.append(url) or f"item-{len(added)}",
+        )
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+        )
+
+        # Well past the old default budget of 25 - every item must still be written.
+        urls = [f"https://github.com/o/r/issues/{i}" for i in range(40)]
+        for url in urls:
+            client.track(url, "ToDo")
+
+        assert added == urls
+        assert len(edited) == 40
+
+    def test_writes_pause_at_the_safety_reserve(self, monkeypatch):
+        """At or below QUOTA_MINIMUM, track() defers instead of writing - the only remaining gate."""
+        monkeypatch.setattr(
+            project_automation, "GRAPHQL_REMAINING", project_automation.QUOTA_MINIMUM
+        )
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {}
+        monkeypatch.setattr(
+            client, "load_existing_items", lambda: pytest.fail("should not query the board")
+        )
+        monkeypatch.setattr(client, "add_item", lambda *a, **k: pytest.fail("should not add"))
+        monkeypatch.setattr(client, "edit_status", lambda *a, **k: pytest.fail("should not edit"))
+
+        client.track("https://github.com/o/r/issues/1", "ToDo")
+
+        assert project_automation.can_mutate() is False
+
+    def test_malformed_quota_header_pauses_mutations_rather_than_assuming_unlimited(
+        self, monkeypatch
+    ):
+        """An unparseable x-ratelimit-remaining header is treated as unsafe, not as unlimited quota."""
+        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", None)
+        monkeypatch.setattr(project_automation, "FAILURES", [])
+
+        class FakeHeaders:
+            def get(self, key, default=None):
+                return "not-a-number" if key == "x-ratelimit-remaining" else default
+
+        class FakeResponse:
+            headers = FakeHeaders()
+
+            def read(self):
+                return b'{"data": {}}'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc_info):
+                return False
+
+        monkeypatch.setattr(
+            project_automation.urllib.request, "urlopen", lambda *a, **k: FakeResponse()
+        )
+
+        client = project_automation.GitHubGraphQLClient(token="test-token")
+        client.execute("query { viewer { login } }")
+
+        assert project_automation.GRAPHQL_REMAINING is None
+        assert project_automation.RATE_LIMITED is True
+        assert project_automation.FAILURES
+        assert project_automation.can_mutate() is False
 
     def test_historical_closed_items_reconciliation(self):
         """Reconciliation tracks historical closed issues and PRs with settled statuses."""
