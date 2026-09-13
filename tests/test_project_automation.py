@@ -784,3 +784,74 @@ class TestRateLimitingAndIncrementalBudget:
         process_event("push", payload, client=client)
         assert client.status_labels == [(REPO, 68, "Done")]
         assert client.closed_issues == [(REPO, 68)]
+
+    def test_enforce_board_taxonomy_mutation_payload(self):
+        """Enforcing board taxonomy submits canonical 7 options without id fields."""
+        executed = []
+
+        class MockGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                executed.append((query, variables))
+                return {
+                    "updateProjectV2Field": {
+                        "projectV2Field": {
+                            "id": "F_123",
+                            "name": "Status",
+                            "options": [
+                                {"id": f"opt-{opt['name']}", "name": opt["name"]}
+                                for opt in variables["input"]["singleSelectOptions"]
+                            ],
+                        }
+                    }
+                }
+
+        client = MockGraphQL(token="test-token")
+        existing_options = [{"id": "opt-old-1", "name": "Backlog"}]
+        result = client.enforce_board_taxonomy("F_123", existing_options)
+
+        assert len(executed) == 1
+        query, variables = executed[0]
+        assert "mutation EnforceTaxonomy" in query
+        options = variables["input"]["singleSelectOptions"]
+        assert len(options) == 7
+        # Verify no option has an 'id' attribute in the input
+        for opt in options:
+            assert "id" not in opt
+            assert "name" in opt
+            assert "color" in opt
+            assert "description" in opt
+            assert opt["name"] in project_automation.STATUS_NAMES
+
+        # Verify returned mapping contains all 7 canonical options
+        for name in project_automation.STATUS_NAMES:
+            assert name in result
+            assert result[name] == f"opt-{name}"
+
+    def test_rest_client_set_status_label_preserves_domain_labels(self):
+        """REST client exclusively replaces status labels while keeping domain labels intact."""
+        called_urls = []
+        payloads = []
+
+        rest = project_automation.GitHubRestClient(token="test-token")
+
+        def mock_request(method, path, data=None):
+            called_urls.append((method, path))
+            if method == "GET":
+                return {
+                    "labels": [
+                        {"name": "bug"},
+                        {"name": "area:governance"},
+                        {"name": "In Progress"},
+                    ]
+                }
+            payloads.append(data)
+            return data
+
+        rest.request = mock_request
+        rest.set_status_label("o/r", 42, "Done")
+
+        assert ("GET", "/repos/o/r/issues/42") in called_urls
+        assert ("PUT", "/repos/o/r/issues/42/labels") in called_urls
+        assert payloads == [{"labels": ["bug", "area:governance", "Done"]}]

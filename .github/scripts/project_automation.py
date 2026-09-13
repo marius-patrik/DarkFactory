@@ -783,22 +783,14 @@ class GitHubGraphQLClient:
             opt["name"].strip().lower(): opt for opt in existing_options if opt and "name" in opt
         }
 
-        options_input = []
-        for canonical in CANONICAL_STATUS_OPTIONS:
-            name = canonical["name"]
-            c_lower = name.lower()
-            match = existing_by_name.get(c_lower)
-            if not match and c_lower == "todo":
-                match = existing_by_name.get("to do")
-
-            opt_payload: Dict[str, Any] = {
-                "name": name,
+        options_input = [
+            {
+                "name": canonical["name"],
                 "color": canonical["color"],
                 "description": canonical["description"],
             }
-            if match and match.get("id"):
-                opt_payload["id"] = match["id"]
-            options_input.append(opt_payload)
+            for canonical in CANONICAL_STATUS_OPTIONS
+        ]
 
         mutation = """
         mutation EnforceTaxonomy($input: UpdateProjectV2FieldInput!) {
