@@ -216,16 +216,19 @@ def test_architecture_documents_secondary_accounts_and_companion_secrets() -> No
     assert "without pipeline disruption" in architecture.lower()
 
 
-def test_architecture_documents_incremental_project_automation_and_rate_limit_backoff() -> None:
-    """ARCHITECTURE.md must document incremental project automation and rate-limit backoff behaviour.
+def test_architecture_documents_quota_gated_project_automation_and_rate_limit_backoff() -> None:
+    """ARCHITECTURE.md must document quota-gated project automation and rate-limit backoff behaviour.
 
-    This ensures mutation budgeting, check-before-write idempotency, rate-limit detection,
-    and graceful backoff are explicitly specified in the normative architecture.
+    This ensures the live-quota safety reserve, check-before-write idempotency, scoped/global
+    board routing, rate-limit detection, and graceful backoff are explicitly specified in the
+    normative architecture - and that no artificial mutation cap is documented as authoritative.
     """
     architecture = _read("ARCHITECTURE.md")
-    assert "Incremental Project Automation & Rate-Limit Backoff" in architecture
+    assert "Quota-Gated Project Automation & Rate-Limit Backoff" in architecture
     assert "GRAPHQL_REMAINING" in architecture
     assert "QUOTA_MINIMUM" in architecture
+    assert "MUTATION_BUDGET" not in architecture
+    assert "resolve_boards" in architecture
     assert "load_existing_items" in architecture
     assert "is_rate_limited" in architecture
     assert "RATE_LIMITED" in architecture

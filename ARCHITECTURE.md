@@ -180,7 +180,7 @@ Provider harnesses authenticate through credentials and companion parameters dec
 - **Exponential Backoff with Jitter (`calculate_backoff`)**: Delay intervals follow exponential backoff with additive jitter (`base_delay * (backoff_factor ** attempt)` plus random jitter bounded by `max_delay`). Backoff is strictly reserved for the final attempt on the last available harness: an unused secondary account or alternative harness is always prioritized over sleeping.
 - **Clean Checkpointing**: When all rungs of the fallback ladder are exhausted, the agent runner serializes execution state into `.agent_runner_checkpoint.json`, moves the GitHub Project board item to `Blocked`, posts an issue comment detailing resume instructions, and exits cleanly (exit status 0) without triggering workflow failures. Commenting `resume` restores the serialized state and continues execution from the exact step where quota paused.
 
-### 6.4 Incremental Project Automation & Rate-Limit Backoff
+### 6.4 Quota-Gated Project Automation & Rate-Limit Backoff
 
 GitHub Projects v2 operations interact with GitHub GraphQL and REST rate limits. To maintain reliable board synchronization without hitting API rate limits or triggering abuse bans:
 
