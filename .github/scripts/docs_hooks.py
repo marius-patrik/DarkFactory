@@ -27,7 +27,7 @@ PUBLISHED_PAGES: List[Tuple[str, str]] = [
     ("README.md", "index.md"),
     ("PRD.md", "prd.md"),
     ("AGENTS.md", "agents.md"),
-    (".agents/notes/architecture_decisions.md", "architecture/decisions/process.md"),
+    (".agents/notes/adr/README.md", "architecture/decisions/process.md"),
     (".agents/notes/vision_capture.md", "notes/vision_capture.md"),
     (".agents/notes/bootstrap.md", "notes/bootstrap.md"),
 ]
@@ -39,10 +39,10 @@ LINK_REWRITES: Dict[str, str] = {
     "AGENTS.md": "agents.md",
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
-    ".agents/notes/architecture_decisions.md": "architecture/decisions/process.md",
+    ".agents/notes/adr/README.md": "architecture/decisions/process.md",
     ".agents/notes/vision_capture.md": "notes/vision_capture.md",
     ".agents/notes/bootstrap.md": "notes/bootstrap.md",
-    "architecture_decisions.md": "architecture/decisions/process.md",
+    "adr/README.md": "architecture/decisions/process.md",
     "vision_capture.md": "notes/vision_capture.md",
     "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
@@ -118,7 +118,7 @@ def discover_adrs(root: str) -> List[Dict[str, str]]:
 
     records: List[Dict[str, str]] = []
     for name in sorted(os.listdir(directory)):
-        if not name.endswith(".md") or name == "index.md":
+        if not name.endswith(".md") or name in ("index.md", "README.md"):
             continue
         path = os.path.join(directory, name)
         with open(path, "r", encoding="utf-8") as handle:

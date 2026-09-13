@@ -34,4 +34,5 @@ None.
 
 Owned jointly with `merge-gates` (interpretation/plan wording) and `workflow-graph` (node
 topology). ADR numbering is per-file under `.agents/notes/adr/`; the deprecated multi-record
-`architecture_decisions.md` ledger is not an ADR database.
+`architecture_decisions.md` ledger was split into one discrete file per decision on 2026-09-13 and
+removed.

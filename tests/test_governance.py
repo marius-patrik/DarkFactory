@@ -97,6 +97,36 @@ def test_legacy_knowledge_files_are_absent():
         assert not os.path.exists(os.path.join(REPO_ROOT, legacy)), f"{legacy} must be retired"
     roadmap_names = {path for path in os.listdir(REPO_ROOT) if path.lower().startswith("roadmap")}
     assert not roadmap_names, f"unexpected roadmap files: {sorted(roadmap_names)}"
+    assert not os.path.exists(
+        os.path.join(REPO_ROOT, ".agents", "notes", "architecture_decisions.md")
+    ), "the deprecated ADR ledger must be retired; one file per decision lives under .agents/notes/adr/"
+
+
+def test_every_adr_is_a_discrete_record_with_status_and_date():
+    """Each ADR is one file with a numbered heading, a status, and a date.
+
+    The generated decision index and the status/nav sorting in `docs_hooks.py` rely on this shape,
+    so records cannot drift back into a multi-record ledger.
+    """
+    adr_dir = os.path.join(REPO_ROOT, ".agents", "notes", "adr")
+    names = sorted(name for name in os.listdir(adr_dir) if name.endswith(".md"))
+
+    records = [name for name in names if name not in ("README.md", "index.md")]
+    assert records, "no discrete ADR records found"
+
+    numbers: list[str] = []
+    for name in records:
+        content = _read(os.path.relpath(adr_dir, REPO_ROOT), name)
+        heading = re.search(r"^#\s+ADR-(\d{4})\s+—\s+(.+?)\s*$", content, re.M)
+        assert heading, f"{name} must open with a '# ADR-NNNN — Title' heading"
+        numbers.append(heading.group(1))
+        assert re.search(
+            r"\*\*Status\*\*:\s*[^·\n]+·\s*\d{4}-\d{2}-\d{2}", content
+        ), f"{name} must carry '**Status**: Accepted · YYYY-MM-DD'"
+
+    assert numbers == [
+        f"{n:04d}" for n in range(1, len(numbers) + 1)
+    ], "ADR numbers must be the consecutive 0001..NNNN sequence"
 
 
 def test_architecture_lists_open_decisions_with_identifiers():
