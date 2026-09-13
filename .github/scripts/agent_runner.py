@@ -677,6 +677,79 @@ def is_quota_exhausted(error_message: str) -> bool:
     return False
 
 
+#: Print-mode timeout wording from the harness CLIs. `agy --print-timeout 5m0s` exits 0 after its
+#: time budget with no (or partial) stdout, which the runner used to treat as a perfect answer and
+#: post as an empty shell comment. The wording is what separates that silent truncation from a real
+#: reply, so a reply carrying it is a failed attempt like any other.
+PRINT_TIMEOUT_PATTERNS: List[re.Pattern] = [
+    re.compile(r"\bprint[_\s-]?timeout\b", re.IGNORECASE),
+    re.compile(r"\btimed?\s*out\b[^\n]{0,60}\b(?:print|output|response|result)\b", re.IGNORECASE),
+    re.compile(r"\bprint\b[^\n]{0,40}\btimed?\s*out\b", re.IGNORECASE),
+]
+
+
+def is_print_timeout(text: str) -> bool:
+    """Detects whether a harness invocation hit its print-mode time budget.
+
+    A Harness reached for ``--print-timeout`` because a coding agent sitting on a TTY will keep a
+    turn alive forever; the timeout is what makes ``--print`` usable in CI. The CLIs that honour
+    it do so by exiting 0 once the budget is spent, which is invisible to ``check=True``.
+
+    Args:
+        text: The attempt's stdout and stderr, combined.
+
+    Returns:
+        True when the text carries print-mode timeout wording.
+    """
+    if not text:
+        return False
+    for pattern in PRINT_TIMEOUT_PATTERNS:
+        if pattern.search(text):
+            return True
+    return False
+
+
+def _bounded_tail(text: str, limit: int = 2000) -> str:
+    """Cuts a log tail down to a bounded size, keeping the most recent end.
+
+    Args:
+        text: The text to truncate.
+        limit: Maximum number of characters to keep.
+
+    Returns:
+        The tail, marked where it was truncated.
+    """
+    if not text:
+        return ""
+    compact = text.strip()
+    if len(compact) <= limit:
+        return compact
+    return f"...[{len(compact) - limit} characters omitted]...\n{compact[-limit:]}"
+
+
+def redact_secrets(text: str) -> str:
+    """Replaces known credential values in a log or error line before it is written.
+
+    Harness credentials live in the environment and may legitimately appear in a CLI's stderr;
+    the account being run is named in the job log, its credential never is.
+
+    Args:
+        text: Text that may embed credential values.
+
+    Returns:
+        The text with every known credential value replaced by `***`.
+    """
+    if not text:
+        return text
+    names = set(harnesses.credential_env_names())
+    names.update(("GH_TOKEN", "GH_PROJECT_TOKEN", "GITHUB_TOKEN"))
+    for name in sorted(names):
+        value = os.environ.get(name, "")
+        if len(value) >= 8 and value in text:
+            text = text.replace(value, "***")
+    return text
+
+
 def calculate_backoff(
     attempt: int,
     base_delay: float = 1.0,
@@ -1105,6 +1178,44 @@ def checkpoint_and_notify_exhaustion(
     return checkpoint_data
 
 
+def _post_agent_failure_notice(
+    message: str,
+    checkpoint_context: Optional[Dict[str, Any]],
+) -> None:
+    """Posts a short failure notice where an agent produced no output anywhere.
+
+    Every attempt running the prompt came back empty or print-timed-out, so there is no agent text
+    to relay. The comment still had to say something, because an execution that ends without any
+    trace looks exactly like one that was never run.
+
+    Args:
+        message: The failure reason, already redacted.
+        checkpoint_context: Context carrying the target issue/PR and repository.
+    """
+    if not checkpoint_context:
+        return
+    issue_number = checkpoint_context.get("issue_number")
+    if not issue_number:
+        return
+    repo = checkpoint_context.get("repo") or os.environ.get(
+        "GITHUB_REPOSITORY", "marius-patrik/DarkFactory"
+    )
+    body = (
+        "<!-- darkfactory-agent -->\n"
+        "### DarkFactory Agent Execution Error\n\n"
+        f"{redact_secrets(message)}"
+    )
+    try:
+        if checkpoint_context.get("is_pr"):
+            run_gh(["pr", "comment", str(issue_number), "--body", body], repo=repo)
+        else:
+            run_gh(["issue", "comment", str(issue_number), "--body", body], repo=repo)
+    except (
+        Exception
+    ) as e:  # noqa: BLE001 - the run is already failing; a notice must not replace it
+        print(f"Notice: Failed to post agent output failure notice: {e}", file=sys.stderr)
+
+
 def run_agent_prompt(
     prompt: str,
     model: Optional[str] = None,
@@ -1136,6 +1247,10 @@ def run_agent_prompt(
     Returns:
         Agent text output, or an explicit error description prefixed
         ``[DarkFactory Agent Execution Error]``.
+
+    Raises:
+        RuntimeError: When every attempt exits cleanly but produces no usable output, after a
+            short failure notice is posted on the checkpoint context's issue or pull request.
     """
     attempts = resolve_attempts(model=model)
 
@@ -1151,6 +1266,7 @@ def run_agent_prompt(
     base_env.setdefault("TERM", "xterm-256color")
     last_error_detail = ""
     tried: List[str] = []
+    saw_no_output = False
 
     for index, attempt in enumerate(attempts):
         harness, current_model = attempt.harness, attempt.model
@@ -1186,9 +1302,6 @@ def run_agent_prompt(
         for retry in range(max_retries + 1):
             try:
                 res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
-                if len(tried) > 1:
-                    print(f"Succeeded on {label} after {len(tried) - 1} exhausted attempt(s).")
-                return res.stdout.strip()
             except FileNotFoundError:
                 print(
                     f"Harness binary {harness.binary!r} vanished between resolution and "
@@ -1241,6 +1354,48 @@ def run_agent_prompt(
                 err = f"[DarkFactory Agent Execution Error]: Unexpected failure executing {label}: {e}"
                 print(err, file=sys.stderr)
                 return err
+
+            output = (res.stdout or "").strip()
+            # Timeout wording is only trusted from stderr: an agent's real answer may discuss timeouts.
+            if not output or is_print_timeout(res.stderr or ""):
+                # A harness that exits 0 with no usable text is a failed attempt, not a perfect
+                # answer: `agy --print-timeout` spends its budget and exits 0 with empty output,
+                # and posting that empty shell was the whole bug. It rotates exactly like quota -
+                # waiting cannot fix a spent time budget - and if nothing produces text anywhere,
+                # the run raises below instead of reporting success over an empty shell.
+                saw_no_output = True
+                tail = _bounded_tail(res.stderr or "")
+                detail = redact_secrets(tail) or f"{label} produced no output"
+                last_error_detail = detail
+                where = (
+                    "Moving to the next attempt."
+                    if rotation_available
+                    else "Nothing left to rotate to."
+                )
+                print(
+                    f"No usable output from {label} (exit 0, empty or print-timed-out); "
+                    f"stderr tail: {detail[:400]}. {where}",
+                    file=sys.stderr,
+                )
+                break
+
+            if len(tried) > 1:
+                print(f"Succeeded on {label} after {len(tried) - 1} exhausted attempt(s).")
+            return output
+
+    if saw_no_output:
+        # Every attempt produced nothing usable. This is not quota - quota blocks gracefully with
+        # a checkpoint - it is the pipeline silently succeeding on an empty shell, which must fail
+        # the run instead so the workflow turns red rather than "passing" with vacuous comments.
+        notice = (
+            "[DarkFactory Agent Execution Error]: No usable agent output was produced "
+            f"across every attempt ({', '.join(tried)}): "
+            f"{last_error_detail or 'empty output'}"
+        )
+        notice = redact_secrets(notice)
+        print(notice, file=sys.stderr)
+        _post_agent_failure_notice(notice, checkpoint_context)
+        raise RuntimeError(notice)
 
     err = (
         f"[DarkFactory Agent Execution Error]: Quota exhausted across every harness and model "
