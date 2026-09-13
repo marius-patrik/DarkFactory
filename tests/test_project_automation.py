@@ -896,10 +896,50 @@ class TestRateLimitingAndIncrementalBudget:
             lambda pid, iid, fid, oid: edited.append((iid, oid)) or True,
         )
 
-        client.track("https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456")
+        client.track(
+            "https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456", fast_path=True
+        )
 
         # Must NOT have fetched existing board items
         assert load_called == []
         # Must have added directly with content_id and updated status
         assert added == [("PVT_123", "NODE_456")]
         assert edited == [("item-99", "opt-1")]
+
+    def test_historical_reconciliation_preloads_and_diffs_in_memory_without_redundant_mutations(
+        self, monkeypatch
+    ):
+        """In historical reconciliation (fast_path=False), board cache is preloaded and matching items require 0 mutations."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        # Preloaded cache with 1 matching item and 1 outdated item
+        client._items_cache = {
+            "https://github.com/o/r/issues/1": ("item-1", "Done"),
+            "https://github.com/o/r/issues/2": ("item-2", "Backlog"),
+        }
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-done")
+        client._status_field_id = "f-1"
+
+        mutations = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: mutations.append((iid, oid)) or True,
+        )
+        monkeypatch.setattr(
+            client.graphql,
+            "add_item",
+            lambda pid, cid: pytest.fail("add_item should not be called for existing items"),
+        )
+
+        # 1. Matching historical item -> 0 mutations
+        client.track(
+            "https://github.com/o/r/issues/1", "Done", content_id="NODE_1", fast_path=False
+        )
+        assert mutations == []
+
+        # 2. Outdated historical item -> exactly 1 status edit
+        client.track(
+            "https://github.com/o/r/issues/2", "Done", content_id="NODE_2", fast_path=False
+        )
+        assert mutations == [("item-2", "opt-done")]

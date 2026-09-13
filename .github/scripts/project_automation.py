@@ -656,7 +656,7 @@ class GitHubGraphQLClient:
             )
             return []
 
-    def fetch_board_items(self, project_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def fetch_board_items(self, project_id: str, limit: int = 1000) -> List[Dict[str, Any]]:
         """Fetches items of a project board with lean projections to minimize GraphQL complexity cost.
 
         Args:
@@ -989,6 +989,7 @@ class GitHubProjectClient:
         self._status_field_id: Optional[str] = os.environ.get("PROJECT_STATUS_FIELD_ID") or None
         self._status_options: Optional[Dict[str, str]] = None
         self._items_cache: Optional[Dict[str, Tuple[str, Optional[str]]]] = None
+        self._raw_items_cache: Optional[List[Dict[str, Any]]] = None
 
     def run_gh(self, args: List[str]) -> str:
         """Runs a legacy `gh` command (provided for backward compatibility with tests)."""
@@ -1148,17 +1149,19 @@ class GitHubProjectClient:
             return self._items_cache
 
         try:
-            items = self.graphql.fetch_board_items(self.project_id)
+            items = self.graphql.fetch_board_items(self.project_id, limit=1000)
+            self._raw_items_cache = items
             for item in items:
                 item_id = item.get("id")
                 content = item.get("content") or {}
                 content_url = content.get("url")
                 node_id = content.get("id")
                 number = content.get("number")
-                repo_name = (content.get("repository") or {}).get("nameWithOwner")
-
-                if repo_name and number and node_id:
-                    self.rest._node_id_cache[(repo_name, number)] = node_id
+                if content_url and number and node_id:
+                    match = URL_PATTERN.match(content_url)
+                    if match:
+                        owner, repo_name, _ = match.groups()
+                        self.rest._node_id_cache[(f"{owner}/{repo_name}", number)] = node_id
 
                 # Resolve current Status value
                 status_name = None
@@ -1272,13 +1275,29 @@ class GitHubProjectClient:
                 return False
         return True
 
-    def track(self, url: str, status: str, content_id: Optional[str] = None) -> None:
-        """Adds a url to this board and sets its status with check-before-write idempotency.
+    def track(
+        self,
+        url: str,
+        status: str,
+        content_id: Optional[str] = None,
+        fast_path: bool = False,
+    ) -> None:
+        """Tracks the item at `url`, ensuring it is on the board with `status`.
+
+        Path 1 (Pipeline Events):
+            When fast_path=True and content_id is provided, directly adds the item
+            (idempotent) and edits status, avoiding any expensive board item queries.
+
+        Path 2 (Historical Reconciliation):
+            When fast_path=False, checks in-memory cache populated by load_existing_items().
+            If status already matches, returns immediately (0 mutations, 0 queries).
+            Only out-of-date or missing items incur mutations within MUTATION_BUDGET.
 
         Args:
             url: Issue or pull request html url.
             status: Target status name.
             content_id: Optional GraphQL node id of the issue or PR.
+            fast_path: If True, executes direct single-item addition without loading board items.
         """
         if not can_mutate():
             if MUTATIONS_PERFORMED >= MUTATION_BUDGET:
@@ -1287,7 +1306,7 @@ class GitHubProjectClient:
                 )
             return
 
-        # Fast path 1: In-memory cache hit (item already tracked or loaded in this process)
+        # Path 2 & General In-memory cache hit: Check if item already exists in local cache
         if self._items_cache is not None and url in self._items_cache:
             item_id, current_status = self._items_cache[url]
             if current_status == status:
@@ -1298,9 +1317,13 @@ class GitHubProjectClient:
                 print(f"{url} -> {status} (project {self.project_number})")
             return
 
-        # Fast path 2: Direct addition with content_id (bypasses expensive board item fetching)
-        # In GitHub Projects v2, addProjectV2ItemById is idempotent and returns the existing item if present.
-        if content_id and self.project_id and type(self).run_gh == GitHubProjectClient.run_gh:
+        # Path 1: Fast path for real-time pipeline events (single item, bypasses board queries)
+        if (
+            fast_path
+            and content_id
+            and self.project_id
+            and type(self).run_gh == GitHubProjectClient.run_gh
+        ):
             item_id = self.graphql.add_item(self.project_id, content_id)
             if item_id:
                 record_mutation()
@@ -1383,10 +1406,22 @@ class BoardGroup:
         """Project number of the first board, or default project number."""
         return self.clients[0].project_number if self.clients else PROJECT_NUMBER
 
-    def track(self, url: str, status: str, content_id: Optional[str] = None) -> None:
+    def track(
+        self,
+        url: str,
+        status: str,
+        content_id: Optional[str] = None,
+        fast_path: bool = False,
+    ) -> None:
         """Tracks the URL across every board in the group."""
         for client in self.clients:
-            _safe_track(client, url, status, content_id=content_id)
+            _safe_track(client, url, status, content_id=content_id, fast_path=fast_path)
+
+    def load_existing_items(self) -> None:
+        """Preloads existing board items across all boards in the group."""
+        for client in self.clients:
+            if hasattr(client, "load_existing_items"):
+                client.load_existing_items()
 
     def set_status_label(
         self,
@@ -1422,12 +1457,21 @@ def _labels_of(payload_entity: Dict[str, Any]) -> List[str]:
     ]
 
 
-def _safe_track(client: Any, url: str, status: str, content_id: Optional[str] = None) -> None:
-    """Tracks a URL safely whether client accepts content_id kwarg or not."""
+def _safe_track(
+    client: Any,
+    url: str,
+    status: str,
+    content_id: Optional[str] = None,
+    fast_path: bool = False,
+) -> None:
+    """Tracks a URL safely whether client accepts content_id/fast_path kwargs or not."""
     try:
-        client.track(url, status, content_id=content_id)
+        client.track(url, status, content_id=content_id, fast_path=fast_path)
     except TypeError:
-        client.track(url, status)
+        try:
+            client.track(url, status, content_id=content_id)
+        except TypeError:
+            client.track(url, status)
 
 
 def _safe_close_issue(client: Any, repo: str, issue_number: int, reason: str = "completed") -> None:
@@ -1467,12 +1511,12 @@ def _handle_issue_event(payload: Dict[str, Any], client: Any) -> None:
 
     if action in ("opened", "reopened"):
         status = "ToDo" if action == "reopened" else determine_status_from_labels(labels)
-        _safe_track(client, issue_url, status, content_id=node_id)
+        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
         if issue_number:
             _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
     elif action in ("labeled", "unlabeled"):
         status = determine_status_from_labels(labels)
-        _safe_track(client, issue_url, status, content_id=node_id)
+        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
         if issue_number:
             _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
     elif action == "closed":
@@ -1484,7 +1528,7 @@ def _handle_issue_event(payload: Dict[str, Any], client: Any) -> None:
             status = "Dropped"
         else:
             status = "Done"
-        _safe_track(client, issue_url, status, content_id=node_id)
+        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
         if issue_number:
             _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
 
@@ -1505,21 +1549,31 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
         status = determine_status_from_labels(labels)
         if status == "ToDo":
             status = "In Progress"
-        _safe_track(client, pr_url, status, content_id=node_id)
+        _safe_track(client, pr_url, status, content_id=node_id, fast_path=True)
         for issue_num in bound_issues:
             _safe_set_status_label(client, repo, issue_num, "In Progress")
-            _safe_track(client, f"https://github.com/{repo}/issues/{issue_num}", "In Progress")
+            _safe_track(
+                client,
+                f"https://github.com/{repo}/issues/{issue_num}",
+                "In Progress",
+                fast_path=True,
+            )
 
     elif action == "closed":
         pr_status = "Done" if merged else determine_status_from_labels(labels)
         if not merged and pr_status in ("ToDo", "In Progress"):
             pr_status = "Dropped"
-        _safe_track(client, pr_url, pr_status, content_id=node_id)
+        _safe_track(client, pr_url, pr_status, content_id=node_id, fast_path=True)
 
         if merged:
             for issue_num in bound_issues:
                 _safe_set_status_label(client, repo, issue_num, "Done")
-                _safe_track(client, f"https://github.com/{repo}/issues/{issue_num}", "Done")
+                _safe_track(
+                    client,
+                    f"https://github.com/{repo}/issues/{issue_num}",
+                    "Done",
+                    fast_path=True,
+                )
                 _safe_close_issue(client, repo, issue_num, reason="completed")
 
 
@@ -1536,7 +1590,12 @@ def _handle_push_event(payload: Dict[str, Any], client: Any) -> None:
     for commit in payload.get("commits", []):
         for issue_num in extract_bound_issues(commit.get("message", "")):
             _safe_set_status_label(client, repo, issue_num, "Done")
-            _safe_track(client, f"https://github.com/{repo}/issues/{issue_num}", "Done")
+            _safe_track(
+                client,
+                f"https://github.com/{repo}/issues/{issue_num}",
+                "Done",
+                fast_path=True,
+            )
             _safe_close_issue(client, repo, issue_num, reason="completed")
 
 
@@ -1566,14 +1625,25 @@ def settled_status(
 def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) -> int:
     """Reconciles repository issues and PRs onto linked boards via REST API.
 
-    Defaults to 'open' issues and PRs to preserve quota and avoid redundant historical queries.
-    Can be overridden via state argument or PROJECT_RECONCILE_STATE env var.
+    Enforces all historical items (open, closed, merged, superseded, dropped)
+    across all boards while using in-memory diffing to skip already-settled items
+    with zero mutations.
     """
     if not can_reconcile():
+        print(
+            f"Notice: Quota reserve preserved ({GRAPHQL_REMAINING} remaining); skipping bulk reconciliation.",
+            file=sys.stderr,
+        )
         return 0
 
     if state is None:
         state = os.environ.get("PROJECT_RECONCILE_STATE", "all")
+
+    # Preload board caches across all boards so in-memory diffing avoids redundant calls
+    if isinstance(client, BoardGroup):
+        client.load_existing_items()
+    elif hasattr(client, "load_existing_items"):
+        client.load_existing_items()
 
     tracked = 0
 
@@ -1616,7 +1686,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
                             labels=labels,
                             state_reason=state_reason,
                         ) or ("Done" if is_merged else "Dropped")
-                    _safe_track(client, entry["url"], status)
+                    _safe_track(client, entry["url"], status, fast_path=False)
                     tracked += 1
             except Exception as exc:
                 if is_rate_limited(exc):
@@ -1626,7 +1696,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
         return tracked
 
     rest = getattr(client, "rest", None) or GitHubRestClient()
-    items = rest.list_issues_and_prs(repo, state=state, limit=100)
+    items = rest.list_issues_and_prs(repo, state=state, limit=500)
 
     for entry in items:
         if not can_mutate():
@@ -1654,7 +1724,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
             ) or ("Done" if is_merged else "Dropped")
 
         if url:
-            _safe_track(client, url, status, content_id=node_id)
+            _safe_track(client, url, status, content_id=node_id, fast_path=False)
             tracked += 1
             # Small pacing delay between mutations to avoid secondary rate limits
             time.sleep(0.05)
@@ -1724,7 +1794,9 @@ def reconcile_unassigned_statuses(client: Any) -> None:
     if not client.project_id:
         return
 
-    items_data = graphql.fetch_board_items(client.project_id)
+    items_data = getattr(client, "_raw_items_cache", None)
+    if items_data is None:
+        items_data = graphql.fetch_board_items(client.project_id, limit=1000)
     existing_items = client._items_cache if client._items_cache is not None else {}
     for item in items_data:
         if not can_mutate():
@@ -1789,7 +1861,7 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
             )
             return
 
-        reconcile_state = os.environ.get("PROJECT_RECONCILE_STATE", "open")
+        reconcile_state = os.environ.get("PROJECT_RECONCILE_STATE", "all")
         repos_to_reconcile = [os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)]
         try:
             import manifest as manifest_module
