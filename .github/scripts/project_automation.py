@@ -907,13 +907,20 @@ def _env_for(args: List[str]) -> Dict[str, str]:
     return env
 
 
-def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
+def resolve_boards(
+    owner: str = PROJECT_OWNER,
+    *,
+    include_scoped: bool = True,
+    include_global: bool = True,
+) -> List[int]:
     """Finds the project numbers of every board this repository is linked to.
 
     Discovers projects via GraphQL and resolves titles declared in the manifest.
 
     Args:
         owner: Project owner login.
+        include_scoped: Include this repository's own scoped board.
+        include_global: Include the Global board that aggregates every repository.
 
     Returns:
         Project numbers, in declaration order, without duplicates.
@@ -922,8 +929,10 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         import manifest as manifest_module
 
         loaded = manifest_module.load(".")
-        titles = [loaded.project_title]
-        if loaded.global_board_title and loaded.global_board_title not in titles:
+        titles = []
+        if include_scoped:
+            titles.append(loaded.project_title)
+        if include_global and loaded.global_board_title and loaded.global_board_title not in titles:
             titles.append(loaded.global_board_title)
     except Exception as exc:
         print(f"Could not read the board declaration: {_detail(exc)}", file=sys.stderr)
@@ -1870,7 +1879,8 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
             return
 
         reconcile_state = os.environ.get("PROJECT_RECONCILE_STATE", "all")
-        repos_to_reconcile = [os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)]
+        current_repo = os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)
+        repos_to_reconcile = [current_repo]
         try:
             import manifest as manifest_module
 
@@ -1882,11 +1892,27 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
         except Exception:
             pass
 
+        # Historical reconciliation walks every installed repository, but only the current
+        # repository's own items belong on its scoped board - another repository's issues and
+        # pull requests must land on the Global board only. `global_client` is built lazily (and
+        # once) the first time it is needed, from a scoped-out `resolve_boards()` call.
+        global_client: Optional[BoardGroup] = None
+
         for r in repos_to_reconcile:
             if not can_reconcile():
                 break
-            if r:
-                reconcile_membership(client, r, state=reconcile_state)
+            if not r:
+                continue
+            if r == current_repo:
+                repo_client = client
+            else:
+                if global_client is None:
+                    global_numbers = resolve_boards(include_scoped=False)
+                    global_client = BoardGroup(
+                        [GitHubProjectClient(project_number=n) for n in global_numbers]
+                    )
+                repo_client = global_client
+            reconcile_membership(repo_client, r, state=reconcile_state)
         if can_reconcile():
             reconcile_unassigned_statuses(client)
 
