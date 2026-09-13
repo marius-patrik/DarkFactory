@@ -134,6 +134,23 @@ FAILURES: List[str] = []
 #: Rate limit detection and graceful backoff flag.
 RATE_LIMITED = False
 
+#: Remaining GraphQL points reported by GitHub x-ratelimit-remaining header.
+GRAPHQL_REMAINING: Optional[int] = None
+
+#: Minimum GraphQL quota required to allow bulk reconciliation scans.
+try:
+    QUOTA_RECONCILIATION_THRESHOLD = int(
+        os.environ.get("PROJECT_QUOTA_RECONCILIATION_THRESHOLD", "1000")
+    )
+except (ValueError, TypeError):
+    QUOTA_RECONCILIATION_THRESHOLD = 1000
+
+#: Minimum GraphQL quota required for any operation.
+try:
+    QUOTA_MINIMUM = int(os.environ.get("PROJECT_QUOTA_MINIMUM", "50"))
+except (ValueError, TypeError):
+    QUOTA_MINIMUM = 50
+
 #: Mutation cap per execution to ensure incremental progress without rate-limit spikes.
 try:
     MUTATION_BUDGET = int(os.environ.get("PROJECT_MUTATION_BUDGET", "25"))
@@ -163,7 +180,25 @@ def record_mutation() -> None:
 
 def can_mutate() -> bool:
     """Checks whether further mutations are permitted within budget and rate limits."""
-    return not RATE_LIMITED and MUTATIONS_PERFORMED < MUTATION_BUDGET
+    if RATE_LIMITED:
+        return False
+    if GRAPHQL_REMAINING is not None and GRAPHQL_REMAINING <= QUOTA_MINIMUM:
+        return False
+    return MUTATIONS_PERFORMED < MUTATION_BUDGET
+
+
+def can_reconcile() -> bool:
+    """Checks whether bulk reconciliation is safe given current quota reserves."""
+    if RATE_LIMITED:
+        return False
+    if GRAPHQL_REMAINING is not None and GRAPHQL_REMAINING < QUOTA_RECONCILIATION_THRESHOLD:
+        print(
+            f"Notice: GraphQL quota below reserve ({GRAPHQL_REMAINING} < {QUOTA_RECONCILIATION_THRESHOLD}); "
+            f"skipping bulk reconciliation to preserve quota for real-time events.",
+            file=sys.stderr,
+        )
+        return False
+    return can_mutate()
 
 
 def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
@@ -493,6 +528,7 @@ class GitHubGraphQLClient:
             or ""
         )
         self.endpoint = "https://api.github.com/graphql"
+        self._projects_cache: Optional[Dict[str, Dict[str, Any]]] = None
 
     def execute(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Executes a GraphQL query or mutation with error checking and rate-limit tracking.
@@ -522,8 +558,11 @@ class GitHubGraphQLClient:
                 rem = resp.headers.get("x-ratelimit-remaining")
                 if rem is not None:
                     try:
-                        if int(rem) <= 20:
-                            mark_rate_limited()
+                        val = int(rem)
+                        global GRAPHQL_REMAINING
+                        GRAPHQL_REMAINING = val
+                        if val <= QUOTA_MINIMUM:
+                            mark_rate_limited(f"GraphQL quota exhausted ({val} remaining)")
                     except ValueError:
                         pass
                 content = resp.read().decode("utf-8")
@@ -544,33 +583,59 @@ class GitHubGraphQLClient:
         return parsed.get("data", {})
 
     def resolve_projects(self, owner: str) -> Dict[str, Dict[str, Any]]:
-        """Discovers all Projects v2 for a user or organization.
+        """Discovers all Projects v2 for a user or organization with lean projection and in-process caching.
 
         Args:
             owner: User or organization login.
 
         Returns:
-            Mapping of project title to metadata dict (id, number, fields, etc.).
+            Mapping of project title to metadata dict (id, number, etc.).
         """
+        if self._projects_cache is not None:
+            return self._projects_cache
+
         query = """
         query GetProjects($login: String!) {
           user(login: $login) {
-            projectsV2(first: 50) {
+            projectsV2(first: 20) {
               nodes {
                 id
                 number
                 title
-                fields(first: 30) {
-                  nodes {
-                    ... on ProjectV2SingleSelectField {
+              }
+            }
+          }
+        }
+        """
+        try:
+            data = self.execute(query, {"login": owner})
+            nodes = data.get("user", {}).get("projectsV2", {}).get("nodes", [])
+            self._projects_cache = {
+                node["title"]: node for node in nodes if node and "title" in node
+            }
+            return self._projects_cache
+        except Exception as exc:
+            if is_rate_limited(exc):
+                mark_rate_limited()
+            print(f"Error resolving projects for {owner}: {_detail(exc)}", file=sys.stderr)
+            return {}
+
+    def get_project_fields(self, project_id: str) -> List[Dict[str, Any]]:
+        """Fetches single-select fields and options for a specific project node ID."""
+        query = """
+        query GetProjectFields($projectId: ID!) {
+          node(id: $projectId) {
+            ... on ProjectV2 {
+              fields(first: 20) {
+                nodes {
+                  ... on ProjectV2SingleSelectField {
+                    id
+                    name
+                    options {
                       id
                       name
-                      options {
-                        id
-                        name
-                        color
-                        description
-                      }
+                      color
+                      description
                     }
                   }
                 }
@@ -580,17 +645,19 @@ class GitHubGraphQLClient:
         }
         """
         try:
-            data = self.execute(query, {"login": owner})
-            nodes = data.get("user", {}).get("projectsV2", {}).get("nodes", [])
-            return {node["title"]: node for node in nodes if node and "title" in node}
+            data = self.execute(query, {"projectId": project_id})
+            proj_node = data.get("node") or {}
+            return proj_node.get("fields", {}).get("nodes", [])
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
-            print(f"Error resolving projects for {owner}: {_detail(exc)}", file=sys.stderr)
-            return {}
+            print(
+                f"Error fetching project fields for {project_id}: {_detail(exc)}", file=sys.stderr
+            )
+            return []
 
-    def fetch_board_items(self, project_id: str, limit: int = 500) -> List[Dict[str, Any]]:
-        """Fetches all items of a project board with full content projections.
+    def fetch_board_items(self, project_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Fetches items of a project board with lean projections to minimize GraphQL complexity cost.
 
         Args:
             project_id: Project node ID.
@@ -603,14 +670,14 @@ class GitHubGraphQLClient:
         query GetBoardItems($projectId: ID!, $cursor: String) {
           node(id: $projectId) {
             ... on ProjectV2 {
-              items(first: 100, after: $cursor) {
+              items(first: 50, after: $cursor) {
                 pageInfo {
                   hasNextPage
                   endCursor
                 }
                 nodes {
                   id
-                  fieldValues(first: 20) {
+                  fieldValues(first: 8) {
                     nodes {
                       ... on ProjectV2ItemFieldSingleSelectValue {
                         name
@@ -632,13 +699,10 @@ class GitHubGraphQLClient:
                       title
                       state
                       stateReason
-                      labels(first: 20) {
+                      labels(first: 10) {
                         nodes {
                           name
                         }
-                      }
-                      repository {
-                        nameWithOwner
                       }
                     }
                     ... on PullRequest {
@@ -648,13 +712,10 @@ class GitHubGraphQLClient:
                       title
                       state
                       merged
-                      labels(first: 20) {
+                      labels(first: 10) {
                         nodes {
                           name
                         }
-                      }
-                      repository {
-                        nameWithOwner
                       }
                     }
                   }
@@ -970,17 +1031,9 @@ class GitHubProjectClient:
         if self._status_options is not None and self._status_field_id is not None:
             return
 
-        projects = self.graphql.resolve_projects(self.owner)
-        target_proj = None
-        for proj in projects.values():
-            if proj.get("number") == self.project_number:
-                target_proj = proj
-                break
-
         fields = []
-        if target_proj:
-            self._project_id = self._project_id or target_proj.get("id")
-            fields = target_proj.get("fields", {}).get("nodes", [])
+        if self.project_id:
+            fields = self.graphql.get_project_fields(self.project_id)
 
         # Fallback to run_gh if fields empty (e.g. in legacy tests)
         if not fields:
@@ -1234,6 +1287,31 @@ class GitHubProjectClient:
                 )
             return
 
+        # Fast path 1: In-memory cache hit (item already tracked or loaded in this process)
+        if self._items_cache is not None and url in self._items_cache:
+            item_id, current_status = self._items_cache[url]
+            if current_status == status:
+                return
+            if self.edit_status(item_id, status):
+                self._items_cache[url] = (item_id, status)
+                record_mutation()
+                print(f"{url} -> {status} (project {self.project_number})")
+            return
+
+        # Fast path 2: Direct addition with content_id (bypasses expensive board item fetching)
+        # In GitHub Projects v2, addProjectV2ItemById is idempotent and returns the existing item if present.
+        if content_id and self.project_id and type(self).run_gh == GitHubProjectClient.run_gh:
+            item_id = self.graphql.add_item(self.project_id, content_id)
+            if item_id:
+                record_mutation()
+                if self.edit_status(item_id, status):
+                    record_mutation()
+                    if self._items_cache is not None:
+                        self._items_cache[url] = (item_id, status)
+                    print(f"{url} -> {status} (project {self.project_number})")
+            return
+
+        # Fallback path 3: Check existing items via cache or fetch
         existing = self.load_existing_items()
         if url in existing:
             item_id, current_status = existing[url]
@@ -1485,8 +1563,18 @@ def settled_status(
     return "Dropped"
 
 
-def reconcile_membership(client: Any, repo: str) -> int:
-    """Reconciles missing repository issues and PRs onto linked boards via REST API."""
+def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) -> int:
+    """Reconciles repository issues and PRs onto linked boards via REST API.
+
+    Defaults to 'open' issues and PRs to preserve quota and avoid redundant historical queries.
+    Can be overridden via state argument or PROJECT_RECONCILE_STATE env var.
+    """
+    if not can_reconcile():
+        return 0
+
+    if state is None:
+        state = os.environ.get("PROJECT_RECONCILE_STATE", "all")
+
     tracked = 0
 
     target = client.clients[0] if isinstance(client, BoardGroup) and client.clients else client
@@ -1500,7 +1588,7 @@ def reconcile_membership(client: Any, repo: str) -> int:
                         "--repo",
                         repo,
                         "--state",
-                        "all",
+                        state,
                         "--limit",
                         "500",
                         "--json",
@@ -1513,14 +1601,14 @@ def reconcile_membership(client: Any, repo: str) -> int:
                 )
                 for entry in json.loads(raw or "[]"):
                     labels = [l.get("name", "") for l in entry.get("labels", []) or []]
-                    state = str(entry.get("state", "")).upper()
-                    is_closed = state in ("CLOSED", "MERGED")
+                    state_val = str(entry.get("state", "")).upper()
+                    is_closed = state_val in ("CLOSED", "MERGED")
                     if not is_closed:
                         status = determine_status_from_labels(labels)
                         if kind == "pr" and status == "ToDo":
                             status = "In Progress"
                     else:
-                        is_merged = state == "MERGED" or bool(entry.get("mergedAt"))
+                        is_merged = state_val == "MERGED" or bool(entry.get("mergedAt"))
                         state_reason = entry.get("stateReason")
                         status = settled_status(
                             closed=True,
@@ -1538,7 +1626,7 @@ def reconcile_membership(client: Any, repo: str) -> int:
         return tracked
 
     rest = getattr(client, "rest", None) or GitHubRestClient()
-    items = rest.list_issues_and_prs(repo, state="all", limit=500)
+    items = rest.list_issues_and_prs(repo, state=state, limit=100)
 
     for entry in items:
         if not can_mutate():
@@ -1547,9 +1635,9 @@ def reconcile_membership(client: Any, repo: str) -> int:
         url = entry.get("html_url")
         node_id = entry.get("node_id")
         labels = entry.get("labels", [])
-        state = str(entry.get("state", "")).upper()
+        state_val = str(entry.get("state", "")).upper()
         is_pr = bool(entry.get("pull_request"))
-        is_closed = state == "CLOSED"
+        is_closed = state_val == "CLOSED"
 
         if not is_closed:
             status = determine_status_from_labels(labels)
@@ -1632,12 +1720,12 @@ def reconcile_unassigned_statuses(client: Any) -> None:
             print(f"Status reconciliation notice: {_detail(exc)}", file=sys.stderr)
         return
 
-    existing_items = client.load_existing_items()
     graphql = getattr(client, "graphql", None) or GitHubGraphQLClient()
     if not client.project_id:
         return
 
     items_data = graphql.fetch_board_items(client.project_id)
+    existing_items = client._items_cache if client._items_cache is not None else {}
     for item in items_data:
         if not can_mutate():
             break
@@ -1655,8 +1743,8 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                 break
 
         labels = [l.get("name") for l in content.get("labels", {}).get("nodes", []) if l]
-        state = str(content.get("state", "")).upper()
-        closed = state in ("CLOSED", "MERGED")
+        state_val = str(content.get("state", "")).upper()
+        closed = state_val in ("CLOSED", "MERGED")
         merged = bool(content.get("merged", False))
         state_reason = content.get("stateReason")
 
@@ -1694,6 +1782,14 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
     elif event_name == "push":
         _handle_push_event(payload, client)
     elif event_name in ("workflow_dispatch", "schedule"):
+        if not can_reconcile():
+            print(
+                "Notice: Quota reserve preserved; skipping scheduled bulk reconciliation.",
+                file=sys.stderr,
+            )
+            return
+
+        reconcile_state = os.environ.get("PROJECT_RECONCILE_STATE", "open")
         repos_to_reconcile = [os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)]
         try:
             import manifest as manifest_module
@@ -1707,9 +1803,12 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
             pass
 
         for r in repos_to_reconcile:
+            if not can_reconcile():
+                break
             if r:
-                reconcile_membership(client, r)
-        reconcile_unassigned_statuses(client)
+                reconcile_membership(client, r, state=reconcile_state)
+        if can_reconcile():
+            reconcile_unassigned_statuses(client)
 
 
 def main() -> None:

@@ -24,10 +24,12 @@ def reset_global_state():
     """Resets global rate limit and mutation tracking between tests."""
     project_automation.RATE_LIMITED = False
     project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
     project_automation.FAILURES = []
     yield
     project_automation.RATE_LIMITED = False
     project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
     project_automation.FAILURES = []
 
 
@@ -855,3 +857,49 @@ class TestRateLimitingAndIncrementalBudget:
         assert ("GET", "/repos/o/r/issues/42") in called_urls
         assert ("PUT", "/repos/o/r/issues/42/labels") in called_urls
         assert payloads == [{"labels": ["bug", "area:governance", "Done"]}]
+
+    def test_quota_reconciliation_threshold_blocks_bulk_scan(self, monkeypatch):
+        """When GraphQL quota is below 1000, bulk reconciliation is deferred to preserve event quota."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 850)
+        assert project_automation.can_reconcile() is False
+        assert project_automation.can_mutate() is True
+
+        # When quota is above threshold, reconciliation is permitted
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 1500)
+        assert project_automation.can_reconcile() is True
+
+    def test_quota_minimum_blocks_all_mutations(self, monkeypatch):
+        """When GraphQL quota drops to 50 or below, all mutations are stopped."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 45)
+        assert project_automation.can_mutate() is False
+        assert project_automation.can_reconcile() is False
+
+    def test_track_with_content_id_uses_fast_path_without_loading_items(self, monkeypatch):
+        """When content_id is provided, track() bypasses expensive board item fetching."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-1")
+        client._status_field_id = "f-1"
+
+        load_called = []
+        monkeypatch.setattr(client, "load_existing_items", lambda: load_called.append(True) or {})
+
+        added = []
+        monkeypatch.setattr(
+            client.graphql, "add_item", lambda pid, cid: added.append((pid, cid)) or "item-99"
+        )
+
+        edited = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: edited.append((iid, oid)) or True,
+        )
+
+        client.track("https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456")
+
+        # Must NOT have fetched existing board items
+        assert load_called == []
+        # Must have added directly with content_id and updated status
+        assert added == [("PVT_123", "NODE_456")]
+        assert edited == [("item-99", "opt-1")]
