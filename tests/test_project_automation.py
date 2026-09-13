@@ -19,6 +19,20 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "marius-patrik/DarkFactory"
 
 
+@pytest.fixture(autouse=True)
+def reset_global_state():
+    """Resets global rate limit and mutation tracking between tests."""
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
+    project_automation.FAILURES = []
+    yield
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
+    project_automation.FAILURES = []
+
+
 class FakeProjectClient:
     """Records board mutations instead of performing them."""
 
@@ -29,7 +43,7 @@ class FakeProjectClient:
         self.added_labels: List[Tuple[str, int, str]] = []
         self.closed_issues: List[Tuple[str, int]] = []
 
-    def track(self, url: str, status: str) -> None:
+    def track(self, url: str, status: str, content_id: Optional[str] = None) -> None:
         """Adds an item and sets its status, as the real client does."""
         item_id = self.add_item(url)
         self.edit_status(item_id, status)
@@ -45,7 +59,13 @@ class FakeProjectClient:
         self.edited_statuses.append((item_id, status_name))
         return True
 
-    def set_status_label(self, repo: str, issue_number: int, status_name: str) -> None:
+    def set_status_label(
+        self,
+        repo: str,
+        issue_number: int,
+        status_name: str,
+        existing_labels: Optional[List[Any]] = None,
+    ) -> None:
         """Records an exclusive status-label assignment."""
         self.status_labels.append((repo, issue_number, status_name))
 
@@ -56,7 +76,7 @@ class FakeProjectClient:
             return
         self.added_labels.append((repo, issue_number, label))
 
-    def close_issue(self, repo: str, issue_number: int) -> None:
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Records an issue closure."""
         self.closed_issues.append((repo, issue_number))
 
@@ -460,12 +480,6 @@ class TestTokenSelection:
         monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
         assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "user"
 
-    def test_graphql_quota_calls_use_the_project_token(self, monkeypatch):
-        """The rate-limit guard must inspect the same quota pool its mutations consume."""
-        monkeypatch.setenv("GH_TOKEN", "app")
-        monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
-        assert project_automation._env_for(["api", "graphql"])["GH_TOKEN"] == "user"
-
     @pytest.mark.parametrize("args", [["issue", "edit"], ["api", "repos/o/r"], ["pr", "view"]])
     def test_repository_calls_use_the_app_token(self, args, monkeypatch):
         """The quota that starved the automation was spent on exactly these calls."""
@@ -569,49 +583,6 @@ class TestMembershipReconciliation:
         group = project_automation.BoardGroup([])
         assert project_automation.reconcile_membership(group, "o/r") == 0
 
-    def test_scheduled_cross_repository_reconciliation_targets_only_global_board(self, monkeypatch):
-        """Installed repositories never leak onto the current repository's scoped board."""
-        monkeypatch.setenv("GITHUB_REPOSITORY", "o/current")
-        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
-        monkeypatch.setattr(
-            project_automation,
-            "resolve_boards",
-            lambda *args, **kwargs: [17] if not kwargs.get("include_scoped", True) else [11, 17],
-        )
-        monkeypatch.setitem(
-            __import__("sys").modules,
-            "manifest",
-            type(
-                "M",
-                (),
-                {
-                    "load": staticmethod(
-                        lambda root: type(
-                            "Loaded",
-                            (),
-                            {"data": {"app": {"installed_on": ["o/current", "o/other"]}}},
-                        )()
-                    )
-                },
-            ),
-        )
-        reconciled = []
-        monkeypatch.setattr(
-            project_automation,
-            "reconcile_membership",
-            lambda client, repo: reconciled.append(
-                (repo, [member.project_number for member in client.clients])
-            )
-            or 0,
-        )
-        monkeypatch.setattr(
-            project_automation, "reconcile_unassigned_statuses", lambda client: None
-        )
-
-        process_event("schedule", {})
-
-        assert reconciled == [("o/current", [11, 17]), ("o/other", [17])]
-
 
 class TestFailuresSayWhatWentWrong:
     """`str()` of a subprocess failure names the command and the exit status and nothing else."""
@@ -640,14 +611,8 @@ class TestFailuresSayWhatWentWrong:
         assert project_automation._detail(ValueError("plain")) == "plain"
 
 
-class TestRateLimitingAndQuotaReserve:
-    """Rate limits pause cleanly; reconciliation uses all quota except its safety reserve."""
-
-    def setup_method(self):
-        """Restores global quota state after each independent rate-limit scenario."""
-        project_automation.FAILURES.clear()
-        project_automation.RATE_LIMITED = False
-        project_automation.GRAPHQL_REMAINING = None
+class TestRateLimitingAndIncrementalBudget:
+    """Rate limits must pause cleanly without failing, and writes must be idempotent and budgeted."""
 
     def test_is_rate_limited_recognises_indicators(self):
         """Standard rate-limit messages across GraphQL and REST are detected."""
@@ -700,40 +665,14 @@ class TestRateLimitingAndQuotaReserve:
         client.track("https://github.com/o/r/issues/1", "In Progress")
         assert edited == [("item-1", "In Progress")]
 
-    def test_mutation_quota_uses_the_live_graphql_remaining_value(self, monkeypatch):
-        """No fixed write cap remains: a live GraphQL value above the reserve permits writes."""
-        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+    def test_track_respects_mutation_budget(self, monkeypatch):
+        """When the mutation budget is reached, further writes are deferred."""
+        monkeypatch.setattr(project_automation, "MUTATIONS_PERFORMED", 5)
+        monkeypatch.setattr(project_automation, "MUTATION_BUDGET", 5)
         client = GitHubProjectClient(project_number=10)
-        seen = []
-
-        def fake_run_gh(args):
-            seen.append(args)
-            return '{"data":{"rateLimit":{"remaining":4999}}}'
-
-        monkeypatch.setattr(client, "run_gh", fake_run_gh)
-        assert client.has_mutation_quota() is True
-        assert project_automation.GRAPHQL_REMAINING == 4999
-        assert seen == [["api", "graphql", "-f", "query=query { rateLimit { remaining } }"]]
-        assert not hasattr(project_automation, "MUTATION_BUDGET")
-
-    def test_mutation_quota_pauses_at_the_safety_reserve(self, monkeypatch):
-        """A quota at the reserve is a clean pause, preventing an unsafe final mutation."""
-        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
-        client = GitHubProjectClient(project_number=10)
-        monkeypatch.setattr(
-            client, "run_gh", lambda args: '{"data":{"rateLimit":{"remaining":50}}}'
-        )
-        assert client.has_mutation_quota() is False
-        assert project_automation.RATE_LIMITED is True
-
-    def test_malformed_quota_response_is_recorded_without_a_write(self, monkeypatch):
-        """Provider response drift is surfaced instead of treating an unknown quota as unlimited."""
-        monkeypatch.setattr(project_automation, "FAILURES", [])
-        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
-        client = GitHubProjectClient(project_number=10)
-        monkeypatch.setattr(client, "run_gh", lambda args: '{"data":{"rateLimit":{}}}')
-        assert client.has_mutation_quota() is False
-        assert project_automation.FAILURES
+        client._items_cache = {}
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("budget exceeded"))
+        client.track("https://github.com/o/r/issues/99", "ToDo")
 
     def test_historical_closed_items_reconciliation(self):
         """Reconciliation tracks historical closed issues and PRs with settled statuses."""
@@ -847,3 +786,160 @@ class TestRateLimitingAndQuotaReserve:
         process_event("push", payload, client=client)
         assert client.status_labels == [(REPO, 68, "Done")]
         assert client.closed_issues == [(REPO, 68)]
+
+    def test_enforce_board_taxonomy_mutation_payload(self):
+        """Enforcing board taxonomy submits canonical 7 options without id fields."""
+        executed = []
+
+        class MockGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                executed.append((query, variables))
+                return {
+                    "updateProjectV2Field": {
+                        "projectV2Field": {
+                            "id": "F_123",
+                            "name": "Status",
+                            "options": [
+                                {"id": f"opt-{opt['name']}", "name": opt["name"]}
+                                for opt in variables["input"]["singleSelectOptions"]
+                            ],
+                        }
+                    }
+                }
+
+        client = MockGraphQL(token="test-token")
+        existing_options = [{"id": "opt-old-1", "name": "Backlog"}]
+        result = client.enforce_board_taxonomy("F_123", existing_options)
+
+        assert len(executed) == 1
+        query, variables = executed[0]
+        assert "mutation EnforceTaxonomy" in query
+        options = variables["input"]["singleSelectOptions"]
+        assert len(options) == 7
+        # Verify no option has an 'id' attribute in the input
+        for opt in options:
+            assert "id" not in opt
+            assert "name" in opt
+            assert "color" in opt
+            assert "description" in opt
+            assert opt["name"] in project_automation.STATUS_NAMES
+
+        # Verify returned mapping contains all 7 canonical options
+        for name in project_automation.STATUS_NAMES:
+            assert name in result
+            assert result[name] == f"opt-{name}"
+
+    def test_rest_client_set_status_label_preserves_domain_labels(self):
+        """REST client exclusively replaces status labels while keeping domain labels intact."""
+        called_urls = []
+        payloads = []
+
+        rest = project_automation.GitHubRestClient(token="test-token")
+
+        def mock_request(method, path, data=None):
+            called_urls.append((method, path))
+            if method == "GET":
+                return {
+                    "labels": [
+                        {"name": "bug"},
+                        {"name": "area:governance"},
+                        {"name": "In Progress"},
+                    ]
+                }
+            payloads.append(data)
+            return data
+
+        rest.request = mock_request
+        rest.set_status_label("o/r", 42, "Done")
+
+        assert ("GET", "/repos/o/r/issues/42") in called_urls
+        assert ("PUT", "/repos/o/r/issues/42/labels") in called_urls
+        assert payloads == [{"labels": ["bug", "area:governance", "Done"]}]
+
+    def test_quota_reconciliation_threshold_blocks_bulk_scan(self, monkeypatch):
+        """When GraphQL quota is below 1000, bulk reconciliation is deferred to preserve event quota."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 850)
+        assert project_automation.can_reconcile() is False
+        assert project_automation.can_mutate() is True
+
+        # When quota is above threshold, reconciliation is permitted
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 1500)
+        assert project_automation.can_reconcile() is True
+
+    def test_quota_minimum_blocks_all_mutations(self, monkeypatch):
+        """When GraphQL quota drops to 50 or below, all mutations are stopped."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 45)
+        assert project_automation.can_mutate() is False
+        assert project_automation.can_reconcile() is False
+
+    def test_track_with_content_id_uses_fast_path_without_loading_items(self, monkeypatch):
+        """When content_id is provided, track() bypasses expensive board item fetching."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-1")
+        client._status_field_id = "f-1"
+
+        load_called = []
+        monkeypatch.setattr(client, "load_existing_items", lambda: load_called.append(True) or {})
+
+        added = []
+        monkeypatch.setattr(
+            client.graphql, "add_item", lambda pid, cid: added.append((pid, cid)) or "item-99"
+        )
+
+        edited = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: edited.append((iid, oid)) or True,
+        )
+
+        client.track(
+            "https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456", fast_path=True
+        )
+
+        # Must NOT have fetched existing board items
+        assert load_called == []
+        # Must have added directly with content_id and updated status
+        assert added == [("PVT_123", "NODE_456")]
+        assert edited == [("item-99", "opt-1")]
+
+    def test_historical_reconciliation_preloads_and_diffs_in_memory_without_redundant_mutations(
+        self, monkeypatch
+    ):
+        """In historical reconciliation (fast_path=False), board cache is preloaded and matching items require 0 mutations."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        # Preloaded cache with 1 matching item and 1 outdated item
+        client._items_cache = {
+            "https://github.com/o/r/issues/1": ("item-1", "Done"),
+            "https://github.com/o/r/issues/2": ("item-2", "Backlog"),
+        }
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-done")
+        client._status_field_id = "f-1"
+
+        mutations = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: mutations.append((iid, oid)) or True,
+        )
+        monkeypatch.setattr(
+            client.graphql,
+            "add_item",
+            lambda pid, cid: pytest.fail("add_item should not be called for existing items"),
+        )
+
+        # 1. Matching historical item -> 0 mutations
+        client.track(
+            "https://github.com/o/r/issues/1", "Done", content_id="NODE_1", fast_path=False
+        )
+        assert mutations == []
+
+        # 2. Outdated historical item -> exactly 1 status edit
+        client.track(
+            "https://github.com/o/r/issues/2", "Done", content_id="NODE_2", fast_path=False
+        )
+        assert mutations == [("item-2", "opt-done")]

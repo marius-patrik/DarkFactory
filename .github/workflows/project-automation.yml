@@ -4,7 +4,7 @@ on:
   issues:
     types: [opened, labeled, unlabeled, closed, reopened]
   pull_request:
-    types: [opened, edited, closed, ready_for_review, reopened]
+    types: [opened, edited, synchronize, closed, ready_for_review, reopened]
   push:
     branches: [darkfactory]
   # Membership is reconciled on a schedule as well as on demand. An item reaches a board only by
