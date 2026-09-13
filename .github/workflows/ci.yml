@@ -303,8 +303,9 @@ jobs:
 
       - name: Build documentation
         # The command comes from the *caller's* environment, not from this file. Consumers do not
-        # share a documentation engine - this repository builds with mkdocs and omnis with
-        # properdocs - so hardcoding one here fails in every repository that chose the other.
+        # share a documentation engine - this repository declares `properdocs build --strict` in its
+        # manifest, while other consumers may choose another engine - so hardcoding one here fails
+        # in every repository that chose a different one.
         run: |
           SCRIPTS=".github/scripts"
           [ -d .darkfactory/.github/scripts ] && SCRIPTS=".darkfactory/.github/scripts"
