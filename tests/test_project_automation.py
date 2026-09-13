@@ -19,6 +19,18 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "marius-patrik/DarkFactory"
 
 
+@pytest.fixture(autouse=True)
+def reset_global_state():
+    """Resets global rate limit and mutation tracking between tests."""
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.FAILURES = []
+    yield
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.FAILURES = []
+
+
 class FakeProjectClient:
     """Records board mutations instead of performing them."""
 
@@ -29,7 +41,7 @@ class FakeProjectClient:
         self.added_labels: List[Tuple[str, int, str]] = []
         self.closed_issues: List[Tuple[str, int]] = []
 
-    def track(self, url: str, status: str) -> None:
+    def track(self, url: str, status: str, content_id: Optional[str] = None) -> None:
         """Adds an item and sets its status, as the real client does."""
         item_id = self.add_item(url)
         self.edit_status(item_id, status)
@@ -45,7 +57,13 @@ class FakeProjectClient:
         self.edited_statuses.append((item_id, status_name))
         return True
 
-    def set_status_label(self, repo: str, issue_number: int, status_name: str) -> None:
+    def set_status_label(
+        self,
+        repo: str,
+        issue_number: int,
+        status_name: str,
+        existing_labels: Optional[List[Any]] = None,
+    ) -> None:
         """Records an exclusive status-label assignment."""
         self.status_labels.append((repo, issue_number, status_name))
 
@@ -56,7 +74,7 @@ class FakeProjectClient:
             return
         self.added_labels.append((repo, issue_number, label))
 
-    def close_issue(self, repo: str, issue_number: int) -> None:
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
         """Records an issue closure."""
         self.closed_issues.append((repo, issue_number))
 
