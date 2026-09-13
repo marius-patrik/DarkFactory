@@ -125,12 +125,13 @@ FAILURES: List[str] = []
 #: Rate limit detection and graceful backoff flag.
 RATE_LIMITED = False
 
-#: Mutation cap per execution to ensure incremental progress without rate-limit spikes.
-try:
-    MUTATION_BUDGET = int(os.environ.get("PROJECT_MUTATION_BUDGET", "25"))
-except (ValueError, TypeError):
-    MUTATION_BUDGET = 25
+#: GraphQL points retained so this reconciliation cannot consume the entire token quota.
+QUOTA_MINIMUM = 50
 
+#: Last GraphQL quota reported by GitHub. ``None`` means it has not yet been queried.
+GRAPHQL_REMAINING: Optional[int] = None
+
+#: Board writes completed in this execution, retained for operational observability only.
 MUTATIONS_PERFORMED = 0
 
 
@@ -187,7 +188,12 @@ def _fail(message: str) -> None:
     print(f"Error: {message}", file=sys.stderr)
 
 
-def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
+def resolve_boards(
+    owner: str = PROJECT_OWNER,
+    *,
+    include_scoped: bool = True,
+    include_global: bool = True,
+) -> List[int]:
     """Finds the project numbers of every board this repository is linked to.
 
     An item belongs on two boards: this repository's own, and the one aggregating every repository.
@@ -209,8 +215,8 @@ def resolve_boards(owner: str = PROJECT_OWNER) -> List[int]:
         import manifest as manifest_module
 
         loaded = manifest_module.load(".")
-        titles = [loaded.project_title]
-        if loaded.global_board_title and loaded.global_board_title not in titles:
+        titles = [loaded.project_title] if include_scoped else []
+        if include_global and loaded.global_board_title and loaded.global_board_title not in titles:
             titles.append(loaded.global_board_title)
     except Exception as exc:  # noqa: BLE001 - a missing manifest must not stop the run
         print(f"Could not read the board declaration: {_detail(exc)}", file=sys.stderr)
@@ -277,7 +283,7 @@ def _env_for(args: List[str]) -> Dict[str, str]:
     """
     env = dict(os.environ)
     project_token = env.get("GH_PROJECT_TOKEN", "")
-    if args and args[0] == "project" and project_token:
+    if args and (args[0] == "project" or args[:2] == ["api", "graphql"]) and project_token:
         env["GH_TOKEN"] = project_token
     return env
 
@@ -441,6 +447,52 @@ class GitHubProjectClient:
                 )
         return self._items_cache
 
+    def has_mutation_quota(self) -> bool:
+        """Refreshes GitHub's GraphQL quota and preserves the configured safety reserve.
+
+        The ``gh project`` commands do not expose GraphQL's ``rateLimit`` object, so the check is
+        made immediately before every write. This uses the same user-scoped token as Projects v2;
+        querying a repository token instead would protect the wrong quota pool.
+
+        Returns:
+            ``True`` when a board mutation may proceed; ``False`` after a clean quota pause or a
+            recorded response-contract failure.
+        """
+        global GRAPHQL_REMAINING, RATE_LIMITED
+        try:
+            raw = self.run_gh(
+                [
+                    "api",
+                    "graphql",
+                    "-f",
+                    "query=query { rateLimit { remaining } }",
+                ]
+            )
+            payload = json.loads(raw or "{}")
+            remaining = payload.get("data", {}).get("rateLimit", {}).get("remaining")
+            if isinstance(remaining, bool) or not isinstance(remaining, int):
+                raise ValueError("GraphQL rateLimit.remaining was absent or not an integer")
+            GRAPHQL_REMAINING = remaining
+        except Exception as exc:  # noqa: BLE001 - boundary failures are surfaced below
+            if is_rate_limited(exc):
+                RATE_LIMITED = True
+                print("Notice: GraphQL quota reached; pausing until next window.", file=sys.stderr)
+            else:
+                _fail(
+                    f"could not read GraphQL quota for project {self.project_number}: {_detail(exc)}"
+                )
+            return False
+
+        if GRAPHQL_REMAINING <= QUOTA_MINIMUM:
+            RATE_LIMITED = True
+            print(
+                "Notice: GraphQL quota reserve reached "
+                f"({GRAPHQL_REMAINING} remaining; reserve {QUOTA_MINIMUM}); pausing.",
+                file=sys.stderr,
+            )
+            return False
+        return True
+
     def track(self, url: str, status: str) -> None:
         """Adds a url to this board and sets its status with check-before-write idempotency.
 
@@ -450,11 +502,6 @@ class GitHubProjectClient:
         """
         global MUTATIONS_PERFORMED, RATE_LIMITED
         if RATE_LIMITED:
-            return
-        if MUTATIONS_PERFORMED >= MUTATION_BUDGET:
-            print(
-                f"Notice: Mutation budget reached ({MUTATION_BUDGET}); deferring {url} to next run."
-            )
             return
 
         existing = self.load_existing_items()
@@ -488,6 +535,8 @@ class GitHubProjectClient:
         Returns:
             Project item id, or ``None`` on failure.
         """
+        if not self.has_mutation_quota():
+            return None
         try:
             output = self.run_gh(
                 [
@@ -534,6 +583,8 @@ class GitHubProjectClient:
                 f"option={option_id} project={project_id} field={field_id}",
                 file=sys.stderr,
             )
+            return False
+        if not self.has_mutation_quota():
             return False
         try:
             self.run_gh(
@@ -853,7 +904,8 @@ def process_event(
     elif event_name == "push":
         _handle_push_event(payload, client)
     elif event_name in ("workflow_dispatch", "schedule"):
-        repos_to_reconcile = [os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)]
+        current_repo = os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)
+        repos_to_reconcile = [current_repo]
         try:
             import manifest as manifest_module
 
@@ -865,9 +917,23 @@ def process_event(
         except Exception:
             pass
 
+        global_client: Optional[BoardGroup] = None
         for r in repos_to_reconcile:
             if r:
-                reconcile_membership(client, r)
+                if r == current_repo:
+                    # Only this repository's items belong to its scoped board. The current client
+                    # covers that board and Global, so lifecycle and local reconciliation agree.
+                    reconcile_membership(client, r)
+                else:
+                    # Historical cross-repository reconciliation is Global-only. Reusing the
+                    # current client's scoped board here put every installed repository's issues
+                    # onto the pipeline repository's board.
+                    if global_client is None:
+                        global_numbers = resolve_boards(include_scoped=False)
+                        global_client = BoardGroup(
+                            [GitHubProjectClient(project_number=n) for n in global_numbers]
+                        )
+                    reconcile_membership(global_client, r)
         reconcile_unassigned_statuses(client)
 
 

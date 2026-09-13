@@ -224,7 +224,8 @@ def test_architecture_documents_incremental_project_automation_and_rate_limit_ba
     """
     architecture = _read("ARCHITECTURE.md")
     assert "Incremental Project Automation & Rate-Limit Backoff" in architecture
-    assert "MUTATION_BUDGET" in architecture
+    assert "GRAPHQL_REMAINING" in architecture
+    assert "QUOTA_MINIMUM" in architecture
     assert "load_existing_items" in architecture
     assert "is_rate_limited" in architecture
     assert "RATE_LIMITED" in architecture
