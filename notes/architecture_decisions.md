@@ -1,7 +1,8 @@
 # Architecture Decision Records
 
-Numbered, append-only. An ADR is added when an open decision from `ARCHITECTURE.md` §7 is resolved,
-or when any deviation from `ARCHITECTURE.md` is approved (rule 3 in `AGENTS.md`).
+Numbered, append-only. An ADR is added when an open decision from `PRD.md` §13 is resolved, or
+when any deviation from `PRD.md` is approved (rule 3 in `AGENTS.md`). Discrete ADRs live under
+`.agents/notes/adr/`; this file is the deprecated process ledger and is retained only for history.
 
 Each record states the decision, the alternatives that were rejected **and why**, and what the
 decision forecloses. "We chose X because it is better" is not an ADR.

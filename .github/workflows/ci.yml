@@ -125,7 +125,7 @@ jobs:
 
       - name: No Rust workspace yet
         if: steps.detect.outputs.present != 'true'
-        run: echo "No Cargo.toml at the repository root; nothing to build. See ROADMAP.md epic E1."
+        run: echo "No Cargo.toml at the repository root; nothing to build."
 
   paper:
     name: paper
@@ -267,7 +267,7 @@ jobs:
 
       - name: No web workspace yet
         if: steps.detect.outputs.present != 'true'
-        run: echo "No package.json at the repository root; nothing to build. See ROADMAP.md epic E2."
+        run: echo "No package.json at the repository root; nothing to build."
 
   docs:
     name: docs

@@ -1,17 +1,18 @@
 """ProperDocs hooks that publish the repository's canonical markdown without duplicating it.
 
-`AGENTS.md` rule 2 forbids storing a static documentation mirror and forbids a manually maintained
-index. The canonical documents live at the repository root (`README.md`, `ARCHITECTURE.md`,
-`ROADMAP.md`, `AGENTS.md`) and under `notes/`, with one file per decision in
-`notes/adr/`. Committing copies of them under `docs/` would create two sources of truth that drift.
+`.agents/rules/002-inline-docs-and-generated-documentation.md` forbids storing a static
+documentation mirror and forbids a manually maintained index. The canonical documents live at the
+repository root (`README.md`, `PRD.md`, `AGENTS.md`) and under `.agents/notes/`, with one file per
+decision in `.agents/notes/adr/`. Committing copies of them under `docs/` would create two sources
+of truth that drift.
 
 These hooks therefore:
 
 - map each canonical file to a virtual page at build time, so the site is generated from the
   originals and `docs/` stays empty of duplicated prose;
-- discover `notes/adr/*.md`, generate the decision index table from each record's title and status,
-  and inject the navigation entries - so adding an ADR needs no configuration change;
-- rewrite links written for GitHub (``ARCHITECTURE.md``) to their site paths, so
+- discover `.agents/notes/adr/*.md`, generate the decision index table from each record's title
+  and status, and inject the navigation entries - so adding an ADR needs no configuration change;
+- rewrite links written for GitHub (``PRD.md``) to their site paths, so
   ``properdocs build --strict`` reports no broken links.
 """
 
@@ -24,34 +25,31 @@ from properdocs.structure.files import File, Files
 #: (source path relative to the repository root, destination path inside the site).
 PUBLISHED_PAGES: List[Tuple[str, str]] = [
     ("README.md", "index.md"),
-    ("ARCHITECTURE.md", "architecture/index.md"),
-    ("ROADMAP.md", "roadmap.md"),
+    ("PRD.md", "prd.md"),
     ("AGENTS.md", "agents.md"),
-    ("notes/pipeline.md", "pipeline.md"),
-    ("notes/transcript.md", "notes/transcript.md"),
-    ("notes/architecture_decisions.md", "architecture/decisions/process.md"),
-    ("notes/vision_capture.md", "notes/vision_capture.md"),
-    ("notes/bootstrap.md", "notes/bootstrap.md"),
+    (".agents/notes/architecture_decisions.md", "architecture/decisions/process.md"),
+    (".agents/notes/vision_capture.md", "notes/vision_capture.md"),
+    (".agents/notes/bootstrap.md", "notes/bootstrap.md"),
 ]
 
 #: Repository-relative markdown targets rewritten to their published counterparts.
 LINK_REWRITES: Dict[str, str] = {
     "README.md": "index.md",
-    "ARCHITECTURE.md": "architecture/index.md",
-    "ROADMAP.md": "roadmap.md",
+    "PRD.md": "prd.md",
     "AGENTS.md": "agents.md",
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
-    "notes/pipeline.md": "pipeline.md",
+    ".agents/notes/architecture_decisions.md": "architecture/decisions/process.md",
+    ".agents/notes/vision_capture.md": "notes/vision_capture.md",
+    ".agents/notes/bootstrap.md": "notes/bootstrap.md",
     "notes/architecture_decisions.md": "architecture/decisions/process.md",
     "notes/vision_capture.md": "notes/vision_capture.md",
-    "notes/transcript.md": "notes/transcript.md",
-    "transcript.md": "notes/transcript.md",
     "notes/bootstrap.md": "notes/bootstrap.md",
-    "pipeline.md": "pipeline.md",
-    "bootstrap.md": "notes/bootstrap.md",
+    "architecture_decisions.md": "architecture/decisions/process.md",
     "vision_capture.md": "notes/vision_capture.md",
+    "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
+    ".agents/notes/adr/": "architecture/decisions/index.md",
     "notes/adr/": "architecture/decisions/index.md",
 }
 
@@ -215,8 +213,8 @@ def _render_declaration_page(body: str) -> str:
             f"[`{DECLARATION_SOURCE}`]({source_url}) at build time — this page and the file cannot",
             "disagree.",
             "",
-            "See [Architecture §4](architecture/index.md) for what a declaration is, how generations",
-            "work, and why runtime changes are written back into it.",
+            "See [PRD §9](prd.md) for identity and security declarations, and why runtime changes",
+            "are written back into them.",
             "",
             "```nix",
             body.rstrip("\n"),
@@ -315,19 +313,16 @@ def on_config(config: Any) -> Any:
         [
             {"Overview": "index.md"},
             {
-                "Architecture": [
-                    {"Overview": "architecture/index.md"},
+                "Product": [
+                    {"Requirements": "prd.md"},
                     {"Decisions": decisions},
                 ]
             },
             {"The declaration": DECLARATION_DEST},
-            {"Roadmap": "roadmap.md"},
-            {"Automation pipeline": "pipeline.md"},
             {"Contributing & Agent Rules": "agents.md"},
             {
                 "Notes": [
                     {"Bootstrap runbook": "notes/bootstrap.md"},
-                    {"Source transcript": "notes/transcript.md"},
                     {"Capture provenance": "notes/vision_capture.md"},
                 ]
             },

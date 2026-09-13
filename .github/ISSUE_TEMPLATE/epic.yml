@@ -8,16 +8,8 @@ body:
       value: |
         An epic holds scope, acceptance criteria for the whole area, and a checklist of child
         `Request` issues. Per `AGENTS.md` rule 13, epics are never implemented directly - only their
-        children are - and every epic must have a matching row in `ROADMAP.md`.
-
-  - type: input
-    id: roadmap_id
-    attributes:
-      label: "Roadmap ID"
-      description: "The identifier from `ROADMAP.md` (e.g. E3). Add the row first if it is missing."
-      placeholder: "E3"
-    validations:
-      required: true
+        children are. The work ledger is GitHub parent/sub-issue relationships and project fields,
+        not a separate roadmap document.
 
   - type: textarea
     id: scope
@@ -33,7 +25,7 @@ body:
       label: "Entry Gate"
       description: >
         What must be true before this epic may leave `Backlog`: decisions resolved (D1-D8 in
-        `ARCHITECTURE.md`), epics completed, spikes measured.
+        `PRD.md`), epics completed, spikes measured.
       placeholder: "Blocked by D4 (sandbox isolation) and E1 (harness registry)."
     validations:
       required: true

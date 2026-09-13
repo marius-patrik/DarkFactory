@@ -58,7 +58,7 @@ body:
     id: parent_epic
     attributes:
       label: "Parent Epic"
-      description: "Issue number of the epic this belongs to, if any. See `ROADMAP.md`."
+      description: "Issue number of the epic this belongs to, if any."
       placeholder: "#12"
     validations:
       required: false

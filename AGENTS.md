@@ -25,12 +25,12 @@ per-module markdown mirrors and no manually maintained documentation index are s
 repository. All documentation builds must succeed with `properdocs build --strict` — zero warnings,
 zero errors — and deploy automatically to GitHub Pages.
 
-### 3. Architecture Conformance
-The system architecture is defined by `ARCHITECTURE.md`, which is the single normative source for
-process topology, crate boundaries, IPC contracts, and renderer separation. `VISION.md` is
-**non-normative reference material** captured from scoping conversations; it never overrides
-`ARCHITECTURE.md`. Any deviation from `ARCHITECTURE.md` must be explicitly approved by the user and
-recorded in `notes/architecture_decisions.md` as a numbered ADR before it is implemented.
+### 3. Product Requirements & ADRs
+Product requirements are defined by `PRD.md`, the single normative product document. Executable
+declarations (providers, taxonomy, workflow graph, installed consumers) live in
+`.github/darkfactory.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
+deviation from `PRD.md` must be explicitly approved by the user and recorded as a discrete ADR
+under `.agents/notes/adr/` before it is implemented.
 
 ### 4. Language Consistency
 All code, identifiers, comments, docstrings, commit messages, issues, and documentation must be
@@ -137,7 +137,7 @@ issues labeled `Request` before any planning, branching, or code changes begin.
 Specification proceeds in one direction, and each stage is locked before the next begins:
 
 ```
-VISION.md  →  ARCHITECTURE.md  →  ADRs (notes/architecture_decisions.md)  →  ROADMAP.md  →  issues
+PRD.md  →  ADRs (.agents/notes/adr/)  →  issues
 ```
 
 - **An issue may only be filed for work that is settled.** Settled means one of two things: an
@@ -146,13 +146,13 @@ VISION.md  →  ARCHITECTURE.md  →  ADRs (notes/architecture_decisions.md)  �
   dependencies").
 - **Speculative epic and decision issues are prohibited.** Filing an issue for an unanswered
   question moves the argument into the tracker, where it fragments across comment threads instead of
-  converging in the document that owns it. Open questions live in `ARCHITECTURE.md` §7 until an ADR
-  closes them; planned work lives in `ROADMAP.md` until its gate opens.
+  converging in the document that owns it. Open questions live in issues and the workflow graph,
+  not in a document that competes with the tracker.
 - **Large settled bodies of work** are tracked as `epic`-labelled issues: a container carrying the
   scope statement, the acceptance criteria for the area, and a checklist of child `Request` issues.
   Epics are never implemented directly — only their children are.
-- `ROADMAP.md` is the authoritative list of epics and their sequencing, and is updated whenever an
-  epic is added, split, completed, or dropped.
+- The workflow graph, GitHub parent/sub-issue relationships, and project fields are the work
+  ledger; no separate planning document shadows them.
 
 ### 14. Harness-Agnostic Containerized Agent & Conversational CI Lifecycle
 An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.agent`). It is

@@ -242,17 +242,14 @@ def _declared_areas() -> Dict[str, str]:
             os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
             r"^- \[ \] `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
         ),
-        (
-            "ARCHITECTURE.md",
-            r"^- `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
-        ),
     ],
 )
 def test_area_lists_match_the_manifest(path, pattern):
     """Every hand-written area list must agree with the one declaration of the taxonomy.
 
-    The dropdown, the capability matrix and the architecture reference are static files GitHub
-    renders itself, so they cannot be generated at render time the way the documentation nav is.
+    The dropdown and the PR template are static files GitHub renders itself, so they cannot be
+    generated at render time the way the documentation nav is. The taxonomy itself is asserted
+    against the manifest alone; the product document no longer carries a hardcoded area list.
     Without this test they simply drift again - which is exactly how they came to list another
     repository's areas.
     """
@@ -644,7 +641,7 @@ def test_the_documentation_command_is_the_one_this_repository_uses():
     """
     for relative in (
         "AGENTS.md",
-        "ARCHITECTURE.md",
+        "PRD.md",
         os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
         os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
     ):

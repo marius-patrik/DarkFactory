@@ -73,19 +73,33 @@ def test_agents_defines_every_area_label_used_by_the_agent():
         assert label in content, f"AGENTS.md must document the {label!r} scope"
 
 
-def test_architecture_is_declared_normative_and_vision_is_not():
-    """The precedence between the two documents is stated in both of them."""
-    architecture = _read("ARCHITECTURE.md")
-    vision = _read("VISION.md")
-    assert "Status: NORMATIVE" in architecture
-    assert "NON-NORMATIVE" in vision
-    assert "ARCHITECTURE.md" in vision, "VISION.md must point at the normative document"
+def test_prd_is_the_only_normative_product_document():
+    """`PRD.md` declares itself normative and the legacy documents are gone."""
+    prd = _read("PRD.md")
+    assert "Status: NORMATIVE" in prd
+    assert "PRD.md" in prd and "single normative source" in prd
+    assert not os.path.exists(
+        os.path.join(REPO_ROOT, "ARCHITECTURE.md")
+    ), "ARCHITECTURE.md must be retired; PRD.md carries its durable content"
+    assert not os.path.exists(os.path.join(REPO_ROOT, "VISION.md")), "VISION.md must be retired"
+
+
+def test_legacy_knowledge_files_are_absent():
+    """No legacy knowledge ledger may remain tracked.
+
+    Work sequencing lives in issues/project fields; a deleted roadmap must not be replaced by
+    another hand-maintained epic table.
+    """
+    for legacy in ("VISION.md", "ROADMAP.md"):
+        assert not os.path.exists(os.path.join(REPO_ROOT, legacy)), f"{legacy} must be retired"
+    roadmap_names = {path for path in os.listdir(REPO_ROOT) if path.lower().startswith("roadmap")}
+    assert not roadmap_names, f"unexpected roadmap files: {sorted(roadmap_names)}"
 
 
 def test_architecture_lists_open_decisions_with_identifiers():
-    """Every open decision is addressable, so an issue and an ADR can reference it."""
-    architecture = _read("ARCHITECTURE.md")
-    identifiers = set(re.findall(r"\bD([1-9]\d*)\b", architecture))
+    """Every durable decision is addressable, so an issue and an ADR can reference it."""
+    prd = _read("PRD.md")
+    identifiers = set(re.findall(r"\bD([1-9]\d*)\b", prd))
     assert {"1", "2", "3", "4", "5", "6", "7", "8"} <= identifiers
 
 
@@ -124,10 +138,10 @@ def test_the_user_directive_is_effective_where_it_sits():
     ), "USER agent must follow the last RUN layer and precede ENTRYPOINT"
 
 
-def test_architecture_names_the_directive_that_enforces_d4():
+def test_prd_names_the_directive_that_enforces_d4():
     """The document and the image must not be able to drift apart independently."""
-    architecture = _read("ARCHITECTURE.md")
-    d4 = next(line for line in architecture.split("\n") if line.startswith("| D4 "))
+    prd = _read("PRD.md")
+    d4 = next(line for line in prd.split("\n") if line.startswith("| D4 "))
     assert "USER agent" in d4, "D4 must name what enforces it"
     assert "1001" in d4, "D4 must record the uid and therefore the reason for it"
     assert "env scoping" in d4, "D4's second claim must not be lost while documenting the first"
@@ -138,7 +152,7 @@ def test_dockerfile_agent_uid_matches_runner():
 
     This keeps the bind-mounted workspace writable without loosening its
     permissions.  If someone changes the uid they must also update
-    ``ARCHITECTURE.md`` D4 and the runner configuration.
+    ``PRD.md`` D4 and the runner configuration.
     """
     dockerfile = _read("docker", "Dockerfile.agent")
     assert re.search(r"(?m)^ARG\s+AGENT_UID\s*=\s*1001\b", dockerfile), (
@@ -147,48 +161,9 @@ def test_dockerfile_agent_uid_matches_runner():
     )
 
 
-def test_roadmap_epics_are_addressable():
-    """Every epic has an `E<n>` identifier that issues and gates can cite."""
-    roadmap = _read("ROADMAP.md")
-    epics = set(re.findall(r"\bE(\d+)\b", roadmap))
-    assert len(epics) >= 8, f"expected at least 8 epics, found {sorted(epics)}"
-
-
-def test_vision_declares_its_provenance():
-    """A transcript-derived document must say where it came from and how complete it is."""
-    vision = _read("VISION.md")
-    assert "gemini.google.com" in vision, "VISION.md must cite its source conversation"
-    assert "notes/vision_capture.md" in vision, "VISION.md must link the provenance note"
-
-
-def test_vision_gap_markers_agree_with_the_capture_note():
-    """Completeness is claimed in one place; the two documents must not contradict each other."""
-    vision = _read("VISION.md")
-    capture = _read("notes", "vision_capture.md")
-    claims_complete = "Status: complete" in capture
-
-    if claims_complete:
-        assert "[GAP]" not in vision, (
-            "notes/vision_capture.md claims the capture is complete, "
-            "but VISION.md still carries [GAP] markers"
-        )
-    else:
-        assert "[GAP]" in vision, (
-            "notes/vision_capture.md does not claim completeness, "
-            "so VISION.md must mark where it is partial"
-        )
-
-
-def test_vision_carries_review_notes():
-    """Recording a source faithfully is not the same as endorsing it."""
-    vision = _read("VISION.md")
-    assert "Review notes" in vision or "[REVIEW]" in vision
-    assert "ARCHITECTURE.md" in vision, "VISION.md must defer to the normative document"
-
-
 @pytest.mark.parametrize(
     "document",
-    ["README.md", "AGENTS.md", "ARCHITECTURE.md", "ROADMAP.md", "VISION.md"],
+    ["README.md", "AGENTS.md", "PRD.md"],
 )
 def test_core_documents_are_present_and_substantial(document: str):
     """Placeholder documents are worse than missing ones; require real content.
@@ -200,38 +175,15 @@ def test_core_documents_are_present_and_substantial(document: str):
     assert len(content) > 500, f"{document} looks like a placeholder"
 
 
-def test_architecture_documents_secondary_accounts_and_companion_secrets() -> None:
-    """ARCHITECTURE.md must document how secondary accounts and companion secrets provide fallback.
+def test_prd_does_not_duplicate_manifest_taxonomy_or_graph() -> None:
+    """Executable declarations live in the manifest, not in the product document.
 
-    This ensures that multi-account secrets, OAuth companion parameters, and transparent alias
-    mapping without pipeline disruption are explicitly specified in the normative architecture.
+    The PRD must not re-state the area taxonomy or a hardcoded stage graph, because those have one
+    executable home (`.github/darkfactory.json` and the workflow graph) and any copy drifts.
     """
-    architecture = _read("ARCHITECTURE.md")
-    assert "Secondary Accounts & Companion Secrets" in architecture
-    assert "companion secrets" in architecture.lower()
-    assert "numbered account secrets" in architecture.lower()
-    assert "credential_env" in architecture
-    assert "prepare_credentials" in architecture
-    assert "persist_rotated_token" in architecture
-    assert "without pipeline disruption" in architecture.lower()
-
-
-def test_architecture_documents_quota_gated_project_automation_and_rate_limit_backoff() -> None:
-    """ARCHITECTURE.md must document quota-gated project automation and rate-limit backoff behaviour.
-
-    This ensures the live-quota safety reserve, check-before-write idempotency, scoped/global
-    board routing, rate-limit detection, and graceful backoff are explicitly specified in the
-    normative architecture - and that no artificial mutation cap is documented as authoritative.
-    """
-    architecture = _read("ARCHITECTURE.md")
-    assert "Quota-Gated Project Automation & Rate-Limit Backoff" in architecture
-    assert "GRAPHQL_REMAINING" in architecture
-    assert "QUOTA_MINIMUM" in architecture
-    assert "MUTATION_BUDGET" not in architecture
-    assert "resolve_boards" in architecture
-    assert "load_existing_items" in architecture
-    assert "is_rate_limited" in architecture
-    assert "RATE_LIMITED" in architecture
-    assert "calculate_backoff" in architecture
-    assert "checkpoint" in architecture.lower()
-    assert "_env_for" in architecture
+    prd = _read("PRD.md")
+    assert "AREA_LABELS" not in prd
+    assert "Quota-Gated Project Automation & Rate-Limit Backoff" not in prd
+    assert "GRAPHQL_REMAINING" not in prd
+    assert "MUTATION_BUDGET" not in prd
+    assert "agent_runner.py" not in prd
