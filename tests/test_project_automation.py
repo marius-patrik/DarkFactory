@@ -440,6 +440,41 @@ class TestBoardResolution:
         assert numbers == [17]
         assert any("DarkFactory" in failure for failure in project_automation.FAILURES)
 
+    def test_resolve_boards_include_scoped_and_include_global_filter_independently(
+        self, monkeypatch
+    ):
+        """Each board group can be resolved on its own, for cross-repository routing."""
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R",
+                (),
+                {
+                    "stdout": (
+                        '{"projects": ['
+                        '{"title": "DarkFactory", "number": 11}, '
+                        '{"title": "Global", "number": 17}'
+                        "]}"
+                    )
+                },
+            )(),
+        )
+
+        class Loaded:
+            project_title = "DarkFactory"
+            global_board_title = "Global"
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        assert project_automation.resolve_boards("marius-patrik") == [11, 17]
+        assert project_automation.resolve_boards("marius-patrik", include_scoped=False) == [17]
+        assert project_automation.resolve_boards("marius-patrik", include_global=False) == [11]
+
     def test_a_recorded_failure_makes_the_run_fail(self):
         """The whole point: a broken board must not report success."""
         project_automation._fail("adding https://example/1 to project 16: boom")
@@ -611,8 +646,8 @@ class TestFailuresSayWhatWentWrong:
         assert project_automation._detail(ValueError("plain")) == "plain"
 
 
-class TestRateLimitingAndIncrementalBudget:
-    """Rate limits must pause cleanly without failing, and writes must be idempotent and budgeted."""
+class TestRateLimitingAndQuotaReserve:
+    """Rate limits pause cleanly; a run may write freely except for the live quota safety reserve."""
 
     def test_is_rate_limited_recognises_indicators(self):
         """Standard rate-limit messages across GraphQL and REST are detected."""
@@ -665,14 +700,84 @@ class TestRateLimitingAndIncrementalBudget:
         client.track("https://github.com/o/r/issues/1", "In Progress")
         assert edited == [("item-1", "In Progress")]
 
-    def test_track_respects_mutation_budget(self, monkeypatch):
-        """When the mutation budget is reached, further writes are deferred."""
-        monkeypatch.setattr(project_automation, "MUTATIONS_PERFORMED", 5)
-        monkeypatch.setattr(project_automation, "MUTATION_BUDGET", 5)
+    def test_long_reconciliation_is_not_truncated_by_an_artificial_cap(self, monkeypatch):
+        """No fixed per-run mutation count remains: a long run processes every item it is given."""
+        assert not hasattr(project_automation, "MUTATION_BUDGET")
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
         client = GitHubProjectClient(project_number=10)
         client._items_cache = {}
-        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("budget exceeded"))
-        client.track("https://github.com/o/r/issues/99", "ToDo")
+        monkeypatch.setattr(client, "load_existing_items", lambda: {})
+        added = []
+        edited = []
+        monkeypatch.setattr(
+            client,
+            "add_item",
+            lambda url, content_id=None: added.append(url) or f"item-{len(added)}",
+        )
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+        )
+
+        # Well past the old default budget of 25 - every item must still be written.
+        urls = [f"https://github.com/o/r/issues/{i}" for i in range(40)]
+        for url in urls:
+            client.track(url, "ToDo")
+
+        assert added == urls
+        assert len(edited) == 40
+
+    def test_writes_pause_at_the_safety_reserve(self, monkeypatch):
+        """At or below QUOTA_MINIMUM, track() defers instead of writing - the only remaining gate."""
+        monkeypatch.setattr(
+            project_automation, "GRAPHQL_REMAINING", project_automation.QUOTA_MINIMUM
+        )
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {}
+        monkeypatch.setattr(
+            client, "load_existing_items", lambda: pytest.fail("should not query the board")
+        )
+        monkeypatch.setattr(client, "add_item", lambda *a, **k: pytest.fail("should not add"))
+        monkeypatch.setattr(client, "edit_status", lambda *a, **k: pytest.fail("should not edit"))
+
+        client.track("https://github.com/o/r/issues/1", "ToDo")
+
+        assert project_automation.can_mutate() is False
+
+    def test_malformed_quota_header_pauses_mutations_rather_than_assuming_unlimited(
+        self, monkeypatch
+    ):
+        """An unparseable x-ratelimit-remaining header is treated as unsafe, not as unlimited quota."""
+        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", None)
+        monkeypatch.setattr(project_automation, "FAILURES", [])
+
+        class FakeHeaders:
+            def get(self, key, default=None):
+                return "not-a-number" if key == "x-ratelimit-remaining" else default
+
+        class FakeResponse:
+            headers = FakeHeaders()
+
+            def read(self):
+                return b'{"data": {}}'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc_info):
+                return False
+
+        monkeypatch.setattr(
+            project_automation.urllib.request, "urlopen", lambda *a, **k: FakeResponse()
+        )
+
+        client = project_automation.GitHubGraphQLClient(token="test-token")
+        client.execute("query { viewer { login } }")
+
+        assert project_automation.GRAPHQL_REMAINING is None
+        assert project_automation.RATE_LIMITED is True
+        assert project_automation.FAILURES
+        assert project_automation.can_mutate() is False
 
     def test_historical_closed_items_reconciliation(self):
         """Reconciliation tracks historical closed issues and PRs with settled statuses."""
@@ -943,3 +1048,114 @@ class TestRateLimitingAndIncrementalBudget:
             "https://github.com/o/r/issues/2", "Done", content_id="NODE_2", fast_path=False
         )
         assert mutations == [("item-2", "opt-done")]
+
+
+class TestScopedBoardRouting:
+    """Cross-repository reconciliation must never leak another repo's items onto this repo's
+    scoped board - only the Global board aggregates other repositories' items."""
+
+    def test_schedule_routes_other_repos_through_global_board_only(self, monkeypatch):
+        """Exact routing table: the current repo gets scoped+Global, every other repo gets
+        Global only."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/current")
+
+        # resolve_boards() falls back to subprocess `gh` when the GraphQL client returns nothing;
+        # force that path deterministically instead of depending on real network reachability.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient, "resolve_projects", lambda self, owner: {}
+        )
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R",
+                (),
+                {
+                    "stdout": (
+                        '{"projects": ['
+                        '{"title": "Scoped", "number": 11}, '
+                        '{"title": "Global", "number": 17}'
+                        "]}"
+                    )
+                },
+            )(),
+        )
+
+        class Loaded:
+            project_title = "Scoped"
+            global_board_title = "Global"
+            data = {"app": {"installed_on": ["o/current", "o/other"]}}
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        reconciled = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile_membership",
+            lambda client, repo, state=None: reconciled.append(
+                (repo, [member.project_number for member in client.clients])
+            )
+            or 0,
+        )
+        monkeypatch.setattr(
+            project_automation, "reconcile_unassigned_statuses", lambda client: None
+        )
+
+        process_event("schedule", {})
+
+        assert reconciled == [("o/current", [11, 17]), ("o/other", [17])]
+
+    def test_global_client_is_built_once_for_several_other_repos(self, monkeypatch):
+        """The Global-only client is resolved lazily and reused, not rebuilt per repo."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/current")
+
+        resolve_calls = []
+        real_resolve_boards = project_automation.resolve_boards
+
+        def counting_resolve_boards(owner=project_automation.PROJECT_OWNER, **kwargs):
+            resolve_calls.append(kwargs)
+            if kwargs.get("include_scoped") is False:
+                return [17]
+            return [11, 17]
+
+        monkeypatch.setattr(project_automation, "resolve_boards", counting_resolve_boards)
+
+        class Loaded:
+            data = {"app": {"installed_on": ["o/current", "o/other-a", "o/other-b"]}}
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        reconciled = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile_membership",
+            lambda client, repo, state=None: reconciled.append(
+                (repo, [member.project_number for member in client.clients])
+            )
+            or 0,
+        )
+        monkeypatch.setattr(
+            project_automation, "reconcile_unassigned_statuses", lambda client: None
+        )
+
+        process_event("schedule", {})
+
+        assert reconciled == [
+            ("o/current", [11, 17]),
+            ("o/other-a", [17]),
+            ("o/other-b", [17]),
+        ]
+        # Exactly one scoped-out resolution for the Global-only client, reused for both other repos.
+        assert [c for c in resolve_calls if c.get("include_scoped") is False] == [
+            {"include_scoped": False}
+        ]
