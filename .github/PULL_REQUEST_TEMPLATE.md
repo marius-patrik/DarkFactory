@@ -2,7 +2,7 @@
 <!-- What changed and why, in a few sentences. -->
 
 ## Linked Issues
-<!-- Required. Rule 9 in AGENTS.md: every PR binds a tracked issue with a closing keyword. -->
+<!-- Required. DF-RULE-009 (`.agents/rules/009-issue-binding-and-board-status.md`): every PR binds a tracked issue with a closing keyword. -->
 - Closes #
 
 ## Type of Change

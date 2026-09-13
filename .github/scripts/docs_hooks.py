@@ -165,7 +165,7 @@ def render_adr_index(records: List[Dict[str, str]]) -> str:
         "",
         "Every decision that binds the implementation, one record per page. This index is generated",
         "from the files in `notes/adr/` at build time - it is never hand-maintained",
-        "(`AGENTS.md` rule 2).",
+        "(`.agents/rules/002-inline-docs-and-generated-documentation.md`).",
         "",
         "See [the process](process.md) for when an ADR is required and how to write one.",
         "",

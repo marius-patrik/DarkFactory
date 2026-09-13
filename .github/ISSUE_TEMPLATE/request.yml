@@ -18,7 +18,7 @@ body:
     attributes:
       label: "Verbatim User Request"
       description: >
-        The exact, unedited wording of the request. Do not summarize or clean it up - rule 12 in
+        The exact, unedited wording of the request. Do not summarize or clean it up - DF-RULE-012
         `AGENTS.md` requires the verbatim text so intent is never lost in paraphrase.
       placeholder: "e.g. the input bar should be switchable between a global HUD and one per pane"
     validations:
@@ -28,7 +28,7 @@ body:
     id: area
     attributes:
       label: "Area / Component"
-      description: "Primary area affected. See `AGENTS.md` rule 15 for the full taxonomy."
+      description: "Primary area affected. See `.agents/rules/015-repository-taxonomy.md` for the full taxonomy."
       options:
         - "agents - Harness orchestration, provider adapters, personas, approvals (area:agents)"
         - "governance - Agent rules, branch protection, required checks, project board taxonomy (area:governance)"

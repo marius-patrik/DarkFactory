@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         An epic holds scope, acceptance criteria for the whole area, and a checklist of child
-        `Request` issues. Per `AGENTS.md` rule 13, epics are never implemented directly - only their
+        `Request` issues. Per `.agents/rules/013-specification-and-work-tracking.md` (DF-RULE-013), epics are never implemented directly - only their
         children are. The work ledger is GitHub parent/sub-issue relationships and project fields,
         not a separate roadmap document.
 

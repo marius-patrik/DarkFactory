@@ -40,14 +40,14 @@ def test_agents_file_exists_and_is_the_canonical_source():
 
 
 def test_agents_mandates_branches_prs_ci_and_protection():
-    """Rule 7 keeps `main` protected and all work on branches behind pull requests."""
+    """DF-RULE-007 (`.agents/rules/007-branches-and-pull-requests.md`) keeps `main` protected and all work on branches behind pull requests."""
     content = _read("AGENTS.md").lower()
     for token in ("pull request", "branch", "ci", "protect", "main", "draft"):
         assert token in content, f"AGENTS.md must mention {token!r}"
 
 
 def test_agents_mandates_issue_binding_and_board_taxonomy():
-    """Rule 9 binds every PR to an issue and names the full status taxonomy."""
+    """DF-RULE-009 (`.agents/rules/009-issue-binding-and-board-status.md`) binds every PR to an issue and names the full status taxonomy."""
     content = _read("AGENTS.md").lower()
     assert "closes" in content
     assert "project board" in content
@@ -56,7 +56,7 @@ def test_agents_mandates_issue_binding_and_board_taxonomy():
 
 
 def test_agents_mandates_plan_gate_and_verbatim_requests():
-    """Rules 10 and 12 keep both human approval gates in the process."""
+    """DF-RULE-010/DF-RULE-012 keep both human approval gates in the process."""
     content = _read("AGENTS.md")
     assert "Matches Plan: Yes" in content
     assert "Plan Alignment:" in content

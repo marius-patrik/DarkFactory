@@ -47,7 +47,7 @@ HOMEPAGE = MANIFEST.homepage
 
 TOPICS: List[str] = MANIFEST.topics
 
-#: Project board Status options, in column order. Mirrors AGENTS.md rule 9 and
+#: Project board Status options, in column order. Mirrors `.agents/rules/009-issue-binding-and-board-status.md` and
 #: ``project_automation.STATUS_NAMES``; the test suite asserts the two stay in sync.
 STATUS_OPTIONS: List[str] = [
     "Backlog",

@@ -1,7 +1,8 @@
 # Architecture Decision Records
 
 Numbered, append-only. An ADR is added when an open decision from `PRD.md` §13 is resolved, or
-when any deviation from `PRD.md` is approved (rule 3 in `AGENTS.md`). Discrete ADRs live under
+when any deviation from `PRD.md` is approved (`.agents/rules/003-product-requirements-and-adrs.md`).
+Discrete ADRs live under
 `.agents/notes/adr/`; this file is the deprecated process ledger and is retained only for history.
 
 Each record states the decision, the alternatives that were rejected **and why**, and what the
@@ -166,7 +167,8 @@ not; some projects deliberately never leave `0.x`.
 `zerover` (the major never leaves zero), `pridever` (`PROUD.DEFAULT.SHAME`), `calver`
 (`YYYY.MM.PATCH`), and `manual` (a `VERSION` file is the decision).
 
-Automatic modes derive the bump from Conventional Commits, which rule 15 already mandates and CI
+Automatic modes derive the bump from Conventional Commits, which
+`.agents/rules/015-repository-taxonomy.md` (DF-RULE-015) already mandates and CI
 already enforces, so the metadata is present without new ceremony. An explicit request always
 overrides the derivation — necessary for PrideVer, where PROUD is a human judgement no commit log
 can express, and useful everywhere else.

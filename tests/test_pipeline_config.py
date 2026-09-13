@@ -214,7 +214,7 @@ def test_the_configuration_template_carries_the_install_marker():
 
 
 def test_request_template_requires_verbatim_wording():
-    """Rule 12 depends on the template asking for the unedited request."""
+    """DF-RULE-012 (`.agents/rules/012-request-capture-and-confirmation.md`) depends on the template asking for the unedited request."""
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
     assert "Verbatim User Request" in content
     assert 'labels: ["Request"]' in content
