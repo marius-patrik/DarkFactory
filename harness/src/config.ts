@@ -10,6 +10,7 @@ export const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,google/gemini-3.7-
 export interface DfConfig {
 	defaultChain: string;
 	cooldownTtlMs?: number;
+	maxWaitMs?: number;
 	hardReasoningChain?: string;
 	sensitiveChain?: string;
 	credentialFiles?: Record<string, string>;
@@ -44,6 +45,10 @@ export async function loadDfConfig(home: string, reader: ConfigReader = (path) =
 	if (cooldownTtlMs !== undefined && (typeof cooldownTtlMs !== "number" || !Number.isSafeInteger(cooldownTtlMs) || cooldownTtlMs <= 0)) {
 		throw new Error("config.json cooldownTtlMs must be a positive integer");
 	}
+	const maxWaitMs = record.maxWaitMs;
+	if (maxWaitMs !== undefined && (typeof maxWaitMs !== "number" || !Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0)) {
+		throw new Error("config.json maxWaitMs must be a positive integer");
+	}
 	let credentialFiles: Record<string, string> | undefined;
 	if (record.credentialFiles !== undefined) {
 		if (!record.credentialFiles || typeof record.credentialFiles !== "object" || Array.isArray(record.credentialFiles)) throw new Error("config.json credentialFiles must be an object");
@@ -55,6 +60,7 @@ export async function loadDfConfig(home: string, reader: ConfigReader = (path) =
 		...(hardReasoningChain ? { hardReasoningChain } : {}),
 		...(sensitiveChain ? { sensitiveChain } : {}),
 		...(typeof cooldownTtlMs === "number" ? { cooldownTtlMs } : {}),
+		...(typeof maxWaitMs === "number" ? { maxWaitMs } : {}),
 		...(credentialFiles ? { credentialFiles } : {}),
 	};
 }

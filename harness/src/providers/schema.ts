@@ -58,9 +58,11 @@ export interface ModelListConfig {
 	body?: Record<string, unknown>;
 }
 export interface ResetSourceConfig {
-	kind: "retry_info" | "header" | "next_pacific_midnight";
+	kind: "retry_info" | "header" | "next_pacific_midnight" | "cooldown";
 	path?: string;
 	header?: string;
+	seconds?: number;
+	jitterMs?: number;
 }
 export interface FailureRuleConfig {
 	kind: FailureRuleKind;
