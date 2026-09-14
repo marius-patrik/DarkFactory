@@ -655,8 +655,33 @@ class TestTheAccountsCredentialReachesTheCli:
         monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_2", "second")
         env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 2))
         assert env["CLAUDE_CODE_OAUTH_TOKEN"] == "second"
-        assert env["ANTHROPIC_API_KEY"] == "second"
+        assert "ANTHROPIC_API_KEY" not in env
         assert "CLAUDE_CODE_OAUTH_TOKEN_2" not in env
+
+    def test_a_subscription_token_is_never_exported_as_an_api_key(self, monkeypatch):
+        """The claude CLI prefers ANTHROPIC_API_KEY; an OAuth token there fails as an invalid key.
+
+        Plan run 34833536164 on #227 failed with "401 API key is invalid": the subscription token
+        was exported under every name the harness accepts, including the API-key name.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "subscription-token")
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 1))
+        assert env["CLAUDE_CODE_OAUTH_TOKEN"] == "subscription-token"
+        assert "ANTHROPIC_API_KEY" not in env
+
+    def test_an_api_key_account_is_exported_only_as_an_api_key(self, monkeypatch):
+        """Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY_2", "api-key-two")
+        env = agent_runner.credential_env(dict(os.environ), self._attempt("claude", 2))
+        assert env["ANTHROPIC_API_KEY"] == "api-key-two"
+        assert "CLAUDE_CODE_OAUTH_TOKEN" not in env
 
     def test_no_credential_survives_from_an_account_that_is_not_running(self, monkeypatch):
         """Args:
@@ -1565,3 +1590,35 @@ class TestCommandHint:
         path.write_text(json.dumps(_issue_comment_payload("/df approve")), encoding="utf-8")
         module.dispatch_event(str(path), "issue_comment")
         assert posted == []
+
+
+class TestStageTimeBudgets:
+    """A plan or review explores the repository; five minutes timed out on every agy attempt."""
+
+    def _capture(self, monkeypatch, handler):
+        seen = {}
+        module = agent_runner_module()
+
+        def fake_prompt(prompt, timeout="5m0s", **kwargs):
+            seen["timeout"] = timeout
+            return "answer"
+
+        monkeypatch.setattr(module, "run_agent_prompt", fake_prompt)
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, repo=None, **k: (
+                json.dumps({"title": "t", "body": "b", "labels": []})
+                if args[:2] == ["issue", "view"]
+                else ""
+            ),
+        )
+        monkeypatch.setattr(module, "try_gh", lambda *a, **k: "")
+        handler(module)
+        return seen.get("timeout")
+
+    def test_the_plan_gets_the_long_budget(self, monkeypatch):
+        """Plan run 34833536164 (#227): four agy attempts hit "print timeout after 5m0s"."""
+        timeout = self._capture(monkeypatch, lambda m: m.handle_plan(227, 227, REPO_SLUG))
+        assert timeout == agent_runner.PLAN_TIMEOUT
+        assert agent_runner.PLAN_TIMEOUT != "5m0s"

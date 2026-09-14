@@ -280,6 +280,26 @@ def finish_login_file(state: Optional[Tuple[str, str, str]], rotates: bool = Tru
             pass
 
 
+def _export_names(auth: Any, account: int, base: Dict[str, str]) -> Tuple[str, ...]:
+    """Returns the account-one names a prepared credential is exported under.
+
+    Args:
+        auth: The harness's auth declaration.
+        account: 1-based account the credential belongs to.
+        base: Environment the attempt derives from.
+
+    Returns:
+        For a static credential, the one account-one name matching the populated name; for an
+        exchanged credential, every declared name.
+    """
+    if auth.kind != "static":
+        return tuple(auth.env_names(1))
+    for source, target in zip(auth.env_names(account), auth.env_names(1)):
+        if base.get(source) or os.environ.get(source):
+            return (target,)
+    return tuple(auth.env_names(1)[:1])
+
+
 def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
     """Builds the environment one attempt runs in, holding that account's credential and no other.
 
@@ -321,8 +341,11 @@ def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
         # Subscription CLIs read the login file, never the static API-key names.
         credential = None
     if credential:
-        # Under the *first* account's names, because that is what the CLI reads.
-        for name in auth.env_names(1):
+        # Under the *first* account's names, because that is what the CLI reads - but only under
+        # the name the credential was found under. The alternatives are different kinds of
+        # credential: the claude CLI prefers ANTHROPIC_API_KEY, so a subscription token exported
+        # there as well failed every run with "401 API key is invalid".
+        for name in _export_names(auth, attempt.account, base):
             env[name] = credential
     for source, target in zip(auth.companion_names(attempt.account), auth.companion_names(1)):
         if base.get(source):
@@ -1305,6 +1328,12 @@ def _post_agent_failure_notice(
         print(f"Notice: Failed to post agent output failure notice: {e}", file=sys.stderr)
 
 
+#: Time budget for stages that explore the repository before answering. Every antigravity attempt
+#: at planning #227 hit "print timeout after 5m0s", so a plan or review gets the longer budget.
+PLAN_TIMEOUT = "15m0s"
+REVIEW_TIMEOUT = "10m0s"
+
+
 def run_agent_prompt(
     prompt: str,
     model: Optional[str] = None,
@@ -1720,7 +1749,7 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
         ],
         "is_pr": False,
     }
-    plan_body = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
+    plan_body = run_agent_prompt(prompt, timeout=PLAN_TIMEOUT, checkpoint_context=checkpoint_ctx)
 
     if is_quota_exhaustion_notice(plan_body):
         return
@@ -2375,7 +2404,9 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             ],
             "cwd": cwd,
         }
-        review_result = run_agent_prompt(review_prompt, checkpoint_context=checkpoint_ctx)
+        review_result = run_agent_prompt(
+            review_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
+        )
 
         if is_quota_exhaustion_notice(review_result):
             return
@@ -2580,7 +2611,9 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
             "Evaluating plan alignment",
         ],
     }
-    alignment_result = run_agent_prompt(alignment_prompt, checkpoint_context=checkpoint_ctx)
+    alignment_result = run_agent_prompt(
+        alignment_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
+    )
 
     if is_quota_exhaustion_notice(alignment_result):
         return
