@@ -1237,6 +1237,8 @@ def update_project_status_blocked(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, "Blocked")
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, "Blocked")
             else:
@@ -1278,7 +1280,7 @@ def unblock_entity(
     except Exception as e:
         print(f"Notice: Failed to remove Blocked label: {e}", file=sys.stderr)
 
-    # 2. Update Project status
+    # 2. Update Project status and status label
     owner = repo.split("/")[0] if "/" in repo else PROJECT_OWNER
     entity_url = (
         f"https://github.com/{repo}/pull/{issue_or_pr_number}"
@@ -1297,6 +1299,8 @@ def unblock_entity(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, target_status)
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, target_status)
             else:

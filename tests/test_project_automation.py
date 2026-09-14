@@ -48,7 +48,7 @@ class FakeProjectClient:
         item_id = self.add_item(url)
         self.edit_status(item_id, status)
 
-    def add_item(self, url: str) -> str:
+    def add_item(self, url: str, content_id: Optional[str] = None) -> str:
         """Records an item addition and returns a synthetic id."""
         item_id = f"item-{len(self.added_items) + 1}"
         self.added_items.append((url, item_id))
@@ -1291,6 +1291,15 @@ class TestScopedBoardRouting:
         monkeypatch.setattr(
             project_automation, "reconcile_unassigned_statuses", lambda client: None
         )
+        corrected = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile",
+            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
+                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
+            )
+            or {},
+        )
 
         process_event("schedule", {})
 
@@ -1332,6 +1341,15 @@ class TestScopedBoardRouting:
         )
         monkeypatch.setattr(
             project_automation, "reconcile_unassigned_statuses", lambda client: None
+        )
+        corrected = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile",
+            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
+                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
+            )
+            or {},
         )
 
         process_event("schedule", {})
@@ -1387,3 +1405,306 @@ class TestAddItemRace:
 
         assert BrokenGraphQL(token="test-token").add_item("PVT_1", "I_1") is None
         assert failures and "Resource not accessible" in failures[0]
+
+
+class TestExpectedStatusTable:
+    """Table-driven unit tests for pure expected_status across all canonical states."""
+
+    @pytest.mark.parametrize(
+        "item,kwargs,expected",
+        [
+            # Pull requests:
+            # - merged PR -> Done
+            ({"is_pr": True, "state": "closed", "merged": True}, {}, "Done"),
+            ({"is_pr": True, "state": "merged", "merged": True}, {}, "Done"),
+            (
+                {
+                    "type": "PullRequest",
+                    "state": "closed",
+                    "merged_at": "2026-09-14T00:00:00Z",
+                },
+                {},
+                "Done",
+            ),
+            # - PR closed unmerged -> Dropped
+            ({"is_pr": True, "state": "closed", "merged": False}, {}, "Dropped"),
+            # - PR closed unmerged with duplicate/superseded -> Superseded
+            (
+                {"is_pr": True, "state": "closed", "merged": False, "labels": ["Superseded"]},
+                {},
+                "Superseded",
+            ),
+            (
+                {"is_pr": True, "state": "closed", "merged": False, "labels": ["duplicate"]},
+                {},
+                "Superseded",
+            ),
+            # - PR open ready / draft -> In Progress
+            ({"is_pr": True, "state": "open", "draft": False}, {}, "In Progress"),
+            ({"is_pr": True, "state": "open", "draft": True}, {}, "In Progress"),
+            ({"is_pr": True, "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            # - PR open but blocked by label or checkpoint
+            ({"is_pr": True, "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
+            ({"is_pr": True, "state": "open"}, {"checkpoint": True}, "Blocked"),
+            # Issues:
+            # - issue closed completed -> Done
+            ({"kind": "Issue", "state": "closed", "state_reason": "completed"}, {}, "Done"),
+            ({"kind": "Issue", "state": "closed", "labels": ["Done"]}, {}, "Done"),
+            # - issue closed with bound PR merged -> Done
+            ({"kind": "Issue", "state": "closed"}, {"bound_prs": [{"merged": True}]}, "Done"),
+            # - issue closed not planned -> Dropped
+            ({"kind": "Issue", "state": "closed", "state_reason": "not_planned"}, {}, "Dropped"),
+            ({"kind": "Issue", "state": "closed", "labels": ["Dropped"]}, {}, "Dropped"),
+            # - issue closed as duplicate or superseded -> Superseded
+            ({"kind": "Issue", "state": "closed", "state_reason": "duplicate"}, {}, "Superseded"),
+            (
+                {"kind": "Issue", "state": "closed", "state_reason": "superseded"},
+                {},
+                "Superseded",
+            ),
+            ({"kind": "Issue", "state": "closed", "labels": ["Superseded"]}, {}, "Superseded"),
+            # - closed issue without implementation / no reason -> Dropped
+            ({"kind": "Issue", "state": "closed"}, {}, "Dropped"),
+            # - closed issue with stale In Progress label -> Dropped
+            ({"kind": "Issue", "state": "closed", "labels": ["In Progress"]}, {}, "Dropped"),
+            # - open issue with quota checkpoint or Blocked label -> Blocked
+            ({"kind": "Issue", "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
+            ({"kind": "Issue", "state": "open"}, {"checkpoint": True}, "Blocked"),
+            # - open issue with bound PR ready / In Progress label -> In Progress
+            ({"kind": "Issue", "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            (
+                {"kind": "Issue", "state": "open"},
+                {"bound_prs": [{"state": "open", "draft": False}]},
+                "In Progress",
+            ),
+            # - open issue with Backlog label -> Backlog
+            ({"kind": "Issue", "state": "open", "labels": ["Backlog"]}, {}, "Backlog"),
+            # - open issue with ToDo label or untriaged -> ToDo
+            ({"kind": "Issue", "state": "open", "labels": ["ToDo"]}, {}, "ToDo"),
+            ({"kind": "Issue", "state": "open", "labels": []}, {}, "ToDo"),
+            # - open issue with stale terminal Done label -> ToDo
+            ({"kind": "Issue", "state": "open", "labels": ["Done"]}, {}, "ToDo"),
+        ],
+    )
+    def test_expected_status_cases(self, item, kwargs, expected):
+        assert project_automation.expected_status(item, **kwargs) == expected
+
+
+def test_event_handler_merged_pr_closes_bound_issue():
+    """Event handler: merged PR closes bound issues and marks both Done."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 99,
+            "html_url": f"https://github.com/{REPO}/pull/99",
+            "body": "Resolves #42",
+            "merged": True,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert (REPO, 99, "Done") in client.status_labels
+    assert (REPO, 42, "Done") in client.status_labels
+    assert (REPO, 42) in client.closed_issues
+    assert ("item-1", "Done") in client.edited_statuses
+
+
+def test_event_handler_issue_closed_not_planned():
+    """Event handler: issue closed as not_planned is Dropped on board and label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 77,
+            "html_url": f"https://github.com/{REPO}/issues/77",
+            "state": "closed",
+            "state_reason": "not_planned",
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Dropped")]
+    assert client.status_labels == [(REPO, 77, "Dropped")]
+
+
+def test_event_handler_closed_unmerged_pr_is_dropped():
+    """Event handler: closed unmerged PR is Dropped with Dropped label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 88,
+            "html_url": f"https://github.com/{REPO}/pull/88",
+            "body": "Some abandoned work",
+            "merged": False,
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert ("item-1", "Dropped") in client.edited_statuses
+    assert (REPO, 88, "Dropped") in client.status_labels
+
+
+def test_reconciliation_fixes_all_audited_faults():
+    """Reconciliation repairs missing label, status mismatch, closed-not-terminal, and missing member."""
+    repo_issues = [
+        {
+            "number": 101,
+            "url": f"https://github.com/{REPO}/issues/101",
+            "labels": [{"name": "bug"}],
+            "state": "open",
+            "title": "no status label",
+        },
+        {
+            "number": 102,
+            "url": f"https://github.com/{REPO}/issues/102",
+            "labels": [{"name": "In Progress"}],
+            "state": "closed",
+            "stateReason": "COMPLETED",
+            "title": "label mismatch and closed not terminal",
+        },
+        {
+            "number": 103,
+            "url": f"https://github.com/{REPO}/issues/103",
+            "labels": [{"name": "ToDo"}],
+            "state": "open",
+            "title": "open terminal on board",
+        },
+        {
+            "number": 104,
+            "url": f"https://github.com/{REPO}/issues/104",
+            "labels": [{"name": "Backlog"}],
+            "state": "open",
+            "title": "missing member",
+        },
+        {
+            "number": 105,
+            "url": f"https://github.com/{REPO}/issues/105",
+            "labels": [{"name": "ToDo"}, {"name": "In Progress"}],
+            "state": "open",
+            "title": "multiple status labels",
+        },
+    ]
+    repo_prs = []
+
+    board_items_map = {
+        f"https://github.com/{REPO}/issues/101": ("item-101", "ToDo"),
+        f"https://github.com/{REPO}/issues/102": ("item-102", "ToDo"),
+        f"https://github.com/{REPO}/issues/103": ("item-103", "Done"),
+        f"https://github.com/{REPO}/issues/105": ("item-105", "In Progress"),
+    }
+
+    class AuditedFakeClient(FakeProjectClient):
+        def __init__(self):
+            super().__init__()
+            self.project_number = 16
+            self.owner = "marius-patrik"
+            self.board_items = dict(board_items_map)
+
+        def load_existing_items(self):
+            return dict(self.board_items)
+
+        def run_gh(self, args):
+            import json as _json
+
+            if args[0] == "issue":
+                return _json.dumps(repo_issues)
+            elif args[0] == "pr":
+                return _json.dumps(repo_prs)
+            return "[]"
+
+        def add_item(self, url, content_id=None):
+            item_id = f"item-{len(self.board_items) + 100}"
+            self.board_items[url] = (item_id, None)
+            self.added_items.append((url, item_id))
+            return item_id
+
+        def edit_status(self, item_id, status_name):
+            for u, (iid, st) in list(self.board_items.items()):
+                if iid == item_id:
+                    self.board_items[u] = (iid, status_name)
+            self.edited_statuses.append((item_id, status_name))
+            return True
+
+        def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
+            self.status_labels.append((repo, issue_number, status_name))
+            for iss in repo_issues:
+                if iss["number"] == issue_number:
+                    filtered = [
+                        l
+                        for l in iss["labels"]
+                        if (l.get("name") if isinstance(l, dict) else str(l))
+                        not in project_automation.STATUS_LABELS
+                    ]
+                    filtered.append({"name": status_name})
+                    iss["labels"] = filtered
+
+    client = AuditedFakeClient()
+    result = project_automation.reconcile(
+        client=client,
+        owner="marius-patrik",
+        repo_slugs=[REPO],
+        dry_run=False,
+    )
+    corrections = result["corrections"]
+    assert corrections["missing_from_board"] == 1
+    assert corrections["closed_not_terminal"] == 1
+    assert corrections["open_terminal"] == 1
+    assert corrections["no_status_label"] == 1
+    assert corrections["label_mismatch"] == 1
+    assert corrections["multiple_status_labels"] == 1
+
+    for iss in repo_issues:
+        url = iss["url"]
+        assert url in client.board_items
+        _, current_status = client.board_items[url]
+        exp = project_automation.expected_status(iss)
+        assert current_status == exp
+        status_labels = {
+            l["name"]
+            for l in iss["labels"]
+            if (l.get("name") if isinstance(l, dict) else str(l))
+            in project_automation.STATUS_LABELS
+        }
+        assert status_labels == {exp}
+
+    second_result = project_automation.reconcile(
+        client=client,
+        owner="marius-patrik",
+        repo_slugs=[REPO],
+        dry_run=True,
+    )
+    for k, v in second_result["corrections"].items():
+        assert v == 0, f"Expected 0 for {k} on second run, got {v}"
+
+
+def test_label_writes_never_replace_non_status_labels():
+    """Assigning a status label preserves non-status labels such as area, kind, bug."""
+    requested = []
+
+    class FakeRest:
+        def request(self, method, path, json_data=None):
+            requested.append((method, path, json_data))
+            if method == "POST":
+                return [
+                    {"name": "bug"},
+                    {"name": "area:ci"},
+                    {"name": "In Progress"},
+                    {"name": "Done"},
+                ]
+            return {}
+
+    rest = FakeRest()
+    project_automation.GitHubRestClient.set_status_label(
+        rest,
+        "o/r",
+        42,
+        "Done",
+    )
+    assert ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]}) in requested
+    assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in requested
+    assert not any(p.endswith("bug") or p.endswith("area%3Aci") for _, p, _ in requested)
