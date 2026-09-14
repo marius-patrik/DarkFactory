@@ -518,27 +518,32 @@ class GitHubRestClient:
             status_name: Status label to assign.
             existing_labels: Optional list of current labels to avoid an extra lookup.
         """
-        if existing_labels is None:
-            try:
-                issue = self.get_issue(repo, issue_number)
-                existing_labels = issue.get("labels", [])
-            except Exception as exc:
-                print(f"Error reading labels for #{issue_number}: {_detail(exc)}", file=sys.stderr)
-                existing_labels = []
-
-        preserved = []
-        for lbl in existing_labels or []:
-            name = lbl.get("name") if isinstance(lbl, dict) else str(lbl)
-            if name and name not in STATUS_LABELS:
-                preserved.append(name)
-
-        new_labels = preserved + [status_name]
+        # The label set is never replaced. A PUT built from a label list read earlier (often the
+        # event payload) wipes every label another writer added in between: on #227 the agent's
+        # type and area labels were removed nine seconds after it applied them. Adding the status
+        # and deleting only the other status labels touches nothing else.
+        del existing_labels  # kept for callers; the POST response is the fresh label list
         try:
-            self.request(
-                "PUT", f"/repos/{repo}/issues/{issue_number}/labels", {"labels": new_labels}
+            current = self.request(
+                "POST", f"/repos/{repo}/issues/{issue_number}/labels", {"labels": [status_name]}
             )
         except Exception as exc:
             print(f"Error setting status label on #{issue_number}: {_detail(exc)}", file=sys.stderr)
+            return
+        for lbl in current if isinstance(current, list) else []:
+            name = lbl.get("name") if isinstance(lbl, dict) else str(lbl)
+            if name in STATUS_LABELS and name != status_name:
+                try:
+                    self.request(
+                        "DELETE",
+                        f"/repos/{repo}/issues/{issue_number}/labels/"
+                        f"{urllib.parse.quote(name, safe='')}",
+                    )
+                except Exception as exc:
+                    print(
+                        f"Error removing status label {name!r} from #{issue_number}: {_detail(exc)}",
+                        file=sys.stderr,
+                    )
 
     def add_issue_label(self, repo: str, issue_number: int, label: str) -> None:
         """Adds a single label to an issue or pull request.

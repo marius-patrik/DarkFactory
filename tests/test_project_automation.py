@@ -1089,30 +1089,47 @@ class TestRateLimitingAndQuotaReserve:
 
     def test_rest_client_set_status_label_preserves_domain_labels(self):
         """REST client exclusively replaces status labels while keeping domain labels intact."""
-        called_urls = []
-        payloads = []
+        calls = []
 
         rest = project_automation.GitHubRestClient(token="test-token")
 
         def mock_request(method, path, data=None):
-            called_urls.append((method, path))
-            if method == "GET":
-                return {
-                    "labels": [
-                        {"name": "bug"},
-                        {"name": "area:governance"},
-                        {"name": "In Progress"},
-                    ]
-                }
-            payloads.append(data)
-            return data
+            calls.append((method, path, data))
+            if method == "POST":
+                # GitHub answers "add labels" with every label now on the issue.
+                return [{"name": "bug"}, {"name": "area:governance"}, {"name": "In Progress"}] + [
+                    {"name": n} for n in data["labels"]
+                ]
+            return None
 
         rest.request = mock_request
         rest.set_status_label("o/r", 42, "Done")
 
-        assert ("GET", "/repos/o/r/issues/42") in called_urls
-        assert ("PUT", "/repos/o/r/issues/42/labels") in called_urls
-        assert payloads == [{"labels": ["bug", "area:governance", "Done"]}]
+        assert calls[0] == ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]})
+        assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in calls
+        assert not [
+            c for c in calls if c[0] == "PUT"
+        ], "replacing the label set races other writers"
+        assert not [c for c in calls if c[0] == "DELETE" and "Done" in c[1]]
+
+    def test_status_label_never_removes_labels_added_after_the_event(self):
+        """#227: type/area labels added 9s earlier were wiped by a PUT built from the event payload."""
+        calls = []
+        rest = project_automation.GitHubRestClient(token="test-token")
+
+        def mock_request(method, path, data=None):
+            calls.append((method, path, data))
+            if method == "POST":
+                return [{"name": "Request"}, {"name": "ci"}, {"name": "area:ci"}, {"name": "ToDo"}]
+            return None
+
+        rest.request = mock_request
+        stale_payload_labels = [{"name": "Request"}]
+        rest.set_status_label("o/r", 227, "ToDo", stale_payload_labels)
+
+        removed = [c[1] for c in calls if c[0] == "DELETE"]
+        assert removed == [], f"only other status labels may be removed, removed {removed}"
+        assert not [c for c in calls if c[0] == "PUT"]
 
     def test_quota_reconciliation_threshold_blocks_bulk_scan(self, monkeypatch):
         """When GraphQL quota is below 1000, bulk reconciliation is deferred to preserve event quota."""
