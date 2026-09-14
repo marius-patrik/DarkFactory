@@ -26,7 +26,11 @@ export async function packageAssets(root = process.cwd(), platform = process.pla
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;
 	const selected = candidates.find((candidate) => existsSync(join(root, "node_modules", "@earendil-works", "pi-tui", candidate.relativePath)));
-	if (!selected) throw new Error(`pi-tui has no native module for ${platform}-${arch}`);
+	if (!selected) {
+		// pi-tui ships prebuilt native helpers only for some platforms (none for Linux today); it runs without them.
+		console.warn(`pi-tui has no native module for ${platform}-${arch}; building without it`);
+		return;
+	}
 	const target = join(dist, selected.relativePath);
 	await mkdir(join(target, ".."), { recursive: true });
 	await copyFile(join(root, "node_modules", "@earendil-works", "pi-tui", selected.relativePath), target);

@@ -40,6 +40,7 @@
   },
   "environment": {
     "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
+    "ignore": ["harness"],
     "packages": [
       {
         "path": ".",
