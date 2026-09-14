@@ -62,7 +62,7 @@ co dělat.
 
 === Sestavení a artefakty
 
-#draft[
+#confirmed[
 Výsledkem sestavení bývá _artefakt_: spustitelný soubor, knihovna, nebo — jak
 ukazuje praktická část — vysázený dokument. Automatizace vydávání verzí spojuje
 artefakt se značkou v historii, takže ke každé vydané verzi existuje doložitelný
