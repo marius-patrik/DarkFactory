@@ -1,6 +1,40 @@
 import type { Candidate } from "../failover.ts";
 import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema.ts";
 import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
+import { nextPacificMidnight } from "../quota.ts";
+
+/** Wording providers use for limits that roll over once a day. */
+const DAILY_WORDING = /per[- ]?day|perday|\bdaily\b|day limit/iu;
+const LIMIT_WORDING = /rate limit|quota|too many requests|limit exceeded|exhausted/iu;
+
+/** The later of two resets: a short rule default must never shorten a reset the provider reported. */
+export function mergeReset(rule: number | undefined, observed: number | undefined): number | undefined {
+	if (rule === undefined) return observed;
+	if (observed === undefined) return rule;
+	return Math.max(rule, observed);
+}
+
+/** Next daily roll-over for a provider: UTC midnight unless its config says otherwise. */
+export function nextDailyReset(now: number, policy?: Pick<LimitPolicyConfig, "dailyReset">): number {
+	if (policy?.dailyReset === "pacific-midnight") return nextPacificMidnight(now);
+	const date = new Date(now);
+	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+}
+
+function nextMonthlyReset(now: number): number {
+	const date = new Date(now);
+	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
+}
+
+/** Reset and capacity hints a provider copies into an error body (headers inside JSON, retry fields). */
+function bodyHints(body: string, now: number): { resetAt?: number; limit?: number; remaining?: number } {
+	const field = (names: string): string | undefined => body.match(new RegExp(`["']?(?:${names})["']?\\s*[:=]\\s*["']?([0-9]+(?:\\.[0-9]+)?(?:ms|[dhms])?)["']?`, "iu"))?.[1];
+	const reset = field("x-ratelimit-reset(?:-requests|-tokens)?|retry[-_]after|resets?[-_]at");
+	const limit = numeric(field("x-ratelimit-limit(?:-requests)?"));
+	const remaining = numeric(field("x-ratelimit-remaining(?:-requests)?"));
+	const resetAt = parseReset(reset, now);
+	return { ...(resetAt === undefined ? {} : { resetAt }), ...(limit === undefined ? {} : { limit }), ...(remaining === undefined ? {} : { remaining }) };
+}
 
 function headerMap(headers: LimitObservation["headers"]): Map<string, string> {
 	if (!headers) return new Map();
@@ -100,13 +134,25 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 		if (genericLimit !== undefined || genericRemaining !== undefined) result.push({ ...candidate, type: "rate", dimension: "requests", observedAt: now, resetAt: parseReset(headers.get("x-ratelimit-reset") ?? headers.get("retry-after"), now) ?? now + 60_000, source: "header", ...(genericRemaining === undefined ? {} : { remaining: genericRemaining }), ...(genericLimit === undefined ? {} : { limit: genericLimit }) });
 	}
 	const body = text(observation.body);
+	let ruled = false;
 	for (const rule of policy.bodyRules ?? []) {
 		const entry = bodyEntry(candidate, body, rule, now);
-		if (entry) result.push(entry);
+		if (entry) { result.push(entry); ruled = true; }
+	}
+	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
+	// than a short default, or exhausted models look recovered minutes later and get retried.
+	if (!ruled && observation.body !== undefined && (observation.status === 429 || LIMIT_WORDING.test(body))) {
+		const hints = bodyHints(body, now);
+		const daily = DAILY_WORDING.test(body);
+		if (hints.resetAt !== undefined || daily) {
+			result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
+		}
 	}
 	return result;
 }
 
-export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now: number, resetAt: number | undefined, dimension?: LimitDimension, pool?: string): LimitEntry {
-	return { ...candidate, type, ...(dimension ? { dimension } : {}), ...(pool ? { pool } : {}), observedAt: now, resetAt: resetAt ?? now + 15 * 60_000, source: resetAt === undefined ? "default" : "rule", remaining: 0 };
+export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now: number, resetAt: number | undefined, dimension?: LimitDimension, pool?: string, policy?: LimitPolicyConfig): LimitEntry {
+	// A daily or monthly limit without a reported reset lasts until its roll-over, not fifteen minutes.
+	const fallback = type === "daily" ? nextDailyReset(now, policy) : type === "monthly" ? nextMonthlyReset(now) : now + 15 * 60_000;
+	return { ...candidate, type, ...(dimension ? { dimension } : {}), ...(pool ? { pool } : {}), observedAt: now, resetAt: resetAt ?? fallback, source: resetAt === undefined ? (type === "daily" || type === "monthly" ? "rule" : "default") : "rule", remaining: 0 };
 }

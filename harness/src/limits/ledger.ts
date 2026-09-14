@@ -117,7 +117,12 @@ export class LimitLedger {
 			const file = await this.readExisting() ?? await this.migrateQuota();
 			for (const [key, entry] of Object.entries(file.entries)) {
 				if (entry.resetAt > now) continue;
-				if (entry.source === "default" && confirm && !await confirm(entry)) { entry.observedAt = now; entry.resetAt = now + this.fallbackTtlMs; continue; }
+				if (entry.source === "default" && confirm && !await confirm(entry)) {
+					// Still limited: back off (doubling, capped at six hours) instead of probing on a fixed short timer.
+					const window = Math.max(entry.resetAt - entry.observedAt, this.fallbackTtlMs);
+					entry.observedAt = now; entry.resetAt = now + Math.min(window * 2, 6 * 60 * 60_000);
+					continue;
+				}
 				recovered.push(entry); delete file.entries[key];
 			}
 			await this.write(file);

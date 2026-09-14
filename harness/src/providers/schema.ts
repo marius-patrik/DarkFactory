@@ -70,6 +70,8 @@ export interface LimitPolicyConfig {
 	defaults?: LimitDefaultConfig[];
 	bodyRules?: LimitBodyRuleConfig[];
 	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
+	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
+	dailyReset?: "utc-midnight" | "pacific-midnight";
 }
 export interface ModelListConfig {
 	path: string;
@@ -234,6 +236,7 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 	if (entry.limits !== undefined) {
 		const limits = object(entry.limits, `provider ${id} limits`);
 		if (typeof limits.observe !== "boolean") throw new Error(`Provider ${id} limits.observe must be boolean`);
+		if (limits.dailyReset !== undefined && limits.dailyReset !== "utc-midnight" && limits.dailyReset !== "pacific-midnight") throw new Error(`Provider ${id} limits.dailyReset must be utc-midnight or pacific-midnight`);
 		if (limits.reserve !== undefined) {
 			const reserve = object(limits.reserve, `provider ${id} limits.reserve`);
 			for (const dimension of ["requests", "tokens"]) if (reserve[dimension] !== undefined && (typeof reserve[dimension] !== "number" || reserve[dimension] < 0)) throw new Error(`Provider ${id} limits.reserve.${dimension} must be non-negative`);

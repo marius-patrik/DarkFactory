@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { LimitLedger } from "../src/limits/ledger.ts";
-import { observeLimits } from "../src/limits/observe.ts";
+import { defaultLimit, mergeReset, observeLimits } from "../src/limits/observe.ts";
 import { assessCandidate, orderCandidates, type TaskEstimate } from "../src/limits/routing.ts";
 import type { LimitPolicyConfig } from "../src/providers/schema.ts";
 
@@ -91,7 +91,9 @@ describe("persisted limit ledger", () => {
 		await ledger.record([{ ...candidate, type: "overload", observedAt: 1, resetAt: 2, source: "default", remaining: 0 }]);
 		expect(await ledger.recover(2, async () => false)).toEqual([]);
 		expect(await ledger.blocking(candidate, 50)).toHaveLength(1);
-		expect(await ledger.recover(102, async () => true)).toHaveLength(1);
+		// Backed off: the next probe is after twice the last window, not after the fallback TTL.
+		expect(await ledger.recover(102, async () => true)).toEqual([]);
+		expect(await ledger.recover(202, async () => true)).toHaveLength(1);
 	});
 });
 
@@ -108,5 +110,42 @@ describe("limit-aware routing", () => {
 		const tiers = (item: typeof chain[number]) => item.provider === "tight" ? "tight" as const : "bulk" as const;
 		expect(orderCandidates(chain, "small", tiers)[0]?.provider).toBe("tight");
 		expect(orderCandidates(chain, "large", tiers)[0]?.provider).toBe("bulk");
+	});
+});
+
+describe("limits reset when the provider says, not on a short timer", () => {
+	// Observed 2026-09-14: OpenRouter reported its free daily limit with an exact reset, Groq and
+	// opencode-zen hit daily limits, and df recorded resets 191-755 seconds out, so the lanes kept
+	// retrying exhausted models ("blind cycling").
+	const openRouterDaily = '429: {"message":"Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day","code":429,"metadata":{"headers":{"X-RateLimit-Limit":"50","X-RateLimit-Remaining":"0","X-RateLimit-Reset":"1789430400000"},"limit_source":"openrouter_free_tier_daily"}}';
+	const now = Date.UTC(2026, 8, 14, 17, 40, 0);
+
+	test("a reset embedded in an error body is used, and per-day wording makes it daily", () => {
+		const entries = observeLimits({ provider: "openrouter", account: "default", model: "m" }, { status: 429, body: openRouterDaily }, { observe: true, standardHeaders: true }, now);
+		expect(entries).toHaveLength(1);
+		expect(entries[0]).toMatchObject({ type: "daily", resetAt: 1789430400000, remaining: 0, limit: 50, source: "body" });
+	});
+
+	test("a short rule reset never shortens a later reset the provider reported", () => {
+		expect(mergeReset(now + 60_000, 1789430400000)).toBe(1789430400000);
+		expect(mergeReset(now + 60_000, undefined)).toBe(now + 60_000);
+	});
+
+	test("a daily limit without a reported reset lasts until the provider's daily boundary", () => {
+		const utc = defaultLimit({ provider: "groq", account: "default", model: "m" }, "daily", now, undefined, undefined, undefined, { observe: true });
+		expect(utc.resetAt).toBe(Date.UTC(2026, 8, 15, 0, 0, 0));
+		const pacific = defaultLimit({ provider: "google", account: "default", model: "m" }, "daily", now, undefined, undefined, undefined, { observe: true, dailyReset: "pacific-midnight" });
+		expect(pacific.resetAt).toBe(Date.UTC(2026, 8, 15, 7, 0, 0));
+	});
+
+	test("a failed recovery probe backs off instead of retrying on the fallback timer", async () => {
+		const ledger = new LimitLedger(await home(), { fallbackTtlMs: 100 });
+		await ledger.record([{ ...candidate, type: "overload", observedAt: 0, resetAt: 1_000, source: "default", remaining: 0 }]);
+		expect(await ledger.recover(1_000, async () => false)).toEqual([]);
+		const [first] = await ledger.list();
+		expect(first!.resetAt - 1_000).toBeGreaterThanOrEqual(2_000);
+		expect(await ledger.recover(first!.resetAt, async () => false)).toEqual([]);
+		const [second] = await ledger.list();
+		expect(second!.resetAt - first!.resetAt).toBeGreaterThanOrEqual(2 * (first!.resetAt - 1_000));
 	});
 });
