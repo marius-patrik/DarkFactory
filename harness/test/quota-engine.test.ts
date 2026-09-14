@@ -51,17 +51,38 @@ describe("Quota Engine", () => {
 		expect(tokenCount).toBe(450); // 100+50 + 200+100
 	});
 
-	it("3. admission control: 5 RPM limit → 6th call signals wait/exhausted", async () => {
+	it("3. admission control: 5 requests at t0..t4 (1s apart) with 5 RPM -> 6th at t5 waits until t0+60s exactly", async () => {
 		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
 		const now = Date.now();
 
+		// 5 requests at t0..t4 (1s apart), recorded relative to now
 		for (let i = 0; i < 5; i++) {
 			await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 1_000 * i, inputTokens: 10, outputTokens: 10, success: true });
 		}
 
 		const verdict = await engine.admit(candidate, undefined, now);
 		expect(verdict.decision).toBe("wait");
-		expect(verdict.waitUntil).toBeDefined();
+		// Oldest request is at now-4s; with the google reserve of 1 request the second-oldest (now-3s) must leave the window.
+		expect(verdict.waitUntil! - now).toBe(57_000);
+	});
+
+	it("3b. usage pruning: events older than 24h are pruned on record, counts unchanged", async () => {
+		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
+		const now = Date.now();
+
+		// Record an old event (> 24h old, e.g. 26 hours ago)
+		await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 26 * 3600_000, inputTokens: 100, outputTokens: 100, success: true });
+
+		// Record a recent event
+		await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 10_000, inputTokens: 50, outputTokens: 50, success: true });
+
+		// Check count in 60s window (should only count the recent one, not the 26h old one)
+		const count = await engine.queryUsage(candidate, 60_000, "requests", undefined, now);
+		expect(count).toBe(1);
+
+		// Read usage.json directly to verify old event is gone
+		const raw = JSON.parse(await import("node:fs/promises").then(m => m.readFile(engine.path, "utf8"))) as { events: Array<{ timestamp: number }> };
+		expect(raw.events.some(e => e.timestamp < now - 24 * 3600_000)).toBe(false);
 	});
 
 	it("4. learned 429 daily limit blocks until reset and survives restart", async () => {

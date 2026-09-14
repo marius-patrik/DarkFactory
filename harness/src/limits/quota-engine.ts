@@ -51,6 +51,36 @@ export class QuotaEngine {
 		this.lockPath = `${this.path}.lock`;
 	}
 
+	private getLongestDeclaredWindowMs(): number {
+		let maxWindow = 86_400_000; // at least 24h
+		for (const config of this.providerConfigs.values()) {
+			if (config.limits?.declared) {
+				for (const d of config.limits.declared) {
+					if (d.windowMs && d.windowMs > maxWindow) {
+						maxWindow = d.windowMs;
+					}
+				}
+			}
+		}
+		return maxWindow;
+	}
+
+	async getMatchingEvents(candidate: Candidate, windowMs: number, pool?: string, now = Date.now()): Promise<UsageEvent[]> {
+		let file: UsageStoreFile;
+		try {
+			const raw = JSON.parse(await readFile(this.path, "utf8")) as UsageStoreFile;
+			file = raw.version === 1 && Array.isArray(raw.events) ? raw : { version: 1, events: [] };
+		} catch {
+			return [];
+		}
+		const cutoff = now - windowMs;
+		return file.events.filter((e) => {
+			if (e.timestamp < cutoff) return false;
+			if (pool && e.pool === pool) return true;
+			return e.provider === candidate.provider && e.account === candidate.account && (e.model === candidate.model || e.model === "*");
+		});
+	}
+
 	async record(event: Omit<UsageEvent, "id">): Promise<void> {
 		const fullEvent: UsageEvent = { id: crypto.randomUUID(), ...event };
 		await withFileLock(this.lockPath, async () => {
@@ -61,7 +91,7 @@ export class QuotaEngine {
 			} catch {
 				file = { version: 1, events: [] };
 			}
-			const cutoff = Date.now() - 7 * 86_400_000;
+			const cutoff = Date.now() - 86_400_000;
 			file.events = [...file.events.filter((e) => e.timestamp > cutoff), fullEvent];
 			await mkdir(dirname(this.path), { recursive: true });
 			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
@@ -71,19 +101,7 @@ export class QuotaEngine {
 	}
 
 	async queryUsage(candidate: Candidate, windowMs: number, dimension: "requests" | "tokens" | "usage" | "concurrency" = "requests", pool?: string, now = Date.now()): Promise<number> {
-		let file: UsageStoreFile;
-		try {
-			const raw = JSON.parse(await readFile(this.path, "utf8")) as UsageStoreFile;
-			file = raw.version === 1 && Array.isArray(raw.events) ? raw : { version: 1, events: [] };
-		} catch {
-			return 0;
-		}
-		const cutoff = now - windowMs;
-		const matching = file.events.filter((e) => {
-			if (e.timestamp < cutoff) return false;
-			if (pool && e.pool === pool) return true;
-			return e.provider === candidate.provider && e.account === candidate.account && (e.model === candidate.model || e.model === "*");
-		});
+		const matching = await this.getMatchingEvents(candidate, windowMs, pool, now);
 		if (dimension === "tokens") {
 			return matching.reduce((sum, e) => sum + (e.inputTokens ?? 0) + (e.outputTokens ?? 0), 0);
 		}
@@ -172,16 +190,40 @@ export class QuotaEngine {
 		const oneStepTokens = taskEstimate ? taskEstimate.contextTokens + taskEstimate.expectedOutputTokens : 0;
 
 		for (const d of declared) {
-			const used = await this.queryUsage(candidate, d.windowMs, d.dimension ?? "requests", d.pool, now);
-			const reserve = (d.dimension === "tokens" ? config?.limits?.reserve?.tokens : config?.limits?.reserve?.requests) ?? 0;
-			const remaining = d.limit - used - reserve;
-			if (d.dimension === "tokens" && oneStepTokens > remaining) {
-				const resetAt = now + d.windowMs;
-				return { decision: "wait", waitUntil: resetAt, reason: `token limit exceeded in window` };
-			}
-			if (d.dimension === "requests" && remaining < 1) {
-				const resetAt = now + (d.windowMs / Math.max(1, d.limit));
-				return { decision: "wait", waitUntil: resetAt, reason: `request rate limit reached` };
+			const dimension = d.dimension ?? "requests";
+			const matching = await this.getMatchingEvents(candidate, d.windowMs, d.pool, now);
+			const reserve = (dimension === "tokens" ? config?.limits?.reserve?.tokens : config?.limits?.reserve?.requests) ?? 0;
+			const effectiveLimit = d.limit - reserve;
+
+			if (dimension === "tokens") {
+				const used = matching.reduce((sum, e) => sum + (e.inputTokens ?? 0) + (e.outputTokens ?? 0), 0);
+				const remaining = effectiveLimit - used;
+				if (oneStepTokens > remaining) {
+					const sorted = [...matching].sort((a, b) => a.timestamp - b.timestamp);
+					let removedTokens = 0;
+					let resetAt = now + d.windowMs;
+					for (const e of sorted) {
+						removedTokens += (e.inputTokens ?? 0) + (e.outputTokens ?? 0);
+						if (used - removedTokens + oneStepTokens <= effectiveLimit) {
+							resetAt = e.timestamp + d.windowMs;
+							break;
+						}
+					}
+					if (resetAt === now + d.windowMs && sorted.length > 0) {
+						resetAt = sorted[sorted.length - 1]!.timestamp + d.windowMs;
+					}
+					return { decision: "wait", waitUntil: resetAt, reason: `token limit exceeded in window` };
+				}
+			} else {
+				const used = matching.length;
+				const remaining = effectiveLimit - used;
+				if (remaining < 1) {
+					const sorted = [...matching].sort((a, b) => a.timestamp - b.timestamp);
+					const k = Math.max(1, used - effectiveLimit + 1);
+					const targetEvent = sorted[Math.min(k - 1, sorted.length - 1)];
+					const resetAt = targetEvent ? targetEvent.timestamp + d.windowMs : now + d.windowMs;
+					return { decision: "wait", waitUntil: resetAt, reason: `request rate limit reached` };
+				}
 			}
 		}
 
