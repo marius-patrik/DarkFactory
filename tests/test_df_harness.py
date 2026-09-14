@@ -30,6 +30,7 @@ def _df_environment(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("DF_HOME", raising=False)
+    monkeypatch.setattr(agent_runner, "_DF_SETUP_HOME", None, raising=False)
     for name in agent_runner.df_setup_secret_names():
         monkeypatch.delenv(name, raising=False)
 
@@ -85,6 +86,58 @@ class TestDfJsonOutput:
         """A stray warning line must not break the parse."""
         stdout = "bun: some notice\n" + _stream({"type": "text_delta", "delta": "kept"})
         assert agent_runner.parse_df_json_output(stdout) == "kept"
+
+    def test_thinking_deltas_are_never_the_answer(self):
+        """Gemini thought summaries stream as thinking events; the answer is text only."""
+        stdout = _stream(
+            {"type": "thinking_delta", "delta": "Developing the Implementation Plan"},
+            {"type": "text_delta", "delta": "the real plan"},
+            {"type": "tool_start", "toolCallId": "t1", "toolName": "read", "input": {}},
+            {"type": "tool_end", "toolCallId": "t1", "toolName": "read", "isError": False},
+            {"type": "thinking_delta", "delta": "more internal reasoning"},
+            {"type": "text_delta", "delta": "final answer"},
+            {"type": "result", "stopReason": "end_turn"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "final answer"
+
+    def test_text_after_failover_is_the_answer(self):
+        """Text from a failed attempt or failover event is discarded; only the final successful attempt survives."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "thinking…"},
+            {
+                "type": "failover",
+                "from": {"provider": "google"},
+                "to": {"provider": "anthropic"},
+                "reason": "transient",
+                "errorMessage": "error",
+            },
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "result", "stopReason": "end_turn"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
+    def test_the_closing_step_of_a_successful_turn_keeps_the_answer(self):
+        """Real df streams end with text, then the turn's step, then the result."""
+        stdout = _stream(
+            {"type": "tool_start", "toolName": "read"},
+            {"type": "tool_end", "toolName": "read"},
+            {"type": "thinking_delta", "delta": "Developing the plan"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
+    def test_text_of_an_attempt_that_errored_is_discarded(self):
+        """A step that ended in an error discards the text streamed before it."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "partial"},
+            {"type": "step", "stopReason": "error", "errorMessage": "429"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
 
     def test_an_empty_stream_is_empty(self):
         """No deltas means no answer, which the runner treats as a failed attempt."""
@@ -344,6 +397,32 @@ class TestDfSetup:
 
         monkeypatch.setattr(agent_runner.subprocess, "run", missing)
         assert os.path.isdir(agent_runner.setup_df_accounts())
+
+    def test_setup_runs_once_per_process(self, monkeypatch):
+        """A second call reuses the first DF_HOME instead of reconfiguring accounts."""
+        monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+        calls = self._record(monkeypatch)
+        first = agent_runner.setup_df_accounts()
+        second = agent_runner.setup_df_accounts()
+        assert second == first
+        assert os.environ["DF_HOME"] == first
+        assert len([call for call in calls if call[0][:2] == ["df", "account"]]) == 1
+
+    def test_dispatch_reuses_the_main_setup(self, monkeypatch, tmp_path):
+        """dispatch_event does not reconfigure accounts main already set up."""
+        monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+        calls = self._record(monkeypatch)
+        agent_runner.setup_df_accounts()
+        seen = len(calls)
+        event = {
+            "repository": {"full_name": "owner/repo"},
+            "action": "opened",
+            "issue": {"number": 1, "labels": [{"name": "Plan"}]},
+        }
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(event), encoding="utf-8")
+        agent_runner.dispatch_event(str(path), "issues")
+        assert len(calls) == seen
 
 
 class TestDfLoginRotation:
