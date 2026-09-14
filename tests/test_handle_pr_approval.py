@@ -32,12 +32,19 @@ def test_collect_bound_issues_tolerates_missing_fields():
         ("/approve", True),
         ("LGTM", True),
         ("merge", True),
+        ("/df approve", True),
         ("looks good to me, approve when ready", False),
+        ("I do not approve yet", False),
+        ("/df reject", False),
+        ("/reject", False),
+        ("/df revise", False),
+        ("/df resume", False),
+        ("good", False),
         ("", False),
     ],
 )
 def test_detect_approval_from_comment(monkeypatch: pytest.MonkeyPatch, body: str, expected: bool):
-    """Only a bare approval word counts; prose mentioning it does not.
+    """Only an approval command counts; prose and rejections do not.
 
     Args:
         monkeypatch: Pytest monkeypatch fixture.
@@ -62,6 +69,121 @@ def test_detect_approval_ignores_comments_outside_pull_requests(monkeypatch: pyt
     monkeypatch.setenv("IS_PR", "false")
     monkeypatch.setenv("COMMENT_BODY", "approve")
     assert detect_approval() == (None, False)
+
+
+@pytest.mark.parametrize("state", ["approved", "APPROVED", "Approved"])
+def test_detect_approval_from_native_review_state(monkeypatch: pytest.MonkeyPatch, state: str):
+    """A native `APPROVED` review counts without consulting `IS_PR`.
+
+    The workflow used to derive `IS_PR` from the `issue` object, which
+    `pull_request_review` events do not carry — so every native approval was missed.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        state: Review state.
+    """
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request_review")
+    monkeypatch.delenv("IS_PR", raising=False)
+    monkeypatch.setenv("PR_NUMBER", "7")
+    monkeypatch.setenv("REVIEW_STATE", state)
+    monkeypatch.setenv("REVIEW_BODY", "")
+    assert detect_approval() == ("7", True)
+
+
+@pytest.mark.parametrize(
+    "state,body",
+    [
+        ("commented", "approve"),
+        ("commented", "LGTM, merge it"),
+        ("changes_requested", "approve"),
+        ("dismissed", ""),
+        ("", "approved"),
+    ],
+)
+def test_review_body_words_never_count(monkeypatch: pytest.MonkeyPatch, state: str, body: str):
+    """The loose body match fired on "I don't approve yet"; only state counts.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        state: Review state.
+        body: Review body.
+    """
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request_review")
+    monkeypatch.setenv("PR_NUMBER", "7")
+    monkeypatch.setenv("REVIEW_STATE", state)
+    monkeypatch.setenv("REVIEW_BODY", body)
+    _pr, approved = detect_approval()
+    assert approved is False
+
+
+def test_actor_gate_rejects_strangers(monkeypatch: pytest.MonkeyPatch, capsys):
+    """Owner decision 9c: neither the author nor a role means no merge path.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        capsys: Pytest capture fixture.
+    """
+    monkeypatch.setenv("GITHUB_ACTOR", "stranger")
+    monkeypatch.setenv("APPROVER_ASSOCIATION", "CONTRIBUTOR")
+    monkeypatch.setenv("ISSUE_AUTHOR", "marius-patrik")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setattr(
+        handle_pr_approval,
+        "_gh",
+        lambda *a, **k: pytest.fail("a stranger must not reach the merge path"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        handle_pr_approval.handle_pr_approval()
+    assert exc.value.code == 0
+
+
+def test_actor_gate_rejects_bots_even_with_owner_association(
+    monkeypatch: pytest.MonkeyPatch, capsys
+):
+    """A bot account never approves, however privileged its association.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        capsys: Pytest capture fixture.
+    """
+    monkeypatch.setenv("GITHUB_ACTOR", "github-actions[bot]")
+    monkeypatch.setenv("APPROVER_ASSOCIATION", "OWNER")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setattr(
+        handle_pr_approval,
+        "_gh",
+        lambda *a, **k: pytest.fail("a bot must not reach the merge path"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        handle_pr_approval.handle_pr_approval()
+    assert exc.value.code == 0
+
+
+def test_request_author_passes_the_actor_gate(monkeypatch: pytest.MonkeyPatch, capsys):
+    """The Request author approves without holding a privileged role.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        capsys: Pytest capture fixture.
+    """
+    monkeypatch.setenv("GITHUB_ACTOR", "author")
+    monkeypatch.setenv("APPROVER_ASSOCIATION", "CONTRIBUTOR")
+    monkeypatch.setenv("ISSUE_AUTHOR", "author")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "issue_comment")
+    monkeypatch.setenv("IS_PR", "true")
+    monkeypatch.setenv("PR_NUMBER", "42")
+    monkeypatch.setenv("COMMENT_BODY", "/df approve")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+
+    def fake_gh(args: List[str], repo: str, check: bool = False, as_bot: bool = False):
+        return subprocess.CompletedProcess(
+            args, 0, '{"isDraft": false, "state": "MERGED", "reviewDecision": ""}', ""
+        )
+
+    monkeypatch.setattr(handle_pr_approval, "_gh", fake_gh)
+    with pytest.raises(SystemExit):
+        handle_pr_approval.handle_pr_approval()
+    assert "approved by @author" in capsys.readouterr().out
 
 
 def test_proxy_review_refuses_without_a_bot_token(monkeypatch: pytest.MonkeyPatch):

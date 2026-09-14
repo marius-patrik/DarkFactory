@@ -41,6 +41,15 @@ for _d in _CANDIDATE_DIRS:
 
 import harnesses
 import manifest as _manifest_module
+from commands import (
+    HINT_MARKER,
+    ISSUE_COMMAND_RE,
+    command_feedback,
+    is_allowed_approver,
+    is_command_hint,
+    parse_issue_command,
+    parse_pr_command,
+)
 from harnesses import Harness, resolve_attempts
 
 #: Repository-specific configuration, read once at import.
@@ -710,7 +719,10 @@ def is_bot_or_agent_comment(user_login: str, body: str) -> bool:
 #: Accepting "three concerns, and approve" would collapse those two acts into one ambiguous
 #: message - nobody can tell whether the concerns were meant to be addressed first. Requiring the
 #: word to stand alone is what keeps a decision distinguishable from a discussion.
-APPROVAL_PATTERN = re.compile(r"(?i)^\s*(?:/approve|approve|good|lgtm|/resume|resume)\s*$")
+#:
+#: The grammar itself lives in :mod:`commands` so the issue gates here and the merge gate in
+#: `handle_pr_approval` parse the same commands. This alias keeps the historic name working.
+APPROVAL_PATTERN = ISSUE_COMMAND_RE
 
 
 def is_quota_exhausted(error_message: str) -> bool:
@@ -1501,8 +1513,15 @@ def run_agent_prompt(
     return err
 
 
-def handle_interpret(issue_number: int, repo: str):
-    """Generates and posts an interpretation comment on a Request issue."""
+def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
+    """Generates and posts an interpretation comment on a Request issue.
+
+    Args:
+        issue_number: Request issue number.
+        repo: Repository slug (owner/name).
+        feedback: Reviewer feedback from a `reject`/`revise` comment. When present
+            the interpretation is re-run with the feedback instead of starting over.
+    """
     raw_issue = run_gh(
         ["issue", "view", str(issue_number), "--json", "title,body,labels"], repo=repo
     )
@@ -1525,6 +1544,11 @@ def handle_interpret(issue_number: int, repo: str):
         "3. Proposed Verification Plan\n"
         "Keep it concise and clear."
     )
+    if feedback:
+        prompt += (
+            "\n\nThe previous interpretation was rejected with this reviewer feedback, "
+            f'which must be addressed in the new interpretation:\n"{feedback}"'
+        )
     checkpoint_ctx = {
         "issue_number": issue_number,
         "repo": repo,
@@ -1663,8 +1687,17 @@ def _is_plan_comment(body: str) -> bool:
     return "### Implementation Plan" in body or body.lstrip().startswith("## Implementation Plan")
 
 
-def handle_plan(request_number: int, plan_number: int, repo: str):
-    """Generates and posts an implementation plan on the child Plan issue."""
+def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str = ""):
+    """Generates and posts an implementation plan on the child Plan issue.
+
+    Args:
+        request_number: Parent Request issue number.
+        plan_number: Issue the plan is posted on (the Request itself when the gates
+            are merged, a child Plan issue for legacy issues).
+        repo: Repository slug (owner/name).
+        feedback: Reviewer feedback from a `reject`/`revise` comment. When present
+            the plan is re-run with the feedback instead of starting over.
+    """
     req_data = json.loads(
         run_gh(["issue", "view", str(request_number), "--json", "title,body"], repo=repo)
     )
@@ -1673,6 +1706,11 @@ def handle_plan(request_number: int, plan_number: int, repo: str):
         f"Title: {req_data.get('title')}\nDetails: {req_data.get('body')}\n\n"
         "Include Scope, Architectural & Code Changes, and Verification Steps."
     )
+    if feedback:
+        prompt += (
+            "\n\nThe previous plan was rejected with this reviewer feedback, "
+            f'which must be addressed in the new plan:\n"{feedback}"'
+        )
     checkpoint_ctx = {
         "issue_number": plan_number,
         "repo": repo,
@@ -2615,6 +2653,62 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         print(f"Plan alignment divergence detected on PR #{pr_number}")
 
 
+#: One-time hint posted when free text merely mentions a command word.
+COMMAND_HINT_BODY = (
+    HINT_MARKER
+    + "\nThat looks like approval feedback, but only a command on its own line counts as a "
+    "decision. Reply with `/df approve` (or `/approve`) to approve, `/df reject` (alias "
+    "`/df revise`, or `/reject` / `/revise`) to send the stage back with feedback, or `/df resume` "
+    "(or `/resume`) to resume a stopped run. Anything else is answered as ordinary feedback."
+)
+
+
+def post_command_hint_once(issue_number: int, repo: str) -> bool:
+    """Posts the command-grammar hint unless it is already on the issue.
+
+    Args:
+        issue_number: Issue to hint on.
+        repo: Repository slug (owner/name).
+
+    Returns:
+        True when a hint was posted.
+    """
+    try:
+        raw = run_gh(["issue", "view", str(issue_number), "--json", "comments"], repo=repo)
+    except Exception as exc:  # noqa: BLE001 - an unreadable issue must not fail the run
+        print(f"Could not read comments on #{issue_number}: {exc}", file=sys.stderr)
+        return False
+    try:
+        comments = json.loads(raw or "{}").get("comments", []) or []
+    except Exception:  # noqa: BLE001 - malformed output means "unknown", so stay silent
+        return False
+    if any(HINT_MARKER in (c.get("body") or "") for c in comments if isinstance(c, dict)):
+        return False
+    try_gh(
+        ["issue", "comment", str(issue_number), "--body", COMMAND_HINT_BODY],
+        repo=repo,
+        doing=f"post the command hint on #{issue_number}",
+    )
+    return True
+
+
+def _comment_actor(comment: Dict[str, Any]) -> tuple:
+    """Extracts the commenter's identity from an `issue_comment` payload.
+
+    Args:
+        comment: The ``comment`` object of the webhook payload.
+
+    Returns:
+        Tuple of ``(login, author_association, user_type)``.
+    """
+    user = comment.get("user", {}) or {}
+    return (
+        user.get("login", "") or "",
+        comment.get("author_association", "") or "",
+        user.get("type", "") or "",
+    )
+
+
 def dispatch_event(event_path: str, event_name: str):
     """Dispatches the event to the appropriate agent handler."""
     if not os.path.exists(event_path):
@@ -2711,9 +2805,40 @@ def dispatch_event(event_path: str, event_name: str):
             labels = [
                 l.get("name") if isinstance(l, dict) else str(l) for l in issue.get("labels", [])
             ]
+            lowered_labels = {str(lbl).lower() for lbl in labels}
+
+            # A pipeline-failure issue is the pipeline reporting on itself. Comments on it
+            # must not run the agent (an LLM call) — unless the comment resumes the run.
+            if "pipeline-failure" in lowered_labels:
+                if parse_issue_command(comment_body) != "resume":
+                    print(
+                        f"Skipping comment on pipeline-failure issue #{issue_num}; "
+                        "only a resume command resumes it."
+                    )
+                    return
+                unblock_entity(issue_num, repo, is_pr=is_pr)
+                handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                return
+
+            issue_author = ((issue.get("user", {}) or {}).get("login", "")) or ""
+            login, association, user_type = _comment_actor(comment)
+            allowed = is_allowed_approver(
+                login,
+                author_association=association,
+                issue_author=issue_author,
+                user_type=user_type,
+            )
             is_request = any(l.lower() == "request" for l in labels)
             is_plan = any(l.lower() == "plan" for l in labels)
-            if re.search(APPROVAL_PATTERN, comment_body):
+            command = parse_issue_command(comment_body)
+            if command is not None and not allowed:
+                # A stranger's "approve" is feedback, never a gate transition.
+                print(
+                    f"Ignoring {command} command on #{issue_num} from @{login}: "
+                    "not the author nor OWNER/MEMBER/COLLABORATOR."
+                )
+                command = None
+            if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
                 load_checkpoint(cwd=WORKSPACE_DIR)
                 if is_request:
@@ -2747,7 +2872,28 @@ def dispatch_event(event_path: str, event_name: str):
                         handle_self_review(issue_num, plan_num, repo)
                     else:
                         print(f"Could not find linked Plan for PR #{issue_num}")
+            elif command == "reject":
+                # A rejection routes back to the same stage with the comment as feedback:
+                # never an approval, never a close, and on a PR never a merge.
+                print(f"Rejection comment on #{issue_num} from @{comment_user}.")
+                feedback = command_feedback(comment_body) or comment_body
+                if is_request:
+                    if has_plan(issue_num, repo):
+                        handle_plan(issue_num, issue_num, repo, feedback=feedback)
+                    else:
+                        handle_interpret(issue_num, repo, feedback=feedback)
+                elif is_plan:
+                    request_num = find_parent_request_number(issue_num, repo)
+                    if request_num:
+                        handle_plan(request_num, issue_num, repo, feedback=feedback)
+                    else:
+                        print(f"Could not find parent Request for Plan #{issue_num}")
+                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                else:
+                    handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
             else:
+                if (is_request or is_plan) and is_command_hint(comment_body):
+                    post_command_hint_once(issue_num, repo)
                 handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
 
     elif event_name == "pull_request_review_comment":
@@ -2764,13 +2910,28 @@ def dispatch_event(event_path: str, event_name: str):
                     f"Skipping PR review comment on #{pr_num} authored by bot/agent ({comment_user})."
                 )
                 return
-            if re.search(APPROVAL_PATTERN, comment_body):
+            pr_author = ((pr.get("user", {}) or {}).get("login", "")) or ""
+            review_user = comment.get("user", {}) or {}
+            review_command = parse_pr_command(comment_body)
+            if review_command is not None and not is_allowed_approver(
+                review_user.get("login", "") or "",
+                author_association=comment.get("author_association", "") or "",
+                issue_author=pr_author,
+                user_type=review_user.get("type", "") or "",
+            ):
+                print(
+                    f"Ignoring {review_command} review comment on #{pr_num}: "
+                    "not the author nor OWNER/MEMBER/COLLABORATOR."
+                )
+                review_command = None
+            if review_command in ("approve", "resume"):
                 unblock_entity(pr_num, repo, is_pr=True, target_status="In Progress")
                 plan_num = find_plan_issue_for_pr(pr_num, repo)
                 if plan_num:
                     unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
                     handle_self_review(pr_num, plan_num, repo)
                     return
+            # A rejection is a change request: answered, never merged, never re-reviewed.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
 

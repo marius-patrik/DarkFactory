@@ -1266,3 +1266,302 @@ class TestPlanAlignmentStatus:
             (20, False, "In Progress"),
             (30, False, "In Progress"),
         ]
+
+
+def _issue_comment_payload(
+    body,
+    login="marius-patrik",
+    assoc="OWNER",
+    user_type="User",
+    labels=("Request",),
+    issue_author="marius-patrik",
+    number=91,
+    is_pr=False,
+):
+    """Builds an `issue_comment: created` payload.
+
+    Args:
+        body: Comment body.
+        login: Comment author login.
+        assoc: Comment `author_association`.
+        user_type: Comment author `user.type`.
+        labels: Issue labels.
+        issue_author: Issue author login.
+        number: Issue number.
+        is_pr: Whether the issue is a pull request.
+
+    Returns:
+        The webhook payload.
+    """
+    issue = {
+        "number": number,
+        "labels": [{"name": name} for name in labels],
+        "user": {"login": issue_author},
+    }
+    if is_pr:
+        issue["pull_request"] = {"url": "https://github.com/o/r/pull/91"}
+    return {
+        "action": "created",
+        "comment": {
+            "body": body,
+            "user": {"login": login, "type": user_type},
+            "author_association": assoc,
+        },
+        "issue": issue,
+        "repository": {"full_name": REPO_SLUG},
+    }
+
+
+def _dispatch_issue_comment(monkeypatch, tmp_path, payload, plan_exists=False):
+    """Dispatches a payload with every stage handler replaced by a recorder.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        tmp_path: Pytest-provided empty directory.
+        payload: Webhook payload.
+        plan_exists: What `has_plan` reports.
+
+    Returns:
+        Dict of recorded calls per handler name.
+    """
+    module = agent_runner_module()
+    calls: dict = {
+        "interpret": [],
+        "plan": [],
+        "implement": [],
+        "self_review": [],
+        "respond": [],
+        "unblock": [],
+        "gh": [],
+    }
+    monkeypatch.setattr(
+        module,
+        "handle_interpret",
+        lambda n, r, feedback="": calls["interpret"].append((n, feedback)),
+    )
+    monkeypatch.setattr(
+        module,
+        "handle_plan",
+        lambda req, plan, r, feedback="": calls["plan"].append((req, plan, feedback)),
+    )
+    monkeypatch.setattr(module, "handle_implement", lambda *a: calls["implement"].append(a))
+    monkeypatch.setattr(module, "handle_self_review", lambda *a: calls["self_review"].append(a))
+    monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append((a, k)))
+    monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: calls["unblock"].append((a, k)))
+    monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
+    monkeypatch.setattr(module, "has_plan", lambda n, r: plan_exists)
+    monkeypatch.setattr(module, "run_gh", lambda *a, **k: (calls["gh"].append(a), "{}")[1])
+    path = tmp_path / "event.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    module.dispatch_event(str(path), "issue_comment")
+    return calls
+
+
+class TestPipelineFailureComments:
+    """Comments on `pipeline-failure` issues must not run the agent."""
+
+    def test_an_ordinary_comment_runs_nothing(self, monkeypatch, tmp_path):
+        """No LLM call, no gate, no board move — the report is left alone."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("what happened here?", labels=("pipeline-failure",)),
+        )
+        assert calls["respond"] == []
+        assert calls["interpret"] == []
+        assert calls["plan"] == []
+        assert calls["implement"] == []
+        assert calls["unblock"] == []
+
+    def test_an_approval_shaped_comment_runs_nothing(self, monkeypatch, tmp_path):
+        """`approve` on a failure report is not a gate; the gates live elsewhere."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("approve", labels=("pipeline-failure",)),
+        )
+        assert calls["respond"] == []
+        assert calls["plan"] == []
+        assert calls["implement"] == []
+
+    def test_only_a_resume_command_is_processed(self, monkeypatch, tmp_path):
+        """The resume escape hatch still answers instead of skipping."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/df resume", labels=("pipeline-failure",)),
+        )
+        assert len(calls["respond"]) == 1
+
+
+class TestRejectRoutesBack:
+    """`reject`/`revise` re-runs the same stage with the comment as feedback."""
+
+    def test_reject_on_an_interpretation_reruns_interpretation(self, monkeypatch, tmp_path):
+        """No plan yet means the interpretation stage owns the rejection."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/df reject use bun, not npm"),
+        )
+        assert len(calls["interpret"]) == 1
+        _num, feedback = calls["interpret"][0]
+        assert "use bun, not npm" in feedback
+        assert calls["plan"] == []
+        assert calls["implement"] == []
+        assert calls["unblock"] == [], "a rejection unblocks nothing"
+        assert not any("close" in args for args in calls["gh"]), "a rejection closes nothing"
+
+    def test_reject_on_a_plan_reruns_planning(self, monkeypatch, tmp_path):
+        """A plan exists means the plan stage owns the rejection."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/revise the scope is wrong"),
+            plan_exists=True,
+        )
+        assert len(calls["plan"]) == 1
+        _req, _plan, feedback = calls["plan"][0]
+        assert "the scope is wrong" in feedback
+        assert calls["implement"] == []
+        assert calls["interpret"] == []
+
+    def test_reject_on_a_pull_request_is_a_change_request(self, monkeypatch, tmp_path):
+        """On a PR there is no stage to re-run: the agent answers, nothing merges."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/df reject needs tests", labels=(), is_pr=True),
+        )
+        assert len(calls["respond"]) == 1
+        assert calls["self_review"] == []
+        assert calls["unblock"] == [], "a change request arms no merge"
+
+    def test_reject_is_never_an_approval(self, monkeypatch, tmp_path):
+        """Even the strict `/df reject` must not advance either gate."""
+        calls = _dispatch_issue_comment(
+            monkeypatch, tmp_path, _issue_comment_payload("/df reject"), plan_exists=True
+        )
+        assert calls["implement"] == []
+
+
+class TestWhoMayApprove:
+    """Owner decision 9c: the Request author or OWNER/MEMBER/COLLABORATOR, never a bot."""
+
+    def test_a_strangers_approve_is_feedback(self, monkeypatch, tmp_path):
+        """It is answered, but the plan gate does not move."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("approve", login="stranger", assoc="CONTRIBUTOR"),
+        )
+        assert len(calls["respond"]) == 1
+        assert calls["plan"] == []
+        assert calls["implement"] == []
+
+    def test_a_strangers_strict_command_is_feedback(self, monkeypatch, tmp_path):
+        """The strict grammar does not promote strangers either."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload("/df approve", login="stranger", assoc="NONE"),
+        )
+        assert len(calls["respond"]) == 1
+        assert calls["plan"] == []
+
+    def test_the_request_author_may_approve(self, monkeypatch, tmp_path):
+        """A CONTRIBUTOR who filed the request approves their own gate."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload(
+                "/df approve", login="author", assoc="CONTRIBUTOR", issue_author="author"
+            ),
+        )
+        assert len(calls["plan"]) == 1
+        assert calls["respond"] == []
+
+    def test_a_collaborator_may_approve(self, monkeypatch, tmp_path):
+        """Role-based approval without authorship."""
+        calls = _dispatch_issue_comment(
+            monkeypatch,
+            tmp_path,
+            _issue_comment_payload(
+                "lgtm", login="helper", assoc="COLLABORATOR", issue_author="someone-else"
+            ),
+        )
+        assert len(calls["plan"]) == 1
+
+
+class TestCommandHint:
+    """Free text mentioning a command word earns at most one hint comment."""
+
+    def _dispatch_with_comments(self, monkeypatch, tmp_path, body, existing):
+        """Dispatches with preset existing comments, recording posted bodies.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+            tmp_path: Pytest-provided empty directory.
+            body: New comment body.
+            existing: Bodies already on the issue.
+
+        Returns:
+            Tuple of (calls, posted bodies).
+        """
+        module = agent_runner_module()
+        posted = []
+        calls = {"respond": []}
+        monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append(a))
+
+        def fake_gh(args, repo=None):
+            if args[:2] == ["issue", "comment"]:
+                posted.append(args[args.index("--body") + 1])
+                return ""
+            return json.dumps({"comments": [{"body": b} for b in existing]})
+
+        monkeypatch.setattr(module, "run_gh", fake_gh)
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(_issue_comment_payload(body)), encoding="utf-8")
+        module.dispatch_event(str(path), "issue_comment")
+        return calls, posted
+
+    def test_a_mention_posts_the_hint_and_still_answers(self, monkeypatch, tmp_path):
+        """The mention is feedback (answered), and the grammar gets one explanation."""
+        calls, posted = self._dispatch_with_comments(
+            monkeypatch, tmp_path, "I do not approve yet", []
+        )
+        assert len(calls["respond"]) == 1
+        assert len(posted) == 1
+        assert "<!-- darkfactory-command-hint -->" in posted[0]
+        assert "/df approve" in posted[0]
+
+    def test_the_hint_is_posted_at_most_once(self, monkeypatch, tmp_path):
+        """A second mention finds the marker and stays silent."""
+        _calls, posted = self._dispatch_with_comments(
+            monkeypatch,
+            tmp_path,
+            "I do not approve yet",
+            ["<!-- darkfactory-command-hint -->\nuse /df approve"],
+        )
+        assert posted == []
+
+    def test_a_real_command_posts_no_hint(self, monkeypatch, tmp_path):
+        """Commands act; they need no explanation."""
+        module = agent_runner_module()
+        posted = []
+        monkeypatch.setattr(module, "handle_plan", lambda *a, **k: None)
+        monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: None)
+        monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
+        monkeypatch.setattr(module, "has_plan", lambda n, r: False)
+
+        def fake_gh(args, repo=None):
+            if args[:2] == ["issue", "comment"]:
+                posted.append(args[args.index("--body") + 1])
+                return ""
+            return json.dumps({"comments": []})
+
+        monkeypatch.setattr(module, "run_gh", fake_gh)
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(_issue_comment_payload("/df approve")), encoding="utf-8")
+        module.dispatch_event(str(path), "issue_comment")
+        assert posted == []
