@@ -49,6 +49,36 @@ describe("AgentSession harness", () => {
 		supervisor.session.dispose();
 	});
 
+	test("an empty final answer fails over instead of ending the run", async () => {
+		// E2E #267: gemini-3.6-flash stopped normally with zero output tokens; df returned the empty
+		// answer as success and the pipeline blocked the Request as if every model were exhausted.
+		const { home, cwd } = await tempWorkspace();
+		const empty = fauxProvider({ provider: "empty-a", models: [{ id: "a" }] });
+		empty.setResponses([fauxAssistantMessage([])]);
+		const good = fauxProvider({ provider: "answer-b", models: [{ id: "b" }] });
+		good.setResponses([fauxAssistantMessage("the plan")]);
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({ chain: [{ provider: "empty-a", model: "a", account: "one" }, { provider: "answer-b", model: "b", account: "two" }], home, cwd, ...runtimeProviders(empty.provider, good.provider), onEvent: (event) => events.push(event) });
+		try {
+			const final = await supervisor.prompt("plan it");
+			expect(final.content.some((block) => block.type === "text" && block.text === "the plan")).toBe(true);
+			expect(events.find((event) => event.type === "failover")).toMatchObject({ reason: "transient" });
+			expect(events.find((event) => event.type === "step" && event.errorKind)).toMatchObject({ errorMessage: "Model returned an empty response" });
+		} finally { supervisor.session.dispose(); }
+	});
+
+	test("a chain that only returns empty answers is exhausted, not successful", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const empty = fauxProvider({ provider: "only-empty", models: [{ id: "e" }] });
+		empty.setResponses([fauxAssistantMessage([])]);
+		const supervisor = await createFailoverSupervisor({ chain: [{ provider: "only-empty", model: "e", account: "one" }], home, cwd, ...runtimeProviders(empty.provider) });
+		try {
+			let error: unknown;
+			try { await supervisor.prompt("plan it"); } catch (caught) { error = caught; }
+			expect(error).toBeInstanceOf(ChainExhaustedError);
+		} finally { supervisor.session.dispose(); }
+	});
+
 	test("mixed fatal exhaustion exits 1 with the final redacted request error", () => {
 		const error = new ChainExhaustedError(["quota_exhausted", "fatal"], [
 			{ candidate: { provider: "a", model: "a", account: "one" }, kind: "quota_exhausted", message: "quota" },
