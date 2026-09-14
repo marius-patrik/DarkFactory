@@ -104,6 +104,12 @@ function isTerminalAbort(thrown: unknown, final: AssistantMessage | undefined): 
 	return thrown.name === "AbortError" || /(?:request|operation|run) (?:was )?aborted/i.test(thrown.message);
 }
 
+/** A normal stop that carries no text and no tool call: some models end a turn with zero output tokens. */
+function isEmptyAnswer(message: AssistantMessage): boolean {
+	return message.stopReason === "stop" && !message.content.some((block) =>
+		(block.type === "text" && block.text.trim() !== "") || block.type === "toolCall");
+}
+
 export class FailoverSupervisor {
 	private activeIndex: number;
 	private readonly failures: FailureKind[] = [];
@@ -249,16 +255,20 @@ export class FailoverSupervisor {
 			}
 			if (totalTurns >= maxTurns && final?.stopReason !== "stop") throw new MaxTurnsError(maxTurns);
 
-			if (!thrown && final && final.stopReason !== "error" && final.stopReason !== "aborted") {
+			const emptyAnswer = !thrown && final !== undefined && isEmptyAnswer(final);
+			if (!thrown && final && final.stopReason !== "error" && final.stopReason !== "aborted" && !emptyAnswer) {
 				this.emit({ type: "step", ...candidate, stopReason: final.stopReason, usage: final.usage, errorClass: null, errorKind: null, errorMessage: null, failoverReason: null });
 				return final;
 			}
 
 			const response = this.options.runtime.takeResponse();
 			const config = this.options.providerConfigs?.get(candidate.provider);
-			const failure = classifyFailure({ error: thrown, message: final, response, now: (this.options.now ?? Date.now)() }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
+			// An empty answer is not an answer: fail over like a transient provider error.
+			const failure: FailureClassification = emptyAnswer
+				? { kind: "transient", errorClass: "EmptyResponse" }
+				: classifyFailure({ error: thrown, message: final, response, now: (this.options.now ?? Date.now)() }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
 			const stopReason = final?.stopReason ?? "threw";
-			const errorMessage = redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
+			const errorMessage = emptyAnswer ? "Model returned an empty response" : redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
 			this.emit({
 				type: "step", ...candidate, stopReason, usage: final?.usage ?? null,
 				errorClass: failure.errorClass ?? null, errorKind: failure.kind, errorMessage,
@@ -279,7 +289,7 @@ export class FailoverSupervisor {
 			// preserve accepted user/tool-result entries, then synchronize agent state.
 			const leaf = this.session.sessionManager.getLeafEntry();
 			if (leaf?.type === "message" && leaf.message.role === "assistant" &&
-				(leaf.message.stopReason === "error" || leaf.message.stopReason === "aborted")) {
+				(leaf.message.stopReason === "error" || leaf.message.stopReason === "aborted" || isEmptyAnswer(leaf.message))) {
 				if (leaf.parentId) this.session.sessionManager.branch(leaf.parentId);
 				else this.session.sessionManager.resetLeaf();
 			}
