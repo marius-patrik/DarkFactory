@@ -54,6 +54,19 @@ export interface LimitDefaultConfig {
 	limit: number;
 	windowMs: number;
 	pool?: string;
+	source?: "docs" | "observed" | "default";
+	reset?: "rolling" | "fixed";
+	model?: string;
+}
+export interface DeclaredLimitConfig {
+	model?: string;
+	type: ConfiguredLimitType | "concurrency";
+	dimension?: "requests" | "tokens" | "usage" | "concurrency";
+	limit: number;
+	windowMs: number;
+	reset?: "rolling" | "fixed";
+	source?: "docs" | "observed" | "default";
+	pool?: string;
 }
 export interface LimitBodyRuleConfig {
 	type: ConfiguredLimitType;
@@ -68,6 +81,7 @@ export interface LimitPolicyConfig {
 	standardHeaders?: boolean;
 	reserve?: { requests?: number; tokens?: number };
 	defaults?: LimitDefaultConfig[];
+	declared?: DeclaredLimitConfig[];
 	bodyRules?: LimitBodyRuleConfig[];
 	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
 	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
@@ -248,6 +262,18 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 				if (!["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(item.type))) throw new Error(`Provider ${id} limit default has invalid type`);
 				if (item.dimension !== undefined && !["requests", "tokens", "usage"].includes(String(item.dimension))) throw new Error(`Provider ${id} limit default has invalid dimension`);
 				if (typeof item.limit !== "number" || item.limit <= 0 || typeof item.windowMs !== "number" || item.windowMs <= 0) throw new Error(`Provider ${id} limit default needs positive limit and windowMs`);
+			}
+		}
+		if (limits.declared !== undefined) {
+			if (!Array.isArray(limits.declared)) throw new Error(`Provider ${id} limits.declared must be an array`);
+			for (const rawDeclared of limits.declared) {
+				const item = object(rawDeclared, `provider ${id} limit declared`);
+				if (!["rate", "daily", "window", "monthly", "concurrency", "overload", "auth"].includes(String(item.type))) throw new Error(`Provider ${id} limit declared has invalid type`);
+				if (item.dimension !== undefined && !["requests", "tokens", "usage", "concurrency"].includes(String(item.dimension))) throw new Error(`Provider ${id} limit declared has invalid dimension`);
+				if (typeof item.limit !== "number" || item.limit <= 0) throw new Error(`Provider ${id} limit declared limit must be positive`);
+				if (typeof item.windowMs !== "number" || item.windowMs <= 0) throw new Error(`Provider ${id} limit declared windowMs must be positive`);
+				if (item.reset !== undefined && item.reset !== "rolling" && item.reset !== "fixed") throw new Error(`Provider ${id} limit declared reset must be rolling or fixed`);
+				if (item.source !== undefined && item.source !== "docs" && item.source !== "observed" && item.source !== "default") throw new Error(`Provider ${id} limit declared source must be docs, observed, or default`);
 			}
 		}
 		if (limits.bodyRules !== undefined) {

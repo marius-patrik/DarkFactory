@@ -14,6 +14,7 @@ import { DEFAULT_ROUTER_CONFIG, loadDfConfig, localCredentialFallback, type DfCo
 import type { Candidate } from "./failover.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type CandidateFailureReason, type HarnessEvent } from "./harness/supervisor.ts";
 import { LimitLedger } from "./limits/ledger.ts";
+import { QuotaEngine, type QuotaStatusItem } from "./limits/quota-engine.ts";
 import { estimateTask, orderCandidates, type TaskSize } from "./limits/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import { defaultSensitiveDataHook, parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
@@ -49,6 +50,7 @@ function usage(): string {
 		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--json] <prompt>",
 		"  df route [--kind kind] [--size size] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
+		"  df quota [--json] [--provider p]",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -534,6 +536,42 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 	} finally { supervisor.session.dispose(); }
 }
 
+async function quotaCommand(registry: ProviderRegistry, store: FileCredentialStore, ledger: LimitLedger, args: string[]): Promise<void> {
+	const selectedProvider = option(args, "--provider");
+	const json = args.includes("--json");
+	const home = defaultDfHome();
+	const engine = new QuotaEngine(home, ledger, new Map(registry.entries.map((e) => [e.id, e])));
+	const accounts = await store.listAccounts();
+	const statuses: QuotaStatusItem[] = [];
+
+	const providersToQuery = registry.entries.filter((p) => p.enabled !== false && (!selectedProvider || p.id === selectedProvider));
+	if (selectedProvider && providersToQuery.length === 0) throw new Error(`Unknown provider ${selectedProvider}`);
+
+	for (const provider of providersToQuery) {
+		const providerAccounts = accounts.filter((a) => a.provider === provider.id);
+		const targetAccounts = providerAccounts.length > 0 ? providerAccounts : [{ provider: provider.id, label: "default", slots: [] }];
+		for (const acc of targetAccounts) {
+			for (const model of provider.models.static) {
+				const candidate = { provider: provider.id, account: acc.label, model: model.id };
+				const items = await engine.status(candidate);
+				statuses.push(...items);
+			}
+		}
+	}
+
+	if (json) {
+		console.log(JSON.stringify({ version: 1, statuses }, null, 2));
+		return;
+	}
+
+	console.log("provider\taccount\tmodel\ttype\tlimit\tused\tremaining\treset in\tstate\tsource");
+	const now = Date.now();
+	for (const item of statuses) {
+		const resetIn = item.resetAt ? `${Math.max(0, Math.ceil((item.resetAt - now) / 1000))}s` : "-";
+		console.log(`${item.provider}\t${item.account}\t${item.model}\t${item.type}${item.dimension ? `:${item.dimension}` : ""}\t${item.limit ?? "-"}\t${item.used}\t${item.remaining ?? "-"}\t${resetIn}\t${item.state}\t${item.source}`);
+	}
+}
+
 async function limitsCommand(ledger: LimitLedger, args: string[]): Promise<void> {
 	if (args[0] === "clear") {
 		const selector = args[1];
@@ -635,6 +673,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "models": return modelsCommand(registry, store, args.slice(1));
 		case "accounts": return accountsCommand(store);
 		case "limits": return limitsCommand(ledger, args.slice(1));
+		case "quota": return quotaCommand(registry, store, ledger, args.slice(1));
 		case "route": return routeCommand(registry, store, config, args.slice(1));
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
