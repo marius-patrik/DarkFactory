@@ -45,6 +45,8 @@ Redukce se konkrétně dotkla čtyř hlavních kategorií skriptů:
 Zásadním přínosem sjednocení je radikální snížení údržbové zátěže. Před zavedením systému vyžadovala jakákoli změna v CI procesu — například bezpečnostní aktualizace akcí, oprava oprávnění tokenů či přechod na novější verzi interpretu — manuální editaci, otestování a schválení pull requestu v každém repozitáři samostatně. Po sjednocení je oprava provedena pouze jednou v centrálním repozitáři DarkFactory. Spotřebitelské projekty změnu převezmou automaticky, případně bezpečným posunem připnuté verze v konfiguračním manifestu, čímž údržbová složitost klesla z lineární závislosti na počtu projektů na konstantní $O(1)$.
 ]
 
+#note[Metodická poznámka k redukci v textovém repozitáři: U repozitáře OdbornaPrace-paper je vhodné v diskusi tabulky 1 detailněji rozvést, jakých konkrétních skriptů se redukce týkala (např. jednoúčelové skripty pro instalaci binárky Typstu, kompilaci a nasazení na GitHub Pages vs. centrální volané workflow).]
+
 #added[
 Z pohledu softwarového inženýrství je však nutné podrobit vykázanou redukci 7 800 řádků YAML konfigurací věcné reflexi. Úbytek řádků v deklarativních workflow sám o sobě neznamená úplné vymizení systémové složitosti; ta se ve skutečnosti transformovala a přesunula z nestrukturovaných skriptů GitHub Actions do centrálního metaharnessu v Pythonu (`agent_runner.py`, `harnesses.py`, `environment.py`). Tento přesun má však zásadní kvalitativní opodstatnění:
 - *Statická kontrola a testovatelnost*: Distribuovaný YAML v CI postrádá typový systém a jakákoli syntaktická chyba vyžaduje zdlouhavé testování odesláním commitu na server. Naproti tomu centrální kód v Pythonu podléhá striktní typové kontrole (`mypy`), formátování (`ruff`) a je pokryt sadou více než stovky jednotkových testů spouštěných lokálně v řádu milisekund.
@@ -108,6 +110,8 @@ Nasazení odhalilo několik chyb, které se při návrhu neprojevily. Jsou uvede
 / Předpoklad o programovacím jazyce (_Language Assumption_): Původní verze sdílených úloh pevně předpokládala, že každý spravovaný repozitář je postaven na jazyce Python a vyžaduje instalaci závislostí a spuštění testů. Repozitář obsahující pouze text a sazbu (např. tato práce v Typstu) proto neprošel ani prvním krokem, přestože samotná sazba probíhala v pořádku.
   *Technické řešení*: V systému vznikl samostatný detekční subsystém `environment.py`, který dynamicky zkoumá přítomnost manifestů (`pyproject.toml`, `Cargo.toml`, `typst.toml`, `lakefile.toml`) a na jejich základě sestavuje exekuční plán (`build_plan()`, `docs_plan()`). Prostředí je kategorizováno do domén (`kód`, `text`, `matematika`) a jednotlivé kroky workflow jsou podmíněny výstupy detektoru, takže pro repozitář s textem se testy kódu bezpečně přeskočí a úloha skončí neutrálním úspěchem.
 ]
+
+#critique[Metodická asymetrie v kategorizaci chyb: Sekce 4.3 uvádí výhradně chyby v infrastruktuře a řízení workflow (souběžnost, názvy kontrol, API zápisy, detekce jazyka), ale zcela opomíjí chyby v samotné generované logice modelů (syntaktické regrese, halucinace knihovních rozhraní, neúplné implementace). Pro vyváženost akademické diskuse je žádoucí doplnit kvalitativní analýzu sémantických selhání kódovacích agentů a uvést, v kolika případech musel zasáhnout člověk při finálním code review.]
 
 == Diskuse
 

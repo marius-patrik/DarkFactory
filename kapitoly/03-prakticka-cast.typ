@@ -48,6 +48,8 @@ postupu okamžitě promítla do všech repozitářů, včetně těch, které na 
 připraveny.
 ]
 
+#alert[Strukturální stručnost a chybějící konkrétní příklad volání: Podkapitola 3.2.1 sestává z jediného odstavce o šesti řádcích. Doporučuji doplnit konkrétní ukázku zdrojového kódu volajícího workflow (např. direktivu `uses: marius-patrik/DarkFactory/.github/workflows/ci.yml@...`) pro názornou demonstraci principu a způsobu předávání parametrů.]
+
 === Jediný konfigurační soubor
 
 #confirmed[
@@ -97,6 +99,8 @@ postup je díky tomu ve všech repozitářích shodný bajt po bajtu.
 #draft[
 Jak je patrné z @kod-darkfactory-json, sekce `areas` slouží jako jednotný zdroj pravdy pro štítkování úkolů i směrování agentů podle shody klíčových slov. Sekce `board` pak zajišťuje agregaci do globální i repozitářové GitHub Projects nástěnky bez nutnosti manuální konfigurace v samotných workflow.
 ]
+
+#issue[Nepřesná cesta ke konfiguračnímu manifestu: Text v sekcích 3.2 a 3.2.2 hovoří o souboru `darkfactory.json` v kořeni repozitáře, avšak v reálné implementaci systému DarkFactory (i v Příloze B) je manifest striktně umístěn v konfiguračním adresáři `.github/darkfactory.json` (`MANIFEST_PATH = os.path.join(".github", "darkfactory.json")`). Je vhodné cestu v kapitole 3 sjednotit na `.github/darkfactory.json`.]
 
 == Životní cyklus požadavku
 
@@ -212,6 +216,8 @@ Mechanika předávání štafety (_baton handover_) probíhá zcela pod kontrolo
 ]
 
 #critique[Kritická slepá skvrna v heterogenní štafetě: Představa, že odlišný model (např. Claude po Antigravity či Codexu) plynule naváže na rozpracovanou práci pouhým načtením serializovaného logu a git diff, zamlčuje zásadní problém nekompatibility vnímání kontextu (_prompt sensitivity_). Každá modelová rodina vyžaduje diametrálně odlišný formát nástrojů, odlišně reaguje na systémový prompt a jinak interpretuje mezivýsledky. V reálném provozu vede synteticky přeložená historie často k okamžité dezorientaci nového modelu, opakování již hotových kroků nebo halucinaci neexistujících nástrojů. Práce neobsahuje žádné empirické vyhodnocení úspěšnosti štafety: Kolik úloh po předání štafety skutečně úspěšně doběhlo a v kolika procentech případů vedla rotace k havárii a divergenci kontextu?]
+
+#note[Správa tajemství a rotace tokenů: Doporučuji v sekci 3.5 stručně specifikovat bezpečnostní model správy API klíčů při rotaci poskytovatelů — jakým způsobem jsou klíče (Anthropic, OpenAI, Google) bezpečně předávány do kontejneru a jak je zamezeno jejich nechtěnému zápisu do kontrolních bodů (`.checkpoint.json`) či veřejných CI logů.]
 
 == Ověřování změn
 

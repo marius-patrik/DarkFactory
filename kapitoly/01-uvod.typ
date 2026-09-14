@@ -54,6 +54,8 @@ V návaznosti na stanovené cíle si práce klade tři konkrétní výzkumné ot
 - *VO3*: Umožňuje zavedení jednotného deklarativního manifestu (`darkfactory.json`) a centralizovaného CI workflow škálovat autonomní pipeline napříč heterogenními projekty s minimálními dodatečnými náklady na údržbu?
 ]
 
+#note[Operacionalizace výzkumných otázek: Doporučuji v úvodu stručně uvést kvantitativní metriky a kritéria úspěšnosti pro zodpovězení VO1–VO3 (např. cílová míra průchodnosti CI bez regrese, práh akceptovatelné latence a definice konstantní údržbové složitosti $O(1)$), aby bylo v kapitolách 4 a 5 zřejmé, na základě jakých exaktních prahů byly otázky vyhodnoceny.]
+
 == Metodika
 
 #confirmed[Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:

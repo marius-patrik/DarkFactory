@@ -85,6 +85,8 @@ Tento architektonický přelom popsala publikace _Attention Is All You Need_ @va
 Ve vývoji softwaru a moderních agentních systémech se však naprostým standardem stala architektura *Decoder-only* (např. GPT, Claude, LLaMA či DeepSeek). Tyto modely pracují čistě autoregresivně — predikují vždy následující nejpravděpodobnější token na základě celého předcházejícího kontextu. Instrukce, pravidla, kontext repozitáře i rozepsaný kód tvoří jedinou společnou sekvenci, což umožňuje plynulé doplňování kódu i přímé generování volání nástrojů. Architektura pouze s dekodérem navíc vykazuje vynikající vlastnosti při škálování parametrů a efektivní správě KV cache v dlouhých kontextech.
 ]
 
+#note[Doplnění výpočetní a paměťové složitosti: Doporučuji v popisu transformeru explicitně uvést kvadratickou složitost standardního mechanismu pozornosti ($O(N^2)$ vzhledem k délce sekvence tokenů) a zmínit optimalizační techniky (např. FlashAttention), které umožňují praktické škálování dlouhého kontextového okna v moderních modelech.]
+
 === Tokeny, tokenizér a embedding
 
 #draft[
@@ -135,6 +137,8 @@ V kontextu automatizovaného vývoje softwaru a autonomních pipeline (jako je s
 + *Diagnostika chyb z artefaktů CI*: Při selhání integračních testů může pipeline předat agentovi screenshot chybové obrazovky nebo interaktivního prvku, z něhož agent rozpozná příčinu selhání snáze než z pouhého textového stack trace.
 + *Interpretace grafických zadání*: Vývojář může v zadání úkolu (GitHub Issue) specifikovat požadovanou změnu formou náčrtku, wireframu či diagramu komponent. Multimodální agent takový grafický podklad přímo zanalyzuje a převede jej na strukturovaný kód.
 ]
+
+#issue[Rozpor mezi teoretickým popisem a stavem implementace: Podkapitola 2.3.3 uvádí využití multimodálních modelů v systému DarkFactory (vizuální regresní testování, diagnostika screenshotů z CI, wireframy) jako hotovou součást pipeline. V praktické části ani ve výsledcích však podpora pro obrazové vstupy integrována není (pipeline pracuje čistě s textovými diffy a logy). Je nutné text přeformulovat a uvést, že jde o teoretický potenciál či plánované rozšíření architektury.]
 
 === Context
 
@@ -208,6 +212,8 @@ Po vykonání akce harness připojí vrácený výsledek (_Observation_) do kont
 #draft[
 Diagram na @fig-react-loop znázorňuje základní iterativní cyklus moderních autonomních agentů. Po přijetí uživatelského zadání dochází v rámci inference k fázi rozvahy (_Reasoning_), kdy model formuluje vnitřní myšlenkový postup (_Thought_). Pokud je k vyřešení kroku zapotřebí externí akce, model vygeneruje strukturované volání nástroje (_Tool Call_). Řídicí harness tento požadavek zachytí, bezpečně vykoná v cílovém prostředí (terminál, souborový systém, API či MCP server) a vrácený výsledek (_Observation_) připojí na konec kontextového okna. Celý aktualizovaný kontext je následně předložen modelu v další iteraci, dokud není úkol kompletní a výsledek předán uživateli. Tento princip byl formálně zaveden v práci _ReAct: Synergizing Reasoning and Acting in Language Models_ (@yao2022, #link("https://arxiv.org/abs/2210.03629")[arXiv:2210.03629]).
 ]
+
+#critique[Absence bezpečnostních pojistek proti nekonečnému cyklu: Popis ReAct smyčky v sekci 2.3.8 uvádí, že cyklus se opakuje, dokud úkol není vyřešen nebo dokud model nerozhodne o předání odpovědi. V praxi však LLM velmi často upadají do perseverace a opakovaného volání téhož neúspěšného nástroje se stejnými parametry. Text postrádá teoretickou analýzu detekce uvíznutí (stuck detection), maximálního limitu tahů (step budget) a deterministického přerušení divergence ze strany řídicího harnessu.]
 
 === Vyvolávání nástrojů
 
