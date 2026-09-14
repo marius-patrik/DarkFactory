@@ -773,3 +773,161 @@ class TestGhCliHandling:
         assert result is None
         err = capsys.readouterr().err
         assert "Could not label #12: label does not exist" in err
+
+
+class TestEmptyAgentOutputIsAFailedAttempt:
+    """Exit 0 with no usable text must rotate the ladder, not post an empty shell comment.
+
+    `agy --print-timeout 5m0s` spends its budget and exits 0 with no body, and the old runner
+    returned that empty string as the agent's perfect answer - the workflow passed, the comment
+    was a heading with nothing under it. Every rung that yields nothing must be a failed attempt,
+    and a run where nothing yields text must fail the workflow rather than report success.
+    """
+
+    def _two_codex_accounts(self, monkeypatch):
+        """Puts two Codex accounts in the environment and pretends the binary exists.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["codex"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "one")
+        monkeypatch.setenv("OPENAI_API_KEY_2", "two")
+
+    def test_empty_stdout_rotates_to_the_next_account(self, monkeypatch):
+        """A 0-exit with no stdout is a failed attempt, so the second account runs.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        seen: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(kwargs["env"].get("OPENAI_API_KEY", ""))
+            if len(seen) == 1:
+                return subprocess.CompletedProcess(argv, 0, stdout="   \n", stderr="")
+            return subprocess.CompletedProcess(argv, 0, stdout="real answer\n", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "real answer"
+        assert seen == ["one", "two"], "the second attempt must use the second account"
+
+    def test_print_timeout_text_rotates_to_the_next_account(self, monkeypatch):
+        """`--print-timeout` wording makes a 0-exit attempt count as failed too.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        seen: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(kwargs["env"].get("OPENAI_API_KEY", ""))
+            if len(seen) == 1:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout="", stderr="print timeout after 5m0s"
+                )
+            return subprocess.CompletedProcess(argv, 0, stdout="done\n", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "done"
+        assert seen == ["one", "two"]
+
+    def test_all_empty_raises_and_posts_a_notice_not_a_header_only_shell(self, monkeypatch, capsys):
+        """Nothing usable anywhere must fail the run, with a real notice, never an empty shell.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+            capsys: Pytest capture fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        posted: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        def fake_gh(args, repo=None):
+            if args[:2] in (["issue", "comment"], ["pr", "comment"]):
+                posted.append(args[args.index("--body") + 1])
+            return ""
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        monkeypatch.setattr(agent_runner, "run_gh", fake_gh)
+        ctx = {"issue_number": 42, "repo": "marius-patrik/DarkFactory"}
+        with pytest.raises(RuntimeError, match="No usable agent output"):
+            agent_runner.run_agent_prompt("do it", checkpoint_context=ctx)
+        assert posted, "a failure notice must be posted where the empty shell would have been"
+        for body in posted:
+            assert "### DarkFactory Agent Execution Error" in body
+            _, _, after = body.partition("### DarkFactory Agent Execution Error")
+            assert after.strip(), f"header-only body posted: {body!r}"
+        err = capsys.readouterr().err
+        assert "No usable agent output" in err
+
+    def test_a_handler_posts_no_empty_shell_comment(self, monkeypatch):
+        """The interpret handler used to post the header-only shell; now nothing empty is posted.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        posted: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        def fake_gh(args, repo=None):
+            if args[0:2] == ["issue", "comment"]:
+                posted.append(args[args.index("--body") + 1])
+                return ""
+            return json.dumps({"title": "T", "body": "B", "labels": []})
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        monkeypatch.setattr(agent_runner, "run_gh", fake_gh)
+        with pytest.raises(RuntimeError):
+            agent_runner.handle_interpret(42, "marius-patrik/DarkFactory")
+        assert posted, "the failure notice must have been posted"
+        assert "### DarkFactory Agent Response" not in posted[0]
+        assert "### DarkFactory Agent Execution Error" in posted[0]
+
+    def test_normal_output_is_returned_unchanged(self, monkeypatch):
+        """Real agent text must pass through exactly as before.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        calls: List[int] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(1)
+            return subprocess.CompletedProcess(
+                argv, 0, stdout="  answer with whitespace  \n", stderr=""
+            )
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "answer with whitespace"
+        assert len(calls) == 1
+
+    def test_answer_discussing_timeouts_is_not_mistaken_for_a_print_timeout(self, monkeypatch):
+        """Timeout wording in the agent's own answer (stdout) must not rotate the attempt away.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_codex_accounts(monkeypatch)
+        calls: List[int] = []
+        answer = "The print timeout is too short: the request timed out before the response."
+
+        def fake_run(argv, **kwargs):
+            calls.append(1)
+            return subprocess.CompletedProcess(argv, 0, stdout=answer, stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == answer
+        assert len(calls) == 1
