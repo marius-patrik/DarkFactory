@@ -16,7 +16,7 @@ export async function importKimiAccount(store: FileCredentialStore, label: strin
 	const id = accountId(provider, label);
 	await store.modifyAccount(id, async (current) => ({
 		id, provider, label,
-		metadata: { ...(current?.metadata ?? {}), ownership: "borrowed", sync: "machine-only", source: "kimi-code-credentials", source_path: path },
+		metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", importedFrom: "kimi", source: "kimi-code-credentials" },
 		slots: { ...(current?.slots ?? {}), oauth: { type: "oauth", access, refresh, expires } },
 	}));
 }

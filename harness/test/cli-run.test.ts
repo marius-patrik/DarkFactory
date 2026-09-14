@@ -72,7 +72,7 @@ describe("df run", () => {
 		const store = new FileCredentialStore(home);
 		for (const label of ["acct-a", "acct-b"]) {
 			await store.setSlot(`fixture:${label}`, "oauth", { type: "oauth", access: `access-${label}`, refresh: `refresh-${label}`, expires: Date.now() + 60_000 });
-			await store.modifyAccount(`fixture:${label}`, async (current) => current ? ({ ...current, metadata: { ownership: label === "acct-a" ? "borrowed" : "df-owned", sync: "machine-only" } }) : undefined);
+			await store.modifyAccount(`fixture:${label}`, async (current) => current ? ({ ...current, metadata: { ...(label === "acct-a" ? { importer: "fixture", ownership: "borrowed" } : { ownership: "df-owned" }), sync: "machine-only" } }) : undefined);
 		}
 		const invoke = async (...args: string[]) => {
 			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], { cwd: process.cwd(), env: { DF_HOME: home, PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" }, stdout: "pipe", stderr: "pipe" });
@@ -83,7 +83,7 @@ describe("df run", () => {
 		expect(listed.exitCode).toBe(0);
 		expect(listed.stdout).toContain("type\texpiry\trefresh\townership");
 		expect(listed.stdout).toContain("fixture:acct-a\toauth");
-		expect(listed.stdout).toContain("reimport-first\tborrowed");
+		expect(listed.stdout).toContain("df-managed\tdf-owned (imported from fixture)");
 		expect(listed.stdout).toContain("df-managed\tdf-owned");
 		expect((await invoke("logout", "fixture", "--account", "acct-b")).exitCode).toBe(0);
 		expect(await store.readAccount("fixture:acct-a")).toBeDefined();

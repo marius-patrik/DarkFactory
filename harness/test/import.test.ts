@@ -125,7 +125,7 @@ describe("import codex", () => {
 		await importCodexAccount(store, "work", reader, "openai-codex", "openai");
 		const account = await store.readAccount("openai-codex:work");
 		expect(account?.slots.oauth).toEqual({ type: "oauth", access: codexFixture.tokens.access_token, refresh: "codex-refresh", expires: 2_000_000_000_000, accountId: "acct-123" });
-		expect(account?.metadata).toMatchObject({ source: "codex-auth-json", plan: "pro", account: "dev@example.com", auth_mode: "chatgpt", ownership: "borrowed", sync: "machine-only" });
+		expect(account?.metadata).toMatchObject({ source: "codex-auth-json", plan: "pro", account: "dev@example.com", auth_mode: "chatgpt", ownership: "df-owned", importedFrom: "codex", sync: "machine-only" });
 		const credential = await store.forAccount("openai-codex", "work").read("openai-codex");
 		expect((credential as OAuthCredential).accountId).toBe("acct-123");
 	});
@@ -232,7 +232,7 @@ describe("import kimi and antigravity", () => {
 			return Response.json({ cloudaicompanionProject: "projects/project-bare" });
 		});
 		expect(await store.getSlot("google-antigravity", "main", "x-antigravity-project")).toEqual({ type: "header", value: "project-bare" });
-		expect((await store.readAccount("google-antigravity:main"))?.metadata).toMatchObject({ ownership: "borrowed", sync: "machine-only" });
+		expect((await store.readAccount("google-antigravity:main"))?.metadata).toMatchObject({ ownership: "df-owned", importedFrom: "antigravity", sync: "machine-only" });
 	});
 
 	test("rejects malformed Kimi and project discovery responses without an account", async () => {
