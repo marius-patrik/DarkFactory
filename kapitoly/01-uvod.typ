@@ -33,7 +33,7 @@ takového modelu vzniknout, aby jeho výstupu bylo možné důvěřovat.
 
 == Cíl práce
 
-#draft[
+#confirmed[
 Cílem této práce je navrhnout, realizovat a ověřit systém, který automatizuje
 vývojový proces od přijetí požadavku po vytvoření ověřené změny, aniž by se vzdal
 lidského schválení v rozhodujících bodech.
