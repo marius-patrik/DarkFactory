@@ -1140,3 +1140,60 @@ class TestEmptyAgentOutputIsAFailedAttempt:
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         assert agent_runner.run_agent_prompt("do it") == answer
         assert len(calls) == 1
+
+
+class TestAnswersAboutQuotaArePosted:
+    """Only the runner's own exhaustion notice means "out of quota"; an answer may discuss quota."""
+
+    ANSWER = (
+        "### 1. Verbatim Request Summary\n"
+        "Classify opencode `429 Too Many Requests` and rate limit output as quota exhausted, "
+        "so the chain moves on when the daily limit is reached."
+    )
+
+    def _issue_view(self):
+        return json.dumps({"title": "Request: rotate on rate limits", "body": "", "labels": []})
+
+    def _run(self, monkeypatch, handler, result):
+        posted = []
+        module = agent_runner_module()
+
+        def fake_gh(args, repo=None, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                return self._issue_view()
+            if args[:2] in (["issue", "comment"], ["pr", "comment"]):
+                posted.append(args[args.index("--body") + 1])
+            return ""
+
+        monkeypatch.setattr(module, "run_gh", fake_gh)
+        monkeypatch.setattr(module, "try_gh", lambda *a, **k: "")
+        monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: result)
+        handler(module)
+        return posted
+
+    def test_an_interpretation_that_discusses_quota_is_posted(self, monkeypatch):
+        """Request #220 asked for rate-limit handling; its interpretation was dropped silently."""
+        posted = self._run(monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), self.ANSWER)
+        assert len(posted) == 1 and self.ANSWER in posted[0]
+
+    def test_a_response_that_discusses_quota_is_posted(self, monkeypatch):
+        posted = self._run(
+            monkeypatch, lambda m: m.handle_respond(220, "what about 429s?", REPO_SLUG), self.ANSWER
+        )
+        assert len(posted) == 1 and self.ANSWER in posted[0]
+
+    def test_the_exhaustion_notice_still_posts_nothing(self, monkeypatch):
+        """Exhaustion already checkpointed and labelled the issue Blocked inside the runner."""
+        notice = agent_runner.QUOTA_EXHAUSTED_NOTICE + " across every harness and model (agy): 429"
+        posted = self._run(monkeypatch, lambda m: m.handle_interpret(220, REPO_SLUG), notice)
+        assert posted == []
+
+    def test_every_caller_tests_the_notice_not_the_wording(self):
+        """Callers that match quota wording on an answer drop every answer that mentions quota."""
+        source = _read_runner_source()
+        callers = [
+            line.strip()
+            for line in source.split("\n")
+            if "is_quota_exhausted(" in line and "def is_quota_exhausted" not in line
+        ]
+        assert callers == ["if not is_quota_exhausted(detail):"], callers
