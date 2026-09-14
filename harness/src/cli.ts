@@ -40,6 +40,7 @@ import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
 import type { ModelCapability, RouteResult, RouterInput, TaskKind, TaskNeed, TaskSize as RouterTaskSize } from "./router/types.ts";
+import { runDoctorIdentities } from "./identities/index.ts";
 
 function usage(): string {
 	return [
@@ -56,6 +57,7 @@ function usage(): string {
 		"  df login <provider> [--account <label>]",
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
+		"  df doctor [identities] [--config <path>] [--manifest <path>] [--repo <path>]",
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
 		"  df graph validate [path]",
 		"  df graph plan --event <file> --state <file> [--graph <path>]",
@@ -590,6 +592,15 @@ async function graphCommand(args: string[]): Promise<void> {
 	console.log(JSON.stringify(plan(graph, JSON.parse(event) as GraphEvent, JSON.parse(state) as RunState), null, 2));
 }
 
+async function doctorCommand(args: string[]): Promise<void> {
+	const check = args[0];
+	if (!check || check === "identities") {
+		await runDoctorIdentities(args.slice(check === "identities" ? 1 : 0));
+		return;
+	}
+	throw new Error(`Unknown doctor check: ${check}. Available checks: identities`);
+}
+
 async function secretsCli(home: string, args: string[]): Promise<void> {
 	const allowFileKey = args.includes("--insecure-file-key");
 	const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? "";
@@ -639,6 +650,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			if (exitCode !== 0) process.exitCode = exitCode;
 			return;
 		}
+		case "doctor": return doctorCommand(args.slice(1));
 		case "secrets": return secretsCli(home, args.slice(1));
 		case "help": case "--help": case "-h": console.log(usage()); return;
 		case undefined: return chatCommand(registry, store, config, []);
