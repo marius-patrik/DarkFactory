@@ -31,6 +31,10 @@ import { classifyFailure } from "./quota.ts";
 import { loginProviderAccount } from "./login.ts";
 import { redactErrorMessage } from "./redaction.ts";
 import { runCiCli } from "./ci/cli.ts";
+import { plan, validateGraph, type GraphEvent, type RunState } from "./graph/index.ts";
+import { secretsCommand } from "./secrets/cli.ts";
+import { GitHubClient } from "./github/client.ts";
+import { GitHubRepository } from "./github/repository.ts";
 
 const isolatedAuthContext = {
 	env: async (_name: string) => undefined,
@@ -45,12 +49,16 @@ function usage(): string {
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
-		"  df account set <account-id> <slot> --type <api_key|header|cookie|other>  # value from stdin",
+		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
 		"  df login <provider> [--account <label>]",
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
+		"  df graph validate [path]",
+		"  df graph plan --event <file> --state <file> [--graph <path>]",
+		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
+		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 	].join("\n");
 }
 
@@ -191,13 +199,20 @@ async function accountsCommand(store: FileCredentialStore): Promise<void> {
 
 async function accountSetCommand(store: FileCredentialStore, args: string[]): Promise<void> {
 	const [id, slotName] = args;
-	const type = option(args, "--type");
-	if (!id || !slotName || !type) throw new Error("account set requires <account-id> <slot> --type <type>");
+	const fromVault = option(args, "--from-vault");
+	const type = option(args, "--type") ?? (fromVault ? "api_key" : undefined);
+	if (!id || !slotName || !type) throw new Error("account set requires <account-id> <slot> --type <type> (or --from-vault NAME)");
 	if (!( ["api_key", "header", "cookie", "other"] as const).includes(type as "api_key" | "header" | "cookie" | "other")) {
 		throw new Error("account set type must be api_key, header, cookie, or other; OAuth is filled by login");
 	}
-	const value = (await Bun.stdin.text()).replace(/\r?\n$/, "");
-	if (!value) throw new Error("account set requires a non-empty value on stdin");
+	let value: string;
+	if (fromVault !== undefined) {
+		if (!fromVault.trim()) throw new Error("--from-vault requires a vault secret name");
+		value = `vault:${fromVault.trim()}`;
+	} else {
+		value = (await Bun.stdin.text()).replace(/\r?\n$/, "");
+		if (!value) throw new Error("account set requires a non-empty value on stdin (or --from-vault NAME)");
+	}
 	await store.setSlot(id, slotName, { type: type as "api_key" | "header" | "cookie" | "other", value });
 	await store.modifyAccount(id, async (current) => current ? ({ ...current, metadata: { ...(current.metadata ?? {}), ownership: "df-owned" } }) : undefined);
 	console.log(`Saved ${id} slot ${slotName} (${type}).`);
@@ -432,7 +447,40 @@ async function chatCommand(registry: ProviderRegistry, store: FileCredentialStor
 	} finally { rl.close(); }
 }
 
+async function graphCommand(args: string[]): Promise<void> {
+	const subcommand = args[0];
+	// Repository-specific data lives in .darkfactory/: the graph is the `graph` section of the manifest.
+	const graphPath = subcommand === "validate" ? (args[1] ?? ".darkfactory/manifest.json") : (option(args, "--graph") ?? ".darkfactory/manifest.json");
+	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
+	const graph = validateGraph(document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document);
+	if (subcommand === "validate") { console.log(`${graphPath}: valid workflow graph v${graph.version} (${graph.nodes.length} nodes, ${graph.edges.length} edges)`); return; }
+	if (subcommand !== "plan") throw new Error(`Unknown graph command: ${subcommand ?? ""}`);
+	const eventPath = option(args, "--event");
+	const statePath = option(args, "--state");
+	if (!eventPath || !statePath) throw new Error("graph plan requires --event <file> --state <file>");
+	const [event, state] = await Promise.all([readFile(eventPath, "utf8"), readFile(statePath, "utf8")]);
+	console.log(JSON.stringify(plan(graph, JSON.parse(event) as GraphEvent, JSON.parse(state) as RunState), null, 2));
+}
+
+async function secretsCli(home: string, args: string[]): Promise<void> {
+	const allowFileKey = args.includes("--insecure-file-key");
+	const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? "";
+	await secretsCommand(args.filter((arg) => arg !== "--insecure-file-key"), {
+		dfHome: home,
+		allowFileKey,
+		stdin: async () => { try { return await Bun.stdin.text(); } catch { return ""; } },
+		githubClient: (repoSlug: string) => {
+			if (!token) throw new Error("df secrets push/doctor needs GITHUB_TOKEN or GH_TOKEN");
+			const [owner, repo] = repoSlug.split("/");
+			if (!owner || !repo) throw new Error(`Expected <owner/repo>, got ${repoSlug}`);
+			const client = new GitHubClient({ token });
+			return { client, repository: new GitHubRepository(client, owner, repo) };
+		},
+	});
+}
+
 export async function main(args = process.argv.slice(2)): Promise<void> {
+	if (args[0] === "graph") return graphCommand(args.slice(1));
 	const home = defaultDfHome();
 	const config = await loadDfConfig(home);
 	const providerConfig = await loadProviderConfig(home);
@@ -461,6 +509,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			if (exitCode !== 0) process.exitCode = exitCode;
 			return;
 		}
+		case "secrets": return secretsCli(home, args.slice(1));
 		case "help": case "--help": case "-h": console.log(usage()); return;
 		case undefined: return chatCommand(registry, store, config, []);
 		default: throw new Error(`Unknown command: ${command}\n${usage()}`);

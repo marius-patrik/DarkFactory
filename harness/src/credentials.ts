@@ -4,6 +4,47 @@ import { dirname, join } from "node:path";
 import type { AuthOperationOptions, Credential, CredentialInfo, CredentialStore, ProviderHeaders } from "@earendil-works/pi-ai";
 import { withFileLock } from "./storage/file-lock.ts";
 
+const VAULT_PREFIX = "vault:";
+
+async function resolveVaultValue(home: string, vaultName: string): Promise<string | undefined> {
+	try {
+		// Try file fallback first (0600) — used in tests with --insecure-file-key
+		let key: string | undefined;
+		try {
+			key = (await readFile(join(home, "vault.key"), "utf8")).trim();
+		} catch {
+			// Fall back to keychain helper if file not present
+			try {
+				const { loadVaultKey } = await import("./secrets/keychain.ts");
+				key = await loadVaultKey({ dfHome: home, allowFileKey: true });
+			} catch { return undefined; }
+		}
+		if (!key) return undefined;
+		let dataRepoPath: string;
+		try {
+			const raw = await readFile(join(home, "config.json"), "utf8");
+			const cfg = JSON.parse(raw) as { dataRepo?: string };
+			dataRepoPath = cfg.dataRepo && typeof cfg.dataRepo === "string" ? cfg.dataRepo : join(home, "data-df");
+		} catch {
+			dataRepoPath = join(home, "data-df");
+		}
+		const { loadVault } = await import("./secrets/vault-store.ts");
+		const vault = await loadVault(dataRepoPath, key);
+		return vault.entries.find((e) => e.name === vaultName)?.value;
+	} catch {
+		return undefined;
+	}
+}
+
+async function resolveSlotValue(home: string, raw: string): Promise<string> {
+	if (!raw.startsWith(VAULT_PREFIX)) return raw;
+	const vaultName = raw.slice(VAULT_PREFIX.length);
+	if (!vaultName) return raw;
+	const resolved = await resolveVaultValue(home, vaultName);
+	if (resolved === undefined) throw new Error(`Vault secret not found: ${vaultName}`);
+	return resolved;
+}
+
 const FILE_VERSION = 2;
 const ACCOUNT_SEPARATOR = ":";
 
@@ -117,10 +158,27 @@ function toPiCredential(account: AccountRecord): Credential | undefined {
 	return undefined;
 }
 
+async function resolveAccountVaultSlots(home: string, account: AccountRecord): Promise<AccountRecord> {
+	let changed = false;
+	const resolved: AccountRecord = { ...account, slots: { ...account.slots } };
+	for (const [name, slot] of Object.entries(resolved.slots)) {
+		if (slot.type !== "oauth" && typeof (slot as { value?: string }).value === "string" && (slot as { value: string }).value.startsWith(VAULT_PREFIX)) {
+			const raw = (slot as { value: string }).value;
+			const vaultName = raw.slice(VAULT_PREFIX.length);
+			const resolvedValue = await resolveVaultValue(home, vaultName);
+			if (resolvedValue === undefined) throw new Error(`Vault secret not found: ${vaultName}`);
+			(resolved.slots[name] as { type: string; value: string }).value = resolvedValue;
+			changed = true;
+		}
+	}
+	return changed ? resolved : account;
+}
+
 /** Atomic, in-process serialized account store. Secret values are never formatted into errors or logs. */
 export class FileCredentialStore {
 	readonly path: string;
 	readonly lockPath: string;
+	readonly home: string;
 
 	constructor(
 		home = defaultDfHome(),
@@ -128,6 +186,7 @@ export class FileCredentialStore {
 		readonly borrowed?: BorrowedCredentialCoordinator,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
 	) {
+		this.home = home;
 		this.path = join(home, "credentials.json");
 		this.lockPath = `${this.path}.lock`;
 	}
@@ -230,31 +289,37 @@ export class FileCredentialStore {
 
 	/** Extra request material pi's two credential shapes cannot represent. */
 	async requestHeaders(provider: string, label: string, slotHeaders: Readonly<Record<string, string>> = {}): Promise<ProviderHeaders> {
-		const account = await this.readAccount(accountId(provider, label));
+		let account = await this.readAccount(accountId(provider, label));
 		if (!account) return {};
+		account = await resolveAccountVaultSlots(this.home, account);
 		const headers: ProviderHeaders = {};
 		const cookies: string[] = [];
 		for (const [name, slot] of Object.entries(account.slots)) {
-			if (slot.type === "header") headers[name] = slot.value;
-			if (slot.type === "cookie") cookies.push(slot.value);
+			if (slot.type === "header") headers[name] = await resolveSlotValue(this.home, slot.value);
+			if (slot.type === "cookie") cookies.push(await resolveSlotValue(this.home, slot.value));
 		}
 		for (const [headerName, slotName] of Object.entries(slotHeaders)) {
 			const slot = account.slots[slotName];
-			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = slot.value;
+			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = await resolveSlotValue(this.home, slot.value);
 		}
 		if (cookies.length > 0) headers.Cookie = cookies.join("; ");
 		return headers;
 	}
 
 	async getSlot(provider: string, label: string, slotName: string): Promise<CredentialSlot | undefined> {
-		return (await this.readAccount(accountId(provider, label)))?.slots[slotName];
+		const slot = (await this.readAccount(accountId(provider, label)))?.slots[slotName];
+		if (!slot || slot.type === "oauth") return slot;
+		const resolved = await resolveSlotValue(this.home, slot.value);
+		return resolved === slot.value ? slot : { ...slot, value: resolved } as CredentialSlot;
 	}
 
 	async readCredential(provider: string, label: string, options?: AuthOperationOptions): Promise<Credential | undefined> {
 		throwIfAborted(options);
-		const account = await this.readAccount(accountId(provider, label), options);
+		let account = await this.readAccount(accountId(provider, label), options);
+		if (account) account = await resolveAccountVaultSlots(this.home, account);
 		const stored = account ? toPiCredential(account) : undefined;
-		if (stored || !this.fallback) return stored;
+		if (stored) return stored;
+		if (!this.fallback) return undefined;
 		const fallback = await this.fallback(provider, label);
 		throwIfAborted(options);
 		return fallback;
