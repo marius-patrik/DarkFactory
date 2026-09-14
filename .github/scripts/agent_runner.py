@@ -2626,7 +2626,7 @@ def revert_out_of_scope_files(
     run_git(["commit", "-m", commit_msg], cwd=cwd)
     run_git(["push", "origin", "HEAD"], cwd=cwd)
     commit_sha = run_git(["rev-parse", "HEAD"], cwd=cwd).strip()
-print(f"Reverted out-of-scope files: {out_of_scope_files}")
+    print(f"Reverted out-of-scope files: {out_of_scope_files}")
     return commit_sha
 
 
@@ -3313,7 +3313,9 @@ def dispatch_stage(repo: str, payload: Dict[str, Any]):
         json.dump({"event_type": "agent-dispatch", "client_payload": payload}, f)
         temp_path = f.name
     try:
-        run_gh(["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path], repo=repo)
+        run_gh(
+            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path], repo=repo
+        )
     except Exception as e:
         print(f"Failed to dispatch agent-dispatch to {repo}: {e}", file=sys.stderr)
         # Post PR notice
