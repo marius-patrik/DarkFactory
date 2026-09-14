@@ -332,8 +332,10 @@
         root.hidden = false;
       }
 
-      // projects.json is the current registry; the manifest remains the build-time fallback.
-      fetch(base + "projects.json", { cache: "no-cache" })
+      // projects.json is the current registry; the manifest list remains the build-time fallback.
+      // The registry is DarkFactory's own `projects.json` (published once, read by every site); a site
+      // without a declared registry reads one next to itself.
+      fetch(manifest.registry || base + "projects.json", { cache: "no-cache" })
         .then(function (response) {
           return response.ok ? response.json() : null;
         })
