@@ -57,7 +57,7 @@ zero errors — and deploy automatically to GitHub Pages.
 
 Product requirements are defined by `PRD.md`, the single normative product document. Executable
 declarations (providers, taxonomy, workflow graph, installed consumers) live in
-`.github/darkfactory.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
+`.darkfactory/manifest.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
 deviation from `PRD.md` MUST be explicitly approved by the user and recorded as a discrete ADR
 under `.agents/notes/adr/` before it is implemented.
 
@@ -227,7 +227,7 @@ An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.
 - **Format**: `<type>(<scope>): <description>` (e.g. `feat(term): add cell matrix buffer`).
 - **Allowed Types**: `feat`, `fix` (mapped from `bug`), `chore`, `docs`, `refactor`, `test`, `ci`.
 - **Allowed Area Scopes & Labels**:
-  The taxonomy is **per repository**, declared in `.github/darkfactory.json` under `areas`. The
+  The taxonomy is **per repository**, declared in `.darkfactory/manifest.json` under `areas`. The
   labels, the permitted commit scopes, and the agent's request classifier all read that one
   declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
   block with its own domains; the areas below are DarkFactory's own.

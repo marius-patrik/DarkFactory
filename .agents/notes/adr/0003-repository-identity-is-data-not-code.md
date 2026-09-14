@@ -15,7 +15,7 @@ every repository but one, or becomes a merge conflict on every update.
 
 ## Decision
 
-Everything repository-specific lives in `.github/darkfactory.json` and is read through
+Everything repository-specific lives in `.darkfactory/manifest.json` and is read through
 `.github/scripts/manifest.py`. The shared workflows and scripts are then byte-identical across
 every consumer, so a pipeline update is a fast-forward rather than a merge.
 

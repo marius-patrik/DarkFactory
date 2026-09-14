@@ -65,7 +65,9 @@ def declared(root: str = ".") -> Dict[str, object]:
     Returns:
         Mapping with `spdx`, `holder` and `year`, defaulted where the manifest is silent.
     """
-    path = os.path.join(root, ".github", "darkfactory.json")
+    import manifest as manifest_module
+
+    path = manifest_module.resolve_manifest_path(root)
     block: Dict[str, object] = {}
     if os.path.isfile(path):
         try:

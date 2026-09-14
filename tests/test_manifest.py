@@ -1,7 +1,7 @@
 """Tests for the per-repository manifest.
 
 The pipeline is distributed byte-for-byte, so anything repository-specific has to come from
-`.github/darkfactory.json`. These tests cover the two ways that goes wrong: a manifest that is
+`.darkfactory/manifest.json`. These tests cover the two ways that goes wrong: a manifest that is
 missing or malformed and takes the pipeline down with it, and repository-specific values leaking
 back into the shared code.
 """
@@ -20,6 +20,20 @@ SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
 def _write_manifest(root, data):
     """Writes a manifest into a throwaway repository root.
+
+    Args:
+        root: Directory to treat as the repository root.
+        data: Document to serialise.
+    """
+    os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
+    with open(
+        os.path.join(str(root), ".darkfactory", "manifest.json"), "w", encoding="utf-8"
+    ) as fh:
+        json.dump(data, fh)
+
+
+def _write_legacy_manifest(root, data):
+    """Writes a legacy-path manifest for migration and fallback coverage.
 
     Args:
         root: Directory to treat as the repository root.
@@ -59,12 +73,20 @@ class TestIdentity:
         assert loaded.topics == []
 
     def test_a_malformed_manifest_does_not_crash_the_pipeline(self, tmp_path, monkeypatch):
-        os.makedirs(os.path.join(str(tmp_path), ".github"))
-        path = os.path.join(str(tmp_path), ".github", "darkfactory.json")
+        os.makedirs(os.path.join(str(tmp_path), ".darkfactory"))
+        path = os.path.join(str(tmp_path), ".darkfactory", "manifest.json")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write("{ this is not json")
         monkeypatch.setenv("GITHUB_REPOSITORY", "acme/broken")
         assert manifest_module.load(str(tmp_path)).slug == "acme/broken"
+
+    def test_a_legacy_manifest_is_read_when_the_new_path_is_absent(self, tmp_path):
+        """Consumers that have not migrated still resolve through the helper fallback."""
+        _write_legacy_manifest(tmp_path, {"identity": {"owner": "legacy", "repo": "widget"}})
+        loaded = manifest_module.load(str(tmp_path))
+        assert loaded.slug == "legacy/widget"
+        resolved = manifest_module.resolve_manifest_path(str(tmp_path))
+        assert resolved == os.path.join(str(tmp_path), manifest_module.LEGACY_MANIFEST_PATH)
 
 
 class TestAreas:

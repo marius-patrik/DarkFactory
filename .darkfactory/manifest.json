@@ -71,7 +71,7 @@
       }
     },
     "release": {
-      "$comment": "This repository is a pipeline, not a distributable package: pyproject.toml carries only tooling configuration, so there is nothing for `python -m build` to produce and setuptools sees theme/, docker/ and the notes alias (a symlink to .agents/notes/) as rival top-level packages. A release here is a tag and its notes, with no assets.",
+      "$comment": "This repository is a pipeline, not a distributable package: pyproject.toml carries only tooling configuration, so there is nothing for `python -m build` to produce and setuptools sees theme/, docker/ and the _notes alias (a symlink to .agents/notes/) as rival top-level packages. A release here is a tag and its notes, with no assets.",
       "python": {
         "enabled": false
       }

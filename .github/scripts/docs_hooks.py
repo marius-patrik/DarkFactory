@@ -42,11 +42,15 @@ LINK_REWRITES: Dict[str, str] = {
     ".agents/notes/adr/README.md": "architecture/decisions/process.md",
     ".agents/notes/vision_capture.md": "notes/vision_capture.md",
     ".agents/notes/bootstrap.md": "notes/bootstrap.md",
+    "_notes/adr/README.md": "architecture/decisions/process.md",
+    "_notes/vision_capture.md": "notes/vision_capture.md",
+    "_notes/bootstrap.md": "notes/bootstrap.md",
     "adr/README.md": "architecture/decisions/process.md",
     "vision_capture.md": "notes/vision_capture.md",
     "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
+    "_notes/adr/": "architecture/decisions/index.md",
 }
 
 #: A repository may publish one reference file verbatim, wrapped in a code fence so the
@@ -241,9 +245,11 @@ def _rewrite_links(markdown: str, dest_path: str) -> str:
         replacement = LINK_REWRITES.get(normalized)
         if replacement is None:
             # Records are addressed as `.agents/notes/adr/NNNN-slug.md` from the repository root;
-            # links from other repositories resolved through the root `notes` alias and from within
+            # links from other repositories resolved through the root `_notes` alias and from within
             # .agents/notes/ use the same pattern and publish under the decisions section.
-            adr_match = re.fullmatch(r"(?:\.agents/notes/)?adr/(?P<slug>[^/]+\.md)", normalized)
+            adr_match = re.fullmatch(
+                r"(?:(?:\.agents/notes|_notes)/)?adr/(?P<slug>[^/]+\.md)", normalized
+            )
             if adr_match:
                 replacement = f"{ADR_DEST_PREFIX}/{adr_match.group('slug')}"
 

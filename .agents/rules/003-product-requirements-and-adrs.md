@@ -12,7 +12,7 @@ owners: [pr206, merge-gates]
 
 Product requirements are defined by `PRD.md`, the single normative product document. Executable
 declarations (providers, taxonomy, workflow graph, installed consumers) live in
-`.github/darkfactory.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
+`.darkfactory/manifest.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
 deviation from `PRD.md` MUST be explicitly approved by the user and recorded as a discrete ADR
 under `.agents/notes/adr/` before it is implemented.
 

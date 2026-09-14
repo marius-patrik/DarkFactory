@@ -311,7 +311,7 @@ def render_manifest(
     description: str = "",
     pipeline_repo: str = "marius-patrik/DarkFactory",
 ) -> str:
-    """Renders a starter `darkfactory.json` from what the repository is made of.
+    """Renders a starter `.darkfactory/manifest.json` from what the repository is made of.
 
     Args:
         owner: Repository owner login.
@@ -439,7 +439,7 @@ def plan(
         f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
         for name in installed
     }
-    files[".github/darkfactory.json"] = render_manifest(
+    files[os.path.join(".darkfactory", "manifest.json")] = render_manifest(
         owner, repo, ref, root, branch, description, pipeline_repo
     )
     return files
@@ -482,7 +482,7 @@ it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 
-`.github/darkfactory.json` carries a starter set. Areas drive **labels, Conventional Commit scopes
+`.darkfactory/manifest.json` carries a starter set. Areas drive **labels, Conventional Commit scopes
 and agent routing**, so they are worth getting right. Replace them with this repository's own
 domains, then re-run the install workflow to reconcile the labels.
 
@@ -515,7 +515,7 @@ python .github/scripts/repo_settings.py --apply
 ---
 
 Close this issue when the four are done. The pipeline is [{pipeline_repo}](https://github.com/{pipeline_repo});
-this repository pins a commit of it in `.github/darkfactory.json`, and bumping that pin is how
+this repository pins a commit of it in `.darkfactory/manifest.json`, and bumping that pin is how
 {name} adopts an update.
 """
 
@@ -663,6 +663,9 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     matters: an installation written before the pipeline generated it protects the branch against
     contexts nothing reports.
 
+    If the manifest still lives at the legacy `.github/darkfactory.json`, it is migrated to
+    `.darkfactory/manifest.json`.
+
     Args:
         root: Repository root.
         ref: Pipeline commit to pin.
@@ -671,8 +674,15 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     Returns:
         True when the manifest on disk changed.
     """
-    path = os.path.join(root, ".github", "darkfactory.json")
-    if not os.path.isfile(path):
+    new_path = os.path.join(root, ".darkfactory", "manifest.json")
+    legacy_path = os.path.join(root, ".github", "darkfactory.json")
+
+    # Find existing manifest, preferring new location.
+    if os.path.isfile(new_path):
+        path = new_path
+    elif os.path.isfile(legacy_path):
+        path = legacy_path
+    else:
         return False
 
     with open(path, encoding="utf-8") as handle:
@@ -686,11 +696,22 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     if ref:
         current.setdefault("upstream", {})["ref"] = ref
 
-    if json.dumps(current, sort_keys=True) == before:
+    changed = json.dumps(current, sort_keys=True) != before
+
+    # Migrate legacy location to the new path.
+    if path == legacy_path:
+        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        with open(new_path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
+        os.remove(legacy_path)
+        print("  migrated .github/darkfactory.json -> .darkfactory/manifest.json")
+        return True
+
+    if not changed:
         return False
-    with open(path, "w", encoding="utf-8") as handle:
+    with open(new_path, "w", encoding="utf-8") as handle:
         handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-    print("  reconciled .github/darkfactory.json")
+    print("  reconciled .darkfactory/manifest.json")
     return True
 
 
@@ -740,8 +761,8 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     # opposite, and both go through the same path so neither is a special case.
     written += retarget(root, ref)
     written += ensure_secrets_pass(root)
-    if reconcile_manifest(root, ref, files[".github/darkfactory.json"]):
-        written.append(".github/darkfactory.json")
+    if reconcile_manifest(root, ref, files[os.path.join(".darkfactory", "manifest.json")]):
+        written.append(os.path.join(".darkfactory", "manifest.json"))
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
             handle.write(f"written={'true' if written else 'false'}\n")

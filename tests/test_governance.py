@@ -212,7 +212,7 @@ def test_prd_does_not_duplicate_manifest_taxonomy_or_graph() -> None:
     """Executable declarations live in the manifest, not in the product document.
 
     The PRD must not re-state the area taxonomy or a hardcoded stage graph, because those have one
-    executable home (`.github/darkfactory.json` and the workflow graph) and any copy drifts.
+    executable home (`.darkfactory/manifest.json` and the workflow graph) and any copy drifts.
     """
     prd = _read("PRD.md")
     assert "AREA_LABELS" not in prd
@@ -337,13 +337,13 @@ def test_rule_enforcement_pointers_resolve_or_say_unenforced():
 
 
 def test_runtime_references_use_canonical_agent_paths():
-    """Automation never traverses the root `notes` / `rules` aliases."""
+    """Automation never traverses the root `_notes` / `_rules` aliases."""
     scripts_dir = os.path.join(REPO_ROOT, ".github", "scripts")
     for name in sorted(os.listdir(scripts_dir)):
         if not name.endswith(".py"):
             continue
         source = _read(os.path.relpath(scripts_dir, REPO_ROOT), name)
-        for alias in ("notes", "rules"):
+        for alias in ("_notes", "_rules"):
             assert (
                 re.search(rf'os\.path\.join\(\s*"{alias}"', source) is None
             ), f"{name} must use the canonical .agents path, not the root {alias} alias"
