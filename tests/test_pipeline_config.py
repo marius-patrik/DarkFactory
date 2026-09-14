@@ -1128,3 +1128,17 @@ class TestTheFormatterDoesNotBlockItsOwnChecks:
         step = self._step()
         assert '"darkfactory"' not in step
         assert "default_branch" in step
+
+
+def test_bot_comments_do_not_start_an_agent_container():
+    """Every agent comment used to start a full run that only reached "Skipping comment ... bot".
+
+    The job-level condition drops comments authored by a `[bot]` login before the container is
+    built; issues, dispatches and human comments still run.
+    """
+    yaml = pytest.importorskip("yaml")
+    with open(os.path.join(WORKFLOW_DIR, "agent.yml"), encoding="utf-8") as handle:
+        document = yaml.safe_load(handle)
+    condition = document["jobs"]["run-agent"]["if"]
+    assert "endsWith(github.event.comment.user.login, '[bot]')" in condition
+    assert condition.count("!endsWith") == 1
