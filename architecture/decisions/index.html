@@ -83,12 +83,12 @@
          href="../..">Overview</a>
     </li>
     <li class="nav__section nav__section--active">
-      <span class="nav__label">Architecture</span>
+      <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../">Overview</a>
+         href="../../prd/">Requirements</a>
     </li>
     <li class="nav__section nav__section--active">
       <span class="nav__label">Decisions</span>
@@ -104,6 +104,22 @@
     </li>
     <li class="nav__item">
       <a class="nav__link"
+         href="0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
          href="process/">Process</a>
     </li>
 </ul>
@@ -111,10 +127,6 @@
     </li>
 </ul>
 
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="../../roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -143,8 +155,8 @@
         <article class="prose">
           <h1 id="architecture-decisions">Architecture decisions<a class="headerlink" href="#architecture-decisions" title="Permanent link">&para;</a></h1>
 <p>Every decision that binds the implementation, one record per page. This index is generated
-from the files in <code>notes/adr/</code> at build time - it is never hand-maintained
-(<code>AGENTS.md</code> rule 2).</p>
+from the files in <code>.agents/notes/adr/</code> at build time - it is never hand-maintained
+(<code>.agents/rules/002-inline-docs-and-generated-documentation.md</code>).</p>
 <p>See <a href="process/">the process</a> for when an ADR is required and how to write one.</p>
 <table>
 <thead>
@@ -162,14 +174,38 @@ from the files in <code>notes/adr/</code> at build time - it is never hand-maint
 <td>Accepted</td>
 <td>#18</td>
 </tr>
+<tr>
+<td><a href="0002-agent-pipeline-is-harness-agnostic/">0002</a></td>
+<td><a href="0002-agent-pipeline-is-harness-agnostic/">The agent pipeline is harness-agnostic</a></td>
+<td>Accepted</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="0003-repository-identity-is-data-not-code/">0003</a></td>
+<td><a href="0003-repository-identity-is-data-not-code/">Repository identity is data, not code</a></td>
+<td>Accepted</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="0004-repository-environment-is-detected-declaration-is-the-exception/">0004</a></td>
+<td><a href="0004-repository-environment-is-detected-declaration-is-the-exception/">The repository environment is detected; declaration is the exception</a></td>
+<td>Accepted</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="0005-versioning-scheme-is-a-per-repository-choice/">0005</a></td>
+<td><a href="0005-versioning-scheme-is-a-per-repository-choice/">The versioning scheme is a per-repository choice</a></td>
+<td>Accepted</td>
+<td>—</td>
+</tr>
 </tbody>
 </table>
-<p>1 records — 1 accepted, 0 proposed. Records are append-only: a decision that turns out wrong is superseded by a new one, never edited away.</p>
+<p>5 records — 5 accepted, 0 proposed. Records are append-only: a decision that turns out wrong is superseded by a new one, never edited away.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../">
+          <a class="pager__link pager__link--prev" href="../../prd/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">Overview</span>
+            <span class="pager__title">Requirements</span>
           </a>
           <a class="pager__link pager__link--next" href="0001-domains-above-environments/">
             <span class="pager__label">Next</span>

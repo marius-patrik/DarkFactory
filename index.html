@@ -83,12 +83,12 @@
          href=".">Overview</a>
     </li>
     <li class="nav__section">
-      <span class="nav__label">Architecture</span>
+      <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="architecture/">Overview</a>
+         href="prd/">Requirements</a>
     </li>
     <li class="nav__section">
       <span class="nav__label">Decisions</span>
@@ -104,6 +104,22 @@
     </li>
     <li class="nav__item">
       <a class="nav__link"
+         href="architecture/decisions/0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="architecture/decisions/0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="architecture/decisions/0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
          href="architecture/decisions/process/">Process</a>
     </li>
 </ul>
@@ -111,10 +127,6 @@
     </li>
 </ul>
 
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -204,7 +216,7 @@
 </tr>
 <tr>
 <td><strong>Virtual Documentation</strong></td>
-<td>MkDocs hook publishes canonical root documents (<code>AGENTS.md</code>, <code>ARCHITECTURE.md</code>, <code>ROADMAP.md</code>, <code>VISION.md</code>) directly to GitHub Pages without committed static duplicates.</td>
+<td>ProperDocs hook publishes canonical root documents (<code>PRD.md</code>, <code>AGENTS.md</code>) and the decision records under <code>.agents/notes/adr/</code> directly to GitHub Pages without committed static duplicates.</td>
 </tr>
 <tr>
 <td><strong>Strict CI &amp; Test Guards</strong></td>
@@ -223,20 +235,12 @@
 </thead>
 <tbody>
 <tr>
+<td><code>PRD.md</code></td>
+<td><strong>Normative.</strong> Product requirements, constraints, actors, and acceptance measures.</td>
+</tr>
+<tr>
 <td><code>AGENTS.md</code></td>
-<td><strong>Normative.</strong> The 16 binding rules for every contributor (human or AI agent).</td>
-</tr>
-<tr>
-<td><code>ARCHITECTURE.md</code></td>
-<td><strong>Normative.</strong> Process topology, pipeline contracts, and foundational architecture decisions.</td>
-</tr>
-<tr>
-<td><code>ROADMAP.md</code></td>
-<td>Epics, entry gates, and sequencing rationale.</td>
-</tr>
-<tr>
-<td><code>VISION.md</code></td>
-<td><strong>Reference.</strong> Scoping, requirements rationale, and system vision.</td>
+<td><strong>Normative.</strong> The binding rules for every contributor (human or AI agent); generated from <code>.agents/rules/</code>.</td>
 </tr>
 <tr>
 <td><code>.github/workflows/agent.yml</code></td>
@@ -362,16 +366,16 @@ repository where the pipeline was never installed.</p>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>black<span class="w"> </span>--check<span class="w"> </span>.
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Serve documentation locally</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>mkdocs<span class="w"> </span>serve
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>properdocs<span class="w"> </span>serve
 </code></pre></div>
 <hr />
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
 <p>GPL-3.0. See <a href="LICENSE">LICENSE</a>.</p>
         </article>
         <nav class="pager" aria-label="Page navigation"><span></span>
-          <a class="pager__link pager__link--next" href="architecture/">
+          <a class="pager__link pager__link--next" href="prd/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">Overview</span>
+            <span class="pager__title">Requirements</span>
           </a>
         </nav>
 

@@ -83,12 +83,12 @@
          href="../..">Overview</a>
     </li>
     <li class="nav__section">
-      <span class="nav__label">Architecture</span>
+      <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../../architecture/">Overview</a>
+         href="../../prd/">Requirements</a>
     </li>
     <li class="nav__section">
       <span class="nav__label">Decisions</span>
@@ -104,6 +104,22 @@
     </li>
     <li class="nav__item">
       <a class="nav__link"
+         href="../../architecture/decisions/0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
          href="../../architecture/decisions/process/">Process</a>
     </li>
 </ul>
@@ -111,10 +127,6 @@
     </li>
 </ul>
 
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="../../roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -144,6 +156,13 @@
           <h1 id="bootstrap-and-operator-runbook">Bootstrap and operator runbook<a class="headerlink" href="#bootstrap-and-operator-runbook" title="Permanent link">&para;</a></h1>
 <p>How this repository was brought up, what still needs a human, and how to reproduce the whole thing
 if it is ever recreated or used to bootstrap a new autonomous project.</p>
+<blockquote>
+<p><strong>Migration annotation (2026-09-13, knowledge-layout).</strong> After this runbook was written the
+governance layout changed: <code>ARCHITECTURE.md</code> became <code>PRD.md</code>, <code>VISION.md</code> and <code>ROADMAP.md</code> were
+retired, and the canonical locations for rules and notes became <code>.agents/rules/</code> and
+<code>.agents/notes/</code>. The historical rows below describe the state at bootstrap time (2026-09) and
+are intentionally not rewritten; current paths are authoritative.</p>
+</blockquote>
 <hr />
 <h2 id="what-is-already-done">What is already done<a class="headerlink" href="#what-is-already-done" title="Permanent link">&para;</a></h2>
 <table>
@@ -217,7 +236,7 @@ designed approve-and-auto-merge path.</p>
 does not start a container build that cannot authenticate. Its first step re-checks the refresh
 token, because <code>secrets</code> is not available in a job-level <code>if</code>.</p>
 <h3 id="3-answer-d1">3. Answer D1<a class="headerlink" href="#3-answer-d1" title="Permanent link">&para;</a></h3>
-<p><code>ARCHITECTURE.md</code> §7 lists eight open decisions. Seven of them gate one or two epics. <strong>D1 gates
+<p><code>PRD.md</code> §13 lists the durable decisions. Seven of them gate one or two epics. <strong>D1 gates
 everything</strong>: until there is a day-one user workflow, "which messages does the Substrate Bus carry"
 has no answer that is not guesswork. Issue #1.</p>
 <hr />
@@ -277,7 +296,7 @@ escape hatch, not a way around the rules:</p>
 </tr>
 <tr>
 <td>Run the local suite</td>
-<td><code>pytest -v &amp;&amp; black --check . &amp;&amp; mkdocs build --strict</code></td>
+<td><code>pytest -v &amp;&amp; black --check . &amp;&amp; properdocs build --strict</code></td>
 </tr>
 </tbody>
 </table>

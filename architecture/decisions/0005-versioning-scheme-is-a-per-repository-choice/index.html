@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ADR-0001 — Domains sit above environments · DarkFactory</title>
+    <title>ADR-0005 — The versioning scheme is a per-repository choice · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,8 +99,8 @@
          href="../">Overview</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link nav__link--active"
-         href="./">ADR-0001 — Domains sit above environments</a>
+      <a class="nav__link"
+         href="../0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -115,8 +115,8 @@
          href="../0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link"
-         href="../0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+      <a class="nav__link nav__link--active"
+         href="./">ADR-0005 — The versioning scheme is a per-repository choice</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -153,54 +153,45 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="adr-0001-domains-sit-above-environments">ADR-0001 — Domains sit above environments<a class="headerlink" href="#adr-0001-domains-sit-above-environments" title="Permanent link">&para;</a></h1>
-<p><strong>Status</strong>: Accepted · 2026-09-08</p>
-<p><strong>Resolves</strong>: #18</p>
+          <h1 id="adr-0005-the-versioning-scheme-is-a-per-repository-choice">ADR-0005 — The versioning scheme is a per-repository choice<a class="headerlink" href="#adr-0005-the-versioning-scheme-is-a-per-repository-choice" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted · 2026-09-07</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p><code>environment.py</code> answers one question for the whole pipeline: what is this repository made of.
-It answered it with a single level, the <em>ecosystem</em> — <code>python</code>, <code>node</code>, <code>rust</code>, <code>go</code>, <code>deno</code> —
-where each ecosystem is a row across the command and artifact tables plus a guarded job in CI.</p>
-<p>That level was enough while every repository held code. It stopped being enough when written work
-came under the pipeline: a thesis typeset with Typst, whose practical part is a working codebase.
-Installed as it was, the pipeline would run a Python job against a repository containing no Python
-and package no artifact for a repository whose entire output is one PDF.</p>
-<p>Adding <code>typst</code> as one more ecosystem row would have made that repository build. It would not have
-expressed the thing that actually differs. Python and Rust are not two kinds of work; they are two
-toolchains for the same kind. Typst and LaTeX are likewise two toolchains — for a different kind.</p>
+<p>Releases are automated on merge to <code>main</code>, but what a version number <em>means</em> is not a property of
+the pipeline. A library makes compatibility promises; a continuously-delivered application does
+not; some projects deliberately never leave <code>0.x</code>.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Introduce a level above the ecosystem: the <strong>domain</strong>.</p>
+<p><code>.github/scripts/versioning.py</code> implements five modes, selected in the manifest: <code>semver</code>,
+<code>zerover</code> (the major never leaves zero), <code>pridever</code> (<code>PROUD.DEFAULT.SHAME</code>), <code>calver</code>
+(<code>YYYY.MM.PATCH</code>), and <code>manual</code> (a <code>VERSION</code> file is the decision).</p>
+<p>Automatic modes derive the bump from Conventional Commits, which
+<code>.agents/rules/015-repository-taxonomy.md</code> (DF-RULE-015) already mandates and CI
+already enforces, so the metadata is present without new ceremony. An explicit request always
+overrides the derivation — necessary for PrideVer, where PROUD is a human judgement no commit log
+can express, and useful everywhere else.</p>
+<h2 id="alternatives-rejected">Alternatives rejected<a class="headerlink" href="#alternatives-rejected" title="Permanent link">&para;</a></h2>
 <ul>
-<li>An <strong>environment</strong> (the existing ecosystem) says which toolchain a package needs.</li>
-<li>A <strong>domain</strong> says what kind of governance it answers to: code is tested and packaged, a paper is
-  typeset and published, math is proved.</li>
+<li><strong>SemVer for everything.</strong> Imposes a compatibility promise on projects that do not make one.</li>
+<li><strong>A version file per repository, bumped by hand.</strong> Retained as <code>manual</code> mode rather than made
+  universal; as a default it drifts from the tags and forgets releases.</li>
+<li><strong>Deriving the mode from the ecosystem.</strong> Cargo and npm both expect SemVer-shaped strings, but
+  the shape is not the policy, and one repository can be both.</li>
 </ul>
-<p><code>DOMAINS</code> maps each ecosystem to its domain, and <code>DEFAULT_DOMAIN</code> covers an ecosystem a repository
-invented for itself, so declaring one never crashes for want of a mapping.</p>
-<p><code>Environment</code> gains <code>domains</code>, <code>packages_in</code>, <code>has_domain</code> and <code>is_multi_domain</code>, mirroring the
-existing <code>ecosystems</code>, <code>packages_for</code> and <code>has</code> exactly — the new level is navigated the same way
-as the old one, so there is nothing extra to learn.</p>
-<p>Environments keep their own rows. <code>typst</code> and <code>latex</code> are separate entries in the command tables,
-not one <code>paper</code> entry with an engine argument, because they are genuinely different toolchains.
-The alternative considered was carrying the engine in the existing <code>package_manager</code> slot; it was
-rejected because a typesetting engine is not a package manager and no lockfile identifies one, so
-the slot would have meant two different things depending on the row.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Repositories become <strong>multi-domain</strong> as well as polyglot. Polyglot means several environments
-inside one domain and already worked; multi-domain means several kinds of work at once, and is what
-lets a thesis and the software it documents live in one repository with both governed properly.</p>
-<p>CI gains one guarded job per new domain rather than per environment, so a repository using both
-Typst and LaTeX does not accumulate a required check per engine.</p>
-<p>Existing repositories are unaffected: every ecosystem they use maps to <code>code</code>, and every table row
-they rely on is untouched.</p>
+<ul>
+<li>Five modes is five behaviours to keep tested; the suite asserts that the same commit log produces
+  genuinely different versions under each.</li>
+<li>ZeroVer and PrideVer produce version strings that SemVer-consuming registries will parse but
+  misinterpret. That is inherent to those schemes, and is the repository's choice to make.</li>
+</ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../">
+          <a class="pager__link pager__link--prev" href="../0004-repository-environment-is-detected-declaration-is-the-exception/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">Overview</span>
+            <span class="pager__title">ADR-0004 — The repository environment is detected; declaration is the exception</span>
           </a>
-          <a class="pager__link pager__link--next" href="../0002-agent-pipeline-is-harness-agnostic/">
+          <a class="pager__link pager__link--next" href="../process/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">ADR-0002 — The agent pipeline is harness-agnostic</span>
+            <span class="pager__title">Process</span>
           </a>
         </nav>
 
@@ -215,6 +206,8 @@ they rely on is untouched.</p>
           <li><a href="#context">Context</a>
           </li>
           <li><a href="#decision">Decision</a>
+          </li>
+          <li><a href="#alternatives-rejected">Alternatives rejected</a>
           </li>
           <li><a href="#consequences">Consequences</a>
           </li>

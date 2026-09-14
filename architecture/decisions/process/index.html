@@ -83,12 +83,12 @@
          href="../../..">Overview</a>
     </li>
     <li class="nav__section nav__section--active">
-      <span class="nav__label">Architecture</span>
+      <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../../">Overview</a>
+         href="../../../prd/">Requirements</a>
     </li>
     <li class="nav__section nav__section--active">
       <span class="nav__label">Decisions</span>
@@ -103,6 +103,22 @@
          href="../0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
     </li>
     <li class="nav__item">
+      <a class="nav__link"
+         href="../0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
       <a class="nav__link nav__link--active"
          href="./">Process</a>
     </li>
@@ -111,10 +127,6 @@
     </li>
 </ul>
 
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="../../../roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -142,203 +154,26 @@
       <main class="content" id="content">
         <article class="prose">
           <h1 id="architecture-decision-records">Architecture Decision Records<a class="headerlink" href="#architecture-decision-records" title="Permanent link">&para;</a></h1>
-<p>Numbered, append-only. An ADR is added when an open decision from <code>ARCHITECTURE.md</code> §7 is resolved,
-or when any deviation from <code>ARCHITECTURE.md</code> is approved (rule 3 in <code>AGENTS.md</code>).</p>
+<p>Numbered, append-only. An ADR is added when an open decision from <code>PRD.md</code> §13 is resolved, or when
+any deviation from <code>PRD.md</code> is approved (<code>.agents/rules/003-product-requirements-and-adrs.md</code>).
+One decision, one file: each discrete ADR in this directory.</p>
 <p>Each record states the decision, the alternatives that were rejected <strong>and why</strong>, and what the
 decision forecloses. "We chose X because it is better" is not an ADR.</p>
 <p><strong>Status values:</strong> <code>Proposed</code> (awaiting the maintainer's approval) · <code>Accepted</code> · <code>Superseded by
 ADR-NNNN</code>. An ADR only binds the implementation once it is <code>Accepted</code>.</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Title</th>
-<th>Status</th>
-<th>Resolves</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="#adr-0001-the-agent-pipeline-is-harness-agnostic">0001</a></td>
-<td>The agent pipeline is harness-agnostic</td>
-<td>Accepted</td>
-<td>—</td>
-</tr>
-<tr>
-<td><a href="#adr-0002-repository-identity-is-data-not-code">0002</a></td>
-<td>Repository identity is data, not code</td>
-<td>Accepted</td>
-<td>—</td>
-</tr>
-<tr>
-<td><a href="#adr-0003-the-repository-environment-is-detected-declaration-is-the-exception">0003</a></td>
-<td>The repository environment is detected; declaration is the exception</td>
-<td>Accepted</td>
-<td>—</td>
-</tr>
-<tr>
-<td><a href="#adr-0004-the-versioning-scheme-is-a-per-repository-choice">0004</a></td>
-<td>The versioning scheme is a per-repository choice</td>
-<td>Accepted</td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="adr-0001-the-agent-pipeline-is-harness-agnostic">ADR-0001 — The agent pipeline is harness-agnostic<a class="headerlink" href="#adr-0001-the-agent-pipeline-is-harness-agnostic" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Status</strong>: Accepted</li>
-<li><strong>Date</strong>: 2026-09-06</li>
-</ul>
-<h3 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h3>
-<p>The delivery pipeline was hardcoded to Google Antigravity's <code>agy</code>, with fallback only <em>between
-models within that one CLI</em>. During this repository's first real run, Antigravity exhausted both
-fallback tiers mid-implementation and two approved plans stalled at <code>Blocked</code> with nothing else to
-try — a single vendor's quota halted delivery entirely.</p>
-<h3 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h3>
-<p>Coding-agent CLIs are described declaratively in <code>.github/scripts/harnesses.py</code>: a binary, an argv
-template, a model chain, and credential keys. Antigravity, Claude Code, Codex, Kimi, Grok, Cursor,
-and opencode ship in the registry.</p>
-<ul>
-<li>Fallback escalates <strong>across harnesses</strong>, not only across models.</li>
-<li>Harnesses whose binary is absent from <code>PATH</code>, or whose credentials are unset, are <strong>skipped, not
-  failed</strong>.</li>
-<li><code>AGENT_HARNESS_CHAIN</code> and <code>AGENT_HARNESS_CONFIG</code> override order and every field at runtime.</li>
-<li>Prompts are passed as argv elements, never through a shell.</li>
-</ul>
-<h3 id="alternatives-rejected">Alternatives rejected<a class="headerlink" href="#alternatives-rejected" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Stay single-vendor.</strong> Demonstrated to halt delivery on one provider's quota. Not hypothetical —
-  it happened during the run that motivated this ADR.</li>
-<li><strong><code>if</code>/<code>elif</code> per CLI in the runner.</strong> Every new CLI edits the core retry loop, and each upstream
-  flag rename becomes a code change, a review, and a container rebuild.</li>
-<li><strong>A wrapper shell script per CLI in the image.</strong> Moves invocation into shell — where prompt
-  quoting becomes an injection risk — and puts it beyond the reach of unit tests.</li>
-<li><strong>An LLM API abstraction instead of CLIs.</strong> These tools are agents, not completions endpoints:
-  they carry their own tool loops, permissions, and repository awareness. Reimplementing that is the
-  project, not a dependency.</li>
-</ul>
-<h3 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Invocation flags are a maintenance surface. Mitigated by making every field overridable from a
-  repository variable, so upstream drift never requires a code change.</li>
-<li>The container is larger and its build tolerates per-CLI failure, printing a manifest of what
-  actually landed rather than pretending.</li>
-<li>Harness behaviour differs — output verbosity, tool permissions, repository conventions. Prompts
-  must not assume any one CLI's habits.</li>
-</ul>
-<hr />
-<h2 id="adr-0002-repository-identity-is-data-not-code">ADR-0002 — Repository identity is data, not code<a class="headerlink" href="#adr-0002-repository-identity-is-data-not-code" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Status</strong>: Accepted</li>
-<li><strong>Date</strong>: 2026-09-07</li>
-</ul>
-<h3 id="context_1">Context<a class="headerlink" href="#context_1" title="Permanent link">&para;</a></h3>
-<p>This repository was seeded from omnis, and inherited its identity wholesale. The area labels
-described a terminal cell-grid renderer and an embedded browser engine; the ADR file recorded
-omnis's decisions about scene trees and PGlite; a docstring looked up "the Omnis project number";
-the argument parser announced itself as omnis's. None of it was detectable by review, because each
-string was individually plausible.</p>
-<p>The pipeline is meant to be distributed to many repositories. Anything hardcoded is either wrong in
-every repository but one, or becomes a merge conflict on every update.</p>
-<h3 id="decision_1">Decision<a class="headerlink" href="#decision_1" title="Permanent link">&para;</a></h3>
-<p>Everything repository-specific lives in <code>.github/darkfactory.json</code> and is read through
-<code>.github/scripts/manifest.py</code>. The shared workflows and scripts are then byte-identical across
-every consumer, so a pipeline update is a fast-forward rather than a merge.</p>
-<p>The area taxonomy is the clearest case: labels, permitted commit scopes, and the agent's request
-classifier all read the one declaration, so the three cannot drift apart.</p>
-<h3 id="alternatives-rejected_1">Alternatives rejected<a class="headerlink" href="#alternatives-rejected_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Environment variables per repository.</strong> Invisible to review, unversioned, and absent when a
-  script is run locally.</li>
-<li><strong>A Python module of constants.</strong> What exists today. It is code, so consumers must edit a shared
-  file, which guarantees a conflict on the next update.</li>
-<li><strong>Template substitution at adoption time.</strong> Produces a copy that has forked on day one; there is
-  no path back to receiving upstream fixes.</li>
-</ul>
-<h3 id="consequences_1">Consequences<a class="headerlink" href="#consequences_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li>A manifest key added later must default, or it breaks repositories that have not adopted it. Every
-  accessor in <code>manifest.py</code> therefore has a fallback, and a missing or malformed manifest still
-  yields a working object rather than an import error.</li>
-<li>Identity leaks are now a test failure rather than a discovery: <code>tests/test_manifest.py</code> asserts
-  that no other project's identifiers appear in the shared scripts.</li>
-</ul>
-<hr />
-<h2 id="adr-0003-the-repository-environment-is-detected-declaration-is-the-exception">ADR-0003 — The repository environment is detected; declaration is the exception<a class="headerlink" href="#adr-0003-the-repository-environment-is-detected-declaration-is-the-exception" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Status</strong>: Accepted</li>
-<li><strong>Date</strong>: 2026-09-07</li>
-</ul>
-<h3 id="context_2">Context<a class="headerlink" href="#context_2" title="Permanent link">&para;</a></h3>
-<p>The pipeline runs in repositories with nothing in common: a Python package, a Rust and TypeScript
-desktop application, a template with no build at all. Each workflow had begun re-deriving this for
-itself with <code>hashFiles</code>, so the answer to "is there Rust here" existed in several places and could
-disagree with itself.</p>
-<h3 id="decision_2">Decision<a class="headerlink" href="#decision_2" title="Permanent link">&para;</a></h3>
-<p><code>.github/scripts/environment.py</code> answers it once. It walks the repository, identifies every package
-manifest, resolves workspace members for npm, Bun, pnpm, Yarn and Cargo, and derives the test,
-format and documentation command for each ecosystem from the package manager actually in use. The
-manifest's <code>environment</code> block overrides or extends any of it.</p>
-<p>Detection is the default because it cannot drift: a repository that grows a <code>Cargo.toml</code> starts
-building Rust with no configuration change. Declaration covers what detection cannot see.</p>
-<h3 id="alternatives-rejected_2">Alternatives rejected<a class="headerlink" href="#alternatives-rejected_2" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Declare everything.</strong> Accurate the day it is written. The failure mode is silent: a new package
-  is simply never built or tested, and nothing reports it.</li>
-<li><strong>Keep <code>hashFiles</code> in each workflow.</strong> Only answers "does this file exist", so it cannot express
-  workspace members, monorepo layout, or which package manager is in use.</li>
-<li><strong>A build-tool abstraction such as Nix or Bazel.</strong> Solves this and much more, at the cost of
-  requiring every consumer repository to adopt it.</li>
-</ul>
-<h3 id="consequences_2">Consequences<a class="headerlink" href="#consequences_2" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Detection heuristics are a maintenance surface; a new ecosystem is a data change to <code>MANIFESTS</code>.</li>
-<li>Lockfiles are scoped per ecosystem. A flat lookup reported a Cargo workspace's package manager as
-  Bun purely because <code>bun.lock</code> sat beside it in a polyglot root.</li>
-</ul>
-<hr />
-<h2 id="adr-0004-the-versioning-scheme-is-a-per-repository-choice">ADR-0004 — The versioning scheme is a per-repository choice<a class="headerlink" href="#adr-0004-the-versioning-scheme-is-a-per-repository-choice" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Status</strong>: Accepted</li>
-<li><strong>Date</strong>: 2026-09-07</li>
-</ul>
-<h3 id="context_3">Context<a class="headerlink" href="#context_3" title="Permanent link">&para;</a></h3>
-<p>Releases are automated on merge to <code>main</code>, but what a version number <em>means</em> is not a property of
-the pipeline. A library makes compatibility promises; a continuously-delivered application does
-not; some projects deliberately never leave <code>0.x</code>.</p>
-<h3 id="decision_3">Decision<a class="headerlink" href="#decision_3" title="Permanent link">&para;</a></h3>
-<p><code>.github/scripts/versioning.py</code> implements five modes, selected in the manifest: <code>semver</code>,
-<code>zerover</code> (the major never leaves zero), <code>pridever</code> (<code>PROUD.DEFAULT.SHAME</code>), <code>calver</code>
-(<code>YYYY.MM.PATCH</code>), and <code>manual</code> (a <code>VERSION</code> file is the decision).</p>
-<p>Automatic modes derive the bump from Conventional Commits, which rule 15 already mandates and CI
-already enforces, so the metadata is present without new ceremony. An explicit request always
-overrides the derivation — necessary for PrideVer, where PROUD is a human judgement no commit log
-can express, and useful everywhere else.</p>
-<h3 id="alternatives-rejected_3">Alternatives rejected<a class="headerlink" href="#alternatives-rejected_3" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>SemVer for everything.</strong> Imposes a compatibility promise on projects that do not make one.</li>
-<li><strong>A version file per repository, bumped by hand.</strong> Retained as <code>manual</code> mode rather than made
-  universal; as a default it drifts from the tags and forgets releases.</li>
-<li><strong>Deriving the mode from the ecosystem.</strong> Cargo and npm both expect SemVer-shaped strings, but
-  the shape is not the policy, and one repository can be both.</li>
-</ul>
-<h3 id="consequences_3">Consequences<a class="headerlink" href="#consequences_3" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Five modes is five behaviours to keep tested; the suite asserts that the same commit log produces
-  genuinely different versions under each.</li>
-<li>ZeroVer and PrideVer produce version strings that SemVer-consuming registries will parse but
-  misinterpret. That is inherent to those schemes, and is the repository's choice to make.</li>
-</ul>
+<p>Numbering is per-file and sequential within this directory. <code>0001</code> is taken; the next decision is
+<code>0006</code>. The deprecated <code>architecture_decisions.md</code> ledger that once held all records was split into
+one file per decision on 2026-09-13 and removed; its four records became this directory's
+<code>0002</code>–<code>0005</code>.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../0001-domains-above-environments/">
+          <a class="pager__link pager__link--prev" href="../0005-versioning-scheme-is-a-per-repository-choice/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">ADR-0001 — Domains sit above environments</span>
+            <span class="pager__title">ADR-0005 — The versioning scheme is a per-repository choice</span>
           </a>
-          <a class="pager__link pager__link--next" href="../../../roadmap/">
+          <a class="pager__link pager__link--next" href="../../../agents/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">Roadmap</span>
+            <span class="pager__title">Contributing & Agent Rules</span>
           </a>
         </nav>
 
@@ -347,42 +182,7 @@ can express, and useful everywhere else.</p>
         </footer>
       </main>
 
-      <aside class="toc">
-        <div class="toc__title">On this page</div>
-        <ul class="toc__list">
-          <li><a href="#adr-0001-the-agent-pipeline-is-harness-agnostic">ADR-0001 — The agent pipeline is harness-agnostic</a>
-            <ul>
-              <li><a href="#context">Context</a></li>
-              <li><a href="#decision">Decision</a></li>
-              <li><a href="#alternatives-rejected">Alternatives rejected</a></li>
-              <li><a href="#consequences">Consequences</a></li>
-            </ul>
-          </li>
-          <li><a href="#adr-0002-repository-identity-is-data-not-code">ADR-0002 — Repository identity is data, not code</a>
-            <ul>
-              <li><a href="#context_1">Context</a></li>
-              <li><a href="#decision_1">Decision</a></li>
-              <li><a href="#alternatives-rejected_1">Alternatives rejected</a></li>
-              <li><a href="#consequences_1">Consequences</a></li>
-            </ul>
-          </li>
-          <li><a href="#adr-0003-the-repository-environment-is-detected-declaration-is-the-exception">ADR-0003 — The repository environment is detected; declaration is the exception</a>
-            <ul>
-              <li><a href="#context_2">Context</a></li>
-              <li><a href="#decision_2">Decision</a></li>
-              <li><a href="#alternatives-rejected_2">Alternatives rejected</a></li>
-              <li><a href="#consequences_2">Consequences</a></li>
-            </ul>
-          </li>
-          <li><a href="#adr-0004-the-versioning-scheme-is-a-per-repository-choice">ADR-0004 — The versioning scheme is a per-repository choice</a>
-            <ul>
-              <li><a href="#context_3">Context</a></li>
-              <li><a href="#decision_3">Decision</a></li>
-              <li><a href="#alternatives-rejected_3">Alternatives rejected</a></li>
-              <li><a href="#consequences_3">Consequences</a></li>
-            </ul>
-          </li>
-        </ul>
+      <aside class="toc toc--empty">
       </aside>
     </div>
 

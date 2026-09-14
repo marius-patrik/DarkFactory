@@ -83,12 +83,12 @@
          href="../..">Overview</a>
     </li>
     <li class="nav__section">
-      <span class="nav__label">Architecture</span>
+      <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
       <a class="nav__link"
-         href="../../architecture/">Overview</a>
+         href="../../prd/">Requirements</a>
     </li>
     <li class="nav__section">
       <span class="nav__label">Decisions</span>
@@ -104,6 +104,22 @@
     </li>
     <li class="nav__item">
       <a class="nav__link"
+         href="../../architecture/decisions/0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
          href="../../architecture/decisions/process/">Process</a>
     </li>
 </ul>
@@ -111,10 +127,6 @@
     </li>
 </ul>
 
-    </li>
-    <li class="nav__item">
-      <a class="nav__link"
-         href="../../roadmap/">Roadmap</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -142,8 +154,12 @@
       <main class="content" id="content">
         <article class="prose">
           <h1 id="vision-capture-provenance">Vision capture — provenance<a class="headerlink" href="#vision-capture-provenance" title="Permanent link">&para;</a></h1>
-<p><code>VISION.md</code> is a transcript of the scoping conversation that produced Omnis. This note records where
-it came from and how it was captured.</p>
+<p>This note records the provenance of the Gemini scoping conversation ("App Scoping Technical
+Specifications Discussion") and how the transcript was captured. The retired <code>VISION.md</code> was the
+non-normative synthesis of the DarkFactory product vision; it did <strong>not</strong> originate from this
+conversation and did not "produce Omnis" — Omnis is a separate consumer repository with its own
+scoping and product docs. The turns listed below document a distinct Omnis-era scoping session and
+are preserved here for provenance only.</p>
 <h2 id="source">Source<a class="headerlink" href="#source" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Conversation</strong>: Google Gemini, "App Scoping Technical Specifications Discussion"</li>
@@ -231,11 +247,12 @@ element's <code>innerText</code> is one complete turn.</p>
 <p>Gemini's DOM wraps each turn in Czech UI affordances — user turns are prefixed <code>Váš pokyn</code> followed
 by a truncated preview line, model turns by <code>Odpověď Gemini</code>. The decoder strips these.</p>
 <h2 id="ground-rules">Ground rules<a class="headerlink" href="#ground-rules" title="Permanent link">&para;</a></h2>
-<p><code>VISION.md</code> is non-normative regardless of how complete it is. Anything in it that should bind the
-implementation must be promoted deliberately into <code>ARCHITECTURE.md</code> through an ADR — never by
-treating the vision document as a specification.</p>
-<p><code>VISION.md</code> §11 lists the points where the source is internally inconsistent or where following it
-literally would be a mistake. Those are decisions, not defects; several are already tracked as D1–D10.</p>
+<p>The retired <code>VISION.md</code> was non-normative regardless of how complete it was. Anything in it that
+binds the implementation was promoted deliberately into <code>PRD.md</code> (the single normative product
+document) through an approved ADR — never by treating the vision document as a specification.</p>
+<p>The earlier <code>VISION.md</code> section on internally inconsistent source points was inaccurate: it cited a
+<code>§11</code> that never existed. Disagreements among sources are recorded in the relevant ADRs and
+tracked issues, not re-created here.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../bootstrap/">
