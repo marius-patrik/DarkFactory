@@ -164,7 +164,7 @@ string was individually plausible.</p>
 <p>The pipeline is meant to be distributed to many repositories. Anything hardcoded is either wrong in
 every repository but one, or becomes a merge conflict on every update.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Everything repository-specific lives in <code>.github/darkfactory.json</code> and is read through
+<p>Everything repository-specific lives in <code>.darkfactory/manifest.json</code> and is read through
 <code>.github/scripts/manifest.py</code>. The shared workflows and scripts are then byte-identical across
 every consumer, so a pipeline update is a fast-forward rather than a merge.</p>
 <p>The area taxonomy is the clearest case: labels, permitted commit scopes, and the agent's request

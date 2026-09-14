@@ -275,7 +275,7 @@ zero errors — and deploy automatically to GitHub Pages.</p>
 <h3 id="rule-3-product-requirements-and-adrs">Rule 3 — Product requirements and ADRs<a class="headerlink" href="#rule-3-product-requirements-and-adrs" title="Permanent link">&para;</a></h3>
 <p>Product requirements are defined by <code>PRD.md</code>, the single normative product document. Executable
 declarations (providers, taxonomy, workflow graph, installed consumers) live in
-<code>.github/darkfactory.json</code>, and mandatory contribution behavior in <code>.agents/rules/*.md</code>. Any
+<code>.darkfactory/manifest.json</code>, and mandatory contribution behavior in <code>.agents/rules/*.md</code>. Any
 deviation from <code>PRD.md</code> MUST be explicitly approved by the user and recorded as a discrete ADR
 under <code>.agents/notes/adr/</code> before it is implemented.</p>
 <h3 id="rule-4-english-language-consistency">Rule 4 — English language consistency<a class="headerlink" href="#rule-4-english-language-consistency" title="Permanent link">&para;</a></h3>
@@ -427,7 +427,7 @@ issues labeled <code>Request</code> before any planning, branching, or code chan
 <li><strong>Format</strong>: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code> (e.g. <code>feat(term): add cell matrix buffer</code>).</li>
 <li><strong>Allowed Types</strong>: <code>feat</code>, <code>fix</code> (mapped from <code>bug</code>), <code>chore</code>, <code>docs</code>, <code>refactor</code>, <code>test</code>, <code>ci</code>.</li>
 <li><strong>Allowed Area Scopes &amp; Labels</strong>:
-  The taxonomy is <strong>per repository</strong>, declared in <code>.github/darkfactory.json</code> under <code>areas</code>. The
+  The taxonomy is <strong>per repository</strong>, declared in <code>.darkfactory/manifest.json</code> under <code>areas</code>. The
   labels, the permitted commit scopes, and the agent's request classifier all read that one
   declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
   block with its own domains; the areas below are DarkFactory's own.</li>
