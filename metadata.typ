@@ -2,7 +2,7 @@
 //  Metadata práce.
 // ─────────────────────────────────────────────────────────────
 
-#import "lib/odborna-prace.typ": draft
+#import "lib/odborna-prace.typ": draft, added
 
 #let meta = (
   nazev: "Úvod do agentického AI a design autonomní pipeline pro softwarový vývoj",
@@ -18,24 +18,31 @@
   mesto: "Hradci Králové",
   rok: 2026,
 
-  anotace: draft[
-    Práce se zabývá návrhem a realizací autonomního systému pro vývoj softwaru,
-    který přebírá rutinní kroky vývojového procesu — od přijetí požadavku přes
-    jeho interpretaci a naplánování až po vytvoření a ověření změny. Teoretická
-    část shrnuje principy kontinuální integrace, řízení verzí a orchestrace
-    jazykových modelů. V praktické části je popsán systém DarkFactory, jeho
-    architektura a governance, a jsou vyhodnoceny výsledky jeho nasazení na
-    reálných repozitářích.
+  anotace: added[
+    Tato odborná práce představuje návrh, implementaci a provozní ověření systému
+    DarkFactory — modulární platformy pro autonomní vývoj softwaru na GitHubu.
+    Systém přebírá celý životní cyklus vývojového požadavku od zadání v GitHub Issues,
+    přes interpretaci a technické plánování, až po generování kódu, běh testů
+    a vystavení pull requestu. Důraz je kladen na lidskou kontrolu prostřednictvím
+    dvoustupňového schvalování (Human Gate) a na spolehlivost provozu zajištěnou
+    automatickou rotací modelů při vyčerpání API kvót a bezeztrátovým ukládáním
+    stavu. Celá infrastruktura je sdílena napříč repozitáři formou znovupoužitelných
+    workflow a řízena jediným manifestem (.github/darkfactory.json). Systém byl
+    úspěšně nasazen na tři repozitáře zahrnující vývoj v Pythonu i sazbu této práce
+    v systému Typst, přičemž dosáhl 86,9% úspěšnosti dokončení úloh.
   ],
-  abstract: draft[
-    This thesis deals with the design and implementation of an autonomous
-    software engineering system that takes over the routine steps of the
-    development process — from intake of a request through its interpretation
-    and planning to the creation and verification of a change. The theoretical
-    part summarises the principles of continuous integration, version control
-    and the orchestration of language models. The practical part describes the
-    DarkFactory system, its architecture and governance, and evaluates the
-    results of its deployment on real repositories.
+  abstract: added[
+    This thesis presents the design, implementation, and operational evaluation of
+    DarkFactory, a modular platform for autonomous software engineering on GitHub.
+    The system automates the complete lifecycle of an engineering request: from issue
+    intake, semantic interpretation, and technical planning, to code generation,
+    testing, and pull request delivery. Governance is maintained through a two-gate
+    human approval contract, while operational reliability is ensured via automated
+    model and account rotation upon API quota exhaustion and lossless state
+    checkpointing. The entire pipeline is shared across repositories via reusable
+    workflows and governed by a single configuration manifest (.github/darkfactory.json).
+    The system was deployed across three repositories covering Python software and
+    the typesetting of this thesis in Typst, achieving an 86.9% completion rate.
   ],
 
   klicova-slova: (

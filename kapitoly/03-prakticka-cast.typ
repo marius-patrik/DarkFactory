@@ -343,10 +343,10 @@ Po úspěšném schválení pull requestu člověkem a jeho sloučení do hlavn�
   caption: [Procesní schéma generování a striktní validace živé dokumentace v CI pipeline.],
 ) <fig-docs-pipeline>
 
-== Systém revizních značek pro lidský dohled nad textem
+== Systém revizních značek pro lidský dohled nad akademickým textem
 
 #draft[
-Při rozšiřování systému DarkFactory na správu a tvorbu dokumentace (doména textu) vyvstala potřeba formalizovat spolupráci člověka a autonomního agenta přímo v sazebním formátu Typst. Výsledkem je protokol vizuálních revizních značek (*Review Markers*) a textových revizních funkcí, který barevně a sémanticky rozlišuje stav zpracování jednotlivých pasáží:
+Při rozšiřování systému DarkFactory na tvorbu a revizi akademických a odborných textů (doména textu) vyvstala potřeba formalizovat spolupráci člověka a autonomního agenta přímo v sazebním formátu Typst. Výsledkem je protokol vizuálních revizních značek (*Review Markers*) a textových revizních funkcí, který barevně a sémanticky rozlišuje stav zpracování jednotlivých pasáží:
 ]
 
 #note[Konstruktivní doporučení, nápady na rozšíření, doplnění schémat či návrhy na praktické propojení. Po zapracování se panel smaže.]

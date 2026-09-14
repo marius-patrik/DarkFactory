@@ -47,20 +47,20 @@ Dílčí cíle:
 + Vyhodnotit jeho chování a pojmenovat omezení, na která v provozu narazil.
 ]
 
-#unconfirmed[
-V návaznosti na stanovené cíle si práce klade tři konkrétní výzkumné otázky:
-- *VO1*: Do jaké míry lze rutinní fáze softwarového vývoje (analýza, implementace, testování, dokumentace) automatizovat pomocí orchestrace jazykových modelů při zachování deterministických záruk a nulové regrese v hlavní větvi?
-- *VO2*: Jaké jsou fundamentální limitující faktory současných LLM při samostatné práci nad reálným repozitářem z hlediska kapacity kontextového okna, degradace pozornosti a stability nástrojů?
-- *VO3*: Umožňuje zavedení jednotného deklarativního manifestu (`darkfactory.json`) a centralizovaného CI workflow škálovat autonomní pipeline napříč heterogenními projekty s minimálními dodatečnými náklady na údržbu?
-]
+#added[
+V návaznosti na stanovené cíle si práce klade tři konkrétní inženýrské výzkumné otázky:
+- *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po vytvoření funkčního pull requestu plně zautomatizovat tak, aby role vývojáře spočívala pouze ve schvalování záměru a plánu, aniž by musel sám psát kód nebo řešit syntaktické chyby?
+- *VO2 (Doménová přenositelnost)*: Lze identické centrální workflow a tutéž agentní pipeline použít pro programovací kód (Python) i pro sazbu textového dokumentu (Typst) pouhou změnou jediného konfiguračního souboru (`.github/darkfactory.json`)?
+- *VO3 (Provozní odolnost a obnova)*: Dokáže systém samostatně překonat vyčerpání API limitů (HTTP 429) a chyby v testech, aniž by došlo k havárii běhu v GitHub Actions nebo ke ztrátě rozpracovaného kódu?
 
-#note[Operacionalizace výzkumných otázek: Doporučuji v úvodu stručně uvést kvantitativní metriky a kritéria úspěšnosti pro zodpovězení VO1–VO3 (např. cílová míra průchodnosti CI bez regrese, práh akceptovatelné latence a definice konstantní údržbové složitosti $O(1)$), aby bylo v kapitolách 4 a 5 zřejmé, na základě jakých exaktních prahů byly otázky vyhodnoceny.]
+Odpovědi na tyto otázky jsou v práci ověřeny empirickým provozním nasazením na třech produkčních repozitářích, vyhodnocením úspěšnosti průchodu životním cyklem požadavků a analýzou chování systému při simulovaných i reálných výpadcích infrastruktury.
+]
 
 == Metodika
 
 #confirmed[Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:
 1. *DarkFactory*: mateřský repozitář systému (Python, GitHub Actions, metaharness).
-2. *OdbornaPrace-paper*: repozitář samotného rukopisu této práce (doména textu a sazby v systému Typst).
+2. *OdbornaPrace-paper*: repozitář samotného rukopisu této práce (doména akademických textů a sazby v systému Typst).
 3. *ChessWithQuests*: aplikační projekt s herní logikou.
 
 Empirické ověření probíhalo longitudinálním sledováním reálných integračních běhů v prostředí GitHub Actions nad skutečnými požadavky (GitHub Issues) a pull requesty. Místo syntetických laboratorních benchmarků (např. izolovaného vyhodnocování na datasetech typu SWE-bench) se výzkum soustředil na end-to-end spolehlivost v produkčních podmínkách: sledována byla schopnost pipeline projít celým životním cyklem bez uváznutí, četnost vyčerpání kontextu či API limitů, chování záchranných mechanismů při rotaci modelů a zejména kvalitativní a kvantitativní analýza chyb, které se projevily v reálném provozu. Získané poznatky sloužily k průběžné optimalizaci a zpevnění mantinelů celého systému.]
