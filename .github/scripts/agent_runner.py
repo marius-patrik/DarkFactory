@@ -1488,7 +1488,11 @@ def parse_df_json_output(stdout: str) -> str:
             delta = event.get("delta")
             if isinstance(delta, str) and delta:
                 segments[-1].append(delta)
-        elif kind in ("tool_start", "tool_end", "failover", "step"):
+        elif kind in ("tool_start", "tool_end", "failover") or (
+            kind == "step" and (event.get("errorMessage") or event.get("stopReason") == "error")
+        ):
+            # A new segment starts after each tool call and after an attempt that failed; the
+            # closing ``step`` of a successful turn follows its text and must not clear it.
             segments.append([])
     return "".join(segments[-1]).strip()
 

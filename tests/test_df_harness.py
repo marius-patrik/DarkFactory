@@ -116,6 +116,29 @@ class TestDfJsonOutput:
         )
         assert agent_runner.parse_df_json_output(stdout) == "PLAN"
 
+    def test_the_closing_step_of_a_successful_turn_keeps_the_answer(self):
+        """Real df streams end with text, then the turn's step, then the result."""
+        stdout = _stream(
+            {"type": "tool_start", "toolName": "read"},
+            {"type": "tool_end", "toolName": "read"},
+            {"type": "thinking_delta", "delta": "Developing the plan"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
+    def test_text_of_an_attempt_that_errored_is_discarded(self):
+        """A step that ended in an error discards the text streamed before it."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "partial"},
+            {"type": "step", "stopReason": "error", "errorMessage": "429"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
     def test_an_empty_stream_is_empty(self):
         """No deltas means no answer, which the runner treats as a failed attempt."""
         assert agent_runner.parse_df_json_output("") == ""
