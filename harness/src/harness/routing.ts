@@ -31,7 +31,7 @@ export interface RoutingDecision {
 	source: "explicit" | "graph" | "sensitive" | "hard" | "default";
 }
 
-const SECRET_OR_PII = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bAIza[0-9A-Za-z_-]{20,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|\b\d{3}-\d{2}-\d{4}\b/iu;
+const SECRET_OR_PII = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bAIza[0-9A-Za-z_-]{20,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}|\b\d{3}-\d{2}-\d{4}\b/iu;
 
 function stringify(value: unknown): string {
 	if (typeof value === "string") return value;
@@ -39,9 +39,23 @@ function stringify(value: unknown): string {
 	catch { return String(value); }
 }
 
+const EMAIL = /\b[A-Z0-9._%+\[\]-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
+
+/** Commit metadata addresses (GitHub noreply, vendor noreply) identify tools and accounts, not people's inboxes. */
+function containsPersonalEmail(text: string): boolean {
+	for (const match of text.matchAll(EMAIL)) {
+		if (!/noreply/iu.test(match[0])) return true;
+	}
+	return false;
+}
+
+function sensitive(text: string): boolean {
+	return SECRET_OR_PII.test(text) || containsPersonalEmail(text);
+}
+
 export const defaultSensitiveDataHook: SensitiveDataHook = {
 	detect({ prompt, toolResults }) {
-		return SECRET_OR_PII.test(prompt) || toolResults.some((result) => SECRET_OR_PII.test(stringify(result)));
+		return sensitive(prompt) || toolResults.some((result) => sensitive(stringify(result)));
 	},
 };
 
