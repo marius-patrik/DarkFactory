@@ -44,7 +44,7 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 | **Bot-Authored Draft PRs** | Pull requests are opened by `github-actions[bot]` so maintainers can natively review, comment, and approve them on GitHub. |
 | **Project Board Automation** | Live 7-state taxonomy synchronization on GitHub Projects v2 (`Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`, `Superseded`, `Dropped`). |
 | **Settings as Code** | Complete GitHub repository configuration (labels, branch protection, permissions, auto-merge, Pages) executed idempotently via `repo_settings.py`. |
-| **Virtual Documentation** | ProperDocs hook publishes canonical root documents (`PRD.md`, `AGENTS.md`) and the decision records under `.agents/notes/adr/` directly to GitHub Pages without committed static duplicates. |
+| **Generated Documentation** | A Bun generator stages canonical repository sources, builds them with ProperDocs, and removes the transient source tree after publishing to GitHub Pages. |
 | **Strict CI & Test Guards** | Guarded language jobs (`hashFiles`) prevent false skips while product code is bootstrapping, keeping required status checks green. |
 
 ---

@@ -12,6 +12,8 @@ import pytest
 
 import environment
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def _write(root, relative, content):
     """Writes a file, creating parent directories.
@@ -263,6 +265,10 @@ class TestPlans:
     def test_python_documentation_comes_from_docstrings(self, tmp_path):
         _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
         assert environment.configure(str(tmp_path)).docs_plan()["python"]["source"] == "docstrings"
+
+    def test_darkfactory_documentation_uses_the_repository_generator(self):
+        plan = environment.configure(REPO_ROOT).docs_plan()
+        assert plan["python"]["command"] == "bun run scripts/build-docs.ts"
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})

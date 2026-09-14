@@ -340,26 +340,39 @@ jobs:
             echo "No requirements-dev.txt; this repository declares no Python documentation engine."
           fi
 
-      - name: Build documentation
+      - name: Resolve the documentation command
         # The command comes from the *caller's* environment, not from this file. Consumers do not
-        # share a documentation engine - this repository declares `properdocs build --strict` in its
-        # manifest, while other consumers may choose another engine - so hardcoding one here fails
-        # in every repository that chose a different one.
+        # share a documentation engine - this repository generates its site with Bun
+        # (`bun run scripts/build-docs.ts`), while other consumers may choose another engine - so
+        # hardcoding one here fails in every repository that chose a different one.
+        id: documentation
         run: |
           SCRIPTS=".github/scripts"
           [ -d .darkfactory-pipeline/.github/scripts ] && SCRIPTS=".darkfactory-pipeline/.github/scripts"
-          COMMAND=$(PYTHONPATH="$SCRIPTS" python - <<'PY'
+          PYTHONPATH="$SCRIPTS" python - <<'PY' >> "$GITHUB_OUTPUT"
+          import shlex
           import environment
 
           plan = environment.configure(".").docs_plan()
           # One repository, one documentation site: the first ecosystem that declares a build owns
           # it. A polyglot repository publishes one site from several inline sources.
-          for entry in plan.values():
-              if entry.get("command"):
-                  print(entry["command"])
-                  break
+          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
+          executable = shlex.split(command)[0] if command else ""
+          print("command<<DARKFACTORY_DOCS_COMMAND")
+          print(command)
+          print("DARKFACTORY_DOCS_COMMAND")
+          print(f"needs_bun={str(executable == 'bun').lower()}")
           PY
-          )
+
+      - name: Set up Bun
+        if: steps.documentation.outputs.needs_bun == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build documentation
+        env:
+          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
+        run: |
+          COMMAND="$DOCUMENTATION_COMMAND"
           if [ -z "$COMMAND" ]; then
             echo "No documentation build is configured for this repository."
             exit 0

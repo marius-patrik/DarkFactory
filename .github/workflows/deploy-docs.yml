@@ -81,6 +81,26 @@ jobs:
             echo "No requirements-dev.txt; this repository declares no documentation engine."
           fi
 
+      - name: Resolve the documentation command
+        id: documentation
+        run: |
+          PYTHONPATH=.github/scripts python - <<'PY' >> "$GITHUB_OUTPUT"
+          import shlex
+          import environment
+
+          plan = environment.configure(".").docs_plan()
+          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
+          executable = shlex.split(command)[0] if command else ""
+          print("command<<DARKFACTORY_DOCS_COMMAND")
+          print(command)
+          print("DARKFACTORY_DOCS_COMMAND")
+          print(f"needs_bun={str(executable == 'bun').lower()}")
+          PY
+
+      - name: Set up Bun
+        if: steps.documentation.outputs.needs_bun == 'true'
+        uses: oven-sh/setup-bun@v2
+
       - name: Detect the paper domain
         id: paper
         run: |
@@ -114,17 +134,10 @@ jobs:
         # The command comes from this repository's declared environment rather than being fixed
         # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
         # properdocs migration fail with `mkdocs: command not found`.
+        env:
+          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
         run: |
-          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
-          import environment
-
-          plan = environment.configure(".").docs_plan()
-          for entry in plan.values():
-              if entry.get("command"):
-                  print(entry["command"])
-                  break
-          PY
-          )
+          COMMAND="$DOCUMENTATION_COMMAND"
           if [ -z "$COMMAND" ]; then
             # A paper has no API to extract a reference from, so it declares no documentation
             # command - but it is still worth publishing. Its site is the document itself.

@@ -114,7 +114,7 @@ python .github/scripts/repo_settings.py --apply
 | Re-apply GitHub-side config | `python .github/scripts/repo_settings.py --apply` |
 | Repair board items with no status | trigger **Project Board Automation** via `workflow_dispatch` |
 | Open a bot-authored draft PR | `python .github/scripts/open_pr.py --branch <b> --title <t> --body <b>` |
-| Run the local suite | `pytest -v && black --check . && properdocs build --strict` |
+| Run the local suite | `pytest -v && black --check . && bun run scripts/build-docs.ts` |
 
 ## Adding a required status check
 

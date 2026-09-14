@@ -50,8 +50,10 @@ All source MUST carry complete API documentation inline:
 
 Documentation MUST be generated from source and hand-written architecture notes. No static
 per-module markdown mirror and no manually maintained documentation index are stored in the
-repository. All documentation builds MUST succeed with `properdocs build --strict` — zero warnings,
-zero errors — and deploy automatically to GitHub Pages.
+repository. All documentation builds MUST use the command declared by the repository environment
+and succeed with zero warnings and zero errors. DarkFactory declares
+`bun run scripts/build-docs.ts`, which stages its repository sources, invokes ProperDocs in strict
+mode, and deploys the result automatically to GitHub Pages.
 
 ### Rule 3 — Product requirements and ADRs
 
