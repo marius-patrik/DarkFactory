@@ -276,12 +276,29 @@
    * @param {string} base Site root, used to resolve `path` entries.
    * @param {string} current The `path` currently being viewed.
    */
-  function fill(select, entries, base, current) {
+  function normalizeProjectUrl(url) {
+    return String(url || "")
+      .replace(/[?#].*$/, "")
+      .replace(/\/pr-\d+(?=\/|$)/i, "")
+      .replace(/\/+$/, "");
+  }
+
+  function fill(select, entries, base, current, isProject) {
+    var locationUrl = normalizeProjectUrl(window.location.href);
+    var bestMatch = "";
     entries.forEach(function (entry) {
       var option = document.createElement("option");
       option.textContent = entry.name;
       option.value = entry.url || base + (entry.path ? entry.path + "/" : "");
-      if (entry.url === undefined && (entry.path || "") === (current || "")) {
+
+      if (isProject && entry.url) {
+        var projectUrl = normalizeProjectUrl(entry.url);
+        var isPrefix = locationUrl === projectUrl || locationUrl.indexOf(projectUrl + "/") === 0;
+        if (isPrefix && projectUrl.length > bestMatch.length) {
+          bestMatch = projectUrl;
+          option.selected = true;
+        }
+      } else if (!isProject && entry.url === undefined && (entry.path || "") === (current || "")) {
         option.selected = true;
       }
       select.appendChild(option);
@@ -309,15 +326,34 @@
           root.querySelector("[data-switcher-versions]"),
           versions,
           base,
-          manifest.current || ""
+          manifest.current || "",
+          false
         );
         root.hidden = false;
       }
-      if (projects.length > 0) {
-        var group = root.querySelector("[data-switcher-projects-group]");
-        fill(root.querySelector("[data-switcher-projects]"), projects, base, null);
-        group.hidden = false;
-        root.hidden = false;
+
+      // projects.json is the current registry; the manifest list remains the build-time fallback.
+      // The registry is DarkFactory's own `projects.json` (published once, read by every site); a site
+      // without a declared registry reads one next to itself.
+      fetch(manifest.registry || base + "projects.json", { cache: "no-cache" })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (registry) {
+          var registryProjects = Array.isArray(registry) ? registry : registry && registry.projects;
+          showProjects(registryProjects || projects);
+        })
+        .catch(function () {
+          showProjects(projects);
+        });
+
+      function showProjects(projectEntries) {
+        if (projectEntries.length > 0) {
+          var group = root.querySelector("[data-switcher-projects-group]");
+          fill(root.querySelector("[data-switcher-projects]"), projectEntries, base, null, true);
+          group.hidden = false;
+          root.hidden = false;
+        }
       }
     })
     .catch(function () {
