@@ -4,6 +4,8 @@ import defaults from "../../assets/providers.defaults.json";
 
 export type ProviderDialect = "openai-completions" | "openai-responses" | "openai-codex-responses" | "anthropic-messages" | "google-generative-ai" | "cloudcode-agent";
 export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
+export type ModelTier = "tight" | "standard" | "bulk";
+export type ConfiguredLimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth";
 
 export interface ValueReference { value?: string; env?: string }
 export interface ApiKeyAuthConfig {
@@ -44,6 +46,30 @@ export interface StaticModelConfig {
 	input?: Array<"text" | "image">;
 	contextWindow?: number;
 	maxTokens?: number;
+	tier?: ModelTier;
+}
+export interface LimitDefaultConfig {
+	type: ConfiguredLimitType;
+	dimension?: "requests" | "tokens" | "usage";
+	limit: number;
+	windowMs: number;
+	pool?: string;
+}
+export interface LimitBodyRuleConfig {
+	type: ConfiguredLimitType;
+	regex: string;
+	durationRegex?: string;
+	resetAfterMs?: number;
+	dimension?: "requests" | "tokens" | "usage";
+	pool?: string;
+}
+export interface LimitPolicyConfig {
+	observe: boolean;
+	standardHeaders?: boolean;
+	reserve?: { requests?: number; tokens?: number };
+	defaults?: LimitDefaultConfig[];
+	bodyRules?: LimitBodyRuleConfig[];
+	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
 }
 export interface ModelListConfig {
 	path: string;
@@ -115,6 +141,7 @@ export interface ProviderConfig {
 	slotHeaders?: Record<string, string>;
 	models: { static: StaticModelConfig[]; list?: ModelListConfig };
 	quota?: { rules: FailureRuleConfig[] };
+	limits?: LimitPolicyConfig;
 	capabilities: { tools: boolean; reasoning: boolean; images: boolean };
 	importers?: ImporterConfig[];
 	request?: { path?: string; projectSlot?: string };
@@ -199,7 +226,44 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 	}
 	const models = object(entry.models, `provider ${id} models`);
 	if (!Array.isArray(models.static) || models.static.length === 0) throw new Error(`Provider ${id} must declare at least one static model`);
-	for (const [modelIndex, rawModel] of models.static.entries()) text(object(rawModel, `provider ${id} model[${modelIndex}]`).id, `provider ${id} model id`);
+	for (const [modelIndex, rawModel] of models.static.entries()) {
+		const model = object(rawModel, `provider ${id} model[${modelIndex}]`);
+		text(model.id, `provider ${id} model id`);
+		if (model.tier !== undefined && !["tight", "standard", "bulk"].includes(String(model.tier))) throw new Error(`Provider ${id} model has invalid tier`);
+	}
+	if (entry.limits !== undefined) {
+		const limits = object(entry.limits, `provider ${id} limits`);
+		if (typeof limits.observe !== "boolean") throw new Error(`Provider ${id} limits.observe must be boolean`);
+		if (limits.reserve !== undefined) {
+			const reserve = object(limits.reserve, `provider ${id} limits.reserve`);
+			for (const dimension of ["requests", "tokens"]) if (reserve[dimension] !== undefined && (typeof reserve[dimension] !== "number" || reserve[dimension] < 0)) throw new Error(`Provider ${id} limits.reserve.${dimension} must be non-negative`);
+		}
+		if (limits.defaults !== undefined) {
+			if (!Array.isArray(limits.defaults)) throw new Error(`Provider ${id} limits.defaults must be an array`);
+			for (const rawDefault of limits.defaults) {
+				const item = object(rawDefault, `provider ${id} limit default`);
+				if (!["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(item.type))) throw new Error(`Provider ${id} limit default has invalid type`);
+				if (item.dimension !== undefined && !["requests", "tokens", "usage"].includes(String(item.dimension))) throw new Error(`Provider ${id} limit default has invalid dimension`);
+				if (typeof item.limit !== "number" || item.limit <= 0 || typeof item.windowMs !== "number" || item.windowMs <= 0) throw new Error(`Provider ${id} limit default needs positive limit and windowMs`);
+			}
+		}
+		if (limits.bodyRules !== undefined) {
+			if (!Array.isArray(limits.bodyRules)) throw new Error(`Provider ${id} limits.bodyRules must be an array`);
+			for (const rawRule of limits.bodyRules) {
+				const rule = object(rawRule, `provider ${id} limit body rule`);
+				if (!["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(rule.type))) throw new Error(`Provider ${id} limit body rule has invalid type`);
+				const regex = text(rule.regex, `provider ${id} limit body regex`);
+				try { new RegExp(regex, "iu"); } catch { throw new Error(`Provider ${id} limit body regex is invalid`); }
+				if (rule.resetAfterMs !== undefined && (typeof rule.resetAfterMs !== "number" || rule.resetAfterMs <= 0)) throw new Error(`Provider ${id} limit body resetAfterMs must be positive`);
+			}
+		}
+		if (limits.probe !== undefined) {
+			const probe = object(limits.probe, `provider ${id} limits.probe`);
+			text(probe.path, `provider ${id} limits.probe.path`);
+			if (probe.enabled !== undefined && typeof probe.enabled !== "boolean") throw new Error(`Provider ${id} limits.probe.enabled must be boolean`);
+			if (probe.method !== undefined && probe.method !== "GET" && probe.method !== "POST") throw new Error(`Provider ${id} limits.probe.method is invalid`);
+		}
+	}
 	object(entry.capabilities, `provider ${id} capabilities`);
 	return entry as unknown as ProviderConfig;
 }

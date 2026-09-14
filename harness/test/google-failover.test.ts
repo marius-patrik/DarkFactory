@@ -190,8 +190,8 @@ describe("QuotaStore numeric resetAt persistence", () => {
 		const { home } = await tempWorkspace();
 		const store = new QuotaStore(home, { fallbackTtlMs: 45_000 });
 		await store.mark({ provider: "google", model: "gemini-3.8-flash", account: "default" }, "transient", undefined, 1_000);
-		const raw = JSON.parse(await readFile(join(home, "quota.json"), "utf8"));
-		const entry = raw.entries["google/gemini-3.8-flash@default"];
+		const raw = JSON.parse(await readFile(join(home, "limits.json"), "utf8"));
+		const entry = Object.values(raw.entries)[0] as { resetAt: number };
 		expect(typeof entry.resetAt).toBe("number");
 		expect(entry.resetAt).toBe(1_000 + 45_000);
 	});
@@ -228,6 +228,7 @@ describe("Supervisor waiting instead of exiting", () => {
 		const result = await supervisor.prompt("test waiting");
 		expect(result.content.some((b) => b.type === "text" && b.text === "recovered after wait")).toBe(true);
 		expect(events.some((e) => e.type === "waiting")).toBe(true);
+		expect(events.some((e) => e.type === "recovered")).toBe(true);
 		expect(sleepCalls.length).toBeGreaterThan(0);
 		supervisor.session.dispose();
 	}, 30_000);

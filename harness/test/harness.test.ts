@@ -216,8 +216,8 @@ describe("AgentSession harness", () => {
 			providerConfigs: new Map([["google", BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!]]),
 		});
 		await supervisor.prompt("go");
-		const quota = JSON.parse(await readFile(join(home, "quota.json"), "utf8")) as { entries: Record<string, { resetAt?: number }> };
-		expect(quota.entries["google/gemini-3-flash-preview@default"]?.resetAt).toBe(now + 41_000);
+		const limits = JSON.parse(await readFile(join(home, "limits.json"), "utf8")) as { entries: Record<string, { resetAt?: number }> };
+		expect((Object.values(limits.entries)[0])?.resetAt).toBe(now + 41_000);
 		supervisor.session.dispose();
 	});
 

@@ -72,4 +72,16 @@ describe("local configuration and credential sources", () => {
 		await expect(loadDfConfig("C:/fixture", async () => "{secret-content")).rejects.toThrow("Invalid $DF_HOME/config.json JSON");
 		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ cooldownTtlMs: 0 }))).rejects.toThrow("positive integer");
 	});
+
+	test("validates and loads router policies, model overrides, and learning bounds", async () => {
+		const config = await loadDfConfig("C:/fixture", async () => JSON.stringify({ router: {
+			classifier: "cheap/classifier@default", candidates: ["acme/fast@work"],
+			models: { "acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" } },
+			policies: [{ id: "review", match: { kind: ["review"], needs: ["tools"] }, prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] } }],
+			learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
+		} }));
+		expect(config.router?.policies[0]?.id).toBe("review");
+		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }))).rejects.toThrow("provider/model@account");
+	});
 });
