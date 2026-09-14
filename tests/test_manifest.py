@@ -244,3 +244,59 @@ class TestApp:
     def test_a_repository_without_an_app_is_fine(self, tmp_path):
         _write_manifest(tmp_path, {})
         assert manifest_module.load(str(tmp_path)).app == {}
+
+
+class TestIdentities:
+    """Agent and pipeline identities are manifest-declared."""
+
+    def test_the_real_manifest_declares_identities(self):
+        loaded = manifest_module.load(REPO_ROOT)
+        assert "app" in loaded.identities
+        assert "google" in loaded.identities
+        assert "claude" in loaded.identities
+        assert (
+            loaded.bot_commit_author
+            == "darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>"
+        )
+        assert loaded.identity_for("google")["name"] == "Gemini"
+        assert loaded.identity_for("google")["verified"] is True
+        assert (
+            loaded.identity_for("claude")["trailer"]
+            == "Co-authored-by: Claude <noreply@anthropic.com>"
+        )
+
+    def test_identities_fall_back_to_defaults_when_undeclared(self, tmp_path):
+        _write_manifest(tmp_path, {})
+        loaded = manifest_module.load(str(tmp_path))
+        assert "app" in loaded.identities
+        assert (
+            loaded.bot_commit_author
+            == "darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>"
+        )
+        assert loaded.identity_for("google")["name"] == "Gemini"
+
+    def test_custom_declared_identities(self, tmp_path):
+        _write_manifest(
+            tmp_path,
+            {
+                "identities": {
+                    "app": {
+                        "login": "custom-bot[bot]",
+                        "user_id": 999999,
+                        "commit_author_email": "custom-bot@example.com",
+                    },
+                    "custom-provider": {
+                        "name": "Custom Provider",
+                        "trailer": "Co-authored-by: Custom <custom@example.com>",
+                        "verified": True,
+                    },
+                }
+            },
+        )
+        loaded = manifest_module.load(str(tmp_path))
+        assert loaded.bot_commit_author == "custom-bot[bot] <custom-bot@example.com>"
+        custom = loaded.identity_for("custom-provider")
+        assert custom is not None
+        assert custom["name"] == "Custom Provider"
+        assert custom["verified"] is True
+        assert loaded.identity_for("nonexistent") is None
