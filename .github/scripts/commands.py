@@ -72,6 +72,20 @@ HINT_MARKER = "<!-- darkfactory-command-hint -->"
 #: Associations allowed to approve: the Request author or a privileged role, never a bot.
 ALLOWED_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
 
+#: Footer for the interpretation comment on a Request issue.
+INTERPRETATION_FOOTER = "Reply with `/df approve` to continue or `/df reject <feedback>` to revise."
+
+#: Footer for the implementation plan comment on a Plan issue.
+PLAN_FOOTER = "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan."
+
+#: Instructions for resuming execution after quota exhaustion.
+RESUME_INSTRUCTIONS = (
+    "When quota limits reset or additional quota is provisioned:\n"
+    "1. Verify that quota is available on at least one configured harness.\n"
+    "2. Comment `/df resume` on this issue/PR to resume execution.\n"
+    "3. The agent resumes from the checkpoint on whichever harness is available."
+)
+
 
 def _strict_verb(body: str) -> Optional[str]:
     """Parses the strict `/df <verb>` / `/<verb>` grammar.

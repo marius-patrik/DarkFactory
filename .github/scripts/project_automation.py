@@ -1044,25 +1044,24 @@ def resolve_boards(
         print(f"No boards declared; falling back to project {PROJECT_NUMBER}.")
         return [PROJECT_NUMBER]
 
-    graphql = GitHubGraphQLClient()
-    by_title = graphql.resolve_projects(owner)
-
-    if not by_title:
-        # Fallback to subprocess if API failed (e.g. legacy test environment)
-        try:
-            args = ["project", "list", "--owner", owner, "--limit", "100", "--format", "json"]
-            output = subprocess.run(
-                ["gh", *args],
-                capture_output=True,
-                text=True,
-                check=True,
-                env=_env_for(args),
-            ).stdout
-            by_title = {p["title"]: p for p in json.loads(output).get("projects", [])}
-        except Exception as exc:
-            if is_rate_limited(exc):
-                mark_rate_limited(f"Project board rate limit reached resolving boards for {owner}")
-                return []
+    by_title = {}
+    try:
+        args = ["project", "list", "--owner", owner, "--limit", "100", "--format", "json"]
+        output = subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_env_for(args),
+        ).stdout
+        by_title = {p["title"]: p for p in json.loads(output).get("projects", [])}
+    except Exception as exc:
+        if is_rate_limited(exc):
+            mark_rate_limited(f"Project board rate limit reached resolving boards for {owner}")
+            return []
+        graphql = GitHubGraphQLClient()
+        by_title = graphql.resolve_projects(owner)
+        if not by_title:
             _fail(f"could not list projects for {owner}: {_detail(exc)}")
             return []
 
