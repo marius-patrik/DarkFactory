@@ -100,6 +100,22 @@ class TestDfJsonOutput:
         )
         assert agent_runner.parse_df_json_output(stdout) == "final answer"
 
+    def test_text_after_failover_is_the_answer(self):
+        """Text from a failed attempt or failover event is discarded; only the final successful attempt survives."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "thinking…"},
+            {
+                "type": "failover",
+                "from": {"provider": "google"},
+                "to": {"provider": "anthropic"},
+                "reason": "transient",
+                "errorMessage": "error",
+            },
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "result", "stopReason": "end_turn"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
     def test_an_empty_stream_is_empty(self):
         """No deltas means no answer, which the runner treats as a failed attempt."""
         assert agent_runner.parse_df_json_output("") == ""

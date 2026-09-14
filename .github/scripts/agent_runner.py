@@ -1488,7 +1488,7 @@ def parse_df_json_output(stdout: str) -> str:
             delta = event.get("delta")
             if isinstance(delta, str) and delta:
                 segments[-1].append(delta)
-        elif kind in ("tool_start", "tool_end"):
+        elif kind in ("tool_start", "tool_end", "failover", "step"):
             segments.append([])
     return "".join(segments[-1]).strip()
 
