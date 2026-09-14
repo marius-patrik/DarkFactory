@@ -10,7 +10,8 @@ export interface CooldownEntry {
 	account: string;
 	kind: FailureKind;
 	markedAt: number;
-	resetAt?: number;
+	resetAt: number;
+	pool?: string;
 }
 
 interface QuotaFile {
@@ -68,10 +69,17 @@ export class QuotaStore {
 		return expiresAt <= now ? undefined : entry;
 	}
 
-	mark(candidate: Candidate, kind: CooldownEntry["kind"], resetAt?: number, now = Date.now()): Promise<void> {
+	mark(candidate: Candidate, kind: CooldownEntry["kind"], resetAt?: number, now = Date.now(), pool?: string): Promise<void> {
 		if (!this.persist(candidate)) return Promise.resolve();
+		const finalResetAt = resetAt !== undefined ? resetAt : now + this.fallbackTtlMs;
 		return this.modify((file) => {
-			file.entries[candidateKey(candidate)] = { ...candidate, kind, markedAt: now, ...(resetAt === undefined ? {} : { resetAt }) };
+			file.entries[candidateKey(candidate)] = {
+				...candidate,
+				kind,
+				markedAt: now,
+				resetAt: finalResetAt,
+				...(pool ? { pool } : {}),
+			};
 		});
 	}
 

@@ -17,7 +17,13 @@
         ],
         "list": { "path": "/models", "itemsPath": "models", "idPath": "name", "namePath": "displayName", "methodsPath": "supportedGenerationMethods", "stripIdPrefix": "models/", "nextPageTokenPath": "nextPageToken", "pageTokenParam": "pageToken" }
       },
-      "quota": { "rules": [{ "kind": "transient", "statuses": [400], "regex": "missing a thought_signature|functionCall parts" }, { "kind": "quota_exhausted", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId", "regex": "GenerateRequestsPerDayPerProjectPerModel-FreeTier", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay" }, { "kind": "next_pacific_midnight" }], "pool": "google-free-daily:model" }] },
+      "quota": { "rules": [
+        { "kind": "transient", "statuses": [400], "regex": "missing a thought_signature|functionCall parts" },
+        { "kind": "transient", "statuses": [503], "regex": "UNAVAILABLE|high demand", "reset": [{ "kind": "cooldown", "seconds": 30 }] },
+        { "kind": "rate_limited", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId|quotaMetric", "regex": "GenerateContentInputTokens.*PerMinute|input_token", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay", "jitterMs": 1000 }], "pool": "google-free-tokens-per-minute:model" },
+        { "kind": "rate_limited", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId|quotaMetric", "regex": "PerMinute", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay", "jitterMs": 1000 }], "pool": "google-free-requests-per-minute:model" },
+        { "kind": "quota_exhausted", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId|quotaMetric", "regex": "PerDay", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay" }, { "kind": "next_pacific_midnight" }], "pool": "google-free-daily:model" }
+      ] },
       "replay": { "foreignToolCallThoughtSignature": "skip_thought_signature_validator" },
       "capabilities": { "tools": true, "reasoning": true, "images": true }
     },

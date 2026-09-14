@@ -298,6 +298,7 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 	else if (event.type === "failover") console.error(`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${event.errorMessage})`);
 	else if (event.type === "candidate_unavailable") console.error(`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.message})`);
 	else if (event.type === "candidate_skipped") console.error(`[skip] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.reason})`);
+	else if (event.type === "waiting") console.error(`\n[waiting] ${event.reason} until ${new Date(event.until).toISOString()}`);
 	else if (event.type === "step" && event.errorKind) console.error(`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${event.errorMessage}`);
 }
 
@@ -370,7 +371,7 @@ async function createCliSupervisor(registry: ProviderRegistry, store: FileCreden
 		policy: { allow: options(args, "--allow"), deny: options(args, "--deny"), headless: args[0] === "run" },
 		providers, authOptionalProviders: [...optional], catalogs,
 		providerConfigs: new Map(registry.entries.map((entry) => [entry.id, entry])),
-		cooldownTtlMs: config.cooldownTtlMs, ephemeralProviders: faux.optional,
+		cooldownTtlMs: config.cooldownTtlMs, maxWaitMs: config.maxWaitMs, ephemeralProviders: faux.optional,
 		store,
 		onEvent: (event) => renderEvent(event, json),
 	});

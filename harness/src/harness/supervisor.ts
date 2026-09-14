@@ -1,9 +1,9 @@
 import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
 import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
 import type { Candidate } from "../failover.ts";
-import { classifyFailure, type FailureKind } from "../quota.ts";
+import { classifyFailure, nextPacificMidnight, type FailureClassification, type FailureKind } from "../quota.ts";
 import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions } from "./runtime.ts";
-import { QuotaStore } from "./quota-store.ts";
+import { QuotaStore, type CooldownEntry } from "./quota-store.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
 import { redactErrorMessage } from "../redaction.ts";
 
@@ -28,7 +28,8 @@ export type HarnessEvent =
 	| { type: "tool_end"; toolCallId: string; toolName: string; isError: boolean }
 	| { type: "failover"; from: Candidate; to: Candidate; reason: string; errorMessage: string }
 	| { type: "candidate_skipped"; candidate: Candidate; reason: FailureKind; resetAt?: number }
-	| { type: "candidate_unavailable"; candidate: Candidate; message: string };
+	| { type: "candidate_unavailable"; candidate: Candidate; message: string }
+	| { type: "waiting"; candidate?: Candidate; reason: FailureKind | string; until: number };
 
 export interface CandidateFailureReason {
 	candidate: Candidate;
@@ -68,6 +69,8 @@ export interface SupervisorOptions {
 	onEvent?: (event: HarnessEvent) => void;
 	now?: () => number;
 	providerConfigs?: ReadonlyMap<string, ProviderConfig>;
+	maxWaitMs?: number;
+	sleep?: (ms: number) => Promise<void>;
 }
 
 export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "candidate"> {
@@ -75,7 +78,19 @@ export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "ca
 	onEvent?: (event: HarnessEvent) => void;
 	now?: () => number;
 	cooldownTtlMs?: number;
+	maxWaitMs?: number;
+	sleep?: (ms: number) => Promise<void>;
 	ephemeralProviders?: readonly string[];
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function isInputTokenLimit(failure: FailureClassification, errorMessage: string): boolean {
+	if (failure.pool && /token.*minute|minute.*token/i.test(failure.pool)) return true;
+	if (/GenerateContentInputTokens/i.test(errorMessage)) return true;
+	if (/generate_content_free_tier_input_token_count/i.test(errorMessage)) return true;
+	if (/input[-_ ]?token/i.test(errorMessage) && /minute/i.test(errorMessage)) return true;
+	return false;
 }
 
 function isAssistant(message: unknown): message is AssistantMessage {
@@ -105,23 +120,85 @@ export class FailoverSupervisor {
 
 	private emit(event: HarnessEvent): void { this.options.onEvent?.(event); }
 
-	private async nextCandidate(reason: FailureKind, errorMessage: string): Promise<boolean> {
+	private async nextCandidate(failure: FailureClassification, errorMessage: string): Promise<boolean> {
 		const from = this.activeCandidate;
-		for (let index = this.activeIndex + 1; index < this.options.chain.length; index++) {
+		const nowFn = this.options.now ?? Date.now;
+		const sleep = this.options.sleep ?? defaultSleep;
+		const maxWaitMs = this.options.maxWaitMs ?? 5 * 60_000;
+		const tokenLimit = isInputTokenLimit(failure, errorMessage);
+
+		const candidateIndices = [...Array(this.options.chain.length).keys()];
+		const orderedIndices = [...candidateIndices.slice(this.activeIndex + 1), ...candidateIndices.slice(0, this.activeIndex)];
+
+		// First pass: try to find an active candidate (not cooling down).
+		// If tokenLimit, prefer candidates with other model/account immediately.
+		if (tokenLimit) {
+			for (const index of orderedIndices) {
+				const candidate = this.options.chain[index]!;
+				if (candidate.model === from.model && candidate.account === from.account) continue;
+				const cooldown = await this.options.quota.active(candidate, nowFn());
+				if (!cooldown) {
+					this.activeIndex = index;
+					await this.options.runtime.bindCandidate(candidate);
+					this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
+					return true;
+				}
+			}
+		}
+
+		for (const index of orderedIndices) {
 			const candidate = this.options.chain[index]!;
-			const cooldown = await this.options.quota.active(candidate, (this.options.now ?? Date.now)());
+			const cooldown = await this.options.quota.active(candidate, nowFn());
 			if (cooldown) {
-				this.failures.push(cooldown.kind);
-				this.reasons.push({ candidate, kind: cooldown.kind, message: `Candidate is cooling down (${cooldown.kind})` });
 				this.emit({ type: "candidate_skipped", candidate, reason: cooldown.kind, ...(cooldown.resetAt === undefined ? {} : { resetAt: cooldown.resetAt }) });
 				continue;
 			}
 			this.activeIndex = index;
 			await this.options.runtime.bindCandidate(candidate);
-			this.emit({ type: "failover", from, to: candidate, reason, errorMessage });
+			this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
 			return true;
 		}
-		return false;
+
+		// When every candidate is cooling down, check if earliest reset is within maxWaitMs
+		const allCooldowns: Array<{ index: number; candidate: Candidate; cooldown: CooldownEntry }> = [];
+		for (let index = 0; index < this.options.chain.length; index++) {
+			const candidate = this.options.chain[index]!;
+			const cooldown = await this.options.quota.active(candidate, nowFn());
+			if (cooldown) {
+				allCooldowns.push({ index, candidate, cooldown });
+			}
+		}
+
+		if (allCooldowns.length === 0) return false;
+
+		let candidatesToConsider = allCooldowns;
+		if (tokenLimit) {
+			const otherCandidates = allCooldowns.filter(
+				(item) => item.candidate.model !== from.model || item.candidate.account !== from.account
+			);
+			if (otherCandidates.length > 0) candidatesToConsider = otherCandidates;
+		}
+
+		candidatesToConsider.sort((a, b) => a.cooldown.resetAt - b.cooldown.resetAt);
+		const earliest = candidatesToConsider[0]!;
+		const waitMs = earliest.cooldown.resetAt - nowFn();
+
+		if (waitMs > maxWaitMs) {
+			return false;
+		}
+
+		this.emit({
+			type: "waiting",
+			candidate: earliest.candidate,
+			reason: earliest.cooldown.kind,
+			until: earliest.cooldown.resetAt,
+		});
+
+		await sleep(Math.max(0, waitMs));
+		this.activeIndex = earliest.index;
+		await this.options.runtime.bindCandidate(earliest.candidate);
+		this.emit({ type: "failover", from, to: earliest.candidate, reason: failure.kind, errorMessage });
+		return true;
 	}
 
 	/** Runs one user prompt; failed provider responses are branched away before continuation. */
@@ -210,7 +287,7 @@ export class FailoverSupervisor {
 			this.session.agent.state.messages = persisted;
 			promptRecorded = persisted.filter((message) => message.role === "user").length > initialUserCount;
 
-			if (!await this.nextCandidate(failure.kind, errorMessage)) throw new ChainExhaustedError(this.failures, this.reasons);
+			if (!await this.nextCandidate(failure, errorMessage)) throw new ChainExhaustedError(this.failures, this.reasons);
 		}
 	}
 }
@@ -234,5 +311,5 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 	}
 	if (activeIndex < 0) throw new ChainExhaustedError(initialFailures, initialReasons);
 	const runtime = await createHarnessRuntime({ ...options, candidate: options.chain[activeIndex]! });
-	return new FailoverSupervisor({ chain: options.chain, runtime, quota, onEvent: options.onEvent, now: options.now, providerConfigs: options.providerConfigs }, activeIndex);
+	return new FailoverSupervisor({ chain: options.chain, runtime, quota, onEvent: options.onEvent, now: options.now, providerConfigs: options.providerConfigs, maxWaitMs: options.maxWaitMs, sleep: options.sleep }, activeIndex);
 }

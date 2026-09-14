@@ -48,7 +48,7 @@ const PROVIDER_QUOTA_WORDINGS: readonly RegExp[] = [
 ];
 const RATE = /rate.?limit|too many requests|resourceexhausted|throttl/i;
 const AUTH = /unauthori[sz]ed|forbidden|invalid[_ ](?:api[_ ]key|token|grant)|authentication|credential|oauth/i;
-const TRANSIENT = /overloaded|service.?unavailable|server.?error|internal.?error|network.?error|connection|fetch failed|getaddrinfo|enotfound|eai_again|timed? out|timeout|socket|stream ended|retry your request|retry delay/i;
+const TRANSIENT = /overloaded|service.?unavailable|server.?error|internal.?error|network.?error|connection|fetch failed|getaddrinfo|enotfound|eai_again|timed? out|timeout|socket|stream ended|retry your request|retry delay|unavailable|high demand/i;
 
 function details(error: unknown): ErrorDetails {
 	if (!(error instanceof Error)) return { message: error === undefined ? "" : String(error) };
@@ -94,9 +94,14 @@ function parseResetAt(headers: Headers | Record<string, string> | undefined, now
 function googleErrorFacts(message: string, now: number): { status?: string; resetAt?: number; pool?: string } {
 	const status = message.match(/"status"\s*:\s*"([A-Z_]+)"/i)?.[1]?.toUpperCase();
 	const retrySeconds = Number(message.match(/"retryDelay"\s*:\s*"([0-9]+(?:\.[0-9]+)?)s"/i)?.[1]);
+	const retryInSeconds = Number(message.match(/Please retry in ([0-9]+(?:\.[0-9]+)?)s/i)?.[1]);
+	const fromTextRetry = !Number.isFinite(retrySeconds) && Number.isFinite(retryInSeconds);
+	const effectiveRetry = Number.isFinite(retrySeconds) ? retrySeconds : Number.isFinite(retryInSeconds) ? retryInSeconds : NaN;
+	const ceilRetry = Number.isFinite(effectiveRetry) ? Math.ceil(effectiveRetry) : NaN;
+	const textJitter = fromTextRetry ? 1000 : 0;
 	const resetText = message.match(/"(?:resetTime|resetAt)"\s*:\s*"([^"]+)"/i)?.[1];
 	const resetParsed = resetText ? Date.parse(resetText) : NaN;
-	const resetAt = Number.isFinite(retrySeconds) ? now + retrySeconds * 1000 : Number.isFinite(resetParsed) ? resetParsed : undefined;
+	const resetAt = Number.isFinite(ceilRetry) ? now + ceilRetry * 1000 + textJitter : Number.isFinite(resetParsed) ? resetParsed : undefined;
 	const explicit = message.match(/"(?:pool|quotaId|quotaMetric|modelId)"\s*:\s*"([A-Za-z0-9_.:/-]+)"/i)?.[1];
 	const lower = `${explicit ?? ""} ${message}`.toLowerCase();
 	const family = lower.includes("gemini") ? "gemini" : /claude|gpt|oss/.test(lower) ? "claude-gpt" : undefined;
@@ -128,6 +133,47 @@ function jsonBody(message: string): unknown {
 	return undefined;
 }
 
+export function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
+	let current = value;
+	for (let depth = 0; depth < maxDepth; depth++) {
+		if (typeof current === "string") {
+			const parsed = jsonBody(current);
+			if (parsed !== undefined) {
+				current = parsed;
+				continue;
+			}
+			break;
+		}
+		if (current && typeof current === "object") {
+			const obj = current as Record<string, unknown>;
+			const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+			const nestedString =
+				(typeof errorObj?.message === "string" ? errorObj.message : undefined) ??
+				(typeof obj.message === "string" ? obj.message : undefined) ??
+				(typeof obj.error === "string" ? obj.error : undefined);
+			if (nestedString) {
+				const parsed = jsonBody(nestedString);
+				if (parsed !== undefined && typeof parsed === "object") {
+					current = parsed;
+					continue;
+				}
+			}
+		}
+		break;
+	}
+	return current;
+}
+
+function extractErrorMessage(body: unknown, fallback: string): string {
+	if (body && typeof body === "object") {
+		const obj = body as Record<string, unknown>;
+		const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+		if (typeof errorObj?.message === "string") return errorObj.message;
+		if (typeof obj.message === "string") return obj.message;
+	}
+	return fallback;
+}
+
 function valuesAt(value: unknown, path: string): unknown[] {
 	let values = [value];
 	for (const part of path.split(".").filter(Boolean)) {
@@ -135,6 +181,13 @@ function valuesAt(value: unknown, path: string): unknown[] {
 		for (const current of values) {
 			if (part === "*" && Array.isArray(current)) next.push(...current);
 			else if (part === "*" && current && typeof current === "object") next.push(...Object.values(current as Record<string, unknown>));
+			else if (part.includes("|")) {
+				for (const key of part.split("|")) {
+					if (current && typeof current === "object" && key in current) {
+						next.push((current as Record<string, unknown>)[key]);
+					}
+				}
+			}
 			else if (current && typeof current === "object" && part in current) next.push((current as Record<string, unknown>)[part]);
 		}
 		values = next;
@@ -156,36 +209,65 @@ export function nextPacificMidnight(now: number): number {
 	return localTomorrow - pacificOffset(localTomorrow + 12 * 60 * 60 * 1000);
 }
 
-function configuredReset(rule: FailureRuleConfig, body: unknown, headers: Headers | Record<string, string> | undefined, now: number): number | undefined {
+function configuredReset(rule: FailureRuleConfig, body: unknown, headers: Headers | Record<string, string> | undefined, now: number, message?: string): number | undefined {
 	for (const source of rule.reset ?? []) {
 		if (source.kind === "header" && source.header) {
 			const parsed = parseResetAt(headers ? { [source.header]: header(headers, source.header) ?? "" } : undefined, now);
 			if (parsed !== undefined) return parsed;
 		}
-		if (source.kind === "retry_info" && source.path) {
-			for (const value of valuesAt(body, source.path)) {
-				const match = typeof value === "string" ? value.match(/^([0-9]+(?:\.[0-9]+)?)s$/u) : undefined;
-				if (match) return now + Number(match[1]) * 1000;
+		if (source.kind === "retry_info") {
+			let seconds: number | undefined;
+			if (source.path) {
+				for (const value of valuesAt(body, source.path)) {
+					const match = typeof value === "string" ? value.match(/^([0-9]+(?:\.[0-9]+)?)s$/u) : undefined;
+					if (match) { seconds = Number(match[1]); break; }
+				}
 			}
+			if (seconds === undefined) {
+				for (const value of valuesAt(body, "error.details.*.retryDelay")) {
+					const match = typeof value === "string" ? value.match(/^([0-9]+(?:\.[0-9]+)?)s$/u) : undefined;
+					if (match) { seconds = Number(match[1]); break; }
+				}
+			}
+			if (seconds === undefined && message) {
+				const retryInMatch = message.match(/Please retry in ([0-9]+(?:\.[0-9]+)?)s/iu);
+				if (retryInMatch) seconds = Math.ceil(Number(retryInMatch[1]));
+			}
+			if (seconds !== undefined) {
+				const jitter = source.jitterMs ?? 0;
+				return now + seconds * 1000 + jitter;
+			}
+		}
+		if (source.kind === "cooldown") {
+			const seconds = source.seconds ?? 30;
+			return now + seconds * 1000;
 		}
 		if (source.kind === "next_pacific_midnight") return nextPacificMidnight(now);
 	}
 	return undefined;
 }
 
-function configuredClassification(policy: FailurePolicy | undefined, status: number | undefined, message: string, headers: Headers | Record<string, string> | undefined, now: number): FailureClassification | undefined {
+function configuredClassification(policy: FailurePolicy | undefined, status: number | undefined, message: string, headers: Headers | Record<string, string> | undefined, now: number, body: unknown): FailureClassification | undefined {
 	if (!policy) return undefined;
-	const body = jsonBody(message);
+	const unwrappedMessage = extractErrorMessage(body, message);
 	for (const rule of policy.rules) {
-		if (rule.statuses && (status === undefined || !rule.statuses.includes(status))) continue;
-		const candidates = rule.jsonPath ? valuesAt(body, rule.jsonPath).map(String) : [message];
+		if (rule.statuses && status !== undefined && !rule.statuses.includes(status)) continue;
+		let candidates = rule.jsonPath ? valuesAt(body, rule.jsonPath).map(String) : [message, unwrappedMessage];
+		if (rule.jsonPath && candidates.length === 0) {
+			candidates = [message, unwrappedMessage];
+		}
 		if (rule.equals !== undefined && !candidates.includes(rule.equals)) continue;
 		if (rule.regex !== undefined) {
 			let pattern: RegExp; try { pattern = new RegExp(rule.regex, "iu"); } catch { continue; }
 			if (!candidates.some((value) => pattern.test(value))) continue;
 		}
-		const resetAt = configuredReset(rule, body, headers, now);
-		return { kind: rule.kind, ...(status === undefined ? {} : { status }), ...(resetAt === undefined ? {} : { resetAt }), ...(rule.pool ? { pool: rule.pool.replace(":model", policy.model ? `:${policy.model}` : "") } : {}) };
+		const resetAt = configuredReset(rule, body, headers, now, unwrappedMessage !== message ? `${message} ${unwrappedMessage}` : message);
+		return {
+			kind: rule.kind,
+			...(status === undefined ? {} : { status }),
+			...(resetAt === undefined ? {} : { resetAt }),
+			...(rule.pool ? { pool: rule.pool.replace(":model", policy.model ? `:${policy.model}` : "") } : {}),
+		};
 	}
 	return undefined;
 }
@@ -198,12 +280,35 @@ export function isExhaustedQuota(detail: string | undefined): boolean {
 export function classifyFailure(input: FailureInput, policy?: FailurePolicy): FailureClassification {
 	const raw = details(input.error);
 	const message = [raw.message, input.message?.errorMessage ?? ""].filter(Boolean).join(" ");
-	const status = input.response?.status ?? raw.status;
+	const body = unwrapNestedJson(jsonBody(message));
+	const unwrappedMessage = extractErrorMessage(body, message);
+	const fullMessage = unwrappedMessage !== message ? `${message} ${unwrappedMessage}` : message;
+
+	let status = input.response?.status ?? raw.status;
+	if (status === undefined && body && typeof body === "object") {
+		const obj = body as Record<string, unknown>;
+		const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+		const code = errorObj?.code ?? obj.code;
+		if (typeof code === "number") status = code;
+		else {
+			const statusText = (errorObj?.status ?? obj.status);
+			if (typeof statusText === "string") {
+				const upper = statusText.toUpperCase();
+				if (upper === "UNAVAILABLE") status = 503;
+				else if (upper === "RESOURCE_EXHAUSTED") status = 429;
+			}
+		}
+	}
+	if (status === undefined) {
+		if (/got status:\s*UNAVAILABLE/i.test(message) || /status.*UNAVAILABLE/i.test(message)) status = 503;
+		else if (/got status:\s*RESOURCE_EXHAUSTED/i.test(message)) status = 429;
+	}
+
 	const headers = input.response?.headers ?? raw.headers;
 	const now = input.now ?? Date.now();
-	const google = googleErrorFacts(message, now);
+	const google = googleErrorFacts(fullMessage, now);
 	const resetAt = parseResetAt(headers, now) ?? google.resetAt;
-	const configured = configuredClassification(policy, status, message, headers, now);
+	const configured = configuredClassification(policy, status, message, headers, now, body);
 	if (configured) return { ...(raw.name ? { errorClass: raw.name } : {}), ...configured };
 	const base = {
 		...(raw.name ? { errorClass: raw.name } : input.message?.stopReason === "error" ? { errorClass: "AssistantMessageError" } : {}),
@@ -216,16 +321,16 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 		return { kind: "auth", ...base };
 	}
 	if (google.status === "SUBSCRIPTION_REQUIRED") return { kind: "fatal", ...base };
-	if ((status === 401 || status === 403) && isExhaustedQuota(message)) {
+	if ((status === 401 || status === 403) && isExhaustedQuota(fullMessage)) {
 		return { kind: "quota_exhausted", ...base };
 	}
-	if (status === 402 || isExhaustedQuota(message)) {
+	if (status === 402 || isExhaustedQuota(fullMessage)) {
 		return { kind: "quota_exhausted", ...base };
 	}
-	if (status === 401 || status === 403 || AUTH.test(message)) return { kind: "auth", ...base };
-	if (status === 429 || RATE.test(message)) return { kind: "rate_limited", ...base };
+	if (status === 401 || status === 403 || AUTH.test(fullMessage)) return { kind: "auth", ...base };
+	if (status === 429 || RATE.test(fullMessage)) return { kind: "rate_limited", ...base };
 	if (status === 408 || status === 409 || (status !== undefined && status >= 500) ||
-		raw.name === "TypeError" || TRANSIENT.test(message)) {
+		raw.name === "TypeError" || TRANSIENT.test(fullMessage)) {
 		return { kind: "transient", ...base };
 	}
 	return { kind: "fatal", ...base };
