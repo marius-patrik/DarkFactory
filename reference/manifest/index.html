@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Overview · DarkFactory</title>
+    <title>Manifest · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,7 +82,7 @@
       <a class="nav__link"
          href="../..">Overview</a>
     </li>
-    <li class="nav__section nav__section--active">
+    <li class="nav__section">
       <span class="nav__label">Product</span>
       
 <ul class="nav nav--depth-1">
@@ -90,37 +90,37 @@
       <a class="nav__link"
          href="../../prd/">Requirements</a>
     </li>
-    <li class="nav__section nav__section--active">
+    <li class="nav__section">
       <span class="nav__label">Decisions</span>
       
 <ul class="nav nav--depth-2">
     <li class="nav__item">
-      <a class="nav__link nav__link--active"
-         href="./">Overview</a>
+      <a class="nav__link"
+         href="../../architecture/decisions/">Overview</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
+         href="../../architecture/decisions/0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+         href="../../architecture/decisions/0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+         href="../../architecture/decisions/0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+         href="../../architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+         href="../../architecture/decisions/0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="process/">Process</a>
+         href="../../architecture/decisions/process/">Process</a>
     </li>
 </ul>
 
@@ -203,17 +203,17 @@
 </ul>
 
     </li>
-    <li class="nav__section">
+    <li class="nav__section nav__section--active">
       <span class="nav__label">Reference</span>
       
 <ul class="nav nav--depth-1">
     <li class="nav__item">
-      <a class="nav__link"
-         href="../../reference/manifest/">Manifest</a>
+      <a class="nav__link nav__link--active"
+         href="./">Manifest</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
-         href="../../reference/workflows/">Workflows</a>
+         href="../workflows/">Workflows</a>
     </li>
 </ul>
 
@@ -243,73 +243,186 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="architecture-decisions">Architecture decisions<a class="headerlink" href="#architecture-decisions" title="Permanent link">&para;</a></h1>
-<p>Every decision that binds the implementation, one record per page. This index is generated
-from the files in <code>.agents/notes/adr/</code> at build time - it is never hand-maintained
-(<code>.agents/rules/002-inline-docs-and-generated-documentation.md</code>).</p>
-<p>See <a href="process/">the process</a> for when an ADR is required and how to write one.</p>
+          <h1 id="repository-manifest-reference">Repository manifest reference<a class="headerlink" href="#repository-manifest-reference" title="Permanent link">&para;</a></h1>
+<p>Declarative configuration for DarkFactory pipelines, taxonomy, labels, and installed projects.
+Generated from <code>.darkfactory/manifest.json</code> at build time.</p>
+<h2 id="area-taxonomy-and-labels">Area taxonomy and labels<a class="headerlink" href="#area-taxonomy-and-labels" title="Permanent link">&para;</a></h2>
+<p>Area labels match keywords in commit scopes, PR labels, and agent routing.</p>
 <table>
 <thead>
 <tr>
-<th>#</th>
-<th>Decision</th>
-<th>Status</th>
-<th>Resolves</th>
+<th>Area</th>
+<th>Label</th>
+<th>Description</th>
+<th>Keywords</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="0001-domains-above-environments/">0001</a></td>
-<td><a href="0001-domains-above-environments/">Domains sit above environments</a></td>
-<td>Accepted</td>
-<td>#18</td>
+<td>agents</td>
+<td><code>area:agents</code></td>
+<td>Harness orchestration, provider adapters, personas, approvals</td>
+<td>agent, harness, persona, provider, llm, prompt, approval, model, quota</td>
 </tr>
 <tr>
-<td><a href="0002-agent-pipeline-is-harness-agnostic/">0002</a></td>
-<td><a href="0002-agent-pipeline-is-harness-agnostic/">The agent pipeline is harness-agnostic</a></td>
-<td>Accepted</td>
-<td>—</td>
+<td>governance</td>
+<td><code>area:governance</code></td>
+<td>Agent rules, branch protection, required checks, project board taxonomy</td>
+<td>governance, rule, protection, policy, board, taxonomy, label, permission</td>
 </tr>
 <tr>
-<td><a href="0003-repository-identity-is-data-not-code/">0003</a></td>
-<td><a href="0003-repository-identity-is-data-not-code/">Repository identity is data, not code</a></td>
-<td>Accepted</td>
-<td>—</td>
+<td>release</td>
+<td><code>area:release</code></td>
+<td>Versioning modes, tagging, asset packaging, release notes</td>
+<td>release, version, versioning, tag, semver, changelog, package, artifact</td>
 </tr>
 <tr>
-<td><a href="0004-repository-environment-is-detected-declaration-is-the-exception/">0004</a></td>
-<td><a href="0004-repository-environment-is-detected-declaration-is-the-exception/">The repository environment is detected; declaration is the exception</a></td>
-<td>Accepted</td>
-<td>—</td>
+<td>docs</td>
+<td><code>area:docs</code></td>
+<td>Documentation site, theme, architecture notes</td>
+<td>doc, docs, documentation, mkdocs, properdocs, theme, site, readme</td>
 </tr>
 <tr>
-<td><a href="0005-versioning-scheme-is-a-per-repository-choice/">0005</a></td>
-<td><a href="0005-versioning-scheme-is-a-per-repository-choice/">The versioning scheme is a per-repository choice</a></td>
-<td>Accepted</td>
-<td>—</td>
+<td>ci</td>
+<td><code>area:ci</code></td>
+<td>GitHub Actions workflows, containers, runner scripts, repository automation</td>
+<td>ci, action, workflow, pipeline, docker, runner, automation, container</td>
 </tr>
 </tbody>
 </table>
-<p>5 records — 5 accepted, 0 proposed. Records are append-only: a decision that turns out wrong is superseded by a new one, never edited away.</p>
+<h2 id="projects">Projects<a class="headerlink" href="#projects" title="Permanent link">&para;</a></h2>
+<p>Documentation sites offered in the switcher:</p>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://marius-patrik.github.io/DarkFactory/">DarkFactory</a></td>
+<td>https://marius-patrik.github.io/DarkFactory/</td>
+</tr>
+<tr>
+<td><a href="https://marius-patrik.github.io/omnis/">Omnis</a></td>
+<td>https://marius-patrik.github.io/omnis/</td>
+</tr>
+<tr>
+<td><a href="https://marius-patrik.github.io/ChessWithQuests/">ChessWithQuests</a></td>
+<td>https://marius-patrik.github.io/ChessWithQuests/</td>
+</tr>
+</tbody>
+</table>
+<h2 id="installed-fleet">Installed fleet<a class="headerlink" href="#installed-fleet" title="Permanent link">&para;</a></h2>
+<p>Repositories with DarkFactory automation installed:</p>
+<table>
+<thead>
+<tr>
+<th>Repository</th>
+<th>GitHub</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>marius-patrik/DarkFactory</td>
+<td><a href="https://github.com/marius-patrik/DarkFactory">marius-patrik/DarkFactory</a></td>
+</tr>
+<tr>
+<td>marius-patrik/omnis</td>
+<td><a href="https://github.com/marius-patrik/omnis">marius-patrik/omnis</a></td>
+</tr>
+<tr>
+<td>marius-patrik/ChessWithQuests</td>
+<td><a href="https://github.com/marius-patrik/ChessWithQuests">marius-patrik/ChessWithQuests</a></td>
+</tr>
+<tr>
+<td>marius-patrik/OdbornaPrace</td>
+<td><a href="https://github.com/marius-patrik/OdbornaPrace">marius-patrik/OdbornaPrace</a></td>
+</tr>
+<tr>
+<td>marius-patrik/template-OdbornaPrace</td>
+<td><a href="https://github.com/marius-patrik/template-OdbornaPrace">marius-patrik/template-OdbornaPrace</a></td>
+</tr>
+<tr>
+<td>marius-patrik/mono-OdbornaPrace</td>
+<td><a href="https://github.com/marius-patrik/mono-OdbornaPrace">marius-patrik/mono-OdbornaPrace</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>owner</td>
+<td>marius-patrik</td>
+</tr>
+<tr>
+<td>repo</td>
+<td>DarkFactory</td>
+</tr>
+<tr>
+<td>display_name</td>
+<td>DarkFactory</td>
+</tr>
+<tr>
+<td>project_title</td>
+<td>DarkFactory</td>
+</tr>
+<tr>
+<td>agent_slug</td>
+<td>darkfactory-agent</td>
+</tr>
+<tr>
+<td>default_branch</td>
+<td>darkfactory</td>
+</tr>
+<tr>
+<td>description</td>
+<td>Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, and project board delivery.</td>
+</tr>
+<tr>
+<td>topics</td>
+<td>agentic-coding, agentic-development, ai-agents, autonomous-agents, automation, dark-factory, developer-tools, orchestration, template, template-repository, workspace</td>
+</tr>
+</tbody>
+</table>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../../prd/">
+          <a class="pager__link pager__link--prev" href="../../rules/016-security-and-secrets/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">Requirements</span>
+            <span class="pager__title">DF-RULE-016 — Security and secrets</span>
           </a>
-          <a class="pager__link pager__link--next" href="0001-domains-above-environments/">
+          <a class="pager__link pager__link--next" href="../workflows/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">ADR-0001 — Domains sit above environments</span>
+            <span class="pager__title">Workflows</span>
           </a>
         </nav>
 
         <footer class="footer">
           <span>DarkFactory</span>
-          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/index.md">Edit this page</a>
+          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/reference/manifest.md">Edit this page</a>
         </footer>
       </main>
 
-      <aside class="toc toc--empty">
+      <aside class="toc">
+        <div class="toc__title">On this page</div>
+        <ul class="toc__list">
+          <li><a href="#area-taxonomy-and-labels">Area taxonomy and labels</a>
+          </li>
+          <li><a href="#projects">Projects</a>
+          </li>
+          <li><a href="#installed-fleet">Installed fleet</a>
+          </li>
+          <li><a href="#identity">Identity</a>
+          </li>
+        </ul>
       </aside>
     </div>
 
