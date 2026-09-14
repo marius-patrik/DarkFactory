@@ -20,7 +20,7 @@ a zkoumat i bez spojení se serverem a slučovat je až ve chvíli, kdy jsou hot
 
 === Větve a jejich role
 
-#diff[Větev je pojmenovaný ukazatel na určitý stav historie. Práce na nové vlastnosti probíhá ve větvi oddělené od hlavní vývojové linie, takže rozpracovaný stav neovlivní ostatní. Tento postup má i důsledek pro automatizaci: dokud změna existuje pouze ve větvi, lze ji libovolně ověřovat, aniž by hrozila škoda.][V moderních distribuovaných systémech správy verzí (zejména v systému Git @chacon2014) je repozitář formálně modelován jako orientovaný acyklický graf (_Directed Acyclic Graph_, DAG), jehož uzly tvoří neměnné objekty revizí (_commits_) provázané kryptografickými hashy (SHA-1 či SHA-256) na své rodičovské stavy. Větev v tomto modelu nepředstavuje fyzickou kopii souborů, nýbrž odlehčený, pohyblivý ukazatel (_ref_) na konkrétní uzel grafu.
+#confirmed[V moderních distribuovaných systémech správy verzí (zejména v systému Git @chacon2014) je repozitář formálně modelován jako orientovaný acyklický graf (_Directed Acyclic Graph_, DAG), jehož uzly tvoří neměnné objekty revizí (_commits_) provázané kryptografickými hashy (SHA-1 či SHA-256) na své rodičovské stavy. Větev v tomto modelu nepředstavuje fyzickou kopii souborů, nýbrž odlehčený, pohyblivý ukazatel (_ref_) na konkrétní uzel grafu.
 
 Tato grafová architektura má klíčový význam pro bezpečné zapojení autonomních agentů do vývojového procesu:
 - *Izolace stavu*: Agent operuje ve vyhrazené větvi (např. `feature/...` nebo `agent/...`), která odbočuje z hlavní vývojové linie (`main`). Veškeré pokusné mutace souborového systému, mezistavy a ladicí kroky zůstávají striktně izolované, aniž by ohrozily stabilitu produkčního kódu nebo práci ostatních členů týmu.
