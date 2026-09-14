@@ -45,8 +45,8 @@ on:
     secrets:
     # Generated from the df container setup - `agent_runner.df_setup_secret_names()` - and asserted
     # against it by a test. The pipeline runs df as its only agent harness, so only the secrets df's
-    # setup consumes are declared: API keys saved with `df account set` and subscription login files
-    # imported with `df account import`. A workflow that omits one does not fail; df runs with a
+    # setup consumes are declared: API keys saved with `df account set` and subscription account records
+    # loaded with `df account load`. A workflow that omits one does not fail; df runs with a
     # shorter chain. The harness chain itself is fixed to df: AGENT_HARNESS_CHAIN and
     # AGENT_HARNESS_CONFIG are deliberately not forwarded, so the removed external CLIs cannot be
     # re-enabled in DarkFactory's own workflows.
@@ -58,8 +58,8 @@ on:
       OPENROUTER_API_KEY: {required: false}
       OPENROUTER_API_KEY_2: {required: false}
       GROQ_API_KEY: {required: false}
-      CODEX_AUTH_JSON: {required: false}
-      GROK_AUTH_JSON: {required: false}
+      DF_ACCOUNT_OPENAI_CODEX: {required: false}
+      DF_ACCOUNT_GROK_SUB: {required: false}
 permissions:
   contents: write
   issues: write
@@ -206,8 +206,8 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_API_KEY_2: ${{ secrets.OPENROUTER_API_KEY_2 }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
-          GROK_AUTH_JSON: ${{ secrets.GROK_AUTH_JSON }}
+          DF_ACCOUNT_OPENAI_CODEX: ${{ secrets.DF_ACCOUNT_OPENAI_CODEX }}
+          DF_ACCOUNT_GROK_SUB: ${{ secrets.DF_ACCOUNT_GROK_SUB }}
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
@@ -221,8 +221,8 @@ jobs:
             -e OPENROUTER_API_KEY \
             -e OPENROUTER_API_KEY_2 \
             -e GROQ_API_KEY \
-            -e CODEX_AUTH_JSON \
-            -e GROK_AUTH_JSON \
+            -e DF_ACCOUNT_OPENAI_CODEX \
+            -e DF_ACCOUNT_GROK_SUB \
             -e GH_TOKEN \
             -e GH_PROJECT_TOKEN \
             -e GITHUB_EVENT_PATH="/workspace/event.json" \

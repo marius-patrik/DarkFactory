@@ -30,6 +30,7 @@ def _df_environment(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("DF_HOME", raising=False)
+    monkeypatch.setattr(agent_runner, "_DF_SETUP_HOME", None, raising=False)
     for name in agent_runner.df_setup_secret_names():
         monkeypatch.delenv(name, raising=False)
 
@@ -85,6 +86,58 @@ class TestDfJsonOutput:
         """A stray warning line must not break the parse."""
         stdout = "bun: some notice\n" + _stream({"type": "text_delta", "delta": "kept"})
         assert agent_runner.parse_df_json_output(stdout) == "kept"
+
+    def test_thinking_deltas_are_never_the_answer(self):
+        """Gemini thought summaries stream as thinking events; the answer is text only."""
+        stdout = _stream(
+            {"type": "thinking_delta", "delta": "Developing the Implementation Plan"},
+            {"type": "text_delta", "delta": "the real plan"},
+            {"type": "tool_start", "toolCallId": "t1", "toolName": "read", "input": {}},
+            {"type": "tool_end", "toolCallId": "t1", "toolName": "read", "isError": False},
+            {"type": "thinking_delta", "delta": "more internal reasoning"},
+            {"type": "text_delta", "delta": "final answer"},
+            {"type": "result", "stopReason": "end_turn"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "final answer"
+
+    def test_text_after_failover_is_the_answer(self):
+        """Text from a failed attempt or failover event is discarded; only the final successful attempt survives."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "thinking…"},
+            {
+                "type": "failover",
+                "from": {"provider": "google"},
+                "to": {"provider": "anthropic"},
+                "reason": "transient",
+                "errorMessage": "error",
+            },
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "result", "stopReason": "end_turn"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
+    def test_the_closing_step_of_a_successful_turn_keeps_the_answer(self):
+        """Real df streams end with text, then the turn's step, then the result."""
+        stdout = _stream(
+            {"type": "tool_start", "toolName": "read"},
+            {"type": "tool_end", "toolName": "read"},
+            {"type": "thinking_delta", "delta": "Developing the plan"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
+
+    def test_text_of_an_attempt_that_errored_is_discarded(self):
+        """A step that ended in an error discards the text streamed before it."""
+        stdout = _stream(
+            {"type": "text_delta", "delta": "partial"},
+            {"type": "step", "stopReason": "error", "errorMessage": "429"},
+            {"type": "text_delta", "delta": "PLAN"},
+            {"type": "step", "stopReason": "stop", "errorMessage": None},
+            {"type": "result", "stopReason": "stop"},
+        )
+        assert agent_runner.parse_df_json_output(stdout) == "PLAN"
 
     def test_an_empty_stream_is_empty(self):
         """No deltas means no answer, which the runner treats as a failed attempt."""
@@ -274,45 +327,36 @@ class TestDfSetup:
             "groq:default",
         ]
 
-    def test_a_login_file_is_written_0600_then_imported(self, monkeypatch, tmp_path):
+    def test_a_codex_account_is_loaded_from_its_secret(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
-        tmp_path: Pytest-provided empty directory.
         """
-        monkeypatch.setenv("CODEX_AUTH_JSON", '{"auth": "codex-login"}')
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "codex-login"}')
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
-        path = tmp_path / ".codex" / "auth.json"
-        assert path.read_text(encoding="utf-8") == '{"auth": "codex-login"}'
-        if sys.platform != "win32":
-            assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
         assert [
             "df",
             "account",
-            "import",
-            "codex",
-            "--account",
-            "default",
+            "load",
+            "openai-codex:pipeline",
+            "--from-env",
+            "DF_ACCOUNT_OPENAI_CODEX",
         ] in [call[0] for call in calls]
 
-    def test_a_grok_login_is_imported_as_grok(self, monkeypatch, tmp_path):
+    def test_a_grok_account_is_loaded_as_grok_sub(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
-        tmp_path: Pytest-provided empty directory.
         """
-        monkeypatch.setenv("GROK_AUTH_JSON", '{"auth": "grok-login"}')
+        monkeypatch.setenv("DF_ACCOUNT_GROK_SUB", '{"auth": "grok-login"}')
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
-        assert (tmp_path / ".grok" / "auth.json").read_text(encoding="utf-8") == (
-            '{"auth": "grok-login"}'
-        )
         assert [
             "df",
             "account",
-            "import",
-            "grok",
-            "--account",
-            "default",
+            "load",
+            "grok-sub:pipeline",
+            "--from-env",
+            "DF_ACCOUNT_GROK_SUB",
         ] in [call[0] for call in calls]
 
     def test_the_target_repo_config_is_copied_into_df_home(self, monkeypatch, tmp_path):
@@ -354,6 +398,32 @@ class TestDfSetup:
         monkeypatch.setattr(agent_runner.subprocess, "run", missing)
         assert os.path.isdir(agent_runner.setup_df_accounts())
 
+    def test_setup_runs_once_per_process(self, monkeypatch):
+        """A second call reuses the first DF_HOME instead of reconfiguring accounts."""
+        monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+        calls = self._record(monkeypatch)
+        first = agent_runner.setup_df_accounts()
+        second = agent_runner.setup_df_accounts()
+        assert second == first
+        assert os.environ["DF_HOME"] == first
+        assert len([call for call in calls if call[0][:2] == ["df", "account"]]) == 1
+
+    def test_dispatch_reuses_the_main_setup(self, monkeypatch, tmp_path):
+        """dispatch_event does not reconfigure accounts main already set up."""
+        monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+        calls = self._record(monkeypatch)
+        agent_runner.setup_df_accounts()
+        seen = len(calls)
+        event = {
+            "repository": {"full_name": "owner/repo"},
+            "action": "opened",
+            "issue": {"number": 1, "labels": [{"name": "Plan"}]},
+        }
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(event), encoding="utf-8")
+        agent_runner.dispatch_event(str(path), "issues")
+        assert len(calls) == seen
+
 
 class TestDfLoginRotation:
     """A rotated borrowed login is written back under that account's own secret name."""
@@ -363,11 +433,17 @@ class TestDfLoginRotation:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        path = tmp_path / ".codex" / "auth.json"
-        path.parent.mkdir(parents=True)
-        path.write_text('{"auth": "v1"}', encoding="utf-8")
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         states = agent_runner.snapshot_df_login_files()
-        path.write_text('{"auth": "v2"}', encoding="utf-8")
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}), encoding="utf-8"
+        )
 
         persisted = []
         monkeypatch.setattr(
@@ -376,16 +452,20 @@ class TestDfLoginRotation:
             lambda secret, value: persisted.append((secret, value)) or True,
         )
         agent_runner.finish_df_login_files(states)
-        assert persisted == [("CODEX_AUTH_JSON", '{"auth": "v2"}')]
+        assert persisted == [("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v2"}')]
 
     def test_an_unchanged_login_is_not_written_back(self, monkeypatch, tmp_path):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        path = tmp_path / ".codex" / "auth.json"
-        path.parent.mkdir(parents=True)
-        path.write_text('{"auth": "same"}', encoding="utf-8")
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "same"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "same"}')
         states = agent_runner.snapshot_df_login_files()
         monkeypatch.setattr(
             agent_runner,
@@ -394,15 +474,23 @@ class TestDfLoginRotation:
         )
         agent_runner.finish_df_login_files(states)
 
-    def test_a_run_persists_rotation_and_keeps_the_file(self, monkeypatch, tmp_path):
-        """The setup-written login stays for df to import; only the secret is updated."""
-        login_path = tmp_path / ".codex" / "auth.json"
-        login_path.parent.mkdir(parents=True)
-        login_path.write_text('{"auth": "v1"}', encoding="utf-8")
+    def test_a_run_persists_rotation_and_updates_only_the_secret(self, monkeypatch, tmp_path):
+        """The setup-loaded login is rotated by df; only the secret is updated."""
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         persisted = []
 
         def fake_run(argv, **kwargs):
-            login_path.write_text('{"auth": "v2"}', encoding="utf-8")
+            # simulate df rotating the account record in the credentials store
+            (df_home / "credentials.json").write_text(
+                json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}),
+                encoding="utf-8",
+            )
             return subprocess.CompletedProcess(
                 argv, 0, stdout=_stream({"type": "text_delta", "delta": "ok"}), stderr=""
             )
@@ -414,8 +502,7 @@ class TestDfLoginRotation:
             lambda secret, value: persisted.append((secret, value)) or True,
         )
         assert agent_runner.run_agent_prompt("do it") == "ok"
-        assert persisted == [("CODEX_AUTH_JSON", '{"auth": "v2"}')]
-        assert login_path.exists(), "the borrowed login file stays in place for df"
+        assert persisted == [("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v2"}')]
 
     def test_a_run_without_logins_persists_nothing(self, monkeypatch):
         """Args:

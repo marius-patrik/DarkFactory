@@ -9,7 +9,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { FileCredentialStore, defaultDfHome } from "./credentials.ts";
+import { FileCredentialStore, defaultDfHome, parseAccountId, validateAccountRecord } from "./credentials.ts";
 import { DEFAULT_ROUTER_CONFIG, loadDfConfig, localCredentialFallback, type DfConfig } from "./config.ts";
 import type { Candidate } from "./failover.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type CandidateFailureReason, type HarnessEvent } from "./harness/supervisor.ts";
@@ -23,7 +23,6 @@ import { importClaudeAccount } from "./import/claude.ts";
 import { importCodexAccount } from "./import/codex.ts";
 import { importGrokAccount } from "./import/grok.ts";
 import { importKimiAccount } from "./import/kimi.ts";
-import { ConfiguredBorrowedCredentialCoordinator } from "./import/borrowed-credentials.ts";
 import { OsClaudeKeyringAdapter } from "./import/keyring.ts";
 import { OsHomeReader } from "./import/reader.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
@@ -56,6 +55,8 @@ function usage(): string {
 		"  df accounts",
 		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
+		"  df account export <provider:label>",
+		"  df account load <provider:label> --from-env <VAR>",
 		"  df login <provider> [--account <label>]",
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
@@ -175,7 +176,7 @@ async function accountImportCommand(registry: ProviderRegistry, store: FileCrede
 	if (!declaration) throw new Error(`Unknown account import source: ${source ?? ""}`);
 	if (declaration.parser === "antigravity-keyring") {
 		await importAntigravityAccount(store, label, new OsKeyringAdapter(), declaration.targetProvider, declaration.keyring?.service, declaration.keyring?.account);
-		await markImportedAccount(store, declaration.targetProvider, label, declaration.id, declaration.path);
+		await markImportedAccount(store, declaration.targetProvider, label, declaration.id);
 		console.log(`Imported ${declaration.targetProvider}/${label}.`);
 		return;
 	}
@@ -188,19 +189,18 @@ async function accountImportCommand(registry: ProviderRegistry, store: FileCrede
 		await importKimiAccount(store, label, reader, declaration.targetProvider, declaration.path);
 	}
 	else throw new Error(`Importer parser is not implemented: ${declaration.parser}`);
-	await markImportedAccount(store, declaration.targetProvider, label, declaration.id, declaration.path);
+	await markImportedAccount(store, declaration.targetProvider, label, declaration.id);
 	console.log(`Imported ${source}/${label}.`);
 }
 
-async function markImportedAccount(store: FileCredentialStore, provider: string, label: string, importer: string, path?: string): Promise<void> {
+async function markImportedAccount(store: FileCredentialStore, provider: string, label: string, importer: string): Promise<void> {
 	const id = `${provider}:${label}`;
 	await store.modifyAccount(id, async (current) => current ? ({
 		...current,
 		metadata: {
-			...(current.metadata ?? {}), importer,
-			ownership: "borrowed", sync: "machine-only",
-			...(path ? { source_path: path } : {}),
-			...(current.metadata?.source?.startsWith("Claude Code-credentials") ? { source_kind: "keyring", source_service: current.metadata.source } : {}),
+			...(current.metadata ?? {}),
+			importedFrom: importer,
+			ownership: "df-owned", sync: "machine-only",
 		},
 	}) : undefined);
 }
@@ -215,10 +215,42 @@ async function accountsCommand(store: FileCredentialStore): Promise<void> {
 		const oauth = record && Object.values(record.slots).find((slot) => slot.type === "oauth");
 		const types = [...new Set(account.slots.map((slot) => slot.type))].join(",") || "-";
 		const expiry = oauth?.type === "oauth" ? `${new Date(oauth.expires).toISOString()} (${oauth.expires > Date.now() ? "valid" : "expired"})` : "-";
-		const refresh = oauth?.type === "oauth" && oauth.refresh ? (account.metadata?.ownership === "borrowed" ? "reimport-first" : "df-managed") : "-";
-		const ownership = account.metadata?.ownership ?? (account.metadata?.importer ? "borrowed" : "df-owned");
+		const refresh = oauth?.type === "oauth" && oauth.refresh ? "df-managed" : "-";
+		const baseOwnership = account.metadata?.ownership ?? "df-owned";
+		const importedFrom = account.metadata?.importedFrom ?? account.metadata?.importer;
+		const ownership = importedFrom
+			? `${baseOwnership} (imported from ${importedFrom})`
+			: baseOwnership;
 		console.log(`${account.id}\t${types}\t${expiry}\t${refresh}\t${ownership}\t${slots || "-"}`);
 	}
+}
+
+async function accountExportCommand(store: FileCredentialStore, args: string[]): Promise<void> {
+	const id = args[0];
+	if (!id) throw new Error("account export requires <provider:label>");
+	const account = await store.readAccount(id);
+	if (!account) throw new Error(`Account not found: ${id}`);
+	console.log(JSON.stringify(account));
+}
+
+async function accountLoadCommand(store: FileCredentialStore, args: string[]): Promise<void> {
+	const id = args[0];
+	const fromEnv = option(args, "--from-env");
+	if (!id || !fromEnv) throw new Error("account load requires <provider:label> --from-env <VAR>");
+	const parsedId = parseAccountId(id);
+	if (!parsedId) throw new Error("Invalid account id; expected <provider:label>");
+	const raw = process.env[fromEnv];
+	if (!raw || !raw.trim()) throw new Error(`Environment variable ${fromEnv} is empty or not set`);
+	let parsedJson: unknown;
+	try {
+		parsedJson = JSON.parse(raw);
+	} catch {
+		throw new Error("Invalid account JSON");
+	}
+	const validated = validateAccountRecord(parsedJson, id);
+	validated.metadata = { ...(validated.metadata ?? {}), ownership: "df-owned" };
+	await store.modifyAccount(id, async () => validated);
+	console.log(`Loaded account ${id} from ${fromEnv}.`);
 }
 
 async function accountSetCommand(store: FileCredentialStore, args: string[]): Promise<void> {
@@ -662,10 +694,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	const config = await loadDfConfig(home);
 	const providerConfig = await loadProviderConfig(home);
 	const registry = new ProviderRegistry(providerConfig);
-	const keyring = new OsKeyringAdapter();
-	const borrowed = new ConfiguredBorrowedCredentialCoordinator(homedir(), providerConfig.providers, keyring);
 	const ledger = new LimitLedger(home, { fallbackTtlMs: config.cooldownTtlMs, persist: (candidate) => candidate.provider !== "faux" });
-	const store = new FileCredentialStore(home, localCredentialFallback(home, config, providerConfig), borrowed, (provider, label) => ledger.clearAccount(provider, label));
+	const store = new FileCredentialStore(home, localCredentialFallback(home, config, providerConfig), (provider, label) => ledger.clearAccount(provider, label));
 	const command = args[0];
 	switch (command) {
 		case "__packaging-smoke": return packagingSmoke();
@@ -678,6 +708,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
 			if (args[1] === "import") return accountImportCommand(registry, store, args.slice(2));
+			if (args[1] === "export") return accountExportCommand(store, args.slice(2));
+			if (args[1] === "load") return accountLoadCommand(store, args.slice(2));
 			throw new Error(`Unknown account command: ${args[1] ?? ""}`);
 		case "login": return loginCommand(registry, store, args[1], option(args, "--account"));
 		case "logout": return logoutCommand(store, args[1], option(args, "--account"));

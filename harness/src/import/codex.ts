@@ -95,7 +95,8 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			label,
 			metadata: {
 				...(current?.metadata ?? {}),
-				ownership: "borrowed", sync: "machine-only",
+				ownership: "df-owned", sync: "machine-only",
+				importedFrom: "codex",
 				...(oauth.account ? { account: oauth.account } : {}),
 				...(oauth.plan ? { plan: oauth.plan } : {}),
 				...(oauth.authMode ? { auth_mode: oauth.authMode } : {}),
@@ -116,7 +117,7 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			id,
 			provider: apiKeyProvider,
 			label,
-			metadata: { ...(current?.metadata ?? {}), ownership: "borrowed", sync: "machine-only", source: "codex-auth-json", plan: "metered_api_key" },
+			metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", importedFrom: "codex", source: "codex-auth-json", plan: "metered_api_key" },
 			slots: { ...(current?.slots ?? {}), api_key: { type: "api_key", value: found.apiKey! } },
 		}));
 		return;
