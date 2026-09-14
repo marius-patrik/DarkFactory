@@ -13,45 +13,25 @@ v provozu.][Pro praktické ověření funkčnosti, robustnosti a přenositelnost
 2. *OdbornaPrace-paper*: Repozitář samotného rukopisu této práce reprezentující doménu textu a dokumentace. Kódová báze kombinuje sazbu v moderním typografickém systému Typst, doprovodné obslužné a validační skripty v Pythonu a plně automatizovanou kompilaci a publikaci PDF na GitHub Pages.
 3. *ChessWithQuests*: Menší aplikační projekt implementující šachovou herní logiku a pravidla. Slouží k ověření chování pipeline při izolovaných, algoritmicky ohraničených úlohách s rychlou zpětnou vazbou jednotkových testů.
 
-V rámci sledovaného období byly kvantitativně i kvalitativně monitorovány čtyři klíčové dimenze provozu: rozsah údržbového kódu a konfigurací, spolehlivost a průchodnost agentních běhů, časová latence jednotlivých fází životního cyklu a chování záchranných mechanismů při chybách a výpadcích.]
+V rámci sledovaného období byly kvantitativně i kvalitativně monitorovány čtyři klíčové dimenze provozu: architektonická konsolidace a údržbová zátěž, spolehlivost a průchodnost agentních běhů, časová latence jednotlivých fází životního cyklu a chování záchranných mechanismů při chybách a výpadcích.]
 
 == Sjednocení pracovních postupů
 
-#draft[
-Sdílení jednoho centrálního pracovního postupu namísto ad-hoc kopií vedlo k odstranění přibližně 7 800 řádků redundantního kódu napříč sledovanými repozitáři.
-]
-
-#figure(
-  table(
-    columns: (auto, auto, auto, auto),
-    align: (left, center, center, right),
-    table.header([*Repozitář*], [*Skripty před*], [*Skripty po*], [*Redukce kódu*]),
-    [DarkFactory],      [12], [12], [— (upstream)],
-    [OdbornaPrace-paper], [7], [1], [~4 900 řádků],
-    [ChessWithQuests],  [5],  [1],  [~2 900 řádků],
-  ),
-  caption: [Počet vlastních skriptů a rozsah odstraněného kódu před sjednocením a po něm.],
-) <tab-vysledky>
-
-#draft[
-Údaje v @tab-vysledky je třeba interpretovat s ohledem na povahu zapojených projektů. U repozitáře DarkFactory se počet skriptů nezměnil, neboť právě on představuje upstreamovou základnu, která sdílené nástroje vyvíjí a spravuje. Zbývající jediný skript v ostatních repozitářích představuje lokální definici struktury jejich vlastní projektové dokumentace, kterou z principu nelze sdílet.
-
-Redukce se konkrétně dotkla čtyř hlavních kategorií skriptů:
-- *Kontrola kvality a statická analýza (linting)*: Každý repozitář původně udržoval vlastní skripty volající formátovače, lintery a typové kontroly. Ty byly plně nahrazeny centrální parametrizovanou úlohou.
-- *Automatizace vydávání verzí a tagování*: Skripty počítající sémantické verze, generující changelogy a publikující balíčky byly nahrazeny sdíleným postupem řízeným deklarací v manifestu `darkfactory.json`.
-- *Sestavení a nasazení dokumentace*: Jednoúčelové deployment skripty pro GitHub Pages byly nahrazeny standardizovaným procesem.
-- *Správa závislostí a submodulů*: Pravidelné aktualizační skripty byly sjednoceny pod centrální plánované workflow.
-
-Zásadním přínosem sjednocení je radikální snížení údržbové zátěže. Před zavedením systému vyžadovala jakákoli změna v CI procesu — například bezpečnostní aktualizace akcí, oprava oprávnění tokenů či přechod na novější verzi interpretu — manuální editaci, otestování a schválení pull requestu v každém repozitáři samostatně. Po sjednocení je oprava provedena pouze jednou v centrálním repozitáři DarkFactory. Spotřebitelské projekty změnu převezmou automaticky, případně bezpečným posunem připnuté verze v konfiguračním manifestu, čímž údržbová složitost klesla z lineární závislosti na počtu projektů na konstantní $O(1)$.
-]
-
-#note[Metodická poznámka k redukci v textovém repozitáři: U repozitáře OdbornaPrace-paper je vhodné v diskusi tabulky 1 detailněji rozvést, jakých konkrétních skriptů se redukce týkala (např. jednoúčelové skripty pro instalaci binárky Typstu, kompilaci a nasazení na GitHub Pages vs. centrální volané workflow).]
-
 #added[
-Z pohledu softwarového inženýrství je však nutné podrobit vykázanou redukci 7 800 řádků YAML konfigurací věcné reflexi. Úbytek řádků v deklarativních workflow sám o sobě neznamená úplné vymizení systémové složitosti; ta se ve skutečnosti transformovala a přesunula z nestrukturovaných skriptů GitHub Actions do centrálního metaharnessu v Pythonu (`agent_runner.py`, `harnesses.py`, `environment.py`). Tento přesun má však zásadní kvalitativní opodstatnění:
-- *Statická kontrola a testovatelnost*: Distribuovaný YAML v CI postrádá typový systém a jakákoli syntaktická chyba vyžaduje zdlouhavé testování odesláním commitu na server. Naproti tomu centrální kód v Pythonu podléhá striktní typové kontrole (`mypy`), formátování (`ruff`) a je pokryt sadou více než stovky jednotkových testů spouštěných lokálně v řádu milisekund.
-- *Omezení jediného bodu selhání (SPOF)*: Riziko, že chyba v centrálním workflow paralyzuje všechny klientské repozitáře současně, je eliminováno verzováním: spotřebitelské repozitáře neodkazují na nestabilní plovoucí větev `main`, nýbrž na neměnný kryptografický SHA hash commitu či sémantickou verzi. K přenosu změn dochází výhradně přes řízený pull request.
-- *Časová bilance*: Ačkoli počáteční vývoj metaharnessu vyžádal desítky hodin inženýrské práce, marginální časová investice do zapojení každého dalšího repozitáře klesla na vytvoření patnáctiřádkového manifestu `darkfactory.json` a jednoduchého volajícího workflow.
+Základním architektonickým principem systému DarkFactory je sdílení pracovních postupů namísto jejich ad-hoc kopírování do jednotlivých projektů. Klientské repozitáře (`OdbornaPrace-paper`, `ChessWithQuests`) neudržují vlastní izolované sady validačních skriptů, linterů ani integračních definic; namísto toho delegují exekuci na centrální znovupoužitelné workflow (`workflow_call`) spravované v mateřském repozitáři DarkFactory a veškerou projektovou specifičnost deklarují v jediném manifestu `.github/darkfactory.json`.
+
+V praxi vedlo nasazení tohoto přístupu k eliminaci stovek až tisíců řádků roztříštěných skriptů a nestrukturovaných konfigurací GitHub Actions, které se v jednotlivých repozitářích dříve duplikovaly:
+- *Statická analýza a linting*: Namísto údržby lokálních konfiguračních a spouštěcích skriptů v každém repozitáři přebírá kontrolu kvality centrální parametrizovaná úloha.
+- *Správa verzí a publikace*: Automatické určování sémantických verzí, generování changelogů a značkování commitů je řízeno deklarativně z manifestu bez nutnosti lokálních skriptů.
+- *Kompilace a nasazení*: Specializované deployment skripty (např. pro sazbu Typstu a nasazení na GitHub Pages) byly nahrazeny standardizovaným procesem v rámci doménového plánu.
+
+Ačkoli by se nabízelo vykázat počet smazaných řádků skriptů a konfigurací v podobě srovnávací tabulky jako empirický důkaz úspěšnosti, z hlediska metodiky softwarového inženýrství *tento úbytek nepředstavuje vhodnou ani směrodatnou měřenou metriku*. Měření počtu řádků (Lines of Code -- LOC) je v kontextu deklarativní infrastruktury notoricky zavádějící a podléhá Goodhartovu zákonu: smazané řádky v deklarativním YAML neznamenají, že by systémová složitost skutečně zanikla. Ve skutečnosti došlo k její vědomé transformaci a přesunu z nestrukturovaných, netypovaných a obtížně testovatelných skriptů GitHub Actions do centrálního metaharnessu v Pythonu (`agent_runner.py`, `harnesses.py`, `environment.py`).
+
+Skutečný inženýrský přínos sjednocení proto nespočívá v kvantitativní redukci řádků, nýbrž v kvalitativních a architektonických vlastnostech:
+- *Údržbová složitost $O(1)$*: Před sjednocením vyžadovala jakákoli změna v CI procesu (bezpečnostní aktualizace akcí, oprava oprávnění tokenů či přechod na novější verzi interpretu) samostatnou manuální úpravu a pull request v každém repozitáři ($O(N)$). Po sjednocení je oprava provedena pouze jednou v upstreamovém repozitáři DarkFactory a spotřebitelské projekty ji přebírají posunem připnuté verze v manifestu.
+- *Statická kontrola a testovatelnost*: Distribuovaný YAML v CI postrádá typový systém a ladění probíhá zdlouhavým cyklem commit-push na vzdálený server. Pythonovské jádro metaharnessu naproti tomu podléhá striktní typové kontrole (`mypy`), formátování (`ruff`) a je pokryto sadou více než stovky jednotkových testů spouštěných lokálně v řádu milisekund.
+- *Omezení jediného bodu selhání (SPOF)*: Riziko, že chyba v centrálním workflow paralyzuje všechny repozitáře současně, je deterministicky eliminováno verzováním: klientské repozitáře neodkazují na nestabilní plovoucí větev `main`, nýbrž na neměnný kryptografický SHA hash commitu či sémantický tag. Změny jsou přenášeny výhradně přes řízené pull requesty.
+- *Konzistentní agentní prostředí*: Zajištění, že životní cyklus požadavku, správa kontextového okna, rotace poskytovatelů i vyhodnocování validačních bran probíhají ve všech repozitářích exaktně stejným způsobem.
 ]
 
 == Rozšíření na texty
