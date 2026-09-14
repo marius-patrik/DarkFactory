@@ -549,6 +549,10 @@ def setup_antigravity_credentials(
 def classify_type_and_area(text: str) -> Tuple[str, str]:
     """Classifies type and area labels from text content.
 
+    Prefer the issue-form ``### Request Type`` declaration when present. Keyword fallback is used
+    only when that section is absent, and the bug fallback is limited to explicit defect wording so
+    ordinary mentions of failures or error handling do not become ``bug``.
+
     Args:
         text: Title and body text to inspect.
 
@@ -557,22 +561,32 @@ def classify_type_and_area(text: str) -> Tuple[str, str]:
     """
     lower = text.lower()
 
-    # Determine type label
-    t_label = "feat"
-    if re.search(r"\b(fix|bug|error|crash|broken|fail)\b", lower):
-        t_label = "bug"
-    elif re.search(
-        r"\b(docs?|document|documents|documenting|documentation|docstrings?|mkdocs|readme)\b", lower
-    ):
-        t_label = "docs"
-    elif re.search(r"\b(refactor|clean|cleanup|simplify)\b", lower):
-        t_label = "refactor"
-    elif re.search(r"\b(test|pytest|testing|mock)\b", lower):
-        t_label = "test"
-    elif re.search(r"\b(ci|workflow|action|docker|runner)\b", lower):
-        t_label = "ci"
-    elif re.search(r"\b(chore|dependency|deps|bump)\b", lower):
-        t_label = "chore"
+    declared = re.search(
+        r"###\s*Request Type\s*\n+\s*([a-z]+)(?:\s|\(|$)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    known_types = {"feat", "bug", "refactor", "docs", "chore", "test", "ci"}
+    if declared and declared.group(1).lower() in known_types:
+        t_label = declared.group(1).lower()
+    else:
+        # Determine type label from keywords only when the form did not declare one.
+        t_label = "feat"
+        if re.search(r"\b(bug|regression|crash|broken)\b", lower):
+            t_label = "bug"
+        elif re.search(
+            r"\b(docs?|document|documents|documenting|documentation|docstrings?|mkdocs|readme)\b",
+            lower,
+        ):
+            t_label = "docs"
+        elif re.search(r"\b(refactor|clean|cleanup|simplify)\b", lower):
+            t_label = "refactor"
+        elif re.search(r"\b(test|pytest|testing|mock)\b", lower):
+            t_label = "test"
+        elif re.search(r"\b(ci|workflow|action|docker|runner)\b", lower):
+            t_label = "ci"
+        elif re.search(r"\b(chore|dependency|deps|bump)\b", lower):
+            t_label = "chore"
 
     # Determine the area label from the repository's own taxonomy. Declaration order is match
     # order, so a repository puts its most specific areas first and the first hit wins.
@@ -2566,11 +2580,11 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         except Exception as e:
             print(f"Failed to mark PR ready: {e}", file=sys.stderr)
 
-        # Unblock entities and move status to Done
-        unblock_entity(pr_number, repo, is_pr=True, target_status="Done")
-        unblock_entity(plan_number, repo, is_pr=False, target_status="Done")
+        # Unblock entities; alignment success is not completion — stay In Progress until merge.
+        unblock_entity(pr_number, repo, is_pr=True, target_status="In Progress")
+        unblock_entity(plan_number, repo, is_pr=False, target_status="In Progress")
         if request_number:
-            unblock_entity(request_number, repo, is_pr=False, target_status="Done")
+            unblock_entity(request_number, repo, is_pr=False, target_status="In Progress")
 
         # Clear checkpoint on successful completion
         clear_checkpoint(cwd=WORKSPACE_DIR)

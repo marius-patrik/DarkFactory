@@ -220,14 +220,19 @@ def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
     return sorted(issues)
 
 
-def determine_status_from_labels(labels: Sequence[Any]) -> str:
+def determine_status_from_labels(labels: Sequence[Any], *, closed: bool = False) -> str:
     """Determines the board status implied by a set of labels.
+
+    Terminal status labels (``Done``, ``Dropped``, ``Superseded``) count only when the item is
+    closed. On an open item they are ignored so a stale terminal label cannot pin the board.
 
     Args:
         labels: Label names or label dicts attached to the issue or pull request.
+        closed: Whether the issue or pull request is closed.
 
     Returns:
-        A status name from :data:`STATUS_NAMES`; ``"ToDo"`` when no status label is present.
+        A status name from :data:`STATUS_NAMES`; ``"ToDo"`` when no applicable status label is
+        present.
     """
     normalized = set()
     for lbl in labels:
@@ -236,6 +241,8 @@ def determine_status_from_labels(labels: Sequence[Any]) -> str:
             normalized.add(name.strip().lower())
 
     for status in STATUS_LABEL_PRECEDENCE:
+        if not closed and status in TERMINAL_STATUSES:
+            continue
         candidates = {status.lower()}
         if status == "ToDo":
             candidates.add("to do")
@@ -243,6 +250,59 @@ def determine_status_from_labels(labels: Sequence[Any]) -> str:
         if candidates & normalized:
             return status
     return "ToDo"
+
+
+def _label_names(labels: Sequence[Any]) -> Set[str]:
+    """Returns lower-cased label names from label dicts or strings."""
+    names: Set[str] = set()
+    for lbl in labels:
+        name = lbl.get("name") if isinstance(lbl, dict) else str(lbl)
+        if name:
+            names.add(name.strip().lower())
+    return names
+
+
+def has_terminal_status_label(labels: Sequence[Any]) -> bool:
+    """Returns whether any terminal status label is present."""
+    return bool(_label_names(labels) & {s.lower() for s in TERMINAL_STATUSES})
+
+
+def checkpoint_covers_issue(issue_number: Optional[int]) -> bool:
+    """Returns True when a quota checkpoint exists for the given issue number.
+
+    The checkpoint file is written by the agent runner on exhaustion. Project automation reads the
+    same path so a reopen cannot wipe ``Blocked`` resume state.
+
+    Args:
+        issue_number: Issue number to match against the checkpoint payload.
+
+    Returns:
+        True when a readable checkpoint names this issue.
+    """
+    if not issue_number:
+        return False
+    candidates = []
+    for key in ("STATE_DIR", "GITHUB_WORKSPACE"):
+        value = os.environ.get(key)
+        if value:
+            candidates.append(value)
+    candidates.append(".")
+    seen: Set[str] = set()
+    for directory in candidates:
+        path = os.path.abspath(os.path.join(directory, ".antigravity_checkpoint.json"))
+        if path in seen:
+            continue
+        seen.add(path)
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict) and data.get("issue_number") == issue_number:
+            return True
+    return False
 
 
 def is_rate_limited(exc: BaseException) -> bool:
@@ -1559,23 +1619,29 @@ def _handle_issue_event(payload: Dict[str, Any], client: Any) -> None:
     node_id = issue.get("node_id")
     repo = payload.get("repository", {}).get("full_name", DEFAULT_REPO)
     labels = _labels_of(issue)
+    closed = str(issue.get("state", "")).lower() == "closed" or action == "closed"
 
     if not issue_url:
         return
 
     if action in ("opened", "reopened"):
-        status = "ToDo" if action == "reopened" else determine_status_from_labels(labels)
+        if action == "reopened" and checkpoint_covers_issue(issue_number):
+            status = "Blocked"
+        elif action == "reopened":
+            status = "ToDo"
+        else:
+            status = determine_status_from_labels(labels, closed=False)
         _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
         if issue_number:
             _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
     elif action in ("labeled", "unlabeled"):
-        status = determine_status_from_labels(labels)
+        status = determine_status_from_labels(labels, closed=closed)
         _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
         if issue_number:
             _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
     elif action == "closed":
         state_reason = issue.get("state_reason")
-        status = determine_status_from_labels(labels)
+        status = determine_status_from_labels(labels, closed=True)
         if status in TERMINAL_STATUSES:
             pass
         elif state_reason == "not_planned":
@@ -1600,21 +1666,25 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     print(f"PR event {action}: bound issues {bound_issues}")
 
     if action in ("opened", "edited", "synchronize", "ready_for_review", "reopened"):
-        status = determine_status_from_labels(labels)
+        status = determine_status_from_labels(labels, closed=False)
         if status == "ToDo":
             status = "In Progress"
         _safe_track(client, pr_url, status, content_id=node_id, fast_path=True)
-        for issue_num in bound_issues:
-            _safe_set_status_label(client, repo, issue_num, "In Progress")
-            _safe_track(
-                client,
-                f"https://github.com/{repo}/issues/{issue_num}",
-                "In Progress",
-                fast_path=True,
-            )
+        # Bound Requests stay ToDo until an approval moves them, or until the PR is ready for
+        # review. Draft open/edit/sync must not flip the Request past the interpretation gate
+        # (observed on #218: a bound PR synchronize labelled In Progress before any approval).
+        if action == "ready_for_review":
+            for issue_num in bound_issues:
+                _safe_set_status_label(client, repo, issue_num, "In Progress")
+                _safe_track(
+                    client,
+                    f"https://github.com/{repo}/issues/{issue_num}",
+                    "In Progress",
+                    fast_path=True,
+                )
 
     elif action == "closed":
-        pr_status = "Done" if merged else determine_status_from_labels(labels)
+        pr_status = "Done" if merged else determine_status_from_labels(labels, closed=True)
         if not merged and pr_status in ("ToDo", "In Progress"):
             pr_status = "Dropped"
         _safe_track(client, pr_url, pr_status, content_id=node_id, fast_path=True)
@@ -1664,7 +1734,7 @@ def settled_status(
         return None
     if merged:
         return "Done"
-    labelled = determine_status_from_labels(labels)
+    labelled = determine_status_from_labels(labels, closed=True)
     if labelled in frozenset({"Done", "Dropped", "Superseded"}):
         return labelled
     if state_reason:
@@ -1728,7 +1798,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
                     state_val = str(entry.get("state", "")).upper()
                     is_closed = state_val in ("CLOSED", "MERGED")
                     if not is_closed:
-                        status = determine_status_from_labels(labels)
+                        status = determine_status_from_labels(labels, closed=False)
                         if kind == "pr" and status == "ToDo":
                             status = "In Progress"
                     else:
@@ -1764,7 +1834,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
         is_closed = state_val == "CLOSED"
 
         if not is_closed:
-            status = determine_status_from_labels(labels)
+            status = determine_status_from_labels(labels, closed=False)
             if is_pr and status == "ToDo":
                 status = "In Progress"
         else:
@@ -1785,6 +1855,61 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
 
     print(f"Reconciled membership for {repo}: {tracked} item(s) checked/tracked.")
     return tracked
+
+
+def _repo_and_number_from_content(
+    content: Dict[str, Any], url: Optional[str] = None
+) -> Tuple[Optional[str], Optional[int]]:
+    """Extracts repository slug and issue/PR number from board item content."""
+    number = content.get("number")
+    if number is not None:
+        try:
+            number = int(number)
+        except (TypeError, ValueError):
+            number = None
+    target_url = url or content.get("url") or ""
+    match = URL_PATTERN.match(str(target_url))
+    if match:
+        repo = f"{match.group(1)}/{match.group(2)}"
+        if number is None:
+            number = int(match.group(3))
+        return repo, number
+    return None, number
+
+
+def _strip_stale_terminal_label(
+    client: Any,
+    content: Dict[str, Any],
+    status: str,
+    labels: Sequence[Any],
+    url: Optional[str] = None,
+) -> None:
+    """Removes a stale terminal status label from an open item by setting the real status label."""
+    repo, number = _repo_and_number_from_content(content, url=url)
+    if not repo or not number:
+        return
+    _safe_set_status_label(client, repo, number, status, existing_labels=list(labels))
+
+
+def _wanted_status_for_open_item(
+    current: Optional[str], labels: Sequence[Any]
+) -> Tuple[Optional[str], bool]:
+    """Decides board status and whether a stale terminal label must be stripped.
+
+    Returns:
+        Tuple of (wanted board status or None when no change, whether to strip terminal labels).
+    """
+    derived = determine_status_from_labels(labels, closed=False)
+    stale = has_terminal_status_label(labels)
+    if stale:
+        if current and current not in TERMINAL_STATUSES:
+            return current, True
+        return derived, True
+    if not current:
+        return derived, False
+    if current in TERMINAL_STATUSES:
+        return derived, False
+    return None, False
 
 
 def reconcile_unassigned_statuses(client: Any) -> None:
@@ -1819,24 +1944,28 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                 closed = bool(content.get("closed", False))
                 merged = str(content.get("state", "")).upper() == "MERGED"
                 state_reason = content.get("stateReason")
+                url = content.get("url")
 
-                labelled = determine_status_from_labels(labels)
                 if closed:
                     wanted = settled_status(closed, merged, labels, state_reason)
                     if wanted is None or wanted == current:
                         continue
-                elif (
-                    labelled in frozenset({"Done", "Dropped", "Superseded"}) and current != labelled
-                ):
-                    wanted = labelled
-                elif not current:
-                    wanted = labelled
-                else:
+                    client.edit_status(item_id, wanted)
+                    print(
+                        f"Reconciled item {item_id} ({content.get('title')}): "
+                        f"{current or 'None'} -> {wanted}"
+                    )
                     continue
 
+                wanted, strip = _wanted_status_for_open_item(current, labels)
+                if strip:
+                    _strip_stale_terminal_label(client, content, wanted or "ToDo", labels, url=url)
+                if wanted is None or wanted == current:
+                    continue
                 client.edit_status(item_id, wanted)
                 print(
-                    f"Reconciled item {item_id} ({content.get('title')}): {current or 'None'} -> {wanted}"
+                    f"Reconciled item {item_id} ({content.get('title')}): "
+                    f"{current or 'None'} -> {wanted}"
                 )
         except Exception as exc:
             if is_rate_limited(exc):
@@ -1874,23 +2003,31 @@ def reconcile_unassigned_statuses(client: Any) -> None:
         merged = bool(content.get("merged", False))
         state_reason = content.get("stateReason")
 
-        labelled = determine_status_from_labels(labels)
         if closed:
             wanted = settled_status(closed, merged, labels, state_reason)
             if wanted is None or wanted == current:
                 continue
-        elif labelled in frozenset({"Done", "Dropped", "Superseded"}) and current != labelled:
-            wanted = labelled
-        elif not current:
-            wanted = labelled
-        else:
+            if client.edit_status(item_id, wanted):
+                record_mutation()
+                existing_items[url] = (item_id, wanted)
+                print(
+                    f"Reconciled item {item_id} ({content.get('title')}): "
+                    f"{current or 'None'} -> {wanted}"
+                )
+                time.sleep(0.05)
             continue
 
+        wanted, strip = _wanted_status_for_open_item(current, labels)
+        if strip:
+            _strip_stale_terminal_label(client, content, wanted or "ToDo", labels, url=url)
+        if wanted is None or wanted == current:
+            continue
         if client.edit_status(item_id, wanted):
             record_mutation()
             existing_items[url] = (item_id, wanted)
             print(
-                f"Reconciled item {item_id} ({content.get('title')}): {current or 'None'} -> {wanted}"
+                f"Reconciled item {item_id} ({content.get('title')}): "
+                f"{current or 'None'} -> {wanted}"
             )
             time.sleep(0.05)
 

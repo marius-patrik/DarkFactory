@@ -98,22 +98,29 @@ def test_extract_bound_issues_deduplicates_and_sorts():
 
 
 def test_determine_status_from_labels_precedence():
-    """Terminal statuses outrank active ones so stale labels cannot win."""
+    """Terminal statuses outrank active ones so stale labels cannot win on closed items."""
     assert determine_status_from_labels(["bug", "Blocked"]) == "Blocked"
     assert determine_status_from_labels(["enhancement", "In Progress"]) == "In Progress"
     assert determine_status_from_labels(["Backlog"]) == "Backlog"
     assert determine_status_from_labels(["ToDo"]) == "ToDo"
-    assert determine_status_from_labels(["Done"]) == "Done"
-    assert determine_status_from_labels(["Superseded"]) == "Superseded"
-    assert determine_status_from_labels(["Dropped"]) == "Dropped"
+    assert determine_status_from_labels(["Done"], closed=True) == "Done"
+    assert determine_status_from_labels(["Superseded"], closed=True) == "Superseded"
+    assert determine_status_from_labels(["Dropped"], closed=True) == "Dropped"
     assert determine_status_from_labels(["random", "label"]) == "ToDo"
     assert determine_status_from_labels([]) == "ToDo"
 
 
-def test_determine_status_prefers_terminal_over_stale_in_progress():
-    """The stale-`In Progress` defect: a Done label must win outright."""
-    assert determine_status_from_labels(["In Progress", "Done"]) == "Done"
-    assert determine_status_from_labels(["In Progress", "Dropped"]) == "Dropped"
+def test_determine_status_prefers_terminal_over_stale_in_progress_when_closed():
+    """On a closed item a Done label must win outright over stale In Progress."""
+    assert determine_status_from_labels(["In Progress", "Done"], closed=True) == "Done"
+    assert determine_status_from_labels(["In Progress", "Dropped"], closed=True) == "Dropped"
+
+
+def test_determine_status_ignores_terminal_labels_on_open_items():
+    """A stale Done on an open item must not pin the board; active labels still count."""
+    assert determine_status_from_labels(["Done"]) == "ToDo"
+    assert determine_status_from_labels(["In Progress", "Done"]) == "In Progress"
+    assert determine_status_from_labels(["Dropped", "Blocked"]) == "Blocked"
 
 
 def test_determine_status_accepts_to_do_spelling():
@@ -172,8 +179,8 @@ def test_issue_closed_as_dropped_is_not_forced_to_done():
     assert client.status_labels == [(REPO, 2, "Dropped")]
 
 
-def test_pr_opened_moves_bound_issues_to_in_progress():
-    """Opening a PR advertises its bound issues as active."""
+def test_pr_opened_does_not_move_bound_issues_to_in_progress():
+    """A draft PR opening must not flip the Request past the approval gate."""
     client = FakeProjectClient()
     payload = {
         "action": "opened",
@@ -185,8 +192,82 @@ def test_pr_opened_moves_bound_issues_to_in_progress():
         },
     }
     process_event("pull_request", payload, client=client)
+    assert client.status_labels == []
+    assert ("item-1", "In Progress") in client.edited_statuses
+    assert all(num != 5 for _, num, _ in client.status_labels)
+
+
+def test_pr_ready_for_review_moves_bound_issues_to_in_progress():
+    """Marking the PR ready is the first board signal that bound work is active."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "ready_for_review",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "html_url": f"https://github.com/{REPO}/pull/9",
+            "body": "Implements the feature. Closes #5",
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
     assert client.status_labels == [(REPO, 5, "In Progress")]
     assert ("item-1", "In Progress") in client.edited_statuses
+
+
+def test_issue_reopened_with_checkpoint_stays_blocked(tmp_path, monkeypatch):
+    """Reopening must not wipe quota-blocked resume state when a checkpoint exists."""
+    checkpoint = tmp_path / ".antigravity_checkpoint.json"
+    checkpoint.write_text('{"issue_number": 7, "completed_steps": ["plan"]}', encoding="utf-8")
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 7,
+            "html_url": f"https://github.com/{REPO}/issues/7",
+            "labels": [{"name": "Request"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Blocked")]
+    assert client.status_labels == [(REPO, 7, "Blocked")]
+
+
+def test_issue_reopened_without_checkpoint_goes_to_todo(tmp_path, monkeypatch):
+    """A plain reopen with no checkpoint returns to ToDo."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 8,
+            "html_url": f"https://github.com/{REPO}/issues/8",
+            "labels": [{"name": "Request"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "ToDo")]
+    assert client.status_labels == [(REPO, 8, "ToDo")]
+
+
+def test_open_issue_with_stale_done_label_is_stripped_to_todo():
+    """Label events on an open issue must not honour a stale Done label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "labeled",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 3,
+            "state": "open",
+            "html_url": f"https://github.com/{REPO}/issues/3",
+            "labels": [{"name": "Request"}, {"name": "Done"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "ToDo")]
+    assert client.status_labels == [(REPO, 3, "ToDo")]
 
 
 def test_pr_merged_marks_everything_done_and_closes_issues():
@@ -285,10 +366,16 @@ def test_reconciliation_uses_labels_not_a_blanket_todo(monkeypatch: pytest.Monke
 
     client = Recorder()
     reconcile_unassigned_statuses(client)
-    # i3 already holds a status and is open, so it is left alone. i4 is closed with nothing to
-    # say it finished, so it is settled as Dropped rather than skipped: a closed item's status is
-    # a fact the board must agree with, not a judgement to preserve.
-    assert client.writes == [("i1", "Backlog"), ("i2", "ToDo"), ("i4", "Dropped")]
+    # i3 is open with a stale terminal "Done" status and no terminal label, so reconciliation
+    # corrects it to "ToDo". i4 is closed with nothing to say it finished, so it is settled as
+    # Dropped rather than skipped: a closed item's status is a fact the board must agree with,
+    # not a judgement to preserve.
+    assert client.writes == [
+        ("i1", "Backlog"),
+        ("i2", "ToDo"),
+        ("i3", "ToDo"),
+        ("i4", "Dropped"),
+    ]
 
 
 def test_reconciliation_with_board_group():
@@ -842,7 +929,7 @@ class TestRateLimitingAndQuotaReserve:
         assert ("https://x/pull/5", "Dropped") in client.tracked
 
     def test_reconcile_unassigned_statuses_overrides_stale_in_progress_with_done_label(self):
-        """Stale In Progress on a completed item with Done label is updated to Done."""
+        """On a closed item, a Done label wins over a stale In Progress board status."""
         from project_automation import reconcile_unassigned_statuses
 
         items = {
@@ -851,13 +938,21 @@ class TestRateLimitingAndQuotaReserve:
                     "id": "item-96",
                     "status": "In Progress",
                     "labels": ["Request", "Done"],
-                    "content": {"title": "record in architecture", "number": 96},
+                    "content": {
+                        "title": "record in architecture",
+                        "number": 96,
+                        "closed": True,
+                    },
                 },
                 {
                     "id": "item-196",
                     "status": "In Progress",
                     "labels": ["Done"],
-                    "content": {"title": "secondary harness tokens", "number": 196},
+                    "content": {
+                        "title": "secondary harness tokens",
+                        "number": 196,
+                        "closed": True,
+                    },
                 },
             ]
         }
@@ -879,6 +974,62 @@ class TestRateLimitingAndQuotaReserve:
         client = Recorder()
         reconcile_unassigned_statuses(client)
         assert client.writes == [("item-96", "Done"), ("item-196", "Done")]
+
+    def test_reconcile_strips_stale_terminal_label_on_open_items(self):
+        """An open item carrying Done must lose that label and not stay Done on the board."""
+        from project_automation import reconcile_unassigned_statuses
+
+        items = {
+            "items": [
+                {
+                    "id": "item-open",
+                    "status": "Done",
+                    "labels": ["Request", "Done"],
+                    "content": {
+                        "title": "still open",
+                        "number": 50,
+                        "closed": False,
+                        "url": "https://github.com/o/r/issues/50",
+                    },
+                },
+                {
+                    "id": "item-active",
+                    "status": "In Progress",
+                    "labels": ["Request", "Done", "In Progress"],
+                    "content": {
+                        "title": "actively working",
+                        "number": 51,
+                        "closed": False,
+                        "url": "https://github.com/o/r/issues/51",
+                    },
+                },
+            ]
+        }
+
+        class Recorder(GitHubProjectClient):
+            def __init__(self):
+                super().__init__(owner="o", project_number=17)
+                self.writes = []
+                self.status_labels = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(items)
+
+            def edit_status(self, item_id, status_name):
+                self.writes.append((item_id, status_name))
+                return True
+
+            def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
+                self.status_labels.append((repo, issue_number, status_name))
+
+        client = Recorder()
+        reconcile_unassigned_statuses(client)
+        assert ("item-open", "ToDo") in client.writes
+        assert ("o/r", 50, "ToDo") in client.status_labels
+        assert ("o/r", 51, "In Progress") in client.status_labels
+        assert ("item-active", "Done") not in client.writes
 
     def test_push_to_darkfactory_branch_closes_issues(self):
         """Pushes to darkfactory branch are recognized when default_branch is darkfactory."""
