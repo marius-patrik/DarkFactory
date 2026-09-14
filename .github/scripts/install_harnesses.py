@@ -26,14 +26,19 @@ import harnesses
 
 #: Harnesses whose absence fails the build.
 #:
-#: The ladder needs at least one that works. Claude is required because it is the harness the
-#: deployment falls back to when a metered provider is exhausted, so an image without it can be
-#: stopped by one vendor's quota.
-REQUIRED: List[str] = ["claude"]
+#: Empty: the pipeline runs df as its only agent harness, and df arrives through the Dockerfile's
+#: Bun steps (pinned Bun, ``harness/`` copy, ``bun install``, ``/usr/local/bin/df`` wrapper) —
+#: not through this script. The removed external CLIs are not installed any more, so nothing
+#: installed here is required.
+REQUIRED: List[str] = []
 
 
 def install_one(name: str) -> Tuple[bool, str]:
     """Runs one harness's declared installer.
+
+    A harness declaring no installer (df) is provided by the image itself and counts as
+    installed: failing the build for it would couple this script to Dockerfile steps it does
+    not run.
 
     Args:
         name: Harness name.
@@ -42,8 +47,10 @@ def install_one(name: str) -> Tuple[bool, str]:
         Whether the binary is present afterwards, and any error output.
     """
     harness = harnesses.get_harness(name)
-    if harness is None or not harness.install:
-        return False, "no installer declared"
+    if harness is None:
+        return False, "unknown harness"
+    if not harness.install:
+        return True, "provided by the image"
 
     result = subprocess.run(
         ["bash", "-o", "pipefail", "-c", harness.install],

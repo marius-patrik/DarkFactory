@@ -1,10 +1,12 @@
-"""Runner for the containerized, harness-agnostic CI agent.
+"""Runner for the containerized, df-driven CI agent.
 
-Drives whichever coding-agent CLI is available - Antigravity, Claude Code, Codex, Kimi, Grok,
-Cursor, or opencode - through the declarative registry in :mod:`harnesses`. Nothing below knows
-which CLI is running.
+Drives DarkFactory's own agent harness — ``df run`` — through the declarative registry in
+:mod:`harnesses`. ``df`` owns model choice and in-flight failover across its own chain, so the
+runner resolves a single attempt: it configures df's accounts from the environment before
+dispatch, invokes ``df run --json --prompt-file``, parses the JSON event stream into the final
+answer text, and maps df's exit codes onto the quota/empty/error paths below.
 
-Handles credential refresh, stage dispatching (interpret, plan, implement, self-review,
+Handles credential setup, stage dispatching (interpret, plan, implement, self-review,
 plan-alignment, respond), auto-labeling, and Conventional Commit generation.
 """
 
@@ -897,6 +899,12 @@ def redact_secrets(text: str) -> str:
     if not text:
         return text
     names = set(harnesses.credential_env_names())
+    # Every registered harness, not only the default chain: a chain override can still run one,
+    # and the df setup reads its own secrets.
+    for registered in harnesses.REGISTRY.values():
+        if registered.auth is not None:
+            names.update(registered.auth.secret_names())
+    names.update(df_setup_secret_names())
     names.update(("GH_TOKEN", "GH_PROJECT_TOKEN", "GITHUB_TOKEN"))
     for name in sorted(names):
         value = os.environ.get(name, "")
@@ -1442,6 +1450,323 @@ ANSWER_CONTRACT = (
 )
 
 
+#: df exit codes, from ``exitCodeFor`` in the harness source (``harness/src/cli.ts``): 2 means
+#: quota was exhausted on every candidate in df's chain, 3 means every candidate failed to
+#: authenticate, and anything else nonzero is a genuine error.
+DF_EXIT_QUOTA_EXHAUSTED = 2
+DF_EXIT_AUTH_FAILED = 3
+
+
+def parse_df_json_output(stdout: str) -> str:
+    """Extracts the final answer text from a ``df run --json`` event stream.
+
+    ``df`` streams one JSON object per line — session, text deltas, tool start/end, failover,
+    step, result and error events — and the result event carries no text itself. The answer is
+    the assistant text streamed after the last tool call, so deltas are collected into segments
+    split at every tool event and only the final segment is kept. A run that never touches a
+    tool answers with the whole stream.
+
+    Args:
+        stdout: Captured standard output of ``df run --json``.
+
+    Returns:
+        The final answer text, stripped, or an empty string when no text delta was streamed.
+    """
+    segments: List[List[str]] = [[]]
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(event, dict):
+            continue
+        kind = event.get("type")
+        if kind == "text_delta":
+            delta = event.get("delta")
+            if isinstance(delta, str) and delta:
+                segments[-1].append(delta)
+        elif kind in ("tool_start", "tool_end"):
+            segments.append([])
+    return "".join(segments[-1]).strip()
+
+
+def parse_df_error_message(stdout: str) -> str:
+    """Reads the error message from a failed ``df run --json`` invocation.
+
+    A failing df run prints a final ``{"type": "error", "message": ...}`` line on stdout beside
+    its nonzero exit. That message names the failing candidate and the reason without ever
+    carrying a secret — df redacts credentials itself — so it is safe to surface.
+
+    Args:
+        stdout: Captured standard output of the failed invocation.
+
+    Returns:
+        The last error event's message, or an empty string when there is none.
+    """
+    message = ""
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if (
+            isinstance(event, dict)
+            and event.get("type") == "error"
+            and isinstance(event.get("message"), str)
+        ):
+            message = event["message"]
+    return message.strip()
+
+
+def df_failure_detail(exc: "subprocess.CalledProcessError", detail: str) -> str:
+    """Builds the failure detail for a ``df`` invocation that exited nonzero.
+
+    Two things are folded in beside the captured output. The parsed error event message is first,
+    because it is df's own summary of what failed. And the exit code is translated into the
+    runner's wording — exit 2 is quota exhausted on every candidate — so the single
+    ``is_quota_exhausted`` check below keeps working: the quota decision stays in one place
+    rather than gaining a second, exit-code-shaped branch beside it.
+
+    Args:
+        exc: The failed invocation.
+        detail: Stderr and stdout already captured for the attempt.
+
+    Returns:
+        The detail the quota/error paths decide on.
+    """
+    parts: List[str] = []
+    message = parse_df_error_message(exc.stdout or "")
+    if message:
+        parts.append(message)
+    if detail and detail not in message:
+        parts.append(detail)
+    if exc.returncode == DF_EXIT_QUOTA_EXHAUSTED:
+        parts.append("df exit code 2: quota exhausted on every candidate in the chain")
+    elif exc.returncode == DF_EXIT_AUTH_FAILED:
+        parts.append("df exit code 3: authentication failed on every candidate in the chain")
+    return "\n".join(parts).strip() or str(exc)
+
+
+#: Environment variables mapped onto ``df account set`` calls: ``(variable, account id, slot)``.
+#: The value travels on stdin, never in argv or logs. Provider ids and the ``provider:label``
+#: account syntax are df's own (see the harness source, ``harness/src/cli.ts`` and
+#: ``assets/providers.defaults.json``): ``google`` reads ``GEMINI_API_KEY``, ``openrouter`` reads
+#: ``OPENROUTER_API_KEY``, ``groq`` reads ``GROQ_API_KEY``.
+DF_ACCOUNT_SET_MAP = (
+    ("GEMINI_API_KEY", "google:default", "api_key"),
+    ("GEMINI_API_KEY_2", "google:key2", "api_key"),
+    ("GEMINI_API_KEY_3", "google:key3", "api_key"),
+    ("OPENROUTER_API_KEY", "openrouter:default", "api_key"),
+    ("OPENROUTER_API_KEY_2", "openrouter:acct2", "api_key"),
+    ("GROQ_API_KEY", "groq:default", "api_key"),
+)
+
+#: Subscription logins df borrows: ``(variable, login file under HOME, df import source)``. The
+#: file is written with mode 0600 and imported with ``df account import <source>``; df's importer
+#: ids and paths (``codex`` reading ``.codex/auth.json``, ``grok`` reading ``.grok/auth.json``)
+#: come from its provider declarations.
+DF_LOGIN_IMPORT_MAP = (
+    ("CODEX_AUTH_JSON", os.path.join(".codex", "auth.json"), "codex"),
+    ("GROK_AUTH_JSON", os.path.join(".grok", "auth.json"), "grok"),
+)
+
+
+def _home_directory() -> str:
+    """Returns the home directory borrowed login files are written under.
+
+    ``HOME`` wins over the account default when set, so tests can isolate the files and the
+    behaviour is identical on platforms where ``expanduser`` ignores ``HOME``.
+
+    Returns:
+        The home directory path.
+    """
+    return os.environ.get("HOME", "") or os.path.expanduser("~")
+
+
+def df_setup_secret_names() -> Tuple[str, ...]:
+    """Returns every secret name the df container setup consumes, in setup order.
+
+    This is the list ``agent.yml`` must declare and forward: a workflow that omits one does not
+    fail, it silently drops that df account. Kept beside the maps that consume them so the guard
+    test can assert the workflow and the setup cannot disagree.
+
+    Returns:
+        Secret variable names, without repeats.
+    """
+    names: List[str] = [variable for variable, _, _ in DF_ACCOUNT_SET_MAP]
+    names.extend(variable for variable, _, _ in DF_LOGIN_IMPORT_MAP)
+    seen: List[str] = []
+    for name in names:
+        if name not in seen:
+            seen.append(name)
+    return tuple(seen)
+
+
+def find_df_config() -> Optional[str]:
+    """Locates the df chain config for this run.
+
+    Repository-specific data lives in ``.darkfactory/``: the target repository's own
+    ``.darkfactory/df/config.json`` wins, falling back to the pipeline's copy checked out at
+    ``.darkfactory-pipeline/`` when a consumer has none yet.
+
+    Returns:
+        Path of the config file, or ``None`` when neither exists.
+    """
+    candidates = (
+        os.path.join(WORKSPACE_DIR, ".darkfactory", "df", "config.json"),
+        os.path.join(WORKSPACE_DIR, ".darkfactory-pipeline", ".darkfactory", "df", "config.json"),
+    )
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def setup_df_accounts() -> str:
+    """Configures df's accounts from the environment before dispatch.
+
+    Points ``DF_HOME`` at a fresh temp dir, copies the chain config there, saves every populated
+    API key with ``df account set`` (value on stdin, never printed), and writes each populated
+    subscription login file before importing it with ``df account import``. Empty variables are
+    skipped: a repository holding three of the keys gets a shorter chain, not a failure. A
+    failure to reach ``df`` at all is a notice, not a fatal error, so local runs without the
+    harness still dispatch.
+
+    Returns:
+        The ``DF_HOME`` directory the run uses.
+    """
+    df_home = tempfile.mkdtemp(prefix="df-home-")
+    os.environ["DF_HOME"] = df_home
+    df_env = {**os.environ, "DF_HOME": df_home}
+    try:
+        source = find_df_config()
+        if source:
+            shutil.copy(source, os.path.join(df_home, "config.json"))
+            print(f"Using df chain config from {source}.")
+        else:
+            print(
+                "No .darkfactory/df/config.json found; df uses its built-in default chain.",
+                file=sys.stderr,
+            )
+    except Exception as exc:  # noqa: BLE001 - a missing config must not stop the run
+        print(f"df config notice: {exc}", file=sys.stderr)
+
+    for variable, account, slot in DF_ACCOUNT_SET_MAP:
+        value = os.environ.get(variable, "")
+        if not value:
+            continue
+        try:
+            subprocess.run(
+                ["df", "account", "set", account, slot, "--type", "api_key"],
+                input=value,
+                text=True,
+                capture_output=True,
+                check=True,
+                env=df_env,
+            )
+            print(f"Configured df account {account} from {variable}.")
+        except FileNotFoundError:
+            print("df binary not found; skipping df account setup.", file=sys.stderr)
+            return df_home
+        except Exception as exc:  # noqa: BLE001 - one bad key must not drop the rest
+            print(f"df account setup notice for {account}: {exc}", file=sys.stderr)
+
+    for variable, relative_path, import_source in DF_LOGIN_IMPORT_MAP:
+        content = os.environ.get(variable, "")
+        if not content:
+            continue
+        path = os.path.join(_home_directory(), relative_path)
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as stream:
+                stream.write(content)
+            os.chmod(path, 0o600)
+            subprocess.run(
+                ["df", "account", "import", import_source, "--account", "default"],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=df_env,
+            )
+            print(f"Imported df account {import_source}/default from {variable}.")
+        except FileNotFoundError:
+            print("df binary not found; skipping df account setup.", file=sys.stderr)
+            return df_home
+        except Exception as exc:  # noqa: BLE001 - one bad login must not drop the rest
+            print(f"df account import notice for {import_source}: {exc}", file=sys.stderr)
+    return df_home
+
+
+def snapshot_df_login_files() -> List[Tuple[str, str, Optional[str]]]:
+    """Snapshots the login material df can rotate during a run.
+
+    That is the borrowed CLI login files (``~/.codex/auth.json``, ``~/.grok/auth.json``) df
+    imports from, plus df's own credential store under ``DF_HOME``. The snapshot is taken before
+    the invocation so :func:`finish_df_login_files` can tell rotation apart from stasis.
+
+    Returns:
+        List of ``(path, secret name, original content)``; the store entry carries an empty
+        secret name because its format is df-internal and is never written back as a secret.
+    """
+    states: List[Tuple[str, str, Optional[str]]] = []
+    home = _home_directory()
+    for variable, relative_path, _import_source in DF_LOGIN_IMPORT_MAP:
+        path = os.path.join(home, relative_path)
+        try:
+            with open(path, "r", encoding="utf-8") as stream:
+                original: Optional[str] = stream.read()
+        except OSError:
+            original = None
+        states.append((path, variable, original))
+    df_home = os.environ.get("DF_HOME", "")
+    store_path = os.path.join(df_home, "credentials.json") if df_home else ""
+    try:
+        with open(store_path, "r", encoding="utf-8") as stream:
+            store_original: Optional[str] = stream.read()
+    except OSError:
+        store_original = None
+    states.append((store_path, "", store_original))
+    return states
+
+
+def finish_df_login_files(states: List[Tuple[str, str, Optional[str]]]) -> None:
+    """Writes rotated df login material back to the secret it came from.
+
+    Mirrors the CLI login-file lifecycle (:func:`finish_login_file`): a file whose content
+    changed is persisted with :func:`persist_rotated_token` under that account's own secret name,
+    and only there. df's own store is df-internal — its slots are not CLI login files — so a
+    rotation there is reported, without values, rather than written back in a format the next
+    setup could not import.
+
+    Args:
+        states: Snapshot taken by :func:`snapshot_df_login_files` before the invocation.
+    """
+    for path, secret, original in states:
+        if not path:
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as stream:
+                current = stream.read()
+        except OSError:
+            continue
+        if original is None or current == original:
+            continue
+        if secret:
+            persist_rotated_token(secret, current)
+        else:
+            print(
+                "df's stored credential rotated during the run; it stays in DF_HOME and is "
+                "not written back as a CLI login secret.",
+                file=sys.stderr,
+            )
+
+
 #: Time budget for stages that explore the repository before answering. Every antigravity attempt
 #: at planning #227 hit "print timeout after 5m0s", so a plan or review gets the longer budget.
 PLAN_TIMEOUT = "15m0s"
@@ -1491,7 +1816,7 @@ def run_agent_prompt(
     if not attempts:
         err = (
             "[DarkFactory Agent Execution Error]: No usable harness. "
-            "No CLI from AGENT_HARNESS_CHAIN is on PATH with credentials."
+            "The pipeline runs df as its only agent harness and it is not on PATH."
         )
         print(err, file=sys.stderr)
         return err
@@ -1511,6 +1836,10 @@ def run_agent_prompt(
         harness, current_model = attempt.harness, attempt.model
         label = attempt.label
         tried.append(label)
+        # A template carrying ``{{PROMPT_FILE}}`` (df) receives the prompt by path rather than as
+        # an argv element, so long prompts never meet an argument-length limit. The file is written
+        # per retry and removed in the loop's ``finally`` below.
+        needs_prompt_file = any(harnesses.PROMPT_FILE in token for token in harness.template)
         argv = harness.build_argv(prompt + ANSWER_CONTRACT, current_model, timeout)
 
         try:
@@ -1540,6 +1869,17 @@ def run_agent_prompt(
 
         for retry in range(max_retries + 1):
             login_state = prepare_login_file(base_env, attempt)
+            # df borrows CLI subscription logins (codex, grok) and keeps OAuth in its own store;
+            # either can rotate mid-run, so the pre-run state is snapshotted for write-back below.
+            df_login_state = snapshot_df_login_files() if harness.name == "df" else None
+            retry_prompt_file: Optional[str] = None
+            if needs_prompt_file:
+                fd, retry_prompt_file = tempfile.mkstemp(prefix="df-prompt-", suffix=".md")
+                with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                    stream.write(prompt + ANSWER_CONTRACT)
+                argv = harness.build_argv(
+                    prompt + ANSWER_CONTRACT, current_model, timeout, prompt_file=retry_prompt_file
+                )
             try:
                 res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
             except FileNotFoundError:
@@ -1553,6 +1893,11 @@ def run_agent_prompt(
                 stderr_part = (e.stderr or "").strip()
                 stdout_part = (e.stdout or "").strip()
                 detail = f"{stderr_part}\n{stdout_part}".strip() or str(e)
+                if harness.name == "df":
+                    # df reports quota and auth through its exit code (2 and 3) rather than through
+                    # stderr wording, so the code is translated into the runner's wording here and
+                    # the single quota check below keeps deciding everything.
+                    detail = df_failure_detail(e, detail)
                 last_error_detail = detail
 
                 # Quota is checked first: some providers report exhaustion as a 403, and that
@@ -1622,8 +1967,20 @@ def run_agent_prompt(
                     getattr(harness, "auth", None), "login_file", None
                 )
                 finish_login_file(login_state, login_file.rotates if login_file else False)
+                if df_login_state is not None:
+                    finish_df_login_files(df_login_state)
+                if retry_prompt_file is not None:
+                    try:
+                        os.remove(retry_prompt_file)
+                    except OSError:
+                        pass
 
-            output = (res.stdout or "").strip()
+            if harness.name == "df":
+                # ``df run --json`` streams events, not an answer: the final text is the assistant
+                # text streamed after the last tool call.
+                output = parse_df_json_output(res.stdout or "")
+            else:
+                output = (res.stdout or "").strip()
             # A harness that reports exhaustion or an auth failure instead of an answer exits 0
             # with the report on stdout. A terse single-line report is not an answer: rotating
             # past it beats posting the error text as the agent's reply. The single-line limit
@@ -3011,15 +3368,12 @@ def dispatch_event(event_path: str, event_name: str):
         repo = repo_raw
     else:
         repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
-    refresh_tok = os.environ.get("ANTIGRAVITY_REFRESH_TOKEN")
-
-    if refresh_tok:
-        try:
-            tok_res = refresh_google_oauth_token(refresh_tok)
-            setup_antigravity_credentials(tok_res["access_token"], refresh_tok)
-            print("Successfully refreshed Antigravity Google OAuth token!")
-        except Exception as e:
-            print(f"Token refresh notice: {e}", file=sys.stderr)
+    # Every agent call in the pipeline goes through df: configure its accounts from the
+    # environment before anything dispatches.
+    try:
+        setup_df_accounts()
+    except Exception as exc:  # noqa: BLE001 - setup must never stop the dispatch itself
+        print(f"df setup notice: {exc}", file=sys.stderr)
 
     if event_name == "issues":
         action = payload.get("action")
@@ -3279,22 +3633,15 @@ def main():
 
     args = parser.parse_args()
 
-    # Automatically refresh Google OAuth token and configure Antigravity credentials
-    # whenever ANTIGRAVITY_REFRESH_TOKEN is present in the environment
-    refresh_tok = os.environ.get("ANTIGRAVITY_REFRESH_TOKEN")
-    if refresh_tok:
-        try:
-            tok_res = refresh_google_oauth_token(refresh_tok)
-            setup_antigravity_credentials(tok_res["access_token"], refresh_tok)
-            print("Successfully refreshed Antigravity Google OAuth token!")
-        except Exception as e:
-            print(f"Token refresh notice: {e}", file=sys.stderr)
+    # Every agent call in the pipeline goes through df: configure its accounts from the
+    # environment before anything dispatches.
+    try:
+        setup_df_accounts()
+    except Exception as exc:  # noqa: BLE001 - setup must never stop the dispatch itself
+        print(f"df setup notice: {exc}", file=sys.stderr)
 
     if args.command == "token-refresh":
-        if not refresh_tok:
-            print("ANTIGRAVITY_REFRESH_TOKEN not set.", file=sys.stderr)
-            sys.exit(1)
-        print("Token refresh and credentials configuration completed successfully.")
+        print("df account setup completed successfully.")
 
     elif args.command == "interpret" and args.issue:
         handle_interpret(args.issue, args.repo)

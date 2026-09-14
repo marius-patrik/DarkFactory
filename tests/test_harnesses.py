@@ -7,7 +7,8 @@ from typing import List
 import pytest
 
 import harnesses
-from harnesses import MODEL, PROMPT, TIMEOUT, Harness, REGISTRY, configured_order, get_harness
+from harnesses import MODEL, PROMPT, PROMPT_FILE, TIMEOUT, Harness, REGISTRY
+from harnesses import configured_order, get_harness
 
 EXPECTED_HARNESSES = [
     "antigravity",
@@ -19,6 +20,10 @@ EXPECTED_HARNESSES = [
     "cursor",
     "opencode",
 ]
+
+#: Harnesses kept in the registry but no longer driven: they are deleted with the Python
+#: pipeline later. Only ``df`` runs.
+REMOVED_HARNESSES = list(EXPECTED_HARNESSES)
 
 
 @pytest.fixture(autouse=True)
@@ -43,15 +48,42 @@ def test_every_requested_harness_is_registered(name: str):
     assert REGISTRY[name].binary, f"{name} must declare a binary"
 
 
-def test_default_order_covers_the_whole_registry():
-    """A registered harness missing from the order would never be tried."""
-    assert set(harnesses.ORDER) == set(REGISTRY)
+def test_default_chain_is_df_only():
+    """The pipeline runs df as its only agent harness.
+
+    The older external CLI entries stay registered but out of the default chain: they are not
+    installed in the image, and the chain overrides are not forwarded, so nothing but df runs.
+    """
+    assert harnesses.ORDER == ["df"]
+    assert "df" in REGISTRY
+    for name in REMOVED_HARNESSES:
+        assert name in REGISTRY, f"{name} stays registered until the Python pipeline is deleted"
+        assert name not in harnesses.ORDER, f"{name} must not be in the default chain"
+
+
+def test_df_harness_runs_one_json_session_by_prompt_file():
+    """df owns model choice and failover, so the runner passes a file and parses the stream."""
+    harness = REGISTRY["df"]
+    assert harness.binary == "df"
+    assert list(harness.pools) == []
+    assert harness.auth is None, "df reads its own accounts from DF_HOME"
+    assert any(PROMPT_FILE in token for token in harness.template)
+    argv = harness.build_argv("do the thing", None, "5m0s", prompt_file="/tmp/p.md")
+    assert argv == ["df", "run", "--json", "--prompt-file", "/tmp/p.md"]
+
+
+def test_df_build_argv_falls_back_to_the_prompt_text():
+    """Without a written file the placeholder degrades to the prompt itself, never emptiness."""
+    argv = REGISTRY["df"].build_argv("do the thing", None, "5m0s")
+    assert argv[-1] == "do the thing"
 
 
 def test_every_template_carries_the_prompt():
     """A template without the prompt placeholder would run the CLI with no instruction."""
     for name, harness in REGISTRY.items():
-        assert any(PROMPT in token for token in harness.template), f"{name} drops the prompt"
+        assert any(
+            PROMPT in token or PROMPT_FILE in token for token in harness.template
+        ), f"{name} drops the prompt"
 
 
 def test_build_argv_substitutes_prompt_and_model():
@@ -352,20 +384,51 @@ def test_oauth_companions_are_secrets_but_not_credentials():
     assert "ANTIGRAVITY_CLIENT_SECRET" in auth.secret_names()
 
 
-def test_credential_env_names_covers_every_harness_without_repeats():
-    """The derived list is what workflows and the installer are meant to read."""
+def test_credential_env_names_covers_the_chain_without_repeats():
+    """The derived list is what the chain runs with, with no repeats."""
     names = harnesses.credential_env_names()
     assert len(names) == len(set(names))
-    for harness in REGISTRY.values():
+    for name in harnesses.ORDER:
+        harness = REGISTRY[name]
+        if harness.auth is None:
+            continue
         assert set(harness.auth.secret_names()) <= set(names)
 
 
-def test_agent_workflow_passes_exactly_the_declared_credentials():
-    """A workflow missing a secret does not fail; it silently shortens the fallback chain.
+def test_df_declares_no_credentials_because_it_reads_its_own_accounts():
+    """df authenticates from DF_HOME, configured by the runner's setup step before dispatch."""
+    assert REGISTRY["df"].auth is None
+    assert REGISTRY["df"].credentials == ()
 
-    So the secrets block of `agent.yml` is asserted against the registry rather than trusted. The
-    two GitHub secrets are the pipeline's own and are not harness credentials.
+
+def test_pipeline_df_chain_runs_free_models_then_borrowed_subscriptions():
+    """The committed chain matches the owner decision: Gemini free models across three accounts,
+    then the free/fast providers, with opencode-zen and antigravity dropped."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, ".darkfactory", "df", "config.json"), encoding="utf-8") as handle:
+        config = json.load(handle)
+    chain = config["defaultChain"].split(",")
+    assert chain[0] == "google/gemini-3.8-flash@default"
+    assert "google/gemini-3.8-flash@key3" in chain
+    assert "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@default" in chain
+    assert "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@acct2" in chain
+    assert "groq/openai/gpt-oss-120b@default" in chain
+    assert "openai-codex/gpt-5.6-luna@default" in chain
+    assert "grok-sub/grok-4.6@default" in chain
+    assert not any(
+        candidate.startswith("opencode-zen/") or "antigravity" in candidate for candidate in chain
+    ), "opencode-zen and antigravity are dropped from the pipeline chain"
+    assert config["cooldownTtlMs"] == 120000
+
+
+def test_agent_workflow_passes_exactly_the_declared_credentials():
+    """A workflow missing a secret does not fail; it silently shortens df's chain.
+
+    So the secrets block of `agent.yml` is asserted against the df setup's secret list rather
+    than trusted. The two GitHub secrets are the pipeline's own and are not df credentials.
     """
+    import agent_runner
+
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8") as handle:
         workflow = handle.read()
@@ -375,7 +438,7 @@ def test_agent_workflow_passes_exactly_the_declared_credentials():
         line.strip().split(":", 1)[0] for line in block.splitlines() if ": {required" in line
     }
     assert declared - {"DARKFACTORY_APP_PRIVATE_KEY", "GH_PROJECT_TOKEN"} == set(
-        harnesses.credential_env_names()
+        agent_runner.df_setup_secret_names()
     )
 
 
