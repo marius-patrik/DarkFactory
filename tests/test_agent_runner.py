@@ -1903,3 +1903,31 @@ class TestFileLinksBecomeRepoLinks:
     def test_plain_text_passes_through_unchanged(self):
         """Text without file:// URLs is returned verbatim."""
         assert agent_runner.rewrite_file_links("no links here") == "no links here"
+
+
+class TestTheAnswerIsTheResult:
+    """The pipeline posts or parses the final message; nobody can answer a question mid-run."""
+
+    def test_every_harness_receives_the_answer_contract(self, monkeypatch, tmp_path):
+        """#227's plan was written to /tmp inside the container and the comment only asked
+        "Want me to post this as a comment?" - the plan itself never reached the issue.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+            tmp_path: Temporary directory.
+        """
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "key")
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        seen = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(" ".join(argv))
+            return subprocess.CompletedProcess(argv, 0, stdout="the plan\n", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("Draft a plan") == "the plan"
+        assert "Draft a plan" in seen[0]
+        assert agent_runner.ANSWER_CONTRACT in seen[0]
