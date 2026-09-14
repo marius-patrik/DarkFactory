@@ -41,6 +41,15 @@ TIMEOUT = "{{TIMEOUT}}"
 
 
 @dataclass(frozen=True)
+class LoginFile:
+    """A CLI subscription login stored in a file under HOME."""
+
+    env: str
+    path: str
+    rotates: bool = True
+
+
+@dataclass(frozen=True)
 class Auth:
     """How a harness obtains a usable credential.
 
@@ -84,6 +93,7 @@ class Auth:
     client_secret_env: str = ""
     rotates: bool = False
     note: str = ""
+    login_file: Optional[LoginFile] = None
 
     @staticmethod
     def _numbered(names: Sequence[str], account: int) -> Tuple[str, ...]:
@@ -115,6 +125,12 @@ class Auth:
         declared = tuple(name for name in (self.env, *self.alternatives) if name)
         return self._numbered(declared, account)
 
+    def login_file_names(self, account: int = 1) -> Tuple[str, ...]:
+        return self._numbered((self.login_file.env,) if self.login_file else (), account)
+
+    def credential_names(self, account: int = 1) -> Tuple[str, ...]:
+        return self.env_names(account) + self.login_file_names(account)
+
     def companion_names(self, account: int = 1) -> Tuple[str, ...]:
         """Returns the OAuth companions for one account.
 
@@ -140,7 +156,7 @@ class Auth:
         """
         names: List[str] = []
         for account in range(1, max(1, self.accounts) + 1):
-            names.extend(self.env_names(account))
+            names.extend(self.credential_names(account))
             names.extend(self.companion_names(account))
         return tuple(names)
 
@@ -154,7 +170,7 @@ class Auth:
             ``True`` when any declared variable is populated, or when nothing is declared and the
             harness authenticates by other means.
         """
-        names = self.env_names(account)
+        names = self.credential_names(account)
         return True if not names else any(os.environ.get(name) for name in names)
 
 
@@ -202,6 +218,19 @@ class Harness:
     install: str = ""
     nix_attr: str = ""
     description: str = ""
+    login_file: Optional[LoginFile] = None
+
+    def __post_init__(self) -> None:
+        """Propagates the login file to the auth declaration when defined here.
+
+        A harness describes how it authenticates through `auth`, but a login file is a property of
+        the CLI harness itself, so declaring it here is what keeps the answer beside the binary
+        that needs it.
+        """
+        if self.login_file and self.auth is None:
+            object.__setattr__(self, "auth", Auth(kind="static", login_file=self.login_file))
+        elif self.login_file and self.auth and not self.auth.login_file:
+            object.__setattr__(self, "auth", replace(self.auth, login_file=self.login_file))
 
     def install_command(self) -> str:
         """Returns the shell that installs this harness, or an empty string when it declares none.
@@ -235,7 +264,7 @@ class Harness:
         """
         if self.env_keys:
             return tuple(self.env_keys) if account <= 1 else ()
-        return self.auth.env_names(account) if self.auth else ()
+        return self.auth.credential_names(account) if self.auth else ()
 
     @property
     def credentials(self) -> Tuple[str, ...]:
@@ -411,8 +440,9 @@ REGISTRY: Dict[str, Harness] = {
         auth=Auth(
             kind="static",
             env="OPENAI_API_KEY",
-            note="OpenAI API key.",
+            note="OpenAI API key or subscription login file.",
         ),
+        login_file=LoginFile(env="CODEX_AUTH_JSON", path=".codex/auth.json"),
         description="OpenAI Codex CLI",
     ),
     "kimi": Harness(
@@ -427,6 +457,7 @@ REGISTRY: Dict[str, Harness] = {
             alternatives=("KIMI_API_KEY",),
             note="Moonshot API key, under either of the two names the CLI accepts.",
         ),
+        login_file=LoginFile(env="KIMI_AUTH_JSON", path=".kimi-code/credentials/kimi-code.json"),
         description="Moonshot Kimi CLI",
     ),
     "grok": Harness(
@@ -441,6 +472,7 @@ REGISTRY: Dict[str, Harness] = {
             alternatives=("GROK_API_KEY",),
             note="xAI API key, under either of the two names the CLI accepts.",
         ),
+        login_file=LoginFile(env="GROK_AUTH_JSON", path=".grok/auth.json"),
         description="xAI Grok Build",
     ),
     "cursor": Harness(

@@ -72,20 +72,29 @@ on:
       GEMINI_API_KEY_3: {required: false}
       GOOGLE_API_KEY_3: {required: false}
       OPENAI_API_KEY: {required: false}
+      CODEX_AUTH_JSON: {required: false}
       OPENAI_API_KEY_2: {required: false}
+      CODEX_AUTH_JSON_2: {required: false}
       OPENAI_API_KEY_3: {required: false}
+      CODEX_AUTH_JSON_3: {required: false}
       MOONSHOT_API_KEY: {required: false}
       KIMI_API_KEY: {required: false}
+      KIMI_AUTH_JSON: {required: false}
       MOONSHOT_API_KEY_2: {required: false}
       KIMI_API_KEY_2: {required: false}
+      KIMI_AUTH_JSON_2: {required: false}
       MOONSHOT_API_KEY_3: {required: false}
       KIMI_API_KEY_3: {required: false}
+      KIMI_AUTH_JSON_3: {required: false}
       XAI_API_KEY: {required: false}
       GROK_API_KEY: {required: false}
+      GROK_AUTH_JSON: {required: false}
       XAI_API_KEY_2: {required: false}
       GROK_API_KEY_2: {required: false}
+      GROK_AUTH_JSON_2: {required: false}
       XAI_API_KEY_3: {required: false}
       GROK_API_KEY_3: {required: false}
+      GROK_AUTH_JSON_3: {required: false}
       CURSOR_API_KEY: {required: false}
       CURSOR_API_KEY_2: {required: false}
       CURSOR_API_KEY_3: {required: false}
@@ -251,20 +260,29 @@ jobs:
             -e GEMINI_API_KEY_3="${{ secrets.GEMINI_API_KEY_3 }}" \
             -e GOOGLE_API_KEY_3="${{ secrets.GOOGLE_API_KEY_3 }}" \
             -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            -e CODEX_AUTH_JSON="${{ secrets.CODEX_AUTH_JSON }}" \
             -e OPENAI_API_KEY_2="${{ secrets.OPENAI_API_KEY_2 }}" \
+            -e CODEX_AUTH_JSON_2="${{ secrets.CODEX_AUTH_JSON_2 }}" \
             -e OPENAI_API_KEY_3="${{ secrets.OPENAI_API_KEY_3 }}" \
+            -e CODEX_AUTH_JSON_3="${{ secrets.CODEX_AUTH_JSON_3 }}" \
             -e MOONSHOT_API_KEY="${{ secrets.MOONSHOT_API_KEY }}" \
             -e KIMI_API_KEY="${{ secrets.KIMI_API_KEY }}" \
+            -e KIMI_AUTH_JSON="${{ secrets.KIMI_AUTH_JSON }}" \
             -e MOONSHOT_API_KEY_2="${{ secrets.MOONSHOT_API_KEY_2 }}" \
             -e KIMI_API_KEY_2="${{ secrets.KIMI_API_KEY_2 }}" \
+            -e KIMI_AUTH_JSON_2="${{ secrets.KIMI_AUTH_JSON_2 }}" \
             -e MOONSHOT_API_KEY_3="${{ secrets.MOONSHOT_API_KEY_3 }}" \
             -e KIMI_API_KEY_3="${{ secrets.KIMI_API_KEY_3 }}" \
+            -e KIMI_AUTH_JSON_3="${{ secrets.KIMI_AUTH_JSON_3 }}" \
             -e XAI_API_KEY="${{ secrets.XAI_API_KEY }}" \
             -e GROK_API_KEY="${{ secrets.GROK_API_KEY }}" \
+            -e GROK_AUTH_JSON="${{ secrets.GROK_AUTH_JSON }}" \
             -e XAI_API_KEY_2="${{ secrets.XAI_API_KEY_2 }}" \
             -e GROK_API_KEY_2="${{ secrets.GROK_API_KEY_2 }}" \
+            -e GROK_AUTH_JSON_2="${{ secrets.GROK_AUTH_JSON_2 }}" \
             -e XAI_API_KEY_3="${{ secrets.XAI_API_KEY_3 }}" \
             -e GROK_API_KEY_3="${{ secrets.GROK_API_KEY_3 }}" \
+            -e GROK_AUTH_JSON_3="${{ secrets.GROK_AUTH_JSON_3 }}" \
             -e CURSOR_API_KEY="${{ secrets.CURSOR_API_KEY }}" \
             -e CURSOR_API_KEY_2="${{ secrets.CURSOR_API_KEY_2 }}" \
             -e CURSOR_API_KEY_3="${{ secrets.CURSOR_API_KEY_3 }}" \

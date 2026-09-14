@@ -221,9 +221,9 @@ CREDENTIALS_BEFORE = {
     "antigravity": {"ANTIGRAVITY_REFRESH_TOKEN"},
     "claude": {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"},
     "gemini": {"GEMINI_API_KEY", "GOOGLE_API_KEY"},
-    "codex": {"OPENAI_API_KEY"},
-    "kimi": {"MOONSHOT_API_KEY", "KIMI_API_KEY"},
-    "grok": {"XAI_API_KEY", "GROK_API_KEY"},
+    "codex": {"OPENAI_API_KEY", "CODEX_AUTH_JSON"},
+    "kimi": {"MOONSHOT_API_KEY", "KIMI_API_KEY", "KIMI_AUTH_JSON"},
+    "grok": {"XAI_API_KEY", "GROK_API_KEY", "GROK_AUTH_JSON"},
     "cursor": {"CURSOR_API_KEY"},
     "opencode": {"OPENCODE_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"},
 }
@@ -266,6 +266,67 @@ def test_an_alternative_name_authenticates_on_its_own(monkeypatch: pytest.Monkey
     monkeypatch.setenv("KIMI_API_KEY", "sk-test")
     assert REGISTRY["kimi"].is_authenticated()
     assert REGISTRY["kimi"].auth.is_satisfied()
+
+
+@pytest.mark.parametrize(
+    "name,login_secret",
+    [
+        ("codex", "CODEX_AUTH_JSON"),
+        ("grok", "GROK_AUTH_JSON"),
+        ("kimi", "KIMI_AUTH_JSON"),
+    ],
+)
+def test_availability_via_login_file_only(
+    name: str, login_secret: str, monkeypatch: pytest.MonkeyPatch
+):
+    """A harness is available when only its login-file secret is present.
+
+    Args:
+        name: Registry key.
+        login_secret: Name of the login-file secret.
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    harness = REGISTRY[name]
+    for secret in harness.auth.secret_names():
+        monkeypatch.delenv(secret, raising=False)
+
+    assert not harness.is_authenticated()
+    assert harness.accounts() == ()
+    assert not harness.auth.is_satisfied(1)
+
+    monkeypatch.setenv(login_secret, '{"token": "subscription-token"}')
+    assert harness.is_authenticated()
+    assert harness.accounts() == (1,)
+    assert harness.auth.is_satisfied(1)
+
+
+@pytest.mark.parametrize(
+    "name,login_secret",
+    [
+        ("codex", "CODEX_AUTH_JSON_2"),
+        ("grok", "GROK_AUTH_JSON_2"),
+        ("kimi", "KIMI_AUTH_JSON_2"),
+    ],
+)
+def test_login_file_accounts_are_numbered(
+    name: str, login_secret: str, monkeypatch: pytest.MonkeyPatch
+):
+    """Numbered login files authenticate their corresponding account.
+
+    Args:
+        name: Registry key.
+        login_secret: Name of the account 2 login-file secret.
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    harness = REGISTRY[name]
+    for secret in harness.auth.secret_names():
+        monkeypatch.delenv(secret, raising=False)
+
+    monkeypatch.setenv(login_secret, '{"token": "account-2-token"}')
+    assert harness.is_authenticated()
+    assert harness.accounts() == (2,)
+    assert harness.auth.is_satisfied(2)
+    assert not harness.auth.is_satisfied(1)
 
 
 def test_env_keys_override_still_wins_over_the_declaration(monkeypatch: pytest.MonkeyPatch):
