@@ -661,6 +661,204 @@ class TestTheAccountsCredentialReachesTheCli:
         assert agent_runner.credential_env(base, harnesses.Attempt(harness, None, 1)) == base
 
 
+class TestLoginFileCredentialLifecycle:
+    """Subscription CLIs authenticate through files written to disk rather than environment keys."""
+
+    def _attempt(self, name: str, account: int):
+        return harnesses.Attempt(harnesses.REGISTRY[name], None, account)
+
+    def test_file_written_with_right_content_path_and_mode_for_account_2(
+        self, monkeypatch, tmp_path
+    ):
+        """Account 2's secret materializes at the declared path under HOME with 0600 mode."""
+        import stat
+        import sys
+
+        monkeypatch.setenv("HOME", str(tmp_path))
+        base = {"HOME": str(tmp_path), "CODEX_AUTH_JSON_2": '{"token": "codex-account-2"}'}
+        attempt = self._attempt("codex", 2)
+
+        chmod_calls = []
+        real_chmod = os.chmod
+
+        def spy_chmod(path, mode):
+            chmod_calls.append((path, mode))
+            real_chmod(path, mode)
+
+        monkeypatch.setattr(agent_runner.os, "chmod", spy_chmod)
+
+        result = agent_runner.prepare_login_file(base, attempt)
+        assert result is not None
+        path, secret_name, original = result
+
+        expected_path = os.path.join(str(tmp_path), ".codex", "auth.json")
+        assert path == expected_path
+        assert secret_name == "CODEX_AUTH_JSON_2"
+        assert original == '{"token": "codex-account-2"}'
+        assert os.path.exists(path)
+        with open(path, "r", encoding="utf-8") as f:
+            assert f.read() == '{"token": "codex-account-2"}'
+
+        assert (path, 0o600) in chmod_calls
+        if sys.platform != "win32":
+            assert (stat.S_IMODE(os.stat(path).st_mode)) == 0o600
+
+    def test_nested_parent_directories_are_created(self, monkeypatch, tmp_path):
+        """Parent directories are created for deep login file paths (e.g. kimi)."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        base = {
+            "HOME": str(tmp_path),
+            "KIMI_AUTH_JSON_2": '{"kimi_token": "secret-2"}',
+        }
+        attempt = self._attempt("kimi", 2)
+
+        result = agent_runner.prepare_login_file(base, attempt)
+        assert result is not None
+        path, secret_name, original = result
+        expected_path = os.path.join(str(tmp_path), ".kimi-code", "credentials", "kimi-code.json")
+        assert path == expected_path
+        assert secret_name == "KIMI_AUTH_JSON_2"
+        assert original == '{"kimi_token": "secret-2"}'
+        assert os.path.exists(path)
+
+    def test_static_key_names_are_not_exported_when_login_file_is_used(self):
+        """When an attempt uses a subscription login file, static API keys must not be exported."""
+        attempt = self._attempt("codex", 2)
+        base = {
+            "OPENAI_API_KEY": "first-key",
+            "OPENAI_API_KEY_2": "second-key",
+            "CODEX_AUTH_JSON_2": '{"token": "second-login"}',
+        }
+        env = agent_runner.credential_env(base, attempt)
+        assert "OPENAI_API_KEY" not in env
+        assert "OPENAI_API_KEY_2" not in env
+        assert "CODEX_AUTH_JSON_2" not in env
+        assert "CODEX_AUTH_JSON" not in env
+
+    def test_a_changed_file_is_persisted_to_the_same_numbered_secret(self, tmp_path, monkeypatch):
+        """Token rotation writes back to the exact account that provided the login file."""
+        module = agent_runner_module()
+        target_file = tmp_path / "auth.json"
+        target_file.write_text('{"token": "new-rotated-token"}', encoding="utf-8")
+
+        persisted = []
+        monkeypatch.setattr(
+            module,
+            "persist_rotated_token",
+            lambda secret, value: persisted.append((secret, value)) or True,
+        )
+
+        state = (str(target_file), "CODEX_AUTH_JSON_2", '{"token": "original-token"}')
+        module.finish_login_file(state, rotates=True)
+
+        assert persisted == [("CODEX_AUTH_JSON_2", '{"token": "new-rotated-token"}')]
+        assert not target_file.exists(), "login file must be removed after attempt"
+
+    def test_an_unchanged_file_is_not_persisted(self, tmp_path, monkeypatch):
+        """Unchanged login files are not written back, but are still cleaned up."""
+        module = agent_runner_module()
+        target_file = tmp_path / "auth.json"
+        target_file.write_text('{"token": "same-token"}', encoding="utf-8")
+
+        monkeypatch.setattr(
+            module,
+            "persist_rotated_token",
+            lambda *a: pytest.fail("must not write unchanged token"),
+        )
+
+        state = (str(target_file), "CODEX_AUTH_JSON_2", '{"token": "same-token"}')
+        module.finish_login_file(state, rotates=True)
+
+        assert not target_file.exists(), "login file must be removed after attempt"
+
+    def test_a_non_rotating_login_file_is_not_persisted_even_if_changed(
+        self, tmp_path, monkeypatch
+    ):
+        """When rotates is False, no persistence occurs even if the content changed."""
+        module = agent_runner_module()
+        target_file = tmp_path / "auth.json"
+        target_file.write_text('{"token": "new-token"}', encoding="utf-8")
+
+        monkeypatch.setattr(
+            module,
+            "persist_rotated_token",
+            lambda *a: pytest.fail("must not write when rotates=False"),
+        )
+
+        state = (str(target_file), "CODEX_AUTH_JSON_2", '{"token": "old-token"}')
+        module.finish_login_file(state, rotates=False)
+
+        assert not target_file.exists(), "login file must still be removed"
+
+    def test_run_agent_prompt_end_to_end_with_login_file_rotation(self, monkeypatch, tmp_path):
+        """run_agent_prompt manages the login file lifecycle, suppresses static keys, and persists rotation."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["codex"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+
+        monkeypatch.setenv("CODEX_AUTH_JSON_2", '{"auth": "v1"}')
+
+        login_path = tmp_path / ".codex" / "auth.json"
+        captured_env = {}
+        persisted = []
+
+        def fake_run(argv, **kwargs):
+            captured_env.update(kwargs["env"])
+            assert login_path.exists()
+            assert login_path.read_text(encoding="utf-8") == '{"auth": "v1"}'
+            login_path.write_text('{"auth": "v2"}', encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, stdout="done\n", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        monkeypatch.setattr(
+            agent_runner,
+            "persist_rotated_token",
+            lambda secret, val: persisted.append((secret, val)) or True,
+        )
+
+        result = agent_runner.run_agent_prompt("test prompt")
+        assert result == "done"
+        assert not login_path.exists(), "login file must be removed after attempt"
+        assert persisted == [("CODEX_AUTH_JSON_2", '{"auth": "v2"}')]
+        assert "OPENAI_API_KEY" not in captured_env
+        assert "OPENAI_API_KEY_2" not in captured_env
+        assert "CODEX_AUTH_JSON_2" not in captured_env
+
+    def test_run_agent_prompt_persists_and_cleans_up_on_failure(self, monkeypatch, tmp_path):
+        """CLI invocation failure still persists any rotated token and removes the file."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["codex"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+
+        monkeypatch.setenv("CODEX_AUTH_JSON_2", '{"auth": "v1"}')
+
+        login_path = tmp_path / ".codex" / "auth.json"
+        persisted = []
+
+        def fail_run(argv, **kwargs):
+            assert login_path.exists()
+            login_path.write_text('{"auth": "v2-rotated-before-fail"}', encoding="utf-8")
+            raise subprocess.CalledProcessError(1, argv, stderr="failed execution")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fail_run)
+        monkeypatch.setattr(
+            agent_runner,
+            "persist_rotated_token",
+            lambda secret, val: persisted.append((secret, val)) or True,
+        )
+
+        result = agent_runner.run_agent_prompt("test prompt")
+        assert "[DarkFactory Agent Execution Error]" in result
+        assert not login_path.exists(), "login file must be removed even on failure"
+        assert persisted == [("CODEX_AUTH_JSON_2", '{"auth": "v2-rotated-before-fail"}')]
+
+
 class TestExhaustionRotatesBeforeItWaits:
     """An unused account is always a better answer than sleeping."""
 

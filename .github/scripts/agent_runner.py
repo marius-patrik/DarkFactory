@@ -233,6 +233,44 @@ def prepare_credentials(harness: Any, account: int = 1) -> Optional[str]:
     return response.get("access_token")
 
 
+def prepare_login_file(base: Dict[str, str], attempt: Any) -> Optional[Tuple[str, str, str]]:
+    """Materialize the selected subscription login and return (path, secret, original)."""
+    auth = getattr(attempt.harness, "auth", None)
+    login = getattr(auth, "login_file", None) if auth else None
+    if not login:
+        return None
+    secret_name = auth.login_file_names(attempt.account)[0]
+    content = base.get(secret_name, "")
+    if not content:
+        return None
+    home = base.get("HOME") or os.environ.get("HOME") or os.path.expanduser("~")
+    path = os.path.join(home, os.path.normpath(login.path))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as stream:
+        stream.write(content)
+    os.chmod(path, 0o600)
+    return path, secret_name, content
+
+
+def finish_login_file(state: Optional[Tuple[str, str, str]], rotates: bool = True) -> None:
+    """Persist a changed login file under the account that supplied it, then remove it."""
+    if not state:
+        return
+    path, secret_name, original = state
+    try:
+        with open(path, "r", encoding="utf-8") as stream:
+            current = stream.read()
+        if rotates and current != original:
+            persist_rotated_token(secret_name, current)
+    except FileNotFoundError:
+        pass
+    finally:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+
+
 def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
     """Builds the environment one attempt runs in, holding that account's credential and no other.
 
@@ -267,7 +305,12 @@ def credential_env(base: Dict[str, str], attempt: Any) -> Dict[str, str]:
     for name in auth.secret_names():
         env.pop(name, None)
 
+    login = getattr(auth, "login_file", None)
+    login_name = auth.login_file_names(attempt.account)[0] if login else ""
     credential = prepare_credentials(harness, attempt.account)
+    if login_name and base.get(login_name):
+        # Subscription CLIs read the login file, never the static API-key names.
+        credential = None
     if credential:
         # Under the *first* account's names, because that is what the CLI reads.
         for name in auth.env_names(1):
@@ -1300,6 +1343,7 @@ def run_agent_prompt(
         rotation_available = index < len(attempts) - 1
 
         for retry in range(max_retries + 1):
+            login_state = prepare_login_file(base_env, attempt)
             try:
                 res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
             except FileNotFoundError:
@@ -1354,6 +1398,11 @@ def run_agent_prompt(
                 err = f"[DarkFactory Agent Execution Error]: Unexpected failure executing {label}: {e}"
                 print(err, file=sys.stderr)
                 return err
+            finally:
+                login_file = getattr(harness, "login_file", None) or getattr(
+                    getattr(harness, "auth", None), "login_file", None
+                )
+                finish_login_file(login_state, login_file.rotates if login_file else False)
 
             output = (res.stdout or "").strip()
             # Timeout wording is only trusted from stderr: an agent's real answer may discuss timeouts.
