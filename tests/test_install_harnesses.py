@@ -10,10 +10,30 @@ import harnesses
 import install_harnesses
 
 
-def test_every_harness_declares_how_it_is_installed():
-    """A harness the image cannot install is one the ladder will silently skip."""
-    missing = [n for n in harnesses.ORDER if not harnesses.get_harness(n).install]
+def test_nothing_in_the_default_chain_needs_a_registry_installer():
+    """df arrives through the Dockerfile's Bun steps, not through this script."""
+    missing = [
+        name
+        for name in harnesses.ORDER
+        if not harnesses.get_harness(name).install and name not in ("df",)
+    ]
     assert not missing, f"no installer declared for: {missing}"
+
+
+def test_df_counts_as_installed_without_a_registry_installer(monkeypatch):
+    """A harness declaring no installer is provided by the image itself.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    monkeypatch.setattr(
+        install_harnesses.subprocess,
+        "run",
+        lambda *a, **k: pytest.fail("the image provides df; nothing must run"),
+    )
+    ok, detail = install_harnesses.install_one("df")
+    assert ok is True
+    assert detail == "provided by the image"
 
 
 def test_a_present_binary_counts_as_installed(monkeypatch):
@@ -58,9 +78,9 @@ def test_failures_are_collected_rather_than_raised(monkeypatch):
     assert set(failures) == {"kimi"}
 
 
-def test_claude_is_required_because_it_is_the_fallback():
-    """The ladder falls back to it when a metered provider is exhausted."""
-    assert "claude" in install_harnesses.REQUIRED
+def test_nothing_is_required_because_df_comes_from_the_bun_steps():
+    """The image installs df itself; nothing installed here may fail the build."""
+    assert install_harnesses.REQUIRED == []
 
 
 def test_the_required_list_stays_short():

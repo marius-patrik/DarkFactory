@@ -1,19 +1,21 @@
-# Containerized Antigravity CI Agent
+# Containerized df CI Agent
 # Provides full parity between local execution and GitHub Actions CI.
 
 FROM python:3.12-slim-bookworm
 
 LABEL maintainer="marius-patrik"
-LABEL description="Containerized Google Antigravity Agent environment with Python 3.12, dev tools, and GitHub CLI."
+LABEL description="Containerized df agent environment with Python 3.12, Bun, dev tools, and GitHub CLI."
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# 1. Install base utilities, D-Bus, Secret Service, and GitHub CLI
+# 1. Install base utilities, D-Bus, Secret Service, unzip (for the Bun installer),
+# and GitHub CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     jq \
+    unzip \
     ca-certificates \
     gnupg \
     dbus-x11 \
@@ -29,37 +31,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && git config --global --add safe.directory '*'
 
-# 2. Install Node.js, the runtime several agent CLIs ship on
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && node --version && npm --version
+# 2. Install Bun (pinned), the runtime the df agent harness runs on
+ARG BUN_VERSION=1.4.2
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v${BUN_VERSION}" \
+    && bun --version
 
-# 3. Install the agent harnesses.
+# 3. Install the df agent harness, the pipeline's only agent harness.
 #
-# Each installs into its own layer and is allowed to fail: the runner resolves harnesses from PATH
-# at dispatch time (see .github/scripts/harnesses.py), so an image carrying four of eight CLIs is a
-# working image with a shorter fallback chain. A hard failure here would make one upstream outage
-# break every build, which is exactly the fragility the harness registry exists to remove.
-# The manifest step below records what actually landed, so the chain is never a guess.
+# The runner resolves every agent call through the `df` binary, which owns model choice and
+# in-flight failover across its own chain itself — external coding-agent CLIs are not installed.
+# The harness source ships with the pipeline checkout (`harness/`, landed separately), so it is
+# copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
+# relative to the source tree, which the wrapper below executes in place.
+COPY harness/ /opt/darkfactory/harness/
+RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
+RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
+    && chmod +x /usr/local/bin/df
 
-# Harnesses are installed from the registry that already describes them, so adding one is a single
-# declaration rather than a Dockerfile edit that can disagree with it. Failures are reported by
-# name instead of being swallowed by `|| true`, and a missing *required* harness fails the build.
-COPY .github/scripts/harnesses.py .github/scripts/install_harnesses.py /usr/local/share/darkfactory-scripts/
-RUN PYTHONPATH=/usr/local/share/darkfactory-scripts \
-    python3 /usr/local/share/darkfactory-scripts/install_harnesses.py
-
-# Record which harnesses are present so the build log answers "what can this image drive?"
+# Record which harness is present so the build log answers "what can this image drive?"
 RUN set -eux; \
-    echo "=== agent harnesses in this image ==="; \
-    for bin in agy claude gemini codex kimi grok cursor-agent opencode; do \
-      if command -v "$bin" >/dev/null 2>&1; then \
-        echo "  present: $bin -> $(command -v "$bin")"; \
-      else \
-        echo "  ABSENT:  $bin"; \
-      fi; \
-    done
+    echo "=== agent harness in this image ==="; \
+    if command -v df >/dev/null 2>&1; then \
+      echo "  present: df -> $(command -v df)"; \
+    else \
+      echo "  ABSENT:  df"; \
+    fi
 
 # 4. Setup project workspace and install Python test / build dependencies
 WORKDIR /workspace
@@ -71,9 +67,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 # 5. Create the unprivileged user the agent runs as
 #
 # PRD.md D4 states that agent processes execute with non-root privileges. The image had
-# no USER directive, so they ran as root, and the claim went unchallenged until Claude Code
-# refused to start: it will not accept --dangerously-skip-permissions as root, which is a sensible
-# refusal and the reason the gap surfaced at all.
+# no USER directive, so they ran as root.
 #
 # uid 1001 matches the GitHub runner's own user, so the bind-mounted workspace is writable without
 # relaxing its permissions.
@@ -81,7 +75,7 @@ ARG AGENT_UID=1001
 ARG AGENT_GID=1001
 RUN groupadd --gid ${AGENT_GID} agent \
     && useradd --uid ${AGENT_UID} --gid ${AGENT_GID} --create-home --shell /bin/bash agent \
-    && mkdir -p /home/agent/.gemini/antigravity-cli /home/agent/.claude /home/agent/.config \
+    && mkdir -p /home/agent/.codex /home/agent/.grok /home/agent/.config \
     && chown -R agent:agent /home/agent /workspace
 
 ENV HOME=/home/agent

@@ -137,9 +137,36 @@ def test_verify_bound_issue_job_name_is_stable():
 def test_agent_workflow_never_leaks_secrets_into_the_log():
     """Secrets are passed as container env, never echoed."""
     content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
-    for secret in ("ANTIGRAVITY_REFRESH_TOKEN", "ANTIGRAVITY_CLIENT_SECRET", "CODEX_AUTH_JSON"):
-        assert f"-e {secret} \\" in content
+    for secret in ("GEMINI_API_KEY", "CODEX_AUTH_JSON", "OPENROUTER_API_KEY", "GROQ_API_KEY"):
+        assert f"-e {secret} \\" in content or f"-e {secret}\n" in content
         assert f"echo ${{{{ secrets.{secret}" not in content
+
+
+def test_agent_workflow_forwards_the_new_secrets_without_interpolation():
+    """The df setup's secrets reach the container through step env and `-e NAME`.
+
+    A secret pasted into a `run:` script is shell text: a login file's JSON loses its quotes on
+    the way in, and a `$(...)` inside any value would execute. The generic interpolation test
+    below guards every workflow; this one pins the df secret list itself.
+    """
+    import agent_runner
+
+    content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
+    for secret in agent_runner.df_setup_secret_names():
+        assert f"{secret}: ${{{{ secrets.{secret} }}}}" in content
+        assert f"-e {secret}" in content
+
+
+def test_agent_workflow_cannot_reenable_the_removed_harnesses():
+    """The chain overrides are not forwarded, so no variable can bring a removed CLI back."""
+    content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
+    for reference in (
+        "vars.AGENT_HARNESS_CHAIN",
+        "vars.AGENT_HARNESS_CONFIG",
+        "-e AGENT_HARNESS_CHAIN",
+        "-e AGENT_HARNESS_CONFIG",
+    ):
+        assert reference not in content, f"{reference} would re-enable the removed CLIs"
 
 
 def test_no_script_interpolates_a_secret():

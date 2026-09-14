@@ -1,8 +1,14 @@
 """Harness registry — the agent pipeline's adapter layer over coding-agent CLIs.
 
-The pipeline is harness-agnostic: nothing in `agent_runner.py` knows which CLI is running. A harness
-is described declaratively — a binary, how to turn a prompt into an argv, and a model fallback
-chain — so adding one is a data change and swapping one is a configuration change.
+The pipeline runs ``df``, DarkFactory's own Bun harness, as its only agent harness: every agent
+call goes through ``df run``, which owns model choice and in-flight failover across its own
+chain. The older external CLI entries below are kept for now — they are deleted with the Python
+pipeline later — but none of them is in the default chain, none is installed into the agent
+image, and ``agent.yml`` no longer forwards ``AGENT_HARNESS_CHAIN``/``AGENT_HARNESS_CONFIG``,
+so the removed CLIs cannot be re-enabled in DarkFactory's own workflows.
+
+A harness is described declaratively — a binary, how to turn a prompt into an argv, and a model
+fallback chain — so adding one is a data change and swapping one is a configuration change.
 
 Invocation shapes are the real, verified flags for each CLI, but CLIs move. Every field is
 overridable at runtime through ``AGENT_HARNESS_CONFIG`` (a JSON object keyed by harness name), so a
@@ -38,6 +44,11 @@ MODEL = "{{MODEL}}"
 
 #: Placeholder substituted with the print-mode timeout (Go duration string, e.g. ``15m0s``).
 TIMEOUT = "{{TIMEOUT}}"
+
+#: Placeholder substituted with a file holding the prompt text. Harnesses taking ``--prompt-file``
+#: (``df``) receive the prompt by path rather than as an argv element, so long prompts never meet
+#: an argument-length limit. The runner writes the file and passes its path via ``prompt_file``.
+PROMPT_FILE = "{{PROMPT_FILE}}"
 
 
 @dataclass(frozen=True)
@@ -303,17 +314,26 @@ class Harness:
         """
         return bool(self.accounts())
 
-    def build_argv(self, prompt: str, model: Optional[str], timeout: str) -> List[str]:
+    def build_argv(
+        self,
+        prompt: str,
+        model: Optional[str],
+        timeout: str,
+        prompt_file: Optional[str] = None,
+    ) -> List[str]:
         """Renders the argv for one invocation.
 
         Placeholder arguments are substituted; any argument still containing ``MODEL`` when no model
         was supplied is dropped along with an immediately preceding flag, so a template can express
-        an optional model without a second template.
+        an optional model without a second template. A template carrying ``PROMPT_FILE`` receives
+        the prompt by path: the runner writes the prompt to a file and passes it here, falling back
+        to the prompt text itself when no file was written.
 
         Args:
             prompt: Prompt text.
             model: Model id, or ``None`` to use the harness default.
             timeout: Print-mode timeout as a Go duration string.
+            prompt_file: Path of the file holding the prompt, for ``PROMPT_FILE`` templates.
 
         Returns:
             Full argv including the binary.
@@ -322,6 +342,8 @@ class Harness:
         pending_flag: Optional[str] = None
 
         for token in self.template:
+            if PROMPT_FILE in token:
+                token = token.replace(PROMPT_FILE, prompt_file or prompt)
             if MODEL in token:
                 if model is None:
                     pending_flag = None
@@ -346,6 +368,19 @@ class Harness:
 
 #: Built-in registry. Flags verified against each CLI's own ``--help``.
 REGISTRY: Dict[str, Harness] = {
+    "df": Harness(
+        name="df",
+        binary="df",
+        # The prompt travels by file so long prompts never meet an argument-length limit, and
+        # ``--json`` so the runner can parse the event stream into the final answer text.
+        template=["run", "--json", "--prompt-file", PROMPT_FILE],
+        # No pools: df owns model choice and in-flight failover across its own chain, so there is
+        # nothing for the runner to fall back between. No auth declaration either: df reads its own
+        # accounts from DF_HOME, configured by the runner's setup step before dispatch.
+        pools=(),
+        auth=None,
+        description="DarkFactory's own agent harness (df run)",
+    ),
     "antigravity": Harness(
         name="antigravity",
         install="curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin",
@@ -507,15 +542,12 @@ REGISTRY: Dict[str, Harness] = {
 }
 
 #: Default order when ``AGENT_HARNESS_CHAIN`` is unset.
+#:
+#: The pipeline runs df as its only agent harness. The older external CLI entries stay registered
+#: but out of the default chain: they are not installed in the image, and ``agent.yml`` does not
+#: forward the chain overrides, so they cannot be re-enabled in DarkFactory's own workflows.
 ORDER: List[str] = [
-    "antigravity",
-    "claude",
-    "gemini",
-    "codex",
-    "kimi",
-    "grok",
-    "cursor",
-    "opencode",
+    "df",
 ]
 
 
