@@ -2588,6 +2588,13 @@ def dispatch_event(event_path: str, event_name: str):
                 )
                 return
 
+            # A pipeline-failure issue is the pipeline reporting on itself. Interpreting it as a
+            # request answers a question nobody asked, and every comment it posts is another event
+            # that re-runs the automations whose failure it reports.
+            if "pipeline-failure" in lowered:
+                print(f"Issue #{issue_num} is a pipeline-failure report; not interpreting it.")
+                return
+
             if not lowered & {"request", "plan"}:
                 # Not fatal. An agent that cannot apply a label has still read the issue and can
                 # still interpret it; aborting here threw the whole run away and filed a
