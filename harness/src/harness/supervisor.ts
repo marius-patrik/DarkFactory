@@ -29,6 +29,7 @@ export interface HarnessStepEvent {
 export type HarnessEvent =
 	| HarnessStepEvent
 	| { type: "text_delta"; delta: string }
+	| { type: "thinking_delta"; delta: string }
 	| { type: "tool_start"; toolCallId: string; toolName: string; input: unknown }
 	| { type: "tool_end"; toolCallId: string; toolName: string; isError: boolean }
 	| { type: "failover"; from: Candidate; to: Candidate; reason: string; errorMessage: string }
@@ -295,6 +296,11 @@ export class FailoverSupervisor {
 			const unsubscribe = this.session.subscribe((event: AgentSessionEvent) => {
 				if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") {
 					this.emit({ type: "text_delta", delta: event.assistantMessageEvent.delta });
+				} else if (event.type === "message_update" && event.assistantMessageEvent.type === "thinking_delta") {
+					// Thought content (e.g. Gemini parts with `thought: true`, which pi-ai maps to
+					// thinking blocks) is model-internal reasoning: it streams as its own event and
+					// never as answer text, so the parsed answer stays thought-free.
+					this.emit({ type: "thinking_delta", delta: event.assistantMessageEvent.delta });
 				} else if (event.type === "tool_execution_start") {
 					this.emit({ type: "tool_start", toolCallId: event.toolCallId, toolName: event.toolName, input: event.args });
 				} else if (event.type === "tool_execution_end") {

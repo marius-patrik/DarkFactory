@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AuthOperationOptions, Credential, CredentialInfo, CredentialStore, ProviderHeaders } from "@earendil-works/pi-ai";
@@ -81,8 +81,6 @@ export interface AccountSummary {
 }
 
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
-export interface BorrowedRefreshPlan { credential: OAuthCredentialSlot; refresh: boolean }
-export interface BorrowedCredentialCoordinator { prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan> }
 
 function throwIfAborted(options?: AuthOperationOptions): void {
 	options?.signal?.throwIfAborted();
@@ -96,7 +94,7 @@ function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0;
 }
 
-function isSlot(value: unknown): value is CredentialSlot {
+export function isSlot(value: unknown): value is CredentialSlot {
 	if (!value || typeof value !== "object") return false;
 	const slot = value as Record<string, unknown>;
 	if (slot.type === "oauth") return isNonEmptyString(slot.access) && isNonEmptyString(slot.refresh) && typeof slot.expires === "number" &&
@@ -104,16 +102,46 @@ function isSlot(value: unknown): value is CredentialSlot {
 	return (slot.type === "api_key" || slot.type === "header" || slot.type === "cookie" || slot.type === "other") && isNonEmptyString(slot.value);
 }
 
-function isMetadata(value: unknown): value is Record<string, string> | undefined {
+export function isMetadata(value: unknown): value is Record<string, string> | undefined {
 	return value === undefined || (typeof value === "object" && value !== null && Object.values(value).every((entry) => typeof entry === "string"));
 }
 
-function isAccount(value: unknown, id: string): value is AccountRecord {
+export function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
 	const account = value as Record<string, unknown>;
 	return account.id === id && isNonEmptyString(account.provider) && isNonEmptyString(account.label) &&
 		isMetadata(account.metadata) && typeof account.slots === "object" && account.slots !== null &&
 		Object.entries(account.slots).every(([name, slot]) => isNonEmptyString(name) && isSlot(slot));
+}
+
+export function validateAccountRecord(value: unknown, expectedId?: string): AccountRecord {
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Account record must be an object");
+	const record = value as Record<string, unknown>;
+	const id = expectedId ?? (typeof record.id === "string" ? record.id : undefined);
+	if (!id) throw new Error("Account record missing id");
+	const parsed = parseAccountId(id);
+	if (!parsed) throw new Error(`Invalid account id: ${id}`);
+	const provider = typeof record.provider === "string" && record.provider ? record.provider : parsed.provider;
+	if (provider !== parsed.provider) {
+		throw new Error(`Account record provider (${provider}) does not match target provider (${parsed.provider})`);
+	}
+	if (!expectedId && typeof record.label === "string" && record.label && record.label !== parsed.label) {
+		throw new Error(`Account record label (${record.label}) does not match id (${id})`);
+	}
+	if (!isMetadata(record.metadata)) throw new Error("Account metadata must be string key-value pairs");
+	if (!record.slots || typeof record.slots !== "object" || Array.isArray(record.slots) || Object.keys(record.slots).length === 0) {
+		throw new Error("Account record must contain at least one valid credential slot");
+	}
+	for (const [name, slot] of Object.entries(record.slots)) {
+		if (!isNonEmptyString(name) || !isSlot(slot)) throw new Error(`Invalid credential slot: ${name}`);
+	}
+	return {
+		id,
+		provider: parsed.provider,
+		label: parsed.label,
+		...(record.metadata ? { metadata: record.metadata as Record<string, string> } : {}),
+		slots: record.slots as Record<string, CredentialSlot>,
+	};
 }
 
 function parseFile(value: unknown): CredentialFile {
@@ -183,7 +211,6 @@ export class FileCredentialStore {
 	constructor(
 		home = defaultDfHome(),
 		private readonly fallback?: CredentialFallback,
-		readonly borrowed?: BorrowedCredentialCoordinator,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
 	) {
 		this.home = home;
@@ -193,7 +220,22 @@ export class FileCredentialStore {
 
 	private async load(): Promise<CredentialFile> {
 		try {
-			return parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
+			const parsed = parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
+			const migratedIds: string[] = [];
+			for (const account of Object.values(parsed.accounts)) {
+				if (account.metadata?.ownership === "borrowed") {
+					account.metadata.ownership = "df-owned";
+					if (account.metadata.importer && !account.metadata.importedFrom) {
+						account.metadata.importedFrom = account.metadata.importer;
+					}
+					migratedIds.push(account.id);
+				}
+			}
+			if (migratedIds.length > 0) {
+				console.error(`Notice: migrated borrowed accounts to df-owned in ${this.path}: ${migratedIds.join(", ")}`);
+				await this.save(parsed);
+			}
+			return parsed;
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") return { version: FILE_VERSION, accounts: {} };
 			if (error instanceof SyntaxError) throw new Error("Invalid credentials file JSON");
@@ -209,6 +251,7 @@ export class FileCredentialStore {
 			await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 			throwIfAborted(options);
 			await rename(temporary, this.path);
+			await chmod(this.path, 0o600).catch(() => undefined);
 		} catch (error) {
 			await Bun.file(temporary).delete().catch(() => undefined);
 			throw error;
@@ -359,16 +402,7 @@ export class AccountCredentialStore implements CredentialStore {
 	): Promise<Credential | undefined> {
 		this.assertProvider(providerId);
 		return this.store.modifyAccount(this.id, async (current) => {
-			let input = current ? toPiCredential(current) : undefined;
-			if (current?.metadata?.importer && input?.type === "oauth" && this.store.borrowed) {
-				const plan = await this.store.borrowed.prepare(current, options);
-				input = plan.credential;
-				if (!plan.refresh) {
-					const slotName = primarySlot(current, "oauth")?.[0] ?? "oauth";
-					current.slots[slotName] = clone(plan.credential);
-					return current;
-				}
-			}
+			const input = current ? toPiCredential(current) : undefined;
 			const next = await fn(input);
 			if (next === undefined) return undefined;
 			const parsed = parseAccountId(this.id)!;

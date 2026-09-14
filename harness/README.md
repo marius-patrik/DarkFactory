@@ -15,7 +15,7 @@ Each account is `<provider>:<label>` with typed `oauth`, `api_key`, `header`, `c
 or provider-specific `other` slots. Pi receives a rebindable one-account
 `CredentialStore`; it is explicitly pointed at `$DF_HOME/pi-agent` and never uses pi's
 `auth.json`. OAuth logins are df-owned, isolated by account label, and marked machine-local;
-borrowed CLI credentials remain an explicit reimport-first fallback. Sessions are JSONL under `$DF_HOME/sessions`, the first-class limit ledger is
+imports are one-time adoptions into df-owned accounts. Sessions are JSONL under `$DF_HOME/sessions`, the first-class limit ledger is
 `$DF_HOME/limits.json`, and model catalogs are in `$DF_HOME/models`. Legacy `quota.json`
 records migrate automatically. Credential and limit updates use atomic replacement plus cross-process lockfiles; stale
 locks left by dead processes are recovered. Changing or successfully refreshing an

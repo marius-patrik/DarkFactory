@@ -1238,6 +1238,8 @@ def update_project_status_blocked(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, "Blocked")
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, "Blocked")
             else:
@@ -1279,7 +1281,7 @@ def unblock_entity(
     except Exception as e:
         print(f"Notice: Failed to remove Blocked label: {e}", file=sys.stderr)
 
-    # 2. Update Project status
+    # 2. Update Project status and status label
     owner = repo.split("/")[0] if "/" in repo else PROJECT_OWNER
     entity_url = (
         f"https://github.com/{repo}/pull/{issue_or_pr_number}"
@@ -1298,6 +1300,8 @@ def unblock_entity(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, target_status)
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, target_status)
             else:
@@ -1492,7 +1496,11 @@ def parse_df_json_output(stdout: str) -> str:
             delta = event.get("delta")
             if isinstance(delta, str) and delta:
                 segments[-1].append(delta)
-        elif kind in ("tool_start", "tool_end"):
+        elif kind in ("tool_start", "tool_end", "failover") or (
+            kind == "step" and (event.get("errorMessage") or event.get("stopReason") == "error")
+        ):
+            # A new segment starts after each tool call and after an attempt that failed; the
+            # closing ``step`` of a successful turn follows its text and must not clear it.
             segments.append([])
     return "".join(segments[-1]).strip()
 
@@ -1571,26 +1579,12 @@ DF_ACCOUNT_SET_MAP = (
     ("GROQ_API_KEY", "groq:default", "api_key"),
 )
 
-#: Subscription logins df borrows: ``(variable, login file under HOME, df import source)``. The
-#: file is written with mode 0600 and imported with ``df account import <source>``; df's importer
-#: ids and paths (``codex`` reading ``.codex/auth.json``, ``grok`` reading ``.grok/auth.json``)
-#: come from its provider declarations.
-DF_LOGIN_IMPORT_MAP = (
-    ("CODEX_AUTH_JSON", os.path.join(".codex", "auth.json"), "codex"),
-    ("GROK_AUTH_JSON", os.path.join(".grok", "auth.json"), "grok"),
+#: Subscription logins df loads as df-owned accounts: ``(variable, account id)``.
+#: Loaded with ``df account load <account> --from-env <variable>``.
+DF_ACCOUNT_LOAD_MAP = (
+    ("DF_ACCOUNT_OPENAI_CODEX", "openai-codex:pipeline"),
+    ("DF_ACCOUNT_GROK_SUB", "grok-sub:pipeline"),
 )
-
-
-def _home_directory() -> str:
-    """Returns the home directory borrowed login files are written under.
-
-    ``HOME`` wins over the account default when set, so tests can isolate the files and the
-    behaviour is identical on platforms where ``expanduser`` ignores ``HOME``.
-
-    Returns:
-        The home directory path.
-    """
-    return os.environ.get("HOME", "") or os.path.expanduser("~")
 
 
 def df_setup_secret_names() -> Tuple[str, ...]:
@@ -1604,7 +1598,7 @@ def df_setup_secret_names() -> Tuple[str, ...]:
         Secret variable names, without repeats.
     """
     names: List[str] = [variable for variable, _, _ in DF_ACCOUNT_SET_MAP]
-    names.extend(variable for variable, _, _ in DF_LOGIN_IMPORT_MAP)
+    names.extend(variable for variable, _ in DF_ACCOUNT_LOAD_MAP)
     seen: List[str] = []
     for name in names:
         if name not in seen:
@@ -1632,20 +1626,31 @@ def find_df_config() -> Optional[str]:
     return None
 
 
+#: Set after the first ``setup_df_accounts`` call so repeated calls (``main`` then
+#: ``dispatch_event``) reuse the same ``DF_HOME`` instead of reconfiguring every account.
+_DF_SETUP_HOME: Optional[str] = None
+
+
 def setup_df_accounts() -> str:
     """Configures df's accounts from the environment before dispatch.
 
     Points ``DF_HOME`` at a fresh temp dir, copies the chain config there, saves every populated
-    API key with ``df account set`` (value on stdin, never printed), and writes each populated
-    subscription login file before importing it with ``df account import``. Empty variables are
-    skipped: a repository holding three of the keys gets a shorter chain, not a failure. A
-    failure to reach ``df`` at all is a notice, not a fatal error, so local runs without the
-    harness still dispatch.
+    API key with ``df account set`` (value on stdin, never printed), and loads each populated
+    subscription account record with ``df account load``. Empty variables are skipped: a
+    repository holding three of the keys gets a shorter chain, not a failure. A failure to reach
+    ``df`` at all is a notice, not a fatal error, so local runs without the harness still
+    dispatch.
+
+    Called exactly once per process; a second call returns the existing ``DF_HOME``.
 
     Returns:
         The ``DF_HOME`` directory the run uses.
     """
+    global _DF_SETUP_HOME
+    if _DF_SETUP_HOME is not None:
+        return _DF_SETUP_HOME
     df_home = tempfile.mkdtemp(prefix="df-home-")
+    _DF_SETUP_HOME = df_home
     os.environ["DF_HOME"] = df_home
     df_env = {**os.environ, "DF_HOME": df_home}
     try:
@@ -1681,94 +1686,104 @@ def setup_df_accounts() -> str:
         except Exception as exc:  # noqa: BLE001 - one bad key must not drop the rest
             print(f"df account setup notice for {account}: {exc}", file=sys.stderr)
 
-    for variable, relative_path, import_source in DF_LOGIN_IMPORT_MAP:
+    for variable, account in DF_ACCOUNT_LOAD_MAP:
         content = os.environ.get(variable, "")
         if not content:
             continue
-        path = os.path.join(_home_directory(), relative_path)
         try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as stream:
-                stream.write(content)
-            os.chmod(path, 0o600)
             subprocess.run(
-                ["df", "account", "import", import_source, "--account", "default"],
+                ["df", "account", "load", account, "--from-env", variable],
                 capture_output=True,
                 text=True,
                 check=True,
                 env=df_env,
             )
-            print(f"Imported df account {import_source}/default from {variable}.")
+            print(f"Loaded df account {account} from {variable}.")
         except FileNotFoundError:
             print("df binary not found; skipping df account setup.", file=sys.stderr)
             return df_home
         except Exception as exc:  # noqa: BLE001 - one bad login must not drop the rest
-            print(f"df account import notice for {import_source}: {exc}", file=sys.stderr)
+            print(f"df account load notice for {account}: {exc}", file=sys.stderr)
     return df_home
 
 
-def snapshot_df_login_files() -> List[Tuple[str, str, Optional[str]]]:
-    """Snapshots the login material df can rotate during a run.
+def snapshot_df_login_files() -> List[Tuple[str, str, Optional[Any]]]:
+    """Snapshots the df-owned account records that can rotate during a run.
 
-    That is the borrowed CLI login files (``~/.codex/auth.json``, ``~/.grok/auth.json``) df
-    imports from, plus df's own credential store under ``DF_HOME``. The snapshot is taken before
-    the invocation so :func:`finish_df_login_files` can tell rotation apart from stasis.
+    The snapshot records the initial account state for each loaded account so
+    :func:`finish_df_login_files` can detect refreshed OAuth tokens and write them back to
+    the secret they were loaded from.
 
     Returns:
-        List of ``(path, secret name, original content)``; the store entry carries an empty
-        secret name because its format is df-internal and is never written back as a secret.
+        List of ``(account id, secret variable, original record)``.
     """
-    states: List[Tuple[str, str, Optional[str]]] = []
-    home = _home_directory()
-    for variable, relative_path, _import_source in DF_LOGIN_IMPORT_MAP:
-        path = os.path.join(home, relative_path)
-        try:
-            with open(path, "r", encoding="utf-8") as stream:
-                original: Optional[str] = stream.read()
-        except OSError:
-            original = None
-        states.append((path, variable, original))
+    states: List[Tuple[str, str, Optional[Any]]] = []
     df_home = os.environ.get("DF_HOME", "")
     store_path = os.path.join(df_home, "credentials.json") if df_home else ""
-    try:
-        with open(store_path, "r", encoding="utf-8") as stream:
-            store_original: Optional[str] = stream.read()
-    except OSError:
-        store_original = None
-    states.append((store_path, "", store_original))
+    accounts_store: Dict[str, Any] = {}
+    if store_path and os.path.isfile(store_path):
+        try:
+            with open(store_path, "r", encoding="utf-8") as stream:
+                accounts_store = json.load(stream).get("accounts", {})
+        except (OSError, ValueError):
+            accounts_store = {}
+
+    for variable, account in DF_ACCOUNT_LOAD_MAP:
+        original: Optional[Any] = accounts_store.get(account)
+        if original is None:
+            raw = os.environ.get(variable, "")
+            if raw:
+                try:
+                    original = json.loads(raw)
+                except ValueError:
+                    original = raw
+        states.append((account, variable, original))
     return states
 
 
-def finish_df_login_files(states: List[Tuple[str, str, Optional[str]]]) -> None:
-    """Writes rotated df login material back to the secret it came from.
+def finish_df_login_files(states: List[Tuple[str, str, Optional[Any]]]) -> None:
+    """Writes rotated df account records back to the secret they came from.
 
-    Mirrors the CLI login-file lifecycle (:func:`finish_login_file`): a file whose content
-    changed is persisted with :func:`persist_rotated_token` under that account's own secret name,
-    and only there. df's own store is df-internal — its slots are not CLI login files — so a
-    rotation there is reported, without values, rather than written back in a format the next
-    setup could not import.
+    Compares the stored record under ``DF_HOME/credentials.json`` with the value loaded before
+    the run. If tokens were refreshed, the updated record is written back using
+    :func:`persist_rotated_token` so a refreshed token never strands the secret.
 
     Args:
         states: Snapshot taken by :func:`snapshot_df_login_files` before the invocation.
     """
-    for path, secret, original in states:
-        if not path:
+    df_home = os.environ.get("DF_HOME", "")
+    store_path = os.path.join(df_home, "credentials.json") if df_home else ""
+    if not store_path or not os.path.isfile(store_path):
+        return
+
+    try:
+        with open(store_path, "r", encoding="utf-8") as stream:
+            accounts_store = json.load(stream).get("accounts", {})
+    except (OSError, ValueError):
+        return
+
+    for account, secret, original in states:
+        if not secret:
             continue
-        try:
-            with open(path, "r", encoding="utf-8") as stream:
-                current = stream.read()
-        except OSError:
+        current = accounts_store.get(account)
+        if current is None or original is None:
             continue
-        if original is None or current == original:
-            continue
-        if secret:
-            persist_rotated_token(secret, current)
-        else:
-            print(
-                "df's stored credential rotated during the run; it stays in DF_HOME and is "
-                "not written back as a CLI login secret.",
-                file=sys.stderr,
-            )
+        orig_val = original
+        if isinstance(orig_val, str):
+            try:
+                orig_val = json.loads(orig_val)
+            except ValueError:
+                pass
+        curr_val = current
+        if isinstance(curr_val, str):
+            try:
+                curr_val = json.loads(curr_val)
+            except ValueError:
+                pass
+        if curr_val != orig_val:
+            serialized = json.dumps(current) if not isinstance(current, str) else current
+            persist_rotated_token(secret, serialized)
+            print(f"Rotated df account {account} written back to {secret}.")
 
 
 #: Time budget for stages that explore the repository before answering. Every antigravity attempt
@@ -4006,12 +4021,6 @@ def dispatch_event(event_path: str, event_name: str):
         repo = repo_raw
     else:
         repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
-    # Every agent call in the pipeline goes through df: configure its accounts from the
-    # environment before anything dispatches.
-    try:
-        setup_df_accounts()
-    except Exception as exc:  # noqa: BLE001 - setup must never stop the dispatch itself
-        print(f"df setup notice: {exc}", file=sys.stderr)
 
     if event_name == "issues":
         action = payload.get("action")
