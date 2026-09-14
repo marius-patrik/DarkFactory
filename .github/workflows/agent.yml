@@ -114,7 +114,11 @@ jobs:
     # AGENT_ENABLED to "true" once a harness secret is configured; until then every issue would
     # otherwise start a container build that cannot authenticate. `secrets` is not available in a
     # job-level `if`, which is why this gate is a variable and the runner re-checks at dispatch.
-    if: vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true'
+    #
+    # Comments written by a bot (the agent's own Interpretation, plan and review comments, board
+    # automation) are skipped here rather than inside the container: the runner ignores them anyway,
+    # and reaching that check cost a container build and two OAuth refreshes per comment.
+    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]')
     runs-on: ubuntu-latest
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
