@@ -2,7 +2,7 @@
 
 = Teoretická část
 
-#draft[
+#confirmed[
 Tato kapitola vymezuje pojmy, o které se opírá praktická část: řízení verzí,
 kontinuální integraci, orchestraci jazykových modelů a princip zapojení člověka
 do smyčky (_Human-in-the-loop_). Cílem není vyčerpávající přehled, nýbrž zavedení
@@ -11,7 +11,7 @@ pojmů v podobě, v jaké s nimi pracuje navržený systém.
 
 == Řízení verzí
 
-#draft[
+#confirmed[
 Systém pro řízení verzí uchovává historii změn zdrojového kódu. Distribuovaný
 model, jehož nejrozšířenějším zástupcem je Git, se od centralizovaného liší tím,
 že každý vývojář má úplnou kopii historie @chacon2014. Změny lze proto vytvářet
@@ -29,7 +29,7 @@ Tato grafová architektura má klíčový význam pro bezpečné zapojení auton
 
 === Model pull requestu
 
-#diff[Sloučení větve do hlavní linie se ve většině dnešních projektů odehrává prostřednictvím _pull requestu_ — návrhu změny, který lze komentovat, ověřovat a schvalovat. Pull request je proto přirozeným místem, kde se uplatňuje kontrola kvality, a zároveň místem, kam lze vložit schvalovací bod pro člověka.][Sloučení větve do hlavní vývojové linie se v moderním kolaborativním softwarovém inženýrství odehrává prostřednictvím modelu *pull requestu* (PR, na platformě GitLab též _Merge Request_). Jde o formalizovaný procesní uzel, v němž autor větve předkládá navržený diff kódu k revizi dříve, než dojde k jeho trvalému začlenění do chráněné hlavní větve.
+#confirmed[Sloučení větve do hlavní vývojové linie se v moderním kolaborativním softwarovém inženýrství odehrává prostřednictvím modelu *pull requestu* (PR, na platformě GitLab též _Merge Request_). Jde o formalizovaný procesní uzel, v němž autor větve předkládá navržený diff kódu k revizi dříve, než dojde k jeho trvalému začlenění do chráněné hlavní větve.
 
 V kontextu autonomního vývoje plní pull request dvě nezastupitelné funkce:
 1. *Strojová validační brána*: Na vytvoření nebo aktualizaci PR reaguje integrační server (CI), který v izolovaném kontejneru spustí sadu automatizovaných testů, typových kontrol a bezpečnostních linterů. Tím je objektivně ověřeno, že syntetický kód generovaný modelem splňuje stanovené standardy a nezpůsobuje regresi stávající funkcionality.

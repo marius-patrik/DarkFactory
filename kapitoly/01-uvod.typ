@@ -47,7 +47,7 @@ Dílčí cíle:
 + Vyhodnotit jeho chování a pojmenovat omezení, na která v provozu narazil.
 ]
 
-#added[
+#unconfirmed[
 V návaznosti na stanovené cíle si práce klade tři konkrétní výzkumné otázky:
 - *VO1*: Do jaké míry lze rutinní fáze softwarového vývoje (analýza, implementace, testování, dokumentace) automatizovat pomocí orchestrace jazykových modelů při zachování deterministických záruk a nulové regrese v hlavní větvi?
 - *VO2*: Jaké jsou fundamentální limitující faktory současných LLM při samostatné práci nad reálným repozitářem z hlediska kapacity kontextového okna, degradace pozornosti a stability nástrojů?
@@ -56,9 +56,7 @@ V návaznosti na stanovené cíle si práce klade tři konkrétní výzkumné ot
 
 == Metodika
 
-#diff[Práce je z povahy tématu konstrukční: hlavním výstupem je funkční systém, nikoli měření. Postup odpovídá vývoji softwaru — po nastudování východisek následoval návrh, realizace a nasazení na reálné repozitáře, přičemž zjištění z provozu se vracela zpět do návrhu.
-
-Ověření proto neprobíhalo formou experimentu s kontrolní skupinou, nýbrž sledováním chování systému v provozu. Sledovány byly zejména nalezené chyby, neboť právě ty ukazují na rozdíl mezi předpokladem a skutečností.][Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:
+#confirmed[Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:
 1. *DarkFactory*: mateřský repozitář systému (Python, GitHub Actions, metaharness).
 2. *OdbornaPrace-paper*: repozitář samotného rukopisu této práce (doména textu a sazby v systému Typst).
 3. *ChessWithQuests*: aplikační projekt s herní logikou.
