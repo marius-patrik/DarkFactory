@@ -777,8 +777,45 @@ class GitHubGraphQLClient:
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
+            # Two runs for the same issue race to add it; the loser is told the item exists. That
+            # is the state it wanted, so it is found rather than reported - reporting it filed a
+            # failure issue whose own events started the next race.
+            if "already exists in this project" in str(exc):
+                existing = self.find_item_for_content(project_id, content_id)
+                if existing:
+                    return existing
             _fail(f"adding content {content_id} to project {project_id}: {_detail(exc)}")
             return None
+
+    def find_item_for_content(self, project_id: str, content_id: str) -> Optional[str]:
+        """Finds the project item that already holds an issue or pull request.
+
+        Args:
+            project_id: Project node ID.
+            content_id: Issue or pull request node ID.
+
+        Returns:
+            Project item ID, or None when the content is not on that project or the lookup fails.
+        """
+        query = """
+        query ItemForContent($contentId: ID!) {
+          node(id: $contentId) {
+            ... on Issue { projectItems(first: 50) { nodes { id project { id } } } }
+            ... on PullRequest { projectItems(first: 50) { nodes { id project { id } } } }
+          }
+        }
+        """
+        try:
+            data = self.execute(query, {"contentId": content_id})
+        except Exception as exc:
+            if is_rate_limited(exc):
+                mark_rate_limited()
+            return None
+        nodes = ((data.get("node") or {}).get("projectItems") or {}).get("nodes") or []
+        for node in nodes:
+            if (node.get("project") or {}).get("id") == project_id:
+                return node.get("id")
+        return None
 
     def update_item_status(
         self, project_id: str, item_id: str, field_id: str, option_id: str

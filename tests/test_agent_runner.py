@@ -368,6 +368,17 @@ class TestPlanIssuesAreNotInterpreted:
         module.dispatch_event(str(path), "issues")
         assert called == [], "a Plan issue must not be interpreted"
 
+    def test_a_pipeline_failure_issue_is_not_interpreted(self, monkeypatch, tmp_path):
+        """The pipeline reporting on itself is not a request, and answering it re-fires automations."""
+        called = []
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(self._payload(["pipeline-failure"])), encoding="utf-8")
+        module.dispatch_event(str(path), "issues")
+        assert called == [], "a pipeline-failure issue must not be interpreted"
+
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
         """The ordinary path must be untouched."""
         called = []
