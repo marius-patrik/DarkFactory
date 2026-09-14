@@ -1251,7 +1251,11 @@ class TestAnswersAboutQuotaArePosted:
             for line in source.split("\n")
             if "is_quota_exhausted(" in line and "def is_quota_exhausted" not in line
         ]
-        assert callers == ["if not is_quota_exhausted(detail):"], callers
+        assert callers == [
+            "exhausted = is_quota_exhausted(detail)",
+            "short_quota = is_quota_exhausted(output)",
+            "if is_quota_exhausted(combined):",
+        ], callers
 
 
 class TestPlanAlignmentStatus:
@@ -1622,3 +1626,280 @@ class TestStageTimeBudgets:
         timeout = self._capture(monkeypatch, lambda m: m.handle_plan(227, 227, REPO_SLUG))
         assert timeout == agent_runner.PLAN_TIMEOUT
         assert agent_runner.PLAN_TIMEOUT != "5m0s"
+
+
+class TestAuthFailuresRotate:
+    """A stale secret on one harness must not stop a healthy chain (F3 item 1)."""
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Error 401: invalid api key",
+            "claude: 401 Unauthorized",
+            "HTTP 403 forbidden",
+            "invalid api key provided",
+            "unauthorized: no valid credential",
+            "OAuth token expired token, please re-login",
+            "invalid_grant: refresh token expired",
+            "Invalid API key for model opus",
+        ],
+    )
+    def test_auth_failures_detected(self, message: str):
+        """Auth errors must be recognised so the chain rotates past the stale secret.
+
+        Args:
+            message: Provider error text.
+        """
+        assert agent_runner.is_auth_failure(message)
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "compilation failed: expected `;`",
+            "rate limit exceeded, retry later",
+            "quota exhausted for this model",
+            "",
+        ],
+    )
+    def test_non_auth_errors_not_misdetected(self, message: str):
+        """Quota wording is quota, build failures are bugs; neither is an auth failure.
+
+        Args:
+            message: Non-auth error text.
+        """
+        assert not agent_runner.is_auth_failure(message)
+
+    def _two_claude_accounts(self, monkeypatch, secret="supersecret-token-value"):
+        """Puts two Claude accounts in the environment and pretends the binary exists.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+            secret: First account credential value, long enough to be redacted.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "claude")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["claude"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", secret)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN_2", "second-account-token-value")
+
+    def test_auth_failure_rotates_to_the_next_account(self, monkeypatch):
+        """A 401 on the first account must try the second, without sleeping.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_claude_accounts(monkeypatch)
+        slept: List[float] = []
+        monkeypatch.setattr(agent_runner.time, "sleep", lambda s: slept.append(s))
+        seen: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
+            if len(seen) == 1:
+                raise subprocess.CalledProcessError(1, argv, stderr="401 invalid api key")
+            return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "done"
+        assert seen == ["supersecret-token-value", "second-account-token-value"]
+        assert slept == []
+
+    def test_auth_rotation_log_names_harness_not_credential(self, monkeypatch, capsys):
+        """The log says which harness/account failed; the credential value never appears.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+            capsys: Pytest capture fixture.
+        """
+        self._two_claude_accounts(monkeypatch)
+
+        def fake_run(argv, **kwargs):
+            raise subprocess.CalledProcessError(
+                1, argv, stderr="401 invalid api key: supersecret-token-value"
+            )
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        result = agent_runner.run_agent_prompt("do it")
+        assert "[DarkFactory Agent Execution Error]" in result
+        err = capsys.readouterr().err
+        assert "claude" in err
+        assert "supersecret-token-value" not in err
+
+    def test_auth_everywhere_is_an_error_not_a_quota_block(self, monkeypatch):
+        """All-stale credentials must surface as an error, never a Blocked quota notice.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_claude_accounts(monkeypatch)
+        checkpoints: List[int] = []
+
+        def fake_run(argv, **kwargs):
+            raise subprocess.CalledProcessError(1, argv, stderr="401 Unauthorized")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        monkeypatch.setattr(
+            agent_runner, "checkpoint_and_notify_exhaustion", lambda **k: checkpoints.append(1)
+        )
+        result = agent_runner.run_agent_prompt("do it")
+        assert result.startswith("[DarkFactory Agent Execution Error]")
+        assert not result.startswith(agent_runner.QUOTA_EXHAUSTED_NOTICE)
+        assert checkpoints == []
+
+    def test_quota_wording_on_stdout_with_empty_output_is_quota(self, monkeypatch):
+        """Exhaustion reported on stdout with no output must Block, not raise.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "codex")
+        monkeypatch.delenv("AGENT_HARNESS_CONFIG", raising=False)
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in harnesses.REGISTRY["codex"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "one")
+        checkpoints: List[int] = []
+        monkeypatch.setattr(
+            agent_runner, "checkpoint_and_notify_exhaustion", lambda **k: checkpoints.append(1)
+        )
+
+        def fake_run(argv, **kwargs):
+            return subprocess.CompletedProcess(
+                argv, 0, stdout="quota exceeded for this model", stderr=""
+            )
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        result = agent_runner.run_agent_prompt(
+            "do it",
+            checkpoint_context={"issue_number": 1, "repo": "marius-patrik/DarkFactory"},
+        )
+        assert result.startswith(agent_runner.QUOTA_EXHAUSTED_NOTICE)
+        assert checkpoints == [1]
+
+    def test_auth_wording_on_stdout_with_empty_output_rotates(self, monkeypatch):
+        """Auth reported on stdout with no output must rotate, not raise RuntimeError.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._two_claude_accounts(monkeypatch)
+        seen: List[str] = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(kwargs["env"].get("CLAUDE_CODE_OAUTH_TOKEN", ""))
+            if len(seen) == 1:
+                return subprocess.CompletedProcess(argv, 0, stdout="401 invalid api key", stderr="")
+            return subprocess.CompletedProcess(argv, 0, stdout="done", stderr="")
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("do it") == "done"
+        assert seen == ["supersecret-token-value", "second-account-token-value"]
+
+
+class TestExecutionErrorsFailTheRun:
+    """A posted Execution Error must exit non-zero so report-failure fires (F3 item 2)."""
+
+    def _posted_after(self, monkeypatch, prompt_result, handler):
+        posted: List[str] = []
+
+        def fake_gh(args, repo=None, **kwargs):
+            if args[:2] in (["issue", "comment"], ["pr", "comment"]):
+                posted.append(args[args.index("--body") + 1])
+                return ""
+            return json.dumps({"title": "Request: x", "body": "y", "labels": []})
+
+        monkeypatch.setattr(agent_runner, "run_gh", fake_gh)
+        monkeypatch.setattr(agent_runner, "try_gh", lambda *a, **k: "")
+        monkeypatch.setattr(agent_runner, "run_agent_prompt", lambda *a, **k: prompt_result)
+        return posted, handler
+
+    def test_interpret_error_posts_then_exits(self, monkeypatch):
+        """An interpret failure must be visible as a failed run, not a green one.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        posted, _ = self._posted_after(
+            monkeypatch,
+            "[DarkFactory Agent Execution Error]: boom",
+            None,
+        )
+        with pytest.raises(SystemExit) as exc:
+            agent_runner.handle_interpret(7, "marius-patrik/DarkFactory")
+        assert exc.value.code != 0
+        assert len(posted) == 1 and "Execution Error" in posted[0]
+
+    def test_plan_error_posts_then_exits(self, monkeypatch):
+        """A plan failure must be visible as a failed run, not a green one.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._posted_after(
+            monkeypatch,
+            "[DarkFactory Agent Execution Error]: boom",
+            None,
+        )
+        with pytest.raises(SystemExit) as exc:
+            agent_runner.handle_plan(7, 7, "marius-patrik/DarkFactory")
+        assert exc.value.code != 0
+
+    def test_respond_error_posts_then_exits(self, monkeypatch):
+        """A respond failure must be visible as a failed run, not a green one.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        self._posted_after(
+            monkeypatch,
+            "[DarkFactory Agent Execution Error]: boom",
+            None,
+        )
+        with pytest.raises(SystemExit) as exc:
+            agent_runner.handle_respond(7, "hello?", "marius-patrik/DarkFactory")
+        assert exc.value.code != 0
+
+    def test_quota_notice_still_returns_normally(self, monkeypatch):
+        """Quota exhaustion keeps today's behaviour: checkpointed, Blocked, run stays green.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        notice = agent_runner.QUOTA_EXHAUSTED_NOTICE + " across every harness (claude): 429"
+        posted: List[str] = []
+
+        def fake_gh(args, repo=None, **kwargs):
+            if args[:2] in (["issue", "comment"], ["pr", "comment"]):
+                posted.append(args[args.index("--body") + 1])
+            return json.dumps({"title": "Request: x", "body": "y", "labels": []})
+
+        monkeypatch.setattr(agent_runner, "run_gh", fake_gh)
+        monkeypatch.setattr(agent_runner, "run_agent_prompt", lambda *a, **k: notice)
+        assert agent_runner.handle_plan(7, 7, "marius-patrik/DarkFactory") is None
+        assert posted == []
+
+
+class TestFileLinksBecomeRepoLinks:
+    """Interpretation comments must not link files as file:/// URLs (F3 item 5)."""
+
+    def test_file_url_becomes_a_repo_blob_link(self):
+        """A file:// URL turns into a GitHub blob link for the file path."""
+        out = agent_runner.rewrite_file_links(
+            "see file:///harnesses.py for details",
+            repo="marius-patrik/DarkFactory",
+            branch="darkfactory",
+        )
+        assert "file://" not in out
+        assert "https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harnesses.py" in out
+
+    def test_file_url_without_repo_becomes_a_plain_path(self):
+        """Without a repo slug there is no link to build, so a plain code path remains."""
+        out = agent_runner.rewrite_file_links("see file:///.github/scripts/harnesses.py")
+        assert "file://" not in out
+        assert ".github/scripts/harnesses.py" in out
+
+    def test_plain_text_passes_through_unchanged(self):
+        """Text without file:// URLs is returned verbatim."""
+        assert agent_runner.rewrite_file_links("no links here") == "no links here"

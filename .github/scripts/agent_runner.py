@@ -23,7 +23,7 @@ import urllib.parse
 import urllib.request
 import random
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NoReturn, Optional, Tuple
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -769,6 +769,49 @@ def is_quota_exhausted(error_message: str) -> bool:
     return False
 
 
+#: Authentication failure wording. One stale secret must not stop a healthy chain: a 401/403,
+#: an expired token, or a rejected key rotates to the next account/harness exactly like quota,
+#: because an unused credential is always a better answer than failing. Matched against the same
+#: subprocess output as quota, never against an agent's answer text.
+AUTH_FAILURE_PATTERNS: List[re.Pattern] = [
+    re.compile(r"(?:status[_\s]*(?:code)?|http|error|code)\s*[:=]?\s*40[123]\b", re.IGNORECASE),
+    re.compile(r"\b401\s*[:=\-]?\s*(?:unauthorized|invalid|expired)", re.IGNORECASE),
+    re.compile(r"\bunauthorized\b", re.IGNORECASE),
+    re.compile(
+        r"\binvalid[_\s-]*(?:api[_\s-]*key|token|oauth|grant|credentials?)\b", re.IGNORECASE
+    ),
+    re.compile(r"\bexpired[_\s-]*token\b", re.IGNORECASE),
+    re.compile(r"\binvalid_grant\b", re.IGNORECASE),
+    re.compile(r"\bauthentication\s*(?:failed|expired|required)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:token|credential|api[_\s-]*key)\s*(?:expired|invalid|revoked)\b", re.IGNORECASE
+    ),
+]
+
+
+def is_auth_failure(error_message: str) -> bool:
+    """Detects whether an error indicates a rejected or expired credential.
+
+    Args:
+        error_message: Error string or subprocess stderr/stdout.
+
+    Returns:
+        True if the error message indicates an authentication failure, False otherwise.
+    """
+    if not error_message:
+        return False
+    for pattern in AUTH_FAILURE_PATTERNS:
+        if pattern.search(error_message):
+            return True
+    return False
+
+
+#: Maximum length of an exit-0 stdout treated as a failure report rather than an answer. CLI
+#: error reports are terse single lines; agent answers run long, so a short report carrying
+#: quota or auth wording rotates instead of being posted as the agent's reply.
+SHORT_REPORT_LIMIT: int = 300
+
+
 #: Prefix of the notice `run_agent_prompt` returns once every harness, account and model is out of
 #: quota. Callers test for this notice and never for quota wording: an agent's answer may discuss
 #: quotas and rate limits (a Request about quota handling always does), and reading that answer as
@@ -860,6 +903,66 @@ def redact_secrets(text: str) -> str:
         if len(value) >= 8 and value in text:
             text = text.replace(value, "***")
     return text
+
+
+#: Matches a `file://` URL in agent output. Coding-agent CLIs cite local paths this way, which
+#: is a broken link on GitHub: it points at the reader's own machine, not the repository.
+_FILE_URL_RE = re.compile(r"file://([^\s)'\"<>]+)")
+
+
+def rewrite_file_links(text: str, repo: str = "", branch: str = "") -> str:
+    """Rewrites `file://` URLs in agent output into repository links or plain paths.
+
+    Args:
+        text: Agent output that may contain `file://` URLs.
+        repo: Repository slug (`owner/name`) used to build blob links when known.
+        branch: Branch the blob link points at.
+
+    Returns:
+        The text with every `file://` URL replaced by a GitHub blob link when the repository
+        and branch are known, otherwise by a plain code path.
+    """
+    if not text or "file://" not in text:
+        return text
+
+    def _replace(match: re.Match) -> str:
+        raw = match.group(1).strip()
+        path = raw.lstrip("/")
+        for prefix in ("home/agent/", "home/runner/work/", "github/workspace/", "workspace/"):
+            if path.startswith(prefix):
+                path = path[len(prefix) :]
+                break
+        path = re.sub(r"^home/[^/]+/", "", path)
+        path = re.sub(
+            r"^[^/]+/[^/]+/[^/]+/(?=\.github/|\.agents/|src/|tests/|docs/|bin/)", "", path
+        )
+        if not path:
+            return match.group(0)
+        if path.startswith(("usr/", "opt/", "etc/", "tmp/", "var/", "proc/")):
+            return f"`{raw.rstrip('/').split('/')[-1]}`"
+        if repo and branch:
+            return f"[{path}](https://github.com/{repo}/blob/{branch}/{path})"
+        return f"`{path}`"
+
+    return _FILE_URL_RE.sub(_replace, text)
+
+
+def fail_agent_run(message: str) -> NoReturn:
+    """Exits non-zero after an agent failure notice has been posted.
+
+    A posted `[Execution Error]` comment used to be followed by a normal return, so the
+    container exited 0 and `report-failure.yml` saw success and filed nothing. Quota
+    exhaustion of the whole chain keeps its own path (checkpoint + `Blocked`, run stays
+    green) and never comes through here.
+
+    Args:
+        message: The failure reason, already posted as a comment.
+
+    Raises:
+        SystemExit: Always, with exit code 1.
+    """
+    print(message, file=sys.stderr)
+    raise SystemExit(1)
 
 
 def calculate_backoff(
@@ -1349,8 +1452,10 @@ def run_agent_prompt(
     account, then another pool, then another harness. A quota error moves to the next attempt
     immediately - an unused account is always a better answer than sleeping - and the exponential
     backoff is kept for the last attempt, the only point at which there is nothing left to rotate
-    to. Any other failure returns at once, because falling through on a genuine bug would burn
-    every harness on the same broken prompt.
+    to. An authentication failure (a 401/403, a rejected key, an expired token) rotates exactly
+    the same way: one stale secret must not stop a healthy chain. Any other failure returns at
+    once, because falling through on a genuine bug would burn every harness on the same broken
+    prompt.
 
     Args:
         prompt: Instruction prompt to execute.
@@ -1383,6 +1488,11 @@ def run_agent_prompt(
     base_env = os.environ.copy()
     base_env.setdefault("TERM", "xterm-256color")
     last_error_detail = ""
+    # What the last rotated failure was. Quota everywhere ends in a checkpoint and a `Blocked`
+    # label; auth everywhere is a plain error with no checkpoint, because resuming the same
+    # stale secrets would fail the same way. Defaults to quota to preserve the previous
+    # end-of-chain behaviour for failures that carry neither wording.
+    last_rotatable = "quota"
     tried: List[str] = []
     saw_no_output = False
 
@@ -1434,7 +1544,12 @@ def run_agent_prompt(
                 detail = f"{stderr_part}\n{stdout_part}".strip() or str(e)
                 last_error_detail = detail
 
-                if not is_quota_exhausted(detail):
+                # Quota is checked first: some providers report exhaustion as a 403, and that
+                # classification predates auth rotation and stays as it was.
+                exhausted = is_quota_exhausted(detail)
+                auth_failed = not exhausted and is_auth_failure(detail)
+
+                if not exhausted and not auth_failed:
                     err = (
                         f"[DarkFactory Agent Execution Error]: `{harness.binary}` invocation failed "
                         f"(exit code {e.returncode}): {detail}"
@@ -1442,6 +1557,24 @@ def run_agent_prompt(
                     print(err, file=sys.stderr)
                     return err
 
+                if auth_failed:
+                    last_rotatable = "auth"
+                    safe_detail = redact_secrets(detail)[:400]
+                    if rotation_available:
+                        print(
+                            f"Authentication failed on {label}: {safe_detail}. "
+                            f"Moving to the next account/model/harness rather than failing.",
+                            file=sys.stderr,
+                        )
+                        break
+                    print(
+                        f"Authentication failed on {label} "
+                        f"with no account, model or harness left to try: {safe_detail}.",
+                        file=sys.stderr,
+                    )
+                    break
+
+                last_rotatable = "quota"
                 if rotation_available:
                     print(
                         f"Quota exhausted on {label}: {detail}. "
@@ -1480,8 +1613,68 @@ def run_agent_prompt(
                 finish_login_file(login_state, login_file.rotates if login_file else False)
 
             output = (res.stdout or "").strip()
+            # A harness that reports exhaustion or an auth failure instead of an answer exits 0
+            # with the report on stdout. A terse single-line report is not an answer: rotating
+            # past it beats posting the error text as the agent's reply. The single-line limit
+            # is what keeps this from catching real answers - an answer may discuss quotas or
+            # credentials at length (a Request about quota handling always does), and that
+            # discussion must still pass through untouched.
+            if output and "\n" not in output and len(output) <= SHORT_REPORT_LIMIT:
+                short_quota = is_quota_exhausted(output)
+                short_auth = not short_quota and is_auth_failure(output)
+                if short_quota or short_auth:
+                    last_rotatable = "quota" if short_quota else "auth"
+                    last_error_detail = redact_secrets(output)
+                    where = (
+                        "Moving to the next attempt."
+                        if rotation_available
+                        else "Nothing left to rotate to."
+                    )
+                    cause = "Quota exhausted" if short_quota else "Authentication failed"
+                    print(
+                        f"{cause} on {label} (reported on stdout); "
+                        f"detail: {last_error_detail[:400]}. {where}",
+                        file=sys.stderr,
+                    )
+                    break
             # Timeout wording is only trusted from stderr: an agent's real answer may discuss timeouts.
             if not output or is_print_timeout(res.stderr or ""):
+                # A harness may report exhaustion or an auth failure on stdout while exiting 0
+                # with no usable text. That is a rotated failure like any other - not an empty
+                # shell - so classify the combined output before the empty branch below.
+                combined = f"{res.stdout or ''}\n{res.stderr or ''}".strip()
+                if is_quota_exhausted(combined):
+                    last_rotatable = "quota"
+                    last_error_detail = redact_secrets(_bounded_tail(combined)) or (
+                        f"{label} reported exhaustion"
+                    )
+                    where = (
+                        "Moving to the next attempt."
+                        if rotation_available
+                        else "Nothing left to rotate to."
+                    )
+                    print(
+                        f"Quota exhausted on {label} (reported without usable output); "
+                        f"stderr tail: {last_error_detail[:400]}. {where}",
+                        file=sys.stderr,
+                    )
+                    break
+                if is_auth_failure(combined):
+                    last_rotatable = "auth"
+                    last_error_detail = redact_secrets(_bounded_tail(combined)) or (
+                        f"{label} reported an authentication failure"
+                    )
+                    where = (
+                        "Moving to the next attempt."
+                        if rotation_available
+                        else "Nothing left to rotate to."
+                    )
+                    print(
+                        f"Authentication failed on {label} (reported without usable output); "
+                        f"stderr tail: {last_error_detail[:400]}. {where}",
+                        file=sys.stderr,
+                    )
+                    break
                 # A harness that exits 0 with no usable text is a failed attempt, not a perfect
                 # answer: `agy --print-timeout` spends its budget and exits 0 with empty output,
                 # and posting that empty shell was the whole bug. It rotates exactly like quota -
@@ -1520,6 +1713,17 @@ def run_agent_prompt(
         print(notice, file=sys.stderr)
         _post_agent_failure_notice(notice, checkpoint_context)
         raise RuntimeError(notice)
+
+    if last_rotatable == "auth":
+        # Every credential in the chain was rejected. This is not quota - resuming the same
+        # stale secrets would fail the same way - so there is no checkpoint and no `Blocked`
+        # label, just an error the callers post before failing the run.
+        err = (
+            "[DarkFactory Agent Execution Error]: Authentication failed "
+            f"across every harness and model ({', '.join(tried)}): {last_error_detail}"
+        )
+        print(redact_secrets(err), file=sys.stderr)
+        return err
 
     err = (
         f"{QUOTA_EXHAUSTED_NOTICE} across every harness and model "
@@ -1571,7 +1775,8 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
         "1. Verbatim Request Summary\n"
         "2. Architectural Scope & Breakdown\n"
         "3. Proposed Verification Plan\n"
-        "Keep it concise and clear."
+        "Keep it concise and clear.\n"
+        "Cite repository files as plain `path/to/file` code spans, never as file:// URLs."
     )
     if feedback:
         prompt += (
@@ -1598,13 +1803,14 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
             f"### DarkFactory Agent Execution Error\n\n"
             f"{interpretation}\n"
         )
-    else:
-        comment = (
-            "<!-- darkfactory-agent -->\n"
-            f"### DarkFactory Agent Interpretation\n\n"
-            f"{interpretation}\n\n"
-            f"---\n*Assigned Labels: `{t_label}`, `{a_label}`. Waiting for user approval (`approve`) to create branch and plan.*"
-        )
+        run_gh(["issue", "comment", str(issue_number), "--body", comment], repo=repo)
+        fail_agent_run(f"Interpretation failed on issue #{issue_number}; Execution Error posted.")
+    comment = (
+        "<!-- darkfactory-agent -->\n"
+        f"### DarkFactory Agent Interpretation\n\n"
+        f"{rewrite_file_links(interpretation, repo, default_branch())}\n\n"
+        f"---\n*Assigned Labels: `{t_label}`, `{a_label}`. Waiting for user approval (`approve`) to create branch and plan.*"
+    )
     run_gh(["issue", "comment", str(issue_number), "--body", comment], repo=repo)
     print(f"Interpretation posted on issue #{issue_number}")
 
@@ -1733,7 +1939,8 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
     prompt = (
         f"Draft a detailed, step-by-step Implementation Plan for Request #{request_number}:\n"
         f"Title: {req_data.get('title')}\nDetails: {req_data.get('body')}\n\n"
-        "Include Scope, Architectural & Code Changes, and Verification Steps."
+        "Include Scope, Architectural & Code Changes, and Verification Steps.\n"
+        "Cite repository files as plain `path/to/file` code spans, never as file:// URLs."
     )
     if feedback:
         prompt += (
@@ -1761,15 +1968,16 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
             f"- **Parent Request**: #{request_number}\n\n"
             f"{plan_body}\n"
         )
-    else:
-        comment = (
-            "<!-- darkfactory-agent -->\n"
-            f"{PLAN_MARKER}\n"
-            "### Implementation Plan (Autogenerated by the DarkFactory Agent)\n\n"
-            f"- **Parent Request**: #{request_number}\n\n"
-            f"{plan_body}\n\n"
-            "---\n*Comment `approve` to begin autonomous implementation on branch.*"
-        )
+        run_gh(["issue", "comment", str(plan_number), "--body", comment], repo=repo)
+        fail_agent_run(f"Plan failed on issue #{plan_number}; Execution Error posted.")
+    comment = (
+        "<!-- darkfactory-agent -->\n"
+        f"{PLAN_MARKER}\n"
+        "### Implementation Plan (Autogenerated by the DarkFactory Agent)\n\n"
+        f"- **Parent Request**: #{request_number}\n\n"
+        f"{rewrite_file_links(plan_body, repo, default_branch())}\n\n"
+        "---\n*Comment `approve` to begin autonomous implementation on branch.*"
+    )
     run_gh(["issue", "comment", str(plan_number), "--body", comment], repo=repo)
     print(f"Plan posted on issue #{plan_number}")
 
@@ -1787,7 +1995,8 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
     prompt = (
         f"User posted the following feedback on {'PR' if is_pr else 'Issue'} #{issue_or_pr_num}:\n"
         f'"{comment_text}"\n\n'
-        "Provide a direct, helpful, and concise response addressing the feedback and detailing next actions."
+        "Provide a direct, helpful, and concise response addressing the feedback and detailing next actions.\n"
+        "Cite repository files as plain `path/to/file` code spans, never as file:// URLs."
     )
     response = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
     if is_quota_exhaustion_notice(response):
@@ -1795,8 +2004,15 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
 
     if response.startswith("[DarkFactory Agent Execution Error]"):
         body = f"<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n{response}"
-    else:
-        body = f"<!-- darkfactory-agent -->\n### DarkFactory Agent Response\n\n{response}"
+        if is_pr:
+            run_gh(["pr", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
+        else:
+            run_gh(["issue", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
+        fail_agent_run(f"Respond failed on #{issue_or_pr_num}; Execution Error posted.")
+    body = (
+        "<!-- darkfactory-agent -->\n### DarkFactory Agent Response\n\n"
+        f"{rewrite_file_links(response, repo, default_branch())}"
+    )
 
     if is_pr:
         run_gh(["pr", "comment", str(issue_or_pr_num), "--body", body], repo=repo)
@@ -2089,7 +2305,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             ],
             repo=repo,
         )
-        return
+        fail_agent_run(f"Branch setup failed for plan #{plan_number}; Execution Error posted.")
 
     # Check for saved checkpoint on the branch or workspace
     checkpoint = load_checkpoint(cwd=cwd)
@@ -2177,7 +2393,9 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
                 ],
                 repo=repo,
             )
-            return
+            fail_agent_run(
+                f"Implementation failed for plan #{plan_number}; Execution Error posted."
+            )
         print(f"Implementation complete. Agent output:\n{impl_result[:500]}")
         completed_steps.append("Implemented code and test changes according to plan")
 
@@ -2202,9 +2420,23 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         )
         if is_quota_exhaustion_notice(fix_result):
             return
-        if not fix_result.startswith("[DarkFactory Agent Execution Error]"):
-            format_repository(cwd)
-            completed_steps.append("Resolved automated test fixes")
+        if fix_result.startswith("[DarkFactory Agent Execution Error]"):
+            run_gh(
+                [
+                    "issue",
+                    "comment",
+                    str(plan_number),
+                    "--body",
+                    "<!-- darkfactory-agent -->\n### DarkFactory Agent Execution Error\n\n"
+                    f"{fix_result}",
+                ],
+                repo=repo,
+            )
+            fail_agent_run(
+                f"Automated test fix failed for plan #{plan_number}; Execution Error posted."
+            )
+        format_repository(cwd)
+        completed_steps.append("Resolved automated test fixes")
 
     # 8. Classify and commit
     t_label, a_label = classify_type_and_area(f"{plan_title} {plan_body}")
@@ -2254,7 +2486,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             ],
             repo=repo,
         )
-        return
+        fail_agent_run(f"Commit/push failed for plan #{plan_number}; Execution Error posted.")
 
     # 9. Open Draft PR via workflow dispatch
     pr_body = (
@@ -2422,7 +2654,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 ],
                 repo=repo,
             )
-            return
+            fail_agent_run(f"Self-review failed on PR #{pr_number}; Execution Error posted.")
 
         # Check if clean
         if "NO_FINDINGS" in review_result.upper()[:50]:
@@ -2512,7 +2744,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 ],
                 repo=repo,
             )
-            return
+            fail_agent_run(f"Self-review fix failed on PR #{pr_number}; Execution Error posted.")
 
         # Format, commit, push
         format_repository(cwd)
@@ -2629,7 +2861,7 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
             ],
             repo=repo,
         )
-        return
+        fail_agent_run(f"Plan alignment failed on issue #{plan_number}; Execution Error posted.")
 
     if "MATCHES_PLAN_YES" in alignment_result.upper()[:50]:
         # Post Implementation Review on Plan issue
