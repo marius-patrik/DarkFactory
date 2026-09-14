@@ -85,8 +85,6 @@ Tento architektonický přelom popsala publikace _Attention Is All You Need_ @va
 Ve vývoji softwaru a moderních agentních systémech se však naprostým standardem stala architektura *Decoder-only* (např. GPT, Claude, LLaMA či DeepSeek). Tyto modely pracují čistě autoregresivně — predikují vždy následující nejpravděpodobnější token na základě celého předcházejícího kontextu. Instrukce, pravidla, kontext repozitáře i rozepsaný kód tvoří jedinou společnou sekvenci, což umožňuje plynulé doplňování kódu i přímé generování volání nástrojů. Architektura pouze s dekodérem navíc vykazuje vynikající vlastnosti při škálování parametrů a efektivní správě KV cache v dlouhých kontextech.
 ]
 
-#note[Doplnění výpočetní a paměťové složitosti: Doporučuji v popisu transformeru explicitně uvést kvadratickou složitost standardního mechanismu pozornosti ($O(N^2)$ vzhledem k délce sekvence tokenů) a zmínit optimalizační techniky (např. FlashAttention), které umožňují praktické škálování dlouhého kontextového okna v moderních modelech.]
-
 === Tokeny, tokenizér a embedding
 
 #draft[
@@ -125,6 +123,60 @@ Praktický dopad sub-word tokenizace na efektivitu a kapacitní limity agenta de
   ),
   caption: [Empirické porovnání tokenové náročnosti ekvivalentního větného významu v angličtině a češtině (tokenizér `cl100k_base`).],
 ) <tab-token-comparison>
+]
+
+=== Mechanismus pozornosti a jeho typy
+
+#added[
+Zatímco tokenizér a embedding transformují diskrétní text do spojitého vektorového prostoru, funkčním jádrem architektury transformeru je mechanismus pozornosti (_attention mechanism_). Pozornost umožňuje modelu dynamicky vyhodnocovat sémantické relace mezi jednotlivými tokeny v sekvenci bez ohledu na jejich vzájemnou vzdálenost, a překonat tak fundamentální limit starších rekurentních architektur (RNN a LSTM), které trpěly postupnou ztrátou kontextu.
+
+==== Matematická podstata: Scaled Dot-Product Attention
+
+Základní stavební jednotkou představenou v práci @vaswani2017 je skalovaný skalární součin (_Scaled Dot-Product Attention_). Pro každý vstupní vektor tokenu se lineární projekcí generuje trojice vektorů:
+- *Dotaz ($Q$ -- Query)*: Vektor reprezentující informaci, kterou aktuální token v kontextu vyhledává.
+- *Klíč ($K$ -- Key)*: Vektor nesoucí charakteristiku a profil tokenu, podle něhož je identifikován.
+- *Hodnota ($V$ -- Value)*: Vektor obsahující vlastní sémantický obsah, který je v případě shody předán do dalších vrstev.
+
+Míra relevance mezi libovolnou dvojicí tokenů je dána skalárním součinem $Q K^T$. Výsledná matice afinity je škálována odmocninou dimenze klíče $sqrt(d_k)$, což zabraňuje prudkému růstu číselných hodnot a následné saturaci funkce softmax (která by vedla k vymizení gradientů při trénování). Výstupní kontextová reprezentace je definována jako vážený součet hodnot $V$:
+
+$ "Attention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k)) V $
+
+Z matematické formulace vyplývá klíčová vlastnost: výpočet součinu $Q K^T$ pro sekvenci délky $N$ vyžaduje sestavení matice o rozměrech $N times N$. Výpočetní složitost i paměťové nároky proto rostou *kvadraticky* $O(N^2)$ vzhledem k délce kontextu, což při zpracování rozsáhlých repozitářů a dlouhých agentních historií představuje primární výkonnostní limit.
+
+==== Směrové a funkční typy pozornosti
+
+Podle původu vektorů $Q$, $K$ a $V$ a směru toku informací se rozlišují tři základní funkční typy:
++ *Vlastní pozornost (Self-Attention)*: Vektory $Q$, $K$ i $V$ jsou odvozeny ze stejné vstupní sekvence. Každý token v kontextu tak přímo interaguje se všemi ostatními tokeny kódové báze (např. provázání volání funkce s její definicí v jiném modulu).
++ *Kauzální (maskovaná) pozornost (Causal / Masked Attention)*: Klíčový princip autoregresivních modelů (_Decoder-only_). Aby model při predikci kódu nemohl „nahlížet do budoucna“, je na matici skalárních součinů před aplikací softmaxu uvalena kauzální maska ($M_(i,j) = -infinity$ pro $j > i$). Tím je matematicky zaručeno, že token na pozici $i$ smí reflektovat výhradně předcházející tokeny na pozicích $j <= i$.
++ *Křížová pozornost (Cross-Attention)*: Dotazy $Q$ pocházejí z generujícího dekodéru, zatímco klíče $K$ a hodnoty $V$ jsou přebírány z externí reprezentace — např. z vizuálního enkodéru zpracovávajícího screenshoty či diagramy v multimodálních architekturách.
+
+==== Architektury organizace hlav (Head Architectures)
+
+V praxi transformer nepočítá pozornost pouze jednou, nýbrž v paralelních projekčních podprostorech zvaných *hlavy* (_Multi-Head Attention_ -- MHA). Během inference se však ukázalo, že ukládání mezistavů klíčů a hodnot do mezipaměti grafické karty (_KV Cache_) pro všechny hlavy a vrstvy představuje kritické paměťové úzké hrdlo. To vedlo k vývoji několika architektonických variant (srovnání uvádí @tab-attention-types):
+
++ *Multi-Head Attention (MHA)*: Původní architektura (@vaswani2017). Každá z $h$ hlav má vlastní nezávislé projekční váhy pro $Q$, $K$ i $V$. Poskytuje maximální reprezentační kapacitu, avšak velikost KV cache v paměti GPU roste strmě s počtem hlav a délkou kontextu.
++ *Multi-Query Attention (MQA)*: Architektura navržená Shazeerem (2019). Všechny dotazové hlavy sdílejí jedinou společnou hlavu klíčů a hodnot ($K$ a $V$). Velikost KV cache v paměti klesá $h$-násobně, což radikálně zrychluje generování tokenů a snižuje paměťové nároky, avšak za cenu mírné degradace kvality u úloh vyžadujících komplexní logické uvažování.
++ *Grouped-Query Attention (GQA)*: Zlatý standard současných produkčních modelů (např. LLaMA 3 či Mistral; @ainslie2023). Dotazové hlavy jsou rozděleny do $g$ skupin, přičemž každá skupina sdílí vlastní pár hlav $K$ a $V$. Představuje optimální kompromis: dosahuje kvality srovnatelné s MHA při paměťové úspoře blízké MQA (obvykle 12,5–25 % původní velikosti KV cache).
++ *Multi-head Latent Attention (MLA)*: Moderní architektura vyvinutá pro modely DeepSeek-V2/V3. Místo prostého sdílení hlav komprimuje vektory klíčů a hodnot do nízkorozměrného latentního prostoru pomocí společné maticové komprese (_low-rank joint compression_). Během inference se do KV cache ukládá pouze kompaktní latentní vektor, což dramaticky redukuje paměťovou stopu a umožňuje obsluhu masivních kontextových oken.
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto, 1fr),
+    align: (left, center, center, center, left),
+    table.header([*Typ pozornosti*], [*Hlavy $Q$*], [*Hlavy $K, V$*], [*Velikost KV Cache*], [*Charakteristika a využití*]),
+    [MHA], [$h$], [$h$], [100 % (báze)], [Původní Transformer, GPT-3. Maximální exprese, vysoké nároky na VRAM.],
+    [MQA], [$h$], [1], [$1 / h$ (~3–6 %)], [Falcon, PaLM. Extrémní úspora paměti, možný mírný pokles přesnosti.],
+    [GQA], [$h$], [$g$ ($1 < g < h$)], [$g / h$ (~12–25 %)], [LLaMA 3, Mistral. Špičkový standard kombinující přesnost a propustnost.],
+    [MLA], [$h$], [Latentní komprese], [~5–10 %], [DeepSeek-V2, DeepSeek-V3. Nízkorozměrná latentní projekce s vysokou věrností.],
+  ),
+  caption: [Srovnání architektur organizace hlav mechanismu pozornosti a jejich dopad na paměťovou náročnost KV cache.],
+) <tab-attention-types>
+
+==== Hardwarové a algoritmické optimalizace pro škálování kontextu
+
+Kvadratická závislost $O(N^2)$ si vyžádala vývoj algoritmických a nízkoúrovňových hardwarových akcelerací:
+- *Sliding Window a Sparse Attention (SWA)*: Pozornost je omezena na lokální okno $W$ nejbližších sousedních tokenů (např. $W = 4096$ v modelu Mistral). Ačkoli v jedné vrstvě model nevidí celou sekvenci, skládáním vrstev nad sebou efektivní kontextové pole roste, zatímco výpočetní složitost klesá na lineární $O(N times W)$.
+- *FlashAttention*: Převratná optimalizace navržená Dao et al. (@dao2022, následovaná architekturami FlashAttention-2 a FlashAttention-3). FlashAttention neprovádí žádnou ztrátovou aproximaci — matematický výsledek je exaktní. Podstata spočívá v hardwarovém uvědomění (_IO-awareness_): namísto ukládání ohromné mezilehlé matice pozornosti $N times N$ do pomalé globální paměti grafické karty (HBM) rozděluje výpočet na bloky (tzv. _tiling_) a provádí normalizaci online algoritmem softmaxu přímo v rychlé čipové mezipaměti SRAM procesoru GPU. Tím dramaticky redukuje paměťové přenosy a umožňuje praktické škálování kontextového okna na stovky tisíc až miliony tokenů.
 ]
 
 === Multimodální modely
