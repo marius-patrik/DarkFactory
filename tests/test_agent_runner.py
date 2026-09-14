@@ -1931,3 +1931,268 @@ class TestTheAnswerIsTheResult:
         assert agent_runner.run_agent_prompt("Draft a plan") == "the plan"
         assert "Draft a plan" in seen[0]
         assert agent_runner.ANSWER_CONTRACT in seen[0]
+
+
+class TestReviewUntilClean:
+    """Owner decision 9b: review and repair run until there are no findings, with no arbitrary cap."""
+
+    def test_review_runs_past_three_iterations_until_clean(self, monkeypatch):
+        """Under MAX_REVIEW_ITERATIONS=3, it stopped at 3. Now it continues until clean."""
+        module = agent_runner_module()
+        iterations_run = []
+        comments_posted = []
+
+        def fake_run_gh(args, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                return json.dumps({"body": "### Scope\n`src/foo.py`", "comments": []})
+            if args[:2] == ["pr", "diff"]:
+                return "diff --git a/src/foo.py b/src/foo.py\n..."
+            if args[:2] == ["pr", "comment"]:
+                comments_posted.append(args[4])
+                return ""
+            return ""
+
+        def fake_agent_prompt(prompt, **kwargs):
+            if "Review the following" in prompt:
+                it = len(iterations_run) + 1
+                iterations_run.append(it)
+                if it < 4:
+                    return f"FINDING: issue number {it}"
+                return "NO_FINDINGS"
+            return "Fix applied"
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_agent_prompt", fake_agent_prompt)
+        monkeypatch.setattr(module, "run_git", lambda *a, **k: "M src/foo.py")
+        monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["src/foo.py"])
+
+        result = module.handle_self_review(10, 20, "owner/repo")
+        assert result is True
+        assert len(iterations_run) == 4
+        assert any("No actionable findings" in c for c in comments_posted)
+
+    def test_progress_comment_posted_after_every_five_iterations(self, monkeypatch):
+        """A progress comment is posted after every 5 iterations so long loops are visible."""
+        module = agent_runner_module()
+        comments_posted = []
+        iteration_count = 0
+
+        def fake_run_gh(args, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                return json.dumps({"body": "### Scope\n`src/foo.py`", "comments": []})
+            if args[:2] == ["pr", "diff"]:
+                return "diff"
+            if args[:2] == ["pr", "comment"]:
+                comments_posted.append(args[4])
+                return ""
+            return ""
+
+        def fake_agent_prompt(prompt, **kwargs):
+            nonlocal iteration_count
+            if "Review the following" in prompt:
+                iteration_count += 1
+                if iteration_count <= 5:
+                    # Different findings each iteration so it doesn't get stuck
+                    return f"FINDING #{iteration_count}: fix this"
+                return "NO_FINDINGS"
+            return "Fix applied"
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_agent_prompt", fake_agent_prompt)
+        monkeypatch.setattr(module, "run_git", lambda *a, **k: "M src/foo.py")
+        monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["src/foo.py"])
+
+        result = module.handle_self_review(10, 20, "owner/repo")
+        assert result is True
+        assert iteration_count == 6
+        # A progress comment was posted after iteration 5
+        progress_comments = [c for c in comments_posted if "Progress" in c or "Iteration 5" in c]
+        assert len(progress_comments) == 1
+        assert "Iteration 5" in progress_comments[0]
+
+    def test_stuck_loop_with_identical_findings_marks_pr_blocked_and_stops(self, monkeypatch):
+        """Detect a loop making no progress (identical findings twice in a row) -> Blocked."""
+        module = agent_runner_module()
+        comments_posted = []
+        blocked_calls = []
+
+        def fake_run_gh(args, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                return json.dumps({"body": "### Scope\n`src/foo.py`", "comments": []})
+            if args[:2] == ["pr", "diff"]:
+                return "diff"
+            if args[:2] == ["pr", "comment"]:
+                comments_posted.append(args[4])
+                return ""
+            return ""
+
+        # Returns identical findings twice in a row
+        def fake_agent_prompt(prompt, **kwargs):
+            return "FINDING: unchanged persistent bug on line 42"
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_agent_prompt", fake_agent_prompt)
+        monkeypatch.setattr(module, "run_git", lambda *a, **k: "M src/foo.py")
+        monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["src/foo.py"])
+        monkeypatch.setattr(
+            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+        )
+
+        result = module.handle_self_review(10, 20, "owner/repo")
+        assert result is False
+        assert len(blocked_calls) == 1
+        assert blocked_calls[0] == (10, True)
+        assert any("unchanged persistent bug" in c for c in comments_posted)
+
+
+class TestDeterministicScopeCheck:
+    """Owner decision 9a: compare PR changed files with approved plan names and revert out-of-scope files."""
+
+    def test_parse_plan_files_extracts_paths(self):
+        module = agent_runner_module()
+        plan_text = (
+            "### Implementation Plan\n\n"
+            "### Scope\n"
+            "- `.github/scripts/commands.py`\n"
+            "- `tests/test_commands.py`\n"
+            "Also update [agent runner](https://github.com/marius-patrik/darkfactory/blob/darkfactory/.github/scripts/agent_runner.py).\n"
+        )
+        files = module.parse_plan_files(plan_text)
+        assert ".github/scripts/commands.py" in files or "commands.py" in files
+        assert "tests/test_commands.py" in files or "test_commands.py" in files
+        assert ".github/scripts/agent_runner.py" in files or "agent_runner.py" in files
+
+    def test_check_scope_detects_out_of_scope_files(self):
+        module = agent_runner_module()
+        plan_files = {".github/scripts/commands.py", "tests/test_commands.py"}
+        changed = [".github/scripts/commands.py", ".github/scripts/project_automation.py"]
+        in_scope, out_of_scope = module.check_scope(changed, plan_files)
+        assert in_scope == [".github/scripts/commands.py"]
+        assert out_of_scope == [".github/scripts/project_automation.py"]
+
+    def test_out_of_scope_files_reverted_in_commit_and_fed_back(self, monkeypatch):
+        module = agent_runner_module()
+        reverted_files = []
+        commits = []
+        prompts_received = []
+
+        def fake_run_gh(args, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                # Plan only mentions commands.py
+                return json.dumps(
+                    {
+                        "body": "### Scope\n`.github/scripts/commands.py`",
+                        "comments": [],
+                    }
+                )
+            if args[:2] == ["pr", "diff"]:
+                return "diff"
+            return ""
+
+        iteration = 0
+
+        def fake_agent_prompt(prompt, **kwargs):
+            nonlocal iteration
+            iteration += 1
+            prompts_received.append(prompt)
+            if iteration == 1:
+                # LLM claimed NO_FINDINGS or Matches Plan: Yes, but out-of-scope files exist!
+                return "NO_FINDINGS"
+            return "NO_FINDINGS"
+
+        def fake_revert(files, base, cwd):
+            reverted_files.extend(files)
+            commits.append(f"revert out-of-scope {files}")
+            return "abc1234"
+
+        # On iteration 1, project_automation.py was changed
+        # On iteration 2 (after revert), only commands.py is changed
+        def fake_changed_files(base, cwd):
+            if iteration == 0:
+                return [".github/scripts/commands.py", ".github/scripts/project_automation.py"]
+            return [".github/scripts/commands.py"]
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_agent_prompt", fake_agent_prompt)
+        monkeypatch.setattr(module, "run_git", lambda *a, **k: "M .github/scripts/commands.py")
+        monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
+        monkeypatch.setattr(module, "get_pr_changed_files", fake_changed_files)
+        monkeypatch.setattr(module, "revert_out_of_scope_files", fake_revert)
+
+        result = module.handle_self_review(10, 20, "owner/repo")
+        assert result is True
+        assert ".github/scripts/project_automation.py" in reverted_files
+        assert len(commits) == 1
+        # The prompt for fix in iteration 1 must contain the OUT_OF_SCOPE finding
+        assert any("OUT_OF_SCOPE" in p for p in prompts_received)
+
+
+class TestDeterministicPrBody:
+    """Build PR body deterministically from plan, diff --stat, and test result."""
+
+    def test_pr_body_built_from_plan_summary_diff_stat_and_test_result(self):
+        module = agent_runner_module()
+        plan_title = "Plan: Update gate commands"
+        plan_text = (
+            "### Implementation Plan\n\n"
+            "### Scope\n"
+            "Update commands to include /df prefixes.\n\n"
+            "### Verification\nRun pytest.\n"
+        )
+        diff_stat = " .github/scripts/commands.py | 10 +++++-----\n 1 file changed"
+        test_cmd = "python3 -m pytest tests/ -q"
+        test_result = "856 passed, 8 skipped in 9.74s"
+        agent_notes = "Now I need to add tests... Wait, let's first check..."
+
+        body = module.build_pr_body(
+            plan_title=plan_title,
+            plan_text=plan_text,
+            request_number=267,
+            plan_number=267,
+            diff_stat=diff_stat,
+            test_command=test_cmd,
+            test_result_line=test_result,
+            agent_notes=agent_notes,
+        )
+
+        assert "## Summary" in body
+        assert "Update commands to include /df prefixes" in body
+        assert "## Changed Files" in body
+        assert ".github/scripts/commands.py" in body
+        assert "python3 -m pytest tests/ -q" in body
+        assert "856 passed, 8 skipped in 9.74s" in body
+        assert "Closes #267" in body
+        # Agent notes must only appear in a details block
+        assert "<details>" in body
+        assert "<summary>Agent notes</summary>" in body
+        assert "Now I need to add tests..." in body
+        # Summary must NOT have the raw agent notes
+        assert body.split("## Changed Files")[0].find("Now I need to add tests") == -1
+
+
+class TestScopeCheckKeepsTestsAndVaguePlans:
+    """Tests accompany every change (rule 1), and a plan that names no files cannot define scope."""
+
+    def test_new_test_files_are_never_out_of_scope(self):
+        """#267's plan named tests/test_commands.py; the implementation added tests/test_footers.py."""
+        in_scope, out = agent_runner.check_scope(
+            [".github/scripts/commands.py", "tests/test_footers.py", "harness/test/router.test.ts"],
+            {".github/scripts/commands.py", "tests/test_commands.py"},
+        )
+        assert out == []
+        assert "tests/test_footers.py" in in_scope
+
+    def test_a_plan_without_file_paths_reverts_nothing(self):
+        in_scope, out = agent_runner.check_scope([".github/scripts/project_automation.py"], set())
+        assert out == []
+        assert in_scope == [".github/scripts/project_automation.py"]
+
+    def test_an_unrelated_production_file_is_still_out_of_scope(self):
+        _, out = agent_runner.check_scope(
+            [".github/scripts/commands.py", ".github/scripts/project_automation.py"],
+            {".github/scripts/commands.py"},
+        )
+        assert out == [".github/scripts/project_automation.py"]
