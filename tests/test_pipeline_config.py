@@ -105,7 +105,8 @@ def test_python_and_docs_jobs_do_not_scan_the_harness_package():
 
     assert "run: pytest -v tests" in ci
     assert re.search(r"^\s*\| harness$", pyproject, re.MULTILINE)
-    assert re.search(r"^docs_dir: docs$", properdocs, re.MULTILINE)
+    # The site is generated into a transient staging directory; the harness is never a docs root.
+    assert re.search(r"^docs_dir: \.properdocs-source$", properdocs, re.MULTILINE)
 
 
 def test_required_checks_match_ci_job_names():
@@ -1211,3 +1212,15 @@ def test_bot_comments_do_not_start_an_agent_container():
     condition = document["jobs"]["run-agent"]["if"]
     assert "endsWith(github.event.comment.user.login, '[bot]')" in condition
     assert condition.count("!endsWith") == 1
+
+
+def test_ci_docs_job_sets_up_bun_only_when_the_command_needs_it():
+    """DarkFactory's docs command is `bun run scripts/build-docs.ts`; the docs job had no Bun.
+
+    The #260 checks failed with "bun: command not found" once the command came from Bun.
+    """
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    block = content.split("\n  docs:", 1)[1]
+    assert "needs_bun=" in block
+    assert "if: steps.documentation.outputs.needs_bun == 'true'" in block
+    assert "uses: oven-sh/setup-bun@v2" in block
