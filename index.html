@@ -366,6 +366,8 @@ it, so there is one implementation of each behaviour and the two cannot drift.</
 <p><code>status</code> answers the question an operator actually has, by checking the things that are silently
 absent rather than loudly broken - a missing credential, an agent that was never switched on, a
 repository where the pipeline was never installed.</p>
+<h2 id="typescript-harness">TypeScript harness<a class="headerlink" href="#typescript-harness" title="Permanent link">&para;</a></h2>
+<p>The integrated Bun-based operator CLI, agent runtime, typed GitHub client, and CI-management engine live in <a href="https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harness/README.md"><code>harness/README.md</code></a>, with the <code>df</code> command as their shared entry point.</p>
 <h2 id="local-development-testing">Local Development &amp; Testing<a class="headerlink" href="#local-development-testing" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Run unit tests</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>pytest<span class="w"> </span>-v
@@ -414,6 +416,8 @@ repository where the pipeline was never installed.</p>
             </ul>
           </li>
           <li><a href="#the-darkfactory-command">The darkfactory command</a>
+          </li>
+          <li><a href="#typescript-harness">TypeScript harness</a>
           </li>
           <li><a href="#local-development-testing">Local Development &amp; Testing</a>
           </li>
