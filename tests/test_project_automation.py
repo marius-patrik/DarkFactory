@@ -48,7 +48,7 @@ class FakeProjectClient:
         item_id = self.add_item(url)
         self.edit_status(item_id, status)
 
-    def add_item(self, url: str) -> str:
+    def add_item(self, url: str, content_id: Optional[str] = None) -> str:
         """Records an item addition and returns a synthetic id."""
         item_id = f"item-{len(self.added_items) + 1}"
         self.added_items.append((url, item_id))
