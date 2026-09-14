@@ -506,6 +506,12 @@ class TestBoardResolution:
 
     def test_a_declared_board_that_does_not_exist_is_a_failure(self, monkeypatch):
         """Silence here is what let every write fail unnoticed for days."""
+        # Board discovery now uses GraphQL first; keep this test focused on the CLI fallback.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
         monkeypatch.setattr(
             project_automation.subprocess,
             "run",
@@ -531,6 +537,12 @@ class TestBoardResolution:
         self, monkeypatch
     ):
         """Each board group can be resolved on its own, for cross-repository routing."""
+        # The project list below is the deliberately canned source for this test.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
         monkeypatch.setattr(
             project_automation.subprocess,
             "run",
@@ -751,6 +763,12 @@ class TestRateLimitingAndQuotaReserve:
 
     def test_resolve_boards_pauses_on_rate_limit(self, monkeypatch):
         """When listing projects hits a rate limit, RATE_LIMITED is set and FAILURES is empty."""
+        # Avoid a real GraphQL request before exercising the mocked CLI failure path.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
         monkeypatch.setattr(project_automation, "FAILURES", [])
         monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
         monkeypatch.setattr(
