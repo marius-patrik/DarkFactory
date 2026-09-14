@@ -2,7 +2,7 @@
 <!-- What changed and why, in a few sentences. -->
 
 ## Linked Issues
-<!-- Required. Rule 9 in AGENTS.md: every PR binds a tracked issue with a closing keyword. -->
+<!-- Required. DF-RULE-009 (`.agents/rules/009-issue-binding-and-board-status.md`): every PR binds a tracked issue with a closing keyword. -->
 - Closes #
 
 ## Type of Change
@@ -31,6 +31,6 @@
 - [ ] Implementation matches the approved child Plan issue, or a `Plan Alignment:` comment records
       every deviation and has been approved
 - [ ] No feature branches on a preset *name* — only on capability-matrix axis values
-      (`ARCHITECTURE.md` §3)
-- [ ] `ARCHITECTURE.md` and `ROADMAP.md` updated if this changes the architecture or an epic
+      (taxonomy in `.github/darkfactory.json`)
+- [ ] `PRD.md` updated if this changes product requirements; decisions recorded as ADRs
 - [ ] No secrets, tokens, or credentials added to the tree or to workflow logs

@@ -3,6 +3,12 @@
 How this repository was brought up, what still needs a human, and how to reproduce the whole thing
 if it is ever recreated or used to bootstrap a new autonomous project.
 
+> **Migration annotation (2026-09-13, knowledge-layout).** After this runbook was written the
+> governance layout changed: `ARCHITECTURE.md` became `PRD.md`, `VISION.md` and `ROADMAP.md` were
+> retired, and the canonical locations for rules and notes became `.agents/rules/` and
+> `.agents/notes/`. The historical rows below describe the state at bootstrap time (2026-09) and
+> are intentionally not rewritten; current paths are authoritative.
+
 ---
 
 ## What is already done
@@ -55,7 +61,7 @@ token, because `secrets` is not available in a job-level `if`.
 
 ### 3. Answer D1
 
-`ARCHITECTURE.md` §7 lists eight open decisions. Seven of them gate one or two epics. **D1 gates
+`PRD.md` §13 lists the durable decisions. Seven of them gate one or two epics. **D1 gates
 everything**: until there is a day-one user workflow, "which messages does the Substrate Bus carry"
 has no answer that is not guesswork. Issue #1.
 
@@ -108,7 +114,7 @@ python .github/scripts/repo_settings.py --apply
 | Re-apply GitHub-side config | `python .github/scripts/repo_settings.py --apply` |
 | Repair board items with no status | trigger **Project Board Automation** via `workflow_dispatch` |
 | Open a bot-authored draft PR | `python .github/scripts/open_pr.py --branch <b> --title <t> --body <b>` |
-| Run the local suite | `pytest -v && black --check . && mkdocs build --strict` |
+| Run the local suite | `pytest -v && black --check . && properdocs build --strict` |
 
 ## Adding a required status check
 

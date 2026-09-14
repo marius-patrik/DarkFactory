@@ -1,7 +1,11 @@
 # Vision capture — provenance
 
-`VISION.md` is a transcript of the scoping conversation that produced Omnis. This note records where
-it came from and how it was captured.
+This note records the provenance of the Gemini scoping conversation ("App Scoping Technical
+Specifications Discussion") and how the transcript was captured. The retired `VISION.md` was the
+non-normative synthesis of the DarkFactory product vision; it did **not** originate from this
+conversation and did not "produce Omnis" — Omnis is a separate consumer repository with its own
+scoping and product docs. The turns listed below document a distinct Omnis-era scoping session and
+are preserved here for provenance only.
 
 ## Source
 
@@ -63,9 +67,10 @@ by a truncated preview line, model turns by `Odpověď Gemini`. The decoder stri
 
 ## Ground rules
 
-`VISION.md` is non-normative regardless of how complete it is. Anything in it that should bind the
-implementation must be promoted deliberately into `ARCHITECTURE.md` through an ADR — never by
-treating the vision document as a specification.
+The retired `VISION.md` was non-normative regardless of how complete it was. Anything in it that
+binds the implementation was promoted deliberately into `PRD.md` (the single normative product
+document) through an approved ADR — never by treating the vision document as a specification.
 
-`VISION.md` §11 lists the points where the source is internally inconsistent or where following it
-literally would be a mistake. Those are decisions, not defects; several are already tracked as D1–D10.
+The earlier `VISION.md` section on internally inconsistent source points was inaccurate: it cited a
+`§11` that never existed. Disagreements among sources are recorded in the relevant ADRs and
+tracked issues, not re-created here.

@@ -44,7 +44,7 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 | **Bot-Authored Draft PRs** | Pull requests are opened by `github-actions[bot]` so maintainers can natively review, comment, and approve them on GitHub. |
 | **Project Board Automation** | Live 7-state taxonomy synchronization on GitHub Projects v2 (`Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`, `Superseded`, `Dropped`). |
 | **Settings as Code** | Complete GitHub repository configuration (labels, branch protection, permissions, auto-merge, Pages) executed idempotently via `repo_settings.py`. |
-| **Virtual Documentation** | MkDocs hook publishes canonical root documents (`AGENTS.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `VISION.md`) directly to GitHub Pages without committed static duplicates. |
+| **Virtual Documentation** | ProperDocs hook publishes canonical root documents (`PRD.md`, `AGENTS.md`) and the decision records under `.agents/notes/adr/` directly to GitHub Pages without committed static duplicates. |
 | **Strict CI & Test Guards** | Guarded language jobs (`hashFiles`) prevent false skips while product code is bootstrapping, keeping required status checks green. |
 
 ---
@@ -53,10 +53,8 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 
 | Path | Purpose |
 |---|---|
-| `AGENTS.md` | **Normative.** The 16 binding rules for every contributor (human or AI agent). |
-| `ARCHITECTURE.md` | **Normative.** Process topology, pipeline contracts, and foundational architecture decisions. |
-| `ROADMAP.md` | Epics, entry gates, and sequencing rationale. |
-| `VISION.md` | **Reference.** Scoping, requirements rationale, and system vision. |
+| `PRD.md` | **Normative.** Product requirements, constraints, actors, and acceptance measures. |
+| `AGENTS.md` | **Normative.** The binding rules for every contributor (human or AI agent); generated from `.agents/rules/`. |
 | `.github/workflows/agent.yml` | Containerized autonomous agent workflow dispatched on issues, comments, and PR reviews. |
 | `.github/workflows/ci.yml` | Multi-Python CI pipeline, guarded language verification, and docs validation. |
 | `.github/workflows/project-automation.yml` | GitHub Project board transitions driven by issue and PR lifecycle events. |
@@ -155,7 +153,7 @@ pytest -v
 black --check .
 
 # Serve documentation locally
-mkdocs serve
+properdocs serve
 ```
 
 ---

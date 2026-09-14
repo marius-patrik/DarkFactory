@@ -70,7 +70,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # 5. Create the unprivileged user the agent runs as
 #
-# ARCHITECTURE.md D4 states that agent processes execute with non-root privileges. The image had
+# PRD.md D4 states that agent processes execute with non-root privileges. The image had
 # no USER directive, so they ran as root, and the claim went unchallenged until Claude Code
 # refused to start: it will not accept --dangerously-skip-permissions as root, which is a sensible
 # refusal and the reason the gap surfaced at all.

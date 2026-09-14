@@ -7,14 +7,14 @@ body:
     attributes:
       value: |
         Decisions are resolved by discussion, not by code. Closing this issue requires a numbered
-        ADR in `notes/architecture_decisions.md` and, where the decision changes the normative
-        architecture, an update to `ARCHITECTURE.md`.
+        ADR in `.agents/notes/adr/` and, where the decision changes the normative product
+        requirements, an update to `PRD.md`.
 
   - type: input
     id: decision_id
     attributes:
       label: "Decision ID"
-      description: "The identifier from `ARCHITECTURE.md` §7 (e.g. D4)."
+      description: "The identifier from `PRD.md` §13 (e.g. D4)."
       placeholder: "D4"
     validations:
       required: true

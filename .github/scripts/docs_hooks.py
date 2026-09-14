@@ -1,17 +1,18 @@
 """ProperDocs hooks that publish the repository's canonical markdown without duplicating it.
 
-`AGENTS.md` rule 2 forbids storing a static documentation mirror and forbids a manually maintained
-index. The canonical documents live at the repository root (`README.md`, `ARCHITECTURE.md`,
-`ROADMAP.md`, `AGENTS.md`) and under `notes/`, with one file per decision in
-`notes/adr/`. Committing copies of them under `docs/` would create two sources of truth that drift.
+`.agents/rules/002-inline-docs-and-generated-documentation.md` forbids storing a static
+documentation mirror and forbids a manually maintained index. The canonical documents live at the
+repository root (`README.md`, `PRD.md`, `AGENTS.md`) and under `.agents/notes/`, with one file per
+decision in `.agents/notes/adr/`. Committing copies of them under `docs/` would create two sources
+of truth that drift.
 
 These hooks therefore:
 
 - map each canonical file to a virtual page at build time, so the site is generated from the
   originals and `docs/` stays empty of duplicated prose;
-- discover `notes/adr/*.md`, generate the decision index table from each record's title and status,
-  and inject the navigation entries - so adding an ADR needs no configuration change;
-- rewrite links written for GitHub (``ARCHITECTURE.md``) to their site paths, so
+- discover `.agents/notes/adr/*.md`, generate the decision index table from each record's title
+  and status, and inject the navigation entries - so adding an ADR needs no configuration change;
+- rewrite links written for GitHub (``PRD.md``) to their site paths, so
   ``properdocs build --strict`` reports no broken links.
 """
 
@@ -24,35 +25,28 @@ from properdocs.structure.files import File, Files
 #: (source path relative to the repository root, destination path inside the site).
 PUBLISHED_PAGES: List[Tuple[str, str]] = [
     ("README.md", "index.md"),
-    ("ARCHITECTURE.md", "architecture/index.md"),
-    ("ROADMAP.md", "roadmap.md"),
+    ("PRD.md", "prd.md"),
     ("AGENTS.md", "agents.md"),
-    ("notes/pipeline.md", "pipeline.md"),
-    ("notes/transcript.md", "notes/transcript.md"),
-    ("notes/architecture_decisions.md", "architecture/decisions/process.md"),
-    ("notes/vision_capture.md", "notes/vision_capture.md"),
-    ("notes/bootstrap.md", "notes/bootstrap.md"),
+    (".agents/notes/adr/README.md", "architecture/decisions/process.md"),
+    (".agents/notes/vision_capture.md", "notes/vision_capture.md"),
+    (".agents/notes/bootstrap.md", "notes/bootstrap.md"),
 ]
 
 #: Repository-relative markdown targets rewritten to their published counterparts.
 LINK_REWRITES: Dict[str, str] = {
     "README.md": "index.md",
-    "ARCHITECTURE.md": "architecture/index.md",
-    "ROADMAP.md": "roadmap.md",
+    "PRD.md": "prd.md",
     "AGENTS.md": "agents.md",
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
-    "notes/pipeline.md": "pipeline.md",
-    "notes/architecture_decisions.md": "architecture/decisions/process.md",
-    "notes/vision_capture.md": "notes/vision_capture.md",
-    "notes/transcript.md": "notes/transcript.md",
-    "transcript.md": "notes/transcript.md",
-    "notes/bootstrap.md": "notes/bootstrap.md",
-    "pipeline.md": "pipeline.md",
-    "bootstrap.md": "notes/bootstrap.md",
+    ".agents/notes/adr/README.md": "architecture/decisions/process.md",
+    ".agents/notes/vision_capture.md": "notes/vision_capture.md",
+    ".agents/notes/bootstrap.md": "notes/bootstrap.md",
+    "adr/README.md": "architecture/decisions/process.md",
     "vision_capture.md": "notes/vision_capture.md",
+    "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
-    "notes/adr/": "architecture/decisions/index.md",
+    ".agents/notes/adr/": "architecture/decisions/index.md",
 }
 
 #: A repository may publish one reference file verbatim, wrapped in a code fence so the
@@ -79,7 +73,7 @@ def _declaration_source(root: str) -> Optional[str]:
 
 
 #: Where ADR records live, and where they are published.
-ADR_SOURCE_DIR = os.path.join("notes", "adr")
+ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")
 ADR_DEST_PREFIX = "architecture/decisions"
 
 _LINK_PATTERN = re.compile(r"\]\((?!https?://)(?P<target>[^)\s#]+)(?P<anchor>#[^)]*)?\)")
@@ -124,7 +118,7 @@ def discover_adrs(root: str) -> List[Dict[str, str]]:
 
     records: List[Dict[str, str]] = []
     for name in sorted(os.listdir(directory)):
-        if not name.endswith(".md") or name == "index.md":
+        if not name.endswith(".md") or name in ("index.md", "README.md"):
             continue
         path = os.path.join(directory, name)
         with open(path, "r", encoding="utf-8") as handle:
@@ -166,8 +160,8 @@ def render_adr_index(records: List[Dict[str, str]]) -> str:
         "# Architecture decisions",
         "",
         "Every decision that binds the implementation, one record per page. This index is generated",
-        "from the files in `notes/adr/` at build time - it is never hand-maintained",
-        "(`AGENTS.md` rule 2).",
+        "from the files in `.agents/notes/adr/` at build time - it is never hand-maintained",
+        "(`.agents/rules/002-inline-docs-and-generated-documentation.md`).",
         "",
         "See [the process](process.md) for when an ADR is required and how to write one.",
         "",
@@ -215,8 +209,8 @@ def _render_declaration_page(body: str) -> str:
             f"[`{DECLARATION_SOURCE}`]({source_url}) at build time — this page and the file cannot",
             "disagree.",
             "",
-            "See [Architecture §4](architecture/index.md) for what a declaration is, how generations",
-            "work, and why runtime changes are written back into it.",
+            "See [PRD §9](prd.md) for identity and security declarations, and why runtime changes",
+            "are written back into them.",
             "",
             "```nix",
             body.rstrip("\n"),
@@ -246,9 +240,10 @@ def _rewrite_links(markdown: str, dest_path: str) -> str:
 
         replacement = LINK_REWRITES.get(normalized)
         if replacement is None:
-            # Records are addressed as `notes/adr/NNNN-slug.md` from the repository root and as
-            # `adr/NNNN-slug.md` from within notes/; both publish under the decisions section.
-            adr_match = re.fullmatch(r"(?:notes/)?adr/(?P<slug>[^/]+\.md)", normalized)
+            # Records are addressed as `.agents/notes/adr/NNNN-slug.md` from the repository root;
+            # links from other repositories resolved through the root `notes` alias and from within
+            # .agents/notes/ use the same pattern and publish under the decisions section.
+            adr_match = re.fullmatch(r"(?:\.agents/notes/)?adr/(?P<slug>[^/]+\.md)", normalized)
             if adr_match:
                 replacement = f"{ADR_DEST_PREFIX}/{adr_match.group('slug')}"
 
@@ -263,7 +258,7 @@ def on_config(config: Any) -> Any:
     """Injects the Architecture section, including one entry per ADR, into ``nav``.
 
     Navigation is built here rather than declared in ``properdocs.yml`` so that adding a record to
-    ``notes/adr/`` is the only step required to publish it.
+    ``.agents/notes/adr/`` is the only step required to publish it.
 
     Args:
         config: ProperDocs configuration.
@@ -315,19 +310,16 @@ def on_config(config: Any) -> Any:
         [
             {"Overview": "index.md"},
             {
-                "Architecture": [
-                    {"Overview": "architecture/index.md"},
+                "Product": [
+                    {"Requirements": "prd.md"},
                     {"Decisions": decisions},
                 ]
             },
             {"The declaration": DECLARATION_DEST},
-            {"Roadmap": "roadmap.md"},
-            {"Automation pipeline": "pipeline.md"},
             {"Contributing & Agent Rules": "agents.md"},
             {
                 "Notes": [
                     {"Bootstrap runbook": "notes/bootstrap.md"},
-                    {"Source transcript": "notes/transcript.md"},
                     {"Capture provenance": "notes/vision_capture.md"},
                 ]
             },
