@@ -374,6 +374,27 @@ REGISTRY: Dict[str, Harness] = {
         ),
         description="Anthropic Claude Code",
     ),
+    "gemini": Harness(
+        name="gemini",
+        install="npm install -g @google/gemini-cli",
+        binary="gemini",
+        template=["-p", PROMPT, "--model", MODEL, "--yolo"],
+        # Five pools, not five tiers: the free quota is separate per model and moves between them.
+        pools=(
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-3-flash-preview",
+        ),
+        auth=Auth(
+            kind="static",
+            env="GEMINI_API_KEY",
+            alternatives=("GOOGLE_API_KEY",),
+            note="Gemini API key, under either of the two names the CLI accepts.",
+        ),
+        description="Google Gemini CLI",
+    ),
     "codex": Harness(
         name="codex",
         install="npm install -g @openai/codex",
@@ -454,7 +475,16 @@ REGISTRY: Dict[str, Harness] = {
 }
 
 #: Default order when ``AGENT_HARNESS_CHAIN`` is unset.
-ORDER: List[str] = ["antigravity", "claude", "codex", "kimi", "grok", "cursor", "opencode"]
+ORDER: List[str] = [
+    "antigravity",
+    "claude",
+    "gemini",
+    "codex",
+    "kimi",
+    "grok",
+    "cursor",
+    "opencode",
+]
 
 
 def _overrides() -> Dict[str, Dict[str, Any]]:

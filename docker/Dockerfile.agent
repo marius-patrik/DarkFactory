@@ -38,7 +38,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # 3. Install the agent harnesses.
 #
 # Each installs into its own layer and is allowed to fail: the runner resolves harnesses from PATH
-# at dispatch time (see .github/scripts/harnesses.py), so an image carrying four of seven CLIs is a
+# at dispatch time (see .github/scripts/harnesses.py), so an image carrying four of eight CLIs is a
 # working image with a shorter fallback chain. A hard failure here would make one upstream outage
 # break every build, which is exactly the fragility the harness registry exists to remove.
 # The manifest step below records what actually landed, so the chain is never a guess.
@@ -53,7 +53,7 @@ RUN PYTHONPATH=/usr/local/share/darkfactory-scripts \
 # Record which harnesses are present so the build log answers "what can this image drive?"
 RUN set -eux; \
     echo "=== agent harnesses in this image ==="; \
-    for bin in agy claude codex kimi grok cursor-agent opencode; do \
+    for bin in agy claude gemini codex kimi grok cursor-agent opencode; do \
       if command -v "$bin" >/dev/null 2>&1; then \
         echo "  present: $bin -> $(command -v "$bin")"; \
       else \
