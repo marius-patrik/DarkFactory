@@ -1431,6 +1431,17 @@ def _post_agent_failure_notice(
         print(f"Notice: Failed to post agent output failure notice: {e}", file=sys.stderr)
 
 
+#: Appended to every prompt. The pipeline posts or parses the agent's final message, and nobody can
+#: reply during a run: #227's plan was written to a file inside the container and the comment only
+#: asked whether to post it, so the plan never reached the issue.
+ANSWER_CONTRACT = (
+    "\n\nThis is a non-interactive pipeline run. Your final message is used verbatim (posted as "
+    "the GitHub comment or read by the pipeline), so put the complete result in that message. Do "
+    "not write the result to a file instead, do not summarise a file, and do not ask for "
+    "confirmation or offer options: nobody can reply until the run has ended."
+)
+
+
 #: Time budget for stages that explore the repository before answering. Every antigravity attempt
 #: at planning #227 hit "print timeout after 5m0s", so a plan or review gets the longer budget.
 PLAN_TIMEOUT = "15m0s"
@@ -1500,7 +1511,7 @@ def run_agent_prompt(
         harness, current_model = attempt.harness, attempt.model
         label = attempt.label
         tried.append(label)
-        argv = harness.build_argv(prompt, current_model, timeout)
+        argv = harness.build_argv(prompt + ANSWER_CONTRACT, current_model, timeout)
 
         try:
             env = credential_env(base_env, attempt)
