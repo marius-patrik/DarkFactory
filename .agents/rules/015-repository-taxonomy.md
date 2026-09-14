@@ -13,7 +13,7 @@ owners: [system-audit, cli-release]
 - **Format**: `<type>(<scope>): <description>` (e.g. `feat(term): add cell matrix buffer`).
 - **Allowed Types**: `feat`, `fix` (mapped from `bug`), `chore`, `docs`, `refactor`, `test`, `ci`.
 - **Allowed Area Scopes & Labels**:
-  The taxonomy is **per repository**, declared in `.github/darkfactory.json` under `areas`. The
+  The taxonomy is **per repository**, declared in `.darkfactory/manifest.json` under `areas`. The
   labels, the permitted commit scopes, and the agent's request classifier all read that one
   declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
   block with its own domains; the areas below are DarkFactory's own.
@@ -30,7 +30,7 @@ and must not be copied verbatim to consumers, whose areas differ.
 
 ## Enforcement
 
-- `.github/darkfactory.json` `areas` declaration is the source of truth.
+- `.darkfactory/manifest.json` `areas` declaration is the source of truth.
 - `tests/test_pipeline_config.py::test_area_lists_match_the_manifest` checks the request template
   and the PR template against the manifest.
 

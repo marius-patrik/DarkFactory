@@ -55,6 +55,8 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 |---|---|
 | `PRD.md` | **Normative.** Product requirements, constraints, actors, and acceptance measures. |
 | `AGENTS.md` | **Normative.** The binding rules for every contributor (human or AI agent); generated from `.agents/rules/`. |
+| `.darkfactory/manifest.json` | **Executable.** Per-repository identity, areas, versioning, and board declaration for the shared pipeline. |
+| `_rules` / `_notes` | Root aliases (symlinks) to `.agents/rules/` and `.agents/notes/`. |
 | `.github/workflows/agent.yml` | Containerized autonomous agent workflow dispatched on issues, comments, and PR reviews. |
 | `.github/workflows/ci.yml` | Multi-Python CI pipeline, guarded language verification, and docs validation. |
 | `.github/workflows/project-automation.yml` | GitHub Project board transitions driven by issue and PR lifecycle events. |

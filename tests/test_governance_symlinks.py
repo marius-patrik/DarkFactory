@@ -2,7 +2,7 @@
 
 `AGENTS.md` is the single canonical governance document. Every other entry point an agent might
 open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, the mirrors under `.agents/`, and
-the root `notes` / `rules` aliases - is a symlink pointing back at the canonical source, so there
+the root `_notes` / `_rules` aliases - is a symlink pointing back at the canonical source, so there
 is exactly one copy of the rules and the notes.
 
 Checking the working tree is not enough. Git stores a symlink as mode `120000` and a regular file
@@ -28,8 +28,8 @@ EXPECTED_LINKS: Dict[str, str] = {
     ".agents/AGENTS.md": "../AGENTS.md",
     ".agents/CLAUDE.md": "../AGENTS.md",
     ".agents/README.md": "../README.md",
-    "notes": ".agents/notes",
-    "rules": ".agents/rules",
+    "_notes": ".agents/notes",
+    "_rules": ".agents/rules",
 }
 
 #: Git's file mode for a symbolic link.

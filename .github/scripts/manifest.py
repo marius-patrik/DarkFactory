@@ -2,8 +2,8 @@
 
 Every workflow and script in `.github/` is distributed byte-for-byte to each repository that uses
 this pipeline. Anything that differs between them - the owner and repository name, the project
-board, the area taxonomy, the versioning mode - lives in `.github/darkfactory.json` instead of being
-hardcoded, so an update to the pipeline is a fast-forward rather than a merge conflict.
+board, the area taxonomy, the versioning mode - lives in `.darkfactory/manifest.json` instead of
+being hardcoded, so an update to the pipeline is a fast-forward rather than a merge conflict.
 
 Keys are read with defaults throughout: a repository that declares nothing still gets a working
 pipeline, and a key added here later does not break repositories that have not adopted it yet.
@@ -14,7 +14,10 @@ import os
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 #: Manifest location, relative to the repository root.
-MANIFEST_PATH = os.path.join(".github", "darkfactory.json")
+MANIFEST_PATH = os.path.join(".darkfactory", "manifest.json")
+
+#: Legacy manifest location for consumer repos that have not migrated yet.
+LEGACY_MANIFEST_PATH = os.path.join(".github", "darkfactory.json")
 
 #: Area labels used when a repository declares none. Deliberately about the pipeline itself, since
 #: that is the only domain a repository is guaranteed to have.
@@ -410,6 +413,25 @@ class Manifest:
         return not self.upstream["repo"]
 
 
+def resolve_manifest_path(root: str) -> str:
+    """Returns the path to the manifest, preferring the new location with a legacy fallback.
+
+    Args:
+        root: Absolute path to the repository root.
+
+    Returns:
+        The path to the manifest file. The new `.darkfactory/manifest.json` is preferred;
+        if it does not exist, the legacy `.github/darkfactory.json` is returned instead.
+    """
+    primary = os.path.join(root, MANIFEST_PATH)
+    if os.path.isfile(primary):
+        return primary
+    legacy = os.path.join(root, LEGACY_MANIFEST_PATH)
+    if os.path.isfile(legacy):
+        return legacy
+    return primary
+
+
 def load(root: str = ".") -> Manifest:
     """Loads a repository's manifest.
 
@@ -420,7 +442,7 @@ def load(root: str = ".") -> Manifest:
         The manifest, with defaults applied when the file is absent or unreadable.
     """
     root = os.path.abspath(root)
-    path = os.path.join(root, MANIFEST_PATH)
+    path = resolve_manifest_path(root)
     data: Dict[str, Any] = {}
     if os.path.isfile(path):
         try:

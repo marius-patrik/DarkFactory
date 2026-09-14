@@ -136,7 +136,8 @@ def cmd_status(args: argparse.Namespace) -> int:
             ),
             (
                 "pipeline installed",
-                _has_path(repo, ".github/darkfactory.json"),
+                _has_path(repo, ".darkfactory/manifest.json")
+                or _has_path(repo, ".github/darkfactory.json"),
                 "run the install workflow",
             ),
         ]

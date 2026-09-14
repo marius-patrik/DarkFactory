@@ -43,7 +43,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def test_classify_area(text: str, expected_area: str):
     """The classifier routes requests to the repository's declared area taxonomy.
 
-    The taxonomy comes from `.github/darkfactory.json`, so these cases assert DarkFactory's own
+    The taxonomy comes from `.darkfactory/manifest.json`, so these cases assert DarkFactory's own
     areas; a repository adopting the pipeline declares its own and gets its own routing.
 
     Args:

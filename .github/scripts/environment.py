@@ -9,7 +9,7 @@ answered once, here, instead of being re-guessed with `hashFiles` in each workfl
 Detection is the default because it cannot drift: a repository that grows a `Cargo.toml` starts
 building Rust without anyone remembering to declare it. Declaration is available for the cases
 detection cannot see - a package deliberately excluded, a build command that is not the ecosystem's
-default, an artifact produced by something bespoke. The two compose: `.github/darkfactory.json`
+default, an artifact produced by something bespoke. The two compose: `.darkfactory/manifest.json`
 overrides and extends what detection found, and never has to restate it.
 
 Workspaces are first-class. npm, Bun, pnpm, Yarn and Cargo all express monorepos as a root manifest
@@ -856,7 +856,9 @@ def configure(root: str) -> Environment:
         The configured environment.
     """
     root = os.path.abspath(root)
-    manifest = _load_json(os.path.join(root, ".github", "darkfactory.json"))
+    import manifest as manifest_module
+
+    manifest = _load_json(manifest_module.resolve_manifest_path(root))
     declared: Dict[str, Any] = manifest.get("environment", {}) or {}
 
     packages = detect(root)

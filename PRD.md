@@ -12,7 +12,7 @@ Product requirements in this document are normative. They rank below nothing els
 facts of the platform they run on.
 
 1. `PRD.md` defines stable product outcomes, constraints, actors, and acceptance measures.
-2. `.github/darkfactory.json` and the declarable workflow graph define the mutable executable
+2. `.darkfactory/manifest.json` and the declarable workflow graph define the mutable executable
    declarations: providers and identities, taxonomy, graph nodes and edges, and installed
    consumers.
 3. `.agents/rules/*.md` define mandatory contribution and agent behavior.

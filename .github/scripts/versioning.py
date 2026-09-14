@@ -2,7 +2,7 @@
 
 The pipeline releases on merge to `main`, but what a version number *means* is a per-project
 choice, so the scheme is data rather than code. A repository declares its mode in
-`.github/darkfactory.json`; this module turns "what landed since the last tag" into "what the next
+`.darkfactory/manifest.json`; this module turns "what landed since the last tag" into "what the next
 tag is called" under that mode.
 
 Five modes are supported:
@@ -73,12 +73,14 @@ def load_config(repo_root: str) -> Dict[str, object]:
         repo_root: Path to the repository root.
 
     Returns:
-        The `versioning` object from `.github/darkfactory.json`, defaulted where absent.
+        The `versioning` object from `.darkfactory/manifest.json`, defaulted where absent.
 
     Raises:
         VersioningError: If the declared mode is not one this module implements.
     """
-    manifest_path = os.path.join(repo_root, ".github", "darkfactory.json")
+    import manifest as manifest_module
+
+    manifest_path = manifest_module.resolve_manifest_path(repo_root)
     config: Dict[str, object] = {}
     if os.path.isfile(manifest_path):
         with open(manifest_path, encoding="utf-8") as handle:

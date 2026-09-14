@@ -28,14 +28,14 @@ def _write(root, relative, content):
 
 
 def _manifest(root, block):
-    """Writes a `.github/darkfactory.json` carrying an `environment` block.
+    """Writes a `.darkfactory/manifest.json` carrying an `environment` block.
 
     Args:
         root: Repository root.
         block: The `environment` object.
     """
-    os.makedirs(os.path.join(str(root), ".github"), exist_ok=True)
-    _write(root, ".github/darkfactory.json", json.dumps({"environment": block}))
+    os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
+    _write(root, ".darkfactory/manifest.json", json.dumps({"environment": block}))
 
 
 @pytest.fixture

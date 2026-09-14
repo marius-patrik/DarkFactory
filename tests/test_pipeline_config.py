@@ -261,7 +261,7 @@ def test_area_lists_match_the_manifest(path, pattern):
     }
     assert found, f"{path} lists no areas at all"
     assert found == declared, (
-        f"{path} disagrees with .github/darkfactory.json; "
+        f"{path} disagrees with .darkfactory/manifest.json; "
         f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
     )
 
@@ -382,7 +382,9 @@ def test_ci_still_runs_for_this_repository_itself():
 def test_a_consumer_needs_no_pipeline_scripts_of_its_own():
     """The point of the pin is that shared code lives in one repository, not three."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    assert "path: .darkfactory" in content, "the pinned pipeline must be checked out separately"
+    assert (
+        "path: .darkfactory-pipeline" in content
+    ), "the pinned pipeline must be checked out separately"
     assert "PYTHONPATH" in content, "the pinned scripts must be importable"
 
 
@@ -468,9 +470,9 @@ def test_the_deploy_workflow_is_callable():
 def test_shared_documentation_assets_never_overwrite_a_consumers_own():
     """A repository that has its own theme keeps it; the copy only ever fills a gap."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert "[ -d theme ] || cp -r .darkfactory/theme theme" in content
-    assert "cp -r .darkfactory/theme theme\n" not in content.replace(
-        "[ -d theme ] || cp -r .darkfactory/theme theme\n", ""
+    assert "[ -d theme ] || cp -r .darkfactory-pipeline/theme theme" in content
+    assert "cp -r .darkfactory-pipeline/theme theme\n" not in content.replace(
+        "[ -d theme ] || cp -r .darkfactory-pipeline/theme theme\n", ""
     ), "the copy must always be guarded"
 
 
@@ -515,7 +517,7 @@ def test_every_agent_credential_is_optional():
 def test_the_agent_image_is_built_from_the_pipeline():
     """Consumers must run the same runner, not whatever Dockerfile they happen to carry."""
     content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
-    assert 'CONTEXT=".darkfactory"' in content
+    assert 'CONTEXT=".darkfactory-pipeline"' in content
     assert "$CONTEXT/docker/Dockerfile.agent" in content
 
 

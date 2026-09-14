@@ -31,6 +31,6 @@
 - [ ] Implementation matches the approved child Plan issue, or a `Plan Alignment:` comment records
       every deviation and has been approved
 - [ ] No feature branches on a preset *name* — only on capability-matrix axis values
-      (taxonomy in `.github/darkfactory.json`)
+      (taxonomy in `.darkfactory/manifest.json`)
 - [ ] `PRD.md` updated if this changes product requirements; decisions recorded as ADRs
 - [ ] No secrets, tokens, or credentials added to the tree or to workflow logs

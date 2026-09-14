@@ -66,12 +66,14 @@ def projects(repo_root: str) -> List[Dict[str, str]]:
     """Reads the sibling documentation sites to offer.
 
     Args:
-        repo_root: Repository root, holding `.github/darkfactory.json`.
+        repo_root: Repository root, holding `.darkfactory/manifest.json`.
 
     Returns:
         Entries carrying `name` and an absolute `url`. Empty when none are declared.
     """
-    path = os.path.join(repo_root, ".github", "darkfactory.json")
+    import manifest as manifest_module
+
+    path = manifest_module.resolve_manifest_path(repo_root)
     if not os.path.isfile(path):
         return []
     try:
