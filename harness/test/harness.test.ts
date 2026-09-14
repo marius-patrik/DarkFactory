@@ -222,7 +222,7 @@ describe("AgentSession harness", () => {
 		second.session.dispose();
 	});
 
-	test("persists the configured Google RetryInfo reset from a recorded 429 body", async () => {
+	test("holds a Google PerDay quota from a recorded 429 body until the Pacific roll-over, not the RetryInfo delay", async () => {
 		const { home, cwd } = await tempWorkspace();
 		const google = fauxProvider({ provider: "google", models: [{ id: "gemini-3-flash-preview" }] });
 		const next = fauxProvider({ provider: "quota-next", models: [{ id: "next" }] });
@@ -237,7 +237,8 @@ describe("AgentSession harness", () => {
 		});
 		await supervisor.prompt("go");
 		const limits = JSON.parse(await readFile(join(home, "limits.json"), "utf8")) as { entries: Record<string, { resetAt?: number }> };
-		expect((Object.values(limits.entries)[0])?.resetAt).toBe(now + 41_000);
+		// 1_700_000_000_000 is 2023-11-14 22:13 UTC; the next Pacific midnight is 2023-11-15 08:00 UTC.
+		expect((Object.values(limits.entries)[0])?.resetAt).toBe(1_700_035_200_000);
 		supervisor.session.dispose();
 	});
 
