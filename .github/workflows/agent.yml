@@ -232,70 +232,131 @@ jobs:
 
       - name: Dispatch agent in container
         if: steps.delegate.outputs.delegated != 'true'
+        # Values reach the container through the step environment and `-e NAME`, never through the
+        # script text: an expression is pasted into the shell before it runs, so a login file's JSON
+        # lost its quotes on the way in, and a `$(...)` inside any value would have been executed.
+        env:
+          AGENT_HARNESS_CHAIN: ${{ vars.AGENT_HARNESS_CHAIN }}
+          AGENT_HARNESS_CONFIG: ${{ vars.AGENT_HARNESS_CONFIG }}
+          AGENT_MODEL_CHAIN: ${{ vars.AGENT_MODEL_CHAIN }}
+          ANTIGRAVITY_REFRESH_TOKEN: ${{ secrets.ANTIGRAVITY_REFRESH_TOKEN }}
+          ANTIGRAVITY_CLIENT_ID: ${{ secrets.ANTIGRAVITY_CLIENT_ID }}
+          ANTIGRAVITY_CLIENT_SECRET: ${{ secrets.ANTIGRAVITY_CLIENT_SECRET }}
+          ANTIGRAVITY_REFRESH_TOKEN_2: ${{ secrets.ANTIGRAVITY_REFRESH_TOKEN_2 }}
+          ANTIGRAVITY_CLIENT_ID_2: ${{ secrets.ANTIGRAVITY_CLIENT_ID_2 }}
+          ANTIGRAVITY_CLIENT_SECRET_2: ${{ secrets.ANTIGRAVITY_CLIENT_SECRET_2 }}
+          ANTIGRAVITY_REFRESH_TOKEN_3: ${{ secrets.ANTIGRAVITY_REFRESH_TOKEN_3 }}
+          ANTIGRAVITY_CLIENT_ID_3: ${{ secrets.ANTIGRAVITY_CLIENT_ID_3 }}
+          ANTIGRAVITY_CLIENT_SECRET_3: ${{ secrets.ANTIGRAVITY_CLIENT_SECRET_3 }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY_2: ${{ secrets.ANTHROPIC_API_KEY_2 }}
+          CLAUDE_CODE_OAUTH_TOKEN_2: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_2 }}
+          ANTHROPIC_API_KEY_3: ${{ secrets.ANTHROPIC_API_KEY_3 }}
+          CLAUDE_CODE_OAUTH_TOKEN_3: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_3 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GOOGLE_API_KEY_2: ${{ secrets.GOOGLE_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GOOGLE_API_KEY_3: ${{ secrets.GOOGLE_API_KEY_3 }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+          OPENAI_API_KEY_2: ${{ secrets.OPENAI_API_KEY_2 }}
+          CODEX_AUTH_JSON_2: ${{ secrets.CODEX_AUTH_JSON_2 }}
+          OPENAI_API_KEY_3: ${{ secrets.OPENAI_API_KEY_3 }}
+          CODEX_AUTH_JSON_3: ${{ secrets.CODEX_AUTH_JSON_3 }}
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
+          KIMI_AUTH_JSON: ${{ secrets.KIMI_AUTH_JSON }}
+          MOONSHOT_API_KEY_2: ${{ secrets.MOONSHOT_API_KEY_2 }}
+          KIMI_API_KEY_2: ${{ secrets.KIMI_API_KEY_2 }}
+          KIMI_AUTH_JSON_2: ${{ secrets.KIMI_AUTH_JSON_2 }}
+          MOONSHOT_API_KEY_3: ${{ secrets.MOONSHOT_API_KEY_3 }}
+          KIMI_API_KEY_3: ${{ secrets.KIMI_API_KEY_3 }}
+          KIMI_AUTH_JSON_3: ${{ secrets.KIMI_AUTH_JSON_3 }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          GROK_AUTH_JSON: ${{ secrets.GROK_AUTH_JSON }}
+          XAI_API_KEY_2: ${{ secrets.XAI_API_KEY_2 }}
+          GROK_API_KEY_2: ${{ secrets.GROK_API_KEY_2 }}
+          GROK_AUTH_JSON_2: ${{ secrets.GROK_AUTH_JSON_2 }}
+          XAI_API_KEY_3: ${{ secrets.XAI_API_KEY_3 }}
+          GROK_API_KEY_3: ${{ secrets.GROK_API_KEY_3 }}
+          GROK_AUTH_JSON_3: ${{ secrets.GROK_AUTH_JSON_3 }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          CURSOR_API_KEY_2: ${{ secrets.CURSOR_API_KEY_2 }}
+          CURSOR_API_KEY_3: ${{ secrets.CURSOR_API_KEY_3 }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_API_KEY_2: ${{ secrets.OPENCODE_API_KEY_2 }}
+          OPENCODE_API_KEY_3: ${{ secrets.OPENCODE_API_KEY_3 }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
         run: |
           cp "${{ steps.target-env.outputs.event_path }}" "${{ github.workspace }}/event.json"
           docker run --rm \
-            -e AGENT_HARNESS_CHAIN="${{ vars.AGENT_HARNESS_CHAIN }}" \
-            -e AGENT_HARNESS_CONFIG="${{ vars.AGENT_HARNESS_CONFIG }}" \
-            -e AGENT_MODEL_CHAIN="${{ vars.AGENT_MODEL_CHAIN }}" \
-            -e ANTIGRAVITY_REFRESH_TOKEN="${{ secrets.ANTIGRAVITY_REFRESH_TOKEN }}" \
-            -e ANTIGRAVITY_CLIENT_ID="${{ secrets.ANTIGRAVITY_CLIENT_ID }}" \
-            -e ANTIGRAVITY_CLIENT_SECRET="${{ secrets.ANTIGRAVITY_CLIENT_SECRET }}" \
-            -e ANTIGRAVITY_REFRESH_TOKEN_2="${{ secrets.ANTIGRAVITY_REFRESH_TOKEN_2 }}" \
-            -e ANTIGRAVITY_CLIENT_ID_2="${{ secrets.ANTIGRAVITY_CLIENT_ID_2 }}" \
-            -e ANTIGRAVITY_CLIENT_SECRET_2="${{ secrets.ANTIGRAVITY_CLIENT_SECRET_2 }}" \
-            -e ANTIGRAVITY_REFRESH_TOKEN_3="${{ secrets.ANTIGRAVITY_REFRESH_TOKEN_3 }}" \
-            -e ANTIGRAVITY_CLIENT_ID_3="${{ secrets.ANTIGRAVITY_CLIENT_ID_3 }}" \
-            -e ANTIGRAVITY_CLIENT_SECRET_3="${{ secrets.ANTIGRAVITY_CLIENT_SECRET_3 }}" \
-            -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
-            -e CLAUDE_CODE_OAUTH_TOKEN="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" \
-            -e ANTHROPIC_API_KEY_2="${{ secrets.ANTHROPIC_API_KEY_2 }}" \
-            -e CLAUDE_CODE_OAUTH_TOKEN_2="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_2 }}" \
-            -e ANTHROPIC_API_KEY_3="${{ secrets.ANTHROPIC_API_KEY_3 }}" \
-            -e CLAUDE_CODE_OAUTH_TOKEN_3="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_3 }}" \
-            -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            -e GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}" \
-            -e GEMINI_API_KEY_2="${{ secrets.GEMINI_API_KEY_2 }}" \
-            -e GOOGLE_API_KEY_2="${{ secrets.GOOGLE_API_KEY_2 }}" \
-            -e GEMINI_API_KEY_3="${{ secrets.GEMINI_API_KEY_3 }}" \
-            -e GOOGLE_API_KEY_3="${{ secrets.GOOGLE_API_KEY_3 }}" \
-            -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
-            -e CODEX_AUTH_JSON="${{ secrets.CODEX_AUTH_JSON }}" \
-            -e OPENAI_API_KEY_2="${{ secrets.OPENAI_API_KEY_2 }}" \
-            -e CODEX_AUTH_JSON_2="${{ secrets.CODEX_AUTH_JSON_2 }}" \
-            -e OPENAI_API_KEY_3="${{ secrets.OPENAI_API_KEY_3 }}" \
-            -e CODEX_AUTH_JSON_3="${{ secrets.CODEX_AUTH_JSON_3 }}" \
-            -e MOONSHOT_API_KEY="${{ secrets.MOONSHOT_API_KEY }}" \
-            -e KIMI_API_KEY="${{ secrets.KIMI_API_KEY }}" \
-            -e KIMI_AUTH_JSON="${{ secrets.KIMI_AUTH_JSON }}" \
-            -e MOONSHOT_API_KEY_2="${{ secrets.MOONSHOT_API_KEY_2 }}" \
-            -e KIMI_API_KEY_2="${{ secrets.KIMI_API_KEY_2 }}" \
-            -e KIMI_AUTH_JSON_2="${{ secrets.KIMI_AUTH_JSON_2 }}" \
-            -e MOONSHOT_API_KEY_3="${{ secrets.MOONSHOT_API_KEY_3 }}" \
-            -e KIMI_API_KEY_3="${{ secrets.KIMI_API_KEY_3 }}" \
-            -e KIMI_AUTH_JSON_3="${{ secrets.KIMI_AUTH_JSON_3 }}" \
-            -e XAI_API_KEY="${{ secrets.XAI_API_KEY }}" \
-            -e GROK_API_KEY="${{ secrets.GROK_API_KEY }}" \
-            -e GROK_AUTH_JSON="${{ secrets.GROK_AUTH_JSON }}" \
-            -e XAI_API_KEY_2="${{ secrets.XAI_API_KEY_2 }}" \
-            -e GROK_API_KEY_2="${{ secrets.GROK_API_KEY_2 }}" \
-            -e GROK_AUTH_JSON_2="${{ secrets.GROK_AUTH_JSON_2 }}" \
-            -e XAI_API_KEY_3="${{ secrets.XAI_API_KEY_3 }}" \
-            -e GROK_API_KEY_3="${{ secrets.GROK_API_KEY_3 }}" \
-            -e GROK_AUTH_JSON_3="${{ secrets.GROK_AUTH_JSON_3 }}" \
-            -e CURSOR_API_KEY="${{ secrets.CURSOR_API_KEY }}" \
-            -e CURSOR_API_KEY_2="${{ secrets.CURSOR_API_KEY_2 }}" \
-            -e CURSOR_API_KEY_3="${{ secrets.CURSOR_API_KEY_3 }}" \
-            -e OPENCODE_API_KEY="${{ secrets.OPENCODE_API_KEY }}" \
-            -e OPENCODE_API_KEY_2="${{ secrets.OPENCODE_API_KEY_2 }}" \
-            -e OPENCODE_API_KEY_3="${{ secrets.OPENCODE_API_KEY_3 }}" \
-            -e GH_TOKEN="${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}" \
-            -e GH_PROJECT_TOKEN="${{ secrets.GH_PROJECT_TOKEN }}" \
+            -e AGENT_HARNESS_CHAIN \
+            -e AGENT_HARNESS_CONFIG \
+            -e AGENT_MODEL_CHAIN \
+            -e ANTIGRAVITY_REFRESH_TOKEN \
+            -e ANTIGRAVITY_CLIENT_ID \
+            -e ANTIGRAVITY_CLIENT_SECRET \
+            -e ANTIGRAVITY_REFRESH_TOKEN_2 \
+            -e ANTIGRAVITY_CLIENT_ID_2 \
+            -e ANTIGRAVITY_CLIENT_SECRET_2 \
+            -e ANTIGRAVITY_REFRESH_TOKEN_3 \
+            -e ANTIGRAVITY_CLIENT_ID_3 \
+            -e ANTIGRAVITY_CLIENT_SECRET_3 \
+            -e ANTHROPIC_API_KEY \
+            -e CLAUDE_CODE_OAUTH_TOKEN \
+            -e ANTHROPIC_API_KEY_2 \
+            -e CLAUDE_CODE_OAUTH_TOKEN_2 \
+            -e ANTHROPIC_API_KEY_3 \
+            -e CLAUDE_CODE_OAUTH_TOKEN_3 \
+            -e GEMINI_API_KEY \
+            -e GOOGLE_API_KEY \
+            -e GEMINI_API_KEY_2 \
+            -e GOOGLE_API_KEY_2 \
+            -e GEMINI_API_KEY_3 \
+            -e GOOGLE_API_KEY_3 \
+            -e OPENAI_API_KEY \
+            -e CODEX_AUTH_JSON \
+            -e OPENAI_API_KEY_2 \
+            -e CODEX_AUTH_JSON_2 \
+            -e OPENAI_API_KEY_3 \
+            -e CODEX_AUTH_JSON_3 \
+            -e MOONSHOT_API_KEY \
+            -e KIMI_API_KEY \
+            -e KIMI_AUTH_JSON \
+            -e MOONSHOT_API_KEY_2 \
+            -e KIMI_API_KEY_2 \
+            -e KIMI_AUTH_JSON_2 \
+            -e MOONSHOT_API_KEY_3 \
+            -e KIMI_API_KEY_3 \
+            -e KIMI_AUTH_JSON_3 \
+            -e XAI_API_KEY \
+            -e GROK_API_KEY \
+            -e GROK_AUTH_JSON \
+            -e XAI_API_KEY_2 \
+            -e GROK_API_KEY_2 \
+            -e GROK_AUTH_JSON_2 \
+            -e XAI_API_KEY_3 \
+            -e GROK_API_KEY_3 \
+            -e GROK_AUTH_JSON_3 \
+            -e CURSOR_API_KEY \
+            -e CURSOR_API_KEY_2 \
+            -e CURSOR_API_KEY_3 \
+            -e OPENCODE_API_KEY \
+            -e OPENCODE_API_KEY_2 \
+            -e OPENCODE_API_KEY_3 \
+            -e GH_TOKEN \
+            -e GH_PROJECT_TOKEN \
             -e GITHUB_EVENT_PATH="/workspace/event.json" \
             -e GITHUB_EVENT_NAME="${{ steps.target-env.outputs.event_name }}" \
             -e GITHUB_REPOSITORY="${{ steps.target-env.outputs.repo }}" \
             -e GITHUB_REPOSITORY_OWNER="${{ steps.target-env.outputs.owner }}" \
-            -e PROJECT_NUMBER="${{ vars.PROJECT_NUMBER }}" \
+            -e PROJECT_NUMBER \
             -v "${{ github.workspace }}:/workspace" \
             darkfactory-agent dispatch
 

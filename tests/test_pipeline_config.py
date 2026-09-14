@@ -110,9 +110,30 @@ def test_verify_bound_issue_job_name_is_stable():
 def test_agent_workflow_never_leaks_secrets_into_the_log():
     """Secrets are passed as container env, never echoed."""
     content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
-    for secret in ("ANTIGRAVITY_REFRESH_TOKEN", "ANTIGRAVITY_CLIENT_SECRET"):
-        assert f"-e {secret}=" in content
+    for secret in ("ANTIGRAVITY_REFRESH_TOKEN", "ANTIGRAVITY_CLIENT_SECRET", "CODEX_AUTH_JSON"):
+        assert f"-e {secret} \\" in content
         assert f"echo ${{{{ secrets.{secret}" not in content
+
+
+def test_no_script_interpolates_a_secret():
+    """A secret pasted into a `run:` script is shell text: JSON loses its quotes, `$(...)` runs.
+
+    Login files (`CODEX_AUTH_JSON`) are multi-line JSON, and the dispatch step used to paste them as
+    `-e NAME="${{ secrets.NAME }}"`, so the container received a file with every quote stripped.
+    Values go through the step's `env:` and reach docker as `-e NAME`.
+    """
+    yaml = pytest.importorskip("yaml")
+    offenders = []
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        if not name.endswith(".yml"):
+            continue
+        with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as handle:
+            document = yaml.safe_load(handle)
+        for job_id, job in (document.get("jobs") or {}).items():
+            for step in job.get("steps") or []:
+                if re.search(r"\$\{\{[^}]*\bsecrets\.", step.get("run") or ""):
+                    offenders.append(f"{name}:{job_id}:{step.get('name')}")
+    assert not offenders, f"secrets interpolated into run scripts: {offenders}"
 
 
 def test_board_workflows_receive_project_coordinates():
