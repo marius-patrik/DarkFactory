@@ -446,11 +446,9 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 
 
 def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
-    """ci.yml was fixed for this and deploy-docs.yml was not, so the merge built fine and the
-    deploy then failed with `mkdocs: command not found`. Both read the declared command now.
-    """
+    """deploy-docs.yml runs the TypeScript documentation generator rather than building from docs/."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert "docs_plan" in content
+    assert "bun run scripts/build-docs.ts" in content
     assert "run: mkdocs build" not in content
     assert "run: properdocs build" not in content
 
@@ -582,9 +580,9 @@ def test_preview_deploys_and_tears_down_in_one_workflow():
 
 
 def test_preview_takes_the_build_command_from_the_caller():
-    """Consumers do not share a documentation engine; the preview must not assume one."""
+    """preview-docs.yml runs the TypeScript documentation generator rather than building from docs/."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert "docs_plan" in content
+    assert "bun run scripts/build-docs.ts" in content
     assert "run: properdocs build" not in content
     assert "run: mkdocs build" not in content
 

@@ -63,12 +63,17 @@ jobs:
             [ -f .github/scripts/environment.py ] || cp .darkfactory/.github/scripts/environment.py .github/scripts/environment.py
             [ -f .github/scripts/manifest.py ] || cp .darkfactory/.github/scripts/manifest.py .github/scripts/manifest.py
             [ -f .github/scripts/docs_versions.py ] || cp .darkfactory/.github/scripts/docs_versions.py .github/scripts/docs_versions.py
+            mkdir -p scripts
+            [ -f scripts/build-docs.ts ] || cp .darkfactory/scripts/build-docs.ts scripts/build-docs.ts
           fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         # A repository with no Python has no requirements file, which is every paper. The pipeline
@@ -81,82 +86,8 @@ jobs:
             echo "No requirements-dev.txt; this repository declares no documentation engine."
           fi
 
-      - name: Detect the paper domain
-        id: paper
-        run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, sys
-          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
-          import environment
-
-          env = environment.configure(".")
-          plan = env.test_plan()
-          print(f"present={str(env.has_domain('paper')).lower()}")
-          print(f"typst={str(env.has('typst')).lower()}")
-          print(f"latex={str(env.has('latex')).lower()}")
-          for engine in ("typst", "latex"):
-              if engine in plan:
-                  print(f"{engine}_command={plan[engine]['command']}")
-          PY
-
-      - name: Set up Typst
-        if: steps.paper.outputs.typst == 'true'
-        uses: typst-community/setup-typst@v5
-
-      - name: Set up TeX Live
-        if: steps.paper.outputs.latex == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
-
       - name: Build documentation
-        # The command comes from this repository's declared environment rather than being fixed
-        # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
-        # properdocs migration fail with `mkdocs: command not found`.
-        run: |
-          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
-          import environment
-
-          plan = environment.configure(".").docs_plan()
-          for entry in plan.values():
-              if entry.get("command"):
-                  print(entry["command"])
-                  break
-          PY
-          )
-          if [ -z "$COMMAND" ]; then
-            # A paper has no API to extract a reference from, so it declares no documentation
-            # command - but it is still worth publishing. Its site is the document itself.
-            if [ "${{ steps.paper.outputs.present }}" = "true" ]; then
-              echo "No documentation engine; publishing the typeset document instead."
-              mkdir -p out
-              for engine_command in "${{ steps.paper.outputs.typst_command }}" \
-                                    "${{ steps.paper.outputs.latex_command }}"; do
-                [ -n "$engine_command" ] && eval "$engine_command"
-              done
-              mkdir -p site
-              find . -path ./site -prune -o -name '*.pdf' -exec cp {} site/ \; 2>/dev/null || true
-              {
-                echo "<!doctype html>"
-                echo "<meta charset=utf-8>"
-                echo "<title>$GITHUB_REPOSITORY</title>"
-                echo "<h1>$GITHUB_REPOSITORY</h1>"
-                echo "<ul>"
-                for pdf in site/*.pdf; do
-                  [ -e "$pdf" ] || continue
-                  name=$(basename "$pdf")
-                  echo "<li><a href=\"$name\">$name</a></li>"
-                done
-                echo "</ul>"
-              } > site/index.html
-              exit 0
-            fi
-            echo "No documentation build is configured for this repository."
-            exit 1
-          fi
-          echo "Documentation build: $COMMAND"
-          eval "$COMMAND"
+        run: bun run scripts/build-docs.ts
 
       - name: Disable Jekyll processing
         run: touch site/.nojekyll

@@ -266,7 +266,8 @@ def on_config(config: Any) -> Any:
     Returns:
         The configuration with ``nav`` rewritten.
     """
-    records = discover_adrs(_repo_root(config))
+    root = _repo_root(config)
+    records = discover_adrs(root)
 
     decisions: List[Any] = [{"Overview": f"{ADR_DEST_PREFIX}/index.md"}]
     decisions += [
@@ -274,12 +275,39 @@ def on_config(config: Any) -> Any:
     ]
     decisions.append({"Process": f"{ADR_DEST_PREFIX}/process.md"})
 
-    root = _repo_root(config)
+    rules_dir = os.path.join(root, ".agents", "rules")
+    rules_records: List[Dict[str, str]] = []
+    if os.path.isdir(rules_dir):
+        for name in sorted(os.listdir(rules_dir)):
+            if not name.endswith(".md") or name in ("index.md", "README.md"):
+                continue
+            path = os.path.join(rules_dir, name)
+            with open(path, "r", encoding="utf-8") as handle:
+                c = handle.read()
+            id_m = re.search(r"^id:\s*(.+)$", c, re.M)
+            title_m = re.search(r"^title:\s*(.+)$", c, re.M)
+            rule_id = id_m.group(1).strip() if id_m else name[:-3]
+            rule_title = title_m.group(1).strip() if title_m else name[:-3]
+            rules_records.append(
+                {
+                    "id": rule_id,
+                    "title": rule_title,
+                    "dest": f"rules/{name}",
+                }
+            )
+
+    rules_nav: List[Any] = [{"Overview": "rules/index.md"}]
+    rules_nav += [{f"{r['id']} — {r['title']}": r["dest"]} for r in rules_records]
+
     published = {
         dest for source, dest in PUBLISHED_PAGES if os.path.isfile(os.path.join(root, source))
     }
     published.update(record["dest"] for record in records)
     published.add(f"{ADR_DEST_PREFIX}/index.md")
+    published.update(r["dest"] for r in rules_records)
+    published.add("rules/index.md")
+    published.add("reference/manifest.md")
+    published.add("reference/workflows.md")
     if _declaration_source(root):
         published.add(DECLARATION_DEST)
 
@@ -313,6 +341,13 @@ def on_config(config: Any) -> Any:
                 "Product": [
                     {"Requirements": "prd.md"},
                     {"Decisions": decisions},
+                ]
+            },
+            {"Rules": rules_nav},
+            {
+                "Reference": [
+                    {"Manifest": "reference/manifest.md"},
+                    {"Workflows": "reference/workflows.md"},
                 ]
             },
             {"The declaration": DECLARATION_DEST},
@@ -351,13 +386,13 @@ def on_files(files: Files, config: Any) -> Files:
     pages = list(PUBLISHED_PAGES) + [(r["source"], r["dest"]) for r in records]
 
     for source, dest in pages:
+        existing: Optional[File] = files.get_file_from_path(dest)
+        if existing is not None:
+            continue
+
         source_path = os.path.join(root, source)
         if not os.path.isfile(source_path):
             continue
-
-        existing: Optional[File] = files.get_file_from_path(dest)
-        if existing is not None:
-            files.remove(existing)
 
         with open(source_path, "r", encoding="utf-8") as handle:
             content = handle.read()
@@ -382,8 +417,7 @@ def on_files(files: Files, config: Any) -> Files:
 
     index_dest = f"{ADR_DEST_PREFIX}/index.md"
     existing_index = files.get_file_from_path(index_dest)
-    if existing_index is not None:
-        files.remove(existing_index)
-    files.append(File.generated(config, index_dest, content=render_adr_index(records)))
+    if existing_index is None:
+        files.append(File.generated(config, index_dest, content=render_adr_index(records)))
 
     return files

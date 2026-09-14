@@ -77,24 +77,15 @@ jobs:
             for f in docs_hooks environment manifest docs_versions; do
               [ -f .github/scripts/$f.py ] || cp .darkfactory/.github/scripts/$f.py .github/scripts/$f.py
             done
+            mkdir -p scripts
+            [ -f scripts/build-docs.ts ] || cp .darkfactory/scripts/build-docs.ts scripts/build-docs.ts
           fi
 
-      - name: Build documentation
-        # The engine is the caller's choice, exactly as in deploy-docs.yml.
-        run: |
-          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
-          import environment
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
-          plan = environment.configure(".").docs_plan()
-          for entry in plan.values():
-              if entry.get("command"):
-                  print(entry["command"])
-                  break
-          PY
-          )
-          [ -n "$COMMAND" ] || { echo "No documentation build configured."; exit 1; }
-          echo "Preview build: $COMMAND"
-          eval "$COMMAND"
+      - name: Build documentation
+        run: bun run scripts/build-docs.ts
 
       - name: Disable Jekyll processing
         run: touch site/.nojekyll

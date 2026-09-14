@@ -4,9 +4,9 @@ site_description: >-
 site_author: marius-patrik
 repo_name: marius-patrik/DarkFactory
 repo_url: https://github.com/marius-patrik/DarkFactory
-edit_uri: edit/main/docs/
+edit_uri: edit/main/
 
-docs_dir: docs
+docs_dir: .properdocs-source
 
 theme:
   # A first-party theme, owned outright rather than extended from a vendor's, so any part of the
