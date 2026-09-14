@@ -65,12 +65,4 @@ Ověření proto neprobíhalo formou experimentu s kontrolní skupinou, nýbrž 
 
 Empirické ověření probíhalo longitudinálním sledováním reálných integračních běhů v prostředí GitHub Actions nad skutečnými požadavky (GitHub Issues) a pull requesty. Místo syntetických laboratorních benchmarků (např. izolovaného vyhodnocování na datasetech typu SWE-bench) se výzkum soustředil na end-to-end spolehlivost v produkčních podmínkách: sledována byla schopnost pipeline projít celým životním cyklem bez uváznutí, četnost vyčerpání kontextu či API limitů, chování záchranných mechanismů při rotaci modelů a zejména kvalitativní a kvantitativní analýza chyb, které se projevily v reálném provozu. Získané poznatky sloužily k průběžné optimalizaci a zpevnění mantinelů celého systému.]
 
-== Struktura práce
-
-#diff[Kapitola 2 shrnuje teoretická východiska: řízení verzí, kontinuální integraci,
-architekturu a orchestraci jazykových modelů a princip zapojení člověka do smyčky
-(_Human-in-the-loop_). Kapitola 3 popisuje vlastní systém DarkFactory — jeho
-architekturu, životní cyklus požadavku a způsob, jímž rozpoznává obsah repozitáře.
-Kapitola 4 hodnotí výsledky nasazení včetně chyb, které se projevily až v provozu,
-a kapitola 5 je shrnuje.][Kapitola 2 shrnuje teoretická východiska: řízení verzí, kontinuální integraci, architekturu a orchestraci jazykových modelů a princip zapojení člověka do smyčky (_Human-in-the-loop_). Kapitola 3 popisuje vlastní systém DarkFactory — jeho architekturu, životní cyklus požadavku a způsob, jímž rozpoznává obsah repozitáře. Kapitola 4 hodnotí výsledky nasazení včetně chyb, které se projevily až v provozu, a kapitola 5 celou práci shrnuje a navrhuje další směřování vývoje. Práci uzavírá pět příloh (Přílohy A–E) obsahujících přehled přiloženého elektronického média, formální JSON schéma konfiguračního manifestu, ukázky volaných GitHub Actions workflow, systémové prompty agentů a specifikaci protokolu vizuálních revizních značek.]
 
