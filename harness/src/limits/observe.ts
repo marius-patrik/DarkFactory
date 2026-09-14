@@ -80,7 +80,7 @@ function text(value: unknown): string {
 	try { return JSON.stringify(value) ?? ""; } catch { return String(value ?? ""); }
 }
 
-function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number): LimitEntry | undefined {
+function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig): LimitEntry | undefined {
 	let pattern: RegExp;
 	try { pattern = new RegExp(rule.regex, "iu"); } catch { return undefined; }
 	if (!pattern.test(body)) return undefined;
@@ -108,6 +108,10 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 		}
 	}
 	if (resetAt === undefined && rule.resetAfterMs !== undefined) resetAt = now + rule.resetAfterMs;
+	// A daily or monthly quota never returns before its roll-over, whatever short retry hint the body carries
+	// (Google sends "retryDelay": "4s" with PerDay violations).
+	if (rule.type === "daily") resetAt = Math.max(resetAt ?? 0, nextDailyReset(now, policy));
+	if (rule.type === "monthly") resetAt = Math.max(resetAt ?? 0, nextMonthlyReset(now));
 	return { ...candidate, type: rule.type, ...(rule.dimension ? { dimension: rule.dimension } : {}), ...(rule.pool ? { pool: rule.pool.replace(":model", `:${candidate.model}`) } : {}), observedAt: now, resetAt: resetAt ?? now + 15 * 60_000, source: "body", remaining: 0 };
 }
 
@@ -136,7 +140,7 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	const body = text(observation.body);
 	let ruled = false;
 	for (const rule of policy.bodyRules ?? []) {
-		const entry = bodyEntry(candidate, body, rule, now);
+		const entry = bodyEntry(candidate, body, rule, now, policy);
 		if (entry) { result.push(entry); ruled = true; }
 	}
 	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
