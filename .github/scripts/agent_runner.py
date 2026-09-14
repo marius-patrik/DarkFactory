@@ -25,7 +25,7 @@ import urllib.parse
 import urllib.request
 import random
 import uuid
-from typing import Any, Dict, List, NoReturn, Optional, Tuple
+from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -1248,6 +1248,9 @@ def update_project_status_blocked(
             print(f"Notice: Failed to update project status: {e}", file=sys.stderr)
 
 
+block_entity = update_project_status_blocked
+
+
 def unblock_entity(
     issue_or_pr_number: int,
     repo: str,
@@ -2389,7 +2392,303 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
     print(f"Responded to comment on #{issue_or_pr_num}")
 
 
-MAX_REVIEW_ITERATIONS = 3
+def _looks_like_file_path(token: str) -> bool:
+    """Heuristic check whether a token looks like a file path rather than code/command."""
+    token = token.strip("`'\",:;()[]{}")
+    if not token or len(token) > 250:
+        return False
+    if token.startswith("http://") or token.startswith("https://") or token.startswith("file://"):
+        return False
+    # Avoid command invocations or code snippets with spaces or shell operators
+    if any(ch in token for ch in (" ", "\t", "\n", ";", "|", "&", ">", "<", "$", "{", "}", "*")):
+        return False
+    known_exts = (
+        ".py",
+        ".ts",
+        ".js",
+        ".json",
+        ".yml",
+        ".yaml",
+        ".toml",
+        ".md",
+        ".rs",
+        ".sh",
+        ".txt",
+        ".html",
+        ".css",
+        ".sql",
+        ".cfg",
+        ".ini",
+        ".lock",
+        ".dockerignore",
+        ".gitignore",
+    )
+    lower = token.lower()
+    if any(lower.endswith(ext) for ext in known_exts):
+        return True
+    if "/" in token:
+        parts = token.split("/")
+        if all(part for part in parts) and not token.startswith("-"):
+            return True
+    return False
+
+
+def _clean_path(token: str) -> str:
+    """Normalizes a candidate file path, preserving leading dots in directory names like .github."""
+    token = token.strip("`'\",:;()[]{}").replace("\\", "/")
+    if token.startswith("./"):
+        token = token[2:]
+    elif token.startswith("/"):
+        token = token[1:]
+    return token
+
+
+def parse_plan_files(plan_text: str) -> Set[str]:
+    """Extracts repository file paths named in an implementation plan comment.
+
+    Args:
+        plan_text: Text/markdown of the approved plan comment.
+
+    Returns:
+        A set of file paths cited in the plan.
+    """
+    if not plan_text:
+        return set()
+
+    found: Set[str] = set()
+
+    # 1. GitHub blob links: https://github.com/.../blob/.../<path>
+    for match in re.finditer(
+        r"https://github\.com/[^/\s'\"]+/[^/\s'\"]+/blob/[^/\s'\"]+/([^\s#)'\"]+)",
+        plan_text,
+    ):
+        raw_path = _clean_path(match.group(1).strip())
+        if raw_path and _looks_like_file_path(raw_path):
+            found.add(raw_path)
+
+    # 2. Markdown links: [text](target)
+    for match in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", plan_text):
+        for candidate in (match.group(1), match.group(2)):
+            c = _clean_path(candidate.strip())
+            if (
+                not c.startswith("http://")
+                and not c.startswith("https://")
+                and ("/" in c or "." in c)
+            ):
+                token = c.split("#")[0].strip()
+                if _looks_like_file_path(token):
+                    found.add(token)
+
+    # 3. Backtick spans: `...`
+    for match in re.finditer(r"`([^`\n]+)`", plan_text):
+        token = _clean_path(match.group(1).strip())
+        if _looks_like_file_path(token):
+            found.add(token)
+
+    # 4. List items: - path or * path
+    for match in re.finditer(r"(?:^|\n)\s*[-*]\s+([^\s`]+)", plan_text):
+        token = _clean_path(match.group(1))
+        if _looks_like_file_path(token):
+            found.add(token)
+
+    return found
+
+
+def is_file_in_plan(file_path: str, plan_files: Set[str]) -> bool:
+    """Reports whether a changed file matches any path cited in the approved plan.
+
+    Matches by exact path, basename, or path suffix/prefix.
+    """
+    norm = _clean_path(file_path)
+    basename = os.path.basename(norm)
+    for pf in plan_files:
+        pfnorm = _clean_path(pf)
+        if norm == pfnorm:
+            return True
+        if norm.endswith("/" + pfnorm):
+            return True
+        if pfnorm.endswith("/" + norm):
+            return True
+        if basename == pfnorm or basename == os.path.basename(pfnorm):
+            return True
+    return False
+
+
+def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[str], List[str]]:
+    """Separates changed files into in-scope and out-of-scope files relative to the plan.
+
+    Args:
+        changed_files: List of file paths changed in the PR.
+        plan_files: Set of file paths named in the approved plan.
+
+    Returns:
+        Tuple of (in_scope_files, out_of_scope_files).
+    """
+    in_scope: List[str] = []
+    out_of_scope: List[str] = []
+    for f in changed_files:
+        if is_file_in_plan(f, plan_files):
+            in_scope.append(f)
+        else:
+            out_of_scope.append(f)
+    return in_scope, out_of_scope
+
+
+def get_pr_changed_files(base_branch_name: str = "", cwd: str = WORKSPACE_DIR) -> List[str]:
+    """Returns the list of changed files between the current branch and the base branch."""
+    base = base_branch_name or default_branch()
+    for ref in (f"origin/{base}...HEAD", f"{base}...HEAD", f"origin/{base}", base):
+        try:
+            out = run_git(["diff", "--name-only", ref], cwd=cwd)
+            files = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
+            if files:
+                return files
+        except Exception:
+            continue
+    return []
+
+
+def revert_out_of_scope_files(
+    out_of_scope_files: List[str], base_branch_name: str = "", cwd: str = WORKSPACE_DIR
+) -> str:
+    """Reverts out-of-scope files to the base branch in a commit and pushes to origin.
+
+    Args:
+        out_of_scope_files: Files modified outside the plan scope.
+        base_branch_name: Base branch to restore from.
+        cwd: Repository directory.
+
+    Returns:
+        The commit SHA of the reversion commit.
+    """
+    base = base_branch_name or default_branch()
+    for f in out_of_scope_files:
+        exists_in_base = False
+        for ref in (f"origin/{base}", base):
+            res = subprocess.run(
+                ["git", "cat-file", "-e", f"{ref}:{f}"],
+                cwd=cwd,
+                capture_output=True,
+            )
+            if res.returncode == 0:
+                exists_in_base = True
+                run_git(["checkout", ref, "--", f], cwd=cwd)
+                break
+        if not exists_in_base:
+            full_path = os.path.join(cwd, f)
+            if os.path.isfile(full_path) or os.path.islink(full_path):
+                os.remove(full_path)
+                run_git(["rm", "-f", "--ignore-unmatch", f], cwd=cwd)
+            elif os.path.isdir(full_path):
+                shutil.rmtree(full_path, ignore_errors=True)
+                run_git(["rm", "-rf", "--ignore-unmatch", f], cwd=cwd)
+    run_git(["add", "-A"], cwd=cwd)
+    commit_msg = f"revert(scope): revert files outside plan scope ({', '.join(out_of_scope_files)})"
+    run_git(["commit", "-m", commit_msg], cwd=cwd)
+    run_git(["push", "origin", "HEAD"], cwd=cwd)
+    commit_sha = run_git(["rev-parse", "HEAD"], cwd=cwd).strip()
+    print(f"Reverted out-of-scope files in commit {commit_sha[:7]}: {out_of_scope_files}")
+    return commit_sha
+
+
+def extract_plan_scope(plan_text: str, fallback_title: str = "") -> str:
+    """Extracts the scope section from an implementation plan, or returns a fallback summary."""
+    scope_match = re.search(
+        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)", plan_text, re.DOTALL | re.IGNORECASE
+    )
+    if scope_match:
+        scope = scope_match.group(1).strip()
+        if scope:
+            return scope
+
+    for heading in ("Objectives", "Overview", "Summary", "Description"):
+        m = re.search(
+            rf"(?:^|\n)#{{2,4}}\s*{heading}\s*\n(.*?)(?=\n#{{2,4}}\s|\Z)",
+            plan_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if m and m.group(1).strip():
+            return m.group(1).strip()
+
+    lines = []
+    for line in plan_text.splitlines():
+        if (
+            line.startswith("<!--")
+            or line.startswith("#")
+            or "PLAN_FOOTER" in line
+            or "Parent Request" in line
+        ):
+            continue
+        lines.append(line)
+    text = "\n".join(lines).strip()
+    if text:
+        return text[:500]
+    return fallback_title or "Implementation changes as approved in the plan."
+
+
+def extract_test_result_line(stdout: str = "", stderr: str = "") -> str:
+    """Extracts the final result summary line from test suite output."""
+    output = (stdout or "") + "\n" + (stderr or "")
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    if not lines:
+        return "Tests passed"
+    return lines[-1]
+
+
+def build_pr_body(
+    plan_title: str,
+    plan_text: str,
+    request_number: int,
+    plan_number: Optional[int] = None,
+    diff_stat: str = "",
+    test_command: str = "",
+    test_result_line: str = "",
+    agent_notes: str = "",
+) -> str:
+    """Builds a pull request description deterministically from the approved plan and run stats.
+
+    Args:
+        plan_title: Title of the plan issue.
+        plan_text: Body of the approved plan.
+        request_number: Parent request issue number.
+        plan_number: Plan issue number.
+        diff_stat: Output of `git diff --stat` vs base branch.
+        test_command: The verification command executed.
+        test_result_line: The final result summary line from the test runner.
+        agent_notes: Raw output notes from the implementation agent.
+
+    Returns:
+        Deterministic pull request body markdown.
+    """
+    scope = extract_plan_scope(plan_text, fallback_title=plan_title)
+
+    sections = [
+        f"## Summary\n\n{scope}",
+    ]
+
+    if diff_stat.strip():
+        sections.append(f"## Changed Files\n\n```\n{diff_stat.strip()}\n```")
+
+    if test_command or test_result_line:
+        verif_lines = ["## Verification\n"]
+        if test_command:
+            verif_lines.append(f"- **Command**: `{test_command}`")
+        if test_result_line:
+            verif_lines.append(f"- **Result**: `{test_result_line}`")
+        sections.append("\n".join(verif_lines))
+
+    closes_lines = [f"Closes #{request_number}"]
+    if plan_number and plan_number != request_number:
+        closes_lines.append(f"Closes #{plan_number}")
+    sections.append("\n".join(closes_lines))
+
+    if agent_notes.strip():
+        truncated_notes = agent_notes[:2000].strip()
+        sections.append(
+            f"<details>\n<summary>Agent notes</summary>\n\n{truncated_notes}\n</details>"
+        )
+
+    return "\n\n".join(sections) + "\n"
 
 
 def find_parent_request_number(plan_number: int, repo: str) -> Optional[int]:
@@ -2857,11 +3156,32 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         fail_agent_run(f"Commit/push failed for plan #{plan_number}; Execution Error posted.")
 
     # 9. Open Draft PR via workflow dispatch
-    pr_body = (
-        f"## Summary of Changes\n\n"
-        f"{impl_result[:2000]}\n\n"
-        f"Closes #{request_number}\n"
-        f"Closes #{plan_number}\n"
+    diff_stat = ""
+    try:
+        diff_stat = run_git(["diff", "--stat", f"origin/{default_branch()}...HEAD"], cwd=cwd)
+    except Exception:
+        try:
+            diff_stat = run_git(["diff", "--stat", f"{default_branch()}...HEAD"], cwd=cwd)
+        except Exception:
+            diff_stat = ""
+
+    test_cmd = (
+        " ".join(test_res.args)
+        if isinstance(getattr(test_res, "args", None), list)
+        else str(getattr(test_res, "args", ""))
+    )
+    test_result_line = extract_test_result_line(
+        getattr(test_res, "stdout", ""), getattr(test_res, "stderr", "")
+    )
+    pr_body = build_pr_body(
+        plan_title=plan_title,
+        plan_text=plan_body,
+        request_number=request_number,
+        plan_number=plan_number,
+        diff_stat=diff_stat,
+        test_command=test_cmd,
+        test_result_line=test_result_line,
+        agent_notes=impl_result,
     )
     try:
         run_gh(
@@ -2939,44 +3259,89 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         return
 
     # 11. Self-review loop
-    handle_self_review(pr_number, plan_number, repo)
+    review_ok = handle_self_review(pr_number, plan_number, repo)
+    if not review_ok:
+        print(f"Self-review did not pass clean on PR #{pr_number}; stopping.")
+        return
 
     # 12. Plan alignment gate
     handle_plan_alignment(pr_number, plan_number, request_number, repo)
 
 
-def handle_self_review(pr_number: int, plan_number: int, repo: str):
-    """Runs a general PR code review loop via agy.
+def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
+    """Runs a general PR code review and repair loop until there are no findings.
 
-    Reviews the PR diff for code quality issues. Posts findings and fixes as
-    comments on the PR. If fixes require out-of-scope changes, posts a Plan
-    Deviation comment with justification on the parent Request issue before
-    updating the Plan issue scope.
+    Compares changed files against approved plan paths to deterministically catch scope creep,
+    reverting out-of-scope files to the base branch and feeding the findings back to repair.
+    Loops until all findings are resolved, posting progress comments after every 5 iterations
+    and detecting loops that make no progress (identical findings twice in a row), marking
+    the PR Blocked and stopping.
 
     Args:
         pr_number: The pull request number.
         plan_number: The child Plan issue number.
         repo: Repository slug (owner/name).
+
+    Returns:
+        True when self-review passes clean with no findings; False if blocked or errored.
     """
     cwd = WORKSPACE_DIR
+    iteration = 1
+    previous_findings: Optional[str] = None
 
-    for iteration in range(1, MAX_REVIEW_ITERATIONS + 1):
-        print(f"Self-review iteration {iteration}/{MAX_REVIEW_ITERATIONS}")
+    while True:
+        print(f"Self-review iteration {iteration}")
 
         # Get PR diff
         try:
             diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
         except Exception as e:
             print(f"Failed to get PR diff: {e}", file=sys.stderr)
-            return
+            return False
 
-        # Get plan content for scope awareness
-        plan_data = json.loads(
-            run_gh(["issue", "view", str(plan_number), "--json", "body"], repo=repo)
-        )
-        plan_body = plan_data.get("body", "")
+        # Get plan content
+        try:
+            plan_data = json.loads(
+                run_gh(
+                    ["issue", "view", str(plan_number), "--json", "title,body,comments"],
+                    repo=repo,
+                )
+            )
+        except Exception as e:
+            print(f"Failed to get plan data: {e}", file=sys.stderr)
+            return False
 
-        # Review via agy
+        plan_body = ""
+        for c in reversed(plan_data.get("comments", [])):
+            cbody = c.get("body", "")
+            if _is_plan_comment(cbody):
+                plan_body = cbody
+                break
+        if not plan_body:
+            plan_body = plan_data.get("body", "")
+
+        # Deterministic scope check before LLM review
+        plan_files = parse_plan_files(plan_body)
+        changed_files = get_pr_changed_files(default_branch(), cwd=cwd)
+        in_scope_files, out_of_scope_files = check_scope(changed_files, plan_files)
+
+        scope_findings = ""
+        if out_of_scope_files:
+            commit_sha = revert_out_of_scope_files(out_of_scope_files, default_branch(), cwd=cwd)
+            scope_findings = (
+                f"OUT_OF_SCOPE: The following files were modified outside the approved plan scope: "
+                f"{', '.join(out_of_scope_files)}. These files have been reverted to {default_branch()} "
+                f"in commit {commit_sha[:7]}. Do not modify these files; all changes must remain "
+                f"strictly within the approved plan scope ({', '.join(sorted(plan_files))})."
+            )
+            # Re-fetch PR diff after out-of-scope files reverted
+            try:
+                diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
+            except Exception as e:
+                print(f"Failed to get PR diff after revert: {e}", file=sys.stderr)
+                return False
+
+        # Review via LLM
         max_diff_len = 60000
         diff_snippet = (
             diff
@@ -2991,8 +3356,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             f"{plan_body[:2000]}\n\n"
             f"## PR Diff\n```diff\n{diff_snippet}\n```\n\n"
             f"If you find NO actionable issues, respond starting with: NO_FINDINGS\n"
-            f"If you find issues, list each finding with a description and suggested fix. "
-            f"For each finding, mark it WITHIN_SCOPE or OUT_OF_SCOPE relative to the plan."
+            f"If you find issues, list each finding with a description and suggested fix."
         )
         checkpoint_ctx = {
             "issue_number": pr_number,
@@ -3000,7 +3364,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             "is_pr": True,
             "completed_steps": [
                 f"Completed implementation and opened PR #{pr_number}",
-                f"Self-review iteration {iteration}/{MAX_REVIEW_ITERATIONS}",
+                f"Self-review iteration {iteration}",
             ],
             "cwd": cwd,
         }
@@ -3009,7 +3373,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
         )
 
         if is_quota_exhaustion_notice(review_result):
-            return
+            return False
 
         if review_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
@@ -3024,8 +3388,19 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             )
             fail_agent_run(f"Self-review failed on PR #{pr_number}; Execution Error posted.")
 
-        # Check if clean
-        if "NO_FINDINGS" in review_result.upper()[:50]:
+        # Combine scope findings and LLM review findings
+        has_llm_findings = not ("NO_FINDINGS" in review_result.upper()[:50])
+        if scope_findings and has_llm_findings:
+            combined_findings = f"{scope_findings}\n\n### Code Quality Findings:\n\n{review_result}"
+        elif scope_findings:
+            combined_findings = scope_findings
+        elif has_llm_findings:
+            combined_findings = review_result
+        else:
+            combined_findings = ""
+
+        # Check if clean (no findings of any kind)
+        if not combined_findings:
             run_gh(
                 [
                     "pr",
@@ -3038,68 +3413,59 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 repo=repo,
             )
             print(f"Self-review passed clean on iteration {iteration}")
-            return
+            return True
 
-        # Post findings on PR
-        run_gh(
-            [
-                "pr",
-                "comment",
-                str(pr_number),
-                "--body",
-                f"<!-- darkfactory-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n{review_result}",
-            ],
-            repo=repo,
-        )
+        # Detect a loop that makes no progress (identical findings twice in a row)
+        def _normalize_findings(text: str) -> str:
+            norm = re.sub(r"in commit [0-9a-fA-F]{7,40}", "in commit <hash>", text)
+            return "\n".join(line.strip() for line in norm.strip().splitlines() if line.strip())
 
-        # Handle out-of-scope findings: post deviation on Request issue
-        if "OUT_OF_SCOPE" in review_result.upper():
-            request_number = find_parent_request_number(plan_number, repo)
-            if request_number:
-                deviation_prompt = (
-                    f"The self-review found out-of-scope findings that need fixing. "
-                    f"Generate a concise Plan Deviation comment explaining what needs "
-                    f"to change and WHY it is necessary (justification), based on:\n\n"
-                    f"{review_result}"
-                )
-                deviation_text = run_agent_prompt(
-                    deviation_prompt, checkpoint_context=checkpoint_ctx
-                )
-                if is_quota_exhaustion_notice(deviation_text):
-                    return
-                if not deviation_text.startswith("[DarkFactory Agent Execution Error]"):
-                    run_gh(
-                        [
-                            "issue",
-                            "comment",
-                            str(request_number),
-                            "--body",
-                            f"<!-- darkfactory-agent -->\n### Plan Deviation\n\n{deviation_text}",
-                        ],
-                        repo=repo,
-                    )
-                    run_gh(
-                        [
-                            "issue",
-                            "comment",
-                            str(plan_number),
-                            "--body",
-                            f"<!-- darkfactory-agent -->\n### Scope Amendment\n\n{deviation_text}",
-                        ],
-                        repo=repo,
-                    )
+        if previous_findings is not None and _normalize_findings(
+            combined_findings
+        ) == _normalize_findings(previous_findings):
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Findings (Blocked)\n\n"
+                    f"Self-review made no progress across iterations (identical findings twice in a row):\n\n"
+                    f"{combined_findings}",
+                ],
+                repo=repo,
+            )
+            block_entity(pr_number, repo=repo, is_pr=True)
+            print(f"Self-review loop made no progress on PR #{pr_number}; marked Blocked.")
+            return False
 
-        # Fix findings via agy
+        previous_findings = combined_findings
+
+        # After every 5 iterations post one progress comment on the PR
+        if iteration % 5 == 0:
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Progress (Iteration {iteration})\n\n"
+                    f"Remaining findings:\n\n{combined_findings}",
+                ],
+                repo=repo,
+            )
+
+        # Fix findings via agent
         fix_prompt = (
             f"Fix the following code review findings in the workspace:\n\n"
-            f"{review_result}\n\nMake the necessary changes to resolve all findings."
+            f"{combined_findings}\n\nMake the necessary changes to resolve all findings."
         )
         fix_result = run_agent_prompt(
             fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
         )
 
         if is_quota_exhaustion_notice(fix_result):
-            return
+            return False
 
         if fix_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
@@ -3129,25 +3495,14 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                     cwd=cwd,
                 )
                 run_git(["push", "origin", "HEAD"], cwd=cwd)
-                run_gh(
-                    [
-                        "pr",
-                        "comment",
-                        str(pr_number),
-                        "--body",
-                        f"<!-- darkfactory-agent -->\n### Self-Review Fix (Iteration {iteration})\n\n{fix_result[:2000]}",
-                    ],
-                    repo=repo,
-                )
                 print(f"Pushed review fixes for iteration {iteration}")
             else:
                 print(f"No changes after fix attempt on iteration {iteration}")
-                return
         except subprocess.CalledProcessError as e:
             print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
-            return
+            return False
 
-    print(f"Self-review loop exhausted after {MAX_REVIEW_ITERATIONS} iterations")
+        iteration += 1
 
 
 def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int, repo: str):
