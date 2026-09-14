@@ -74,11 +74,38 @@ def test_ci_language_jobs_are_guarded_not_skipped():
     assert "hashFiles('package.json')" in content
     # The guards must sit on steps, not on the jobs themselves.
     job_headers = re.findall(r"^  (\w[\w-]*):\n(?:    .*\n)*?    runs-on:", content, re.MULTILINE)
-    assert {"pipeline", "rust", "web", "docs"} <= set(job_headers)
-    for job in ("rust:", "web:"):
+    assert {"pipeline", "rust", "web", "harness", "docs"} <= set(job_headers)
+    for job in ("rust:", "web:", "harness:"):
         block_start = content.index(f"\n  {job}")
         block = content[block_start : block_start + 200]
         assert "\n    if:" not in block, f"job {job} must not be conditionally skipped"
+
+
+def test_harness_job_runs_all_bun_gates_from_the_harness_directory():
+    """The embedded harness owns its lockfile and must be verified as an isolated Bun package."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    block = content.split("\n  harness:", 1)[1].split("\n  docs:", 1)[0]
+
+    assert "uses: oven-sh/setup-bun@v2" in block
+    assert block.count("working-directory: harness") == 4
+    for command in (
+        "bun install --frozen-lockfile",
+        "bun run typecheck",
+        "bun test",
+        "bun run build",
+    ):
+        assert f"run: {command}" in block
+
+
+def test_python_and_docs_jobs_do_not_scan_the_harness_package():
+    """The dedicated Bun job owns harness checks; legacy scanners stay on their native roots."""
+    ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    pyproject = _read(os.path.join(REPO_ROOT, "pyproject.toml"))
+    properdocs = _read(os.path.join(REPO_ROOT, "properdocs.yml"))
+
+    assert "run: pytest -v tests" in ci
+    assert re.search(r"^\s*\| harness$", pyproject, re.MULTILINE)
+    assert re.search(r"^docs_dir: docs$", properdocs, re.MULTILINE)
 
 
 def test_required_checks_match_ci_job_names():

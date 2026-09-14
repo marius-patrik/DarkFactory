@@ -1,0 +1,26 @@
+{
+  "name": "@darkfactory/harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "df": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "bun run ./scripts/build.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "0.85.1",
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "jose": "6.1.0",
+    "libsodium-wrappers": "0.8.2",
+    "zod": "4.1.5"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.2"
+  }
+}

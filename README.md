@@ -145,6 +145,10 @@ darkfactory submodules              # pin and update submodules
 absent rather than loudly broken - a missing credential, an agent that was never switched on, a
 repository where the pipeline was never installed.
 
+## TypeScript harness
+
+The integrated Bun-based operator CLI, agent runtime, typed GitHub client, and CI-management engine live in [`harness/README.md`](https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harness/README.md), with the `df` command as their shared entry point.
+
 ## Local Development & Testing
 
 ```bash

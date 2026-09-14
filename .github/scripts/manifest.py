@@ -38,6 +38,7 @@ DEFAULT_REQUIRED_CHECKS: Tuple[str, ...] = (
     "paper",
     "math",
     "web",
+    "harness",
     "docs",
     "verify-bound-issue",
 )

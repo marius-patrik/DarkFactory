@@ -1,0 +1,144 @@
+import type { GitHubRepository } from "../github/repository.ts";
+import { loadCiConfig } from "./config.ts";
+import { checkWorkflowsDrift } from "./installer.ts";
+import { computeRequiredChecks, verifyBranchProtection, type ProtectionVerificationReport } from "./protection.ts";
+import type { CiConfig } from "./schema.ts";
+
+export interface DoctorCheckResult {
+	status: "pass" | "warn" | "fail" | "skipped";
+	message: string;
+	details?: unknown;
+}
+
+export interface DoctorReport {
+	ok: boolean;
+	checks: {
+		config: DoctorCheckResult;
+		workflows: DoctorCheckResult;
+		protection: DoctorCheckResult;
+	};
+}
+
+export async function runCiDoctor(
+	repoDir = process.cwd(),
+	repo?: GitHubRepository,
+	branch = "main",
+): Promise<DoctorReport> {
+	// 1. Check config
+	let config: CiConfig | null = null;
+	let configResult: DoctorCheckResult;
+
+	try {
+		config = await loadCiConfig(repoDir);
+		const required = computeRequiredChecks(config);
+		configResult = {
+			status: "pass",
+			message: `.darkfactory/ci.json is valid (${config.checks.length} check(s) declared, ${required.length} required)`,
+			details: { checks: config.checks, alert_after: config.alert_after },
+		};
+	} catch (err: unknown) {
+		configResult = {
+			status: "fail",
+			message: err instanceof Error ? err.message : String(err),
+		};
+	}
+
+	// 2. Check workflows
+	let workflowsResult: DoctorCheckResult;
+	try {
+		const drift = await checkWorkflowsDrift(repoDir);
+		const modified = drift.filter((d) => d.status === "modified");
+		const missing = drift.filter((d) => d.status === "missing");
+		const outdated = drift.filter((d) => d.status === "outdated");
+		const unmanaged = drift.filter((d) => d.status === "unmanaged");
+		const inSync = drift.filter((d) => d.status === "in_sync");
+
+		if (modified.length > 0) {
+			workflowsResult = {
+				status: "fail",
+				message: `Managed workflows modified by user (hash mismatch): ${modified.map((m) => m.file).join(", ")}`,
+				details: drift,
+			};
+		} else if (missing.length > 0) {
+			workflowsResult = {
+				status: "fail",
+				message: `Managed workflows missing: ${missing.map((m) => m.file).join(", ")}`,
+				details: drift,
+			};
+		} else if (outdated.length > 0) {
+			workflowsResult = {
+				status: "warn",
+				message: `Workflows outdated (run 'df ci update'): ${outdated.map((o) => o.file).join(", ")}`,
+				details: drift,
+			};
+		} else {
+			workflowsResult = {
+				status: "pass",
+				message: `All ${inSync.length} managed workflow(s) in sync`,
+				details: drift,
+			};
+		}
+	} catch (err: unknown) {
+		workflowsResult = {
+			status: "fail",
+			message: `Failed to inspect workflows: ${err instanceof Error ? err.message : String(err)}`,
+		};
+	}
+
+	// 3. Check protection
+	let protectionResult: DoctorCheckResult;
+	if (!repo || !config) {
+		protectionResult = {
+			status: "skipped",
+			message: "Branch protection check skipped (no GitHub repository client or invalid config)",
+		};
+	} else {
+		try {
+			const expected = computeRequiredChecks(config, repo.slug);
+			const verification = await verifyBranchProtection(repo, expected, branch);
+			if (verification.valid) {
+				protectionResult = {
+					status: "pass",
+					message: `Remote protection matches all ${expected.length} required checks (source: ${verification.source})`,
+					details: verification,
+				};
+			} else {
+				const issues: string[] = [];
+				if (verification.missing.length > 0) {
+					issues.push(`missing remote checks: ${verification.missing.join(", ")}`);
+				}
+				if (verification.extra.length > 0) {
+					issues.push(`unexpected extra remote checks: ${verification.extra.join(", ")}`);
+				}
+				if (!verification.strict) {
+					issues.push("strict branch up-to-date policy disabled");
+				}
+
+				protectionResult = {
+					status: "fail",
+					message: `Branch protection mismatch: ${issues.join("; ")}`,
+					details: verification,
+				};
+			}
+		} catch (err: unknown) {
+			protectionResult = {
+				status: "fail",
+				message: `Failed to verify branch protection: ${err instanceof Error ? err.message : String(err)}`,
+			};
+		}
+	}
+
+	const ok =
+		configResult.status === "pass" &&
+		workflowsResult.status !== "fail" &&
+		protectionResult.status !== "fail";
+
+	return {
+		ok,
+		checks: {
+			config: configResult,
+			workflows: workflowsResult,
+			protection: protectionResult,
+		},
+	};
+}

@@ -84,7 +84,7 @@ jobs:
 
       - name: Run repository automation tests
         if: steps.detect.outputs.present == 'true'
-        run: pytest -v
+        run: pytest -v tests
 
       - name: No Python in this repository
         if: steps.detect.outputs.present != 'true'
@@ -268,6 +268,45 @@ jobs:
       - name: No web workspace yet
         if: steps.detect.outputs.present != 'true'
         run: echo "No package.json at the repository root; nothing to build."
+
+  harness:
+    name: harness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect the df harness
+        id: detect
+        run: echo "present=${{ hashFiles('harness/package.json') != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Bun
+        if: steps.detect.outputs.present == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install harness dependencies
+        if: steps.detect.outputs.present == 'true'
+        working-directory: harness
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck harness
+        if: steps.detect.outputs.present == 'true'
+        working-directory: harness
+        run: bun run typecheck
+
+      - name: Test harness
+        if: steps.detect.outputs.present == 'true'
+        working-directory: harness
+        run: bun test
+
+      - name: Build harness
+        if: steps.detect.outputs.present == 'true'
+        working-directory: harness
+        run: bun run build
+
+      - name: No df harness in this repository
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No harness/package.json; nothing for the harness job to test."
 
   docs:
     name: docs

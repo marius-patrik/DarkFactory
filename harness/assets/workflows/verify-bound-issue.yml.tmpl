@@ -1,0 +1,13 @@
+name: Verify Bound Issue
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  verify-bound-issue:
+    uses: {{pipeline_repo}}/.github/workflows/verify-pr-issue.yml@{{pipeline_ref}}
+    with:
+      pipeline-ref: "{{pipeline_ref}}"
+      pipeline-repo: "{{pipeline_repo}}"
