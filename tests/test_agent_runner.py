@@ -2171,3 +2171,28 @@ class TestDeterministicPrBody:
         assert "Now I need to add tests..." in body
         # Summary must NOT have the raw agent notes
         assert body.split("## Changed Files")[0].find("Now I need to add tests") == -1
+
+
+class TestScopeCheckKeepsTestsAndVaguePlans:
+    """Tests accompany every change (rule 1), and a plan that names no files cannot define scope."""
+
+    def test_new_test_files_are_never_out_of_scope(self):
+        """#267's plan named tests/test_commands.py; the implementation added tests/test_footers.py."""
+        in_scope, out = agent_runner.check_scope(
+            [".github/scripts/commands.py", "tests/test_footers.py", "harness/test/router.test.ts"],
+            {".github/scripts/commands.py", "tests/test_commands.py"},
+        )
+        assert out == []
+        assert "tests/test_footers.py" in in_scope
+
+    def test_a_plan_without_file_paths_reverts_nothing(self):
+        in_scope, out = agent_runner.check_scope([".github/scripts/project_automation.py"], set())
+        assert out == []
+        assert in_scope == [".github/scripts/project_automation.py"]
+
+    def test_an_unrelated_production_file_is_still_out_of_scope(self):
+        _, out = agent_runner.check_scope(
+            [".github/scripts/commands.py", ".github/scripts/project_automation.py"],
+            {".github/scripts/commands.py"},
+        )
+        assert out == [".github/scripts/project_automation.py"]

@@ -2514,6 +2514,26 @@ def is_file_in_plan(file_path: str, plan_files: Set[str]) -> bool:
     return False
 
 
+def is_test_file(file_path: str) -> bool:
+    """Reports whether a path is a test: tests accompany every change (DF-RULE-001), so never out of scope.
+
+    Args:
+        file_path: Repository-relative path.
+
+    Returns:
+        True for files under a test directory or named like a test.
+    """
+    norm = _clean_path(file_path)
+    parts = norm.split("/")
+    name = parts[-1]
+    return (
+        any(part in ("tests", "test", "__tests__") for part in parts[:-1])
+        or name.startswith("test_")
+        or name.endswith(("_test.py", ".test.ts", ".test.js", ".spec.ts"))
+        or name == "conftest.py"
+    )
+
+
 def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[str], List[str]]:
     """Separates changed files into in-scope and out-of-scope files relative to the plan.
 
@@ -2526,8 +2546,11 @@ def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[st
     """
     in_scope: List[str] = []
     out_of_scope: List[str] = []
+    if not plan_files:
+        # A plan that names no files cannot define scope; reverting everything would undo the work.
+        return list(changed_files), []
     for f in changed_files:
-        if is_file_in_plan(f, plan_files):
+        if is_test_file(f) or is_file_in_plan(f, plan_files):
             in_scope.append(f)
         else:
             out_of_scope.append(f)
