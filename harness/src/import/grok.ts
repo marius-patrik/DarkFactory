@@ -71,10 +71,10 @@ export async function importGrokAccount(store: FileCredentialStore, label: strin
 		label,
 		metadata: {
 			...(current?.metadata ?? {}),
-			ownership: "borrowed", sync: "machine-only",
+			ownership: "df-owned", sync: "machine-only",
+			importedFrom: "grok",
 			...(entry.email ? { account: entry.email } : {}),
 			issuer: entry.issuer,
-			source_entry: entry.sourceEntry,
 			source: "grok-auth-json",
 		},
 		slots: {

@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { FileCredentialStore, accountId } from "../src/credentials.ts";
+import { FileCredentialStore, accountId, validateAccountRecord } from "../src/credentials.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
-import { ConfiguredBorrowedCredentialCoordinator } from "../src/import/borrowed-credentials.ts";
+import { importCodexAccount } from "../src/import/codex.ts";
 import type { ProviderConfig } from "../src/providers/schema.ts";
 
 const roots: string[] = [];
@@ -46,7 +46,7 @@ describe("FileCredentialStore", () => {
 		const quota = new QuotaStore(root);
 		const candidate = { provider: "fixture", model: "model", account: "work" };
 		await quota.mark(candidate, "auth", undefined, Date.now());
-		const store = new FileCredentialStore(root, undefined, undefined, (provider, label) => quota.clearAccount(provider, label));
+		const store = new FileCredentialStore(root, undefined, (provider, label) => quota.clearAccount(provider, label));
 		await store.setSlot("fixture:work", "api_key", { type: "api_key", value: "updated" });
 		expect(await quota.active(candidate)).toBeUndefined();
 	});
@@ -117,63 +117,173 @@ describe("FileCredentialStore", () => {
 		await expect(new FileCredentialStore(home).listAccounts()).rejects.toThrow("Invalid credentials file JSON");
 	});
 
-	function borrowedConfig(keyring = false): ProviderConfig {
-		return {
-			id: "borrowed", name: "Borrowed", dialect: "openai-completions", baseUrl: "https://example.test/v1",
-			auth: [{ kind: "oauth", slot: "oauth", flow: "pkce", authorizationEndpoint: "https://example.test/auth", tokenEndpoint: "https://example.test/token", clientId: { value: "client" }, scopes: [] }],
-			requiredCredentialSlots: ["oauth"], models: { static: [{ id: "model" }] }, capabilities: { tools: true, reasoning: false, images: false },
-			importers: [{ id: "fixture", parser: keyring ? "antigravity-keyring" : "kimi-code", ...(keyring ? { keyring: { service: "fixture", account: "main" } } : { path: "source.json" }), targetProvider: "borrowed", refresh: "reimport-first", formats: { expires: keyring ? "iso" : "epoch_milliseconds" }, fieldMapping: keyring ? { access: "token.access_token", refresh: "token.refresh_token", expires: "token.expiry" } : { access: "access", refresh: "refresh", expires: "expires" } }],
+function testJwt(payload: Record<string, unknown>): string {
+	return `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.`;
+}
+
+	test("import creates a df-owned account and later refreshes never touch the source file", async () => {
+		const root = await temporaryHome();
+		const sourceDir = join(root, "source");
+		await mkdir(join(sourceDir, ".codex"), { recursive: true });
+		const sourceFile = join(sourceDir, ".codex", "auth.json");
+		const srcJwt = testJwt({ exp: 2_000_000_000, "https://api.openai.com/auth": { chatgpt_account_id: "codex-acct" } });
+		const initialSourceContent = JSON.stringify({
+			tokens: {
+				access_token: srcJwt,
+				refresh_token: "src-refresh-token",
+				account_id: "codex-acct",
+			},
+			auth_mode: "chatgpt",
+			untouched: { marker: "original-data" },
+		});
+		await writeFile(sourceFile, initialSourceContent, "utf8");
+
+		const store = new FileCredentialStore(join(root, "df"));
+		const reader = { home: sourceDir, read: async (p: string) => {
+			try { return await readFile(join(sourceDir, p), "utf8"); } catch { return undefined; }
+		} };
+		await importCodexAccount(store, "work", reader, "openai-codex", "openai");
+
+		const imported = await store.readAccount("openai-codex:work");
+		expect(imported?.metadata?.ownership).toBe("df-owned");
+		expect(imported?.metadata?.importedFrom).toBe("codex");
+		expect(imported?.slots.oauth).toMatchObject({ access: srcJwt, refresh: "src-refresh-token" });
+
+		let refreshes = 0;
+		const faux = fauxProvider({ provider: "openai-codex", models: [{ id: "model" }] });
+		const models = createModels({ credentials: store.forAccount("openai-codex", "work") });
+		models.setProvider({
+			...faux.provider,
+			auth: {
+				oauth: {
+					name: "fixture",
+					login: async () => oauth("x", "x"),
+					refresh: async (current) => {
+						refreshes++;
+						return { ...current, access: "df-refreshed-access", refresh: "df-refreshed-refresh" };
+					},
+					toAuth: async (current) => ({ apiKey: current.access }),
+				},
+			},
+		});
+
+		const authResult = await store.forAccount("openai-codex", "work").modify("openai-codex", async (curr) => {
+			refreshes++;
+			return { ...(curr as OAuthCredential), access: "df-refreshed-access", refresh: "df-refreshed-refresh" };
+		});
+		expect(refreshes).toBe(1);
+		expect(authResult).toMatchObject({ access: "df-refreshed-access", refresh: "df-refreshed-refresh" });
+
+		const storedAfter = await store.readAccount("openai-codex:work");
+		expect(storedAfter?.slots.oauth).toMatchObject({ access: "df-refreshed-access", refresh: "df-refreshed-refresh" });
+		expect(storedAfter?.metadata?.ownership).toBe("df-owned");
+
+		expect(await readFile(sourceFile, "utf8")).toBe(initialSourceContent);
+	});
+
+	test("borrowed accounts in an old store migrate to df-owned", async () => {
+		const root = await temporaryHome();
+		const storePath = join(root, "credentials.json");
+		const oldStore = {
+			version: 2,
+			accounts: {
+				"borrowed:main": {
+					id: "borrowed:main",
+					provider: "borrowed",
+					label: "main",
+					metadata: {
+						importer: "fixture",
+						ownership: "borrowed",
+						source_path: "source.json",
+					},
+					slots: {
+						oauth: {
+							type: "oauth",
+							access: "tok-access",
+							refresh: "tok-refresh",
+							expires: Date.now() + 100_000,
+						},
+					},
+				},
+			},
 		};
-	}
+		await writeFile(storePath, JSON.stringify(oldStore, null, 2), "utf8");
 
-	async function borrowedStore(root: string, config: ProviderConfig, keyringValue?: string) {
-		const source = join(root, "source");
-		await mkdir(source, { recursive: true });
-		const coordinator = new ConfiguredBorrowedCredentialCoordinator(source, [config], { read: async () => keyringValue });
-		const store = new FileCredentialStore(join(root, "df"), undefined, coordinator);
-		await store.modifyAccount("borrowed:main", async () => ({ id: "borrowed:main", provider: "borrowed", label: "main", metadata: { importer: "fixture", ...(keyringValue ? { source_kind: "keyring", source_service: "fixture", source_account: "main" } : { source_path: "source.json" }) }, slots: { oauth: { type: "oauth", access: "df-stale", refresh: "df-stale-refresh", expires: 1 } } }));
-		return { source, store };
-	}
+		const store = new FileCredentialStore(root);
+		const account = await store.readAccount("borrowed:main");
+		expect(account).toBeDefined();
+		expect(account?.metadata?.ownership).toBe("df-owned");
+		expect(account?.metadata?.importedFrom).toBe("fixture");
+		expect(account?.slots.oauth).toMatchObject({ access: "tok-access", refresh: "tok-refresh" });
 
-	test("borrowed success: re-reads and adopts a newer valid source without refreshing", async () => {
-		const root = await temporaryHome();
-		const config = borrowedConfig();
-		const { source, store } = await borrowedStore(root, config);
-		await writeFile(join(source, "source.json"), JSON.stringify({ access: "source-current", refresh: "source-refresh", expires: Date.now() + 60_000, untouched: { keep: true } }));
-		let refreshes = 0;
-		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
-		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
-		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return current; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
-		expect((await models.getAuth("borrowed"))?.auth.apiKey).toBe("source-current");
-		expect(refreshes).toBe(0);
-		expect(await store.getSlot("borrowed", "main", "oauth")).toMatchObject({ access: "source-current", refresh: "source-refresh" });
+		const diskFile = JSON.parse(await readFile(storePath, "utf8"));
+		expect(diskFile.accounts["borrowed:main"].metadata.ownership).toBe("df-owned");
+		expect(diskFile.accounts["borrowed:main"].slots.oauth.access).toBe("tok-access");
 	});
 
-	test("borrowed edge: an expired file source is reimport-first and is never refreshed or written back", async () => {
-		const root = await temporaryHome();
-		const config = borrowedConfig();
-		const { source, store } = await borrowedStore(root, config);
-		const original = JSON.stringify({ access: "source-expired", refresh: "source-refresh", expires: 1, untouched: { keep: true } });
-		await writeFile(join(source, "source.json"), original, { mode: 0o600 });
-		let refreshes = 0;
-		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
-		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
-		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return { ...current, access: "rotated-access" }; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
-		await expect(models.getAuth("borrowed")).rejects.toThrow(/re-import/);
-		expect(refreshes).toBe(0);
-		expect(await readFile(join(source, "source.json"), "utf8")).toBe(original);
+	test("export/load round trip preserves tokens as df-owned with 0600 permissions", async () => {
+		const root1 = await temporaryHome();
+		const store1 = new FileCredentialStore(root1);
+		await store1.setSlot("openai-codex:test", "oauth", {
+			type: "oauth",
+			access: "acc-secret",
+			refresh: "ref-secret",
+			expires: Date.now() + 3600_000,
+			accountId: "acct-test",
+		});
+		await store1.setSlot("openai-codex:test", "header-slot", {
+			type: "header",
+			value: "custom-header",
+		});
+
+		const exported = await store1.readAccount("openai-codex:test");
+		expect(exported).toBeDefined();
+		const jsonLine = JSON.stringify(exported);
+		expect(jsonLine).not.toContain("\n");
+
+		const root2 = await temporaryHome();
+		const store2 = new FileCredentialStore(root2);
+		const envVarName = "TEST_DF_ACCOUNT_EXPORT";
+		process.env[envVarName] = jsonLine;
+		try {
+			const validated = validateAccountRecord(JSON.parse(jsonLine), "openai-codex:pipeline");
+			expect(validated.id).toBe("openai-codex:pipeline");
+			await store2.modifyAccount("openai-codex:pipeline", async () => ({
+				...validated,
+				metadata: { ...(validated.metadata ?? {}), ownership: "df-owned" },
+			}));
+
+			const loaded = await store2.readAccount("openai-codex:pipeline");
+			expect(loaded).toBeDefined();
+			expect(loaded?.metadata?.ownership).toBe("df-owned");
+			expect(loaded?.slots.oauth).toMatchObject({
+				access: "acc-secret",
+				refresh: "ref-secret",
+				accountId: "acct-test",
+			});
+			expect(loaded?.slots["header-slot"]).toMatchObject({
+				type: "header",
+				value: "custom-header",
+			});
+
+			const fileStat = await stat(store2.path);
+			if (process.platform !== "win32") {
+				expect(fileStat.mode & 0o777).toBe(0o600);
+			}
+		} finally {
+			delete process.env[envVarName];
+		}
 	});
 
-	test("borrowed denied: an expired keyring source is re-read but never refreshed", async () => {
-		const root = await temporaryHome();
-		const config = borrowedConfig(true);
-		const raw = JSON.stringify({ token: { access_token: "expired", refresh_token: "refresh", expiry: new Date(1).toISOString() } });
-		const { store } = await borrowedStore(root, config, raw);
-		let refreshes = 0;
-		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
-		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
-		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return current; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
-		await expect(models.getAuth("borrowed")).rejects.toThrow(/re-import/);
-		expect(refreshes).toBe(0);
+	test("load rejects malformed records", () => {
+		expect(() => validateAccountRecord("string", "p:l")).toThrow("must be an object");
+		expect(() => validateAccountRecord(null, "p:l")).toThrow("must be an object");
+		expect(() => validateAccountRecord([1, 2], "p:l")).toThrow("must be an object");
+		expect(() => validateAccountRecord({}, "p:l")).toThrow("must contain at least one valid credential slot");
+		expect(() => validateAccountRecord({ slots: {} }, "p:l")).toThrow("must contain at least one valid credential slot");
+		expect(() => validateAccountRecord({ slots: { oauth: { type: "oauth", access: "" } } }, "p:l")).toThrow("Invalid credential slot");
+		expect(() => validateAccountRecord({ slots: { oauth: { type: "oauth", access: "a", refresh: "r", expires: "not-a-number" } } }, "p:l")).toThrow("Invalid credential slot");
+		expect(() => validateAccountRecord({ slots: { api_key: { type: "api_key", value: "" } } }, "p:l")).toThrow("Invalid credential slot");
+		expect(() => validateAccountRecord({ provider: "other", label: "l", slots: { api_key: { type: "api_key", value: "key" } } }, "p:l")).toThrow("does not match");
 	});
 });

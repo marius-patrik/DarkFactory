@@ -46,5 +46,5 @@ export async function importAntigravityAccount(store: FileCredentialStore, label
 	const body = await response.json().catch(() => null) as Record<string, unknown> | null;
 	const project = typeof body?.cloudaicompanionProject === "string" ? body.cloudaicompanionProject.replace(/^projects\//u, "") : "";
 	if (!project) throw new Error("Antigravity project discovery returned no cloudaicompanionProject");
-	await store.modifyAccount(id, async (current) => ({ id, provider, label, metadata: { ...(current?.metadata ?? {}), ownership: "borrowed", sync: "machine-only", source: "os-keyring", source_kind: "keyring", source_service: service, source_account: account }, slots: { ...(current?.slots ?? {}), oauth: { type: "oauth", ...imported }, "x-antigravity-project": { type: "header", value: project } } }));
+	await store.modifyAccount(id, async (current) => ({ id, provider, label, metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", importedFrom: "antigravity", source: "os-keyring" }, slots: { ...(current?.slots ?? {}), oauth: { type: "oauth", ...imported }, "x-antigravity-project": { type: "header", value: project } } }));
 }
