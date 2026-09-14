@@ -138,9 +138,17 @@ def test_verify_bound_issue_job_name_is_stable():
 def test_agent_workflow_never_leaks_secrets_into_the_log():
     """Secrets are passed as container env, never echoed."""
     content = _read(os.path.join(WORKFLOW_DIR, "agent.yml"))
-    for secret in ("GEMINI_API_KEY", "CODEX_AUTH_JSON", "OPENROUTER_API_KEY", "GROQ_API_KEY"):
+    for secret in (
+        "GEMINI_API_KEY",
+        "DF_ACCOUNT_OPENAI_CODEX",
+        "DF_ACCOUNT_GROK_SUB",
+        "OPENROUTER_API_KEY",
+        "GROQ_API_KEY",
+    ):
         assert f"-e {secret} \\" in content or f"-e {secret}\n" in content
         assert f"echo ${{{{ secrets.{secret}" not in content
+    for old_secret in ("CODEX_AUTH_JSON", "GROK_AUTH_JSON"):
+        assert old_secret not in content
 
 
 def test_agent_workflow_forwards_the_new_secrets_without_interpolation():

@@ -35,7 +35,7 @@
       "models": { "static": [{ "id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "reasoning": true, "contextWindow": 200000, "maxTokens": 64000, "tier": "bulk" }], "list": { "path": "/v1/models", "itemsPath": "data", "idPath": "id", "namePath": "display_name" } },
       "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }] },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
-      "importers": [{ "id": "claude", "parser": "claude-code", "path": ".claude/.credentials.json", "targetProvider": "anthropic", "refresh": "reimport-first", "formats": { "expires": "epoch_milliseconds" }, "fieldMapping": { "access": "claudeAiOauth.accessToken", "refresh": "claudeAiOauth.refreshToken", "expires": "claudeAiOauth.expiresAt" } }]
+      "importers": [{ "id": "claude", "parser": "claude-code", "path": ".claude/.credentials.json", "targetProvider": "anthropic", "formats": { "expires": "epoch_milliseconds" }, "fieldMapping": { "access": "claudeAiOauth.accessToken", "refresh": "claudeAiOauth.refreshToken", "expires": "claudeAiOauth.expiresAt" } }]
     },
     {
       "id": "openai-codex", "name": "OpenAI Codex (ChatGPT)", "dialect": "openai-codex-responses", "baseUrl": "https://chatgpt.com/backend-api/codex",
@@ -46,7 +46,7 @@
       "quota": { "rules": [{ "kind": "quota_exhausted", "statuses": [429], "jsonPath": "error.code", "regex": "usage_limit_reached|usage_not_included", "reset": [{ "kind": "header", "header": "retry-after" }] }, { "kind": "rate_limited", "statuses": [429], "jsonPath": "error.code", "equals": "rate_limit_exceeded", "reset": [{ "kind": "header", "header": "retry-after" }] }] },
       "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage_limit_reached|usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }] },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
-      "importers": [{ "id": "codex", "parser": "codex", "path": ".codex/auth.json", "targetProvider": "openai-codex", "apiKeyTargetProvider": "openai", "refresh": "reimport-first", "fieldMapping": { "access": "tokens.access_token", "refresh": "tokens.refresh_token", "accountId": "tokens.account_id" } }]
+      "importers": [{ "id": "codex", "parser": "codex", "path": ".codex/auth.json", "targetProvider": "openai-codex", "apiKeyTargetProvider": "openai", "fieldMapping": { "access": "tokens.access_token", "refresh": "tokens.refresh_token", "accountId": "tokens.account_id" } }]
     },
     {
       "id": "grok-sub", "name": "Grok Subscription", "dialect": "openai-completions", "baseUrl": "https://cli-chat-proxy.grok.com/v1",
@@ -55,7 +55,7 @@
       "models": { "static": [{ "id": "grok-4.6", "name": "Grok 4.6", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }, { "id": "grok-4.5", "name": "Grok 4.5", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }, { "id": "grok-composer-2.5-fast", "name": "Grok Composer 2.5 Fast", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
       "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }] },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
-      "importers": [{ "id": "grok", "parser": "grok-cli", "path": ".grok/auth.json", "targetProvider": "grok-sub", "refresh": "reimport-first", "formats": { "expires": "iso" }, "fieldMapping": { "access": "*.key", "refresh": "*.refresh_token", "expires": "*.expires_at" } }]
+      "importers": [{ "id": "grok", "parser": "grok-cli", "path": ".grok/auth.json", "targetProvider": "grok-sub", "formats": { "expires": "iso" }, "fieldMapping": { "access": "*.key", "refresh": "*.refresh_token", "expires": "*.expires_at" } }]
     },
     {
       "id": "kimi-coding", "name": "Kimi Coding", "dialect": "anthropic-messages", "baseUrl": "https://api.kimi.com/coding",
@@ -63,7 +63,7 @@
       "models": { "static": [{ "id": "kimi-for-coding", "name": "Kimi for Coding", "reasoning": true, "contextWindow": 262144, "maxTokens": 32768 }], "list": { "path": "/v1/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
       "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }] },
       "capabilities": { "tools": true, "reasoning": true, "images": false },
-      "importers": [{ "id": "kimi", "parser": "kimi-code", "path": ".kimi-code/credentials/kimi-code.json", "targetProvider": "kimi-coding", "refresh": "reimport-first", "formats": { "expires": "epoch_seconds" }, "fieldMapping": { "access": "access_token", "refresh": "refresh_token", "expires": "expires_at" } }]
+      "importers": [{ "id": "kimi", "parser": "kimi-code", "path": ".kimi-code/credentials/kimi-code.json", "targetProvider": "kimi-coding", "formats": { "expires": "epoch_seconds" }, "fieldMapping": { "access": "access_token", "refresh": "refresh_token", "expires": "expires_at" } }]
     },
     {
       "id": "openrouter", "name": "OpenRouter", "dialect": "openai-completions", "baseUrl": "https://openrouter.ai/api/v1",
@@ -104,7 +104,7 @@
       "models": { "static": [{ "id": "default-chat", "name": "Antigravity default chat", "contextWindow": 1048576, "maxTokens": 65535 }], "list": { "path": ":fetchAvailableModels", "method": "POST", "itemsPath": "models", "idPath": "$key", "namePath": "displayName", "body": { "project": "$slot:x-antigravity-project" } } },
       "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }] },
       "capabilities": { "tools": false, "reasoning": false, "images": false },
-      "importers": [{ "id": "antigravity", "parser": "antigravity-keyring", "keyring": { "service": "gemini", "account": "antigravity" }, "targetProvider": "google-antigravity", "refresh": "reimport-first", "formats": { "expires": "iso" }, "fieldMapping": { "access": "token.access_token", "refresh": "token.refresh_token", "expires": "token.expiry" } }]
+      "importers": [{ "id": "antigravity", "parser": "antigravity-keyring", "keyring": { "service": "gemini", "account": "antigravity" }, "targetProvider": "google-antigravity", "formats": { "expires": "iso" }, "fieldMapping": { "access": "token.access_token", "refresh": "token.refresh_token", "expires": "token.expiry" } }]
     }
   ]
 }
