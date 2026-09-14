@@ -38,7 +38,7 @@ V kontextu autonomního vývoje plní pull request dvě nezastupitelné funkce:
 
 == Kontinuální integrace
 
-#draft[
+#confirmed[
 Kontinuální integrace (angl. _continuous integration_) je praxe, při níž se
 každá změna automaticky sestaví a otestuje @humble2010. Namísto dlouhých období,
 kdy se změny hromadí a slučují až na konci, se ověřuje průběžně a v malých
@@ -47,7 +47,7 @@ dávkách, takže chyba je odhalena blízko svému vzniku.
 
 === Požadované kontroly
 
-#draft[
+#confirmed[
 Ke kontinuální integraci patří pojem _požadovaných kontrol_ (angl. required
 checks): množina úloh, které musí skončit úspěšně, jinak nelze změnu sloučit.
 Tím se z kvality stává vlastnost vynucovaná strojem, nikoli pouze dohodou mezi
@@ -140,7 +140,7 @@ V kontextu automatizovaného vývoje softwaru a autonomních pipeline (jako je s
 
 ==== Turn
 
-#diff[Každému kroku mezi modelem a uživatelem se říká turn, nebo specificky model turn pro každé spuštění inference.][Každému diskrétnímu kroku ve výměně informací mezi okolním prostředím a jazykovým modelem se v agentních architekturách říká tah (_turn_). Na rozdíl od jednoduchého konverzačního rozhraní, kde dochází pouze ke střídání uživatele a asistenta, agentní smyčka (typicky implementující vzor ReAct @yao2022) rozlišuje tři základní typy tahů:
+#confirmed[Každému diskrétnímu kroku ve výměně informací mezi okolním prostředím a jazykovým modelem se v agentních architekturách říká tah (_turn_). Na rozdíl od jednoduchého konverzačního rozhraní, kde dochází pouze ke střídání uživatele a asistenta, agentní smyčka (typicky implementující vzor ReAct @yao2022) rozlišuje tři základní typy tahů:
 1. *Tah uživatele či prostředí (_User / Environment Turn_)*: Vnáší do kontextu nové zadání, externí událost (např. spuštění GitHub webhooku) nebo doplňující instrukce.
 2. *Tah modelu (_Model / Assistant Turn_)*: Reprezentuje jedno spuštění inference neuronové sítě. Model na základě dosavadní historie emituje buď finální textovou odpověď, nebo strukturovaný požadavek na vyvolání nástroje (_tool call_).
 3. *Tah vykonání nástroje (_Tool Execution Turn_)*: Běhové prostředí (harness) provede požadovanou operaci — např. spuštění skriptu v terminálu či čtení souboru — a její výsledek vloží do kontextu jako syntetický tah určený pro navazující uvažování modelu.
@@ -165,13 +165,13 @@ Model je schopen přijmout pouze omezený objem vstupu; tomuto limitu se říká
 
 ==== KV Caching
 
-#draft[
+#confirmed[
 KV caching slouží ke snížení výpočetní náročnosti modelu při generování tokenů. Místo toho, abychom při každém kroku inference znovu od začátku počítali pozornost pro celou dosavadní konverzaci, ponechává inferenční engine v paměti uložené již vypočtené vektory klíčů a hodnot (_Key-Value pairs_) a v každém kroku počítá a přidává pouze nově vygenerovaný token.
 ]
 
 === Prompt a kontextové inženýrství
 
-#draft[
+#confirmed[
 _Prompt engineering_ (inženýrství promptů) je disciplína zaměřená na systematický návrh, formulaci a optimalizaci textových instrukcí předkládaných modelu @anthropic-prompt. V autonomních agentních systémech nepředstavuje prompt pouhou volnou konverzaci, ale slouží jako závazný kontrakt vymezující chování, práva a bezpečnostní mantinely agenta. Mezi klíčové techniky patří:
 
 - *Systémový prompt (System Prompt)*: Základní direktiva definující identitu agenta, dostupné nástroje a striktní provozní pravidla (např. pravidla pro zachování neměnnosti existujících testů, konvence pro formát commitů či zákaz destruktivních operací v repozitáři).
@@ -188,7 +188,7 @@ _Prompt engineering_ (inženýrství promptů) je disciplína zaměřená na sys
 
 === Harness a System Prompt
 
-#draft[
+#confirmed[
 Harness je řídicí program obklopující jazykový model. Odlišuje se od inferenčního jádra (_inference engine_), které provádí samotné maticové výpočty sítě: harness má na starost rozhraní mezi uživatelem a agentem či chatbotem, předávání systémového promptu, bezpečné spouštění nástrojů a řízení iterativní smyčky neboli ReAct smyčky. Mezi typické příklady patří webová aplikace ChatGPT, terminálové rozhraní Claude Code, desktopová aplikace Codex a další agentní prostředí.
 ]
 
@@ -223,7 +223,7 @@ Abychom z jazykového modelu vytvořili autonomního agenta, musíme jej vybavit
 
 === Dovednosti, skripty a záchytné body
 
-#draft[
+#confirmed[
 Tyto standardy vznikly proto, aby vývojáři mohli modulárně upravovat chování agenta a rozšiřovat jeho schopnosti pro specifické doménové úlohy:
 
 - *Dovednost (_Skill_)*: Samostatný adresář sdružující instrukce, reference a pomocné soubory. Klíčovým prvkem je soubor `SKILL.md`, který využívá hlavičku v metadatovém formátu YAML frontmatter (ohraničenou trojicí pomlček `---`). V hlavičce je definován název a stručný popis dovednosti. Řídicí harness do základního systémového promptu vkládá pouze tato metadata; samotný text podrobného návodu se do kontextu načte až ve chvíli, kdy agent danou dovednost vyvolá. Tím se efektivně šetří kapacita kontextového okna.
@@ -245,7 +245,7 @@ Praktický význam specifikace Model Context Protocol @anthropic-mcp spočívá 
 
 === Subagenti
 
-#diff[Když dáme agentovi nástroj s možností vyvolat jiného agenta, zadat mu úlohu, interagovat s ním a sledovat jeho progress drasticky zvýšíme jeho efektivnost pro rozsáhlé úlohy. Tomuto se říká "subagents".][Když je agent vybaven nástrojem umožňujícím vyvolat další specializovanou instanci jazykového modelu, zadat jí dílčí úlohu, asynchronně s ní komunikovat a sledovat její postup, efektivita řešení rozsáhlých softwarových problémů dramaticky roste. V teorii autonomních systémů se tyto delegované entity označují jako subagenti (_subagents_).
+#confirmed[Když je agent vybaven nástrojem umožňujícím vyvolat další specializovanou instanci jazykového modelu, zadat jí dílčí úlohu, asynchronně s ní komunikovat a sledovat její postup, efektivita řešení rozsáhlých softwarových problémů dramaticky roste. V teorii autonomních systémů se tyto delegované entity označují jako subagenti (_subagents_).
 
 Tato architektura umožňuje hierarchickou dekompozici problému: hlavní koordinační agent (_orchestrator_) udržuje globální strategii a pověřuje úzce profilované subagenty izolovanými činnostmi — například rešerší dokumentace, prozkoumáním rozsáhlého adresářového stromu repozitáře nebo syntaktickou opravou konkrétního modulu. Zásadní architektonickou výhodou je ochrana a izolace kontextového okna: rozsáhlý a výpočetně náročný průzkumný kontext subagenta se po dokončení úkolu zahodí a rodičovskému orchestrátoru je předán pouze syntetizovaný, čistý výsledek. Tím se zabraňuje zahlcení primárního kontextu (_context pollution_) a degradaci kognitivních schopností hlavního agenta.]
 
@@ -268,7 +268,7 @@ Zásadní předností grafového uspořádání je determinismus a striktní bez
 
 == Human in the loop neboli člověk ve smyčce
 
-#draft[
+#confirmed[
 Čím je systém samostatnější, tím důležitější je otázka, kde do procesu vstupuje
 člověk. Úplná autonomie není cílem; cílem je autonomie v rutinních krocích
 a lidské rozhodnutí tam, kde je nevratné nebo kde chybí měřítko správnosti.
@@ -276,7 +276,7 @@ a lidské rozhodnutí tam, kde je nevratné nebo kde chybí měřítko správnos
 
 === Schvalovací body
 
-#draft[
+#confirmed[
 Schvalovací bod je místo, kde se proces zastaví a čeká na potvrzení. Jeho
 umístění je kompromisem: příliš mnoho schvalování popírá smysl automatizace,
 příliš málo znamená ztrátu kontroly. Osvědčeným řešením je schvalovat _záměr_
@@ -285,7 +285,7 @@ příliš málo znamená ztrátu kontroly. Osvědčeným řešením je schvalova
 
 === Dohledatelnost
 
-#draft[
+#confirmed[
 Aby byla automatizovaná změna přezkoumatelná, musí být zřejmé, z jakého
 požadavku vzešla. Uchování doslovného znění původního zadání je proto součástí
 návrhu, nikoli formalitou: parafráze ztrácí význam, který do zadání vložil ten,

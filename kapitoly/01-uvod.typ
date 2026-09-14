@@ -19,7 +19,7 @@ jak stejný princip uplatnit ve vývoji softwaru.
 
 == Motivace
 
-#draft[
+#confirmed[
 S rozšířením velkých jazykových modelů se objevila možnost automatizovat i psaní
 kódu. Většina dostupných nástrojů však řeší jen dílčí krok: vygenerují návrh
 změny, který někdo musí zasadit do procesu, ověřit a schválit. Chybí popis toho,
@@ -60,7 +60,7 @@ V návaznosti na stanovené cíle si práce klade tři konkrétní výzkumné ot
 
 Ověření proto neprobíhalo formou experimentu s kontrolní skupinou, nýbrž sledováním chování systému v provozu. Sledovány byly zejména nalezené chyby, neboť právě ty ukazují na rozdíl mezi předpokladem a skutečností.][Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:
 1. *DarkFactory*: mateřský repozitář systému (Python, GitHub Actions, metaharness).
-2. *omnis*: vícejazyčná polyglotní aplikace kombinující více subsystémů.
+2. *OdbornaPrace-paper*: repozitář samotného rukopisu této práce (doména textu a sazby v systému Typst).
 3. *ChessWithQuests*: aplikační projekt s herní logikou.
 
 Empirické ověření probíhalo longitudinálním sledováním reálných integračních běhů v prostředí GitHub Actions nad skutečnými požadavky (GitHub Issues) a pull requesty. Místo syntetických laboratorních benchmarků (např. izolovaného vyhodnocování na datasetech typu SWE-bench) se výzkum soustředil na end-to-end spolehlivost v produkčních podmínkách: sledována byla schopnost pipeline projít celým životním cyklem bez uváznutí, četnost vyčerpání kontextu či API limitů, chování záchranných mechanismů při rotaci modelů a zejména kvalitativní a kvantitativní analýza chyb, které se projevily v reálném provozu. Získané poznatky sloužily k průběžné optimalizaci a zpevnění mantinelů celého systému.]

@@ -8,7 +8,7 @@
 Naplnění jednotlivých dílčích cílů lze ve vztahu ke stanovené metodice shrnout následovně:
 + *Současný stav a teoretická východiska (Kapitola 2)*: Práce systematicky zmapovala architekturu moderních dekodérových transformerů, mechanismus pozornosti, limity kontextového okna (včetně jevu _Context Rot_ a významu KV cache), techniky inženýrství promptů a formální strukturu autonomní ReAct smyčky alternující vnitřní rozvahu (_Thought_) a volání nástrojů (_Action_).
 + *Architektonický návrh (Kapitola 3)*: Byla navržena třívrstvá dekompozice propojující platformu GitHub, řídicí Python jádro a hermetické kontejnerové prostředí. Životní cyklus požadavku byl formalizován jako orientovaný stavový diagram s explicitními schvalovacími branami.
-+ *Realizace a nasazení (Kapitola 3 a 4)*: Systém byl kompletně naprogramován a nasazen na tři repozitáře různého zaměření — vlastní repozitář systému DarkFactory, vícejazyčnou aplikaci `omnis` a projekt `ChessWithQuests`.
++ *Realizace a nasazení (Kapitola 3 a 4)*: Systém byl kompletně naprogramován a nasazen na tři repozitáře různého zaměření — vlastní repozitář systému DarkFactory, textový repozitář této odborné práce (`OdbornaPrace-paper`) a projekt `ChessWithQuests`.
 + *Vyhodnocení a provozní analýza (Kapitola 4)*: Sjednocení na volané pracovní postupy vedlo k odstranění přibližně 7 800 řádků duplicitního kódu napříč sledovanými projekty. Nejcennějším zjištěním byla identifikace čtyř subtilních chyb v distribuovaném řízení (uváznutí souběžnosti, skládání názvů kontrol, tiché selhání API zápisů a pevný předpoklad o přítomnosti Pythonu), které byly v systému deterministicky vyřešeny.
 
 V návaznosti na výsledky lze zodpovědět stanovené výzkumné otázky:

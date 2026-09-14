@@ -87,7 +87,7 @@ postup je díky tomu ve všech repozitářích shodný bajt po bajtu.
     },
     "board": {
       "global_title": "Global",
-      "link_boards": ["Global", "DarkFactory", "Omnis", "ChessWithQuests"]
+      "link_boards": ["Global", "DarkFactory", "OdbornaPrace", "ChessWithQuests"]
     }
   }
   ```,
@@ -259,7 +259,7 @@ Zásadním prvkem architektury je inteligentní deduplikace incidentů: opakovan
 
 == Automaticky generovaná dokumentace
 
-#added[
+#confirmed[
 V moderním softwarovém vývoji představuje manuální údržba dokumentace permanentní zdroj chyb a desynchronizace: jakmile se kód vyvíjí rychleji než textové popisy, dokumentace se nevyhnutelně stává zastaralou a nespolehlivou. Systém DarkFactory proto prosazuje striktní princip stoprocentního odvozování veškeré projektové a API dokumentace přímo ze zdrojového kódu a strukturovaných inline komentářů (tzv. _living documentation_).
 
 Tento přístup využívá přirozené standardy konkrétních programovacích jazyků a prostředí:

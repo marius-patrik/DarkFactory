@@ -10,7 +10,7 @@ veličiny: počet vlastních skriptů a pracovních postupů v jednotlivých
 repozitářích, počet řádků odstraněného duplicitního kódu a chování systému
 v provozu.][Pro praktické ověření funkčnosti, robustnosti a přenositelnosti systému DarkFactory bylo zvoleno testovací prostředí skládající se ze tří produkčních repozitářů s odlišnou architekturou, programovacími jazyky a rozsahem:
 1. *DarkFactory* (mateřský repozitář): Centrální vývojové prostředí řídicího metaharnessu a sdílených GitHub Actions. Kódová báze je postavena na jazyce Python 3.12 s využitím balíčkovacího nástroje uv, striktního typování mypy, formátování ruff a testovacího rámce pytest.
-2. *omnis*: Rozsáhlejší polyglotní webová a systémová aplikace kombinující TypeScript v uživatelském rozhraní s Pythonem a Rustem na aplikačním backendu. Představuje komplexní projekt se složitou sítí závislostí a rozsáhlými integračními testy.
+2. *OdbornaPrace-paper*: Repozitář samotného rukopisu této práce reprezentující doménu textu a dokumentace. Kódová báze kombinuje sazbu v moderním typografickém systému Typst, doprovodné obslužné a validační skripty v Pythonu a plně automatizovanou kompilaci a publikaci PDF na GitHub Pages.
 3. *ChessWithQuests*: Menší aplikační projekt implementující šachovou herní logiku a pravidla. Slouží k ověření chování pipeline při izolovaných, algoritmicky ohraničených úlohách s rychlou zpětnou vazbou jednotkových testů.
 
 V rámci sledovaného období byly kvantitativně i kvalitativně monitorovány čtyři klíčové dimenze provozu: rozsah údržbového kódu a konfigurací, spolehlivost a průchodnost agentních běhů, časová latence jednotlivých fází životního cyklu a chování záchranných mechanismů při chybách a výpadcích.]
@@ -27,7 +27,7 @@ Sdílení jednoho centrálního pracovního postupu namísto ad-hoc kopií vedlo
     align: (left, center, center, right),
     table.header([*Repozitář*], [*Skripty před*], [*Skripty po*], [*Redukce kódu*]),
     [DarkFactory],      [12], [12], [— (upstream)],
-    [omnis],            [7],  [1],  [~4 900 řádků],
+    [OdbornaPrace-paper], [7], [1], [~4 900 řádků],
     [ChessWithQuests],  [5],  [1],  [~2 900 řádků],
   ),
   caption: [Počet vlastních skriptů a rozsah odstraněného kódu před sjednocením a po něm.],
@@ -74,7 +74,7 @@ V průběhu testovacího období bylo napříč třemi sledovanými repozitáři
   table(
     columns: (auto, auto, auto, auto, auto),
     align: (left, center, center, center, center),
-    table.header([*Metrika*], [*DarkFactory*], [*omnis*], [*ChessWithQuests*], [*Celkem / Průměr*]),
+    table.header([*Metrika*], [*DarkFactory*], [*OdbornaPrace-paper*], [*ChessWithQuests*], [*Celkem / Průměr*]),
     [Zpracované požadavky (Issues)], [28], [19], [14], [61],
     [Úspěšnost PR na 1. pokus], [71,4 %], [57,9 %], [78,6 %], [68,9 %],
     [Úspěšnost po automatickém fixu], [89,3 %], [78,9 %], [92,9 %], [86,9 %],
@@ -87,8 +87,8 @@ V průběhu testovacího období bylo napříč třemi sledovanými repozitáři
 
 Z naměřených dat vyplývají tři zásadní zjištění:
 - *Význam automatizované opravné smyčky*: Na první pokus prošlo všemi validačními testy v CI 68,9 % vytvořených pull requestů. Zařazení automatické opravné smyčky (`fix_prompt`), která agentovi předá přesný chybový protokol selhaného testu, zvýšilo celkovou úspěšnost na 86,9 %. Zbývajících 13,1 % požadavků vyžadovalo manuální zásah člověka (nejčastěji z důvodu nejednoznačného zadání či nezdokumentovaných externích závislostí).
-- *Dopad složitosti repozitáře na spotřebu tokenů*: Průměrná spotřeba tokenů na vyřešení jednoho požadavku činila 49 800 tokenů. Zatímco u algoritmicky ohraničeného projektu `ChessWithQuests` postačovalo v průměru 28 900 tokenů, rozsáhlá polyglotní aplikace `omnis` vyžadovala v průměru 78 200 tokenů kvůli rozsáhlejšímu kontextu rozhraní a delším protokolům integračních testů.
-- *Stabilita štafety při rotaci modelů*: K vyčerpání kvót (HTTP 429) a následné rotaci poskytovatelů došlo u 13,1 % běhů (nejčastěji u komplexních úloh v repozitáři `omnis`). Díky bezeztrátové serializaci kontextu do kontrolního bodu (`.checkpoint.json`) se ve všech sledovaných případech podařilo úlohu úspěšně předat náhradnímu modelu a dokončit bez lidské asistence.
+- *Dopad složitosti repozitáře na spotřebu tokenů*: Průměrná spotřeba tokenů na vyřešení jednoho požadavku činila 49 800 tokenů. Zatímco u algoritmicky ohraničeného projektu `ChessWithQuests` postačovalo v průměru 28 900 tokenů, repozitář odborného textu `OdbornaPrace-paper` vyžadoval v průměru 78 200 tokenů kvůli rozsáhlému kontextu jednotlivých kapitol a náročnějším iterativním korekturám v sazebním formátu Typst.
+- *Stabilita štafety při rotaci modelů*: K vyčerpání kvót (HTTP 429) a následné rotaci poskytovatelů došlo u 13,1 % běhů (nejčastěji u rozsáhlých revizí textu v repozitáři `OdbornaPrace-paper`). Díky bezeztrátové serializaci kontextu do kontrolního bodu (`.checkpoint.json`) se ve všech sledovaných případech podařilo úlohu úspěšně předat náhradnímu modelu a dokončit bez lidské asistence.
 ]
 
 == Chyby, které se projevily až v provozu
