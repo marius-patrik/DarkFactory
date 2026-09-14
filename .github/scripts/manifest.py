@@ -56,6 +56,56 @@ AREA_COLOURS: Tuple[str, ...] = (
     "0075ca",
 )
 
+#: Default identities used when a repository declares none.
+DEFAULT_IDENTITIES: Dict[str, Any] = {
+    "app": {
+        "slug": "darkfactory-pipeline",
+        "login": "darkfactory-pipeline[bot]",
+        "user_id": 326069535,
+        "commit_author_email": "326069535+darkfactory-pipeline[bot]@users.noreply.github.com",
+    },
+    "claude": {
+        "name": "Claude",
+        "display_name": "Claude",
+        "trailer": "Co-authored-by: Claude <noreply@anthropic.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/claude",
+        "verified": True,
+    },
+    "codex": {
+        "name": "Codex",
+        "display_name": "Codex",
+        "trailer": "Co-authored-by: Codex <noreply@openai.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/codex",
+        "verified": True,
+    },
+    "openai-codex": {
+        "name": "Codex",
+        "display_name": "Codex",
+        "trailer": "Co-authored-by: Codex <noreply@openai.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/codex",
+        "verified": True,
+    },
+    "google": {
+        "name": "Gemini",
+        "display_name": "Gemini",
+        "trailer": "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/gemini-code-assist",
+        "verified": True,
+    },
+    "antigravity": {
+        "name": "Gemini",
+        "display_name": "Gemini",
+        "trailer": "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/gemini-code-assist",
+        "verified": True,
+    },
+}
+
 
 class Manifest:
     """The parsed contents of a repository's `darkfactory.json`.
@@ -310,6 +360,57 @@ class Manifest:
         declared.pop("$comment", None)
         return declared
 
+    # -- identities -------------------------------------------------------------------------
+
+    @property
+    def identities(self) -> Dict[str, Any]:
+        """Returns the declared provider and pipeline identities.
+
+        Returns:
+            Mapping of identities with defaults applied when none are declared.
+        """
+        declared = dict(self.data.get("identities", {}) or {})
+        declared.pop("$comment", None)
+        if not declared:
+            return dict(DEFAULT_IDENTITIES)
+        return declared
+
+    def identity_for(self, provider: str) -> Optional[Dict[str, Any]]:
+        """Returns the identity entry for a provider id.
+
+        Args:
+            provider: Provider ID (e.g. 'google', 'claude', 'codex').
+
+        Returns:
+            The identity dictionary for the provider, or None if not configured.
+        """
+        identities = self.identities
+        providers = identities.get("providers")
+        if isinstance(providers, dict) and provider in providers:
+            return dict(providers[provider])
+        entry = identities.get(provider)
+        if isinstance(entry, dict):
+            return dict(entry)
+        return None
+
+    @property
+    def bot_commit_author(self) -> str:
+        """Returns the Git commit author string for the pipeline bot.
+
+        Returns:
+            Author string in the format 'login <email>', e.g.
+            'darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>'.
+        """
+        app = self.identities.get("app") or self.identities.get("automation") or {}
+        login = str(app.get("login") or "darkfactory-pipeline[bot]")
+        user_id = app.get("user_id", 326069535)
+        email = str(
+            app.get("commit_author_email")
+            or app.get("email")
+            or f"{user_id}+{login}@users.noreply.github.com"
+        )
+        return f"{login} <{email}>"
+
     # -- required checks --------------------------------------------------------------------
 
     @property
@@ -480,6 +581,7 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
                 "pages": loaded.pages_payload(),
                 "upstream": loaded.upstream,
                 "is_upstream": loaded.is_upstream,
+                "identities": loaded.identities,
             },
             indent=2,
         )

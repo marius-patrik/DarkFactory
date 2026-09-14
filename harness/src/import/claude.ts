@@ -94,7 +94,8 @@ export async function importClaudeAccount(
 		label,
 		metadata: {
 			...(current?.metadata ?? {}),
-			ownership: "borrowed", sync: "machine-only",
+			ownership: "df-owned", sync: "machine-only",
+			importedFrom: "claude",
 			...(login.organizationUuid ? { account: login.organizationUuid } : {}),
 			...(login.subscriptionType ? { plan: login.subscriptionType } : {}),
 			source: login.source,

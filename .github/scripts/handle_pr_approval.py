@@ -172,6 +172,7 @@ def reconcile_post_merge(
         item_id = client.add_item(pr_url)
         if item_id:
             client.edit_status(item_id, "Done")
+        client.set_status_label(repo, pr_number, "Done")
 
     for num in issue_numbers:
         _gh(["issue", "close", str(num), "--repo", repo, "--reason", "completed"], repo)

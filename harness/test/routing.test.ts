@@ -38,6 +38,20 @@ describe("model routing policy", () => {
 		expect(graph).toMatchObject({ source: "graph", chain: [{ provider: "openai", model: "node-model", account: "work" }] });
 	});
 
+	test("GitHub noreply and bot addresses in commit metadata are not personal data", async () => {
+		// Pipeline prompts carry authors and trailers such as these; treating them as PII sent every
+		// such task to the sensitive chain (or failed it when none was configured).
+		for (const prompt of [
+			"Commit with author marius-patrik <marius-patrik@users.noreply.github.com>",
+			"Co-authored-by: Claude <noreply@anthropic.com>",
+			"Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+			"darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>",
+		]) {
+			expect((await resolveRouting(config, { prompt })).source).toBe("default");
+		}
+		expect((await resolveRouting(config, { prompt: "author x@users.noreply.github.com, contact dev@example.com" })).source).toBe("sensitive");
+	});
+
 	test("sensitive prompts and tool results select the configured sensitive failover chain", async () => {
 		expect((await resolveRouting(config, { prompt: "contact dev@example.com" })).source).toBe("sensitive");
 		expect((await resolveRouting(config, { prompt: "inspect output", toolResults: [{ token: "access_token=fixture-secret-123" }] })).source).toBe("sensitive");

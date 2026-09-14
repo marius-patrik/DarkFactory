@@ -86,6 +86,7 @@ describe("config-driven provider registry", () => {
 		const entry = openAICompatible();
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry, entry] })).toThrow("duplicate provider");
 		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, dialect: "bespoke-api" }] })).toThrow("unsupported dialect");
+		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }] })).toThrow("regex is invalid");
 	});
 
 	test("local providers replace same-id defaults and append new entries", async () => {
@@ -110,6 +111,7 @@ describe("config-driven provider registry", () => {
 		expect(BUILTIN_PROVIDER_CONFIG.providers.flatMap((entry) => entry.importers ?? []).map((entry) => entry.id).sort()).toEqual(["antigravity", "claude", "codex", "grok", "kimi"]);
 		const codexOauth = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "openai-codex")?.auth.find((entry) => entry.kind === "oauth");
 		expect(codexOauth?.redirectUri).toBe("http://localhost:1455/auth/callback");
+		expect(BUILTIN_PROVIDER_CONFIG.providers.every((entry) => entry.limits?.observe === true)).toBe(true);
 	});
 
 	test("generated headers keep session values stable and group request ids", () => {
@@ -164,14 +166,14 @@ describe("config-driven provider registry", () => {
 
 	test("importer target providers are mandatory because runtime has no provider defaults", () => {
 		const entry = openAICompatible("import-target");
-		entry.importers = [{ id: "fixture", parser: "kimi-code", path: "fixture.json", refresh: "reimport-first", fieldMapping: {} } as never];
+		entry.importers = [{ id: "fixture", parser: "kimi-code", path: "fixture.json", fieldMapping: {} } as never];
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("targetProvider");
 	});
 
-	test("borrowed importers reject legacy refresh/write-back ownership policies", () => {
+	test("importers reject unsupported parser types", () => {
 		const entry = openAICompatible("import-policy");
-		entry.importers = [{ id: "fixture", parser: "kimi-code", path: "fixture.json", targetProvider: "import-policy", refresh: "write-back", fieldMapping: {} } as never];
-		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("reimport-first");
+		entry.importers = [{ id: "fixture", parser: "unknown-parser", targetProvider: "import-policy", fieldMapping: {} } as never];
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("unsupported importer parser");
 	});
 
 	test("each built-in declares credential slots, capabilities, and a model source", () => {

@@ -25,7 +25,7 @@ import urllib.parse
 import urllib.request
 import random
 import uuid
-from typing import Any, Dict, List, NoReturn, Optional, Tuple
+from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -45,7 +45,10 @@ import harnesses
 import manifest as _manifest_module
 from commands import (
     HINT_MARKER,
+    INTERPRETATION_FOOTER,
     ISSUE_COMMAND_RE,
+    PLAN_FOOTER,
+    RESUME_INSTRUCTIONS,
     command_feedback,
     is_allowed_approver,
     is_command_hint,
@@ -1234,6 +1237,8 @@ def update_project_status_blocked(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, "Blocked")
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, "Blocked")
             else:
@@ -1243,6 +1248,9 @@ def update_project_status_blocked(
                     print(f"Updated project board status to Blocked for {entity_url}")
         except Exception as e:
             print(f"Notice: Failed to update project status: {e}", file=sys.stderr)
+
+
+block_entity = update_project_status_blocked
 
 
 def unblock_entity(
@@ -1272,7 +1280,7 @@ def unblock_entity(
     except Exception as e:
         print(f"Notice: Failed to remove Blocked label: {e}", file=sys.stderr)
 
-    # 2. Update Project status
+    # 2. Update Project status and status label
     owner = repo.split("/")[0] if "/" in repo else PROJECT_OWNER
     entity_url = (
         f"https://github.com/{repo}/pull/{issue_or_pr_number}"
@@ -1291,6 +1299,8 @@ def unblock_entity(
 
     if client is not None:
         try:
+            if hasattr(client, "set_status_label"):
+                client.set_status_label(repo, issue_or_pr_number, target_status)
             if hasattr(client, "set_status"):
                 client.set_status(entity_url, target_status)
             else:
@@ -1379,10 +1389,7 @@ def checkpoint_and_notify_exhaustion(
         "- **Checkpoint**: Progress preserved in `.antigravity_checkpoint.json`\n"
         "- **Project Status**: Updated to `Blocked`\n\n"
         "#### Instructions to Resume\n"
-        "When quota limits reset or additional quota is provisioned:\n"
-        "1. Verify that quota is available on at least one configured harness.\n"
-        "2. Comment `approve` or `/resume` on this issue/PR to resume execution.\n"
-        "3. The agent resumes from the checkpoint on whichever harness is available.\n"
+        f"{RESUME_INSTRUCTIONS}\n"
     )
     if error_detail:
         comment_body += f"\n<details><summary>Error Details</summary>\n\n```\n{error_detail.strip()}\n```\n</details>\n"
@@ -1571,26 +1578,12 @@ DF_ACCOUNT_SET_MAP = (
     ("GROQ_API_KEY", "groq:default", "api_key"),
 )
 
-#: Subscription logins df borrows: ``(variable, login file under HOME, df import source)``. The
-#: file is written with mode 0600 and imported with ``df account import <source>``; df's importer
-#: ids and paths (``codex`` reading ``.codex/auth.json``, ``grok`` reading ``.grok/auth.json``)
-#: come from its provider declarations.
-DF_LOGIN_IMPORT_MAP = (
-    ("CODEX_AUTH_JSON", os.path.join(".codex", "auth.json"), "codex"),
-    ("GROK_AUTH_JSON", os.path.join(".grok", "auth.json"), "grok"),
+#: Subscription logins df loads as df-owned accounts: ``(variable, account id)``.
+#: Loaded with ``df account load <account> --from-env <variable>``.
+DF_ACCOUNT_LOAD_MAP = (
+    ("DF_ACCOUNT_OPENAI_CODEX", "openai-codex:pipeline"),
+    ("DF_ACCOUNT_GROK_SUB", "grok-sub:pipeline"),
 )
-
-
-def _home_directory() -> str:
-    """Returns the home directory borrowed login files are written under.
-
-    ``HOME`` wins over the account default when set, so tests can isolate the files and the
-    behaviour is identical on platforms where ``expanduser`` ignores ``HOME``.
-
-    Returns:
-        The home directory path.
-    """
-    return os.environ.get("HOME", "") or os.path.expanduser("~")
 
 
 def df_setup_secret_names() -> Tuple[str, ...]:
@@ -1604,7 +1597,7 @@ def df_setup_secret_names() -> Tuple[str, ...]:
         Secret variable names, without repeats.
     """
     names: List[str] = [variable for variable, _, _ in DF_ACCOUNT_SET_MAP]
-    names.extend(variable for variable, _, _ in DF_LOGIN_IMPORT_MAP)
+    names.extend(variable for variable, _ in DF_ACCOUNT_LOAD_MAP)
     seen: List[str] = []
     for name in names:
         if name not in seen:
@@ -1641,11 +1634,11 @@ def setup_df_accounts() -> str:
     """Configures df's accounts from the environment before dispatch.
 
     Points ``DF_HOME`` at a fresh temp dir, copies the chain config there, saves every populated
-    API key with ``df account set`` (value on stdin, never printed), and writes each populated
-    subscription login file before importing it with ``df account import``. Empty variables are
-    skipped: a repository holding three of the keys gets a shorter chain, not a failure. A
-    failure to reach ``df`` at all is a notice, not a fatal error, so local runs without the
-    harness still dispatch.
+    API key with ``df account set`` (value on stdin, never printed), and loads each populated
+    subscription account record with ``df account load``. Empty variables are skipped: a
+    repository holding three of the keys gets a shorter chain, not a failure. A failure to reach
+    ``df`` at all is a notice, not a fatal error, so local runs without the harness still
+    dispatch.
 
     Called exactly once per process; a second call returns the existing ``DF_HOME``.
 
@@ -1692,94 +1685,104 @@ def setup_df_accounts() -> str:
         except Exception as exc:  # noqa: BLE001 - one bad key must not drop the rest
             print(f"df account setup notice for {account}: {exc}", file=sys.stderr)
 
-    for variable, relative_path, import_source in DF_LOGIN_IMPORT_MAP:
+    for variable, account in DF_ACCOUNT_LOAD_MAP:
         content = os.environ.get(variable, "")
         if not content:
             continue
-        path = os.path.join(_home_directory(), relative_path)
         try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as stream:
-                stream.write(content)
-            os.chmod(path, 0o600)
             subprocess.run(
-                ["df", "account", "import", import_source, "--account", "default"],
+                ["df", "account", "load", account, "--from-env", variable],
                 capture_output=True,
                 text=True,
                 check=True,
                 env=df_env,
             )
-            print(f"Imported df account {import_source}/default from {variable}.")
+            print(f"Loaded df account {account} from {variable}.")
         except FileNotFoundError:
             print("df binary not found; skipping df account setup.", file=sys.stderr)
             return df_home
         except Exception as exc:  # noqa: BLE001 - one bad login must not drop the rest
-            print(f"df account import notice for {import_source}: {exc}", file=sys.stderr)
+            print(f"df account load notice for {account}: {exc}", file=sys.stderr)
     return df_home
 
 
-def snapshot_df_login_files() -> List[Tuple[str, str, Optional[str]]]:
-    """Snapshots the login material df can rotate during a run.
+def snapshot_df_login_files() -> List[Tuple[str, str, Optional[Any]]]:
+    """Snapshots the df-owned account records that can rotate during a run.
 
-    That is the borrowed CLI login files (``~/.codex/auth.json``, ``~/.grok/auth.json``) df
-    imports from, plus df's own credential store under ``DF_HOME``. The snapshot is taken before
-    the invocation so :func:`finish_df_login_files` can tell rotation apart from stasis.
+    The snapshot records the initial account state for each loaded account so
+    :func:`finish_df_login_files` can detect refreshed OAuth tokens and write them back to
+    the secret they were loaded from.
 
     Returns:
-        List of ``(path, secret name, original content)``; the store entry carries an empty
-        secret name because its format is df-internal and is never written back as a secret.
+        List of ``(account id, secret variable, original record)``.
     """
-    states: List[Tuple[str, str, Optional[str]]] = []
-    home = _home_directory()
-    for variable, relative_path, _import_source in DF_LOGIN_IMPORT_MAP:
-        path = os.path.join(home, relative_path)
-        try:
-            with open(path, "r", encoding="utf-8") as stream:
-                original: Optional[str] = stream.read()
-        except OSError:
-            original = None
-        states.append((path, variable, original))
+    states: List[Tuple[str, str, Optional[Any]]] = []
     df_home = os.environ.get("DF_HOME", "")
     store_path = os.path.join(df_home, "credentials.json") if df_home else ""
-    try:
-        with open(store_path, "r", encoding="utf-8") as stream:
-            store_original: Optional[str] = stream.read()
-    except OSError:
-        store_original = None
-    states.append((store_path, "", store_original))
+    accounts_store: Dict[str, Any] = {}
+    if store_path and os.path.isfile(store_path):
+        try:
+            with open(store_path, "r", encoding="utf-8") as stream:
+                accounts_store = json.load(stream).get("accounts", {})
+        except (OSError, ValueError):
+            accounts_store = {}
+
+    for variable, account in DF_ACCOUNT_LOAD_MAP:
+        original: Optional[Any] = accounts_store.get(account)
+        if original is None:
+            raw = os.environ.get(variable, "")
+            if raw:
+                try:
+                    original = json.loads(raw)
+                except ValueError:
+                    original = raw
+        states.append((account, variable, original))
     return states
 
 
-def finish_df_login_files(states: List[Tuple[str, str, Optional[str]]]) -> None:
-    """Writes rotated df login material back to the secret it came from.
+def finish_df_login_files(states: List[Tuple[str, str, Optional[Any]]]) -> None:
+    """Writes rotated df account records back to the secret they came from.
 
-    Mirrors the CLI login-file lifecycle (:func:`finish_login_file`): a file whose content
-    changed is persisted with :func:`persist_rotated_token` under that account's own secret name,
-    and only there. df's own store is df-internal — its slots are not CLI login files — so a
-    rotation there is reported, without values, rather than written back in a format the next
-    setup could not import.
+    Compares the stored record under ``DF_HOME/credentials.json`` with the value loaded before
+    the run. If tokens were refreshed, the updated record is written back using
+    :func:`persist_rotated_token` so a refreshed token never strands the secret.
 
     Args:
         states: Snapshot taken by :func:`snapshot_df_login_files` before the invocation.
     """
-    for path, secret, original in states:
-        if not path:
+    df_home = os.environ.get("DF_HOME", "")
+    store_path = os.path.join(df_home, "credentials.json") if df_home else ""
+    if not store_path or not os.path.isfile(store_path):
+        return
+
+    try:
+        with open(store_path, "r", encoding="utf-8") as stream:
+            accounts_store = json.load(stream).get("accounts", {})
+    except (OSError, ValueError):
+        return
+
+    for account, secret, original in states:
+        if not secret:
             continue
-        try:
-            with open(path, "r", encoding="utf-8") as stream:
-                current = stream.read()
-        except OSError:
+        current = accounts_store.get(account)
+        if current is None or original is None:
             continue
-        if original is None or current == original:
-            continue
-        if secret:
-            persist_rotated_token(secret, current)
-        else:
-            print(
-                "df's stored credential rotated during the run; it stays in DF_HOME and is "
-                "not written back as a CLI login secret.",
-                file=sys.stderr,
-            )
+        orig_val = original
+        if isinstance(orig_val, str):
+            try:
+                orig_val = json.loads(orig_val)
+            except ValueError:
+                pass
+        curr_val = current
+        if isinstance(curr_val, str):
+            try:
+                curr_val = json.loads(curr_val)
+            except ValueError:
+                pass
+        if curr_val != orig_val:
+            serialized = json.dumps(current) if not isinstance(current, str) else current
+            persist_rotated_token(secret, serialized)
+            print(f"Rotated df account {account} written back to {secret}.")
 
 
 #: Time budget for stages that explore the repository before answering. Every antigravity attempt
@@ -2192,7 +2195,7 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
         "<!-- darkfactory-agent -->\n"
         f"### DarkFactory Agent Interpretation\n\n"
         f"{rewrite_file_links(interpretation, repo, default_branch())}\n\n"
-        f"---\n*Assigned Labels: `{t_label}`, `{a_label}`. Waiting for user approval (`approve`) to create branch and plan.*"
+        f"---\n*Assigned Labels: `{t_label}`, `{a_label}`. {INTERPRETATION_FOOTER}.*"
     )
     run_gh(["issue", "comment", str(issue_number), "--body", comment], repo=repo)
     print(f"Interpretation posted on issue #{issue_number}")
@@ -2359,7 +2362,7 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
         "### Implementation Plan (Autogenerated by the DarkFactory Agent)\n\n"
         f"- **Parent Request**: #{request_number}\n\n"
         f"{rewrite_file_links(plan_body, repo, default_branch())}\n\n"
-        "---\n*Comment `approve` to begin autonomous implementation on branch.*"
+        f"---\n*{PLAN_FOOTER}.*"
     )
     run_gh(["issue", "comment", str(plan_number), "--body", comment], repo=repo)
     print(f"Plan posted on issue #{plan_number}")
@@ -2404,7 +2407,326 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
     print(f"Responded to comment on #{issue_or_pr_num}")
 
 
-MAX_REVIEW_ITERATIONS = 3
+def _looks_like_file_path(token: str) -> bool:
+    """Heuristic check whether a token looks like a file path rather than code/command."""
+    token = token.strip("`'\",:;()[]{}")
+    if not token or len(token) > 250:
+        return False
+    if token.startswith("http://") or token.startswith("https://") or token.startswith("file://"):
+        return False
+    # Avoid command invocations or code snippets with spaces or shell operators
+    if any(ch in token for ch in (" ", "\t", "\n", ";", "|", "&", ">", "<", "$", "{", "}", "*")):
+        return False
+    known_exts = (
+        ".py",
+        ".ts",
+        ".js",
+        ".json",
+        ".yml",
+        ".yaml",
+        ".toml",
+        ".md",
+        ".rs",
+        ".sh",
+        ".txt",
+        ".html",
+        ".css",
+        ".sql",
+        ".cfg",
+        ".ini",
+        ".lock",
+        ".dockerignore",
+        ".gitignore",
+    )
+    lower = token.lower()
+    if any(lower.endswith(ext) for ext in known_exts):
+        return True
+    if "/" in token:
+        parts = token.split("/")
+        if all(part for part in parts) and not token.startswith("-"):
+            return True
+    return False
+
+
+def _clean_path(token: str) -> str:
+    """Normalizes a candidate file path, preserving leading dots in directory names like .github."""
+    token = token.strip("`'\",:;()[]{}").replace("\\", "/")
+    if token.startswith("./"):
+        token = token[2:]
+    elif token.startswith("/"):
+        token = token[1:]
+    return token
+
+
+def parse_plan_files(plan_text: str) -> Set[str]:
+    """Extracts repository file paths named in an implementation plan comment.
+
+    Args:
+        plan_text: Text/markdown of the approved plan comment.
+
+    Returns:
+        A set of file paths cited in the plan.
+    """
+    if not plan_text:
+        return set()
+
+    found: Set[str] = set()
+
+    # 1. GitHub blob links: https://github.com/.../blob/.../<path>
+    for match in re.finditer(
+        r"https://github\.com/[^/\s'\"]+/[^/\s'\"]+/blob/[^/\s'\"]+/([^\s#)'\"]+)",
+        plan_text,
+    ):
+        raw_path = _clean_path(match.group(1).strip())
+        if raw_path and _looks_like_file_path(raw_path):
+            found.add(raw_path)
+
+    # 2. Markdown links: [text](target)
+    for match in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", plan_text):
+        for candidate in (match.group(1), match.group(2)):
+            c = _clean_path(candidate.strip())
+            if (
+                not c.startswith("http://")
+                and not c.startswith("https://")
+                and ("/" in c or "." in c)
+            ):
+                token = c.split("#")[0].strip()
+                if _looks_like_file_path(token):
+                    found.add(token)
+
+    # 3. Backtick spans: `...`
+    for match in re.finditer(r"`([^`\n]+)`", plan_text):
+        token = _clean_path(match.group(1).strip())
+        if _looks_like_file_path(token):
+            found.add(token)
+
+    # 4. List items: - path or * path
+    for match in re.finditer(r"(?:^|\n)\s*[-*]\s+([^\s`]+)", plan_text):
+        token = _clean_path(match.group(1))
+        if _looks_like_file_path(token):
+            found.add(token)
+
+    return found
+
+
+def is_file_in_plan(file_path: str, plan_files: Set[str]) -> bool:
+    """Reports whether a changed file matches any path cited in the approved plan.
+
+    Matches by exact path, basename, or path suffix/prefix.
+    """
+    norm = _clean_path(file_path)
+    basename = os.path.basename(norm)
+    for pf in plan_files:
+        pfnorm = _clean_path(pf)
+        if norm == pfnorm:
+            return True
+        if norm.endswith("/" + pfnorm):
+            return True
+        if pfnorm.endswith("/" + norm):
+            return True
+        if basename == pfnorm or basename == os.path.basename(pfnorm):
+            return True
+    return False
+
+
+def is_test_file(file_path: str) -> bool:
+    """Reports whether a path is a test: tests accompany every change (DF-RULE-001), so never out of scope.
+
+    Args:
+        file_path: Repository-relative path.
+
+    Returns:
+        True for files under a test directory or named like a test.
+    """
+    norm = _clean_path(file_path)
+    parts = norm.split("/")
+    name = parts[-1]
+    return (
+        any(part in ("tests", "test", "__tests__") for part in parts[:-1])
+        or name.startswith("test_")
+        or name.endswith(("_test.py", ".test.ts", ".test.js", ".spec.ts"))
+        or name == "conftest.py"
+    )
+
+
+def check_scope(changed_files: List[str], plan_files: Set[str]) -> Tuple[List[str], List[str]]:
+    """Separates changed files into in-scope and out-of-scope files relative to the plan.
+
+    Args:
+        changed_files: List of file paths changed in the PR.
+        plan_files: Set of file paths named in the approved plan.
+
+    Returns:
+        Tuple of (in_scope_files, out_of_scope_files).
+    """
+    in_scope: List[str] = []
+    out_of_scope: List[str] = []
+    if not plan_files:
+        # A plan that names no files cannot define scope; reverting everything would undo the work.
+        return list(changed_files), []
+    for f in changed_files:
+        if is_test_file(f) or is_file_in_plan(f, plan_files):
+            in_scope.append(f)
+        else:
+            out_of_scope.append(f)
+    return in_scope, out_of_scope
+
+
+def get_pr_changed_files(base_branch_name: str = "", cwd: str = WORKSPACE_DIR) -> List[str]:
+    """Returns the list of changed files between the current branch and the base branch."""
+    base = base_branch_name or default_branch()
+    for ref in (f"origin/{base}...HEAD", f"{base}...HEAD", f"origin/{base}", base):
+        try:
+            out = run_git(["diff", "--name-only", ref], cwd=cwd)
+            files = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
+            if files:
+                return files
+        except Exception:
+            continue
+    return []
+
+
+def revert_out_of_scope_files(
+    out_of_scope_files: List[str], base_branch_name: str = "", cwd: str = WORKSPACE_DIR
+) -> str:
+    """Reverts out-of-scope files to the base branch in a commit and pushes to origin.
+
+    Args:
+        out_of_scope_files: Files modified outside the plan scope.
+        base_branch_name: Base branch to restore from.
+        cwd: Repository directory.
+
+    Returns:
+        The commit SHA of the reversion commit.
+    """
+    base = base_branch_name or default_branch()
+    for f in out_of_scope_files:
+        exists_in_base = False
+        for ref in (f"origin/{base}", base):
+            res = subprocess.run(
+                ["git", "cat-file", "-e", f"{ref}:{f}"],
+                cwd=cwd,
+                capture_output=True,
+            )
+            if res.returncode == 0:
+                exists_in_base = True
+                run_git(["checkout", ref, "--", f], cwd=cwd)
+                break
+        if not exists_in_base:
+            full_path = os.path.join(cwd, f)
+            if os.path.isfile(full_path) or os.path.islink(full_path):
+                os.remove(full_path)
+                run_git(["rm", "-f", "--ignore-unmatch", f], cwd=cwd)
+            elif os.path.isdir(full_path):
+                shutil.rmtree(full_path, ignore_errors=True)
+                run_git(["rm", "-rf", "--ignore-unmatch", f], cwd=cwd)
+    run_git(["add", "-A"], cwd=cwd)
+    commit_msg = f"revert(scope): revert files outside plan scope ({', '.join(out_of_scope_files)})"
+    run_git(["commit", "-m", commit_msg], cwd=cwd)
+    run_git(["push", "origin", "HEAD"], cwd=cwd)
+    commit_sha = run_git(["rev-parse", "HEAD"], cwd=cwd).strip()
+    print(f"Reverted out-of-scope files in commit {commit_sha[:7]}: {out_of_scope_files}")
+    return commit_sha
+
+
+def extract_plan_scope(plan_text: str, fallback_title: str = "") -> str:
+    """Extracts the scope section from an implementation plan, or returns a fallback summary."""
+    scope_match = re.search(
+        r"(?:^|\n)#{2,4}\s*Scope\s*\n(.*?)(?=\n#{2,4}\s|\Z)", plan_text, re.DOTALL | re.IGNORECASE
+    )
+    if scope_match:
+        scope = scope_match.group(1).strip()
+        if scope:
+            return scope
+
+    for heading in ("Objectives", "Overview", "Summary", "Description"):
+        m = re.search(
+            rf"(?:^|\n)#{{2,4}}\s*{heading}\s*\n(.*?)(?=\n#{{2,4}}\s|\Z)",
+            plan_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if m and m.group(1).strip():
+            return m.group(1).strip()
+
+    lines = []
+    for line in plan_text.splitlines():
+        if (
+            line.startswith("<!--")
+            or line.startswith("#")
+            or "PLAN_FOOTER" in line
+            or "Parent Request" in line
+        ):
+            continue
+        lines.append(line)
+    text = "\n".join(lines).strip()
+    if text:
+        return text[:500]
+    return fallback_title or "Implementation changes as approved in the plan."
+
+
+def extract_test_result_line(stdout: str = "", stderr: str = "") -> str:
+    """Extracts the final result summary line from test suite output."""
+    output = (stdout or "") + "\n" + (stderr or "")
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    if not lines:
+        return "Tests passed"
+    return lines[-1]
+
+
+def build_pr_body(
+    plan_title: str,
+    plan_text: str,
+    request_number: int,
+    plan_number: Optional[int] = None,
+    diff_stat: str = "",
+    test_command: str = "",
+    test_result_line: str = "",
+    agent_notes: str = "",
+) -> str:
+    """Builds a pull request description deterministically from the approved plan and run stats.
+
+    Args:
+        plan_title: Title of the plan issue.
+        plan_text: Body of the approved plan.
+        request_number: Parent request issue number.
+        plan_number: Plan issue number.
+        diff_stat: Output of `git diff --stat` vs base branch.
+        test_command: The verification command executed.
+        test_result_line: The final result summary line from the test runner.
+        agent_notes: Raw output notes from the implementation agent.
+
+    Returns:
+        Deterministic pull request body markdown.
+    """
+    scope = extract_plan_scope(plan_text, fallback_title=plan_title)
+
+    sections = [
+        f"## Summary\n\n{scope}",
+    ]
+
+    if diff_stat.strip():
+        sections.append(f"## Changed Files\n\n```\n{diff_stat.strip()}\n```")
+
+    if test_command or test_result_line:
+        verif_lines = ["## Verification\n"]
+        if test_command:
+            verif_lines.append(f"- **Command**: `{test_command}`")
+        if test_result_line:
+            verif_lines.append(f"- **Result**: `{test_result_line}`")
+        sections.append("\n".join(verif_lines))
+
+    closes_lines = [f"Closes #{request_number}"]
+    if plan_number and plan_number != request_number:
+        closes_lines.append(f"Closes #{plan_number}")
+    sections.append("\n".join(closes_lines))
+
+    if agent_notes.strip():
+        truncated_notes = agent_notes[:2000].strip()
+        sections.append(
+            f"<details>\n<summary>Agent notes</summary>\n\n{truncated_notes}\n</details>"
+        )
+
+    return "\n\n".join(sections) + "\n"
 
 
 def find_parent_request_number(plan_number: int, repo: str) -> Optional[int]:
@@ -2872,11 +3194,32 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         fail_agent_run(f"Commit/push failed for plan #{plan_number}; Execution Error posted.")
 
     # 9. Open Draft PR via workflow dispatch
-    pr_body = (
-        f"## Summary of Changes\n\n"
-        f"{impl_result[:2000]}\n\n"
-        f"Closes #{request_number}\n"
-        f"Closes #{plan_number}\n"
+    diff_stat = ""
+    try:
+        diff_stat = run_git(["diff", "--stat", f"origin/{default_branch()}...HEAD"], cwd=cwd)
+    except Exception:
+        try:
+            diff_stat = run_git(["diff", "--stat", f"{default_branch()}...HEAD"], cwd=cwd)
+        except Exception:
+            diff_stat = ""
+
+    test_cmd = (
+        " ".join(test_res.args)
+        if isinstance(getattr(test_res, "args", None), list)
+        else str(getattr(test_res, "args", ""))
+    )
+    test_result_line = extract_test_result_line(
+        getattr(test_res, "stdout", ""), getattr(test_res, "stderr", "")
+    )
+    pr_body = build_pr_body(
+        plan_title=plan_title,
+        plan_text=plan_body,
+        request_number=request_number,
+        plan_number=plan_number,
+        diff_stat=diff_stat,
+        test_command=test_cmd,
+        test_result_line=test_result_line,
+        agent_notes=impl_result,
     )
     try:
         run_gh(
@@ -2954,44 +3297,89 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         return
 
     # 11. Self-review loop
-    handle_self_review(pr_number, plan_number, repo)
+    review_ok = handle_self_review(pr_number, plan_number, repo)
+    if not review_ok:
+        print(f"Self-review did not pass clean on PR #{pr_number}; stopping.")
+        return
 
     # 12. Plan alignment gate
     handle_plan_alignment(pr_number, plan_number, request_number, repo)
 
 
-def handle_self_review(pr_number: int, plan_number: int, repo: str):
-    """Runs a general PR code review loop via agy.
+def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
+    """Runs a general PR code review and repair loop until there are no findings.
 
-    Reviews the PR diff for code quality issues. Posts findings and fixes as
-    comments on the PR. If fixes require out-of-scope changes, posts a Plan
-    Deviation comment with justification on the parent Request issue before
-    updating the Plan issue scope.
+    Compares changed files against approved plan paths to deterministically catch scope creep,
+    reverting out-of-scope files to the base branch and feeding the findings back to repair.
+    Loops until all findings are resolved, posting progress comments after every 5 iterations
+    and detecting loops that make no progress (identical findings twice in a row), marking
+    the PR Blocked and stopping.
 
     Args:
         pr_number: The pull request number.
         plan_number: The child Plan issue number.
         repo: Repository slug (owner/name).
+
+    Returns:
+        True when self-review passes clean with no findings; False if blocked or errored.
     """
     cwd = WORKSPACE_DIR
+    iteration = 1
+    previous_findings: Optional[str] = None
 
-    for iteration in range(1, MAX_REVIEW_ITERATIONS + 1):
-        print(f"Self-review iteration {iteration}/{MAX_REVIEW_ITERATIONS}")
+    while True:
+        print(f"Self-review iteration {iteration}")
 
         # Get PR diff
         try:
             diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
         except Exception as e:
             print(f"Failed to get PR diff: {e}", file=sys.stderr)
-            return
+            return False
 
-        # Get plan content for scope awareness
-        plan_data = json.loads(
-            run_gh(["issue", "view", str(plan_number), "--json", "body"], repo=repo)
-        )
-        plan_body = plan_data.get("body", "")
+        # Get plan content
+        try:
+            plan_data = json.loads(
+                run_gh(
+                    ["issue", "view", str(plan_number), "--json", "title,body,comments"],
+                    repo=repo,
+                )
+            )
+        except Exception as e:
+            print(f"Failed to get plan data: {e}", file=sys.stderr)
+            return False
 
-        # Review via agy
+        plan_body = ""
+        for c in reversed(plan_data.get("comments", [])):
+            cbody = c.get("body", "")
+            if _is_plan_comment(cbody):
+                plan_body = cbody
+                break
+        if not plan_body:
+            plan_body = plan_data.get("body", "")
+
+        # Deterministic scope check before LLM review
+        plan_files = parse_plan_files(plan_body)
+        changed_files = get_pr_changed_files(default_branch(), cwd=cwd)
+        in_scope_files, out_of_scope_files = check_scope(changed_files, plan_files)
+
+        scope_findings = ""
+        if out_of_scope_files:
+            commit_sha = revert_out_of_scope_files(out_of_scope_files, default_branch(), cwd=cwd)
+            scope_findings = (
+                f"OUT_OF_SCOPE: The following files were modified outside the approved plan scope: "
+                f"{', '.join(out_of_scope_files)}. These files have been reverted to {default_branch()} "
+                f"in commit {commit_sha[:7]}. Do not modify these files; all changes must remain "
+                f"strictly within the approved plan scope ({', '.join(sorted(plan_files))})."
+            )
+            # Re-fetch PR diff after out-of-scope files reverted
+            try:
+                diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
+            except Exception as e:
+                print(f"Failed to get PR diff after revert: {e}", file=sys.stderr)
+                return False
+
+        # Review via LLM
         max_diff_len = 60000
         diff_snippet = (
             diff
@@ -3006,8 +3394,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             f"{plan_body[:2000]}\n\n"
             f"## PR Diff\n```diff\n{diff_snippet}\n```\n\n"
             f"If you find NO actionable issues, respond starting with: NO_FINDINGS\n"
-            f"If you find issues, list each finding with a description and suggested fix. "
-            f"For each finding, mark it WITHIN_SCOPE or OUT_OF_SCOPE relative to the plan."
+            f"If you find issues, list each finding with a description and suggested fix."
         )
         checkpoint_ctx = {
             "issue_number": pr_number,
@@ -3015,7 +3402,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             "is_pr": True,
             "completed_steps": [
                 f"Completed implementation and opened PR #{pr_number}",
-                f"Self-review iteration {iteration}/{MAX_REVIEW_ITERATIONS}",
+                f"Self-review iteration {iteration}",
             ],
             "cwd": cwd,
         }
@@ -3024,7 +3411,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
         )
 
         if is_quota_exhaustion_notice(review_result):
-            return
+            return False
 
         if review_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
@@ -3039,8 +3426,19 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             )
             fail_agent_run(f"Self-review failed on PR #{pr_number}; Execution Error posted.")
 
-        # Check if clean
-        if "NO_FINDINGS" in review_result.upper()[:50]:
+        # Combine scope findings and LLM review findings
+        has_llm_findings = not ("NO_FINDINGS" in review_result.upper()[:50])
+        if scope_findings and has_llm_findings:
+            combined_findings = f"{scope_findings}\n\n### Code Quality Findings:\n\n{review_result}"
+        elif scope_findings:
+            combined_findings = scope_findings
+        elif has_llm_findings:
+            combined_findings = review_result
+        else:
+            combined_findings = ""
+
+        # Check if clean (no findings of any kind)
+        if not combined_findings:
             run_gh(
                 [
                     "pr",
@@ -3053,68 +3451,59 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 repo=repo,
             )
             print(f"Self-review passed clean on iteration {iteration}")
-            return
+            return True
 
-        # Post findings on PR
-        run_gh(
-            [
-                "pr",
-                "comment",
-                str(pr_number),
-                "--body",
-                f"<!-- darkfactory-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n{review_result}",
-            ],
-            repo=repo,
-        )
+        # Detect a loop that makes no progress (identical findings twice in a row)
+        def _normalize_findings(text: str) -> str:
+            norm = re.sub(r"in commit [0-9a-fA-F]{7,40}", "in commit <hash>", text)
+            return "\n".join(line.strip() for line in norm.strip().splitlines() if line.strip())
 
-        # Handle out-of-scope findings: post deviation on Request issue
-        if "OUT_OF_SCOPE" in review_result.upper():
-            request_number = find_parent_request_number(plan_number, repo)
-            if request_number:
-                deviation_prompt = (
-                    f"The self-review found out-of-scope findings that need fixing. "
-                    f"Generate a concise Plan Deviation comment explaining what needs "
-                    f"to change and WHY it is necessary (justification), based on:\n\n"
-                    f"{review_result}"
-                )
-                deviation_text = run_agent_prompt(
-                    deviation_prompt, checkpoint_context=checkpoint_ctx
-                )
-                if is_quota_exhaustion_notice(deviation_text):
-                    return
-                if not deviation_text.startswith("[DarkFactory Agent Execution Error]"):
-                    run_gh(
-                        [
-                            "issue",
-                            "comment",
-                            str(request_number),
-                            "--body",
-                            f"<!-- darkfactory-agent -->\n### Plan Deviation\n\n{deviation_text}",
-                        ],
-                        repo=repo,
-                    )
-                    run_gh(
-                        [
-                            "issue",
-                            "comment",
-                            str(plan_number),
-                            "--body",
-                            f"<!-- darkfactory-agent -->\n### Scope Amendment\n\n{deviation_text}",
-                        ],
-                        repo=repo,
-                    )
+        if previous_findings is not None and _normalize_findings(
+            combined_findings
+        ) == _normalize_findings(previous_findings):
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Findings (Blocked)\n\n"
+                    f"Self-review made no progress across iterations (identical findings twice in a row):\n\n"
+                    f"{combined_findings}",
+                ],
+                repo=repo,
+            )
+            block_entity(pr_number, repo=repo, is_pr=True)
+            print(f"Self-review loop made no progress on PR #{pr_number}; marked Blocked.")
+            return False
 
-        # Fix findings via agy
+        previous_findings = combined_findings
+
+        # After every 5 iterations post one progress comment on the PR
+        if iteration % 5 == 0:
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Progress (Iteration {iteration})\n\n"
+                    f"Remaining findings:\n\n{combined_findings}",
+                ],
+                repo=repo,
+            )
+
+        # Fix findings via agent
         fix_prompt = (
             f"Fix the following code review findings in the workspace:\n\n"
-            f"{review_result}\n\nMake the necessary changes to resolve all findings."
+            f"{combined_findings}\n\nMake the necessary changes to resolve all findings."
         )
         fix_result = run_agent_prompt(
             fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
         )
 
         if is_quota_exhaustion_notice(fix_result):
-            return
+            return False
 
         if fix_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
@@ -3144,25 +3533,14 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                     cwd=cwd,
                 )
                 run_git(["push", "origin", "HEAD"], cwd=cwd)
-                run_gh(
-                    [
-                        "pr",
-                        "comment",
-                        str(pr_number),
-                        "--body",
-                        f"<!-- darkfactory-agent -->\n### Self-Review Fix (Iteration {iteration})\n\n{fix_result[:2000]}",
-                    ],
-                    repo=repo,
-                )
                 print(f"Pushed review fixes for iteration {iteration}")
             else:
                 print(f"No changes after fix attempt on iteration {iteration}")
-                return
         except subprocess.CalledProcessError as e:
             print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
-            return
+            return False
 
-    print(f"Self-review loop exhausted after {MAX_REVIEW_ITERATIONS} iterations")
+        iteration += 1
 
 
 def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int, repo: str):

@@ -29,6 +29,7 @@ Environment:
     PROJECT_QUOTA_MINIMUM: Live GraphQL quota reserve below which mutations pause (default: 50).
 """
 
+import argparse
 import json
 import os
 import re
@@ -223,8 +224,7 @@ def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
 def determine_status_from_labels(labels: Sequence[Any], *, closed: bool = False) -> str:
     """Determines the board status implied by a set of labels.
 
-    Terminal status labels (``Done``, ``Dropped``, ``Superseded``) count only when the item is
-    closed. On an open item they are ignored so a stale terminal label cannot pin the board.
+    Maintained for backward compatibility; delegates to :func:`expected_status`.
 
     Args:
         labels: Label names or label dicts attached to the issue or pull request.
@@ -234,22 +234,7 @@ def determine_status_from_labels(labels: Sequence[Any], *, closed: bool = False)
         A status name from :data:`STATUS_NAMES`; ``"ToDo"`` when no applicable status label is
         present.
     """
-    normalized = set()
-    for lbl in labels:
-        name = lbl.get("name") if isinstance(lbl, dict) else str(lbl)
-        if name:
-            normalized.add(name.strip().lower())
-
-    for status in STATUS_LABEL_PRECEDENCE:
-        if not closed and status in TERMINAL_STATUSES:
-            continue
-        candidates = {status.lower()}
-        if status == "ToDo":
-            candidates.add("to do")
-            candidates.add("todo")
-        if candidates & normalized:
-            return status
-    return "ToDo"
+    return expected_status({"labels": labels, "state": "closed" if closed else "open"})
 
 
 def _label_names(labels: Sequence[Any]) -> Set[str]:
@@ -303,6 +288,174 @@ def checkpoint_covers_issue(issue_number: Optional[int]) -> bool:
         if isinstance(data, dict) and data.get("issue_number") == issue_number:
             return True
     return False
+
+
+def expected_status(
+    item: Any,
+    *,
+    bound_prs: Optional[Sequence[Any]] = None,
+    checkpoint: Optional[bool] = None,
+) -> str:
+    """Derives the canonical board status for an issue or pull request from live facts.
+
+    Enforces the single canonical model across both real-time event handlers and historic
+    reconciliation:
+    - Closed items are always terminal (Done, Dropped, Superseded).
+    - Open items are never terminal (Backlog, ToDo, In Progress, Blocked).
+    - Pull requests merged or issues closed completed -> Done.
+    - Pull requests closed unmerged or issues closed not planned -> Dropped (or Superseded if duplicate/superseded).
+    - Open items blocked by quota checkpoint or Blocked label -> Blocked.
+    - Open pull requests or issues with active bound work -> In Progress.
+    - Staged items with Backlog label -> Backlog.
+    - Approved or newly filed open items awaiting work -> ToDo.
+
+    Args:
+        item: Issue or pull request dict, object, or mapping carrying live facts.
+        bound_prs: Optional list of bound pull request objects or dicts (if not inside item).
+        checkpoint: Optional explicit override for whether a quota checkpoint exists.
+
+    Returns:
+        One of the canonical statuses from :data:`STATUS_NAMES`.
+    """
+    if isinstance(item, dict):
+        kind = item.get("kind") or item.get("type") or item.get("__typename") or ""
+        is_pr = bool(
+            item.get("is_pr")
+            or item.get("isPr")
+            or item.get("pull_request")
+            or str(kind).lower() in ("pullrequest", "pr")
+        )
+        state_str = str(item.get("state", "")).strip().lower()
+        is_merged = bool(
+            item.get("merged")
+            or item.get("merged_at")
+            or item.get("mergedAt")
+            or (
+                isinstance(item.get("pull_request"), dict) and item["pull_request"].get("merged_at")
+            )
+            or state_str == "merged"
+        )
+        is_closed = (
+            state_str in ("closed", "merged") or is_merged or bool(item.get("closed", False))
+        )
+        is_draft = bool(item.get("draft") or item.get("is_draft") or item.get("isDraft"))
+        state_reason_val = item.get("state_reason") or item.get("stateReason")
+        state_reason = str(state_reason_val).strip().lower() if state_reason_val else None
+
+        raw_labels = item.get("labels", [])
+        if isinstance(raw_labels, dict) and "nodes" in raw_labels:
+            raw_labels = raw_labels["nodes"]
+        labels_list = []
+        for l in raw_labels or []:
+            name = l.get("name") if isinstance(l, dict) else str(l)
+            if name:
+                labels_list.append(name.strip())
+
+        item_checkpoint = item.get("checkpoint")
+        if checkpoint is None:
+            if item_checkpoint is not None:
+                checkpoint = bool(item_checkpoint)
+            else:
+                num = item.get("number") or item.get("issue_number")
+                if num is not None and not is_pr:
+                    try:
+                        checkpoint = checkpoint_covers_issue(int(num))
+                    except (ValueError, TypeError):
+                        checkpoint = False
+                else:
+                    checkpoint = False
+
+        item_bound_prs = bound_prs or item.get("bound_prs") or item.get("bound_pr_states") or []
+    else:
+        kind = getattr(item, "kind", getattr(item, "type", ""))
+        is_pr = bool(getattr(item, "is_pr", False) or str(kind).lower() in ("pullrequest", "pr"))
+        state_str = str(getattr(item, "state", "")).strip().lower()
+        is_merged = bool(
+            getattr(item, "merged", False)
+            or getattr(item, "merged_at", None)
+            or state_str == "merged"
+        )
+        is_closed = state_str in ("closed", "merged") or is_merged
+        is_draft = bool(getattr(item, "draft", False) or getattr(item, "is_draft", False))
+        state_reason_val = getattr(item, "state_reason", getattr(item, "stateReason", None))
+        state_reason = str(state_reason_val).strip().lower() if state_reason_val else None
+        raw_labels = getattr(item, "labels", [])
+        labels_list = [l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels if l]
+        if checkpoint is None:
+            checkpoint = bool(getattr(item, "checkpoint", False))
+        item_bound_prs = bound_prs or getattr(item, "bound_prs", [])
+
+    bound_pr_merged = False
+    bound_pr_ready = False
+    for pr in item_bound_prs:
+        if isinstance(pr, dict):
+            pr_st = str(pr.get("state", "")).strip().lower()
+            pr_mg = bool(
+                pr.get("merged") or pr.get("merged_at") or pr.get("mergedAt") or pr_st == "merged"
+            )
+            pr_dr = bool(pr.get("draft") or pr.get("is_draft") or pr.get("isDraft"))
+        else:
+            pr_st = str(getattr(pr, "state", "")).strip().lower()
+            pr_mg = bool(
+                getattr(pr, "merged", False) or getattr(pr, "merged_at", None) or pr_st == "merged"
+            )
+            pr_dr = bool(getattr(pr, "draft", False) or getattr(pr, "is_draft", False))
+        if pr_mg:
+            bound_pr_merged = True
+        elif pr_st == "open" and not pr_dr:
+            bound_pr_ready = True
+
+    normalized_labels = {lbl.lower() for lbl in labels_list}
+    has_superseded = bool({"superseded", "duplicate"} & normalized_labels) or state_reason in (
+        "duplicate",
+        "superseded",
+    )
+    has_dropped = "dropped" in normalized_labels or state_reason in ("not_planned", "not-planned")
+    has_blocked = "blocked" in normalized_labels
+    has_in_progress = "in progress" in normalized_labels
+    has_backlog = "backlog" in normalized_labels
+    has_todo = bool({"todo", "to do"} & normalized_labels)
+
+    # 1. Closed items: always terminal (Done, Dropped, Superseded)
+    if is_closed:
+        if is_pr:
+            if is_merged:
+                return "Done"
+            if has_superseded:
+                return "Superseded"
+            return "Dropped"
+        else:
+            if is_merged or bound_pr_merged:
+                return "Done"
+            if has_superseded:
+                return "Superseded"
+            if has_dropped:
+                return "Dropped"
+            if state_reason == "completed":
+                return "Done"
+            if "done" in normalized_labels:
+                return "Done"
+            if "dropped" in normalized_labels:
+                return "Dropped"
+            if "superseded" in normalized_labels:
+                return "Superseded"
+            return "Dropped"
+
+    # 2. Open items: never terminal (Backlog, ToDo, In Progress, Blocked)
+    if checkpoint or has_blocked:
+        return "Blocked"
+
+    if is_pr:
+        return "In Progress"
+
+    if bound_pr_ready or has_in_progress:
+        return "In Progress"
+    if has_backlog:
+        return "Backlog"
+    if has_todo:
+        return "ToDo"
+
+    return "ToDo"
 
 
 def is_rate_limited(exc: BaseException) -> bool:
@@ -1629,33 +1782,25 @@ def _handle_issue_event(payload: Dict[str, Any], client: Any) -> None:
     if not issue_url:
         return
 
-    if action in ("opened", "reopened"):
-        if action == "reopened" and checkpoint_covers_issue(issue_number):
-            status = "Blocked"
-        elif action == "reopened":
-            status = "ToDo"
-        else:
-            status = determine_status_from_labels(labels, closed=False)
-        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
-        if issue_number:
-            _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
-    elif action in ("labeled", "unlabeled"):
-        status = determine_status_from_labels(labels, closed=closed)
-        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
-        if issue_number:
-            _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
-    elif action == "closed":
-        state_reason = issue.get("state_reason")
-        status = determine_status_from_labels(labels, closed=True)
-        if status in TERMINAL_STATUSES:
-            pass
-        elif state_reason == "not_planned":
-            status = "Dropped"
-        else:
-            status = "Done"
-        _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
-        if issue_number:
-            _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
+    item = dict(issue)
+    item["kind"] = "Issue"
+    item["is_pr"] = False
+    if closed:
+        item["state"] = "closed"
+        if action == "closed" and not item.get("state_reason"):
+            item["state_reason"] = "completed"
+    elif action in ("opened", "reopened"):
+        item["state"] = "open"
+
+    if action == "reopened":
+        item["checkpoint"] = checkpoint_covers_issue(issue_number)
+    elif "checkpoint" not in item and issue_number:
+        item["checkpoint"] = checkpoint_covers_issue(issue_number)
+
+    status = expected_status(item)
+    _safe_track(client, issue_url, status, content_id=node_id, fast_path=True)
+    if issue_number:
+        _safe_set_status_label(client, repo, issue_number, status, existing_labels=labels)
 
 
 def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
@@ -1663,6 +1808,7 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     action = payload.get("action")
     pr = payload.get("pull_request", {})
     pr_url = pr.get("html_url")
+    pr_number = pr.get("number")
     node_id = pr.get("node_id")
     repo = payload.get("repository", {}).get("full_name", DEFAULT_REPO)
     merged = bool(pr.get("merged", False))
@@ -1670,40 +1816,41 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     bound_issues = extract_bound_issues(pr.get("body", ""))
     print(f"PR event {action}: bound issues {bound_issues}")
 
-    if action in ("opened", "edited", "synchronize", "ready_for_review", "reopened"):
-        status = determine_status_from_labels(labels, closed=False)
-        if status == "ToDo":
-            status = "In Progress"
-        _safe_track(client, pr_url, status, content_id=node_id, fast_path=True)
-        # Bound Requests stay ToDo until an approval moves them, or until the PR is ready for
-        # review. Draft open/edit/sync must not flip the Request past the interpretation gate
-        # (observed on #218: a bound PR synchronize labelled In Progress before any approval).
-        if action == "ready_for_review":
-            for issue_num in bound_issues:
-                _safe_set_status_label(client, repo, issue_num, "In Progress")
-                _safe_track(
-                    client,
-                    f"https://github.com/{repo}/issues/{issue_num}",
-                    "In Progress",
-                    fast_path=True,
-                )
+    closed = str(pr.get("state", "")).lower() == "closed" or action == "closed" or merged
 
-    elif action == "closed":
-        pr_status = "Done" if merged else determine_status_from_labels(labels, closed=True)
-        if not merged and pr_status in ("ToDo", "In Progress"):
-            pr_status = "Dropped"
-        _safe_track(client, pr_url, pr_status, content_id=node_id, fast_path=True)
+    item = dict(pr)
+    item["kind"] = "PullRequest"
+    item["is_pr"] = True
+    if closed:
+        item["state"] = "closed"
+    if merged:
+        item["merged"] = True
 
-        if merged:
-            for issue_num in bound_issues:
-                _safe_set_status_label(client, repo, issue_num, "Done")
-                _safe_track(
-                    client,
-                    f"https://github.com/{repo}/issues/{issue_num}",
-                    "Done",
-                    fast_path=True,
-                )
-                _safe_close_issue(client, repo, issue_num, reason="completed")
+    pr_status = expected_status(item)
+    _safe_track(client, pr_url, pr_status, content_id=node_id, fast_path=True)
+    if pr_number:
+        _safe_set_status_label(client, repo, pr_number, pr_status, existing_labels=labels)
+
+    if action == "ready_for_review":
+        for issue_num in bound_issues:
+            _safe_set_status_label(client, repo, issue_num, "In Progress")
+            _safe_track(
+                client,
+                f"https://github.com/{repo}/issues/{issue_num}",
+                "In Progress",
+                fast_path=True,
+            )
+
+    elif action == "closed" and merged:
+        for issue_num in bound_issues:
+            _safe_set_status_label(client, repo, issue_num, "Done")
+            _safe_track(
+                client,
+                f"https://github.com/{repo}/issues/{issue_num}",
+                "Done",
+                fast_path=True,
+            )
+            _safe_close_issue(client, repo, issue_num, reason="completed")
 
 
 def _handle_push_event(payload: Dict[str, Any], client: Any) -> None:
@@ -1727,6 +1874,9 @@ def _handle_push_event(payload: Dict[str, Any], client: Any) -> None:
             )
             _safe_close_issue(client, repo, issue_num, reason="completed")
 
+    if can_reconcile():
+        reconcile(client=client)
+
 
 def settled_status(
     closed: bool,
@@ -1737,18 +1887,14 @@ def settled_status(
     """Decides the canonical status an item should hold once closed."""
     if not closed:
         return None
-    if merged:
-        return "Done"
-    labelled = determine_status_from_labels(labels, closed=True)
-    if labelled in frozenset({"Done", "Dropped", "Superseded"}):
-        return labelled
-    if state_reason:
-        reason = str(state_reason).upper()
-        if reason == "COMPLETED":
-            return "Done"
-        if reason == "NOT_PLANNED":
-            return "Dropped"
-    return "Dropped"
+    return expected_status(
+        {
+            "state": "closed",
+            "merged": merged,
+            "labels": labels,
+            "state_reason": state_reason,
+        }
+    )
 
 
 def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) -> int:
@@ -1789,7 +1935,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
                         "--state",
                         state,
                         "--limit",
-                        "500",
+                        "2000",
                         "--json",
                         (
                             "number,url,labels,state,isDraft,mergedAt"
@@ -1800,22 +1946,18 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
                 )
                 for entry in json.loads(raw or "[]"):
                     labels = [l.get("name", "") for l in entry.get("labels", []) or []]
-                    state_val = str(entry.get("state", "")).upper()
-                    is_closed = state_val in ("CLOSED", "MERGED")
-                    if not is_closed:
-                        status = determine_status_from_labels(labels, closed=False)
-                        if kind == "pr" and status == "ToDo":
-                            status = "In Progress"
+                    item_entry = dict(entry)
+                    if kind == "pr":
+                        item_entry["is_pr"] = True
+                        item_entry["kind"] = "PullRequest"
                     else:
-                        is_merged = state_val == "MERGED" or bool(entry.get("mergedAt"))
-                        state_reason = entry.get("stateReason")
-                        status = settled_status(
-                            closed=True,
-                            merged=is_merged,
-                            labels=labels,
-                            state_reason=state_reason,
-                        ) or ("Done" if is_merged else "Dropped")
+                        item_entry["is_pr"] = False
+                        item_entry["kind"] = "Issue"
+                    status = expected_status(item_entry)
                     _safe_track(client, entry["url"], status, fast_path=False)
+                    num = entry.get("number")
+                    if num:
+                        _safe_set_status_label(client, repo, num, status, existing_labels=labels)
                     tracked += 1
             except Exception as exc:
                 if is_rate_limited(exc):
@@ -1825,7 +1967,7 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
         return tracked
 
     rest = getattr(client, "rest", None) or GitHubRestClient()
-    items = rest.list_issues_and_prs(repo, state=state, limit=500)
+    items = rest.list_issues_and_prs(repo, state=state, limit=5000)
 
     for entry in items:
         if not can_mutate():
@@ -1834,26 +1976,18 @@ def reconcile_membership(client: Any, repo: str, state: Optional[str] = None) ->
         url = entry.get("html_url")
         node_id = entry.get("node_id")
         labels = entry.get("labels", [])
-        state_val = str(entry.get("state", "")).upper()
+        num = entry.get("number")
         is_pr = bool(entry.get("pull_request"))
-        is_closed = state_val == "CLOSED"
 
-        if not is_closed:
-            status = determine_status_from_labels(labels, closed=False)
-            if is_pr and status == "ToDo":
-                status = "In Progress"
-        else:
-            is_merged = bool(entry.get("pull_request", {}).get("merged_at"))
-            state_reason = entry.get("state_reason")
-            status = settled_status(
-                closed=True,
-                merged=is_merged,
-                labels=labels,
-                state_reason=state_reason,
-            ) or ("Done" if is_merged else "Dropped")
+        item_entry = dict(entry)
+        item_entry["is_pr"] = is_pr
+        item_entry["kind"] = "PullRequest" if is_pr else "Issue"
+        status = expected_status(item_entry)
 
         if url:
             _safe_track(client, url, status, content_id=node_id, fast_path=False)
+            if num:
+                _safe_set_status_label(client, repo, num, status, existing_labels=labels)
             tracked += 1
             # Small pacing delay between mutations to avoid secondary rate limits
             time.sleep(0.05)
@@ -1936,42 +2070,34 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                     "--format",
                     "json",
                     "--limit",
-                    "500",
+                    "2000",
                 ]
             )
             for item in json.loads(raw_items or "{}").get("items", []):
-                content = item.get("content", {})
+                content = item.get("content", {}) or {}
                 item_id = item.get("id")
                 if not item_id:
                     continue
                 current = item.get("status")
-                labels = item.get("labels", []) or []
-                closed = bool(content.get("closed", False))
-                merged = str(content.get("state", "")).upper() == "MERGED"
-                state_reason = content.get("stateReason")
+                labels = item.get("labels", []) or content.get("labels", []) or []
                 url = content.get("url")
 
-                if closed:
-                    wanted = settled_status(closed, merged, labels, state_reason)
-                    if wanted is None or wanted == current:
-                        continue
+                item_entry = dict(content)
+                item_entry["labels"] = labels
+                if "closed" in item and "closed" not in item_entry:
+                    item_entry["closed"] = item["closed"]
+                if "state" in item and "state" not in item_entry:
+                    item_entry["state"] = item["state"]
+                wanted = expected_status(item_entry)
+                if wanted != current:
                     client.edit_status(item_id, wanted)
                     print(
                         f"Reconciled item {item_id} ({content.get('title')}): "
                         f"{current or 'None'} -> {wanted}"
                     )
-                    continue
-
-                wanted, strip = _wanted_status_for_open_item(current, labels)
-                if strip:
-                    _strip_stale_terminal_label(client, content, wanted or "ToDo", labels, url=url)
-                if wanted is None or wanted == current:
-                    continue
-                client.edit_status(item_id, wanted)
-                print(
-                    f"Reconciled item {item_id} ({content.get('title')}): "
-                    f"{current or 'None'} -> {wanted}"
-                )
+                repo, number = _repo_and_number_from_content(content, url=url)
+                if repo and number:
+                    _safe_set_status_label(client, repo, number, wanted, existing_labels=labels)
         except Exception as exc:
             if is_rate_limited(exc):
                 mark_rate_limited()
@@ -1984,7 +2110,7 @@ def reconcile_unassigned_statuses(client: Any) -> None:
 
     items_data = getattr(client, "_raw_items_cache", None)
     if items_data is None:
-        items_data = graphql.fetch_board_items(client.project_id, limit=1000)
+        items_data = graphql.fetch_board_items(client.project_id, limit=2000)
     existing_items = client._items_cache if client._items_cache is not None else {}
     for item in items_data:
         if not can_mutate():
@@ -2003,15 +2129,11 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                 break
 
         labels = [l.get("name") for l in content.get("labels", {}).get("nodes", []) if l]
-        state_val = str(content.get("state", "")).upper()
-        closed = state_val in ("CLOSED", "MERGED")
-        merged = bool(content.get("merged", False))
-        state_reason = content.get("stateReason")
+        item_entry = dict(content)
+        item_entry["labels"] = labels
+        wanted = expected_status(item_entry)
 
-        if closed:
-            wanted = settled_status(closed, merged, labels, state_reason)
-            if wanted is None or wanted == current:
-                continue
+        if wanted != current:
             if client.edit_status(item_id, wanted):
                 record_mutation()
                 existing_items[url] = (item_id, wanted)
@@ -2020,21 +2142,276 @@ def reconcile_unassigned_statuses(client: Any) -> None:
                     f"{current or 'None'} -> {wanted}"
                 )
                 time.sleep(0.05)
-            continue
 
-        wanted, strip = _wanted_status_for_open_item(current, labels)
-        if strip:
-            _strip_stale_terminal_label(client, content, wanted or "ToDo", labels, url=url)
-        if wanted is None or wanted == current:
-            continue
-        if client.edit_status(item_id, wanted):
-            record_mutation()
-            existing_items[url] = (item_id, wanted)
-            print(
-                f"Reconciled item {item_id} ({content.get('title')}): "
-                f"{current or 'None'} -> {wanted}"
-            )
-            time.sleep(0.05)
+        repo, number = _repo_and_number_from_content(content, url=url)
+        if repo and number:
+            _safe_set_status_label(client, repo, number, wanted, existing_labels=labels)
+
+
+def reconcile(
+    client: Optional[Any] = None,
+    *,
+    dry_run: bool = False,
+    owner: str = PROJECT_OWNER,
+    board_numbers: Optional[Sequence[int]] = None,
+    repo_slugs: Optional[Sequence[str]] = None,
+    state: str = "all",
+) -> Dict[str, Any]:
+    """Reconciles every declared board and repository into strict alignment with expected_status.
+
+    For every board declared in the manifest (plus the Global board):
+    - Lists every issue and pull request of each bound repository (all states, paginated).
+    - Adds missing items to the board.
+    - Sets board status to expected_status.
+    - Sets exactly one status label on the issue/PR and removes all other status labels,
+      preserving non-status labels.
+    - Reports a summary with counts per correction type.
+    - Supports dry-run mode (read-only inspection without writing).
+
+    Args:
+        client: Optional explicit client or BoardGroup.
+        dry_run: If True, detects and reports corrections without writing.
+        owner: Project owner login.
+        board_numbers: Optional filter of specific project numbers to reconcile.
+        repo_slugs: Optional list of repository slugs to reconcile.
+        state: State filter ('all', 'open', 'closed').
+
+    Returns:
+        Dictionary summarizing scanned items and counts per correction type.
+    """
+    corrections = {
+        "missing_from_board": 0,
+        "status_updated": 0,
+        "closed_not_terminal": 0,
+        "open_terminal": 0,
+        "board_status_mismatch": 0,
+        "labels_corrected": 0,
+        "no_status_label": 0,
+        "label_mismatch": 0,
+        "multiple_status_labels": 0,
+    }
+    total_scanned = 0
+
+    if not dry_run and not can_reconcile():
+        print(
+            f"Notice: Quota reserve preserved ({GRAPHQL_REMAINING} remaining); skipping bulk reconciliation.",
+            file=sys.stderr,
+        )
+        return {
+            "items_scanned": 0,
+            "corrections": corrections,
+            "dry_run": dry_run,
+            "skipped": True,
+        }
+
+    try:
+        import manifest as manifest_module
+
+        loaded = manifest_module.load(".")
+    except Exception:
+        loaded = None
+
+    if repo_slugs:
+        repos_to_scan = list(repo_slugs)
+    else:
+        current_repo = os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPO)
+        repos_to_scan = [current_repo] if current_repo else []
+        if loaded:
+            installed = (loaded.data.get("app", {}) or {}).get("installed_on", [])
+            for r in installed:
+                if r and r not in repos_to_scan:
+                    repos_to_scan.append(r)
+        if not repos_to_scan and DEFAULT_REPO:
+            repos_to_scan = [DEFAULT_REPO]
+
+    if client is not None:
+        if isinstance(client, BoardGroup):
+            board_clients = list(client.clients)
+        else:
+            board_clients = [client]
+    else:
+        if board_numbers:
+            board_clients = [
+                GitHubProjectClient(owner=owner, project_number=n) for n in board_numbers
+            ]
+        else:
+            board_nums = resolve_boards(owner=owner, include_scoped=True, include_global=True)
+            if loaded:
+                graphql = GitHubGraphQLClient()
+                by_title = graphql.resolve_projects(owner)
+                for title in loaded.linked_boards:
+                    p = by_title.get(title)
+                    if p and "number" in p and p["number"] not in board_nums:
+                        board_nums.append(p["number"])
+            board_clients = [GitHubProjectClient(owner=owner, project_number=n) for n in board_nums]
+
+    title_by_num: Dict[int, str] = {
+        getattr(c, "project_number", PROJECT_NUMBER): getattr(c, "title", "")
+        for c in board_clients
+        if getattr(c, "title", "")
+    }
+    # Titles decide which repositories a board carries; only ask GitHub when a token is present
+    # (never from tests, where the credential variables are cleared).
+    if (
+        not title_by_num
+        and (os.environ.get("GH_PROJECT_TOKEN") or os.environ.get("GH_TOKEN"))
+        and not (
+            board_clients
+            and hasattr(board_clients[0], "run_gh")
+            and type(board_clients[0]).run_gh != GitHubProjectClient.run_gh
+        )
+    ):
+        try:
+            graphql = GitHubGraphQLClient()
+            projects_by_title = graphql.resolve_projects(owner)
+            title_by_num = {
+                p["number"]: title
+                for title, p in projects_by_title.items()
+                if isinstance(p, dict) and "number" in p
+            }
+        except Exception:
+            title_by_num = {}
+
+    global_title = (getattr(loaded, "global_board_title", None) if loaded else None) or "Global"
+
+    for b_client in board_clients:
+        b_num = getattr(b_client, "project_number", PROJECT_NUMBER)
+        b_title = title_by_num.get(b_num, "")
+        is_global = bool(b_title) and b_title.lower() == global_title.lower()
+
+        existing_items: Dict[str, Tuple[str, Optional[str]]] = {}
+        if hasattr(b_client, "load_existing_items"):
+            existing_items = b_client.load_existing_items()
+
+        for repo in repos_to_scan:
+            if not repo:
+                continue
+            repo_name = repo.split("/")[-1]
+            if not is_global:
+                # A scoped board carries only its own repository; with an unknown title, only the
+                # repository this run belongs to. Other repositories are aggregated on Global only.
+                if b_title:
+                    if repo_name.lower() != b_title.lower() and repo.lower() != b_title.lower():
+                        continue
+                elif repo != repos_to_scan[0]:
+                    continue
+
+            if hasattr(b_client, "run_gh") and type(b_client).run_gh != GitHubProjectClient.run_gh:
+                repo_items = []
+                for kind in ("issue", "pr"):
+                    try:
+                        raw = b_client.run_gh(
+                            [
+                                kind,
+                                "list",
+                                "--repo",
+                                repo,
+                                "--state",
+                                state,
+                                "--limit",
+                                "2000",
+                                "--json",
+                                (
+                                    "number,url,labels,state,isDraft,mergedAt,title"
+                                    if kind == "pr"
+                                    else "number,url,labels,state,stateReason,title"
+                                ),
+                            ]
+                        )
+                        for d in json.loads(raw or "[]"):
+                            d["kind"] = "PullRequest" if kind == "pr" else "Issue"
+                            d["is_pr"] = kind == "pr"
+                            repo_items.append(d)
+                    except Exception as exc:
+                        if is_rate_limited(exc):
+                            mark_rate_limited()
+                            break
+                        _fail(f"could not list {kind}s in {repo}: {_detail(exc)}")
+            else:
+                rest = getattr(b_client, "rest", None) or GitHubRestClient()
+                repo_items = rest.list_issues_and_prs(repo, state=state, limit=5000)
+
+            for item in repo_items:
+                if not dry_run and not can_mutate():
+                    break
+                total_scanned += 1
+                url = item.get("html_url") or item.get("url")
+                num = item.get("number")
+                node_id = item.get("node_id")
+                raw_labels = item.get("labels", [])
+                if isinstance(raw_labels, dict) and "nodes" in raw_labels:
+                    raw_labels = raw_labels["nodes"]
+                label_names = [
+                    l.get("name") if isinstance(l, dict) else str(l) for l in raw_labels if l
+                ]
+                item_status_labels = {l for l in label_names if l in STATUS_LABELS}
+
+                exp_status = expected_status(item)
+
+                if not url:
+                    continue
+
+                if url not in existing_items:
+                    corrections["missing_from_board"] += 1
+                    corrections["status_updated"] += 1
+                    if not dry_run and can_mutate():
+                        item_id = b_client.add_item(url, content_id=node_id)
+                        if item_id:
+                            record_mutation()
+                            if b_client.edit_status(item_id, exp_status):
+                                record_mutation()
+                                existing_items[url] = (item_id, exp_status)
+                else:
+                    item_id, current_status = existing_items[url]
+                    if current_status != exp_status:
+                        corrections["status_updated"] += 1
+                        state_val = str(item.get("state", "")).upper()
+                        is_closed = state_val in ("CLOSED", "MERGED") or bool(item.get("merged"))
+                        if is_closed and current_status not in TERMINAL_STATUSES:
+                            corrections["closed_not_terminal"] += 1
+                        elif not is_closed and current_status in TERMINAL_STATUSES:
+                            corrections["open_terminal"] += 1
+                        else:
+                            corrections["board_status_mismatch"] += 1
+
+                        if not dry_run and can_mutate():
+                            if b_client.edit_status(item_id, exp_status):
+                                record_mutation()
+                                existing_items[url] = (item_id, exp_status)
+
+                if item_status_labels != {exp_status}:
+                    corrections["labels_corrected"] += 1
+                    if not item_status_labels:
+                        corrections["no_status_label"] += 1
+                    elif len(item_status_labels) > 1:
+                        corrections["multiple_status_labels"] += 1
+                    else:
+                        corrections["label_mismatch"] += 1
+
+                    if not dry_run and can_mutate() and num:
+                        _safe_set_status_label(
+                            b_client, repo, num, exp_status, existing_labels=raw_labels
+                        )
+
+    summary = {
+        "items_scanned": total_scanned,
+        "corrections": corrections,
+        "dry_run": dry_run,
+    }
+    mode_str = "dry-run" if dry_run else "live"
+    print(
+        f"Reconciliation ({mode_str}): scanned {total_scanned} item(s); "
+        f"missing_from_board={corrections['missing_from_board']}, "
+        f"status_updated={corrections['status_updated']} "
+        f"(closed_not_terminal={corrections['closed_not_terminal']}, "
+        f"open_terminal={corrections['open_terminal']}, "
+        f"board_status_mismatch={corrections['board_status_mismatch']}), "
+        f"labels_corrected={corrections['labels_corrected']} "
+        f"(no_status_label={corrections['no_status_label']}, "
+        f"label_mismatch={corrections['label_mismatch']}, "
+        f"multiple_status_labels={corrections['multiple_status_labels']})."
+    )
+    return summary
 
 
 def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any] = None) -> None:
@@ -2071,10 +2448,6 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
         except Exception:
             pass
 
-        # Historical reconciliation walks every installed repository, but only the current
-        # repository's own items belong on its scoped board - another repository's issues and
-        # pull requests must land on the Global board only. `global_client` is built lazily (and
-        # once) the first time it is needed, from a scoped-out `resolve_boards()` call.
         global_client: Optional[BoardGroup] = None
 
         for r in repos_to_reconcile:
@@ -2091,13 +2464,62 @@ def process_event(event_name: str, payload: Dict[str, Any], client: Optional[Any
                         [GitHubProjectClient(project_number=n) for n in global_numbers]
                     )
                 repo_client = global_client
+            # Membership first (other repositories reach only the Global board), then the same
+            # expected_status corrections the real-time handlers apply, per repository and board.
             reconcile_membership(repo_client, r, state=reconcile_state)
+            if can_reconcile():
+                reconcile(client=repo_client, repo_slugs=[r], state=reconcile_state)
         if can_reconcile():
             reconcile_unassigned_statuses(client)
 
 
 def main() -> None:
-    """Entry point: reads the webhook payload from the environment and processes it."""
+    """Entry point: parses CLI arguments or reads webhook payload from the environment."""
+    parser = argparse.ArgumentParser(description="GitHub Project board automation.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Dry run: inspect and report corrections without writing to boards or issues",
+    )
+    parser.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="Run historic reconciliation across all declared boards and repositories",
+    )
+    parser.add_argument(
+        "--board",
+        type=int,
+        default=None,
+        help="Specific project board number to reconcile",
+    )
+    parser.add_argument(
+        "--owner",
+        type=str,
+        default=PROJECT_OWNER,
+        help="Project owner login (default: PROJECT_OWNER)",
+    )
+    parser.add_argument(
+        "--repo",
+        type=str,
+        default=None,
+        help="Specific repository slug to reconcile",
+    )
+    args, unknown = parser.parse_known_args()
+
+    if args.dry_run or args.reconcile or args.board:
+        reconcile(
+            dry_run=args.dry_run,
+            owner=args.owner,
+            board_numbers=[args.board] if args.board else None,
+            repo_slugs=[args.repo] if args.repo else None,
+        )
+        if RATE_LIMITED:
+            print("Notice: Project board rate limit reached; exiting cleanly.", file=sys.stderr)
+            sys.exit(0)
+        if FAILURES:
+            sys.exit(1)
+        return
+
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
 

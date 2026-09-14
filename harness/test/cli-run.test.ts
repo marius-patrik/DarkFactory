@@ -35,12 +35,44 @@ async function run(prompt: string, options: { args?: string[]; config?: Record<s
 }
 
 describe("df run", () => {
+	test("df route explains a route and df run emits the route before the session", async () => {
+		const home = await mkdtemp(join(process.cwd(), ".cli-test-")); temporary.push(home);
+		await writeFile(join(home, "config.json"), JSON.stringify({
+			defaultChain: "faux/echo@test",
+			router: { policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }] },
+		}), "utf8");
+		const invoke = async (...command: string[]) => {
+			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...command], { cwd: process.cwd(), env: { DF_HOME: home, DF_FAUX: "1", PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" }, stdout: "pipe", stderr: "pipe" });
+			const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
+			return { stdout, exitCode };
+		};
+		const explained = await invoke("route", "hello", "--json", "--faux");
+		expect(explained.exitCode).toBe(0);
+		expect(JSON.parse(explained.stdout)).toMatchObject({ profile: { kind: "chat", size: "small" }, ranked: [{ status: "chosen" }] });
+		const runResult = await invoke("run", "hello", "--json", "--faux");
+		expect(runResult.exitCode).toBe(0);
+		const events = runResult.stdout.trim().split(/\r?\n/u).map((line) => JSON.parse(line) as { type: string });
+		expect(events.slice(0, 2).map((event) => event.type)).toEqual(["route", "session"]);
+	});
+	test("df run records per-kind outcomes for the learning hook", async () => {
+		const result = await run("hello");
+		expect(result.exitCode).toBe(0);
+		const lines = (await readFile(join(result.home, "router-outcomes.jsonl"), "utf8")).trim().split(/\r?\n/u);
+		expect(lines.length).toBeGreaterThanOrEqual(1);
+		for (const line of lines) {
+			expect(JSON.parse(line) as unknown).toMatchObject({
+				candidate: { provider: "faux", model: "echo", account: "test" },
+				kind: "chat",
+				success: true,
+			});
+		}
+	});
 	test("accounts reports OAuth ownership/expiry/refresh and logout removes only the named account", async () => {
 		const home = await mkdtemp(join(process.cwd(), ".cli-test-")); temporary.push(home);
 		const store = new FileCredentialStore(home);
 		for (const label of ["acct-a", "acct-b"]) {
 			await store.setSlot(`fixture:${label}`, "oauth", { type: "oauth", access: `access-${label}`, refresh: `refresh-${label}`, expires: Date.now() + 60_000 });
-			await store.modifyAccount(`fixture:${label}`, async (current) => current ? ({ ...current, metadata: { ownership: label === "acct-a" ? "borrowed" : "df-owned", sync: "machine-only" } }) : undefined);
+			await store.modifyAccount(`fixture:${label}`, async (current) => current ? ({ ...current, metadata: { ...(label === "acct-a" ? { importer: "fixture", ownership: "borrowed" } : { ownership: "df-owned" }), sync: "machine-only" } }) : undefined);
 		}
 		const invoke = async (...args: string[]) => {
 			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], { cwd: process.cwd(), env: { DF_HOME: home, PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" }, stdout: "pipe", stderr: "pipe" });
@@ -51,7 +83,7 @@ describe("df run", () => {
 		expect(listed.exitCode).toBe(0);
 		expect(listed.stdout).toContain("type\texpiry\trefresh\townership");
 		expect(listed.stdout).toContain("fixture:acct-a\toauth");
-		expect(listed.stdout).toContain("reimport-first\tborrowed");
+		expect(listed.stdout).toContain("df-managed\tdf-owned (imported from fixture)");
 		expect(listed.stdout).toContain("df-managed\tdf-owned");
 		expect((await invoke("logout", "fixture", "--account", "acct-b")).exitCode).toBe(0);
 		expect(await store.readAccount("fixture:acct-a")).toBeDefined();
@@ -126,15 +158,16 @@ describe("df run", () => {
 	});
 
 	test("preflight cooldown exhaustion exits 2 and includes the persisted reason", async () => {
-		const result = await run("hello", { setup: async (home) => {
+		const result = await run("hello", { config: { maxWaitMs: 1 }, setup: async (home) => {
 			await writeFile(join(home, "quota.json"), JSON.stringify({ version: 1, entries: {
 				"faux/echo@test": { provider: "faux", model: "echo", account: "test", kind: "quota_exhausted", markedAt: Date.now(), resetAt: Date.now() + 60_000 },
 			} }), "utf8");
 		} });
 		expect(result.exitCode).toBe(2);
-		const events = result.stdout.trim().split(/\r?\n/u).map((line) => JSON.parse(line) as { type: string; reasons?: Array<{ kind: string }> });
+		const events = result.stdout.trim().split(/\r?\n/u).map((line) => JSON.parse(line) as { type: string; reasons?: Array<{ kind: string }>; limits?: unknown[] });
 		expect(events.some((event) => event.type === "session")).toBe(false);
 		expect(events.at(-1)?.reasons?.[0]?.kind).toBe("quota_exhausted");
+		expect(events.at(-1)?.limits).toHaveLength(1);
 	});
 
 	test("faux quota failures never create or modify the persistent quota store", async () => {

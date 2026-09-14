@@ -7,13 +7,14 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
-import type { AuthEvent, AuthPrompt, Context, Models, MutableModels, Provider } from "@earendil-works/pi-ai";
+import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { FileCredentialStore, defaultDfHome } from "./credentials.ts";
-import { loadDfConfig, localCredentialFallback, type DfConfig } from "./config.ts";
-import { runFailoverTurn, type Candidate, type StepEvent } from "./failover.ts";
+import { FileCredentialStore, defaultDfHome, parseAccountId, validateAccountRecord } from "./credentials.ts";
+import { DEFAULT_ROUTER_CONFIG, loadDfConfig, localCredentialFallback, type DfConfig } from "./config.ts";
+import type { Candidate } from "./failover.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type CandidateFailureReason, type HarnessEvent } from "./harness/supervisor.ts";
-import { QuotaStore } from "./harness/quota-store.ts";
+import { LimitLedger } from "./limits/ledger.ts";
+import { estimateTask, orderCandidates, type TaskSize } from "./limits/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import { defaultSensitiveDataHook, parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { ModelCatalog, isRunnableCatalogModel, type CatalogResult } from "./models/catalog.ts";
@@ -21,7 +22,6 @@ import { importClaudeAccount } from "./import/claude.ts";
 import { importCodexAccount } from "./import/codex.ts";
 import { importGrokAccount } from "./import/grok.ts";
 import { importKimiAccount } from "./import/kimi.ts";
-import { ConfiguredBorrowedCredentialCoordinator } from "./import/borrowed-credentials.ts";
 import { OsClaudeKeyringAdapter } from "./import/keyring.ts";
 import { OsHomeReader } from "./import/reader.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
@@ -35,25 +35,30 @@ import { plan, validateGraph, type GraphEvent, type RunState } from "./graph/ind
 import { secretsCommand } from "./secrets/cli.ts";
 import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
-
-const isolatedAuthContext = {
-	env: async (_name: string) => undefined,
-	fileExists: async (_path: string) => false,
-};
+import { buildRouterCatalog } from "./router/catalog.ts";
+import { OutcomeStore } from "./router/outcomes.ts";
+import { routeTask } from "./router/router.ts";
+import type { ModelCapability, RouteResult, RouterInput, TaskKind, TaskNeed, TaskSize as RouterTaskSize } from "./router/types.ts";
+import { runDoctorIdentities } from "./identities/index.ts";
 
 function usage(): string {
 	return [
 		"Usage:",
 		"  df | df chat [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard]",
-		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--json] <prompt>",
+		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--json] <prompt>",
+		"  df route [--kind kind] [--size size] [--need capability] [--json] <prompt>",
+		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
 		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
+		"  df account export <provider:label>",
+		"  df account load <provider:label> --from-env <VAR>",
 		"  df login <provider> [--account <label>]",
 		"  df logout <provider> --account <label>",
 		"  df ask --chain <provider/model[@account]>,... [--json] <prompt>",
+		"  df doctor [identities] [--config <path>] [--manifest <path>] [--repo <path>]",
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
 		"  df graph validate [path]",
 		"  df graph plan --event <file> --state <file> [--graph <path>]",
@@ -62,10 +67,28 @@ function usage(): string {
 	].join("\n");
 }
 
-function dfModels(registry: ProviderRegistry, store?: FileCredentialStore, provider?: string, label?: string): MutableModels {
-	return registry.models(store && provider && label ? {
-		credentials: store.forAccount(provider, label), authContext: isolatedAuthContext,
-	} : undefined);
+const TASK_KINDS: TaskKind[] = ["plan", "implement", "review", "fix", "summarize", "classify", "chat", "image", "video"];
+const TASK_NEEDS: TaskNeed[] = ["tools", "reasoning", "vision", "long_context", "image_gen", "video_gen"];
+
+function routerInput(args: string[], prompt: string, config: DfConfig): RouterInput {
+	const kind = option(args, "--kind") as TaskKind | undefined;
+	if (kind && !TASK_KINDS.includes(kind)) throw new Error(`--kind must be one of: ${TASK_KINDS.join(", ")}`);
+	const size = option(args, "--size") as RouterTaskSize | undefined;
+	if (size && !["small", "medium", "large"].includes(size)) throw new Error("--size must be small, medium, or large");
+	const needs = options(args, "--need") as TaskNeed[];
+	if (needs.some((need) => !TASK_NEEDS.includes(need))) throw new Error(`--need must be one of: ${TASK_NEEDS.join(", ")}`);
+	const contextTokensRaw = option(args, "--context-tokens");
+	const contextTokens = contextTokensRaw === undefined ? undefined : Number.parseInt(contextTokensRaw, 10);
+	if (contextTokens !== undefined && (!Number.isSafeInteger(contextTokens) || contextTokens < 0)) throw new Error("--context-tokens must be a non-negative integer");
+	const reasoning = option(args, "--reasoning");
+	return {
+		prompt,
+		...(option(args, "--chain") ? { explicitChain: option(args, "--chain") } : {}),
+		...(option(args, "--model") ? { explicitModel: option(args, "--model") } : {}),
+		...((contextTokens ?? 0) > 0 ? { attachedFiles: [{ tokens: contextTokens, modality: "text" as const }] } : {}),
+		flags: { ...(kind ? { kind } : {}), ...(size ? { size } : {}), ...(needs.length ? { needs } : {}), ...(args.includes("--sensitive") ? { sensitivity: "sensitive" as const } : {}) },
+		...(reasoning === "hard" ? { reasoning: "hard" as const } : {}),
+	};
 }
 
 function option(args: string[], name: string): string | undefined {
@@ -81,7 +104,7 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 	const result: string[] = [];
 	for (let index = 0; index < args.length; index++) {
 		if (names.includes(args[index]!)) { index++; continue; }
-		if (args[index] === "--json" || args[index] === "--faux") continue;
+		if (args[index] === "--json" || args[index] === "--faux" || args[index] === "--sensitive") continue;
 		result.push(args[index]!);
 	}
 	return result;
@@ -151,7 +174,7 @@ async function accountImportCommand(registry: ProviderRegistry, store: FileCrede
 	if (!declaration) throw new Error(`Unknown account import source: ${source ?? ""}`);
 	if (declaration.parser === "antigravity-keyring") {
 		await importAntigravityAccount(store, label, new OsKeyringAdapter(), declaration.targetProvider, declaration.keyring?.service, declaration.keyring?.account);
-		await markImportedAccount(store, declaration.targetProvider, label, declaration.id, declaration.path);
+		await markImportedAccount(store, declaration.targetProvider, label, declaration.id);
 		console.log(`Imported ${declaration.targetProvider}/${label}.`);
 		return;
 	}
@@ -164,19 +187,18 @@ async function accountImportCommand(registry: ProviderRegistry, store: FileCrede
 		await importKimiAccount(store, label, reader, declaration.targetProvider, declaration.path);
 	}
 	else throw new Error(`Importer parser is not implemented: ${declaration.parser}`);
-	await markImportedAccount(store, declaration.targetProvider, label, declaration.id, declaration.path);
+	await markImportedAccount(store, declaration.targetProvider, label, declaration.id);
 	console.log(`Imported ${source}/${label}.`);
 }
 
-async function markImportedAccount(store: FileCredentialStore, provider: string, label: string, importer: string, path?: string): Promise<void> {
+async function markImportedAccount(store: FileCredentialStore, provider: string, label: string, importer: string): Promise<void> {
 	const id = `${provider}:${label}`;
 	await store.modifyAccount(id, async (current) => current ? ({
 		...current,
 		metadata: {
-			...(current.metadata ?? {}), importer,
-			ownership: "borrowed", sync: "machine-only",
-			...(path ? { source_path: path } : {}),
-			...(current.metadata?.source?.startsWith("Claude Code-credentials") ? { source_kind: "keyring", source_service: current.metadata.source } : {}),
+			...(current.metadata ?? {}),
+			importedFrom: importer,
+			ownership: "df-owned", sync: "machine-only",
 		},
 	}) : undefined);
 }
@@ -191,10 +213,42 @@ async function accountsCommand(store: FileCredentialStore): Promise<void> {
 		const oauth = record && Object.values(record.slots).find((slot) => slot.type === "oauth");
 		const types = [...new Set(account.slots.map((slot) => slot.type))].join(",") || "-";
 		const expiry = oauth?.type === "oauth" ? `${new Date(oauth.expires).toISOString()} (${oauth.expires > Date.now() ? "valid" : "expired"})` : "-";
-		const refresh = oauth?.type === "oauth" && oauth.refresh ? (account.metadata?.ownership === "borrowed" ? "reimport-first" : "df-managed") : "-";
-		const ownership = account.metadata?.ownership ?? (account.metadata?.importer ? "borrowed" : "df-owned");
+		const refresh = oauth?.type === "oauth" && oauth.refresh ? "df-managed" : "-";
+		const baseOwnership = account.metadata?.ownership ?? "df-owned";
+		const importedFrom = account.metadata?.importedFrom ?? account.metadata?.importer;
+		const ownership = importedFrom
+			? `${baseOwnership} (imported from ${importedFrom})`
+			: baseOwnership;
 		console.log(`${account.id}\t${types}\t${expiry}\t${refresh}\t${ownership}\t${slots || "-"}`);
 	}
+}
+
+async function accountExportCommand(store: FileCredentialStore, args: string[]): Promise<void> {
+	const id = args[0];
+	if (!id) throw new Error("account export requires <provider:label>");
+	const account = await store.readAccount(id);
+	if (!account) throw new Error(`Account not found: ${id}`);
+	console.log(JSON.stringify(account));
+}
+
+async function accountLoadCommand(store: FileCredentialStore, args: string[]): Promise<void> {
+	const id = args[0];
+	const fromEnv = option(args, "--from-env");
+	if (!id || !fromEnv) throw new Error("account load requires <provider:label> --from-env <VAR>");
+	const parsedId = parseAccountId(id);
+	if (!parsedId) throw new Error("Invalid account id; expected <provider:label>");
+	const raw = process.env[fromEnv];
+	if (!raw || !raw.trim()) throw new Error(`Environment variable ${fromEnv} is empty or not set`);
+	let parsedJson: unknown;
+	try {
+		parsedJson = JSON.parse(raw);
+	} catch {
+		throw new Error("Invalid account JSON");
+	}
+	const validated = validateAccountRecord(parsedJson, id);
+	validated.metadata = { ...(validated.metadata ?? {}), ownership: "df-owned" };
+	await store.modifyAccount(id, async () => validated);
+	console.log(`Loaded account ${id} from ${fromEnv}.`);
 }
 
 async function accountSetCommand(store: FileCredentialStore, args: string[]): Promise<void> {
@@ -255,25 +309,17 @@ async function logoutCommand(store: FileCredentialStore, providerId: string | un
 	console.log(`Logged out ${providerId}/${label}.`);
 }
 
-async function askCommand(registry: ProviderRegistry, store: FileCredentialStore, args: string[]): Promise<void> {
+async function askCommand(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[]): Promise<void> {
 	const chainValue = option(args, "--chain");
 	if (!chainValue) throw new Error("ask requires --chain");
 	const prompt = removeOptions(args, ["--chain"]).join(" ").trim();
 	if (!prompt) throw new Error("ask requires a prompt");
 	const json = args.includes("--json");
-	const candidates = parseChain(chainValue);
-	const context: Context = { messages: [{ role: "user", content: prompt, timestamp: Date.now() }] };
-	const emitStep = (event: StepEvent) => json ? console.log(JSON.stringify(event)) : console.error(JSON.stringify(event));
-	const result = await runFailoverTurn({
-		candidates, context,
-		modelsFor(candidate): Models { return dfModels(registry, store, candidate.provider, candidate.account); },
-		headersFor: (candidate) => store.requestHeaders(candidate.provider, candidate.account, registry.config(candidate.provider)?.slotHeaders),
-		providerConfigs: new Map(registry.entries.map((entry) => [entry.id, entry])),
-		onText: (delta) => json ? console.log(JSON.stringify({ type: "text_delta", delta })) : process.stdout.write(delta),
-		onStep: emitStep,
-	});
+	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], parseChain(chainValue), json, estimateTask(prompt));
+	const result = await supervisor.prompt(prompt);
 	if (!json) process.stdout.write("\n");
-	else console.log(JSON.stringify({ type: "result", candidate: result.candidate, stopReason: result.message.stopReason, responseModel: result.message.responseModel }));
+	else console.log(JSON.stringify({ type: "result", candidate: supervisor.activeCandidate, stopReason: result.stopReason, responseModel: result.responseModel }));
+	supervisor.session.dispose();
 }
 
 function fauxProviders(enabled: boolean): { providers: Provider[]; optional: string[] } {
@@ -289,6 +335,99 @@ function fauxProviders(enabled: boolean): { providers: Provider[]; optional: str
 		return fauxAssistantMessage(`faux: ${text}`);
 	}));
 	return { providers: [handle.provider], optional: ["faux"] };
+}
+
+async function routerModels(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[]): Promise<ModelCapability[]> {
+	const accountSets = new Map<string, Set<string>>();
+	const declarations = [config.defaultChain, config.hardReasoningChain, config.sensitiveChain, config.router?.classifier, ...(config.router?.candidates ?? []), ...(config.router?.policies.flatMap((policy) => policy.prefer.candidates ?? []) ?? [])];
+	for (const declaration of declarations) {
+		if (!declaration) continue;
+		for (const candidate of parseChain(declaration)) {
+			const accounts = accountSets.get(candidate.provider) ?? new Set<string>(); accounts.add(candidate.account); accountSets.set(candidate.provider, accounts);
+		}
+	}
+	for (const account of await store.listAccounts()) {
+		const accounts = accountSets.get(account.provider) ?? new Set<string>(); accounts.add(account.label); accountSets.set(account.provider, accounts);
+	}
+	const accounts = new Map([...accountSets].map(([provider, values]) => [provider, [...values]]));
+	const fauxEnabled = args.includes("--faux") || process.env.DF_FAUX === "1";
+	const faux = fauxProviders(fauxEnabled);
+	const catalog = new ModelCatalog({
+		home: defaultDfHome(), providers: providerList(registry, faux.providers), providerConfigs: registry.entries, store,
+		offline: fauxEnabled || process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
+	});
+	const catalogs = new Map<string, CatalogResult>();
+	await Promise.all(registry.entries.filter((provider) => provider.enabled !== false).map(async (provider) => {
+		const account = accounts.get(provider.id)?.[0] ?? "default";
+		if (provider.models.list && !provider.auth.some((auth) => auth.kind === "api_key" && auth.optional)) {
+			const knownAccount = (accounts.get(provider.id)?.length ?? 0) > 0;
+			let credential: unknown;
+			try { credential = await store.forAccount(provider.id, account).read(provider.id); } catch { return; }
+			if (!credential && !knownAccount) return;
+		}
+		try { catalogs.set(provider.id, await catalog.get(provider.id, { account })); } catch { /* static declarations remain the offline fallback */ }
+	}));
+	const models = buildRouterCatalog({ providers: registry.entries, catalogs, accounts, overrides: config.router?.models });
+	if (fauxEnabled) models.push({
+		candidate: { provider: "faux", model: "echo", account: "test" }, contextWindow: 128_000,
+		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin",
+	});
+	return models;
+}
+
+async function resolveCliRoute(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[], prompt: string): Promise<RouteResult> {
+	const home = defaultDfHome();
+	const learning = config.router?.learning;
+	return routeTask(routerInput(args, prompt, config), {
+		config: config.router ?? DEFAULT_ROUTER_CONFIG,
+		models: await routerModels(registry, store, config, args),
+		ledger: new LimitLedger(home, { fallbackTtlMs: config.cooldownTtlMs, persist: (candidate) => candidate.provider !== "faux" }),
+		outcomes: new OutcomeStore(home, learning),
+		defaultChain: config.defaultChain,
+		sensitiveChain: config.sensitiveChain,
+		hardReasoningChain: config.hardReasoningChain,
+		...(config.router?.classifier ? { classify: async (ambiguousPrompt: string, classifier: string) => classifyWithCandidate(registry, store, config, args, ambiguousPrompt, classifier) } : {}),
+	});
+}
+
+function parsedTaskKind(value: unknown): TaskKind | undefined {
+	if (typeof value !== "string") return undefined;
+	const normalized = value.trim().replace(/^```(?:json)?\s*|\s*```$/giu, "").trim();
+	if (TASK_KINDS.includes(normalized as TaskKind)) return normalized as TaskKind;
+	try {
+		const decoded = JSON.parse(normalized) as { kind?: unknown };
+		return typeof decoded.kind === "string" && TASK_KINDS.includes(decoded.kind as TaskKind) ? decoded.kind as TaskKind : undefined;
+	} catch { return undefined; }
+}
+
+function messageText(message: unknown): string {
+	if (!message || typeof message !== "object") return "";
+	const content = (message as { content?: unknown }).content;
+	if (typeof content === "string") return content;
+	return Array.isArray(content) ? content.flatMap((block) => block && typeof block === "object" && (block as { type?: unknown }).type === "text" && typeof (block as { text?: unknown }).text === "string" ? [(block as { text: string }).text] : []).join("") : "";
+}
+
+async function classifyWithCandidate(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[], prompt: string, classifier: string): Promise<TaskKind> {
+	let supervisor: Awaited<ReturnType<typeof createCliSupervisor>> | undefined;
+	try {
+		supervisor = await createCliSupervisor(registry, store, config, ["run", ...(args.includes("--faux") ? ["--faux"] : []), "--deny", "*"], [parseCandidate(classifier)], false, estimateTask(prompt, "small"), "classify", () => undefined);
+		const result = await supervisor.prompt(`Classify the task below. Return only one JSON object with a kind from ${TASK_KINDS.join(", ")}.\n\n${prompt}`, 1);
+		return parsedTaskKind(messageText(result)) ?? "chat";
+	} catch { return "chat"; }
+	finally { supervisor?.session.dispose(); }
+}
+
+function printRoute(route: RouteResult, write: (line: string) => void = console.log): void {
+	write(`profile: ${route.profile.kind}/${route.profile.size}; needs=${route.profile.needs.join(",") || "none"}; sensitivity=${route.profile.sensitivity}; context=${route.profile.contextTokens}`);
+	write(`source: ${route.source}${route.policy ? ` (${route.policy})` : ""}`);
+	for (const item of route.ranked) write(`${item.rank}. ${item.candidate.provider}/${item.candidate.model}@${item.candidate.account}\t${item.status}\t${item.reason}\t${item.details.join("; ")}`);
+}
+
+async function routeCommand(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[]): Promise<void> {
+	const prompt = removeOptions(args, ["--chain", "--model", "--reasoning", "--kind", "--size", "--need", "--context-tokens"]).join(" ").trim();
+	if (!prompt) throw new Error("route requires a prompt");
+	const route = await resolveCliRoute(registry, store, config, args, prompt);
+	if (args.includes("--json")) console.log(JSON.stringify(route)); else printRoute(route);
 }
 
 const SECRET_KEY = /token|secret|password|api[-_]?key|authorization/iu;
@@ -314,6 +453,8 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 	else if (event.type === "candidate_unavailable") console.error(`[unavailable] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.message})`);
 	else if (event.type === "candidate_skipped") console.error(`[skip] ${event.candidate.provider}/${event.candidate.account}/${event.candidate.model} (${event.reason})`);
 	else if (event.type === "waiting") console.error(`\n[waiting] ${event.reason} until ${new Date(event.until).toISOString()}`);
+	else if (event.type === "limit") console.error(`[limit] ${event.entry.provider}/${event.entry.account}/${event.entry.model} ${event.entry.type} until ${new Date(event.entry.resetAt).toISOString()}`);
+	else if (event.type === "recovered") console.error(`[recovered] ${event.entry.provider}/${event.entry.account}/${event.entry.model} ${event.entry.type}`);
 	else if (event.type === "step" && event.errorKind) console.error(`\n[step] ${event.provider}/${event.account}/${event.model}: ${event.errorKind}: ${event.errorMessage}`);
 }
 
@@ -345,7 +486,7 @@ async function packagingSmoke(): Promise<void> {
 	console.log("packaging smoke ok");
 }
 
-async function createCliSupervisor(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[], chain: Candidate[], json: boolean) {
+async function createCliSupervisor(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[], chain: Candidate[], json: boolean, taskEstimate?: ReturnType<typeof estimateTask>, taskKind?: TaskKind, eventHandler?: (event: HarnessEvent) => void) {
 	const faux = fauxProviders(args.includes("--faux") || process.env.DF_FAUX === "1");
 	const providers = providerList(registry, faux.providers);
 	const catalog = new ModelCatalog({
@@ -387,8 +528,10 @@ async function createCliSupervisor(registry: ProviderRegistry, store: FileCreden
 		providers, authOptionalProviders: [...optional], catalogs,
 		providerConfigs: new Map(registry.entries.map((entry) => [entry.id, entry])),
 		cooldownTtlMs: config.cooldownTtlMs, maxWaitMs: config.maxWaitMs, ephemeralProviders: faux.optional,
+		taskEstimate, monitorRecovery: args[0] === "chat",
+		outcomeStore: new OutcomeStore(defaultDfHome(), config.router?.learning), taskKind,
 		store,
-		onEvent: (event) => renderEvent(event, json),
+		onEvent: eventHandler ?? ((event) => renderEvent(event, json)),
 	});
 }
 
@@ -399,20 +542,21 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 	const reasoning = option(args, "--reasoning");
 	if (reasoning !== undefined && reasoning !== "hard") throw new Error("--reasoning must be hard");
 	const json = args.includes("--json");
+	const sizeValue = option(args, "--size");
+	if (sizeValue !== undefined && !["small", "medium", "large"].includes(sizeValue)) throw new Error("--size must be small, medium, or large");
 	const maxTurns = Number.parseInt(option(args, "--max-turns") ?? "100", 10);
 	if (!Number.isSafeInteger(maxTurns) || maxTurns <= 0) throw new Error("--max-turns must be a positive integer");
 	const promptFile = option(args, "--prompt-file");
 	const prompt = promptFile ? await readFile(promptFile, "utf8") :
-		removeOptions(args, ["--chain", "--model", "--reasoning", "--max-turns", "--prompt-file", "--allow", "--deny", "--resume"]).join(" ").trim();
+		removeOptions(args, ["--chain", "--model", "--reasoning", "--kind", "--size", "--need", "--context-tokens", "--max-turns", "--prompt-file", "--allow", "--deny", "--resume"]).join(" ").trim();
 	if (!prompt) throw new Error("run requires a prompt or --prompt-file");
-	const route = await resolveRouting(config, {
-		prompt,
-		...(chainValue ? { explicitChain: chainValue } : {}),
-		...(modelValue ? { explicitModel: modelValue } : {}),
-		...(reasoning === "hard" ? { reasoning: "hard" as const } : {}),
-		sensitiveHook: defaultSensitiveDataHook,
-	});
-	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], route.chain, json);
+	const route = await resolveCliRoute(registry, store, config, args, prompt);
+	if (json) console.log(JSON.stringify({ type: "route", ...route }));
+	else printRoute(route, console.error);
+	const executableChain = route.chain.length > 0 ? route.chain : route.ranked.filter((item) => ["limited", "capacity"].includes(item.reason)).map((item) => item.candidate);
+	if (executableChain.length === 0) throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
+	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
+	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], executableChain, json, task, route.profile.kind);
 	if (json) console.log(JSON.stringify({ type: "session", sessionId: supervisor.session.sessionId, candidate: supervisor.activeCandidate }));
 	else console.error(`[session ${supervisor.session.sessionId}] ${supervisor.activeCandidate.provider}/${supervisor.activeCandidate.account}/${supervisor.activeCandidate.model}`);
 	try {
@@ -420,6 +564,24 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 		if (!json) process.stdout.write("\n");
 		else console.log(JSON.stringify({ type: "result", sessionId: supervisor.session.sessionId, candidate: supervisor.activeCandidate, stopReason: message.stopReason, usage: message.usage }));
 	} finally { supervisor.session.dispose(); }
+}
+
+async function limitsCommand(ledger: LimitLedger, args: string[]): Promise<void> {
+	if (args[0] === "clear") {
+		const selector = args[1];
+		if (!selector) throw new Error("limits clear requires a selector");
+		const removed = await ledger.clear(selector);
+		const event = { type: "limits_cleared", selector, removed, observedAt: Date.now() };
+		if (args.includes("--json")) console.log(JSON.stringify(event));
+		else console.log(`Cleared ${removed} limit entr${removed === 1 ? "y" : "ies"} for ${selector}.`);
+		return;
+	}
+	for (const entry of await ledger.recover()) console.error(`[recovered] ${entry.provider}/${entry.account}/${entry.model} ${entry.type}`);
+	const entries = await ledger.list();
+	if (args.includes("--json")) { console.log(JSON.stringify({ version: 1, entries })); return; }
+	console.log("provider\taccount\tmodel\ttype\tremaining\tresets in\tsource");
+	const now = Date.now();
+	for (const entry of entries) console.log(`${entry.provider}\t${entry.account}\t${entry.model}\t${entry.type}${entry.dimension ? `:${entry.dimension}` : ""}\t${entry.remaining ?? "-"}${entry.limit === undefined ? "" : `/${entry.limit}`}\t${Math.max(0, Math.ceil((entry.resetAt - now) / 1000))}s\t${entry.source}`);
 }
 
 async function chatCommand(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[]): Promise<void> {
@@ -462,6 +624,15 @@ async function graphCommand(args: string[]): Promise<void> {
 	console.log(JSON.stringify(plan(graph, JSON.parse(event) as GraphEvent, JSON.parse(state) as RunState), null, 2));
 }
 
+async function doctorCommand(args: string[]): Promise<void> {
+	const check = args[0];
+	if (!check || check === "identities") {
+		await runDoctorIdentities(args.slice(check === "identities" ? 1 : 0));
+		return;
+	}
+	throw new Error(`Unknown doctor check: ${check}. Available checks: identities`);
+}
+
 async function secretsCli(home: string, args: string[]): Promise<void> {
 	const allowFileKey = args.includes("--insecure-file-key");
 	const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? "";
@@ -485,23 +656,25 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	const config = await loadDfConfig(home);
 	const providerConfig = await loadProviderConfig(home);
 	const registry = new ProviderRegistry(providerConfig);
-	const keyring = new OsKeyringAdapter();
-	const borrowed = new ConfiguredBorrowedCredentialCoordinator(homedir(), providerConfig.providers, keyring);
-	const quota = new QuotaStore(home, { fallbackTtlMs: config.cooldownTtlMs, persist: (candidate) => candidate.provider !== "faux" });
-	const store = new FileCredentialStore(home, localCredentialFallback(home, config, providerConfig), borrowed, (provider, label) => quota.clearAccount(provider, label));
+	const ledger = new LimitLedger(home, { fallbackTtlMs: config.cooldownTtlMs, persist: (candidate) => candidate.provider !== "faux" });
+	const store = new FileCredentialStore(home, localCredentialFallback(home, config, providerConfig), (provider, label) => ledger.clearAccount(provider, label));
 	const command = args[0];
 	switch (command) {
 		case "__packaging-smoke": return packagingSmoke();
 		case "providers": return providersCommand(registry);
 		case "models": return modelsCommand(registry, store, args.slice(1));
 		case "accounts": return accountsCommand(store);
+		case "limits": return limitsCommand(ledger, args.slice(1));
+		case "route": return routeCommand(registry, store, config, args.slice(1));
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
 			if (args[1] === "import") return accountImportCommand(registry, store, args.slice(2));
+			if (args[1] === "export") return accountExportCommand(store, args.slice(2));
+			if (args[1] === "load") return accountLoadCommand(store, args.slice(2));
 			throw new Error(`Unknown account command: ${args[1] ?? ""}`);
 		case "login": return loginCommand(registry, store, args[1], option(args, "--account"));
 		case "logout": return logoutCommand(store, args[1], option(args, "--account"));
-		case "ask": return askCommand(registry, store, args.slice(1));
+		case "ask": return askCommand(registry, store, config, args.slice(1));
 		case "run": return runCommand(registry, store, config, args.slice(1));
 		case "chat": return chatCommand(registry, store, config, args.slice(1));
 		case "ci": {
@@ -509,6 +682,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			if (exitCode !== 0) process.exitCode = exitCode;
 			return;
 		}
+		case "doctor": return doctorCommand(args.slice(1));
 		case "secrets": return secretsCli(home, args.slice(1));
 		case "help": case "--help": case "-h": console.log(usage()); return;
 		case undefined: return chatCommand(registry, store, config, []);
@@ -524,7 +698,7 @@ if (import.meta.main) {
 	main().catch((error: unknown) => {
 		const message = redactErrorMessage(error);
 		const exitCode = exitCodeFor(error);
-		if (process.argv.includes("--json")) console.log(JSON.stringify({ type: "error", message, exitCode, ...(error instanceof ChainExhaustedError ? { reasons: error.reasons } : {}) }));
+		if (process.argv.includes("--json")) console.log(JSON.stringify({ type: "error", message, exitCode, ...(error instanceof ChainExhaustedError ? { reasons: error.reasons, limits: error.limits } : {}) }));
 		console.error(message);
 		process.exitCode = exitCode;
 	});

@@ -15,9 +15,9 @@ Each account is `<provider>:<label>` with typed `oauth`, `api_key`, `header`, `c
 or provider-specific `other` slots. Pi receives a rebindable one-account
 `CredentialStore`; it is explicitly pointed at `$DF_HOME/pi-agent` and never uses pi's
 `auth.json`. OAuth logins are df-owned, isolated by account label, and marked machine-local;
-borrowed CLI credentials remain an explicit reimport-first fallback. Sessions are JSONL under `$DF_HOME/sessions`, quota cooldowns are in
-`$DF_HOME/quota.json`, and model catalogs are in `$DF_HOME/models`.
-Credential and quota updates use atomic replacement plus cross-process lockfiles; stale
+imports are one-time adoptions into df-owned accounts. Sessions are JSONL under `$DF_HOME/sessions`, the first-class limit ledger is
+`$DF_HOME/limits.json`, and model catalogs are in `$DF_HOME/models`. Legacy `quota.json`
+records migrate automatically. Credential and limit updates use atomic replacement plus cross-process lockfiles; stale
 locks left by dead processes are recovered. Changing or successfully refreshing an
 account clears that account's cooldowns.
 
@@ -39,11 +39,15 @@ All three pi packages are pinned to `0.85.1`.
 df providers
 df models --provider google --refresh
 df accounts
+df limits
+df limits --json
+df limits clear google:default
 df chat
 df chat --resume <session-id> --chain ...
-df run --json --max-turns 50 "Fix the failing test"
+df run --json --size large --max-turns 50 "Fix the failing test"
 df run --reasoning hard "Prove the invariant"
 df run --chain ... --prompt-file task.md
+df route "Review this patch" --json
 ```
 
 `df` with no arguments starts the readline chat; press Enter at the model prompt to
@@ -69,13 +73,50 @@ Configure routing in `$DF_HOME/config.json`; relative key paths resolve from
   "hardReasoningChain": "anthropic/claude-opus@work,google/gemini-3.8-flash@default",
   "sensitiveChain": "local/private@default,anthropic/claude-safe@work",
   "credentialFiles": { "google:default": "secrets/gemini_api_key" },
-  "cooldownTtlMs": 900000
+  "cooldownTtlMs": 900000,
+  "maxWaitMs": 300000
 }
 ```
 
+`router.policies` is an ordered rule list. A rule matches task `kind`, `size`, required
+capabilities, and sensitivity, then prefers configured candidates, limit tiers, or a
+per-kind quality score. Model metadata starts with the live/cached provider catalog and
+provider declarations; `router.models` supplies per-model capability or quality
+overrides. Candidate values are always `provider/model@account`:
+
+```json
+{
+  "router": {
+    "classifier": "cheap/classifier@default",
+    "candidates": ["limited/reviewer@work", "capacity/coder@work"],
+    "models": {
+      "limited/reviewer": { "limitTier": "tight", "quality": { "review": 5 } },
+      "capacity/coder": { "limitTier": "bulk", "tools": true, "contextWindow": 200000 }
+    },
+    "policies": [
+      { "id": "small-review", "match": { "kind": ["review"], "size": ["small"] }, "prefer": { "tiers": ["tight", "standard", "bulk"], "quality": "review" } },
+      { "id": "large-code", "match": { "kind": ["implement", "fix"], "size": ["large"], "needs": ["tools", "long_context"] }, "prefer": { "tiers": ["bulk", "standard"] } }
+    ],
+    "learning": { "enabled": true, "windowMs": 604800000, "maxPenalty": 20, "maxRecords": 1000 }
+  }
+}
+```
+
+The deterministic classifier uses prompt intent, attached context, graph-node hints,
+and CLI flags (`--kind`, `--size`, repeatable `--need`, `--context-tokens`, and
+`--sensitive`). The optional classifier candidate is invoked only through the router's
+cheap-classification hook when heuristics are ambiguous. Explicit CLI and graph routes
+keep their order; capacity checks still prevent impossible calls. Sensitive automatic
+routing is restricted to `sensitiveChain`. Outcomes are stored in
+`$DF_HOME/router-outcomes.jsonl`; recent per-kind failures add a capped, decaying
+ranking penalty.
+
 Credential precedence is a saved account slot, then (only for the `default` account)
 the provider entry's environment variables, then that account's `credentialFiles` path.
-Undated cooldowns expire after `cooldownTtlMs` (15 minutes by default). Save the key from
+Every limit entry has a numeric recovery time. Signals without one use `cooldownTtlMs`
+(15 minutes by default). `df run` infers `small`, `medium`, or `large`; `--size` overrides
+that estimate. Learned request/token remaining values, reserves, context windows, and
+model tiers make routing preserve bulk capacity while keeping tight models useful. Save the key from
 stdin and run the default model without a model flag:
 
 ```powershell

@@ -327,45 +327,36 @@ class TestDfSetup:
             "groq:default",
         ]
 
-    def test_a_login_file_is_written_0600_then_imported(self, monkeypatch, tmp_path):
+    def test_a_codex_account_is_loaded_from_its_secret(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
-        tmp_path: Pytest-provided empty directory.
         """
-        monkeypatch.setenv("CODEX_AUTH_JSON", '{"auth": "codex-login"}')
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "codex-login"}')
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
-        path = tmp_path / ".codex" / "auth.json"
-        assert path.read_text(encoding="utf-8") == '{"auth": "codex-login"}'
-        if sys.platform != "win32":
-            assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
         assert [
             "df",
             "account",
-            "import",
-            "codex",
-            "--account",
-            "default",
+            "load",
+            "openai-codex:pipeline",
+            "--from-env",
+            "DF_ACCOUNT_OPENAI_CODEX",
         ] in [call[0] for call in calls]
 
-    def test_a_grok_login_is_imported_as_grok(self, monkeypatch, tmp_path):
+    def test_a_grok_account_is_loaded_as_grok_sub(self, monkeypatch):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
-        tmp_path: Pytest-provided empty directory.
         """
-        monkeypatch.setenv("GROK_AUTH_JSON", '{"auth": "grok-login"}')
+        monkeypatch.setenv("DF_ACCOUNT_GROK_SUB", '{"auth": "grok-login"}')
         calls = self._record(monkeypatch)
         agent_runner.setup_df_accounts()
-        assert (tmp_path / ".grok" / "auth.json").read_text(encoding="utf-8") == (
-            '{"auth": "grok-login"}'
-        )
         assert [
             "df",
             "account",
-            "import",
-            "grok",
-            "--account",
-            "default",
+            "load",
+            "grok-sub:pipeline",
+            "--from-env",
+            "DF_ACCOUNT_GROK_SUB",
         ] in [call[0] for call in calls]
 
     def test_the_target_repo_config_is_copied_into_df_home(self, monkeypatch, tmp_path):
@@ -442,11 +433,17 @@ class TestDfLoginRotation:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        path = tmp_path / ".codex" / "auth.json"
-        path.parent.mkdir(parents=True)
-        path.write_text('{"auth": "v1"}', encoding="utf-8")
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         states = agent_runner.snapshot_df_login_files()
-        path.write_text('{"auth": "v2"}', encoding="utf-8")
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}), encoding="utf-8"
+        )
 
         persisted = []
         monkeypatch.setattr(
@@ -455,16 +452,20 @@ class TestDfLoginRotation:
             lambda secret, value: persisted.append((secret, value)) or True,
         )
         agent_runner.finish_df_login_files(states)
-        assert persisted == [("CODEX_AUTH_JSON", '{"auth": "v2"}')]
+        assert persisted == [("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v2"}')]
 
     def test_an_unchanged_login_is_not_written_back(self, monkeypatch, tmp_path):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        path = tmp_path / ".codex" / "auth.json"
-        path.parent.mkdir(parents=True)
-        path.write_text('{"auth": "same"}', encoding="utf-8")
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "same"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "same"}')
         states = agent_runner.snapshot_df_login_files()
         monkeypatch.setattr(
             agent_runner,
@@ -473,15 +474,23 @@ class TestDfLoginRotation:
         )
         agent_runner.finish_df_login_files(states)
 
-    def test_a_run_persists_rotation_and_keeps_the_file(self, monkeypatch, tmp_path):
-        """The setup-written login stays for df to import; only the secret is updated."""
-        login_path = tmp_path / ".codex" / "auth.json"
-        login_path.parent.mkdir(parents=True)
-        login_path.write_text('{"auth": "v1"}', encoding="utf-8")
+    def test_a_run_persists_rotation_and_updates_only_the_secret(self, monkeypatch, tmp_path):
+        """The setup-loaded login is rotated by df; only the secret is updated."""
+        df_home = tmp_path / "df-home"
+        df_home.mkdir()
+        monkeypatch.setenv("DF_HOME", str(df_home))
+        (df_home / "credentials.json").write_text(
+            json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
+        )
+        monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         persisted = []
 
         def fake_run(argv, **kwargs):
-            login_path.write_text('{"auth": "v2"}', encoding="utf-8")
+            # simulate df rotating the account record in the credentials store
+            (df_home / "credentials.json").write_text(
+                json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}),
+                encoding="utf-8",
+            )
             return subprocess.CompletedProcess(
                 argv, 0, stdout=_stream({"type": "text_delta", "delta": "ok"}), stderr=""
             )
@@ -493,8 +502,7 @@ class TestDfLoginRotation:
             lambda secret, value: persisted.append((secret, value)) or True,
         )
         assert agent_runner.run_agent_prompt("do it") == "ok"
-        assert persisted == [("CODEX_AUTH_JSON", '{"auth": "v2"}')]
-        assert login_path.exists(), "the borrowed login file stays in place for df"
+        assert persisted == [("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v2"}')]
 
     def test_a_run_without_logins_persists_nothing(self, monkeypatch):
         """Args:
