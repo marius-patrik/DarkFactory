@@ -12,6 +12,12 @@ domains, so a starter set is offered and expected to be edited.
 The caller files have to exist in the target repository because GitHub only runs workflow files
 present on the branch an event fires on; there is no way to drive a repository's pipeline entirely
 from elsewhere. Generating them is the closest thing to installing nothing.
+
+The governed knowledge layout is part of the convention this pipeline installs: a consumer
+repository that keeps notes at all adopts `.agents/notes` - runbooks and captures under
+`.agents/notes/`, and one ADR per decision under `.agents/notes/adr/`. Notes content is never
+written or overwritten by this installer; the layout convention is what is shared, mirroring
+DarkFactory's own canonical paths.
 """
 
 import json
@@ -469,6 +475,10 @@ def configuration_issue(repo: str, pipeline_repo: str, needs_submodules: bool = 
     return f"""{CONFIG_MARKER}
 
 The pipeline is installed and everything derivable has been generated. Four things need you.
+
+If this repository keeps notes - runbooks, captures, or a decision log - the canonical location is
+`.agents/notes/`, with one ADR per decision under `.agents/notes/adr/`, exactly as DarkFactory does
+it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 

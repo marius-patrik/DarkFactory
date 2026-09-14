@@ -65,6 +65,12 @@ on:
       ANTHROPIC_API_KEY_2: {required: false}
       CLAUDE_CODE_OAUTH_TOKEN_3: {required: false}
       ANTHROPIC_API_KEY_3: {required: false}
+      GEMINI_API_KEY: {required: false}
+      GOOGLE_API_KEY: {required: false}
+      GEMINI_API_KEY_2: {required: false}
+      GOOGLE_API_KEY_2: {required: false}
+      GEMINI_API_KEY_3: {required: false}
+      GOOGLE_API_KEY_3: {required: false}
       OPENAI_API_KEY: {required: false}
       OPENAI_API_KEY_2: {required: false}
       OPENAI_API_KEY_3: {required: false}
@@ -238,6 +244,12 @@ jobs:
             -e CLAUDE_CODE_OAUTH_TOKEN_2="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_2 }}" \
             -e ANTHROPIC_API_KEY_3="${{ secrets.ANTHROPIC_API_KEY_3 }}" \
             -e CLAUDE_CODE_OAUTH_TOKEN_3="${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_3 }}" \
+            -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            -e GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}" \
+            -e GEMINI_API_KEY_2="${{ secrets.GEMINI_API_KEY_2 }}" \
+            -e GOOGLE_API_KEY_2="${{ secrets.GOOGLE_API_KEY_2 }}" \
+            -e GEMINI_API_KEY_3="${{ secrets.GEMINI_API_KEY_3 }}" \
+            -e GOOGLE_API_KEY_3="${{ secrets.GOOGLE_API_KEY_3 }}" \
             -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             -e OPENAI_API_KEY_2="${{ secrets.OPENAI_API_KEY_2 }}" \
             -e OPENAI_API_KEY_3="${{ secrets.OPENAI_API_KEY_3 }}" \

@@ -103,7 +103,7 @@ def test_format_conventional_commit_maps_bug_to_fix():
 
 
 def test_generate_branch_name_excludes_issue_numbers():
-    """Rule 7 forbids issue numbers in branch names."""
+    """DF-RULE-007 (`.agents/rules/007-branches-and-pull-requests.md`) forbids issue numbers in branch names."""
     name = generate_branch_name("Plan: Add cell matrix buffer for #42")
     assert "42" not in name
     assert name == name.lower()
@@ -367,6 +367,17 @@ class TestPlanIssuesAreNotInterpreted:
         path.write_text(json.dumps(self._payload(["Plan"])), encoding="utf-8")
         module.dispatch_event(str(path), "issues")
         assert called == [], "a Plan issue must not be interpreted"
+
+    def test_a_pipeline_failure_issue_is_not_interpreted(self, monkeypatch, tmp_path):
+        """The pipeline reporting on itself is not a request, and answering it re-fires automations."""
+        called = []
+        module = agent_runner_module()
+        monkeypatch.setattr(module, "handle_interpret", lambda n, r: called.append(n))
+        monkeypatch.setattr(module, "run_gh", lambda *a, **k: "")
+        path = tmp_path / "event.json"
+        path.write_text(json.dumps(self._payload(["pipeline-failure"])), encoding="utf-8")
+        module.dispatch_event(str(path), "issues")
+        assert called == [], "a pipeline-failure issue must not be interpreted"
 
     def test_a_request_issue_is_still_interpreted(self, monkeypatch, tmp_path):
         """The ordinary path must be untouched."""

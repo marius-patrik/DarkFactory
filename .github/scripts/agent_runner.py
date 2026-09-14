@@ -1796,7 +1796,7 @@ def generate_branch_name(title: str) -> str:
 def format_repository(cwd: str) -> List[str]:
     """Runs every formatter whose toolchain is present in the repository.
 
-    Formatting is never a review topic (AGENTS.md rule 8), so the agent normalizes the tree itself
+    Formatting is never a review topic (`.agents/rules/008-formatting-and-linting.md`), so the agent normalizes the tree itself
     before committing. Each formatter is skipped silently when its manifest is absent, which keeps
     the pipeline green while the repository is still a scaffold.
 
@@ -2586,6 +2586,13 @@ def dispatch_event(event_path: str, event_name: str):
                 print(
                     f"Issue #{issue_num} is a Plan; interpretation belongs to its parent Request."
                 )
+                return
+
+            # A pipeline-failure issue is the pipeline reporting on itself. Interpreting it as a
+            # request answers a question nobody asked, and every comment it posts is another event
+            # that re-runs the automations whose failure it reports.
+            if "pipeline-failure" in lowered:
+                print(f"Issue #{issue_num} is a pipeline-failure report; not interpreting it.")
                 return
 
             if not lowered & {"request", "plan"}:

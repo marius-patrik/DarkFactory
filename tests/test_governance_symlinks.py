@@ -1,8 +1,9 @@
 """Tests that the agent-governance aliases are committed as symlinks, not as text files.
 
 `AGENTS.md` is the single canonical governance document. Every other entry point an agent might
-open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, and the mirrors under `.agents/` -
-is a symlink pointing back at it, so there is exactly one copy of the rules.
+open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, the mirrors under `.agents/`, and
+the root `notes` / `rules` aliases - is a symlink pointing back at the canonical source, so there
+is exactly one copy of the rules and the notes.
 
 Checking the working tree is not enough. Git stores a symlink as mode `120000` and a regular file
 as `100644`; when the mode is wrong the checkout is a small text file whose *content* is the target
@@ -22,13 +23,13 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 #: Governance alias -> the relative target it must point at.
 EXPECTED_LINKS: Dict[str, str] = {
-    "CLAUDE.md": "AGENTS.md",
     "CONTRIBUTING.md": "AGENTS.md",
     ".claude": ".agents",
     ".agents/AGENTS.md": "../AGENTS.md",
     ".agents/CLAUDE.md": "../AGENTS.md",
     ".agents/README.md": "../README.md",
-    ".agents/notes": "../notes",
+    "notes": ".agents/notes",
+    "rules": ".agents/rules",
 }
 
 #: Git's file mode for a symbolic link.
@@ -92,6 +93,16 @@ def test_agents_is_the_only_real_governance_document():
     assert os.path.getsize(os.path.join(REPO_ROOT, "AGENTS.md")) > 1000
 
 
+def test_claude_entry_is_a_regular_import():
+    """Claude Code discovers a root import; a symlink would need Windows developer mode."""
+    modes = _index_modes()
+    assert modes.get("CLAUDE.md") == "100644", "CLAUDE.md must be a regular file, not a link"
+    with open(os.path.join(REPO_ROOT, "CLAUDE.md"), encoding="utf-8") as handle:
+        assert (
+            handle.read().strip() == "@AGENTS.md"
+        ), "CLAUDE.md must import the AGENTS.md projection"
+
+
 def test_every_alias_resolves_to_readable_content():
     """A link that resolves to nothing is as broken as one committed as text."""
     for alias in EXPECTED_LINKS:
@@ -99,6 +110,11 @@ def test_every_alias_resolves_to_readable_content():
         assert os.path.exists(path), f"{alias} does not resolve"
         if os.path.isdir(path):
             assert os.listdir(path), f"{alias} resolves to an empty directory"
-        else:
-            with open(path, encoding="utf-8") as handle:
-                assert len(handle.read()) > 100, f"{alias} resolves to a stub"
+            continue
+        if not os.path.islink(path):
+            # A `core.symlinks=false` checkout materializes each symlink as a one-line text file
+            # whose content is the target path. There is nothing meaningful to read there; the
+            # index-mode tests already pin down what those aliases must be.
+            pytest.skip(f"{alias} is not a symlink in this working tree")
+        with open(path, encoding="utf-8") as handle:
+            assert len(handle.read()) > 100, f"{alias} resolves to a stub"

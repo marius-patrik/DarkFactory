@@ -1159,3 +1159,45 @@ class TestScopedBoardRouting:
         assert [c for c in resolve_calls if c.get("include_scoped") is False] == [
             {"include_scoped": False}
         ]
+
+
+class TestAddItemRace:
+    """Adding an item another run already added returns that item instead of failing."""
+
+    def test_already_exists_is_resolved_to_the_existing_item(self):
+        calls = []
+
+        class RacingGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                calls.append(query)
+                if "addProjectV2ItemById" in query:
+                    raise RuntimeError("GraphQL error: Content already exists in this project")
+                return {
+                    "node": {
+                        "projectItems": {
+                            "nodes": [
+                                {"id": "PVTI_other", "project": {"id": "PVT_other"}},
+                                {"id": "PVTI_mine", "project": {"id": "PVT_1"}},
+                            ]
+                        }
+                    }
+                }
+
+        client = RacingGraphQL(token="test-token")
+        assert client.add_item("PVT_1", "I_1") == "PVTI_mine"
+        assert len(calls) == 2
+
+    def test_other_add_errors_still_fail(self, monkeypatch):
+        failures = []
+        monkeypatch.setattr(project_automation, "_fail", lambda message: failures.append(message))
+
+        class BrokenGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                raise RuntimeError("GraphQL error: Resource not accessible by integration")
+
+        assert BrokenGraphQL(token="test-token").add_item("PVT_1", "I_1") is None
+        assert failures and "Resource not accessible" in failures[0]

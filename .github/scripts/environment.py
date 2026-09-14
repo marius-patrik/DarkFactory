@@ -181,8 +181,9 @@ FORMAT_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
 
 #: Where each ecosystem's API documentation is extracted from, and the tool that extracts it.
 #:
-#: `AGENTS.md` rule 2 requires documentation to be generated from source rather than mirrored by
-#: hand, so each ecosystem contributes its own inline convention to one site: rustdoc comments,
+#: `.agents/rules/002-inline-docs-and-generated-documentation.md` requires documentation to be
+#: generated from source rather than mirrored by hand, so each ecosystem contributes its own inline
+#: convention to one site: rustdoc comments,
 #: TSDoc, and Google-style docstrings are three inputs to the same build.
 DOC_SOURCES: Dict[str, str] = {
     "python": "docstrings",

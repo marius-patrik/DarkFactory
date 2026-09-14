@@ -12,6 +12,7 @@ from harnesses import MODEL, PROMPT, TIMEOUT, Harness, REGISTRY, configured_orde
 EXPECTED_HARNESSES = [
     "antigravity",
     "claude",
+    "gemini",
     "codex",
     "kimi",
     "grok",
@@ -219,6 +220,7 @@ def test_describe_chain_reports_emptiness_honestly(monkeypatch: pytest.MonkeyPat
 CREDENTIALS_BEFORE = {
     "antigravity": {"ANTIGRAVITY_REFRESH_TOKEN"},
     "claude": {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"},
+    "gemini": {"GEMINI_API_KEY", "GOOGLE_API_KEY"},
     "codex": {"OPENAI_API_KEY"},
     "kimi": {"MOONSHOT_API_KEY", "KIMI_API_KEY"},
     "grok": {"XAI_API_KEY", "GROK_API_KEY"},
@@ -426,6 +428,25 @@ class TestPoolsAreQuotaNotCapability:
     def test_claude_declares_one_model_because_it_has_one_pool(self):
         """Dropping opus to sonnet does not find quota; it answers worse on the pool that ran out."""
         assert list(REGISTRY["claude"].pools) == ["opus"]
+
+    def test_gemini_pools_are_tried_on_every_numbered_account(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        """Each Gemini model quota is tried for each available API key account.
+
+        Args:
+            monkeypatch: Pytest monkeypatch fixture.
+        """
+        monkeypatch.setenv("AGENT_HARNESS_CHAIN", "gemini")
+        monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
+        for name in REGISTRY["gemini"].auth.secret_names():
+            monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv("GEMINI_API_KEY", "one")
+        monkeypatch.setenv("GEMINI_API_KEY_2", "two")
+
+        assert [(a.model, a.account) for a in harnesses.resolve_attempts()] == [
+            (model, account) for model in REGISTRY["gemini"].pools for account in (1, 2)
+        ]
 
     def test_both_pools_are_tried_on_every_account(self, monkeypatch: pytest.MonkeyPatch):
         """Two pools and two accounts are four fresh quotas, and all four are reachable.
