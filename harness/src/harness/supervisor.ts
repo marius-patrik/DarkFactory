@@ -361,9 +361,10 @@ export class FailoverSupervisor {
 			this.reasons.push({ candidate, kind: failure.kind, message: errorMessage });
 			const observedAt = (this.options.now ?? Date.now)();
 			const observed = observeLimits(candidate, { status: response?.status ?? failure.status ?? 0, headers: response?.headers, body: errorMessage }, this.policy(candidate), observedAt)
-				.map((entry) => failure.resetAt === undefined ? entry : { ...entry, resetAt: failure.resetAt, source: "rule" as const });
-			const type = failure.kind === "rate_limited" ? "rate" : failure.kind === "quota_exhausted" ? (/monthly|billing cycle/iu.test(errorMessage) ? "monthly" : /resets? in|weekly|\b5h/iu.test(errorMessage) ? "window" : "daily") : failure.kind === "transient" ? "overload" : failure.kind === "auth" ? "auth" : undefined;
-			const limits = observed.length > 0 ? observed : type ? [defaultLimit(candidate, type, observedAt, failure.resetAt ?? (failure.kind === "rate_limited" ? observedAt + 60_000 : undefined), undefined, failure.pool)] : [];
+				.map((entry) => failure.resetAt === undefined || entry.resetAt >= failure.resetAt ? entry : { ...entry, resetAt: failure.resetAt, source: "rule" as const });
+			const dailyWording = /per[- ]?day|perday|\bdaily\b/iu.test(errorMessage);
+			const type = (failure.kind === "rate_limited" || failure.kind === "quota_exhausted") && dailyWording ? "daily" : failure.kind === "rate_limited" ? "rate" : failure.kind === "quota_exhausted" ? (/monthly|billing cycle/iu.test(errorMessage) ? "monthly" : /resets? in|weekly|\b5h/iu.test(errorMessage) ? "window" : "daily") : failure.kind === "transient" ? "overload" : failure.kind === "auth" ? "auth" : undefined;
+			const limits = observed.length > 0 ? observed : type ? [defaultLimit(candidate, type, observedAt, type === "daily" ? failure.resetAt : failure.resetAt ?? (failure.kind === "rate_limited" ? observedAt + 60_000 : undefined), undefined, failure.pool, this.policy(candidate))] : [];
 			await this.options.ledger.record(limits);
 			for (const entry of limits) this.emit({ type: "limit", entry });
 
