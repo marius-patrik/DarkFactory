@@ -86,8 +86,16 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          IS_PR: ${{ github.event.issue.pull_request != null }}
+          # `pull_request_review` events carry no `issue` object, so `IS_PR` derived from it
+          # is empty there and native approvals never reached the merge path. Reviews are
+          # detected by event name instead; `PR_NUMBER` resolves from either payload.
+          IS_PR: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' }}
           PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.review.body }}
           REVIEW_STATE: ${{ github.event.review.state }}
+          # Who may approve (owner decision 9c): the Request author or an
+          # OWNER/MEMBER/COLLABORATOR, never a bot. Replaces the hardcoded allowlist.
+          APPROVER_ASSOCIATION: ${{ github.event.comment.author_association || github.event.review.author_association }}
+          APPROVER_TYPE: ${{ github.event.comment.user.type || github.event.review.user.type }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login || github.event.pull_request.user.login }}

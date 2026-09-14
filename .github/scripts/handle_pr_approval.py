@@ -11,7 +11,6 @@ runtime rather than hardcoded.
 
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -21,17 +20,12 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
+from commands import is_allowed_approver, parse_pr_command  # noqa: E402
 from project_automation import (  # noqa: E402
     CLOSING_PATTERN,
     GitHubProjectClient,
     extract_bound_issues,
 )
-
-#: Comment bodies that count as an approval when posted by the maintainer.
-APPROVAL_COMMENT = re.compile(r"(?i)^\s*(?:/approve|approve|merge|/merge|lgtm)\s*$")
-
-#: Free-text approval detection inside a submitted review body.
-APPROVAL_REVIEW_TEXT = re.compile(r"(?i)\b(?:approve|approved|merge)\b")
 
 #: Seconds between merge-completion polls, and how many polls to attempt.
 MERGE_POLL_INTERVAL_SECONDS = 5
@@ -191,6 +185,12 @@ def reconcile_post_merge(
 def detect_approval() -> tuple[Optional[str], bool]:
     """Determines whether the current event is a maintainer approval.
 
+    Native ``pull_request_review`` events count by review state alone: an ``APPROVED``
+    state is an approval, anything else (including a body that merely mentions
+    approving) is not. ``issue_comment`` events count when the body is an approval
+    command in the shared :mod:`commands` grammar — so ``/df reject`` is a change
+    request, never a merge.
+
     Returns:
         Tuple of ``(pr_number, is_approved)``; ``pr_number`` is ``None`` when the event carries none.
     """
@@ -199,15 +199,14 @@ def detect_approval() -> tuple[Optional[str], bool]:
     if event_name == "pull_request_review":
         pr_number = os.environ.get("PR_NUMBER")
         state = os.environ.get("REVIEW_STATE", "").upper()
-        body = os.environ.get("REVIEW_BODY", "").strip()
-        return pr_number, state == "APPROVED" or bool(APPROVAL_REVIEW_TEXT.search(body))
+        return pr_number, state == "APPROVED"
 
     if event_name == "issue_comment":
         if os.environ.get("IS_PR") != "true":
             return None, False
         pr_number = os.environ.get("PR_NUMBER")
         body = os.environ.get("COMMENT_BODY", "").strip()
-        return pr_number, bool(APPROVAL_COMMENT.match(body))
+        return pr_number, parse_pr_command(body) == "approve"
 
     return None, False
 
@@ -215,12 +214,15 @@ def detect_approval() -> tuple[Optional[str], bool]:
 def handle_pr_approval() -> None:
     """Entry point: gates on the actor, then readies, approves, and auto-merges the PR."""
     actor = os.environ.get("GITHUB_ACTOR", "")
-    repo_owner = os.environ.get("REPO_OWNER", "")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
 
-    allowed_users = {u for u in {repo_owner.lower(), "marius-patrik"} if u}
-    if actor.lower() not in allowed_users:
-        print(f"Actor {actor} not in allowed list {sorted(allowed_users)}. Skipping.")
+    if not is_allowed_approver(
+        actor,
+        author_association=os.environ.get("APPROVER_ASSOCIATION", ""),
+        issue_author=os.environ.get("ISSUE_AUTHOR", ""),
+        user_type=os.environ.get("APPROVER_TYPE", ""),
+    ):
+        print(f"Actor {actor} is not the author nor OWNER/MEMBER/COLLABORATOR. Skipping.")
         sys.exit(0)
 
     pr_number, is_approved = detect_approval()
