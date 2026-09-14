@@ -79,6 +79,10 @@ def test_classifier_only_emits_known_labels():
         ("Refactor the palette resolver", "refactor"),
         ("Bump the pinned dependencies", "chore"),
         ("Add a new brand preset", "feat"),
+        ("Add retry when the upload fails", "feat"),
+        ("Improve error handling in the upload path", "feat"),
+        ("A regression in auth breaks login", "bug"),
+        ("The login form is broken", "bug"),
     ],
 )
 def test_classify_type(text: str, expected_type: str):
@@ -90,6 +94,32 @@ def test_classify_type(text: str, expected_type: str):
     """
     type_label, _area = classify_type_and_area(text)
     assert type_label == expected_type
+
+
+def test_classify_type_prefers_request_type_section():
+    """The issue-form ``Request Type`` declaration wins over prose keywords."""
+    body = (
+        "### Verbatim User Request\n\n"
+        "Add failover when the upload fails and improve error handling.\n\n"
+        "### Request Type\n\n"
+        "feat (new feature)\n\n"
+        "### Additional Context\n\n"
+        "A crash was mentioned only as prior art.\n"
+    )
+    type_label, _area = classify_type_and_area(body)
+    assert type_label == "feat"
+
+
+def test_classify_type_uses_declared_bug_from_request_type_section():
+    """A declared bug stays a bug even when the prose reads like a feature."""
+    body = (
+        "### Request Type\n\n"
+        "bug (bug fix)\n\n"
+        "### Verbatim User Request\n\n"
+        "Add clearer messages when retries succeed.\n"
+    )
+    type_label, _area = classify_type_and_area(body)
+    assert type_label == "bug"
 
 
 def test_format_conventional_commit_maps_bug_to_fix():
@@ -1197,3 +1227,42 @@ class TestAnswersAboutQuotaArePosted:
             if "is_quota_exhausted(" in line and "def is_quota_exhausted" not in line
         ]
         assert callers == ["if not is_quota_exhausted(detail):"], callers
+
+
+class TestPlanAlignmentStatus:
+    """Alignment success means ready for review, not finished."""
+
+    def test_alignment_success_leaves_entities_in_progress(self, monkeypatch):
+        """Only merge/close paths may set Done; a matching plan stays In Progress."""
+        module = agent_runner_module()
+        statuses = []
+
+        def fake_gh(args, repo=None):
+            joined = " ".join(str(a) for a in args)
+            if "pr diff" in joined:
+                return "diff --git a/x b/x\n"
+            if "issue view" in joined:
+                return json.dumps({"title": "Plan", "body": "Do the thing", "comments": []})
+            return ""
+
+        monkeypatch.setattr(module, "run_gh", fake_gh)
+        monkeypatch.setattr(
+            module, "run_agent_prompt", lambda *a, **k: "MATCHES_PLAN_YES\nLooks good."
+        )
+        monkeypatch.setattr(module, "is_quota_exhausted", lambda *_a, **_k: False)
+        monkeypatch.setattr(module, "clear_checkpoint", lambda **_k: None)
+        monkeypatch.setattr(
+            module,
+            "unblock_entity",
+            lambda number, repo, is_pr=False, target_status="In Progress", **_k: statuses.append(
+                (number, is_pr, target_status)
+            ),
+        )
+
+        module.handle_plan_alignment(10, 20, 30, "o/r")
+
+        assert statuses == [
+            (10, True, "In Progress"),
+            (20, False, "In Progress"),
+            (30, False, "In Progress"),
+        ]
