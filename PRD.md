@@ -183,8 +183,8 @@ CLI is running. Providers, models, and accounts are manifest declarations, never
 - The board invariant of section 5 is mandatory across every installed repository; the executable
   schema lives in the manifest, not duplicated here.
 - Documentation is generated from source: `PRD.md`, `.agents/rules/*.md`, and
-  `.agents/notes/adr/*.md` are read directly by the docs generator; no static mirrors are
-  committed (`docs/` stays empty of duplicated prose).
+  `.agents/notes/adr/*.md` are read directly by the docs generator into an ignored transient
+  staging directory; no static documentation tree is committed.
 - The documentation site's project selector lists every `installed_on` repository, with
   cross-project preview links falling back to the other project's main site.
 

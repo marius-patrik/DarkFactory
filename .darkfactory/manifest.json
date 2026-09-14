@@ -67,7 +67,7 @@
     },
     "documentation": {
       "python": {
-        "command": "properdocs build --strict",
+        "command": "bun run scripts/build-docs.ts",
         "source": "docstrings"
       }
     },

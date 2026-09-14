@@ -79,19 +79,32 @@ jobs:
             done
           fi
 
-      - name: Build documentation
-        # The engine is the caller's choice, exactly as in deploy-docs.yml.
+      - name: Resolve the documentation command
+        id: documentation
         run: |
-          COMMAND=$(PYTHONPATH=.github/scripts python - <<'PY'
+          PYTHONPATH=.github/scripts python - <<'PY' >> "$GITHUB_OUTPUT"
+          import shlex
           import environment
 
           plan = environment.configure(".").docs_plan()
-          for entry in plan.values():
-              if entry.get("command"):
-                  print(entry["command"])
-                  break
+          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
+          executable = shlex.split(command)[0] if command else ""
+          print("command<<DARKFACTORY_DOCS_COMMAND")
+          print(command)
+          print("DARKFACTORY_DOCS_COMMAND")
+          print(f"needs_bun={str(executable == 'bun').lower()}")
           PY
-          )
+
+      - name: Set up Bun
+        if: steps.documentation.outputs.needs_bun == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build documentation
+        # The engine is the caller's choice, exactly as in deploy-docs.yml.
+        env:
+          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
+        run: |
+          COMMAND="$DOCUMENTATION_COMMAND"
           [ -n "$COMMAND" ] || { echo "No documentation build configured."; exit 1; }
           echo "Preview build: $COMMAND"
           eval "$COMMAND"

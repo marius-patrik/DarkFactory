@@ -71,7 +71,7 @@ body:
       placeholder: |
         - [ ] Behaviour is reachable by toggling a documented setting, not by brand-specific code
         - [ ] Unit tests cover the new behaviour
-        - [ ] `properdocs build --strict` passes with zero warnings
+        - [ ] The environment-declared documentation build passes with zero warnings
     validations:
       required: false
 

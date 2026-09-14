@@ -30,6 +30,7 @@ src-tauri/target/
 
 # MkDocs
 site/
+.properdocs-source/
 
 # Agent pipeline
 .antigravity_checkpoint.json

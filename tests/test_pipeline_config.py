@@ -523,13 +523,25 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 
 
 def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
-    """ci.yml was fixed for this and deploy-docs.yml was not, so the merge built fine and the
-    deploy then failed with `mkdocs: command not found`. Both read the declared command now.
-    """
+    """Consumers retain the documentation command declared by their own environment."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
     assert "docs_plan" in content
+    assert "steps.documentation.outputs.command" in content
+    assert "if: steps.documentation.outputs.needs_bun == 'true'" in content
+    assert "run: bun run scripts/build-docs.ts" not in content
     assert "run: mkdocs build" not in content
     assert "run: properdocs build" not in content
+
+
+def test_the_deploy_workflow_keeps_the_paper_site_path():
+    """A Typst or LaTeX consumer publishes its PDFs through the shared workflow."""
+    content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
+    assert 'environment.configure(".")' in content
+    assert "env.has_domain('paper')" in content
+    assert "typst-community/setup-typst@v5" in content
+    assert "texlive-latex-recommended" in content
+    assert "find . -path ./site -prune -o -name '*.pdf'" in content
+    assert "> site/index.html" in content
 
 
 def test_the_deploy_workflow_is_callable():
@@ -659,9 +671,12 @@ def test_preview_deploys_and_tears_down_in_one_workflow():
 
 
 def test_preview_takes_the_build_command_from_the_caller():
-    """Consumers do not share a documentation engine; the preview must not assume one."""
+    """A preview uses the consumer's environment and installs Bun only when requested."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
     assert "docs_plan" in content
+    assert "steps.documentation.outputs.command" in content
+    assert "if: steps.documentation.outputs.needs_bun == 'true'" in content
+    assert "run: bun run scripts/build-docs.ts" not in content
     assert "run: properdocs build" not in content
     assert "run: mkdocs build" not in content
 
