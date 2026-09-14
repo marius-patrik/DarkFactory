@@ -138,6 +138,17 @@ describe("limits reset when the provider says, not on a short timer", () => {
 		expect(pacific.resetAt).toBe(Date.UTC(2026, 8, 15, 7, 0, 0));
 	});
 
+	test("a per-day quota body with a seconds retry hint holds until the daily roll-over", () => {
+		// Observed 2026-09-14: Gemini PerDay 429s carry "retryDelay": "4s"; df recorded resets 4 s out and kept re-sending.
+		const geminiDaily = '{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"4s"}]}}';
+		const google: LimitPolicyConfig = { observe: true, dailyReset: "pacific-midnight", bodyRules: [{ type: "daily", dimension: "requests", regex: "PerDay" }] };
+		const [entry] = observeLimits({ provider: "google", account: "key2", model: "gemini-3.6-flash" }, { status: 429, body: geminiDaily }, google, now);
+		expect(entry).toMatchObject({ type: "daily", source: "body", resetAt: Date.UTC(2026, 8, 15, 7, 0, 0) });
+		const perMinute = geminiDaily.replace("GenerateRequestsPerDayPerProjectPerModel-FreeTier", "GenerateRequestsPerMinutePerProjectPerModel-FreeTier");
+		const rate: LimitPolicyConfig = { observe: true, dailyReset: "pacific-midnight", bodyRules: [{ type: "rate", dimension: "requests", regex: "PerMinute" }] };
+		expect(observeLimits({ provider: "google", account: "key2", model: "gemini-3.6-flash" }, { status: 429, body: perMinute }, rate, now)[0]).toMatchObject({ type: "rate", resetAt: now + 4_000 });
+	});
+
 	test("a failed recovery probe backs off instead of retrying on the fallback timer", async () => {
 		const ledger = new LimitLedger(await home(), { fallbackTtlMs: 100 });
 		await ledger.record([{ ...candidate, type: "overload", observedAt: 0, resetAt: 1_000, source: "default", remaining: 0 }]);
