@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import patch, MagicMock
 from agent_runner import handle_interpret, handle_plan
@@ -48,6 +49,3 @@ def test_handle_plan_includes_footer(mock_prompt, mock_run_gh):
         "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan."
         in body
     )
-
-
-import json
