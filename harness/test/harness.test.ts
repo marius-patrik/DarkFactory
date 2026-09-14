@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { fauxAssistantMessage, fauxProvider, fauxToolCall, type Provider } from "@earendil-works/pi-ai";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxThinking, fauxToolCall, type Provider } from "@earendil-works/pi-ai";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 
@@ -47,6 +47,26 @@ describe("AgentSession harness", () => {
 		expect(step).toMatchObject({ errorMessage: "The object can not be cloned. authorization=[REDACTED]" });
 		expect(failover).toMatchObject({ errorMessage: "The object can not be cloned. authorization=[REDACTED]" });
 		supervisor.session.dispose();
+	});
+
+	test("model thinking never becomes answer text", async () => {
+		// E2E #267: the posted plan started with Gemini's thought summary before the real plan.
+		// A thought part must stream as a thinking event, never as answer text.
+		const { home, cwd } = await tempWorkspace();
+		const faux = fauxProvider({ provider: "think-faux", models: [{ id: "model" }] });
+		faux.setResponses([
+			fauxAssistantMessage([fauxThinking("Developing the Implementation Plan"), fauxText("the real plan")]),
+		]);
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({ chain: [{ provider: "think-faux", model: "model", account: "one" }], home, cwd, ...runtimeProviders(faux.provider), onEvent: (event) => events.push(event) });
+		try {
+			const final = await supervisor.prompt("plan it");
+			const answer = events.filter((event) => event.type === "text_delta").map((event) => event.delta).join("");
+			expect(answer).toBe("the real plan");
+			const thinking = events.filter((event) => event.type === "thinking_delta").map((event) => event.delta).join("");
+			expect(thinking).toContain("Developing the Implementation Plan");
+			expect(final.content.some((block) => block.type === "text" && block.text === "the real plan")).toBe(true);
+		} finally { supervisor.session.dispose(); }
 	});
 
 	test("an empty final answer fails over instead of ending the run", async () => {

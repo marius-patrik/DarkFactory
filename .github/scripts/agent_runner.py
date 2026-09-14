@@ -1628,6 +1628,11 @@ def find_df_config() -> Optional[str]:
     return None
 
 
+#: Set after the first ``setup_df_accounts`` call so repeated calls (``main`` then
+#: ``dispatch_event``) reuse the same ``DF_HOME`` instead of reconfiguring every account.
+_DF_SETUP_HOME: Optional[str] = None
+
+
 def setup_df_accounts() -> str:
     """Configures df's accounts from the environment before dispatch.
 
@@ -1638,10 +1643,16 @@ def setup_df_accounts() -> str:
     failure to reach ``df`` at all is a notice, not a fatal error, so local runs without the
     harness still dispatch.
 
+    Called exactly once per process; a second call returns the existing ``DF_HOME``.
+
     Returns:
         The ``DF_HOME`` directory the run uses.
     """
+    global _DF_SETUP_HOME
+    if _DF_SETUP_HOME is not None:
+        return _DF_SETUP_HOME
     df_home = tempfile.mkdtemp(prefix="df-home-")
+    _DF_SETUP_HOME = df_home
     os.environ["DF_HOME"] = df_home
     df_env = {**os.environ, "DF_HOME": df_home}
     try:
@@ -3368,12 +3379,6 @@ def dispatch_event(event_path: str, event_name: str):
         repo = repo_raw
     else:
         repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
-    # Every agent call in the pipeline goes through df: configure its accounts from the
-    # environment before anything dispatches.
-    try:
-        setup_df_accounts()
-    except Exception as exc:  # noqa: BLE001 - setup must never stop the dispatch itself
-        print(f"df setup notice: {exc}", file=sys.stderr)
 
     if event_name == "issues":
         action = payload.get("action")
