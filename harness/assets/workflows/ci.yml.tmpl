@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master", "darkfactory"]
+  pull_request:
+    branches: ["main", "master", "darkfactory"]
+  workflow_dispatch:
+
+jobs:
+  pipeline:
+    uses: {{pipeline_repo}}/.github/workflows/ci.yml@{{pipeline_ref}}
+    with:
+      pipeline-ref: "{{pipeline_ref}}"
+      pipeline-repo: "{{pipeline_repo}}"

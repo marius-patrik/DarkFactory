@@ -1,0 +1,8 @@
+node_modules/
+.bun-cache/
+.df-home-*/
+.verify-home-*/
+.fixture-home-*/
+.smoke-home-*/
+.smoke-*/
+dist/
