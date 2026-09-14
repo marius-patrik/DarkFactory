@@ -720,6 +720,26 @@ def is_quota_exhausted(error_message: str) -> bool:
     return False
 
 
+#: Prefix of the notice `run_agent_prompt` returns once every harness, account and model is out of
+#: quota. Callers test for this notice and never for quota wording: an agent's answer may discuss
+#: quotas and rate limits (a Request about quota handling always does), and reading that answer as
+#: exhaustion drops it without a comment - the run stays green and the issue waits forever.
+QUOTA_EXHAUSTED_NOTICE = "[DarkFactory Agent Execution Error]: Quota exhausted"
+
+
+def is_quota_exhaustion_notice(result: str) -> bool:
+    """Detects the runner's own out-of-quota notice in a `run_agent_prompt` result.
+
+    Args:
+        result: What `run_agent_prompt` returned - an agent's answer or an error notice.
+
+    Returns:
+        True only for the exhaustion notice, which has already checkpointed the work and marked
+        the issue Blocked, so there is nothing left for the caller to post.
+    """
+    return bool(result) and result.startswith(QUOTA_EXHAUSTED_NOTICE)
+
+
 #: Print-mode timeout wording from the harness CLIs. `agy --print-timeout 5m0s` exits 0 after its
 #: time budget with no (or partial) stdout, which the runner used to treat as a perfect answer and
 #: post as an empty shell comment. The wording is what separates that silent truncation from a real
@@ -1447,7 +1467,7 @@ def run_agent_prompt(
         raise RuntimeError(notice)
 
     err = (
-        f"[DarkFactory Agent Execution Error]: Quota exhausted across every harness and model "
+        f"{QUOTA_EXHAUSTED_NOTICE} across every harness and model "
         f"({', '.join(tried)}): {last_error_detail}"
     )
     print(err, file=sys.stderr)
@@ -1502,7 +1522,7 @@ def handle_interpret(issue_number: int, repo: str):
     }
     interpretation = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
 
-    if is_quota_exhausted(interpretation):
+    if is_quota_exhaustion_notice(interpretation):
         return
 
     if interpretation.startswith("[DarkFactory Agent Execution Error]"):
@@ -1650,7 +1670,7 @@ def handle_plan(request_number: int, plan_number: int, repo: str):
     }
     plan_body = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
 
-    if is_quota_exhausted(plan_body):
+    if is_quota_exhaustion_notice(plan_body):
         return
 
     if plan_body.startswith("[DarkFactory Agent Execution Error]"):
@@ -1689,7 +1709,7 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
         "Provide a direct, helpful, and concise response addressing the feedback and detailing next actions."
     )
     response = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
-    if is_quota_exhausted(response):
+    if is_quota_exhaustion_notice(response):
         return
 
     if response.startswith("[DarkFactory Agent Execution Error]"):
@@ -2062,7 +2082,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         impl_result = run_agent_prompt(
             implement_prompt, timeout="15m0s", checkpoint_context=checkpoint_ctx
         )
-        if is_quota_exhausted(impl_result):
+        if is_quota_exhaustion_notice(impl_result):
             return
 
         if impl_result.startswith("[DarkFactory Agent Execution Error]"):
@@ -2099,7 +2119,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         fix_result = run_agent_prompt(
             fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
         )
-        if is_quota_exhausted(fix_result):
+        if is_quota_exhaustion_notice(fix_result):
             return
         if not fix_result.startswith("[DarkFactory Agent Execution Error]"):
             format_repository(cwd)
@@ -2305,7 +2325,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
         }
         review_result = run_agent_prompt(review_prompt, checkpoint_context=checkpoint_ctx)
 
-        if is_quota_exhausted(review_result):
+        if is_quota_exhaustion_notice(review_result):
             return
 
         if review_result.startswith("[DarkFactory Agent Execution Error]"):
@@ -2362,7 +2382,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
                 deviation_text = run_agent_prompt(
                     deviation_prompt, checkpoint_context=checkpoint_ctx
                 )
-                if is_quota_exhausted(deviation_text):
+                if is_quota_exhaustion_notice(deviation_text):
                     return
                 if not deviation_text.startswith("[DarkFactory Agent Execution Error]"):
                     run_gh(
@@ -2395,7 +2415,7 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str):
             fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
         )
 
-        if is_quota_exhausted(fix_result):
+        if is_quota_exhaustion_notice(fix_result):
             return
 
         if fix_result.startswith("[DarkFactory Agent Execution Error]"):
@@ -2510,7 +2530,7 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
     }
     alignment_result = run_agent_prompt(alignment_prompt, checkpoint_context=checkpoint_ctx)
 
-    if is_quota_exhausted(alignment_result):
+    if is_quota_exhaustion_notice(alignment_result):
         return
 
     if alignment_result.startswith("[DarkFactory Agent Execution Error]"):
