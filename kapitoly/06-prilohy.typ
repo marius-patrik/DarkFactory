@@ -14,7 +14,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
   │   ├── lib/odborna-prace.typ       # Sazební šablona, recenzní značky a formátování GJKT
   │   ├── img/                        # Vektorová procesní schémata (SVG) a grafické podklady
   │   ├── fonts/                      # Metricky shodná patková písma (Caladea)
-  │   ├── bib/literatura.bib          # Bibliografická databáze citovaných zdrojů
+  │   ├── bib/references.bib          # Bibliografická databáze citovaných zdrojů
   │   ├── scripts/preview_server.py   # Lokální server pro živý náhled v Google Chrome
   │   ├── main.typ                    # Hlavní řídicí dokument sazby
   │   ├── metadata.typ                # Údaje o autorovi, vedoucím a anotace

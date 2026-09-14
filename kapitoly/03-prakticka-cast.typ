@@ -31,30 +31,50 @@ Systém DarkFactory je navržen jako modulární stavebnice složená z řídic�
 #draft[
 Celý systém je dekomponován do tří funkčních vrstev znázorněných na @fig-komponenty:
 
-1. *Vrstva deklarace a platformy GitHub*: Zahrnuje centrální konfigurační soubor `darkfactory.json` jako jediný zdroj pravdy pro daný repozitář, rozhraní GitHub Issues pro zadávání požadavků v doslovném znění a projektovou nástěnku GitHub Projects v2, která vizualizuje stav pipeline napříč všemi zapojenými repozitáři v sedmi stavech (od _Backlog_ po _Done_).
-2. *Výkonné jádro pipeline (`.github/scripts/`)*: Tvoří jej sada úzce spolupracujících skriptů v jazyce Python. Klíčovým prvkem je `agent_runner.py` jako hlavní stavový automat řídící životní cyklus požadavku. Doplňuje jej `harnesses.py` pro sjednocení rozhraní různých modelů (Antigravity, Claude Code, Codex, Kimi) a rotaci kvótových účtů, `project_automation.py` pro obousměrnou synchronizaci stavů přes GraphQL rozhraní a skripty `open_pr.py` spolu s `handle_pr_approval.py` zajišťující automatické vystavení pull requestu botem a následný bezpečný squash-merge po schválení člověkem.
-3. *Izolované běhové prostředí a nástroje*: Zahrnuje kontejnerový sandbox (`docker/Dockerfile.agent`), který hermeticky izoluje běh agenta od hostitelského CI runneru. Agent operuje v izolované větvi repozitáře a veškerý postup je průběžně atomicky serializován do kontrolních bodů (`.checkpoint.json`), což umožňuje bezeztrátové předání štafety mezi různými poskytovateli.
-
-Návrh vychází z jednoho základního požadavku: pracovní postupy i skripty musí být ve všech repozitářích totožné. Kdyby se kopírovaly, začaly by se rozcházet, a oprava chyby by se musela provádět tolikrát, kolik je repozitářů.
+1. *Vrstva deklarace a platformy GitHub*: Zahrnuje centrální konfigurační manifest `.github/darkfactory.json` jako jediný zdroj pravdy pro daný repozitář, rozhraní GitHub Issues pro zadávání požadavků v doslovném znění a projektovou nástěnku GitHub Projects v2, která vizualizuje stav pipeline napříč všemi zapojenými repozitáři v sedmi striktních stavech (od _Backlog_ po _Done_).
+2. *Výkonné jádro pipeline (`.github/scripts/`)*: Tvoří jej sada úzce spolupracujících skriptů v jazyce Python. Klíčovým prvkem je `agent_runner.py` jako hlavní stavový automat řídící životní cyklus požadavku a checkpointing. Doplňuje jej `harnesses.py` pro sjednocení rozhraní různých modelů (Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, Opencode) a víceúčtovou rotaci kvót, `project_automation.py` pro inkrementální synchronizaci stavů přes GraphQL, `repo_settings.py` pro deklarativní správu GitHub metadat a pravidel, `docs_hooks.py` pro virtualizaci dokumentace a skripty `open_pr.py` spolu s `handle_pr_approval.py` zajišťující automatické vystavení pull requestu botem a bezpečný squash-merge po lidském schválení.
+3. *Izolované běhové prostředí a nástroje*: Zahrnuje hermetický kontejnerový sandbox (`docker/Dockerfile.agent`), který izoluje běh agenta od hostitelského CI runneru. Z bezpečnostních důvodů agent běží pod neprivilegovaným uživatelem `USER agent` s UID 1001, což přesně odpovídá uživatelskému ID v hostitelském běhovém prostředí GitHub Actions; připojený pracovní adresář (bind mount) tak zůstává plně zapisovatelný bez nutnosti nebezpečného uvolňování souborových oprávnění či spouštění agenta s právy uživatele `root`.
 ]
 
 === Sdílení místo kopírování
 
 #draft[
-Pracovní postupy jsou proto _volané_, nikoli kopírované. Repozitář, který systém
-používá, obsahuje pouze krátký soubor odkazující na sdílený pracovní postup
-připnutý ke konkrétní verzi. Připnutí je podstatné: bez něj by se změna sdíleného
-postupu okamžitě promítla do všech repozitářů, včetně těch, které na ni nejsou
-připraveny.
+Pracovní postupy jsou v systému DarkFactory striktně _volané_ (`workflow_call`), nikoli kopírované. Klientský repozitář, který systém využívá (např. `OdbornaPrace-paper` či `ChessWithQuests`), obsahuje pouze tenký deklarativní soubor workflow odkazující na centrální sdílený postup v mateřském repozitáři DarkFactory, jak ukazuje @kod-volane-workflow.
 ]
 
-#alert[Strukturální stručnost a chybějící konkrétní příklad volání: Podkapitola 3.2.1 sestává z jediného odstavce o šesti řádcích. Doporučuji doplnit konkrétní ukázku zdrojového kódu volajícího workflow (např. direktivu `uses: marius-patrik/DarkFactory/.github/workflows/ci.yml@...`) pro názornou demonstraci principu a způsobu předávání parametrů.]
+#figure(
+  ```yaml
+  name: CI
+
+  on:
+    push:
+      branches: [main]
+    pull_request:
+    workflow_dispatch:
+
+  permissions:
+    contents: read
+
+  jobs:
+    ci:
+      uses: marius-patrik/DarkFactory/.github/workflows/ci.yml@7ecba1617f553e6a34ceb31177e1ac84d08c350f
+      with:
+        pipeline-repo: marius-patrik/DarkFactory
+        pipeline-ref: "7ecba1617f553e6a34ceb31177e1ac84d08c350f"
+      secrets: inherit
+  ```,
+  caption: [Ukázka volajícího workflow v klientském repozitáři odkazujícího na centrální sdílený postup v DarkFactory s připnutým kryptografickým SHA commitem.],
+) <kod-volane-workflow>
+
+#added[
+Kryptografické připnutí k SHA hashi commitu (např. `@7ecba161...`) má zásadní stabilitní význam: bez něj by se jakákoli neotestovaná úprava v centrálním repozitáři okamžitě promítla do všech spotřebitelských projektů současně. Díky připnutí je spotřeba workflow plně pod kontrolou správce klientského repozitáře a aktualizace probíhá bezpečným posunem commitu přes standardní pull request. Direktiva `secrets: inherit` současně zajišťuje bezpečné předání potřebných autentizačních tokenů bez nutnosti jejich explicitního vypisování.
+]
 
 === Jediný konfigurační soubor
 
 #confirmed[
-Vše, co se mezi repozitáři liší, je soustředěno do jediného souboru
-`darkfactory.json`. Ten popisuje totožnost repozitáře, jeho oblasti, nástěnky,
+Vše, co se mezi repozitáři liší, je soustředěno do jediného konfiguračního manifestu
+`.github/darkfactory.json`. Ten deklarativně popisuje totožnost repozitáře, jeho doménové oblasti, nástěnky,
 na které patří jeho úkoly, a případné odchylky od výchozího chování. Sdílený
 postup je díky tomu ve všech repozitářích shodný bajt po bajtu.
 ]
@@ -66,6 +86,10 @@ postup je díky tomu ve všech repozitářích shodný bajt po bajtu.
       "owner": "marius-patrik",
       "repo": "DarkFactory",
       "default_branch": "darkfactory"
+    },
+    "upstream": {
+      "repo": null,
+      "ref": null
     },
     "versioning": {
       "mode": "semver",
@@ -93,19 +117,17 @@ postup je díky tomu ve všech repozitářích shodný bajt po bajtu.
     }
   }
   ```,
-  caption: [Ukázka konfigurace v souboru `darkfactory.json` vymezující identitu repozitáře, doménové oblasti (`areas`) a propojení s projektovými nástěnkami.],
+  caption: [Ukázka konfigurace v manifestu `.github/darkfactory.json` vymezující identitu repozitáře, doménové oblasti (`areas`) a propojení s projektovými nástěnkami.],
 ) <kod-darkfactory-json>
 
 #draft[
-Jak je patrné z @kod-darkfactory-json, sekce `areas` slouží jako jednotný zdroj pravdy pro štítkování úkolů i směrování agentů podle shody klíčových slov. Sekce `board` pak zajišťuje agregaci do globální i repozitářové GitHub Projects nástěnky bez nutnosti manuální konfigurace v samotných workflow.
+Jak je patrné z @kod-darkfactory-json, sekce `areas` slouží jako jednotný zdroj pravdy pro štítkování úkolů i směrování agentů podle shody klíčových slov. Sekce `board` pak zajišťuje agregaci do globální i repozitářové GitHub Projects nástěnky bez nutnosti manuální konfigurace v samotných workflow. V klientských projektech sekce `upstream` navíc explicitně deklaruje vazbu na mateřský repozitář a připnutou revizi.
 ]
-
-#issue[Nepřesná cesta ke konfiguračnímu manifestu: Text v sekcích 3.2 a 3.2.2 hovoří o souboru `darkfactory.json` v kořeni repozitáře, avšak v reálné implementaci systému DarkFactory (i v Příloze B) je manifest striktně umístěn v konfiguračním adresáři `.github/darkfactory.json` (`MANIFEST_PATH = os.path.join(".github", "darkfactory.json")`). Je vhodné cestu v kapitole 3 sjednotit na `.github/darkfactory.json`.]
 
 == Životní cyklus požadavku
 
 #draft[
-Požadavek prochází systémem v pevně daných krocích, mezi nimiž jsou striktně vyžadovány schvalovací body pro udržení lidské kontroly nad rozsahem i kvalitou implementace.
+Životní cyklus požadavku v systému DarkFactory je formalizován do sedmi exekučních fází oddělených striktními schvalovacími branami pro udržení deterministického lidského dohledu nad rozsahem i kvalitou implementace.
 ]
 
 #figure(
@@ -113,19 +135,20 @@ Požadavek prochází systémem v pevně daných krocích, mezi nimiž jsou stri
   caption: [Stavový diagram životního cyklu požadavku v systému DarkFactory: přechody mezi stavy od založení issue přes schvalovací brány (Human Gates), tvorbu větve a PR až po automatické sloučení a uzavření úkolu.],
 ) <fig-zivotni-cyklus>
 
-#draft[
-Jednotlivé kroky životního cyklu znázorněné na @fig-zivotni-cyklus na sebe navazují v přesně daném pořadí:
+#added[
+Procesní topologie sestává z těchto na sebe navazujících kroků:
 
-+ *Zadání úkolu*: Uživatel založí požadavek (GitHub Issue) s doslovným zněním svého zadání.
-+ *Interpretace*: Systém požadavek analyzuje (`interpreted`) a předloží své porozumění rozsahu.
-+ *Human Gate 1 (Schválení záměru)*: Člověk potvrdí, že systém pochopil cíl správně.
-+ *Návrh plánu*: Po schválení vzniká podřízený úkol (`planned`) s technickým rozpisem kroků.
-+ *Human Gate 2 (Schválení plánu)*: Člověk schválí technický plán dříve, než dojde k zásahu do kódu.
-+ *Kódování a verifikace*: Systém vytvoří větev (`branch created`), agent napíše kód i testy a provede vlastní přezkoumání a ověření proti plánu.
-+ *Návrh změny (`PR open`)*: Bot otevře pull request a spustí integrační CI kontroly.
-+ *Human Gate 3 a dokončení*: Po schválení pull requestu člověkem systém provede automatické sloučení (`auto-merge`), smaže větev a uzavře rodičovský úkol.
-
-Doslovné znění zadání je uchováno záměrně. Zkušenost z vývoje ukázala, že právě parafráze bývá zdrojem nedorozumění: shrnutí požadavku se zdá výstižné tomu, kdo je psal, a přitom už neobsahuje to, na čem zadavateli záleželo.
+1. *Zadání úkolu*: Uživatel založí požadavek v GitHub Issues s doslovným zněním zadání. Doslovné znění je zachováno záměrně, aby nedocházelo k informačním ztrátám způsobeným unáhlenou parafrází.
+2. *Fáze 1: Interpretace (`interpreted`)*: Agent analyzuje zadání, extrahuje sémantické cíle, identifikuje dotčené komponenty a publikuje své porozumění požadavku v komentáři.
+3. *Human Gate 1 (Schválení záměru)*: Správce repozitáře ověří rozsah interpretace a schválí jej vložením komentáře `approve`. Bez tohoto potvrzení se plánování nespustí.
+4. *Fáze 2: Plánování (`planned`)*: Po schválení záměru agent vygeneruje podřízený úkol s detailním technickým plánem kroků, architektonickými dopady a seznamem souborů.
+5. *Human Gate 2 (Schválení plánu)*: Správce schválí technický plán (`approve`). Tím je garantováno, že agent nezasáhne do kódu s chybnou architektonickou představou.
+6. *Fáze 3: Implementace*: Runner vytvoří izolovanou větev (`branch created`), připraví hermetický kontejner a agent provede úpravy kódu a doplnění testů.
+7. *Fáze 4: Smyčka samooprav (Self-Review Loop)*: Agent autonomně spustí lokální testy, lintery a statické kontroly; při detekci chyb provede korekční iterace v rámci přiděleného rozpočtu kroků.
+8. *Fáze 5: Ověření shody s plánem (Plan Alignment)*: Systém automaticky porovná vygenerovaný `git diff` vůči schválenému plánu z Fáze 2 a ověří, zda nedošlo k nežádoucímu posunu rozsahu.
+9. *Fáze 6: Vystavení Pull Requestu (`PR open`)*: Bot `github-actions[bot]` vystaví pull request s klíčovým slovem `Closes #...` a spustí kompletní sadu integračních CI kontrol.
+10. *Human Review Gate*: Správce zkontroluje finální pull request a odešle nativní GitHub PR Review se stavem `Approve`.
+11. *Fáze 7: Auto-Merge a smíření stavu*: Po splnění povinných kontrol systém provede squash-merge do hlavní větve, smaže pracovní větev, posune stav položky na GitHub Projects na `Done` a uzavře původní issue.
 ]
 
 #critique[Pochybná autonomie a paralýza lidským faktorem: Název „DarkFactory“ evokuje bezobslužnou továrnu (angl. _lights-out manufacturing_), která běží plně autonomně bez lidského zásahu. Zavedení tří synchronních schvalovacích bran (Human Gate 1: záměr, Human Gate 2: plán, Human Gate 3: PR) však z procesu činí silně blokující workflow. Pokud musí člověk manuálně schválit každou fázi drobného úkolu, tráví agent 95 % životního cyklu čekáním na lidskou reakci. Skutečná průchodnost systému je pak determinována latencí člověka, nikoli rychlostí modelů. Práce navíc ignoruje fenomén únavy ze schvalování (_review fatigue_), kdy člověk po desítkách syntetických notifikací rezignuje na důkladnou kontrolu a začne plány i diffy schvalovat mechanicky bez čtení.]
@@ -193,7 +216,7 @@ celek.][Rozpoznávání prostředí nemůže předvídat veškeré specifické p
     }
   }
   ```,
-  caption: [Ukázka deklarativního přepsání parametrů sestavení v souboru `darkfactory.json`.],
+  caption: [Ukázka deklarativního přepsání parametrů sestavení v manifestu `.github/darkfactory.json`.],
 ) <kod-extra-args>
 
 Jak ukazuje @kod-extra-args, systém zkombinuje detekované prostředí s explicitní specifikací z manifestu. CI úloha tak automaticky zkonstruuje přesný příkaz `typst compile --font-path fonts main.typ out/main.pdf` bez nutnosti manuálního zásahu do sdíleného kódu akce.]
@@ -211,13 +234,28 @@ kvůli vyčerpané kvótě jediného poskytovatele bylo nejčastější příči
 Mechanika předávání štafety (_baton handover_) probíhá zcela pod kontrolou nadřazeného procesu (`agent_runner`). Jakmile volající skript zachytí vyčerpání limitů (např. HTTP kód 429 nebo chybový stav `RESOURCE_EXHAUSTED`), okamžitě zmrazí aktuální běh a provede atomickou serializaci stavu:
 + *Pracovní strom v Gitu*: Veškeré rozpracované úpravy v souborovém systému jsou uloženy do pracovní větve a vytvoří se kontrolní otisk (`git diff`).
 + *Serializace kontextu a štafety*: Log konverzace (předchozí kroky, volání nástrojů i vrácená pozorování) je spolu s metadaty úkolu zapsán do strukturovaného kontrolního bodu (_checkpoint_ ve formátu JSON).
-+ *Rotace po žebříčku kapacit*: Runner neponižuje model na slabší variantu v témže fondu (což by novou kapacitu nepřineslo), nýbrž rotuje účty, oddělené kvótové fondy (_quota pools_) nebo přepne na záložní CLI harness (např. Antigravity, Claude Code či Codex).
++ *Rotace po žebříčku kapacit*: Runner neponižuje model na slabší variantu v témže fondu (což by novou kapacitu nepřineslo), nýbrž rotuje účty, oddělené kvótové fondy (_quota pools_) nebo přepne na záložní CLI harness (např. Antigravity, Claude Code, Codex, Kimi, Grok, Cursor či Opencode).
 + *Rekonstituce a navázání*: Náhradní agent obdrží serializovanou štafetu, jeho adaptér přeloží historii kroků do nativního formátu nového poskytovatele a ověří stav repositáře. Běh plynule naváže v přesném bodě přerušení, aniž by došlo ke ztrátě dosavadní práce či kontextu.
 ]
 
 #critique[Kritická slepá skvrna v heterogenní štafetě: Představa, že odlišný model (např. Claude po Antigravity či Codexu) plynule naváže na rozpracovanou práci pouhým načtením serializovaného logu a git diff, zamlčuje zásadní problém nekompatibility vnímání kontextu (_prompt sensitivity_). Každá modelová rodina vyžaduje diametrálně odlišný formát nástrojů, odlišně reaguje na systémový prompt a jinak interpretuje mezivýsledky. V reálném provozu vede synteticky přeložená historie často k okamžité dezorientaci nového modelu, opakování již hotových kroků nebo halucinaci neexistujících nástrojů. Práce neobsahuje žádné empirické vyhodnocení úspěšnosti štafety: Kolik úloh po předání štafety skutečně úspěšně doběhlo a v kolika procentech případů vedla rotace k havárii a divergenci kontextu?]
 
-#note[Správa tajemství a rotace tokenů: Doporučuji v sekci 3.5 stručně specifikovat bezpečnostní model správy API klíčů při rotaci poskytovatelů — jakým způsobem jsou klíče (Anthropic, OpenAI, Google) bezpečně předávány do kontejneru a jak je zamezeno jejich nechtěnému zápisu do kontrolních bodů (`.checkpoint.json`) či veřejných CI logů.]
+#added[
+=== Bezpečnostní model správy tajemství a víceúrovňový kvótový žebříček
+
+Rotace mezi různými účty a poskytovateli klade vysoké nároky na bezpečnostní architekturu. V systému DarkFactory je správa pověření implementována v subsystémech `credentials.py` a `harnesses.py` podle následujících zásad:
+
+1. *Číslované účty a symetrická doprovodná tajemství*: Každý poskytovatel může disponovat více autorizovanými účty konfigurovanými jako GitHub Secrets s číselnou příponou (např. `ANTHROPIC_API_KEY`, `ANTHROPIC_API_KEY_2`, `GEMINI_API_KEY_2`). U nástrojů vyžadujících OAuth autorizaci jsou symetricky spravována i tzv. doprovodná tajemství (Companion Secrets — např. `CLAUDE_CLIENT_ID_2` a `CLAUDE_CLIENT_SECRET_2`). Přidání dalšího účtu tak vyžaduje pouze uložení tajného klíče v nastavení repozitáře bez zásahu do kódu pipeline.
+2. *Izolace prostředí a aliasování (`credential_env`)*: Jednotlivé CLI nástroje očekávají výhradně kanonické, nečíslované názvy proměnných prostředí. Runner proto před spuštěním agenta nejprve vyčistí procesní prostředí od všech potenciálních autentizačních proměnných (čímž brání nechtěnému úniku nebo křížové kontaminaci) a následně do prostředí injektuje klíč aktivního účtu pod jeho kanonickým názvem. CLI harness tak operuje zcela transparentně bez vědomí o proběhlé rotaci účtu.
+3. *Dynamické obnovování tokenů a persistence (`persist_rotated_token`)*: Poskytovatelé využívající OAuth s rotujícími obnovovacími tokeny při každém refreshnutí zneplatní předchozí token. Aby nedošlo ke zneplatnění přístupu v navazujících bězích, runner provede výměnu tokenu, aktualizuje běžící proces a nový obnovovací token automaticky zapíše zpět do GitHub Secrets repozitáře prostřednictvím GitHub API.
+4. *Striktní hygiena kontrolních bodů*: Soubor kontrolního bodu (`.agent_runner_checkpoint.json`) ukládá výhradně stav Gitu, metadata úkolu a historii konverzace; jakékoli autentizační klíče a tokeny jsou ze serializace striktně vyloučeny a veškeré výstupy v CI podléhají nativnímu maskování GitHub Actions.
+5. *Víceúrovňový kvótový žebříček*: Při vyčerpání limitů runner postupuje po striktně definovaných stupních:
+   - _Rotace účtu_: Přepnutí na další číslovaný účet v rámci téhož harnessu a modelu (nejlevnější čerstvá kapacita).
+   - _Rotace kvótového fondu_: Přepnutí na model účtovaný z odděleného fondu (např. v rámci Antigravity přepnutí mezi fondy Gemini a Claude).
+   - _Harness fallback_: Přepnutí na další CLI harness v řetězci `AGENT_HARNESS_CHAIN` (Antigravity $arrow$ Claude Code $arrow$ Codex $arrow$ Kimi $arrow$ Grok $arrow$ Cursor $arrow$ Opencode).
+   - _Exponenciální backoff s jitterem_: Zpoždění je vyhrazeno výhradně pro poslední pokus na posledním dostupném harnessu; čekání nastává teprve tehdy, když nezbývá žádná volná kapacita k rotaci.
+   - _Čistý checkpointing_: Při úplném vyčerpání všech fondů pipeline uloží stav, přesune položku na projektové nástěnce do stavu `Blocked` a skončí s návratovým kódem 0. Po obnovení kvót stačí vložit komentář `resume` a agent plynule naváže v přesném bodě přerušení.
+]
 
 == Ověřování změn
 
@@ -262,6 +300,28 @@ bez toho by úloha selhávající při každé změně zahltila seznam úkolů. 
 úloha znovu uspěje, úkol se sám uzavře.][Pokud kterákoli integrační či verifikační úloha v CI selže, systém automaticky vyvolá záchranné workflow `report-failure.yml`. To v klientském repozitáři založí nový incident ve formě GitHub Issue s detailním označením selhaného kroku a přímým odkazem na protokol neúspěšného běhu.
 
 Zásadním prvkem architektury je inteligentní deduplikace incidentů: opakované selhání téže úlohy (např. při následném nepovedeném commitu) nezakládá nový redundantní úkol, nýbrž identifikuje stávající otevřený incident a pouze k němu připojí nový diagnostický komentář s aktuálním logem. Tím se spolehlivě zamezuje zahlcení projektové nástěnky desítkami duplicitních hlášení. Jakmile je chyba v kódu odstraněna a navazující běh úspěšně projde všemi kontrolami, systém otevřený incident v GitHub Issues automaticky uzavře s odkazem na opravný commit.]
+
+== Projektová automatizace a správa nastavení jako kód
+
+#added[
+Pro spolehlivou koordinaci a auditovatelnost úkolů bez manuálního klikání v administračním rozhraní GitHubu obsahuje systém DarkFactory dva specializované subsystémy: `project_automation.py` a `repo_settings.py`.
+
+=== Synchronizace GitHub Projects v2 a řízení GraphQL limitů
+
+Veškerý stav životního cyklu požadavků je v reálném čase vizualizován na projektové nástěnce GitHub Projects v2 v sedmi vzájemně se vylučujících stavech (_Backlog_, _ToDo_, _In Progress_, _Blocked_, _Done_, _Superseded_, _Dropped_). Přímá interakce s rozhraním GitHub GraphQL API však přináší riziko vyčerpání sekundárních kvót a dočasného zablokování repozitáře (tzv. _abuse rate limits_). Subsystém `project_automation.py` tento problém řeší čtyřstupňovým ochranným mechanismem:
+- *Izolace tokenů (`GH_PROJECT_TOKEN` vs. `GH_TOKEN`)*: Zápisové mutace na projektové nástěnce vyžadují uživatelský přístupový token s rozsahem `project`, zatímco běžné operace nad repozitářem (čtení issues, tvorba větví, štítkování) běží pod standardním tokenem GitHub App. Toto striktní oddělení brání tomu, aby intenzivní činnost agenta v kódu spotřebovala kvótu pro projektovou koordinaci.
+- *Inkrementální rozpočet mutací (`PROJECT_MUTATION_BUDGET`)*: Skript omezuje maximální počet GraphQL mutací provedených během jediného integračního běhu (výchozí hodnota je 25 zápisů). Pokud je ve frontě více položek, zbývající aktualizace jsou bezpečně odloženy do dalšího naplánovaného cyklu.
+- *Idempotentní kontrola před zápisem (`load_existing_items`)*: Před odesláním mutace klient dotazem načte a nacachuje aktuální stav položek na nástěnce. Pokud již karta odpovídající stav má, zápisový dotaz se vůbec nevygeneruje.
+- *Detekce omezení a elegantní ústup (`RATE_LIMITED`)*: Pokud GitHub API vrátí signaturu throttlingu (např. `"secondary rate limit"` či `"was submitted too quickly"`), subsystém okamžitě pozastaví další mutace a ukončí běh s neutrálním návratovým kódem 0. Tím je zabráněno zbytečnému selhání CI workflow.
+
+=== Nastavení repozitáře a správa pravidel jako kód (`repo_settings.py`)
+
+Zatímco aplikační konfigurace se řídí manifestem `.github/darkfactory.json`, samotné metainformace repozitáře (popis, témata, štítky a jejich barvy, pravidla ochrany větví a konfigurace GitHub Pages) jsou programově synchronizovány skriptem `repo_settings.py` (tzv. _Settings as Code_). Pravidla pro ochranu hlavní větve — striktní zákaz přímého commitování, povinnost schválení pull requestu člověkem a zelený stav integračních kontrol — jsou definována přímo ve verzovaném skriptu. Repozitář je tak odolný vůči nechtěným změnám v grafickém rozhraní GitHubu a libovolný nový projekt zapojený do pipeline převezme identická pravidla řízení okamžitě po spuštění synchronizace.
+
+=== Virtualizace dokumentace (`docs_hooks.py`)
+
+Klíčovým prvkem údržby živé dokumentace v systému DarkFactory je subsystém `docs_hooks.py`. Namísto toho, aby se kanonické normativní soubory z kořene repozitáře (`README.md`, `ARCHITECTURE.md`, `AGENTS.md`, `ROADMAP.md`, `VISION.md`) manuálně kopírovaly do složky dokumentačního webu (což vede k nevyhnutelnému zanedbání a desynchronizaci verzí), jsou při sestavení dokumentačního portálu `properdocs` dynamicky připojeny formou virtuálních stránek přímo z kořenového umístění. Dokumentace na webu tak vždy reflektuje jediný autoritativní zdroj pravdy v repozitáři.
+]
 
 == Automaticky generovaná dokumentace
 
