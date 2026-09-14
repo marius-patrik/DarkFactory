@@ -992,7 +992,7 @@ class TestExhaustionRotatesBeforeItWaits:
 
         def fake_run(argv, **kwargs):
             calls.append(1)
-            raise subprocess.CalledProcessError(2, argv, stderr="syntax error in prompt file")
+            raise subprocess.CalledProcessError(1, argv, stderr="syntax error in prompt file")
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
         result = agent_runner.run_agent_prompt("do it")
