@@ -86,6 +86,7 @@ describe("config-driven provider registry", () => {
 		const entry = openAICompatible();
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry, entry] })).toThrow("duplicate provider");
 		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, dialect: "bespoke-api" }] })).toThrow("unsupported dialect");
+		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }] })).toThrow("regex is invalid");
 	});
 
 	test("local providers replace same-id defaults and append new entries", async () => {
@@ -110,6 +111,7 @@ describe("config-driven provider registry", () => {
 		expect(BUILTIN_PROVIDER_CONFIG.providers.flatMap((entry) => entry.importers ?? []).map((entry) => entry.id).sort()).toEqual(["antigravity", "claude", "codex", "grok", "kimi"]);
 		const codexOauth = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "openai-codex")?.auth.find((entry) => entry.kind === "oauth");
 		expect(codexOauth?.redirectUri).toBe("http://localhost:1455/auth/callback");
+		expect(BUILTIN_PROVIDER_CONFIG.providers.every((entry) => entry.limits?.observe === true)).toBe(true);
 	});
 
 	test("generated headers keep session values stable and group request ids", () => {

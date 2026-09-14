@@ -141,7 +141,8 @@ export interface HarnessRuntime {
 	store: FileCredentialStore;
 	validateCandidate(candidate: Candidate): Promise<void>;
 	bindCandidate(candidate: Candidate): Promise<void>;
-	takeResponse(): ResponseSnapshot | undefined;
+	takeResponses(): ResponseSnapshot[];
+	probeCandidate(candidate: Candidate): Promise<boolean>;
 }
 
 export async function validateCandidateCredentials(
@@ -196,7 +197,7 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 	}
 
 	let selected = options.candidate;
-	let response: ResponseSnapshot | undefined;
+	let responses: ResponseSnapshot[] = [];
 	let runtimeSessionId = "";
 	const generatedForSession = new Map<string, string>();
 	const authOptional = new Set(options.authOptionalProviders ?? []);
@@ -209,7 +210,7 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 			for (const [name, value] of Object.entries(extra)) event.headers[name] = value;
 		});
 		pi.on("after_provider_response", (event) => {
-			response = { status: event.status, headers: event.headers };
+			responses.push({ status: event.status, headers: event.headers });
 		});
 	};
 	const settingsManager = SettingsManager.inMemory({
@@ -238,7 +239,7 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 		if (!model) throw new Error(`Unknown model ${candidate.provider}/${candidate.model}`);
 		selected = candidate;
 		credentials.bind(candidate.provider, store.forAccount(candidate.provider, candidate.account));
-		response = undefined;
+		responses = [];
 	}
 
 	await bindCandidate(selected);
@@ -269,10 +270,29 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 			await bindCandidate(candidate);
 			await session.setModel(modelRuntime.getModel(candidate.provider, candidate.model)!);
 		},
-		takeResponse() {
-			const value = response;
-			response = undefined;
+		takeResponses() {
+			const value = responses;
+			responses = [];
 			return value;
+		},
+		async probeCandidate(candidate) {
+			const config = options.providerConfigs?.get(candidate.provider);
+			const probe = config?.limits?.probe;
+			if (!config || !probe?.enabled) return true;
+			const rawHeaders = { ...(config.staticHeaders ?? {}), ...(await store.requestHeaders(candidate.provider, candidate.account, config.slotHeaders)) };
+			const headers = Object.fromEntries(Object.entries(rawHeaders).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+			const credential = await store.forAccount(candidate.provider, candidate.account).read(candidate.provider);
+			const auth = config.auth[0];
+			let url = new URL(probe.path, `${config.baseUrl.replace(/\/$/u, "")}/`);
+			if (credential?.type === "api_key" && credential.key && auth?.kind === "api_key") {
+				if (auth.placement === "bearer") headers.authorization = `Bearer ${credential.key}`;
+				else if (auth.placement === "header") headers[auth.name ?? "x-api-key"] = credential.key;
+				else url.searchParams.set(auth.name ?? "key", credential.key);
+			} else if (credential?.type === "oauth" && credential.access) headers.authorization = `Bearer ${credential.access}`;
+			try {
+				const result = await fetch(url, { method: probe.method ?? "GET", headers, ...(probe.method === "POST" ? { body: "{}" } : {}) });
+				return result.ok;
+			} catch { return false; }
 		},
 	};
 }
