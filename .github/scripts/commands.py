@@ -73,10 +73,12 @@ HINT_MARKER = "<!-- darkfactory-command-hint -->"
 ALLOWED_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
 
 #: Footer for the interpretation comment on a Request issue.
-INTERPRETATION_FOOTER = "Reply with `/df approve` to continue or `/df reject <feedback>` to revise."
+INTERPRETATION_FOOTER = "Reply with `/df approve` to continue or `/df reject <feedback>` to revise"
 
 #: Footer for the implementation plan comment on a Plan issue.
-PLAN_FOOTER = "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan."
+PLAN_FOOTER = (
+    "Reply with `/df approve` to start implementation or `/df reject <feedback>` to revise the plan"
+)
 
 #: Instructions for resuming execution after quota exhaustion.
 RESUME_INSTRUCTIONS = (

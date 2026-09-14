@@ -1045,6 +1045,8 @@ def resolve_boards(
         return [PROJECT_NUMBER]
 
     by_title = {}
+    cli_exc = None
+    gql_exc = None
     try:
         args = ["project", "list", "--owner", owner, "--limit", "100", "--format", "json"]
         output = subprocess.run(
@@ -1056,14 +1058,48 @@ def resolve_boards(
         ).stdout
         by_title = {p["title"]: p for p in json.loads(output).get("projects", [])}
     except Exception as exc:
+        cli_exc = exc
         if is_rate_limited(exc):
             mark_rate_limited(f"Project board rate limit reached resolving boards for {owner}")
             return []
+
+    if not by_title:
         graphql = GitHubGraphQLClient()
-        by_title = graphql.resolve_projects(owner)
-        if not by_title:
-            _fail(f"could not list projects for {owner}: {_detail(exc)}")
-            return []
+        try:
+            query = """
+            query GetProjects($login: String!) {
+              user(login: $login) {
+                projectsV2(first: 20) {
+                  nodes {
+                    id
+                    number
+                    title
+                  }
+                }
+              }
+            }
+            """
+            data = graphql.execute(query, {"login": owner})
+            nodes = data.get("user", {}).get("projectsV2", {}).get("nodes", [])
+            by_title = {node["title"]: node for node in nodes if node and "title" in node}
+        except Exception as g_exc:
+            gql_exc = g_exc
+            if is_rate_limited(g_exc):
+                mark_rate_limited()
+            by_title = {}
+
+    if not by_title:
+        details = []
+        if cli_exc:
+            details.append(f"CLI error: {_detail(cli_exc)}")
+        else:
+            details.append("CLI returned no projects")
+        if gql_exc:
+            details.append(f"GraphQL error: {_detail(gql_exc)}")
+        else:
+            details.append("GraphQL returned no projects")
+        _fail(f"could not list projects for {owner}: {'; '.join(details)}")
+        return []
 
     numbers: List[int] = []
     for title in titles:
