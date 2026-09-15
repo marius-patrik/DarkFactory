@@ -15,6 +15,8 @@ describe("classifyFailure", () => {
 	test.each([
 		["quota text", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: "insufficient_quota" }) }, "quota_exhausted"],
 		["HTTP 402", { error: providerError("payment required", 402) }, "quota_exhausted"],
+		// Observed 2026-09-15 on Cerebras with a $0 balance: the SDK error carries only its message.
+		["402 named in an SDK message without a status", { error: new Error("402 status code (no body)") }, "quota_exhausted"],
 		["HTTP 429", { error: providerError("too many requests", 429) }, "rate_limited"],
 		["auth model error", { error: new ModelsError("oauth", "refresh failed") }, "auth"],
 		["HTTP auth", { error: providerError("request failed", 401) }, "auth"],
