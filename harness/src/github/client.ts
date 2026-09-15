@@ -2,24 +2,95 @@ import { GitHubError, redact, type GitHubErrorKind } from "./errors.ts";
 import { FetchTransport, type GitHubFetch } from "./transport.ts";
 import type { GraphQLConnection, RateLimitSnapshot } from "./types.ts";
 
-type TokenSource = string | (() => string | Promise<string>);
-type Sleep = (milliseconds: number) => Promise<void>;
+/**
+ * Token source used for authentication.
+ *
+ * Can be a static token string or a function returning a token or a promise of a token.
+ */
+export type TokenSource = string | (() => string | Promise<string>);
+/**
+ * Async sleep function used for retry back‑off.
+ *
+ * @param milliseconds - Number of milliseconds to sleep.
+ */
+export type Sleep = (milliseconds: number) => Promise<void>;
+/**
+ * Cached response entry.
+ *
+ * @property etag - Entity tag header value for cache validation.
+ * @property value - Parsed response payload.
+ */
 interface CacheEntry { etag: string; value: unknown; }
 
+/**
+ * Configuration options for {@link GitHubClient}.
+ *
+ * @property token - Token source; a static token string or a function returning a token.
+ * @property fetch - Optional fetch implementation; defaults to global fetch.
+ * @property apiBase - Base URL for the GitHub REST API; defaults to "https://api.github.com".
+ * @property graphqlUrl - URL for GraphQL endpoint; defaults to `${apiBase}/graphql`.
+ * @property timeoutMs - Optional request timeout in milliseconds.
+ * @property maxRetries - Maximum number of retry attempts for transient failures.
+ * @property random - Function returning a random number for jitter calculation.
+ * @property sleep - Async sleep function; defaults to Bun.sleep.
+ * @property now - Function returning current date; defaults to `new Date()`.
+ * @property userAgent - User‑Agent string sent with requests.
+ * @property onAuthenticationFailure - Callback invoked when authentication errors are encountered.
+ */
 export interface GitHubClientOptions {
+/**
+   * Token source used for authentication.
+   *
+   * Can be a static token string or a function returning a token or a promise of a token.
+   */
   token: TokenSource;
+/**
+   * Optional fetch implementation; defaults to global fetch.
+   */
   fetch?: GitHubFetch;
+/**
+   * Base URL for the GitHub REST API; defaults to "https://api.github.com".
+   */
   apiBase?: string;
+/**
+   * URL for GraphQL endpoint; defaults to `${apiBase}/graphql`.
+   */
   graphqlUrl?: string;
+/**
+   * Optional request timeout in milliseconds.
+   */
   timeoutMs?: number;
+/**
+   * Maximum number of retry attempts for transient failures.
+   */
   maxRetries?: number;
+/**
+   * Function returning a random number for jitter calculation.
+   */
   random?: () => number;
+/**
+   * Async sleep function; defaults to Bun.sleep.
+   */
   sleep?: Sleep;
+/**
+   * Function returning current date; defaults to `new Date()`.
+   */
   now?: () => Date;
+/**
+   * User‑Agent string sent with requests.
+   */
   userAgent?: string;
+/**
+   * Callback invoked when authentication errors are encountered.
+   */
   onAuthenticationFailure?: () => void;
 }
 
+/**
+ * Client for interacting with the GitHub REST and GraphQL APIs.
+ *
+ * Handles authentication, rate‑limit tracking, request caching, and automatic retries.
+ */
 export class GitHubClient {
   readonly #token: TokenSource;
   readonly #transport: FetchTransport;
@@ -32,8 +103,16 @@ export class GitHubClient {
   readonly #userAgent: string;
   readonly #onAuthenticationFailure?: () => void;
   readonly #cache = new Map<string, CacheEntry>();
+/**
+ * Current rate‑limit information for the GitHub API.
+ */
   rateLimit?: RateLimitSnapshot;
 
+  /**
+ * Creates a new {@link GitHubClient} instance.
+ *
+ * @param options - Configuration options for the client.
+ */
   constructor(options: GitHubClientOptions) {
     if (typeof options.token === "string" && options.token.length === 0) throw new Error("GitHub token is required");
     this.#token = options.token;
@@ -48,11 +127,27 @@ export class GitHubClient {
     this.#onAuthenticationFailure = options.onAuthenticationFailure;
   }
 
+/**
+ * Perform a REST API request.
+ *
+ * @param method - HTTP method (GET, POST, etc.).
+ * @param path - API endpoint path, relative to the base URL.
+ * @param body - Optional request body for methods like POST.
+ * @param accept - Accept header value; defaults to GitHub JSON media type.
+ * @returns Parsed response payload.
+ */
   async rest<T>(method: string, path: string, body?: unknown, accept = "application/vnd.github+json"): Promise<T> {
     const url = path.startsWith("http://") || path.startsWith("https://") ? path : `${this.#apiBase}${path.startsWith("/") ? "" : "/"}${path}`;
     return (await this.#request<T>(method.toUpperCase(), url, body, true, accept)).value;
   }
 
+/**
+ * Perform a GraphQL API request.
+ *
+ * @param query - GraphQL query string.
+ * @param variables - Variables object for the query.
+ * @returns Parsed GraphQL response data.
+ */
   async graphql<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
     const response = await this.#request<{ data?: T; errors?: Array<{ message?: string }> }>("POST", this.#graphqlUrl, { query, variables }, false);
     if (response.value.errors?.length || response.value.data === undefined) {
@@ -62,6 +157,13 @@ export class GitHubClient {
     return response.value.data;
   }
 
+/**
+ * Collect items from a paginated REST endpoint.
+ *
+ * @param path - Initial endpoint path.
+ * @param limit - Maximum number of items to collect.
+ * @returns Array of collected items.
+ */
   async collectRest<T>(path: string, limit = 10_000): Promise<T[]> {
     const items: T[] = [];
     const seen = new Set<string>();
@@ -78,6 +180,15 @@ export class GitHubClient {
     return items;
   }
 
+/**
+ * Collect items from a paginated GraphQL connection.
+ *
+ * @param query - GraphQL query that returns a connection.
+ * @param variables - Variables for the query.
+ * @param connection - Function extracting the connection from the response.
+ * @param limit - Maximum number of items to collect.
+ * @returns Array of collected nodes.
+ */
   async collectGraphQL<T>(query: string, variables: Record<string, unknown>, connection: (data: unknown) => GraphQLConnection<T>, limit = 10_000): Promise<T[]> {
     const nodes: T[] = [];
     const cursors = new Set<string>();
@@ -95,6 +206,11 @@ export class GitHubClient {
     return nodes;
   }
 
+/**
+ * Invalidate cached responses.
+ *
+ * @param pathPrefix - Optional prefix to match cache keys; if omitted, all cache entries are cleared.
+ */
   invalidate(pathPrefix = ""): void {
     for (const key of this.#cache.keys()) if (!pathPrefix || key.includes(pathPrefix)) this.#cache.delete(key);
   }
