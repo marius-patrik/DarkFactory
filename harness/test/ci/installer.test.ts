@@ -1,9 +1,18 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { installWorkflows, updateWorkflows, checkWorkflowsDrift } from "../../src/ci/installer.ts";
+import {
+	installWorkflows,
+	installSkills,
+	checkSkillsDrift,
+	discoverBundledSkills,
+	checkWorkflowsDrift,
+	updateWorkflows,
+} from "../../src/ci/installer.ts";
 import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
+
+const bundledSkillPath = (name: string) => join(import.meta.dir, "../../assets/skills", name, "SKILL.md");
 
 describe("Workflow installer & updater", () => {
 	it("installs templates into .github/workflows with managed headers", async () => {
@@ -126,6 +135,103 @@ describe("Workflow installer & updater", () => {
 
 			const updatedCi = await readFile(join(temp, ".github", "workflows", "ci.yml"), "utf-8");
 			expect(updatedCi).toContain("new-ref");
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("Bundled skills installer & drift", () => {
+	it("discovers bundled skills from harness/assets/skills", async () => {
+		const skills = await discoverBundledSkills();
+		expect(skills.length).toBeGreaterThanOrEqual(1);
+		expect(skills).toContain("darkfactory-auth");
+	});
+
+	it("installs bundled skills under .agents/skills", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-skill-install-"));
+		try {
+			const report = await installSkills(temp);
+			expect(report.installed).toContain("darkfactory-auth");
+
+			const destPath = join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md");
+			expect(await stat(destPath)).toBeTruthy();
+			expect(await readFile(destPath, "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
+	it("does not write skills during dry-run", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-skill-dryrun-"));
+		try {
+			const report = await installSkills(temp, { dryRun: true });
+			expect(report.installed.length).toBeGreaterThanOrEqual(1);
+			const destPath = join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md");
+			try {
+				await readFile(destPath);
+				throw new Error("skill file should not exist");
+			} catch {
+				// expected - dry-run should not write
+			}
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
+	it("skips modified skills without --force and overwrites with --force", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-skill-modified-"));
+		try {
+			// Seed a skill file that differs from the bundled source
+			await mkdir(join(temp, ".agents", "skills", "darkfactory-auth"), { recursive: true });
+			const modifiedContent = "# darkfactory-auth\n\nModified by user.\n";
+			await writeFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), modifiedContent);
+
+			const skipReport = await installSkills(temp);
+			expect(skipReport.skippedModified).toContain("darkfactory-auth");
+			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(modifiedContent);
+
+			const forceReport = await installSkills(temp, { force: true });
+			expect(forceReport.installed).toContain("darkfactory-auth");
+			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
+	it("reports skill drift", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-skill-drift-"));
+		try {
+			// Nothing installed -> missing
+			let drift = await checkSkillsDrift(temp);
+			expect(drift.some((d) => d.status === "missing")).toBe(true);
+
+			// Install via workflows (which now also install skills)
+			await installWorkflows(temp);
+
+			drift = await checkSkillsDrift(temp);
+			expect(drift.every((d) => d.status === "in_sync")).toBe(true);
+
+			// Modify the installed skill
+			await writeFile(
+				join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"),
+				"# modified\n"
+			);
+
+			drift = await checkSkillsDrift(temp);
+			expect(drift.some((d) => d.status === "modified")).toBe(true);
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
+
+	it("installSkills installs skills independently of workflows", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-ci-install-skills-"));
+		try {
+			const report = await installSkills(temp);
+			expect(report.installed).toContain("darkfactory-auth");
+			const destPath = join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md");
+			expect(await readFile(destPath, "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { loadCiConfig } from "./config.ts";
 import {
@@ -43,6 +43,35 @@ export interface WorkflowDriftItem {
 	details?: string;
 }
 
+export interface SkillDriftItem {
+	file: string;
+	status: "in_sync" | "outdated" | "modified" | "unmanaged" | "missing";
+	details?: string;
+}
+
+/** Discovers bundled skill directories under harness/assets/skills/. */
+export async function discoverBundledSkills(): Promise<string[]> {
+	const skillsDir = join(import.meta.dir as string, "../../assets/skills");
+	let entries;
+	try {
+		entries = await readdir(skillsDir, { withFileTypes: true });
+	} catch {
+		return [];
+	}
+
+	const names: string[] = [];
+	for (const entry of entries) {
+		if (!entry.isDirectory()) continue;
+		try {
+			await readFile(join(skillsDir, entry.name, "SKILL.md"), "utf-8");
+			names.push(entry.name);
+		} catch {
+			// directory without SKILL.md is ignored
+		}
+	}
+	return names.sort();
+}
+
 async function resolveTemplateContext(repoDir: string): Promise<TemplateContext> {
 	try {
 		const config = await loadCiConfig(repoDir);
@@ -83,7 +112,7 @@ export async function checkWorkflowsDrift(
 			results.push({
 				file: template,
 				status: "modified",
-				details: `Hash mismatch (user edited): header=${verification.expectedHash?.slice(0, 8)} computed=${verification.computedHash?.slice(0, 8)}`,
+				details: `Hash mismatch (user edits): header=${verification.expectedHash?.slice(0, 8)} computed=${verification.computedHash?.slice(0, 8)}`,
 			});
 			continue;
 		}
@@ -97,6 +126,86 @@ export async function checkWorkflowsDrift(
 	}
 
 	return results;
+}
+
+export async function checkSkillsDrift(repoDir = process.cwd()): Promise<SkillDriftItem[]> {
+	const skills = await discoverBundledSkills();
+	const results: SkillDriftItem[] = [];
+
+	for (const name of skills) {
+		const srcPath = join(import.meta.dir as string, "../../assets/skills", name, "SKILL.md");
+		const srcContent = await readFile(srcPath, "utf-8");
+		const destPath = join(repoDir, ".agents", "skills", name, "SKILL.md");
+		let existingContent: string;
+		try {
+			existingContent = await readFile(destPath, "utf-8");
+		} catch {
+			results.push({ file: name, status: "missing", details: "File does not exist" });
+			continue;
+		}
+
+		if (existingContent === srcContent) {
+			results.push({ file: name, status: "in_sync" });
+		} else {
+			results.push({
+				file: name,
+				status: "modified",
+				details: "Bundled skill differs from installed file",
+			});
+		}
+	}
+
+	return results;
+}
+
+export async function installSkills(
+	repoDir = process.cwd(),
+	options: InstallOptions = {},
+): Promise<InstallReport> {
+	const dryRun = options.dryRun === true;
+	const force = options.force === true;
+	const skills = await discoverBundledSkills();
+
+	const installed: string[] = [];
+	const skippedModified: string[] = [];
+	const skippedUnmanaged: string[] = [];
+
+	for (const name of skills) {
+		const srcPath = join(import.meta.dir as string, "../../assets/skills", name, "SKILL.md");
+		const srcContent = await readFile(srcPath, "utf-8");
+		const destPath = join(repoDir, ".agents", "skills", name, "SKILL.md");
+
+		let existingContent: string | null = null;
+		try {
+			existingContent = await readFile(destPath, "utf-8");
+		} catch {
+			// file does not exist
+		}
+
+		if (existingContent !== null && existingContent === srcContent) {
+			continue;
+		}
+
+		if (existingContent !== null && !force) {
+			// Skills are not marked with a managed-by header; any differing existing
+			// file is considered a user modification and skipped without --force.
+			skippedModified.push(name);
+			continue;
+		}
+
+		if (!dryRun) {
+			await mkdir(join(repoDir, ".agents", "skills", name), { recursive: true });
+			await writeFile(destPath, srcContent, "utf-8");
+		}
+		installed.push(name);
+	}
+
+	return {
+		installed,
+		skippedModified,
+		skippedUnmanaged,
+		dryRun,
+	};
 }
 
 export async function installWorkflows(
@@ -141,6 +250,8 @@ export async function installWorkflows(
 		}
 		installed.push(template);
 	}
+
+	const skillsReport = await installSkills(repoDir, { dryRun, force });
 
 	return {
 		installed,
