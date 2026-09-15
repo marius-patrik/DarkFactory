@@ -11,6 +11,6 @@ decision forecloses. "We chose X because it is better" is not an ADR.
 ADR-NNNN`. An ADR only binds the implementation once it is `Accepted`.
 
 Numbering is per-file and sequential within this directory. `0001` is taken; the next decision is
-`0006`. The deprecated `architecture_decisions.md` ledger that once held all records was split into
+`0017`.  The deprecated `architecture_decisions.md` ledger that once held all records was split into
 one file per decision on 2026-09-13 and removed; its four records became this directory's
 `0002`–`0005`.
