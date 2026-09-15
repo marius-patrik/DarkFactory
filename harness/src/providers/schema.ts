@@ -106,6 +106,7 @@ export interface LimitPolicyConfig {
 	defaults?: LimitDefaultConfig[];
 	declared?: DeclaredLimitConfig[];
 	bodyRules?: LimitBodyRuleConfig[];
+	recheckAfterMs?: number;
 	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
 	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
 	dailyReset?: "utc-midnight" | "pacific-midnight";

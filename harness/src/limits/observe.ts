@@ -1,4 +1,5 @@
 import type { Candidate } from "../failover.ts";
+import type { ConfiguredLimitType } from "../providers/schema.ts";
 import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema.ts";
 import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
 import { nextPacificMidnight } from "../quota.ts";
@@ -80,7 +81,8 @@ function text(value: unknown): string {
 	try { return JSON.stringify(value) ?? ""; } catch { return String(value ?? ""); }
 }
 
-function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig): LimitEntry | undefined {
+function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig, status?: number): LimitEntry | undefined {
+	if (rule.status !== undefined && rule.status !== status) return undefined;
 	let pattern: RegExp;
 	try { pattern = new RegExp(rule.regex, "iu"); } catch { return undefined; }
 	if (!pattern.test(body)) return undefined;
@@ -140,16 +142,25 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	const body = text(observation.body);
 	let ruled = false;
 	for (const rule of policy.bodyRules ?? []) {
-		const entry = bodyEntry(candidate, body, rule, now, policy);
+		const entry = bodyEntry(candidate, body, rule, now, policy, observation.status);
 		if (entry) { result.push(entry); ruled = true; }
 	}
 	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
 	// than a short default, or exhausted models look recovered minutes later and get retried.
-	if (!ruled && observation.body !== undefined && (observation.status === 429 || LIMIT_WORDING.test(body))) {
-		const hints = bodyHints(body, now);
-		const daily = DAILY_WORDING.test(body);
-		if (hints.resetAt !== undefined || daily) {
-			result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
+	const fallbackReset = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
+	if (!ruled && observation.status !== undefined) {
+		let type: ConfiguredLimitType | undefined;
+		if (observation.status === 402) type = "billing";
+		else if (observation.status === 401 || observation.status === 403) type = "access";
+		else if (observation.status === 404) type = "model";
+		if (type) {
+			result.push({ ...candidate, type, observedAt: now, resetAt: fallbackReset, source: "default", remaining: 0 });
+		} else if (observation.status === 429 && observation.body !== undefined) {
+			const hints = bodyHints(text(observation.body), now);
+			const daily = DAILY_WORDING.test(text(observation.body));
+			if (hints.resetAt !== undefined || daily) {
+				result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
+			}
 		}
 	}
 	return result;
