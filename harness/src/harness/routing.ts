@@ -1,5 +1,5 @@
-import type { Candidate } from "../failover.ts";
 import type { DfConfig } from "../config.ts";
+import type { Candidate } from "../failover.ts";
 
 export interface SensitiveDataInput {
 	prompt: string;
@@ -31,20 +31,27 @@ export interface RoutingDecision {
 	source: "explicit" | "graph" | "sensitive" | "hard" | "default";
 }
 
-const SECRET_OR_PII = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bAIza[0-9A-Za-z_-]{20,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}|\b\d{3}-\d{2}-\d{4}\b/iu;
+const SECRET_OR_PII =
+	/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bAIza[0-9A-Za-z_-]{20,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}|\b\d{3}-\d{2}-\d{4}\b/iu;
 
 function stringify(value: unknown): string {
 	if (typeof value === "string") return value;
-	try { return JSON.stringify(value) ?? ""; }
-	catch { return String(value); }
+	try {
+		return JSON.stringify(value) ?? "";
+	} catch {
+		return String(value);
+	}
 }
 
-const EMAIL = /\b[A-Z0-9._%+\[\]-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
+const EMAIL = /\b[A-Z0-9._%+[\]-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
 
 /** Commit metadata addresses (GitHub noreply, vendor noreply) identify tools and accounts, not people's inboxes. */
+/** Domains reserved for documentation and tests (RFC 2606, RFC 6761): no address there belongs to a person. */
+const RESERVED_EMAIL_DOMAIN = /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|net|org)|example|invalid|test|localhost)$/iu;
+
 function containsPersonalEmail(text: string): boolean {
 	for (const match of text.matchAll(EMAIL)) {
-		if (!/noreply/iu.test(match[0])) return true;
+		if (!/noreply/iu.test(match[0]) && !RESERVED_EMAIL_DOMAIN.test(match[0])) return true;
 	}
 	return false;
 }
@@ -72,7 +79,11 @@ export function parseCandidate(value: string): Candidate {
 }
 
 export function parseChain(value: string): Candidate[] {
-	const chain = value.split(",").map((entry) => entry.trim()).filter(Boolean).map(parseCandidate);
+	const chain = value
+		.split(",")
+		.map((entry) => entry.trim())
+		.filter(Boolean)
+		.map(parseCandidate);
 	if (chain.length === 0) throw new Error("Failover chain is empty");
 	return chain;
 }
