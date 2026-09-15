@@ -19,6 +19,12 @@ const onSchema = z.union([
 const rawSchema = z.object({ version: z.literal(1), checks: z.array(z.object({ name: z.string().min(1), required: z.boolean() })), nodes: z.array(nodeSchema), edges: z.array(z.object({ from: id, to: id, on: onSchema, loop: z.object({ kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework"]), safety_budget: z.number().int().positive().optional() }).optional() })) });
 const STRICT_GATE_COMMAND = "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$";
 
+/**
+ * Error thrown when a workflow graph fails validation.
+ * Contains a list of human‑readable issue strings describing each problem found.
+ *
+ * @property {string[]} issues - Human‑readable issue strings describing each validation problem.
+ */
 export class GraphValidationError extends Error {
 	constructor(public readonly issues: string[]) { super(`Invalid workflow graph:\n${issues.map((issue) => `- ${issue}`).join("\n")}`); this.name = "GraphValidationError"; }
 }
@@ -38,6 +44,13 @@ function pathBetween(edges: GraphEdge[], start: string, goal: string): string[] 
 	}
 }
 
+/**
+ * Validate an unknown object against the workflow graph schema.
+ *
+ * @param value - The raw value to validate, typically parsed JSON.
+ * @returns The validated {@link WorkflowGraph} instance.
+ * @throws {@link GraphValidationError} if validation fails, containing all detected issues.
+ */
 export function validateGraph(value: unknown): WorkflowGraph {
 	const parsed = rawSchema.safeParse(value);
 	if (!parsed.success) throw new GraphValidationError(parsed.error.issues.map((issue) => `${pathOf(issue.path)}: ${issue.message}`));

@@ -1,33 +1,68 @@
 import type { Candidate } from "../failover.ts";
 import type { DfConfig } from "../config.ts";
 
+/**
+ * Input shape for sensitive data detection hooks.
+ * Contains the raw prompt and any tool results that may contain secrets.
+ */
 export interface SensitiveDataInput {
+	/** The user prompt string. */
 	prompt: string;
+	/** Array of tool result objects (read‑only). */
 	toolResults: readonly unknown[];
 }
 
+/**
+ * Hook interface for detecting sensitive data in a prompt or tool results.
+ */
 export interface SensitiveDataHook {
+	/**
+ 	 * Determine whether the given input contains sensitive data.
+ 	 * @param input - The data to inspect.
+ 	 * @returns `true` if sensitive data is detected, otherwise `false`. May also return a Promise.
+ 	 */
 	detect(input: SensitiveDataInput): boolean | Promise<boolean>;
 }
 
+/**
+ * Partial routing information for a graph node.
+ */
 export interface GraphNodeRouting {
+	/** Optional explicit chain string (comma‑separated candidates). */
 	chain?: string;
+	/** Optional explicit model string (single candidate). */
 	model?: string;
+	/** If set to "hard", forces hard reasoning mode. */
 	reasoning?: "hard";
 }
 
+/**
+ * Input parameters for routing resolution.
+ */
 export interface RoutingInput {
+	/** Prompt text to be routed. */
 	prompt: string;
+	/** Optional tool results array. */
 	toolResults?: readonly unknown[];
+	/** Explicit chain provided by the caller (comma‑separated). */
 	explicitChain?: string;
+	/** Explicit model provided by the caller (single candidate). */
 	explicitModel?: string;
+	/** Optional hard reasoning flag. */
 	reasoning?: "hard";
+	/** Optional node routing overrides from the graph. */
 	node?: GraphNodeRouting;
+	/** Optional custom sensitive data detection hook. */
 	sensitiveHook?: SensitiveDataHook;
 }
 
+/**
+ * Result of routing resolution.
+ */
 export interface RoutingDecision {
+	/** Ordered list of candidates to be used for routing. */
 	chain: Candidate[];
+	/** Source of the routing decision. */
 	source: "explicit" | "graph" | "sensitive" | "hard" | "default";
 }
 
@@ -53,12 +88,22 @@ function sensitive(text: string): boolean {
 	return SECRET_OR_PII.test(text) || containsPersonalEmail(text);
 }
 
+/**
+ * Default implementation of {@link SensitiveDataHook} that detects secrets and personal email.
+ */
 export const defaultSensitiveDataHook: SensitiveDataHook = {
 	detect({ prompt, toolResults }) {
 		return sensitive(prompt) || toolResults.some((result) => sensitive(stringify(result)));
 	},
 };
 
+/**
+ * Parse a candidate string of the form `provider/model@account`.
+ *
+ * @param value - The candidate string to parse.
+ * @throws `Error` if the string is malformed.
+ * @returns An object containing `provider`, `model`, and `account`.
+ */
 export function parseCandidate(value: string): Candidate {
 	const slash = value.indexOf("/");
 	if (slash <= 0 || slash === value.length - 1) throw new Error(`Invalid chain candidate: ${value}`);
@@ -71,13 +116,27 @@ export function parseCandidate(value: string): Candidate {
 	return { provider, model, account };
 }
 
+/**
+ * Parse a comma‑separated list of candidate strings into an array of {@link Candidate}.
+ *
+ * @param value - The comma‑separated candidate list.
+ * @throws `Error` if the resulting chain is empty.
+ * @returns Array of parsed candidates.
+ */
 export function parseChain(value: string): Candidate[] {
 	const chain = value.split(",").map((entry) => entry.trim()).filter(Boolean).map(parseCandidate);
 	if (chain.length === 0) throw new Error("Failover chain is empty");
 	return chain;
 }
 
-/** Explicit caller/node intent is authoritative; policy only chooses when neither supplied a route. */
+/**
+ * Resolve routing based on explicit inputs, graph defaults, and sensitivity policies.
+ *
+ * @param config - Global DF configuration containing default chains.
+ * @param input - Routing input describing prompts, tool results, and overrides.
+ * @returns A {@link RoutingDecision} describing the chosen chain and its source.
+ * @throws `Error` if parsing of any chain fails.
+ */
 export async function resolveRouting(config: DfConfig, input: RoutingInput): Promise<RoutingDecision> {
 	const explicit = input.explicitChain ?? input.explicitModel;
 	if (explicit) return { chain: parseChain(explicit), source: "explicit" };
