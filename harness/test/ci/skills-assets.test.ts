@@ -8,7 +8,7 @@ const repoDir = join(harnessDir, "..");
 const skillsDir = join(harnessDir, "assets", "skills");
 
 /** Bundled skills; each chunk that adds one appends its name. */
-const EXPECTED_SKILLS = ["darkfactory-auth", "df-operator"];
+const EXPECTED_SKILLS = ["darkfactory-auth", "df-operator", "pipeline-operations"];
 
 /** Top-level df commands named in the CLI's usage() text. */
 function usageCommands(): Set<string> {
