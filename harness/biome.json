@@ -1,14 +1,36 @@
 {
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "darkfactory"
+  },
+  "files": {
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*"]
+  },
   "formatter": {
     "indentStyle": "tab",
-    "lineWidth": 120,
-    "quoteStyle": "double"
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
   },
   "linter": {
     "rules": {
       "recommended": true,
-      "noUnusedImports": "error",
-      "noUnusedVariables": "error"
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
+      }
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2
     }
   }
 }

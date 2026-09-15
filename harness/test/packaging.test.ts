@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { nativeAssetCandidates } from "../scripts/package-assets.ts";
 
 describe("standalone packaging", () => {
@@ -15,7 +16,9 @@ describe("standalone packaging", () => {
 	});
 
 	test("compiles the worker under the exact path used by pi at runtime", async () => {
-		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain("./src/utils/image-resize-worker.ts");
+		expect(await readFile(new URL("../scripts/build.ts", import.meta.url), "utf8")).toContain(
+			"./src/utils/image-resize-worker.ts",
+		);
 	});
 });
 
@@ -42,21 +45,28 @@ describe("packageAssets without a native pi-tui module", () => {
 });
 
 describe("biome configuration", () => {
-	test("biome config exists and has correct settings", async () => {
-		const content = await readFile(new URL("../biome.json", import.meta.url), "utf8");
-		const json = JSON.parse(content);
-		expect(json.formatter?.indentStyle).toBe("tab");
-		expect(json.formatter?.lineWidth).toBe(120);
-		expect(json.formatter?.quoteStyle).toBe("double");
-		expect(json.linter?.rules?.recommended).toBe(true);
-		expect(json.linter?.rules?.noUnusedImports).toBe("error");
-		expect(json.linter?.rules?.noUnusedVariables).toBe("error");
+	const harnessDir = join(import.meta.dir, "..");
+
+	test("uses tabs, width 120, double quotes and blocks unused imports and variables", async () => {
+		const json = JSON.parse(await readFile(new URL("../biome.json", import.meta.url), "utf8"));
+		expect(json.formatter).toMatchObject({ indentStyle: "tab", lineWidth: 120 });
+		expect(json.javascript.formatter.quoteStyle).toBe("double");
+		expect(json.linter.rules.recommended).toBe(true);
+		expect(json.linter.rules.correctness).toMatchObject({ noUnusedImports: "error", noUnusedVariables: "error" });
 	});
-	test("package.json contains formatting scripts", async () => {
-		const pkgContent = await readFile(new URL("../package.json", import.meta.url), "utf8");
-		const pkg = JSON.parse(pkgContent);
-		expect(pkg.scripts?.format).toBe("biome format --write .");
-		expect(pkg.scripts?.lint).toBe("biome lint .");
-		expect(pkg.scripts?.check).toBe("biome ci .");
+
+	test("the pinned Biome accepts the configuration and formats with it", () => {
+		const result = Bun.spawnSync([process.execPath, "x", "biome", "format", "--stdin-file-path=sample.ts"], {
+			cwd: harnessDir,
+			stdin: Buffer.from("const a = 'x'; export function f() { return a }\n"),
+		});
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout.toString()).toBe('const a = "x";\nexport function f() {\n\treturn a;\n}\n');
+	});
+
+	test("package.json pins Biome and exposes format, lint and check", async () => {
+		const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+		expect(pkg.devDependencies["@biomejs/biome"]).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(pkg.scripts).toMatchObject({ format: "biome format --write .", lint: "biome lint .", check: "biome ci ." });
 	});
 });
