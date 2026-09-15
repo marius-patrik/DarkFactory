@@ -302,6 +302,11 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 	if (status === undefined) {
 		if (/got status:\s*UNAVAILABLE/i.test(message) || /status.*UNAVAILABLE/i.test(message)) status = 503;
 		else if (/got status:\s*RESOURCE_EXHAUSTED/i.test(message)) status = 429;
+		else {
+			// SDK errors without a response object still name the status: "402 status code (no body)".
+			const named = /\b([45]\d\d) status code\b/.exec(message);
+			if (named) status = Number(named[1]);
+		}
 	}
 
 	const headers = input.response?.headers ?? raw.headers;

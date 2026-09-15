@@ -148,8 +148,11 @@ export class QuotaEngine {
 	async record(event: Omit<UsageEvent, "id">): Promise<void> {
 		const full: UsageEvent = { id: crypto.randomUUID(), ...event };
 		await withFileLock(this.lockPath, async () => {
-			const cutoff = Math.max(Date.now(), event.timestamp) - this.retentionMs();
-			const events = [...(await this.events()).filter((item) => item.timestamp > cutoff), full];
+			// Prune relative to the newest recorded time, never the wall clock: callers (and tests) may record past events.
+			const existing = await this.events();
+			const newest = existing.reduce((latest, item) => Math.max(latest, item.timestamp), event.timestamp);
+			const cutoff = newest - this.retentionMs();
+			const events = [...existing.filter((item) => item.timestamp > cutoff), full];
 			await mkdir(dirname(this.path), { recursive: true });
 			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
 			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
