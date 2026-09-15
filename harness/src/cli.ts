@@ -116,12 +116,18 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 export { parseCandidate } from "./harness/routing.ts";
 
 async function providersCommand(registry: ProviderRegistry): Promise<void> {
-	console.log("provider\toauth-login\tsubscription");
-	const providers = providerList(registry).sort((a, b) => a.id.localeCompare(b.id));
-	for (const provider of providers) {
-		console.log(`${provider.id}\t${provider.auth.oauth ? "yes" : "no"}\t${provider.auth.oauth?.isSubscription === true ? "yes" : "no"}`);
+	console.log("provider\toauth-login\tsubscription\tdata-collection");
+	// Use the raw provider configs to access free/data fields.
+	const entries = registry.entries.filter((e) => e.enabled !== false);
+	const sorted = entries.sort((a, b) => a.id.localeCompare(b.id));
+	for (const entry of sorted) {
+		const collection = entry.free?.data?.collection ?? entry.data?.collection ?? "unknown";
+		const hasOauth = entry.auth.some((a) => a.kind === "oauth");
+		const isSubscription = entry.auth.some((a) => a.kind === "oauth" && (a as any).isSubscription === true);
+		console.log(`${entry.id}\t${hasOauth ? "yes" : "no"}\t${isSubscription ? "yes" : "no"}\t${collection}`);
 	}
 }
+
 
 function providerList(registry: ProviderRegistry, additional: readonly Provider[] = []): Provider[] {
 	const byId = new Map([...registry.providers, ...additional].map((provider) => [provider.id, provider]));
@@ -373,7 +379,7 @@ async function routerModels(registry: ProviderRegistry, store: FileCredentialSto
 	const models = buildRouterCatalog({ providers: registry.entries, catalogs, accounts, overrides: config.router?.models });
 	if (fauxEnabled) models.push({
 		candidate: { provider: "faux", model: "echo", account: "test" }, contextWindow: 128_000,
-		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin",
+		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin", collection: "none" as const,
 	});
 	return models;
 }
@@ -438,6 +444,22 @@ async function routeCommand(registry: ProviderRegistry, store: FileCredentialSto
 
 const SECRET_KEY = /token|secret|password|api[-_]?key|authorization/iu;
 const BEARER_VALUE = /\bbearer\s+[A-Za-z0-9._~+/=-]+/iu;
+
+/**
+ * The candidates a run tries, in order: the router's chosen chain, then candidates it skipped only because a limit
+ * is active. They go last so the supervisor waits for their windows instead of the run ending with exit 1 when every
+ * chosen candidate turns out unusable (seen 2026-09-15: chosen models missing from live catalogs while the rate-limited
+ * ones would have recovered within a minute).
+ */
+export function executableChainFor(route: Pick<RouteResult, "chain" | "ranked">): Candidate[] {
+	const deferred = route.ranked
+		.filter((item) => item.status === "skipped" && (["limited", "capacity"].includes(item.reason) || item.reason.startsWith("quota exhausted until")))
+		.map((item) => item.candidate);
+	const key = (candidate: Candidate) => `${candidate.provider}/${candidate.model}@${candidate.account}`;
+	const seen = new Set(route.chain.map(key));
+	const tail = deferred.filter((candidate) => !seen.has(key(candidate)) && !!seen.add(key(candidate)));
+	return [...route.chain, ...tail];
+}
 
 export function redactToolInput(value: unknown, key?: string): unknown {
 	if (key && SECRET_KEY.test(key)) return "[REDACTED]";
@@ -561,7 +583,7 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 	const route = await resolveCliRoute(registry, store, config, args, prompt);
 	if (json) console.log(JSON.stringify({ type: "route", ...route }));
 	else printRoute(route, console.error);
-	const executableChain = route.chain.length > 0 ? route.chain : route.ranked.filter((item) => ["limited", "capacity"].includes(item.reason)).map((item) => item.candidate);
+	const executableChain = executableChainFor(route);
 	if (executableChain.length === 0) throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
 	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
 	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], executableChain, json, task, route.profile.kind);
@@ -654,6 +676,7 @@ async function graphCommand(args: string[]): Promise<void> {
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const graph = validateGraph(document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document);
 	if (subcommand === "validate") { console.log(`${graphPath}: valid workflow graph v${graph.version} (${graph.nodes.length} nodes, ${graph.edges.length} edges)`); return; }
+	if (subcommand === "dispatch") { const { dispatch } = await import("./graph/dispatch.ts"); await dispatch(args.slice(1)); return; }
 	if (subcommand !== "plan") throw new Error(`Unknown graph command: ${subcommand ?? ""}`);
 	const eventPath = option(args, "--event");
 	const statePath = option(args, "--state");

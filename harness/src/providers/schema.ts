@@ -88,6 +88,7 @@ export interface FreeTierConfig {
 	notes?: string;
 	sourceUrl?: string;
 	checkedAt?: string;
+	data?: DataConfig;
 }
 export interface LimitBodyRuleConfig {
 	type: ConfiguredLimitType;
@@ -143,7 +144,21 @@ export interface FailureRuleConfig {
 	reset?: ResetSourceConfig[];
 	pool?: string;
 }
-export interface ImporterConfig {
+/** Optional data‑collection configuration for a provider. */
+export interface DataConfig {
+    /** How the provider's data is used. */
+    collection: "none" | "logging" | "training" | "unknown";
+    /** Optional retention period in days. */
+    retentionDays?: number;
+    /** Source description for the data. */
+    source: string;
+    /** Optional HTTPS URL to the source of the data. */
+    sourceUrl?: string;
+    /** When the data source was last checked (ISO date). */
+    checkedAt: string;
+    /** Optional free‑form note. */
+    note?: string;
+}export interface ImporterConfig {
 	id: string;
 	parser: "claude-code" | "codex" | "grok-cli" | "antigravity-keyring" | "kimi-code";
 	path?: string;
@@ -185,6 +200,8 @@ export interface ProviderConfig {
 	models: { static: StaticModelConfig[]; list?: ModelListConfig };
 	quota?: { rules: FailureRuleConfig[] };
 	limits?: LimitPolicyConfig;
+	/** Optional data‑collection configuration for the provider. */
+	data?: DataConfig;
 	capabilities: { tools: boolean; reasoning: boolean; images: boolean };
 	importers?: ImporterConfig[];
 	request?: { path?: string; projectSlot?: string };
@@ -262,6 +279,21 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		if (free.card !== undefined && typeof free.card !== "boolean") throw new Error(`Provider ${id} free.card must be boolean`);
 		if (free.checkedAt !== undefined && (typeof free.checkedAt !== "string" || Number.isNaN(Date.parse(free.checkedAt)))) throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
 	}
+	if (entry.free !== undefined && (entry.free as Record<string, unknown>).data !== undefined) {
+		const free = object(entry.free as unknown, `provider ${id} free`);
+		const freeData = object(free.data as unknown, `provider ${id} free.data`);
+		const collection = text(freeData.collection, `provider ${id} free.data.collection`);
+		if (!["none", "logging", "training", "unknown"].includes(collection)) throw new Error(`provider ${id} free.data.collection must be one of none, logging, training, unknown`);
+		if (freeData.retentionDays !== undefined) {
+			if (typeof freeData.retentionDays !== "number" || !Number.isInteger(freeData.retentionDays) || freeData.retentionDays < 0) throw new Error(`provider ${id} free.data.retentionDays must be a non-negative integer`);
+		}
+		text(freeData.source, `provider ${id} free.data.source`);
+		if (freeData.sourceUrl !== undefined) {
+			if (typeof freeData.sourceUrl !== "string" || !/^https:\/\//u.test(freeData.sourceUrl)) throw new Error(`provider ${id} free.data.sourceUrl must be an https URL`);
+		}
+		if (typeof freeData.checkedAt !== "string" || Number.isNaN(Date.parse(freeData.checkedAt))) throw new Error(`provider ${id} free.data.checkedAt must be an ISO date`);
+		if (freeData.note !== undefined && typeof freeData.note !== "string") throw new Error(`provider ${id} free.data.note must be a string`);
+	}
 	if (entry.login !== undefined) {
 		const login = object(entry.login, `provider ${id} login`);
 		if (login.hydration !== undefined) {
@@ -336,6 +368,20 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		if (limits.recheckAfterMs !== undefined && (typeof limits.recheckAfterMs !== "number" || limits.recheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.recheckAfterMs must be positive`);
 		if (limits.accessRecheckAfterMs !== undefined && (typeof limits.accessRecheckAfterMs !== "number" || limits.accessRecheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.accessRecheckAfterMs must be positive`);
 		if (limits.modelRecheckAfterMs !== undefined && (typeof limits.modelRecheckAfterMs !== "number" || limits.modelRecheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.modelRecheckAfterMs must be positive`);
+	}
+	if (entry.data !== undefined) {
+		const data = object(entry.data, `provider ${id} data`);
+		const collection = text(data.collection, `provider ${id} data.collection`);
+		if (!["none", "logging", "training", "unknown"].includes(collection)) throw new Error(`provider ${id} data.collection must be one of none, logging, training, unknown`);
+		if (data.retentionDays !== undefined) {
+			if (typeof data.retentionDays !== "number" || !Number.isInteger(data.retentionDays) || data.retentionDays < 0) throw new Error(`provider ${id} data.retentionDays must be a non-negative integer`);
+		}
+		text(data.source, `provider ${id} data.source`);
+		if (data.sourceUrl !== undefined) {
+			if (typeof data.sourceUrl !== "string" || !/^https:\/\//u.test(data.sourceUrl)) throw new Error(`provider ${id} data.sourceUrl must be an https URL`);
+		}
+		if (typeof data.checkedAt !== "string" || Number.isNaN(Date.parse(data.checkedAt))) throw new Error(`provider ${id} data.checkedAt must be an ISO date`);
+		if (data.note !== undefined && typeof data.note !== "string") throw new Error(`provider ${id} data.note must be a string`);
 	}
 	object(entry.capabilities, `provider ${id} capabilities`);
 	return entry as unknown as ProviderConfig;

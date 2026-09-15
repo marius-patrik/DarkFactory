@@ -119,6 +119,8 @@ describe("df run", () => {
 			defaultChain: "faux/echo@default-policy",
 			hardReasoningChain: "faux/echo@hard-policy",
 			sensitiveChain: "faux/echo@sensitive-policy",
+			// Faux accounts declare no data-collection policy (unknown), which sensitive routing refuses by default.
+			router: { policies: [], dataCollection: { sensitive: ["none", "unknown"] } },
 		};
 		const normal = await run("hello", { args: [], config });
 		const hard = await run("prove it", { args: ["--reasoning", "hard"], config });
@@ -142,6 +144,7 @@ describe("df run", () => {
 	});
 
 	test("returns 3 when every candidate has an auth failure", async () => {
+
 		const result = await run("__df_auth__");
 		expect(result.exitCode).toBe(3);
 		expect(result.stderr).toContain("authentication");
@@ -149,6 +152,7 @@ describe("df run", () => {
 	});
 
 	test("preflight auth exhaustion exits 3 without starting a session and reports every reason", async () => {
+
 		const result = await run("hello", { args: ["--chain", "google/gemini-3.8-flash@work,openai-codex/gpt-5.6-luna@work"] });
 		expect(result.exitCode).toBe(3);
 		const events = result.stdout.trim().split(/\r?\n/u).map((line) => JSON.parse(line) as { type: string; reasons?: Array<{ kind: string }> });
@@ -158,6 +162,7 @@ describe("df run", () => {
 	});
 
 	test("preflight cooldown exhaustion exits 2 and includes the persisted reason", async () => {
+
 		const result = await run("hello", { config: { maxWaitMs: 1 }, setup: async (home) => {
 			await writeFile(join(home, "quota.json"), JSON.stringify({ version: 1, entries: {
 				"faux/echo@test": { provider: "faux", model: "echo", account: "test", kind: "quota_exhausted", markedAt: Date.now(), resetAt: Date.now() + 60_000 },
@@ -171,9 +176,60 @@ describe("df run", () => {
 	});
 
 	test("faux quota failures never create or modify the persistent quota store", async () => {
+
 		const marker = JSON.stringify({ version: 1, entries: { preserved: { provider: "real", model: "model", account: "default", kind: "auth", markedAt: 1 } } });
 		const result = await run("__df_quota__", { setup: (home) => writeFile(join(home, "quota.json"), marker, "utf8") });
 		expect(result.exitCode).toBe(2);
 		expect(await readFile(join(result.home, "quota.json"), "utf8")).toBe(marker);
 	});
+
+	test('df providers shows data-collection column', async () => {
+		const home = await mkdtemp(join(process.cwd(), '.cli-test-'));
+		temporary.push(home);
+		const providersConfig = {
+			version: 1,
+			providers: [
+				{
+					id: 'prov1', name: 'Provider One', dialect: 'openai-completions' as const,
+					baseUrl: 'https://example.com',
+					auth: [{ kind: 'api_key' as const, slot: 'api_key', placement: 'header', name: 'x-api-key' }],
+					requiredCredentialSlots: ['api_key'],
+					models: { static: [{ id: 'model1', name: 'Model 1' }] },
+					capabilities: { tools: false, reasoning: false, images: false },
+					free: { kind: 'permanent', keyUrl: 'https://example.com/key', checkedAt: new Date().toISOString(), data: { collection: 'logging', source: 'test', sourceUrl: 'https://example.com', checkedAt: new Date().toISOString() } },
+				},
+				{
+					id: 'prov2', name: 'Provider Two', dialect: 'openai-completions' as const,
+					baseUrl: 'https://example.org',
+					auth: [{ kind: 'api_key' as const, slot: 'api_key', placement: 'header', name: 'x-api-key' }],
+					requiredCredentialSlots: ['api_key'],
+					models: { static: [{ id: 'model2', name: 'Model 2' }] },
+					capabilities: { tools: false, reasoning: false, images: false },
+					data: { collection: 'training', source: 'test2', sourceUrl: 'https://example.org', checkedAt: new Date().toISOString() },
+				},
+				{
+					id: 'prov3', name: 'Provider Three', dialect: 'openai-completions' as const,
+					baseUrl: 'https://example.net',
+					auth: [{ kind: 'api_key' as const, slot: 'api_key', placement: 'header', name: 'x-api-key' }],
+					requiredCredentialSlots: ['api_key'],
+					models: { static: [{ id: 'model3', name: 'Model 3' }] },
+					capabilities: { tools: false, reasoning: false, images: false },
+				},
+			],
+		};
+		await writeFile(join(home, 'providers.json'), JSON.stringify(providersConfig), 'utf8');
+		const child = Bun.spawn([process.execPath, 'run', 'src/cli.ts', 'providers'], { cwd: process.cwd(), env: { DF_HOME: home, PATH: process.env.PATH ?? '' }, stdout: 'pipe', stderr: 'pipe' });
+		const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
+		expect(exitCode).toBe(0);
+		const lines = stdout.trim().split(/\r?\n/);
+		expect(lines[0]).toContain('data-collection');
+		const rows = lines.slice(1).map(l => l.split('\t'));
+		const prov1 = rows.find(r => r[0] === 'prov1');
+		const prov2 = rows.find(r => r[0] === 'prov2');
+		const prov3 = rows.find(r => r[0] === 'prov3');
+		expect(prov1?.[3]).toBe('logging');
+		expect(prov2?.[3]).toBe('training');
+		expect(prov3?.[3]).toBe('unknown');
+	});
 });
+

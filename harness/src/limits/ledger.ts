@@ -1,7 +1,8 @@
-import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Candidate } from "../failover.ts";
 import { withFileLock } from "../storage/file-lock.ts";
+import { replaceFile } from "../storage/replace-file.ts";
 import { limitKey, type LimitEntry } from "./types.ts";
 
 interface LedgerFile { version: 1; entries: Record<string, LimitEntry> }
@@ -78,7 +79,7 @@ export class LimitLedger {
 	private async write(file: LedgerFile): Promise<void> {
 		await mkdir(dirname(this.path), { recursive: true });
 		const temporary = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
-		try { await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" }); await rename(temporary, this.path); }
+		try { await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" }); await replaceFile(temporary, this.path); }
 		catch (error) { await Bun.file(temporary).delete().catch(() => undefined); throw error; }
 	}
 
