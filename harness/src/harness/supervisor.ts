@@ -13,6 +13,20 @@ import { redactErrorMessage } from "../redaction.ts";
 import type { OutcomeStore } from "../router/outcomes.ts";
 import type { TaskKind } from "../router/types.ts";
 
+/**
+ * Emitted for each step of a model call within a failover chain.
+ * @property type Discriminator: always "step".
+ * @property provider Provider name that handled the step.
+ * @property account Account associated with the provider call.
+ * @property model Model identifier used for the step.
+ * @property stopReason Reason the call stopped.
+ * @property usage Token usage for the step, or `null` if unavailable.
+ * @property errorClass Error class if the step failed, otherwise `null`.
+ * @property errorKind Failure kind classification, or `null` if the step succeeded.
+ * @property errorMessage Human-readable error message, or `null` if the step succeeded.
+ * @property failoverReason Failure kind of the failover reason, or `null` if no failover occurred.
+ * @property resetAt Timestamp (ms) when the rate/limit resets, if applicable.
+ */
 export interface HarnessStepEvent {
 	type: "step";
 	provider: string;
@@ -27,25 +41,44 @@ export interface HarnessStepEvent {
 	resetAt?: number;
 }
 
+/**
+ * Events emitted by the failover supervisor during a run.
+ */
 export type HarnessEvent =
 	| HarnessStepEvent
-	| { type: "text_delta"; delta: string }
-	| { type: "thinking_delta"; delta: string }
-	| { type: "tool_start"; toolCallId: string; toolName: string; input: unknown }
-	| { type: "tool_end"; toolCallId: string; toolName: string; isError: boolean }
-	| { type: "failover"; from: Candidate; to: Candidate; reason: string; errorMessage: string }
-	| { type: "candidate_skipped"; candidate: Candidate; reason: FailureKind; resetAt?: number }
-	| { type: "candidate_unavailable"; candidate: Candidate; message: string }
-	| { type: "limit"; entry: LimitEntry }
-	| { type: "recovered"; entry: LimitEntry }
-	| { type: "waiting"; candidate?: Candidate; reason: FailureKind | string; until: number; limits?: readonly LimitEntry[] };
+	| { /** Discriminator: "text_delta". */ type: "text_delta"; /** Text delta. */ delta: string }
+	| { /** Discriminator: "thinking_delta". */ type: "thinking_delta"; /** Thinking delta. */ delta: string }
+	| { /** Discriminator: "tool_start". */ type: "tool_start"; /** Tool call ID. */ toolCallId: string; /** Tool name. */ toolName: string; /** Tool arguments. */ input: unknown }
+	| { /** Discriminator: "tool_end". */ type: "tool_end"; /** Tool call ID. */ toolCallId: string; /** Tool name. */ toolName: string; /** Whether the tool call failed. */ isError: boolean }
+	| { /** Discriminator: "failover". */ type: "failover"; /** Failover source candidate. */ from: Candidate; /** Failover target candidate. */ to: Candidate; /** Reason for failover. */ reason: string; /** Error message if any. */ errorMessage: string }
+	| { /** Discriminator: "candidate_skipped". */ type: "candidate_skipped"; /** Skipped candidate. */ candidate: Candidate; /** Reason for skipping. */ reason: FailureKind; /** Optional reset timestamp (ms). */ resetAt?: number }
+	| { /** Discriminator: "candidate_unavailable". */ type: "candidate_unavailable"; /** Unavailable candidate. */ candidate: Candidate; /** Message explaining unavailability. */ message: string }
+	| { /** Discriminator: "limit". */ type: "limit"; /** Limit entry. */ entry: LimitEntry }
+	| { /** Discriminator: "recovered". */ type: "recovered"; /** Recovered limit entry. */ entry: LimitEntry }
+	| { /** Discriminator: "waiting". */ type: "waiting"; /** Optional waiting candidate. */ candidate?: Candidate; /** Reason for waiting. */ reason: FailureKind | string; /** Wait timestamp (ms). */ until: number; /** Optional limit entries. */ limits?: readonly LimitEntry[] };
 
+/**
+ * A candidate that failed and the reason for its failure.
+ * @property candidate The failover candidate that failed.
+ * @property kind Kind of failure that occurred.
+ * @property message Human-readable explanation of the failure.
+ */
 export interface CandidateFailureReason {
 	candidate: Candidate;
 	kind: FailureKind;
 	message: string;
 }
 
+/**
+ * Thrown when every candidate in the failover chain has been exhausted.
+ * @property exitCode Exit code: `3` for auth-only failures, `2` for quota/rate-limit-only, `1` otherwise.
+ * @property failures Failure kinds encountered across the chain.
+ * @property reasons Per-candidate failure details.
+ * @property limits Limits observed during the chain.
+ * @param failures Failure kinds encountered across all candidates.
+ * @param reasons Per-candidate failure details.
+ * @param limits Limits observed during the chain.
+ */
 export class ChainExhaustedError extends Error {
 	readonly exitCode: 1 | 2 | 3;
 	readonly failures: readonly FailureKind[];
@@ -67,6 +100,10 @@ export class ChainExhaustedError extends Error {
 	}
 }
 
+/**
+ * Thrown when the maximum number of turns is reached for a prompt.
+ * @param limit Maximum turn count that was reached.
+ */
 export class MaxTurnsError extends Error {
 	constructor(limit: number) {
 		super(`Maximum turn count reached (${limit})`);
@@ -74,6 +111,21 @@ export class MaxTurnsError extends Error {
 	}
 }
 
+/**
+ * Options for creating a FailoverSupervisor.
+ * @property chain Ordered list of failover candidates tried when a call fails.
+ * @property runtime Runtime providing session and model execution capabilities.
+ * @property ledger Ledger tracking rate and quota limits.
+ * @property onEvent Optional callback receiving events during the supervisor run.
+ * @property now Optional clock function (ms) used for timing decisions; defaults to `Date.now`.
+ * @property providerConfigs Per-provider configuration, keyed by provider name.
+ * @property maxWaitMs Maximum time (ms) to wait for a candidate to become usable before giving up.
+ * @property sleep Optional sleep function (ms) used to wait for cooldowns; defaults to `setTimeout`.
+ * @property taskEstimate Optional task estimate used to assess candidate eligibility.
+ * @property outcomeStore Optional store for recording call outcomes.
+ * @property taskKind Kind of task being run, used for outcome recording and quota tracking.
+ * @property quota Admission control: asked before every model call; every call is recorded as usage.
+ */
 export interface SupervisorOptions {
 	chain: readonly Candidate[];
 	runtime: HarnessRuntime;
@@ -90,6 +142,21 @@ export interface SupervisorOptions {
 	quota?: QuotaEngine;
 }
 
+/**
+ * Options for creating a failover supervisor via `createFailoverSupervisor`.
+ * @property chain Ordered list of failover candidates.
+ * @property onEvent Optional callback receiving events during the supervisor run.
+ * @property now Optional clock function (ms); defaults to `Date.now`.
+ * @property cooldownTtlMs Cooldown TTL in ms used for the limit ledger.
+ * @property maxWaitMs Maximum time (ms) to wait for a candidate to become usable before giving up.
+ * @property sleep Optional sleep function (ms); defaults to `setTimeout`.
+ * @property ephemeralProviders Provider names whose limits are not persisted across sessions.
+ * @property taskEstimate Optional task estimate used to assess candidate eligibility.
+ * @property monitorRecovery Whether to monitor and recover limits in the background.
+ * @property outcomeStore Optional store for recording call outcomes.
+ * @property taskKind Kind of task being run, used for outcome recording and quota tracking.
+ * @property quota Admission control: asked before every model call; every call is recorded as usage.
+ */
 export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "candidate"> {
 	chain: readonly Candidate[];
 	onEvent?: (event: HarnessEvent) => void;
@@ -139,19 +206,38 @@ function isEmptyAnswer(message: AssistantMessage): boolean {
 		(block.type === "text" && block.text.trim() !== "") || block.type === "toolCall");
 }
 
+/**
+ * Supervisor that handles failover across multiple candidates.
+ * @property activeIndex Index of the currently active candidate.
+ * @property failures List of failure kinds encountered during the run.
+ * @property reasons List of per-candidate failure details.
+ * @param options Supervisor options.
+ * @param activeIndex Initial active index (default 0).
+ */
 export class FailoverSupervisor {
 	private activeIndex: number;
 	private readonly failures: FailureKind[] = [];
 	private readonly reasons: CandidateFailureReason[] = [];
 
-	constructor(private readonly options: SupervisorOptions, activeIndex = 0) {
+	/**
+ * Creates a new FailoverSupervisor.
+ * @param options Supervisor options.
+ * @param activeIndex Initial active index (default 0).
+ */
+constructor(private readonly options: SupervisorOptions, activeIndex = 0) {
 		if (options.chain.length === 0) throw new Error("Failover chain is empty");
 		this.activeIndex = activeIndex;
 	}
 
-	get session() { return this.options.runtime.session; }
+	/**
+ * Returns the underlying session from the runtime.
+ */
+get session() { return this.options.runtime.session; }
 
-	get activeCandidate(): Candidate { return this.options.chain[this.activeIndex]!; }
+	/**
+ * Returns the currently active candidate.
+ */
+get activeCandidate(): Candidate { return this.options.chain[this.activeIndex]!; }
 
 	private emit(event: HarnessEvent): void { this.options.onEvent?.(event); }
 	private async recordOutcome(candidate: Candidate, success: boolean, usage: Usage | null | undefined, durationMs: number, failureKind?: FailureKind): Promise<void> {
@@ -183,7 +269,12 @@ export class FailoverSupervisor {
 		return !probe?.enabled || this.options.runtime.probeCandidate(entry);
 	};
 
-	async recoverNow(now = (this.options.now ?? Date.now)()): Promise<LimitEntry[]> {
+	/**
+ * Recovers limits up to the given time.
+ * @param now Optional timestamp (ms) to recover to; defaults to now.
+ * @returns A promise that resolves to the list of recovered limit entries.
+ */
+async recoverNow(now = (this.options.now ?? Date.now)()): Promise<LimitEntry[]> {
 		const recovered = await this.options.ledger.recover(now, this.confirmRecovery);
 		for (const entry of recovered) this.emit({ type: "recovered", entry });
 		return recovered;
@@ -291,8 +382,15 @@ export class FailoverSupervisor {
 		return true;
 	}
 
-	/** Runs one user prompt; failed provider responses are branched away before continuation. */
-	async prompt(prompt: string, maxTurns = 100): Promise<AssistantMessage> {
+	/**
+ * Runs a user prompt through the failover supervisor.
+ * @param prompt The user prompt string.
+ * @param maxTurns Maximum number of turns to allow; defaults to 100.
+ * @returns A promise that resolves to the final AssistantMessage.
+ * @throws MaxTurnsError If the maximum number of turns is exceeded.
+ * @throws Error If the assistant aborts or an unrecoverable error occurs.
+ */
+async prompt(prompt: string, maxTurns = 100): Promise<AssistantMessage> {
 		if (!prompt.trim()) throw new Error("Prompt cannot be empty");
 		const initialUserCount = this.session.sessionManager.buildSessionContext().messages.filter((message) => message.role === "user").length;
 		let promptRecorded = false;
@@ -416,6 +514,11 @@ export class FailoverSupervisor {
 	}
 }
 
+/**
+ * Creates a new FailoverSupervisor with the given options.
+ * @param options Options for creating the supervisor.
+ * @returns A promise that resolves to a FailoverSupervisor instance.
+ */
 export async function createFailoverSupervisor(options: CreateSupervisorOptions): Promise<FailoverSupervisor> {
 	if (options.chain.length === 0) throw new Error("Failover chain is empty");
 	const home = options.home ?? process.env.DF_HOME;
