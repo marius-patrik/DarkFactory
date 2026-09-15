@@ -5,7 +5,7 @@ description: operating df runs day to day - checking capacity, routing, limits a
 
 # DarkFactory operator guide
 
-`df` is the command-line tool for running DarkFactory pipelines. This guide covers the commands an operator uses every day: checking capacity, routing tasks, inspecting limits, and reading run health. Every command below is a real `df` subcommand taken from `df --help`.
+`df` is the command-line tool for running DarkFactory pipelines. This guide covers the commands an operator uses every day: checking capacity, routing tasks, inspecting limits, and reading run health. Every command below is a `df` subcommand from the usage text df prints.
 
 ## Capacity and availability
 
@@ -56,7 +56,7 @@ df ask --chain <provider/model@account,...> <prompt>
 
 `df graph validate` checks that a workflow graph file is well-formed and prints a summary of nodes and edges. `df graph plan` produces a planned run from an event and a state file.
 
-`df graph validate [path]` (default `.darkfactory/manifest.json`) prints:
+`df graph validate [path]` reads a workflow graph file (default `.darkfactory/manifest.json`, whose `graph` key holds the graph) and prints:
 ```
 <path>: valid workflow graph v<version> (<nodes> nodes, <edges> edges)
 ```
@@ -74,8 +74,8 @@ df graph plan --event <file> --state <file>
 ```sh
 df ci status
 df ci runs
-df ci logs <run-id>
-df ci rerun <run-id>
+df ci logs <run-id> [--failed] [--job <id>]
+df ci rerun <run-id> [--failed]
 df doctor
 df doctor identities
 ```

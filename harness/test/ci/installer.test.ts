@@ -21,7 +21,7 @@ describe("Workflow installer & updater", () => {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
 				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "sha-999", checks: [] })
+				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "sha-999", checks: [] }),
 			);
 
 			const report = await installWorkflows(temp);
@@ -111,7 +111,7 @@ describe("Workflow installer & updater", () => {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
 				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "old-ref", checks: [] })
+				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "old-ref", checks: [] }),
 			);
 			await installWorkflows(temp);
 
@@ -122,7 +122,7 @@ describe("Workflow installer & updater", () => {
 			// Now change config ref
 			await writeFile(
 				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "new-ref", checks: [] })
+				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "new-ref", checks: [] }),
 			);
 
 			// Check drift - should detect outdated

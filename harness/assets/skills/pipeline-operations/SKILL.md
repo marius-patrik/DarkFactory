@@ -11,8 +11,8 @@ The DarkFactory pipeline is driven **entirely by GitHub comments** on the Reques
 
 | Comment | What it does | Where it applies | Who may use it |
 |---|---|---|---|
-| ``/df approve`` | Advances the current gate (interpretation → plan → implementation) | Any *issue* gate (Interpretation, Plan) or the PR merge gate | The request author, or anyone with the GitHub association `OWNER`, `MEMBER` or `COLLABORATOR` (see `is_allowed_approver` in `agent_runner.py`). |
-| ``/df reject <feedback>`` | Sends the pipeline back to the previous stage with the supplied feedback attached to the comment.  The free‑text after the command is extracted by `command_feedback` and stored on the issue. | Any *issue* gate (Interpretation, Plan) | Same aprover set as above. |
+| ``/df approve`` | Advances the current gate (interpretation → plan → implementation) | The interpretation and plan gates on the Request issue | The request author, or anyone with the GitHub association `OWNER`, `MEMBER` or `COLLABORATOR` (see `is_allowed_approver` in `agent_runner.py`). |
+| ``/df reject <feedback>`` | Sends the pipeline back to the previous stage with the supplied feedback attached to the comment.  The free‑text after the command is extracted by `command_feedback` and stored on the issue. | Any *issue* gate (Interpretation, Plan) | Same approver set as above. |
 | ``/df revise`` | Alias of ``/df reject`` – the parser normalises it to *reject* and treats the trailing text exactly the same way. | Same as *reject* | Same as *reject* |
 | ``/df resume`` | Unblocks a pipeline that stopped because of a quota exhaustion.  The comment must be posted after the quota is restored. | Any gate that is currently *blocked* (usually after `quota_resume.py` triggers) | Same as *approve* – the approver role is checked again. |
 
@@ -45,7 +45,7 @@ New comments should always use the ``/df`` form to avoid ambiguity.
 
 ## Resuming after a quota stop
 
-When a harness runs out of quota, the pipeline pauses and posts a comment that contains the **resume instructions** (the constant `RESUME_INSTRUCTIONS` in `commands.py`).  It looks like this:
+When every configured account is out of quota, the pipeline pauses and posts a comment that contains the **resume instructions** (the constant `RESUME_INSTRUCTIONS` in `commands.py`).  It looks like this:
 
 ```
 When quota limits reset or additional quota is provisioned:
@@ -57,12 +57,9 @@ When quota limits reset or additional quota is provisioned:
 After the quota is restored you can run a few df CLI commands to see the current state:
 
 ```sh
-# Show quota usage for each provider/account
-`df quota --json`
-# List recent CI runs for the repository
-`df ci runs`
-# Dump logs of the latest run (useful for debugging)
-`df ci logs`
+df quota --json            # quota state for every provider, account and model
+df ci runs                 # recent workflow runs of the repository
+df ci logs <run-id>        # logs of one run
 ```
 
 These are the **only** df CLI commands referenced in this skill – they are read‑only checks; the pipeline itself never invokes the CLI.

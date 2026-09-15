@@ -10,11 +10,11 @@ owners: [tests-audit]
 
 ## Requirement
 
-Formatting is not a review topic — it is automated. `rustfmt` for Rust, the workspace formatter
-(`bun format` when the TypeScript foundation lands) for TypeScript, and `black` (line length 100)
-for Python automation. The GitHub Actions bot formats the codebase on every push across branches and
-commits any adjustments. Lints are blocking: `cargo clippy -D warnings` today, the Bun-native lint
-gate after the workspace lands.
+Formatting is not a review topic — it is automated. `rustfmt` for Rust, Biome (`harness/biome.json`)
+for TypeScript, and `black` (line length 100) for Python automation. The GitHub Actions bot formats
+the codebase on every push across branches and commits any adjustments. Lints are blocking:
+`cargo clippy -D warnings` for Rust and `biome ci` for TypeScript. Until the one-time full harness
+reformat lands, Biome formats and checks the TypeScript files a change touches.
 
 ## Rationale
 
@@ -24,7 +24,7 @@ never normalizes the tree by hand during an implementation pass.
 ## Enforcement
 
 - `.github/workflows/auto-format.yml` reformats on every push.
-- Formatting and lint gates are required jobs in `ci.yml`.
+- Formatting and lint gates are required jobs in `ci.yml` (the `harness` job runs `biome ci`).
 
 ## Exceptions
 
@@ -33,5 +33,5 @@ where declared.
 
 ## Change control
 
-The tool list is legacy where it predates the TS/Bun workspace; the target formatter/linter/test
-set is the Bun-native one after `cli-release` lands.
+Changing a formatter or its configuration (`harness/biome.json`, black's line length) is a
+reviewed change; the one-time full reformat lands as its own pull request (plans/repository-truth.md Q1).
