@@ -136,6 +136,21 @@ def test_architecture_lists_open_decisions_with_identifiers():
     assert {"1", "2", "3", "4", "5", "6", "7", "8"} <= identifiers
 
 
+def test_new_adr_status_dates():
+    """Ensure the newly added ADRs have the correct status date."""
+    adr_dir = os.path.join(REPO_ROOT, ".agents", "notes", "adr")
+    for num in range(7, 12):
+        name = f"{num:04d}-"  # prefix
+        # find file starting with this number
+        files = [f for f in os.listdir(adr_dir) if f.startswith(name) and f.endswith(".md")]
+        assert files, f"ADR file for {num:04d} not found"
+        content = _read(os.path.relpath(adr_dir, REPO_ROOT), files[0])
+        # status line must contain the exact date
+        assert re.search(
+            r"\*\*Status\*\*:\s*Accepted\s*·\s*2026-09-15", content
+        ), f"ADR {num:04d} status date incorrect"
+
+
 def test_dockerfile_enforces_non_root_user():
     """D4 claims agent processes execute with non-root privileges.
 
