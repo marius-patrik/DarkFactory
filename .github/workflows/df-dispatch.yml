@@ -41,8 +41,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
-          ref: ${{ inputs.pipeline-ref || 'darkfactory' }}
+          repository: darkfactory/pipeline
+          ref: ${{ inputs.pipeline_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: .darkfactory-pipeline
 
       - name: Set up Bun
