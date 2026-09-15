@@ -52,6 +52,8 @@ export interface RouterConfig {
 	models?: Record<string, ModelCapabilityOverride>;
 	policies: RouterPolicy[];
 	learning?: { enabled?: boolean; windowMs?: number; maxPenalty?: number; maxRecords?: number };
+	dataCollection?: { normal?: string[]; sensitive?: string[] };
+
 }
 
 export interface RankedCandidate {

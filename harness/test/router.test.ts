@@ -178,3 +178,31 @@ describe("quota-aware ranking", () => {
 	});
 
 });
+
+describe("data‑collection policy", () => {
+	test("sensitive task with allowed collection none succeeds", async () => {
+		const models = [candidate("p1", "m", "standard", { collection: "none" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p1/m@default" }, { config, models });
+		expect(result.chain.length).toBe(1);
+	});
+
+	test("sensitive task with only logging collection fails", async () => {
+		const models = [candidate("p2", "m", "standard", { collection: "logging" })];
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+	});
+
+	test("explicit chain with disallowed provider for sensitive task is rejected", async () => {
+		const models = [candidate("p2", "m", "standard", { collection: "logging" }), candidate("p1", "m", "standard", { collection: "none" })];
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "secret", explicitChain: "p2/m@default", node: { sensitivity: "sensitive" } }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+	});
+
+	test("normal task can use any collection", async () => {
+		const models = [candidate("p2", "m", "standard", { collection: "logging" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "normal", node: { sensitivity: "normal" } }, { config, models });
+		expect(result.chain.length).toBe(1);
+	});
+});

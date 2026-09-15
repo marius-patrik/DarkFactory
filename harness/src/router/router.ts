@@ -55,11 +55,30 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	const universe: ModelCapability[] = forced || preferred.length > 0 ? preferred.map((candidate): ModelCapability => byKey.get(candidateKey(candidate)) ?? {
 		candidate, contextWindow: Number.MAX_SAFE_INTEGER, tools: true, reasoning: true, modalities: ["text"], quality: {}, limitTier: "standard",
 	}) : [...dependencies.models];
+	// Apply data‑collection policy filtering
+	const allowedCollections = profile.sensitivity === "sensitive"
+		? (dependencies.config.dataCollection?.sensitive ?? ["none"])
+		: (dependencies.config.dataCollection?.normal ?? ["none","logging","training","unknown"]);
+	// Reject disallowed providers in explicit chains for sensitive tasks
+	if (forced) {
+		const forcedCandidates = parseChain(forced);
+		for (const cand of forcedCandidates) {
+			const cap = byKey.get(candidateKey(cand));
+			const collection = cap?.collection ?? "none";
+			if (!allowedCollections.includes(collection)) {
+				throw new Error(`No providers allowed for ${profile.sensitivity} data‑collection policy`);
+			}
+		}
+	}
+	const filtered = universe.filter(m => allowedCollections.includes(m.collection ?? "none"));
+	if (filtered.length === 0) {
+		throw new Error(`No providers allowed for ${profile.sensitivity} data‑collection policy`);
+	}
 	const penalties = dependencies.outcomes && dependencies.config.learning?.enabled !== false ? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.()) : new Map<string, number>();
 	const preference = new Map(preferred.map((candidate, index) => [candidateKey(candidate), index]));
 	const tierOrder = policy?.prefer.tiers ?? [...DEFAULT_TIER_ORDER[profile.size]];
 	const forcedOrder = !!forced || !!policy?.prefer.candidates;
-	const scored = universe.map((model, index) => {
+	const scored = filtered.map((model, index) => {
 		const preferredIndex = preference.get(candidateKey(model.candidate));
 		const tierIndex = tierOrder.indexOf(model.limitTier);
 		const qualityKind = policy?.prefer.quality ?? profile.kind;
