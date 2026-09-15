@@ -100,8 +100,8 @@ describe("ModelCatalog integration boundary", () => {
 			"https://generativelanguage.googleapis.com/v1beta/models?pageToken=page+two",
 		]);
 		expect(live.models).toEqual([
-			{ id: "gemini-3.8-flash", name: "Gemini 3.8 Flash", supportedMethods: ["countTokens", "generateContent"] },
-			{ id: "imagen-live", name: "Imagen Live", supportedMethods: ["predict"] },
+			{ id: "gemini-3.8-flash", name: "Gemini 3.8 Flash", supportedMethods: ["countTokens", "generateContent"], modalities: ["text"] },
+			{ id: "imagen-live", name: "Imagen Live", supportedMethods: ["predict"], modalities: ["image"] },
 			{ id: "veo-live", name: "Veo Live", supportedMethods: ["predictLongRunning"] },
 		]);
 		expect((await catalog.get("google", { account: "default" })).models).toEqual(live.models);
@@ -207,7 +207,7 @@ describe("ModelCatalog integration boundary", () => {
 		const config = { ...base.config, id: "sample-google-dialect", name: "Sample Google Dialect", baseUrl: "https://generativelanguage.googleapis.com/v1beta", models: { static: base.config.models.static } };
 		const provider = providerFromConfig(config);
 		const catalog = new ModelCatalog({ home: root, providers: [provider], providerConfigs: [config], store, fetch: fetcher, now: () => 1_000 });
-		expect((await catalog.get("sample-google-dialect", { account: "default" })).models).toEqual([{ id: "gemini-pro", name: "Gemini Pro", supportedMethods: ["generateContent"] }]);
+		expect((await catalog.get("sample-google-dialect", { account: "default" })).models).toEqual([{ id: "gemini-pro", name: "Gemini Pro", supportedMethods: ["generateContent"], modalities: ["text"] }]);
 	});
 
 	test("config list overrides dialect default: Cloudflare-style POST /models/search", async () => {
@@ -240,5 +240,31 @@ describe("ModelCatalog integration boundary", () => {
 		const stale = await catalog.get("sample-stale", { account: "test", refresh: true });
 		expect(stale).toMatchObject({ source: "cache", models: [{ id: "cached-model" }] });
 		expect(stale.error).toContain("HTTP 403");
+	});
+
+	test("metadata extraction: contextLength, modalities, tools, pricing", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		await store.setSlot("meta-provider:test", "api_key", { type: "api_key", value: "fixture-key" });
+		const base = configured("openrouter");
+		const config = { ...base.config, id: "meta-provider", name: "Meta", baseUrl: "https://api.fake.com/v1", models: { static: base.config.models.static, list: { path: "/models", method: "GET" as const, itemsPath: "data", idPath: "id", namePath: "display_name" } } } as ProviderConfig;
+		const provider = providerFromConfig(config);
+		const fetcher: CatalogFetch = async () => Response.json({ data: [
+			{ id: "context-model", display_name: "Context Model", context_length: 128000 },
+			{ id: "input-limit-model", display_name: "Input Limit Model", inputTokenLimit: 4096 },
+			{ id: "modalities-model", display_name: "Modalities Model", modalities: ["text", "image"] },
+			{ id: "methods-model", display_name: "Methods Model", supportedMethods: ["generateContent"] },
+			{ id: "tools-model", display_name: "Tools Model", supported_parameters: ["tools"] },
+			{ id: "priced-model", display_name: "Priced Model", pricing: { prompt: "0" } },
+		] });
+		const catalog = new ModelCatalog({ home: root, providers: [provider], providerConfigs: [config], store, fetch: fetcher });
+		const result = await catalog.get("meta-provider", { account: "test" });
+		expect(result.source).toBe("live");
+		expect(result.models.find((model) => model.id === "context-model")?.contextLength).toBe(128000);
+		expect(result.models.find((model) => model.id === "input-limit-model")?.contextLength).toBe(4096);
+		expect(result.models.find((model) => model.id === "modalities-model")?.modalities).toEqual(["text", "image"]);
+		expect(result.models.find((model) => model.id === "methods-model")?.modalities).toEqual(["text"]);
+		expect(result.models.find((model) => model.id === "tools-model")?.tools).toBe(true);
+		expect(result.models.find((model) => model.id === "priced-model")?.pricing).toEqual({ prompt: "0", free: true });
 	});
 });

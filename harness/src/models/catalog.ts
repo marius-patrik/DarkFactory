@@ -19,6 +19,11 @@ export interface CatalogModel {
 	id: string;
 	name: string;
 	supportedMethods?: string[];
+	/** Optional metadata fields */
+	contextLength?: number;
+	modalities?: string[];
+	tools?: boolean;
+	pricing?: { prompt?: string; completion?: string; free?: boolean };
 }
 
 interface CatalogFile {
@@ -54,6 +59,29 @@ function nonEmpty(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function modelMetadata(item: Record<string, unknown>, id: string, supportedMethods?: string[]): Partial<CatalogModel> {
+	const contextLength = [item.context_length, item.inputTokenLimit, item.context_window].find((value): value is number => typeof value === "number");
+	let modalities: string[] | undefined;
+	if (Array.isArray(item.modalities)) modalities = item.modalities.filter((value): value is string => typeof value === "string");
+	else if (Array.isArray(item.tasks)) modalities = item.tasks.filter((value): value is string => typeof value === "string");
+	else if (supportedMethods) modalities = supportedMethods.map((method) => method === "generateContent" ? "text" : method === "predict" ? "image" : undefined).filter((value) => typeof value === "string") as string[];
+	const tools = Array.isArray(item.supported_parameters) && item.supported_parameters.includes("tools");
+	let pricing: CatalogModel["pricing"];
+	const free = id.includes(":free") || id.includes("-free");
+	if (item.pricing && typeof item.pricing === "object") {
+		const raw = item.pricing as Record<string, unknown>;
+		const prompt = typeof raw.prompt === "string" ? raw.prompt : undefined;
+		const completion = typeof raw.completion === "string" ? raw.completion : undefined;
+		if (prompt !== undefined || completion !== undefined || free || prompt === "0") pricing = { ...(prompt !== undefined ? { prompt } : {}), ...(completion !== undefined ? { completion } : {}), ...(prompt === "0" || free ? { free: true } : {}) };
+	} else if (free) pricing = { free: true };
+	return {
+		...(contextLength !== undefined ? { contextLength } : {}),
+		...(modalities?.length ? { modalities: [...new Set(modalities)] } : {}),
+		...(tools ? { tools: true } : {}),
+		...(pricing ? { pricing } : {}),
+	};
+}
+
 function candidateModel(value: unknown, key?: string): CatalogModel | undefined {
 	if (typeof value === "string") return { id: value, name: value };
 	if (!value || typeof value !== "object") return undefined;
@@ -68,10 +96,15 @@ function candidateModel(value: unknown, key?: string): CatalogModel | undefined 
 	const name = nonEmpty(item.display_name) ?? nonEmpty(item.displayName) ?? nonEmpty(config?.displayName) ??
 		nonEmpty(nested?.displayName) ?? nonEmpty(item.name) ?? id;
 	const rawMethods = item.supportedGenerationMethods ?? item.supportedMethods;
-	const supportedMethods = Array.isArray(rawMethods)
+		const supportedMethods = Array.isArray(rawMethods)
 		? rawMethods.filter((method): method is string => typeof method === "string" && method.length > 0)
 		: undefined;
-	return { id, name, ...(supportedMethods?.length ? { supportedMethods: [...new Set(supportedMethods)].sort() } : {}) };
+	return {
+		id,
+		name,
+		...(supportedMethods?.length ? { supportedMethods: [...new Set(supportedMethods)].sort() } : {}),
+		...modelMetadata(item, id, supportedMethods),
+	};
 }
 
 /** Normalizes OpenAI, Anthropic, Google, pi.dev, and Antigravity catalog envelopes. */
@@ -108,9 +141,10 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 		if (!rawId) continue;
 		const id = mapping.stripIdPrefix && rawId.startsWith(mapping.stripIdPrefix) ? rawId.slice(mapping.stripIdPrefix.length) : rawId;
 		if (!id) continue;
-		const methodsValue = mapping.methodsPath ? pathValues(entry.value, mapping.methodsPath)[0]?.value : undefined;
+		const entryRecord = entry.value && typeof entry.value === "object" ? entry.value as Record<string, unknown> : undefined;
+		const methodsValue = mapping.methodsPath ? pathValues(entry.value, mapping.methodsPath)[0]?.value : entryRecord?.supportedGenerationMethods ?? entryRecord?.supportedMethods;
 		const methods = Array.isArray(methodsValue) ? methodsValue.filter((item): item is string => typeof item === "string" && !!item) : undefined;
-		byId.set(id, { id, name: mappedString(entry.value, mapping.namePath, entry.key) ?? id, ...(methods?.length ? { supportedMethods: [...new Set(methods)].sort() } : {}) });
+		byId.set(id, { id, name: mappedString(entry.value, mapping.namePath, entry.key) ?? id, ...(methods?.length ? { supportedMethods: [...new Set(methods)].sort() } : {}), ...modelMetadata(entryRecord ?? {}, id, methods) });
 	}
 	if (byId.size === 0) throw new Error(`Model catalog for provider ${provider} contained no valid models`);
 	return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
