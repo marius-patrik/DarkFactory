@@ -162,8 +162,13 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	const fallbackReset = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
 	if (!ruled && observation.status !== undefined) {
 		let type: ConfiguredLimitType | undefined;
-		if (observation.status === 402) type = "billing";
-		else if (observation.status === 401 || observation.status === 403) type = "access";
+		if (observation.status === 402) {
+			// Only treat as billing if the body mentions typical billing keywords.
+			const bodyStr = text(observation.body);
+			if (/(balance|credit|budget)/i.test(bodyStr)) {
+				type = "billing";
+			}
+		} else if (observation.status === 401 || observation.status === 403) type = "access";
 		else if (observation.status === 404) type = "model";
 		if (type) {
 			result.push({ ...candidate, type, observedAt: now, resetAt: fallbackReset, source: "default", remaining: 0 });
