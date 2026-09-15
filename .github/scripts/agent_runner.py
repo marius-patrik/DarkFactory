@@ -1596,6 +1596,14 @@ def checkpoint_and_notify_exhaustion(
     steps_formatted = "\n".join([f"- [x] {s}" for s in steps])
     models_formatted = harnesses.describe_chain()
 
+    # Automatic resume time computation
+    reset_at = next_quota_reset(error_detail, time.time())
+    reset_at_utc = (
+        datetime.fromtimestamp(reset_at, tz=timezone.utc)
+        .replace(microsecond=0)
+        .strftime("%Y-%m-%d %H:%M:%S UTC")
+    )
+
     comment_body = (
         "<!-- darkfactory-agent -->\n"
         "### ⚠️ DarkFactory Agent Quota Exhaustion Notice\n\n"
@@ -1606,6 +1614,7 @@ def checkpoint_and_notify_exhaustion(
         f"{steps_formatted}\n\n"
         "#### Checkpoint Information\n"
         f"- **Branch**: `{branch_name or 'N/A'}`\n"
+        f"- **Automatic Resume**: {reset_at_utc}\n"
         "- **Checkpoint**: Progress preserved in `.antigravity_checkpoint.json`\n"
         "- **Project Status**: Updated to `Blocked`\n\n"
         "#### Instructions to Resume\n"
@@ -1634,6 +1643,7 @@ def checkpoint_and_notify_exhaustion(
         providers = []
         if m:
             providers = [p.strip() for p in m.group(1).split(",")]
+        # Recalculate reset_at to record the block
         reset_at = next_quota_reset(error_detail, time.time())
         try:
             record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
