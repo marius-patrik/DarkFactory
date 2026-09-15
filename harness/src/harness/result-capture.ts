@@ -74,12 +74,9 @@ export async function captureResult<T>(params: {
     try {
       const stream = candidate.stream(candidate.model, context, {
         ...candidate.options,
-        onPayload: async (upstream, payload) => {
-          // invoke original onPayload if present
-          if (candidate.options?.onPayload) {
-            await candidate.options.onPayload(upstream, payload);
-          }
-          // force capture tool for this dialect
+        onPayload: async (payload, model) => {
+          // The caller's hook runs first; its replacement payload (if any) is what gets the forced capture tool.
+          const upstream = await candidate.options?.onPayload?.(payload, model);
           return forceCaptureTool(candidate.dialect, upstream ?? payload);
         },
       });
