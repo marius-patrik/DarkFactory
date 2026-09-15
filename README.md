@@ -4,7 +4,7 @@
 
 One engine, fully automated delivery. DarkFactory provides a complete, battle-tested autonomous software factory setup where feature requests, bug reports, and refactors are ingested, interpreted, planned, implemented, self-reviewed, and merged under rigorous human approval gates.
 
-> **Status: Template repository.** Instantiate this repository to bootstrap any new or existing software project with an enterprise-grade autonomous development pipeline, strict branch protection, project board automation, and multi-harness agent orchestration.
+> **Status: Template repository.** Instantiate this repository to bootstrap any new or existing software project with an enterprise-grade autonomous development pipeline, strict branch protection, project board automation, and the `df` harness.
 
 ---
 
@@ -13,7 +13,7 @@ One engine, fully automated delivery. DarkFactory provides a complete, battle-te
 In manufacturing, a **Dark Factory** (or *lights-out factory*) operates autonomously with zero or minimal on-site human intervention. DarkFactory brings this paradigm to software engineering:
 
 ```
-user request  ──▶  Request issue      ──▶  interpretation  ──▶  maintainer comments `approve`
+user request  ──▶  Single request issue  ──▶  interpretation  ──▶  maintainer comments `approve`
                    (verbatim wording)      (agent)
                                                     │
                                                     ▼
@@ -26,9 +26,9 @@ user request  ──▶  Request issue      ──▶  interpretation  ──▶
                    maintainer Review Approval ──▶  auto-merge  ──▶  issues closed, board set to Done
 ```
 
-### Two Explicit Human Gates
+### Interpretation Gate and Plan Approval Gate
 1. **Interpretation Gate**: You approve the agent's interpretation of your verbatim request before any planning begins.
-2. **Plan Gate**: You approve the structured implementation plan before any code is written.
+2. **Plan Approval Gate**: You approve the structured implementation plan before any code is written.
 
 Once both gates are approved, the autonomous pipeline generates the branch, drafts the PR, runs self-review cycles, enforces plan alignment, and waits for your native GitHub PR review approval before auto-merging.
 
@@ -38,8 +38,10 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 
 | Capability | Description |
 |---|---|
-| **Multi-Harness Agent Runner** | Native support for Antigravity (`agy`), Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with configurable priority order. |
-| **Quota & Error Resilience** | Automatic quota exhaustion detection, exponential backoff, state checkpointing, and graceful multi-model fallback. |
+| **TypeScript/Bun `df` Harness** | A high-performance TypeScript/Bun `df` harness providing a unified interface for autonomous execution and CI management. |
+| **Workflow Graph Execution** | Orchestrates agents through a strictly defined sequence of stages (Interpretation $\to$ Planning $\to$ Implementation $\to$ Verification). |
+| **Quota Engine** | Intelligent resource management with automatic quota exhaustion detection, exponential backoff, and multi‑account rotation to ensure uninterrupted operation. |
+| **Lanes** | Isolated execution environments ensuring that parallel requests do not collide and that state is maintained per-task. |
 | **Two-Gate Human Governance** | Non-negotiable human sign-offs on interpretation and planning prevent hallucinated scope drift. |
 | **Bot-Authored Draft PRs** | Pull requests are opened by `github-actions[bot]` so maintainers can natively review, comment, and approve them on GitHub. |
 | **Project Board Automation** | Live 7-state taxonomy synchronization on GitHub Projects v2 (`Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`, `Superseded`, `Dropped`). |
@@ -66,11 +68,11 @@ Once both gates are approved, the autonomous pipeline generates the branch, draf
 | `.github/workflows/verify-pr-issue.yml` | Enforces that every pull request binds an open issue. |
 | `.github/workflows/deploy-docs.yml` | Automated documentation site deployment to GitHub Pages. |
 | `.github/scripts/agent_runner.py` | Multi-stage autonomous agent execution pipeline with quota backoff and checkpoint/resume. |
-| `.github/scripts/harnesses.py` | CLI harness abstraction layer driving Antigravity, Claude, Codex, Kimi, and other runners. |
 | `.github/scripts/project_automation.py` | GitHub Projects v2 GraphQL client managing board status transitions. |
 | `.github/scripts/handle_pr_approval.py` | Pull request approval detection and auto-merge handler. |
 | `.github/scripts/repo_settings.py` | Declarative GitHub repository settings, labels, and branch protection as code. |
 | `docker/Dockerfile.agent` | Reproducible container environment equipped with Python, uv, Node/Bun, Rust, and Git. |
+| `harness/` | The TypeScript/Bun source for the `df` command and agent runtime. |
 | `tests/` | 120+ unit tests validating governance rules, pipeline configs, harnesses, and automation. |
 
 ---
@@ -84,10 +86,10 @@ gh repo create my-project --template marius-patrik/DarkFactory --public --clone
 cd my-project
 ```
 
-### 2. Install development tools
+### 2. One‑Command Install
+Run the one‑command install to bootstrap the environment and the df harness in one go:
 ```bash
-pip install -r requirements-dev.txt
-pytest -v
+./bin/install.sh
 ```
 
 ### 3. Bootstrap repository settings
@@ -126,28 +128,21 @@ From this moment on, your repository operates as an autonomous Dark Factory!
 
 ---
 
-## The `darkfactory` command
+## The `df` command
 
-One front door for a deployment. Every subcommand delegates to the module that already implements
-it, so there is one implementation of each behaviour and the two cannot drift.
+The `df` harness is the primary entry point for the DarkFactory product. It manages agent execution, account rotation, and repository maintenance.
 
 ```bash
-ln -s "$(pwd)/bin/darkfactory" /usr/local/bin/darkfactory
-
-darkfactory status                  # why is nothing happening
-darkfactory describe                # what is this repository made of
-darkfactory auth --repo owner/name  # set harness credentials from this machine
-darkfactory license                 # apply the licence the manifest declares
-darkfactory submodules              # pin and update submodules
+df status                  # why is nothing happening
+df describe                # what is this repository made of
+df auth --repo owner/name  # set harness credentials from this machine
+df license                 # apply the licence the manifest declares
+df submodules              # pin and update submodules
 ```
 
 `status` answers the question an operator actually has, by checking the things that are silently
 absent rather than loudly broken - a missing credential, an agent that was never switched on, a
 repository where the pipeline was never installed.
-
-## TypeScript harness
-
-The integrated Bun-based operator CLI, agent runtime, typed GitHub client, and CI-management engine live in [`harness/README.md`](https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harness/README.md), with the `df` command as their shared entry point.
 
 ## Local Development & Testing
 

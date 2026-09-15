@@ -350,3 +350,26 @@ def test_runtime_references_use_canonical_agent_paths():
     assert 'ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")' in _read(
         ".github", "scripts", "docs_hooks.py"
     ), "docs_hooks must discover ADRs under the canonical directory"
+
+
+def test_readme_mentions_current_df_architecture_terms():
+    """README.md must reference the current df architecture terms and avoid stale multi‑CLI references."""
+    content = _read("README.md")
+    # Required terms (case‑insensitive)
+    required = [
+        "df harness",
+        "typescript/bun",
+        "workflow graph",
+        "quota engine",
+        "lanes",
+        "single request issue",
+        "interpretation gate",
+        "plan approval gate",
+        "one‑command install",
+    ]
+    lowered = content.lower()
+    for term in required:
+        assert term in lowered, f"README.md missing required term: {term}"
+    # Ensure stale references are gone
+    assert "multi‑cli" not in lowered, "README.md still contains stale multi‑CLI reference"
+    assert "df‑cli" not in lowered, "README.md still contains stale df‑CLI reference"
