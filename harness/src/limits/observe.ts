@@ -2,6 +2,7 @@ import type { Candidate } from "../failover.ts";
 import type { ConfiguredLimitType } from "../providers/schema.ts";
 import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema.ts";
 import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
+import { getCredentialChangeTime, onCredentialChanged } from "../credentials.ts";
 import { nextPacificMidnight } from "../quota.ts";
 
 // In‑memory counter for persistent 422 errors per model
@@ -174,7 +175,17 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 		} else if (observation.status === 401 || observation.status === 403) type = "access";
 		else if (observation.status === 404) type = "model";
 		if (type) {
-			result.push({ ...candidate, type, observedAt: now, resetAt: fallbackReset, source: "default", remaining: 0 });
+			let resetAt = fallbackReset;
+			if (type === "access") {
+				const accessReset = now + (policy?.recheckAfterMs ?? 24 * 60 * 60_000);
+				const credTime = getCredentialChangeTime();
+				if (credTime !== null) {
+					resetAt = Math.min(accessReset, credTime.getTime());
+				} else {
+					resetAt = accessReset;
+				}
+			}
+			result.push({ ...candidate, type, observedAt: now, resetAt, source: "default", remaining: 0 });
 		} else if (observation.status === 429 && observation.body !== undefined) {
 			const hints = bodyHints(text(observation.body), now);
 			const daily = DAILY_WORDING.test(text(observation.body));

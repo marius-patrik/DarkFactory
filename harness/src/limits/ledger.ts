@@ -11,7 +11,7 @@ function valid(value: unknown): value is LimitEntry {
 	if (!value || typeof value !== "object") return false;
 	const item = value as Record<string, unknown>;
 	return typeof item.provider === "string" && typeof item.account === "string" && typeof item.model === "string" &&
-		["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(item.type)) &&
+		["rate", "daily", "window", "monthly", "overload", "auth", "access"].includes(String(item.type)) &&
 		typeof item.observedAt === "number" && typeof item.resetAt === "number" && Number.isFinite(item.resetAt) &&
 		["header", "body", "rule", "default", "migration", "manual"].includes(String(item.source));
 }
