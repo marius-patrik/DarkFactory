@@ -3648,6 +3648,83 @@ def parse_review_findings(text: str) -> List[str]:
     return items
 
 
+def run_pr_feedback_fix(
+    pr_number: int, plan_number: int, request_number: int, feedback: str, repo: str
+) -> None:
+    """Apply owner feedback to a PR using the approved plan.
+
+    Checks out the PR branch, runs a single agent fix with a prompt containing the plan
+    and the verbatim feedback, commits and pushes the change, posts a comment summarizing
+    the agent answer (trimmed to 3000 chars), then starts self‑review again.
+    """
+    cwd = WORKSPACE_DIR
+    # Ensure we are on the PR branch – assumed to be checked out by the runner.
+    # Retrieve the approved plan content.
+    try:
+        plan_data = json.loads(
+            run_gh(["issue", "view", str(plan_number), "--json", "title,body,comments"], repo=repo)
+        )
+    except Exception as e:
+        print(f"Failed to load plan #{plan_number}: {e}", file=sys.stderr)
+        return
+    plan_body = ""
+    for c in reversed(plan_data.get("comments", [])):
+        cbody = c.get("body", "")
+        if _is_plan_comment(cbody):
+            plan_body = cbody
+            break
+    if not plan_body:
+        plan_body = plan_data.get("body", "")
+    # Build prompt with plan and feedback.
+    prompt = (
+        f"Plan approved:\n{plan_body}\n\n"
+        f"Owner feedback:\n{feedback}\n\n"
+        "Make the necessary changes to address the feedback."
+    )
+    checkpoint_ctx = {
+        "issue_number": pr_number,
+        "repo": repo,
+        "is_pr": True,
+        "completed_steps": ["Feedback fix"],
+        "cwd": cwd,
+    }
+    result = run_agent_prompt(prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx)
+    if is_quota_exhaustion_notice(result):
+        return
+    if result.startswith("[DarkFactory Agent Execution Error]"):
+        # Post error and block
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Feedback Fix Error\n\n{result}",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        return
+    # Commit and push changes
+    format_repository(cwd)
+    try:
+        run_git(["add", "-A"], cwd=cwd)
+        status = run_git(["status", "--porcelain"], cwd=cwd)
+        if status:
+            run_git(["commit", "-m", "fix(feedback): address owner feedback"], cwd=cwd)
+            run_git(["push", "origin", "HEAD"], cwd=cwd)
+    except subprocess.CalledProcessError as e:
+        print(f"Git error during feedback fix: {e.stderr or e.stdout}", file=sys.stderr)
+    # Post summary comment
+    trimmed = result[:3000]
+    comment_body = f"### Feedback addressed\n\n{trimmed}"
+    run_gh(["pr", "comment", str(pr_number), "--body", comment_body], repo=repo)
+    # Continue self‑review
+    start_self_review(pr_number, plan_number, request_number, repo)
+
+
 def run_self_review_iteration(
     pr_number: int,
     plan_number: int,
@@ -4270,6 +4347,10 @@ def dispatch_event(event_path: str, event_name: str):
                 run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
             elif stage == "self-review-fix":
                 run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "pr-feedback-fix":
+                # New stage for handling owner feedback on a PR
+                feedback = client_payload.get("feedback")
+                run_pr_feedback_fix(pr_number, plan_issue, request_issue, feedback, repo)
             elif stage == "resume":
                 item = client_payload.get("item")
                 is_pr = client_payload.get("is_pr")
@@ -4374,24 +4455,39 @@ def dispatch_event(event_path: str, event_name: str):
                 resume_item(issue_num, is_pr, repo, labels)
                 return
             elif command == "reject":
-                # A rejection routes back to the same stage with the comment as feedback:
-                # never an approval, never a close, and on a PR never a merge.
+                # Owner feedback on a PR or issue. For PRs, dispatch a feedback fix stage.
                 print(f"Rejection comment on #{issue_num} from @{comment_user}.")
                 feedback = command_feedback(comment_body) or comment_body
-                if is_request:
-                    if has_plan(issue_num, repo):
-                        handle_plan(issue_num, issue_num, repo, feedback=feedback)
-                    else:
-                        handle_interpret(issue_num, repo, feedback=feedback)
-                elif is_plan:
-                    request_num = find_parent_request_number(issue_num, repo)
-                    if request_num:
-                        handle_plan(request_num, issue_num, repo, feedback=feedback)
-                    else:
-                        print(f"Could not find parent Request for Plan #{issue_num}")
-                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
-                else:
+                if is_pr:
+                    # Find linked plan and request, then dispatch feedback fix
+                    plan = find_plan_issue_for_pr(issue_num, repo)
+                    request = find_parent_request_number(plan, repo) if plan else plan
+                    payload = {
+                        "stage": "pr-feedback-fix",
+                        "pr": issue_num,
+                        "plan": plan,
+                        "request": request,
+                        "feedback": feedback,
+                    }
+                    dispatch_stage(repo, payload)
+                    # Also post a response comment to satisfy existing expectations
                     handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                else:
+                    # Non‑PR issues keep previous behaviour
+                    if is_request:
+                        if has_plan(issue_num, repo):
+                            handle_plan(issue_num, issue_num, repo, feedback=feedback)
+                        else:
+                            handle_interpret(issue_num, repo, feedback=feedback)
+                    elif is_plan:
+                        request_num = find_parent_request_number(issue_num, repo)
+                        if request_num:
+                            handle_plan(request_num, issue_num, repo, feedback=feedback)
+                        else:
+                            print(f"Could not find parent Request for Plan #{issue_num}")
+                            handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                    else:
+                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
             else:
                 if (is_request or is_plan) and is_command_hint(comment_body):
                     post_command_hint_once(issue_num, repo)
@@ -4428,8 +4524,21 @@ def dispatch_event(event_path: str, event_name: str):
             if review_command in ("approve", "resume"):
                 resume_item(pr_num, True, repo)
                 return
-            # A rejection is a change request: answered, never merged, never re-reviewed.
+            # Owner feedback on PR review comment. Dispatch feedback fix stage.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
+            feedback = command_feedback(comment_body) or comment_body
+            # Find linked plan and request
+            plan = find_plan_issue_for_pr(pr_num, repo)
+            request = find_parent_request_number(plan, repo) if plan else plan
+            payload = {
+                "stage": "pr-feedback-fix",
+                "pr": pr_num,
+                "plan": plan,
+                "request": request,
+                "feedback": feedback,
+            }
+            dispatch_stage(repo, payload)
+            # Also post a response comment to satisfy existing expectations
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
 
 

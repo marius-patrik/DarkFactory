@@ -640,7 +640,9 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
         The package, or `None` when the file declares nothing useful.
     """
     ecosystem = MANIFESTS[filename]
-    relative = os.path.join(directory, filename) if directory != "." else filename
+    relative = (
+        os.path.join(directory, filename).replace(os.sep, "/") if directory != "." else filename
+    )
     absolute = os.path.join(root, relative)
     name: Optional[str] = None
     version: Optional[str] = None
@@ -813,7 +815,7 @@ def detect(root: str) -> List[Package]:
             and not entry.startswith(".")
             and os.path.relpath(os.path.join(current, entry), root) not in submodules
         ]
-        relative = os.path.relpath(current, root)
+        relative = os.path.relpath(current, root).replace(os.sep, "/")
         depth = 0 if relative == "." else relative.count(os.sep) + 1
         if depth > MAX_DEPTH:
             directories[:] = []

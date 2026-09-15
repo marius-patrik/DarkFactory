@@ -171,7 +171,7 @@ def collect_assets(root: str, steps: Iterable[Dict[str, Any]]) -> List[str]:
         for pattern in step.get("globs", []):
             for match in glob.glob(os.path.join(base, pattern), recursive=True):
                 if os.path.isfile(match):
-                    found.append(os.path.relpath(match, root))
+                    found.append(os.path.relpath(match, root).replace(os.sep, "/"))
     return sorted(set(found))
 
 
@@ -248,7 +248,7 @@ def sync_metadata(root: str, version: str) -> List[str]:
         if updated != content:
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(updated)
-            changed.append(package.manifest)
+            changed.append(package.manifest.replace(os.sep, "/"))
     return changed
 
 
