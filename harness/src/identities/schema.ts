@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { AppIdentity, ManifestIdentities, ProviderIdentity } from "./types.ts";
 
+/**
+ * Error thrown when identity validation fails.
+ * Contains a list of human‑readable issue strings describing each problem.
+ * @property {string[]} issues - Human‑readable validation issue messages.
+ */
 export class IdentitiesValidationError extends Error {
 	constructor(public readonly issues: string[]) {
 		super(`Invalid identities declaration:\n${issues.map((issue) => `- ${issue}`).join("\n")}`);
@@ -8,6 +13,10 @@ export class IdentitiesValidationError extends Error {
 	}
 }
 
+/**
+ * Zod schema for validating an application identity entry.
+ * Ensures required fields like `login` and `user_id` are present and correctly typed.
+ */
 export const appIdentitySchema = z
 	.object({
 		slug: z.string().optional(),
@@ -18,6 +27,11 @@ export const appIdentitySchema = z
 	})
 	.passthrough();
 
+/**
+ * Zod schema for validating a provider identity entry.
+ * Validates fields such as `name`, `display_name`, `trailer`, and `verified`.
+ * Includes custom refinement to enforce constraints on `name`/`display_name` and `trailer` based on verification status.
+ */
 export const providerIdentitySchema = z
 	.object({
 		name: z.string().min(1, "provider display name must not be empty").optional(),
@@ -64,6 +78,13 @@ function formatZodPath(path: readonly PropertyKey[]): string {
 		.join("");
 }
 
+/**
+ * Validate the `identities` section of a manifest.
+ *
+ * @param rawDocument - The parsed manifest object (or its `identities` sub‑object).
+ * @returns A {@link ManifestIdentities} object containing the resolved app and provider identities.
+ * @throws {@link IdentitiesValidationError} when required sections are missing or any validation issues are found.
+ */
 export function validateIdentities(rawDocument: unknown): ManifestIdentities {
 	if (!rawDocument || typeof rawDocument !== "object" || Array.isArray(rawDocument)) {
 		throw new IdentitiesValidationError(["identities declaration must be an object"]);
