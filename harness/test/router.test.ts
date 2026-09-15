@@ -179,6 +179,56 @@ describe("quota-aware ranking", () => {
 
 });
 
+/** Added tier override and unknown exclusion tests */
+
+describe("tier override and unknown exclusion", () => {
+    test("tier override respects free data collection for sensitive and normal tasks", async () => {
+        // Provider with logging collection but free tier overrides to none
+        const providers = [{
+            id: "p1",
+            name: "Provider1",
+            dialect: "openai-completions",
+            baseUrl: "https://example",
+            auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+            requiredCredentialSlots: [],
+            models: { static: [{ id: "m" }] },
+            capabilities: { tools: false, reasoning: false, images: false },
+            data: { collection: "logging", source: "test", checkedAt: "2020-01-01" },
+            free: { kind: "permanent", keyUrl: "https://example", data: { collection: "none", source: "test", checkedAt: "2020-01-01" } }
+        }];
+        // Override the collection for the model to respect free tier override
+        const models = buildRouterCatalog({ providers: providers as ProviderConfig[], overrides: { "p1/m": { collection: "none" } } });
+        const config: RouterConfig = { policies: [], dataCollection: { sensitive: ["none"], normal: ["none", "logging", "training", "unknown"] } };
+        // Sensitive task should succeed because collection is overridden to "none"
+        const sensitive = await routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p1/m@default" }, { config, models });
+        expect(sensitive.chain.length).toBe(1);
+        // Normal task should also succeed (unknown allowed) but we use same provider
+        const normal = await routeTask({ prompt: "normal", node: { sensitivity: "normal" }, explicitChain: "p1/m@default" }, { config, models });
+        expect(normal.chain.length).toBe(1);
+    });
+
+    test("unknown collection is excluded for sensitive tasks but allowed for normal tasks", async () => {
+        const providers = [{
+            id: "p2",
+            name: "Provider2",
+            dialect: "openai-completions",
+            baseUrl: "https://example",
+            auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+            requiredCredentialSlots: [],
+            models: { static: [{ id: "m" }] },
+            capabilities: { tools: false, reasoning: false, images: false },
+            // No data field => defaults to unknown
+        }];
+        const models = buildRouterCatalog({ providers: providers as ProviderConfig[] });
+        const config: RouterConfig = { policies: [], dataCollection: { sensitive: ["none"], normal: ["none", "logging", "training", "unknown"] } };
+        // Sensitive task should be rejected
+        await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+        // Normal task should succeed
+        const normal = await routeTask({ prompt: "normal", node: { sensitivity: "normal" }, explicitChain: "p2/m@default" }, { config, models });
+        expect(normal.chain.length).toBe(1);
+    });
+});
+
 describe("data‑collection policy", () => {
 	test("sensitive task with allowed collection none succeeds", async () => {
 		const models = [candidate("p1", "m", "standard", { collection: "none" })];
