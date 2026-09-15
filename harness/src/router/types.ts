@@ -39,6 +39,7 @@ export interface ModelCapability {
 	limitTier: LimitTier;
 	reserve?: { requests?: number; tokens?: number };
 	source?: "live" | "cache" | "builtin" | "config";
+	collection?: "none" | "logging" | "training" | "unknown";
 }
 
 export interface ModelCapabilityOverride extends Partial<Omit<ModelCapability, "candidate">> {}
@@ -51,6 +52,8 @@ export interface RouterConfig {
 	models?: Record<string, ModelCapabilityOverride>;
 	policies: RouterPolicy[];
 	learning?: { enabled?: boolean; windowMs?: number; maxPenalty?: number; maxRecords?: number };
+	dataCollection?: { normal?: string[]; sensitive?: string[] };
+
 }
 
 export interface RankedCandidate {
