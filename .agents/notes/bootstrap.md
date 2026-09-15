@@ -1,5 +1,8 @@
 # Bootstrap and operator runbook
 
+> **Historical note.** This runbook describes how the repository was bootstrapped in 2026-09. Current product requirements are in [`PRD.md`](../../PRD.md); the decisions
+> made since are recorded as ADRs in [`.agents/notes/adr/`](adr/).
+
 How this repository was brought up, what still needs a human, and how to reproduce the whole thing
 if it is ever recreated or used to bootstrap a new autonomous project.
 

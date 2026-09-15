@@ -390,3 +390,14 @@ def test_adr_superseded_links_exist():
             # Look for a file starting with that number
             exists = any(f.startswith(num) and f.endswith(".md") for f in os.listdir(adr_dir))
             assert exists, f"{name} supersedes ADR-{num} but no such ADR file exists"
+
+
+def test_historical_notes_carry_notice_and_pointers():
+    """Historical notes say so and point to the current sources: PRD.md and the ADR directory."""
+    for note in ("bootstrap.md", "vision_capture.md"):
+        content = _read(".agents", "notes", note)
+        head = content[:600]
+        assert "Historical note" in head, f"{note} must open with a historical note"
+        assert "PRD.md" in head, f"{note} must point to PRD.md"
+        assert ".agents/notes/adr/" in head, f"{note} must point to the ADR directory"
+        assert ".df-task" not in content, f"{note} must not link to lane scratch files"

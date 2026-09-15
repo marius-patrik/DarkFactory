@@ -6,7 +6,7 @@
 
 From the decision record of 2026-09-13 (prompts/_decisions.md, orchestrator workspace):
 
-> "Credentials (Patrik, 2026-09-13): df supports MANY accounts per provider, and an account may need SEVERAL credentials (e.g. OAuth token + refresh + project id header, API key + org id, cookie + bearer). Model: provider → accounts[] → credential set (named slots). pi‑ai's one‑credential‑per‑provider CredentialStore is only an adapter view of one selected account." — 2026-09-13
+> "Credentials (Patrik, 2026-09-13): df supports MANY accounts per provider, and an account may need SEVERAL credentials (e.g. OAuth token + refresh + project id header, API key + org id, cookie + bearer). Model: provider → accounts[] → credential set (named slots). pi-ai's one-credential-per-provider CredentialStore is only an adapter view of one selected account." — 2026-09-13
 
 ## Decision
 Support multiple accounts per provider, each with named credential slots, allowing flexible credential management.

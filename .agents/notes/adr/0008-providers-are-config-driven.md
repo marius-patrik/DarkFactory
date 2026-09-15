@@ -6,7 +6,7 @@
 
 From the decision record of 2026-09-13 (prompts/_decisions.md, orchestrator workspace):
 
-> "Provider layer must be fully abstracted: NO per‑provider code; every provider (endpoints, API dialect, auth method and credential slots, headers, model‑list endpoint, quota/error mapping) is defined in config, driven by generic dialect adapters." — 2026-09-13
+> "Provider layer must be fully abstracted: NO per-provider code; every provider (endpoints, API dialect, auth method and credential slots, headers, model-list endpoint, quota/error mapping) is defined in config, driven by generic dialect adapters." — 2026-09-13
 
 ## Decision
 Make the provider layer entirely driven by configuration files; no provider‑specific code exists in the codebase.

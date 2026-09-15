@@ -1,5 +1,8 @@
 # Vision capture — provenance
 
+> **Historical note.** This note preserves the provenance of the original vision conversation. Current product requirements are in [`PRD.md`](../../PRD.md); the decisions
+> made since are recorded as ADRs in [`.agents/notes/adr/`](adr/).
+
 This note records the provenance of the Gemini scoping conversation ("App Scoping Technical
 Specifications Discussion") and how the transcript was captured. The retired `VISION.md` was the
 non-normative synthesis of the DarkFactory product vision; it did **not** originate from this
