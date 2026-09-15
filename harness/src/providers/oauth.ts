@@ -132,6 +132,11 @@ async function deviceLogin(config: OAuthAuthConfig, deps: OAuthDependencies, int
 	}
 	throw new Error("OAuth device code expired");
 }
+/** Creates a configured OAuth authentication handler from the given config.
+ *
+ * @param config - The OAuth authentication configuration.
+ * @param dependencies - Optional partial overrides for internal dependencies.
+ * @returns An OAuthAuth object with login, refresh, and toAuth methods. */
 export function createConfiguredOAuth(config: OAuthAuthConfig, dependencies: Partial<OAuthDependencies> = {}): OAuthAuth {
 	const deps = { ...DEFAULTS, ...dependencies };
 	return {

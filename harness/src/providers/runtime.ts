@@ -27,6 +27,11 @@ function configuredApiKey(config: ApiKeyAuthConfig): ApiKeyAuth {
 		},
 	};
 }
+/** Prepares a replay payload by injecting a thought signature placeholder into function calls.
+ *
+ * @param config - The provider configuration, which may contain the replay placeholder.
+ * @param payload - The payload to process.
+ * @returns The modified payload with thought signatures, or the original if no changes are needed. */
 export function prepareReplayPayload(config: ProviderConfig, payload: unknown): unknown {
 	const placeholder = config.replay?.foreignToolCallThoughtSignature;
 	if (!placeholder) return payload;
@@ -75,13 +80,22 @@ function streams(config: ProviderConfig): ProviderStreams {
 function model(config: ProviderConfig, entry: ProviderConfig["models"]["static"][number]): Model<any> {
 	return { id: entry.id, name: entry.name ?? entry.id, api: config.dialect, provider: config.id, baseUrl: config.baseUrl, reasoning: entry.reasoning ?? config.capabilities.reasoning, input: entry.input ?? (config.capabilities.images ? ["text", "image"] : ["text"]), cost: COST, contextWindow: entry.contextWindow ?? 128_000, maxTokens: entry.maxTokens ?? 32_768 };
 }
+/** Creates a Provider from a ProviderConfig by resolving auth and building the API streams.
+ *
+ * @param config - The provider configuration.
+ * @returns A fully constructed Provider object. */
 export function providerFromConfig(config: ProviderConfig): Provider {
 	const apiKey = config.auth.find((entry): entry is ApiKeyAuthConfig => entry.kind === "api_key");
 	const oauth = config.auth.find((entry) => entry.kind === "oauth");
 	return createProvider({ id: config.id, name: config.name, baseUrl: config.baseUrl, headers: config.staticHeaders, auth: { ...(apiKey ? { apiKey: configuredApiKey(apiKey) } : {}), ...(oauth ? { oauth: createConfiguredOAuth(oauth) } : {}) }, models: config.models.static.map((entry) => model(config, entry)), api: streams(config) });
 }
+/** Registry that manages provider configurations and their instantiated providers.
+ *
+ * Stores provider configs and lazily creates Provider instances for enabled providers. */
 export class ProviderRegistry {
+	/** The list of all provider configurations from the config file. */
 	readonly entries: readonly ProviderConfig[];
+	/** The list of enabled Provider instances built from the configurations. */
 	readonly providers: readonly Provider[];
 	private readonly byId: Map<string, ProviderConfig>;
 	constructor(file: ProviderConfigFile) {
@@ -89,6 +103,14 @@ export class ProviderRegistry {
 		this.byId = new Map(file.providers.map((entry) => [entry.id, entry]));
 		this.providers = this.entries.filter((entry) => entry.enabled !== false).map(providerFromConfig);
 	}
+	/** Retrieves a ProviderConfig by its identifier.
+	 *
+	 * @param id - The provider identifier to look up.
+	 * @returns The matching ProviderConfig, or undefined if not found. */
 	config(id: string): ProviderConfig | undefined { return this.byId.get(id); }
+	/** Creates a MutableModels instance populated with all enabled providers.
+	 *
+	 * @param options - Optional model creation options.
+	 * @returns A MutableModels with all registry providers registered. */
 	models(options?: CreateModelsOptions): MutableModels { const result = createModels(options); result.clearProviders(); for (const provider of this.providers) result.setProvider(provider); return result; }
 }

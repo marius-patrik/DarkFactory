@@ -27,7 +27,16 @@ function requestHeaders(input: ProviderHeaders | undefined, config: ProviderConf
 }
 const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 };
 
-export function cloudcodeAgentApi(config: ProviderConfig): { stream: StreamFunction<any>; streamSimple: StreamFunction<any> } {
+/** Creates a streaming API handler for the cloudcode-agent provider.
+ *
+ * @param config - The provider configuration containing base URL and request settings.
+ * @returns An object with `stream` and `streamSimple` functions for streaming responses. */
+export function cloudcodeAgentApi(config: ProviderConfig): {
+	/** Streaming function that returns an event stream with assistant message events */
+	stream: StreamFunction<any>;
+	/** Simple streaming function returning the same stream as `stream` */
+	streamSimple: StreamFunction<any>;
+} {
 	const stream: StreamFunction<any> = (model, context, options = {}) => {
 		const events = createAssistantMessageEventStream();
 		void (async () => {
