@@ -62,8 +62,11 @@ describe("policy routing", () => {
 		expect(result.chain).toEqual([{ provider: "bulk", model: "coder", account: "default" }]);
 	});
 
-	test("explicit and graph routes win; sensitive routing cannot escape sensitiveChain", async () => {
-		const models = [candidate("safe", "private", "standard"), candidate("other", "fast", "tight")];
+		test("explicit and graph routes win; sensitive routing cannot escape sensitiveChain", async () => {
+		const models = [
+		{ candidate: { provider: "safe", model: "private", account: "default" }, contextWindow: 128_000, tools: true, reasoning: true, modalities: ["text"] as ModelCapability["modalities"], quality: {}, limitTier: "standard" as ModelCapability["limitTier"], collection: "none" as ModelCapability["collection"] },
+		{ candidate: { provider: "other", model: "fast", account: "default" }, contextWindow: 128_000, tools: true, reasoning: true, modalities: ["text"] as ModelCapability["modalities"], quality: {}, limitTier: "tight" as ModelCapability["limitTier"], collection: "none" as ModelCapability["collection"] }
+	];
 		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["tight"] } }] };
 		const explicit = await routeTask({ prompt: "password=fixture-secret", explicitChain: "other/fast@default", node: { chain: "safe/private@default" } }, { config, models });
 		expect(explicit.source).toBe("explicit");
@@ -82,7 +85,7 @@ describe("policy routing", () => {
 			catalogs: new Map([["generic", { provider: "generic", source: "live", models: [{ id: "fresh", name: "Fresh", supportedMethods: ["generateImage"] }] }]]),
 			overrides: { "generic/fresh": { reasoning: true, contextWindow: 1_000_000, limitTier: "bulk", quality: { image: 5 } } },
 		});
-		expect(models).toEqual([{ candidate: { provider: "generic", model: "fresh", account: "default" }, contextWindow: 1_000_000, tools: false, reasoning: true, modalities: ["text", "image_gen"], quality: { image: 5 }, limitTier: "bulk", reserve: undefined, collection: "unknown", source: "live" }]);
+		expect(models).toEqual([{ candidate: { provider: "generic", model: "fresh", account: "default" }, contextWindow: 1_000_000, tools: false, reasoning: true, modalities: ["text", "image_gen"] as ModelCapability["modalities"], quality: { image: 5 }, limitTier: "bulk" as ModelCapability["limitTier"], reserve: undefined, collection: "unknown" as ModelCapability["collection"], source: "live" }]);
 	});
 });
 
@@ -222,7 +225,7 @@ describe("tier override and unknown exclusion", () => {
         const models = buildRouterCatalog({ providers: providers as ProviderConfig[] });
         const config: RouterConfig = { policies: [], dataCollection: { sensitive: ["none"], normal: ["none", "logging", "training", "unknown"] } };
         // Sensitive task should be rejected
-        await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+        await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
         // Normal task should succeed
         const normal = await routeTask({ prompt: "normal", node: { sensitivity: "normal" }, explicitChain: "p2/m@default" }, { config, models });
         expect(normal.chain.length).toBe(1);
@@ -240,13 +243,13 @@ describe("data‑collection policy", () => {
 	test("sensitive task with only logging collection fails", async () => {
 		const models = [candidate("p2", "m", "standard", { collection: "logging" })];
 		const config: RouterConfig = { policies: [] };
-		await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+		await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" }, { config, models })).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
 	});
 
 	test("explicit chain with disallowed provider for sensitive task is rejected", async () => {
 		const models = [candidate("p2", "m", "standard", { collection: "logging" }), candidate("p1", "m", "standard", { collection: "none" })];
 		const config: RouterConfig = { policies: [] };
-		await expect(routeTask({ prompt: "secret", explicitChain: "p2/m@default", node: { sensitivity: "sensitive" } }, { config, models })).rejects.toThrow("No providers allowed for sensitive data‑collection policy");
+		await expect(routeTask({ prompt: "secret", explicitChain: "p2/m@default", node: { sensitivity: "sensitive" } }, { config, models })).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
 	});
 
 	test("normal task can use any collection", async () => {
@@ -254,5 +257,41 @@ describe("data‑collection policy", () => {
 		const config: RouterConfig = { policies: [] };
 		const result = await routeTask({ prompt: "normal", node: { sensitivity: "normal" } }, { config, models });
 		expect(result.chain.length).toBe(1);
+	});
+	test("sensitive task with explicit chain and missing collection is rejected", async () => {
+		// Candidate not in models => defaults to unknown collection
+		const models: ModelCapability[] = []; // no models
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "secret", explicitChain: "p1/m@default", node: { sensitivity: "sensitive" } }, { config, models })).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+	test("sensitive task without sensitiveChain routes to none and skips training and unknown", async () => {
+		const models = [
+			candidate("p1", "m", "standard", { collection: "none" }),
+			candidate("p2", "m", "standard", { collection: "training" }),
+			candidate("p3", "m", "standard", { collection: "unknown" }),
+		];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "secret", node: { sensitivity: "sensitive" } }, { config, models });
+		// Should choose the none provider
+		expect(result.chain.length).toBe(1);
+		expect(result.chain[0]?.provider).toBe("p1");
+		// The other two should not be in the result
+		expect(result.ranked).toHaveLength(1);
+		expect(result.ranked[0]!.candidate.provider).toBe("p1");
+	});
+	test("sensitive task with no none collection throws fail-closed error", async () => {
+		const models = [
+			candidate("p1", "m", "standard", { collection: "training" }),
+			candidate("p2", "m", "standard", { collection: "unknown" }),
+		];
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "secret", node: { sensitivity: "sensitive" } }, { config, models })).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+	test("normal task accepts unknown providers", async () => {
+		const models = [candidate("p1", "m", "standard", { collection: "unknown" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "normal", node: { sensitivity: "normal" } }, { config, models });
+		expect(result.chain.length).toBe(1);
+		expect(result.chain[0]?.provider).toBe("p1");
 	});
 });

@@ -119,6 +119,8 @@ describe("df run", () => {
 			defaultChain: "faux/echo@default-policy",
 			hardReasoningChain: "faux/echo@hard-policy",
 			sensitiveChain: "faux/echo@sensitive-policy",
+			// Faux accounts declare no data-collection policy (unknown), which sensitive routing refuses by default.
+			router: { policies: [], dataCollection: { sensitive: ["none", "unknown"] } },
 		};
 		const normal = await run("hello", { args: [], config });
 		const hard = await run("prove it", { args: ["--reasoning", "hard"], config });

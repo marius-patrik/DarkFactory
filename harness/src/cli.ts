@@ -373,7 +373,7 @@ async function routerModels(registry: ProviderRegistry, store: FileCredentialSto
 	const models = buildRouterCatalog({ providers: registry.entries, catalogs, accounts, overrides: config.router?.models });
 	if (fauxEnabled) models.push({
 		candidate: { provider: "faux", model: "echo", account: "test" }, contextWindow: 128_000,
-		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin",
+		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin", collection: "none" as const,
 	});
 	return models;
 }
