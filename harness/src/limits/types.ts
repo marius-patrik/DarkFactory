@@ -2,7 +2,17 @@ import type { Candidate } from "../failover.ts";
 
 export type LimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth";
 export type LimitDimension = "requests" | "tokens" | "usage";
-/** "declared" marks an in-memory admission block from a declared limit; it is never persisted. */
+/**
+ * Source of a limit value.
+ *
+ * - `"header"`: derived from response headers.
+ * - `"body"`: parsed from response body.
+ * - `"rule"`: from a configured rule.
+ * - `"default"`: default limit when none provided.
+ * - `"migration"`: limits from migration process.
+ * - `"manual"`: manually set limits.
+ * - `"declared"`: limits declared in schema.
+ */
 export type LimitSource = "header" | "body" | "rule" | "default" | "migration" | "manual" | "declared";
 
 export interface LimitEntry extends Candidate {

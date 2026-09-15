@@ -2,6 +2,22 @@ import { accountId, type FileCredentialStore } from "../credentials.ts";
 import type { HomeReader } from "./reader.ts";
 import { epochMsFromMilliseconds, epochMsFromSeconds, parseJson, stringField } from "./shared.ts";
 
+/**
+ * Import a Kimi Code account credential into the DF credential store.
+ *
+ * Reads a Kimi Code credentials file at `path` using `homeReader`, validates the
+ * required OAuth fields and stores them under the generated account ID.
+ *
+ * @param store - The credential store to modify.
+ * @param label - Human‑readable label for the imported account.
+ * @param homeReader - Reader for home‑relative files; used to fetch the JSON
+ *   credential file.
+ * @param provider - Provider identifier (e.g. "kimi").
+ * @param path - Relative path within the home directory where the Kimi file lives.
+ * @throws When the file cannot be read, is missing required fields, or the token
+ *   expiry is invalid.
+ * @returns A promise that resolves when the account has been imported.
+ */
 export async function importKimiAccount(store: FileCredentialStore, label: string, homeReader: HomeReader, provider: string, path: string): Promise<void> {
 	const document = parseJson(await homeReader.read(path) ?? null, `~/${path}`);
 	if (!document) throw new Error(`No Kimi Code login was found in ~/${path}`);
