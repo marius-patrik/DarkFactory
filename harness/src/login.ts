@@ -3,6 +3,16 @@ import { accountId, type CredentialSlot, type FileCredentialStore } from "./cred
 import { createConfiguredOAuth } from "./providers/oauth.ts";
 import type { LoginHydrationConfig, ProviderConfig } from "./providers/schema.ts";
 
+/**
+ * Options for configuring the login process.
+ *
+ * @property prompt - Function to prompt the user for authentication input.
+ * @property notify - Callback invoked for authentication events.
+ * @property signal - Optional AbortSignal to cancel the login.
+ * @property fetch - Optional custom fetch implementation.
+ * @property isHeadless - If true, runs in headless mode without UI prompts.
+ * @property credential - Optional pre-obtained OAuth credential to use.
+ */
 export interface LoginOptions {
 	prompt(prompt: AuthPrompt): Promise<string>;
 	notify(event: AuthEvent): void;
@@ -35,7 +45,15 @@ async function hydrate(config: ProviderConfig, credential: OAuthCredential, fetc
 	return { type: spec.slotType, value: normalized };
 }
 
-/** Completes a config-declared OAuth login and commits all account slots atomically. */
+/**
+ * Completes an OAuth login flow for a provider configuration and stores the resulting credentials.
+ *
+ * @param config - Provider configuration containing authentication details.
+ * @param label - Human‑readable label identifying the account.
+ * @param store - Credential store where the account information will be persisted.
+ * @param options - Options controlling the login behaviour.
+ * @throws When the provider does not support OAuth, the login fails, or the hydration process cannot retrieve required data.
+ */
 export async function loginProviderAccount(config: ProviderConfig, label: string, store: FileCredentialStore, options: LoginOptions): Promise<void> {
 	const oauthConfig = config.auth.find((entry) => entry.kind === "oauth");
 	if (!oauthConfig) throw new Error(`Provider ${config.id} does not support OAuth login`);

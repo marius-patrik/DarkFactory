@@ -5,12 +5,23 @@ import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-wor
 import { FileCredentialStore, defaultDfHome } from "../credentials.ts";
 import type { ModelListConfig, ProviderConfig } from "../providers/schema.ts";
 
+/** Default cache lifetime for model catalogs (6 hours). */
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
 
+/**
+ * Represents a simplified model definition from a provider catalog.
+ *
+ * @property id - Unique identifier of the model.
+ * @property name - Human-readable display name of the model.
+ * @property supportedMethods - List of supported API methods (e.g. "generateContent").
+ */
 export interface CatalogModel {
+	/** Unique identifier of the model. */
 	id: string;
+	/** Human-readable display name of the model. */
 	name: string;
+	/** Supported API methods (e.g. "generateContent", "streamGenerateContent"). */
 	supportedMethods?: string[];
 }
 
@@ -21,25 +32,59 @@ interface CatalogFile {
 	models: CatalogModel[];
 }
 
+/**
+ * The result of a model catalog fetch operation.
+ *
+ * @property provider - Provider ID the models belong to.
+ * @property models - List of discovered models.
+ * @property source - Origin of the data: "live" (fresh fetch), "cache" (local file), or "builtin" (hardcoded).
+ * @property fetchedAt - Timestamp of when the data was fetched, if applicable.
+ * @property error - Error message if a live fetch failed and cached data was served instead.
+ */
 export interface CatalogResult {
+	/** Provider ID the models belong to. */
 	provider: string;
+	/** List of discovered models. */
 	models: CatalogModel[];
+	/** Origin of the data: "live" (fresh fetch), "cache" (local file), or "builtin" (hardcoded). */
 	source: "live" | "cache" | "builtin";
+	/** Timestamp of when the data was fetched, if applicable. */
 	fetchedAt?: number;
 	/** Set when a live refresh failed and a cached catalog was served instead. */
 	error?: string;
 }
 
+/** Function type for fetching catalog data. */
 export type CatalogFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
+/**
+ * Configuration options for the ModelCatalog.
+ *
+ * @property home - Path to the home directory for storing caches.
+ * @property providers - List of available providers.
+ * @property providerConfigs - Configuration for the providers.
+ * @property store - Credential store for authenticated catalog requests.
+ * @property fetch - Custom fetch implementation.
+ * @property ttlMs - Cache lifetime in milliseconds.
+ * @property offline - If true, forbids live network requests.
+ * @property now - Mockable time function returning current epoch in milliseconds.
+ */
 export interface ModelCatalogOptions {
+	/** Path to the home directory for storing caches. */
 	home?: string;
+	/** List of available providers. */
 	providers: readonly Provider[];
+	/** Configuration for the providers. */
 	providerConfigs?: readonly ProviderConfig[];
+	/** Credential store for authenticated catalog requests. */
 	store?: FileCredentialStore;
+	/** Custom fetch implementation. */
 	fetch?: CatalogFetch;
+	/** Cache lifetime in milliseconds. */
 	ttlMs?: number;
+	/** If true, forbids live network requests. */
 	offline?: boolean;
+	/** Mockable time function returning current epoch in milliseconds. */
 	now?: () => number;
 }
 
@@ -88,6 +133,15 @@ function mappedString(value: unknown, path: string | undefined, key?: string): s
 	return nonEmpty(pathValues(value, path)[0]?.value);
 }
 
+/**
+ * Normalizes a provider's catalog response using a specific mapping configuration.
+ *
+ * @param provider - Provider ID for error reporting.
+ * @param value - Raw response body from the provider.
+ * @param mapping - Mapping rules to extract models from the response.
+ * @returns A sorted list of normalized models.
+ * @throws When the response contains no valid models.
+ */
 export function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
 	const raw = pathValues(value, mapping.itemsPath);
 	const entries = raw.length === 1 && Array.isArray(raw[0]?.value)
@@ -109,7 +163,14 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 	return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** Backward-compatible loose normalization; configured providers use explicit paths. */
+/**
+ * Normalizes a provider's catalog response using heuristic-based discovery.
+ *
+ * @param provider - Provider ID for error reporting.
+ * @param value - Raw response body from the provider.
+ * @returns A sorted list of normalized models.
+ * @throws When the response is invalid or contains no valid models.
+ */
 export function normalizeCatalogResponse(provider: string, value: unknown): CatalogModel[] {
 	let entries: Array<[string | undefined, unknown]> | undefined;
 	if (Array.isArray(value)) entries = value.map((entry) => [undefined, entry]);
@@ -161,6 +222,12 @@ function mergeHeaders(...sets: ProviderHeaders[]): Headers {
 	return headers;
 }
 
+/**
+ * Manages retrieval and caching of model catalogs from various providers.
+ *
+ * Provides support for both configured API endpoints and heuristic-based discovery,
+ * with automatic local filesystem caching.
+ */
 export class ModelCatalog {
 	private readonly home: string;
 	private readonly providers: Map<string, Provider>;
@@ -275,7 +342,20 @@ export class ModelCatalog {
 		return [...models.values()].sort((a, b) => a.id.localeCompare(b.id));
 	}
 
-	async get(providerId: string, options: { account?: string; refresh?: boolean } = {}): Promise<CatalogResult> {
+	/**
+	 * Retrieves the model catalog for a provider.
+	 *
+	 * @param providerId - Provider identifier.
+	 * @param options - Options controlling fetch and caching.
+	 * @returns The catalog result.
+	 * @throws When the provider is unknown or the catalog fetch fails.
+	 */
+	async get(providerId: string, options: {
+		/** Account identifier to use for authenticated catalog requests. */
+		account?: string;
+		/** If true, forces a fresh fetch instead of using cache. */
+		refresh?: boolean;
+	} = {}): Promise<CatalogResult> {
 		const provider = this.providers.get(providerId);
 		if (!provider) throw new Error(`Unknown provider ${providerId}`);
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
@@ -303,6 +383,13 @@ export class ModelCatalog {
 	}
 }
 
+/**
+ * Transforms catalog models into runnable Model instances.
+ *
+ * @param provider - The provider that owns the models.
+ * @param catalog - The discovered model catalog.
+ * @returns A list of runnable Model instances.
+ */
 export function materializeCatalogModels(provider: Provider, catalog: CatalogResult): Model<any>[] {
 	const builtins = provider.getModels();
 	const fallback = builtins[0];
@@ -313,6 +400,12 @@ export function materializeCatalogModels(provider: Provider, catalog: CatalogRes
 	});
 }
 
+/**
+ * Checks if a catalog model supports the necessary methods to be runnable.
+ *
+ * @param model - The model to check.
+ * @returns True if the model is runnable.
+ */
 export function isRunnableCatalogModel(model: CatalogModel): boolean {
 	return !model.supportedMethods || model.supportedMethods.some((method) => method === "generateContent" || method === "streamGenerateContent");
 }
