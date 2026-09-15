@@ -3309,13 +3309,25 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
 
 def dispatch_stage(repo: str, payload: Dict[str, Any]):
     """Dispatches the agent-dispatch event to the repository."""
-    with tempfile.NamedTemporaryFile("w", delete=False) as f:
-        json.dump({"event_type": "agent-dispatch", "client_payload": payload}, f)
-        temp_path = f.name
+    payload_data = json.dumps({"event_type": "agent-dispatch", "client_payload": payload})
+    temp_path = None
     try:
-        run_gh(
-            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path], repo=repo
-        )
+        try:
+            # Try stdin first
+            run_gh(
+                ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", "-"],
+                repo=repo,
+                input=payload_data,
+            )
+        except TypeError:
+            # Fallback to temp file if run_gh doesn't accept input
+            with tempfile.NamedTemporaryFile("w", delete=False) as f:
+                f.write(payload_data)
+                temp_path = f.name
+            run_gh(
+                ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
+                repo=repo,
+            )
     except Exception as e:
         print(f"Failed to dispatch agent-dispatch to {repo}: {e}", file=sys.stderr)
         # Post PR notice
@@ -3332,7 +3344,8 @@ def dispatch_stage(repo: str, payload: Dict[str, Any]):
         block_entity(payload.get("pr"), repo=repo, is_pr=True)
         raise
     finally:
-        os.remove(temp_path)
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def run_self_review_iteration(
@@ -3439,7 +3452,56 @@ def run_self_review_iteration(
         )
         return "blocked"
 
-    # Combine scope findings and LLM review findings
+    # Parse findings from combined text into individual items.
+    # A "finding" is a numbered item (1., 2., ...) or a bullet (* or -),
+    # where a multi-line item counts as one finding.
+    # Scope findings (Out of scope:) are added one per file.
+
+    def _parse_findings_items(text: str) -> List[str]:
+        """Extract top-level findings from agent review text.
+
+        Returns one stripped string per finding. Numbered items (1., 2., etc.)
+        and bullet items (* or -) are each one finding; subsequent indented/continuation
+        lines belong to that same finding.
+        """
+        lines = text.splitlines()
+        items: List[str] = []
+        current_item_lines: List[str] = []
+        in_item = False
+
+        def flush_item():
+            nonlocal current_item_lines
+            if current_item_lines:
+                items.append(" ".join(l.strip() for l in current_item_lines if l.strip()))
+            current_item_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                # blank line: continue collecting if in an item
+                if in_item and current_item_lines:
+                    pass
+                continue
+            # Check if this line starts a new item
+            starts_numbered = re.match(r"^\d+\.\s", stripped) is not None
+            starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
+            if starts_numbered or starts_bullet:
+                # flush any previous item
+                flush_item()
+                in_item = True
+                current_item_lines = [
+                    stripped[2:].strip() if starts_numbered else stripped[2:].strip()
+                ]
+                continue
+            # Otherwise, it's a continuation line of the current item
+            if in_item:
+                current_item_lines.append(stripped)
+            # if not in_item, ignore orphan lines
+
+        flush_item()
+        return items
+
+    # Build combined findings text: scope findings + LLM review findings
     has_llm_findings = not ("NO_FINDINGS" in review_result.upper()[:50])
     scope_findings = ""
     if out_of_scope_files:
@@ -3448,11 +3510,9 @@ def run_self_review_iteration(
             f"Out of scope: {f} (not in the approved plan)" for f in sorted(out_of_scope_files)
         )
 
-    # Re-evaluate review result after potential revert
-    # (If we had scope findings above, review_result may need re-combining)
-    # Actually, let's just combine as the original code does
+    # Combine: scope findings first, then LLM findings
     if scope_findings and has_llm_findings:
-        combined_findings = f"{scope_findings}\n\n### Code Quality Findings:\n\n{review_result}"
+        combined_findings = f"{scope_findings}\n\n{review_result}"
     elif scope_findings:
         combined_findings = scope_findings
     elif has_llm_findings:
@@ -3460,16 +3520,14 @@ def run_self_review_iteration(
     else:
         combined_findings = ""
 
-    # Normalize findings for digest and comparison
-    def _normalize_findings(text: str) -> str:
-        norm = re.sub(r"in commit [0-9a-fA-F]{7,40}", "in commit <hash>", text)
-        return "\n".join(line.strip() for line in norm.strip().splitlines() if line.strip())
+    # Parse into individual findings items
+    findings_items = _parse_findings_items(combined_findings)
+    K = len(findings_items)  # number of findings, not lines
 
-    normalized = _normalize_findings(combined_findings)
-
-    # Compute SHA1 digest of normalized findings
-    digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()
-    k = len([line for line in normalized.splitlines() if line.strip()]) if normalized.strip() else 0
+    # Compute normalized findings for digest: each finding stripped + lowercased,
+    # then sorted, joined by "\n"
+    normalized_sorted = "\n".join(sorted(f.strip().lower() for f in findings_items))
+    digest = hashlib.sha1(normalized_sorted.encode("utf-8")).hexdigest()
 
     # Post ONE PR comment with marker
     # First, check for previous iteration marker to get prior digest
@@ -3490,18 +3548,17 @@ def run_self_review_iteration(
     except Exception as e:
         print(f"Failed to read previous comments: {e}", file=sys.stderr)
 
-    # Build the comment body
-    findings_list = normalized.splitlines() if normalized.strip() else []
+    # Build findings display as `1.`, `2., ...
     findings_display = (
-        "\n".join(f"{i+1}. {f}" for i, f in enumerate(findings_list))
-        if findings_list
+        "\n".join(f"{i+1}. {f}" for i, f in enumerate(findings_items))
+        if findings_items
         else "No actionable findings."
     )
 
     comment_body = (
         f"### Self-Review — iteration {iteration}\n"
         f"{findings_display}\n"
-        f"<!-- darkfactory-self-review iteration={iteration} findings={k} digest={digest} -->"
+        f"<!-- darkfactory-self-review iteration={iteration} findings={K} digest={digest} -->"
     )
 
     # Post the comment
@@ -3517,7 +3574,7 @@ def run_self_review_iteration(
     )
 
     # Case 1: K == 0 → clean
-    if k == 0:
+    if K == 0:
         run_gh(
             [
                 "pr",
@@ -3533,7 +3590,7 @@ def run_self_review_iteration(
         return "clean"
 
     # Case 2: K > 0 and D equals the digest in the marker of iteration N-1 → blocked
-    if k > 0 and prior_digest is not None and digest == prior_digest:
+    if K > 0 and prior_digest is not None and digest == prior_digest:
         run_gh(
             [
                 "pr",
