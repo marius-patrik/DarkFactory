@@ -19,3 +19,20 @@ test("malformed consumed payloads fail at the boundary", async () => {
   const repo = new GitHubRepository(new GitHubClient({ token: "t", fetch: mock.fetch }), "o", "r");
   expect(repo.getIssue(1)).rejects.toThrow("invalid GitHub issue response");
 });
+
+test("checkStates merges check runs and commit statuses, preferring check runs", async () => {
+  const mock = scripted([json({ check_runs: [
+    { name: "pipeline (3.10)", status: "completed", conclusion: "success" },
+    { name: "pipeline (3.11)", status: "in_progress", conclusion: null },
+    { name: "harness", status: "completed", conclusion: "failure" },
+  ] }), json({ statuses: [
+    { context: "legacy", state: "success" },
+    { context: "harness", state: "success" },
+  ] })]);
+  const repo = new GitHubRepository(new GitHubClient({ token: "t", fetch: mock.fetch }), "o", "r");
+  const states = await repo.checkStates("abc");
+  expect(states.get("pipeline (3.10)")).toBe("success");
+  expect(states.get("pipeline (3.11)")).toBe("pending");
+  expect(states.get("harness")).toBe("failure");
+  expect(states.get("legacy")).toBe("success");
+});
