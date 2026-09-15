@@ -265,8 +265,10 @@
   credential never is.</li>
 <li><strong>Conversational lifecycle</strong>: incoming issues are auto-classified, the agent answers feedback and
   executes adjustments on Request issues and pull requests, bots are ignored to prevent
-  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and runs a review
-  loop bounded by <code>MAX_REVIEW_ITERATIONS</code>. On quota exhaustion the agent saves a checkpoint, moves
+  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and self-reviews it
+  in separate runs: each review run posts all findings and dispatches a fix run, which dispatches
+  the next review, until a review finds nothing (identical findings twice block the PR). On quota
+  exhaustion the agent saves a checkpoint, moves
   the item to <code>Blocked</code>, comments the resume instructions, and exits cleanly.</li>
 </ul>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
