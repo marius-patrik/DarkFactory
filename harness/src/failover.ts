@@ -7,12 +7,9 @@ import type {
 	StopReason,
 	Usage,
 } from "@earendil-works/pi-ai";
-
-export type { Context, Models } from "@earendil-works/pi-ai";
 import { classifyFailure, type FailureClassification } from "./quota.ts";
 import type { ProviderConfig } from "./providers/schema.ts";
 import { redactErrorMessage } from "./redaction.ts";
-import { penalty } from "./penalty.ts";
 
 export interface Candidate {
 	provider: string;
@@ -92,89 +89,66 @@ export async function runFailoverTurn(options: RunTurnOptions): Promise<TurnResu
 
 	for (const candidate of options.candidates) {
 		if (exhausted.isExhausted(candidate)) continue;
-		let retryAttempt = 0;
-		let shouldFailover = false;
-		while (retryAttempt < 2) {
-			const isRetry = retryAttempt > 0;
-			if (isRetry) {
-				penalty.record('lengthStopRetry', { candidate, retryAttempt });
+		const started = (options.now ?? performance.now)();
+		let response: ProviderResponse | undefined;
+		try {
+			const models = options.modelsFor(candidate);
+			const model = models.getModel(candidate.provider, candidate.model);
+			if (!model) throw new Error(`Unknown model ${candidate.provider}/${candidate.model}`);
+			const headers = await options.headersFor?.(candidate);
+			const stream = models.streamSimple(model, options.context, {
+				...(headers ? { headers } : {}),
+				...(options.fetchFor ? { fetch: options.fetchFor(candidate) } : {}),
+				maxRetries: 0,
+				maxRetryDelayMs: 1_000,
+				onResponse(value) { response = value; },
+			});
+			for await (const event of stream) {
+				if (event.type === "text_delta") options.onText?.(event.delta);
 			}
-			const started = (options.now ?? performance.now)();
-			let response: ProviderResponse | undefined;
-			try {
-				const models = options.modelsFor(candidate);
-				const model = models.getModel(candidate.provider, candidate.model);
-				if (!model) throw new Error(`Unknown model ${candidate.provider}/${candidate.model}`);
-				const headers = await options.headersFor?.(candidate);
-				const stream = models.streamSimple(model, options.context, {
-					...(headers ? { headers } : {}),
-					...(options.fetchFor ? { fetch: options.fetchFor(candidate) } : {}),
-					maxRetries: 0,
-					maxRetryDelayMs: 1_000,
-					onResponse(value) { response = value; },
-				});
-				for await (const event of stream) {
-					if (event.type === "text_delta") options.onText?.(event.delta);
-				}
-				const message = await stream.result();
-				const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
-				const hasOutput = message.content.some((c) => c.type === "text" && (c as any).text?.length > 0) || message.content.some((c) => c.type === "toolCall");
-				if (message.stopReason === "length" && !hasOutput && !isRetry) {
-					// length stop with no output, retry
-					retryAttempt++;
-					continue; // retry loop
-				}
-				if (message.stopReason === "length" && !hasOutput && isRetry) {
-					// second length stop, record failover penalty and break to next candidate
-					penalty.record('lengthStopFailover', { candidate, retryAttempt });
-					shouldFailover = true;
-					break;
-				}
-				if (message.stopReason !== "error" && message.stopReason !== "aborted") {
-					const event: StepEvent = {
-						type: "attempt", ...candidate, stopReason: message.stopReason, usage: message.usage,
-						errorClass: null, durationMs,
-						errorMessage: null,
-					};
-					steps.push(event);
-					options.onStep?.(event);
-					return { message, candidate, steps };
-				}
-				const config = options.providerConfigs?.get(candidate.provider);
-				const failure = classifyFailure({ message, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
-				lastFailure = redactErrorMessage(message.errorMessage ?? message.stopReason);
+			const message = await stream.result();
+			const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
+			if (message.stopReason !== "error" && message.stopReason !== "aborted") {
 				const event: StepEvent = {
 					type: "attempt", ...candidate, stopReason: message.stopReason, usage: message.usage,
-					durationMs, classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
+					errorClass: null, durationMs,
+					errorMessage: null,
 				};
 				steps.push(event);
 				options.onStep?.(event);
-				if (failure.kind === "quota_exhausted" || failure.kind === "rate_limited") {
-					exhausted.mark(candidate, failure.resetAt);
-					break;
-				}
-				throw new TerminalAttemptError(lastFailure);
-			} catch (error) {
-				if (error instanceof TerminalAttemptError) throw error;
-				const config = options.providerConfigs?.get(candidate.provider);
-				const failure = classifyFailure({ error, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
-				const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
-				lastFailure = redactErrorMessage(error);
-				const event: StepEvent = {
-					type: "attempt", ...candidate, stopReason: "threw", usage: null, durationMs,
-					classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
-				};
-				steps.push(event);
-				options.onStep?.(event);
-				if (failure.kind === "quota_exhausted" || failure.kind === "rate_limited") {
-					exhausted.mark(candidate, failure.resetAt);
-					break;
-				}
-				throw error;
+				return { message, candidate, steps };
 			}
-		}
-		if (shouldFailover) {
-			continue; // move to next candidate
+			const config = options.providerConfigs?.get(candidate.provider);
+			const failure = classifyFailure({ message, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
+			lastFailure = redactErrorMessage(message.errorMessage ?? message.stopReason);
+			const event: StepEvent = {
+				type: "attempt", ...candidate, stopReason: message.stopReason, usage: message.usage,
+				durationMs, classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
+			};
+			steps.push(event);
+			options.onStep?.(event);
+			if (failure.kind === "quota_exhausted" || failure.kind === "rate_limited") {
+				exhausted.mark(candidate, failure.resetAt);
+				continue;
+			}
+			throw new TerminalAttemptError(lastFailure);
+		} catch (error) {
+			if (error instanceof TerminalAttemptError) throw error;
+			const config = options.providerConfigs?.get(candidate.provider);
+			const failure = classifyFailure({ error, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
+			const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
+			lastFailure = redactErrorMessage(error);
+			const event: StepEvent = {
+				type: "attempt", ...candidate, stopReason: "threw", usage: null, durationMs,
+				classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
+			};
+			steps.push(event);
+			options.onStep?.(event);
+			if (failure.kind === "quota_exhausted" || failure.kind === "rate_limited") {
+				exhausted.mark(candidate, failure.resetAt);
+				continue;
+			}
+			throw error;
 		}
 	}
 	throw new Error(`All failover candidates exhausted: ${lastFailure}`);
