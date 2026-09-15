@@ -42,6 +42,17 @@ export class ModelPoller {
 		const excludes = [...this.#excludeGlobs, ...(provider?.routing?.exclude ?? [])];
 		const usable = live.models
 			.filter((model) => isTextGenerationCapable(model))
+			.filter((model) => {
+				// Paid/free resolution
+				const isFreeAccount = !!provider?.free?.kind;
+				if (!isFreeAccount) return true; // paid accounts keep all text-generation models
+				const pricing = (model as any).pricing;
+				if (pricing?.prompt !== undefined) {
+					return pricing.prompt === "0" || model.id.includes(":free") || model.id.includes("-free");
+				}
+				// No pricing metadata: include model
+				return true;
+			})
 			.filter((model) => !isLearnedUnavailable(this.#learnedUnavailable, providerId, model.id, account))
 			.filter((model) => !excludes.some((glob) => globMatch(glob, `${providerId}/${model.id}`)))
 			.map((model): UsableCatalogModel => {

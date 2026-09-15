@@ -66,4 +66,39 @@ describe("ModelPoller", () => {
 		);
 		expect(result.stale).toEqual(["missing-model"]);
 	});
+
+	test("free model filtering: free-tier account", async () => {
+		const result = await poll(
+			[
+				{ id: "model-paid", name: "Paid Model", modalities: ["text"], pricing: { prompt: "0.001" } },
+				{ id: "model-free", name: "Free Model", modalities: ["text"], pricing: { prompt: "0" } },
+				{ id: "model:free", name: "Free ID Model", modalities: ["text"], pricing: {} },
+			],
+			provider({ free: { kind: "permanent", keyUrl: "https://example.com" } }),
+		);
+		expect(result.usable.map((model) => model.id)).toEqual(["model-free", "model:free"]);
+	});
+
+	test("paid account includes all models regardless of pricing", async () => {
+		const result = await poll(
+			[
+				{ id: "model-paid", name: "Paid Model", modalities: ["text"], pricing: { prompt: "0.001" } },
+				{ id: "model-free", name: "Free Model", modalities: ["text"], pricing: { prompt: "0" } },
+			],
+			provider()
+		);
+		expect(result.usable.map((model) => model.id)).toEqual(["model-paid", "model-free"]);
+	});
+
+	test("no pricing metadata includes all text models", async () => {
+		const result = await poll(
+			[
+				{ id: "model-a", name: "Model A", modalities: ["text"] },
+				{ id: "model-b", name: "Model B", modalities: ["text"] },
+			],
+			provider()
+		);
+		expect(result.usable.map((model) => model.id)).toEqual(["model-a", "model-b"]);
+	});
+
 });
