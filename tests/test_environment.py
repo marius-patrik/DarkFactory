@@ -179,6 +179,15 @@ class TestDeclaredConfiguration:
         assert "packages/cli" not in {p.path for p in env.packages}
         assert "packages/web" in {p.path for p in env.packages}
 
+    def test_harness_is_detected_when_not_ignored(self, tmp_path):
+        # Create a TypeScript harness package with Bun lockfile
+        _write(
+            tmp_path, "harness/package.json", json.dumps({"name": "harness", "version": "0.1.0"})
+        )
+        _write(tmp_path, "harness/bun.lock", "")
+        env = environment.configure(str(tmp_path))
+        assert any(p.path == "harness" and p.ecosystem == "node" for p in env.packages)
+
     def test_glob_patterns_are_honoured_when_ignoring(self, polyglot):
         _manifest(polyglot, {"ignore": ["packages/*"]})
         env = environment.configure(str(polyglot))
@@ -271,6 +280,12 @@ class TestPlans:
         assert plan["python"]["command"] == "bun run scripts/build-docs.ts"
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
+        _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
+        plan = environment.configure(str(polyglot)).test_plan()
+        assert plan["rust"]["command"] == "cargo nextest run"
+        assert plan["node"]["command"] == "bun test", "other ecosystems keep their defaults"
+
+    def test_rust_declared_command_overrides_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
         plan = environment.configure(str(polyglot)).test_plan()
         assert plan["rust"]["command"] == "cargo nextest run"
