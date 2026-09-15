@@ -53,7 +53,8 @@ export class ChainExhaustedError extends Error {
 
 	constructor(failures: readonly FailureKind[], reasons: readonly CandidateFailureReason[] = [], limits: readonly LimitEntry[] = []) {
 		const authOnly = failures.length > 0 && failures.every((kind) => kind === "auth");
-		const quotaOnly = failures.length > 0 && failures.every((kind) => kind === "quota_exhausted" || kind === "rate_limited");
+		// Quota, rate limits and overload all clear on their own: the caller should wait and retry (exit 2), not give up.
+		const quotaOnly = failures.length > 0 && failures.every((kind) => kind === "quota_exhausted" || kind === "rate_limited" || kind === "transient");
 		const safeReasons = reasons.map((reason) => ({ ...reason, message: redactErrorMessage(reason.message) }));
 		const finalMessage = safeReasons.at(-1)?.message;
 		super(authOnly ? "All failover candidates failed authentication" : quotaOnly ? "All failover candidates are exhausted or rate limited" : finalMessage ? redactErrorMessage(finalMessage) : "All failover candidates failed");
