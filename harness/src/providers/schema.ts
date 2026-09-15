@@ -165,6 +165,12 @@ export interface LoginHydrationConfig {
 	stripPrefix?: string;
 }
 export interface ProviderConfig {
+	routing?: {
+		/** If false, this provider is excluded from automatic routing. */
+		enabled?: boolean;
+		/** Glob patterns of model IDs to exclude from automatic routing. */
+		exclude?: string[];
+	};
 	id: string;
 	name: string;
 	enabled?: boolean;
