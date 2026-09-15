@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxProvider } from "@earendil-works/pi-ai";
@@ -17,7 +17,10 @@ function workspace(): { home: string; cwd: string } {
 	const cwd = join(root, "repo");
 	for (const name of ["darkfactory-auth", "df-operator"]) {
 		mkdirSync(join(cwd, ".agents", "skills", name), { recursive: true });
-		writeFileSync(join(cwd, ".agents", "skills", name, "SKILL.md"), `---\nname: ${name}\ndescription: Fixture skill ${name} used by the runtime skills test.\n---\n\n# ${name}\n`);
+		writeFileSync(
+			join(cwd, ".agents", "skills", name, "SKILL.md"),
+			`---\nname: ${name}\ndescription: Fixture skill ${name} used by the runtime skills test.\n---\n\n# ${name}\n`,
+		);
 	}
 	return { home: join(root, "home"), cwd };
 }
@@ -34,7 +37,10 @@ async function loadedSkills(skills?: readonly string[]): Promise<string[]> {
 		...(skills ? { skills } : {}),
 	});
 	try {
-		return runtime.session.resourceLoader.getSkills().skills.map((skill) => skill.name).sort();
+		return runtime.session.resourceLoader
+			.getSkills()
+			.skills.map((skill) => skill.name)
+			.sort();
 	} finally {
 		runtime.session.dispose();
 	}
@@ -50,7 +56,10 @@ describe("runtime skills", () => {
 	});
 
 	test("skill names cannot leave .agents/skills", () => {
-		expect(namedSkillPaths("/repo", ["darkfactory-auth"])).toEqual([join("/repo", ".agents", "skills", "darkfactory-auth")]);
-		for (const name of ["../secrets", "a/b", "Auth", ""]) expect(() => namedSkillPaths("/repo", [name])).toThrow("Invalid skill name");
+		expect(namedSkillPaths("/repo", ["darkfactory-auth"])).toEqual([
+			join("/repo", ".agents", "skills", "darkfactory-auth"),
+		]);
+		for (const name of ["../secrets", "a/b", "Auth", ""])
+			expect(() => namedSkillPaths("/repo", [name])).toThrow("Invalid skill name");
 	});
 });

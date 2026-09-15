@@ -1,16 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
-	installWorkflows,
-	installSkills,
 	checkSkillsDrift,
-	discoverBundledSkills,
 	checkWorkflowsDrift,
+	discoverBundledSkills,
+	installSkills,
+	installWorkflows,
 	updateWorkflows,
 } from "../../src/ci/installer.ts";
-import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
 
 const bundledSkillPath = (name: string) => join(import.meta.dir, "../../assets/skills", name, "SKILL.md");
 
@@ -189,11 +188,15 @@ describe("Bundled skills installer & drift", () => {
 
 			const skipReport = await installSkills(temp);
 			expect(skipReport.skippedModified).toContain("darkfactory-auth");
-			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(modifiedContent);
+			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(
+				modifiedContent,
+			);
 
 			const forceReport = await installSkills(temp, { force: true });
 			expect(forceReport.installed).toContain("darkfactory-auth");
-			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"));
+			expect(await readFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf-8")).toBe(
+				await readFile(bundledSkillPath("darkfactory-auth"), "utf-8"),
+			);
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -213,10 +216,7 @@ describe("Bundled skills installer & drift", () => {
 			expect(drift.every((d) => d.status === "in_sync")).toBe(true);
 
 			// Modify the installed skill
-			await writeFile(
-				join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"),
-				"# modified\n"
-			);
+			await writeFile(join(temp, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "# modified\n");
 
 			drift = await checkSkillsDrift(temp);
 			expect(drift.some((d) => d.status === "modified")).toBe(true);

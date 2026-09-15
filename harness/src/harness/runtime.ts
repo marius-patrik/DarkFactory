@@ -1,5 +1,5 @@
-import { readdir } from "node:fs/promises";
 import { randomBytes, randomUUID } from "node:crypto";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type {
 	AuthContext,
@@ -11,17 +11,17 @@ import type {
 	ProviderHeaders,
 } from "@earendil-works/pi-ai";
 import {
+	type AgentSession,
 	createAgentSession,
 	DefaultResourceLoader,
+	type ExtensionFactory,
 	ModelRuntime,
 	SessionManager,
 	SettingsManager,
-	type AgentSession,
-	type ExtensionFactory,
 } from "@earendil-works/pi-coding-agent";
-import { FileCredentialStore, defaultDfHome } from "../credentials.ts";
+import { defaultDfHome, FileCredentialStore } from "../credentials.ts";
 import type { Candidate } from "../failover.ts";
-import { materializeCatalogModels, type CatalogResult } from "../models/catalog.ts";
+import { type CatalogResult, materializeCatalogModels } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
 import { policyExtension, ToolPolicy, type ToolPolicyOptions } from "./tools.ts";
 
@@ -30,7 +30,11 @@ const isolatedAuthContext: AuthContext = {
 	fileExists: async (_path: string) => false,
 };
 
-export function resolveGeneratedHeaders(config: ProviderConfig | undefined, sessionId: string, sessionValues: Map<string, string>): ProviderHeaders {
+export function resolveGeneratedHeaders(
+	config: ProviderConfig | undefined,
+	sessionId: string,
+	sessionValues: Map<string, string>,
+): ProviderHeaders {
 	const result: ProviderHeaders = {};
 	const requestValues = new Map<string, string>();
 	for (const [header, spec] of Object.entries(config?.generatedHeaders ?? {})) {
@@ -73,7 +77,11 @@ class RebindableCredentialStore implements CredentialStore {
 		return this.delegate?.list(options) ?? Promise.resolve([]);
 	}
 
-	modify(providerId: string, fn: (current: Credential | undefined) => Promise<Credential | undefined>, options?: AuthOperationOptions): Promise<Credential | undefined> {
+	modify(
+		providerId: string,
+		fn: (current: Credential | undefined) => Promise<Credential | undefined>,
+		options?: AuthOperationOptions,
+	): Promise<Credential | undefined> {
 		const store = this.selected(providerId);
 		if (!store) throw new Error(`No df account is bound for provider ${providerId}`);
 		return store.modify(providerId, fn, options);
@@ -92,13 +100,15 @@ function isolateAmbientAuth(provider: Provider): Provider {
 		...provider,
 		auth: {
 			...provider.auth,
-			...(apiKey ? {
-				apiKey: {
-					...apiKey,
-					...(apiKey.check ? { check: (input) => apiKey.check!({ ...input, ctx: isolatedAuthContext }) } : {}),
-					resolve: (input) => apiKey.resolve({ ...input, ctx: isolatedAuthContext }),
-				},
-			} : {}),
+			...(apiKey
+				? {
+						apiKey: {
+							...apiKey,
+							...(apiKey.check ? { check: (input) => apiKey.check!({ ...input, ctx: isolatedAuthContext }) } : {}),
+							resolve: (input) => apiKey.resolve({ ...input, ctx: isolatedAuthContext }),
+						},
+					}
+				: {}),
 		},
 	};
 }
@@ -113,7 +123,8 @@ async function sessionFileForId(sessionDir: string, id: string): Promise<string>
 		throw error;
 	}
 	const matches = files.filter((file) => file.endsWith(`_${id}.jsonl`));
-	if (matches.length !== 1) throw new Error(matches.length === 0 ? `Session not found: ${id}` : `Ambiguous session id: ${id}`);
+	if (matches.length !== 1)
+		throw new Error(matches.length === 0 ? `Session not found: ${id}` : `Ambiguous session id: ${id}`);
 	return join(sessionDir, matches[0]!);
 }
 
@@ -172,7 +183,9 @@ export async function validateCandidateCredentials(
 	if (authOptional) return;
 	const credential = await store.forAccount(candidate.provider, candidate.account).read(candidate.provider);
 	if (!credential) {
-		const error = new Error(`No credentials for ${candidate.provider}/${candidate.account}`) as Error & { code: string };
+		const error = new Error(`No credentials for ${candidate.provider}/${candidate.account}`) as Error & {
+			code: string;
+		};
 		error.code = "auth";
 		throw error;
 	}
@@ -181,7 +194,9 @@ export async function validateCandidateCredentials(
 		if (slot === "api_key" && credential.type === "api_key") continue;
 		if (slot === "oauth" && credential.type === "oauth") continue;
 		if (!account?.slots[slot]) {
-			const error = new Error(`Account ${candidate.provider}/${candidate.account} is missing required slot ${slot}`) as Error & { code: string };
+			const error = new Error(
+				`Account ${candidate.provider}/${candidate.account} is missing required slot ${slot}`,
+			) as Error & { code: string };
 			error.code = "auth";
 			throw error;
 		}
@@ -285,7 +300,12 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 		modelRuntime,
 		store,
 		async validateCandidate(candidate) {
-			await validateCandidateCredentials(store, candidate, options.providerConfigs?.get(candidate.provider), authOptional.has(candidate.provider));
+			await validateCandidateCredentials(
+				store,
+				candidate,
+				options.providerConfigs?.get(candidate.provider),
+				authOptional.has(candidate.provider),
+			);
 		},
 		async bindCandidate(candidate) {
 			await bindCandidate(candidate);
@@ -300,20 +320,32 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 			const config = options.providerConfigs?.get(candidate.provider);
 			const probe = config?.limits?.probe;
 			if (!config || !probe?.enabled) return true;
-			const rawHeaders = { ...(config.staticHeaders ?? {}), ...(await store.requestHeaders(candidate.provider, candidate.account, config.slotHeaders)) };
-			const headers = Object.fromEntries(Object.entries(rawHeaders).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+			const rawHeaders = {
+				...(config.staticHeaders ?? {}),
+				...(await store.requestHeaders(candidate.provider, candidate.account, config.slotHeaders)),
+			};
+			const headers = Object.fromEntries(
+				Object.entries(rawHeaders).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+			);
 			const credential = await store.forAccount(candidate.provider, candidate.account).read(candidate.provider);
 			const auth = config.auth[0];
-			let url = new URL(probe.path, `${config.baseUrl.replace(/\/$/u, "")}/`);
+			const url = new URL(probe.path, `${config.baseUrl.replace(/\/$/u, "")}/`);
 			if (credential?.type === "api_key" && credential.key && auth?.kind === "api_key") {
 				if (auth.placement === "bearer") headers.authorization = `Bearer ${credential.key}`;
 				else if (auth.placement === "header") headers[auth.name ?? "x-api-key"] = credential.key;
 				else url.searchParams.set(auth.name ?? "key", credential.key);
-			} else if (credential?.type === "oauth" && credential.access) headers.authorization = `Bearer ${credential.access}`;
+			} else if (credential?.type === "oauth" && credential.access)
+				headers.authorization = `Bearer ${credential.access}`;
 			try {
-				const result = await fetch(url, { method: probe.method ?? "GET", headers, ...(probe.method === "POST" ? { body: "{}" } : {}) });
+				const result = await fetch(url, {
+					method: probe.method ?? "GET",
+					headers,
+					...(probe.method === "POST" ? { body: "{}" } : {}),
+				});
 				return result.ok;
-			} catch { return false; }
+			} catch {
+				return false;
+			}
 		},
 	};
 }

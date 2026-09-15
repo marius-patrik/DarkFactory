@@ -56,10 +56,7 @@ export interface SkillDriftItem {
  * @returns The first existing skills directory, or undefined when df was installed without skills.
  */
 export function bundledSkillsDir(): string | undefined {
-	const candidates = [
-		join(import.meta.dir, "../../assets/skills"),
-		join(dirname(process.execPath), "assets/skills"),
-	];
+	const candidates = [join(import.meta.dir, "../../assets/skills"), join(dirname(process.execPath), "assets/skills")];
 	return candidates.find((candidate) => existsSync(candidate));
 }
 
@@ -170,10 +167,7 @@ export async function checkSkillsDrift(repoDir = process.cwd()): Promise<SkillDr
 	return results;
 }
 
-export async function installSkills(
-	repoDir = process.cwd(),
-	options: InstallOptions = {},
-): Promise<InstallReport> {
+export async function installSkills(repoDir = process.cwd(), options: InstallOptions = {}): Promise<InstallReport> {
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
 	const skills = await discoverBundledSkills();
@@ -220,10 +214,7 @@ export async function installSkills(
 	};
 }
 
-export async function installWorkflows(
-	repoDir = process.cwd(),
-	options: InstallOptions = {},
-): Promise<InstallReport> {
+export async function installWorkflows(repoDir = process.cwd(), options: InstallOptions = {}): Promise<InstallReport> {
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
 	const templates = options.templates ?? STANDARD_WORKFLOW_TEMPLATES;
@@ -263,12 +254,14 @@ export async function installWorkflows(
 		installed.push(template);
 	}
 
+	// Bundled skills install with the workflows; the report names them by their installed path.
 	const skillsReport = await installSkills(repoDir, { dryRun, force });
+	const skillFile = (name: string) => `.agents/skills/${name}/SKILL.md`;
 
 	return {
-		installed,
-		skippedModified,
-		skippedUnmanaged,
+		installed: [...installed, ...skillsReport.installed.map(skillFile)],
+		skippedModified: [...skippedModified, ...skillsReport.skippedModified.map(skillFile)],
+		skippedUnmanaged: [...skippedUnmanaged, ...skillsReport.skippedUnmanaged.map(skillFile)],
 		dryRun,
 	};
 }

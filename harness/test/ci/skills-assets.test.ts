@@ -31,7 +31,9 @@ const skillPath = (name: string) => join(skillsDir, name, "SKILL.md");
 
 describe("bundled skills", () => {
 	test("the bundled skill directories are exactly the expected skills", () => {
-		const dirs = readdirSync(skillsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+		const dirs = readdirSync(skillsDir, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name);
 		expect(dirs.sort()).toEqual([...EXPECTED_SKILLS].sort());
 	});
 
@@ -56,11 +58,17 @@ describe("bundled skills", () => {
 	});
 
 	test("this repository's installed darkfactory-auth skill is the bundled one", () => {
-		expect(readFileSync(join(repoDir, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf8")).toBe(readFileSync(skillPath("darkfactory-auth"), "utf8"));
+		expect(readFileSync(join(repoDir, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf8")).toBe(
+			readFileSync(skillPath("darkfactory-auth"), "utf8"),
+		);
 	});
 
 	test("the command check recognises unknown commands", () => {
-		expect(skillCommands("Run `df nosuch` and\n```sh\ndf quota --json\necho x | df account set a b\n```\n")).toEqual(["nosuch", "quota", "account"]);
+		expect(skillCommands("Run `df nosuch` and\n```sh\ndf quota --json\necho x | df account set a b\n```\n")).toEqual([
+			"nosuch",
+			"quota",
+			"account",
+		]);
 		expect(usageCommands().has("nosuch")).toBe(false);
 	});
 });
