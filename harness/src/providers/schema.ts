@@ -183,6 +183,7 @@ export interface ProviderConfig {
 	request?: { path?: string; projectSlot?: string };
 	login?: { hydration?: LoginHydrationConfig[] };
 	replay?: { foreignToolCallThoughtSignature?: string };
+	routing?: { exclude?: string[] };
 	free?: FreeTierConfig;
 }
 export interface ProviderConfigFile { version: 1; providers: ProviderConfig[] }
@@ -244,6 +245,13 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 	if (entry.replay !== undefined) {
 		const replay = object(entry.replay, `provider ${id} replay`);
 		if (replay.foreignToolCallThoughtSignature !== undefined) text(replay.foreignToolCallThoughtSignature, `provider ${id} foreign tool-call thought signature`);
+	}
+	if (entry.routing !== undefined) {
+		const routing = object(entry.routing, `provider ${id} routing`);
+		if (routing.exclude !== undefined) {
+			if (!Array.isArray(routing.exclude)) throw new Error(`Provider ${id} routing.exclude must be an array`);
+			for (const pattern of routing.exclude) if (typeof pattern !== "string" || !pattern.trim()) throw new Error(`Provider ${id} routing.exclude entries must be non-empty strings`);
+		}
 	}
 	if (entry.free !== undefined) {
 		const free = object(entry.free, `provider ${id} free`);
