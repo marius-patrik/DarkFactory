@@ -206,6 +206,12 @@ export interface LoginHydrationConfig {
 	stripPrefix?: string;
 }
 export interface ProviderConfig {
+	routing?: {
+		/** If false, this provider is excluded from automatic routing. */
+		enabled?: boolean;
+		/** Glob patterns of model IDs to exclude from automatic routing. */
+		exclude?: string[];
+	};
 	id: string;
 	name: string;
 	enabled?: boolean;
@@ -329,6 +335,15 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			(typeof free.checkedAt !== "string" || Number.isNaN(Date.parse(free.checkedAt)))
 		)
 			throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
+	}
+	if (entry.routing !== undefined) {
+		const routing = object(entry.routing, `provider ${id} routing`);
+		if (routing.enabled !== undefined && typeof routing.enabled !== "boolean")
+			throw new Error(`Provider ${id} routing.enabled must be a boolean`);
+		if (routing.exclude !== undefined) {
+			if (!Array.isArray(routing.exclude) || routing.exclude.some((g) => typeof g !== "string" || !g.trim()))
+				throw new Error(`Provider ${id} routing.exclude must be an array of non-empty model id globs`);
+		}
 	}
 	if (entry.free !== undefined && (entry.free as Record<string, unknown>).data !== undefined) {
 		const free = object(entry.free as unknown, `provider ${id} free`);

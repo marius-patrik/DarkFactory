@@ -14,11 +14,9 @@ import type {
 } from "./router/types.ts";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
-export const DEFAULT_CHAIN =
-	"google/gemini-3.8-flash@default,google/gemini-3.7-flash@default,google/gemini-3.6-flash@default,google/gemini-3.5-flash@default,google/gemini-3-flash-preview@default,google/gemini-3.5-flash-lite@default,google/gemini-3.1-flash-lite@default,opencode-zen/big-pickle@default,openai-codex/gpt-5.6-luna@default,grok-sub/grok-4.6@default,kimi-coding/kimi-for-coding@default,groq/llama-3.3-70b-versatile@default,cerebras/llama-3.3-70b@default";
 
 export interface DfConfig {
-	defaultChain: string;
+	defaultChain?: string;
 	cooldownTtlMs?: number;
 	maxWaitMs?: number;
 	hardReasoningChain?: string;
@@ -213,7 +211,7 @@ export async function loadDfConfig(
 	try {
 		raw = await reader(path);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") return { defaultChain: DEFAULT_CHAIN };
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
 		throw error;
 	}
 	let value: unknown;
@@ -249,8 +247,9 @@ export async function loadDfConfig(
 		for (const [account, path] of Object.entries(record.credentialFiles as Record<string, unknown>))
 			credentialFiles[account] = optionalString({ path }, "path")!;
 	}
+	const defaultChain = optionalString(record, "defaultChain");
 	return {
-		defaultChain: optionalString(record, "defaultChain") ?? DEFAULT_CHAIN,
+		...(defaultChain ? { defaultChain } : {}),
 		...(hardReasoningChain ? { hardReasoningChain } : {}),
 		...(sensitiveChain ? { sensitiveChain } : {}),
 		...(typeof cooldownTtlMs === "number" ? { cooldownTtlMs } : {}),
