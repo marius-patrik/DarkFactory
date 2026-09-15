@@ -27,6 +27,8 @@ import hashlib
 import random
 import uuid
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -689,6 +691,172 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
             stderr=detail[0] if detail else "no output",
         )
     return res.stdout.strip()
+
+
+def next_quota_reset(error_detail: str, now: float) -> float:
+    """Return epoch seconds of the earliest moment the run may resume.
+
+    Uses, in order:
+    1. ISO timestamp found in ``error_detail``.
+    2. ``resetAt`` epoch (ms) found in ``error_detail``.
+    3. ``retryDelay`` or ``Please retry in Ns`` value added to ``now``.
+    4. Next Pacific midnight (America/Los_Angeles) if none of the above.
+    """
+    import re
+
+    # 1. ISO timestamp (e.g. 2025-01-02T15:04:05Z)
+    iso_match = re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?", error_detail)
+    if iso_match:
+        try:
+            iso_str = iso_match.group(0)
+            dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        except Exception:
+            pass
+    # 2. resetAt epoch in milliseconds
+    reset_match = re.search(r'"resetAt"\s*:\s*(\d{10,})', error_detail)
+    if reset_match:
+        try:
+            ms = int(reset_match.group(1))
+            return ms / 1000.0
+        except Exception:
+            pass
+    # 3. retryDelay or Please retry in Ns
+    retry_match = re.search(r'"retryDelay"\s*:\s*(\d+)', error_detail)
+    if not retry_match:
+        retry_match = re.search(r"please\s+retry\s+in\s+(\d+)s", error_detail, re.IGNORECASE)
+    if retry_match:
+        try:
+            delay = int(retry_match.group(1))
+            return now + delay
+        except Exception:
+            pass
+    # 4. Next Pacific midnight
+    utc_dt = datetime.fromtimestamp(now, tz=timezone.utc)
+    pac_dt = utc_dt.astimezone(ZoneInfo("America/Los_Angeles"))
+    next_midnight = datetime(
+        pac_dt.year, pac_dt.month, pac_dt.day, tzinfo=ZoneInfo("America/Los_Angeles")
+    ) + timedelta(days=1)
+    return next_midnight.astimezone(timezone.utc).timestamp()
+
+
+def record_quota_block(
+    repo, item_number, is_pr, reset_at, providers: List[str], run_id: str
+) -> None:
+    """Writes repository variable ``DF_QUOTA_<run_id>`` and updates ``DARKFACTORY_QUOTA_PROVIDERS``.
+
+    The run variable stores JSON with keys ``item``, ``is_pr``, ``reset_at`` (ISO UTC), and ``blocked_at`` (ISO UTC).
+    The provider map stores the maximum reset epoch for each provider.
+    All failures are printed as notices and never raise.
+    """
+    var_name = f"DF_QUOTA_{run_id}"
+    now_iso = (
+        datetime.fromtimestamp(reset_at, tz=timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+    blocked_iso = (
+        datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    )
+    payload = {
+        "item": item_number,
+        "is_pr": is_pr,
+        "reset_at": now_iso,
+        "blocked_at": blocked_iso,
+    }
+    value_json = json.dumps(payload, separators=(",", ":"))
+    # Create or update the run variable
+    try:
+        run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables",
+                "--method",
+                "POST",
+                "-f",
+                f"name={var_name}",
+                "-f",
+                f"value={value_json}",
+            ],
+            repo=repo,
+        )
+    except subprocess.CalledProcessError as e:
+        # If it already exists (HTTP 409) fall back to PATCH
+        if "409" in str(e) or "already exists" in str(e).lower():
+            try:
+                run_gh(
+                    [
+                        "api",
+                        f"repos/{repo}/actions/variables/{var_name}",
+                        "--method",
+                        "PATCH",
+                        "-f",
+                        f"value={value_json}",
+                    ],
+                    repo=repo,
+                )
+            except Exception as ee:
+                print(f"Notice: Failed to patch quota variable {var_name}: {ee}", file=sys.stderr)
+        else:
+            print(f"Notice: Failed to create quota variable {var_name}: {e}", file=sys.stderr)
+    prov_name = "DARKFACTORY_QUOTA_PROVIDERS"
+    existing = {}
+    try:
+        raw = run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables/{prov_name}",
+                "--method",
+                "GET",
+            ],
+            repo=repo,
+        )
+        data = json.loads(raw)
+        if isinstance(data, dict) and "value" in data:
+            existing = json.loads(data["value"]) if data["value"] else {}
+    except subprocess.CalledProcessError:
+        existing = {}
+    except Exception as ee:
+        print(f"Notice: Failed to read provider map {prov_name}: {ee}", file=sys.stderr)
+    for p in providers:
+        existing[p] = max(existing.get(p, 0), reset_at)
+    prov_json = json.dumps(existing, separators=(",", ":"))
+    # Write back provider map (POST if missing, otherwise PATCH)
+    try:
+        run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables",
+                "--method",
+                "POST",
+                "-f",
+                f"name={prov_name}",
+                "-f",
+                f"value={prov_json}",
+            ],
+            repo=repo,
+        )
+    except subprocess.CalledProcessError as e:
+        if "409" in str(e) or "already exists" in str(e).lower():
+            try:
+                run_gh(
+                    [
+                        "api",
+                        f"repos/{repo}/actions/variables/{prov_name}",
+                        "--method",
+                        "PATCH",
+                        "-f",
+                        f"value={prov_json}",
+                    ],
+                    repo=repo,
+                )
+            except Exception as ee:
+                print(f"Notice: Failed to patch provider map {prov_name}: {ee}", file=sys.stderr)
+        else:
+            print(f"Notice: Failed to create provider map {prov_name}: {e}", file=sys.stderr)
 
 
 def try_gh(args: List[str], repo: Optional[str] = None, doing: str = "") -> Optional[str]:
@@ -1406,6 +1574,17 @@ def checkpoint_and_notify_exhaustion(
     # 4. Update Project Board Status to Blocked
     update_project_status_blocked(issue_number, repo=repo, is_pr=is_pr, client=client)
 
+    # 5. Record quota block in repository variables
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if run_id:
+        import re
+
+        m = re.search(r"across every harness and model\s*\(([^)]+)\)", error_detail)
+        providers = []
+        if m:
+            providers = [p.strip() for p in m.group(1).split(",")]
+        reset_at = next_quota_reset(error_detail, time.time())
+        record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
     return checkpoint_data
 
 

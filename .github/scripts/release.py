@@ -171,7 +171,8 @@ def collect_assets(root: str, steps: Iterable[Dict[str, Any]]) -> List[str]:
         for pattern in step.get("globs", []):
             for match in glob.glob(os.path.join(base, pattern), recursive=True):
                 if os.path.isfile(match):
-                    found.append(os.path.relpath(match, root))
+                    rel = os.path.relpath(match, root).replace(os.sep, "/")
+                    found.append(rel)
     return sorted(set(found))
 
 
