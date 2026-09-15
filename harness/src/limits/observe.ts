@@ -81,8 +81,20 @@ function text(value: unknown): string {
 	try { return JSON.stringify(value) ?? ""; } catch { return String(value ?? ""); }
 }
 
-function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig, status?: number): LimitEntry | undefined {
+function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig, status?: number, observation?: LimitObservation): LimitEntry | undefined {
 	if (rule.status !== undefined && rule.status !== status) return undefined;
+	// answerText flag handling
+	if (rule.answerText) {
+		// Only apply when status is 2xx and usage.outputTokens === 0
+		if (status === undefined || status < 200 || status >= 300) return undefined;
+		const obsBody = observation?.body as any;
+		const answer = typeof obsBody?.answerText === "string" ? obsBody.answerText : undefined;
+		const outputTokens = obsBody?.usage?.outputTokens;
+		if (outputTokens !== 0) return undefined;
+		if (!answer) return undefined;
+		// Use answerText for regex matching
+		body = answer;
+	}
 	let pattern: RegExp;
 	try { pattern = new RegExp(rule.regex, "iu"); } catch { return undefined; }
 	if (!pattern.test(body)) return undefined;
@@ -142,7 +154,7 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	const body = text(observation.body);
 	let ruled = false;
 	for (const rule of policy.bodyRules ?? []) {
-		const entry = bodyEntry(candidate, body, rule, now, policy, observation.status);
+		const entry = bodyEntry(candidate, body, rule, now, policy, observation.status, observation);
 		if (entry) { result.push(entry); ruled = true; }
 	}
 	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
