@@ -571,6 +571,135 @@ class Environment:
             ]
         return plan
 
+    def lint_plan(self) -> Dict[str, Dict[str, Any]]:
+        """Works out how to lint each ecosystem present.
+
+        Returns:
+            Mapping of ecosystem to `command`, `versions` and `manager`.
+        """
+        return self._plan("linting", {"python": {None: "ruff check ."}})
+
+    def format_check_plan(self) -> Dict[str, Dict[str, Any]]:
+        """Works out how to check formatting for each ecosystem present.
+
+        Returns:
+            Mapping of ecosystem to `command`, `versions` and `manager`.
+        """
+        return self._plan(
+            "formatting",
+            {"python": {None: "ruff format ."}, "node": {None: "npx prettier --check ."}},
+        )
+
+    def docs_check_plan(self) -> Dict[str, Dict[str, Any]]:
+        """Works out how to check documentation for each ecosystem present.
+
+        Returns:
+            Mapping of ecosystem to `command`, `versions` and `manager`.
+        """
+        return self._plan("documentation", {"python": {None: "properdocs check --strict"}})
+
+    def docs_extract_plan(self) -> Dict[str, Dict[str, Any]]:
+        """Works out how to extract documentation for each ecosystem present.
+
+        Returns:
+            Mapping of ecosystem to `command`, `versions`, `manager` and `source`.
+        """
+        plan = self._plan("documentation", DOC_COMMANDS)
+        declared = self.declared.get("documentation", {}) or {}
+        for ecosystem, entry in plan.items():
+            settings = declared.get(ecosystem, {}) or {}
+            entry["source"] = settings.get("source") or DOC_SOURCES.get(ecosystem)
+        return plan
+
+    def ci_plan(self) -> List[Dict[str, Any]]:
+        """Builds a CI job matrix covering all packages and their checks.
+
+        Returns:
+            List of entries with `package`, `ecosystem`, `check`, `command`, and `versions`.
+        """
+        matrix: List[Dict[str, Any]] = []
+        for package in self.packages:
+            ecosystem = package.ecosystem
+            check: Dict[str, Dict[str, Any]]
+            command: Optional[str]
+            versions: List[str]
+            test_plan = self.test_plan()
+            if ecosystem in test_plan:
+                check = test_plan[ecosystem]
+                command = check.get("command")
+                versions = check.get("versions", [])
+                if command:
+                    matrix.append(
+                        {
+                            "package": package.path,
+                            "ecosystem": ecosystem,
+                            "check": "test",
+                            "command": command,
+                            "versions": versions,
+                        }
+                    )
+            lint_plan = self.lint_plan()
+            if ecosystem in lint_plan:
+                check = lint_plan[ecosystem]
+                command = check.get("command")
+                versions = check.get("versions", [])
+                if command:
+                    matrix.append(
+                        {
+                            "package": package.path,
+                            "ecosystem": ecosystem,
+                            "check": "lint",
+                            "command": command,
+                            "versions": versions,
+                        }
+                    )
+            format_check = self.format_check_plan()
+            if ecosystem in format_check:
+                check = format_check[ecosystem]
+                command = check.get("command")
+                versions = check.get("versions", [])
+                if command:
+                    matrix.append(
+                        {
+                            "package": package.path,
+                            "ecosystem": ecosystem,
+                            "check": "format",
+                            "command": command,
+                            "versions": versions,
+                        }
+                    )
+            docs_plan = self.docs_plan()
+            if ecosystem in docs_plan:
+                check = docs_plan[ecosystem]
+                command = check.get("command")
+                versions = check.get("versions", [])
+                if command:
+                    matrix.append(
+                        {
+                            "package": package.path,
+                            "ecosystem": ecosystem,
+                            "check": "docs",
+                            "command": command,
+                            "versions": versions,
+                        }
+                    )
+            build_plan = self.build_plan()
+            if ecosystem in build_plan:
+                check = build_plan[ecosystem]
+                command = check.get("command")
+                versions = check.get("versions", [])
+                if command:
+                    matrix.append(
+                        {
+                            "package": package.path,
+                            "ecosystem": ecosystem,
+                            "check": "build",
+                            "command": command,
+                            "versions": versions,
+                        }
+                    )
+        return matrix
+
     def as_dict(self) -> Dict[str, Any]:
         """Returns the whole environment as plain data.
 
@@ -588,8 +717,12 @@ class Environment:
             },
             "test_plan": self.test_plan(),
             "format_plan": self.format_plan(),
+            "format_check_plan": self.format_check_plan(),
             "docs_plan": self.docs_plan(),
+            "docs_check_plan": self.docs_check_plan(),
+            "docs_extract_plan": self.docs_extract_plan(),
             "build_plan": self.build_plan(),
+            "ci_plan": self.ci_plan(),
         }
 
 

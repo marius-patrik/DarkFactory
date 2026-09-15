@@ -325,10 +325,59 @@ class TestPlans:
         _write(tmp_path, "ruff.toml", "")
         assert environment.configure(str(tmp_path)).test_plan()["python"]["command"] == "pytest"
 
+    def test_lint_plan_returns_python_command(self, tmp_path):
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert "python" in env.lint_plan()
+        assert env.lint_plan()["python"]["command"] == "ruff check ."
+
+    def test_format_check_plan_returns_commands(self, tmp_path):
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert "python" in env.format_check_plan()
+        assert env.format_check_plan()["python"]["command"] == "ruff format ."
+
+    def test_docs_check_plan_returns_python_command(self, tmp_path):
+        _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
+        env = environment.configure(str(tmp_path))
+        assert "python" in env.docs_check_plan()
+        assert env.docs_check_plan()["python"]["command"] == "properdocs check --strict"
+
+    def test_docs_extract_plan_returns_source(self, polyglot):
+        env = environment.configure(str(polyglot))
+        plan = env.docs_extract_plan()
+        assert plan["node"]["source"] == "tsdoc"
+        assert plan["rust"]["source"] == "rustdoc"
+
+    def test_ci_plan_returns_matrix_with_required_fields(self, polyglot):
+        env = environment.configure(str(polyglot))
+        matrix = env.ci_plan()
+        assert isinstance(matrix, list)
+        required_fields = {"package", "ecosystem", "check", "command", "versions"}
+        for entry in matrix:
+            assert required_fields.issubset(set(entry.keys()))
+            assert isinstance(entry["package"], str)
+            assert isinstance(entry["ecosystem"], str)
+            assert isinstance(entry["check"], str)
+            assert isinstance(entry["command"], str)
+            assert isinstance(entry["versions"], list)
+
+    def test_ci_plan_covers_test_check(self, polyglot):
+        env = environment.configure(str(polyglot))
+        matrix = env.ci_plan()
+        checks = {entry["check"] for entry in matrix}
+        assert "test" in checks
+
+    def test_ci_plan_covers_build_check(self, polyglot):
+        env = environment.configure(str(polyglot))
+        matrix = env.ci_plan()
+        checks = {entry["check"] for entry in matrix}
+        assert "build" in checks
+
     def test_plans_survive_json_serialisation(self, polyglot):
         payload = environment.configure(str(polyglot)).as_dict()
         assert json.loads(json.dumps(payload)) == payload
-        assert set(payload) >= {"test_plan", "format_plan", "docs_plan"}
+        assert set(payload) >= {"test_plan", "format_plan", "docs_plan", "ci_plan"}
 
 
 class TestDomains:
