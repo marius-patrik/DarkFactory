@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateVaultKey } from "../../src/secrets/crypto.ts";
-import { saveVault, loadVault } from "../../src/secrets/vault-store.ts";
-import { emptyVault } from "../../src/secrets/vault.ts";
 import { syncDataRepo } from "../../src/secrets/sync.ts";
+import { emptyVault } from "../../src/secrets/vault.ts";
+import { loadVault, saveVault } from "../../src/secrets/vault-store.ts";
 
 async function git(cwd: string, ...args: string[]) {
 	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
@@ -61,7 +61,18 @@ afterEach(async () => {
 describe("sync against local bare repo", () => {
 	test("sync pushes local vault to remote and second clone pulls it", async () => {
 		const key = generateVaultKey();
-		const vault = { version: 1 as const, entries: [{ name: "SHARED", value: "hello", scope: "actions" as const, created: { by: "a", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "a", at: "2026-01-01T00:00:00.000Z" } }] };
+		const vault = {
+			version: 1 as const,
+			entries: [
+				{
+					name: "SHARED",
+					value: "hello",
+					scope: "actions" as const,
+					created: { by: "a", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "a", at: "2026-01-01T00:00:00.000Z" },
+				},
+			],
+		};
 		await saveVault(cloneA, vault, key);
 		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
 		await git(cloneA, "commit", "-m", "add secret");
@@ -78,7 +89,18 @@ describe("sync against local bare repo", () => {
 	test("two-clone conflict merged by updated.at with conflict reported", async () => {
 		const key = generateVaultKey();
 		// Start both from same base empty vault committed
-		const baseVault = { version: 1 as const, entries: [{ name: "CONFLICT", value: "base", scope: "actions" as const, created: { by: "a", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "a", at: "2026-01-01T00:00:00.000Z" } }] };
+		const baseVault = {
+			version: 1 as const,
+			entries: [
+				{
+					name: "CONFLICT",
+					value: "base",
+					scope: "actions" as const,
+					created: { by: "a", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "a", at: "2026-01-01T00:00:00.000Z" },
+				},
+			],
+		};
 		await saveVault(cloneA, baseVault, key);
 		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
 		await git(cloneA, "commit", "-m", "base");
@@ -86,14 +108,36 @@ describe("sync against local bare repo", () => {
 		await git(cloneB, "pull", "--rebase", "origin", "main");
 
 		// Clone A: update CONFLICT to newer time
-		const vaultA = { version: 1 as const, entries: [{ name: "CONFLICT", value: "from-A-newer", scope: "actions" as const, created: { by: "a", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "a", at: "2026-01-02T12:00:00.000Z" } }] };
+		const vaultA = {
+			version: 1 as const,
+			entries: [
+				{
+					name: "CONFLICT",
+					value: "from-A-newer",
+					scope: "actions" as const,
+					created: { by: "a", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "a", at: "2026-01-02T12:00:00.000Z" },
+				},
+			],
+		};
 		await saveVault(cloneA, vaultA, key);
 		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
 		await git(cloneA, "commit", "-m", "update A");
 		await git(cloneA, "push", "origin", "main");
 
 		// Clone B: update CONFLICT to older time (should lose)
-		const vaultB = { version: 1 as const, entries: [{ name: "CONFLICT", value: "from-B-older", scope: "actions" as const, created: { by: "b", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "b", at: "2026-01-01T06:00:00.000Z" } }] };
+		const vaultB = {
+			version: 1 as const,
+			entries: [
+				{
+					name: "CONFLICT",
+					value: "from-B-older",
+					scope: "actions" as const,
+					created: { by: "b", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "b", at: "2026-01-01T06:00:00.000Z" },
+				},
+			],
+		};
 		await saveVault(cloneB, vaultB, key);
 		await git(cloneB, "add", "vault.enc.json", "vault.meta.json");
 		await git(cloneB, "commit", "-m", "update B");

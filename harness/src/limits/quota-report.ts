@@ -18,6 +18,8 @@ export interface QuotaReportProvider {
 	credentials: "configured" | "anonymous" | "missing";
 	state: QuotaState | "no-account";
 	free?: FreeTierConfig;
+	/** Optional data‑collection configuration for a provider */
+	data?: { collection: "none" | "logging" | "training" | "unknown"; source?: string; sourceUrl?: string; checkedAt?: string };
 	declared: DeclaredLimitConfig[];
 	accounts: QuotaReportAccount[];
 }
@@ -64,14 +66,16 @@ export async function buildQuotaReport(input: QuotaReportInput): Promise<QuotaRe
 			for (const model of models) statuses.push(await input.engine.status({ provider: provider.id, account: label, model }, now));
 			accounts.push({ label, models: statuses });
 		}
-		providers.push({
-			id: provider.id, name: provider.name, dialect: provider.dialect, baseUrl: provider.baseUrl, enabled,
-			credentials: configured.length > 0 ? "configured" : anonymous ? "anonymous" : "missing",
-			state: labels.length === 0 ? "no-account" : providerState(accounts),
-			...(provider.free ? { free: provider.free } : {}),
-			declared: provider.limits?.declared ?? [],
-			accounts,
-		});
+			const data: NonNullable<QuotaReportProvider["data"]> = provider.free?.data ?? provider.data ?? { collection: "unknown" };
+			providers.push({
+				id: provider.id, name: provider.name, dialect: provider.dialect, baseUrl: provider.baseUrl, enabled,
+				credentials: configured.length > 0 ? "configured" : anonymous ? "anonymous" : "missing",
+				state: labels.length === 0 ? "no-account" : providerState(accounts),
+				...(provider.free ? { free: provider.free } : {}),
+				declared: provider.limits?.declared ?? [],
+				data,
+				accounts,
+			});
 	}
 	if (input.provider && providers.length === 0) throw new Error(`Unknown provider ${input.provider}`);
 	return { version: 2, generatedAt: new Date(now).toISOString(), providers };

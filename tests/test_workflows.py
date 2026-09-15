@@ -62,6 +62,37 @@ def test_final_step_cli_command():
     assert '--summary "$GITHUB_STEP_SUMMARY"' in run_cmd
 
 
+def _steps(path, job):
+    with pathlib.Path(path).open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f)["jobs"][job]["steps"]
+
+
+def _index(steps, name):
+    return next(i for i, step in enumerate(steps) if step.get("name") == name)
+
+
+def test_auto_format_formats_changed_harness_files_before_committing():
+    steps = _steps(".github/workflows/auto-format.yml", "format")
+    fmt = _index(steps, "Format harness")
+    assert fmt < _index(steps, "Commit and push formatting changes")
+    step = steps[fmt]
+    # Consumer repositories call this workflow and have no harness.
+    assert step["if"] == "hashFiles('harness/biome.json') != ''"
+    assert step["working-directory"] == "harness"
+    assert "bun install --frozen-lockfile" in step["run"]
+    assert "biome check --write --changed" in step["run"]
+
+
+def test_ci_blocks_on_harness_format_and_lint_before_typecheck():
+    steps = _steps(".github/workflows/ci.yml", "harness")
+    check = _index(steps, "Check harness formatting and lint")
+    assert check < _index(steps, "Typecheck harness")
+    step = steps[check]
+    assert "continue-on-error" not in step
+    assert "biome ci --changed" in step["run"]
+    assert steps[0]["with"]["fetch-depth"] == 0
+
+
 def test_dispatch_runs_the_bundled_graph_with_a_token_for_the_checks_gate():
     wf = load_workflow()
     steps = wf["jobs"]["dispatch"]["steps"]
