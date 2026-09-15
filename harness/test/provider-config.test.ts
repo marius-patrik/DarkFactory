@@ -89,6 +89,26 @@ describe("config-driven provider registry", () => {
 		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }] })).toThrow("regex is invalid");
 	});
 
+	test("data: accepts minimal valid data configuration", () => {
+		const entry = openAICompatible("data-provider");
+		entry.data = {
+			collection: "logging",
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
+	test("data: rejects invalid collection values", () => {
+		const entry = openAICompatible("bad-data");
+		entry.data = {
+			collection: "invalid-collection" as any,
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(/data\.collection/);
+	});
+
 	test("local providers replace same-id defaults and append new entries", async () => {
 		const google = { ...openAICompatible("google"), name: "Local Google Override" };
 		const custom = openAICompatible("custom");
