@@ -3648,6 +3648,122 @@ def parse_review_findings(text: str) -> List[str]:
     return items
 
 
+def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> Optional[str]:
+    """Checks out a pull request's head branch in the working copy.
+
+    Dispatched stages start from the default branch; review and fix runs must read and change the
+    pull request's own branch, and a push from the default branch would target the wrong ref.
+
+    Args:
+        pr_number: Pull request number.
+        repo: Repository slug.
+        cwd: Working copy.
+
+    Returns:
+        The head branch name, or None when it could not be checked out.
+    """
+    try:
+        head = json.loads(
+            run_gh(["pr", "view", str(pr_number), "--json", "headRefName"], repo=repo)
+        )["headRefName"]
+        run_git(["fetch", "origin", head], cwd=cwd)
+        run_git(["checkout", "-B", head, f"origin/{head}"], cwd=cwd)
+        return head
+    except (subprocess.CalledProcessError, KeyError, ValueError, TypeError) as error:
+        print(f"Could not check out the branch of PR #{pr_number}: {error}", file=sys.stderr)
+        return None
+
+
+def run_pr_feedback_fix(
+    pr_number: int, plan_number: int, request_number: int, feedback: str, repo: str
+) -> None:
+    """Apply owner feedback to a PR using the approved plan.
+
+    Checks out the PR branch, runs a single agent fix with a prompt containing the plan
+    and the verbatim feedback, commits and pushes the change, posts a comment summarizing
+    the agent answer (trimmed to 3000 chars), then starts self‑review again.
+    """
+    if checkout_pr_branch(pr_number, repo) is None:
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                "<!-- darkfactory-agent -->\n### Branch checkout failed\n\n"
+                "The pull request branch could not be checked out, so this stage did not run.",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        return
+    cwd = WORKSPACE_DIR
+    # Retrieve the approved plan content.
+    try:
+        plan_data = json.loads(
+            run_gh(["issue", "view", str(plan_number), "--json", "title,body,comments"], repo=repo)
+        )
+    except Exception as e:
+        print(f"Failed to load plan #{plan_number}: {e}", file=sys.stderr)
+        return
+    plan_body = ""
+    for c in reversed(plan_data.get("comments", [])):
+        cbody = c.get("body", "")
+        if _is_plan_comment(cbody):
+            plan_body = cbody
+            break
+    if not plan_body:
+        plan_body = plan_data.get("body", "")
+    # Build prompt with plan and feedback.
+    prompt = (
+        f"Plan approved:\n{plan_body}\n\n"
+        f"Owner feedback:\n{feedback}\n\n"
+        "Make the necessary changes to address the feedback."
+    )
+    checkpoint_ctx = {
+        "issue_number": pr_number,
+        "repo": repo,
+        "is_pr": True,
+        "completed_steps": ["Feedback fix"],
+        "cwd": cwd,
+    }
+    result = run_agent_prompt(prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx)
+    if is_quota_exhaustion_notice(result):
+        return
+    if result.startswith("[DarkFactory Agent Execution Error]"):
+        # Post error and block
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Feedback Fix Error\n\n{result}",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        return
+    # Commit and push changes
+    format_repository(cwd)
+    try:
+        run_git(["add", "-A"], cwd=cwd)
+        status = run_git(["status", "--porcelain"], cwd=cwd)
+        if status:
+            run_git(["commit", "-m", "fix(feedback): address owner feedback"], cwd=cwd)
+            run_git(["push", "origin", "HEAD"], cwd=cwd)
+    except subprocess.CalledProcessError as e:
+        print(f"Git error during feedback fix: {e.stderr or e.stdout}", file=sys.stderr)
+    # Post summary comment
+    trimmed = result[:3000]
+    comment_body = f"### Feedback addressed\n\n{trimmed}"
+    run_gh(["pr", "comment", str(pr_number), "--body", comment_body], repo=repo)
+    # Continue self‑review
+    start_self_review(pr_number, plan_number, request_number, repo)
+
+
 def run_self_review_iteration(
     pr_number: int,
     plan_number: int,
@@ -3670,6 +3786,9 @@ def run_self_review_iteration(
     Returns:
         "clean" if no findings, "blocked" if no progress, "fix-dispatched" if fix payload sent.
     """
+    if checkout_pr_branch(pr_number, repo) is None:
+        block_entity(pr_number, repo=repo, is_pr=True)
+        return "blocked"
     cwd = WORKSPACE_DIR
 
     # Get PR diff
@@ -3884,6 +4003,9 @@ def run_self_review_fix(
         iteration: Current iteration number (1-based).
         repo: Repository slug (owner/name).
     """
+    if checkout_pr_branch(pr_number, repo) is None:
+        block_entity(pr_number, repo=repo, is_pr=True)
+        return "blocked"
     cwd = WORKSPACE_DIR
 
     # 1. Read latest PR comment carrying the iteration-N marker
@@ -4270,6 +4392,10 @@ def dispatch_event(event_path: str, event_name: str):
                 run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
             elif stage == "self-review-fix":
                 run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "pr-feedback-fix":
+                # New stage for handling owner feedback on a PR
+                feedback = client_payload.get("feedback")
+                run_pr_feedback_fix(pr_number, plan_issue, request_issue, feedback, repo)
             elif stage == "resume":
                 item = client_payload.get("item")
                 is_pr = client_payload.get("is_pr")
@@ -4374,24 +4500,41 @@ def dispatch_event(event_path: str, event_name: str):
                 resume_item(issue_num, is_pr, repo, labels)
                 return
             elif command == "reject":
-                # A rejection routes back to the same stage with the comment as feedback:
-                # never an approval, never a close, and on a PR never a merge.
+                # Owner feedback on a PR or issue. For PRs, dispatch a feedback fix stage.
                 print(f"Rejection comment on #{issue_num} from @{comment_user}.")
                 feedback = command_feedback(comment_body) or comment_body
-                if is_request:
-                    if has_plan(issue_num, repo):
-                        handle_plan(issue_num, issue_num, repo, feedback=feedback)
+                if is_pr:
+                    # Find linked plan and request, then dispatch feedback fix
+                    plan = find_plan_issue_for_pr(issue_num, repo)
+                    if plan:
+                        dispatch_stage(
+                            repo,
+                            {
+                                "stage": "pr-feedback-fix",
+                                "pr": issue_num,
+                                "plan": plan,
+                                "request": find_parent_request_number(plan, repo) or plan,
+                                "feedback": feedback,
+                            },
+                        )
                     else:
-                        handle_interpret(issue_num, repo, feedback=feedback)
-                elif is_plan:
-                    request_num = find_parent_request_number(issue_num, repo)
-                    if request_num:
-                        handle_plan(request_num, issue_num, repo, feedback=feedback)
-                    else:
-                        print(f"Could not find parent Request for Plan #{issue_num}")
                         handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
                 else:
-                    handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                    # Non‑PR issues keep previous behaviour
+                    if is_request:
+                        if has_plan(issue_num, repo):
+                            handle_plan(issue_num, issue_num, repo, feedback=feedback)
+                        else:
+                            handle_interpret(issue_num, repo, feedback=feedback)
+                    elif is_plan:
+                        request_num = find_parent_request_number(issue_num, repo)
+                        if request_num:
+                            handle_plan(request_num, issue_num, repo, feedback=feedback)
+                        else:
+                            print(f"Could not find parent Request for Plan #{issue_num}")
+                            handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
+                    else:
+                        handle_respond(issue_num, comment_body, repo=repo, is_pr=is_pr)
             else:
                 if (is_request or is_plan) and is_command_hint(comment_body):
                     post_command_hint_once(issue_num, repo)
@@ -4428,8 +4571,21 @@ def dispatch_event(event_path: str, event_name: str):
             if review_command in ("approve", "resume"):
                 resume_item(pr_num, True, repo)
                 return
-            # A rejection is a change request: answered, never merged, never re-reviewed.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
+            plan = find_plan_issue_for_pr(pr_num, repo) if review_command == "reject" else None
+            if plan:
+                # A rejection with feedback becomes a code revision on the pull request's branch.
+                dispatch_stage(
+                    repo,
+                    {
+                        "stage": "pr-feedback-fix",
+                        "pr": pr_num,
+                        "plan": plan,
+                        "request": find_parent_request_number(plan, repo) or plan,
+                        "feedback": command_feedback(comment_body) or comment_body,
+                    },
+                )
+                return
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
 
 

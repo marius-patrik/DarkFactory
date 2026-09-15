@@ -282,6 +282,20 @@ def test_legacy_agent_comments_are_still_recognised():
     assert is_bot_or_agent_comment("someone", "<!-- darkfactory-agent -->\nnew notice")
 
 
+@pytest.fixture(autouse=True)
+def _pr_branch_is_checked_out(request, monkeypatch):
+    """Review and fix runs check out the PR branch first; their unit tests run on a stub checkout."""
+    if request.cls is not None and request.cls.__name__ in (
+        "TestSelfReviewFix",
+        "TestRunSelfReviewIterationAndFindings",
+        "TestPrFeedbackRevision",
+    ):
+        module = agent_runner_module()
+        monkeypatch.setattr(
+            module, "checkout_pr_branch", lambda pr, repo, cwd=None: "feature/branch"
+        )
+
+
 def agent_runner_module():
     """Returns the runner module, for monkeypatching module-level functions.
 
@@ -2599,3 +2613,121 @@ def test_gh_api_calls_never_get_a_repo_flag(monkeypatch):
     module.run_gh(["issue", "view", "1"], repo="owner/repo")
     assert "--repo" not in seen[0]
     assert seen[1][-2:] == ["--repo", "owner/repo"]
+
+
+def test_checkout_pr_branch_switches_to_the_head_branch(monkeypatch):
+    """Dispatched stages start on the default branch; review and fix runs must work on the PR's branch."""
+    module = agent_runner_module()
+    git_calls = []
+    monkeypatch.setattr(
+        module, "run_gh", lambda args, repo=None: json.dumps({"headRefName": "feature/x"})
+    )
+    monkeypatch.setattr(module, "run_git", lambda args, cwd=None: git_calls.append(args) or "")
+    assert module.checkout_pr_branch(10, "owner/repo", cwd="/work") == "feature/x"
+    assert git_calls == [
+        ["fetch", "origin", "feature/x"],
+        ["checkout", "-B", "feature/x", "origin/feature/x"],
+    ]
+
+
+class TestPrFeedbackRevision:
+    """Owner feedback on a pull request becomes a code revision, then goes through self-review again."""
+
+    def _comment_event(self, monkeypatch, tmp_path, body, plan=20):
+        module = agent_runner_module()
+        calls = {"dispatch": [], "respond": []}
+        monkeypatch.setattr(
+            module, "dispatch_stage", lambda repo, payload: calls["dispatch"].append(payload)
+        )
+        monkeypatch.setattr(module, "handle_respond", lambda *a, **k: calls["respond"].append(a))
+        monkeypatch.setattr(module, "find_plan_issue_for_pr", lambda n, r: plan)
+        monkeypatch.setattr(module, "find_parent_request_number", lambda n, r: None)
+        monkeypatch.setattr(module, "is_allowed_approver", lambda *a, **k: True)
+        monkeypatch.setattr(module, "setup_df_accounts", lambda: "home", raising=False)
+        event = {
+            "action": "created",
+            "repository": {"full_name": "owner/repo"},
+            "comment": {
+                "body": body,
+                "user": {"login": "marius-patrik", "type": "User"},
+                "author_association": "OWNER",
+            },
+            "pull_request": {"number": 10, "user": {"login": "github-actions[bot]"}},
+        }
+        path = tmp_path / "review.json"
+        path.write_text(json.dumps(event), encoding="utf-8")
+        module.dispatch_event(str(path), "pull_request_review_comment")
+        return calls
+
+    def test_a_reject_review_comment_dispatches_a_revision_with_the_feedback(
+        self, monkeypatch, tmp_path
+    ):
+        calls = self._comment_event(
+            monkeypatch, tmp_path, "/df reject rename the helper and add a test"
+        )
+        assert calls["respond"] == []
+        assert calls["dispatch"] == [
+            {
+                "stage": "pr-feedback-fix",
+                "pr": 10,
+                "plan": 20,
+                "request": 20,
+                "feedback": "rename the helper and add a test",
+            }
+        ]
+
+    def test_a_plain_review_comment_is_only_answered(self, monkeypatch, tmp_path):
+        calls = self._comment_event(monkeypatch, tmp_path, "why is this function so long?")
+        assert calls["dispatch"] == [] and len(calls["respond"]) == 1
+
+    def test_the_revision_is_pushed_announced_and_reviewed_again(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls, git_calls, reviews = [], [], []
+
+        def fake_gh(args, repo=None):
+            gh_calls.append(args)
+            return (
+                json.dumps({"title": "Plan", "body": "Files: a.py", "comments": []})
+                if args[:2] == ["issue", "view"]
+                else ""
+            )
+
+        def fake_git(args, cwd=None):
+            git_calls.append(args)
+            return " M a.py" if args[:1] == ["status"] else ""
+
+        monkeypatch.setattr(module, "run_gh", fake_gh)
+        monkeypatch.setattr(module, "run_git", fake_git)
+        monkeypatch.setattr(module, "format_repository", lambda cwd: None)
+        monkeypatch.setattr(
+            module, "run_agent_prompt", lambda prompt, **k: "Renamed the helper and added a test."
+        )
+        monkeypatch.setattr(module, "start_self_review", lambda *a: reviews.append(a))
+        module.run_pr_feedback_fix(10, 20, 30, "rename the helper", "owner/repo")
+        assert ["push", "origin", "HEAD"] in git_calls
+        assert any(
+            c[:2] == ["pr", "comment"] and "### Feedback addressed" in c[-1] for c in gh_calls
+        )
+        assert reviews == [(10, 20, 30, "owner/repo")]
+
+    def test_an_execution_error_blocks_without_review(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls, blocked, reviews = [], [], []
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, repo=None: gh_calls.append(args)
+            or json.dumps({"body": "", "comments": []}),
+        )
+        monkeypatch.setattr(
+            module,
+            "run_agent_prompt",
+            lambda prompt, **k: "[DarkFactory Agent Execution Error]: model crashed",
+        )
+        monkeypatch.setattr(module, "block_entity", lambda n, **k: blocked.append(n))
+        monkeypatch.setattr(module, "start_self_review", lambda *a: reviews.append(a))
+        module.run_pr_feedback_fix(10, 20, 30, "rename the helper", "owner/repo")
+        assert blocked == [10, 30] and reviews == []
+        assert any(
+            "### Feedback Fix Error" in c[-1] for c in gh_calls if c[:2] == ["pr", "comment"]
+        )
