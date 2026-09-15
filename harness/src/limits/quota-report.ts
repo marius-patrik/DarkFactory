@@ -2,40 +2,85 @@ import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, FreeTierConfig, ProviderConfig } from "../providers/schema.ts";
 import type { CandidateQuota, QuotaEngine, QuotaState } from "./quota-engine.ts";
 
-export interface QuotaReportAccount {
-	label: string;
-	models: CandidateQuota[];
+/**
+ * Mapping entry for a provider's account used in quota report input.
+ */
+interface QuotaReportAccountMap {
+  /** Identifier of the provider */
+  provider: string;
+  /** Human‑readable label for the account */
+  label: string;
 }
 
+/**
+ * Represents a quota report for a specific account, listing the models and their quota information.
+ */
+export interface QuotaReportAccount {
+	/** Account label */
+label: string;
+	/** Array of quota information for each model under this account */
+models: CandidateQuota[];
+}
+
+/**
+ * Detailed quota information for a provider, including its accounts and model quotas.
+ */
 export interface QuotaReportProvider {
-	id: string;
-	name: string;
-	dialect: string;
-	baseUrl: string;
+	/** Provider identifier */
+id: string;
+	/** Human‑readable provider name */
+name: string;
+	/** Provider dialect (e.g., "openai", "anthropic") */
+dialect: string;
+	/** Base URL for the provider API */
+baseUrl: string;
 	/** Disabled providers are listed (they may need local configuration first) but never evaluated. */
 	enabled: boolean;
 	/** configured: df holds an account; anonymous: usable without a key; missing: needs a login or key first. */
 	credentials: "configured" | "anonymous" | "missing";
-	state: QuotaState | "no-account";
-	free?: FreeTierConfig;
-	declared: DeclaredLimitConfig[];
-	accounts: QuotaReportAccount[];
+	/** Overall quota state for the provider (or "no-account" if no accounts are configured) */
+state: QuotaState | "no-account";
+	/** Optional free‑tier configuration */
+free?: FreeTierConfig;
+	/** Limits that the provider has declared in its configuration */
+declared: DeclaredLimitConfig[];
+	/** Quota information for each account under this provider */
+accounts: QuotaReportAccount[];
 }
 
+/**
+ * Top‑level quota report produced by the CLI.
+ */
 export interface QuotaReport {
-	version: 2;
-	generatedAt: string;
-	providers: QuotaReportProvider[];
+	/** Report format version (currently 2) */
+version: 2;
+	/** ISO‑8601 timestamp when the report was generated */
+generatedAt: string;
+	/** List of providers included in the report */
+providers: QuotaReportProvider[];
 }
 
+/**
+ * Parameters required to build a quota report.
+ */
 export interface QuotaReportInput {
-	providers: readonly ProviderConfig[];
-	accounts: ReadonlyArray<{ provider: string; label: string }>;
-	/** Candidates named in df's configured chains; their models are reported even when not in the static catalog. */
-	chains: readonly Candidate[];
-	engine: QuotaEngine;
-	now?: number;
-	provider?: string;
+	/** Provider configurations to include in the report */
+providers: readonly ProviderConfig[];
+/**
+ * Mapping of provider IDs to account labels that are configured.
+ *
+ * @property provider - Identifier of the provider.
+ * @property label - Human‑readable label for the account.
+ */
+accounts: ReadonlyArray<QuotaReportAccountMap>;
+	/** Candidate chains whose models should be reported even if not in the static catalog */
+chains: readonly Candidate[];
+	/** Quota engine used to query the current quota status */
+engine: QuotaEngine;
+	/** Optional override for the current timestamp (in ms since epoch) */
+now?: number;
+	/** Optional provider ID to limit the report to a single provider */
+provider?: string;
 }
 
 function providerState(accounts: readonly QuotaReportAccount[]): QuotaState {
@@ -46,7 +91,13 @@ function providerState(accounts: readonly QuotaReportAccount[]): QuotaState {
 	return "unknown";
 }
 
-/** df's single quota status surface: every provider, account and model with the source of each number. Sends no requests. */
+/**
+ * Generates a quota report based on the supplied input.
+ *
+ * @param input - Configuration and state required to build the report.
+ * @returns A {@link QuotaReport} containing quota information for each provider.
+ * @throws If a specific provider is requested via `input.provider` but does not exist.
+ */
 export async function buildQuotaReport(input: QuotaReportInput): Promise<QuotaReport> {
 	const now = input.now ?? Date.now();
 	const providers: QuotaReportProvider[] = [];
