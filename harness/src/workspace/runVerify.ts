@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 
 /** Result of a verification command run via {@link runVerify}. */
 export interface VerifyResult {
@@ -79,7 +79,9 @@ export function runVerify({ worktree, command, timeoutMs, tailBytes = 4096 }: Ru
 		}, timeoutMs);
 		child.stdout?.on("data", keep);
 		child.stderr?.on("data", keep);
-		child.on("error", (error) => finish({ exitCode: 127, timedOut: false, outputTail: `${output}${error.message}`.slice(-tailBytes) }));
+		child.on("error", (error) =>
+			finish({ exitCode: 127, timedOut: false, outputTail: `${output}${error.message}`.slice(-tailBytes) }),
+		);
 		child.on("close", (code, signal) =>
 			finish({ exitCode: timedOut ? 124 : (code ?? (signal ? 1 : 0)), timedOut, outputTail: output }),
 		);

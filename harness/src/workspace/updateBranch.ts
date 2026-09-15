@@ -2,9 +2,7 @@ import type { CommitIdentity } from "./commitChunk.ts";
 import { GitError, runGit } from "./git.ts";
 
 /** Result of {@link updateBranch}. */
-export type UpdateBranchResult =
-	| { status: "clean" }
-	| { status: "conflict"; conflictedFiles: string[] };
+export type UpdateBranchResult = { status: "clean" } | { status: "conflict"; conflictedFiles: string[] };
 
 /**
  * Merges the latest `origin/<base>` into the worktree's branch.

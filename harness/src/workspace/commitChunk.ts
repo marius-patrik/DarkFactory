@@ -14,10 +14,10 @@ import { runGit } from "./git.ts";
  * @returns The new commit SHA as a string, or `null` if nothing was committed.
  */
 export interface CommitIdentity {
-  /** Author/committer name */
-  name: string;
-  /** Author/committer email */
-  email: string;
+	/** Author/committer name */
+	name: string;
+	/** Author/committer email */
+	email: string;
 }
 
 /**
@@ -33,33 +33,33 @@ export interface CommitIdentity {
  * @returns The new commit SHA as a string, or `null` if nothing was committed.
  */
 export async function commitChunk({
-  worktree,
-  message,
-  identity,
+	worktree,
+	message,
+	identity,
 }: {
-  worktree: string;
-  message: string;
-  identity: CommitIdentity;
+	worktree: string;
+	message: string;
+	identity: CommitIdentity;
 }): Promise<string | null> {
-  // Determine which files have changed (excluding engine scratch files).
-  const paths = await changedFiles(worktree);
-  if (paths.length === 0) {
-    return null;
-  }
+	// Determine which files have changed (excluding engine scratch files).
+	const paths = await changedFiles(worktree);
+	if (paths.length === 0) {
+		return null;
+	}
 
-  // Stage exactly those paths, including deletions.
-  // The `--` separator ensures paths are not interpreted as options.
-  runGit(worktree, ["add", "--all", "--", ...paths]);
+	// Stage exactly those paths, including deletions.
+	// The `--` separator ensures paths are not interpreted as options.
+	runGit(worktree, ["add", "--all", "--", ...paths]);
 
-  // Commit with the provided identity.
-  const env = {
-    GIT_AUTHOR_NAME: identity.name,
-    GIT_AUTHOR_EMAIL: identity.email,
-    GIT_COMMITTER_NAME: identity.name,
-    GIT_COMMITTER_EMAIL: identity.email,
-  };
-  runGit(worktree, ["commit", "-m", message], { env });
+	// Commit with the provided identity.
+	const env = {
+		GIT_AUTHOR_NAME: identity.name,
+		GIT_AUTHOR_EMAIL: identity.email,
+		GIT_COMMITTER_NAME: identity.name,
+		GIT_COMMITTER_EMAIL: identity.email,
+	};
+	runGit(worktree, ["commit", "-m", message], { env });
 
-  // Return the newly created commit SHA.
-  return runGit(worktree, ["rev-parse", "HEAD"]);
+	// Return the newly created commit SHA.
+	return runGit(worktree, ["rev-parse", "HEAD"]);
 }

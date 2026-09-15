@@ -7,7 +7,11 @@ export class GitError extends Error {
 	 * @param exitCode - The process exit code, or null when git could not be started.
 	 * @param stderr - What git wrote to standard error.
 	 */
-	constructor(readonly args: readonly string[], readonly exitCode: number | null, readonly stderr: string) {
+	constructor(
+		readonly args: readonly string[],
+		readonly exitCode: number | null,
+		readonly stderr: string,
+	) {
 		super(`git ${args.join(" ")} failed (exit ${exitCode ?? "spawn error"}): ${stderr.trim()}`);
 		this.name = "GitError";
 	}

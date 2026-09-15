@@ -1,9 +1,9 @@
-import { describe, test, expect, afterEach } from "bun:test";
-import { join } from "node:path";
+import { afterEach, describe, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
-import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
-import { runGit, GitError } from "../../src/workspace/git.ts";
+import { join } from "node:path";
+import { GitError, runGit } from "../../src/workspace/git.ts";
 import { pushBranch } from "../../src/workspace/pushBranch.ts";
+import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
 
 describe("pushBranch", () => {
 	let tempRepo: ReturnType<typeof createTempRepo>;

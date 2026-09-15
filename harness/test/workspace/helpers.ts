@@ -17,7 +17,12 @@ export interface TempRepo {
 	cleanup(): void;
 }
 
-const IDENTITY = { GIT_AUTHOR_NAME: "test", GIT_AUTHOR_EMAIL: "test@users.noreply.example", GIT_COMMITTER_NAME: "test", GIT_COMMITTER_EMAIL: "test@users.noreply.example" };
+const IDENTITY = {
+	GIT_AUTHOR_NAME: "test",
+	GIT_AUTHOR_EMAIL: "test@users.noreply.example",
+	GIT_COMMITTER_NAME: "test",
+	GIT_COMMITTER_EMAIL: "test@users.noreply.example",
+};
 
 /**
  * Creates a bare remote and a clone with an initial commit on `main`, all inside a new temp directory.

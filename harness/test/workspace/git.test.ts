@@ -3,7 +3,10 @@ import { GitError, runGit } from "../../src/workspace/git.ts";
 import { createTempRepo, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;
-afterEach(() => { temp?.cleanup(); temp = undefined; });
+afterEach(() => {
+	temp?.cleanup();
+	temp = undefined;
+});
 
 test("runGit runs inside the given repository, not the process directory", () => {
 	temp = createTempRepo();

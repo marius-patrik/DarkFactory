@@ -9,12 +9,12 @@
  * All paths use forward slashes and are sorted lexicographically.
  */
 export interface ScopeCheckResult {
-  /** Every changed path, repository‑relative with forward slashes, sorted. */
-  changed: string[];
-  /** Changed paths matching none of the allowed patterns, sorted. */
-  outside: string[];
-  /** Required test paths that were not changed, sorted. */
-  untouchedTests: string[];
+	/** Every changed path, repository‑relative with forward slashes, sorted. */
+	changed: string[];
+	/** Changed paths matching none of the allowed patterns, sorted. */
+	outside: string[];
+	/** Required test paths that were not changed, sorted. */
+	untouchedTests: string[];
 }
 
 import { changedFiles } from "./changedFiles.ts";
@@ -28,30 +28,30 @@ import { changedFiles } from "./changedFiles.ts";
  * @returns A {@link ScopeCheckResult} describing the change analysis.
  */
 export async function scopeCheck(
-  worktree: string,
-  allowed: readonly string[],
-  requiredTests: readonly string[] = [],
+	worktree: string,
+	allowed: readonly string[],
+	requiredTests: readonly string[] = [],
 ): Promise<ScopeCheckResult> {
-  // Gather changed files and normalise path separators.
-  const rawChanged = await changedFiles(worktree);
-  const changed = rawChanged.map((p) => p.replace(/\\/g, "/")).sort();
+	// Gather changed files and normalise path separators.
+	const rawChanged = await changedFiles(worktree);
+	const changed = rawChanged.map((p) => p.replace(/\\/g, "/")).sort();
 
-  // Helper to test if a path matches any allowed pattern using Bun.Glob.
-  const matchesAllowed = (path: string): boolean => {
-    for (const pattern of allowed) {
-      // Bun.Glob works with forward‑slash patterns; paths are already normalised.
-      if (new Bun.Glob(pattern).match(path)) return true;
-    }
-    return false;
-  };
+	// Helper to test if a path matches any allowed pattern using Bun.Glob.
+	const matchesAllowed = (path: string): boolean => {
+		for (const pattern of allowed) {
+			// Bun.Glob works with forward‑slash patterns; paths are already normalised.
+			if (new Bun.Glob(pattern).match(path)) return true;
+		}
+		return false;
+	};
 
-  const outside = changed.filter((p) => !matchesAllowed(p)).sort();
+	const outside = changed.filter((p) => !matchesAllowed(p)).sort();
 
-  const changedSet = new Set(changed);
-  const untouchedTests = requiredTests
-    .map((p) => p.replace(/\\/g, "/"))
-    .filter((p) => !changedSet.has(p))
-    .sort();
+	const changedSet = new Set(changed);
+	const untouchedTests = requiredTests
+		.map((p) => p.replace(/\\/g, "/"))
+		.filter((p) => !changedSet.has(p))
+		.sort();
 
-  return { changed, outside, untouchedTests };
+	return { changed, outside, untouchedTests };
 }

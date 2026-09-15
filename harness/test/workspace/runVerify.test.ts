@@ -20,22 +20,36 @@ const script = (code: string) => `${bun} -e "${code}"`;
 
 describe("runVerify", () => {
 	test("keeps the tail of the output and the exit code", async () => {
-		const result = await runVerify({ worktree: worktree(), command: script("process.stdout.write('a'.repeat(10000) + 'END')"), timeoutMs: 30_000 });
+		const result = await runVerify({
+			worktree: worktree(),
+			command: script("process.stdout.write('a'.repeat(10000) + 'END')"),
+			timeoutMs: 30_000,
+		});
 		expect(result).toMatchObject({ exitCode: 0, timedOut: false });
 		expect(result.outputTail.length).toBe(4096);
 		expect(result.outputTail.endsWith("END")).toBe(true);
-		expect((await runVerify({ worktree: worktree(), command: script("process.exit(3)"), timeoutMs: 30_000 })).exitCode).toBe(3);
+		expect(
+			(await runVerify({ worktree: worktree(), command: script("process.exit(3)"), timeoutMs: 30_000 })).exitCode,
+		).toBe(3);
 	});
 
 	test("runs in the worktree, not the process directory", async () => {
 		const dir = worktree();
-		await runVerify({ worktree: dir, command: script("require('fs').writeFileSync('marker.txt', 'x')"), timeoutMs: 30_000 });
+		await runVerify({
+			worktree: dir,
+			command: script("require('fs').writeFileSync('marker.txt', 'x')"),
+			timeoutMs: 30_000,
+		});
 		expect(existsSync(join(dir, "marker.txt"))).toBe(true);
 	});
 
 	test("a command that outlives the timeout is killed with everything it started", async () => {
 		const started = Date.now();
-		const result = await runVerify({ worktree: worktree(), command: script("setTimeout(() => {}, 20000)"), timeoutMs: 500 });
+		const result = await runVerify({
+			worktree: worktree(),
+			command: script("setTimeout(() => {}, 20000)"),
+			timeoutMs: 500,
+		});
 		expect(result).toMatchObject({ exitCode: 124, timedOut: true });
 		expect(Date.now() - started).toBeLessThan(10_000);
 	}, 15_000);
