@@ -3348,6 +3348,50 @@ def dispatch_stage(repo: str, payload: Dict[str, Any]):
             os.remove(temp_path)
 
 
+def _parse_findings_items(text: str) -> List[str]:
+    """Extract top-level findings from agent review text.
+
+    Returns one stripped string per finding. Numbered items (1., 2., etc.)
+    and bullet items (* or -) are each one finding; subsequent indented/continuation
+    lines belong to that same finding.
+    """
+    lines = text.splitlines()
+    items: List[str] = []
+    current_item_lines: List[str] = []
+    in_item = False
+
+    def flush_item():
+        nonlocal current_item_lines
+        if current_item_lines:
+            items.append(" ".join(l.strip() for l in current_item_lines if l.strip()))
+        current_item_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if in_item and current_item_lines:
+                pass
+            continue
+        starts_numbered = re.match(r"^\d+\.\s*", stripped)
+        starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
+        if starts_numbered or starts_bullet:
+            flush_item()
+            in_item = True
+            if starts_numbered:
+                content = stripped[starts_numbered.end() :].strip()
+            elif stripped.startswith(("* ", "- ")):
+                content = stripped[2:].strip()
+            else:
+                content = stripped[1:].strip()
+            current_item_lines = [content]
+            continue
+        if in_item:
+            current_item_lines.append(stripped)
+
+    flush_item()
+    return items
+
+
 def run_self_review_iteration(
     pr_number: int,
     plan_number: int,
@@ -3451,64 +3495,6 @@ def run_self_review_iteration(
             repo=repo,
         )
         return "blocked"
-
-    # Parse findings from combined text into individual items.
-    # A "finding" is a numbered item (1., 2., ...) or a bullet (* or -),
-    # where a multi-line item counts as one finding.
-    # Scope findings (Out of scope:) are added one per file.
-
-    def _parse_findings_items(text: str) -> List[str]:
-        """Extract top-level findings from agent review text.
-
-        Returns one stripped string per finding. Numbered items (1., 2., etc.)
-        and bullet items (* or -) are each one finding; subsequent indented/continuation
-        lines belong to that same finding.
-        """
-        lines = text.splitlines()
-        items: List[str] = []
-        current_item_lines: List[str] = []
-        in_item = False
-
-        def flush_item():
-            nonlocal current_item_lines
-            if current_item_lines:
-                items.append(" ".join(l.strip() for l in current_item_lines if l.strip()))
-            current_item_lines = []
-
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                # blank line: continue collecting if in an item
-                if in_item and current_item_lines:
-                    pass
-                continue
-            # Check if this line starts a new item
-            starts_numbered = re.match(r"^\d+\.\s", stripped) is not None
-            starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
-            if starts_numbered or starts_bullet:
-                # flush any previous item
-                flush_item()
-                in_item = True
-                current_item_lines = [
-                    stripped[2:].strip() if starts_numbered else stripped[2:].strip()
-                ]
-                continue
-            # Otherwise, it's a continuation line of the current item
-            if in_item:
-                current_item_lines.append(stripped)
-            # if not in_item, ignore orphan lines
-
-        flush_item()
-        return items
-
-    # Build combined findings text: scope findings + LLM review findings
-    has_llm_findings = not ("NO_FINDINGS" in review_result.upper()[:50])
-    scope_findings = ""
-    if out_of_scope_files:
-        # List out-of-scope files as findings, do NOT revert
-        scope_findings = "\n".join(
-            f"Out of scope: {f} (not in the approved plan)" for f in sorted(out_of_scope_files)
-        )
 
     # Combine: scope findings first, then LLM findings
     if scope_findings and has_llm_findings:
@@ -3623,6 +3609,178 @@ def run_self_review_iteration(
 
     print(f"Self-review fix dispatched for iteration {iteration}")
     return "fix-dispatched"
+
+
+def run_self_review_fix(
+    pr_number: int,
+    plan_number: int,
+    request_number: int,
+    iteration: int,
+    repo: str,
+):
+    """Executes fixes for self-review findings in the PR branch.
+
+    Reads the latest findings comment, reverts out-of-scope files, runs the agent
+    to fix remaining findings, and dispatches the next review iteration.
+
+    Args:
+        pr_number: The pull request number.
+        plan_number: The child Plan issue number.
+        request_number: The parent Request issue number.
+        iteration: Current iteration number (1-based).
+        repo: Repository slug (owner/name).
+    """
+    cwd = WORKSPACE_DIR
+
+    # 1. Read latest PR comment carrying the iteration-N marker
+    try:
+        comments_res = run_gh(["issue", "view", str(pr_number), "--json", "comments"], repo=repo)
+        comments = json.loads(comments_res or "{}").get("comments", []) or []
+    except Exception as e:
+        print(f"Failed to read comments for PR #{pr_number}: {e}", file=sys.stderr)
+        comments = []
+
+    latest_comment_body = None
+    for c in reversed(comments):
+        cbody = c.get("body", "") if isinstance(c, dict) else str(c)
+        m = re.search(
+            r"<!--\s*darkfactory-self-review\s+iteration=(\d+)\s+findings=(\d+)\s+digest=([a-zA-Z0-9]+)\s*-->",
+            cbody,
+        )
+        if m and int(m.group(1)) == iteration:
+            latest_comment_body = cbody
+            break
+
+    if not latest_comment_body:
+        # No findings comment found → post a notice and set Blocked; no dispatch.
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review Fix Notice\n\n"
+                f"No self-review findings comment found for iteration {iteration}.",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        print(f"No iteration {iteration} findings comment found on PR #{pr_number}; set Blocked.")
+        return
+
+    # 2. Parse findings
+    findings_items = _parse_findings_items(latest_comment_body)
+
+    out_of_scope_files: List[str] = []
+    other_findings: List[str] = []
+
+    for item in findings_items:
+        match = re.search(r"Out of scope:\s*([^\s(]+)", item, re.IGNORECASE)
+        if match:
+            out_of_scope_files.append(match.group(1))
+        else:
+            other_findings.append(item)
+
+    # 3. Out-of-scope file findings: restore those files from the base branch in their own commit
+    revert_sha = None
+    if out_of_scope_files:
+        revert_sha = revert_out_of_scope_files(out_of_scope_files, default_branch(), cwd=cwd)
+
+    # 4. Other findings: one agent fix run on the PR branch with the findings as prompt
+    if other_findings:
+        formatted_findings = "\n".join(f"{i+1}. {f}" for i, f in enumerate(other_findings))
+        fix_prompt = (
+            f"Fix the following code review findings in the workspace:\n\n"
+            f"{formatted_findings}\n\nMake the necessary changes to resolve all findings."
+        )
+        checkpoint_ctx = {
+            "issue_number": pr_number,
+            "repo": repo,
+            "is_pr": True,
+            "completed_steps": [
+                f"Self-review fix iteration {iteration}",
+            ],
+            "cwd": cwd,
+        }
+        fix_result = run_agent_prompt(
+            fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
+        )
+
+        if is_quota_exhaustion_notice(fix_result):
+            return
+
+        if fix_result.startswith("[DarkFactory Agent Execution Error]"):
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Fix Error (Iteration {iteration})\n\n{fix_result}",
+                ],
+                repo=repo,
+            )
+            return
+
+        format_repository(cwd)
+        try:
+            run_git(["add", "-A"], cwd=cwd)
+            status = run_git(["status", "--porcelain"], cwd=cwd)
+            if status:
+                run_git(
+                    [
+                        "commit",
+                        "-m",
+                        f"fix(review): address self-review findings (iteration {iteration})",
+                    ],
+                    cwd=cwd,
+                )
+                run_git(["push", "origin", "HEAD"], cwd=cwd)
+                print(f"Pushed review fixes for iteration {iteration}")
+            else:
+                print(f"No changes after fix attempt on iteration {iteration}")
+        except subprocess.CalledProcessError as e:
+            print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
+            return
+
+    # 5. Push, post `### Self-Review fixes — iteration N` summarizing what changed, then dispatch
+    summary_parts = []
+    if out_of_scope_files:
+        sha_str = f" in commit {revert_sha[:7]}" if revert_sha else ""
+        summary_parts.append(
+            f"Reverted out-of-scope files ({', '.join(out_of_scope_files)}){sha_str}."
+        )
+    if other_findings:
+        summary_parts.append(
+            f"Applied fixes for findings:\n" + "\n".join(f"- {f}" for f in other_findings)
+        )
+
+    summary_body = f"### Self-Review fixes — iteration {iteration}\n\n" + (
+        "\n\n".join(summary_parts) if summary_parts else "No fixes required."
+    )
+
+    run_gh(
+        [
+            "pr",
+            "comment",
+            str(pr_number),
+            "--body",
+            f"<!-- darkfactory-agent -->\n{summary_body}",
+        ],
+        repo=repo,
+    )
+
+    payload = {
+        "stage": "self-review",
+        "pr": pr_number,
+        "plan": plan_number,
+        "request": request_number,
+        "iteration": iteration + 1,
+    }
+    dispatch_stage(repo, payload)
+    print(f"Dispatched self-review iteration {iteration + 1}")
 
 
 def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
@@ -4081,6 +4239,22 @@ def dispatch_event(event_path: str, event_name: str):
     else:
         repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
 
+    if event_name == "repository_dispatch":
+        action = payload.get("action")
+        if action == "agent-dispatch":
+            client_payload = payload.get("client_payload", {})
+            stage = client_payload.get("stage")
+            pr_number = client_payload.get("pr")
+            plan_issue = client_payload.get("plan")
+            request_issue = client_payload.get("request")
+            iteration = client_payload.get("iteration", 1)
+
+            if stage == "self-review":
+                run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "self-review-fix":
+                run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            return
+
     if event_name == "issues":
         action = payload.get("action")
         issue = payload.get("issue", {})
@@ -4316,6 +4490,7 @@ def main():
             "plan",
             "implement",
             "self-review",
+            "self-review-fix",
             "plan-alignment",
             "respond",
             "token-refresh",
@@ -4327,6 +4502,7 @@ def main():
     parser.add_argument("--request-issue", type=int, help="Parent request issue number")
     parser.add_argument("--plan-issue", type=int, help="Child plan issue number")
     parser.add_argument("--pr-number", type=int, help="Pull request number")
+    parser.add_argument("--iteration", type=int, default=1, help="Self-review iteration number")
     # Defaulting to a named repository sends a stray invocation at somebody else's project. The
     # environment says where this is running; the manifest says what the repository calls itself.
     parser.add_argument(
@@ -4359,7 +4535,23 @@ def main():
         handle_implement(args.plan_issue, args.request_issue, args.repo)
 
     elif args.command == "self-review" and args.pr_number and args.plan_issue:
-        handle_self_review(args.pr_number, args.plan_issue, args.repo)
+        # Default to old behavior if request-issue is missing, but use new if present
+        if args.request_issue:
+            run_self_review_iteration(
+                args.pr_number, args.plan_issue, args.request_issue, args.iteration, args.repo
+            )
+        else:
+            handle_self_review(args.pr_number, args.plan_issue, args.repo)
+
+    elif (
+        args.command == "self-review-fix"
+        and args.pr_number
+        and args.plan_issue
+        and args.request_issue
+    ):
+        run_self_review_fix(
+            args.pr_number, args.plan_issue, args.request_issue, args.iteration, args.repo
+        )
 
     elif (
         args.command == "plan-alignment"
