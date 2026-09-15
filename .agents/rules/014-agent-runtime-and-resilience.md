@@ -30,8 +30,10 @@ An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.
   credential never is.
 - **Conversational lifecycle**: incoming issues are auto-classified, the agent answers feedback and
   executes adjustments on Request issues and pull requests, bots are ignored to prevent
-  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and runs a review
-  loop bounded by `MAX_REVIEW_ITERATIONS`. On quota exhaustion the agent saves a checkpoint, moves
+  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and self-reviews it
+  in separate runs: each review run posts all findings and dispatches a fix run, which dispatches
+  the next review, until a review finds nothing (identical findings twice block the PR). On quota
+  exhaustion the agent saves a checkpoint, moves
   the item to `Blocked`, comments the resume instructions, and exits cleanly.
 
 ## Rationale
