@@ -6,7 +6,7 @@ import freeProviders from "../../assets/providers.free.json";
 export type ProviderDialect = "openai-completions" | "openai-responses" | "openai-codex-responses" | "anthropic-messages" | "google-generative-ai" | "cloudcode-agent";
 export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
 export type ModelTier = "tight" | "standard" | "bulk";
-export type ConfiguredLimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth";
+export type ConfiguredLimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth" | "billing" | "access" | "model";
 
 export interface ValueReference { value?: string; env?: string }
 export interface ApiKeyAuthConfig {
@@ -96,6 +96,8 @@ export interface LimitBodyRuleConfig {
 	resetAfterMs?: number;
 	dimension?: "requests" | "tokens" | "usage";
 	pool?: string;
+	status?: number;
+	answerText?: boolean;
 }
 export interface LimitPolicyConfig {
 	observe: boolean;
@@ -312,10 +314,12 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			if (!Array.isArray(limits.bodyRules)) throw new Error(`Provider ${id} limits.bodyRules must be an array`);
 			for (const rawRule of limits.bodyRules) {
 				const rule = object(rawRule, `provider ${id} limit body rule`);
-				if (!["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(rule.type))) throw new Error(`Provider ${id} limit body rule has invalid type`);
+				if (!["rate", "daily", "window", "monthly", "overload", "auth", "billing", "access", "model"].includes(String(rule.type))) throw new Error(`Provider ${id} limit body rule has invalid type`);
 				const regex = text(rule.regex, `provider ${id} limit body regex`);
 				try { new RegExp(regex, "iu"); } catch { throw new Error(`Provider ${id} limit body regex is invalid`); }
 				if (rule.resetAfterMs !== undefined && (typeof rule.resetAfterMs !== "number" || rule.resetAfterMs <= 0)) throw new Error(`Provider ${id} limit body resetAfterMs must be positive`);
+				if (rule.status !== undefined && (typeof rule.status !== "number" || !Number.isFinite(rule.status) || rule.status < 0)) throw new Error(`Provider ${id} limit body status must be a non‑negative finite number`);
+				if (rule.answerText !== undefined && typeof rule.answerText !== "boolean") throw new Error(`Provider ${id} limit body answerText must be boolean`);
 			}
 		}
 		if (limits.probe !== undefined) {
