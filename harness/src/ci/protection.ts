@@ -2,27 +2,80 @@ import type { GitHubRepository } from "../github/repository.ts";
 import { getRequiredCheckNames } from "./config.ts";
 import type { CiConfig } from "./schema.ts";
 
+/**
+ * Report describing the result of a protection verification.
+ * Includes whether the protection is valid, which contexts matched, missing, or extra, and the source of the protection.
+ */
 export interface ProtectionVerificationReport {
+	/**
+	 * True if the protection matches the expected configuration.
+	 */
 	valid: boolean;
+	/**
+	 * List of contexts that were expected and found.
+	 */
 	matched: string[];
+	/**
+	 * List of expected contexts that were not found.
+	 */
 	missing: string[];
+	/**
+	 * List of contexts that are present but not expected.
+	 */
 	extra: string[];
+	/**
+	 * Whether strict mode is enabled (no extra contexts allowed).
+	 */
 	strict: boolean;
+	/**
+	 * Origin of the protection configuration.
+	 */
 	source: "ruleset" | "branch_protection" | "none";
 }
 
+/**
+ * Options for applying protection to a branch.
+ */
 export interface ApplyProtectionOptions {
+	/**
+	 * Target branch name. Defaults to "main" if omitted.
+	 */
 	branch?: string;
+	/**
+	 * If true, the operation is simulated without making changes.
+	 */
 	dryRun?: boolean;
 }
 
+/**
+ * Result of applying protection.
+ */
 export interface ApplyProtectionResult {
+	/**
+	 * Indicates whether the protection was successfully applied.
+	 */
 	success: boolean;
+	/**
+	 * Mirrors the dryRun option; true if this was a simulated run.
+	 */
 	dryRun: boolean;
+	/**
+	 * Source of the applied protection configuration, if any.
+	 */
 	source?: "ruleset" | "branch_protection";
+	/**
+	 * List of status check contexts that were applied.
+	 */
 	contexts: string[];
 }
 
+/**
+ * Compute the list of required status check names based on the CI configuration.
+ *
+ * @param config - CI configuration object.
+ * @param repoSlug - Optional repository slug to customize check names.
+ * @returns Array of required status check names.
+ */
 export function computeRequiredChecks(config: CiConfig, repoSlug?: string): string[] {
 	return getRequiredCheckNames(config, repoSlug);
 }
@@ -43,6 +96,15 @@ interface RulesetItem {
 	rules?: RulesetRule[];
 }
 
+/**
+ * Apply branch protection settings to a repository.
+ *
+ * @param repo - GitHub repository information.
+ * @param contexts - List of required status check contexts.
+ * @param options - Additional options such as target branch and dry-run mode.
+ * @returns Result object describing the outcome of the operation.
+ * @throws May throw errors from GitHub API requests.
+ */
 export async function applyBranchProtection(
 	repo: GitHubRepository,
 	contexts: string[],
@@ -135,6 +197,15 @@ export async function applyBranchProtection(
 	};
 }
 
+/**
+ * Verify that branch protection matches the expected status check contexts.
+ *
+ * @param repo - GitHub repository information.
+ * @param expectedContexts - List of status check contexts that should be required.
+ * @param branch - Branch name to verify; defaults to "main".
+ * @returns A report detailing the verification result.
+ * @throws May throw errors from GitHub API requests.
+ */
 export async function verifyBranchProtection(
 	repo: GitHubRepository,
 	expectedContexts: string[],
