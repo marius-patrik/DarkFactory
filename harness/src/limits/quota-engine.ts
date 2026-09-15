@@ -11,64 +11,100 @@ import type { TaskEstimate } from "./routing.ts";
 
 /** One model request df sent, counted against declared limits. */
 export interface UsageEvent {
+	/** Unique identifier for the usage event. */
 	id: string;
+	/** Provider name. */
 	provider: string;
+	/** Account identifier. */
 	account: string;
+	/** Model identifier. */
 	model: string;
+	/** Event timestamp in milliseconds since epoch. */
 	timestamp: number;
+	/** Number of input tokens consumed. */
 	inputTokens: number;
+	/** Number of output tokens produced. */
 	outputTokens: number;
+	/** Whether the request succeeded. */
 	success: boolean;
 }
 
+/** Shape of the usage store JSON file on disk. */
 export interface UsageStoreFile {
+	/** File format version; always 1. */
 	version: 1;
+	/** Recorded usage events. */
 	events: UsageEvent[];
 }
 
+/** Possible states of a quota. */
 export type QuotaState = "available" | "waiting" | "exhausted" | "unknown";
 
 /** One limit as df knows it right now: what the provider declares, what df counted, what it learned. */
 export interface QuotaStatusItem {
+	/** Provider name. */
 	provider: string;
+	/** Account identifier. */
 	account: string;
+	/** Model identifier. */
 	model: string;
+	/** Pool name if this limit is pooled. */
 	pool?: string;
+	/** Declared limit type. */
 	type: string;
+	/** Dimension this limit applies to (requests or tokens). */
 	dimension?: string;
+	/** Declared limit value. */
 	limit?: number;
 	/** Counted usage in the current window; absent when df cannot count this dimension (e.g. neurons, credits). */
 	used?: number;
+	/** Remaining quota in the current window. */
 	remaining?: number;
+	/** Start of the current counting window (ms timestamp). */
 	windowStart?: number;
+	/** Timestamp when the window resets (ms). */
 	resetAt?: number;
+	/** Current quota state. */
 	state: QuotaState;
 	/** Where the number comes from: docs / community / observed for declared limits, header / body / rule for learned ones. */
 	source: string;
+	/** URL to the provider's documentation for this limit. */
 	sourceUrl?: string;
+	/** ISO timestamp when this item was last checked. */
 	checkedAt?: string;
+	/** Free-form note from the provider or rule. */
 	note?: string;
 	/** Whether admission control enforces this limit (usage and concurrency limits are shown, not enforced). */
 	enforced: boolean;
+	/** Whether this limit is declared by the provider or learned from usage. */
 	origin: "declared" | "learned";
 }
 
+/** Everything df knows about one candidate's quota right now: its overall state, when it clears and every limit behind it. */
 export interface CandidateQuota extends Candidate {
+	/** Current quota state. */
 	state: QuotaState;
 	/** When the candidate is fully usable again (all blocking limits cleared). */
 	until?: number;
+	/** Reason for the current state. */
 	reason?: string;
+	/** All quota status items for this candidate. */
 	items: QuotaStatusItem[];
 }
 
+/** Whether a request to a candidate may go out now, must wait for a limit to clear, or should skip to the next candidate. */
 export interface AdmissionVerdict {
+	/** Decision: admit, wait, or skip. */
 	decision: "admit" | "wait" | "skip";
+	/** Earliest time the candidate can be admitted (ms timestamp). */
 	waitUntil?: number;
+	/** Reason for the decision. */
 	reason?: string;
 	/** Blocking limits as ledger-shaped entries, so the supervisor's wait logic can treat them like learned cooldowns. */
 	entries: LimitEntry[];
 }
 
+/** Options for the QuotaEngine. */
 export interface QuotaEngineOptions {
 	/** A blocked candidate whose limits clear within this time is "wait", otherwise "skip". */
 	maxAdmitWaitMs?: number;
@@ -90,7 +126,12 @@ function nextUtcMidnight(now: number): number {
 }
 
 /** The counting window of a declared limit: fixed windows follow the provider's roll-over, rolling windows trail now. */
-export function windowBounds(limit: DeclaredLimitConfig, policy: LimitPolicyConfig | undefined, now: number): { start: number; resetAt?: number } {
+export function windowBounds(limit: DeclaredLimitConfig, policy: LimitPolicyConfig | undefined, now: number): {
+	/** Start of the counting window (ms timestamp). */
+	start: number;
+	/** Timestamp when the window resets (ms). */
+	resetAt?: number;
+} {
 	if (limit.reset !== "fixed") return { start: now - limit.windowMs };
 	if (limit.type === "monthly" || limit.windowMs >= 28 * DAY) {
 		const date = new Date(now);
@@ -116,10 +157,19 @@ function ledgerType(type: DeclaredLimitConfig["type"]): LimitType {
 	return type === "concurrency" ? "rate" : type;
 }
 
+/** Engine that tracks and enforces quota limits for candidates. */
 export class QuotaEngine {
+	/** Path to the usage data file. */
 	readonly path: string;
+	/** Path to the file lock for usage data. */
 	readonly lockPath: string;
 
+	/** Create a new QuotaEngine.
+	 * @param home Directory where usage data is stored.
+	 * @param ledger Ledger for learned limits.
+	 * @param providerConfigs Map of provider configurations.
+	 * @param options Optional engine options.
+	 */
 	constructor(
 		readonly home: string,
 		readonly ledger: LimitLedger,
@@ -145,7 +195,9 @@ export class QuotaEngine {
 		}
 	}
 
-	/** Records one model request; safe across concurrent df processes and prunes events older than the longest window. */
+	/** Record a model request event.
+	 * @param event Event data without an id; id will be generated.
+	 */
 	async record(event: Omit<UsageEvent, "id">): Promise<void> {
 		const full: UsageEvent = { id: crypto.randomUUID(), ...event };
 		await withFileLock(this.lockPath, async () => {
@@ -161,7 +213,10 @@ export class QuotaEngine {
 		});
 	}
 
-	/** Declared limits that apply to a candidate's model. */
+	/** Get declared limits that apply to a candidate's model.
+	 * @param candidate The candidate to query.
+	 * @returns Array of declared limit configurations.
+	 */
 	declaredLimits(candidate: Candidate): DeclaredLimitConfig[] {
 		return (this.providerConfigs.get(candidate.provider)?.limits?.declared ?? []).filter((limit) => matchesModel(limit.model, candidate.model));
 	}
@@ -233,7 +288,11 @@ export class QuotaEngine {
 		return [...declared, ...learned];
 	}
 
-	/** Everything df knows about a candidate's quota, without sending any request. */
+	/** Retrieve quota status for a candidate without sending a request.
+	 * @param candidate The candidate to check.
+	 * @param now Optional current timestamp (defaults to now).
+	 * @returns CandidateQuota describing the quota state.
+	 */
 	async status(candidate: Candidate, now = Date.now()): Promise<CandidateQuota> {
 		const items = await this.items(candidate, now, 0);
 		const blocked = items.filter((item) => item.blockedUntil !== undefined);
@@ -247,9 +306,11 @@ export class QuotaEngine {
 		return { ...candidate, state: counted ? "available" : "unknown", ...(counted ? {} : { reason: "no declared or learned limits" }), items: items.map(strip) };
 	}
 
-	/**
-	 * Decides before a model call: admit now, wait until every blocking limit has cleared (when that is soon),
-	 * or skip the candidate. Never sends a request.
+	/** Decide whether a candidate can be admitted now, wait, or be skipped.
+	 * @param candidate The candidate to evaluate.
+	 * @param taskEstimate Optional estimate of token usage for the request.
+	 * @param now Optional current timestamp.
+	 * @returns AdmissionVerdict indicating decision and any blocking entries.
 	 */
 	async admit(candidate: Candidate, taskEstimate?: TaskEstimate, now = Date.now()): Promise<AdmissionVerdict> {
 		await this.ledger.recover(now);

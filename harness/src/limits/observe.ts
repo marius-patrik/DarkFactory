@@ -7,14 +7,24 @@ import { nextPacificMidnight } from "../quota.ts";
 const DAILY_WORDING = /per[- ]?day|perday|\bdaily\b|day limit/iu;
 const LIMIT_WORDING = /rate limit|quota|too many requests|limit exceeded|exhausted/iu;
 
-/** The later of two resets: a short rule default must never shorten a reset the provider reported. */
+/**
+ * The later of two resets: a short rule default must never shorten a reset the provider reported.
+ * @param rule - Reset time from the rule.
+ * @param observed - Reset time observed from the provider.
+ * @returns The later of the two reset times, or undefined if both are undefined.
+ */
 export function mergeReset(rule: number | undefined, observed: number | undefined): number | undefined {
 	if (rule === undefined) return observed;
 	if (observed === undefined) return rule;
 	return Math.max(rule, observed);
 }
 
-/** Next daily roll-over for a provider: UTC midnight unless its config says otherwise. */
+/**
+ * Next daily roll-over for a provider: UTC midnight unless its config says otherwise.
+ * @param now - Current timestamp in milliseconds.
+ * @param policy - Optional policy configuration for daily reset.
+ * @returns Timestamp of the next daily reset in milliseconds.
+ */
 export function nextDailyReset(now: number, policy?: Pick<LimitPolicyConfig, "dailyReset">): number {
 	if (policy?.dailyReset === "pacific-midnight") return nextPacificMidnight(now);
 	const date = new Date(now);
@@ -48,6 +58,12 @@ function numeric(value: string | undefined): number | undefined {
 	return Number.isFinite(result) && result >= 0 ? result : undefined;
 }
 
+/**
+ * Parse a duration string into milliseconds.
+ * Supports plain numbers (seconds) and units (d, h, m, s, ms).
+ * @param value - Duration string to parse.
+ * @returns Milliseconds or undefined if unparsable.
+ */
 export function parseDuration(value: string): number | undefined {
 	const plain = Number(value);
 	if (Number.isFinite(plain) && plain >= 0) return plain * 1_000;
@@ -61,6 +77,13 @@ export function parseDuration(value: string): number | undefined {
 	return found ? total : undefined;
 }
 
+/**
+ * Parse a reset value from a header or body into a timestamp.
+ * Handles durations, timestamps, and numeric seconds.
+ * @param value - Reset string to parse.
+ * @param now - Current timestamp for relative calculations.
+ * @returns Timestamp in ms or undefined.
+ */
 export function parseReset(value: string | undefined, now: number): number | undefined {
 	if (!value) return undefined;
 	const duration = parseDuration(value);
@@ -115,7 +138,14 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 	return { ...candidate, type: rule.type, ...(rule.dimension ? { dimension: rule.dimension } : {}), ...(rule.pool ? { pool: rule.pool.replace(":model", `:${candidate.model}`) } : {}), observedAt: now, resetAt: resetAt ?? now + 15 * 60_000, source: "body", remaining: 0 };
 }
 
-/** Normalizes remote limit signals only when enabled by provider configuration. */
+/**
+ * Normalizes remote limit signals only when enabled by provider configuration.
+ * @param candidate - The candidate to observe limits for.
+ * @param observation - The limit observation from the provider.
+ * @param policy - Optional policy configuration for limit observation.
+ * @param now - Current timestamp in milliseconds (defaults to Date.now()).
+ * @returns Array of LimitEntry objects representing the observed limits.
+ */
 export function observeLimits(candidate: Candidate, observation: LimitObservation, policy: LimitPolicyConfig | undefined, now = Date.now()): LimitEntry[] {
 	if (!policy?.observe) return [];
 	const result: LimitEntry[] = [];
@@ -155,6 +185,17 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	return result;
 }
 
+/**
+ * Create a default limit entry when no information is available.
+ * @param candidate - The candidate the limit applies to.
+ * @param type - Type of limit (rate, daily, monthly, etc.).
+ * @param now - Current timestamp.
+ * @param resetAt - Optional reset timestamp.
+ * @param dimension - Optional dimension.
+ * @param pool - Optional pool name.
+ * @param policy - Optional policy for daily reset.
+ * @returns A LimitEntry with sensible defaults.
+ */
 export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now: number, resetAt: number | undefined, dimension?: LimitDimension, pool?: string, policy?: LimitPolicyConfig): LimitEntry {
 	// A daily or monthly limit without a reported reset lasts until its roll-over, not fifteen minutes.
 	const fallback = type === "daily" ? nextDailyReset(now, policy) : type === "monthly" ? nextMonthlyReset(now) : now + 15 * 60_000;
