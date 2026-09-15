@@ -8,9 +8,16 @@ export type Sensitivity = "normal" | "sensitive";
 export type LimitTier = "tight" | "standard" | "bulk";
 export type ModelModality = "text" | "image" | "video" | "image_gen" | "video_gen";
 export type CapabilityTierId = string;
-export interface CapabilityTier { id: string; match: string[] }
+export interface CapabilityTier {
+	id: string;
+	match: string[];
+}
 export type Difficulty = "easy" | "medium" | "hard";
-export interface DifficultyTierMapping { easy: string; medium: string; hard: string }
+export interface DifficultyTierMapping {
+	easy: string;
+	medium: string;
+	hard: string;
+}
 
 export interface TaskProfile {
 	kind: TaskKind;
@@ -21,8 +28,18 @@ export interface TaskProfile {
 	contextTokens: number;
 }
 
-export interface AttachedContext { name?: string; tokens?: number; text?: string; modality?: "text" | "image" | "video" }
-export interface TaskHints { kind?: TaskKind; size?: TaskSize; needs?: TaskNeed[]; sensitivity?: Sensitivity }
+export interface AttachedContext {
+	name?: string;
+	tokens?: number;
+	text?: string;
+	modality?: "text" | "image" | "video";
+}
+export interface TaskHints {
+	kind?: TaskKind;
+	size?: TaskSize;
+	needs?: TaskNeed[];
+	sensitivity?: Sensitivity;
+}
 export interface RouterInput {
 	prompt: string;
 	attachedFiles?: readonly AttachedContext[];
@@ -48,9 +65,22 @@ export interface ModelCapability {
 }
 
 export interface ModelCapabilityOverride extends Partial<Omit<ModelCapability, "candidate">> {}
-export interface PolicyMatch { kind?: TaskKind[]; size?: TaskSize[]; needs?: TaskNeed[]; sensitivity?: Sensitivity[] }
-export interface CandidatePreference { candidates?: string[]; tiers?: LimitTier[]; quality?: TaskKind }
-export interface RouterPolicy { id: string; match: PolicyMatch; prefer: CandidatePreference }
+export interface PolicyMatch {
+	kind?: TaskKind[];
+	size?: TaskSize[];
+	needs?: TaskNeed[];
+	sensitivity?: Sensitivity[];
+}
+export interface CandidatePreference {
+	candidates?: string[];
+	tiers?: LimitTier[];
+	quality?: TaskKind;
+}
+export interface RouterPolicy {
+	id: string;
+	match: PolicyMatch;
+	prefer: CandidatePreference;
+}
 export interface RouterConfig {
 	classifier?: string;
 	candidates?: string[];
@@ -89,6 +119,6 @@ export interface CandidateOutcome {
 	observedAt: number;
 }
 export function tierRank(tier: string, tierOrder?: string[]): number {
-  const order = tierOrder ?? ["light", "standard", "strong"];
-  return order.indexOf(tier);
+	const order = tierOrder ?? ["light", "standard", "strong"];
+	return order.indexOf(tier);
 }
