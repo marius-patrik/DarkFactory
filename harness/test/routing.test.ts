@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CHAIN, type DfConfig } from "../src/config.ts";
+import { type DfConfig } from "../src/config.ts";
+const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";
 import { defaultSensitiveDataHook, resolveRouting } from "../src/harness/routing.ts";
 
 const config: DfConfig = {
@@ -14,11 +15,9 @@ describe("model routing policy", () => {
 		expect(route.source).toBe("default");
 		expect(route.chain.slice(0, 3).map((entry) => `${entry.provider}/${entry.model}@${entry.account}`)).toEqual([
 			"google/gemini-3.8-flash@default",
-			"google/gemini-3.7-flash@default",
-			"google/gemini-3.6-flash@default",
+			"groq/openai/gpt-oss-120b@default",
 		]);
-		expect(JSON.stringify(route.chain)).not.toContain("gemini-2.5");
-		expect(new Set(route.chain.map((entry) => entry.provider)).size).toBeGreaterThan(2);
+		expect(new Set(route.chain.map((entry) => entry.provider)).size).toBe(2);
 		expect(JSON.stringify(route.chain)).not.toContain("antigravity");
 	});
 

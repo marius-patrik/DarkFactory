@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+const FIXED_CHAIN = "google/gemini-3.8-flash@default,claude/claude-3-5-sonnet@default";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,7 +15,7 @@ describe("doctor identities", () => {
 			await writeFile(
 				configPath,
 				JSON.stringify({
-					defaultChain: "google/gemini-3.8-flash@default,claude/claude-3-5-sonnet@default",
+					defaultChain: FIXED_CHAIN,
 				}),
 			);
 
@@ -58,7 +59,72 @@ describe("doctor identities", () => {
 			await writeFile(
 				configPath,
 				JSON.stringify({
-					defaultChain: "google/gemini-3.8-flash@default,missing-provider/model-x@default",
+					defaultChain: `${FIXED_CHAIN},missing-provider/model-x@default`,
+				}),
+			);
+
+			await writeFile(
+				manifestPath,
+				JSON.stringify({
+					identities: {
+						app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
+						google: {
+							name: "Gemini",
+							trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+							verified: true,
+						},
+						claude: {
+							name: "Claude",
+							trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
+							verified: true,
+						},
+					},
+				}),
+			);
+
+			const result = await checkDoctorIdentities({ configPath, manifestPath });
+			expect(result.ok).toBe(false);
+			expect(result.missingProviders).toEqual(["missing-provider"]);
+
+			// runDoctorIdentities should throw error
+			expect(
+				runDoctorIdentities(["--config", configPath, "--manifest", manifestPath]),
+			).rejects.toThrow("missing-provider");
+		} finally {
+			await rm(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("passes when no chains are configured", async () => {
+		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
+		const configPath = join(tempDir, "config.json");
+		const manifestPath = join(tempDir, "manifest.json");
+
+		try {
+			await writeFile(configPath, JSON.stringify({}));
+			await writeFile(manifestPath, JSON.stringify({ identities: { app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 } } }));
+
+			const result = await checkDoctorIdentities({ configPath, manifestPath });
+			expect(result.ok).toBe(true);
+			expect(result.chainProviders).toEqual([]);
+			expect(result.missingProviders).toEqual([]);
+
+			await runDoctorIdentities(["--config", configPath, "--manifest", manifestPath]);
+		} finally {
+			await rm(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("checks providers from only sensitiveChain", async () => {
+		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
+		const configPath = join(tempDir, "config.json");
+		const manifestPath = join(tempDir, "manifest.json");
+
+		try {
+			await writeFile(
+				configPath,
+				JSON.stringify({
+					sensitiveChain: FIXED_CHAIN,
 				}),
 			);
 
@@ -78,12 +144,9 @@ describe("doctor identities", () => {
 
 			const result = await checkDoctorIdentities({ configPath, manifestPath });
 			expect(result.ok).toBe(false);
-			expect(result.missingProviders).toEqual(["missing-provider"]);
+			expect(result.missingProviders).toEqual(["claude"]);
 
-			// runDoctorIdentities should throw error
-			expect(
-				runDoctorIdentities(["--config", configPath, "--manifest", manifestPath]),
-			).rejects.toThrow("missing-provider");
+			await expect(runDoctorIdentities(["--config", configPath, "--manifest", manifestPath])).rejects.toThrow("claude");
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });
 		}

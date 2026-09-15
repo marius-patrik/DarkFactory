@@ -43,18 +43,33 @@ export async function checkDoctorIdentities(
 		);
 	}
 
-	let configData: { defaultChain?: string };
+	let configData: { defaultChain?: string; hardReasoningChain?: string; sensitiveChain?: string };
 	try {
-		configData = JSON.parse(configRaw) as { defaultChain?: string };
+		configData = JSON.parse(configRaw) as { defaultChain?: string; hardReasoningChain?: string; sensitiveChain?: string };
 	} catch {
 		throw new Error(`df doctor identities: invalid JSON in config at ${configPath}`);
 	}
 
-	if (!configData || typeof configData !== "object" || !configData.defaultChain) {
+	if (!configData || typeof configData !== "object") {
 		throw new Error(`df doctor identities: config at ${configPath} missing defaultChain`);
 	}
 
-	const candidates = parseChain(configData.defaultChain);
+	// Collect providers from any configured chains
+	const chainStrings: string[] = [];
+	if (configData.defaultChain) chainStrings.push(configData.defaultChain);
+	if (configData.hardReasoningChain) chainStrings.push(configData.hardReasoningChain);
+	if (configData.sensitiveChain) chainStrings.push(configData.sensitiveChain);
+
+	if (chainStrings.length === 0) {
+		// No chains configured; candidates are derived from provider configs.
+		return {
+			ok: true,
+			chainProviders: [],
+			missingProviders: [],
+		};
+	}
+
+	const candidates = chainStrings.flatMap(parseChain);
 	const chainProviders = [...new Set(candidates.map((c) => c.provider))];
 
 	const identities = await loadIdentities(manifestPath, reader);
@@ -85,6 +100,11 @@ export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 		const message = `df doctor identities failed: missing identity entry for provider(s) in defaultChain: ${result.missingProviders.join(", ")}`;
 		console.error(message);
 		throw new Error(message);
+	}
+
+	if (result.chainProviders.length === 0) {
+		console.log('df doctor identities: no chains configured; candidates are derived from provider configs');
+		return;
 	}
 
 	console.log(
