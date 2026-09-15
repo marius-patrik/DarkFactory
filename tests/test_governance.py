@@ -208,7 +208,7 @@ def test_core_documents_are_present_and_substantial(document: str):
     assert len(content) > 500, f"{document} looks like a placeholder"
 
 
-def test_prd_does_not_duplicate_manifest_taxonomy_or_graph() -> None:
+def test_prd_does_not_duplicate_manifest_taxonomy_or_graph():
     """Executable declarations live in the manifest, not in the product document.
 
     The PRD must not re-state the area taxonomy or a hardcoded stage graph, because those have one
@@ -350,3 +350,30 @@ def test_runtime_references_use_canonical_agent_paths():
     assert 'ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")' in _read(
         ".github", "scripts", "docs_hooks.py"
     ), "docs_hooks must discover ADRs under the canonical directory"
+
+
+def test_adr_superseded_links_exist():
+    """Every ADR that is superseded references an existing ADR file, and ADR‑0006 supersedes ADR‑0002."""
+    adr_dir = os.path.join(REPO_ROOT, ".agents", "notes", "adr")
+    # Verify ADR‑0002 supersedes ADR‑0006
+    content2 = _read(
+        os.path.relpath(adr_dir, REPO_ROOT), "0002-agent-pipeline-is-harness-agnostic.md"
+    )
+    assert (
+        "**Status**: Superseded by ADR-0006" in content2
+    ), "ADR-0002 should be superseded by ADR-0006"
+    # Verify ADR‑0006 file exists
+    assert os.path.isfile(
+        os.path.join(adr_dir, "0006-the-pipeline-runs-only-df.md")
+    ), "ADR-0006 file missing"
+    # Check all superseded ADRs reference an existing file
+    for name in os.listdir(adr_dir):
+        if not name.endswith(".md") or name in ("README.md", "index.md"):
+            continue
+        content = _read(os.path.relpath(adr_dir, REPO_ROOT), name)
+        m = re.search(r"\*\*Status\*\*:\s*Superseded by ADR-(\d{4})", content)
+        if m:
+            num = m.group(1)
+            # Look for a file starting with that number
+            exists = any(f.startswith(num) and f.endswith(".md") for f in os.listdir(adr_dir))
+            assert exists, f"{name} supersedes ADR-{num} but no such ADR file exists"
