@@ -3,8 +3,34 @@ import type { ModelTier, ProviderConfig } from "../providers/schema.ts";
 import type { LimitLedger } from "../limits/ledger.ts";
 import { matchesModel } from "../limits/quota-engine.ts";
 
-const NON_TEXT_MODALITIES = new Set(["embed", "embedding", "rerank", "tts", "whisper", "speech", "audio", "image", "video"]);
-const CHAT_HINTS = ["chat", "instruct", "assistant", "claude", "gpt", "gemini", "llama", "mistral", "mixtral", "qwen", "deepseek", "command", "sonnet", "haiku", "opus"];
+const NON_TEXT_MODALITIES = new Set([
+	"embed",
+	"embedding",
+	"rerank",
+	"tts",
+	"whisper",
+	"speech",
+	"audio",
+	"image",
+	"video",
+]);
+const CHAT_HINTS = [
+	"chat",
+	"instruct",
+	"assistant",
+	"claude",
+	"gpt",
+	"gemini",
+	"llama",
+	"mistral",
+	"mixtral",
+	"qwen",
+	"deepseek",
+	"command",
+	"sonnet",
+	"haiku",
+	"opus",
+];
 
 export type UsableCatalogModel = CatalogModel & { contextWindow?: number; tier?: ModelTier };
 
@@ -43,15 +69,20 @@ export class ModelPoller {
 		const declared = new Map((provider?.models.static ?? []).map((model) => [model.id, model]));
 		const liveIds = new Set(live.models.map((model) => model.id));
 		const rawExcludes = [...this.#excludeGlobs, ...(provider?.routing?.exclude ?? [])];
-        // Strip provider prefix from globs if present, because matchesModel expects model id only
-        const excludes = rawExcludes.map((g) => {
-          const slash = g.indexOf("/");
-          return slash >= 0 ? g.slice(slash + 1) : g;
-        });
+		// Strip provider prefix from globs if present, because matchesModel expects model id only
+		const excludes = rawExcludes.map((g) => {
+			const slash = g.indexOf("/");
+			return slash >= 0 ? g.slice(slash + 1) : g;
+		});
 
 		// Learned unavailability (#318) for this provider account, read once: billing/access block the whole account,
 		// a model limit blocks that model.
-		const learned = this.#ledger && account ? (await this.#ledger.list()).filter((entry) => entry.provider === providerId && entry.account === account && entry.resetAt > now) : [];
+		const learned =
+			this.#ledger && account
+				? (await this.#ledger.list()).filter(
+						(entry) => entry.provider === providerId && entry.account === account && entry.resetAt > now,
+					)
+				: [];
 		const accountUnavailable = learned.some((entry) => isAccountUnavailableType(entry.type));
 		const unavailableModels = new Set(learned.filter((entry) => entry.type === "model").map((entry) => entry.model));
 
@@ -72,7 +103,12 @@ export class ModelPoller {
 			if (accountUnavailable) continue;
 			if (unavailableModels.has(model.id)) continue;
 			// Legacy learned unavailable set
-			if (this.#learnedUnavailable.has(model.id) || this.#learnedUnavailable.has(`${providerId}/${model.id}`) || (!!account && this.#learnedUnavailable.has(`${providerId}/${account}/${model.id}`))) continue;
+			if (
+				this.#learnedUnavailable.has(model.id) ||
+				this.#learnedUnavailable.has(`${providerId}/${model.id}`) ||
+				(!!account && this.#learnedUnavailable.has(`${providerId}/${account}/${model.id}`))
+			)
+				continue;
 			const hint = declared.get(model.id);
 			usable.push({
 				...model,
@@ -89,11 +125,12 @@ function isAccountUnavailableType(type: unknown): boolean {
 	return type === "billing" || type === "access";
 }
 
-
 function isTextGenerationCapable(model: CatalogModel): boolean {
 	const haystack = `${model.id} ${model.name}`.toLowerCase();
 	// Non-chat families first: these are not text-generation capable unless modalities explicitly include "text"
-	if (/embed|rerank|tts|whisper|transcri|speech|moderation|image|imagen|dall-e|video|veo|sora|audio|music/.test(haystack)) {
+	if (
+		/embed|rerank|tts|whisper|transcri|speech|moderation|image|imagen|dall-e|video|veo|sora|audio|music/.test(haystack)
+	) {
 		const modalities = model.modalities?.map((modality) => modality.toLowerCase()) ?? [];
 		if (!modalities.includes("text")) return false;
 	}
