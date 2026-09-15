@@ -88,6 +88,7 @@ export interface FreeTierConfig {
 	notes?: string;
 	sourceUrl?: string;
 	checkedAt?: string;
+	data?: DataConfig;
 }
 export interface LimitBodyRuleConfig {
 	type: ConfiguredLimitType;
@@ -270,6 +271,21 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		}
 		if (free.card !== undefined && typeof free.card !== "boolean") throw new Error(`Provider ${id} free.card must be boolean`);
 		if (free.checkedAt !== undefined && (typeof free.checkedAt !== "string" || Number.isNaN(Date.parse(free.checkedAt)))) throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
+	}
+	if (entry.free !== undefined && (entry.free as Record<string, unknown>).data !== undefined) {
+		const free = object(entry.free as unknown, `provider ${id} free`);
+		const freeData = object(free.data as unknown, `provider ${id} free.data`);
+		const collection = text(freeData.collection, `provider ${id} free.data.collection`);
+		if (!["none", "logging", "training", "unknown"].includes(collection)) throw new Error(`provider ${id} free.data.collection must be one of none, logging, training, unknown`);
+		if (freeData.retentionDays !== undefined) {
+			if (typeof freeData.retentionDays !== "number" || !Number.isInteger(freeData.retentionDays) || freeData.retentionDays < 0) throw new Error(`provider ${id} free.data.retentionDays must be a non-negative integer`);
+		}
+		text(freeData.source, `provider ${id} free.data.source`);
+		if (freeData.sourceUrl !== undefined) {
+			if (typeof freeData.sourceUrl !== "string" || !/^https:\/\//u.test(freeData.sourceUrl)) throw new Error(`provider ${id} free.data.sourceUrl must be an https URL`);
+		}
+		if (typeof freeData.checkedAt !== "string" || Number.isNaN(Date.parse(freeData.checkedAt))) throw new Error(`provider ${id} free.data.checkedAt must be an ISO date`);
+		if (freeData.note !== undefined && typeof freeData.note !== "string") throw new Error(`provider ${id} free.data.note must be a string`);
 	}
 	if (entry.login !== undefined) {
 		const login = object(entry.login, `provider ${id} login`);
