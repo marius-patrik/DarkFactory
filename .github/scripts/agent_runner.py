@@ -4216,6 +4216,10 @@ def dispatch_event(event_path: str, event_name: str):
                 run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
             elif stage == "self-review-fix":
                 run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "resume":
+                item = client_payload.get("item")
+                is_pr = client_payload.get("is_pr")
+                resume_item(item, is_pr, repo)
             return
 
     if event_name == "issues":
@@ -4313,38 +4317,8 @@ def dispatch_event(event_path: str, event_name: str):
                 command = None
             if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
-                load_checkpoint(cwd=WORKSPACE_DIR)
-                if is_request:
-                    unblock_entity(issue_num, repo, is_pr=False, target_status="In Progress")
-                    # Both gates live on this issue. Which one an approval answers is read back
-                    # from the issue rather than tracked elsewhere: before a plan exists the
-                    # approval is of the interpretation, and after it exists it is of the plan.
-                    #
-                    # A second issue used to carry the second gate, which meant two board items
-                    # per pull request, both moving through the same statuses, and closing the
-                    # pull request closed one and left the other to be reconciled.
-                    if has_plan(issue_num, repo):
-                        handle_implement(issue_num, issue_num, repo)
-                    else:
-                        handle_plan(issue_num, issue_num, repo)
-                elif is_plan:
-                    # Legacy: issues created as separate children before the gates were merged.
-                    unblock_entity(issue_num, repo, is_pr=False, target_status="In Progress")
-                    request_num = find_parent_request_number(issue_num, repo)
-                    if request_num:
-                        unblock_entity(request_num, repo, is_pr=False, target_status="In Progress")
-                        handle_implement(issue_num, request_num, repo)
-                    else:
-                        print(f"Could not find parent Request for Plan #{issue_num}")
-                elif is_pr:
-                    unblock_entity(issue_num, repo, is_pr=True, target_status="In Progress")
-                    # Retrieve linked plan issue and resume self-review or plan alignment
-                    plan_num = find_plan_issue_for_pr(issue_num, repo)
-                    if plan_num:
-                        unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                        start_self_review(issue_num, plan_num, None, repo)
-                    else:
-                        print(f"Could not find linked Plan for PR #{issue_num}")
+                resume_item(issue_num, is_pr, repo)
+                return
             elif command == "reject":
                 # A rejection routes back to the same stage with the comment as feedback:
                 # never an approval, never a close, and on a PR never a merge.
@@ -4398,12 +4372,8 @@ def dispatch_event(event_path: str, event_name: str):
                 )
                 review_command = None
             if review_command in ("approve", "resume"):
-                unblock_entity(pr_num, repo, is_pr=True, target_status="In Progress")
-                plan_num = find_plan_issue_for_pr(pr_num, repo)
-                if plan_num:
-                    unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                    start_self_review(pr_num, plan_num, None, repo)
-                    return
+                resume_item(pr_num, True, repo)
+                return
             # A rejection is a change request: answered, never merged, never re-reviewed.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
@@ -4441,6 +4411,62 @@ def _manifest_slug() -> str:
         return f"{loaded.owner}/{loaded.repo}"
     except Exception:  # noqa: BLE001 - a missing manifest must not stop the CLI parsing
         return ""
+
+
+def resume_item(item_number: int, is_pr: bool, repo: str) -> None:
+    """Resume a blocked item (issue or PR) based on its current state.
+
+    This extracts the same behaviour as the approve/resume comment handling:
+    - Load the checkpoint.
+    - Unblock the item.
+    - For a request issue, run plan or implement depending on whether a plan exists.
+    - For a plan issue, run implement after unblocking its parent request.
+    - For a PR, start self‑review after unblocking the linked plan.
+    """
+    load_checkpoint(cwd=WORKSPACE_DIR)
+    if not is_pr:
+        # Issue case: fetch labels to decide type
+        issue_raw = run_gh(["issue", "view", str(item_number), "--json", "labels"], repo=repo)
+        if isinstance(issue_raw, str):
+            try:
+                issue_raw = json.loads(issue_raw)
+            except Exception:
+                issue_raw = {}
+        labels = [
+            l.get("name") if isinstance(l, dict) else str(l) for l in issue_raw.get("labels", [])
+        ]
+        is_request = any(l.lower() == "request" for l in labels)
+        is_plan = any(l.lower() == "plan" for l in labels)
+        if is_request:
+            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
+            if has_plan(item_number, repo):
+                handle_implement(item_number, item_number, repo)
+            else:
+                handle_plan(item_number, item_number, repo)
+        elif is_plan:
+            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
+            request_num = find_parent_request_number(item_number, repo)
+            if request_num:
+                unblock_entity(request_num, repo, is_pr=False, target_status="In Progress")
+                handle_implement(item_number, request_num, repo)
+            else:
+                print(f"Could not find parent Request for Plan #{item_number}")
+        else:
+            # Fallback: treat as request
+            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
+            if has_plan(item_number, repo):
+                handle_implement(item_number, item_number, repo)
+            else:
+                handle_plan(item_number, item_number, repo)
+    else:
+        # PR case
+        unblock_entity(item_number, repo, is_pr=True, target_status="In Progress")
+        plan_num = find_plan_issue_for_pr(item_number, repo)
+        if plan_num:
+            unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
+            start_self_review(item_number, plan_num, None, repo)
+        else:
+            print(f"Could not find linked Plan for PR #{item_number}")
 
 
 def main():
