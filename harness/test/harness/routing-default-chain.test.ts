@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test";
-import { resolveRouting } from "../../src/harness/routing.ts";
+import { describe, expect, test } from "bun:test";
 import type { DfConfig } from "../../src/config.ts";
+import { resolveRouting } from "../../src/harness/routing.ts";
 
 describe("resolveRouting without defaultChain", () => {
 	test("falls back to empty chain when defaultChain is absent", async () => {

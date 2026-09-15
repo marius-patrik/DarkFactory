@@ -2,12 +2,12 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import defaultsJson from "../../assets/providers.defaults.json";
 import { routerModels } from "../../src/cli.ts";
 import type { DfConfig } from "../../src/config.ts";
 import { FileCredentialStore } from "../../src/credentials.ts";
 import { ProviderRegistry } from "../../src/providers/runtime.ts";
-import { parseProviderConfigFile, type ProviderConfigFile } from "../../src/providers/schema.ts";
-import defaultsJson from "../../assets/providers.defaults.json";
+import { type ProviderConfigFile, parseProviderConfigFile } from "../../src/providers/schema.ts";
 
 // routerModels reads DF_HOME for its model catalog; point it at a temp directory and stay offline so the test never
 // touches the real ~/.df or the network.
@@ -19,8 +19,10 @@ beforeAll(() => {
 	process.env.DF_OFFLINE = "1";
 });
 afterAll(() => {
-	if (saved.home === undefined) delete process.env.DF_HOME; else process.env.DF_HOME = saved.home;
-	if (saved.offline === undefined) delete process.env.DF_OFFLINE; else process.env.DF_OFFLINE = saved.offline;
+	if (saved.home === undefined) delete process.env.DF_HOME;
+	else process.env.DF_HOME = saved.home;
+	if (saved.offline === undefined) delete process.env.DF_OFFLINE;
+	else process.env.DF_OFFLINE = saved.offline;
 	rmSync(root, { recursive: true, force: true });
 });
 
@@ -28,9 +30,14 @@ const registry = () => new ProviderRegistry(parseProviderConfigFile(defaultsJson
 const config = {} as DfConfig;
 let storeIndex = 0;
 const store = () => new FileCredentialStore(join(root, `store-${storeIndex++}`));
-const providers = async (credentials: FileCredentialStore) => new Set((await routerModels(registry(), credentials, config, [])).map((model) => model.candidate.provider));
+const providers = async (credentials: FileCredentialStore) =>
+	new Set((await routerModels(registry(), credentials, config, [])).map((model) => model.candidate.provider));
 const accountsOf = async (credentials: FileCredentialStore, provider: string) =>
-	new Set((await routerModels(registry(), credentials, config, [])).filter((model) => model.candidate.provider === provider).map((model) => model.candidate.account));
+	new Set(
+		(await routerModels(registry(), credentials, config, []))
+			.filter((model) => model.candidate.provider === provider)
+			.map((model) => model.candidate.account),
+	);
 
 test("a provider whose required api_key slot is missing leaves the candidate universe", async () => {
 	expect((await providers(store())).has("google")).toBe(false);
@@ -55,6 +62,11 @@ test("an anonymous transport stays a candidate without any stored credential", a
 
 test("a disabled provider stays excluded even with its credentials stored", async () => {
 	const credentials = store();
-	await credentials.setSlot("google-antigravity:work", "oauth", { type: "oauth", access: "fixture", refresh: "fixture", expires: Date.now() + 60_000 });
+	await credentials.setSlot("google-antigravity:work", "oauth", {
+		type: "oauth",
+		access: "fixture",
+		refresh: "fixture",
+		expires: Date.now() + 60_000,
+	});
 	expect((await providers(credentials)).has("google-antigravity")).toBe(false);
 });
