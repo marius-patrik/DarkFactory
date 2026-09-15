@@ -180,6 +180,37 @@ describe("quota-aware ranking", () => {
 		expect(map.get("p5")).toBe("unknown");
 	});
 
+	test("free.data.collection overrides provider.data.collection for free-tier providers", () => {
+		const providers: ProviderConfig[] = [
+			{
+				id: "p1", name: "P1", dialect: "openai-completions", baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+				free: { kind: "permanent", keyUrl: "https://example", data: { collection: "training", source: "test", checkedAt: "2020-01-01" } },
+			},
+			{
+				id: "p2", name: "P2", dialect: "openai-completions", baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p3", name: "P3", dialect: "openai-completions", baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+			},
+		];
+		const caps = buildRouterCatalog({ providers });
+		const map = new Map(caps.map(c => [c.candidate.provider, c.collection]));
+		expect(map.get("p1")).toBe("training");
+		expect(map.get("p2")).toBe("none");
+		expect(map.get("p3")).toBe("unknown");
+	});
+
 });
 
 /** Added tier override and unknown exclusion tests */
