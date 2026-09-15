@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import defaults from "../../assets/providers.defaults.json";
+import freeProviders from "../../assets/providers.free.json";
 
 export type ProviderDialect = "openai-completions" | "openai-responses" | "openai-codex-responses" | "anthropic-messages" | "google-generative-ai" | "cloudcode-agent";
 export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
@@ -58,15 +59,35 @@ export interface LimitDefaultConfig {
 	reset?: "rolling" | "fixed";
 	model?: string;
 }
+export type LimitNumberSource = "docs" | "community" | "observed" | "default";
 export interface DeclaredLimitConfig {
+	/** Model id or glob ("*", "*:free"); absent means every model. */
 	model?: string;
 	type: ConfiguredLimitType | "concurrency";
 	dimension?: "requests" | "tokens" | "usage" | "concurrency";
 	limit: number;
 	windowMs: number;
 	reset?: "rolling" | "fixed";
-	source?: "docs" | "observed" | "default";
+	/** docs = provider documentation, community = third-party list, observed = seen in real responses. */
+	source?: LimitNumberSource;
+	sourceUrl?: string;
+	/** ISO date the number was last checked against its source. */
+	checkedAt?: string;
+	note?: string;
+	/** A pooled limit is shared by every model the pattern matches (same account). */
 	pool?: string;
+}
+/** How a provider can be used for free and where its owner gets access. */
+export interface FreeTierConfig {
+	kind: "permanent" | "renewable-credits" | "trial-credits" | "anonymous";
+	keyUrl: string;
+	signupUrl?: string;
+	card?: boolean;
+	verification?: string;
+	credits?: string;
+	notes?: string;
+	sourceUrl?: string;
+	checkedAt?: string;
 }
 export interface LimitBodyRuleConfig {
 	type: ConfiguredLimitType;
@@ -162,6 +183,7 @@ export interface ProviderConfig {
 	request?: { path?: string; projectSlot?: string };
 	login?: { hydration?: LoginHydrationConfig[] };
 	replay?: { foreignToolCallThoughtSignature?: string };
+	free?: FreeTierConfig;
 }
 export interface ProviderConfigFile { version: 1; providers: ProviderConfig[] }
 
@@ -223,6 +245,16 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		const replay = object(entry.replay, `provider ${id} replay`);
 		if (replay.foreignToolCallThoughtSignature !== undefined) text(replay.foreignToolCallThoughtSignature, `provider ${id} foreign tool-call thought signature`);
 	}
+	if (entry.free !== undefined) {
+		const free = object(entry.free, `provider ${id} free`);
+		if (!["permanent", "renewable-credits", "trial-credits", "anonymous"].includes(String(free.kind))) throw new Error(`Provider ${id} free.kind must be permanent, renewable-credits, trial-credits, or anonymous`);
+		for (const field of ["keyUrl", "signupUrl", "sourceUrl"] as const) {
+			if (free[field] === undefined && field !== "keyUrl") continue;
+			if (typeof free[field] !== "string" || !/^https:\/\//u.test(free[field] as string)) throw new Error(`Provider ${id} free.${field} must be an https URL`);
+		}
+		if (free.card !== undefined && typeof free.card !== "boolean") throw new Error(`Provider ${id} free.card must be boolean`);
+		if (free.checkedAt !== undefined && (typeof free.checkedAt !== "string" || Number.isNaN(Date.parse(free.checkedAt)))) throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
+	}
 	if (entry.login !== undefined) {
 		const login = object(entry.login, `provider ${id} login`);
 		if (login.hydration !== undefined) {
@@ -271,7 +303,9 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 				if (typeof item.limit !== "number" || item.limit <= 0) throw new Error(`Provider ${id} limit declared limit must be positive`);
 				if (typeof item.windowMs !== "number" || item.windowMs <= 0) throw new Error(`Provider ${id} limit declared windowMs must be positive`);
 				if (item.reset !== undefined && item.reset !== "rolling" && item.reset !== "fixed") throw new Error(`Provider ${id} limit declared reset must be rolling or fixed`);
-				if (item.source !== undefined && item.source !== "docs" && item.source !== "observed" && item.source !== "default") throw new Error(`Provider ${id} limit declared source must be docs, observed, or default`);
+				if (item.source !== undefined && !["docs", "community", "observed", "default"].includes(String(item.source))) throw new Error(`Provider ${id} limit declared source must be docs, community, observed, or default`);
+				if (item.sourceUrl !== undefined && (typeof item.sourceUrl !== "string" || !/^https:\/\//u.test(item.sourceUrl))) throw new Error(`Provider ${id} limit declared sourceUrl must be an https URL`);
+				if (item.checkedAt !== undefined && (typeof item.checkedAt !== "string" || Number.isNaN(Date.parse(item.checkedAt)))) throw new Error(`Provider ${id} limit declared checkedAt must be an ISO date`);
 			}
 		}
 		if (limits.bodyRules !== undefined) {
@@ -307,7 +341,8 @@ export function parseProviderConfigFile(value: unknown, source = "providers.json
 	return { version: 1, providers };
 }
 
-export const BUILTIN_PROVIDER_CONFIG = parseProviderConfigFile(defaults, "built-in providers defaults");
+/** Built-in providers: the core set plus every researched free provider (assets/providers.free.json). */
+export const BUILTIN_PROVIDER_CONFIG = parseProviderConfigFile({ version: 1, providers: [...defaults.providers, ...freeProviders.providers] }, "built-in providers");
 
 export async function loadProviderConfig(home: string, reader: (path: string) => Promise<string> = (path) => readFile(path, "utf8")): Promise<ProviderConfigFile> {
 	let local: ProviderConfigFile | undefined;

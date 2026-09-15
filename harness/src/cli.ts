@@ -14,7 +14,8 @@ import { DEFAULT_ROUTER_CONFIG, loadDfConfig, localCredentialFallback, type DfCo
 import type { Candidate } from "./failover.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type CandidateFailureReason, type HarnessEvent } from "./harness/supervisor.ts";
 import { LimitLedger } from "./limits/ledger.ts";
-import { QuotaEngine, type QuotaStatusItem } from "./limits/quota-engine.ts";
+import { QuotaEngine } from "./limits/quota-engine.ts";
+import { buildQuotaReport } from "./limits/quota-report.ts";
 import { estimateTask, orderCandidates, type TaskSize } from "./limits/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import { defaultSensitiveDataHook, parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
@@ -49,7 +50,7 @@ function usage(): string {
 		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--json] <prompt>",
 		"  df route [--kind kind] [--size size] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
-		"  df quota [--json] [--provider p]",
+		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -532,6 +533,8 @@ async function createCliSupervisor(registry: ProviderRegistry, store: FileCreden
 		cooldownTtlMs: config.cooldownTtlMs, maxWaitMs: config.maxWaitMs, ephemeralProviders: faux.optional,
 		taskEstimate, monitorRecovery: args[0] === "chat",
 		outcomeStore: new OutcomeStore(defaultDfHome(), config.router?.learning), taskKind,
+		// Admission control for every model call; DF_QUOTA=off falls back to learned limits only.
+		...(process.env.DF_QUOTA === "off" ? {} : { quota: new QuotaEngine(defaultDfHome(), new LimitLedger(defaultDfHome(), { fallbackTtlMs: config.cooldownTtlMs }), new Map(registry.entries.map((entry) => [entry.id, entry]))) }),
 		store,
 		onEvent: eventHandler ?? ((event) => renderEvent(event, json)),
 	});
@@ -568,39 +571,33 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 	} finally { supervisor.session.dispose(); }
 }
 
-async function quotaCommand(registry: ProviderRegistry, store: FileCredentialStore, ledger: LimitLedger, args: string[]): Promise<void> {
-	const selectedProvider = option(args, "--provider");
-	const json = args.includes("--json");
+async function quotaCommand(registry: ProviderRegistry, store: FileCredentialStore, ledger: LimitLedger, config: DfConfig, args: string[]): Promise<void> {
 	const home = defaultDfHome();
-	const engine = new QuotaEngine(home, ledger, new Map(registry.entries.map((e) => [e.id, e])));
-	const accounts = await store.listAccounts();
-	const statuses: QuotaStatusItem[] = [];
-
-	const providersToQuery = registry.entries.filter((p) => p.enabled !== false && (!selectedProvider || p.id === selectedProvider));
-	if (selectedProvider && providersToQuery.length === 0) throw new Error(`Unknown provider ${selectedProvider}`);
-
-	for (const provider of providersToQuery) {
-		const providerAccounts = accounts.filter((a) => a.provider === provider.id);
-		const targetAccounts = providerAccounts.length > 0 ? providerAccounts : [{ provider: provider.id, label: "default", slots: [] }];
-		for (const acc of targetAccounts) {
-			for (const model of provider.models.static) {
-				const candidate = { provider: provider.id, account: acc.label, model: model.id };
-				const items = await engine.status(candidate);
-				statuses.push(...items);
-			}
-		}
+	const engine = new QuotaEngine(home, ledger, new Map(registry.entries.map((entry) => [entry.id, entry])));
+	const chains = [config.defaultChain, config.hardReasoningChain, config.sensitiveChain].flatMap((chain) => chain ? parseChain(chain) : []);
+	const accounts = (await store.listAccounts()).map((account) => ({ provider: account.provider, label: account.label }));
+	// Chain accounts backed by local credential files are real accounts too, though the store does not list them.
+	for (const candidate of chains) {
+		if (accounts.some((account) => account.provider === candidate.provider && account.label === candidate.account)) continue;
+		if (await store.readCredential(candidate.provider, candidate.account).catch(() => undefined)) accounts.push({ provider: candidate.provider, label: candidate.account });
 	}
-
-	if (json) {
-		console.log(JSON.stringify({ version: 1, statuses }, null, 2));
+	const report = await buildQuotaReport({ providers: registry.entries, accounts, chains, engine, provider: option(args, "--provider") });
+	if (args.includes("--json")) {
+		console.log(JSON.stringify(report, null, 2));
 		return;
 	}
-
-	console.log("provider\taccount\tmodel\ttype\tlimit\tused\tremaining\treset in\tstate\tsource");
 	const now = Date.now();
-	for (const item of statuses) {
-		const resetIn = item.resetAt ? `${Math.max(0, Math.ceil((item.resetAt - now) / 1000))}s` : "-";
-		console.log(`${item.provider}\t${item.account}\t${item.model}\t${item.type}${item.dimension ? `:${item.dimension}` : ""}\t${item.limit ?? "-"}\t${item.used}\t${item.remaining ?? "-"}\t${resetIn}\t${item.state}\t${item.source}`);
+	const until = (at?: number) => at === undefined ? "-" : `${Math.max(0, Math.ceil((at - now) / 60_000))}m`;
+	console.log("provider	account	model	state	until	limits (used/limit source)");
+	for (const provider of report.providers) {
+		if (provider.accounts.length === 0) {
+			console.log(`${provider.id}	-	-	no-account	-	${provider.free ? `${provider.free.kind}: ${provider.free.keyUrl}` : "no free tier recorded"}`);
+			continue;
+		}
+		for (const account of provider.accounts) for (const model of account.models) {
+			const limits = model.items.map((item) => `${item.type}${item.dimension ? `:${item.dimension}` : ""} ${item.used ?? "?"}/${item.limit ?? "?"} ${item.source}`).join("; ") || "none known";
+			console.log(`${provider.id}	${account.label}	${model.model}	${model.state}	${until(model.until)}	${limits}`);
+		}
 	}
 }
 
@@ -703,7 +700,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "models": return modelsCommand(registry, store, args.slice(1));
 		case "accounts": return accountsCommand(store);
 		case "limits": return limitsCommand(ledger, args.slice(1));
-		case "quota": return quotaCommand(registry, store, ledger, args.slice(1));
+		case "quota": return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route": return routeCommand(registry, store, config, args.slice(1));
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));

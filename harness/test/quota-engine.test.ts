@@ -1,152 +1,205 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { QuotaEngine } from "../src/limits/quota-engine.ts";
+import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
-import { loadProviderConfig } from "../src/providers/schema.ts";
-import { defaultDfHome } from "../src/credentials.ts";
+import { QuotaEngine, matchesModel, windowBounds } from "../src/limits/quota-engine.ts";
+import { buildQuotaReport } from "../src/limits/quota-report.ts";
+import { BUILTIN_PROVIDER_CONFIG, type DeclaredLimitConfig, type ProviderConfig } from "../src/providers/schema.ts";
 
-describe("Quota Engine", () => {
-	let testHome: string;
-	let ledger: LimitLedger;
-	let engine: QuotaEngine;
-	let providerConfigs: Awaited<ReturnType<typeof loadProviderConfig>>;
+const temporary: string[] = [];
+async function home(): Promise<string> {
+	const root = await mkdtemp(join(process.cwd(), ".harness-test-quota-"));
+	temporary.push(root);
+	return root;
+}
+afterEach(async () => { for (const path of temporary.splice(0)) await rm(path, { recursive: true, force: true }); });
 
-	beforeEach(async () => {
-		testHome = await mkdtemp(join(tmpdir(), "df-quota-test-"));
-		ledger = new LimitLedger(testHome);
-		providerConfigs = await loadProviderConfig(testHome);
-		engine = new QuotaEngine(testHome, ledger, new Map(providerConfigs.providers.map((p) => [p.id, p])));
+function provider(id: string, declared: DeclaredLimitConfig[], extra: Partial<ProviderConfig> = {}): ProviderConfig {
+	return {
+		id, name: id, dialect: "openai-completions", baseUrl: `https://${id}.example/v1`,
+		auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: ["api_key"],
+		models: { static: [{ id: "m" }] }, capabilities: { tools: true, reasoning: false, images: false },
+		limits: { observe: true, declared }, ...extra,
+	};
+}
+
+async function engineFor(configs: ProviderConfig[], root?: string): Promise<{ engine: QuotaEngine; ledger: LimitLedger; root: string }> {
+	const dir = root ?? await home();
+	const ledger = new LimitLedger(dir);
+	return { engine: new QuotaEngine(dir, ledger, new Map(configs.map((config) => [config.id, config]))), ledger, root: dir };
+}
+
+const a = { provider: "p", account: "one", model: "m" };
+const MIN = 60_000;
+
+describe("declared limits", () => {
+	test("model patterns match ids and globs", () => {
+		expect(matchesModel(undefined, "x")).toBe(true);
+		expect(matchesModel("*", "x")).toBe(true);
+		expect(matchesModel("*:free", "nvidia/nemotron:free")).toBe(true);
+		expect(matchesModel("*:free", "nvidia/nemotron")).toBe(false);
+		expect(matchesModel("gemini-3.*-flash", "gemini-3.8-flash")).toBe(true);
+		expect(matchesModel("gemini-3.*-flash", "gemini-3.8-flash-lite")).toBe(false);
 	});
 
-	afterEach(async () => {
-		await rm(testHome, { recursive: true, force: true });
+	test("fixed daily windows follow the provider roll-over; monthly windows the calendar month; rolling windows trail now", () => {
+		const now = Date.UTC(2026, 8, 15, 5, 0, 0); // 22:00 PDT on 14 Sep
+		const daily: DeclaredLimitConfig = { type: "daily", dimension: "requests", limit: 20, windowMs: 86_400_000, reset: "fixed" };
+		expect(windowBounds(daily, { observe: true, dailyReset: "pacific-midnight" }, now)).toEqual({ start: Date.UTC(2026, 8, 14, 7), resetAt: Date.UTC(2026, 8, 15, 7) });
+		expect(windowBounds(daily, { observe: true }, now)).toEqual({ start: Date.UTC(2026, 8, 15), resetAt: Date.UTC(2026, 8, 16) });
+		expect(windowBounds({ ...daily, type: "monthly", windowMs: 30 * 86_400_000 }, undefined, now)).toEqual({ start: Date.UTC(2026, 8, 1), resetAt: Date.UTC(2026, 9, 1) });
+		expect(windowBounds({ type: "rate", limit: 5, windowMs: MIN }, undefined, now)).toEqual({ start: now - MIN });
 	});
+});
 
-	it("1. parses declared limits from provider config", async () => {
-		const google = providerConfigs.providers.find((p) => p.id === "google");
-		expect(google).toBeDefined();
-		expect(google?.limits?.declared).toBeDefined();
-		const rpm = google?.limits?.declared?.find((d) => d.type === "rate" && d.dimension === "requests");
-		expect(rpm).toBeDefined();
-		expect(rpm?.limit).toBe(5);
-		expect(rpm?.source).toBe("docs");
-		expect(rpm?.reset).toBe("rolling");
-	});
-
-	it("2. rolling window counting under concurrency (two parallel tasks)", async () => {
-		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
-		const now = Date.now();
-
-		await Promise.all([
-			engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 10_000, inputTokens: 100, outputTokens: 50, success: true }),
-			engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 5_000, inputTokens: 200, outputTokens: 100, success: true }),
-		]);
-
-		const reqCount = await engine.queryUsage(candidate, 60_000, "requests", undefined, now);
-		expect(reqCount).toBe(2);
-
-		const tokenCount = await engine.queryUsage(candidate, 60_000, "tokens", undefined, now);
-		expect(tokenCount).toBe(450); // 100+50 + 200+100
-	});
-
-	it("3. admission control: 5 requests at t0..t4 (1s apart) with 5 RPM -> 6th at t5 waits until t0+60s exactly", async () => {
-		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
-		const now = Date.now();
-
-		// 5 requests at t0..t4 (1s apart), recorded relative to now
-		for (let i = 0; i < 5; i++) {
-			await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 1_000 * i, inputTokens: 10, outputTokens: 10, success: true });
-		}
-
-		const verdict = await engine.admit(candidate, undefined, now);
+describe("admission control", () => {
+	test("5 RPM: the 6th request waits exactly until the oldest request leaves the window", async () => {
+		const { engine } = await engineFor([provider("p", [{ type: "rate", dimension: "requests", limit: 5, windowMs: MIN, source: "docs" }])]);
+		const t0 = 1_800_000_000_000;
+		for (let i = 0; i < 5; i++) await engine.record({ ...a, timestamp: t0 + i * 1_000, inputTokens: 10, outputTokens: 5, success: true });
+		const verdict = await engine.admit(a, undefined, t0 + 5_000);
 		expect(verdict.decision).toBe("wait");
-		// Oldest request is at now-4s; with the google reserve of 1 request the second-oldest (now-3s) must leave the window.
-		expect(verdict.waitUntil! - now).toBe(57_000);
+		expect(verdict.waitUntil).toBe(t0 + MIN);
+		expect((await engine.admit(a, undefined, t0 + MIN + 1)).decision).toBe("admit");
 	});
 
-	it("3b. usage pruning: events older than 24h are pruned on record, counts unchanged", async () => {
-		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
+	test("a fixed daily quota counts only since the roll-over and skips the candidate until the next one", async () => {
+		const policy = { dailyReset: "pacific-midnight" as const };
+		const { engine } = await engineFor([provider("p", [{ type: "daily", dimension: "requests", limit: 20, windowMs: 86_400_000, reset: "fixed", source: "observed" }], { limits: { observe: true, ...policy, declared: [{ type: "daily", dimension: "requests", limit: 20, windowMs: 86_400_000, reset: "fixed", source: "observed" }] } })]);
+		const now = Date.UTC(2026, 8, 15, 5, 0, 0);
+		await engine.record({ ...a, timestamp: Date.UTC(2026, 8, 14, 6, 59), inputTokens: 1, outputTokens: 1, success: true }); // before the window
+		for (let i = 0; i < 19; i++) await engine.record({ ...a, timestamp: Date.UTC(2026, 8, 14, 8) + i, inputTokens: 1, outputTokens: 1, success: true });
+		expect((await engine.admit(a, undefined, now)).decision).toBe("admit");
+		await engine.record({ ...a, timestamp: now - 1, inputTokens: 1, outputTokens: 1, success: true });
+		const verdict = await engine.admit(a, undefined, now);
+		expect(verdict).toMatchObject({ decision: "skip", waitUntil: Date.UTC(2026, 8, 15, 7) });
+		expect(verdict.entries[0]).toMatchObject({ type: "daily", source: "declared", remaining: 0, resetAt: Date.UTC(2026, 8, 15, 7) });
+	});
+
+	test("a pooled limit is shared by the models it covers on one account, never across accounts", async () => {
+		const { engine } = await engineFor([provider("p", [{ model: "*", type: "monthly", dimension: "requests", limit: 3, windowMs: 30 * 86_400_000, reset: "fixed", pool: "p-monthly", source: "docs" }])]);
+		const now = Date.UTC(2026, 8, 15);
+		await engine.record({ provider: "p", account: "one", model: "x", timestamp: now - 3, inputTokens: 0, outputTokens: 0, success: true });
+		await engine.record({ provider: "p", account: "one", model: "y", timestamp: now - 2, inputTokens: 0, outputTokens: 0, success: true });
+		await engine.record({ provider: "p", account: "two", model: "m", timestamp: now - 1, inputTokens: 0, outputTokens: 0, success: true });
+		expect((await engine.admit(a, undefined, now)).decision).toBe("admit");
+		await engine.record({ provider: "p", account: "one", model: "z", timestamp: now, inputTokens: 0, outputTokens: 0, success: true });
+		expect((await engine.admit(a, undefined, now)).decision).toBe("skip");
+		expect((await engine.admit({ ...a, account: "two" }, undefined, now)).decision).toBe("admit");
+	});
+
+	test("a token window admits a step only when the estimated tokens fit", async () => {
+		const { engine } = await engineFor([provider("p", [{ type: "rate", dimension: "tokens", limit: 1_000, windowMs: MIN, source: "docs" }])]);
+		const t0 = 1_800_000_000_000;
+		await engine.record({ ...a, timestamp: t0, inputTokens: 500, outputTokens: 100, success: true });
+		await engine.record({ ...a, timestamp: t0 + 10_000, inputTokens: 250, outputTokens: 50, success: true });
+		const task = { size: "small" as const, contextTokens: 150, expectedOutputTokens: 50, expectedSteps: 1 };
+		expect((await engine.admit(a, { ...task, contextTokens: 50 }, t0 + 20_000)).decision).toBe("admit");
+		expect(await engine.admit(a, task, t0 + 20_000)).toMatchObject({ decision: "wait", waitUntil: t0 + MIN });
+	});
+
+	test("a candidate waits for its LAST blocking limit: a short window next to a learned daily quota means the daily reset", async () => {
+		const { engine, ledger } = await engineFor([provider("p", [{ type: "rate", dimension: "requests", limit: 1, windowMs: MIN, source: "docs" }])]);
+		const now = 1_800_000_000_000;
+		await engine.record({ ...a, timestamp: now - 1_000, inputTokens: 1, outputTokens: 1, success: true });
+		await ledger.record([{ ...a, type: "daily", dimension: "requests", observedAt: now, resetAt: now + 6 * 3_600_000, source: "body", remaining: 0 }]);
+		expect(await engine.admit(a, undefined, now)).toMatchObject({ decision: "skip", waitUntil: now + 6 * 3_600_000 });
+	});
+
+	test("usage and concurrency limits are reported but not enforced", async () => {
+		const { engine } = await engineFor([provider("p", [{ type: "daily", dimension: "usage", limit: 10_000, windowMs: 86_400_000, reset: "fixed", source: "docs", note: "neurons" }, { type: "concurrency", dimension: "concurrency", limit: 1, windowMs: 1, source: "community" }])]);
+		expect((await engine.admit(a)).decision).toBe("admit");
+		const status = await engine.status(a);
+		expect(status.state).toBe("unknown");
+		expect(status.items.map((item) => [item.enforced, item.used])).toEqual([[false, undefined], [false, undefined]]);
+	});
+
+	test("concurrent processes recording usage never lose events", async () => {
+		const { engine, root } = await engineFor([provider("p", [{ type: "rate", dimension: "requests", limit: 100, windowMs: MIN, source: "docs" }])]);
+		const other = new QuotaEngine(root, new LimitLedger(root), engine.providerConfigs);
 		const now = Date.now();
-
-		// Record an old event (> 24h old, e.g. 26 hours ago)
-		await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 26 * 3600_000, inputTokens: 100, outputTokens: 100, success: true });
-
-		// Record a recent event
-		await engine.record({ provider: "google", account: "default", model: "gemini-3.8-flash", timestamp: now - 10_000, inputTokens: 50, outputTokens: 50, success: true });
-
-		// Check count in 60s window (should only count the recent one, not the 26h old one)
-		const count = await engine.queryUsage(candidate, 60_000, "requests", undefined, now);
-		expect(count).toBe(1);
-
-		// Read usage.json directly to verify old event is gone
-		const raw = JSON.parse(await import("node:fs/promises").then(m => m.readFile(engine.path, "utf8"))) as { events: Array<{ timestamp: number }> };
-		expect(raw.events.some(e => e.timestamp < now - 24 * 3600_000)).toBe(false);
+		await Promise.all(Array.from({ length: 20 }, (_, i) => (i % 2 ? engine : other).record({ ...a, timestamp: now + i, inputTokens: 1, outputTokens: 1, success: true })));
+		const file = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as { events: unknown[] };
+		expect(file.events).toHaveLength(20);
+		expect((await engine.status(a, now + 100)).items[0]).toMatchObject({ used: 20, remaining: 80, state: "available" });
 	});
 
-	it("4. learned 429 daily limit blocks until reset and survives restart", async () => {
-		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
+	test("events older than the longest declared window are pruned", async () => {
+		const { engine, root } = await engineFor([provider("p", [{ type: "rate", dimension: "requests", limit: 100, windowMs: MIN, source: "docs" }])]);
 		const now = Date.now();
-		const resetAt = now + 3600_000;
-
-		await ledger.record([{
-			...candidate,
-			type: "daily",
-			dimension: "requests",
-			observedAt: now,
-			resetAt,
-			source: "header",
-			remaining: 0,
-		}]);
-
-		// Verify blocking/status
-		let statuses = await engine.status(candidate, now);
-		let daily = statuses.find((s) => s.type === "daily");
-		expect(daily?.state).toBe("exhausted");
-		expect(daily?.resetAt).toBe(resetAt);
-
-		// Test survival across restart (new ledger and engine instance reading same testHome)
-		const ledger2 = new LimitLedger(testHome);
-		const engine2 = new QuotaEngine(testHome, ledger2, new Map(providerConfigs.providers.map((p) => [p.id, p])));
-		statuses = await engine2.status(candidate, now);
-		daily = statuses.find((s) => s.type === "daily");
-		expect(daily?.state).toBe("exhausted");
-		expect(daily?.resetAt).toBe(resetAt);
+		await engine.record({ ...a, timestamp: now - 2 * 86_400_000, inputTokens: 1, outputTokens: 1, success: true });
+		await engine.record({ ...a, timestamp: now, inputTokens: 1, outputTokens: 1, success: true });
+		const file = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as { events: Array<{ timestamp: number }> };
+		expect(file.events.map((event) => event.timestamp)).toEqual([now]);
 	});
+});
 
-	it("5. df quota status shape from fixture state without network", async () => {
-		const candidate = { provider: "google", account: "default", model: "gemini-3.8-flash" };
-		const statuses = await engine.status(candidate, Date.now());
-		expect(statuses.length).toBeGreaterThan(0);
-		for (const s of statuses) {
-			expect(s.provider).toBe("google");
-			expect(s.account).toBe("default");
-			expect(s.model).toBe("gemini-3.8-flash");
-			expect(typeof s.type).toBe("string");
-			expect(typeof s.used).toBe("number");
-			expect(typeof s.state).toBe("string");
-			expect(typeof s.source).toBe("string");
+describe("df quota report", () => {
+	test("every provider appears with its credential state, free tier, and the source of each number; no network", async () => {
+		const documented = provider("docs-p", [{ type: "rate", dimension: "requests", limit: 30, windowMs: MIN, source: "docs", sourceUrl: "https://docs-p.example/limits", checkedAt: "2026-09-15" }], {
+			free: { kind: "permanent", keyUrl: "https://docs-p.example/keys", card: false },
+		});
+		const anonymous = provider("anon-p", [], { auth: [{ kind: "api_key", slot: "api_key", placement: "bearer", optional: true }], requiredCredentialSlots: [], free: { kind: "anonymous", keyUrl: "https://anon-p.example" } });
+		const configured = provider("have-p", [{ type: "daily", dimension: "requests", limit: 20, windowMs: 86_400_000, reset: "fixed", source: "observed" }]);
+		const { engine } = await engineFor([documented, anonymous, configured]);
+		const now = Date.UTC(2026, 8, 15, 12);
+		const report = await buildQuotaReport({
+			providers: [documented, anonymous, configured], engine, now,
+			accounts: [{ provider: "have-p", label: "key2" }],
+			chains: [{ provider: "have-p", account: "key2", model: "big-model" }],
+		});
+		expect(report.version).toBe(2);
+		const byId = Object.fromEntries(report.providers.map((entry) => [entry.id, entry]));
+		expect(byId["docs-p"]).toMatchObject({ credentials: "missing", state: "no-account", accounts: [], free: { kind: "permanent", keyUrl: "https://docs-p.example/keys" } });
+		expect(byId["docs-p"]!.declared[0]).toMatchObject({ source: "docs", sourceUrl: "https://docs-p.example/limits", checkedAt: "2026-09-15" });
+		expect(byId["anon-p"]).toMatchObject({ credentials: "anonymous", state: "unknown" });
+		expect(byId["have-p"]!.accounts[0]!.models.map((model) => model.model)).toEqual(["m", "big-model"]);
+		expect(byId["have-p"]!.accounts[0]!.models[0]!.items[0]).toMatchObject({ type: "daily", limit: 20, used: 0, source: "observed", state: "available" });
+	});
+});
+
+describe("built-in provider data quality", () => {
+	test("every declared limit says where its number comes from and when it was checked", () => {
+		for (const config of BUILTIN_PROVIDER_CONFIG.providers) {
+			for (const limit of config.limits?.declared ?? []) {
+				expect({ provider: config.id, source: limit.source }).toMatchObject({ source: expect.stringMatching(/^(docs|community|observed)$/u) });
+				expect({ provider: config.id, checkedAt: Number.isNaN(Date.parse(limit.checkedAt ?? "")) }).toEqual({ provider: config.id, checkedAt: false });
+				if (limit.source !== "observed") expect({ provider: config.id, url: limit.sourceUrl?.startsWith("https://") }).toEqual({ provider: config.id, url: true });
+			}
+			if (config.free) expect(config.free.keyUrl.startsWith("https://")).toBe(true);
 		}
 	});
+});
 
-	it("6. router / assessment prefers candidate with remaining capacity", async () => {
-		const candidate1 = { provider: "google", account: "default", model: "gemini-3.8-flash" };
-		const candidate2 = { provider: "openrouter", account: "default", model: "openrouter/free" };
-
-		// Exhaust candidate1 (record 20 requests today)
-		const now = Date.now();
-		for (let i = 0; i < 20; i++) {
-			await engine.record({ ...candidate1, timestamp: now - i * 100, inputTokens: 10, outputTokens: 10, success: true });
-		}
-
-		const status1 = await engine.status(candidate1, now);
-		const status2 = await engine.status(candidate2, now);
-
-		const c1Exhausted = status1.some((s) => s.state === "exhausted" || (s.remaining !== undefined && s.remaining <= 0));
-		const c2Available = status2.some((s) => s.state === "available" && (s.remaining === undefined || s.remaining > 0));
-
-		expect(c1Exhausted).toBe(true);
-		expect(c2Available).toBe(true);
-	});
+describe("supervisor admission", () => {
+	test("a blocked candidate is skipped without a model call and every call is recorded as usage", async () => {
+		const root = await home();
+		const cwd = join(root, "workspace");
+		const limited = provider("quota-a", [{ type: "rate", dimension: "requests", limit: 1, windowMs: MIN, source: "docs" }], { requiredCredentialSlots: [] });
+		const open = provider("quota-b", [], { requiredCredentialSlots: [] });
+		const configs = new Map([[limited.id, limited], [open.id, open]]);
+		const ledger = new LimitLedger(root);
+		const quota = new QuotaEngine(root, ledger, configs);
+		const now = 1_800_000_000_000;
+		await quota.record({ provider: "quota-a", account: "default", model: "a", timestamp: now - 1_000, inputTokens: 1, outputTokens: 1, success: true });
+		const aProvider = fauxProvider({ provider: "quota-a", models: [{ id: "a" }] });
+		aProvider.setResponses([fauxAssistantMessage("must not be called")]);
+		const bProvider = fauxProvider({ provider: "quota-b", models: [{ id: "b" }] });
+		bProvider.setResponses([fauxAssistantMessage("from b")]);
+		const skipped: unknown[] = [];
+		const supervisor = await createFailoverSupervisor({
+			chain: [{ provider: "quota-a", model: "a", account: "default" }, { provider: "quota-b", model: "b", account: "default" }],
+			home: root, cwd, now: () => now, providers: [aProvider.provider, bProvider.provider], authOptionalProviders: ["quota-a", "quota-b"],
+			providerConfigs: configs, quota, maxWaitMs: 0,
+			onEvent: (event) => { if (event.type === "candidate_skipped") skipped.push(event); },
+		});
+		const result = await supervisor.prompt("go");
+		supervisor.session.dispose();
+		expect(result.content.some((block) => block.type === "text" && block.text === "from b")).toBe(true);
+		expect(skipped).toHaveLength(1);
+		const usage = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as { events: Array<{ provider: string; success: boolean }> };
+		expect(usage.events.map((event) => [event.provider, event.success])).toEqual([["quota-a", true], ["quota-b", true]]);
+	}, 30_000);
 });

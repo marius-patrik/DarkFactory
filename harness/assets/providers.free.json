@@ -1,0 +1,2414 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "mistral",
+      "name": "Mistral La Plateforme",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.mistral.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "MISTRAL_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "mistral-small-latest",
+            "name": "mistral-small-latest",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "codestral-latest",
+            "name": "codestral-latest",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "mistral-medium-latest",
+            "name": "mistral-medium-latest",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 60,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "note": "about 1 request per second"
+          },
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "tokens",
+            "limit": 500000,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://console.mistral.ai/api-keys",
+        "card": false,
+        "verification": "phone",
+        "notes": "Free mode on by default; free-mode prompts may be used for training unless you opt out.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face Inference Providers",
+      "dialect": "openai-completions",
+      "baseUrl": "https://router.huggingface.co/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "HF_TOKEN"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen/Qwen3.8-27B",
+            "name": "Qwen/Qwen3.8-27B",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+            "name": "deepseek-ai/DeepSeek-V4.1-Flash",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "monthly",
+            "dimension": "usage",
+            "limit": 10,
+            "windowMs": 2592000000,
+            "reset": "fixed",
+            "source": "docs",
+            "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+            "checkedAt": "2026-09-15",
+            "pool": "hf-monthly-credits",
+            "note": "US cents of routed credits; df cannot count credits"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "renewable-credits",
+        "keyUrl": "https://huggingface.co/settings/tokens",
+        "card": false,
+        "credits": "$0.10 per month (PRO $2)",
+        "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "cohere",
+      "name": "Cohere (trial key)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "COHERE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "command-a-03-2025",
+            "name": "Command A",
+            "contextWindow": 256000,
+            "maxTokens": 8000,
+            "tier": "tight"
+          },
+          {
+            "id": "command-r7b-12-2024",
+            "name": "Command R7B",
+            "contextWindow": 128000,
+            "maxTokens": 4000,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 20,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "docs",
+            "sourceUrl": "https://docs.cohere.com/docs/rate-limits",
+            "checkedAt": "2026-09-15"
+          },
+          {
+            "model": "*",
+            "type": "monthly",
+            "dimension": "requests",
+            "limit": 1000,
+            "windowMs": 2592000000,
+            "reset": "fixed",
+            "source": "docs",
+            "sourceUrl": "https://docs.cohere.com/docs/rate-limits",
+            "checkedAt": "2026-09-15",
+            "pool": "cohere-trial-monthly"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://dashboard.cohere.com/api-keys",
+        "card": false,
+        "notes": "Trial keys are non-commercial.",
+        "sourceUrl": "https://docs.cohere.com/docs/rate-limits",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "nvidia-nim",
+      "name": "NVIDIA NIM (build.nvidia.com)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "NVIDIA_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "openai/gpt-oss-120b",
+            "name": "openai/gpt-oss-120b",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "deepseek-ai/deepseek-v4-flash-0731",
+            "name": "deepseek-ai/deepseek-v4-flash-0731",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "nvidia/nemotron-3-ultra-550b-a55b",
+            "name": "nvidia/nemotron-3-ultra-550b-a55b",
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 40,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15"
+          },
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "requests",
+            "limit": 10000,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://build.nvidia.com/settings/api-keys",
+        "card": false,
+        "verification": "phone (developer program)",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "zai",
+      "name": "Z.AI (GLM Flash models)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.z.ai/api/paas/v4",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "ZAI_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "glm-4.7-flash",
+            "name": "glm-4.7-flash",
+            "contextWindow": 200000,
+            "maxTokens": 128000,
+            "tier": "tight",
+            "reasoning": true
+          },
+          {
+            "id": "glm-4.5-flash",
+            "name": "glm-4.5-flash",
+            "contextWindow": 128000,
+            "maxTokens": 96000,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*-flash",
+            "type": "concurrency",
+            "dimension": "concurrency",
+            "limit": 1,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "note": "one concurrent request"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://z.ai/manage-apikey/apikey-list",
+        "card": false,
+        "notes": "Only the *-flash models are free.",
+        "sourceUrl": "https://docs.z.ai/guides/overview/pricing",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "cloudflare-workers-ai",
+      "name": "Cloudflare Workers AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "CLOUDFLARE_API_TOKEN"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "@cf/openai/gpt-oss-120b",
+            "name": "@cf/openai/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            "name": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            "contextWindow": 24000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "usage",
+            "limit": 10000,
+            "windowMs": 86400000,
+            "reset": "fixed",
+            "source": "docs",
+            "sourceUrl": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+            "checkedAt": "2026-09-15",
+            "pool": "cloudflare-neurons",
+            "note": "neurons, shared by all models; df cannot count neurons"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://dash.cloudflare.com/profile/api-tokens",
+        "card": false,
+        "notes": "Set baseUrl with your account id in $DF_HOME/providers.json and enable it; the URL carries the account id.",
+        "sourceUrl": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+        "checkedAt": "2026-09-15"
+      },
+      "enabled": false
+    },
+    {
+      "id": "llm7",
+      "name": "LLM7.io",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.llm7.io/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "LLM7_API_KEY"
+          ],
+          "optional": true,
+          "anonymousValue": "unused"
+        }
+      ],
+      "requiredCredentialSlots": [],
+      "models": {
+        "static": [
+          {
+            "id": "DeepSeek-V4-Flash-0731",
+            "name": "DeepSeek-V4-Flash-0731",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 10,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "pool": "llm7-anonymous-minute",
+            "note": "anonymous tier"
+          },
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 60,
+            "windowMs": 3600000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "pool": "llm7-anonymous-hour",
+            "note": "anonymous tier"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "anonymous",
+        "keyUrl": "https://token.llm7.io",
+        "card": false,
+        "notes": "Works without a key; a free token raises the limits.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "ovh-ai-endpoints",
+      "name": "OVHcloud AI Endpoints",
+      "dialect": "openai-completions",
+      "baseUrl": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "OVH_AI_ENDPOINTS_ACCESS_TOKEN"
+          ],
+          "optional": true
+        }
+      ],
+      "requiredCredentialSlots": [],
+      "models": {
+        "static": [
+          {
+            "id": "gpt-oss-120b",
+            "name": "gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "Qwen3-Coder-30B-A3B-Instruct",
+            "name": "Qwen3-Coder-30B-A3B-Instruct",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "Mistral-Nemo-Instruct-2407",
+            "name": "Mistral-Nemo-Instruct-2407",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 2,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "note": "anonymous, per IP per model"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "anonymous",
+        "keyUrl": "https://endpoints.ai.cloud.ovh.net/",
+        "card": false,
+        "notes": "Anonymous 2 RPM per IP per model; 400 RPM with a Public Cloud token.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "ollama-cloud",
+      "name": "Ollama Cloud",
+      "dialect": "openai-completions",
+      "baseUrl": "https://ollama.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "OLLAMA_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "gpt-oss:120b",
+            "name": "gpt-oss:120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "glm-5.3",
+            "name": "glm-5.3",
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "deepseek-v4-flash:0731",
+            "name": "deepseek-v4-flash:0731",
+            "contextWindow": 1000000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://ollama.com/settings/keys",
+        "card": false,
+        "notes": "Session and weekly usage limits, not published.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "nous-portal",
+      "name": "Nous Portal",
+      "dialect": "openai-completions",
+      "baseUrl": "https://inference-api.nousresearch.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "NOUS_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "stepfun/step-3.7-flash:free",
+            "name": "stepfun/step-3.7-flash:free",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "poolside/laguna-s-2.1:free",
+            "name": "poolside/laguna-s-2.1:free",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://portal.nousresearch.com",
+        "card": false,
+        "notes": "Free models carry the :free suffix; limits not published.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "hetzner-inference",
+      "name": "Hetzner Inference API (experimental)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://inference.hetzner.com/api/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "HETZNER_INFERENCE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen3.6-35B-A3B",
+            "name": "Qwen3.6-35B-A3B",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "tokens",
+            "limit": 3000000,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15",
+            "note": "input tokens"
+          },
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "tokens",
+            "limit": 500000000,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15",
+            "note": "input tokens"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://experiments.hetzner.com/inference",
+        "card": false,
+        "notes": "Free during the experimental phase.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "pollinations",
+      "name": "Pollinations.ai",
+      "dialect": "openai-completions",
+      "baseUrl": "https://gen.pollinations.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "POLLINATIONS_API_KEY"
+          ],
+          "optional": true
+        }
+      ],
+      "requiredCredentialSlots": [],
+      "models": {
+        "static": [
+          {
+            "id": "qwen/qwen3.8-flash",
+            "name": "qwen/qwen3.8-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "deepseek/deepseek-v4.1-flash",
+            "name": "deepseek/deepseek-v4.1-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 4,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15",
+            "pool": "pollinations-anonymous",
+            "note": "anonymous tier"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "anonymous",
+        "keyUrl": "https://enter.pollinations.ai",
+        "card": false,
+        "notes": "Anonymous about 1 request per 15 s; a free key raises it.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "siliconflow",
+      "name": "SiliconFlow",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.siliconflow.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "SILICONFLOW_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen/Qwen3-8B",
+            "name": "Qwen/Qwen3-8B",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://cloud.siliconflow.com/account/ak",
+        "card": false,
+        "verification": "phone",
+        "notes": "Free models after verification; exact limits need a login.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "modelscope",
+      "name": "ModelScope API-Inference",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api-inference.modelscope.cn/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "MODELSCOPE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+            "name": "deepseek-ai/DeepSeek-V4-Flash-0731",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "Qwen/Qwen3.5-27B",
+            "name": "Qwen/Qwen3.5-27B",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "requests",
+            "limit": 2000,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "pool": "modelscope-daily",
+            "note": "all models together"
+          },
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "requests",
+            "limit": 500,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "note": "per model, dynamic"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://modelscope.cn/my/myaccesstoken",
+        "card": false,
+        "verification": "Alibaba Cloud binding + real-name",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "aion-labs",
+      "name": "Aion Labs",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.aionlabs.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "AION_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "aion-labs/aion-3.0",
+            "name": "aion-labs/aion-3.0",
+            "contextWindow": 128000,
+            "maxTokens": 32000,
+            "tier": "tight",
+            "reasoning": true
+          },
+          {
+            "id": "aion-labs/aion-3.0-mini",
+            "name": "aion-labs/aion-3.0-mini",
+            "contextWindow": 128000,
+            "maxTokens": 32000,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "models",
+          "idPath": "id",
+          "namePath": "name"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 15,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15"
+          },
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "tokens",
+            "limit": 20000,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://www.aionlabs.ai/app/api-keys/",
+        "card": false,
+        "notes": "Specialized for roleplay and storytelling.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "inference-net",
+      "name": "Inference.net",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.inference.net/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "INFERENCE_NET_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "deepseek-v3.2",
+            "name": "deepseek-v3.2",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 30,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://inference.net/",
+        "card": false,
+        "notes": "Fair-use free tier.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "kilo-gateway",
+      "name": "Kilo Code Gateway",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.kilo.ai/api/gateway",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "KILO_API_KEY"
+          ],
+          "optional": true
+        }
+      ],
+      "requiredCredentialSlots": [],
+      "models": {
+        "static": [
+          {
+            "id": "kilo-auto/free",
+            "name": "kilo-auto/free",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "name": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "tier": "tight",
+            "reasoning": true
+          },
+          {
+            "id": "poolside/laguna-s-2.1:free",
+            "name": "poolside/laguna-s-2.1:free",
+            "contextWindow": 262000,
+            "maxTokens": 32000,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*free",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 200,
+            "windowMs": 3600000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "pool": "kilo-free-hour"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "anonymous",
+        "keyUrl": "https://app.kilo.ai/profile",
+        "card": false,
+        "notes": "Free models need no key; the free pool changes often.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "chutes",
+      "name": "Chutes",
+      "dialect": "openai-completions",
+      "baseUrl": "https://llm.chutes.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "CHUTES_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen/Qwen3.8-27B-TEE",
+            "name": "Qwen/Qwen3.8-27B-TEE",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
+            "name": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
+            "contextWindow": 131072,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://chutes.ai/app/api",
+        "card": false,
+        "notes": "Community-subsidized; free usage limited and congested at peak.",
+        "sourceUrl": "https://www.free-model.com/providers/chutes-ai/",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "venice",
+      "name": "Venice.ai",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.venice.ai/api/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "VENICE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "z-ai-glm-5-3-flash",
+            "name": "z-ai-glm-5-3-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 10,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "renewable-credits",
+        "keyUrl": "https://venice.ai/settings/api",
+        "card": false,
+        "notes": "Limited daily free usage.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "requesty",
+      "name": "Requesty",
+      "dialect": "openai-completions",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "REQUESTY_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "alibaba/qwen3-coder-flash",
+            "name": "alibaba/qwen3-coder-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 60,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15"
+          },
+          {
+            "model": "*",
+            "type": "daily",
+            "dimension": "requests",
+            "limit": 200,
+            "windowMs": 86400000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/nejib1/Free-LLM",
+            "checkedAt": "2026-09-15",
+            "pool": "requesty-free-daily"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "renewable-credits",
+        "keyUrl": "https://app.requesty.ai/api-keys",
+        "card": false,
+        "notes": "Free models 200 requests/day.",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "vercel-ai-gateway",
+      "name": "Vercel AI Gateway",
+      "dialect": "openai-completions",
+      "baseUrl": "https://ai-gateway.vercel.sh/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "AI_GATEWAY_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "alibaba/qwen3-coder",
+            "name": "alibaba/qwen3-coder",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "poolside/laguna-s-2.1-free",
+            "name": "poolside/laguna-s-2.1-free",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "monthly",
+            "dimension": "usage",
+            "limit": 500,
+            "windowMs": 2592000000,
+            "reset": "rolling",
+            "source": "docs",
+            "sourceUrl": "https://vercel.com/docs/ai-gateway/pricing",
+            "checkedAt": "2026-09-15",
+            "pool": "vercel-credits",
+            "note": "US cents; df cannot count credits"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "renewable-credits",
+        "keyUrl": "https://vercel.com/dashboard/ai-gateway",
+        "card": false,
+        "credits": "$5 every 30 days; ends permanently after the first credit purchase",
+        "sourceUrl": "https://vercel.com/docs/ai-gateway/pricing",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "xai",
+      "name": "xAI API",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.x.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "XAI_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "grok-4.5",
+            "name": "grok-4.5",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://console.x.ai/",
+        "card": false,
+        "credits": "$25 one-time signup credit",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.together.xyz/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "TOGETHER_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "openai/gpt-oss-120b",
+            "name": "openai/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://api.together.ai/settings/api-keys",
+        "card": false,
+        "credits": "free research models need a $5 deposit",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "fireworks",
+      "name": "Fireworks AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "FIREWORKS_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "accounts/fireworks/models/gpt-oss-120b",
+            "name": "accounts/fireworks/models/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://fireworks.ai/account/api-keys",
+        "card": false,
+        "credits": "$1 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "sambanova",
+      "name": "SambaNova Cloud",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "SAMBANOVA_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "gpt-oss-120b",
+            "name": "gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "DeepSeek-V3.2",
+            "name": "DeepSeek-V3.2",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://cloud.sambanova.ai/apis",
+        "card": false,
+        "credits": "$5 for 3 months",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "hyperbolic",
+      "name": "Hyperbolic",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.hyperbolic.xyz/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "HYPERBOLIC_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "openai/gpt-oss-120b",
+            "name": "openai/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://app.hyperbolic.xyz/settings",
+        "card": false,
+        "credits": "$1 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "nebius",
+      "name": "Nebius Token Factory",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.tokenfactory.nebius.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "NEBIUS_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "openai/gpt-oss-120b",
+            "name": "openai/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://tokenfactory.nebius.com/",
+        "card": true,
+        "credits": "$1 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "novita",
+      "name": "Novita AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.novita.ai/openai",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "NOVITA_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "deepseek/deepseek-v4.1-flash",
+            "name": "deepseek/deepseek-v4.1-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "zai-org/glm-5.3-flash",
+            "name": "zai-org/glm-5.3-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://novita.ai/settings/key-management",
+        "card": false,
+        "credits": "$0.50 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "scaleway",
+      "name": "Scaleway Generative APIs",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.scaleway.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "SCALEWAY_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "gpt-oss-120b",
+            "name": "gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://console.scaleway.com/iam/api-keys",
+        "card": false,
+        "credits": "1M tokens one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "alibaba-model-studio",
+      "name": "Alibaba Cloud Model Studio (intl)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "DASHSCOPE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "qwen-flash",
+            "name": "qwen-flash",
+            "contextWindow": 1000000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://bailian.console.alibabacloud.com/",
+        "card": false,
+        "credits": "1M tokens per model, one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "ai21",
+      "name": "AI21 Labs",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.ai21.com/studio/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "AI21_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "jamba-large",
+            "name": "jamba-large",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://studio.ai21.com/account/api-key",
+        "card": false,
+        "credits": "$10 for 3 months",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "notes": "GET /models returned 410 on 2026-09-15; chat endpoint unverified.",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "upstage",
+      "name": "Upstage",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "UPSTAGE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "solar-pro3",
+            "name": "solar-pro3",
+            "contextWindow": 65536,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://console.upstage.ai/api-keys",
+        "card": false,
+        "credits": "$10 for 3 months",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek Platform",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "DEEPSEEK_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "deepseek-chat",
+            "name": "deepseek-chat",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://platform.deepseek.com/api_keys",
+        "card": false,
+        "credits": "5M tokens for 30 days",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "deepinfra",
+      "name": "DeepInfra",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.deepinfra.com/v1/openai",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "DEEPINFRA_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen/Qwen3.8-27B",
+            "name": "Qwen/Qwen3.8-27B",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "nvidia/NVIDIA-Nemotron-3.5-Lightning",
+            "name": "nvidia/NVIDIA-Nemotron-3.5-Lightning",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://deepinfra.com/dash/api_keys",
+        "card": false,
+        "credits": "$5 one-time (90 days)",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "nscale",
+      "name": "Nscale",
+      "dialect": "openai-completions",
+      "baseUrl": "https://inference.api.nscale.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "NSCALE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "openai/gpt-oss-120b",
+            "name": "openai/gpt-oss-120b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://console.nscale.com/",
+        "card": false,
+        "credits": "$5 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "friendli",
+      "name": "FriendliAI Serverless",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.friendli.ai/serverless/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "FRIENDLI_TOKEN"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "zai-org/GLM-5.3-Flash",
+            "name": "zai-org/GLM-5.3-Flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://friendli.ai/suite/",
+        "card": false,
+        "credits": "$10 one-time",
+        "sourceUrl": "https://github.com/nejib1/Free-LLM",
+        "checkedAt": "2026-09-15"
+      }
+    }
+  ]
+}

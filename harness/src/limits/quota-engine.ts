@@ -2,10 +2,13 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Candidate } from "../failover.ts";
 import { withFileLock } from "../storage/file-lock.ts";
-import type { ProviderConfig, DeclaredLimitConfig } from "../providers/schema.ts";
+import type { DeclaredLimitConfig, LimitPolicyConfig, ProviderConfig } from "../providers/schema.ts";
+import { nextPacificMidnight } from "../quota.ts";
 import { LimitLedger } from "./ledger.ts";
+import type { LimitEntry, LimitType } from "./types.ts";
 import type { TaskEstimate } from "./routing.ts";
 
+/** One model request df sent, counted against declared limits. */
 export interface UsageEvent {
 	id: string;
 	provider: string;
@@ -15,7 +18,6 @@ export interface UsageEvent {
 	inputTokens: number;
 	outputTokens: number;
 	success: boolean;
-	pool?: string;
 }
 
 export interface UsageStoreFile {
@@ -23,6 +25,9 @@ export interface UsageStoreFile {
 	events: UsageEvent[];
 }
 
+export type QuotaState = "available" | "waiting" | "exhausted" | "unknown";
+
+/** One limit as df knows it right now: what the provider declares, what df counted, what it learned. */
 export interface QuotaStatusItem {
 	provider: string;
 	account: string;
@@ -31,11 +36,83 @@ export interface QuotaStatusItem {
 	type: string;
 	dimension?: string;
 	limit?: number;
-	used: number;
+	/** Counted usage in the current window; absent when df cannot count this dimension (e.g. neurons, credits). */
+	used?: number;
 	remaining?: number;
+	windowStart?: number;
 	resetAt?: number;
-	state: "available" | "waiting" | "exhausted" | "unknown";
+	state: QuotaState;
+	/** Where the number comes from: docs / community / observed for declared limits, header / body / rule for learned ones. */
 	source: string;
+	sourceUrl?: string;
+	checkedAt?: string;
+	note?: string;
+	/** Whether admission control enforces this limit (usage and concurrency limits are shown, not enforced). */
+	enforced: boolean;
+	origin: "declared" | "learned";
+}
+
+export interface CandidateQuota extends Candidate {
+	state: QuotaState;
+	/** When the candidate is fully usable again (all blocking limits cleared). */
+	until?: number;
+	reason?: string;
+	items: QuotaStatusItem[];
+}
+
+export interface AdmissionVerdict {
+	decision: "admit" | "wait" | "skip";
+	waitUntil?: number;
+	reason?: string;
+	/** Blocking limits as ledger-shaped entries, so the supervisor's wait logic can treat them like learned cooldowns. */
+	entries: LimitEntry[];
+}
+
+export interface QuotaEngineOptions {
+	/** A blocked candidate whose limits clear within this time is "wait", otherwise "skip". */
+	maxAdmitWaitMs?: number;
+}
+
+const DAY = 86_400_000;
+const MAX_RETENTION = 32 * DAY;
+
+/** "*" and globs like "*:free" or "gemini-3.*-flash" match model ids; an absent pattern matches every model. */
+export function matchesModel(pattern: string | undefined, model: string): boolean {
+	if (!pattern || pattern === "*") return true;
+	const regex = new RegExp(`^${pattern.split("*").map((part) => part.replace(/[.+?^${}()|[\]\\]/gu, "\\$&")).join(".*")}$`, "u");
+	return regex.test(model);
+}
+
+function nextUtcMidnight(now: number): number {
+	const date = new Date(now);
+	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+}
+
+/** The counting window of a declared limit: fixed windows follow the provider's roll-over, rolling windows trail now. */
+export function windowBounds(limit: DeclaredLimitConfig, policy: LimitPolicyConfig | undefined, now: number): { start: number; resetAt?: number } {
+	if (limit.reset !== "fixed") return { start: now - limit.windowMs };
+	if (limit.type === "monthly" || limit.windowMs >= 28 * DAY) {
+		const date = new Date(now);
+		return { start: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1), resetAt: Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) };
+	}
+	if (limit.type === "daily" || limit.windowMs >= DAY) {
+		const resetAt = policy?.dailyReset === "pacific-midnight" ? nextPacificMidnight(now) : nextUtcMidnight(now);
+		return { start: resetAt - DAY, resetAt };
+	}
+	const start = Math.floor(now / limit.windowMs) * limit.windowMs;
+	return { start, resetAt: start + limit.windowMs };
+}
+
+function enforced(limit: DeclaredLimitConfig): boolean {
+	return limit.type !== "concurrency" && (limit.dimension ?? "requests") !== "usage" && limit.dimension !== "concurrency";
+}
+
+function tokens(event: UsageEvent): number {
+	return (event.inputTokens ?? 0) + (event.outputTokens ?? 0);
+}
+
+function ledgerType(type: DeclaredLimitConfig["type"]): LimitType {
+	return type === "concurrency" ? "rate" : type;
 }
 
 export class QuotaEngine {
@@ -45,196 +122,145 @@ export class QuotaEngine {
 	constructor(
 		readonly home: string,
 		readonly ledger: LimitLedger,
-		readonly providerConfigs: ReadonlyMap<string, ProviderConfig>
+		readonly providerConfigs: ReadonlyMap<string, ProviderConfig>,
+		readonly options: QuotaEngineOptions = {},
 	) {
 		this.path = join(home, "usage.json");
 		this.lockPath = `${this.path}.lock`;
 	}
 
-	private getLongestDeclaredWindowMs(): number {
-		let maxWindow = 86_400_000; // at least 24h
-		for (const config of this.providerConfigs.values()) {
-			if (config.limits?.declared) {
-				for (const d of config.limits.declared) {
-					if (d.windowMs && d.windowMs > maxWindow) {
-						maxWindow = d.windowMs;
-					}
-				}
-			}
-		}
-		return maxWindow;
+	private retentionMs(): number {
+		let longest = DAY;
+		for (const config of this.providerConfigs.values()) for (const limit of config.limits?.declared ?? []) longest = Math.max(longest, limit.windowMs);
+		return Math.min(longest, MAX_RETENTION);
 	}
 
-	async getMatchingEvents(candidate: Candidate, windowMs: number, pool?: string, now = Date.now()): Promise<UsageEvent[]> {
-		let file: UsageStoreFile;
+	private async events(): Promise<UsageEvent[]> {
 		try {
 			const raw = JSON.parse(await readFile(this.path, "utf8")) as UsageStoreFile;
-			file = raw.version === 1 && Array.isArray(raw.events) ? raw : { version: 1, events: [] };
+			return raw.version === 1 && Array.isArray(raw.events) ? raw.events : [];
 		} catch {
 			return [];
 		}
-		const cutoff = now - windowMs;
-		return file.events.filter((e) => {
-			if (e.timestamp < cutoff) return false;
-			if (pool && e.pool === pool) return true;
-			return e.provider === candidate.provider && e.account === candidate.account && (e.model === candidate.model || e.model === "*");
-		});
 	}
 
+	/** Records one model request; safe across concurrent df processes and prunes events older than the longest window. */
 	async record(event: Omit<UsageEvent, "id">): Promise<void> {
-		const fullEvent: UsageEvent = { id: crypto.randomUUID(), ...event };
+		const full: UsageEvent = { id: crypto.randomUUID(), ...event };
 		await withFileLock(this.lockPath, async () => {
-			let file: UsageStoreFile;
-			try {
-				const raw = JSON.parse(await readFile(this.path, "utf8")) as UsageStoreFile;
-				file = raw.version === 1 && Array.isArray(raw.events) ? raw : { version: 1, events: [] };
-			} catch {
-				file = { version: 1, events: [] };
-			}
-			const cutoff = Date.now() - 86_400_000;
-			file.events = [...file.events.filter((e) => e.timestamp > cutoff), fullEvent];
+			const cutoff = Math.max(Date.now(), event.timestamp) - this.retentionMs();
+			const events = [...(await this.events()).filter((item) => item.timestamp > cutoff), full];
 			await mkdir(dirname(this.path), { recursive: true });
 			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
-			await writeFile(temp, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 			await rename(temp, this.path);
 		});
 	}
 
-	async queryUsage(candidate: Candidate, windowMs: number, dimension: "requests" | "tokens" | "usage" | "concurrency" = "requests", pool?: string, now = Date.now()): Promise<number> {
-		const matching = await this.getMatchingEvents(candidate, windowMs, pool, now);
-		if (dimension === "tokens") {
-			return matching.reduce((sum, e) => sum + (e.inputTokens ?? 0) + (e.outputTokens ?? 0), 0);
-		}
-		return matching.length;
+	/** Declared limits that apply to a candidate's model. */
+	declaredLimits(candidate: Candidate): DeclaredLimitConfig[] {
+		return (this.providerConfigs.get(candidate.provider)?.limits?.declared ?? []).filter((limit) => matchesModel(limit.model, candidate.model));
 	}
 
-	async getDeclaredLimits(candidate: Candidate): Promise<DeclaredLimitConfig[]> {
-		const config = this.providerConfigs.get(candidate.provider);
-		if (!config || !config.limits?.declared) return [];
-		return config.limits.declared.filter((d) => !d.model || d.model === "*" || d.model === candidate.model);
+	/** Usage events counted by a declared limit: same provider and account; a pooled limit counts every model it covers. */
+	private counted(events: readonly UsageEvent[], candidate: Candidate, limit: DeclaredLimitConfig, start: number, now: number): UsageEvent[] {
+		return events.filter((event) => event.provider === candidate.provider && event.account === candidate.account && event.timestamp > start && event.timestamp <= now &&
+			(limit.pool ? matchesModel(limit.model, event.model) : event.model === candidate.model));
 	}
 
-	async status(candidate: Candidate, now = Date.now()): Promise<QuotaStatusItem[]> {
+	private evaluate(candidate: Candidate, limit: DeclaredLimitConfig, events: readonly UsageEvent[], now: number, needTokens: number): QuotaStatusItem & { blockedUntil?: number } {
 		const config = this.providerConfigs.get(candidate.provider);
-		const declared = await this.getDeclaredLimits(candidate);
-		const learned = await this.ledger.forCandidate(candidate, now);
-		const results: QuotaStatusItem[] = [];
-
-		if (declared.length === 0 && learned.length === 0) {
-			results.push({
-				provider: candidate.provider,
-				account: candidate.account,
-				model: candidate.model,
-				type: "unknown",
-				used: 0,
-				state: "unknown",
-				source: "unknown",
-			});
-		}
-
-		for (const d of declared) {
-			const used = await this.queryUsage(candidate, d.windowMs, d.dimension ?? "requests", d.pool, now);
-			const reserve = (d.dimension === "tokens" ? config?.limits?.reserve?.tokens : config?.limits?.reserve?.requests) ?? 0;
-			const remaining = Math.max(0, d.limit - used - reserve);
-			const activeLearned = learned.find((l) => l.type === d.type && (!d.dimension || l.dimension === d.dimension));
-			const resetAt = activeLearned?.resetAt ?? (d.reset === "fixed" ? nextFixedReset(d.windowMs, now) : undefined);
-			const exhausted = remaining <= 0 || (activeLearned !== undefined && activeLearned.resetAt > now);
-			const state: QuotaStatusItem["state"] = exhausted ? (resetAt && resetAt > now ? "exhausted" : "waiting") : "available";
-			results.push({
-				provider: candidate.provider,
-				account: candidate.account,
-				model: candidate.model,
-				...(d.pool ? { pool: d.pool } : {}),
-				type: d.type,
-				...(d.dimension ? { dimension: d.dimension } : {}),
-				limit: d.limit,
-				used,
-				remaining,
-				...(resetAt ? { resetAt } : {}),
-				state,
-				source: d.source ?? "docs",
-			});
-		}
-
-		for (const l of learned) {
-			if (results.some((r) => r.type === l.type && r.dimension === l.dimension)) continue;
-			results.push({
-				provider: candidate.provider,
-				account: candidate.account,
-				model: candidate.model,
-				...(l.pool ? { pool: l.pool } : {}),
-				type: l.type,
-				...(l.dimension ? { dimension: l.dimension } : {}),
-				limit: l.limit,
-				used: 0,
-				remaining: l.remaining,
-				resetAt: l.resetAt,
-				state: l.resetAt > now ? "exhausted" : "available",
-				source: l.source,
-			});
-		}
-
-		return results;
-	}
-
-	async admit(candidate: Candidate, taskEstimate?: TaskEstimate, now = Date.now()): Promise<{ decision: "admit" | "wait" | "skip"; waitUntil?: number; reason?: string }> {
-		await this.ledger.recover(now);
-		const learned = await this.ledger.forCandidate(candidate, now);
-		if (learned.some((l) => l.resetAt > now && (l.remaining === undefined || l.remaining <= 0))) {
-			const earliest = learned.sort((a, b) => a.resetAt - b.resetAt)[0];
-			return { decision: "skip", reason: `exhausted by learned limit (${earliest?.type})`, waitUntil: earliest?.resetAt };
-		}
-
-		const declared = await this.getDeclaredLimits(candidate);
-		const config = this.providerConfigs.get(candidate.provider);
-		const oneStepTokens = taskEstimate ? taskEstimate.contextTokens + taskEstimate.expectedOutputTokens : 0;
-
-		for (const d of declared) {
-			const dimension = d.dimension ?? "requests";
-			const matching = await this.getMatchingEvents(candidate, d.windowMs, d.pool, now);
-			const reserve = (dimension === "tokens" ? config?.limits?.reserve?.tokens : config?.limits?.reserve?.requests) ?? 0;
-			const effectiveLimit = d.limit - reserve;
-
-			if (dimension === "tokens") {
-				const used = matching.reduce((sum, e) => sum + (e.inputTokens ?? 0) + (e.outputTokens ?? 0), 0);
-				const remaining = effectiveLimit - used;
-				if (oneStepTokens > remaining) {
-					const sorted = [...matching].sort((a, b) => a.timestamp - b.timestamp);
-					let removedTokens = 0;
-					let resetAt = now + d.windowMs;
-					for (const e of sorted) {
-						removedTokens += (e.inputTokens ?? 0) + (e.outputTokens ?? 0);
-						if (used - removedTokens + oneStepTokens <= effectiveLimit) {
-							resetAt = e.timestamp + d.windowMs;
-							break;
-						}
-					}
-					if (resetAt === now + d.windowMs && sorted.length > 0) {
-						resetAt = sorted[sorted.length - 1]!.timestamp + d.windowMs;
-					}
-					return { decision: "wait", waitUntil: resetAt, reason: `token limit exceeded in window` };
-				}
-			} else {
-				const used = matching.length;
-				const remaining = effectiveLimit - used;
-				if (remaining < 1) {
-					const sorted = [...matching].sort((a, b) => a.timestamp - b.timestamp);
-					const k = Math.max(1, used - effectiveLimit + 1);
-					const targetEvent = sorted[Math.min(k - 1, sorted.length - 1)];
-					const resetAt = targetEvent ? targetEvent.timestamp + d.windowMs : now + d.windowMs;
-					return { decision: "wait", waitUntil: resetAt, reason: `request rate limit reached` };
-				}
+		const policy = config?.limits;
+		const { start, resetAt } = windowBounds(limit, policy, now);
+		const dimension = limit.dimension ?? "requests";
+		const base: QuotaStatusItem = {
+			...candidate, ...(limit.pool ? { pool: limit.pool } : {}), type: limit.type, dimension, limit: limit.limit,
+			windowStart: start, ...(resetAt === undefined ? {} : { resetAt }),
+			state: "available", source: limit.source ?? "docs", ...(limit.sourceUrl ? { sourceUrl: limit.sourceUrl } : {}),
+			...(limit.checkedAt ? { checkedAt: limit.checkedAt } : {}), ...(limit.note ? { note: limit.note } : {}),
+			enforced: enforced(limit), origin: "declared",
+		};
+		if (!base.enforced) return { ...base, state: "unknown" };
+		const window = this.counted(events, candidate, limit, start, now).sort((a, b) => a.timestamp - b.timestamp);
+		const reserve = (dimension === "tokens" ? policy?.reserve?.tokens : policy?.reserve?.requests) ?? 0;
+		const capacity = limit.limit - reserve;
+		const used = dimension === "tokens" ? window.reduce((sum, event) => sum + tokens(event), 0) : window.length;
+		const need = dimension === "tokens" ? Math.max(1, needTokens) : 1;
+		const remaining = Math.max(0, limit.limit - used);
+		if (used + need <= capacity) return { ...base, used, remaining };
+		let blockedUntil: number | undefined;
+		if (resetAt !== undefined) blockedUntil = resetAt;
+		else {
+			// Rolling window: the moment enough of the oldest usage has left the window for this request to fit.
+			let freed = 0;
+			for (const event of window) {
+				freed += dimension === "tokens" ? tokens(event) : 1;
+				if (used - freed + need <= capacity) { blockedUntil = event.timestamp + limit.windowMs; break; }
 			}
+			// A single request larger than the whole window can never fit: blocked for a full window.
+			blockedUntil ??= now + limit.windowMs;
 		}
-
-		return { decision: "admit" };
+		return { ...base, used, remaining, resetAt: blockedUntil, state: this.stateFor(blockedUntil, now), blockedUntil };
 	}
-}
 
-function nextFixedReset(windowMs: number, now: number): number {
-	if (windowMs >= 86_400_000) {
-		const d = new Date(now);
-		return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+	private stateFor(until: number, now: number): QuotaState {
+		return until - now <= (this.options.maxAdmitWaitMs ?? 5 * 60_000) ? "waiting" : "exhausted";
 	}
-	return now + windowMs;
+
+	private learnedItem(entry: LimitEntry, now: number, reserve: { requests?: number; tokens?: number } | undefined): QuotaStatusItem & { blockedUntil?: number } {
+		const threshold = entry.dimension === "requests" ? reserve?.requests ?? 0 : entry.dimension === "tokens" ? reserve?.tokens ?? 0 : 0;
+		const blocking = entry.resetAt > now && (entry.remaining === undefined || entry.remaining <= threshold);
+		return {
+			provider: entry.provider, account: entry.account, model: entry.model, ...(entry.pool ? { pool: entry.pool } : {}),
+			type: entry.type, ...(entry.dimension ? { dimension: entry.dimension } : {}), ...(entry.limit === undefined ? {} : { limit: entry.limit }),
+			...(entry.remaining === undefined ? {} : { remaining: entry.remaining }), resetAt: entry.resetAt,
+			state: blocking ? this.stateFor(entry.resetAt, now) : "available", source: entry.source,
+			checkedAt: new Date(entry.observedAt).toISOString(), enforced: true, origin: "learned",
+			...(blocking ? { blockedUntil: entry.resetAt } : {}),
+		};
+	}
+
+	private async items(candidate: Candidate, now: number, needTokens: number): Promise<Array<QuotaStatusItem & { blockedUntil?: number }>> {
+		const config = this.providerConfigs.get(candidate.provider);
+		const events = await this.events();
+		const declared = this.declaredLimits(candidate).map((limit) => this.evaluate(candidate, limit, events, now, needTokens));
+		const pools = [...new Set((config?.limits?.defaults ?? []).flatMap((entry) => entry.pool ? [entry.pool.replace(":model", `:${candidate.model}`)] : []))];
+		const learned = (await this.ledger.forCandidate(candidate, now, pools)).map((entry) => this.learnedItem(entry, now, config?.limits?.reserve));
+		return [...declared, ...learned];
+	}
+
+	/** Everything df knows about a candidate's quota, without sending any request. */
+	async status(candidate: Candidate, now = Date.now()): Promise<CandidateQuota> {
+		const items = await this.items(candidate, now, 0);
+		const blocked = items.filter((item) => item.blockedUntil !== undefined);
+		const strip = ({ blockedUntil: _blockedUntil, ...item }: QuotaStatusItem & { blockedUntil?: number }): QuotaStatusItem => item;
+		if (blocked.length > 0) {
+			const until = Math.max(...blocked.map((item) => item.blockedUntil!));
+			const last = blocked.find((item) => item.blockedUntil === until)!;
+			return { ...candidate, state: this.stateFor(until, now), until, reason: `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} (${last.source})`, items: items.map(strip) };
+		}
+		const counted = items.some((item) => item.enforced);
+		return { ...candidate, state: counted ? "available" : "unknown", ...(counted ? {} : { reason: "no declared or learned limits" }), items: items.map(strip) };
+	}
+
+	/**
+	 * Decides before a model call: admit now, wait until every blocking limit has cleared (when that is soon),
+	 * or skip the candidate. Never sends a request.
+	 */
+	async admit(candidate: Candidate, taskEstimate?: TaskEstimate, now = Date.now()): Promise<AdmissionVerdict> {
+		await this.ledger.recover(now);
+		const needTokens = taskEstimate ? taskEstimate.contextTokens + taskEstimate.expectedOutputTokens : 0;
+		const blocked = (await this.items(candidate, now, needTokens)).filter((item) => item.blockedUntil !== undefined);
+		if (blocked.length === 0) return { decision: "admit", entries: [] };
+		// A candidate is usable only once ALL of its blocking limits have cleared.
+		const waitUntil = Math.max(...blocked.map((item) => item.blockedUntil!));
+		const last = blocked.find((item) => item.blockedUntil === waitUntil)!;
+		const reason = `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} limit until ${new Date(waitUntil).toISOString()}`;
+		const entries: LimitEntry[] = blocked.map((item) => ({
+			...candidate, type: ledgerType(item.type as DeclaredLimitConfig["type"]), ...(item.dimension && item.dimension !== "concurrency" ? { dimension: item.dimension as LimitEntry["dimension"] } : {}),
+			...(item.pool ? { pool: item.pool } : {}), observedAt: now, resetAt: item.blockedUntil!, source: item.origin === "declared" ? "declared" : (item.source as LimitEntry["source"]), remaining: 0,
+			...(item.limit === undefined ? {} : { limit: item.limit }),
+		}));
+		return { decision: this.stateFor(waitUntil, now) === "waiting" ? "wait" : "skip", waitUntil, reason, entries };
+	}
 }
