@@ -25,7 +25,14 @@ export interface UsageStoreFile {
 	events: UsageEvent[];
 }
 
-export type QuotaState = "available" | "waiting" | "exhausted" | "unknown";
+/**
+ * Availability of a limit, candidate or provider. `unavailable` is learned unavailability (billing, access or model
+ * limits): the candidate cannot be used until the limit recovers, however soon that is.
+ */
+export type QuotaState = "available" | "waiting" | "exhausted" | "unavailable" | "unknown";
+
+/** Learned limit types that make a candidate unavailable rather than temporarily exhausted. */
+export const UNAVAILABLE_LIMIT_TYPES: ReadonlySet<LimitType> = new Set<LimitType>(["billing", "access", "model"]);
 
 /** One limit as df knows it right now: what the provider declares, what df counted, what it learned. */
 export interface QuotaStatusItem {
@@ -217,7 +224,7 @@ export class QuotaEngine {
 			provider: entry.provider, account: entry.account, model: entry.model, ...(entry.pool ? { pool: entry.pool } : {}),
 			type: entry.type, ...(entry.dimension ? { dimension: entry.dimension } : {}), ...(entry.limit === undefined ? {} : { limit: entry.limit }),
 			...(entry.remaining === undefined ? {} : { remaining: entry.remaining }), resetAt: entry.resetAt,
-			state: blocking ? this.stateFor(entry.resetAt, now) : "available", source: entry.source,
+			state: blocking ? (UNAVAILABLE_LIMIT_TYPES.has(entry.type) ? "unavailable" : this.stateFor(entry.resetAt, now)) : "available", source: entry.source,
 			checkedAt: new Date(entry.observedAt).toISOString(), enforced: true, origin: "learned",
 			...(blocking ? { blockedUntil: entry.resetAt } : {}),
 		};
@@ -237,6 +244,12 @@ export class QuotaEngine {
 		const items = await this.items(candidate, now, 0);
 		const blocked = items.filter((item) => item.blockedUntil !== undefined);
 		const strip = ({ blockedUntil: _blockedUntil, ...item }: QuotaStatusItem & { blockedUntil?: number }): QuotaStatusItem => item;
+		const unavailable = blocked.filter((item) => item.state === "unavailable");
+		if (unavailable.length > 0) {
+			const until = Math.max(...unavailable.map((item) => item.blockedUntil!));
+			const last = unavailable.find((item) => item.blockedUntil === until)!;
+			return { ...candidate, state: "unavailable", until, reason: `${last.origin} ${last.type} (${last.source})`, items: items.map(strip) };
+		}
 		if (blocked.length > 0) {
 			const until = Math.max(...blocked.map((item) => item.blockedUntil!));
 			const last = blocked.find((item) => item.blockedUntil === until)!;

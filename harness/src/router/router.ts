@@ -84,7 +84,9 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		let quotaStatus;
 		if (dependencies.quota) {
 			quotaStatus = await dependencies.quota.status(item.model.candidate, now);
-			if (quotaStatus.state === "exhausted") {
+			if (quotaStatus.state === "unavailable") {
+				skip = `unavailable (${quotaStatus.reason}) until ${new Date(quotaStatus.until!).toISOString()}`;
+			} else if (quotaStatus.state === "exhausted") {
 				skip = "quota exhausted until " + new Date(quotaStatus.until!).toISOString();
 			} else if (quotaStatus.state === "waiting") {
 				if (!isForced) item.score += 50;

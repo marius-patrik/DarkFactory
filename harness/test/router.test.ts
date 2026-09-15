@@ -149,6 +149,21 @@ describe("quota-aware ranking", () => {
 		expect(result.chain.map((item) => item.provider)).toEqual(["fresh"]);
 	});
 
+	test("a candidate with learned unavailability is skipped with its reason, however soon it recovers", async () => {
+		const home = await mkdtemp(join(process.cwd(), ".harness-test-router-"));
+		temporary.push(home);
+		const ledger = new LimitLedger(home);
+		const quota = new QuotaEngine(home, ledger, new Map([declared("billed", rpm), declared("fresh", rpm)].map((config) => [config.id, config])));
+		const resetAt = now + 60_000;
+		await ledger.record([{ provider: "billed", account: "default", model: "m", type: "billing", observedAt: now, resetAt, source: "body" }]);
+		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["standard"] } }] };
+		const result = await routeTask({ prompt: "Summarize this" }, { config, models: [candidate("billed", "m", "standard"), candidate("fresh", "m", "standard")], quota, now: () => now });
+		const billed = result.ranked.find((item) => item.candidate.provider === "billed")!;
+		expect(billed.status).toBe("skipped");
+		expect(billed.reason).toBe(`unavailable (learned billing (body)) until ${new Date(resetAt).toISOString()}`);
+		expect(result.chain.map((item) => item.provider)).toEqual(["fresh"]);
+	});
+
 	test("an explicit chain keeps its order and only drops exhausted members", async () => {
 		const quota = await engine([declared("first", rpm), declared("second", daily), declared("third", rpm)]);
 		await use(quota, "first", 4);

@@ -203,3 +203,46 @@ describe("supervisor admission", () => {
 		expect(usage.events.map((event) => [event.provider, event.success])).toEqual([["quota-a", true], ["quota-b", true]]);
 	}, 30_000);
 });
+
+describe("learned unavailability", () => {
+	const now = 1_800_000_000_000;
+
+	test("billing and model limits survive a ledger reload", async () => {
+		const { ledger, root } = await engineFor([provider("p", [])]);
+		await ledger.record([
+			{ ...a, type: "billing", observedAt: now, resetAt: now + 86_400_000, source: "body" },
+			{ ...a, model: "gone", type: "model", observedAt: now, resetAt: now + 21_600_000, source: "body" },
+		]);
+		const types = (await new LimitLedger(root).list()).map((entry) => entry.type);
+		expect(types.sort()).toEqual(["billing", "model"]);
+	});
+
+	test("a billing, access or model limit makes the candidate unavailable even when it recovers within the admit wait", async () => {
+		for (const type of ["billing", "access", "model"] as const) {
+			const { engine, ledger } = await engineFor([provider("p", [])]);
+			await ledger.record([{ ...a, type, observedAt: now, resetAt: now + 60_000, source: "body" }]);
+			const status = await engine.status(a, now);
+			expect(status).toMatchObject({ state: "unavailable", until: now + 60_000, reason: `learned ${type} (body)` });
+			expect(status.items[0]?.state).toBe("unavailable");
+		}
+	});
+
+	test("unavailability outranks a longer exhausted quota and an expired entry no longer counts", async () => {
+		const { engine, ledger } = await engineFor([provider("p", [])]);
+		await ledger.record([
+			{ ...a, type: "daily", dimension: "requests", observedAt: now, resetAt: now + 6 * 3_600_000, source: "body", remaining: 0 },
+			{ ...a, type: "access", observedAt: now, resetAt: now + 3_600_000, source: "body" },
+		]);
+		expect((await engine.status(a, now)).state).toBe("unavailable");
+		expect((await engine.status(a, now + 2 * 3_600_000)).state).toBe("exhausted");
+	});
+
+	test("the quota report marks a provider unavailable when none of its models is usable", async () => {
+		const configured = provider("gone-p", []);
+		const { engine, ledger } = await engineFor([configured]);
+		const candidate = { provider: "gone-p", account: "key", model: "m" };
+		await ledger.record([{ ...candidate, type: "billing", observedAt: now, resetAt: now + 86_400_000, source: "body" }]);
+		const report = await buildQuotaReport({ providers: [configured], engine, now, accounts: [{ provider: "gone-p", label: "key" }], chains: [candidate] });
+		expect(report.providers.find((entry) => entry.id === "gone-p")?.state).toBe("unavailable");
+	});
+});

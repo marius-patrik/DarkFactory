@@ -43,6 +43,7 @@ function providerState(accounts: readonly QuotaReportAccount[]): QuotaState {
 	if (states.includes("available")) return "available";
 	if (states.includes("waiting")) return "waiting";
 	if (states.includes("exhausted")) return "exhausted";
+	if (states.includes("unavailable")) return "unavailable";
 	return "unknown";
 }
 
