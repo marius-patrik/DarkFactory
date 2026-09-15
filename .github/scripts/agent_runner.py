@@ -28,7 +28,6 @@ import random
 import uuid
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -675,7 +674,8 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
         subprocess.CalledProcessError: When the command fails, carrying the reason in its message.
     """
     cmd = ["gh"] + args
-    if repo:
+    # `gh api` has no --repo flag ("unknown flag: --repo"); its path already names the repository.
+    if repo and (not args or args[0] != "api"):
         cmd.extend(["--repo", repo])
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
@@ -691,6 +691,45 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
             stderr=detail[0] if detail else "no output",
         )
     return res.stdout.strip()
+
+
+def _pacific_offset_hours(moment: datetime) -> int:
+    """Returns the UTC offset of America/Los_Angeles at a UTC moment (US daylight-saving rule).
+
+    Computed without a time zone database, which Windows Python lacks unless ``tzdata`` is installed.
+
+    Args:
+        moment: A timezone-aware UTC datetime.
+
+    Returns:
+        -7 during daylight saving time (second Sunday of March to first Sunday of November), else -8.
+    """
+    year = moment.year
+    march_first = datetime(year, 3, 1, tzinfo=timezone.utc)
+    second_sunday_march = march_first + timedelta(days=(6 - march_first.weekday()) % 7 + 7)
+    november_first = datetime(year, 11, 1, tzinfo=timezone.utc)
+    first_sunday_november = november_first + timedelta(days=(6 - november_first.weekday()) % 7)
+    dst_start = second_sunday_march.replace(hour=10)  # 02:00 PST
+    dst_end = first_sunday_november.replace(hour=9)  # 02:00 PDT
+    return -7 if dst_start <= moment < dst_end else -8
+
+
+def _next_pacific_midnight(now: float) -> float:
+    """Returns epoch seconds of the next midnight in America/Los_Angeles.
+
+    Args:
+        now: Current time in epoch seconds.
+
+    Returns:
+        The next Pacific midnight, when Google's daily free-tier quotas reset.
+    """
+    utc_now = datetime.fromtimestamp(now, tz=timezone.utc)
+    local = utc_now + timedelta(hours=_pacific_offset_hours(utc_now))
+    local_next_midnight = datetime(
+        local.year, local.month, local.day, tzinfo=timezone.utc
+    ) + timedelta(days=1)
+    guess = local_next_midnight - timedelta(hours=_pacific_offset_hours(utc_now))
+    return (local_next_midnight - timedelta(hours=_pacific_offset_hours(guess))).timestamp()
 
 
 def next_quota_reset(error_detail: str, now: float) -> float:
@@ -734,12 +773,24 @@ def next_quota_reset(error_detail: str, now: float) -> float:
         except Exception:
             pass
     # 4. Next Pacific midnight
-    utc_dt = datetime.fromtimestamp(now, tz=timezone.utc)
-    pac_dt = utc_dt.astimezone(ZoneInfo("America/Los_Angeles"))
-    next_midnight = datetime(
-        pac_dt.year, pac_dt.month, pac_dt.day, tzinfo=ZoneInfo("America/Los_Angeles")
-    ) + timedelta(days=1)
-    return next_midnight.astimezone(timezone.utc).timestamp()
+    return _next_pacific_midnight(now)
+
+
+def _already_exists(error: Exception) -> bool:
+    """Tells whether a gh failure means the variable already exists (HTTP 409).
+
+    Args:
+        error: The failure raised by ``run_gh``; its stderr carries the HTTP status.
+
+    Returns:
+        True for a 409 / "Already exists" response.
+    """
+    text = " ".join(
+        str(part)
+        for part in (error, getattr(error, "stderr", ""), getattr(error, "output", ""))
+        if part
+    )
+    return "409" in text or "already exists" in text.lower()
 
 
 def record_quota_block(
@@ -785,7 +836,7 @@ def record_quota_block(
         )
     except subprocess.CalledProcessError as e:
         # If it already exists (HTTP 409) fall back to PATCH
-        if "409" in str(e) or "already exists" in str(e).lower():
+        if _already_exists(e):
             try:
                 run_gh(
                     [
@@ -840,7 +891,7 @@ def record_quota_block(
             repo=repo,
         )
     except subprocess.CalledProcessError as e:
-        if "409" in str(e) or "already exists" in str(e).lower():
+        if _already_exists(e):
             try:
                 run_gh(
                     [
@@ -1584,7 +1635,10 @@ def checkpoint_and_notify_exhaustion(
         if m:
             providers = [p.strip() for p in m.group(1).split(",")]
         reset_at = next_quota_reset(error_detail, time.time())
-        record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
+        try:
+            record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
+        except Exception as error:  # noqa: BLE001 - recording the block must never fail the notice
+            print(f"Notice: could not record the quota block: {error}", file=sys.stderr)
     return checkpoint_data
 
 
@@ -4317,7 +4371,7 @@ def dispatch_event(event_path: str, event_name: str):
                 command = None
             if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
-                resume_item(issue_num, is_pr, repo)
+                resume_item(issue_num, is_pr, repo, labels)
                 return
             elif command == "reject":
                 # A rejection routes back to the same stage with the comment as feedback:
@@ -4413,7 +4467,9 @@ def _manifest_slug() -> str:
         return ""
 
 
-def resume_item(item_number: int, is_pr: bool, repo: str) -> None:
+def resume_item(
+    item_number: int, is_pr: bool, repo: str, labels: Optional[List[str]] = None
+) -> None:
     """Resume a blocked item (issue or PR) based on its current state.
 
     This extracts the same behaviour as the approve/resume comment handling:
@@ -4425,16 +4481,19 @@ def resume_item(item_number: int, is_pr: bool, repo: str) -> None:
     """
     load_checkpoint(cwd=WORKSPACE_DIR)
     if not is_pr:
-        # Issue case: fetch labels to decide type
-        issue_raw = run_gh(["issue", "view", str(item_number), "--json", "labels"], repo=repo)
-        if isinstance(issue_raw, str):
-            try:
-                issue_raw = json.loads(issue_raw)
-            except Exception:
-                issue_raw = {}
-        labels = [
-            l.get("name") if isinstance(l, dict) else str(l) for l in issue_raw.get("labels", [])
-        ]
+        # The comment path already has the labels from its event; a dispatched resume reads them.
+        if labels is None:
+            # Issue case: fetch labels to decide type
+            issue_raw = run_gh(["issue", "view", str(item_number), "--json", "labels"], repo=repo)
+            if isinstance(issue_raw, str):
+                try:
+                    issue_raw = json.loads(issue_raw)
+                except Exception:
+                    issue_raw = {}
+            labels = [
+                l.get("name") if isinstance(l, dict) else str(l)
+                for l in issue_raw.get("labels", [])
+            ]
         is_request = any(l.lower() == "request" for l in labels)
         is_plan = any(l.lower() == "plan" for l in labels)
         if is_request:
@@ -4452,12 +4511,8 @@ def resume_item(item_number: int, is_pr: bool, repo: str) -> None:
             else:
                 print(f"Could not find parent Request for Plan #{item_number}")
         else:
-            # Fallback: treat as request
-            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
-            if has_plan(item_number, repo):
-                handle_implement(item_number, item_number, repo)
-            else:
-                handle_plan(item_number, item_number, repo)
+            # Only Requests and Plans have stages to resume; anything else is left untouched.
+            print(f"Issue #{item_number} is neither a Request nor a Plan; nothing to resume.")
     else:
         # PR case
         unblock_entity(item_number, repo, is_pr=True, target_status="In Progress")

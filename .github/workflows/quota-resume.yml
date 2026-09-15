@@ -1,30 +1,81 @@
 name: Quota Resume Sweep
 
+# Resumes runs that stopped because every model was out of quota, once their reset time has passed.
+# The agent runner records each blocked run in a DF_QUOTA_<run-id> repository variable; this sweep
+# dispatches the `resume` stage for every record whose reset time is due and deletes the record.
 on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+
+  # Consumers call this rather than copying it, so the script it runs lives in one place.
   workflow_call:
     inputs:
-      dummy:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
         required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  contents: read
 
 concurrency:
-  group: quota-resume
+  group: quota-resume-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 5
+    env:
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Mint an installation token for the App
+        # Reading and deleting repository variables and sending repository_dispatch belong to the
+        # App (it needs the Variables: read and write permission).
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run quota resume
+
+      - name: Resume quota-blocked runs
+        run: |
+          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/quota_resume.py"
         env:
-          SCRIPTS_DIR: .github/scripts
-        run: python ${{ env.SCRIPTS_DIR }}/quota_resume.py
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}

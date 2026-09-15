@@ -641,8 +641,6 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
     """
     ecosystem = MANIFESTS[filename]
     relative = os.path.join(directory, filename) if directory != "." else filename
-    # Normalize to POSIX style for consistency across platforms
-    relative = relative.replace(os.sep, "/")
     absolute = os.path.join(root, relative)
     name: Optional[str] = None
     version: Optional[str] = None
@@ -816,9 +814,7 @@ def detect(root: str) -> List[Package]:
             and os.path.relpath(os.path.join(current, entry), root) not in submodules
         ]
         relative = os.path.relpath(current, root)
-        # Normalize to POSIX style for consistency across platforms
-        relative = relative.replace(os.sep, "/")
-        depth = 0 if relative == "." else relative.count("/") + 1
+        depth = 0 if relative == "." else relative.count(os.sep) + 1
         if depth > MAX_DEPTH:
             directories[:] = []
             continue

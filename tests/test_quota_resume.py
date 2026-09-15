@@ -1,87 +1,82 @@
+"""Tests for the scheduled quota resume sweep."""
+
 import json
+import os
+import subprocess
 import sys
 from datetime import datetime, timezone
-from unittest import mock
-import os
-import pathlib
-import importlib.util
-import pytest
 
-# Load the quota_resume module from its file path
-module_path = pathlib.Path(__file__).parents[1] / ".github" / "scripts" / "quota_resume.py"
-spec = importlib.util.spec_from_file_location("quota_resume", module_path)
-quota_resume = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(quota_resume)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.github/scripts")))
+
+import quota_resume  # noqa: E402
+
+NOW = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
+REPO = "owner/repo"
 
 
-def fake_subprocess_run_factory(calls):
-    """Factory that returns a mock subprocess.run function recording calls."""
+class FakeGh:
+    """Records gh calls and answers the variables listing; no network."""
 
-    def _run(args, capture_output=False, text=False, check=False, **kwargs):
-        # Record the call for inspection
-        calls.append(args)
-        # Simulate behavior based on the command
-        cmd = args[0]
-        if cmd != "gh":
-            raise RuntimeError("Only gh commands expected")
-        # List variables command
-        if "variables" in args and "--paginate" in args:
-            # Return a JSON list of variable objects
-            data = [
-                {
-                    "name": "DF_QUOTA_1",
-                    "value": json.dumps(
-                        {"item": 1, "is_pr": False, "reset_at": "2023-01-01T00:00:00Z"}
-                    ),
-                },
-                {
-                    "name": "DF_QUOTA_2",
-                    "value": json.dumps(
-                        {"item": 2, "is_pr": True, "reset_at": "2099-01-01T00:00:00Z"}
-                    ),
-                },
-                {"name": "DF_QUOTA_BAD", "value": "{not json}"},
-                {"name": "OTHER_VAR", "value": "something"},
-            ]
-            mock_obj = mock.Mock()
-            mock_obj.returncode = 0
-            mock_obj.stdout = json.dumps(data)
-            mock_obj.stderr = ""
-            return mock_obj
-        # Dispatch or delete commands just succeed
-        mock_obj = mock.Mock()
-        mock_obj.returncode = 0
-        mock_obj.stdout = ""
-        mock_obj.stderr = ""
-        return mock_obj
+    def __init__(self, variables, fail_dispatch=False):
+        self.variables = variables
+        self.fail_dispatch = fail_dispatch
+        self.calls = []
+        self.dispatched = []
 
-    return _run
+    def __call__(self, args):
+        self.calls.append(args)
+        if args[1].startswith(f"repos/{REPO}/actions/variables?"):
+            return json.dumps({"total_count": len(self.variables), "variables": self.variables})
+        if args[1] == f"repos/{REPO}/dispatches":
+            if self.fail_dispatch:
+                raise subprocess.CalledProcessError(1, ["gh", "api"], stderr="HTTP 403")
+            with open(args[-1], encoding="utf-8") as handle:
+                self.dispatched.append(json.load(handle))
+        return ""
+
+    def deleted(self):
+        return [call[-1].rsplit("/", 1)[-1] for call in self.calls if "DELETE" in call]
 
 
-def test_sweep_resumes_and_cleans_up(monkeypatch):
-    calls = []
-    monkeypatch.setattr("subprocess.run", fake_subprocess_run_factory(calls))
-    now = datetime(2023, 1, 2, tzinfo=timezone.utc)
-    resumed = quota_resume.sweep("owner/repo", now)
-    # Expect only item 1 to be resumed
-    assert resumed == [1]
-    # Verify that a dispatch was made for item 1
-    dispatch_calls = [c for c in calls if "dispatches" in c]
-    assert any("client_payload" in c for c in dispatch_calls)
-    # Verify that delete was called for DF_QUOTA_1 and DF_QUOTA_BAD
-    delete_calls = [c for c in calls if "-X" in c]
-    assert any("DF_QUOTA_1" in c for c in delete_calls)
-    assert any("DF_QUOTA_BAD" in c for c in delete_calls)
-    # Ensure DF_QUOTA_2 was not deleted
-    assert not any("DF_QUOTA_2" in c for c in delete_calls)
+def record(item, reset_at, is_pr=False):
+    return json.dumps(
+        {"item": item, "is_pr": is_pr, "reset_at": reset_at, "blocked_at": "2026-09-15T09:00:00Z"}
+    )
 
 
-def test_main_prints_output(monkeypatch, capsys):
-    # Patch env and subprocess
-    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
-    calls = []
-    monkeypatch.setattr("subprocess.run", fake_subprocess_run_factory(calls))
-    # Run main
-    quota_resume.main()
-    captured = capsys.readouterr()
-    assert "Resumed items: 1" in captured.out
+def test_a_due_block_is_resumed_and_its_variable_deleted():
+    gh = FakeGh([{"name": "DF_QUOTA_111", "value": record(42, "2026-09-15T11:59:00Z", is_pr=True)}])
+    assert quota_resume.sweep(REPO, NOW, gh) == [42]
+    assert gh.dispatched == [
+        {
+            "event_type": "agent-dispatch",
+            "client_payload": {"stage": "resume", "item": 42, "is_pr": True},
+        }
+    ]
+    assert gh.deleted() == ["DF_QUOTA_111"]
+
+
+def test_a_block_that_has_not_reset_is_left_alone():
+    gh = FakeGh([{"name": "DF_QUOTA_222", "value": record(7, "2026-09-15T13:00:00Z")}])
+    assert quota_resume.sweep(REPO, NOW, gh) == []
+    assert gh.dispatched == [] and gh.deleted() == []
+
+
+def test_an_unreadable_record_is_deleted_and_other_variables_ignored():
+    gh = FakeGh(
+        [
+            {"name": "DF_QUOTA_333", "value": "not json"},
+            {"name": "DARKFACTORY_QUOTA_PROVIDERS", "value": "{}"},
+            {"name": "SOMETHING_ELSE", "value": record(1, "2026-09-01T00:00:00Z")},
+        ]
+    )
+    assert quota_resume.sweep(REPO, NOW, gh) == []
+    assert gh.deleted() == ["DF_QUOTA_333"]
+
+
+def test_a_failed_dispatch_keeps_the_record_for_the_next_sweep():
+    gh = FakeGh(
+        [{"name": "DF_QUOTA_444", "value": record(9, "2026-09-15T10:00:00Z")}], fail_dispatch=True
+    )
+    assert quota_resume.sweep(REPO, NOW, gh) == []
+    assert gh.deleted() == []
