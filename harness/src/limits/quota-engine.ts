@@ -118,7 +118,7 @@ function tokens(event: UsageEvent): number {
 	return (event.inputTokens ?? 0) + (event.outputTokens ?? 0);
 }
 
-function ledgerType(type: DeclaredLimitConfig["type"]): LimitType {
+function ledgerType(type: DeclaredLimitConfig["type"] | LimitType): LimitType {
 	return type === "concurrency" ? "rate" : type;
 }
 
@@ -273,10 +273,12 @@ export class QuotaEngine {
 		const last = blocked.find((item) => item.blockedUntil === waitUntil)!;
 		const reason = `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} limit until ${new Date(waitUntil).toISOString()}`;
 		const entries: LimitEntry[] = blocked.map((item) => ({
-			...candidate, type: ledgerType(item.type as DeclaredLimitConfig["type"]), ...(item.dimension && item.dimension !== "concurrency" ? { dimension: item.dimension as LimitEntry["dimension"] } : {}),
+			...candidate, type: ledgerType(item.type as DeclaredLimitConfig["type"] | LimitType), ...(item.dimension && item.dimension !== "concurrency" ? { dimension: item.dimension as LimitEntry["dimension"] } : {}),
 			...(item.pool ? { pool: item.pool } : {}), observedAt: now, resetAt: item.blockedUntil!, source: item.origin === "declared" ? "declared" : (item.source as LimitEntry["source"]), remaining: 0,
 			...(item.limit === undefined ? {} : { limit: item.limit }),
 		}));
-		return { decision: this.stateFor(waitUntil, now) === "waiting" ? "wait" : "skip", waitUntil, reason, entries };
+		// Unavailability (billing, access, model) is never waited out inside a request, however soon it may recover.
+		const unavailable = blocked.some((item) => item.state === "unavailable");
+		return { decision: unavailable || this.stateFor(waitUntil, now) === "exhausted" ? "skip" : "wait", waitUntil, reason, entries };
 	}
 }

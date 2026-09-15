@@ -227,6 +227,14 @@ describe("learned unavailability", () => {
 		}
 	});
 
+	test("admission skips an unavailable candidate instead of waiting for a near recovery", async () => {
+		const { engine, ledger } = await engineFor([provider("p", [])]);
+		await ledger.record([{ ...a, type: "access", observedAt: now, resetAt: now + 60_000, source: "body" }]);
+		const verdict = await engine.admit(a, undefined, now);
+		expect(verdict).toMatchObject({ decision: "skip", waitUntil: now + 60_000 });
+		expect(verdict.entries.map((entry) => entry.type)).toEqual(["access"]);
+	});
+
 	test("unavailability outranks a longer exhausted quota and an expired entry no longer counts", async () => {
 		const { engine, ledger } = await engineFor([provider("p", [])]);
 		await ledger.record([
