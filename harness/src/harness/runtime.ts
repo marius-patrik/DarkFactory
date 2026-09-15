@@ -133,6 +133,24 @@ export interface HarnessRuntimeOptions {
 	catalogs?: ReadonlyMap<string, CatalogResult>;
 	store?: FileCredentialStore;
 	providerConfigs?: ReadonlyMap<string, ProviderConfig>;
+	/** Skills to load as context for this run, by name (`.agents/skills/<name>` in `cwd`). */
+	skills?: readonly string[];
+}
+
+/**
+ * Resolves named skills to their installed directories. Names are plain identifiers, so a name can never point outside
+ * `.agents/skills`.
+ *
+ * @param cwd - Repository working directory.
+ * @param skills - Skill names from the run or graph node.
+ * @returns Absolute skill directories, in the given order.
+ * @throws Error when a name is not a lowercase identifier.
+ */
+export function namedSkillPaths(cwd: string, skills: readonly string[] = []): string[] {
+	return skills.map((name) => {
+		if (!/^[a-z0-9][a-z0-9-]*$/u.test(name)) throw new Error(`Invalid skill name: ${name}`);
+		return join(cwd, ".agents", "skills", name);
+	});
 }
 
 export interface HarnessRuntime {
@@ -227,7 +245,10 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 			{ name: "df-policy", factory: policyExtension(policy), hidden: true },
 		],
 		noExtensions: true,
+		// Discovery stays off: only the skills a run or graph node names are loaded, from the repository's installed
+		// copies (.agents/skills/<name>, written by df ci install). Skills are context, never policy overrides.
 		noSkills: true,
+		additionalSkillPaths: namedSkillPaths(options.cwd, options.skills),
 		noPromptTemplates: true,
 		noThemes: true,
 		noContextFiles: true,
