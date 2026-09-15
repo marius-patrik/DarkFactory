@@ -54,12 +54,16 @@ export class GitHubRepository {
   mergePullRequest(number: number, options: { commitTitle?: string; commitMessage?: string; method?: "merge" | "squash" | "rebase" } = {}): Promise<{ merged: boolean; message: string; sha?: string }> { return this.#client.rest("PUT", this.#path(`/pulls/${number}/merge`), { commit_title: options.commitTitle, commit_message: options.commitMessage, merge_method: options.method ?? "merge" }); }
   async markReady(pullRequestId: string): Promise<void> { await this.#client.graphql("mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{number}} rateLimit{cost remaining resetAt}}", { id: pullRequestId }); }
   async enableAutoMerge(pullRequestId: string, method: "MERGE" | "SQUASH" | "REBASE" = "MERGE"): Promise<void> { await this.#client.graphql("mutation($id:ID!,$method:PullRequestMergeMethod!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:$method}){pullRequest{number}} rateLimit{cost remaining resetAt}}", { id: pullRequestId, method }); }
-  async requiredCheckStatus(ref: string, required: string[]): Promise<{ state: "success" | "pending" | "failure"; missing: string[]; failing: string[] }> {
+  async checkStates(ref: string): Promise<Map<string, "success" | "pending" | "failure">> {
     const runs = await this.#client.rest<{ check_runs?: Array<{ name: string; status: string; conclusion: string | null }> }>("GET", this.#path(`/commits/${encodeURIComponent(ref)}/check-runs?per_page=100`));
     const statuses = await this.#client.rest<{ statuses?: Array<{ context: string; state: string }> }>("GET", this.#path(`/commits/${encodeURIComponent(ref)}/status`));
     const values = new Map<string, "success" | "pending" | "failure">();
     for (const run of runs.check_runs ?? []) values.set(run.name, run.status !== "completed" ? "pending" : run.conclusion === "success" || run.conclusion === "neutral" || run.conclusion === "skipped" ? "success" : "failure");
     for (const status of statuses.statuses ?? []) if (!values.has(status.context)) values.set(status.context, status.state === "success" ? "success" : status.state === "pending" ? "pending" : "failure");
+    return values;
+  }
+  async requiredCheckStatus(ref: string, required: string[]): Promise<{ state: "success" | "pending" | "failure"; missing: string[]; failing: string[] }> {
+    const values = await this.checkStates(ref);
     const missing = required.filter(name => !values.has(name)); const failing = required.filter(name => values.get(name) === "failure"); const pending = required.some(name => values.get(name) === "pending");
     return { state: failing.length ? "failure" : missing.length || pending ? "pending" : "success", missing, failing };
   }

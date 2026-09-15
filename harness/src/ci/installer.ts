@@ -4,9 +4,8 @@ import { loadCiConfig } from "./config.ts";
 import {
 	renderWorkflowTemplate,
 	STANDARD_WORKFLOW_TEMPLATES,
-	verifyWorkflowHash,
-	type StandardWorkflowName,
 	type TemplateContext,
+	verifyWorkflowHash,
 } from "./templates.ts";
 
 export interface InstallOptions {
@@ -99,10 +98,7 @@ export async function checkWorkflowsDrift(
 	return results;
 }
 
-export async function installWorkflows(
-	repoDir = process.cwd(),
-	options: InstallOptions = {},
-): Promise<InstallReport> {
+export async function installWorkflows(repoDir = process.cwd(), options: InstallOptions = {}): Promise<InstallReport> {
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
 	const templates = options.templates ?? STANDARD_WORKFLOW_TEMPLATES;
@@ -150,10 +146,7 @@ export async function installWorkflows(
 	};
 }
 
-export async function updateWorkflows(
-	repoDir = process.cwd(),
-	options: UpdateOptions = {},
-): Promise<UpdateReport> {
+export async function updateWorkflows(repoDir = process.cwd(), options: UpdateOptions = {}): Promise<UpdateReport> {
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
 	const templates = options.templates ?? STANDARD_WORKFLOW_TEMPLATES;

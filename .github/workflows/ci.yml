@@ -275,6 +275,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # The format/lint check compares against the base branch.
+          fetch-depth: 0
 
       - name: Detect the df harness
         id: detect
@@ -288,6 +291,16 @@ jobs:
         if: steps.detect.outputs.present == 'true'
         working-directory: harness
         run: bun install --frozen-lockfile
+
+      - name: Check harness formatting and lint
+        # Blocking for every file the change touches. Until the one-time full reformat lands (plans/repository-truth.md
+        # Q1) untouched files are not checked; after it, this becomes `bun run check`.
+        if: steps.detect.outputs.present == 'true'
+        working-directory: harness
+        run: |
+          base="${GITHUB_BASE_REF:-${{ github.event.repository.default_branch }}}"
+          git fetch --no-tags origin "$base"
+          bun x biome ci --changed --since="origin/$base" --no-errors-on-unmatched .
 
       - name: Typecheck harness
         if: steps.detect.outputs.present == 'true'

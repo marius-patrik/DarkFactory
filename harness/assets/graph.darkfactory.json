@@ -2,7 +2,8 @@
   "$schema": "../src/graph/graph.schema.json",
   "version": 1,
   "checks": [
-    { "name": "ci-pipeline", "required": true },
+    { "name": "pipeline", "required": true },
+    { "name": "harness", "required": true },
     { "name": "verify-bound-issue", "required": true }
   ],
   "nodes": [
@@ -70,7 +71,8 @@
       "id": "board-sync", "kind": "automation", "script": "board-sync",
       "trigger": { "event": "issues|pull_request|push:darkfactory", "schedule": "43 5 * * *" }, "filter": { "ignore_bots": true }
     },
-    { "id": "ci-pipeline", "kind": "check-reference", "check": "ci-pipeline", "required": true },
+    { "id": "pipeline", "kind": "check-reference", "check": "pipeline", "required": true },
+    { "id": "harness", "kind": "check-reference", "check": "harness", "required": true },
     { "id": "verify-bound-issue", "kind": "check-reference", "check": "verify-bound-issue", "required": true }
   ],
   "edges": [

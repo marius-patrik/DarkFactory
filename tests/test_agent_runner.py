@@ -2140,6 +2140,46 @@ class TestSelfReviewFix:
         assert (30, False) in blocked_calls
         assert dispatched_payloads == []
 
+    def test_run_self_review_fix_git_error_is_reported_and_blocks(self, monkeypatch):
+        """A failed commit of review fixes must not stall the PR silently."""
+        module = agent_runner_module()
+        comments, blocked, dispatched = [], [], []
+        findings = (
+            "### Self-Review — iteration 1\n1. Bug in auth.py: handle None case\n"
+            "<!-- darkfactory-self-review iteration=1 findings=1 digest=1234abcd -->"
+        )
+
+        def fake_run_gh(args, **kwargs):
+            if args[:2] == ["issue", "view"]:
+                return json.dumps({"comments": [{"body": findings}]})
+            if args[:2] == ["pr", "comment"]:
+                comments.append(args[args.index("--body") + 1])
+            return ""
+
+        def fake_run_git(args, **kwargs):
+            if args[:1] == ["commit"]:
+                raise subprocess.CalledProcessError(
+                    128, ["git"] + args, stderr="Author identity unknown"
+                )
+            return "M auth.py" if args[:2] == ["status", "--porcelain"] else ""
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_git", fake_run_git)
+        monkeypatch.setattr(module, "run_agent_prompt", lambda prompt, **k: "Fixed the bug")
+        monkeypatch.setattr(module, "format_repository", lambda *a, **k: None)
+        monkeypatch.setattr(module, "block_entity", lambda num, **k: blocked.append(num))
+        monkeypatch.setattr(
+            module, "dispatch_stage", lambda repo, payload: dispatched.append(payload)
+        )
+
+        module.run_self_review_fix(
+            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+        )
+
+        assert blocked == [10] and dispatched == []
+        assert len(comments) == 1 and "### Self-Review Fix Error (Iteration 1)" in comments[0]
+        assert "Author identity unknown" in comments[0]
+
     def test_run_self_review_fix_reads_latest_matching_iteration(self, monkeypatch):
         module = agent_runner_module()
         dispatched_payloads = []
@@ -2624,10 +2664,30 @@ def test_checkout_pr_branch_switches_to_the_head_branch(monkeypatch):
     )
     monkeypatch.setattr(module, "run_git", lambda args, cwd=None: git_calls.append(args) or "")
     assert module.checkout_pr_branch(10, "owner/repo", cwd="/work") == "feature/x"
-    assert git_calls == [
+    assert git_calls[-2:] == [
         ["fetch", "origin", "feature/x"],
         ["checkout", "-B", "feature/x", "origin/feature/x"],
     ]
+    # The branch is ready for commits: a dispatched fix stage failed with "Author identity unknown".
+    assert ["config", "user.email", module.GIT_BOT_EMAIL] in git_calls[:-2]
+
+
+def test_configure_git_identity_sets_the_bot_identity_and_survives_git_errors(monkeypatch):
+    """Every git config call goes through run_git, and a failing one does not stop the others."""
+    module = agent_runner_module()
+    calls = []
+
+    def fake_git(args, cwd=None):
+        calls.append((args, cwd))
+        if "safe.directory" in args:
+            raise subprocess.CalledProcessError(1, ["git"] + args, stderr="locked")
+        return ""
+
+    monkeypatch.setattr(module, "run_git", fake_git)
+    module.configure_git_identity("/work")
+    assert (["config", "user.name", module.GIT_BOT_NAME], "/work") in calls
+    assert (["config", "--global", "user.email", module.GIT_BOT_EMAIL], "/work") in calls
+    assert len(calls) == 5
 
 
 class TestPrFeedbackRevision:
@@ -2731,3 +2791,82 @@ class TestPrFeedbackRevision:
         assert any(
             "### Feedback Fix Error" in c[-1] for c in gh_calls if c[:2] == ["pr", "comment"]
         )
+
+    @pytest.mark.parametrize(
+        "status, commit_error, expected",
+        [
+            (" M a.py", "Author identity unknown", "Author identity unknown"),
+            ("", None, "without changing any file"),
+        ],
+    )
+    def test_an_unpushed_revision_is_reported_never_announced(
+        self, monkeypatch, status, commit_error, expected
+    ):
+        """E2E #314: a failed commit was announced as "Feedback addressed" and reviewed unchanged."""
+        module = agent_runner_module()
+        gh_calls, git_calls, blocked, reviews = [], [], [], []
+
+        def fake_git(args, cwd=None):
+            git_calls.append(args)
+            if args[:1] == ["commit"] and commit_error:
+                raise subprocess.CalledProcessError(128, ["git"] + args, stderr=commit_error)
+            return status if args[:1] == ["status"] else ""
+
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, repo=None: gh_calls.append(args)
+            or json.dumps({"body": "Plan", "comments": []}),
+        )
+        monkeypatch.setattr(module, "run_git", fake_git)
+        monkeypatch.setattr(module, "format_repository", lambda cwd: None)
+        monkeypatch.setattr(module, "run_agent_prompt", lambda prompt, **k: "Done, all fixed.")
+        monkeypatch.setattr(module, "block_entity", lambda n, **k: blocked.append(n))
+        monkeypatch.setattr(module, "start_self_review", lambda *a: reviews.append(a))
+        module.run_pr_feedback_fix(10, 20, 30, "compute it once", "owner/repo")
+        comments = [c[-1] for c in gh_calls if c[:2] == ["pr", "comment"]]
+        assert blocked == [10, 30] and reviews == []
+        assert ["push", "origin", "HEAD"] not in git_calls
+        assert len(comments) == 1 and "### Feedback Fix Error" in comments[0]
+        assert expected in comments[0] and "### Feedback addressed" not in comments[0]
+
+
+def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(monkeypatch):
+    """The quota exhaustion notice states the automatic resume time (UTC) and names /df resume."""
+    module = agent_runner_module()
+    posted_comments = []
+    monkeypatch.setattr(module, "save_checkpoint", lambda *a, **k: "checkpoint.json")
+    monkeypatch.setattr(module, "run_git", lambda *a, **k: "")
+    monkeypatch.setattr(
+        module,
+        "run_gh",
+        lambda args, repo=None: posted_comments.append(args) or "",
+    )
+    monkeypatch.setattr(module, "update_project_status_blocked", lambda *a, **k: None)
+    recorded_blocks = []
+    monkeypatch.setenv("GITHUB_RUN_ID", "run-123")
+    monkeypatch.setattr(
+        module,
+        "record_quota_block",
+        lambda repo, item_number, is_pr, reset_at, providers, run_id: recorded_blocks.append(
+            (repo, item_number, is_pr, reset_at, providers, run_id)
+        ),
+    )
+    monkeypatch.setattr(
+        module, "next_quota_reset", lambda detail, now: 1742054400.0
+    )  # 2025-03-15 16:00:00 UTC
+
+    module.checkpoint_and_notify_exhaustion(
+        issue_number=42,
+        repo="owner/repo",
+        error_detail="quota exceeded",
+        branch_name="feature/foo",
+    )
+
+    comment_body = next(
+        args[args.index("--body") + 1] for args in posted_comments if "--body" in args
+    )
+    assert "2025-03-15 16:00:00 UTC" in comment_body
+    assert "/df resume" in comment_body
+    assert len(recorded_blocks) == 1
+    assert recorded_blocks[0][3] == 1742054400.0
