@@ -1,8 +1,34 @@
 import type { Actor, AuthorAssociation, GraphEvent } from "./types.ts";
 
+/**
+ * Translated representation of a GitHub event for the graph processing.
+ *
+ * The union consists of:
+ * - An event with a concrete GraphEvent and subject information.
+ * - A skip entry indicating the event should be ignored, with a reason.
+ */
 export type TranslatedEvent =
-	| { kind: "event"; event: GraphEvent; subject: { number: number; is_pr: boolean; ref?: string } }
-	| { kind: "skip"; reason: string };
+	| {
+		/** The kind of translation result, always "event" for a valid event. */
+		kind: "event";
+		/** The specific graph event derived from the GitHub payload. */
+		event: GraphEvent;
+		/** Subject information identifying the target of the event. */
+		subject: {
+			/** The issue or PR number. */
+			number: number;
+			/** True if the subject is a pull request. */
+			is_pr: boolean;
+			/** Optional ref (e.g., commit SHA) for the subject. */
+			ref?: string;
+		};
+	}
+	| {
+		/** The kind of translation result, "skip" when the payload is not relevant. */
+		kind: "skip";
+		/** Reason why the event is being skipped. */
+		reason: string;
+	};
 
 // Events whose ingress comes from a human user (and thus can be a bot). System
 // events like `check_suite` and `schedule` are deliberately excluded: GitHub
@@ -105,7 +131,19 @@ function translateSchedule(p: Record<string, unknown>, now?: string): Translated
 	return { kind: "event", event: { type: "schedule", schedule, now: now ?? new Date().toISOString() }, subject: { number: 0, is_pr: false } };
 }
 
-export function translateGitHubEvent(eventName: string, payload: unknown, now?: string): TranslatedEvent {
+/**
+ * Translate a raw GitHub webhook payload into a TranslatedEvent for the graph engine.
+ *
+ * @param eventName - The name of the GitHub event (e.g., "issues", "push").
+ * @param payload - The parsed JSON payload of the webhook.
+ * @param now - Optional current timestamp override for schedule events.
+ * @returns A TranslatedEvent representing the processed event or a skip with reason.
+ */
+export function translateGitHubEvent(
+	eventName: string,
+	payload: unknown,
+	now?: string
+): TranslatedEvent {
 	try {
 		if (!payload || typeof payload !== "object") return { kind: "skip", reason: "malformed payload" };
 		const p = payload as Record<string, unknown>;

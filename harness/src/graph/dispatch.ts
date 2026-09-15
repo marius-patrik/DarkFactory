@@ -7,12 +7,22 @@ import { validateGraph } from "./validator.ts";
 import { translateGitHubEvent, type TranslatedEvent } from "./events.ts";
 import { evaluateChecksGate, type CheckStateSource, type ChecksGateResult } from "./checks-gate.ts";
 
+/**
+ * Options for the dispatch command.
+ * Controls input paths, output behavior, and overrides.
+ */
 export interface DispatchOptions {
+	/** GitHub event name (e.g. issues, issue_comment). */
 	eventName: string;
+	/** Path to the event JSON payload file. */
 	eventPath: string;
+	/** Path to the workflow graph file (defaults to .darkfactory/manifest.json). */
 	graphPath?: string;
+	/** Path to the runs directory (defaults to .darkfactory/runs). */
 	runsPath?: string;
+	/** When true, append markdown summary instead of saving state. */
 	shadow: boolean;
+	/** Path to write the job summary (defaults to GITHUB_STEP_SUMMARY). */
 	summaryPath?: string;
 }
 
@@ -75,7 +85,16 @@ function githubCheckSource(token: string, repository: string): CheckStateSource 
 	return new GitHubRepository(new GitHubClient({ token }), owner, repo);
 }
 
-export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
+/**
+ * Dispatch a workflow based on a GitHub event.
+ * @param argv - Command line arguments passed to the dispatch command.
+ * @param options - Optional overrides, such as a custom check state source.
+ * @returns A promise that resolves when dispatch processing is complete.
+ */
+export async function dispatch(
+	argv: string[],
+	options?: { checkStateSource?: CheckStateSource }
+): Promise<void> {
 	const opts = parseArgs(argv);
 
 	// Load the event payload

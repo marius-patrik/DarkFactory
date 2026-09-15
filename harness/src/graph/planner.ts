@@ -25,7 +25,18 @@ function authorized(gate: GateNode, event: Extract<GraphEvent, {actor: unknown}>
 	return !event.actor.is_bot && (gate.author_associations.includes(event.actor.association as never) || (gate.requester_can_approve === true && event.actor.login === state.requester));
 }
 
-export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): PlanAction {
+/**
+ * Determine the next action for the workflow based on the current graph, event, and run state.
+ * @param graph - The workflow graph definition.
+ * @param event - The incoming graph event to process.
+ * @param state - The current run state of the workflow.
+ * @returns A PlanAction describing what to do next (run nodes, gate, comment, hint, or none).
+ */
+export function plan(
+	graph: WorkflowGraph,
+	event: GraphEvent,
+	state: RunState
+): PlanAction {
 	const current = graph.nodes.find((node) => node.id === state.current_node);
 	if (!current) return none(`unknown current node ${state.current_node}`);
 	if ("actor" in event && event.actor.is_bot) return none("bot ingress ignored");
