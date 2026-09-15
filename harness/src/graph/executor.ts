@@ -1,261 +1,229 @@
+import { existsSync } from "node:fs";
+import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { plan } from "./planner.ts";
 import type { AgentNode, AutomationNode, GraphEvent, GraphNode, PlanAction, RunState, WorkflowGraph } from "./types.ts";
-import { writeFile, rename, appendFile, mkdir } from "fs/promises";
-import { existsSync, readFileSync } from "fs";
 
-export interface NodeHandlers {
-  agent(node: AgentNode, ctx: NodeContext): Promise<NodeResult>;
-  automation(node: AutomationNode, ctx: NodeContext): Promise<NodeResult>;
-}
-export interface NodeContext {
-  runDir: string;
-  outputs: Record<string, unknown>;
-  item?: unknown;
-  feedback?: string;
-  iteration: number;
-}
+/** Outcome of one node run, as the planner's `node_outcome` edges expect. */
+export type NodeOutcome = "success" | "failure" | "quota_exhausted";
+
+/** What a node handler reports back to the executor. */
 export interface NodeResult {
-  outcome: "success" | "failure" | "quota_exhausted";
-  outputs: Record<string, unknown>;
+	/** Selects the outgoing `node_outcome` edge. */
+	outcome: NodeOutcome;
+	/** Merged into the run's outputs; edge guards and later nodes read them. */
+	outputs: Record<string, unknown>;
 }
 
-// Atomic write helper
-async function atomicWrite(path: string, data: string): Promise<void> {
-  await writeFile(`${path}.tmp`, data);
-  await rename(`${path}.tmp`, path);
+/** Everything a handler needs to run one node (or one fan-out item). */
+export interface NodeContext {
+	/** Directory owned by this run (or this fan-out child) for scratch files. */
+	runDir: string;
+	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
+	outputs: Record<string, unknown>;
+	/** The fan-out item, for a child of a `foreach` node. */
+	item?: unknown;
+	/** Reviewer or gate feedback the planner attached to this run. */
+	feedback?: string;
+	/** 1 on the first run of this node, incremented every time a loop runs it again. */
+	iteration: number;
+	/** Safety-budget alerts the planner raised for this run. */
+	alerts?: string[];
 }
 
-async function handleForeachNode(
-  node: GraphNode,
-  action: PlanAction,
-  state: RunState,
-  runDir: string,
-  handlers: NodeHandlers,
-  eventsPath: string,
-  statePath: string
-): Promise<GraphEvent> {
-  const foreach = node.foreach!;
-  const { items, max_parallel, as } = foreach;
-  // Get the items array from state.outputs[items]
-  const itemsArray = state.outputs[items] as unknown[];
-  if (!Array.isArray(itemsArray)) {
-    throw new Error(`foreach.items must be an array, got ${typeof itemsArray}`);
-  }
-  // We'll run the children sequentially for now (respecting max_parallel by running max_parallel at a time, but we'll do sequential if max_parallel is 1, parallel otherwise simplified)
-  // We'll implement a simple queue: we'll run up to max_parallel children at a time.
-  const maxConcurrent = max_parallel ?? itemsArray.length;
-  const childrenOutcomes: ("success" | "failure" | "quota_exhausted")[] = [];
-  const childrenInfo: { run_id: string; node: string; eligible: boolean }[] = [];
-
-  // We'll process items in batches of maxConcurrent
-  for (let i = 0; i < itemsArray.length; i += maxConcurrent) {
-    const batch = itemsArray.slice(i, i + maxConcurrent);
-    const batchPromises = batch.map(async (item, offset) => {
-      const index = i + offset;
-      const childRunDir = `${runDir}/children/${index}`;
-      await mkdir(childRunDir, { recursive: true });
-      // Initialize child state: inherit parent's outputs, but not iterations, hints, etc.
-      const childState: RunState = {
-        run_id: `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-        current_node: node.id,
-        outputs: { ...state.outputs }, // inherit parent's outputs
-        hints: [],
-        iterations: {},
-        checkpoints: [],
-        children: undefined,
-      };
-      // Write initial state
-      await atomicWrite(`${childRunDir}/state.json`, JSON.stringify(childState));
-      // Set up context for the node
-      const iteration = 1; // first iteration in child run
-      const ctx: NodeContext = {
-        runDir: childRunDir,
-        outputs: childState.outputs,
-        item: item, // set the item from the foreach
-        feedback: (action as Extract<PlanAction, { type: "run" }>).feedback,
-        iteration,
-      };
-      let result: NodeResult;
-      if (node.kind === "agent") {
-        result = await handlers.agent(node as AgentNode, ctx);
-      } else if (node.kind === "automation") {
-        result = await handlers.automation(node as AutomationNode, ctx);
-      } else {
-        throw new Error(`Unexpected node kind ${node.kind} in foreach`);
-      }
-      // Update child state
-      childState.outputs = { ...childState.outputs, ...result.outputs };
-      childState.iterations![node.id] = iteration;
-      childState.current_node = node.id;
-      await atomicWrite(`${childRunDir}/state.json`, JSON.stringify(childState));
-      // Emit node.completed event for the child run
-      const childEvent = {
-        type: "node.completed",
-        node: node.id,
-        outcome: result.outcome,
-        outputs: result.outputs,
-      } as GraphEvent;
-      await appendFile(`${childRunDir}/events.jsonl`, JSON.stringify(childEvent) + "\n");
-      // For the purpose of the foreach, we consider the child run's outcome as the outcome of the foreach node
-      return { outcome: result.outcome, runId: childState.run_id, index };
-    });
-    const batchResults = await Promise.all(batchPromises);
-    for (const result of batchResults) {
-      childrenOutcomes.push(result.outcome);
-      childrenInfo.push({
-        run_id: result.runId,
-        node: node.id,
-        eligible: true, // we set eligible to true for simplicity
-      });
-    }
-  }
-
-  // Update parent state with children information
-  state.children = (state.children ?? []).concat(childrenInfo);
-  state.current_node = node.id; // set current node to the foreach node
-  await atomicWrite(statePath, JSON.stringify(state));
-
-  // Determine the parent's outcome for the children.completed event
-  const allSucceeded = childrenOutcomes.every((outcome) => outcome === "success");
-  const anyFailed = childrenOutcomes.some((outcome) => outcome === "failure" || outcome === "quota_exhausted");
-  let parentOutcome: "all_done" | "any_failed";
-  if (allSucceeded) {
-    parentOutcome = "all_done";
-  } else if (anyFailed) {
-    parentOutcome = "any_failed";
-  } else {
-    // This case should not happen because each outcome is either success, failure, or quota_exhausted
-    // If we get here, treat as any_failed? We'll default to all_done? We'll choose all_done arbitrarily.
-    parentOutcome = "all_done";
-  }
-
-  // Emit children.completed event for the parent node
-  const childrenEvent = {
-    type: "children.completed",
-    node: node.id,
-    outcome: parentOutcome,
-  } as GraphEvent;
-  await appendFile(eventsPath, JSON.stringify(childrenEvent) + "\n");
-  return childrenEvent;
+/** Executes agent and automation nodes; everything else (gates, comments, board moves) is the caller's side effect. */
+export interface NodeHandlers {
+	/** Runs an agent node (a df model run). */
+	agent(node: AgentNode, ctx: NodeContext): Promise<NodeResult>;
+	/** Runs an automation node (deterministic engine work: worktrees, commits, PRs). */
+	automation(node: AutomationNode, ctx: NodeContext): Promise<NodeResult>;
 }
 
+/** Options for {@link runGraph}. */
+export interface RunGraphOptions {
+	/**
+	 * Receives gate, hint and comment actions (post the comment, move the board card). The run then stops and waits
+	 * for the next external event; a gate is never passed without one.
+	 */
+	onAction?(action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState): void | Promise<void>;
+	/** Clock for `blocked_since`; defaults to `new Date()`. */
+	now?: () => Date;
+	/** Upper bound on node runs per call, guarding against an undeclared infinite loop; default 1000. */
+	maxSteps?: number;
+}
+
+async function writeJson(path: string, value: unknown): Promise<void> {
+	const temp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+	await writeFile(temp, `${JSON.stringify(value)}\n`, "utf8");
+	await rename(temp, path);
+}
+
+async function readJson<T>(path: string): Promise<T | undefined> {
+	if (!existsSync(path)) return undefined;
+	return JSON.parse(await readFile(path, "utf8")) as T;
+}
+
+/** A trigger node for a fresh run: the node whose trigger matches the starting event. */
+function startNode(graph: WorkflowGraph, event: GraphEvent): string {
+	const byEvent = graph.nodes.find((node) => node.trigger?.event?.split("|").includes(event.type));
+	const bySchedule = event.type === "schedule" ? graph.nodes.find((node) => node.trigger?.schedule === event.schedule) : undefined;
+	return (byEvent ?? bySchedule ?? graph.nodes[0])?.id ?? "";
+}
+
+async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext): Promise<NodeResult> {
+	try {
+		if (node.kind === "agent") return await handlers.agent(node, ctx);
+		if (node.kind === "automation") return await handlers.automation(node, ctx);
+		return { outcome: "failure", outputs: { error: `node ${node.id} of kind ${node.kind} cannot be run` } };
+	} catch (error) {
+		// A crashing handler is a failed node, routed by the graph like any other failure.
+		return { outcome: "failure", outputs: { error: error instanceof Error ? error.message : String(error) } };
+	}
+}
+
+/**
+ * Runs a `foreach` node: one child per item of `state.outputs[foreach.items]`, at most `max_parallel` (default 1) at a
+ * time. Each child keeps its result in `children/<node>/<index>/result.json`, so a resumed fan-out re-runs only the
+ * children that did not succeed.
+ */
+async function runForeach(
+	node: GraphNode,
+	action: Extract<PlanAction, { type: "run" }>,
+	state: RunState,
+	runDir: string,
+	handlers: NodeHandlers,
+	iteration: number,
+): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
+	const spec = node.foreach!;
+	const items = state.outputs[spec.items];
+	const as = spec.as ?? "item";
+	if (!Array.isArray(items)) {
+		state.outputs[`${node.id}_results`] = [];
+		state.outputs[`${node.id}_error`] = `foreach.items "${spec.items}" is not an array`;
+		return { type: "children.completed", node: node.id, outcome: "any_failed" };
+	}
+	const results: (NodeResult & { index: number })[] = new Array(items.length);
+	let next = 0;
+	const worker = async () => {
+		while (next < items.length) {
+			const index = next++;
+			const childDir = join(runDir, "children", node.id, String(index));
+			await mkdir(childDir, { recursive: true });
+			const resultPath = join(childDir, "result.json");
+			const previous = await readJson<NodeResult>(resultPath);
+			if (previous?.outcome === "success") {
+				results[index] = { ...previous, index };
+				continue;
+			}
+			const item = items[index];
+			const result = await invoke(handlers, node, {
+				runDir: childDir,
+				outputs: { ...state.outputs, [as]: item },
+				item,
+				iteration,
+				...(action.feedback ? { feedback: action.feedback } : {}),
+				...(action.alerts ? { alerts: action.alerts } : {}),
+			});
+			await writeJson(resultPath, result);
+			await appendFile(join(childDir, "events.jsonl"), `${JSON.stringify({ type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs })}\n`);
+			results[index] = { ...result, index };
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(Math.max(1, spec.max_parallel ?? 1), Math.max(1, items.length)) }, worker));
+	state.children = results.map((result) => ({ run_id: `${state.run_id}/${node.id}/${result.index}`, node: node.id, eligible: result.outcome === "quota_exhausted" }));
+	state.outputs[`${node.id}_results`] = results.map((result) => ({ index: result.index, outcome: result.outcome, outputs: result.outputs }));
+	return { type: "children.completed", node: node.id, outcome: results.every((result) => result.outcome === "success") ? "all_done" : "any_failed" };
+}
+
+/**
+ * Drives a run of a workflow graph from one incoming event until the run completes or waits for the outside world.
+ *
+ * State and events live in `runDir` (`state.json`, `events.jsonl`), written after every step, so a crashed or
+ * interrupted run resumes from the last completed node. The planner decides every step: `run` executes nodes through
+ * `handlers` (a node may run again when a loop routes back to it; its iteration count grows), `gate` / `hint` /
+ * `comment` are handed to `options.onAction` and stop the run until an external event (approval comment, review,
+ * checks, schedule) is passed to the next call, and `none` ends the call.
+ *
+ * @param graph - A validated workflow graph.
+ * @param runDir - Directory holding this run's state and events.
+ * @param handlers - Agent and automation node executors.
+ * @param event - The event that starts or continues the run.
+ * @param options - Side-effect hook for gates/comments, clock and step bound.
+ * @returns The persisted run state after the call.
+ * @throws Error when the run exceeds `maxSteps` node runs in one call.
+ */
 export async function runGraph(
-  graph: WorkflowGraph,
-  runDir: string,
-  handlers: NodeHandlers,
-  start: GraphEvent,
+	graph: WorkflowGraph,
+	runDir: string,
+	handlers: NodeHandlers,
+	event: GraphEvent,
+	options: RunGraphOptions = {},
 ): Promise<RunState> {
-  // Ensure run directory exists
-  await mkdir(runDir, { recursive: true });
+	await mkdir(runDir, { recursive: true });
+	const statePath = join(runDir, "state.json");
+	const eventsPath = join(runDir, "events.jsonl");
+	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
+	const state: RunState = (await readJson<RunState>(statePath)) ?? {
+		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+		current_node: startNode(graph, event),
+		outputs: {},
+		hints: [],
+		iterations: {},
+	};
+	state.outputs ??= {};
+	state.hints ??= [];
+	state.iterations ??= {};
+	const save = () => writeJson(statePath, state);
+	await save();
+	await record({ type: "event", event });
 
-  const statePath = `${runDir}/state.json`;
-  const eventsPath = `${runDir}/events.jsonl`;
-
-  // Load or create state (no global cache)
-  let state: RunState;
-  if (existsSync(statePath)) {
-    const raw = readFileSync(statePath, "utf8");
-    state = JSON.parse(raw) as RunState;
-    // Initialise optional fields if missing
-    state.iterations ??= {};
-    state.outputs ??= {};
-    state.hints ??= [];
-  } else {
-    // Determine start node based on event type
-    let current_node = "";
-    if (start.type === "issues.opened" || start.type === "issues.labeled") {
-      const startNode = graph.nodes.find(
-        (n) => n.trigger?.event?.split("|").includes(start.type),
-      );
-      current_node = startNode?.id ?? "";
-    }
-    state = {
-      run_id: `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-      current_node,
-      outputs: {},
-      hints: [],
-      iterations: {},
-    } as RunState;
-    await atomicWrite(statePath, JSON.stringify(state));
-  }
-
-  let event: GraphEvent = start;
-  while (true) {
-    const action = plan(graph, event, state);
-    if (action.type === "none") {
-      await atomicWrite(statePath, JSON.stringify(state));
-      return state;
-    }
-
-    if (action.type === "run") {
-      // Filter out already executed nodes
-      const pending = action.nodes.filter((nodeId) => !(state.iterations?.[nodeId]));
-      if (pending.length === 0) {
-        await atomicWrite(statePath, JSON.stringify(state));
-        return state;
-      }
-      for (const nodeId of pending) {
-        const node = graph.nodes.find((n) => n.id === nodeId)!;
-        if (node.foreach) {
-          // Handle foreach node
-          const childrenEvent = await handleForeachNode(node, action, state, runDir, handlers, eventsPath, statePath);
-          event = childrenEvent;
-          break; // break out of the for loop, then continue the while loop
-        } else {
-          // Original handling for non-foreach node
-          const iteration = (state.iterations?.[nodeId] ?? 0) + 1;
-          const runAction = action as Extract<PlanAction, { type: "run" }>;
-          const ctx: NodeContext = {
-            runDir,
-            outputs: state.outputs,
-            iteration,
-            feedback: runAction.feedback,
-          };
-          let result: NodeResult;
-          if (node.kind === "agent") {
-            result = await handlers.agent(node as AgentNode, ctx);
-          } else if (node.kind === "automation") {
-            result = await handlers.automation(node as AutomationNode, ctx);
-          } else {
-            throw new Error(`Unexpected node kind ${node.kind} in run action`);
-          }
-          // Merge outputs and update iterations
-          state.outputs = { ...state.outputs, ...result.outputs };
-          state.iterations![nodeId] = iteration;
-          state.current_node = nodeId;
-          await atomicWrite(statePath, JSON.stringify(state));
-          // Emit node.completed event for next planning step and record it
-          const nodeCompletedEvent = {
-            type: "node.completed",
-            node: nodeId,
-            outcome: result.outcome,
-            outputs: result.outputs,
-          } as GraphEvent;
-          await appendFile(eventsPath, JSON.stringify(nodeCompletedEvent) + "\n");
-          event = nodeCompletedEvent;
-          // we do not break here; we continue to the next pending node
-        }
-      }
-      continue;
-    }
-
-    // Append other action records
-    await appendFile(eventsPath, JSON.stringify(action) + "\n");
-
-    if (action.type === "gate" || action.type === "hint" || action.type === "comment") {
-      const node = (action as any).node;
-      state.current_node = node;
-      await atomicWrite(statePath, JSON.stringify(state));
-      // Emit a dummy node.completed event to advance planning and avoid infinite loops
-      event = {
-        type: "node.completed",
-        node: node,
-        outcome: "success",
-        outputs: {},
-      } as GraphEvent;
-      // Record the action itself as well
-      await appendFile(eventsPath, JSON.stringify(action) + "\n");
-      continue;
-    }
-  }
+	const maxSteps = options.maxSteps ?? 1000;
+	let steps = 0;
+	let current: GraphEvent = event;
+	for (;;) {
+		const action = plan(graph, current, state);
+		await record({ type: "action", action });
+		if (action.type === "none") {
+			await save();
+			return state;
+		}
+		if (action.type !== "run") {
+			state.current_node = action.node;
+			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
+			if (action.type === "gate" || action.type === "comment") state.blocked_since ??= (options.now?.() ?? new Date()).toISOString();
+			if (action.type === "comment" && /quota/iu.test(action.message)) state.quota_blocked = true;
+			await save();
+			await options.onAction?.(action, state);
+			return state;
+		}
+		const nodeId = action.nodes[0];
+		const node = graph.nodes.find((candidate) => candidate.id === nodeId);
+		if (!node) throw new Error(`Planner chose unknown node ${nodeId}`);
+		if (++steps > maxSteps) throw new Error(`Run ${state.run_id} exceeded ${maxSteps} node runs; check the graph for an undeclared loop`);
+		const iteration = (state.iterations[node.id] ?? 0) + 1;
+		state.iterations[node.id] = iteration;
+		state.current_node = node.id;
+		delete state.blocked_since;
+		delete state.quota_blocked;
+		await save();
+		if (node.kind === "check-reference" || node.kind === "gate") {
+			// Nothing to execute: the run waits for the checks (or gate) event.
+			return state;
+		}
+		if (node.foreach) {
+			current = await runForeach(node, action, state, runDir, handlers, iteration);
+		} else {
+			const result = await invoke(handlers, node, {
+				runDir,
+				outputs: state.outputs,
+				iteration,
+				...(action.feedback ? { feedback: action.feedback } : {}),
+				...(action.alerts ? { alerts: action.alerts } : {}),
+			});
+			state.outputs = { ...state.outputs, ...result.outputs };
+			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
+		}
+		await save();
+		await record({ type: "event", event: current });
+	}
 }
