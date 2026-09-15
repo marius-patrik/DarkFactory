@@ -23,6 +23,7 @@ import tempfile
 import time
 import urllib.parse
 import urllib.request
+import hashlib
 import random
 import uuid
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
@@ -2625,7 +2626,7 @@ def revert_out_of_scope_files(
     run_git(["commit", "-m", commit_msg], cwd=cwd)
     run_git(["push", "origin", "HEAD"], cwd=cwd)
     commit_sha = run_git(["rev-parse", "HEAD"], cwd=cwd).strip()
-    print(f"Reverted out-of-scope files in commit {commit_sha[:7]}: {out_of_scope_files}")
+    print(f"Reverted out-of-scope files: {out_of_scope_files}")
     return commit_sha
 
 
@@ -3051,8 +3052,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         print(
             f"Found existing open PR #{pr_number} for branch {branch_name}, skipping implementation."
         )
-        handle_self_review(pr_number, plan_number, repo)
-        handle_plan_alignment(pr_number, plan_number, request_number, repo)
+        start_self_review(pr_number, plan_number, request_number, repo)
         return
 
     # 5. Run agy to implement the plan (longer timeout for implementation)
@@ -3296,214 +3296,441 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
         print("Timed out waiting for PR creation.")
         return
 
-    # 11. Self-review loop
-    review_ok = handle_self_review(pr_number, plan_number, repo)
-    if not review_ok:
-        print(f"Self-review did not pass clean on PR #{pr_number}; stopping.")
-        return
-
-    # 12. Plan alignment gate
-    handle_plan_alignment(pr_number, plan_number, request_number, repo)
+    # 11. Self-review runs as dispatched review and fix iterations; the clean review continues to
+    # the plan alignment gate.
+    start_self_review(pr_number, plan_number, request_number, repo)
 
 
-def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
-    """Runs a general PR code review and repair loop until there are no findings.
+def start_self_review(
+    pr_number: int, plan_number: int, request_number: Optional[int], repo: str
+) -> None:
+    """Starts the self-review cycle for a pull request by dispatching review iteration 1.
 
-    Compares changed files against approved plan paths to deterministically catch scope creep,
-    reverting out-of-scope files to the base branch and feeding the findings back to repair.
-    Loops until all findings are resolved, posting progress comments after every 5 iterations
-    and detecting loops that make no progress (identical findings twice in a row), marking
-    the PR Blocked and stopping.
+    Each iteration runs as its own workflow run: the review run posts all findings and dispatches
+    the fix run, which dispatches the next review, until a review has no findings.
+
+    Args:
+        pr_number: The pull request to review.
+        plan_number: The approved Plan issue (the Request itself since both gates share one issue).
+        request_number: The parent Request issue; falls back to the plan's parent, then the plan.
+        repo: Repository slug (owner/name).
+    """
+    request = request_number or find_parent_request_number(plan_number, repo) or plan_number
+    dispatch_stage(
+        repo,
+        {
+            "stage": "self-review",
+            "pr": pr_number,
+            "plan": plan_number,
+            "request": request,
+            "iteration": 1,
+        },
+    )
+    print(f"Dispatched self-review iteration 1 for PR #{pr_number}")
+
+
+def dispatch_stage(repo: str, payload: Dict[str, Any]):
+    """Dispatches the agent-dispatch event to the repository."""
+    payload_data = json.dumps({"event_type": "agent-dispatch", "client_payload": payload})
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", delete=False) as f:
+            f.write(payload_data)
+            temp_path = f.name
+        run_gh(
+            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
+            repo=repo,
+        )
+    except Exception as e:
+        print(f"Failed to dispatch agent-dispatch to {repo}: {e}", file=sys.stderr)
+        # Post PR notice
+        pr_num = payload.get("pr")
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_num),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review Dispatch Error\n\nFailed to dispatch next stage: {e}",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_num, repo=repo, is_pr=True)
+        request_num = payload.get("request")
+        if request_num:
+            block_entity(request_num, repo=repo, is_pr=False)
+        raise
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def parse_review_findings(text: str) -> List[str]:
+    """Extract top-level findings from agent review text.
+
+    Returns one stripped string per finding. Numbered items (1., 2., etc.)
+    and bullet items (* or -) are each one finding; subsequent indented/continuation
+    lines belong to that same finding.
+    """
+    stripped_text = text.strip()
+    if stripped_text.startswith("NO_FINDINGS"):
+        return []
+
+    lines = text.splitlines()
+    items: List[str] = []
+    current_item_lines: List[str] = []
+    in_item = False
+
+    def flush_item():
+        nonlocal current_item_lines
+        if current_item_lines:
+            items.append(" ".join(l.strip() for l in current_item_lines if l.strip()))
+        current_item_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        starts_numbered = re.match(r"^\d+\.\s*", stripped)
+        starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
+        if starts_numbered or starts_bullet:
+            flush_item()
+            in_item = True
+            if starts_numbered:
+                content = stripped[starts_numbered.end() :].strip()
+            elif stripped.startswith(("* ", "- ")):
+                content = stripped[2:].strip()
+            elif stripped.startswith(("*", "-")):
+                content = stripped[1:].strip()
+            current_item_lines = [content]
+            continue
+        if in_item:
+            current_item_lines.append(stripped)
+
+    flush_item()
+
+    if not items and stripped_text:
+        return [stripped_text]
+
+    return items
+
+
+def run_self_review_iteration(
+    pr_number: int,
+    plan_number: int,
+    request_number: int,
+    iteration: int,
+    repo: str,
+) -> str:
+    """Run one iteration of self-review.
+
+    Performs a single review pass against the PR diff, posts a comment with findings
+    and a digest marker, and decides the next step based on the findings.
 
     Args:
         pr_number: The pull request number.
         plan_number: The child Plan issue number.
+        request_number: The parent Request issue number.
+        iteration: Current iteration number (1-based).
         repo: Repository slug (owner/name).
 
     Returns:
-        True when self-review passes clean with no findings; False if blocked or errored.
+        "clean" if no findings, "blocked" if no progress, "fix-dispatched" if fix payload sent.
     """
     cwd = WORKSPACE_DIR
-    iteration = 1
-    previous_findings: Optional[str] = None
 
-    while True:
-        print(f"Self-review iteration {iteration}")
+    # Get PR diff
+    try:
+        diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
+    except Exception as e:
+        print(f"Failed to get PR diff: {e}", file=sys.stderr)
+        return "blocked"
 
-        # Get PR diff
-        try:
-            diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
-        except Exception as e:
-            print(f"Failed to get PR diff: {e}", file=sys.stderr)
-            return False
-
-        # Get plan content
-        try:
-            plan_data = json.loads(
-                run_gh(
-                    ["issue", "view", str(plan_number), "--json", "title,body,comments"],
-                    repo=repo,
-                )
+    # Get plan content
+    try:
+        plan_data = json.loads(
+            run_gh(
+                ["issue", "view", str(plan_number), "--json", "title,body,comments"],
+                repo=repo,
             )
-        except Exception as e:
-            print(f"Failed to get plan data: {e}", file=sys.stderr)
-            return False
-
-        plan_body = ""
-        for c in reversed(plan_data.get("comments", [])):
-            cbody = c.get("body", "")
-            if _is_plan_comment(cbody):
-                plan_body = cbody
-                break
-        if not plan_body:
-            plan_body = plan_data.get("body", "")
-
-        # Deterministic scope check before LLM review
-        plan_files = parse_plan_files(plan_body)
-        changed_files = get_pr_changed_files(default_branch(), cwd=cwd)
-        in_scope_files, out_of_scope_files = check_scope(changed_files, plan_files)
-
-        scope_findings = ""
-        if out_of_scope_files:
-            commit_sha = revert_out_of_scope_files(out_of_scope_files, default_branch(), cwd=cwd)
-            scope_findings = (
-                f"OUT_OF_SCOPE: The following files were modified outside the approved plan scope: "
-                f"{', '.join(out_of_scope_files)}. These files have been reverted to {default_branch()} "
-                f"in commit {commit_sha[:7]}. Do not modify these files; all changes must remain "
-                f"strictly within the approved plan scope ({', '.join(sorted(plan_files))})."
-            )
-            # Re-fetch PR diff after out-of-scope files reverted
-            try:
-                diff = run_gh(["pr", "diff", str(pr_number)], repo=repo)
-            except Exception as e:
-                print(f"Failed to get PR diff after revert: {e}", file=sys.stderr)
-                return False
-
-        # Review via LLM
-        max_diff_len = 60000
-        diff_snippet = (
-            diff
-            if len(diff) <= max_diff_len
-            else f"{diff[:max_diff_len]}\n\n[... diff truncated at {max_diff_len} characters ...]"
         )
-        review_prompt = (
-            f"Review the following pull request diff for code quality issues.\n"
-            f"Look for: bugs, edge cases, missing error handling, missing tests, "
-            f"style issues, naming problems, architectural concerns.\n\n"
-            f"## Plan Scope (for reference — do NOT evaluate plan alignment here)\n"
-            f"{plan_body[:2000]}\n\n"
-            f"## PR Diff\n```diff\n{diff_snippet}\n```\n\n"
-            f"If you find NO actionable issues, respond starting with: NO_FINDINGS\n"
-            f"If you find issues, list each finding with a description and suggested fix."
+    except Exception as e:
+        print(f"Failed to get plan data: {e}", file=sys.stderr)
+        return "blocked"
+
+    plan_body = ""
+    for c in reversed(plan_data.get("comments", [])):
+        cbody = c.get("body", "")
+        if _is_plan_comment(cbody):
+            plan_body = cbody
+            break
+    if not plan_body:
+        plan_body = plan_data.get("body", "")
+
+    # Deterministic scope check before LLM review
+    plan_files = parse_plan_files(plan_body)
+    changed_files = get_pr_changed_files(default_branch(), cwd=cwd)
+    in_scope_files, out_of_scope_files = check_scope(changed_files, plan_files)
+
+    # Run LLM review (one pass)
+    max_diff_len = 60000
+    diff_snippet = (
+        diff
+        if len(diff) <= max_diff_len
+        else f"{diff[:max_diff_len]}\n\n[... diff truncated at {max_diff_len} characters ...]"
+    )
+    review_prompt = (
+        f"Review the following pull request diff for code quality issues.\n"
+        f"Look for: bugs, edge cases, missing error handling, missing tests, "
+        f"style issues, naming problems, architectural concerns.\n\n"
+        f"## Plan Scope (for reference — do NOT evaluate plan alignment here)\n"
+        f"{plan_body[:2000]}\n\n"
+        f"## PR Diff\n```diff\n{diff_snippet}\n```\n\n"
+        f"If you find NO actionable issues, respond starting with: NO_FINDINGS\n"
+        f"If you find issues, list each finding with a description and suggested fix."
+    )
+    checkpoint_ctx = {
+        "issue_number": pr_number,
+        "repo": repo,
+        "is_pr": True,
+        "completed_steps": [
+            f"Completed implementation and opened PR #{pr_number}",
+            f"Self-review iteration {iteration}",
+        ],
+        "cwd": cwd,
+    }
+    review_result = run_agent_prompt(
+        review_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
+    )
+
+    if is_quota_exhaustion_notice(review_result):
+        return "blocked"
+
+    if review_result.startswith("[DarkFactory Agent Execution Error]"):
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review Error (Iteration {iteration})\n\n{review_result}",
+            ],
+            repo=repo,
+        )
+        return "blocked"
+
+    # Build findings list: out of scope files + parsed review findings
+    findings_items = [
+        f"Out of scope: {path} (not in the approved plan)" for path in out_of_scope_files
+    ]
+    findings_items.extend(parse_review_findings(review_result))
+    K = len(findings_items)  # number of findings, not lines
+    combined_findings = "\n".join(findings_items)
+
+    # Compute normalized findings for digest: each finding stripped + lowercased,
+    # then sorted, joined by "\n"
+    normalized_sorted = "\n".join(sorted(f.strip().lower() for f in findings_items))
+    digest = hashlib.sha1(normalized_sorted.encode("utf-8")).hexdigest()
+
+    # Post ONE PR comment with marker
+    # First, check for previous iteration marker to get prior digest
+    prior_digest = None
+    try:
+        comments_res = run_gh(["issue", "view", str(pr_number), "--json", "comments"], repo=repo)
+        comments = json.loads(comments_res or "{}").get("comments", []) or []
+        # Find the marker from iteration N-1
+        for c in comments:
+            cbody = c.get("body", "")
+            marker_match = re.search(
+                r"<!--\s*darkfactory-self-review\s+iteration=(\d+)\s+findings=(\d+)\s+digest=([a-f0-9]+)\s*-->",
+                cbody,
+            )
+            if marker_match and int(marker_match.group(1)) == iteration - 1:
+                prior_digest = marker_match.group(3)
+                break
+    except Exception as e:
+        print(f"Failed to read previous comments: {e}", file=sys.stderr)
+
+    # Build findings display as `1.`, `2., ...
+    findings_display = (
+        "\n".join(f"{i+1}. {f}" for i, f in enumerate(findings_items))
+        if findings_items
+        else "No actionable findings."
+    )
+
+    comment_body = (
+        f"### Self-Review — iteration {iteration}\n"
+        f"{findings_display}\n"
+        f"<!-- darkfactory-self-review iteration={iteration} findings={K} digest={digest} -->"
+    )
+
+    # Post the comment
+    run_gh(
+        [
+            "pr",
+            "comment",
+            str(pr_number),
+            "--body",
+            comment_body,
+        ],
+        repo=repo,
+    )
+
+    # Case 1: K == 0 → clean
+    if K == 0:
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review — iteration {iteration}\n\n✅ Self-review clean at iteration {iteration}\n<!-- darkfactory-self-review iteration={iteration} findings=0 digest={digest} -->",
+            ],
+            repo=repo,
+        )
+        print(f"Self-review passed clean on iteration {iteration}")
+        handle_plan_alignment(pr_number, plan_number, request_number, repo)
+        return "clean"
+
+    # Case 2: K > 0 and D equals the digest in the marker of iteration N-1 → blocked
+    if K > 0 and prior_digest is not None and digest == prior_digest:
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review Findings (Blocked)\n\n"
+                f"Self-review made no progress across iterations (identical findings twice in a row):\n\n"
+                f"{combined_findings}",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        # Also block the request if it exists
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        print(f"Self-review loop made no progress on PR #{pr_number}; marked Blocked.")
+        return "blocked"
+
+    # Case 3: Otherwise → dispatch fix
+    # Post repository_dispatch agent-dispatch with client_payload
+    payload = {
+        "stage": "self-review-fix",
+        "pr": pr_number,
+        "plan": plan_number,
+        "request": request_number,
+        "iteration": iteration,
+    }
+    try:
+        dispatch_stage(repo, payload)
+    except Exception as e:
+        print(f"Dispatch failed during self-review: {e}", file=sys.stderr)
+        return "blocked"
+
+    print(f"Self-review fix dispatched for iteration {iteration}")
+    return "fix-dispatched"
+
+
+def run_self_review_fix(
+    pr_number: int,
+    plan_number: int,
+    request_number: int,
+    iteration: int,
+    repo: str,
+):
+    """Executes fixes for self-review findings in the PR branch.
+
+    Reads the latest findings comment, reverts out-of-scope files, runs the agent
+    to fix remaining findings, and dispatches the next review iteration.
+
+    Args:
+        pr_number: The pull request number.
+        plan_number: The child Plan issue number.
+        request_number: The parent Request issue number.
+        iteration: Current iteration number (1-based).
+        repo: Repository slug (owner/name).
+    """
+    cwd = WORKSPACE_DIR
+
+    # 1. Read latest PR comment carrying the iteration-N marker
+    try:
+        comments_res = run_gh(["issue", "view", str(pr_number), "--json", "comments"], repo=repo)
+        comments = json.loads(comments_res or "{}").get("comments", []) or []
+    except Exception as e:
+        print(f"Failed to read comments for PR #{pr_number}: {e}", file=sys.stderr)
+        comments = []
+
+    latest_comment_body = None
+    for c in reversed(comments):
+        cbody = c.get("body", "") if isinstance(c, dict) else str(c)
+        m = re.search(
+            r"<!--\s*darkfactory-self-review\s+iteration=(\d+)\s+findings=(\d+)\s+digest=([a-zA-Z0-9]+)\s*-->",
+            cbody,
+        )
+        if m and int(m.group(1)) == iteration:
+            latest_comment_body = cbody
+            break
+
+    if not latest_comment_body:
+        # No findings comment found → post a notice and set Blocked; no dispatch.
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Self-Review Fix Notice\n\n"
+                f"No self-review findings comment found for iteration {iteration}.",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        print(f"No iteration {iteration} findings comment found on PR #{pr_number}; set Blocked.")
+        return
+
+    # 2. Parse findings
+    findings_items = parse_review_findings(latest_comment_body)
+
+    out_of_scope_files: List[str] = []
+    other_findings: List[str] = []
+
+    for item in findings_items:
+        match = re.search(r"Out of scope:\s*([^\s(]+)", item, re.IGNORECASE)
+        if match:
+            out_of_scope_files.append(match.group(1))
+        else:
+            other_findings.append(item)
+
+    # 3. Out-of-scope file findings: restore those files from the base branch in their own commit
+    revert_sha = None
+    if out_of_scope_files:
+        revert_sha = revert_out_of_scope_files(out_of_scope_files, default_branch(), cwd=cwd)
+
+    # 4. Other findings: one agent fix run on the PR branch with the findings as prompt
+    if other_findings:
+        formatted_findings = "\n".join(f"{i+1}. {f}" for i, f in enumerate(other_findings))
+        fix_prompt = (
+            f"Fix the following code review findings in the workspace:\n\n"
+            f"{formatted_findings}\n\nMake the necessary changes to resolve all findings."
         )
         checkpoint_ctx = {
             "issue_number": pr_number,
             "repo": repo,
             "is_pr": True,
             "completed_steps": [
-                f"Completed implementation and opened PR #{pr_number}",
-                f"Self-review iteration {iteration}",
+                f"Self-review fix iteration {iteration}",
             ],
             "cwd": cwd,
         }
-        review_result = run_agent_prompt(
-            review_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
-        )
-
-        if is_quota_exhaustion_notice(review_result):
-            return False
-
-        if review_result.startswith("[DarkFactory Agent Execution Error]"):
-            run_gh(
-                [
-                    "pr",
-                    "comment",
-                    str(pr_number),
-                    "--body",
-                    f"<!-- darkfactory-agent -->\n### Self-Review Error (Iteration {iteration})\n\n{review_result}",
-                ],
-                repo=repo,
-            )
-            fail_agent_run(f"Self-review failed on PR #{pr_number}; Execution Error posted.")
-
-        # Combine scope findings and LLM review findings
-        has_llm_findings = not ("NO_FINDINGS" in review_result.upper()[:50])
-        if scope_findings and has_llm_findings:
-            combined_findings = f"{scope_findings}\n\n### Code Quality Findings:\n\n{review_result}"
-        elif scope_findings:
-            combined_findings = scope_findings
-        elif has_llm_findings:
-            combined_findings = review_result
-        else:
-            combined_findings = ""
-
-        # Check if clean (no findings of any kind)
-        if not combined_findings:
-            run_gh(
-                [
-                    "pr",
-                    "comment",
-                    str(pr_number),
-                    "--body",
-                    f"<!-- darkfactory-agent -->\n### Self-Review Findings (Iteration {iteration})\n\n"
-                    f"✅ No actionable findings. Code review passed.",
-                ],
-                repo=repo,
-            )
-            print(f"Self-review passed clean on iteration {iteration}")
-            return True
-
-        # Detect a loop that makes no progress (identical findings twice in a row)
-        def _normalize_findings(text: str) -> str:
-            norm = re.sub(r"in commit [0-9a-fA-F]{7,40}", "in commit <hash>", text)
-            return "\n".join(line.strip() for line in norm.strip().splitlines() if line.strip())
-
-        if previous_findings is not None and _normalize_findings(
-            combined_findings
-        ) == _normalize_findings(previous_findings):
-            run_gh(
-                [
-                    "pr",
-                    "comment",
-                    str(pr_number),
-                    "--body",
-                    f"<!-- darkfactory-agent -->\n### Self-Review Findings (Blocked)\n\n"
-                    f"Self-review made no progress across iterations (identical findings twice in a row):\n\n"
-                    f"{combined_findings}",
-                ],
-                repo=repo,
-            )
-            block_entity(pr_number, repo=repo, is_pr=True)
-            print(f"Self-review loop made no progress on PR #{pr_number}; marked Blocked.")
-            return False
-
-        previous_findings = combined_findings
-
-        # After every 5 iterations post one progress comment on the PR
-        if iteration % 5 == 0:
-            run_gh(
-                [
-                    "pr",
-                    "comment",
-                    str(pr_number),
-                    "--body",
-                    f"<!-- darkfactory-agent -->\n### Self-Review Progress (Iteration {iteration})\n\n"
-                    f"Remaining findings:\n\n{combined_findings}",
-                ],
-                repo=repo,
-            )
-
-        # Fix findings via agent
-        fix_prompt = (
-            f"Fix the following code review findings in the workspace:\n\n"
-            f"{combined_findings}\n\nMake the necessary changes to resolve all findings."
-        )
         fix_result = run_agent_prompt(
             fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
         )
 
         if is_quota_exhaustion_notice(fix_result):
-            return False
+            return
 
         if fix_result.startswith("[DarkFactory Agent Execution Error]"):
             run_gh(
@@ -3516,9 +3743,8 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
                 ],
                 repo=repo,
             )
-            fail_agent_run(f"Self-review fix failed on PR #{pr_number}; Execution Error posted.")
+            return
 
-        # Format, commit, push
         format_repository(cwd)
         try:
             run_git(["add", "-A"], cwd=cwd)
@@ -3538,9 +3764,44 @@ def handle_self_review(pr_number: int, plan_number: int, repo: str) -> bool:
                 print(f"No changes after fix attempt on iteration {iteration}")
         except subprocess.CalledProcessError as e:
             print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
-            return False
+            return
 
-        iteration += 1
+    # 5. Push, post `### Self-Review fixes — iteration N` summarizing what changed, then dispatch
+    summary_parts = []
+    if out_of_scope_files:
+        sha_str = f" in commit {revert_sha[:7]}" if revert_sha else ""
+        summary_parts.append(
+            f"Reverted out-of-scope files ({', '.join(out_of_scope_files)}){sha_str}."
+        )
+    if other_findings:
+        summary_parts.append(
+            f"Applied fixes for findings:\n" + "\n".join(f"- {f}" for f in other_findings)
+        )
+
+    summary_body = f"### Self-Review fixes — iteration {iteration}\n\n" + (
+        "\n\n".join(summary_parts) if summary_parts else "No fixes required."
+    )
+
+    run_gh(
+        [
+            "pr",
+            "comment",
+            str(pr_number),
+            "--body",
+            f"<!-- darkfactory-agent -->\n{summary_body}",
+        ],
+        repo=repo,
+    )
+
+    payload = {
+        "stage": "self-review",
+        "pr": pr_number,
+        "plan": plan_number,
+        "request": request_number,
+        "iteration": iteration + 1,
+    }
+    dispatch_stage(repo, payload)
+    print(f"Dispatched self-review iteration {iteration + 1}")
 
 
 def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int, repo: str):
@@ -3762,6 +4023,22 @@ def dispatch_event(event_path: str, event_name: str):
     else:
         repo = os.environ.get("GITHUB_REPOSITORY", "marius-patrik/DarkFactory")
 
+    if event_name == "repository_dispatch":
+        action = payload.get("action")
+        if action == "agent-dispatch":
+            client_payload = payload.get("client_payload", {})
+            stage = client_payload.get("stage")
+            pr_number = client_payload.get("pr")
+            plan_issue = client_payload.get("plan")
+            request_issue = client_payload.get("request")
+            iteration = client_payload.get("iteration", 1)
+
+            if stage == "self-review":
+                run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "self-review-fix":
+                run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            return
+
     if event_name == "issues":
         action = payload.get("action")
         issue = payload.get("issue", {})
@@ -3886,7 +4163,7 @@ def dispatch_event(event_path: str, event_name: str):
                     plan_num = find_plan_issue_for_pr(issue_num, repo)
                     if plan_num:
                         unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                        handle_self_review(issue_num, plan_num, repo)
+                        start_self_review(issue_num, plan_num, None, repo)
                     else:
                         print(f"Could not find linked Plan for PR #{issue_num}")
             elif command == "reject":
@@ -3946,7 +4223,7 @@ def dispatch_event(event_path: str, event_name: str):
                 plan_num = find_plan_issue_for_pr(pr_num, repo)
                 if plan_num:
                     unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                    handle_self_review(pr_num, plan_num, repo)
+                    start_self_review(pr_num, plan_num, None, repo)
                     return
             # A rejection is a change request: answered, never merged, never re-reviewed.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
@@ -3997,6 +4274,7 @@ def main():
             "plan",
             "implement",
             "self-review",
+            "self-review-fix",
             "plan-alignment",
             "respond",
             "token-refresh",
@@ -4008,6 +4286,7 @@ def main():
     parser.add_argument("--request-issue", type=int, help="Parent request issue number")
     parser.add_argument("--plan-issue", type=int, help="Child plan issue number")
     parser.add_argument("--pr-number", type=int, help="Pull request number")
+    parser.add_argument("--iteration", type=int, default=1, help="Self-review iteration number")
     # Defaulting to a named repository sends a stray invocation at somebody else's project. The
     # environment says where this is running; the manifest says what the repository calls itself.
     parser.add_argument(
@@ -4040,7 +4319,23 @@ def main():
         handle_implement(args.plan_issue, args.request_issue, args.repo)
 
     elif args.command == "self-review" and args.pr_number and args.plan_issue:
-        handle_self_review(args.pr_number, args.plan_issue, args.repo)
+        run_self_review_iteration(
+            args.pr_number,
+            args.plan_issue,
+            args.request_issue or args.plan_issue,
+            args.iteration,
+            args.repo,
+        )
+
+    elif (
+        args.command == "self-review-fix"
+        and args.pr_number
+        and args.plan_issue
+        and args.request_issue
+    ):
+        run_self_review_fix(
+            args.pr_number, args.plan_issue, args.request_issue, args.iteration, args.repo
+        )
 
     elif (
         args.command == "plan-alignment"
