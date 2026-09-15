@@ -54,7 +54,8 @@ export class ChainExhaustedError extends Error {
 
 	constructor(failures: readonly FailureKind[], reasons: readonly CandidateFailureReason[] = [], limits: readonly LimitEntry[] = []) {
 		const authOnly = failures.length > 0 && failures.every((kind) => kind === "auth");
-		const quotaOnly = failures.length > 0 && failures.every((kind) => kind === "quota_exhausted" || kind === "rate_limited");
+		// Quota, rate limits and overload all clear on their own: the caller should wait and retry (exit 2), not give up.
+		const quotaOnly = failures.length > 0 && failures.every((kind) => kind === "quota_exhausted" || kind === "rate_limited" || kind === "transient");
 		const safeReasons = reasons.map((reason) => ({ ...reason, message: redactErrorMessage(reason.message) }));
 		const finalMessage = safeReasons.at(-1)?.message;
 		super(authOnly ? "All failover candidates failed authentication" : quotaOnly ? "All failover candidates are exhausted or rate limited" : finalMessage ? redactErrorMessage(finalMessage) : "All failover candidates failed");
@@ -263,9 +264,13 @@ export class FailoverSupervisor {
 			if (otherCandidates.length > 0) candidatesToConsider = otherCandidates;
 		}
 
-		candidatesToConsider.sort((a, b) => a.cooldown.resetAt - b.cooldown.resetAt);
+		// A candidate is usable only when ALL of its limits have cleared: a 60 s token window next to a
+		// daily quota means the candidate is ready at the daily reset, not in 60 s.
+		const readyAt = new Map<number, number>();
+		for (const item of candidatesToConsider) readyAt.set(item.index, Math.max(readyAt.get(item.index) ?? 0, item.cooldown.resetAt));
+		candidatesToConsider.sort((a, b) => readyAt.get(a.index)! - readyAt.get(b.index)! || b.cooldown.resetAt - a.cooldown.resetAt);
 		const earliest = candidatesToConsider[0]!;
-		const waitMs = earliest.cooldown.resetAt - nowFn();
+		const waitMs = readyAt.get(earliest.index)! - nowFn();
 
 		if (waitMs > maxWaitMs) {
 			return false;
@@ -275,7 +280,7 @@ export class FailoverSupervisor {
 			type: "waiting",
 			candidate: earliest.candidate,
 			reason: earliest.cooldown.type,
-			until: earliest.cooldown.resetAt, limits: allCooldowns.map((item) => item.cooldown),
+			until: readyAt.get(earliest.index)!, limits: allCooldowns.map((item) => item.cooldown),
 		});
 
 		await sleep(Math.max(0, waitMs));
@@ -456,7 +461,15 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 	}
 	if (activeIndex < 0) {
 		const limits = [...await ledger.list(), ...quotaBlocks];
-		const earliest = limits.filter((entry) => entry.resetAt > (options.now ?? Date.now)()).sort((a, b) => a.resetAt - b.resetAt)[0];
+		// Wait for the candidate whose limits ALL clear first, never for one limit of a candidate that has others.
+		const nowAt = (options.now ?? Date.now)();
+		const readyByCandidate = new Map<string, LimitEntry>();
+		for (const entry of limits.filter((item) => item.resetAt > nowAt && options.chain.some((candidate) => candidate.provider === item.provider && candidate.account === item.account && candidate.model === item.model))) {
+			const key = `${entry.provider}/${entry.model}@${entry.account}`;
+			const current = readyByCandidate.get(key);
+			if (!current || entry.resetAt > current.resetAt) readyByCandidate.set(key, entry);
+		}
+		const earliest = [...readyByCandidate.values()].sort((a, b) => a.resetAt - b.resetAt)[0];
 		const waitMs = earliest ? earliest.resetAt - (options.now ?? Date.now)() : Infinity;
 		if (earliest && waitMs <= (options.maxWaitMs ?? 5 * 60_000)) {
 			options.onEvent?.({ type: "waiting", reason: earliest.type, until: earliest.resetAt, limits });
