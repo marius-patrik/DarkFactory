@@ -3312,49 +3312,48 @@ def dispatch_stage(repo: str, payload: Dict[str, Any]):
     payload_data = json.dumps({"event_type": "agent-dispatch", "client_payload": payload})
     temp_path = None
     try:
-        try:
-            # Try stdin first
-            run_gh(
-                ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", "-"],
-                repo=repo,
-                input=payload_data,
-            )
-        except TypeError:
-            # Fallback to temp file if run_gh doesn't accept input
-            with tempfile.NamedTemporaryFile("w", delete=False) as f:
-                f.write(payload_data)
-                temp_path = f.name
-            run_gh(
-                ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
-                repo=repo,
-            )
+        with tempfile.NamedTemporaryFile("w", delete=False) as f:
+            f.write(payload_data)
+            temp_path = f.name
+        run_gh(
+            ["api", f"repos/{repo}/dispatches", "--method", "POST", "--input", temp_path],
+            repo=repo,
+        )
     except Exception as e:
         print(f"Failed to dispatch agent-dispatch to {repo}: {e}", file=sys.stderr)
         # Post PR notice
+        pr_num = payload.get("pr")
         run_gh(
             [
                 "pr",
                 "comment",
-                str(payload.get("pr")),
+                str(pr_num),
                 "--body",
                 f"<!-- darkfactory-agent -->\n### Self-Review Dispatch Error\n\nFailed to dispatch next stage: {e}",
             ],
             repo=repo,
         )
-        block_entity(payload.get("pr"), repo=repo, is_pr=True)
+        block_entity(pr_num, repo=repo, is_pr=True)
+        request_num = payload.get("request")
+        if request_num:
+            block_entity(request_num, repo=repo, is_pr=False)
         raise
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
 
-def _parse_findings_items(text: str) -> List[str]:
+def parse_review_findings(text: str) -> List[str]:
     """Extract top-level findings from agent review text.
 
     Returns one stripped string per finding. Numbered items (1., 2., etc.)
     and bullet items (* or -) are each one finding; subsequent indented/continuation
     lines belong to that same finding.
     """
+    stripped_text = text.strip()
+    if stripped_text.startswith("NO_FINDINGS"):
+        return []
+
     lines = text.splitlines()
     items: List[str] = []
     current_item_lines: List[str] = []
@@ -3369,8 +3368,6 @@ def _parse_findings_items(text: str) -> List[str]:
     for line in lines:
         stripped = line.strip()
         if not stripped:
-            if in_item and current_item_lines:
-                pass
             continue
         starts_numbered = re.match(r"^\d+\.\s*", stripped)
         starts_bullet = stripped.startswith(("* ", "- ")) or stripped.startswith(("*", "-"))
@@ -3381,7 +3378,7 @@ def _parse_findings_items(text: str) -> List[str]:
                 content = stripped[starts_numbered.end() :].strip()
             elif stripped.startswith(("* ", "- ")):
                 content = stripped[2:].strip()
-            else:
+            elif stripped.startswith(("*", "-")):
                 content = stripped[1:].strip()
             current_item_lines = [content]
             continue
@@ -3389,6 +3386,10 @@ def _parse_findings_items(text: str) -> List[str]:
             current_item_lines.append(stripped)
 
     flush_item()
+
+    if not items and stripped_text:
+        return [stripped_text]
+
     return items
 
 
@@ -3496,19 +3497,13 @@ def run_self_review_iteration(
         )
         return "blocked"
 
-    # Combine: scope findings first, then LLM findings
-    if scope_findings and has_llm_findings:
-        combined_findings = f"{scope_findings}\n\n{review_result}"
-    elif scope_findings:
-        combined_findings = scope_findings
-    elif has_llm_findings:
-        combined_findings = review_result
-    else:
-        combined_findings = ""
-
-    # Parse into individual findings items
-    findings_items = _parse_findings_items(combined_findings)
+    # Build findings list: out of scope files + parsed review findings
+    findings_items = [
+        f"Out of scope: {path} (not in the approved plan)" for path in out_of_scope_files
+    ]
+    findings_items.extend(parse_review_findings(review_result))
     K = len(findings_items)  # number of findings, not lines
+    combined_findings = "\n".join(findings_items)
 
     # Compute normalized findings for digest: each finding stripped + lowercased,
     # then sorted, joined by "\n"
@@ -3605,7 +3600,11 @@ def run_self_review_iteration(
         "request": request_number,
         "iteration": iteration,
     }
-    dispatch_stage(repo, payload)
+    try:
+        dispatch_stage(repo, payload)
+    except Exception as e:
+        print(f"Dispatch failed during self-review: {e}", file=sys.stderr)
+        return "blocked"
 
     print(f"Self-review fix dispatched for iteration {iteration}")
     return "fix-dispatched"
@@ -3671,7 +3670,7 @@ def run_self_review_fix(
         return
 
     # 2. Parse findings
-    findings_items = _parse_findings_items(latest_comment_body)
+    findings_items = parse_review_findings(latest_comment_body)
 
     out_of_scope_files: List[str] = []
     other_findings: List[str] = []

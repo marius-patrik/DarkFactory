@@ -2380,3 +2380,215 @@ class TestSelfReviewFix:
         )  # No agent prompt needed when all findings are out-of-scope files
         assert len(dispatched_payloads) == 1
         assert dispatched_payloads[0]["iteration"] == 2
+
+
+class TestRunSelfReviewIterationAndFindings:
+    """Tests for parse_review_findings and run_self_review_iteration."""
+
+    def test_parse_review_findings(self):
+        import agent_runner
+
+        # Numbered multi-line items -> one finding each; 10. prefix stripped
+        text1 = "10. This is finding one\n  with a second line.\n20. This is finding two."
+        res1 = agent_runner.parse_review_findings(text1)
+        assert res1 == ["This is finding one with a second line.", "This is finding two."]
+
+        # Bullets without losing characters for *text/-text
+        text2 = "* Bullet one\n*Bullet two\n- Bullet three\n-Bullet four"
+        res2 = agent_runner.parse_review_findings(text2)
+        assert res2 == ["Bullet one", "Bullet two", "Bullet three", "Bullet four"]
+
+        # Prose -> one finding
+        text3 = "This is a single prose paragraph review.\nIt has no numbered or bulleted items."
+        res3 = agent_runner.parse_review_findings(text3)
+        assert res3 == [
+            "This is a single prose paragraph review.\nIt has no numbered or bulleted items."
+        ]
+
+        # NO_FINDINGS -> none
+        text4 = "NO_FINDINGS\nEverything is clean!"
+        res4 = agent_runner.parse_review_findings(text4)
+        assert res4 == []
+
+    def test_run_self_review_iteration_two_findings(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls = []
+        dispatch_calls = []
+
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, **k: gh_calls.append(args)
+            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+        )
+        monkeypatch.setattr(
+            module, "run_agent_prompt", lambda *a, **k: "1. Finding A\n2. Finding B"
+        )
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
+        monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
+        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(
+            module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
+        )
+
+        res = module.run_self_review_iteration(
+            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+        )
+
+        assert res == "fix-dispatched"
+        assert len(dispatch_calls) == 1
+        assert dispatch_calls[0] == {
+            "stage": "self-review-fix",
+            "pr": 10,
+            "plan": 20,
+            "request": 30,
+            "iteration": 1,
+        }
+
+        pr_comments = [args for args in gh_calls if args[:2] == ["pr", "comment"]]
+        assert len(pr_comments) == 1
+        comment_body = pr_comments[0][pr_comments[0].index("--body") + 1]
+        assert "findings=2" in comment_body
+        assert "1. Finding A" in comment_body
+        assert "2. Finding B" in comment_body
+
+    def test_run_self_review_iteration_clean(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls = []
+        alignment_calls = []
+
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, **k: gh_calls.append(args)
+            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+        )
+        monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
+        monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
+        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(
+            module, "handle_plan_alignment", lambda *a, **k: alignment_calls.append(a)
+        )
+
+        res = module.run_self_review_iteration(
+            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+        )
+
+        assert res == "clean"
+        assert len(alignment_calls) == 1
+        assert alignment_calls[0] == (10, 20, 30, "owner/repo")
+
+    def test_run_self_review_iteration_out_of_scope_file(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls = []
+        dispatch_calls = []
+
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, **k: gh_calls.append(args)
+            or (json.dumps({"comments": []}) if args[:2] == ["issue", "view"] else "diff"),
+        )
+        monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "NO_FINDINGS")
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py", "extra.py"])
+        monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], ["extra.py"]))
+        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(
+            module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
+        )
+
+        res = module.run_self_review_iteration(
+            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+        )
+
+        assert res == "fix-dispatched"
+        assert len(dispatch_calls) == 1
+        pr_comments = [args for args in gh_calls if args[:2] == ["pr", "comment"]]
+        markers = [
+            args
+            for args in pr_comments
+            if "darkfactory-self-review" in args[args.index("--body") + 1]
+        ]
+        assert len(markers) == 1
+        assert "findings=1" in markers[0][markers[0].index("--body") + 1]
+
+    def test_run_self_review_iteration_stuck_loop(self, monkeypatch):
+        module = agent_runner_module()
+        gh_calls = []
+        blocked_calls = []
+
+        c_prev = (
+            "### Self-Review — iteration 1\n"
+            "1. Finding A\n"
+            "<!-- darkfactory-self-review iteration=1 findings=1 digest=ec7c4a513bac4eafac51797cbd5dba57638fce97 -->"
+        )
+
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, **k: gh_calls.append(args)
+            or (
+                json.dumps({"comments": [{"body": c_prev}]})
+                if args[:2] == ["issue", "view"]
+                else "diff"
+            ),
+        )
+        monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "1. Finding A")
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
+        monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
+        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(
+            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+        )
+
+        res = module.run_self_review_iteration(
+            pr_number=10, plan_number=20, request_number=30, iteration=2, repo="owner/repo"
+        )
+
+        assert res == "blocked"
+        assert len(blocked_calls) == 2
+        assert (10, True) in blocked_calls
+        assert (30, False) in blocked_calls
+
+    def test_run_self_review_iteration_dispatch_raising(self, monkeypatch):
+        module = agent_runner_module()
+        blocked_calls = []
+        gh_calls = []
+
+        def fake_run_gh(args, **k):
+            gh_calls.append(args)
+            if args[:2] == ["issue", "view"]:
+                return json.dumps({"comments": []})
+            if args[:2] == ["pr", "diff"]:
+                return "diff"
+            if args[:2] == ["api", "repos/owner/repo/dispatches"]:
+                raise Exception("simulate dispatch API error")
+            return ""
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        monkeypatch.setattr(module, "run_agent_prompt", lambda *a, **k: "1. Finding A")
+        monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
+        monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
+        monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
+        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(
+            module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
+        )
+
+        res = module.run_self_review_iteration(
+            pr_number=10, plan_number=20, request_number=30, iteration=1, repo="owner/repo"
+        )
+
+        assert res == "blocked"
+        assert len(blocked_calls) == 2
+        assert (10, True) in blocked_calls
+        assert (30, False) in blocked_calls
+        pr_comments = [args for args in gh_calls if args[:2] == ["pr", "comment"]]
+        assert any(
+            "Self-Review Dispatch Error" in args[args.index("--body") + 1] for args in pr_comments
+        )
