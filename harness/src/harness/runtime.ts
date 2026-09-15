@@ -30,6 +30,14 @@ const isolatedAuthContext: AuthContext = {
 	fileExists: async (_path: string) => false,
 };
 
+/**
+ * Resolve generated provider headers based on the provider configuration and session values.
+ *
+ * @param config - Provider configuration that may define generated headers.
+ * @param sessionId - Identifier of the current runtime session.
+ * @param sessionValues - Map storing values generated for the session scope.
+ * @returns A map of header names to their resolved values.
+ */
 export function resolveGeneratedHeaders(config: ProviderConfig | undefined, sessionId: string, sessionValues: Map<string, string>): ProviderHeaders {
 	const result: ProviderHeaders = {};
 	const requestValues = new Map<string, string>();
@@ -117,34 +125,71 @@ async function sessionFileForId(sessionDir: string, id: string): Promise<string>
 	return join(sessionDir, matches[0]!);
 }
 
+/**
+ * Snapshot of an HTTP response produced by a provider.
+ */
 export interface ResponseSnapshot {
+	/** HTTP status code of the response. */
 	status: number;
+	/** Header map of the response (name to value). */
 	headers: Record<string, string>;
 }
 
+/**
+ * Options for creating a HarnessRuntime.
+ */
 export interface HarnessRuntimeOptions {
+	/** Current working directory for the runtime. */
 	cwd: string;
+	/** Candidate to be executed by the runtime. */
 	candidate: Candidate;
+	/** Optional home directory for DF; defaults to standard location. */
 	home?: string;
+	/** Optional session ID to resume from a previous run. */
 	resume?: string;
+	/** Optional tool policy configuration (excluding cwd). */
 	policy?: Omit<ToolPolicyOptions, "cwd">;
+	/** Additional providers to register in the runtime. */
 	providers?: readonly Provider[];
+	/** Provider IDs for which authentication validation is skipped. */
 	authOptionalProviders?: readonly string[];
+	/** Map of provider IDs to catalog results to augment model set. */
 	catalogs?: ReadonlyMap<string, CatalogResult>;
+	/** Credential store to use; defaults to new store in home. */
 	store?: FileCredentialStore;
+	/** Provider configuration map used for request header generation and limits. */
 	providerConfigs?: ReadonlyMap<string, ProviderConfig>;
 }
 
+/**
+ * Represents the runtime environment for a candidate execution.
+ */
 export interface HarnessRuntime {
+	/** Active AgentSession for the runtime. */
 	session: AgentSession;
+	/** ModelRuntime instance managing models and providers. */
 	modelRuntime: ModelRuntime;
+	/** Credential store used by the runtime. */
 	store: FileCredentialStore;
+	/** Validate that required credentials are present for the candidate. */
 	validateCandidate(candidate: Candidate): Promise<void>;
+	/** Bind a new candidate to the runtime, updating credentials and session model. */
 	bindCandidate(candidate: Candidate): Promise<void>;
+	/** Retrieve and clear buffered response snapshots from provider calls. */
 	takeResponses(): ResponseSnapshot[];
+	/** Perform a lightweight probe request to verify provider availability and limits. Returns true if successful. */
 	probeCandidate(candidate: Candidate): Promise<boolean>;
 }
 
+/**
+ * Validate that the required credentials are present for the given candidate.
+ *
+ * @param store - Credential store containing stored credentials.
+ * @param candidate - The candidate whose credentials are being validated.
+ * @param config - Provider configuration that may specify required credential slots.
+ * @param authOptional - If true, skip validation for optional providers.
+ * @throws When required credentials are missing or required slots are absent.
+ */
 export async function validateCandidateCredentials(
 	store: FileCredentialStore,
 	candidate: Candidate,
@@ -170,7 +215,14 @@ export async function validateCandidateCredentials(
 	}
 }
 
-/** Creates an SDK AgentSession without consulting pi auth.json, ambient token env, or real pi directories. */
+/**
+ * Creates a test harness runtime for candidate execution without consulting real pi auth.json,
+ * ambient token environment variables, or real pi directories. This runtime is isolated and
+ * suitable for testing harness functionality without external dependencies.
+ *
+ * @param options - Configuration for the runtime including working directory, candidate, and optional settings.
+ * @returns A HarnessRuntime instance with session, modelRuntime, store, and candidate management methods.
+ */
 export async function createHarnessRuntime(options: HarnessRuntimeOptions): Promise<HarnessRuntime> {
 	const home = options.home ?? defaultDfHome();
 	const agentDir = join(home, "pi-agent");
