@@ -1,6 +1,8 @@
 import pathlib
 import yaml
 
+CI_PATH = pathlib.Path(".github/workflows/ci.yml")
+
 YAML_PATH = pathlib.Path(".github/workflows/df-dispatch.yml")
 
 
@@ -68,3 +70,31 @@ def test_dispatch_runs_the_bundled_graph_with_a_token_for_the_checks_gate():
     run_step = next(s for s in steps if s.get("name", "").startswith("Run DF Dispatch"))
     assert "--graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json" in run_step["run"]
     assert run_step.get("env", {}).get("GH_TOKEN") == "${{ github.token }}"
+
+
+def test_docs_impact_job_present():
+    yaml_content = CI_PATH.read_text()
+    wf = yaml.safe_load(yaml_content)
+    job = wf.get("jobs", {}).get("docs-impact")
+    assert job is not None, "docs-impact job missing"
+    assert job.get("name") == "docs-impact"
+    assert job.get("runs-on") == "ubuntu-latest"
+    assert job.get("if") == "github.event_name == 'pull_request'"
+    steps = job.get("steps", [])
+    # checkout step
+    assert any(
+        s.get("name") == "Checkout repository" and s.get("uses") == "actions/checkout@v4"
+        for s in steps
+    )
+    # check out pinned pipeline step
+    assert any(
+        s.get("name") == "Check out the pinned pipeline" and s.get("uses") == "actions/checkout@v4"
+        for s in steps
+    )
+    # run docs impact check
+    assert any(
+        s.get("name") == "Run docs impact check"
+        and "docs_impact.py" in s.get("run", "")
+        and "SCRIPTS" in s.get("run", "")
+        for s in steps
+    )

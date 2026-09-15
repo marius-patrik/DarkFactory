@@ -379,3 +379,25 @@ jobs:
           fi
           echo "Documentation build: $COMMAND"
           eval "$COMMAND"
+
+  docs-impact:
+    name: docs-impact
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Run docs impact check
+        run: |
+          SCRIPTS=".github/scripts"
+          [ -d .darkfactory-pipeline/.github/scripts ] && SCRIPTS=".darkfactory-pipeline/.github/scripts"
+          PYTHONPATH="$SCRIPTS" python "$SCRIPTS/docs_impact.py"
