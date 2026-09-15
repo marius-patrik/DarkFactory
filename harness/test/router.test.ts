@@ -581,10 +581,7 @@ describe("empty model list", () => {
 	test("explicit chain is unaffected when models list is empty", async () => {
 		const models: ModelCapability[] = [];
 		const config: RouterConfig = { policies: [] };
-		const result = await routeTask(
-			{ prompt: "hello", explicitChain: "p1/m@default" },
-			{ config, models },
-		);
+		const result = await routeTask({ prompt: "hello", explicitChain: "p1/m@default" }, { config, models });
 		expect(result.chain[0]?.provider).toBe("p1");
 	});
 });
