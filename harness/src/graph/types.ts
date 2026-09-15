@@ -22,6 +22,10 @@ export interface AgentNode extends BaseNode {
 	timeout?: string;
 	iteration?: { context_file: string; safety_budget?: number };
 	quota_policy?: { on_exhaustion: "checkpoint_and_block"; resume: "sweep_or_command" };
+	prompt?: string;
+	mode?: "read" | "write";
+	workdir?: string;
+	max_turns?: number;
 }
 
 export interface GateNode extends BaseNode {
