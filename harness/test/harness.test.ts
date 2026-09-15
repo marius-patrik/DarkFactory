@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider, fauxText, fauxThinking, fauxToolCall, type Provider } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 import { OutcomeStore } from "../src/router/outcomes.ts";
@@ -103,6 +104,37 @@ describe("AgentSession harness", () => {
 			expect(events.find((event) => event.type === "step" && event.errorKind)).toMatchObject({ provider: "budget-a", stopReason: "length", errorMessage: "Model spent its output budget without an answer" });
 			expect((await outcomes.penalties("plan")).get("budget-a/a@one")).toBeGreaterThan(0);
 			expect((await outcomes.penalties("plan")).has("answer-b/b@two")).toBe(false);
+		} finally { supervisor.session.dispose(); }
+	});
+
+	test("a provider limit delivered as a zero-token answer fails over and makes the account unavailable", async () => {
+		// pollinations answered HTTP 200 "The API key used for this request has reached its budget" with 0 output tokens.
+		const { home, cwd } = await tempWorkspace();
+		const brokeFaux = fauxProvider({ provider: "budget-p", models: [{ id: "p" }] });
+		// The faux provider estimates usage from the text, so this provider streams the provider's reply with 0 output tokens.
+		const zeroTokenAnswer = (model: { api: string; provider: string; id: string }) => {
+			const stream = createAssistantMessageEventStream();
+			const message = { ...fauxAssistantMessage("The API key used for this request has reached its budget"), api: model.api, provider: model.provider, model: model.id };
+			message.usage = { input: 5, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 5, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
+			queueMicrotask(() => { stream.push({ type: "done", reason: "stop", message }); stream.end(message); });
+			return stream;
+		};
+		const broke = { provider: { ...brokeFaux.provider, stream: zeroTokenAnswer, streamSimple: zeroTokenAnswer } as Provider };
+		const good = fauxProvider({ provider: "answer-b", models: [{ id: "b" }] });
+		good.setResponses([fauxAssistantMessage("the plan")]);
+		const base = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
+		const policy = { observe: true, bodyRules: [{ type: "billing" as const, regex: "reached its budget", answerText: true }] };
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({
+			chain: [{ provider: "budget-p", model: "p", account: "one" }, { provider: "answer-b", model: "b", account: "two" }], home, cwd,
+			...runtimeProviders(broke.provider, good.provider), onEvent: (event) => events.push(event),
+			providerConfigs: new Map([["budget-p", { ...base, id: "budget-p", limits: policy }]]),
+		});
+		try {
+			const final = await supervisor.prompt("plan it");
+			expect(final.content.some((block) => block.type === "text" && block.text === "the plan")).toBe(true);
+			expect(events.find((event) => event.type === "limit")).toMatchObject({ entry: { provider: "budget-p", account: "one", type: "billing" } });
+			expect(events.find((event) => event.type === "step" && event.errorKind)).toMatchObject({ errorKind: "quota_exhausted", errorMessage: "Provider answered with a billing limit message" });
 		} finally { supervisor.session.dispose(); }
 	});
 

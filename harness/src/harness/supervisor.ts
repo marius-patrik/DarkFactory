@@ -4,7 +4,7 @@ import type { Candidate } from "../failover.ts";
 import { classifyFailure, type FailureClassification, type FailureKind } from "../quota.ts";
 import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions } from "./runtime.ts";
 import { LimitLedger } from "../limits/ledger.ts";
-import { defaultLimit, observeLimits } from "../limits/observe.ts";
+import { defaultLimit, observeAnswer, observeLimits } from "../limits/observe.ts";
 import { assessCandidate, type TaskEstimate } from "../limits/routing.ts";
 import type { LimitEntry } from "../limits/types.ts";
 import type { QuotaEngine } from "../limits/quota-engine.ts";
@@ -358,7 +358,11 @@ export class FailoverSupervisor {
 			if (totalTurns >= maxTurns && final?.stopReason !== "stop") throw new MaxTurnsError(maxTurns);
 
 			const emptyAnswer = !thrown && final !== undefined && isEmptyAnswer(final);
-			if (!thrown && final && final.stopReason !== "error" && final.stopReason !== "aborted" && !emptyAnswer) {
+			// A provider limit delivered as the answer text (HTTP 200, zero output tokens) is not an answer either.
+			const answerLimits = !thrown && final && !emptyAnswer && final.stopReason !== "error" && final.stopReason !== "aborted"
+				? observeAnswer(candidate, final.content.flatMap((block) => block.type === "text" ? [block.text] : []).join("\n"), final.usage?.output ?? -1, this.policy(candidate), (this.options.now ?? Date.now)())
+				: [];
+			if (!thrown && final && final.stopReason !== "error" && final.stopReason !== "aborted" && !emptyAnswer && answerLimits.length === 0) {
 				const responses = this.options.runtime.takeResponses();
 				const policy = this.policy(candidate);
 				const learned = responses.flatMap((response) => observeLimits(candidate, response, policy, (this.options.now ?? Date.now)()));
@@ -375,9 +379,11 @@ export class FailoverSupervisor {
 			// An empty answer is not an answer: fail over like a transient provider error.
 			const failure: FailureClassification = emptyAnswer
 				? { kind: "transient", errorClass: "EmptyResponse" }
+				: answerLimits.length > 0
+				? { kind: "quota_exhausted", errorClass: "AnswerLimit", resetAt: Math.max(...answerLimits.map((entry) => entry.resetAt)) }
 				: classifyFailure({ error: thrown, message: final, response, now: (this.options.now ?? Date.now)() }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
 			const stopReason = final?.stopReason ?? "threw";
-			const errorMessage = emptyAnswer ? (final?.stopReason === "length" ? "Model spent its output budget without an answer" : "Model returned an empty response") : redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
+			const errorMessage = emptyAnswer ? (final?.stopReason === "length" ? "Model spent its output budget without an answer" : "Model returned an empty response") : answerLimits.length > 0 ? `Provider answered with a ${answerLimits[0]!.type} limit message` : redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
 			this.emit({
 				type: "step", ...candidate, stopReason, usage: final?.usage ?? null,
 				errorClass: failure.errorClass ?? null, errorKind: failure.kind, errorMessage,
@@ -399,7 +405,7 @@ export class FailoverSupervisor {
 				.map((entry) => failure.resetAt === undefined || entry.resetAt >= failure.resetAt ? entry : { ...entry, resetAt: failure.resetAt, source: "rule" as const });
 			const dailyWording = /per[- ]?day|perday|\bdaily\b/iu.test(errorMessage);
 			const type = (failure.kind === "rate_limited" || failure.kind === "quota_exhausted") && dailyWording ? "daily" : failure.kind === "rate_limited" ? "rate" : failure.kind === "quota_exhausted" ? (/monthly|billing cycle/iu.test(errorMessage) ? "monthly" : /resets? in|weekly|\b5h/iu.test(errorMessage) ? "window" : "daily") : failure.kind === "transient" ? "overload" : failure.kind === "auth" ? "auth" : undefined;
-			const limits = observed.length > 0 ? observed : type ? [defaultLimit(candidate, type, observedAt, type === "daily" ? failure.resetAt : failure.resetAt ?? (failure.kind === "rate_limited" ? observedAt + 60_000 : undefined), undefined, failure.pool, this.policy(candidate))] : [];
+			const limits = answerLimits.length > 0 ? answerLimits : observed.length > 0 ? observed : type ? [defaultLimit(candidate, type, observedAt, type === "daily" ? failure.resetAt : failure.resetAt ?? (failure.kind === "rate_limited" ? observedAt + 60_000 : undefined), undefined, failure.pool, this.policy(candidate))] : [];
 			await this.options.ledger.record(limits);
 			for (const entry of limits) this.emit({ type: "limit", entry });
 
@@ -407,7 +413,7 @@ export class FailoverSupervisor {
 			// preserve accepted user/tool-result entries, then synchronize agent state.
 			const leaf = this.session.sessionManager.getLeafEntry();
 			if (leaf?.type === "message" && leaf.message.role === "assistant" &&
-				(leaf.message.stopReason === "error" || leaf.message.stopReason === "aborted" || isEmptyAnswer(leaf.message))) {
+				(leaf.message.stopReason === "error" || leaf.message.stopReason === "aborted" || isEmptyAnswer(leaf.message) || (answerLimits.length > 0 && leaf.message === final))) {
 				if (leaf.parentId) this.session.sessionManager.branch(leaf.parentId);
 				else this.session.sessionManager.resetLeaf();
 			}

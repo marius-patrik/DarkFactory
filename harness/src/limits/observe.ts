@@ -10,6 +10,8 @@ const repeated422Counter = new Map<string, number>();
 /** Wording providers use for limits that roll over once a day. */
 const DAILY_WORDING = /per[- ]?day|perday|\bdaily\b|day limit/iu;
 const LIMIT_WORDING = /rate limit|quota|too many requests|limit exceeded|exhausted/iu;
+/** The account has no money left: balance, credit or budget wording (cerebras/requesty/venice 402, deepseek balance 0, pollinations budget). */
+const BILLING_WORDING = /insufficient (?:account )?(?:balance|credits?|funds)|(?:credit|account) balance (?:is )?(?:too low|exhausted|zero|0)|out of credits|(?:reached|exceeded|exhausted) (?:its |your |the )?(?:budget|credits?)|budget (?:has been )?(?:reached|exceeded|exhausted)|payment required/iu;
 
 /** The later of two resets: a short rule default must never shorten a reset the provider reported. */
 export function mergeReset(rule: number | undefined, observed: number | undefined): number | undefined {
@@ -163,28 +165,24 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
 	// than a short default, or exhausted models look recovered minutes later and get retried.
 	const fallbackReset = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
-	if (!ruled && observation.status !== undefined) {
+	if (!ruled) {
+		// Limit wording wins over the status: a 403 "quota exceeded, retry in 5 minutes" is a quota, not a rejected key,
+		// and errors observed without a status (status 0: the supervisor passes the error text) still carry their reset.
+		const limitWording = observation.body !== undefined && LIMIT_WORDING.test(body);
 		let type: ConfiguredLimitType | undefined;
-		if (observation.status === 402) {
-			// Only treat as billing if the body mentions typical billing keywords.
-			const bodyStr = text(observation.body);
-			if (/(balance|credit|budget)/i.test(bodyStr)) {
-				type = "billing";
-			}
-		} else if (observation.status === 401 || observation.status === 403) type = "access";
-		else if (observation.status === 404) type = "model";
+		if (observation.status === 402 || BILLING_WORDING.test(body)) type = "billing";
+		else if ((observation.status === 401 || observation.status === 403) && !limitWording) type = "access";
+		else if (observation.status === 404 && !limitWording) type = "model";
 		if (type) {
 			let resetAt = fallbackReset;
-			if (type === "model") {
-				resetAt = now + (policy?.modelRecheckAfterMs ?? 24 * 60 * 60_000);
-			}
+			if (type === "model") resetAt = now + (policy?.modelRecheckAfterMs ?? 24 * 60 * 60_000);
 			// A rejected credential stays unavailable for a day; `df account set` / `df login` clear the account's entries
 			// sooner (FileCredentialStore's onAccountChanged -> LimitLedger.clearAccount), in whichever process changes it.
 			if (type === "access") resetAt = now + (policy?.accessRecheckAfterMs ?? 24 * 60 * 60_000);
 			result.push({ ...candidate, type, observedAt: now, resetAt, source: "default", remaining: 0 });
-		} else if (observation.status === 429 && observation.body !== undefined) {
-			const hints = bodyHints(text(observation.body), now);
-			const daily = DAILY_WORDING.test(text(observation.body));
+		} else if (observation.body !== undefined && (observation.status === 429 || limitWording)) {
+			const hints = bodyHints(body, now);
+			const daily = DAILY_WORDING.test(body);
 			if (hints.resetAt !== undefined || daily) {
 				result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
 			}
@@ -208,4 +206,25 @@ export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now
 	// A daily or monthly limit without a reported reset lasts until its roll-over, not fifteen minutes.
 	const fallback = type === "daily" ? nextDailyReset(now, policy) : type === "monthly" ? nextMonthlyReset(now) : now + 15 * 60_000;
 	return { ...candidate, type, ...(dimension ? { dimension } : {}), ...(pool ? { pool } : {}), observedAt: now, resetAt: resetAt ?? fallback, source: resetAt === undefined ? (type === "daily" || type === "monthly" ? "rule" : "default") : "rule", remaining: 0 };
+}
+
+/**
+ * Limits a provider reports inside a normal answer instead of an error: HTTP 200 with zero output tokens and text such as
+ * "The API key used for this request has reached its budget" (pollinations). Only `answerText` body rules match, so an
+ * ordinary answer that merely mentions a quota is never treated as a limit.
+ *
+ * @param candidate - The candidate that produced the answer.
+ * @param answerText - The answer's text blocks joined.
+ * @param outputTokens - Output tokens the provider reported for the answer.
+ * @param policy - The provider's limit policy.
+ * @param now - Observation time in ms.
+ * @returns Ledger entries from matching `answerText` rules; empty when the answer used output tokens.
+ */
+export function observeAnswer(candidate: Candidate, answerText: string, outputTokens: number, policy: LimitPolicyConfig | undefined, now = Date.now()): LimitEntry[] {
+	if (!policy?.observe || outputTokens !== 0 || answerText.trim() === "") return [];
+	const observation: LimitObservation = { status: 200, body: { answerText, usage: { outputTokens } } };
+	return (policy.bodyRules ?? []).filter((rule) => rule.answerText).flatMap((rule) => {
+		const entry = bodyEntry(candidate, answerText, rule, now, policy, 200, observation);
+		return entry ? [entry] : [];
+	});
 }
