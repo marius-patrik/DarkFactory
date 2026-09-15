@@ -1,4 +1,6 @@
 import type { Candidate } from "../failover.ts";
+import type { QuotaEngine } from "../limits/quota-engine.ts";
+
 import { parseChain } from "../harness/routing.ts";
 import { assessCandidate, estimateTask } from "../limits/routing.ts";
 import type { LimitLedger } from "../limits/ledger.ts";
@@ -25,6 +27,7 @@ function missingNeed(model: ModelCapability, need: TaskNeed, profile: TaskProfil
 }
 
 export interface RouteDependencies {
+	quota?: QuotaEngine;
 	config: RouterConfig;
 	models: readonly ModelCapability[];
 	ledger?: LimitLedger;
@@ -67,19 +70,64 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		const score = orderScore + (forced ? 0 : tierIndex < 0 ? 300 : tierIndex * 100) - (forced ? 0 : quality) + learning + (forced ? 0 : capabilityPenalty) + index / 100_000;
 		return { model, score, quality, learning };
 	}).sort((a, b) => a.score - b.score);
-	const ranked: RankedCandidate[] = [];
-	for (const [index, item] of scored.entries()) {
+	    const now = dependencies.now?.() ?? Date.now();
+	const isForced = !!forced;
+	const adjusted = await Promise.all(scored.map(async (item) => {
 		const missing = forced && (source === "explicit" || source === "graph") ? undefined : profile.needs.find((need) => missingNeed(item.model, need, profile));
 		let skip: string | undefined = missing ? `missing ${missing}` : undefined;
 		if (!skip && dependencies.ledger) {
-			const entries = await dependencies.ledger.forCandidate(item.model.candidate, dependencies.now?.() ?? Date.now());
+			const entries = await dependencies.ledger.forCandidate(item.model.candidate, now);
 			const estimate = estimateTask(input.prompt, profile.size, profile.contextTokens);
 			const verdict = assessCandidate(item.model.candidate, estimate, entries, item.model);
 			if (!verdict.eligible) skip = verdict.reason ?? "limited";
 		}
-		const details = [`tier ${item.model.limitTier}`, `quality ${item.quality}`];
+		let quotaStatus;
+		if (dependencies.quota) {
+			quotaStatus = await dependencies.quota.status(item.model.candidate, now);
+			if (quotaStatus.state === "exhausted") {
+				skip = "quota exhausted until " + new Date(quotaStatus.until!).toISOString();
+			} else if (quotaStatus.state === "waiting") {
+				if (!isForced) item.score += 50;
+			} else if (quotaStatus.state === "available") {
+				if (!isForced) {
+					const enforcedItems = quotaStatus.items.filter(i => i.enforced && i.limit && i.limit > 0);
+					let fraction = 1;
+					if (enforcedItems.length > 0) {
+						fraction = Math.min(...enforcedItems.map(i => (i.remaining ?? 0) / (i.limit ?? 1)));
+					}
+					item.score -= 10 * fraction;
+				}
+			}
+		}
+		return { item, skip, quotaStatus };
+	}));
+	adjusted.sort((a, b) => a.item.score - b.item.score);
+	const ranked: RankedCandidate[] = [];
+	for (const [index, entry] of adjusted.entries()) {
+		const { item, skip, quotaStatus } = entry;
+		const details: string[] = [`tier ${item.model.limitTier}`, `quality ${item.quality}`];
 		if (item.learning > 0) details.push(`recent-failure penalty ${item.learning.toFixed(2)}`);
-		ranked.push({ candidate: item.model.candidate, rank: index + 1, status: skip ? "skipped" : "chosen", reason: skip ?? (source === "policy" ? `policy ${policy?.id ?? "default"}` : `${source} selection`), score: item.score, details });
+		if (!skip && quotaStatus) {
+			if (quotaStatus.state === "waiting") {
+				details.push("waiting until " + new Date(quotaStatus.until!).toISOString());
+			} else if (quotaStatus.state === "available") {
+				const enforcedItems = quotaStatus.items.filter(i => i.enforced && i.limit && i.limit > 0);
+				let fraction = 1;
+				if (enforcedItems.length > 0) {
+					fraction = Math.min(...enforcedItems.map(i => (i.remaining ?? 0) / (i.limit ?? 1)));
+				}
+				const percent = Math.round(fraction * 100);
+				details.push("capacity " + percent + "%");
+			}
+		}
+		ranked.push({
+			candidate: item.model.candidate,
+			rank: index + 1,
+			status: skip ? "skipped" : "chosen",
+			reason: skip ?? (source === "policy" ? `policy ${policy?.id ?? "default"}` : `${source} selection`),
+			score: item.score,
+			details,
+		});
 	}
 	return { profile, source: source === "policy" && !policy ? "default" : source, ...(policy ? { policy: policy.id } : {}), ranked, chain: ranked.filter((item) => item.status === "chosen").map((item) => item.candidate) };
 }
