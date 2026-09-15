@@ -1,5 +1,6 @@
 import type { Candidate } from "../failover.ts";
 import type { QuotaEngine } from "../limits/quota-engine.ts";
+import type { ModelPoller } from "../models/poller.ts";
 
 import { parseChain } from "../harness/routing.ts";
 import { assessCandidate, estimateTask } from "../limits/routing.ts";
@@ -10,6 +11,7 @@ import type { ModelCapability, RankedCandidate, RouteResult, RouterConfig, Route
 
 const candidateKey = (value: Candidate) => `${value.provider}/${value.model}@${value.account}`;
 const DEFAULT_TIER_ORDER = { small: ["tight", "standard", "bulk"], medium: ["standard", "bulk", "tight"], large: ["bulk", "standard", "tight"] } as const;
+type Poller = ModelPoller & { getUsableModels?: (providerId: string, account?: string) => Promise<ModelCapability[]> };
 
 function matches(policy: RouterPolicy, profile: TaskProfile): boolean {
 	const match = policy.match;
@@ -30,6 +32,7 @@ export interface RouteDependencies {
 	quota?: QuotaEngine;
 	config: RouterConfig;
 	models: readonly ModelCapability[];
+	modelPoller?: Poller;
 	ledger?: LimitLedger;
 	outcomes?: OutcomeStore;
 	sensitiveChain?: string;
@@ -51,10 +54,19 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	const forced = explicit ?? graph ?? constrained ?? hard;
 	const useGenerationCatalog = !!policy && !policy.prefer.candidates && !dependencies.config.candidates && (profile.needs.includes("image_gen") || profile.needs.includes("video_gen"));
 	const preferred = forced ? parseChain(forced) : policy?.prefer.candidates?.map((entry) => parseChain(entry)[0]!) ?? dependencies.config.candidates?.map((entry) => parseChain(entry)[0]!) ?? (useGenerationCatalog ? [] : dependencies.defaultChain ? parseChain(dependencies.defaultChain) : []);
-	const byKey = new Map(dependencies.models.map((model) => [candidateKey(model.candidate), model]));
+	let availableModels = dependencies.models;
+	if (dependencies.modelPoller?.getUsableModels) {
+		try {
+			const scopes = [...new Map(dependencies.models.map((model) => [`${model.candidate.provider}@${model.candidate.account ?? "default"}`, model.candidate])).values()];
+			availableModels = (await Promise.all(scopes.map((candidate) => dependencies.modelPoller!.getUsableModels!(candidate.provider, candidate.account)))).flat();
+		} catch {
+			availableModels = dependencies.models;
+		}
+	}
+	const byKey = new Map(availableModels.map((model) => [candidateKey(model.candidate), model]));
 	const universe: ModelCapability[] = forced || preferred.length > 0 ? preferred.map((candidate): ModelCapability => byKey.get(candidateKey(candidate)) ?? {
 		candidate, contextWindow: Number.MAX_SAFE_INTEGER, tools: true, reasoning: true, modalities: ["text"], quality: {}, limitTier: "standard",
-	}) : [...dependencies.models];
+	}) : [...availableModels];
 	const penalties = dependencies.outcomes && dependencies.config.learning?.enabled !== false ? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.()) : new Map<string, number>();
 	const preference = new Map(preferred.map((candidate, index) => [candidateKey(candidate), index]));
 	const tierOrder = policy?.prefer.tiers ?? [...DEFAULT_TIER_ORDER[profile.size]];
