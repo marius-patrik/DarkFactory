@@ -12,7 +12,7 @@ export async function loadRunState(dir: string, subject: string, graph: Workflow
   try {
     const data = await fs.readFile(runsPath, "utf8");
     return JSON.parse(data) as RunState;
-  } catch (e) {
+  } catch {
     // If file does not exist, create a fresh state.
     // Determine the first node with a trigger event, otherwise the first node.
     const firstNode = graph.nodes.find((n) => n.trigger?.event) ?? graph.nodes[0];

@@ -16,9 +16,9 @@ import { ChainExhaustedError, createFailoverSupervisor, type CandidateFailureRea
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
-import { estimateTask, orderCandidates, type TaskSize } from "./limits/routing.ts";
+import { estimateTask } from "./limits/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
-import { defaultSensitiveDataHook, parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
+import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { ModelCatalog, isRunnableCatalogModel, type CatalogResult } from "./models/catalog.ts";
 import { importClaudeAccount } from "./import/claude.ts";
 import { importCodexAccount } from "./import/codex.ts";
@@ -284,7 +284,7 @@ async function accountSetCommand(store: FileCredentialStore, args: string[]): Pr
 async function answerPrompt(rl: ReturnType<typeof createInterface>, prompt: AuthPrompt): Promise<string> {
 	if (prompt.type === "select") {
 		console.log(prompt.message);
-		prompt.options.forEach((entry, index) => console.log(`  ${index + 1}. ${entry.label}`));
+		for (const [index, entry] of prompt.options.entries()) console.log(`  ${index + 1}. ${entry.label}`);
 		const selected = prompt.options[Number.parseInt(await rl.question("Selection: "), 10) - 1];
 		if (!selected) throw new Error("Invalid selection");
 		return selected.id;

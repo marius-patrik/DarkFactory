@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildQuotaReport } from "../src/limits/quota-report.ts";
-import { BUILTIN_PROVIDER_CONFIG, type ProviderConfig } from "../src/providers/schema.ts";
+import { type ProviderConfig } from "../src/providers/schema.ts";
 
 function provider(id: string, extra: Partial<ProviderConfig> = {}): ProviderConfig {
 	return {

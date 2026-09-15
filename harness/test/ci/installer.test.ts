@@ -3,7 +3,6 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { installWorkflows, updateWorkflows, checkWorkflowsDrift } from "../../src/ci/installer.ts";
-import { renderWorkflowTemplate } from "../../src/ci/templates.ts";
 
 describe("Workflow installer & updater", () => {
 	it("installs templates into .github/workflows with managed headers", async () => {

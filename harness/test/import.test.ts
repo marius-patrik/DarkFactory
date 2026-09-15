@@ -193,7 +193,7 @@ describe("import grok", () => {
 		const store = new FileCredentialStore(home);
 		await importGrokAccount(store, "main", reader, "grok-sub");
 		const account = await store.readAccount("grok-sub:main");
-		expect((account?.slots.oauth as { expires: number }).expires).toBe(2_000_000_000_000);
+		expect((account?.slots.oauth as { expires: number } | undefined)?.expires).toBe(2_000_000_000_000);
 	});
 
 	test("rejects missing refresh, malformed JSON and an absent login", async () => {

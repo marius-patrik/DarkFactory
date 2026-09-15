@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import type { Credential } from "@earendil-works/pi-ai";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import type { LimitTier, ModelCapabilityOverride, ModelModality, RouterConfig, RouterPolicy, TaskKind, TaskNeed, TaskSize } from "./router/types.ts";

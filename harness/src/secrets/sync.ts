@@ -1,4 +1,4 @@
-import { stat, readFile } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { loadVault, saveVault, mergeVaults } from "./vault-store.ts";
 import type { Vault } from "./vault.ts";

@@ -184,6 +184,7 @@ export interface RunLogsReport {
 }
 
 export function stripAnsi(text: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: matches ANSI escape sequences on purpose
 	return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
 }
 

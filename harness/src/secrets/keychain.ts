@@ -142,7 +142,7 @@ export async function storeVaultKey(keyBase64: string, options: KeychainOptions)
 		if (platform === "darwin") { await storeMac(keyBase64, runner); return; }
 		if (platform === "win32") { await storeWindows(keyBase64, runner); return; }
 		if (platform === "linux") { await storeLinux(keyBase64, runner); return; }
-	} catch (error) {
+	} catch {
 		if (!options.allowFileKey) {
 			throw new Error("OS keychain unavailable. Use --insecure-file-key to allow file-based key storage.");
 		}

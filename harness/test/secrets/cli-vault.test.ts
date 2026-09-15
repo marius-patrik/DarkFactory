@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -88,11 +88,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 			OTHER: { repos: ["owner/repo"], ghName: "OTHER" },
 		});
 
-		// Mocked fetch: public-key then PUT
-		const mock = scripted([json({ key_id: "k1", key: publicKey }), json(undefined, 204)]);
-		const factory = () => ({ client: new GitHubClient({ token: "t", fetch: mock.fetch }), repository: new GitHubRepository(new GitHubClient({ token: "t", fetch: mock.fetch }), "owner", "repo") });
-		// Use single mock for both calls: need to share mock across factory creation - simplify by creating repo directly in push test via direct mock
-		// Instead call secretsCommand with mocked factory that returns repo using same mock fetch sequence
+		// Mocked fetch: public-key then PUT, shared by every client the factory creates
 		const sharedMock = scripted([json({ key_id: "k1", key: publicKey }), json(undefined, 204)]);
 		const sharedFactory = (slug: string) => {
 			const c = new GitHubClient({ token: "t", fetch: sharedMock.fetch });

@@ -73,8 +73,8 @@ function pathValues(value: unknown, path: string): Array<{ key?: string; value: 
 	for (const part of path.split(".").filter(Boolean)) {
 		const next: Array<{ key?: string; value: unknown }> = [];
 		for (const item of current) {
-			if (part === "*" && Array.isArray(item.value)) item.value.forEach((entry, key) => next.push({ key: String(key), value: entry }));
-			else if (part === "*" && item.value && typeof item.value === "object") Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) => next.push({ key, value: entry }));
+			if (part === "*" && Array.isArray(item.value)) item.value.forEach((entry, key) => { next.push({ key: String(key), value: entry }); });
+			else if (part === "*" && item.value && typeof item.value === "object") Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) => { next.push({ key, value: entry }); });
 			else if (item.value && typeof item.value === "object" && part in item.value) next.push({ key: item.key, value: (item.value as Record<string, unknown>)[part] });
 		}
 		current = next;

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { classifyFailure, nextPacificMidnight } from "../src/quota.ts";
+import { classifyFailure } from "../src/quota.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";

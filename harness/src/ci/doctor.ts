@@ -1,7 +1,7 @@
 import type { GitHubRepository } from "../github/repository.ts";
 import { loadCiConfig } from "./config.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
-import { computeRequiredChecks, verifyBranchProtection, type ProtectionVerificationReport } from "./protection.ts";
+import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import type { CiConfig } from "./schema.ts";
 
 export interface DoctorCheckResult {
@@ -50,7 +50,6 @@ export async function runCiDoctor(
 		const modified = drift.filter((d) => d.status === "modified");
 		const missing = drift.filter((d) => d.status === "missing");
 		const outdated = drift.filter((d) => d.status === "outdated");
-		const unmanaged = drift.filter((d) => d.status === "unmanaged");
 		const inSync = drift.filter((d) => d.status === "in_sync");
 
 		if (modified.length > 0) {

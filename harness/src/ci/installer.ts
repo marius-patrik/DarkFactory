@@ -5,7 +5,6 @@ import {
 	renderWorkflowTemplate,
 	STANDARD_WORKFLOW_TEMPLATES,
 	verifyWorkflowHash,
-	type StandardWorkflowName,
 	type TemplateContext,
 } from "./templates.ts";
 

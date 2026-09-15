@@ -5,7 +5,6 @@ import { createModels, fauxProvider, type OAuthCredential, type Provider } from 
 import { FileCredentialStore, accountId, validateAccountRecord } from "../src/credentials.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
 import { importCodexAccount } from "../src/import/codex.ts";
-import type { ProviderConfig } from "../src/providers/schema.ts";
 
 const roots: string[] = [];
 
