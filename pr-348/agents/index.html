@@ -402,11 +402,11 @@ submitted through GitHub Pull Requests. Direct commits and pushes to the protect
   branch up-to-date enforcement, and pull request review enforcement.</li>
 </ul>
 <h3 id="rule-8-automated-formatting-and-linting">Rule 8 — Automated formatting and linting<a class="headerlink" href="#rule-8-automated-formatting-and-linting" title="Permanent link">&para;</a></h3>
-<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, the workspace formatter
-(<code>bun format</code> when the TypeScript foundation lands) for TypeScript, and <code>black</code> (line length 100)
-for Python automation. The GitHub Actions bot formats the codebase on every push across branches and
-commits any adjustments. Lints are blocking: <code>cargo clippy -D warnings</code> today, the Bun-native lint
-gate after the workspace lands.</p>
+<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, Biome (<code>harness/biome.json</code>)
+for TypeScript, and <code>black</code> (line length 100) for Python automation. The GitHub Actions bot formats
+the codebase on every push across branches and commits any adjustments. Lints are blocking:
+<code>cargo clippy -D warnings</code> for Rust and <code>biome ci</code> for TypeScript. Until the one-time full harness
+reformat lands, Biome formats and checks the TypeScript files a change touches.</p>
 <h3 id="rule-9-issue-binding-branch-auto-deletion-and-board-status">Rule 9 — Issue binding, branch auto-deletion, and board status<a class="headerlink" href="#rule-9-issue-binding-branch-auto-deletion-and-board-status" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Issue Binding</strong>: Every pull request MUST bind a tracked GitHub issue using closing keywords in
