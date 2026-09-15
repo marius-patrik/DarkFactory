@@ -2745,7 +2745,15 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
         lambda args, repo=None: posted_comments.append(args) or "",
     )
     monkeypatch.setattr(module, "update_project_status_blocked", lambda *a, **k: None)
-    monkeypatch.setattr(module, "record_quota_block", lambda *a, **k: None)
+    recorded_blocks = []
+    monkeypatch.setenv("GITHUB_RUN_ID", "run-123")
+    monkeypatch.setattr(
+        module,
+        "record_quota_block",
+        lambda repo, item_number, is_pr, reset_at, providers, run_id: recorded_blocks.append(
+            (repo, item_number, is_pr, reset_at, providers, run_id)
+        ),
+    )
     monkeypatch.setattr(
         module, "next_quota_reset", lambda detail, now: 1742054400.0
     )  # 2025-03-15 16:00:00 UTC
@@ -2762,3 +2770,5 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
     )
     assert "2025-03-15 16:00:00 UTC" in comment_body
     assert "/df resume" in comment_body
+    assert len(recorded_blocks) == 1
+    assert recorded_blocks[0][3] == 1742054400.0

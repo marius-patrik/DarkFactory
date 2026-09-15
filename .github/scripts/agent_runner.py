@@ -1643,8 +1643,6 @@ def checkpoint_and_notify_exhaustion(
         providers = []
         if m:
             providers = [p.strip() for p in m.group(1).split(",")]
-        # Recalculate reset_at to record the block
-        reset_at = next_quota_reset(error_detail, time.time())
         try:
             record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
         except Exception as error:  # noqa: BLE001 - recording the block must never fail the notice
