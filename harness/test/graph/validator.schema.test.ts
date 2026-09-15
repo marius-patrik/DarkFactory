@@ -56,7 +56,6 @@ describe("AgentNode schema extensions", () => {
 			invalidate((g) => {
 				const node = g.nodes.find((n: any) => n.kind === "agent");
 				if (!node) throw new Error("no agent node");
-				// @ts-expect-error deliberately set wrong type
 				node.prompt = 123;
 			}),
 		).toEqual(expect.arrayContaining([expect.stringContaining("prompt")]));
