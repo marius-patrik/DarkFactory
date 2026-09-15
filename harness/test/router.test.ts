@@ -9,7 +9,8 @@ import { classifyTask } from "../src/router/profile.ts";
 import { buildRouterCatalog } from "../src/router/catalog.ts";
 import { OutcomeStore } from "../src/router/outcomes.ts";
 import { routeTask } from "../src/router/router.ts";
-import type { ModelCapability, RouterConfig } from "../src/router/types.ts";
+import type { ModelCapability, RouterConfig, TaskProfile } from "../src/router/types.ts";
+import { tierRank } from "../src/router/types.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
@@ -158,5 +159,36 @@ describe("quota-aware ranking", () => {
 		const result = await routeTask({ prompt: "Summarize this", explicitChain: "first/m@default,second/m@default,third/m@default" }, { config, models, quota, now: () => now });
 		expect(result.chain.map((item) => item.provider)).toEqual(["first", "third"]);
 		expect(result.ranked.find((item) => item.candidate.provider === "second")!.status).toBe("skipped");
-	});
+	 });
+});
+
+describe("new types and helpers", () => {
+  test("tierRank ordering", () => {
+    expect(tierRank("light")).toBe(0);
+    expect(tierRank("standard")).toBe(1);
+    expect(tierRank("strong")).toBe(2);
+    expect(tierRank("custom", ["custom", "light"])).toBe(0);
+  });
+
+  test("TaskProfile includes difficulty field", () => {
+    const profile: TaskProfile = { kind: "review", size: "small", needs: [], sensitivity: "normal", contextTokens: 0, difficulty: "easy" };
+    expect(profile.difficulty).toBe("easy");
+  });
+
+  test("RouterConfig includes new optional fields", () => {
+    const cfg: RouterConfig = {
+      policies: [],
+      capabilityTiers: [{ id: "c1", match: ["provider/model"] }],
+      defaultTier: "c1",
+      difficultyTiers: { easy: "c1", medium: "c2", hard: "c3" }
+    };
+    expect(cfg.capabilityTiers?.[0]?.id).toBe("c1");
+    expect(cfg.defaultTier).toBe("c1");
+    expect(cfg.difficultyTiers?.easy).toBe("c1");
+  });
+
+  test("ModelCapability includes capabilityTier", () => {
+    const mc = candidate("prov", "mod", "standard", { capabilityTier: "c1" });
+    expect(mc.capabilityTier).toBe("c1");
+  });
 });

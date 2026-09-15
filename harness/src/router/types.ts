@@ -7,12 +7,17 @@ export type TaskNeed = "tools" | "reasoning" | "vision" | "long_context" | "imag
 export type Sensitivity = "normal" | "sensitive";
 export type LimitTier = "tight" | "standard" | "bulk";
 export type ModelModality = "text" | "image" | "video" | "image_gen" | "video_gen";
+export type CapabilityTierId = string;
+export interface CapabilityTier { id: string; match: string[] }
+export type Difficulty = "easy" | "medium" | "hard";
+export interface DifficultyTierMapping { easy: string; medium: string; hard: string }
 
 export interface TaskProfile {
 	kind: TaskKind;
 	size: TaskSize;
 	needs: TaskNeed[];
 	sensitivity: Sensitivity;
+	difficulty?: Difficulty;
 	contextTokens: number;
 }
 
@@ -37,6 +42,7 @@ export interface ModelCapability {
 	modalities: ModelModality[];
 	quality: Partial<Record<TaskKind, number>>;
 	limitTier: LimitTier;
+	capabilityTier?: string;
 	reserve?: { requests?: number; tokens?: number };
 	source?: "live" | "cache" | "builtin" | "config";
 }
@@ -51,6 +57,9 @@ export interface RouterConfig {
 	models?: Record<string, ModelCapabilityOverride>;
 	policies: RouterPolicy[];
 	learning?: { enabled?: boolean; windowMs?: number; maxPenalty?: number; maxRecords?: number };
+	capabilityTiers?: CapabilityTier[];
+	defaultTier?: string;
+	difficultyTiers?: DifficultyTierMapping;
 }
 
 export interface RankedCandidate {
@@ -78,4 +87,8 @@ export interface CandidateOutcome {
 	tokens: number;
 	durationMs: number;
 	observedAt: number;
+}
+export function tierRank(tier: string, tierOrder?: string[]): number {
+  const order = tierOrder ?? ["light", "standard", "strong"];
+  return order.indexOf(tier);
 }
