@@ -26,19 +26,40 @@ function missingNeed(model: ModelCapability, need: TaskNeed, profile: TaskProfil
 	return !model.modalities.includes("video_gen");
 }
 
+/**
+ * Dependencies required by the routing engine to evaluate and select candidates.
+ * All fields are optional unless otherwise noted; missing dependencies will disable related features.
+ */
 export interface RouteDependencies {
-	quota?: QuotaEngine;
-	config: RouterConfig;
-	models: readonly ModelCapability[];
-	ledger?: LimitLedger;
-	outcomes?: OutcomeStore;
-	sensitiveChain?: string;
-	hardReasoningChain?: string;
-	defaultChain?: string;
-	classify?: CheapClassifier;
-	now?: () => number;
+	/** Optional quota engine to enforce usage limits per candidate. */
+quota?: QuotaEngine;
+	/** Router configuration defining policies, candidates and learning settings. */
+config: RouterConfig;
+	/** Available model capabilities that can be considered for routing. */
+models: readonly ModelCapability[];
+	/** Optional ledger tracking historical usage for limit enforcement. */
+ledger?: LimitLedger;
+	/** Optional storage for outcome penalties used by learning‑based routing. */
+outcomes?: OutcomeStore;
+	/** Name of the chain to use for tasks marked as sensitive. */
+sensitiveChain?: string;
+	/** Chain to use when hard reasoning is requested. */
+hardReasoningChain?: string;
+	/** Fallback chain used when no other chain is applicable. */
+defaultChain?: string;
+	/** Optional cheap classifier for quickly deriving a task profile. */
+classify?: CheapClassifier;
+	/** Function returning the current timestamp (ms); useful for testing. */
+now?: () => number;
 }
 
+/**
+ * Route a task to one or more model candidates based on configuration, policies, and runtime constraints.
+ *
+ * @param input - The incoming request describing the task to be routed.
+ * @param dependencies - Runtime dependencies required for routing decisions.
+ * @returns A {@link RouteResult} containing the selected candidates, ranking details and the profiling information.
+ */
 export async function routeTask(input: RouterInput, dependencies: RouteDependencies): Promise<RouteResult> {
 	const profile = await classifyTask(input, dependencies.config, dependencies.classify);
 	const explicit = input.explicitChain ?? input.explicitModel;
