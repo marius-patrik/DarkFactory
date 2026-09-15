@@ -24,3 +24,16 @@ describe("workflow graph validation", () => {
 	test("rejects noncanonical board statuses", () => expect(invalid((g) => { g.nodes[0].board_status.done = "Todo"; })).toContain("nodes[request-intake].board_status.done: unknown canonical status \"Todo\""));
 	test("requires bot filters on event ingress", () => expect(invalid((g) => { delete g.edges[0].on.filter.ignore_bots; })).toContain("edges[0].on.filter.ignore_bots: event ingress must explicitly be true"));
 });
+	test("accepts agent node with min_tier", () => {
+		const g = structuredClone(graph) as any;
+		const agent = g.nodes.find((n:any) => n.kind === "agent");
+		if (agent) agent.min_tier = "light";
+		expect(validateGraph(g).nodes.some((n:any) => n.min_tier === "light")).toBe(true);
+	});
+	test("graph with min_tier on agent nodes passes validation", () => {
+		const g = structuredClone(graph) as any;
+		for (const node of g.nodes) {
+			if (node.kind === "agent") node.min_tier = "light";
+		}
+		expect(() => validateGraph(g)).not.toThrow();
+	});

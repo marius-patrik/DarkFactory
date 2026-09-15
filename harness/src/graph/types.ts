@@ -19,6 +19,7 @@ export interface AgentNode extends BaseNode {
 	identity?: string;
 	reasoning?: "standard" | "hard";
 	chain?: string[];
+	min_tier?: string;
 	timeout?: string;
 	iteration?: { context_file: string; safety_budget?: number };
 	quota_policy?: { on_exhaustion: "checkpoint_and_block"; resume: "sweep_or_command" };
@@ -87,6 +88,7 @@ export interface RunState {
 	blocked_since?: string;
 	iterations?: Record<string, number>;
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
+	tier?: string;
 }
 
 export type PlanAction =
