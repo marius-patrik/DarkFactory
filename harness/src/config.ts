@@ -40,6 +40,7 @@ const SIZES: TaskSize[] = ["small", "medium", "large"];
 const NEEDS: TaskNeed[] = ["tools", "reasoning", "vision", "long_context", "image_gen", "video_gen"];
 const TIERS: LimitTier[] = ["tight", "standard", "bulk"];
 const MODALITIES: ModelModality[] = ["text", "image", "video", "image_gen", "video_gen"];
+const COLLECTION_VALUES = ["none", "logging", "training", "unknown"];
 function stringArray(value: unknown, label: string, allowed?: readonly string[]): string[] | undefined {
 	if (value === undefined) return undefined;
 	if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !entry || (allowed && !allowed.includes(entry)))) throw new Error(`config.json ${label} must be an array of valid strings`);
@@ -104,7 +105,15 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 		for (const field of ["windowMs", "maxPenalty", "maxRecords"] as const) if (value[field] !== undefined && (typeof value[field] !== "number" || value[field] <= 0)) throw new Error(`config.json router.learning.${field} must be positive`);
 		learning = value as RouterConfig["learning"];
 	}
-	return { policies, ...(classifier ? { classifier } : {}), ...(candidates ? { candidates } : {}), ...(models ? { models } : {}), ...(learning ? { learning } : {}) };
+	let dataCollection: RouterConfig["dataCollection"];
+	if (record.dataCollection !== undefined) {
+		if (!record.dataCollection || typeof record.dataCollection !== "object" || Array.isArray(record.dataCollection)) throw new Error("config.json router.dataCollection must be an object");
+		const dc = record.dataCollection as Record<string, unknown>;
+		const normal = stringArray(dc.normal, "router.dataCollection.normal", COLLECTION_VALUES);
+		const sensitive = stringArray(dc.sensitive, "router.dataCollection.sensitive", COLLECTION_VALUES);
+		if (normal !== undefined || sensitive !== undefined) dataCollection = { ...(normal !== undefined ? { normal } : {}), ...(sensitive !== undefined ? { sensitive } : {}) };
+	}
+	return { policies, ...(classifier ? { classifier } : {}), ...(candidates ? { candidates } : {}), ...(models ? { models } : {}), ...(learning ? { learning } : {}), ...(dataCollection ? { dataCollection } : {}) };
 }
 
 export async function loadDfConfig(home: string, reader: ConfigReader = (path) => readFile(path, "utf8")): Promise<DfConfig> {

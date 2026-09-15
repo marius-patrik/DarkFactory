@@ -89,6 +89,45 @@ describe("config-driven provider registry", () => {
 		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }] })).toThrow("regex is invalid");
 	});
 
+	test("data: accepts minimal valid data configuration", () => {
+		const entry = openAICompatible("data-provider");
+		entry.data = {
+			collection: "logging",
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
+	test("data: rejects invalid collection values", () => {
+		const entry = openAICompatible("bad-data");
+		entry.data = {
+			collection: "invalid-collection" as any,
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(/data\.collection/);
+	});
+
+	test("data: accepts provider-level data and free.data override together", () => {
+		const entry = openAICompatible("data-override");
+		entry.free = { kind: "permanent", keyUrl: "https://example.com/key", data: { collection: "logging", source: "free-docs", checkedAt: "2023-01-01T00:00:00Z" } };
+		entry.data = { collection: "training", source: "provider-docs", checkedAt: "2023-01-02T00:00:00Z" };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
+	test("data: rejects invalid free.data.collection", () => {
+		const entry = openAICompatible("bad-free-data");
+		entry.free = { kind: "permanent", keyUrl: "https://example.com/key", data: { collection: "archival" as any, source: "free-docs", checkedAt: "2023-01-01T00:00:00Z" } };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(/free\.data\.collection/);
+	});
+
+	test("data: free.data override works standalone without provider-level data", () => {
+		const entry = openAICompatible("free-only-data");
+		entry.free = { kind: "permanent", keyUrl: "https://example.com/key", data: { collection: "none", source: "free-docs", retentionDays: 30, checkedAt: "2023-01-03T00:00:00Z", sourceUrl: "https://example.com/terms", note: "free tier" } };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
 	test("local providers replace same-id defaults and append new entries", async () => {
 		const google = { ...openAICompatible("google"), name: "Local Google Override" };
 		const custom = openAICompatible("custom");
