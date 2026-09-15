@@ -40,7 +40,16 @@ function parseArgs(argv: string[]): DispatchOptions {
 		if (arg === "--event") { eventPath = argv[++i] ?? ""; continue; }
 		if (arg === "--graph") { graphPath = argv[++i]; continue; }
 		if (arg === "--runs") { runsPath = argv[++i]; continue; }
-		if (arg === "--shadow") { shadow = true; continue; }
+		if (arg === "--shadow") {
+		const next = argv[i + 1];
+		if (next === "true" || next === "false") {
+			shadow = next === "true";
+			i++;
+		} else {
+			shadow = true;
+		}
+		continue;
+	}
 		if (arg === "--summary") { summaryPath = argv[++i]; continue; }
 	}
 
@@ -59,7 +68,7 @@ async function getSummaryPath(): Promise<string> {
 	return process.env.GITHUB_STEP_SUMMARY ?? "step_summary.md";
 }
 
-export async function dispatch(argv: string[]): Promise<void> {
+export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
 	const opts = parseArgs(argv);
 
 	// Load the event payload
@@ -81,6 +90,7 @@ export async function dispatch(argv: string[]): Promise<void> {
 	const workflowGraph = await graph;
 
 	// For checks.completed events, evaluate the checks gate if tokens are present
+	let gateResult: ChecksGateResult | undefined;
 	if (translated.event.type === "checks.completed") {
 		const env: GitHubTokenEnv & GitHubRepoEnv = {
 			GH_TOKEN: process.env.GH_TOKEN,
@@ -91,14 +101,14 @@ export async function dispatch(argv: string[]): Promise<void> {
 		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
 			if (env.GITHUB_REPOSITORY) {
 				// Create a minimal CheckStateSource (in-process, can be stubbed in tests)
-				const checkStateSource: CheckStateSource = {
+				const checkStateSource: CheckStateSource = options?.checkStateSource ?? {
 					checkStates: async (ref: string): Promise<Map<string, "success" | "pending" | "failure">> => {
 						// Stub implementation - in real usage would call GitHub API
 						return new Map();
 					},
 				};
 
-				const gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
+				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
 
 				if (gateResult.conclusion === "pending") {
 					console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
@@ -122,8 +132,16 @@ export async function dispatch(argv: string[]): Promise<void> {
 	// Plan the action
 	const action = plan(workflowGraph, translated.event, runState);
 
-	// Prepare the output
-	const output = {
+	// Advance the run state to the selected node before persisting
+	if (action.type !== "none") {
+		let nodeId: string | undefined;
+		if (action.type === "run" && action.nodes.length > 0) { nodeId = action.nodes[0]; }
+		else if (action.type === "gate" || action.type === "hint" || action.type === "comment") { nodeId = action.node; }
+		if (nodeId !== undefined) { runState.current_node = nodeId; }
+	}
+
+	// Prepare the base output
+	const baseOutput = {
 		subject,
 		event: translated.event.type,
 		current_node: runState.current_node,
@@ -131,6 +149,16 @@ export async function dispatch(argv: string[]): Promise<void> {
 		commands: action.type === "run" && action.nodes
  ? action.nodes.map((id) => `bun df run --node ${id}`) : [],
 	};
+
+	// If this is a checks.completed event with a non‑pending gate result, emit the checks JSON
+	const output =
+		translated.event.type === "checks.completed" && gateResult && gateResult.conclusion !== "pending"
+			? {
+				...baseOutput,
+				type: "checks",
+				result: gateResult.conclusion === "required_green" ? "pass" : "fail",
+				}
+			: baseOutput;
 
 	// Print the output
 	console.log(JSON.stringify(output));
