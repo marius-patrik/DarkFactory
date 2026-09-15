@@ -2,16 +2,30 @@ import { accountId, type FileCredentialStore } from "../credentials.ts";
 import type { HomeReader } from "./reader.ts";
 import { claimString, epochMsFromSeconds, jwtClaims, parseJson, record, stringField } from "./shared.ts";
 
+/**
+ * The OAuth token endpoint used by Codex (ChatGPT).
+ */
 export const OPENAI_TOKEN_ENDPOINT = "https://auth.openai.com/oauth/token";
 
+/**
+ * Represents an OAuth login imported from Codex's `auth.json`.
+ */
 export interface ImportedCodexOAuth {
+	/** The OAuth access token. */
 	accessToken: string;
+	/** The OAuth refresh token, if present. */
 	refreshToken?: string;
+	/** The subscription plan type (e.g. "ChatGPT Plus"). */
 	plan?: string;
+	/** The account identifier string. */
 	account?: string;
+	/** The numeric account ID from JWT claims. */
 	accountId?: string;
+	/** The authentication mode (e.g. "chatgpt"). */
 	authMode?: string;
+	/** The timestamp of the last refresh (ISO string). */
 	lastRefresh?: string;
+	/** The epoch timestamp (ms) when the access token expires. */
 	expiresAt?: number;
 }
 
@@ -51,16 +65,32 @@ export function parseCodexOAuthDocument(document: Record<string, unknown>): Impo
 	};
 }
 
+/**
+ * Options for locating Codex authentication files.
+ */
 export interface CodexFindOptions {
+	/** Utility to read files from the user's home directory. */
 	homeReader: HomeReader;
 }
 
+/**
+ * Result of searching for Codex authentication data.
+ */
 export interface CodexImport {
+	/** The raw parsed JSON document from `auth.json`, or null. */
 	document: Record<string, unknown> | null;
+	/** The OAuth credentials extracted, or null. */
 	oauth: ImportedCodexOAuth | null;
+	/** The OpenAI API key string, or null. */
 	apiKey: string | null;
 }
 
+/**
+ * Find Codex authentication credentials in `~/.codex/auth.json`.
+ *
+ * @param options - Find options containing the home reader.
+ * @returns An object with the raw document, OAuth credentials, and API key.
+ */
 export async function findCodexAuth(options: CodexFindOptions): Promise<CodexImport> {
 	const file = await options.homeReader.read(".codex/auth.json");
 	const document = parseJson(file ?? null, "~/.codex/auth.json");

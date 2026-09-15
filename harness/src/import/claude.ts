@@ -3,19 +3,38 @@ import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, decodeKeychainPayload, type ClaudeKe
 import type { HomeReader } from "./reader.ts";
 import { epochMsFromMilliseconds, parseJson, record, stringField } from "./shared.ts";
 
+/**
+ * The endpoint used by Claude Code to refresh OAuth tokens.
+ */
 export const ANTHROPIC_TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token";
 
+/**
+ * Represents a Claude login credential imported from a configuration file or keychain.
+ */
 export interface ImportedClaudeLogin {
+	/** The OAuth access token. */
 	accessToken: string;
+	/** The OAuth refresh token, optional. */
 	refreshToken?: string;
+	/** The epoch timestamp (ms) when the refresh token expires. */
 	refreshTokenExpiresAt?: number;
+	/** The subscription level of the account (e.g. "pro"). */
 	subscriptionType?: string;
+	/** List of OAuth scopes granted to the token. */
 	scopes: string[];
+	/** The epoch timestamp (ms) when the access token expires. */
 	expiresAt?: number;
+	/** The unique identifier of the organization. */
 	organizationUuid?: string;
 }
 
-export type ClaudeLoginWithSource = ImportedClaudeLogin & { source: string };
+/**
+ * A Claude login combined with the source identifier from which it was discovered.
+ */
+export interface ClaudeLoginWithSource extends ImportedClaudeLogin {
+	/** The source identifier where the login was discovered (e.g. ".claude/.credentials.json" or a keychain service name). */
+	source: string;
+}
 
 function claudeOauthEntry(document: Record<string, unknown>): ImportedClaudeLogin | null {
 	const oauth = record(document.claudeAiOauth);
@@ -33,9 +52,15 @@ function claudeOauthEntry(document: Record<string, unknown>): ImportedClaudeLogi
 	};
 }
 
+/**
+ * Options for discovering Claude logins on the local system.
+ */
 export interface ClaudeFindOptions {
+	/** Path to the user's home directory. */
 	home: string;
+	/** Utility to read files from the home directory. */
 	homeReader: HomeReader;
+	/** Keyring adapter for macOS keychain access. */
 	keyring: ClaudeKeyring;
 }
 
@@ -45,6 +70,9 @@ export interface ClaudeFindOptions {
  * dsh-stack `claude-credentials.ts:69-151`: the file is the whole story outside
  * macOS; the keychain carries one item per profile and every suffixed item is
  * walked because they are previous logins the owner may still want.
+ *
+ * @param options - Find options containing home directory and keyring.
+ * @returns A list of discovered Claude logins with their source.
  */
 export async function findClaudeLogins(options: ClaudeFindOptions): Promise<ClaudeLoginWithSource[]> {
 	const logins: ClaudeLoginWithSource[] = [];
@@ -72,6 +100,12 @@ export async function findClaudeLogins(options: ClaudeFindOptions): Promise<Clau
  * the credential), so such a login is rejected with a clear message instead of
  * being half-imported. Mirrors dsh-stack's `no refresh token: this login cannot
  * self-heal` finding (claude-credentials.ts:58-63).
+ *
+ * @param store - The credential store to modify.
+ * @param label - Human readable label for the imported account.
+ * @param options - Find options for locating Claude logins.
+ * @param provider - Identifier of the provider (e.g. {@code "claude"}).
+ * @throws When no login is found or the login lacks a refresh token.
  */
 export async function importClaudeAccount(
 	store: FileCredentialStore,

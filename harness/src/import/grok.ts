@@ -2,13 +2,23 @@ import { accountId, type FileCredentialStore } from "../credentials.ts";
 import type { HomeReader } from "./reader.ts";
 import { epochMsFromSeconds, epochMsFromText, jwtClaims, parseJson, record, stringField } from "./shared.ts";
 
+/**
+ * Represents a Grok CLI login entry parsed from `auth.json`.
+ */
 export interface ImportedGrokEntry {
+	/** The raw key string of the entry. */
 	sourceEntry: string;
+	/** The issuer identifier (e.g. "Grok"). */
 	issuer: string;
+	/** The access token for the Grok API. */
 	accessToken: string;
+	/** The refresh token, if present. */
 	refreshToken?: string;
+	/** The email address associated with the account. */
 	email?: string;
+	/** The epoch timestamp (ms) when the token expires. */
 	expiresAt?: number;
+	/** The list of OAuth scopes granted. */
 	scopes: string[];
 }
 
@@ -34,10 +44,20 @@ export function parseGrokEntry(key: string, value: unknown): ImportedGrokEntry |
 	};
 }
 
+/**
+ * Options for locating Grok authentication files.
+ */
 export interface GrokFindOptions {
+	/** Utility to read files from the user's home directory. */
 	homeReader: HomeReader;
 }
 
+/**
+ * Find all Grok CLI login entries in `~/.grok/auth.json`.
+ *
+ * @param options - Find options containing the home reader.
+ * @returns A list of parsed Grok login entries.
+ */
 export async function findGrokEntries(options: GrokFindOptions): Promise<ImportedGrokEntry[]> {
 	const file = await options.homeReader.read(".grok/auth.json");
 	const document = parseJson(file ?? null, "~/.grok/auth.json");

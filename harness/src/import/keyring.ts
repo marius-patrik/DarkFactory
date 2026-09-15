@@ -9,14 +9,45 @@ export const CLAUDE_CREDENTIALS_SERVICE_PREFIX = "Claude Code-credentials";
 /** `security dump-keychain` argv — metadata only, never `-d`/`-w` (credential-source.ts:63). */
 export const KEYCHAIN_ENUMERATION_ARGV: readonly string[] = ["dump-keychain"];
 
-/** Injectable keychain access so the Claude importer is testable without touching an OS keychain. */
+/**
+ * Injectable keychain access so the Claude importer is testable without touching an OS keychain.
+ */
 export interface ClaudeKeyring {
+	/**
+	 * Lists all Claude Code keychain service names.
+	 *
+	 * @returns A list of service names.
+	 */
 	listServices(): Promise<string[]>;
+	/**
+	 * Reads the secret for a Claude Code keychain service.
+	 *
+	 * @param service - The keychain service name.
+	 * @returns The stored secret, or undefined if not found.
+	 */
 	read(service: string): Promise<string | undefined>;
 }
 
-/** `parseKeychainDump` port (credential-source.ts:116-141). */
-export function parseKeychainDump(dump: string): { service: string; account: string | null }[] {
+/**
+ * A service and account pair from a keychain dump.
+ *
+ * @param service - The keychain service name.
+ * @param account - The account name, or null if absent.
+ */
+export interface KeychainDumpEntry {
+	/** The keychain service name. */
+	service: string;
+	/** The account name, or null if absent. */
+	account: string | null;
+}
+
+/**
+ * Parses the output of `security dump-keychain` into service/account pairs.
+ *
+ * @param dump - The raw keychain dump string.
+ * @returns A deduplicated list of service and account objects.
+ */
+export function parseKeychainDump(dump: string): KeychainDumpEntry[] {
 	const items: { service: string; account: string | null }[] = [];
 	let service: string | null = null;
 	let account: string | null = null;
@@ -43,7 +74,13 @@ export function parseKeychainDump(dump: string): { service: string; account: str
 	}).map((item) => ({ service: item.service, account: item.account }));
 }
 
-/** `decodeKeychainPayload` port (credential-source.ts:148-156). */
+/**
+ * Decodes a keychain payload value, unwrapping the `go-keyring-base64:` prefix
+ * if present.
+ *
+ * @param value - The raw payload string.
+ * @returns The decoded UTF-8 string.
+ */
 export function decodeKeychainPayload(value: string): string {
 	const prefix = "go-keyring-base64:";
 	if (!value.startsWith(prefix)) return value;
@@ -61,6 +98,11 @@ export function decodeKeychainPayload(value: string): string {
  * On other platforms there is no Claude keychain login to find.
  */
 export class OsClaudeKeyringAdapter implements ClaudeKeyring {
+	/**
+	 * Lists all Claude Code keychain service names on macOS.
+	 *
+	 * @returns A sorted list of service names matching the Claude Code prefix.
+	 */
 	async listServices(): Promise<string[]> {
 		if (process.platform !== "darwin") return [];
 		try {
@@ -73,6 +115,12 @@ export class OsClaudeKeyringAdapter implements ClaudeKeyring {
 		}
 	}
 
+	/**
+	 * Reads the secret for a Claude Code keychain service.
+	 *
+	 * @param service - The keychain service name.
+	 * @returns The stored secret, or undefined if not found.
+	 */
 	async read(service: string): Promise<string | undefined> {
 		if (process.platform !== "darwin") return undefined;
 		try {
