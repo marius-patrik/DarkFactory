@@ -92,7 +92,6 @@ export interface RouterConfig {
 	defaultTier?: string;
 	difficultyTiers?: DifficultyTierMapping;
 	dataCollection?: { normal?: string[]; sensitive?: string[] };
-
 }
 
 export interface RankedCandidate {
