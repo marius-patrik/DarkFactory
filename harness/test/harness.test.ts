@@ -112,6 +112,10 @@ describe("AgentSession harness", () => {
 		expect(new ChainExhaustedError(["quota_exhausted", "rate_limited"]).exitCode).toBe(2);
 		expect(new ChainExhaustedError(["auth", "auth"]).exitCode).toBe(3);
 		expect(new ChainExhaustedError(["auth", "quota_exhausted"]).exitCode).toBe(1);
+		// Observed 2026-09-15: every free candidate was daily-limited except one overloaded OpenRouter model, df exited 1 and the lane gave up instead of waiting.
+		expect(new ChainExhaustedError(["quota_exhausted", "transient"]).exitCode).toBe(2);
+		expect(new ChainExhaustedError(["transient"]).exitCode).toBe(2);
+		expect(new ChainExhaustedError(["transient", "fatal"]).exitCode).toBe(1);
 	});
 
 	test("single-candidate fatal runs surface the redacted request error with exit 1", async () => {

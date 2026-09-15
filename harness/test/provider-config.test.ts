@@ -106,7 +106,14 @@ describe("config-driven provider registry", () => {
 
 	test("built-ins contain the required providers and importer declarations", () => {
 		const ids = BUILTIN_PROVIDER_CONFIG.providers.map((entry) => entry.id);
-		expect(ids).toEqual(["google", "anthropic", "openai-codex", "grok-sub", "kimi-coding", "openrouter", "groq", "cerebras", "opencode-zen", "google-antigravity"]);
+		expect(ids.slice(0, 10)).toEqual(["google", "anthropic", "openai-codex", "grok-sub", "kimi-coding", "openrouter", "groq", "cerebras", "opencode-zen", "google-antigravity"]);
+		// Every researched free provider follows the core set, each with a free-tier record and a unique id.
+		const free = ids.slice(10);
+		expect(free).toContain("mistral");
+		expect(free).toContain("nvidia-nim");
+		expect(free).toContain("kilo-gateway");
+		expect(new Set(ids).size).toBe(ids.length);
+		for (const id of free) expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === id)?.free?.keyUrl).toMatch(/^https:\/\//u);
 		expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "opencode-zen")?.models.static[0]?.id).toBe("big-pickle");
 		expect(BUILTIN_PROVIDER_CONFIG.providers.flatMap((entry) => entry.importers ?? []).map((entry) => entry.id).sort()).toEqual(["antigravity", "claude", "codex", "grok", "kimi"]);
 		const codexOauth = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "openai-codex")?.auth.find((entry) => entry.kind === "oauth");
