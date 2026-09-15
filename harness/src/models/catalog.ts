@@ -8,6 +8,13 @@ import type { ModelListConfig, ProviderConfig } from "../providers/schema.ts";
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
 
+const DIALECT_DEFAULTS: Record<string, ModelListConfig> = {
+  "openai-completions": { path: "/models", method: "GET", itemsPath: "data", idPath: "id", namePath: "display_name" },
+  "openai-responses": { path: "/models", method: "GET", itemsPath: "data", idPath: "id", namePath: "display_name" },
+  "google-generative-ai": { path: "/models", method: "GET", itemsPath: "models", idPath: "name", namePath: "displayName", stripIdPrefix: "models/", methodsPath: "supportedGenerationMethods" },
+  "anthropic-messages": { path: "/v1/models", method: "GET", itemsPath: "data", idPath: "id", namePath: "display_name" },
+};
+
 export interface CatalogModel {
 	id: string;
 	name: string;
@@ -238,7 +245,7 @@ export class ModelCatalog {
 			if (!response.ok) throw new Error(`Model catalog request failed for ${provider.id}: HTTP ${response.status}`);
 			return normalizeCatalogResponse(provider.id, await response.json());
 		}
-		const mapping = config.models.list;
+		const mapping = config.models.list ?? DIALECT_DEFAULTS[config.dialect];
 		if (!mapping) return provider.getModels().map((entry) => ({ id: entry.id, name: entry.name }));
 		const target = { url: `${config.baseUrl.replace(/\/$/u, "")}${mapping.path}`, method: mapping.method ?? "GET" };
 		const extras = account ? await this.store.requestHeaders(provider.id, account) : {};
@@ -280,7 +287,7 @@ export class ModelCatalog {
 		if (!provider) throw new Error(`Unknown provider ${providerId}`);
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
 		// Never let a prior cached static revision hide newly shipped models.
-		if (this.configs.get(providerId) && !this.configs.get(providerId)?.models.list) {
+		if (this.configs.get(providerId) && !this.configs.get(providerId)?.models.list && !DIALECT_DEFAULTS[this.configs.get(providerId)!.dialect]) {
 			return { provider: providerId, models: provider.getModels().map((model) => ({ id: model.id, name: model.name })), source: "builtin" };
 		}
 		const cached = await this.cached(providerId);

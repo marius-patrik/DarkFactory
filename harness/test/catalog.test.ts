@@ -179,6 +179,53 @@ describe("ModelCatalog integration boundary", () => {
 		expect(await catalog.get("sample-query", { account: "test" })).toMatchObject({ source: "live", models: [{ id: "q-model" }] });
 	});
 
+	test("dialect default: openai-completions fetches GET /models with display_name mapping", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		await store.setSlot("sample-openai-dialect:test", "api_key", { type: "api_key", value: "fixture-key" });
+		const fetcher: CatalogFetch = async (input, init) => {
+			expect(String(input)).toBe("https://api.openai.com/v1/models");
+			expect(init?.method).toBe("GET");
+			return Response.json({ data: [{ id: "gpt-4", display_name: "GPT-4" }] });
+		};
+		const base = configured("groq");
+		const config = { ...base.config, id: "sample-openai-dialect", name: "Sample Dialect", baseUrl: "https://api.openai.com/v1", models: { static: base.config.models.static } };
+		const provider = providerFromConfig(config);
+		const catalog = new ModelCatalog({ home: root, providers: [provider], providerConfigs: [config], store, fetch: fetcher, now: () => 1_000 });
+		expect((await catalog.get("sample-openai-dialect", { account: "test" })).models).toEqual([{ id: "gpt-4", name: "GPT-4" }]);
+	});
+
+	test("dialect default: google-generative-ai fetches GET /models with stripIdPrefix and methodsPath", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		await store.setSlot("sample-google-dialect:default", "api_key", { type: "api_key", value: "fixture-google" });
+		const fetcher: CatalogFetch = async (input, init) => {
+			expect(String(input)).toBe("https://generativelanguage.googleapis.com/v1beta/models");
+			return Response.json({ models: [{ name: "models/gemini-pro", displayName: "Gemini Pro", supportedGenerationMethods: ["generateContent"] }] });
+		};
+		const base = configured("google");
+		const config = { ...base.config, id: "sample-google-dialect", name: "Sample Google Dialect", baseUrl: "https://generativelanguage.googleapis.com/v1beta", models: { static: base.config.models.static } };
+		const provider = providerFromConfig(config);
+		const catalog = new ModelCatalog({ home: root, providers: [provider], providerConfigs: [config], store, fetch: fetcher, now: () => 1_000 });
+		expect((await catalog.get("sample-google-dialect", { account: "default" })).models).toEqual([{ id: "gemini-pro", name: "Gemini Pro", supportedMethods: ["generateContent"] }]);
+	});
+
+	test("config list overrides dialect default: Cloudflare-style POST /models/search", async () => {
+		const root = await home();
+		const store = new FileCredentialStore(root);
+		await store.setSlot("cloudflare-override:test", "api_key", { type: "api_key", value: "fixture-key" });
+		const fetcher: CatalogFetch = async (input, init) => {
+			expect(String(input)).toBe("https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/ai/v1/models/search");
+			expect(init?.method).toBe("POST");
+			return Response.json({ result: [{ name: "cf-model" }] });
+		};
+		const base = configured("cloudflare-workers-ai");
+		const config = { ...base.config, id: "cloudflare-override", name: "Cloudflare Override", models: { static: base.config.models.static, list: { path: "/models/search", method: "POST", itemsPath: "result", idPath: "name", namePath: "name" } } } as ProviderConfig;
+		const provider = providerFromConfig(config);
+		const catalog = new ModelCatalog({ home: root, providers: [provider], providerConfigs: [config], store, fetch: fetcher, now: () => 1_000 });
+		expect((await catalog.get("cloudflare-override", { account: "test" })).models).toEqual([{ id: "cf-model", name: "cf-model" }]);
+	});
+
 	test("failed refresh serves the cache but reports the live error", async () => {
 		const root = await home();
 		const store = new FileCredentialStore(root);
