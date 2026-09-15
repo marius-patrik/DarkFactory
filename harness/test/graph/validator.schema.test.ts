@@ -57,4 +57,15 @@ describe("AgentNode schema extensions", () => {
       node.prompt = 123;
     })).toEqual(expect.arrayContaining([expect.stringContaining("prompt")]));
   });
+
+  test("rejects graph missing required top-level fields", () => {
+    const missingVersion = invalidate((g) => delete g.version);
+    expect(missingVersion.some((i) => i.toLowerCase().includes("version") && i.toLowerCase().includes("invalid input"))).toBe(true);
+    const missingChecks = invalidate((g) => delete g.checks);
+    expect(missingChecks.some((i) => i.toLowerCase().includes("checks") && i.toLowerCase().includes("invalid input"))).toBe(true);
+    const missingNodes = invalidate((g) => delete g.nodes);
+    expect(missingNodes.some((i) => i.toLowerCase().includes("nodes") && i.toLowerCase().includes("invalid input"))).toBe(true);
+    const missingEdges = invalidate((g) => delete g.edges);
+    expect(missingEdges.some((i) => i.toLowerCase().includes("edges") && i.toLowerCase().includes("invalid input"))).toBe(true);
+  });
 });

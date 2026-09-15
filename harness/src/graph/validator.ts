@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CANONICAL_STATUSES, type GraphEdge, type GraphNode, type WorkflowGraph } from "./types.ts";
 
 const id = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-const base = z.object({ id, kind: z.enum(["agent", "gate", "automation", "check-reference"]), description: z.string().optional(), inputs: z.array(z.string()).optional(), outputs: z.array(z.string()).optional(), board_status: z.record(z.string(), z.string()).optional(), trigger: z.object({ event: z.string().optional(), schedule: z.string().optional() }).optional(), filter: z.object({ label: z.string().optional(), ignore_bots: z.boolean().optional() }).optional() });
+const base = z.object({ id, kind: z.enum(["agent", "gate", "automation", "check-reference"]), description: z.string().optional(), inputs: z.array(z.string()).optional(), outputs: z.array(z.string()).optional(), board_status: z.record(z.string(), z.string()).optional(), trigger: z.object({ event: z.string().optional(), schedule: z.string().optional() }).optional(), filter: z.object({ label: z.string().optional(), ignore_bots: z.boolean().optional() }).optional(), foreach: z.object({ items: z.string(), max_parallel: z.number().int().positive().optional(), as: z.string().optional() }).optional() });
 const nodeSchema = z.discriminatedUnion("kind", [
 	base.extend({ kind: z.literal("agent"), identity: z.string().optional(), reasoning: z.enum(["standard", "hard"]).optional(), chain: z.array(z.string()).optional(), timeout: z.string().optional(), iteration: z.object({ context_file: z.string(), safety_budget: z.number().int().positive().optional() }).optional(), quota_policy: z.object({ on_exhaustion: z.literal("checkpoint_and_block"), resume: z.literal("sweep_or_command") }).optional(), prompt: z.string().optional(), mode: z.enum(["read", "write"]).optional(), workdir: z.string().optional(), max_turns: z.number().int().positive().optional() }),
 	base.extend({ kind: z.literal("gate"), author_associations: z.array(z.enum(["OWNER", "MEMBER", "COLLABORATOR", "AUTHOR"])).min(1), requester_can_approve: z.boolean().optional(), command: z.string(), allow_review_state: z.tuple([z.literal("APPROVED")]).optional(), reminder_after_days: z.number().int().positive().optional(), on_reject: z.object({ action: z.enum(["route_to", "revert_deviation"]), target: id }).optional() }),
@@ -15,6 +15,7 @@ const onSchema = z.union([
 	z.object({ node_outcome: z.enum(["success", "failure", "quota_exhausted"]), when: z.string().optional() }).strict(),
 	z.object({ gate_outcome: z.enum(["approved", "rejected"]), when: z.string().optional() }).strict(),
 	z.object({ checks: z.enum(["required_green", "failed"]), when: z.string().optional() }).strict(),
+	z.object({ children: z.enum(["all_done", "any_failed"]), when: z.string().optional() }).strict(),
 ]);
 const rawSchema = z.object({ version: z.literal(1), checks: z.array(z.object({ name: z.string().min(1), required: z.boolean() })), nodes: z.array(nodeSchema), edges: z.array(z.object({ from: id, to: id, on: onSchema, loop: z.object({ kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework"]), safety_budget: z.number().int().positive().optional() }).optional() })) });
 const STRICT_GATE_COMMAND = "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$";
@@ -61,10 +62,28 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			const words = [...edge.on.when.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?:==|!=)/g)].map((match) => match[1]!);
 			for (const word of words) if (!source?.outputs?.includes(word)) issues.push(`edges[${index}].on.when: \"${word}\" is not a declared output of ${edge.from}`);
 		}
+		// Validate children edges: must start at a node with foreach
+		if ("children" in edge.on) {
+			const sourceNode = graph.nodes.find((node) => node.id === edge.from);
+			if (!sourceNode?.foreach) {
+				issues.push(`edges[${index}].on.children: edge with children trigger must originate from a node with a foreach field`);
+			}
+		}
 	});
 	for (const node of graph.nodes) (node.inputs ?? []).forEach((input, index) => {
 		const upstream = graph.nodes.some((producer) => producer.outputs?.includes(input) && (producer.id === node.id || pathBetween(graph.edges, producer.id, node.id)));
 		if (!upstream) issues.push(`nodes[${node.id}].inputs[${index}]: \"${input}\" is not produced by an upstream node`);
+	});
+	// Validate foreach.items: must be a declared output of an upstream node
+	graph.nodes.forEach((node, nodeIndex) => {
+		if (node.foreach) {
+			const { items } = node.foreach;
+			// Check that items is an output of some upstream node
+			const upstream = graph.nodes.some((producer) => producer.outputs?.includes(items) && (producer.id === node.id || pathBetween(graph.edges, producer.id, node.id)));
+			if (!upstream) {
+				issues.push(`nodes[${nodeIndex}].foreach.items: \"${items}\" is not produced by an upstream node`);
+			}
+		}
 	});
 	const roots = graph.nodes.filter((node) => node.trigger?.event || node.trigger?.schedule || node.kind === "check-reference").map((node) => node.id);
 	const reachable = new Set(roots);

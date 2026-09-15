@@ -23,4 +23,24 @@ describe("workflow graph validation", () => {
 	test("rejects loose gate grammar", () => expect(invalid((g) => { g.nodes.find((n: any) => n.id === "plan-gate").command = "approve"; })).toContain("nodes[plan-gate].command: must accept only /df approve|reject|revise and /approve|reject|revise"));
 	test("rejects noncanonical board statuses", () => expect(invalid((g) => { g.nodes[0].board_status.done = "Todo"; })).toContain("nodes[request-intake].board_status.done: unknown canonical status \"Todo\""));
 	test("requires bot filters on event ingress", () => expect(invalid((g) => { delete g.edges[0].on.filter.ignore_bots; })).toContain("edges[0].on.filter.ignore_bots: event ingress must explicitly be true"));
+	test("validates foreach.items references upstream output", () => {
+		const issues = invalid((g) => {
+			// Add a node with foreach that references an output that doesn't exist upstream
+			g.nodes.push({
+				id: "foreach-node",
+				kind: "automation",
+				script: "echo",
+				foreach: { items: "nonexistent" },
+			});
+			g.edges.push({ from: "request-intake", to: "foreach-node", on: { node_outcome: "success" } });
+		});
+		expect(issues.some((i) => i.includes("foreach.items") && i.includes("not produced by an upstream node"))).toBe(true);
+	});
+	test("rejects children edges from nodes without foreach", () => {
+		const issues = invalid((g) => {
+			// Add an edge with children trigger from a node that doesn't have foreach
+			g.edges.push({ from: "request-intake", to: "implement", on: { children: "all_done" } });
+		});
+		expect(issues.some((i) => i.includes("on.children") && i.includes("must originate from a node with a foreach field"))).toBe(true);
+	});
 });

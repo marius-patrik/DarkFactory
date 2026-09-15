@@ -12,6 +12,7 @@ export interface BaseNode {
 	board_status?: Partial<Record<"running" | "quota_blocked" | "blocked" | "done" | "rejected", CanonicalStatus>>;
 	trigger?: { event?: string; schedule?: string };
 	filter?: { label?: string; ignore_bots?: boolean };
+	foreach?: { items: string; max_parallel?: number; as?: string };
 }
 
 export interface AgentNode extends BaseNode {
@@ -57,7 +58,8 @@ export type EdgeOn =
 	| { schedule: true; when?: string }
 	| { node_outcome: "success" | "failure" | "quota_exhausted"; when?: string }
 	| { gate_outcome: "approved" | "rejected"; when?: string }
-	| { checks: "required_green" | "failed"; when?: string };
+	| { checks: "required_green" | "failed"; when?: string }
+	| { children: "all_done" | "any_failed"; when?: string };
 
 export interface GraphEdge {
 	from: string;
@@ -79,7 +81,8 @@ export type GraphEvent =
 	| { type: "review"; state: string; actor: Actor }
 	| { type: "node.completed"; node: string; outcome: "success" | "failure" | "quota_exhausted"; outputs: Record<string, unknown> }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
-	| { type: "schedule"; schedule: string; now?: string };
+	| { type: "schedule"; schedule: string; now?: string }
+	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 
 export interface RunState {
 	run_id: string;
@@ -91,6 +94,7 @@ export interface RunState {
 	blocked_since?: string;
 	iterations?: Record<string, number>;
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
+	children?: { run_id: string; node: string; eligible: boolean }[];
 }
 
 export type PlanAction =

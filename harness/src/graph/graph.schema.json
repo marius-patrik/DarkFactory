@@ -24,7 +24,8 @@
         "inputs": { "type": "array", "items": { "type": "string" } }, "outputs": { "type": "array", "items": { "type": "string" } },
         "board_status": { "type": "object", "additionalProperties": { "$ref": "#/$defs/status" } },
         "trigger": { "type": "object", "properties": { "event": { "type": "string" }, "schedule": { "type": "string" } }, "additionalProperties": false },
-        "filter": { "type": "object", "properties": { "label": { "type": "string" }, "ignore_bots": { "type": "boolean" } }, "additionalProperties": false }
+        "filter": { "type": "object", "properties": { "label": { "type": "string" }, "ignore_bots": { "type": "boolean" } }, "additionalProperties": false },
+        "foreach": { "type": "object", "properties": { "items": { "type": "string" }, "max_parallel": { "type": "integer", "minimum": 1 }, "as": { "type": "string" } }, "additionalProperties": false }
       }
     },
     "node": {
@@ -41,7 +42,8 @@
       { "type": "object", "required": ["schedule"], "properties": { "schedule": { "const": true }, "when": { "type": "string" } }, "additionalProperties": false },
       { "type": "object", "required": ["node_outcome"], "properties": { "node_outcome": { "enum": ["success", "failure", "quota_exhausted"] }, "when": { "type": "string" } }, "additionalProperties": false },
       { "type": "object", "required": ["gate_outcome"], "properties": { "gate_outcome": { "enum": ["approved", "rejected"] }, "when": { "type": "string" } }, "additionalProperties": false },
-      { "type": "object", "required": ["checks"], "properties": { "checks": { "enum": ["required_green", "failed"] }, "when": { "type": "string" } }, "additionalProperties": false }
+      { "type": "object", "required": ["checks"], "properties": { "checks": { "enum": ["required_green", "failed"] }, "when": { "type": "string" } }, "additionalProperties": false },
+      { "type": "object", "required": ["children"], "properties": { "children": { "enum": ["all_done", "any_failed"] }, "when": { "type": "string" } }, "additionalProperties": false }
     ] },
     "edge": { "type": "object", "required": ["from", "to", "on"], "properties": { "from": { "$ref": "#/$defs/id" }, "to": { "$ref": "#/$defs/id" }, "on": { "$ref": "#/$defs/on" }, "loop": { "type": "object", "required": ["kind"], "properties": { "kind": { "enum": ["self_review", "ci_repair", "gate_revision", "deviation_rework"] }, "safety_budget": { "type": "integer", "minimum": 1 } }, "additionalProperties": false } }, "additionalProperties": false }
   }

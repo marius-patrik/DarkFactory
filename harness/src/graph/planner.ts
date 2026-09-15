@@ -48,6 +48,11 @@ export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): 
 		const edge = matchingEdge(graph, current.id, (item) => "checks" in item.on && item.on.checks === event.conclusion, state.outputs);
 		return edge ? actionFor(graph, edge, state) : none("no matching check edge");
 	}
+	if (event.type === "children.completed") {
+		if (event.node !== state.current_node) return none("event node disagrees with persisted state");
+		const edge = matchingEdge(graph, current.id, (item) => "children" in item.on && item.on.children === event.outcome, state.outputs);
+		return edge ? actionFor(graph, edge, state) : none("no matching children edge");
+	}
 	if (event.type === "comment") {
 		if (state.quota_blocked && RESUME.test(event.body ?? "")) return { type: "run", nodes: [current.id], resume_run_id: state.run_id };
 		if (current.kind !== "gate") return none("comment is not actionable here");
