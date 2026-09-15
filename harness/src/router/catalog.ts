@@ -28,6 +28,7 @@ export function buildRouterCatalog(options: {
 				reasoning: declared?.reasoning ?? provider.capabilities.reasoning,
 				modalities,
 				quality: {}, limitTier: declared?.tier ?? "standard", reserve: provider.limits?.reserve,
+				collection: provider.data?.collection ?? "unknown",
 				source: live?.source ?? "builtin", ...override,
 			});
 		}

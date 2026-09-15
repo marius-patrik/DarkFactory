@@ -39,6 +39,7 @@ export interface ModelCapability {
 	limitTier: LimitTier;
 	reserve?: { requests?: number; tokens?: number };
 	source?: "live" | "cache" | "builtin" | "config";
+	collection?: "none" | "logging" | "training" | "unknown";
 }
 
 export interface ModelCapabilityOverride extends Partial<Omit<ModelCapability, "candidate">> {}

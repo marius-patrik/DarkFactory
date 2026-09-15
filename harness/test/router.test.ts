@@ -82,7 +82,7 @@ describe("policy routing", () => {
 			catalogs: new Map([["generic", { provider: "generic", source: "live", models: [{ id: "fresh", name: "Fresh", supportedMethods: ["generateImage"] }] }]]),
 			overrides: { "generic/fresh": { reasoning: true, contextWindow: 1_000_000, limitTier: "bulk", quality: { image: 5 } } },
 		});
-		expect(models).toEqual([{ candidate: { provider: "generic", model: "fresh", account: "default" }, contextWindow: 1_000_000, tools: false, reasoning: true, modalities: ["text", "image_gen"], quality: { image: 5 }, limitTier: "bulk", reserve: undefined, source: "live" }]);
+		expect(models).toEqual([{ candidate: { provider: "generic", model: "fresh", account: "default" }, contextWindow: 1_000_000, tools: false, reasoning: true, modalities: ["text", "image_gen"], quality: { image: 5 }, limitTier: "bulk", reserve: undefined, collection: "unknown", source: "live" }]);
 	});
 });
 
@@ -159,4 +159,22 @@ describe("quota-aware ranking", () => {
 		expect(result.chain.map((item) => item.provider)).toEqual(["first", "third"]);
 		expect(result.ranked.find((item) => item.candidate.provider === "second")!.status).toBe("skipped");
 	});
+
+	test("exposes provider data-collection in capability", () => {
+		const providers: ProviderConfig[] = [
+			{ id: "p1", name: "P1", dialect: "openai-completions", baseUrl: "https://example", auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [], models: { static: [{ id: "m" }] }, capabilities: { tools: false, reasoning: false, images: false }, data: { collection: "none", source: "test", checkedAt: "2020-01-01" } },
+			{ id: "p2", name: "P2", dialect: "openai-completions", baseUrl: "https://example", auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [], models: { static: [{ id: "m" }] }, capabilities: { tools: false, reasoning: false, images: false }, data: { collection: "logging", source: "test", checkedAt: "2020-01-01" } },
+			{ id: "p3", name: "P3", dialect: "openai-completions", baseUrl: "https://example", auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [], models: { static: [{ id: "m" }] }, capabilities: { tools: false, reasoning: false, images: false }, data: { collection: "training", source: "test", checkedAt: "2020-01-01" } },
+			{ id: "p4", name: "P4", dialect: "openai-completions", baseUrl: "https://example", auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [], models: { static: [{ id: "m" }] }, capabilities: { tools: false, reasoning: false, images: false }, data: { collection: "unknown", source: "test", checkedAt: "2020-01-01" } },
+			{ id: "p5", name: "P5", dialect: "openai-completions", baseUrl: "https://example", auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [], models: { static: [{ id: "m" }] }, capabilities: { tools: false, reasoning: false, images: false } }
+		];
+		const caps = buildRouterCatalog({ providers });
+		const map = new Map(caps.map(c => [c.candidate.provider, (c as any).collection]));
+		expect(map.get("p1")).toBe("none");
+		expect(map.get("p2")).toBe("logging");
+		expect(map.get("p3")).toBe("training");
+		expect(map.get("p4")).toBe("unknown");
+		expect(map.get("p5")).toBe("unknown");
+	});
+
 });
