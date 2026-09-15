@@ -2,8 +2,16 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ciFileSchema, type CiConfig, type ResolvedCheck } from "./schema.ts";
 
+/** Relative path to the CI config file within a repository. */
 export const CI_CONFIG_RELATIVE_PATH = join(".darkfactory", "ci.json");
 
+/**
+ * Load and validate the CI configuration from `.darkfactory/ci.json`.
+ *
+ * @param repoDir - Directory containing the CI configuration file (defaults to current working directory).
+ * @returns The parsed and validated CI configuration object.
+ * @throws If the configuration file is missing, contains invalid JSON, or fails schema validation.
+ */
 export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
 	const absolutePath = resolve(repoDir, CI_CONFIG_RELATIVE_PATH);
 	let content: string;
@@ -33,6 +41,13 @@ export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
 	return result.data;
 }
 
+/**
+ * Resolve required checks for a repository, applying per‑repository overrides.
+ *
+ * @param config - CI configuration object.
+ * @param repoSlug - Optional repository slug to apply per‑repo overrides.
+ * @returns Array of resolved checks with concrete required flag, workflow, and job.
+ */
 export function resolveChecksForRepo(config: CiConfig, repoSlug?: string): ResolvedCheck[] {
 	return config.checks.map((check) => {
 		let required = check.required;
@@ -51,6 +66,13 @@ export function resolveChecksForRepo(config: CiConfig, repoSlug?: string): Resol
 	});
 }
 
+/**
+ * Get the names of required checks for a repository from the CI configuration.
+ *
+ * @param config - CI configuration object.
+ * @param repoSlug - Optional repository slug to apply per‑repo overrides.
+ * @returns List of required check names.
+ */
 export function getRequiredCheckNames(config: CiConfig, repoSlug?: string): string[] {
 	return resolveChecksForRepo(config, repoSlug)
 		.filter((check) => check.required)

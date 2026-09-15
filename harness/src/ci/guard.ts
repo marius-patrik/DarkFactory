@@ -1,6 +1,14 @@
 import { resolveChecksForRepo } from "./config.ts";
 import type { CheckRunItem, CiConfig, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
 
+/**
+ * Compute the overall required‑checks state from a list of check runs.
+ *
+ * @param config - CI configuration or already resolved checks.
+ * @param checkRuns - List of check run items retrieved from GitHub.
+ * @param repoSlug - Optional repository slug for per‑repo overrides.
+ * @returns An object describing the aggregated state, including failing, pending, missing, passed checks and details.
+ */
 export function requiredChecksState(
 	config: CiConfig | ResolvedCheck[],
 	checkRuns: CheckRunItem[],
@@ -72,6 +80,13 @@ export function requiredChecksState(
 	};
 }
 
+/**
+ * Determine whether an alert should be triggered based on the number of repairs and a threshold.
+ *
+ * @param repairCount - Number of repairs performed.
+ * @param alertAfter - Optional threshold; if undefined or non‑positive, alerts are never triggered.
+ * @returns True if an alert should be raised, false otherwise.
+ */
 export function shouldAlert(repairCount: number, alertAfter?: number): boolean {
 	if (typeof alertAfter !== "number" || alertAfter <= 0) {
 		return false;

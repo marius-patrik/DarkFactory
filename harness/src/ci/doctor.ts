@@ -4,21 +4,40 @@ import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection, type ProtectionVerificationReport } from "./protection.ts";
 import type { CiConfig } from "./schema.ts";
 
+/** Result of a single CI health check. */
 export interface DoctorCheckResult {
+	/** Result status (pass, warn, fail, skipped). */
 	status: "pass" | "warn" | "fail" | "skipped";
+	/** Human-readable summary of the check result. */
 	message: string;
+	/** Optional detailed data returned by the check. */
 	details?: unknown;
 }
 
+/** Overall report from running the CI doctor checks. */
 export interface DoctorReport {
+	/** Whether all checks passed (no failures or warnings). */
 	ok: boolean;
+	/** Results of each individual CI health check. */
 	checks: {
+		/** Result of the config validity check. */
 		config: DoctorCheckResult;
+		/** Result of the workflow drift check. */
 		workflows: DoctorCheckResult;
+		/** Result of the branch protection check. */
 		protection: DoctorCheckResult;
 	};
 }
 
+/**
+ * Run all CI health checks and return a comprehensive report.
+ *
+ * @param repoDir - Directory of the repository to inspect (defaults to current working directory).
+ * @param repo - Optional GitHub repository client for remote checks; omitted for offline mode.
+ * @param branch - Branch name to check protection against (defaults to "main").
+ * @returns A DoctorReport summarising the results of each health check.
+ * @throws If any of the checks encounter unexpected errors.
+ */
 export async function runCiDoctor(
 	repoDir = process.cwd(),
 	repo?: GitHubRepository,

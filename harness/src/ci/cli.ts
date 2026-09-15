@@ -6,9 +6,13 @@ import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
 
+/** Context passed to the CI CLI for running commands. */
 export interface CiCliContext {
+	/** GitHub repository to operate on, if not inferred from environment. */
 	repo?: GitHubRepository;
+	/** Custom log function for standard output messages. */
 	log?: (msg: string) => void;
+	/** Custom log function for error messages. */
 	error?: (msg: string) => void;
 }
 
@@ -34,6 +38,13 @@ function resolveRepoClient(repoPath: string, explicitRepo?: GitHubRepository): G
 	return new GitHubRepository(client, owner!, repo!);
 }
 
+/**
+ * Run the CI subcommand with the given arguments and context.
+ *
+ * @param args - CLI arguments including subcommand and flags.
+ * @param context - Optional context with logging and repository overrides.
+ * @returns Exit code: 0 for success, 1 for failure or missing configuration.
+ */
 export async function runCiCli(args: string[], context: CiCliContext = {}): Promise<number> {
 	const log = context.log ?? console.log;
 	const error = context.error ?? console.error;

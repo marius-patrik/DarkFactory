@@ -9,37 +9,61 @@ import {
 	type TemplateContext,
 } from "./templates.ts";
 
+/** Options for installing managed workflow templates. */
 export interface InstallOptions {
+	/** If true, only report what would be installed without writing files. */
 	dryRun?: boolean;
+	/** If true, overwrite user-modified or unmanaged workflow files. */
 	force?: boolean;
+	/** Optional list of template names to install; defaults to all standard templates. */
 	templates?: readonly string[];
 }
 
+/** Summary of installWorkflows results. */
 export interface InstallReport {
+	/** Names of templates that were installed. */
 	installed: string[];
+	/** Names of templates skipped due to user modifications. */
 	skippedModified: string[];
+	/** Names of templates skipped because they are unmanaged. */
 	skippedUnmanaged: string[];
+	/** Whether the operation was a dry run. */
 	dryRun: boolean;
 }
 
+/** Options for updating managed workflow templates. */
 export interface UpdateOptions {
+	/** If true, only report what would be updated without writing files. */
 	dryRun?: boolean;
+	/** If true, overwrite user-modified or unmanaged workflow files. */
 	force?: boolean;
+	/** Optional list of template names to update; defaults to all standard templates. */
 	templates?: readonly string[];
 }
 
+/** Summary of updateWorkflows results. */
 export interface UpdateReport {
+	/** Names of templates that were updated. */
 	updated: string[];
+	/** Names of templates already up-to-date. */
 	upToDate: string[];
+	/** Names of templates skipped due to user modifications. */
 	skippedModified: string[];
+	/** Names of templates skipped because they are unmanaged. */
 	skippedUnmanaged: string[];
+	/** Names of templates missing (no file found). */
 	missing: string[];
+	/** Whether the operation was a dry run. */
 	dryRun: boolean;
 }
 
+/** Describes the drift status of a managed workflow template. */
 export interface WorkflowDriftItem {
+	/** Template file name. */
 	file: string;
+	/** Drift status (in_sync, outdated, modified, unmanaged, missing). */
 	status: "in_sync" | "outdated" | "modified" | "unmanaged" | "missing";
+	/** Optional explanation of the drift status. */
 	details?: string;
 }
 
@@ -55,6 +79,13 @@ async function resolveTemplateContext(repoDir: string): Promise<TemplateContext>
 	}
 }
 
+/**
+ * Check all managed workflow templates for drift compared to the rendered templates.
+ *
+ * @param repoDir - Repository directory (defaults to current working directory).
+ * @param templates - List of template file names to check (defaults to all standard templates).
+ * @returns Array of WorkflowDriftItem describing the drift status for each template.
+ */
 export async function checkWorkflowsDrift(
 	repoDir = process.cwd(),
 	templates = STANDARD_WORKFLOW_TEMPLATES,
@@ -99,6 +130,13 @@ export async function checkWorkflowsDrift(
 	return results;
 }
 
+/**
+ * Install managed workflow templates into the repository.
+ *
+ * @param repoDir - Repository directory (defaults to current working directory).
+ * @param options - Installation options controlling dry‑run, force, and specific templates.
+ * @returns A report summarising which templates were installed or skipped.
+ */
 export async function installWorkflows(
 	repoDir = process.cwd(),
 	options: InstallOptions = {},
@@ -150,6 +188,13 @@ export async function installWorkflows(
 	};
 }
 
+/**
+ * Update managed workflow templates in the repository.
+ *
+ * @param repoDir - Repository directory (defaults to current working directory).
+ * @param options - Update options controlling dry‑run, force, and specific templates.
+ * @returns A report summarising which templates were updated, up‑to‑date, or skipped.
+ */
 export async function updateWorkflows(
 	repoDir = process.cwd(),
 	options: UpdateOptions = {},
