@@ -3,6 +3,11 @@ import { rename } from "node:fs/promises";
 /** Error codes Windows reports while another process holds the target open (a reader or antivirus scan). */
 const TRANSIENT_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
 
+/** Options for replaceFile operation.
+ * @property rename - Optional custom rename function for testing.
+ * @property delaysMs - Sequence of delays in milliseconds between retries.
+ * @property sleep - Optional custom sleep implementation for testing.
+ */
 export interface ReplaceFileOptions {
 	/** Rename implementation; injectable for tests. */
 	rename?: (from: string, to: string) => Promise<void>;

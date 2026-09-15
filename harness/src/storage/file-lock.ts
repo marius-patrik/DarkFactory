@@ -3,10 +3,27 @@ import { dirname } from "node:path";
 
 const localQueues = new Map<string, Promise<unknown>>();
 
+/** Options for configuring file lock behavior.
+ * @property staleMs - Time in milliseconds after which a lock is considered stale. Defaults to 30,000 ms.
+ * @property timeoutMs - Maximum time to wait for acquiring the lock before giving up. Defaults to 10,000 ms.
+ * @property retryMs - Delay between lock acquisition attempts in milliseconds. Defaults to 10 ms.
+ */
 export interface FileLockOptions {
-	staleMs?: number;
-	timeoutMs?: number;
-	retryMs?: number;
+	/**
+ * Maximum age of an existing lock file before it is considered stale.
+ * @default 30000
+ */
+staleMs?: number;
+	/**
+ * How long to wait for the lock before timing out.
+ * @default 10000
+ */
+timeoutMs?: number;
+	/**
+ * Interval between attempts to acquire the lock.
+ * @default 10
+ */
+retryMs?: number;
 }
 
 function ownerIsAlive(pid: number): boolean {
@@ -66,7 +83,14 @@ async function acquire(path: string, options: FileLockOptions): Promise<() => Pr
 	}
 }
 
-/** Serializes a load-modify-save transaction both in-process and across processes. */
+/**
+ * Executes a task with an exclusive file lock, ensuring only one process modifies the file at a time.
+ *
+ * @param path - Path to the lock file.
+ * @param task - Async function containing the work to perform while the lock is held.
+ * @param options - Optional configuration for stale detection, timeouts, and retry intervals.
+ * @returns The result of the provided task.
+ */
 export function withFileLock<T>(path: string, task: () => Promise<T>, options: FileLockOptions = {}): Promise<T> {
 	const previous = localQueues.get(path) ?? Promise.resolve();
 	const current = (async () => {
