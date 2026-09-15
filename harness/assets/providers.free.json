@@ -2409,6 +2409,888 @@
         "sourceUrl": "https://github.com/nejib1/Free-LLM",
         "checkedAt": "2026-09-15"
       }
+    },
+    {
+      "id": "aihubmix",
+      "name": "AIHubMix",
+      "dialect": "openai-completions",
+      "baseUrl": "https://aihubmix.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "AIHUBMIX_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "gemini-3.8-flash-free",
+            "name": "gemini-3.8-flash-free",
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "tier": "tight",
+            "reasoning": true
+          },
+          {
+            "id": "coding-glm-5.3-free",
+            "name": "coding-glm-5.3-free",
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "minimax-m2.7-free",
+            "name": "minimax-m2.7-free",
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://aihubmix.com/token",
+        "card": false,
+        "notes": "Models with the -free suffix; per-model RPM and daily token caps, reset daily.",
+        "sourceUrl": "https://docs.aihubmix.com/en/blogs/free-ai-models",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "zenmux",
+      "name": "ZenMux",
+      "dialect": "openai-completions",
+      "baseUrl": "https://zenmux.ai/api/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "ZENMUX_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "z-ai/glm-4.7-flash-free",
+            "name": "z-ai/glm-4.7-flash-free",
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://zenmux.ai/",
+        "card": false,
+        "notes": "Rotating free models (-free suffix).",
+        "sourceUrl": "https://www.nxcode.io/resources/news/zenmux-complete-guide-ai-api-gateway-2026",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "cline-gateway",
+      "name": "Cline API",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.cline.bot/api/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "CLINE_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "poolside/laguna-s-2.1:free",
+            "name": "poolside/laguna-s-2.1:free",
+            "contextWindow": 262000,
+            "maxTokens": 32000,
+            "tier": "tight"
+          },
+          {
+            "id": "stepfun/step-3.7-flash:free",
+            "name": "stepfun/step-3.7-flash:free",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://app.cline.bot/",
+        "card": false,
+        "notes": "Free models carry the :free suffix.",
+        "sourceUrl": "https://freellm.net/providers",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "longcat",
+      "name": "Meituan LongCat API",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.longcat.chat/openai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "LONGCAT_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "LongCat-2.0",
+            "name": "LongCat-2.0",
+            "contextWindow": 1000000,
+            "maxTokens": 128000,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://longcat.chat/platform/",
+        "card": false,
+        "notes": "Daily free token quota (amount not published on the docs page).",
+        "sourceUrl": "https://longcat.chat/platform/docs/",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "inception",
+      "name": "Inception (Mercury)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.inceptionlabs.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "INCEPTION_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "mercury-2",
+            "name": "mercury-2",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "mercury-2.5",
+            "name": "mercury-2.5",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://platform.inceptionlabs.ai/",
+        "card": false,
+        "credits": "free tokens for every new key (10M-100M reported)",
+        "sourceUrl": "https://www.inceptionlabs.ai/blog/mercury-2-10x-free-tokens",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "arliai",
+      "name": "Arli AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.arliai.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "ARLIAI_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "Qwen3-32B",
+            "name": "Qwen3-32B",
+            "contextWindow": 12000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "concurrency",
+            "dimension": "concurrency",
+            "limit": 1,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "docs",
+            "sourceUrl": "https://www.arliai.com/pricing",
+            "checkedAt": "2026-09-15",
+            "note": "free tier"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://www.arliai.com/",
+        "card": false,
+        "notes": "Free tier: 12K context, one request at a time, slower. Static model id is a starting point; `df models --provider arliai --refresh` lists the real ids once a key is set.",
+        "sourceUrl": "https://www.arliai.com/pricing",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "baidu-qianfan",
+      "name": "Baidu Qianfan (ERNIE Speed / Lite)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://qianfan.baidubce.com/v2",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "QIANFAN_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "ernie-speed-128k",
+            "name": "ernie-speed-128k",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          },
+          {
+            "id": "ernie-lite-8k",
+            "name": "ernie-lite-8k",
+            "contextWindow": 8000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://console.bce.baidu.com/iam/#/iam/apikey/list",
+        "card": false,
+        "verification": "real-name (China)",
+        "notes": "ERNIE Speed and Lite are free with QPS limits only.",
+        "sourceUrl": "https://cloud.baidu.com/news/news_c7a145b9-5c99-4870-939f-e09ba506aab3",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "iflytek-spark",
+      "name": "iFlytek Spark Lite",
+      "dialect": "openai-completions",
+      "baseUrl": "https://spark-api-open.xf-yun.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "SPARK_API_PASSWORD"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "lite",
+            "name": "Spark Lite",
+            "contextWindow": 8000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*",
+            "type": "rate",
+            "dimension": "requests",
+            "limit": 5,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://www.llmabacus.com/articles/free-llm-api-forever-myth-2026",
+            "checkedAt": "2026-09-15"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": false,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://console.xfyun.cn/services/cbm",
+        "card": false,
+        "verification": "phone (China)",
+        "notes": "The key is the HTTP APIPassword from the console; Spark Lite is free with unlimited tokens.",
+        "sourceUrl": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "zhipu-cn",
+      "name": "Zhipu BigModel (mainland)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "ZHIPU_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "glm-4.7-flash",
+            "name": "glm-4.7-flash",
+            "contextWindow": 200000,
+            "maxTokens": 128000,
+            "tier": "tight",
+            "reasoning": true
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "declared": [
+          {
+            "model": "*-flash",
+            "type": "concurrency",
+            "dimension": "concurrency",
+            "limit": 1,
+            "windowMs": 60000,
+            "reset": "rolling",
+            "source": "community",
+            "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+            "checkedAt": "2026-09-15",
+            "note": "one concurrent request"
+          }
+        ]
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "permanent",
+        "keyUrl": "https://open.bigmodel.cn/usercenter/apikeys",
+        "card": false,
+        "notes": "Separate account from Z.AI; the -flash models are free.",
+        "sourceUrl": "https://github.com/mnfst/awesome-free-llm-apis",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "volcengine-ark",
+      "name": "Volcengine Ark (Doubao)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "ARK_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "doubao-seed-1-6-flash-250828",
+            "name": "doubao-seed-1-6-flash-250828",
+            "contextWindow": 256000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://console.volcengine.com/ark/",
+        "card": false,
+        "verification": "real-name (China)",
+        "credits": "free token grant per model",
+        "notes": "Static model id is a starting point; `df models --provider volcengine-ark --refresh` lists the real ids once a key is set.",
+        "sourceUrl": "https://blog.csdn.net/demm868/article/details/160535726",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "moonshot",
+      "name": "Moonshot AI (Kimi platform)",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.moonshot.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "MOONSHOT_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "kimi-latest",
+            "name": "kimi-latest",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://platform.moonshot.ai/console/api-keys",
+        "card": false,
+        "credits": "signup credit (amount not verified)",
+        "notes": "Static model id is a starting point; `df models --provider moonshot --refresh` lists the real ids once a key is set.",
+        "sourceUrl": "https://blog.csdn.net/demm868/article/details/160535726",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax platform",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.minimax.io/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "MINIMAX_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "MiniMax-M2.7",
+            "name": "MiniMax-M2.7",
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://platform.minimax.io/",
+        "card": false,
+        "credits": "signup credit (amount not verified)",
+        "notes": "Static model id is a starting point; `df models --provider minimax --refresh` lists the real ids once a key is set.",
+        "sourceUrl": "https://blog.csdn.net/demm868/article/details/160535726",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "stepfun",
+      "name": "StepFun platform",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.stepfun.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "STEPFUN_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "step-3.7-flash",
+            "name": "step-3.7-flash",
+            "contextWindow": 262000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://platform.stepfun.com/",
+        "card": false,
+        "credits": "signup credit (amount not verified)",
+        "notes": "Static model id is a starting point; `df models --provider stepfun --refresh` lists the real ids once a key is set.",
+        "sourceUrl": "https://blog.csdn.net/demm868/article/details/160535726",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "sarvam",
+      "name": "Sarvam AI",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.sarvam.ai/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "SARVAM_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "sarvam-105b",
+            "name": "sarvam-105b",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://dashboard.sarvam.ai/",
+        "card": false,
+        "credits": "signup credits",
+        "sourceUrl": "https://api.sarvam.ai/v1/models",
+        "checkedAt": "2026-09-15"
+      }
+    },
+    {
+      "id": "aimlapi",
+      "name": "AI/ML API",
+      "dialect": "openai-completions",
+      "baseUrl": "https://api.aimlapi.com/v1",
+      "auth": [
+        {
+          "kind": "api_key",
+          "slot": "api_key",
+          "placement": "bearer",
+          "env": [
+            "AIMLAPI_API_KEY"
+          ]
+        }
+      ],
+      "requiredCredentialSlots": [
+        "api_key"
+      ],
+      "models": {
+        "static": [
+          {
+            "id": "deepseek/deepseek-v4.1-flash",
+            "name": "deepseek/deepseek-v4.1-flash",
+            "contextWindow": 128000,
+            "maxTokens": 16384,
+            "tier": "tight"
+          }
+        ],
+        "list": {
+          "path": "/models",
+          "itemsPath": "data",
+          "idPath": "id",
+          "namePath": "id"
+        }
+      },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true
+      },
+      "capabilities": {
+        "tools": true,
+        "reasoning": false,
+        "images": false
+      },
+      "free": {
+        "kind": "trial-credits",
+        "keyUrl": "https://aimlapi.com/app/keys",
+        "card": false,
+        "credits": "free starter usage",
+        "sourceUrl": "https://github.com/OuterSpacee/free-ai-apis",
+        "checkedAt": "2026-09-15"
+      }
     }
   ]
 }
