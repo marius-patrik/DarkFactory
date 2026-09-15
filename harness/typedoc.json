@@ -1,0 +1,22 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": [
+		"src"
+	],
+	"entryPointStrategy": "expand",
+	"exclude": [
+		"**/*.test.ts"
+	],
+	"tsconfig": "tsconfig.json",
+	"plugin": [
+		"typedoc-plugin-markdown"
+	],
+	"excludePrivate": true,
+	"excludeInternal": true,
+	"validation": {
+		"notExported": false,
+		"invalidLink": true,
+		"notDocumented": true
+	},
+	"treatValidationWarningsAsErrors": true
+}

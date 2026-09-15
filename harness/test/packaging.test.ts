@@ -40,3 +40,19 @@ describe("packageAssets without a native pi-tui module", () => {
 		}
 	});
 });
+
+describe("API documentation check", () => {
+	test("pins TypeDoc and the markdown plugin exactly and exposes docs:check", async () => {
+		const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+		expect(manifest.devDependencies.typedoc).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(manifest.devDependencies["typedoc-plugin-markdown"]).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(manifest.scripts["docs:check"]).toBe("typedoc --emit none");
+	});
+
+	test("fails on any undocumented export across src/", async () => {
+		const config = JSON.parse(await readFile(new URL("../typedoc.json", import.meta.url), "utf8"));
+		expect(config.entryPoints).toEqual(["src"]);
+		expect(config.validation.notDocumented).toBe(true);
+		expect(config.treatValidationWarningsAsErrors).toBe(true);
+	});
+});
