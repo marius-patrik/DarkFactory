@@ -1596,6 +1596,14 @@ def checkpoint_and_notify_exhaustion(
     steps_formatted = "\n".join([f"- [x] {s}" for s in steps])
     models_formatted = harnesses.describe_chain()
 
+    # Automatic resume time computation
+    reset_at = next_quota_reset(error_detail, time.time())
+    reset_at_utc = (
+        datetime.fromtimestamp(reset_at, tz=timezone.utc)
+        .replace(microsecond=0)
+        .strftime("%Y-%m-%d %H:%M:%S UTC")
+    )
+
     comment_body = (
         "<!-- darkfactory-agent -->\n"
         "### ⚠️ DarkFactory Agent Quota Exhaustion Notice\n\n"
@@ -1606,6 +1614,7 @@ def checkpoint_and_notify_exhaustion(
         f"{steps_formatted}\n\n"
         "#### Checkpoint Information\n"
         f"- **Branch**: `{branch_name or 'N/A'}`\n"
+        f"- **Automatic Resume**: {reset_at_utc}\n"
         "- **Checkpoint**: Progress preserved in `.antigravity_checkpoint.json`\n"
         "- **Project Status**: Updated to `Blocked`\n\n"
         "#### Instructions to Resume\n"
@@ -1634,7 +1643,6 @@ def checkpoint_and_notify_exhaustion(
         providers = []
         if m:
             providers = [p.strip() for p in m.group(1).split(",")]
-        reset_at = next_quota_reset(error_detail, time.time())
         try:
             record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
         except Exception as error:  # noqa: BLE001 - recording the block must never fail the notice
@@ -3184,32 +3192,7 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
     print(f"Creating branch: {branch_name}")
 
     # 3. Configure git identity and safe directory
-    try:
-        subprocess.run(["git", "config", "--global", "--add", "safe.directory", "*"], check=False)
-        subprocess.run(
-            ["git", "config", "--global", "user.name", "github-actions[bot]"], check=False
-        )
-        subprocess.run(
-            [
-                "git",
-                "config",
-                "--global",
-                "user.email",
-                "41898282+github-actions[bot]@users.noreply.github.com",
-            ],
-            check=False,
-        )
-        run_git(["config", "user.name", "github-actions[bot]"], cwd=cwd)
-        run_git(
-            [
-                "config",
-                "user.email",
-                "41898282+github-actions[bot]@users.noreply.github.com",
-            ],
-            cwd=cwd,
-        )
-    except Exception as e:
-        print(f"Git config notice: {e}", file=sys.stderr)
+    configure_git_identity(cwd)
 
     # 4. Create feature branch from main or track existing remote branch
     try:
@@ -3648,11 +3631,38 @@ def parse_review_findings(text: str) -> List[str]:
     return items
 
 
+GIT_BOT_NAME = "github-actions[bot]"
+GIT_BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
+
+
+def configure_git_identity(cwd: str = WORKSPACE_DIR) -> None:
+    """Gives the container's git a committer identity and trusts the mounted working copy.
+
+    The agent container has no global git identity, so every stage that commits must set one
+    first; a dispatched stage that skipped this failed with "Author identity unknown".
+
+    Args:
+        cwd: Working copy.
+    """
+    for args in (
+        ["config", "--global", "--add", "safe.directory", "*"],
+        ["config", "--global", "user.name", GIT_BOT_NAME],
+        ["config", "--global", "user.email", GIT_BOT_EMAIL],
+        ["config", "user.name", GIT_BOT_NAME],
+        ["config", "user.email", GIT_BOT_EMAIL],
+    ):
+        try:
+            run_git(args, cwd=cwd)
+        except (subprocess.CalledProcessError, OSError) as error:
+            print(f"Git config notice: {getattr(error, 'stderr', None) or error}", file=sys.stderr)
+
+
 def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> Optional[str]:
-    """Checks out a pull request's head branch in the working copy.
+    """Checks out a pull request's head branch in the working copy, ready for commits.
 
     Dispatched stages start from the default branch; review and fix runs must read and change the
-    pull request's own branch, and a push from the default branch would target the wrong ref.
+    pull request's own branch, and a push from the default branch would target the wrong ref. The
+    committer identity is configured here because every stage that changes the branch starts here.
 
     Args:
         pr_number: Pull request number.
@@ -3666,6 +3676,7 @@ def checkout_pr_branch(pr_number: int, repo: str, cwd: str = WORKSPACE_DIR) -> O
         head = json.loads(
             run_gh(["pr", "view", str(pr_number), "--json", "headRefName"], repo=repo)
         )["headRefName"]
+        configure_git_identity(cwd)
         run_git(["fetch", "origin", head], cwd=cwd)
         run_git(["checkout", "-B", head, f"origin/{head}"], cwd=cwd)
         return head
@@ -3746,16 +3757,37 @@ def run_pr_feedback_fix(
         if request_number:
             block_entity(request_number, repo=repo, is_pr=False)
         return
-    # Commit and push changes
+    # Commit and push changes. The owner's rejection is only answered once a revision is on the
+    # branch: an empty or failed commit is reported and blocks, never announced as addressed.
     format_repository(cwd)
+    failure = None
     try:
         run_git(["add", "-A"], cwd=cwd)
         status = run_git(["status", "--porcelain"], cwd=cwd)
         if status:
             run_git(["commit", "-m", "fix(feedback): address owner feedback"], cwd=cwd)
             run_git(["push", "origin", "HEAD"], cwd=cwd)
+        else:
+            failure = "The agent finished without changing any file, so nothing was pushed."
     except subprocess.CalledProcessError as e:
         print(f"Git error during feedback fix: {e.stderr or e.stdout}", file=sys.stderr)
+        failure = f"Committing or pushing the revision failed:\n\n```\n{(e.stderr or e.stdout or str(e)).strip()[:1500]}\n```"
+    if failure:
+        run_gh(
+            [
+                "pr",
+                "comment",
+                str(pr_number),
+                "--body",
+                f"<!-- darkfactory-agent -->\n### Feedback Fix Error\n\n{failure}\n\n"
+                "The feedback was not applied. Reply `/df reject <feedback>` to try again.",
+            ],
+            repo=repo,
+        )
+        block_entity(pr_number, repo=repo, is_pr=True)
+        if request_number:
+            block_entity(request_number, repo=repo, is_pr=False)
+        return
     # Post summary comment
     trimmed = result[:3000]
     comment_body = f"### Feedback addressed\n\n{trimmed}"
@@ -4119,6 +4151,19 @@ def run_self_review_fix(
                 print(f"No changes after fix attempt on iteration {iteration}")
         except subprocess.CalledProcessError as e:
             print(f"Git error during review fix: {e.stderr or e.stdout}", file=sys.stderr)
+            run_gh(
+                [
+                    "pr",
+                    "comment",
+                    str(pr_number),
+                    "--body",
+                    f"<!-- darkfactory-agent -->\n### Self-Review Fix Error (Iteration {iteration})\n\n"
+                    f"Committing or pushing the fixes failed:\n\n```\n"
+                    f"{(e.stderr or e.stdout or str(e)).strip()[:1500]}\n```",
+                ],
+                repo=repo,
+            )
+            block_entity(pr_number, repo=repo, is_pr=True)
             return
 
     # 5. Push, post `### Self-Review fixes — iteration N` summarizing what changed, then dispatch

@@ -1,4 +1,5 @@
-import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { replaceFile } from "./storage/replace-file.ts";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AuthOperationOptions, Credential, CredentialInfo, CredentialStore, ProviderHeaders } from "@earendil-works/pi-ai";
@@ -250,7 +251,7 @@ export class FileCredentialStore {
 		try {
 			await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 			throwIfAborted(options);
-			await rename(temporary, this.path);
+			await replaceFile(temporary, this.path);
 			await chmod(this.path, 0o600).catch(() => undefined);
 		} catch (error) {
 			await Bun.file(temporary).delete().catch(() => undefined);
