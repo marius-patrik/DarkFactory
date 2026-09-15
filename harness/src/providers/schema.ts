@@ -3,189 +3,399 @@ import { join } from "node:path";
 import defaults from "../../assets/providers.defaults.json";
 import freeProviders from "../../assets/providers.free.json";
 
+/** The provider dialect determines the API format and behavior for the provider. */
 export type ProviderDialect = "openai-completions" | "openai-responses" | "openai-codex-responses" | "anthropic-messages" | "google-generative-ai" | "cloudcode-agent";
+/** Categorizes failure types for provider quota and error handling. */
 export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
+/** Tier classification for model usage limits and pricing. */
 export type ModelTier = "tight" | "standard" | "bulk";
+/** Types of limits that can be configured for a provider. */
 export type ConfiguredLimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth";
 
-export interface ValueReference { value?: string; env?: string }
+/** Reference to a value that can be provided directly or via an environment variable. */
+export interface ValueReference {
+	/** Direct string value. */
+	value?: string;
+	/** Environment variable name containing the value. */
+	env?: string;
+}
+/** Configuration for API‑key based authentication. */
 export interface ApiKeyAuthConfig {
+	/** Authentication type identifier. */
 	kind: "api_key";
+	/** Name of the credential slot to use. */
 	slot: string;
+	/** Where to place the API key in requests. */
 	placement: "bearer" | "header" | "query";
+	/** Header or query parameter name for the API key. */
 	name?: string;
+	/** Environment variables that may contain the API key. */
 	env?: string[];
+	/** Whether this auth is optional. */
 	optional?: boolean;
+	/** Value to use when no key is provided. */
 	anonymousValue?: string;
 }
+/** Configuration for OAuth‑based authentication flows. */
 export interface OAuthAuthConfig {
+	/** Authentication type identifier. */
 	kind: "oauth";
+	/** Name of the credential slot to use. */
 	slot: string;
+	/** OAuth flow type to use. */
 	flow: "device_code" | "pkce";
+	/** OAuth authorization endpoint URL. */
 	authorizationEndpoint?: string;
+	/** OAuth device code endpoint URL. */
 	deviceCodeEndpoint?: string;
+	/** OAuth token endpoint URL. */
 	tokenEndpoint: string;
+	/** OAuth client ID. */
 	clientId: ValueReference;
+	/** OAuth client secret. */
 	clientSecret?: ValueReference;
+	/** OAuth scopes to request. */
 	scopes: string[];
+	/** Whether this is a subscription-based OAuth. */
 	isSubscription?: boolean;
+	/** Label to display for login. */
 	loginLabel?: string;
+	/** Additional HTTP headers to include in the OAuth token request. */
 	authHeaders?: Record<string, string>;
+	/** Name of the response header that contains the account ID. */
 	accountIdHeader?: string;
+	/** Where to place the OAuth token (header or API-key style). */
 	placement?: "bearer" | "api_key";
+	/** Encoding format for the token request body. */
 	tokenEncoding?: "form" | "json";
+	/** URI to redirect to after successful authentication (if applicable). */
 	redirectUri?: string;
+	/** Extra query parameters to include in the authorization request. */
 	authorizationParams?: Record<string, string>;
+	/** JWT claim names that may contain the account ID. */
 	accountIdJwtClaim?: string[];
 }
+/** Union of supported authentication configurations for a provider. */
 export type ProviderAuthConfig = ApiKeyAuthConfig | OAuthAuthConfig;
 
+/** Definition of a static model that does not require a discovery endpoint. */
 export interface StaticModelConfig {
+	/** Unique identifier for the static model. */
 	id: string;
+	/** Human-readable name of the model. */
 	name?: string;
+	/** Whether the model supports chain-of-thought reasoning. */
 	reasoning?: boolean;
+	/** Types of inputs the model accepts (text, image). */
 	input?: Array<"text" | "image">;
+	/** Maximum number of tokens the model can consider in a single request. */
 	contextWindow?: number;
+	/** Maximum number of tokens the model can generate in a response. */
 	maxTokens?: number;
+	/** Pricing tier of the model (tight, standard, bulk). */
 	tier?: ModelTier;
 }
+/** Default limit configuration used when a provider does not supply explicit limits. */
 export interface LimitDefaultConfig {
+	/** Kind of limit being configured (rate, daily, etc.). */
 	type: ConfiguredLimitType;
+	/** What the limit dimension applies to (requests count, token count, or usage cost). */
 	dimension?: "requests" | "tokens" | "usage";
+	/** Numeric value of the limit. */
 	limit: number;
+	/** Time window for the limit in milliseconds. */
 	windowMs: number;
+	/** Identifier of a pool of limits shared across models. */
 	pool?: string;
+	/** Source of the limit value (documentation, observed, or default). */
 	source?: "docs" | "observed" | "default";
+	/** Reset behavior for the limit (rolling window or fixed interval). */
 	reset?: "rolling" | "fixed";
+	/** Model identifier this limit applies to (optional). */
 	model?: string;
 }
+/** Source of the numeric limit value used for documentation or runtime checks. */
 export type LimitNumberSource = "docs" | "community" | "observed" | "default";
+/** Explicitly declared limit configuration for a specific model pattern. */
 export interface DeclaredLimitConfig {
 	/** Model id or glob ("*", "*:free"); absent means every model. */
 	model?: string;
+	/** Type of limit (including concurrency limits). */
 	type: ConfiguredLimitType | "concurrency";
+	/** Dimension of the declared limit. */
 	dimension?: "requests" | "tokens" | "usage" | "concurrency";
+	/** Numeric value of the limit. */
 	limit: number;
+	/** Time window for the limit in milliseconds. */
 	windowMs: number;
+	/** Reset behavior for the limit (rolling window or fixed interval). */
 	reset?: "rolling" | "fixed";
 	/** docs = provider documentation, community = third-party list, observed = seen in real responses. */
 	source?: LimitNumberSource;
+	/** URL pointing to the source documentation for the limit. */
 	sourceUrl?: string;
 	/** ISO date the number was last checked against its source. */
 	checkedAt?: string;
+	/** Additional human-readable note about the limit. */
 	note?: string;
 	/** A pooled limit is shared by every model the pattern matches (same account). */
 	pool?: string;
 }
 /** How a provider can be used for free and where its owner gets access. */
 export interface FreeTierConfig {
+	/** Category of free-tier access. */
 	kind: "permanent" | "renewable-credits" | "trial-credits" | "anonymous";
+	/** URL where a free API key can be obtained. */
 	keyUrl: string;
+	/** URL to sign up for the free tier (if separate from key URL). */
 	signupUrl?: string;
+	/** Whether a credit card is required for the free tier. */
 	card?: boolean;
+	/** Description of any verification steps required. */
 	verification?: string;
+	/** Amount of free credits provided. */
 	credits?: string;
+	/** Additional notes about the free tier. */
 	notes?: string;
+	/** URL to the source information for the free tier. */
 	sourceUrl?: string;
+	/** Date when the free-tier information was last verified. */
 	checkedAt?: string;
 }
+/** Rule describing how request body contents affect limit enforcement. */
 export interface LimitBodyRuleConfig {
+	/** Type of limit to apply to request bodies. */
 	type: ConfiguredLimitType;
+	/** Regular expression that matches request body content triggering the limit. */
 	regex: string;
+	/** Regular expression to match duration-related content in the body. */
 	durationRegex?: string;
+	/** Time in milliseconds after which to reset the limit counter. */
 	resetAfterMs?: number;
+	/** What the limit dimension applies to (requests count, token count, or usage cost). */
 	dimension?: "requests" | "tokens" | "usage";
+	/** Identifier of a pool of limits shared across models. */
 	pool?: string;
 }
+/** Policy governing how limits are observed and enforced for a provider. */
 export interface LimitPolicyConfig {
+	/** Whether to automatically observe and learn from observed limits in responses. */
 	observe: boolean;
+	/** Whether the provider uses standard rate limit headers. */
 	standardHeaders?: boolean;
-	reserve?: { requests?: number; tokens?: number };
+	/** Reserved capacity that should not be used for regular requests. */
+	reserve?: {
+		/** Number of requests to reserve. */
+		requests?: number;
+		/** Number of tokens to reserve. */
+		tokens?: number;
+	};
+	/** Default limit values when a provider does not supply explicit limits. */
 	defaults?: LimitDefaultConfig[];
+	/** Explicitly declared limit configuration for specific model patterns. */
 	declared?: DeclaredLimitConfig[];
+	/** Rules describing how request body contents affect limit enforcement. */
 	bodyRules?: LimitBodyRuleConfig[];
-	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
+	/** Health probe configuration to check if limits are available. */
+	probe?: {
+		/** Whether the probe is enabled. */
+		enabled?: boolean;
+		/** HTTP method to use for the probe. */
+		method?: "GET" | "POST";
+		/** API path to probe. */
+		path: string;
+	};
 	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
 	dailyReset?: "utc-midnight" | "pacific-midnight";
 }
+/** Configuration for endpoints that list available models dynamically. */
 export interface ModelListConfig {
+	/** API endpoint path to fetch the list of models. */
 	path: string;
+	/** HTTP method to use for the request. */
 	method?: "GET" | "POST";
+	/** JSONPath expression to extract the array of model items. */
 	itemsPath: string;
+	/** JSONPath expression to extract the model ID. */
 	idPath: string;
+	/** JSONPath expression to extract the model name. */
 	namePath?: string;
+	/** JSONPath expression to extract supported methods. */
 	methodsPath?: string;
+	/** Prefix to strip from model IDs when generating identifiers. */
 	stripIdPrefix?: string;
+	/** JSONPath expression to extract the next page token. */
 	nextPageTokenPath?: string;
+	/** Query parameter name for pagination. */
 	pageTokenParam?: string;
+	/** Request body for POST endpoints. */
 	body?: Record<string, unknown>;
 }
+/** Configuration describing how a limit reset time is derived. */
 export interface ResetSourceConfig {
+	/** Source type for the reset time. */
 	kind: "retry_info" | "header" | "next_pacific_midnight" | "cooldown";
+	/** JSONPath expression to extract the reset time from response. */
 	path?: string;
+	/** HTTP header name containing the reset time. */
 	header?: string;
+	/** Reset time in seconds. */
 	seconds?: number;
+	/** Random jitter in milliseconds to prevent thundering herd. */
 	jitterMs?: number;
 }
+/** Rule defining when a failure should trigger a limit reset or back‑off. */
 export interface FailureRuleConfig {
+	/** Type of failure that triggers this rule. */
 	kind: FailureRuleKind;
+	/** HTTP status codes that indicate this failure. */
 	statuses?: number[];
+	/** JSONPath expression to extract the failure condition. */
 	jsonPath?: string;
+	/** Expected string value to match. */
 	equals?: string;
+	/** Regular expression pattern to match the failure. */
 	regex?: string;
+	/** How to derive the reset time after this failure. */
 	reset?: ResetSourceConfig[];
+	/** Pool identifier for shared limits. */
 	pool?: string;
 }
+/** Configuration for importing credentials or tokens from external sources. */
 export interface ImporterConfig {
+	/** Unique identifier for this importer. */
 	id: string;
+	/** Parser type to extract credentials from the source. */
 	parser: "claude-code" | "codex" | "grok-cli" | "antigravity-keyring" | "kimi-code";
+	/** Path to the file or directory containing credentials. */
 	path?: string;
-	keyring?: { service: string; account: string };
+	/** Keyring configuration for system credential store. */
+	keyring?: {
+		/** Keyring service name. */
+		service: string;
+		/** Keyring account name. */
+		account: string;
+	};
+	/** Target provider name to import credentials for. */
 	targetProvider: string;
+	/** APIKey target provider if different from targetProvider. */
 	apiKeyTargetProvider?: string;
+	/** Mapping of credential fields to provider-specific names. */
 	fieldMapping: Record<string, string>;
-	formats?: { expires?: "epoch_seconds" | "epoch_milliseconds" | "iso" };
+	/** Formats for credential expiration dates. */
+	formats?: {
+		/** How the expiration is encoded. */
+		expires?: "epoch_seconds" | "epoch_milliseconds" | "iso";
+	};
 }
+/** Specification for headers that are generated automatically per request or session. */
 export interface GeneratedHeaderConfig {
+	/** Type of value to generate. */
 	kind: "session-id" | "request-id" | "random";
+	/** Scope of the generated value. */
 	scope?: "session" | "request";
+	/** Group identifier for related generated values. */
 	group?: string;
+	/** Prefix to prepend to generated values. */
 	prefix?: string;
+	/** Length of the generated value. */
 	length?: number;
 }
+/** Configuration for login hydration steps required before using a provider. */
 export interface LoginHydrationConfig {
+	/** API endpoint path to call for login. */
 	path: string;
+	/** HTTP method to use. */
 	method?: "GET" | "POST";
+	/** Headers to include in the login request. */
 	headers?: Record<string, string>;
+	/** Request body for POST login requests. */
 	body?: Record<string, unknown>;
+	/** Authorization type to use. */
 	authorization?: "bearer" | "none";
+	/** JSONPath to extract the response token. */
 	responsePath: string;
+	/** Target slot to store the token. */
 	targetSlot: string;
+	/** Type of slot the token goes to. */
 	slotType: "header" | "other";
+	/** Prefix to strip from the response. */
 	stripPrefix?: string;
 }
+/** Full configuration object describing a provider and its capabilities. */
 export interface ProviderConfig {
+	/** Unique provider identifier. */
 	id: string;
+	/** Human-readable provider name. */
 	name: string;
+	/** Whether the provider is enabled. */
 	enabled?: boolean;
+	/** API dialect to use. */
 	dialect: ProviderDialect;
+	/** Base URL for API requests. */
 	baseUrl: string;
+	/** Authentication configurations. */
 	auth: ProviderAuthConfig[];
+	/** Required credential slot names. */
 	requiredCredentialSlots: string[];
+	/** Headers always included in requests. */
 	staticHeaders?: Record<string, string>;
+	/** Automatically generated headers. */
 	generatedHeaders?: Record<string, GeneratedHeaderConfig>;
+	/** Headers derived from credential slots. */
 	slotHeaders?: Record<string, string>;
-	models: { static: StaticModelConfig[]; list?: ModelListConfig };
-	quota?: { rules: FailureRuleConfig[] };
+	/** Model definitions. */
+	models: {
+		/** Static model definitions. */
+		static: StaticModelConfig[];
+		/** Dynamic model list configuration. */
+		list?: ModelListConfig;
+	};
+	/** Failure handling rules. */
+	quota?: {
+		/** Rules for detecting failures. */
+		rules: FailureRuleConfig[];
+	};
+	/** Limit policies. */
 	limits?: LimitPolicyConfig;
-	capabilities: { tools: boolean; reasoning: boolean; images: boolean };
+	/** Provider capabilities. */
+	capabilities: {
+		/** Whether tool calls are supported. */
+		tools: boolean;
+		/** Whether reasoning is supported. */
+		reasoning: boolean;
+		/** Whether images are supported. */
+		images: boolean;
+	};
+	/** Credential importers. */
 	importers?: ImporterConfig[];
-	request?: { path?: string; projectSlot?: string };
-	login?: { hydration?: LoginHydrationConfig[] };
-	replay?: { foreignToolCallThoughtSignature?: string };
+	/** Request configuration. */
+	request?: {
+		/** Request path template. */
+		path?: string;
+		/** Project slot name. */
+		projectSlot?: string;
+	};
+	/** Login configuration. */
+	login?: {
+		/** Hydration steps. */
+		hydration?: LoginHydrationConfig[];
+	};
+	/** Replay configuration. */
+	replay?: {
+		/** Signature for foreign tool-call thoughts. */
+		foreignToolCallThoughtSignature?: string;
+	};
+	/** Free tier information. */
 	free?: FreeTierConfig;
 }
-export interface ProviderConfigFile { version: 1; providers: ProviderConfig[] }
+/** Container format for a providers configuration file. */
+export interface ProviderConfigFile {
+	/** Schema version. */
+	version: 1;
+	/** List of provider configurations. */
+	providers: ProviderConfig[];
+}
 
 function object(value: unknown, label: string): Record<string, unknown> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label} must be an object`);
@@ -329,6 +539,12 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 	return entry as unknown as ProviderConfig;
 }
 
+/**
+ * Parse and validate a providers configuration JSON structure.
+ * @param value - Parsed JSON content.
+ * @param source - Optional identifier used in error messages.
+ * @returns The validated ProviderConfigFile.
+ */
 export function parseProviderConfigFile(value: unknown, source = "providers.json"): ProviderConfigFile {
 	const root = object(value, source);
 	if (root.version !== 1 || !Array.isArray(root.providers)) throw new Error(`${source} must have version 1 and a providers array`);
@@ -344,6 +560,12 @@ export function parseProviderConfigFile(value: unknown, source = "providers.json
 /** Built-in providers: the core set plus every researched free provider (assets/providers.free.json). */
 export const BUILTIN_PROVIDER_CONFIG = parseProviderConfigFile({ version: 1, providers: [...defaults.providers, ...freeProviders.providers] }, "built-in providers");
 
+/**
+ * Load and merge built‑in provider configurations with a user‑provided file.
+ * @param home - Directory containing a `providers.json` file.
+ * @param reader - Optional custom file reader.
+ * @returns The merged ProviderConfigFile.
+ */
 export async function loadProviderConfig(home: string, reader: (path: string) => Promise<string> = (path) => readFile(path, "utf8")): Promise<ProviderConfigFile> {
 	let local: ProviderConfigFile | undefined;
 	try { local = parseProviderConfigFile(JSON.parse(await reader(join(home, "providers.json"))) as unknown, "$DF_HOME/providers.json"); }
