@@ -124,7 +124,7 @@ describe("df run", () => {
 		};
 		const normal = await run("hello", { args: [], config });
 		const hard = await run("prove it", { args: ["--reasoning", "hard"], config });
-		const sensitive = await run("contact dev@example.com", { args: [], config });
+		const sensitive = await run("contact jane.doe@proton.me", { args: [], config });
 		const sessionAccount = (result: Awaited<ReturnType<typeof run>>) => {
 			const events = result.stdout.trim().split(/\r?\n/u).map((line) => JSON.parse(line) as { type: string; candidate?: { account?: string } });
 			return events.find((event) => event.type === "session")?.candidate?.account;

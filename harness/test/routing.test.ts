@@ -49,11 +49,20 @@ describe("model routing policy", () => {
 		]) {
 			expect((await resolveRouting(config, { prompt })).source).toBe("default");
 		}
-		expect((await resolveRouting(config, { prompt: "author x@users.noreply.github.com, contact dev@example.com" })).source).toBe("sensitive");
+		expect((await resolveRouting(config, { prompt: "author x@users.noreply.github.com, contact jane.doe@proton.me" })).source).toBe("sensitive");
+	});
+
+	test("addresses on reserved example and test domains are not personal data", async () => {
+		// Test fixtures and verify output quote such addresses; counting them as PII made chunk prompts unroutable.
+		for (const address of ["dev@example.com", "a@mail.example.org", "test@example.invalid", "bot@ci.test", "x@users.example", "root@localhost.localhost"]) {
+			expect((await resolveRouting(config, { prompt: `author ${address}` })).source).toBe("default");
+		}
+		expect((await resolveRouting(config, { prompt: "author dev@example.com.evil.io" })).source).toBe("sensitive");
+		expect((await resolveRouting(config, { prompt: "author dev@notexample.com" })).source).toBe("sensitive");
 	});
 
 	test("sensitive prompts and tool results select the configured sensitive failover chain", async () => {
-		expect((await resolveRouting(config, { prompt: "contact dev@example.com" })).source).toBe("sensitive");
+		expect((await resolveRouting(config, { prompt: "contact jane.doe@proton.me" })).source).toBe("sensitive");
 		expect((await resolveRouting(config, { prompt: "inspect output", toolResults: [{ token: "access_token=fixture-secret-123" }] })).source).toBe("sensitive");
 		expect((await resolveRouting(config, {
 			prompt: "custom classification",

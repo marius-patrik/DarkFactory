@@ -42,9 +42,12 @@ function stringify(value: unknown): string {
 const EMAIL = /\b[A-Z0-9._%+\[\]-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
 
 /** Commit metadata addresses (GitHub noreply, vendor noreply) identify tools and accounts, not people's inboxes. */
+/** Domains reserved for documentation and tests (RFC 2606, RFC 6761): no address there belongs to a person. */
+const RESERVED_EMAIL_DOMAIN = /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|net|org)|example|invalid|test|localhost)$/iu;
+
 function containsPersonalEmail(text: string): boolean {
 	for (const match of text.matchAll(EMAIL)) {
-		if (!/noreply/iu.test(match[0])) return true;
+		if (!/noreply/iu.test(match[0]) && !RESERVED_EMAIL_DOMAIN.test(match[0])) return true;
 	}
 	return false;
 }
