@@ -4,6 +4,16 @@ import type { ModelCapability, ModelCapabilityOverride, ModelModality, RouterCon
 
 function key(provider: string, model: string, account?: string): string { return `${provider}/${model}${account ? `@${account}` : ""}`; }
 
+/**
+ * Builds a catalog of model capabilities from provider information.
+ *
+ * @param options - Configuration options:
+ *   @param options.providers – List of provider configurations.
+ *   @param options.catalogs – Optional map of provider IDs to fetched catalog results.
+ *   @param options.accounts – Optional map of provider IDs to account identifiers.
+ *   @param options.overrides – Optional router config overrides for specific models.
+ * @returns An array of {@link ModelCapability} objects describing each model.
+ */
 export function buildRouterCatalog(options: {
 	providers: readonly ProviderConfig[];
 	catalogs?: ReadonlyMap<string, CatalogResult>;

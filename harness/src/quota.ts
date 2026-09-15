@@ -1,22 +1,80 @@
 import type { AssistantMessage, ProviderResponse } from "@earendil-works/pi-ai";
 import type { FailureRuleConfig } from "./providers/schema.ts";
 
+/**
+ * Enumerates the categories of failure that can be classified by the system.
+ *
+ * - `quota_exhausted` – The request exceeded a quota or usage limit.
+ * - `rate_limited` – The request was throttled by the provider.
+ * - `auth` – Authentication or authorization failed.
+ * - `transient` – A temporary error that may succeed on retry.
+ * - `fatal` – An unrecoverable error.
+ */
 export type FailureKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
 
+/**
+ * Input data for classifying a failure.
+ * All fields are optional; missing values are inferred from other information.
+ */
 export interface FailureInput {
-	error?: unknown;
-	message?: AssistantMessage;
-	response?: ProviderResponse;
-	now?: number;
+	  /**
+   * The raw error object thrown by the provider or runtime.
+   */
+  error?: unknown;
+	  /**
+   * The assistant message associated with the error, if any.
+   */
+  message?: AssistantMessage;
+	  /**
+   * The provider response that accompanied the error, if available.
+   */
+  response?: ProviderResponse;
+	  /**
+   * The timestamp (in ms since epoch) to use for calculations; defaults to `Date.now()`.
+   */
+  now?: number;
 }
 
-export interface FailurePolicy { rules: readonly FailureRuleConfig[]; model?: string }
+/**
+ * Configuration for how failures should be classified and handled.
+ *
+ * @property rules – An array of rule configurations that drive classification.
+ * @property model – Optional model identifier to substitute into rule pool strings.
+ */
+export interface FailurePolicy {
+  /**
+   * Array of rule configurations that drive classification.
+   */
+  rules: readonly FailureRuleConfig[];
+  /**
+   * Optional model identifier to substitute into rule pool strings.
+   */
+  model?: string;
+}
 
+/**
+ * Result of classifying a failure.
+ */
 export interface FailureClassification {
-	kind: FailureKind;
-	errorClass?: string;
+	  /**
+   * The high‑level category of the failure.
+   */
+  kind: FailureKind;
+	  /**
+   * The class name of the underlying error, if known.
+   */
+  errorClass?: string;
+	/**
+	 * HTTP status code associated with the failure, if applicable.
+	 */
 	status?: number;
+	/**
+	 * Timestamp (ms since epoch) when the quota or rate‑limit resets.
+	 */
 	resetAt?: number;
+	/**
+	 * Identifier of the quota or rate‑limit pool to which this failure belongs.
+	 */
 	pool?: string;
 }
 
@@ -135,6 +193,13 @@ function jsonBody(message: string): unknown {
 	return undefined;
 }
 
+/**
+ * Recursively parses JSON strings found in nested error objects.
+ *
+ * @param value – The value that may contain nested JSON strings.
+ * @param maxDepth – Maximum recursion depth; defaults to 5.
+ * @returns The innermost parsed JSON object, or the original value if parsing fails.
+ */
 export function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
 	let current = value;
 	for (let depth = 0; depth < maxDepth; depth++) {
@@ -205,6 +270,12 @@ function pacificOffset(at: number): number {
 	return (match[1] === "+" ? 1 : -1) * minutes * 60 * 1000;
 }
 
+/**
+ * Computes the Unix timestamp for the next midnight in the Pacific time zone.
+ *
+ * @param now – Current timestamp (ms since epoch).
+ * @returns Timestamp for the next Pacific midnight.
+ */
 export function nextPacificMidnight(now: number): number {
 	const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(now)).map((entry) => [entry.type, entry.value]));
 	const localTomorrow = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + 1);
@@ -274,12 +345,23 @@ function configuredClassification(policy: FailurePolicy | undefined, status: num
 	return undefined;
 }
 
-/** Ported from dsh-stack: distinguishes exhausted plans from bad credentials. */
+/**
+ * Determines whether a textual error detail indicates that a quota has been exhausted.
+ *
+ * @param detail – The error detail string.
+ * @returns `true` if the detail matches known quota‑exhaustion patterns.
+ */
 export function isExhaustedQuota(detail: string | undefined): boolean {
 	return detail !== undefined && (QUOTA.test(detail) || GATEWAY_QUOTA.test(detail) || PROVIDER_QUOTA_WORDINGS.some((pattern) => pattern.test(detail)));
 }
 
-/** A reset the provider only states in prose: "Try again in 22h 16m", "try again in 45s". */
+/**
+ * Parses human‑readable prose describing a retry delay and returns the absolute reset time.
+ *
+ * @param message – The error message containing the prose.
+ * @param now – Current timestamp.
+ * @returns Computed reset timestamp, or `undefined` if not found.
+ */
 export function proseResetAt(message: string, now: number): number | undefined {
 	const match = /try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|d|h|m|s)\b\s*)+)/i.exec(message);
 	if (!match) return undefined;
@@ -291,6 +373,13 @@ export function proseResetAt(message: string, now: number): number | undefined {
 	return total > 0 ? now + total : undefined;
 }
 
+/**
+ * Classifies a failure according to the provided policy and heuristics.
+ *
+ * @param input – Information about the failure to classify.
+ * @param policy – Optional policy that can override default classification rules.
+ * @returns A {@link FailureClassification} describing the failure.
+ */
 export function classifyFailure(input: FailureInput, policy?: FailurePolicy): FailureClassification {
 	const raw = details(input.error);
 	const message = [raw.message, input.message?.errorMessage ?? ""].filter(Boolean).join(" ");

@@ -1,6 +1,10 @@
 import { defaultSensitiveDataHook } from "../harness/routing.ts";
 import type { RouterConfig, RouterInput, TaskKind, TaskNeed, TaskProfile, TaskSize } from "./types.ts";
 
+/**
+ * A lightweight classifier that determines the task kind from a prompt.
+ * It returns a {@link TaskKind} promise for the given prompt and candidate model.
+ */
 export type CheapClassifier = (prompt: string, candidate: string) => Promise<TaskKind>;
 
 const KIND_RULES: Array<[TaskKind, RegExp]> = [
@@ -32,6 +36,14 @@ function sizeFor(tokens: number, promptLength: number): TaskSize {
 	return "small";
 }
 
+/**
+ * Classifies a routing task based on the input prompt, attached files, and configuration.
+ *
+ * @param input - The router input containing the prompt and optional files.
+ * @param config - Optional router configuration with a custom classifier.
+ * @param classify - Optional cheap classifier override used when the default inference is ambiguous.
+ * @returns A {@link TaskProfile} describing the inferred kind, size, needed capabilities, and sensitivity.
+ */
 export async function classifyTask(input: RouterInput, config: Pick<RouterConfig, "classifier"> = {}, classify?: CheapClassifier): Promise<TaskProfile> {
 	const promptTokens = Math.ceil(input.prompt.length / 4);
 	const attachedTokens = (input.attachedFiles ?? []).reduce((total, file) => total + (file.tokens ?? Math.ceil((file.text?.length ?? 0) / 4)), 0);
