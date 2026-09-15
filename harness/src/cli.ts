@@ -116,12 +116,18 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 export { parseCandidate } from "./harness/routing.ts";
 
 async function providersCommand(registry: ProviderRegistry): Promise<void> {
-	console.log("provider\toauth-login\tsubscription");
-	const providers = providerList(registry).sort((a, b) => a.id.localeCompare(b.id));
-	for (const provider of providers) {
-		console.log(`${provider.id}\t${provider.auth.oauth ? "yes" : "no"}\t${provider.auth.oauth?.isSubscription === true ? "yes" : "no"}`);
+	console.log("provider\toauth-login\tsubscription\tdata-collection");
+	// Use the raw provider configs to access free/data fields.
+	const entries = registry.entries.filter((e) => e.enabled !== false);
+	const sorted = entries.sort((a, b) => a.id.localeCompare(b.id));
+	for (const entry of sorted) {
+		const collection = entry.free?.data?.collection ?? entry.data?.collection ?? "unknown";
+		const hasOauth = entry.auth.some((a) => a.kind === "oauth");
+		const isSubscription = entry.auth.some((a) => a.kind === "oauth" && (a as any).isSubscription === true);
+		console.log(`${entry.id}\t${hasOauth ? "yes" : "no"}\t${isSubscription ? "yes" : "no"}\t${collection}`);
 	}
 }
+
 
 function providerList(registry: ProviderRegistry, additional: readonly Provider[] = []): Provider[] {
 	const byId = new Map([...registry.providers, ...additional].map((provider) => [provider.id, provider]));
