@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { replaceFile } from "../storage/replace-file.ts";
 import { dirname, join } from "node:path";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
 import { FileCredentialStore, defaultDfHome } from "../credentials.ts";
@@ -202,7 +203,7 @@ export class ModelCatalog {
 		await mkdir(dirname(path), { recursive: true });
 		const temporary = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
 		await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
-		await rename(temporary, path);
+		await replaceFile(temporary, path);
 	}
 
 	private async accountCredential(provider: string, account?: string): Promise<Credential | undefined> {
