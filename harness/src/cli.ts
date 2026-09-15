@@ -670,6 +670,7 @@ async function graphCommand(args: string[]): Promise<void> {
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const graph = validateGraph(document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document);
 	if (subcommand === "validate") { console.log(`${graphPath}: valid workflow graph v${graph.version} (${graph.nodes.length} nodes, ${graph.edges.length} edges)`); return; }
+	if (subcommand === "dispatch") { const { dispatch } = await import("./graph/dispatch.ts"); await dispatch(args.slice(1)); return; }
 	if (subcommand !== "plan") throw new Error(`Unknown graph command: ${subcommand ?? ""}`);
 	const eventPath = option(args, "--event");
 	const statePath = option(args, "--state");
