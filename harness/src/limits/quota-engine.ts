@@ -1,13 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Candidate } from "../failover.ts";
-import { withFileLock } from "../storage/file-lock.ts";
-import { replaceFile } from "../storage/replace-file.ts";
 import type { DeclaredLimitConfig, LimitPolicyConfig, ProviderConfig } from "../providers/schema.ts";
 import { nextPacificMidnight } from "../quota.ts";
-import { LimitLedger } from "./ledger.ts";
-import type { LimitEntry, LimitType } from "./types.ts";
+import { withFileLock } from "../storage/file-lock.ts";
+import { replaceFile } from "../storage/replace-file.ts";
+import type { LimitLedger } from "./ledger.ts";
 import type { TaskEstimate } from "./routing.ts";
+import type { LimitEntry, LimitType } from "./types.ts";
 
 /** One model request df sent, counted against declared limits. */
 export interface UsageEvent {
@@ -87,7 +87,13 @@ const MAX_RETENTION = 32 * DAY;
 /** "*" and globs like "*:free" or "gemini-3.*-flash" match model ids; an absent pattern matches every model. */
 export function matchesModel(pattern: string | undefined, model: string): boolean {
 	if (!pattern || pattern === "*") return true;
-	const regex = new RegExp(`^${pattern.split("*").map((part) => part.replace(/[.+?^${}()|[\]\\]/gu, "\\$&")).join(".*")}$`, "u");
+	const regex = new RegExp(
+		`^${pattern
+			.split("*")
+			.map((part) => part.replace(/[.+?^${}()|[\]\\]/gu, "\\$&"))
+			.join(".*")}$`,
+		"u",
+	);
 	return regex.test(model);
 }
 
@@ -97,11 +103,18 @@ function nextUtcMidnight(now: number): number {
 }
 
 /** The counting window of a declared limit: fixed windows follow the provider's roll-over, rolling windows trail now. */
-export function windowBounds(limit: DeclaredLimitConfig, policy: LimitPolicyConfig | undefined, now: number): { start: number; resetAt?: number } {
+export function windowBounds(
+	limit: DeclaredLimitConfig,
+	policy: LimitPolicyConfig | undefined,
+	now: number,
+): { start: number; resetAt?: number } {
 	if (limit.reset !== "fixed") return { start: now - limit.windowMs };
 	if (limit.type === "monthly" || limit.windowMs >= 28 * DAY) {
 		const date = new Date(now);
-		return { start: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1), resetAt: Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) };
+		return {
+			start: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1),
+			resetAt: Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1),
+		};
 	}
 	if (limit.type === "daily" || limit.windowMs >= DAY) {
 		const resetAt = policy?.dailyReset === "pacific-midnight" ? nextPacificMidnight(now) : nextUtcMidnight(now);
@@ -112,7 +125,9 @@ export function windowBounds(limit: DeclaredLimitConfig, policy: LimitPolicyConf
 }
 
 function enforced(limit: DeclaredLimitConfig): boolean {
-	return limit.type !== "concurrency" && (limit.dimension ?? "requests") !== "usage" && limit.dimension !== "concurrency";
+	return (
+		limit.type !== "concurrency" && (limit.dimension ?? "requests") !== "usage" && limit.dimension !== "concurrency"
+	);
 }
 
 function tokens(event: UsageEvent): number {
@@ -139,7 +154,8 @@ export class QuotaEngine {
 
 	private retentionMs(): number {
 		let longest = DAY;
-		for (const config of this.providerConfigs.values()) for (const limit of config.limits?.declared ?? []) longest = Math.max(longest, limit.windowMs);
+		for (const config of this.providerConfigs.values())
+			for (const limit of config.limits?.declared ?? []) longest = Math.max(longest, limit.windowMs);
 		return Math.min(longest, MAX_RETENTION);
 	}
 
@@ -163,33 +179,66 @@ export class QuotaEngine {
 			const events = [...existing.filter((item) => item.timestamp > cutoff), full];
 			await mkdir(dirname(this.path), { recursive: true });
 			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
-			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, {
+				encoding: "utf8",
+				mode: 0o600,
+				flag: "wx",
+			});
 			await replaceFile(temp, this.path);
 		});
 	}
 
 	/** Declared limits that apply to a candidate's model. */
 	declaredLimits(candidate: Candidate): DeclaredLimitConfig[] {
-		return (this.providerConfigs.get(candidate.provider)?.limits?.declared ?? []).filter((limit) => matchesModel(limit.model, candidate.model));
+		return (this.providerConfigs.get(candidate.provider)?.limits?.declared ?? []).filter((limit) =>
+			matchesModel(limit.model, candidate.model),
+		);
 	}
 
 	/** Usage events counted by a declared limit: same provider and account; a pooled limit counts every model it covers. */
-	private counted(events: readonly UsageEvent[], candidate: Candidate, limit: DeclaredLimitConfig, start: number, now: number): UsageEvent[] {
-		return events.filter((event) => event.provider === candidate.provider && event.account === candidate.account && event.timestamp > start && event.timestamp <= now &&
-			(limit.pool ? matchesModel(limit.model, event.model) : event.model === candidate.model));
+	private counted(
+		events: readonly UsageEvent[],
+		candidate: Candidate,
+		limit: DeclaredLimitConfig,
+		start: number,
+		now: number,
+	): UsageEvent[] {
+		return events.filter(
+			(event) =>
+				event.provider === candidate.provider &&
+				event.account === candidate.account &&
+				event.timestamp > start &&
+				event.timestamp <= now &&
+				(limit.pool ? matchesModel(limit.model, event.model) : event.model === candidate.model),
+		);
 	}
 
-	private evaluate(candidate: Candidate, limit: DeclaredLimitConfig, events: readonly UsageEvent[], now: number, needTokens: number): QuotaStatusItem & { blockedUntil?: number } {
+	private evaluate(
+		candidate: Candidate,
+		limit: DeclaredLimitConfig,
+		events: readonly UsageEvent[],
+		now: number,
+		needTokens: number,
+	): QuotaStatusItem & { blockedUntil?: number } {
 		const config = this.providerConfigs.get(candidate.provider);
 		const policy = config?.limits;
 		const { start, resetAt } = windowBounds(limit, policy, now);
 		const dimension = limit.dimension ?? "requests";
 		const base: QuotaStatusItem = {
-			...candidate, ...(limit.pool ? { pool: limit.pool } : {}), type: limit.type, dimension, limit: limit.limit,
-			windowStart: start, ...(resetAt === undefined ? {} : { resetAt }),
-			state: "available", source: limit.source ?? "docs", ...(limit.sourceUrl ? { sourceUrl: limit.sourceUrl } : {}),
-			...(limit.checkedAt ? { checkedAt: limit.checkedAt } : {}), ...(limit.note ? { note: limit.note } : {}),
-			enforced: enforced(limit), origin: "declared",
+			...candidate,
+			...(limit.pool ? { pool: limit.pool } : {}),
+			type: limit.type,
+			dimension,
+			limit: limit.limit,
+			windowStart: start,
+			...(resetAt === undefined ? {} : { resetAt }),
+			state: "available",
+			source: limit.source ?? "docs",
+			...(limit.sourceUrl ? { sourceUrl: limit.sourceUrl } : {}),
+			...(limit.checkedAt ? { checkedAt: limit.checkedAt } : {}),
+			...(limit.note ? { note: limit.note } : {}),
+			enforced: enforced(limit),
+			origin: "declared",
 		};
 		if (!base.enforced) return { ...base, state: "unknown" };
 		const window = this.counted(events, candidate, limit, start, now).sort((a, b) => a.timestamp - b.timestamp);
@@ -206,7 +255,10 @@ export class QuotaEngine {
 			let freed = 0;
 			for (const event of window) {
 				freed += dimension === "tokens" ? tokens(event) : 1;
-				if (used - freed + need <= capacity) { blockedUntil = event.timestamp + limit.windowMs; break; }
+				if (used - freed + need <= capacity) {
+					blockedUntil = event.timestamp + limit.windowMs;
+					break;
+				}
 			}
 			// A single request larger than the whole window can never fit: blocked for a full window.
 			blockedUntil ??= now + limit.windowMs;
@@ -218,25 +270,61 @@ export class QuotaEngine {
 		return until - now <= (this.options.maxAdmitWaitMs ?? 5 * 60_000) ? "waiting" : "exhausted";
 	}
 
-	private learnedItem(entry: LimitEntry, now: number, reserve: { requests?: number; tokens?: number } | undefined): QuotaStatusItem & { blockedUntil?: number } {
-		const threshold = entry.dimension === "requests" ? reserve?.requests ?? 0 : entry.dimension === "tokens" ? reserve?.tokens ?? 0 : 0;
+	private learnedItem(
+		entry: LimitEntry,
+		now: number,
+		reserve: { requests?: number; tokens?: number } | undefined,
+	): QuotaStatusItem & { blockedUntil?: number } {
+		const threshold =
+			entry.dimension === "requests"
+				? (reserve?.requests ?? 0)
+				: entry.dimension === "tokens"
+					? (reserve?.tokens ?? 0)
+					: 0;
 		const blocking = entry.resetAt > now && (entry.remaining === undefined || entry.remaining <= threshold);
 		return {
-			provider: entry.provider, account: entry.account, model: entry.model, ...(entry.pool ? { pool: entry.pool } : {}),
-			type: entry.type, ...(entry.dimension ? { dimension: entry.dimension } : {}), ...(entry.limit === undefined ? {} : { limit: entry.limit }),
-			...(entry.remaining === undefined ? {} : { remaining: entry.remaining }), resetAt: entry.resetAt,
-			state: blocking ? (UNAVAILABLE_LIMIT_TYPES.has(entry.type) ? "unavailable" : this.stateFor(entry.resetAt, now)) : "available", source: entry.source,
-			checkedAt: new Date(entry.observedAt).toISOString(), enforced: true, origin: "learned",
+			provider: entry.provider,
+			account: entry.account,
+			model: entry.model,
+			...(entry.pool ? { pool: entry.pool } : {}),
+			type: entry.type,
+			...(entry.dimension ? { dimension: entry.dimension } : {}),
+			...(entry.limit === undefined ? {} : { limit: entry.limit }),
+			...(entry.remaining === undefined ? {} : { remaining: entry.remaining }),
+			resetAt: entry.resetAt,
+			state: blocking
+				? UNAVAILABLE_LIMIT_TYPES.has(entry.type)
+					? "unavailable"
+					: this.stateFor(entry.resetAt, now)
+				: "available",
+			source: entry.source,
+			checkedAt: new Date(entry.observedAt).toISOString(),
+			enforced: true,
+			origin: "learned",
 			...(blocking ? { blockedUntil: entry.resetAt } : {}),
 		};
 	}
 
-	private async items(candidate: Candidate, now: number, needTokens: number): Promise<Array<QuotaStatusItem & { blockedUntil?: number }>> {
+	private async items(
+		candidate: Candidate,
+		now: number,
+		needTokens: number,
+	): Promise<Array<QuotaStatusItem & { blockedUntil?: number }>> {
 		const config = this.providerConfigs.get(candidate.provider);
 		const events = await this.events();
-		const declared = this.declaredLimits(candidate).map((limit) => this.evaluate(candidate, limit, events, now, needTokens));
-		const pools = [...new Set((config?.limits?.defaults ?? []).flatMap((entry) => entry.pool ? [entry.pool.replace(":model", `:${candidate.model}`)] : []))];
-		const learned = (await this.ledger.forCandidate(candidate, now, pools)).map((entry) => this.learnedItem(entry, now, config?.limits?.reserve));
+		const declared = this.declaredLimits(candidate).map((limit) =>
+			this.evaluate(candidate, limit, events, now, needTokens),
+		);
+		const pools = [
+			...new Set(
+				(config?.limits?.defaults ?? []).flatMap((entry) =>
+					entry.pool ? [entry.pool.replace(":model", `:${candidate.model}`)] : [],
+				),
+			),
+		];
+		const learned = (await this.ledger.forCandidate(candidate, now, pools)).map((entry) =>
+			this.learnedItem(entry, now, config?.limits?.reserve),
+		);
 		return [...declared, ...learned];
 	}
 
@@ -244,20 +332,40 @@ export class QuotaEngine {
 	async status(candidate: Candidate, now = Date.now()): Promise<CandidateQuota> {
 		const items = await this.items(candidate, now, 0);
 		const blocked = items.filter((item) => item.blockedUntil !== undefined);
-		const strip = ({ blockedUntil: _blockedUntil, ...item }: QuotaStatusItem & { blockedUntil?: number }): QuotaStatusItem => item;
+		const strip = ({
+			blockedUntil: _blockedUntil,
+			...item
+		}: QuotaStatusItem & { blockedUntil?: number }): QuotaStatusItem => item;
 		const unavailable = blocked.filter((item) => item.state === "unavailable");
 		if (unavailable.length > 0) {
 			const until = Math.max(...unavailable.map((item) => item.blockedUntil!));
 			const last = unavailable.find((item) => item.blockedUntil === until)!;
-			return { ...candidate, state: "unavailable", until, reason: `${last.origin} ${last.type} (${last.source})`, items: items.map(strip) };
+			return {
+				...candidate,
+				state: "unavailable",
+				until,
+				reason: `${last.origin} ${last.type} (${last.source})`,
+				items: items.map(strip),
+			};
 		}
 		if (blocked.length > 0) {
 			const until = Math.max(...blocked.map((item) => item.blockedUntil!));
 			const last = blocked.find((item) => item.blockedUntil === until)!;
-			return { ...candidate, state: this.stateFor(until, now), until, reason: `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} (${last.source})`, items: items.map(strip) };
+			return {
+				...candidate,
+				state: this.stateFor(until, now),
+				until,
+				reason: `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} (${last.source})`,
+				items: items.map(strip),
+			};
 		}
 		const counted = items.some((item) => item.enforced);
-		return { ...candidate, state: counted ? "available" : "unknown", ...(counted ? {} : { reason: "no declared or learned limits" }), items: items.map(strip) };
+		return {
+			...candidate,
+			state: counted ? "available" : "unknown",
+			...(counted ? {} : { reason: "no declared or learned limits" }),
+			items: items.map(strip),
+		};
 	}
 
 	/**
@@ -274,12 +382,25 @@ export class QuotaEngine {
 		const last = blocked.find((item) => item.blockedUntil === waitUntil)!;
 		const reason = `${last.origin} ${last.type}${last.dimension ? `:${last.dimension}` : ""} limit until ${new Date(waitUntil).toISOString()}`;
 		const entries: LimitEntry[] = blocked.map((item) => ({
-			...candidate, type: ledgerType(item.type as DeclaredLimitConfig["type"] | LimitType), ...(item.dimension && item.dimension !== "concurrency" ? { dimension: item.dimension as LimitEntry["dimension"] } : {}),
-			...(item.pool ? { pool: item.pool } : {}), observedAt: now, resetAt: item.blockedUntil!, source: item.origin === "declared" ? "declared" : (item.source as LimitEntry["source"]), remaining: 0,
+			...candidate,
+			type: ledgerType(item.type as DeclaredLimitConfig["type"] | LimitType),
+			...(item.dimension && item.dimension !== "concurrency"
+				? { dimension: item.dimension as LimitEntry["dimension"] }
+				: {}),
+			...(item.pool ? { pool: item.pool } : {}),
+			observedAt: now,
+			resetAt: item.blockedUntil!,
+			source: item.origin === "declared" ? "declared" : (item.source as LimitEntry["source"]),
+			remaining: 0,
 			...(item.limit === undefined ? {} : { limit: item.limit }),
 		}));
 		// Unavailability (billing, access, model) is never waited out inside a request, however soon it may recover.
 		const unavailable = blocked.some((item) => item.state === "unavailable");
-		return { decision: unavailable || this.stateFor(waitUntil, now) === "exhausted" ? "skip" : "wait", waitUntil, reason, entries };
+		return {
+			decision: unavailable || this.stateFor(waitUntil, now) === "exhausted" ? "skip" : "wait",
+			waitUntil,
+			reason,
+			entries,
+		};
 	}
 }

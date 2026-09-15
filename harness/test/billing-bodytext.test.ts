@@ -14,7 +14,11 @@ test("402 Payment Required is billing, with or without wording", () => {
 });
 
 test("balance, credit and budget wording is billing under any status", () => {
-	for (const [status, body] of [[400, "Insufficient balance"], [429, "Your credit balance is too low"], [0, "The API key used for this request has reached its budget"]] as const) {
+	for (const [status, body] of [
+		[400, "Insufficient balance"],
+		[429, "Your credit balance is too low"],
+		[0, "The API key used for this request has reached its budget"],
+	] as const) {
 		expect(observeLimits(candidate, { status, body }, policy, now).map((entry) => entry.type)).toEqual(["billing"]);
 	}
 });
@@ -24,5 +28,7 @@ test("limit wording is a quota, not a rejected credential, even on 403 or withou
 	expect(forbidden.map((entry) => entry.type)).toEqual(["daily"]);
 	const unknown = observeLimits(candidate, { status: 0, body: "rate limit exceeded; retry-after: 30" }, policy, now);
 	expect(unknown).toMatchObject([{ type: "rate", resetAt: now + 30_000 }]);
-	expect(observeLimits(candidate, { status: 403, body: "Forbidden" }, policy, now).map((entry) => entry.type)).toEqual(["access"]);
+	expect(observeLimits(candidate, { status: 403, body: "Forbidden" }, policy, now).map((entry) => entry.type)).toEqual([
+		"access",
+	]);
 });

@@ -1,8 +1,7 @@
 import type { Candidate } from "../failover.ts";
-import type { ConfiguredLimitType } from "../providers/schema.ts";
-import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema.ts";
-import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
+import type { ConfiguredLimitType, LimitBodyRuleConfig, LimitPolicyConfig } from "../providers/schema.ts";
 import { nextPacificMidnight } from "../quota.ts";
+import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
 
 // In‑memory counter for persistent 422 errors per model
 const repeated422Counter = new Map<string, number>();
@@ -11,7 +10,8 @@ const repeated422Counter = new Map<string, number>();
 const DAILY_WORDING = /per[- ]?day|perday|\bdaily\b|day limit/iu;
 const LIMIT_WORDING = /rate limit|quota|too many requests|limit exceeded|exhausted/iu;
 /** The account has no money left: balance, credit or budget wording (cerebras/requesty/venice 402, deepseek balance 0, pollinations budget). */
-const BILLING_WORDING = /insufficient (?:account )?(?:balance|credits?|funds)|(?:credit|account) balance (?:is )?(?:too low|exhausted|zero|0)|out of credits|(?:reached|exceeded|exhausted) (?:its |your |the )?(?:budget|credits?)|budget (?:has been )?(?:reached|exceeded|exhausted)|payment required/iu;
+const BILLING_WORDING =
+	/insufficient (?:account )?(?:balance|credits?|funds)|(?:credit|account) balance (?:is )?(?:too low|exhausted|zero|0)|out of credits|(?:reached|exceeded|exhausted) (?:its |your |the )?(?:budget|credits?)|budget (?:has been )?(?:reached|exceeded|exhausted)|payment required/iu;
 
 /** The later of two resets: a short rule default must never shorten a reset the provider reported. */
 export function mergeReset(rule: number | undefined, observed: number | undefined): number | undefined {
@@ -34,12 +34,19 @@ function nextMonthlyReset(now: number): number {
 
 /** Reset and capacity hints a provider copies into an error body (headers inside JSON, retry fields). */
 function bodyHints(body: string, now: number): { resetAt?: number; limit?: number; remaining?: number } {
-	const field = (names: string): string | undefined => body.match(new RegExp(`["']?(?:${names})["']?\\s*[:=]\\s*["']?([0-9]+(?:\\.[0-9]+)?(?:ms|[dhms])?)["']?`, "iu"))?.[1];
+	const field = (names: string): string | undefined =>
+		body.match(
+			new RegExp(`["']?(?:${names})["']?\\s*[:=]\\s*["']?([0-9]+(?:\\.[0-9]+)?(?:ms|[dhms])?)["']?`, "iu"),
+		)?.[1];
 	const reset = field("x-ratelimit-reset(?:-requests|-tokens)?|retry[-_]after|resets?[-_]at");
 	const limit = numeric(field("x-ratelimit-limit(?:-requests)?"));
 	const remaining = numeric(field("x-ratelimit-remaining(?:-requests)?"));
 	const resetAt = parseReset(reset, now);
-	return { ...(resetAt === undefined ? {} : { resetAt }), ...(limit === undefined ? {} : { limit }), ...(remaining === undefined ? {} : { remaining }) };
+	return {
+		...(resetAt === undefined ? {} : { resetAt }),
+		...(limit === undefined ? {} : { limit }),
+		...(remaining === undefined ? {} : { remaining }),
+	};
 }
 
 function headerMap(headers: LimitObservation["headers"]): Map<string, string> {
@@ -61,7 +68,16 @@ export function parseDuration(value: string): number | undefined {
 	let found = false;
 	for (const match of value.matchAll(/([0-9]+(?:\.[0-9]+)?)(ms|[dhms])/giu)) {
 		found = true;
-		const factor = match[2]!.toLowerCase() === "d" ? 86_400_000 : match[2]!.toLowerCase() === "h" ? 3_600_000 : match[2]!.toLowerCase() === "m" ? 60_000 : match[2]!.toLowerCase() === "s" ? 1_000 : 1;
+		const factor =
+			match[2]!.toLowerCase() === "d"
+				? 86_400_000
+				: match[2]!.toLowerCase() === "h"
+					? 3_600_000
+					: match[2]!.toLowerCase() === "m"
+						? 60_000
+						: match[2]!.toLowerCase() === "s"
+							? 1_000
+							: 1;
 		total += Number(match[1]) * factor;
 	}
 	return found ? total : undefined;
@@ -83,10 +99,22 @@ export function parseReset(value: string | undefined, now: number): number | und
 
 function text(value: unknown): string {
 	if (typeof value === "string") return value;
-	try { return JSON.stringify(value) ?? ""; } catch { return String(value ?? ""); }
+	try {
+		return JSON.stringify(value) ?? "";
+	} catch {
+		return String(value ?? "");
+	}
 }
 
-function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig, now: number, policy?: LimitPolicyConfig, status?: number, observation?: LimitObservation): LimitEntry | undefined {
+function bodyEntry(
+	candidate: Candidate,
+	body: string,
+	rule: LimitBodyRuleConfig,
+	now: number,
+	policy?: LimitPolicyConfig,
+	status?: number,
+	observation?: LimitObservation,
+): LimitEntry | undefined {
 	if (rule.status !== undefined && rule.status !== status) return undefined;
 	// answerText flag handling
 	if (rule.answerText) {
@@ -101,7 +129,11 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 		body = answer;
 	}
 	let pattern: RegExp;
-	try { pattern = new RegExp(rule.regex, "iu"); } catch { return undefined; }
+	try {
+		pattern = new RegExp(rule.regex, "iu");
+	} catch {
+		return undefined;
+	}
 	if (!pattern.test(body)) return undefined;
 	let resetAt: number | undefined;
 	if (rule.durationRegex) {
@@ -109,7 +141,9 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 			const match = body.match(new RegExp(rule.durationRegex, "iu"));
 			const duration = match?.[1] ? parseDuration(match[1]) : undefined;
 			if (duration !== undefined) resetAt = now + duration;
-		} catch { /* malformed local config is ignored at this boundary */ }
+		} catch {
+			/* malformed local config is ignored at this boundary */
+		}
 	}
 	if (resetAt === undefined) {
 		const retry = body.match(/(?:"retryDelay"\s*:\s*"|Please retry in\s+)([0-9]+(?:\.[0-9]+)?s)/iu)?.[1];
@@ -121,7 +155,8 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 		if (clock) {
 			let hour = Number(clock[1]) % 12;
 			if (clock[3]!.toUpperCase() === "PM") hour += 12;
-			const target = new Date(now); target.setHours(hour, Number(clock[2]), 0, 0);
+			const target = new Date(now);
+			target.setHours(hour, Number(clock[2]), 0, 0);
 			if (target.getTime() <= now) target.setDate(target.getDate() + 1);
 			resetAt = target.getTime();
 		}
@@ -131,11 +166,25 @@ function bodyEntry(candidate: Candidate, body: string, rule: LimitBodyRuleConfig
 	// (Google sends "retryDelay": "4s" with PerDay violations).
 	if (rule.type === "daily") resetAt = Math.max(resetAt ?? 0, nextDailyReset(now, policy));
 	if (rule.type === "monthly") resetAt = Math.max(resetAt ?? 0, nextMonthlyReset(now));
-	return { ...candidate, type: rule.type, ...(rule.dimension ? { dimension: rule.dimension } : {}), ...(rule.pool ? { pool: rule.pool.replace(":model", `:${candidate.model}`) } : {}), observedAt: now, resetAt: resetAt ?? now + 15 * 60_000, source: "body", remaining: 0 };
+	return {
+		...candidate,
+		type: rule.type,
+		...(rule.dimension ? { dimension: rule.dimension } : {}),
+		...(rule.pool ? { pool: rule.pool.replace(":model", `:${candidate.model}`) } : {}),
+		observedAt: now,
+		resetAt: resetAt ?? now + 15 * 60_000,
+		source: "body",
+		remaining: 0,
+	};
 }
 
 /** Normalizes remote limit signals only when enabled by provider configuration. */
-export function observeLimits(candidate: Candidate, observation: LimitObservation, policy: LimitPolicyConfig | undefined, now = Date.now()): LimitEntry[] {
+export function observeLimits(
+	candidate: Candidate,
+	observation: LimitObservation,
+	policy: LimitPolicyConfig | undefined,
+	now = Date.now(),
+): LimitEntry[] {
 	if (!policy?.observe) return [];
 	const result: LimitEntry[] = [];
 	const headers = headerMap(observation.headers);
@@ -143,24 +192,55 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 		for (const dimension of ["requests", "tokens"] as const) {
 			const prefixes = ["x-ratelimit", "anthropic-ratelimit"];
 			for (const prefix of prefixes) {
-				const limit = numeric(headers.get(`${prefix}-limit-${dimension}`) ?? headers.get(`${prefix}-${dimension}-limit`));
-				const remaining = numeric(headers.get(`${prefix}-remaining-${dimension}`) ?? headers.get(`${prefix}-${dimension}-remaining`));
+				const limit = numeric(
+					headers.get(`${prefix}-limit-${dimension}`) ?? headers.get(`${prefix}-${dimension}-limit`),
+				);
+				const remaining = numeric(
+					headers.get(`${prefix}-remaining-${dimension}`) ?? headers.get(`${prefix}-${dimension}-remaining`),
+				);
 				if (limit === undefined && remaining === undefined) continue;
-				const resetValue = headers.get(`${prefix}-reset-${dimension}`) ?? headers.get(`${prefix}-${dimension}-reset`) ?? headers.get("x-ratelimit-reset") ?? headers.get("retry-after");
+				const resetValue =
+					headers.get(`${prefix}-reset-${dimension}`) ??
+					headers.get(`${prefix}-${dimension}-reset`) ??
+					headers.get("x-ratelimit-reset") ??
+					headers.get("retry-after");
 				const configured = policy.defaults?.find((entry) => entry.type === "rate" && entry.dimension === dimension);
-				result.push({ ...candidate, type: "rate", dimension, observedAt: now, resetAt: parseReset(resetValue, now) ?? now + (configured?.windowMs ?? 60_000), source: "header", ...(configured?.pool ? { pool: configured.pool.replace(":model", `:${candidate.model}`) } : {}), ...(remaining === undefined ? {} : { remaining }), ...(limit === undefined ? {} : { limit }) });
+				result.push({
+					...candidate,
+					type: "rate",
+					dimension,
+					observedAt: now,
+					resetAt: parseReset(resetValue, now) ?? now + (configured?.windowMs ?? 60_000),
+					source: "header",
+					...(configured?.pool ? { pool: configured.pool.replace(":model", `:${candidate.model}`) } : {}),
+					...(remaining === undefined ? {} : { remaining }),
+					...(limit === undefined ? {} : { limit }),
+				});
 				break;
 			}
 		}
 		const genericLimit = numeric(headers.get("x-ratelimit-limit"));
 		const genericRemaining = numeric(headers.get("x-ratelimit-remaining"));
-		if (genericLimit !== undefined || genericRemaining !== undefined) result.push({ ...candidate, type: "rate", dimension: "requests", observedAt: now, resetAt: parseReset(headers.get("x-ratelimit-reset") ?? headers.get("retry-after"), now) ?? now + 60_000, source: "header", ...(genericRemaining === undefined ? {} : { remaining: genericRemaining }), ...(genericLimit === undefined ? {} : { limit: genericLimit }) });
+		if (genericLimit !== undefined || genericRemaining !== undefined)
+			result.push({
+				...candidate,
+				type: "rate",
+				dimension: "requests",
+				observedAt: now,
+				resetAt: parseReset(headers.get("x-ratelimit-reset") ?? headers.get("retry-after"), now) ?? now + 60_000,
+				source: "header",
+				...(genericRemaining === undefined ? {} : { remaining: genericRemaining }),
+				...(genericLimit === undefined ? {} : { limit: genericLimit }),
+			});
 	}
 	const body = text(observation.body);
 	let ruled = false;
 	for (const rule of policy.bodyRules ?? []) {
 		const entry = bodyEntry(candidate, body, rule, now, policy, observation.status, observation);
-		if (entry) { result.push(entry); ruled = true; }
+		if (entry) {
+			result.push(entry);
+			ruled = true;
+		}
 	}
 	// Without a matching rule, a limit error still carries its own reset and scope: use them rather
 	// than a short default, or exhausted models look recovered minutes later and get retried.
@@ -184,7 +264,16 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 			const hints = bodyHints(body, now);
 			const daily = DAILY_WORDING.test(body);
 			if (hints.resetAt !== undefined || daily) {
-				result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
+				result.push({
+					...candidate,
+					type: daily ? "daily" : "rate",
+					dimension: "requests",
+					observedAt: now,
+					resetAt: hints.resetAt ?? nextDailyReset(now, policy),
+					source: "body",
+					remaining: hints.remaining ?? 0,
+					...(hints.limit === undefined ? {} : { limit: hints.limit }),
+				});
 			}
 		}
 	}
@@ -202,10 +291,28 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 	return result;
 }
 
-export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now: number, resetAt: number | undefined, dimension?: LimitDimension, pool?: string, policy?: LimitPolicyConfig): LimitEntry {
+export function defaultLimit(
+	candidate: Candidate,
+	type: LimitEntry["type"],
+	now: number,
+	resetAt: number | undefined,
+	dimension?: LimitDimension,
+	pool?: string,
+	policy?: LimitPolicyConfig,
+): LimitEntry {
 	// A daily or monthly limit without a reported reset lasts until its roll-over, not fifteen minutes.
-	const fallback = type === "daily" ? nextDailyReset(now, policy) : type === "monthly" ? nextMonthlyReset(now) : now + 15 * 60_000;
-	return { ...candidate, type, ...(dimension ? { dimension } : {}), ...(pool ? { pool } : {}), observedAt: now, resetAt: resetAt ?? fallback, source: resetAt === undefined ? (type === "daily" || type === "monthly" ? "rule" : "default") : "rule", remaining: 0 };
+	const fallback =
+		type === "daily" ? nextDailyReset(now, policy) : type === "monthly" ? nextMonthlyReset(now) : now + 15 * 60_000;
+	return {
+		...candidate,
+		type,
+		...(dimension ? { dimension } : {}),
+		...(pool ? { pool } : {}),
+		observedAt: now,
+		resetAt: resetAt ?? fallback,
+		source: resetAt === undefined ? (type === "daily" || type === "monthly" ? "rule" : "default") : "rule",
+		remaining: 0,
+	};
 }
 
 /**
@@ -220,11 +327,19 @@ export function defaultLimit(candidate: Candidate, type: LimitEntry["type"], now
  * @param now - Observation time in ms.
  * @returns Ledger entries from matching `answerText` rules; empty when the answer used output tokens.
  */
-export function observeAnswer(candidate: Candidate, answerText: string, outputTokens: number, policy: LimitPolicyConfig | undefined, now = Date.now()): LimitEntry[] {
+export function observeAnswer(
+	candidate: Candidate,
+	answerText: string,
+	outputTokens: number,
+	policy: LimitPolicyConfig | undefined,
+	now = Date.now(),
+): LimitEntry[] {
 	if (!policy?.observe || outputTokens !== 0 || answerText.trim() === "") return [];
 	const observation: LimitObservation = { status: 200, body: { answerText, usage: { outputTokens } } };
-	return (policy.bodyRules ?? []).filter((rule) => rule.answerText).flatMap((rule) => {
-		const entry = bodyEntry(candidate, answerText, rule, now, policy, 200, observation);
-		return entry ? [entry] : [];
-	});
+	return (policy.bodyRules ?? [])
+		.filter((rule) => rule.answerText)
+		.flatMap((rule) => {
+			const entry = bodyEntry(candidate, answerText, rule, now, policy, 200, observation);
+			return entry ? [entry] : [];
+		});
 }

@@ -22,6 +22,8 @@ export interface LimitObservation {
 	body?: unknown;
 }
 
-export function limitKey(entry: Pick<LimitEntry, "provider" | "account" | "model" | "pool" | "type" | "dimension">): string {
+export function limitKey(
+	entry: Pick<LimitEntry, "provider" | "account" | "model" | "pool" | "type" | "dimension">,
+): string {
 	return [entry.provider, entry.account, entry.pool ?? entry.model, entry.type, entry.dimension ?? "usage"].join("/");
 }

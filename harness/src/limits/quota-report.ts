@@ -19,7 +19,12 @@ export interface QuotaReportProvider {
 	state: QuotaState | "no-account";
 	free?: FreeTierConfig;
 	/** Optional data‑collection configuration for a provider */
-	data?: { collection: "none" | "logging" | "training" | "unknown"; source?: string; sourceUrl?: string; checkedAt?: string };
+	data?: {
+		collection: "none" | "logging" | "training" | "unknown";
+		source?: string;
+		sourceUrl?: string;
+		checkedAt?: string;
+	};
 	declared: DeclaredLimitConfig[];
 	accounts: QuotaReportAccount[];
 }
@@ -56,27 +61,36 @@ export async function buildQuotaReport(input: QuotaReportInput): Promise<QuotaRe
 	for (const provider of input.providers) {
 		if (input.provider && provider.id !== input.provider) continue;
 		const enabled = provider.enabled !== false;
-		const configured = input.accounts.filter((account) => account.provider === provider.id).map((account) => account.label);
+		const configured = input.accounts
+			.filter((account) => account.provider === provider.id)
+			.map((account) => account.label);
 		const anonymous = configured.length === 0 && provider.auth.some((auth) => auth.kind === "api_key" && auth.optional);
 		const labels = !enabled ? [] : configured.length > 0 ? configured : anonymous ? ["default"] : [];
 		const accounts: QuotaReportAccount[] = [];
 		for (const label of labels) {
 			const models = new Set(provider.models.static.map((model) => model.id));
-			for (const candidate of input.chains) if (candidate.provider === provider.id && candidate.account === label) models.add(candidate.model);
+			for (const candidate of input.chains)
+				if (candidate.provider === provider.id && candidate.account === label) models.add(candidate.model);
 			const statuses: CandidateQuota[] = [];
-			for (const model of models) statuses.push(await input.engine.status({ provider: provider.id, account: label, model }, now));
+			for (const model of models)
+				statuses.push(await input.engine.status({ provider: provider.id, account: label, model }, now));
 			accounts.push({ label, models: statuses });
 		}
-			const data: NonNullable<QuotaReportProvider["data"]> = provider.free?.data ?? provider.data ?? { collection: "unknown" };
-			providers.push({
-				id: provider.id, name: provider.name, dialect: provider.dialect, baseUrl: provider.baseUrl, enabled,
-				credentials: configured.length > 0 ? "configured" : anonymous ? "anonymous" : "missing",
-				state: labels.length === 0 ? "no-account" : providerState(accounts),
-				...(provider.free ? { free: provider.free } : {}),
-				declared: provider.limits?.declared ?? [],
-				data,
-				accounts,
-			});
+		const data: NonNullable<QuotaReportProvider["data"]> = provider.free?.data ??
+			provider.data ?? { collection: "unknown" };
+		providers.push({
+			id: provider.id,
+			name: provider.name,
+			dialect: provider.dialect,
+			baseUrl: provider.baseUrl,
+			enabled,
+			credentials: configured.length > 0 ? "configured" : anonymous ? "anonymous" : "missing",
+			state: labels.length === 0 ? "no-account" : providerState(accounts),
+			...(provider.free ? { free: provider.free } : {}),
+			declared: provider.limits?.declared ?? [],
+			data,
+			accounts,
+		});
 	}
 	if (input.provider && providers.length === 0) throw new Error(`Unknown provider ${input.provider}`);
 	return { version: 2, generatedAt: new Date(now).toISOString(), providers };
