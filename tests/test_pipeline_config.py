@@ -22,6 +22,7 @@ EXPECTED_WORKFLOWS = [
     "update-submodules.yml",
     "install.yml",
     "verify-pr-issue.yml",
+    "quota-resume.yml",
 ]
 
 EXPECTED_SCRIPTS = [

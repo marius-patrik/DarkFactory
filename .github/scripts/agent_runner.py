@@ -27,6 +27,7 @@ import hashlib
 import random
 import uuid
 from typing import Any, Dict, List, NoReturn, Optional, Set, Tuple
+from datetime import datetime, timezone, timedelta
 
 ANTIGRAVITY_CLIENT_ID = os.environ.get("ANTIGRAVITY_CLIENT_ID", "")
 ANTIGRAVITY_CLIENT_SECRET = os.environ.get("ANTIGRAVITY_CLIENT_SECRET", "")
@@ -673,7 +674,8 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
         subprocess.CalledProcessError: When the command fails, carrying the reason in its message.
     """
     cmd = ["gh"] + args
-    if repo:
+    # `gh api` has no --repo flag ("unknown flag: --repo"); its path already names the repository.
+    if repo and (not args or args[0] != "api"):
         cmd.extend(["--repo", repo])
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
@@ -689,6 +691,223 @@ def run_gh(args: List[str], repo: Optional[str] = None) -> str:
             stderr=detail[0] if detail else "no output",
         )
     return res.stdout.strip()
+
+
+def _pacific_offset_hours(moment: datetime) -> int:
+    """Returns the UTC offset of America/Los_Angeles at a UTC moment (US daylight-saving rule).
+
+    Computed without a time zone database, which Windows Python lacks unless ``tzdata`` is installed.
+
+    Args:
+        moment: A timezone-aware UTC datetime.
+
+    Returns:
+        -7 during daylight saving time (second Sunday of March to first Sunday of November), else -8.
+    """
+    year = moment.year
+    march_first = datetime(year, 3, 1, tzinfo=timezone.utc)
+    second_sunday_march = march_first + timedelta(days=(6 - march_first.weekday()) % 7 + 7)
+    november_first = datetime(year, 11, 1, tzinfo=timezone.utc)
+    first_sunday_november = november_first + timedelta(days=(6 - november_first.weekday()) % 7)
+    dst_start = second_sunday_march.replace(hour=10)  # 02:00 PST
+    dst_end = first_sunday_november.replace(hour=9)  # 02:00 PDT
+    return -7 if dst_start <= moment < dst_end else -8
+
+
+def _next_pacific_midnight(now: float) -> float:
+    """Returns epoch seconds of the next midnight in America/Los_Angeles.
+
+    Args:
+        now: Current time in epoch seconds.
+
+    Returns:
+        The next Pacific midnight, when Google's daily free-tier quotas reset.
+    """
+    utc_now = datetime.fromtimestamp(now, tz=timezone.utc)
+    local = utc_now + timedelta(hours=_pacific_offset_hours(utc_now))
+    local_next_midnight = datetime(
+        local.year, local.month, local.day, tzinfo=timezone.utc
+    ) + timedelta(days=1)
+    guess = local_next_midnight - timedelta(hours=_pacific_offset_hours(utc_now))
+    return (local_next_midnight - timedelta(hours=_pacific_offset_hours(guess))).timestamp()
+
+
+def next_quota_reset(error_detail: str, now: float) -> float:
+    """Return epoch seconds of the earliest moment the run may resume.
+
+    Uses, in order:
+    1. ISO timestamp found in ``error_detail``.
+    2. ``resetAt`` epoch (ms) found in ``error_detail``.
+    3. ``retryDelay`` or ``Please retry in Ns`` value added to ``now``.
+    4. Next Pacific midnight (America/Los_Angeles) if none of the above.
+    """
+    import re
+
+    # 1. ISO timestamp (e.g. 2025-01-02T15:04:05Z)
+    iso_match = re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?", error_detail)
+    if iso_match:
+        try:
+            iso_str = iso_match.group(0)
+            dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        except Exception:
+            pass
+    # 2. resetAt epoch in milliseconds
+    reset_match = re.search(r'"resetAt"\s*:\s*(\d{10,})', error_detail)
+    if reset_match:
+        try:
+            ms = int(reset_match.group(1))
+            return ms / 1000.0
+        except Exception:
+            pass
+    # 3. retryDelay or Please retry in Ns
+    retry_match = re.search(r'"retryDelay"\s*:\s*(\d+)', error_detail)
+    if not retry_match:
+        retry_match = re.search(r"please\s+retry\s+in\s+(\d+)s", error_detail, re.IGNORECASE)
+    if retry_match:
+        try:
+            delay = int(retry_match.group(1))
+            return now + delay
+        except Exception:
+            pass
+    # 4. Next Pacific midnight
+    return _next_pacific_midnight(now)
+
+
+def _already_exists(error: Exception) -> bool:
+    """Tells whether a gh failure means the variable already exists (HTTP 409).
+
+    Args:
+        error: The failure raised by ``run_gh``; its stderr carries the HTTP status.
+
+    Returns:
+        True for a 409 / "Already exists" response.
+    """
+    text = " ".join(
+        str(part)
+        for part in (error, getattr(error, "stderr", ""), getattr(error, "output", ""))
+        if part
+    )
+    return "409" in text or "already exists" in text.lower()
+
+
+def record_quota_block(
+    repo, item_number, is_pr, reset_at, providers: List[str], run_id: str
+) -> None:
+    """Writes repository variable ``DF_QUOTA_<run_id>`` and updates ``DARKFACTORY_QUOTA_PROVIDERS``.
+
+    The run variable stores JSON with keys ``item``, ``is_pr``, ``reset_at`` (ISO UTC), and ``blocked_at`` (ISO UTC).
+    The provider map stores the maximum reset epoch for each provider.
+    All failures are printed as notices and never raise.
+    """
+    var_name = f"DF_QUOTA_{run_id}"
+    now_iso = (
+        datetime.fromtimestamp(reset_at, tz=timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+    blocked_iso = (
+        datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    )
+    payload = {
+        "item": item_number,
+        "is_pr": is_pr,
+        "reset_at": now_iso,
+        "blocked_at": blocked_iso,
+    }
+    value_json = json.dumps(payload, separators=(",", ":"))
+    # Create or update the run variable
+    try:
+        run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables",
+                "--method",
+                "POST",
+                "-f",
+                f"name={var_name}",
+                "-f",
+                f"value={value_json}",
+            ],
+            repo=repo,
+        )
+    except subprocess.CalledProcessError as e:
+        # If it already exists (HTTP 409) fall back to PATCH
+        if _already_exists(e):
+            try:
+                run_gh(
+                    [
+                        "api",
+                        f"repos/{repo}/actions/variables/{var_name}",
+                        "--method",
+                        "PATCH",
+                        "-f",
+                        f"value={value_json}",
+                    ],
+                    repo=repo,
+                )
+            except Exception as ee:
+                print(f"Notice: Failed to patch quota variable {var_name}: {ee}", file=sys.stderr)
+        else:
+            print(f"Notice: Failed to create quota variable {var_name}: {e}", file=sys.stderr)
+    prov_name = "DARKFACTORY_QUOTA_PROVIDERS"
+    existing = {}
+    try:
+        raw = run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables/{prov_name}",
+                "--method",
+                "GET",
+            ],
+            repo=repo,
+        )
+        data = json.loads(raw)
+        if isinstance(data, dict) and "value" in data:
+            existing = json.loads(data["value"]) if data["value"] else {}
+    except subprocess.CalledProcessError:
+        existing = {}
+    except Exception as ee:
+        print(f"Notice: Failed to read provider map {prov_name}: {ee}", file=sys.stderr)
+    for p in providers:
+        existing[p] = max(existing.get(p, 0), reset_at)
+    prov_json = json.dumps(existing, separators=(",", ":"))
+    # Write back provider map (POST if missing, otherwise PATCH)
+    try:
+        run_gh(
+            [
+                "api",
+                f"repos/{repo}/actions/variables",
+                "--method",
+                "POST",
+                "-f",
+                f"name={prov_name}",
+                "-f",
+                f"value={prov_json}",
+            ],
+            repo=repo,
+        )
+    except subprocess.CalledProcessError as e:
+        if _already_exists(e):
+            try:
+                run_gh(
+                    [
+                        "api",
+                        f"repos/{repo}/actions/variables/{prov_name}",
+                        "--method",
+                        "PATCH",
+                        "-f",
+                        f"value={prov_json}",
+                    ],
+                    repo=repo,
+                )
+            except Exception as ee:
+                print(f"Notice: Failed to patch provider map {prov_name}: {ee}", file=sys.stderr)
+        else:
+            print(f"Notice: Failed to create provider map {prov_name}: {e}", file=sys.stderr)
 
 
 def try_gh(args: List[str], repo: Optional[str] = None, doing: str = "") -> Optional[str]:
@@ -1406,6 +1625,20 @@ def checkpoint_and_notify_exhaustion(
     # 4. Update Project Board Status to Blocked
     update_project_status_blocked(issue_number, repo=repo, is_pr=is_pr, client=client)
 
+    # 5. Record quota block in repository variables
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if run_id:
+        import re
+
+        m = re.search(r"across every harness and model\s*\(([^)]+)\)", error_detail)
+        providers = []
+        if m:
+            providers = [p.strip() for p in m.group(1).split(",")]
+        reset_at = next_quota_reset(error_detail, time.time())
+        try:
+            record_quota_block(repo, issue_number, is_pr, reset_at, providers, run_id)
+        except Exception as error:  # noqa: BLE001 - recording the block must never fail the notice
+            print(f"Notice: could not record the quota block: {error}", file=sys.stderr)
     return checkpoint_data
 
 
@@ -4037,6 +4270,10 @@ def dispatch_event(event_path: str, event_name: str):
                 run_self_review_iteration(pr_number, plan_issue, request_issue, iteration, repo)
             elif stage == "self-review-fix":
                 run_self_review_fix(pr_number, plan_issue, request_issue, iteration, repo)
+            elif stage == "resume":
+                item = client_payload.get("item")
+                is_pr = client_payload.get("is_pr")
+                resume_item(item, is_pr, repo)
             return
 
     if event_name == "issues":
@@ -4134,38 +4371,8 @@ def dispatch_event(event_path: str, event_name: str):
                 command = None
             if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")
-                load_checkpoint(cwd=WORKSPACE_DIR)
-                if is_request:
-                    unblock_entity(issue_num, repo, is_pr=False, target_status="In Progress")
-                    # Both gates live on this issue. Which one an approval answers is read back
-                    # from the issue rather than tracked elsewhere: before a plan exists the
-                    # approval is of the interpretation, and after it exists it is of the plan.
-                    #
-                    # A second issue used to carry the second gate, which meant two board items
-                    # per pull request, both moving through the same statuses, and closing the
-                    # pull request closed one and left the other to be reconciled.
-                    if has_plan(issue_num, repo):
-                        handle_implement(issue_num, issue_num, repo)
-                    else:
-                        handle_plan(issue_num, issue_num, repo)
-                elif is_plan:
-                    # Legacy: issues created as separate children before the gates were merged.
-                    unblock_entity(issue_num, repo, is_pr=False, target_status="In Progress")
-                    request_num = find_parent_request_number(issue_num, repo)
-                    if request_num:
-                        unblock_entity(request_num, repo, is_pr=False, target_status="In Progress")
-                        handle_implement(issue_num, request_num, repo)
-                    else:
-                        print(f"Could not find parent Request for Plan #{issue_num}")
-                elif is_pr:
-                    unblock_entity(issue_num, repo, is_pr=True, target_status="In Progress")
-                    # Retrieve linked plan issue and resume self-review or plan alignment
-                    plan_num = find_plan_issue_for_pr(issue_num, repo)
-                    if plan_num:
-                        unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                        start_self_review(issue_num, plan_num, None, repo)
-                    else:
-                        print(f"Could not find linked Plan for PR #{issue_num}")
+                resume_item(issue_num, is_pr, repo, labels)
+                return
             elif command == "reject":
                 # A rejection routes back to the same stage with the comment as feedback:
                 # never an approval, never a close, and on a PR never a merge.
@@ -4219,12 +4426,8 @@ def dispatch_event(event_path: str, event_name: str):
                 )
                 review_command = None
             if review_command in ("approve", "resume"):
-                unblock_entity(pr_num, repo, is_pr=True, target_status="In Progress")
-                plan_num = find_plan_issue_for_pr(pr_num, repo)
-                if plan_num:
-                    unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
-                    start_self_review(pr_num, plan_num, None, repo)
-                    return
+                resume_item(pr_num, True, repo)
+                return
             # A rejection is a change request: answered, never merged, never re-reviewed.
             print(f"PR review comment on #{pr_num} from @{comment_user}: {comment_body[:80]}...")
             handle_respond(pr_num, comment_body, repo=repo, is_pr=True)
@@ -4262,6 +4465,63 @@ def _manifest_slug() -> str:
         return f"{loaded.owner}/{loaded.repo}"
     except Exception:  # noqa: BLE001 - a missing manifest must not stop the CLI parsing
         return ""
+
+
+def resume_item(
+    item_number: int, is_pr: bool, repo: str, labels: Optional[List[str]] = None
+) -> None:
+    """Resume a blocked item (issue or PR) based on its current state.
+
+    This extracts the same behaviour as the approve/resume comment handling:
+    - Load the checkpoint.
+    - Unblock the item.
+    - For a request issue, run plan or implement depending on whether a plan exists.
+    - For a plan issue, run implement after unblocking its parent request.
+    - For a PR, start self‑review after unblocking the linked plan.
+    """
+    load_checkpoint(cwd=WORKSPACE_DIR)
+    if not is_pr:
+        # The comment path already has the labels from its event; a dispatched resume reads them.
+        if labels is None:
+            # Issue case: fetch labels to decide type
+            issue_raw = run_gh(["issue", "view", str(item_number), "--json", "labels"], repo=repo)
+            if isinstance(issue_raw, str):
+                try:
+                    issue_raw = json.loads(issue_raw)
+                except Exception:
+                    issue_raw = {}
+            labels = [
+                l.get("name") if isinstance(l, dict) else str(l)
+                for l in issue_raw.get("labels", [])
+            ]
+        is_request = any(l.lower() == "request" for l in labels)
+        is_plan = any(l.lower() == "plan" for l in labels)
+        if is_request:
+            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
+            if has_plan(item_number, repo):
+                handle_implement(item_number, item_number, repo)
+            else:
+                handle_plan(item_number, item_number, repo)
+        elif is_plan:
+            unblock_entity(item_number, repo, is_pr=False, target_status="In Progress")
+            request_num = find_parent_request_number(item_number, repo)
+            if request_num:
+                unblock_entity(request_num, repo, is_pr=False, target_status="In Progress")
+                handle_implement(item_number, request_num, repo)
+            else:
+                print(f"Could not find parent Request for Plan #{item_number}")
+        else:
+            # Only Requests and Plans have stages to resume; anything else is left untouched.
+            print(f"Issue #{item_number} is neither a Request nor a Plan; nothing to resume.")
+    else:
+        # PR case
+        unblock_entity(item_number, repo, is_pr=True, target_status="In Progress")
+        plan_num = find_plan_issue_for_pr(item_number, repo)
+        if plan_num:
+            unblock_entity(plan_num, repo, is_pr=False, target_status="In Progress")
+            start_self_review(item_number, plan_num, None, repo)
+        else:
+            print(f"Could not find linked Plan for PR #{item_number}")
 
 
 def main():

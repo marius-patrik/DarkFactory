@@ -2475,3 +2475,127 @@ class TestSelfReviewDispatchCycle:
         source = Path(module.__file__).read_text(encoding="utf-8")
         assert not hasattr(module, "handle_self_review")
         assert "MAX_REVIEW_ITERATIONS" not in source
+
+
+class TestQuotaBlockRecording:
+    """Issue #243: a run that stops on quota records when it may resume."""
+
+    NOW = 1789473600.0  # 2026-09-15T12:00:00Z (05:00 in Los Angeles)
+
+    def test_reset_from_an_iso_timestamp_in_the_error(self):
+        module = agent_runner_module()
+        detail = "429 quota exhausted; resets at 2026-09-15T14:30:00Z"
+        assert module.next_quota_reset(detail, self.NOW) == self.NOW + 2.5 * 3600
+
+    def test_reset_from_a_retry_delay(self):
+        module = agent_runner_module()
+        assert module.next_quota_reset("Please retry in 33s.", self.NOW) == self.NOW + 33
+
+    def test_reset_falls_back_to_the_next_pacific_midnight(self):
+        module = agent_runner_module()
+        assert (
+            module.next_quota_reset("quota exhausted", self.NOW) == 1789542000.0
+        )  # 2026-09-16T07:00Z
+
+    def test_records_the_run_and_keeps_the_provider_map_monotonic(self, monkeypatch):
+        module = agent_runner_module()
+        calls = []
+
+        def fake_run_gh(args, repo=None):
+            calls.append(args)
+            if args[1].endswith("/DARKFACTORY_QUOTA_PROVIDERS") and "GET" in args:
+                return json.dumps(
+                    {
+                        "name": "DARKFACTORY_QUOTA_PROVIDERS",
+                        "value": json.dumps({"later": 5e9, "earlier": 1.0}),
+                    }
+                )
+            if "POST" in args and any(str(a) == "name=DARKFACTORY_QUOTA_PROVIDERS" for a in args):
+                raise subprocess.CalledProcessError(
+                    1, ["gh", "api"], stderr="HTTP 409: Already exists"
+                )
+            return ""
+
+        monkeypatch.setattr(module, "run_gh", fake_run_gh)
+        module.record_quota_block("owner/repo", 42, True, self.NOW, ["later", "earlier"], "987")
+        run_post = next(c for c in calls if "name=DF_QUOTA_987" in c)
+        value = json.loads(next(a for a in run_post if a.startswith("value="))[len("value=") :])
+        assert (
+            value["item"] == 42
+            and value["is_pr"] is True
+            and value["reset_at"] == "2026-09-15T12:00:00Z"
+        )
+        patch = next(
+            c for c in calls if "PATCH" in c and c[1].endswith("/DARKFACTORY_QUOTA_PROVIDERS")
+        )
+        providers = json.loads(next(a for a in patch if a.startswith("value="))[len("value=") :])
+        assert providers == {"later": 5e9, "earlier": self.NOW}
+
+
+class TestResumeDispatch:
+    """Issue #243: a resume dispatch continues the item exactly like a /df resume comment."""
+
+    def _dispatch(self, monkeypatch, tmp_path, item, is_pr, labels, plan_exists=False):
+        module = agent_runner_module()
+        calls = []
+        monkeypatch.setattr(module, "load_checkpoint", lambda **k: None)
+        monkeypatch.setattr(module, "unblock_entity", lambda *a, **k: None)
+        monkeypatch.setattr(module, "has_plan", lambda n, r: plan_exists)
+        monkeypatch.setattr(module, "handle_plan", lambda *a, **k: calls.append(("plan", a)))
+        monkeypatch.setattr(
+            module, "handle_implement", lambda *a, **k: calls.append(("implement", a))
+        )
+        monkeypatch.setattr(module, "start_self_review", lambda *a: calls.append(("review", a)))
+        monkeypatch.setattr(module, "find_plan_issue_for_pr", lambda n, r: 20)
+        monkeypatch.setattr(
+            module,
+            "run_gh",
+            lambda args, repo=None: json.dumps({"labels": [{"name": l} for l in labels]}),
+        )
+        monkeypatch.setattr(module, "setup_df_accounts", lambda: "home", raising=False)
+        event = {
+            "action": "agent-dispatch",
+            "repository": {"full_name": "owner/repo"},
+            "client_payload": {"stage": "resume", "item": item, "is_pr": is_pr},
+        }
+        path = tmp_path / "resume.json"
+        path.write_text(json.dumps(event), encoding="utf-8")
+        module.dispatch_event(str(path), "repository_dispatch")
+        return calls
+
+    def test_a_request_with_a_plan_resumes_implementation(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, 7, False, ["Request"], plan_exists=True) == [
+            ("implement", (7, 7, "owner/repo"))
+        ]
+
+    def test_a_request_without_a_plan_resumes_planning(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, 7, False, ["Request"]) == [
+            ("plan", (7, 7, "owner/repo"))
+        ]
+
+    def test_a_pull_request_resumes_self_review(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, 10, True, []) == [
+            ("review", (10, 20, None, "owner/repo"))
+        ]
+
+    def test_an_issue_that_is_neither_request_nor_plan_is_not_started(self, monkeypatch, tmp_path):
+        assert self._dispatch(monkeypatch, tmp_path, 5, False, ["pipeline-failure"]) == []
+
+
+def test_gh_api_calls_never_get_a_repo_flag(monkeypatch):
+    """`gh api --repo` fails with "unknown flag: --repo"; dispatches and variable writes use `gh api`."""
+    module = agent_runner_module()
+    seen = []
+
+    class Done:
+        returncode = 0
+        stdout = "{}"
+        stderr = ""
+
+    monkeypatch.setattr(
+        module.subprocess, "run", lambda cmd, **kwargs: (seen.append(cmd), Done())[1]
+    )
+    module.run_gh(["api", "repos/owner/repo/dispatches", "--method", "POST"], repo="owner/repo")
+    module.run_gh(["issue", "view", "1"], repo="owner/repo")
+    assert "--repo" not in seen[0]
+    assert seen[1][-2:] == ["--repo", "owner/repo"]
