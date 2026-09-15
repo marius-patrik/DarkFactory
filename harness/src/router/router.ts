@@ -81,7 +81,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			const verdict = assessCandidate(item.model.candidate, estimate, entries, item.model);
 			if (!verdict.eligible) skip = verdict.reason ?? "limited";
 		}
-		let quotaStatus;
+		let quotaStatus: Awaited<ReturnType<NonNullable<typeof dependencies.quota>["status"]>> | undefined;
 		if (dependencies.quota) {
 			quotaStatus = await dependencies.quota.status(item.model.candidate, now);
 			if (quotaStatus.state === "unavailable") {

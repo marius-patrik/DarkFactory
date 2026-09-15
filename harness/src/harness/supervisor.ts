@@ -133,9 +133,13 @@ function isTerminalAbort(thrown: unknown, final: AssistantMessage | undefined): 
 	return thrown.name === "AbortError" || /(?:request|operation|run) (?:was )?aborted/i.test(thrown.message);
 }
 
-/** A normal stop that carries no text and no tool call: some models end a turn with zero output tokens. */
+/**
+ * A stop that carries no text and no tool call. Some models end a turn with zero output tokens; others spend the whole
+ * output budget on reasoning and stop with `length` (cline-gateway laguna-s-2.1 after 18 minutes of F30-2). Either way
+ * the run must fail over with its session instead of ending with an empty answer.
+ */
 function isEmptyAnswer(message: AssistantMessage): boolean {
-	return message.stopReason === "stop" && !message.content.some((block) =>
+	return (message.stopReason === "stop" || message.stopReason === "length") && !message.content.some((block) =>
 		(block.type === "text" && block.text.trim() !== "") || block.type === "toolCall");
 }
 
@@ -373,7 +377,7 @@ export class FailoverSupervisor {
 				? { kind: "transient", errorClass: "EmptyResponse" }
 				: classifyFailure({ error: thrown, message: final, response, now: (this.options.now ?? Date.now)() }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
 			const stopReason = final?.stopReason ?? "threw";
-			const errorMessage = emptyAnswer ? "Model returned an empty response" : redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
+			const errorMessage = emptyAnswer ? (final?.stopReason === "length" ? "Model spent its output budget without an answer" : "Model returned an empty response") : redactErrorMessage(thrown instanceof Error ? thrown.message : final?.errorMessage ?? `Agent stopped: ${stopReason}`);
 			this.emit({
 				type: "step", ...candidate, stopReason, usage: final?.usage ?? null,
 				errorClass: failure.errorClass ?? null, errorKind: failure.kind, errorMessage,

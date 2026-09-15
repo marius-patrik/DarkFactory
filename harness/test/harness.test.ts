@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider, fauxText, fauxThinking, fauxToolCall, type Provider } from "@earendil-works/pi-ai";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
+import { OutcomeStore } from "../src/router/outcomes.ts";
 
 const temporary: string[] = [];
 
@@ -84,6 +85,24 @@ describe("AgentSession harness", () => {
 			expect(final.content.some((block) => block.type === "text" && block.text === "the plan")).toBe(true);
 			expect(events.find((event) => event.type === "failover")).toMatchObject({ reason: "transient" });
 			expect(events.find((event) => event.type === "step" && event.errorKind)).toMatchObject({ errorMessage: "Model returned an empty response" });
+		} finally { supervisor.session.dispose(); }
+	});
+
+	test("a length stop without text or tool call fails over with the session and counts against the model", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const thinker = fauxProvider({ provider: "budget-a", models: [{ id: "a" }] });
+		thinker.setResponses([fauxAssistantMessage([fauxThinking("planning at length")], { stopReason: "length" })]);
+		const good = fauxProvider({ provider: "answer-b", models: [{ id: "b" }] });
+		good.setResponses([fauxAssistantMessage("the plan")]);
+		const outcomes = new OutcomeStore(home);
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({ chain: [{ provider: "budget-a", model: "a", account: "one" }, { provider: "answer-b", model: "b", account: "two" }], home, cwd, ...runtimeProviders(thinker.provider, good.provider), onEvent: (event) => events.push(event), outcomeStore: outcomes, taskKind: "plan" });
+		try {
+			const final = await supervisor.prompt("plan it");
+			expect(final.content.some((block) => block.type === "text" && block.text === "the plan")).toBe(true);
+			expect(events.find((event) => event.type === "step" && event.errorKind)).toMatchObject({ provider: "budget-a", stopReason: "length", errorMessage: "Model spent its output budget without an answer" });
+			expect((await outcomes.penalties("plan")).get("budget-a/a@one")).toBeGreaterThan(0);
+			expect((await outcomes.penalties("plan")).has("answer-b/b@two")).toBe(false);
 		} finally { supervisor.session.dispose(); }
 	});
 
