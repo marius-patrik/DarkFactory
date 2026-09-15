@@ -1,0 +1,30 @@
+name: Quota Resume Sweep
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      dummy:
+        required: false
+
+concurrency:
+  group: quota-resume
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run quota resume
+        env:
+          SCRIPTS_DIR: .github/scripts
+        run: python ${{ env.SCRIPTS_DIR }}/quota_resume.py
