@@ -83,6 +83,59 @@ describe("observeLimits learns unavailability types", () => {
     expect(result).toHaveLength(1);
     expect(entry.type).toBe("model");
     expect(entry.source).toBe("default");
+    expect(entry.resetAt).toBe(now + 24 * 60 * 60_000);
+  });
+
+  test("404 observation yields model entry with 24h reset by default", () => {
+    const candidate: Candidate = { provider: "test", account: "test", model: "test-model" };
+    const observation: LimitObservation = { body: "not found", status: 404, headers: {} };
+    const policy: LimitPolicyConfig = { observe: true };
+    const now = Date.now();
+    const result = observeLimits(candidate, observation, policy, now);
+    const entry = result[0]!;
+    expect(result).toHaveLength(1);
+    expect(entry.type).toBe("model");
+    expect(entry.source).toBe("default");
+    expect(entry.resetAt).toBe(now + 24 * 60 * 60_000);
+  });
+
+  test("404 observation with modelRecheckAfterMs uses custom value", () => {
+    const candidate: Candidate = { provider: "test", account: "test", model: "test-model" };
+    const observation: LimitObservation = { body: "not found", status: 404, headers: {} };
+    const policy: LimitPolicyConfig = { observe: true, modelRecheckAfterMs: 3_600_000 };
+    const now = Date.now();
+    const result = observeLimits(candidate, observation, policy, now);
+    const entry = result[0]!;
+    expect(result).toHaveLength(1);
+    expect(entry.type).toBe("model");
+    expect(entry.source).toBe("default");
+    expect(entry.resetAt).toBe(now + 3_600_000);
+  });
+
+  test("two 422 observations for the same model yields model entry with 24h default", () => {
+    const candidate: Candidate = { provider: "test", account: "test", model: "test-model" };
+    const policy: LimitPolicyConfig = { observe: true };
+    const now = Date.now();
+    const observation: LimitObservation = { body: "unprocessable", status: 422, headers: {} };
+    observeLimits(candidate, observation, policy, now);
+    const result = observeLimits(candidate, observation, policy, now);
+    const entry = result[0]!;
+    expect(result).toHaveLength(1);
+    expect(entry.type).toBe("model");
+    expect(entry.source).toBe("default");
+    expect(entry.resetAt).toBe(now + 24 * 60 * 60_000);
+  });
+
+  test("402 billing entry keeps its 6h default", () => {
+    const candidate: Candidate = { provider: "test", account: "test", model: "test-model" };
+    const observation: LimitObservation = { body: "balance low", status: 402, headers: {} };
+    const policy: LimitPolicyConfig = { observe: true };
+    const now = Date.now();
+    const result = observeLimits(candidate, observation, policy, now);
+    const entry = result[0]!;
+    expect(result).toHaveLength(1);
+    expect(entry.type).toBe("billing");
+    expect(entry.source).toBe("default");
     expect(entry.resetAt).toBe(now + 6 * 60 * 60_000);
   });
 });

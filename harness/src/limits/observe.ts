@@ -176,8 +176,11 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 		else if (observation.status === 404) type = "model";
 		if (type) {
 			let resetAt = fallbackReset;
+			if (type === "model") {
+				resetAt = now + (policy?.modelRecheckAfterMs ?? 24 * 60 * 60_000);
+			}
 			if (type === "access") {
-				const accessReset = now + (policy?.recheckAfterMs ?? 24 * 60 * 60_000);
+				const accessReset = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
 				const credTime = getCredentialChangeTime();
 				if (credTime !== null) {
 					resetAt = Math.min(accessReset, credTime.getTime());
@@ -200,7 +203,7 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 		const count = (repeated422Counter.get(key) ?? 0) + 1;
 		repeated422Counter.set(key, count);
 		if (count >= 2) {
-			const resetAt = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
+			const resetAt = now + (policy?.modelRecheckAfterMs ?? 24 * 60 * 60_000);
 			result.push({ ...candidate, type: "model", observedAt: now, resetAt, source: "default", remaining: 0 });
 			repeated422Counter.delete(key);
 		}

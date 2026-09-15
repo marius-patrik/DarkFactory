@@ -110,6 +110,8 @@ export interface LimitPolicyConfig {
 	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
 	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
 	dailyReset?: "utc-midnight" | "pacific-midnight";
+	/** How long before a model limit is rechecked; defaults to 24 hours. */
+	modelRecheckAfterMs?: number;
 }
 export interface ModelListConfig {
 	path: string;
@@ -329,6 +331,8 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			if (probe.enabled !== undefined && typeof probe.enabled !== "boolean") throw new Error(`Provider ${id} limits.probe.enabled must be boolean`);
 			if (probe.method !== undefined && probe.method !== "GET" && probe.method !== "POST") throw new Error(`Provider ${id} limits.probe.method is invalid`);
 		}
+		if (limits.recheckAfterMs !== undefined && (typeof limits.recheckAfterMs !== "number" || limits.recheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.recheckAfterMs must be positive`);
+		if (limits.modelRecheckAfterMs !== undefined && (typeof limits.modelRecheckAfterMs !== "number" || limits.modelRecheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.modelRecheckAfterMs must be positive`);
 	}
 	object(entry.capabilities, `provider ${id} capabilities`);
 	return entry as unknown as ProviderConfig;
