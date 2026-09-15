@@ -245,25 +245,25 @@
         <article class="prose">
           <h1 id="rule-8-automated-formatting-and-linting">Rule 8 — Automated formatting and linting<a class="headerlink" href="#rule-8-automated-formatting-and-linting" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, the workspace formatter
-(<code>bun format</code> when the TypeScript foundation lands) for TypeScript, and <code>black</code> (line length 100)
-for Python automation. The GitHub Actions bot formats the codebase on every push across branches and
-commits any adjustments. Lints are blocking: <code>cargo clippy -D warnings</code> today, the Bun-native lint
-gate after the workspace lands.</p>
+<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, Biome (<code>harness/biome.json</code>)
+for TypeScript, and <code>black</code> (line length 100) for Python automation. The GitHub Actions bot formats
+the codebase on every push across branches and commits any adjustments. Lints are blocking:
+<code>cargo clippy -D warnings</code> for Rust and <code>biome ci</code> for TypeScript. Until the one-time full harness
+reformat lands, Biome formats and checks the TypeScript files a change touches.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Deterministic formatting removes style disagreement from review and from agent loopback, so a model
 never normalizes the tree by hand during an implementation pass.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>.github/workflows/auto-format.yml</code> reformats on every push.</li>
-<li>Formatting and lint gates are required jobs in <code>ci.yml</code>.</li>
+<li>Formatting and lint gates are required jobs in <code>ci.yml</code> (the <code>harness</code> job runs <code>biome ci</code>).</li>
 </ul>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>Formatting gates apply to source languages present in the tree; generated artifacts are excluded
 where declared.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>The tool list is legacy where it predates the TS/Bun workspace; the target formatter/linter/test
-set is the Bun-native one after <code>cli-release</code> lands.</p>
+<p>Changing a formatter or its configuration (<code>harness/biome.json</code>, black's line length) is a
+reviewed change; the one-time full reformat lands as its own pull request (plans/repository-truth.md Q1).</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../007-branches-and-pull-requests/">
