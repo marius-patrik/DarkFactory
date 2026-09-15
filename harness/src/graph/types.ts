@@ -1,5 +1,13 @@
-export const CANONICAL_STATUSES = ["Backlog", "ToDo", "In Progress", "Blocked", "Done", "Superseded", "Dropped"] as const;
-export type CanonicalStatus = typeof CANONICAL_STATUSES[number];
+export const CANONICAL_STATUSES = [
+	"Backlog",
+	"ToDo",
+	"In Progress",
+	"Blocked",
+	"Done",
+	"Superseded",
+	"Dropped",
+] as const;
+export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
 export type NodeKind = "agent" | "gate" | "automation" | "check-reference";
 export type AuthorAssociation = "OWNER" | "MEMBER" | "COLLABORATOR" | "AUTHOR";
 
@@ -12,6 +20,7 @@ export interface BaseNode {
 	board_status?: Partial<Record<"running" | "quota_blocked" | "blocked" | "done" | "rejected", CanonicalStatus>>;
 	trigger?: { event?: string; schedule?: string };
 	filter?: { label?: string; ignore_bots?: boolean };
+	foreach?: { items: string; max_parallel?: number; as?: string };
 }
 
 export interface AgentNode extends BaseNode {
@@ -22,6 +31,10 @@ export interface AgentNode extends BaseNode {
 	timeout?: string;
 	iteration?: { context_file: string; safety_budget?: number };
 	quota_policy?: { on_exhaustion: "checkpoint_and_block"; resume: "sweep_or_command" };
+	prompt?: string;
+	mode?: "read" | "write";
+	workdir?: string;
+	max_turns?: number;
 }
 
 export interface GateNode extends BaseNode {
@@ -53,7 +66,8 @@ export type EdgeOn =
 	| { schedule: true; when?: string }
 	| { node_outcome: "success" | "failure" | "quota_exhausted"; when?: string }
 	| { gate_outcome: "approved" | "rejected"; when?: string }
-	| { checks: "required_green" | "failed"; when?: string };
+	| { checks: "required_green" | "failed"; when?: string }
+	| { children: "all_done" | "any_failed"; when?: string };
 
 export interface GraphEdge {
 	from: string;
@@ -69,13 +83,23 @@ export interface WorkflowGraph {
 	edges: GraphEdge[];
 }
 
-export interface Actor { login: string; association: AuthorAssociation | "NONE"; is_bot: boolean }
+export interface Actor {
+	login: string;
+	association: AuthorAssociation | "NONE";
+	is_bot: boolean;
+}
 export type GraphEvent =
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
 	| { type: "review"; state: string; actor: Actor }
-	| { type: "node.completed"; node: string; outcome: "success" | "failure" | "quota_exhausted"; outputs: Record<string, unknown> }
+	| {
+			type: "node.completed";
+			node: string;
+			outcome: "success" | "failure" | "quota_exhausted";
+			outputs: Record<string, unknown>;
+	  }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
-	| { type: "schedule"; schedule: string; now?: string };
+	| { type: "schedule"; schedule: string; now?: string }
+	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 
 export interface RunState {
 	run_id: string;
@@ -87,10 +111,18 @@ export interface RunState {
 	blocked_since?: string;
 	iterations?: Record<string, number>;
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
+	children?: { run_id: string; node: string; eligible: boolean }[];
 }
 
 export type PlanAction =
-	| { type: "run"; nodes: string[]; feedback?: string; revert?: "out_of_scope_commits"; resume_run_id?: string; alerts?: string[] }
+	| {
+			type: "run";
+			nodes: string[];
+			feedback?: string;
+			revert?: "out_of_scope_commits";
+			resume_run_id?: string;
+			alerts?: string[];
+	  }
 	| { type: "gate"; node: string; status: "Blocked" }
 	| { type: "hint"; node: string; message: string }
 	| { type: "comment"; node: string; status: "Blocked"; message: string }
