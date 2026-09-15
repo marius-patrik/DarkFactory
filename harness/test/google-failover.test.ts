@@ -6,6 +6,7 @@ import { classifyFailure, nextPacificMidnight } from "../src/quota.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
+import { LimitLedger } from "../src/limits/ledger.ts";
 
 const temporary: string[] = [];
 
@@ -261,6 +262,56 @@ describe("Supervisor waiting instead of exiting", () => {
 		expect((error as ChainExhaustedError).exitCode).toBe(2);
 		supervisor.session.dispose();
 	});
+
+	// Observed 2026-09-15: gemini-3.8-flash held a 60 s token window AND a daily quota until Pacific midnight; df waited
+	// for the token window, retried, got the daily 429 again and looped for hours.
+	test("a candidate with a short and a daily limit is not waited for until the daily limit clears", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const simNow = 1_000_000;
+		const b = { provider: "wait-b", model: "b", account: "default" };
+		await new LimitLedger(home).record([
+			{ ...b, type: "rate", dimension: "tokens", observedAt: simNow, resetAt: simNow + 60_000, source: "body", remaining: 0 },
+			{ ...b, type: "daily", dimension: "requests", observedAt: simNow, resetAt: simNow + 6 * 3_600_000, source: "body", remaining: 0 },
+		]);
+		const bProvider = fauxProvider({ provider: "wait-b", models: [{ id: "b" }] });
+		const sleepCalls: number[] = [];
+		let error: unknown;
+		try {
+			const supervisor = await createFailoverSupervisor({
+				chain: [b], home, cwd, now: () => simNow, maxWaitMs: 300_000,
+				sleep: async (ms) => { sleepCalls.push(ms); },
+				providers: [bProvider.provider], authOptionalProviders: ["wait-b"],
+			});
+			supervisor.session.dispose();
+		} catch (caught) { error = caught; }
+		expect(sleepCalls).toEqual([]);
+		expect(error).toBeInstanceOf(ChainExhaustedError);
+		expect((error as ChainExhaustedError).exitCode).toBe(2);
+	});
+
+	test("after a failure, df waits for the candidate that is fully ready first, not the first limit to expire", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const simNow = 1_000_000;
+		const b = { provider: "wait-b", model: "b", account: "default" };
+		const a = fauxProvider({ provider: "wait-a", models: [{ id: "a" }] });
+		a.setResponses([fauxAssistantMessage([], { stopReason: "error", errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"120s"}]}}' }), fauxAssistantMessage("a recovered")]);
+		const bProvider = fauxProvider({ provider: "wait-b", models: [{ id: "b" }] });
+		const sleepCalls: number[] = [];
+		let now = simNow;
+		const supervisor = await createFailoverSupervisor({
+			chain: [{ provider: "wait-a", model: "a", account: "default" }, b], home, cwd, now: () => now, maxWaitMs: 300_000,
+			sleep: async (ms) => { sleepCalls.push(ms); now += ms; },
+			providers: [a.provider, bProvider.provider], authOptionalProviders: ["wait-a", "wait-b"],
+		});
+		await new LimitLedger(home).record([
+			{ ...b, type: "rate", dimension: "tokens", observedAt: simNow, resetAt: simNow + 60_000, source: "body", remaining: 0 },
+			{ ...b, type: "daily", dimension: "requests", observedAt: simNow, resetAt: simNow + 6 * 3_600_000, source: "body", remaining: 0 },
+		]);
+		const result = await supervisor.prompt("go");
+		expect(result.content.some((block) => block.type === "text" && block.text === "a recovered")).toBe(true);
+		expect(sleepCalls.every((ms) => ms >= 120_000)).toBe(true);
+		supervisor.session.dispose();
+	}, 30_000);
 
 	test("abort remains terminal and never waits", async () => {
 		const { home, cwd } = await tempWorkspace();
