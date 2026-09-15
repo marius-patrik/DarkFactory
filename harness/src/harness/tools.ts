@@ -2,15 +2,23 @@ import { existsSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type { ExtensionFactory, ToolCallEvent } from "@earendil-works/pi-coding-agent";
 
+/** Options for constructing a {@link ToolPolicy}. */
 export interface ToolPolicyOptions {
+	/** The working directory that paths must stay within. */
 	cwd: string;
+	/** Patterns that are allowed; if empty, all non-deny commands/paths are allowed. */
 	allow?: readonly string[];
+	/** Patterns that are always denied. */
 	deny?: readonly string[];
+	/** When true, blocks interactive prompts and runs non-interactively. */
 	headless?: boolean;
 }
 
+/** The result of evaluating a tool call against a {@link ToolPolicy}. */
 export interface PolicyDecision {
+	/** Whether the tool call is permitted. */
 	allowed: boolean;
+	/** Explanation for the decision, present when `allowed` is false. */
 	reason?: string;
 }
 
@@ -62,6 +70,7 @@ function suspiciousCommandPaths(command: string): string[] {
 
 /** Deterministic, non-prompting policy used by pi's tool_call extension hook. */
 export class ToolPolicy {
+	/** The resolved working directory this policy enforces. */
 	readonly cwd: string;
 	private readonly canonicalCwd: string;
 	private readonly allow: Rule[];
@@ -74,6 +83,11 @@ export class ToolPolicy {
 		this.deny = (options.deny ?? []).map(compileRule);
 	}
 
+	/**
+	 * Evaluates a tool call against this policy.
+	 * @param event - The tool call event to evaluate.
+	 * @returns The policy decision; `allowed: false` with a reason when blocked.
+	 */
 	evaluate(event: Pick<ToolCallEvent, "toolName" | "input">): PolicyDecision {
 		const input = event.input as Record<string, unknown>;
 		if (event.toolName === "bash" || event.toolName === "powershell") {
@@ -113,6 +127,11 @@ export class ToolPolicy {
 	}
 }
 
+/**
+ * Creates a pi extension hook that enforces a {@link ToolPolicy} on every tool call.
+ * @param policy - The policy to enforce; blocks calls that violate it.
+ * @returns An extension factory for pi's tool_call hook.
+ */
 export function policyExtension(policy: ToolPolicy): ExtensionFactory {
 	return (pi) => {
 		pi.on("tool_call", (event) => {

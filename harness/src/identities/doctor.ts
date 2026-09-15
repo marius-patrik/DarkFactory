@@ -4,15 +4,23 @@ import { join } from "node:path";
 import { parseChain } from "../harness/routing.ts";
 import { loadIdentities } from "./loader.ts";
 
+/** Options for {@link checkDoctorIdentities}. */
 export interface DoctorIdentitiesOptions {
+	/** Override the default config path `.darkfactory/df/config.json`. */
 	configPath?: string;
+	/** Override the default manifest path `.darkfactory/manifest.json`. */
 	manifestPath?: string;
+	/** Custom reader used to read config/manifest files; defaults to reading from disk. */
 	reader?: (path: string) => Promise<string>;
 }
 
+/** Result of {@link checkDoctorIdentities}. */
 export interface DoctorIdentitiesResult {
+	/** True when every provider in the default chain has an identity entry. */
 	ok: boolean;
+	/** Unique providers referenced in the default chain. */
 	chainProviders: string[];
+	/** Providers in the default chain that lack an identity entry. */
 	missingProviders: string[];
 }
 
@@ -21,6 +29,12 @@ function getOption(args: string[], name: string): string | undefined {
 	return index >= 0 ? args[index + 1] : undefined;
 }
 
+/**
+ * Validates that every provider in the default chain has an identity entry.
+ * @param options - Override config/manifest paths or provide a custom reader.
+ * @returns The result indicating which providers are missing.
+ * @throws When config cannot be read, is invalid JSON, or lacks `defaultChain`.
+ */
 export async function checkDoctorIdentities(
 	options: DoctorIdentitiesOptions = {},
 ): Promise<DoctorIdentitiesResult> {
@@ -68,6 +82,11 @@ export async function checkDoctorIdentities(
 	};
 }
 
+/**
+ * Runs the `df doctor identities` CLI command.
+ * @param args - CLI args; supports `--config`, `--manifest`, and `--repo`.
+ * @throws When any provider in the default chain is missing an identity entry.
+ */
 export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 	const configPath = getOption(args, "--config");
 	const manifestPath = getOption(args, "--manifest");

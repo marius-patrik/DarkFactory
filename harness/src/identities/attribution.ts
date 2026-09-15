@@ -1,5 +1,11 @@
 import type { AttributionResult, ManifestIdentities } from "./types.ts";
 
+/**
+ * Builds the commit author line for bot commits from the app identity.
+ * @param identities - The manifest identities containing the app entry.
+ * @returns A `Name <email>` string suitable for git commit author.
+ * @throws When no app identity is configured.
+ */
 export function botCommitAuthor(identities: ManifestIdentities): string {
 	const app = identities.app;
 	if (!app) {
@@ -9,6 +15,13 @@ export function botCommitAuthor(identities: ManifestIdentities): string {
 	return `${app.login} <${email}>`;
 }
 
+/**
+ * Renders attribution trailers and a footer for a set of used model candidates.
+ * @param usedCandidates - The provider/model pairs actually used in this run.
+ * @param identities - The manifest identities used to resolve trailers and notes.
+ * @returns Attribution trailers and a footer string; empty when no candidates are given.
+ * @throws When a candidate references a provider with no identity configured.
+ */
 export function renderAttribution(
 	usedCandidates: readonly { provider: string; model: string }[],
 	identities: ManifestIdentities,
