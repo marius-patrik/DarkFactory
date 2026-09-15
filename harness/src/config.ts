@@ -5,19 +5,37 @@ import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import type { LimitTier, ModelCapabilityOverride, ModelModality, RouterConfig, RouterPolicy, TaskKind, TaskNeed, TaskSize } from "./router/types.ts";
 
-// Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
+/**
+ * Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13;
+ * ~20 requests/day each), then keyless/free providers. Used as the default chain
+ * when no config.json is present.
+ */
 export const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,google/gemini-3.7-flash@default,google/gemini-3.6-flash@default,google/gemini-3.5-flash@default,google/gemini-3-flash-preview@default,google/gemini-3.5-flash-lite@default,google/gemini-3.1-flash-lite@default,opencode-zen/big-pickle@default,openai-codex/gpt-5.6-luna@default,grok-sub/grok-4.6@default,kimi-coding/kimi-for-coding@default,groq/llama-3.3-70b-versatile@default,cerebras/llama-3.3-70b@default";
 
+/**
+ * The DarkFactory configuration loaded from config.json.
+ */
 export interface DfConfig {
+	/** The default model chain to use when no explicit chain is specified. */
 	defaultChain: string;
+	/** Cooldown period in milliseconds between requests to the same provider. */
 	cooldownTtlMs?: number;
+	/** Maximum wait time in milliseconds for a provider to become available. */
 	maxWaitMs?: number;
+	/** The chain used for hard-reasoning tasks. */
 	hardReasoningChain?: string;
+	/** The chain used for sensitive tasks. */
 	sensitiveChain?: string;
+	/** Map of account labels to credential file paths. */
 	credentialFiles?: Record<string, string>;
+	/** Router configuration for model selection and routing policies. */
 	router?: RouterConfig;
 }
 
+/**
+ * The default router configuration with built-in routing policies for
+ * sensitive, image-generation, video-generation, review, and implementation tasks.
+ */
 export const DEFAULT_ROUTER_CONFIG: RouterConfig = { policies: [
 	{ id: "sensitive", match: { sensitivity: ["sensitive"] }, prefer: {} },
 	{ id: "image-generation", match: { needs: ["image_gen"] }, prefer: { quality: "image", tiers: ["standard", "bulk", "tight"] } },
@@ -26,6 +44,9 @@ export const DEFAULT_ROUTER_CONFIG: RouterConfig = { policies: [
 	{ id: "large-implementation", match: { kind: ["implement", "fix"], size: ["large"] }, prefer: { quality: "implement", tiers: ["bulk", "standard", "tight"] } },
 ] };
 
+/**
+ * A function that reads a file at the given path and returns its contents as a string.
+ */
 export type ConfigReader = (path: string) => Promise<string>;
 
 function optionalString(record: Record<string, unknown>, name: string): string | undefined {
@@ -107,6 +128,13 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	return { policies, ...(classifier ? { classifier } : {}), ...(candidates ? { candidates } : {}), ...(models ? { models } : {}), ...(learning ? { learning } : {}) };
 }
 
+/**
+ * Loads the DarkFactory configuration from config.json in the given home directory.
+ * Falls back to the default chain if config.json is missing.
+ * @param home - The $DF_HOME directory containing config.json
+ * @param reader - Optional custom file reader (defaults to reading files with UTF-8 encoding)
+ * @returns A promise resolving to the loaded DfConfig
+ */
 export async function loadDfConfig(home: string, reader: ConfigReader = (path) => readFile(path, "utf8")): Promise<DfConfig> {
 	const path = join(home, "config.json");
 	let raw: string;
@@ -149,11 +177,26 @@ export async function loadDfConfig(home: string, reader: ConfigReader = (path) =
 	};
 }
 
+/**
+ * Creates a credential fallback that resolves API keys from provider config files,
+ * environment variables, or the vault. Used when no credentials are found in the
+ * credential store.
+ * @param home - The $DF_HOME directory
+ * @param config - The loaded DfConfig
+ * @param providers - The provider configuration file
+ * @param options - Optional env and reader overrides
+ * @returns A credential fallback function that resolves provider credentials
+ */
 export function localCredentialFallback(
 	home: string,
 	config: DfConfig,
 	providers: ProviderConfigFile,
-	options: { env?: Readonly<Record<string, string | undefined>>; read?: ConfigReader } = {},
+	options: {
+		/** Environment variables to read API keys from. */
+		env?: Readonly<Record<string, string | undefined>>;
+		/** Custom file reader function. */
+		read?: ConfigReader;
+	} = {},
 ): CredentialFallback {
 	const env = options.env ?? process.env;
 	const reader = options.read ?? ((path: string) => readFile(path, "utf8"));
