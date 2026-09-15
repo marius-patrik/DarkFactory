@@ -266,24 +266,17 @@ async function modelsCommand(
 		for (const provider of providers.sort((a, b) => a.id.localeCompare(b.id))) {
 			const account = resolveAccount(provider.id);
 			try {
-				const { usable, stale } = await poller.poll(provider.id, account);
+				const { usable, stale, excluded } = await poller.poll(provider.id, account);
 				const source = sources.get(`${provider.id}\u0000${account}`) ?? "live";
 				if (usableFlag) {
-					// Include all declared models (static) with source and reason (empty if usable, "-" if excluded)
-					const config = registry.config(provider.id);
-					const declared = config?.models?.static ?? [];
-					const staleSet = new Set(stale);
-					for (const model of declared) {
-						const isUsable = usable.some((u) => u.id === model.id);
-						const reason = model.id === "missing-model" ? "-" : "";
-						rows.push({ provider: provider.id, model: model.id, account, source, reason });
-					}
+					for (const model of usable)
+						rows.push({ provider: provider.id, model: model.id, account, source, reason: "" });
+					for (const model of excluded)
+						rows.push({ provider: provider.id, model: model.id, account, source, reason: model.reason });
 				}
 				if (staleFlag) {
-					for (const id of stale) {
-						if (id.includes("missing"))
-							rows.push({ provider: provider.id, model: id, account, source, reason: "missing from live list" });
-					}
+					for (const id of stale)
+						rows.push({ provider: provider.id, model: id, account, source, reason: "missing from live list" });
 				}
 			} catch (error) {
 				console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
