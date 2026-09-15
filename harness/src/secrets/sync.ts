@@ -3,10 +3,15 @@ import { join } from "node:path";
 import { loadVault, saveVault, mergeVaults } from "./vault-store.ts";
 import type { Vault } from "./vault.ts";
 
+/** Options for syncing the data repository. */
 export interface SyncOptions {
+	/** Path to the local data repository. */
 	dataRepoPath: string;
+	/** Remote name to push/pull from (default "origin"). */
 	remote?: string;
+	/** Branch name to sync (default "main"). */
 	branch?: string;
+	/** Base64-encoded encryption key for vault operations. */
 	keyBase64?: string;
 }
 
@@ -20,6 +25,7 @@ async function git(cwd: string, ...args: string[]): Promise<{ stdout: string; st
 	return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode };
 }
 
+/** Check whether a path is a git repository by looking for a `.git` directory. */
 export async function isGitRepo(path: string): Promise<boolean> {
 	try {
 		const s = await stat(join(path, ".git"));
@@ -29,11 +35,13 @@ export async function isGitRepo(path: string): Promise<boolean> {
 	}
 }
 
+/** Initialize a new git repository at the given path. */
 export async function initDataRepo(dataRepoPath: string): Promise<void> {
 	const result = await git(dataRepoPath, "init");
 	if (result.exitCode !== 0) throw new Error(`git init failed: ${result.stderr}`);
 }
 
+/** Clone a remote git repository to the target path. */
 export async function cloneDataRepo(repoUrl: string, targetPath: string): Promise<void> {
 	const proc = Bun.spawn(["git", "clone", repoUrl, targetPath], { stdout: "pipe", stderr: "pipe" });
 	const stderr = await new Response(proc.stderr).text();
@@ -41,7 +49,13 @@ export async function cloneDataRepo(repoUrl: string, targetPath: string): Promis
 	if (exitCode !== 0) throw new Error(`git clone failed: ${stderr.trim()}`);
 }
 
-export async function pull(options: SyncOptions): Promise<{ updated: boolean; output: string }> {
+/** Pull changes from the remote repository. Returns whether the local repo was updated and the git output. */
+export async function pull(options: SyncOptions): Promise<{
+	/** Whether the repository was updated by the pull. */
+	updated: boolean;
+	/** Output from the git pull operation. */
+	output: string;
+}> {
 	const remote = options.remote ?? "origin";
 	const branch = options.branch ?? "main";
 	const hasRemote = await git(options.dataRepoPath, "remote");
@@ -55,10 +69,16 @@ export async function pull(options: SyncOptions): Promise<{ updated: boolean; ou
 	return { updated: !result.stdout.includes("Already up to date"), output: result.stdout };
 }
 
+/** Stage vault files, commit, and push to the remote. Returns whether commits were pushed and the git output. */
 export async function commitAndPush(
 	options: SyncOptions,
 	message: string,
-): Promise<{ pushed: boolean; output: string }> {
+): Promise<{
+	/** Whether new commits were pushed to the remote. */
+	pushed: boolean;
+	/** Output from the git commit/push operations. */
+	output: string;
+}> {
 	const { dataRepoPath } = options;
 	const remote = options.remote ?? "origin";
 	const branch = options.branch ?? "main";
@@ -128,10 +148,22 @@ async function tryMerge(options: SyncOptions, keyBase64: string): Promise<string
 	return conflicts;
 }
 
+/** Orchestrate the full sync cycle: pull from remote, merge vaults if needed, commit, and push. */
 export async function syncDataRepo(
 	options: SyncOptions,
 	commitMessage = "df secrets sync",
-): Promise<{ pulled: boolean; pushed: boolean; pullOutput: string; pushOutput: string; conflicts: string[] }> {
+): Promise<{
+	/** Whether the pull actually updated the local repo. */
+	pulled: boolean;
+	/** Whether commits were pushed to the remote. */
+	pushed: boolean;
+	/** Output from the git pull operation. */
+	pullOutput: string;
+	/** Output from the git push operation. */
+	pushOutput: string;
+	/** List of conflict descriptions from vault merging. */
+	conflicts: string[];
+}> {
 	const remote = options.remote ?? "origin";
 	const branch = options.branch ?? "main";
 	let conflicts: string[] = [];
