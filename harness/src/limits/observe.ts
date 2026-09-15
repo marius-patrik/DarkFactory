@@ -4,6 +4,9 @@ import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema
 import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
 import { nextPacificMidnight } from "../quota.ts";
 
+// In‑memory counter for persistent 422 errors per model
+const repeated422Counter = new Map<string, number>();
+
 /** Wording providers use for limits that roll over once a day. */
 const DAILY_WORDING = /per[- ]?day|perday|\bdaily\b|day limit/iu;
 const LIMIT_WORDING = /rate limit|quota|too many requests|limit exceeded|exhausted/iu;
@@ -178,6 +181,17 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 			if (hints.resetAt !== undefined || daily) {
 				result.push({ ...candidate, type: daily ? "daily" : "rate", dimension: "requests", observedAt: now, resetAt: hints.resetAt ?? nextDailyReset(now, policy), source: "body", remaining: hints.remaining ?? 0, ...(hints.limit === undefined ? {} : { limit: hints.limit }) });
 			}
+		}
+	}
+	// Detect persistent 422 responses as model limits
+	if (observation.status === 422) {
+		const key = candidate.model;
+		const count = (repeated422Counter.get(key) ?? 0) + 1;
+		repeated422Counter.set(key, count);
+		if (count >= 2) {
+			const resetAt = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
+			result.push({ ...candidate, type: "model", observedAt: now, resetAt, source: "default", remaining: 0 });
+			repeated422Counter.delete(key);
 		}
 	}
 	return result;
