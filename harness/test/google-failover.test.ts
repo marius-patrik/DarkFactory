@@ -2,11 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { classifyFailure, nextPacificMidnight } from "../src/quota.ts";
-import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
-import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
+import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
+import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
+import { classifyFailure } from "../src/quota.ts";
 
 const temporary: string[] = [];
 
@@ -176,7 +176,8 @@ describe("Google Gemini free-tier real fixtures classification", () => {
 	});
 
 	test("extracts 'Please retry in N s' from text message if RetryInfo is missing", () => {
-		const text = "Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests. Please retry in 15.5s.";
+		const text =
+			"Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests. Please retry in 15.5s.";
 		const classification = classifyFailure(
 			{ message: fauxAssistantMessage([], { stopReason: "error", errorMessage: text }), now },
 			{ rules: googleRules, model: "gemini-3.6-flash" },
@@ -190,7 +191,12 @@ describe("QuotaStore numeric resetAt persistence", () => {
 	test("every persisted entry has a numeric resetAt", async () => {
 		const { home } = await tempWorkspace();
 		const store = new QuotaStore(home, { fallbackTtlMs: 45_000 });
-		await store.mark({ provider: "google", model: "gemini-3.8-flash", account: "default" }, "transient", undefined, 1_000);
+		await store.mark(
+			{ provider: "google", model: "gemini-3.8-flash", account: "default" },
+			"transient",
+			undefined,
+			1_000,
+		);
 		const raw = JSON.parse(await readFile(join(home, "limits.json"), "utf8"));
 		const entry = Object.values(raw.entries)[0] as { resetAt: number };
 		expect(typeof entry.resetAt).toBe("number");
@@ -207,7 +213,10 @@ describe("Supervisor waiting instead of exiting", () => {
 		const a = fauxProvider({ provider: "wait-a", models: [{ id: "a" }] });
 		a.setResponses([
 			// First call fails with 20s rate limit
-			fauxAssistantMessage([], { stopReason: "error", errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"20s"}]}}' }),
+			fauxAssistantMessage([], {
+				stopReason: "error",
+				errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"20s"}]}}',
+			}),
 			// After waiting, second call succeeds
 			fauxAssistantMessage("recovered after wait"),
 		]);
@@ -215,7 +224,8 @@ describe("Supervisor waiting instead of exiting", () => {
 		const sleepCalls: number[] = [];
 		const supervisor = await createFailoverSupervisor({
 			chain: [{ provider: "wait-a", model: "a", account: "default" }],
-			home, cwd,
+			home,
+			cwd,
 			now: () => simNow,
 			sleep: async (ms) => {
 				sleepCalls.push(ms);
@@ -240,12 +250,16 @@ describe("Supervisor waiting instead of exiting", () => {
 		const a = fauxProvider({ provider: "wait-a", models: [{ id: "a" }] });
 		// Fails with 10 minute retryDelay (exceeding 5 min default)
 		a.setResponses([
-			fauxAssistantMessage([], { stopReason: "error", errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"600s"}]}}' }),
+			fauxAssistantMessage([], {
+				stopReason: "error",
+				errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"600s"}]}}',
+			}),
 		]);
 
 		const supervisor = await createFailoverSupervisor({
 			chain: [{ provider: "wait-a", model: "a", account: "default" }],
-			home, cwd,
+			home,
+			cwd,
 			now: () => simNow,
 			maxWaitMs: 300_000,
 			providers: [a.provider],
@@ -270,20 +284,45 @@ describe("Supervisor waiting instead of exiting", () => {
 		const simNow = 1_000_000;
 		const b = { provider: "wait-b", model: "b", account: "default" };
 		await new LimitLedger(home).record([
-			{ ...b, type: "rate", dimension: "tokens", observedAt: simNow, resetAt: simNow + 60_000, source: "body", remaining: 0 },
-			{ ...b, type: "daily", dimension: "requests", observedAt: simNow, resetAt: simNow + 6 * 3_600_000, source: "body", remaining: 0 },
+			{
+				...b,
+				type: "rate",
+				dimension: "tokens",
+				observedAt: simNow,
+				resetAt: simNow + 60_000,
+				source: "body",
+				remaining: 0,
+			},
+			{
+				...b,
+				type: "daily",
+				dimension: "requests",
+				observedAt: simNow,
+				resetAt: simNow + 6 * 3_600_000,
+				source: "body",
+				remaining: 0,
+			},
 		]);
 		const bProvider = fauxProvider({ provider: "wait-b", models: [{ id: "b" }] });
 		const sleepCalls: number[] = [];
 		let error: unknown;
 		try {
 			const supervisor = await createFailoverSupervisor({
-				chain: [b], home, cwd, now: () => simNow, maxWaitMs: 300_000,
-				sleep: async (ms) => { sleepCalls.push(ms); },
-				providers: [bProvider.provider], authOptionalProviders: ["wait-b"],
+				chain: [b],
+				home,
+				cwd,
+				now: () => simNow,
+				maxWaitMs: 300_000,
+				sleep: async (ms) => {
+					sleepCalls.push(ms);
+				},
+				providers: [bProvider.provider],
+				authOptionalProviders: ["wait-b"],
 			});
 			supervisor.session.dispose();
-		} catch (caught) { error = caught; }
+		} catch (caught) {
+			error = caught;
+		}
 		expect(sleepCalls).toEqual([]);
 		expect(error).toBeInstanceOf(ChainExhaustedError);
 		expect((error as ChainExhaustedError).exitCode).toBe(2);
@@ -294,18 +333,48 @@ describe("Supervisor waiting instead of exiting", () => {
 		const simNow = 1_000_000;
 		const b = { provider: "wait-b", model: "b", account: "default" };
 		const a = fauxProvider({ provider: "wait-a", models: [{ id: "a" }] });
-		a.setResponses([fauxAssistantMessage([], { stopReason: "error", errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"120s"}]}}' }), fauxAssistantMessage("a recovered")]);
+		a.setResponses([
+			fauxAssistantMessage([], {
+				stopReason: "error",
+				errorMessage: '429 rate limit {"error":{"details":[{"retryDelay":"120s"}]}}',
+			}),
+			fauxAssistantMessage("a recovered"),
+		]);
 		const bProvider = fauxProvider({ provider: "wait-b", models: [{ id: "b" }] });
 		const sleepCalls: number[] = [];
 		let now = simNow;
 		const supervisor = await createFailoverSupervisor({
-			chain: [{ provider: "wait-a", model: "a", account: "default" }, b], home, cwd, now: () => now, maxWaitMs: 300_000,
-			sleep: async (ms) => { sleepCalls.push(ms); now += ms; },
-			providers: [a.provider, bProvider.provider], authOptionalProviders: ["wait-a", "wait-b"],
+			chain: [{ provider: "wait-a", model: "a", account: "default" }, b],
+			home,
+			cwd,
+			now: () => now,
+			maxWaitMs: 300_000,
+			sleep: async (ms) => {
+				sleepCalls.push(ms);
+				now += ms;
+			},
+			providers: [a.provider, bProvider.provider],
+			authOptionalProviders: ["wait-a", "wait-b"],
 		});
 		await new LimitLedger(home).record([
-			{ ...b, type: "rate", dimension: "tokens", observedAt: simNow, resetAt: simNow + 60_000, source: "body", remaining: 0 },
-			{ ...b, type: "daily", dimension: "requests", observedAt: simNow, resetAt: simNow + 6 * 3_600_000, source: "body", remaining: 0 },
+			{
+				...b,
+				type: "rate",
+				dimension: "tokens",
+				observedAt: simNow,
+				resetAt: simNow + 60_000,
+				source: "body",
+				remaining: 0,
+			},
+			{
+				...b,
+				type: "daily",
+				dimension: "requests",
+				observedAt: simNow,
+				resetAt: simNow + 6 * 3_600_000,
+				source: "body",
+				remaining: 0,
+			},
 		]);
 		const result = await supervisor.prompt("go");
 		expect(result.content.some((block) => block.type === "text" && block.text === "a recovered")).toBe(true);
@@ -316,14 +385,15 @@ describe("Supervisor waiting instead of exiting", () => {
 	test("abort remains terminal and never waits", async () => {
 		const { home, cwd } = await tempWorkspace();
 		const a = fauxProvider({ provider: "abort-a", models: [{ id: "a" }] });
-		a.setResponses([
-			fauxAssistantMessage([], { stopReason: "aborted", errorMessage: "operation was aborted" }),
-		]);
+		a.setResponses([fauxAssistantMessage([], { stopReason: "aborted", errorMessage: "operation was aborted" })]);
 		let waited = false;
 		const supervisor = await createFailoverSupervisor({
 			chain: [{ provider: "abort-a", model: "a", account: "default" }],
-			home, cwd,
-			sleep: async () => { waited = true; },
+			home,
+			cwd,
+			sleep: async () => {
+				waited = true;
+			},
 			providers: [a.provider],
 			authOptionalProviders: ["abort-a"],
 		});
@@ -343,7 +413,8 @@ describe("Token-per-minute awareness", () => {
 		const tokenError = JSON.stringify({
 			error: {
 				code: 429,
-				message: "Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+				message:
+					"Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
 				status: "RESOURCE_EXHAUSTED",
 				details: [
 					{ violations: [{ quotaId: "GenerateContentInputTokensPerModelPerMinute-FreeTier" }] },
@@ -364,7 +435,8 @@ describe("Token-per-minute awareness", () => {
 				{ provider: "google", model: "gemini-3.5-flash", account: "default" },
 				{ provider: "google", model: "gemini-3.6-flash", account: "default" },
 			],
-			home, cwd,
+			home,
+			cwd,
 			now: () => simNow,
 			sleep: async (ms) => {
 				waitedForA = true;
@@ -377,7 +449,9 @@ describe("Token-per-minute awareness", () => {
 		});
 
 		const result = await supervisor.prompt("big prompt");
-		expect(result.content.some((block) => block.type === "text" && block.text === "candidate B handled the prompt")).toBe(true);
+		expect(
+			result.content.some((block) => block.type === "text" && block.text === "candidate B handled the prompt"),
+		).toBe(true);
 		// Crucial: did NOT wait 2s for model A; switched immediately to model B!
 		expect(waitedForA).toBe(false);
 		expect(events.some((e) => e.type === "failover" && e.to.model === "gemini-3.6-flash")).toBe(true);

@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { replaceFile } from "../storage/replace-file.ts";
 import { join, dirname } from "node:path";
 import { hostname } from "node:os";
 import { withFileLock } from "../storage/file-lock.ts";
@@ -20,7 +21,7 @@ async function atomicWrite(path: string, content: string): Promise<void> {
 	const tmp = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
 	try {
 		await writeFile(tmp, content, { encoding: "utf8", mode: 0o600, flag: "wx" });
-		await rename(tmp, path);
+		await replaceFile(tmp, path);
 	} catch (error) {
 		await Bun.file(tmp).delete().catch(() => undefined);
 		throw error;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ModelsError, fauxAssistantMessage } from "@earendil-works/pi-ai";
-import { classifyFailure, nextPacificMidnight } from "../src/quota.ts";
+import { classifyFailure, nextPacificMidnight, proseResetAt } from "../src/quota.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 
 function providerError(message: string, status?: number, headers?: Record<string, string>): Error {
@@ -17,6 +17,12 @@ describe("classifyFailure", () => {
 		["HTTP 402", { error: providerError("payment required", 402) }, "quota_exhausted"],
 		// Observed 2026-09-15 on Cerebras with a $0 balance: the SDK error carries only its message.
 		["402 named in an SDK message without a status", { error: new Error("402 status code (no body)") }, "quota_exhausted"],
+		// Observed 2026-09-15 on the lanes: gateways put the status first and df classified them fatal, so failover cycled forever.
+		["Cline daily cap with the status first", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: '429: {"code":"INFERENCE_CAP_ERROR","message":"Error 429: Daily free limit reached on model poolside/laguna-s-2.1:free. Try again in 22h 16m"}' }) }, "quota_exhausted"],
+		["DeepInfra balance with the status first", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: '402: {"message":"You need positive balance to do inference. Please add balance manually or"}' }) }, "quota_exhausted"],
+		["Hugging Face monthly credits", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: '402 "You have depleted your monthly included credits. Purchase pre-paid credits to continue"' }) }, "quota_exhausted"],
+		["Ollama Cloud subscription model", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: '402: {"message":"this model requires a subscription or usage credits, upgrade for access"}' }) }, "quota_exhausted"],
+		["status-first 429 without quota wording", { message: fauxAssistantMessage([], { stopReason: "error", errorMessage: '429: {"message":"slow down"}' }) }, "rate_limited"],
 		["HTTP 429", { error: providerError("too many requests", 429) }, "rate_limited"],
 		["auth model error", { error: new ModelsError("oauth", "refresh failed") }, "auth"],
 		["HTTP auth", { error: providerError("request failed", 401) }, "auth"],
@@ -46,6 +52,15 @@ describe("classifyFailure", () => {
 		const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!.quota!.rules;
 		const error = providerError("Function call is missing a thought_signature in functionCall parts", 400);
 		expect(classifyFailure({ error }, { rules, model: "gemini-3.5-flash-lite" }).kind).toBe("transient");
+	});
+
+	test("takes the reset a provider only states in prose", () => {
+		const now = 1_700_000_000_000;
+		const errorMessage = '429: {"code":"INFERENCE_CAP_ERROR","message":"Error 429: Daily free limit reached on model x. Try again in 22h 16m"}';
+		const result = classifyFailure({ message: fauxAssistantMessage([], { stopReason: "error", errorMessage }), now });
+		expect(result).toMatchObject({ kind: "quota_exhausted", status: 429, resetAt: now + 22 * 3_600_000 + 16 * 60_000 });
+		expect(proseResetAt("rate limited, try again in 45s", now)).toBe(now + 45_000);
+		expect(proseResetAt("try again later", now)).toBeUndefined();
 	});
 
 	describe("AI Studio daily free-tier regression triplet", () => {

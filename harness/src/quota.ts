@@ -38,6 +38,8 @@ interface ErrorDetails {
 //   packages/ai/src/utils/retry.ts:7-24,26-90,235-240.
 
 const QUOTA = /insufficient[_ ]quota|quota (?:exceeded|exhausted)|usage limit|monthly limit|freeusagelimiterror|gousagelimiterror|out of (?:budget|credits?)|billing|credit balance/i;
+/** Balance, credit and daily-cap wordings of free gateways (seen 2026-09-15 on Hugging Face, DeepInfra, Ollama Cloud, Venice, Cline, Pollinations). */
+const GATEWAY_QUOTA = /depleted your (?:monthly )?(?:included )?credits|positive balance|insufficient (?:usd|balance|funds|credits?)|requires a subscription or usage credits|daily (?:free )?limit reached|inference_cap_error|reached its budget/i;
 const PROVIDER_QUOTA_WORDINGS: readonly RegExp[] = [
 	/\baccess[\s_-]+terminated[\s_-]+error\b/i,
 	/\breach(?:ed|es)?\b.{0,24}\busage[\s_-]+limit\b/i,
@@ -274,7 +276,19 @@ function configuredClassification(policy: FailurePolicy | undefined, status: num
 
 /** Ported from dsh-stack: distinguishes exhausted plans from bad credentials. */
 export function isExhaustedQuota(detail: string | undefined): boolean {
-	return detail !== undefined && (QUOTA.test(detail) || PROVIDER_QUOTA_WORDINGS.some((pattern) => pattern.test(detail)));
+	return detail !== undefined && (QUOTA.test(detail) || GATEWAY_QUOTA.test(detail) || PROVIDER_QUOTA_WORDINGS.some((pattern) => pattern.test(detail)));
+}
+
+/** A reset the provider only states in prose: "Try again in 22h 16m", "try again in 45s". */
+export function proseResetAt(message: string, now: number): number | undefined {
+	const match = /try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|d|h|m|s)\b\s*)+)/i.exec(message);
+	if (!match) return undefined;
+	let total = 0;
+	for (const part of match[1]!.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
+		const unit = part[2]!.toLowerCase();
+		total += Number(part[1]) * (unit === "d" ? 86_400_000 : unit === "h" ? 3_600_000 : unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1);
+	}
+	return total > 0 ? now + total : undefined;
 }
 
 export function classifyFailure(input: FailureInput, policy?: FailurePolicy): FailureClassification {
@@ -305,14 +319,17 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 		else {
 			// SDK errors without a response object still name the status: "402 status code (no body)".
 			const named = /\b([45]\d\d) status code\b/.exec(message);
+			// Gateway errors put the status first: '429: {"code":"INFERENCE_CAP_ERROR",...}', '402 "You have depleted..."'.
+			const leading = /^\s*([45]\d\d)\s*(?::|"|\{)/.exec(message);
 			if (named) status = Number(named[1]);
+			else if (leading) status = Number(leading[1]);
 		}
 	}
 
 	const headers = input.response?.headers ?? raw.headers;
 	const now = input.now ?? Date.now();
 	const google = googleErrorFacts(fullMessage, now);
-	const resetAt = parseResetAt(headers, now) ?? google.resetAt;
+	const resetAt = parseResetAt(headers, now) ?? google.resetAt ?? proseResetAt(fullMessage, now);
 	const configured = configuredClassification(policy, status, message, headers, now, body);
 	if (configured) return { ...(raw.name ? { errorClass: raw.name } : {}), ...configured };
 	const base = {
