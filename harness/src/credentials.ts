@@ -6,27 +6,6 @@ import { withFileLock } from "./storage/file-lock.ts";
 
 const VAULT_PREFIX = "vault:";
 
-// Track the most recent credential change time.
-let lastCredentialChange: Date | null = null;
-
-// Listeners for credential change events.
-const changedListeners: Array<() => void> = [];
-
-/**
- * Returns the time of the most recent credential change, or null if unknown.
- */
-export function getCredentialChangeTime(): Date | null {
-	return lastCredentialChange;
-}
-
-export function onCredentialChanged(listener: () => void): () => void {
-	changedListeners.push(listener);
-	return () => {
-		const index = changedListeners.indexOf(listener);
-		if (index !== -1) changedListeners.splice(index, 1);
-	};
-}
-
 async function resolveVaultValue(home: string, vaultName: string): Promise<string | undefined> {
 	try {
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
@@ -160,7 +139,7 @@ export function validateAccountRecord(value: unknown, expectedId?: string): Acco
 		id,
 		provider: parsed.provider,
 		label: parsed.label,
-		...(record.metadata ? { metadata: record.metadata } : {}),
+		...(record.metadata ? { metadata: record.metadata as Record<string, string> } : {}),
 		slots: record.slots as Record<string, CredentialSlot>,
 	};
 }
@@ -301,8 +280,6 @@ export class FileCredentialStore {
 				file.accounts[id] = clone(next);
 				await this.save(file, options);
 				await this.onAccountChanged?.(next.provider, next.label);
-				lastCredentialChange = new Date();
-				for (const listener of changedListeners) listener();
 			}
 			return clone(next ?? current);
 		});
@@ -348,7 +325,7 @@ export class FileCredentialStore {
 			id: account.id,
 			provider: account.provider,
 			label: account.label,
-			...(account.metadata ? { metadata: account.metadata } : {}),
+			...(account.metadata ? { metadata: clone(account.metadata) } : {}),
 			slots: Object.entries(account.slots).map(([name, slot]) => ({ name, type: slot.type })).sort((a, b) => a.name.localeCompare(b.name)),
 		})).sort((a, b) => a.id.localeCompare(b.id));
 	}

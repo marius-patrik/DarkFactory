@@ -112,6 +112,8 @@ export interface LimitPolicyConfig {
 	dailyReset?: "utc-midnight" | "pacific-midnight";
 	/** How long before a model limit is rechecked; defaults to 24 hours. */
 	modelRecheckAfterMs?: number;
+	/** How long a rejected credential (401/403) keeps the account unavailable unless its credentials change; default 24 h. */
+	accessRecheckAfterMs?: number;
 }
 export interface ModelListConfig {
 	path: string;
@@ -332,6 +334,7 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			if (probe.method !== undefined && probe.method !== "GET" && probe.method !== "POST") throw new Error(`Provider ${id} limits.probe.method is invalid`);
 		}
 		if (limits.recheckAfterMs !== undefined && (typeof limits.recheckAfterMs !== "number" || limits.recheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.recheckAfterMs must be positive`);
+		if (limits.accessRecheckAfterMs !== undefined && (typeof limits.accessRecheckAfterMs !== "number" || limits.accessRecheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.accessRecheckAfterMs must be positive`);
 		if (limits.modelRecheckAfterMs !== undefined && (typeof limits.modelRecheckAfterMs !== "number" || limits.modelRecheckAfterMs <= 0)) throw new Error(`Provider ${id} limits.modelRecheckAfterMs must be positive`);
 	}
 	object(entry.capabilities, `provider ${id} capabilities`);

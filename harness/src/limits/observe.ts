@@ -2,7 +2,6 @@ import type { Candidate } from "../failover.ts";
 import type { ConfiguredLimitType } from "../providers/schema.ts";
 import type { LimitPolicyConfig, LimitBodyRuleConfig } from "../providers/schema.ts";
 import type { LimitDimension, LimitEntry, LimitObservation } from "./types.ts";
-import { getCredentialChangeTime, onCredentialChanged } from "../credentials.ts";
 import { nextPacificMidnight } from "../quota.ts";
 
 // In‑memory counter for persistent 422 errors per model
@@ -179,15 +178,9 @@ export function observeLimits(candidate: Candidate, observation: LimitObservatio
 			if (type === "model") {
 				resetAt = now + (policy?.modelRecheckAfterMs ?? 24 * 60 * 60_000);
 			}
-			if (type === "access") {
-				const accessReset = now + (policy?.recheckAfterMs ?? 6 * 60 * 60_000);
-				const credTime = getCredentialChangeTime();
-				if (credTime !== null) {
-					resetAt = Math.min(accessReset, credTime.getTime());
-				} else {
-					resetAt = accessReset;
-				}
-			}
+			// A rejected credential stays unavailable for a day; `df account set` / `df login` clear the account's entries
+			// sooner (FileCredentialStore's onAccountChanged -> LimitLedger.clearAccount), in whichever process changes it.
+			if (type === "access") resetAt = now + (policy?.accessRecheckAfterMs ?? 24 * 60 * 60_000);
 			result.push({ ...candidate, type, observedAt: now, resetAt, source: "default", remaining: 0 });
 		} else if (observation.status === 429 && observation.body !== undefined) {
 			const hints = bodyHints(text(observation.body), now);
