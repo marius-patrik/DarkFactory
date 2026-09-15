@@ -439,6 +439,22 @@ async function routeCommand(registry: ProviderRegistry, store: FileCredentialSto
 const SECRET_KEY = /token|secret|password|api[-_]?key|authorization/iu;
 const BEARER_VALUE = /\bbearer\s+[A-Za-z0-9._~+/=-]+/iu;
 
+/**
+ * The candidates a run tries, in order: the router's chosen chain, then candidates it skipped only because a limit
+ * is active. They go last so the supervisor waits for their windows instead of the run ending with exit 1 when every
+ * chosen candidate turns out unusable (seen 2026-09-15: chosen models missing from live catalogs while the rate-limited
+ * ones would have recovered within a minute).
+ */
+export function executableChainFor(route: Pick<RouteResult, "chain" | "ranked">): Candidate[] {
+	const deferred = route.ranked
+		.filter((item) => item.status === "skipped" && (["limited", "capacity"].includes(item.reason) || item.reason.startsWith("quota exhausted until")))
+		.map((item) => item.candidate);
+	const key = (candidate: Candidate) => `${candidate.provider}/${candidate.model}@${candidate.account}`;
+	const seen = new Set(route.chain.map(key));
+	const tail = deferred.filter((candidate) => !seen.has(key(candidate)) && !!seen.add(key(candidate)));
+	return [...route.chain, ...tail];
+}
+
 export function redactToolInput(value: unknown, key?: string): unknown {
 	if (key && SECRET_KEY.test(key)) return "[REDACTED]";
 	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : value;
@@ -561,7 +577,7 @@ async function runCommand(registry: ProviderRegistry, store: FileCredentialStore
 	const route = await resolveCliRoute(registry, store, config, args, prompt);
 	if (json) console.log(JSON.stringify({ type: "route", ...route }));
 	else printRoute(route, console.error);
-	const executableChain = route.chain.length > 0 ? route.chain : route.ranked.filter((item) => ["limited", "capacity"].includes(item.reason)).map((item) => item.candidate);
+	const executableChain = executableChainFor(route);
 	if (executableChain.length === 0) throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
 	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
 	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], executableChain, json, task, route.profile.kind);
