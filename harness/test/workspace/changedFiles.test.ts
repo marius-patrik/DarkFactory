@@ -44,4 +44,14 @@ describe("changedFiles utility", () => {
     const result = await changedFiles(worktreePath);
     expect(result).toEqual(["src/a.ts"]);
   });
+
+  it("lists every file of a new directory, paths with spaces, and a rename's new path", async () => {
+    const { worktreePath } = createWorktree({ repo: repoInfo.repo, branch: "shapes", base: "main", workRoot: repoInfo.workRoot });
+    mkdirSync(join(worktreePath, "new", "deep"), { recursive: true });
+    writeFileSync(join(worktreePath, "new", "deep", "one.ts"), "1\n");
+    writeFileSync(join(worktreePath, "new", "two words.ts"), "2\n");
+    runGit(worktreePath, ["mv", "README.md", "RENAMED.md"]);
+    expect((await changedFiles(worktreePath)).sort()).toEqual(["RENAMED.md", "new/deep/one.ts", "new/two words.ts"]);
+  });
 });
+

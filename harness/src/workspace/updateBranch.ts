@@ -1,35 +1,45 @@
-import { runGit } from "./git.ts";
+import type { CommitIdentity } from "./commitChunk.ts";
+import { GitError, runGit } from "./git.ts";
+
+/** Result of {@link updateBranch}. */
+export type UpdateBranchResult =
+	| { status: "clean" }
+	| { status: "conflict"; conflictedFiles: string[] };
 
 /**
- * Update the current branch of a worktree by merging the latest `origin/<base>` into it.
+ * Merges the latest `origin/<base>` into the worktree's branch.
  *
- * @param worktree - Path to the git worktree.
- * @param base - Name of the base branch on the remote (e.g. "main").
- * @returns An object describing the result. If the merge succeeds without conflicts, `{ status: "clean" }` is returned.
- *          If a merge conflict occurs, `{ status: "conflict", conflictedFiles: string[] }` is returned, where
- *          `conflictedFiles` are the paths (relative to the worktree) that are in conflict.
+ * The merge commit uses the configured identity (a CI runner has no git identity; E2E #314 failed that way). On a
+ * conflict the merge stays in progress with the conflicted files listed, so an agent can resolve them and the engine
+ * commits the resolution; any other git failure is thrown.
+ *
+ * @param options - Worktree, base branch and commit identity.
+ * @returns `clean` when the merge completed (or there was nothing to merge), otherwise the conflicted files.
+ * @throws GitError when the fetch or merge fails for a reason other than conflicts.
  */
-export async function updateBranch({ worktree, base }: { worktree: string; base: string }): Promise<
-  | { status: "clean" }
-  | { status: "conflict"; conflictedFiles: string[] }
-> {
-  // Ensure we have the latest remote refs for the base.
-  runGit(worktree, ["fetch", "origin", base]);
-
-  try {
-    // Attempt the merge. Using `--no-ff` is not required; default merge works.
-    runGit(worktree, ["merge", `origin/${base}`]);
-    return { status: "clean" };
-  } catch (e) {
-    // If merge failed, it may be due to conflicts.
-    // Determine conflicted files via `git diff --name-only --diff-filter=U`.
-    let conflicted = [] as string[];
-    try {
-      const out = runGit(worktree, ["diff", "--name-only", "--diff-filter=U"]);
-      conflicted = out ? out.split(/\r?\n/).filter(Boolean) : [];
-    } catch (_) {
-      // If we cannot get the list, fall back to empty.
-    }
-    return { status: "conflict", conflictedFiles: conflicted };
-  }
+export async function updateBranch({
+	worktree,
+	base,
+	identity,
+}: {
+	worktree: string;
+	base: string;
+	identity: CommitIdentity;
+}): Promise<UpdateBranchResult> {
+	runGit(worktree, ["fetch", "origin", base]);
+	const env = {
+		GIT_AUTHOR_NAME: identity.name,
+		GIT_AUTHOR_EMAIL: identity.email,
+		GIT_COMMITTER_NAME: identity.name,
+		GIT_COMMITTER_EMAIL: identity.email,
+	};
+	try {
+		runGit(worktree, ["merge", "--no-edit", `origin/${base}`], { env });
+		return { status: "clean" };
+	} catch (error) {
+		if (!(error instanceof GitError)) throw error;
+		const conflicted = runGit(worktree, ["diff", "--name-only", "--diff-filter=U"]).split(/\r?\n/).filter(Boolean);
+		if (conflicted.length === 0) throw error;
+		return { status: "conflict", conflictedFiles: conflicted };
+	}
 }

@@ -1,28 +1,32 @@
 import { runGit } from "./git.ts";
 
+/** Engine scratch paths that never belong to a chunk: task files and df's own temporary files. */
+function isScratch(path: string): boolean {
+	return path.startsWith(".df-task/") || path.startsWith(".df-");
+}
+
 /**
- * List files in a worktree that have uncommitted changes (staged, modified, or untracked).
- * Engine scratch files (paths starting with `.df-task/` or `.df-`) are excluded.
+ * Lists the files a worktree changed: staged, modified, deleted and untracked (every file inside a new directory, not
+ * the directory), excluding engine scratch files (`.df-task/`, `.df-*`).
  *
- * @param worktree - Absolute path to the git worktree.
- * @returns A promise that resolves to an array of changed file paths relative to the worktree.
+ * Uses NUL-separated porcelain output, so paths with spaces or non-ASCII characters come back unquoted, and a rename
+ * reports its new path.
+ *
+ * @param worktree - Path to the git worktree.
+ * @returns Repository-relative paths with forward slashes, in git's order.
  */
 export async function changedFiles(worktree: string): Promise<string[]> {
-  // Get porcelain status; each line begins with two‑character status followed by a space and the path.
-  const stdout = runGit(worktree, ["status", "--porcelain=v1"]);
-  if (!stdout) return [];
-  const lines = stdout.split(/\r?\n/).filter(Boolean);
-  const changed: string[] = [];
-  for (const line of lines) {
-    // The format is "XY <path>" where XY are status chars.
-    // Path starts at column 4 (index 3).
-    const rawPath = line.length > 3 ? line.slice(3) : "";
-    // For renames (e.g., "R  old -> new") take the new path after " -> ".
-    const path = rawPath.includes(" -> ") ? rawPath.split(" -> ").pop()!.trim() : rawPath.trim();
-    if (!path) continue;
-    // Exclude engine scratch patterns.
-    if (path.startsWith('.df-task/') || path.startsWith('.df-')) continue;
-    changed.push(path);
-  }
-  return changed;
+	const stdout = runGit(worktree, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
+	const entries = stdout.split("\0");
+	const changed: string[] = [];
+	for (let index = 0; index < entries.length; index++) {
+		const entry = entries[index] ?? "";
+		if (entry.length < 4) continue;
+		const status = entry.slice(0, 2);
+		const path = entry.slice(3);
+		// In -z output a rename or copy is followed by its original path as a separate entry.
+		if (status.includes("R") || status.includes("C")) index++;
+		if (!isScratch(path)) changed.push(path);
+	}
+	return changed;
 }

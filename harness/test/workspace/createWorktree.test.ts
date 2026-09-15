@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runGit } from "../../src/workspace/git.ts";
 import { createTempRepo, TEST_IDENTITY } from "./helpers.ts";
@@ -31,4 +31,23 @@ describe("createWorktree", () => {
     expect(result2.worktreePath).toBe(result1.worktreePath);
     expect(result2.worktreeBranch).toBe(result1.worktreeBranch);
   });
+
+  test("continues a branch that only exists on origin instead of restarting it from base", () => {
+    runGit(temp.repo, ["checkout", "-b", "pushed/work"]);
+    writeFileSync(join(temp.repo, "work.txt"), "pushed work\n");
+    runGit(temp.repo, ["add", "work.txt"]);
+    runGit(temp.repo, ["commit", "-m", "pushed work"], { env: TEST_IDENTITY });
+    runGit(temp.repo, ["push", "origin", "pushed/work"]);
+    runGit(temp.repo, ["checkout", "main"]);
+    runGit(temp.repo, ["branch", "-D", "pushed/work"]);
+    const { worktreePath } = createWorktree({ repo: temp.repo, branch: "pushed/work", base: "main", workRoot: temp.workRoot });
+    expect(existsSync(join(worktreePath, "work.txt"))).toBeTrue();
+    expect(runGit(worktreePath, ["log", "-1", "--format=%s"])).toBe("pushed work");
+  });
+
+  test("refuses to reuse a directory that is not the branch's worktree", () => {
+    mkdirSync(join(temp.workRoot, "stray-dir"), { recursive: true });
+    expect(() => createWorktree({ repo: temp.repo, branch: "stray-dir", base: "main", workRoot: temp.workRoot })).toThrow("is not a worktree on stray-dir");
+  });
 });
+
