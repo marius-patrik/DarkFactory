@@ -7,6 +7,9 @@ describe("dispatch", () => {
   const runsDir = "runs";
 
   beforeEach(async () => {
+    // Never reach the real GitHub API: a token in the environment would make checks events call it.
+    delete process.env.GH_TOKEN;
+    delete process.env.GITHUB_TOKEN;
     tmpDir = await mkdtemp();
     await mkdir(join(tmpDir, runsDir), { recursive: true });
     await mkdir(join(tmpDir, ".darkfactory"), { recursive: true });

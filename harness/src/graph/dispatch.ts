@@ -1,10 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { writeFile, appendFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import type { GraphEvent, RunState } from "./types.ts";
+import { appendFile, readFile } from "node:fs/promises";
+import { GitHubClient } from "../github/client.ts";
+import { GitHubRepository } from "../github/repository.ts";
 import { plan } from "./planner.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
-import { loadManifestGraph } from "./loader.ts";
+import { validateGraph } from "./validator.ts";
 import { translateGitHubEvent, type TranslatedEvent } from "./events.ts";
 import { evaluateChecksGate, type CheckStateSource, type ChecksGateResult } from "./checks-gate.ts";
 
@@ -64,8 +63,16 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 	return `${translated.subject.number}`;
 }
 
-async function getSummaryPath(): Promise<string> {
-	return process.env.GITHUB_STEP_SUMMARY ?? "step_summary.md";
+/** The job summary to append to: --summary, else GITHUB_STEP_SUMMARY; outside Actions nothing is written. */
+function summaryTarget(explicit: string | undefined): string | undefined {
+	return explicit || process.env.GITHUB_STEP_SUMMARY || undefined;
+}
+
+/** Required check states from the GitHub API for the repository the workflow runs in. */
+function githubCheckSource(token: string, repository: string): CheckStateSource {
+	const [owner, repo] = repository.split("/");
+	if (!owner || !repo) throw new Error(`GITHUB_REPOSITORY must be owner/repo, got ${repository}`);
+	return new GitHubRepository(new GitHubClient({ token }), owner, repo);
 }
 
 export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
@@ -84,10 +91,10 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	}
 
 	// Load the graph
+	// A repository manifest carries the graph in its `graph` section; a standalone graph file is the graph itself.
 	const graphPath = opts.graphPath ?? ".darkfactory/manifest.json";
-	const manifest = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
-	const graph = loadManifestGraph(graphPath).then(g => g);
-	const workflowGraph = await graph;
+	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
+	const workflowGraph = validateGraph(document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document);
 
 	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
@@ -100,13 +107,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
 			if (env.GITHUB_REPOSITORY) {
-				// Create a minimal CheckStateSource (in-process, can be stubbed in tests)
-				const checkStateSource: CheckStateSource = options?.checkStateSource ?? {
-					checkStates: async (ref: string): Promise<Map<string, "success" | "pending" | "failure">> => {
-						// Stub implementation - in real usage would call GitHub API
-						return new Map();
-					},
-				};
+				const checkStateSource: CheckStateSource = options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
 
 				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
 
@@ -166,7 +167,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	// Handle shadow mode vs normal mode
 	if (opts.shadow) {
 		// Append markdown summary instead of saving state
-		const summaryPath = opts.summaryPath ?? await getSummaryPath();
+		const summaryPath = summaryTarget(opts.summaryPath);
 		const summaryLines = [
 			`## Dispatch: ${subject}`,
 			`Event: ${translated.event.type}`,
@@ -178,7 +179,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			] : []),
 		];
 
-		await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
+		if (summaryPath) await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
 	} else {
 		// Save the updated RunState
 		await saveRunState(runsDir, subject, runState);

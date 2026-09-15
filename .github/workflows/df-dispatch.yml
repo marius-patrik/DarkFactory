@@ -1,5 +1,7 @@
 name: DF Dispatch (Shadow)
 
+# Shadow mode (#242): df evaluates the workflow graph on live events and writes the node it would dispatch to the
+# job summary. It performs no writes: read-only permissions, no state persisted, no comments, labels or pushes.
 on:
   issues:
     types: [opened, labeled]
@@ -11,22 +13,22 @@ on:
     types: [completed]
   schedule:
     - cron: '*/15 * * * *'
-
-workflow_call:
-  inputs:
-    pipeline-repo:
-      description: "Repository holding the runner and the container definition."
-      required: false
-      type: string
-      default: "marius-patrik/DarkFactory"
-    pipeline-ref:
-      description: "Commit SHA or ref of the pipeline repository to run. Empty means default."
-      required: false
-      type: string
-      default: "darkfactory"
+  workflow_call:
+    inputs:
+      pipeline-repo:
+        description: "Repository holding the df harness and the workflow graph."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+      pipeline-ref:
+        description: "Commit SHA or ref of the pipeline repository. Empty means its default branch."
+        required: false
+        type: string
+        default: ""
 
 jobs:
   dispatch:
+    # Bot ingress is filtered before any work, like agent.yml; scheduled runs have no sender.
     if: github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
     permissions:
@@ -41,18 +43,19 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          repository: darkfactory/pipeline
-          ref: ${{ inputs.pipeline_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
+          ref: ${{ inputs.pipeline-ref }}
           path: .darkfactory-pipeline
 
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
         working-directory: .darkfactory-pipeline/harness
 
       - name: Run DF Dispatch (shadow mode)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          bun .darkfactory-pipeline/harness/src/cli.ts graph dispatch --event-name "$GITHUB_EVENT_NAME" --event "$GITHUB_EVENT_PATH" --shadow --summary "$GITHUB_STEP_SUMMARY"
+          bun .darkfactory-pipeline/harness/src/cli.ts graph dispatch --event-name "$GITHUB_EVENT_NAME" --event "$GITHUB_EVENT_PATH" --graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json --shadow --summary "$GITHUB_STEP_SUMMARY"

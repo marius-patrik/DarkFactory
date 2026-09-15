@@ -1,13 +1,16 @@
 import pathlib
+
 import yaml
 
-def test_dispatch_workflow_has_pinned_checkout():
-    wf_path = pathlib.Path('.github/workflows/df-dispatch.yml')
-    wf = yaml.safe_load(wf_path.read_text())
-    steps = wf['jobs']['dispatch']['steps']
-    # Find the checkout pipeline step
-    step = next(s for s in steps if s.get('name') == 'Checkout pipeline')
-    with_block = step.get('with', {})
-    assert with_block.get('repository') == 'darkfactory/pipeline'
-    assert with_block.get('ref') == '${{ inputs.pipeline_ref }}'
-    assert with_block.get('token') == "${{ secrets.GITHUB_TOKEN }}"
+
+def test_dispatch_workflow_checks_out_the_pinned_pipeline():
+    """The pipeline checkout honours the workflow_call pinning inputs and defaults to DarkFactory."""
+    wf = yaml.safe_load(pathlib.Path(".github/workflows/df-dispatch.yml").read_text(encoding="utf-8"))
+    on = wf.get("on", wf.get(True, {}))
+    inputs = on["workflow_call"]["inputs"]
+    assert inputs["pipeline-repo"]["default"] == "marius-patrik/DarkFactory"
+    assert "pipeline-ref" in inputs
+    step = next(s for s in wf["jobs"]["dispatch"]["steps"] if s.get("name") == "Checkout pipeline")
+    assert step["with"]["repository"] == "${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}"
+    assert step["with"]["ref"] == "${{ inputs.pipeline-ref }}"
+    assert step["with"]["path"] == ".darkfactory-pipeline"

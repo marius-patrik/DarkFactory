@@ -9,9 +9,10 @@ def load_workflow():
 
 def test_on_triggers():
     wf = load_workflow()
-    on = wf.get('on', {})
+    # PyYAML (YAML 1.1) reads the bare key `on` as the boolean True.
+    on = wf.get('on', wf.get(True, {}))
     # Expected trigger keys
-    expected_keys = {'issues', 'issue_comment', 'pull_request_review', 'check_suite', 'schedule'}
+    expected_keys = {'issues', 'issue_comment', 'pull_request_review', 'check_suite', 'schedule', 'workflow_call'}
     assert set(on.keys()) == expected_keys
     # Check types for each
     assert on['issues'].get('types') == ['opened', 'labeled']
@@ -47,3 +48,11 @@ def test_final_step_cli_command():
     run_cmd = run_step.get('run', '')
     assert '--shadow' in run_cmd
     assert '--summary "$GITHUB_STEP_SUMMARY"' in run_cmd
+
+
+def test_dispatch_runs_the_bundled_graph_with_a_token_for_the_checks_gate():
+    wf = load_workflow()
+    steps = wf['jobs']['dispatch']['steps']
+    run_step = next(s for s in steps if s.get('name', '').startswith('Run DF Dispatch'))
+    assert '--graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json' in run_step['run']
+    assert run_step.get('env', {}).get('GH_TOKEN') == '${{ github.token }}'
