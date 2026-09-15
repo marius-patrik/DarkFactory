@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
+
 const FIXED_CHAIN = "google/gemini-3.8-flash@default,claude/claude-3-5-sonnet@default";
+
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -87,9 +89,9 @@ describe("doctor identities", () => {
 			expect(result.missingProviders).toEqual(["missing-provider"]);
 
 			// runDoctorIdentities should throw error
-			expect(
-				runDoctorIdentities(["--config", configPath, "--manifest", manifestPath]),
-			).rejects.toThrow("missing-provider");
+			expect(runDoctorIdentities(["--config", configPath, "--manifest", manifestPath])).rejects.toThrow(
+				"missing-provider",
+			);
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });
 		}
@@ -102,7 +104,10 @@ describe("doctor identities", () => {
 
 		try {
 			await writeFile(configPath, JSON.stringify({}));
-			await writeFile(manifestPath, JSON.stringify({ identities: { app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 } } }));
+			await writeFile(
+				manifestPath,
+				JSON.stringify({ identities: { app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 } } }),
+			);
 
 			const result = await checkDoctorIdentities({ configPath, manifestPath });
 			expect(result.ok).toBe(true);

@@ -82,6 +82,21 @@ describe("config-driven provider registry", () => {
 		expect(models.getProvider(entry.id)?.headers).toEqual({ "x-client": "df-test" });
 	});
 
+	test("routing: valid routing config passes validation", () => {
+		const entry = openAICompatible("routing-provider");
+		entry.routing = { enabled: true, exclude: ["*-fallback"] };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+	test("routing: enabled must be a boolean", () => {
+		const entry = openAICompatible("routing-bad");
+		entry.routing = { enabled: "no" } as never;
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("Provider routing-bad routing.enabled must be a boolean");
+	});
+	test("routing: exclude must be an array of non-empty model id globs", () => {
+		const entry = openAICompatible("routing-bad-exclude");
+		entry.routing = { exclude: [""] };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("Provider routing-bad-exclude routing.exclude must be an array of non-empty model id globs");
+	});
 	test("edge-input: rejects duplicate ids and unsupported dialects at the boundary", () => {
 		const entry = openAICompatible();
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry, entry] })).toThrow("duplicate provider");

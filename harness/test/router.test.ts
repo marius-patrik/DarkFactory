@@ -573,7 +573,23 @@ describe("tier override and unknown exclusion", () => {
 	});
 });
 
-describe("data‑collection policy", () => {
+describe("empty model list", () => {
+	test("routeTask with models: [] and no explicit chain rejects with No usable model guidance", async () => {
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "hello" }, { config, models: [] })).rejects.toThrow("No usable model");
+	});
+	test("explicit chain is unaffected when models list is empty", async () => {
+		const models: ModelCapability[] = [];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask(
+			{ prompt: "hello", explicitChain: "p1/m@default" },
+			{ config, models },
+		);
+		expect(result.chain[0]?.provider).toBe("p1");
+	});
+});
+
+describe("data–collection policy", () => {
 	test("sensitive task with allowed collection none succeeds", async () => {
 		const models = [candidate("p1", "m", "standard", { collection: "none" })];
 		const config: RouterConfig = { policies: [] };

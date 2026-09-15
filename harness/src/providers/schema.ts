@@ -336,6 +336,15 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		)
 			throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
 	}
+	if (entry.routing !== undefined) {
+		const routing = object(entry.routing, `provider ${id} routing`);
+		if (routing.enabled !== undefined && typeof routing.enabled !== "boolean")
+			throw new Error(`Provider ${id} routing.enabled must be a boolean`);
+		if (routing.exclude !== undefined) {
+			if (!Array.isArray(routing.exclude) || routing.exclude.some((g) => typeof g !== "string" || !g.trim()))
+				throw new Error(`Provider ${id} routing.exclude must be an array of non-empty model id globs`);
+		}
+	}
 	if (entry.free !== undefined && (entry.free as Record<string, unknown>).data !== undefined) {
 		const free = object(entry.free as unknown, `provider ${id} free`);
 		const freeData = object(free.data as unknown, `provider ${id} free.data`);

@@ -21,9 +21,7 @@ function getOption(args: string[], name: string): string | undefined {
 	return index >= 0 ? args[index + 1] : undefined;
 }
 
-export async function checkDoctorIdentities(
-	options: DoctorIdentitiesOptions = {},
-): Promise<DoctorIdentitiesResult> {
+export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {}): Promise<DoctorIdentitiesResult> {
 	let configPath = options.configPath ?? ".darkfactory/df/config.json";
 	if (!options.configPath && !existsSync(configPath) && existsSync(join("..", configPath))) {
 		configPath = join("..", configPath);
@@ -38,14 +36,16 @@ export async function checkDoctorIdentities(
 	try {
 		configRaw = await reader(configPath);
 	} catch (err) {
-		throw new Error(
-			`df doctor identities: cannot read config at ${configPath}: ${(err as Error).message}`,
-		);
+		throw new Error(`df doctor identities: cannot read config at ${configPath}: ${(err as Error).message}`);
 	}
 
 	let configData: { defaultChain?: string; hardReasoningChain?: string; sensitiveChain?: string };
 	try {
-		configData = JSON.parse(configRaw) as { defaultChain?: string; hardReasoningChain?: string; sensitiveChain?: string };
+		configData = JSON.parse(configRaw) as {
+			defaultChain?: string;
+			hardReasoningChain?: string;
+			sensitiveChain?: string;
+		};
 	} catch {
 		throw new Error(`df doctor identities: invalid JSON in config at ${configPath}`);
 	}
@@ -88,8 +88,7 @@ export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 	const manifestPath = getOption(args, "--manifest");
 	const repo = getOption(args, "--repo");
 	const resolvedConfig = configPath ?? (repo ? join(repo, ".darkfactory/df/config.json") : undefined);
-	const resolvedManifest =
-		manifestPath ?? (repo ? join(repo, ".darkfactory/manifest.json") : undefined);
+	const resolvedManifest = manifestPath ?? (repo ? join(repo, ".darkfactory/manifest.json") : undefined);
 
 	const result = await checkDoctorIdentities({
 		configPath: resolvedConfig,
@@ -103,7 +102,7 @@ export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 	}
 
 	if (result.chainProviders.length === 0) {
-		console.log('df doctor identities: no chains configured; candidates are derived from provider configs');
+		console.log("df doctor identities: no chains configured; candidates are derived from provider configs");
 		return;
 	}
 

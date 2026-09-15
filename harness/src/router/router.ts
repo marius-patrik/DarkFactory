@@ -120,6 +120,12 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		}
 	}
 	const filtered = universe.filter((m) => allowedCollections.includes(m.collection ?? "unknown"));
+	// Only the derived universe can be empty for lack of configuration; an explicit chain or graph node names its models.
+	if (!forced && dependencies.models.length === 0) {
+		throw new Error(
+			"No usable model: add an account for a configured provider (df account set <provider>:<label> <slot> --type api_key), enable an anonymous provider, or check routing.enabled/routing.exclude in the provider config",
+		);
+	}
 	if (filtered.length === 0) {
 		throw new Error(
 			`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections.map((c) => `"${c}"`).join(", ")} (configure router.dataCollection.${profile.sensitivity === "sensitive" ? "sensitive" : "normal"} or provider data.collection)`,
