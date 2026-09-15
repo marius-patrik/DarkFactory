@@ -1,55 +1,55 @@
+import type { AssistantMessageEventStream, Context, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { z } from "zod";
-import type { Context, AssistantMessageEventStream, SimpleStreamOptions, Model } from "@earendil-works/pi-ai";
 import { captureContext, forceCaptureTool, readCapture } from "./capture-request.ts";
 
 /** Validate a value against a Zod schema. */
 export function validateCaptureSchema(schema: unknown, value: unknown): boolean {
-  if (!schema || typeof schema !== "object" || !("safeParse" in schema)) {
-    throw new Error("Provided schema is not a Zod schema");
-  }
-  const anySchema = schema as { safeParse: (v: unknown) => { success: boolean } };
-  return anySchema.safeParse(value).success;
+	if (!schema || typeof schema !== "object" || !("safeParse" in schema)) {
+		throw new Error("Provided schema is not a Zod schema");
+	}
+	const anySchema = schema as { safeParse: (v: unknown) => { success: boolean } };
+	return anySchema.safeParse(value).success;
 }
 
 /**
  * Candidate for capture using a specific model and provider dialect.
  */
 export interface CaptureCandidate {
-  /** Provider dialect, e.g., "openai-completions". */
-  dialect: import("../providers/schema.ts").ProviderDialect;
-  /** Model to query. */
-  model: Model<any>;
-  /** Stream function for the model. */
-  stream: (model: Model<any>, context: Context, options?: SimpleStreamOptions) => AssistantMessageEventStream;
-  /** Optional stream options. */
-  options?: SimpleStreamOptions;
+	/** Provider dialect, e.g., "openai-completions". */
+	dialect: import("../providers/schema.ts").ProviderDialect;
+	/** Model to query. */
+	model: Model<any>;
+	/** Stream function for the model. */
+	stream: (model: Model<any>, context: Context, options?: SimpleStreamOptions) => AssistantMessageEventStream;
+	/** Optional stream options. */
+	options?: SimpleStreamOptions;
 }
 
 /** Attempt record for a model that failed to capture. */
 export interface CaptureAttempt {
-  /** Model identifier. */
-  model: string;
-  /** Error message describing the failure. */
-  error: string;
+	/** Model identifier. */
+	model: string;
+	/** Error message describing the failure. */
+	error: string;
 }
 
 /** Error thrown when all capture candidates fail. */
 export class CaptureError extends Error {
-  /** List of attempts made. */
-  readonly attempts: CaptureAttempt[];
-  constructor(attempts: CaptureAttempt[]) {
-    super(`All capture candidates failed (${attempts.length} attempts)`);
-    this.attempts = attempts;
-  }
+	/** List of attempts made. */
+	readonly attempts: CaptureAttempt[];
+	constructor(attempts: CaptureAttempt[]) {
+		super(`All capture candidates failed (${attempts.length} attempts)`);
+		this.attempts = attempts;
+	}
 }
 
 /** Convert a Zod schema to a JSON schema without the top‑level `$schema` key. */
 export function captureJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const json: any = (z as any).toJSONSchema(schema);
-  if (json && typeof json === "object") {
-    delete json["$schema"];
-  }
-  return json ?? {};
+	const json: any = (z as any).toJSONSchema(schema);
+	if (json && typeof json === "object") {
+		delete json["$schema"];
+	}
+	return json ?? {};
 }
 
 /**
@@ -62,40 +62,40 @@ export function captureJsonSchema(schema: z.ZodType): Record<string, unknown> {
  * @throws CaptureError when every candidate fails.
  */
 export async function captureResult<T>(params: {
-  answer: string;
-  schema: z.ZodType<T>;
-  candidates: CaptureCandidate[];
+	answer: string;
+	schema: z.ZodType<T>;
+	candidates: CaptureCandidate[];
 }): Promise<{ value: T; model: string; attempts: CaptureAttempt[] }> {
-  const { answer, schema, candidates } = params;
-  const attempts: CaptureAttempt[] = [];
+	const { answer, schema, candidates } = params;
+	const attempts: CaptureAttempt[] = [];
 
-  for (const candidate of candidates) {
-    const context = captureContext(answer, captureJsonSchema(schema));
-    try {
-      const stream = candidate.stream(candidate.model, context, {
-        ...candidate.options,
-        onPayload: async (payload, model) => {
-          // The caller's hook runs first; its replacement payload (if any) is what gets the forced capture tool.
-          const upstream = await candidate.options?.onPayload?.(payload, model);
-          return forceCaptureTool(candidate.dialect, upstream ?? payload);
-        },
-      });
-      const message = await (stream as any).result();
-      const capture = readCapture(message);
-      if (!capture) {
-        attempts.push({ model: candidate.model.id, error: "no capture tool call" });
-        continue;
-      }
-      const parsed = schema.safeParse(capture);
-      if (!parsed.success) {
-        attempts.push({ model: candidate.model.id, error: "schema validation failed" });
-        continue;
-      }
-      return { value: parsed.data, model: candidate.model.id, attempts };
-    } catch (e: any) {
-      attempts.push({ model: candidate.model.id, error: e?.message ?? String(e) });
-    }
-  }
+	for (const candidate of candidates) {
+		const context = captureContext(answer, captureJsonSchema(schema));
+		try {
+			const stream = candidate.stream(candidate.model, context, {
+				...candidate.options,
+				onPayload: async (payload, model) => {
+					// The caller's hook runs first; its replacement payload (if any) is what gets the forced capture tool.
+					const upstream = await candidate.options?.onPayload?.(payload, model);
+					return forceCaptureTool(candidate.dialect, upstream ?? payload);
+				},
+			});
+			const message = await (stream as any).result();
+			const capture = readCapture(message);
+			if (!capture) {
+				attempts.push({ model: candidate.model.id, error: "no capture tool call" });
+				continue;
+			}
+			const parsed = schema.safeParse(capture);
+			if (!parsed.success) {
+				attempts.push({ model: candidate.model.id, error: "schema validation failed" });
+				continue;
+			}
+			return { value: parsed.data, model: candidate.model.id, attempts };
+		} catch (e: any) {
+			attempts.push({ model: candidate.model.id, error: e?.message ?? String(e) });
+		}
+	}
 
-  throw new CaptureError(attempts);
+	throw new CaptureError(attempts);
 }
