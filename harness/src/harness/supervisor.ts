@@ -7,6 +7,7 @@ import { LimitLedger } from "../limits/ledger.ts";
 import { defaultLimit, observeLimits } from "../limits/observe.ts";
 import { assessCandidate, type TaskEstimate } from "../limits/routing.ts";
 import type { LimitEntry } from "../limits/types.ts";
+import type { QuotaEngine } from "../limits/quota-engine.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
 import { redactErrorMessage } from "../redaction.ts";
 import type { OutcomeStore } from "../router/outcomes.ts";
@@ -85,6 +86,8 @@ export interface SupervisorOptions {
 	taskEstimate?: TaskEstimate;
 	outcomeStore?: OutcomeStore;
 	taskKind?: TaskKind;
+	/** Admission control: asked before every model call; every call is recorded as usage. */
+	quota?: QuotaEngine;
 }
 
 export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "candidate"> {
@@ -99,6 +102,7 @@ export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "ca
 	monitorRecovery?: boolean;
 	outcomeStore?: OutcomeStore;
 	taskKind?: TaskKind;
+	quota?: QuotaEngine;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -155,6 +159,13 @@ export class FailoverSupervisor {
 		await this.options.outcomeStore.record({ candidate, kind: this.options.taskKind, success, ...(failureKind ? { failureKind } : {}), tokens: usageTokens(usage), durationMs: Math.max(0, durationMs), observedAt: (this.options.now ?? Date.now)() });
 	}
 
+	private async recordUsage(candidate: Candidate, usage: Usage | null | undefined, success: boolean): Promise<void> {
+		if (!this.options.quota) return;
+		const record = (usage ?? {}) as unknown as Record<string, unknown>;
+		const count = (key: string) => typeof record[key] === "number" ? record[key] as number : 0;
+		await this.options.quota.record({ ...candidate, timestamp: (this.options.now ?? Date.now)(), inputTokens: count("input") + count("cacheRead") + count("cacheWrite"), outputTokens: count("output"), success });
+	}
+
 	private policy(candidate: Candidate) { return this.options.providerConfigs?.get(candidate.provider)?.limits; }
 
 	private profile(candidate: Candidate) {
@@ -180,6 +191,10 @@ export class FailoverSupervisor {
 
 	private async usable(candidate: Candidate, now: number): Promise<{ usable: boolean; entries: LimitEntry[] }> {
 		await this.recoverNow(now);
+		if (this.options.quota) {
+			const verdict = await this.options.quota.admit(candidate, this.options.taskEstimate, now);
+			if (verdict.decision !== "admit") return { usable: false, entries: verdict.entries };
+		}
 		const learned = await this.options.ledger.forCandidate(candidate, now, this.pools(candidate));
 		const entries = [...learned];
 		for (const item of this.policy(candidate)?.defaults ?? []) {
@@ -187,7 +202,8 @@ export class FailoverSupervisor {
 			entries.push({ ...candidate, type: item.type, ...(item.dimension ? { dimension: item.dimension } : {}), ...(item.pool ? { pool: item.pool.replace(":model", `:${candidate.model}`) } : {}), observedAt: now, resetAt: now + item.windowMs, source: "default", remaining: item.limit, limit: item.limit });
 		}
 		const verdict = this.options.taskEstimate ? assessCandidate(candidate, this.options.taskEstimate, entries, this.profile(candidate)) : { eligible: (await this.options.ledger.blocking(candidate, now, this.policy(candidate)?.reserve, this.pools(candidate))).length === 0 };
-		return { usable: verdict.eligible, entries };
+		// Only limits that actually block are cooldowns; an unexhausted default window must never be waited for.
+		return { usable: verdict.eligible, entries: entries.filter((entry) => entry.remaining === undefined || entry.remaining <= 0) };
 	}
 
 	private async nextCandidate(failure: FailureClassification, errorMessage: string): Promise<boolean> {
@@ -333,6 +349,7 @@ export class FailoverSupervisor {
 			for (const message of turnMessages.slice(0, -1)) {
 				this.emit({ type: "step", ...candidate, stopReason: message.stopReason, usage: message.usage, errorClass: null, errorKind: null, errorMessage: null, failoverReason: null });
 				await this.recordOutcome(candidate, true, message.usage, 0);
+				await this.recordUsage(candidate, message.usage, true);
 			}
 			if (totalTurns >= maxTurns && final?.stopReason !== "stop") throw new MaxTurnsError(maxTurns);
 
@@ -345,6 +362,7 @@ export class FailoverSupervisor {
 				for (const entry of learned) this.emit({ type: "limit", entry });
 				this.emit({ type: "step", ...candidate, stopReason: final.stopReason, usage: final.usage, errorClass: null, errorKind: null, errorMessage: null, failoverReason: null });
 				await this.recordOutcome(candidate, true, final.usage, (this.options.now ?? Date.now)() - attemptStartedAt);
+				await this.recordUsage(candidate, final.usage, true);
 				return final;
 			}
 
@@ -363,6 +381,8 @@ export class FailoverSupervisor {
 				...(failure.resetAt === undefined ? {} : { resetAt: failure.resetAt }),
 			});
 			await this.recordOutcome(candidate, false, final?.usage, (this.options.now ?? Date.now)() - attemptStartedAt, failure.kind);
+			// A rejected request still counts against request limits on most providers.
+			if (final !== undefined || thrown !== undefined) await this.recordUsage(candidate, final?.usage, false);
 			if (isTerminalAbort(thrown, final)) {
 				if (thrown instanceof Error) throw thrown;
 				throw new Error(final?.errorMessage ?? `Agent stopped: ${stopReason}`);
@@ -405,12 +425,25 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 	let activeIndex = -1;
 	const initialFailures: FailureKind[] = [];
 	const initialReasons: CandidateFailureReason[] = [];
+	const quotaBlocks: LimitEntry[] = [];
 	for (let index = 0; index < options.chain.length; index++) {
 		const candidate = options.chain[index]!;
 		for (const entry of await ledger.recover((options.now ?? Date.now)())) options.onEvent?.({ type: "recovered", entry });
 		const config = options.providerConfigs?.get(candidate.provider);
 		const pools = (config?.limits?.defaults ?? []).flatMap((entry) => entry.pool ? [entry.pool.replace(":model", `:${candidate.model}`)] : []);
 		const currentNow = (options.now ?? Date.now)();
+		if (options.quota) {
+			const admission = await options.quota.admit(candidate, options.taskEstimate, currentNow);
+			if (admission.decision !== "admit") {
+				// Learned limits are already in the ledger; only declared-limit blocks are added to what the wait considers.
+				quotaBlocks.push(...admission.entries.filter((entry) => entry.source === "declared"));
+				const kind: FailureKind = admission.entries.some((entry) => entry.type === "daily" || entry.type === "monthly") ? "quota_exhausted" : "rate_limited";
+				initialFailures.push(kind);
+				initialReasons.push({ candidate, kind, message: `Candidate is limited (${admission.reason ?? "quota"})` });
+				options.onEvent?.({ type: "candidate_skipped", candidate, reason: kind, ...(admission.waitUntil === undefined ? {} : { resetAt: admission.waitUntil }) });
+				continue;
+			}
+		}
 		const persistedEntries = await ledger.forCandidate(candidate, currentNow, pools);
 		const entries = [...persistedEntries];
 		for (const item of config?.limits?.defaults ?? []) {
@@ -427,7 +460,7 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 		options.onEvent?.({ type: "candidate_skipped", candidate, reason: kind, ...(cooldown ? { resetAt: cooldown.resetAt } : {}) });
 	}
 	if (activeIndex < 0) {
-		const limits = await ledger.list();
+		const limits = [...await ledger.list(), ...quotaBlocks];
 		// Wait for the candidate whose limits ALL clear first, never for one limit of a candidate that has others.
 		const nowAt = (options.now ?? Date.now)();
 		const readyByCandidate = new Map<string, LimitEntry>();
@@ -447,7 +480,7 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 		if (activeIndex < 0) throw new ChainExhaustedError(initialFailures, initialReasons, limits);
 	}
 	const runtime = await createHarnessRuntime({ ...options, candidate: options.chain[activeIndex]! });
-	const supervisor = new FailoverSupervisor({ chain: options.chain, runtime, ledger, onEvent: options.onEvent, now: options.now, providerConfigs: options.providerConfigs, maxWaitMs: options.maxWaitMs, sleep: options.sleep, taskEstimate: options.taskEstimate, outcomeStore: options.outcomeStore, taskKind: options.taskKind }, activeIndex);
+	const supervisor = new FailoverSupervisor({ chain: options.chain, runtime, ledger, onEvent: options.onEvent, now: options.now, providerConfigs: options.providerConfigs, maxWaitMs: options.maxWaitMs, sleep: options.sleep, taskEstimate: options.taskEstimate, outcomeStore: options.outcomeStore, taskKind: options.taskKind, ...(options.quota ? { quota: options.quota } : {}) }, activeIndex);
 	if (options.monitorRecovery) {
 		const timer = setInterval(() => { void supervisor.recoverNow(); }, 1_000);
 		timer.unref?.();

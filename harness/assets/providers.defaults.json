@@ -24,8 +24,30 @@
         { "kind": "rate_limited", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId|quotaMetric", "regex": "PerMinute", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay", "jitterMs": 1000 }], "pool": "google-free-requests-per-minute:model" },
         { "kind": "quota_exhausted", "statuses": [429], "jsonPath": "error.details.*.violations.*.quotaId|quotaMetric", "regex": "PerDay", "reset": [{ "kind": "retry_info", "path": "error.details.*.retryDelay" }, { "kind": "next_pacific_midnight" }], "pool": "google-free-daily:model" }
       ] },
-      "limits": {"dailyReset": "pacific-midnight",  "observe": true, "standardHeaders": true, "reserve": { "requests": 1, "tokens": 1000 }, "defaults": [{ "type": "rate", "dimension": "tokens", "limit": 250000, "windowMs": 60000, "pool": "google-free-tokens-per-minute:model" }, { "type": "daily", "dimension": "requests", "limit": 20, "windowMs": 86400000, "pool": "google-free-daily:model" }], "bodyRules": [{ "type": "rate", "dimension": "tokens", "regex": "InputTokens.*PerMinute|input_token_count", "pool": "google-free-tokens-per-minute:model" }, { "type": "daily", "dimension": "requests", "regex": "PerDay", "pool": "google-free-daily:model" }, { "type": "overload", "regex": "UNAVAILABLE|high demand", "resetAfterMs": 30000 }] },
+      "limits": {
+        "dailyReset": "pacific-midnight",
+        "observe": true,
+        "standardHeaders": true,
+        "reserve": { "requests": 1, "tokens": 1000 },
+        "declared": [
+          { "model": "gemini-3.*-flash", "type": "daily", "dimension": "requests", "limit": 20, "windowMs": 86400000, "reset": "fixed", "source": "observed", "checkedAt": "2026-09-15", "note": "quotaValue of GenerateRequestsPerDayPerProjectPerModel-FreeTier 429s, per key per model" },
+          { "model": "gemini-3-flash-preview", "type": "daily", "dimension": "requests", "limit": 20, "windowMs": 86400000, "reset": "fixed", "source": "observed", "checkedAt": "2026-09-15", "note": "quotaValue of GenerateRequestsPerDayPerProjectPerModel-FreeTier 429s, per key" },
+          { "model": "gemini-3.6-flash", "type": "rate", "dimension": "requests", "limit": 5, "windowMs": 60000, "reset": "rolling", "source": "observed", "checkedAt": "2026-09-15", "note": "quotaValue of GenerateRequestsPerMinutePerProjectPerModel-FreeTier" },
+          { "model": "*-flash-lite", "type": "rate", "dimension": "requests", "limit": 15, "windowMs": 60000, "reset": "rolling", "source": "observed", "checkedAt": "2026-09-15", "note": "quotaValue of GenerateRequestsPerMinutePerProjectPerModel-FreeTier" },
+          { "model": "*", "type": "rate", "dimension": "tokens", "limit": 250000, "windowMs": 60000, "reset": "rolling", "source": "observed", "checkedAt": "2026-09-15", "note": "input tokens per model per minute (GenerateContentInputTokensPerModelPerMinute-FreeTier)" }
+        ],
+        "defaults": [
+          { "type": "rate", "dimension": "tokens", "limit": 250000, "windowMs": 60000, "pool": "google-free-tokens-per-minute:model" },
+          { "type": "daily", "dimension": "requests", "limit": 20, "windowMs": 86400000, "pool": "google-free-daily:model" }
+        ],
+        "bodyRules": [
+          { "type": "rate", "dimension": "tokens", "regex": "InputTokens.*PerMinute|input_token_count", "pool": "google-free-tokens-per-minute:model" },
+          { "type": "daily", "dimension": "requests", "regex": "PerDay", "pool": "google-free-daily:model" },
+          { "type": "overload", "regex": "UNAVAILABLE|high demand", "resetAfterMs": 30000 }
+        ]
+      },
       "replay": { "foreignToolCallThoughtSignature": "skip_thought_signature_validator" },
+      "free": { "kind": "permanent", "keyUrl": "https://aistudio.google.com/app/apikey", "card": false, "notes": "Free-tier prompts may be used to improve Google products. Each API key is a separate project quota.", "sourceUrl": "https://ai.google.dev/gemini-api/docs/rate-limits", "checkedAt": "2026-09-15" },
       "capabilities": { "tools": true, "reasoning": true, "images": true }
     },
     {
@@ -33,7 +55,11 @@
       "auth": [{ "kind": "oauth", "slot": "oauth", "flow": "pkce", "authorizationEndpoint": "https://claude.ai/oauth/authorize", "tokenEndpoint": "https://platform.claude.com/v1/oauth/token", "clientId": { "value": "9d1c250a-e61b-44d9-88ed-5944d1962f5e" }, "scopes": ["org:create_api_key", "user:profile", "user:inference", "user:sessions:claude_code"], "isSubscription": true, "placement": "api_key", "tokenEncoding": "json", "redirectUri": "http://localhost:53692/callback", "authorizationParams": { "code": "true" } }],
       "requiredCredentialSlots": ["oauth"], "staticHeaders": { "anthropic-version": "2023-06-01" },
       "models": { "static": [{ "id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "reasoning": true, "contextWindow": 200000, "maxTokens": 64000, "tier": "bulk" }], "list": { "path": "/v1/models", "itemsPath": "data", "idPath": "id", "namePath": "display_name" } },
-      "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }] },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }]
+      },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
       "importers": [{ "id": "claude", "parser": "claude-code", "path": ".claude/.credentials.json", "targetProvider": "anthropic", "formats": { "expires": "epoch_milliseconds" }, "fieldMapping": { "access": "claudeAiOauth.accessToken", "refresh": "claudeAiOauth.refreshToken", "expires": "claudeAiOauth.expiresAt" } }]
     },
@@ -44,7 +70,11 @@
       "generatedHeaders": { "session-id": { "kind": "request-id", "scope": "request", "group": "turn" }, "x-client-request-id": { "kind": "request-id", "scope": "request", "group": "turn" } },
       "models": { "static": [{ "id": "gpt-6-astra", "name": "GPT-6 Astra", "reasoning": true, "contextWindow": 272000, "maxTokens": 128000, "tier": "bulk" }, { "id": "gpt-5.6-luna", "name": "GPT-5.6 Luna", "reasoning": true, "contextWindow": 272000, "maxTokens": 128000, "tier": "bulk" }, { "id": "gpt-5.6-sol", "name": "GPT-5.6 Sol", "reasoning": true, "contextWindow": 272000, "maxTokens": 128000, "tier": "bulk" }, { "id": "gpt-5.6-terra", "name": "GPT-5.6 Terra", "reasoning": true, "contextWindow": 272000, "maxTokens": 128000, "tier": "bulk" }, { "id": "gpt-5.5", "name": "GPT-5.5", "reasoning": true, "contextWindow": 272000, "maxTokens": 128000, "tier": "bulk" }, { "id": "gpt-5.3-codex-spark", "name": "GPT-5.3 Codex Spark", "reasoning": true, "contextWindow": 128000, "maxTokens": 128000, "tier": "standard" }] },
       "quota": { "rules": [{ "kind": "quota_exhausted", "statuses": [429], "jsonPath": "error.code", "regex": "usage_limit_reached|usage_not_included", "reset": [{ "kind": "header", "header": "retry-after" }] }, { "kind": "rate_limited", "statuses": [429], "jsonPath": "error.code", "equals": "rate_limit_exceeded", "reset": [{ "kind": "header", "header": "retry-after" }] }] },
-      "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage_limit_reached|usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }] },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "bodyRules": [{ "type": "window", "regex": "usage_limit_reached|usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }]
+      },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
       "importers": [{ "id": "codex", "parser": "codex", "path": ".codex/auth.json", "targetProvider": "openai-codex", "apiKeyTargetProvider": "openai", "fieldMapping": { "access": "tokens.access_token", "refresh": "tokens.refresh_token", "accountId": "tokens.account_id" } }]
     },
@@ -53,7 +83,11 @@
       "auth": [{ "kind": "oauth", "slot": "oauth", "flow": "device_code", "deviceCodeEndpoint": "https://auth.x.ai/oauth2/device/code", "tokenEndpoint": "https://auth.x.ai/oauth2/token", "clientId": { "value": "b1a00492-073a-47ea-816f-4c329264a828" }, "scopes": ["openid", "profile", "email", "offline_access", "grok-cli:access", "api:access"], "isSubscription": true }],
       "requiredCredentialSlots": ["oauth"], "staticHeaders": { "x-xai-token-auth": "xai-grok-cli", "x-grok-client-identifier": "grok-shell", "x-grok-client-version": "0.2.93" },
       "models": { "static": [{ "id": "grok-4.6", "name": "Grok 4.6", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }, { "id": "grok-4.5", "name": "Grok 4.5", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }, { "id": "grok-composer-2.5-fast", "name": "Grok Composer 2.5 Fast", "reasoning": true, "contextWindow": 256000, "maxTokens": 32768 }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
-      "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }] },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }, { "type": "monthly", "regex": "monthly limit|billing cycle", "resetAfterMs": 2592000000 }]
+      },
       "capabilities": { "tools": true, "reasoning": true, "images": true },
       "importers": [{ "id": "grok", "parser": "grok-cli", "path": ".grok/auth.json", "targetProvider": "grok-sub", "formats": { "expires": "iso" }, "fieldMapping": { "access": "*.key", "refresh": "*.refresh_token", "expires": "*.expires_at" } }]
     },
@@ -61,29 +95,65 @@
       "id": "kimi-coding", "name": "Kimi Coding", "dialect": "anthropic-messages", "baseUrl": "https://api.kimi.com/coding",
       "auth": [{ "kind": "api_key", "slot": "api_key", "placement": "bearer", "env": ["KIMI_API_KEY"] }, { "kind": "oauth", "slot": "oauth", "flow": "device_code", "deviceCodeEndpoint": "https://auth.kimi.com/api/oauth/device_authorization", "tokenEndpoint": "https://auth.kimi.com/api/oauth/token", "clientId": { "value": "17e5f671-d194-4dfb-9706-5516cb48c098" }, "scopes": [], "isSubscription": true }], "requiredCredentialSlots": [],
       "models": { "static": [{ "id": "kimi-for-coding", "name": "Kimi for Coding", "reasoning": true, "contextWindow": 262144, "maxTokens": 32768 }], "list": { "path": "/v1/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
-      "limits": { "observe": true, "standardHeaders": true, "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }] },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "bodyRules": [{ "type": "window", "regex": "usage limit has been reached|Resets in", "durationRegex": "Resets in ([0-9dhms]+)" }]
+      },
       "capabilities": { "tools": true, "reasoning": true, "images": false },
       "importers": [{ "id": "kimi", "parser": "kimi-code", "path": ".kimi-code/credentials/kimi-code.json", "targetProvider": "kimi-coding", "formats": { "expires": "epoch_seconds" }, "fieldMapping": { "access": "access_token", "refresh": "refresh_token", "expires": "expires_at" } }]
     },
     {
       "id": "openrouter", "name": "OpenRouter", "dialect": "openai-completions", "baseUrl": "https://openrouter.ai/api/v1",
       "auth": [{ "kind": "api_key", "slot": "api_key", "placement": "bearer", "env": ["OPENROUTER_API_KEY"] }], "requiredCredentialSlots": ["api_key"],
-      "models": { "static": [{ "id": "openrouter/free", "name": "OpenRouter Free Router", "contextWindow": 200000, "maxTokens": 32768, "tier": "tight" }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "name" } },
-      "limits": { "observe": true, "standardHeaders": true, "reserve": { "requests": 1 }, "defaults": [{ "type": "daily", "dimension": "requests", "limit": 50, "windowMs": 86400000 }] },
+      "models": { "static": [{ "id": "nvidia/nemotron-3-ultra-550b-a55b:free", "name": "Nemotron 3 Ultra (free)", "reasoning": true, "contextWindow": 1000000, "maxTokens": 65536, "tier": "tight" }, { "id": "openrouter/free", "name": "OpenRouter Free Router", "contextWindow": 200000, "maxTokens": 32768, "tier": "tight" }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "name" } },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "reserve": { "requests": 1 },
+        "declared": [
+          { "model": "*", "type": "rate", "dimension": "requests", "limit": 20, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://openrouter.ai/docs/api-reference/limits", "checkedAt": "2026-09-15", "pool": "openrouter-free-minute", "note": "free models" },
+          { "model": "*", "type": "daily", "dimension": "requests", "limit": 50, "windowMs": 86400000, "reset": "fixed", "source": "docs", "sourceUrl": "https://openrouter.ai/docs/api-reference/limits", "checkedAt": "2026-09-15", "pool": "openrouter-free-daily", "note": "all free models of the account; 1000 after a $10 purchase" }
+        ],
+        "defaults": [{ "type": "daily", "dimension": "requests", "limit": 50, "windowMs": 86400000 }]
+      },
+      "free": { "kind": "permanent", "keyUrl": "https://openrouter.ai/keys", "card": false, "notes": "Models with the :free suffix; usage via GET /api/v1/key.", "sourceUrl": "https://openrouter.ai/docs/api-reference/limits", "checkedAt": "2026-09-15" },
       "capabilities": { "tools": true, "reasoning": true, "images": true }
     },
     {
       "id": "groq", "name": "Groq", "dialect": "openai-completions", "baseUrl": "https://api.groq.com/openai/v1",
       "auth": [{ "kind": "api_key", "slot": "api_key", "placement": "bearer", "env": ["GROQ_API_KEY"] }], "requiredCredentialSlots": ["api_key"],
-      "models": { "static": [{ "id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B Versatile", "contextWindow": 131072, "maxTokens": 32768, "tier": "tight" }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
-      "limits": { "observe": true, "standardHeaders": true, "reserve": { "tokens": 1000 }, "defaults": [{ "type": "rate", "dimension": "tokens", "limit": 250000, "windowMs": 60000 }] },
+      "models": { "static": [{ "id": "openai/gpt-oss-120b", "name": "GPT-OSS 120B", "reasoning": true, "contextWindow": 131072, "maxTokens": 65536, "tier": "tight" }, { "id": "qwen/qwen3.8-27b", "name": "Qwen3.8 27B", "contextWindow": 131072, "maxTokens": 16384, "tier": "tight" }, { "id": "openai/gpt-oss-20b", "name": "GPT-OSS 20B", "reasoning": true, "contextWindow": 131072, "maxTokens": 65536, "tier": "tight" }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
+      "limits": {
+        "observe": true,
+        "standardHeaders": true,
+        "reserve": { "tokens": 1000 },
+        "declared": [
+          { "model": "*", "type": "rate", "dimension": "requests", "limit": 30, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "openai/gpt-oss-*", "type": "daily", "dimension": "requests", "limit": 1000, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "openai/gpt-oss-*", "type": "rate", "dimension": "tokens", "limit": 8000, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "openai/gpt-oss-*", "type": "daily", "dimension": "tokens", "limit": 200000, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "qwen/qwen3.8-27b", "type": "daily", "dimension": "requests", "limit": 1000, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "qwen/qwen3.8-27b", "type": "rate", "dimension": "tokens", "limit": 8000, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "qwen/qwen3.8-27b", "type": "daily", "dimension": "tokens", "limit": 200000, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "groq/compound*", "type": "daily", "dimension": "requests", "limit": 250, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
+          { "model": "groq/compound*", "type": "rate", "dimension": "tokens", "limit": 70000, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" }
+        ]
+      },
+      "free": { "kind": "permanent", "keyUrl": "https://console.groq.com/keys", "card": false, "sourceUrl": "https://console.groq.com/docs/rate-limits", "checkedAt": "2026-09-15" },
       "capabilities": { "tools": true, "reasoning": false, "images": false }
     },
     {
       "id": "cerebras", "name": "Cerebras", "dialect": "openai-completions", "baseUrl": "https://api.cerebras.ai/v1",
       "auth": [{ "kind": "api_key", "slot": "api_key", "placement": "bearer", "env": ["CEREBRAS_API_KEY"] }], "requiredCredentialSlots": ["api_key"],
-      "models": { "static": [{ "id": "llama-3.3-70b", "name": "Llama 3.3 70B", "contextWindow": 131072, "maxTokens": 32768 }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
-      "limits": { "observe": true, "standardHeaders": true },
+      "models": { "static": [{ "id": "gpt-oss-120b", "name": "GPT-OSS 120B", "reasoning": true, "contextWindow": 65536, "maxTokens": 32768, "tier": "tight" }, { "id": "qwen-3.8-27b", "name": "Qwen 3.8 27B", "contextWindow": 65536, "maxTokens": 32768, "tier": "tight" }, { "id": "llama-3.3-70b", "name": "Llama 3.3 70B", "contextWindow": 131072, "maxTokens": 32768 }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "id" } },
+      "limits": { "observe": true, "standardHeaders": true, "declared": [
+        { "model": "*", "type": "rate", "dimension": "requests", "limit": 5, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits", "checkedAt": "2026-09-15" },
+        { "model": "*", "type": "rate", "dimension": "tokens", "limit": 90000, "windowMs": 60000, "reset": "rolling", "source": "docs", "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits", "checkedAt": "2026-09-15", "note": "token bucket; 30K of it uncached" },
+        { "model": "*", "type": "window", "dimension": "tokens", "limit": 1000000, "windowMs": 3600000, "reset": "rolling", "source": "docs", "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits", "checkedAt": "2026-09-15" },
+        { "model": "*", "type": "daily", "dimension": "tokens", "limit": 1000000, "windowMs": 86400000, "reset": "rolling", "source": "docs", "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits", "checkedAt": "2026-09-15" }
+      ] },
+      "free": { "kind": "permanent", "keyUrl": "https://cloud.cerebras.ai/", "card": false, "notes": "Docs call it the free trial tier: 1M tokens per day.", "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits", "checkedAt": "2026-09-15" },
       "capabilities": { "tools": true, "reasoning": false, "images": false }
     },
     {
@@ -93,6 +163,7 @@
       "generatedHeaders": { "x-opencode-session": { "kind": "random", "scope": "session", "prefix": "ses_", "length": 26 }, "x-opencode-request": { "kind": "random", "scope": "request", "prefix": "msg_", "length": 26 } },
       "models": { "static": [{ "id": "big-pickle", "name": "Big Pickle (Free)", "reasoning": true, "contextWindow": 200000, "maxTokens": 32768, "tier": "tight" }], "list": { "path": "/models", "itemsPath": "data", "idPath": "id", "namePath": "name" } },
       "limits": { "observe": true, "standardHeaders": true },
+      "free": { "kind": "anonymous", "keyUrl": "https://opencode.ai/auth", "card": false, "notes": "Zen free models work without a key; limits are not published.", "checkedAt": "2026-09-15" },
       "capabilities": { "tools": true, "reasoning": true, "images": false }
     },
     {

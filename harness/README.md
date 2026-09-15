@@ -4,8 +4,9 @@
 pi's `read`, `write`, `edit`, and `bash` tools, deterministic tool policy, live model
 catalogs, and ordered account/provider failover.
 
-Providers are interpreted from `assets/providers.defaults.json`, then replaced by
-same-id entries in `$DF_HOME/providers.json`. The default route starts with
+Providers are interpreted from `assets/providers.defaults.json` and `assets/providers.free.json`
+(every researched free LLM API provider, with its free-tier kind, key page, and transport), then
+replaced by same-id entries in `$DF_HOME/providers.json`. The default route starts with
 `google/gemini-3.8-flash@default`, tries two other free Gemini models on the same
 key, then crosses to configured free/fast providers. Antigravity is declared but
 disabled by default.
@@ -42,6 +43,8 @@ df accounts
 df limits
 df limits --json
 df limits clear google:default
+df quota
+df quota --json --provider groq
 df chat
 df chat --resume <session-id> --chain ...
 df run --json --size large --max-turns 50 "Fix the failing test"
@@ -131,6 +134,33 @@ A complete custom OpenAI-compatible provider is one entry in `$DF_HOME/providers
 ```json
 {"version":1,"providers":[{"id":"acme","name":"Acme","dialect":"openai-completions","baseUrl":"https://api.acme.test/v1","auth":[{"kind":"api_key","slot":"api_key","placement":"bearer","env":["ACME_API_KEY"]}],"requiredCredentialSlots":["api_key"],"models":{"static":[{"id":"acme-free"}],"list":{"path":"/models","itemsPath":"data","idPath":"id","namePath":"name"}},"quota":{"rules":[{"kind":"rate_limited","statuses":[429]}]},"capabilities":{"tools":true,"reasoning":false,"images":false}}]}
 ```
+
+## Quota engine
+
+Before every model call the supervisor asks the quota engine whether the candidate may run now.
+Each provider declares its limits per model or model glob in `limits.declared`: requests or tokens
+per minute, hour, day, or month, rolling or fixed (daily windows follow `limits.dailyReset`),
+optionally pooled across the models of one account. Every declared number records its `source`
+(`docs`, `community`, or `observed`), a `sourceUrl`, and the `checkedAt` date. df counts every
+request it sends in `$DF_HOME/usage.json` (shared safely across processes) and combines that with
+limits learned from real responses in `limits.json`. A blocked candidate is admitted again only
+once all of its blocking limits have cleared; it is waited for when that is within `maxWaitMs`,
+otherwise skipped, and no request is sent to it. Usage and concurrency limits (credits, neurons)
+are reported but not enforced. `DF_QUOTA=off` disables admission and keeps learned limits only.
+
+`df quota --json` is the single status surface: every provider (including those without an
+account, with the page to get a key), every account and model, its state (`available`, `waiting`,
+`exhausted`, `unknown`, `no-account`), when it is usable again, and the source of each number. It
+never sends a model request.
+
+Adding a key for a free provider is one command; the key comes from stdin:
+
+```powershell
+$env:MISTRAL_API_KEY | df account set mistral:default api_key --type api_key
+```
+
+Cloudflare Workers AI needs the account id in its base URL: copy its entry into
+`$DF_HOME/providers.json`, replace `ACCOUNT_ID`, and set `"enabled": true`.
 
 Existing account commands remain available:
 
