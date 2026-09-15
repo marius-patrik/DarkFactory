@@ -3,7 +3,15 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NodeContext, type NodeHandlers, type NodeResult, runGraph } from "../../src/graph/executor.ts";
-import type { Actor, AgentNode, AutomationNode, GraphEdge, GraphEvent, GraphNode, WorkflowGraph } from "../../src/graph/types.ts";
+import type {
+	Actor,
+	AgentNode,
+	AutomationNode,
+	GraphEdge,
+	GraphEvent,
+	GraphNode,
+	WorkflowGraph,
+} from "../../src/graph/types.ts";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -18,7 +26,12 @@ function runDir(): string {
 const owner: Actor = { login: "owner", association: "OWNER", is_bot: false };
 const opened: GraphEvent = { type: "issues.opened", actor: owner };
 const agent = (id: string, extra: Partial<AgentNode> = {}): AgentNode => ({ id, kind: "agent", ...extra });
-const automation = (id: string, extra: Partial<AutomationNode> = {}): AutomationNode => ({ id, kind: "automation", script: id, ...extra });
+const automation = (id: string, extra: Partial<AutomationNode> = {}): AutomationNode => ({
+	id,
+	kind: "automation",
+	script: id,
+	...extra,
+});
 const graphOf = (nodes: GraphNode[], edges: GraphEdge[]): WorkflowGraph => ({ version: 1, checks: [], nodes, edges });
 
 /** Handlers answering from a per-node script; records every call with its iteration and item. */
@@ -47,17 +60,33 @@ describe("runGraph", () => {
 		const dir = runDir();
 		const state = await runGraph(graph, dir, handlers, opened);
 		expect(calls.map((call) => call.node)).toEqual(["plan", "apply"]);
-		expect(state).toMatchObject({ current_node: "apply", outputs: { plan_text: "do it" }, iterations: { plan: 1, apply: 1 } });
+		expect(state).toMatchObject({
+			current_node: "apply",
+			outputs: { plan_text: "do it" },
+			iterations: { plan: 1, apply: 1 },
+		});
 		expect(JSON.parse(readFileSync(join(dir, "state.json"), "utf8"))).toEqual(state);
-		const events = readFileSync(join(dir, "events.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
-		expect(events.filter((entry) => entry.type === "event" && entry.event.type === "node.completed").map((entry) => entry.event.node)).toEqual(["plan", "apply"]);
+		const events = readFileSync(join(dir, "events.jsonl"), "utf8")
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+		expect(
+			events
+				.filter((entry) => entry.type === "event" && entry.event.type === "node.completed")
+				.map((entry) => entry.event.node),
+		).toEqual(["plan", "apply"]);
 	});
 
 	test("a gate stops the run until an authorized approval arrives", async () => {
 		const graph = graphOf(
 			[
 				agent("plan", { trigger: { event: "issues.opened" } }),
-				{ id: "approval", kind: "gate", author_associations: ["OWNER"], command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$" },
+				{
+					id: "approval",
+					kind: "gate",
+					author_associations: ["OWNER"],
+					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+				},
 				automation("implement"),
 			],
 			[
@@ -69,16 +98,31 @@ describe("runGraph", () => {
 		const actions: string[] = [];
 		const dir = runDir();
 		const now = () => new Date("2026-09-15T12:00:00Z");
-		const waiting = await runGraph(graph, dir, handlers, opened, { onAction: (action) => void actions.push(`${action.type}:${action.node}`), now });
+		const waiting = await runGraph(graph, dir, handlers, opened, {
+			onAction: (action) => void actions.push(`${action.type}:${action.node}`),
+			now,
+		});
 		expect(calls.map((call) => call.node)).toEqual(["plan"]);
 		expect(actions).toEqual(["gate:approval"]);
 		expect(waiting).toMatchObject({ current_node: "approval", blocked_since: "2026-09-15T12:00:00.000Z" });
 
-		const stranger = await runGraph(graph, dir, handlers, { type: "comment", body: "/df approve", actor: { login: "x", association: "NONE", is_bot: false } }, { now });
+		const stranger = await runGraph(
+			graph,
+			dir,
+			handlers,
+			{ type: "comment", body: "/df approve", actor: { login: "x", association: "NONE", is_bot: false } },
+			{ now },
+		);
 		expect(stranger.current_node).toBe("approval");
 		expect(calls.map((call) => call.node)).toEqual(["plan"]);
 
-		const approved = await runGraph(graph, dir, handlers, { type: "comment", body: "/df approve", actor: owner }, { now });
+		const approved = await runGraph(
+			graph,
+			dir,
+			handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{ now },
+		);
 		expect(calls.map((call) => call.node)).toEqual(["plan", "implement"]);
 		expect(approved.current_node).toBe("implement");
 		expect(approved.blocked_since).toBeUndefined();
@@ -88,14 +132,28 @@ describe("runGraph", () => {
 		const graph = graphOf(
 			[agent("review", { trigger: { event: "issues.opened" }, outputs: ["clean"] }), agent("fix"), automation("merge")],
 			[
-				{ from: "review", to: "fix", on: { node_outcome: "success", when: "clean == false" }, loop: { kind: "self_review", safety_budget: 5 } },
+				{
+					from: "review",
+					to: "fix",
+					on: { node_outcome: "success", when: "clean == false" },
+					loop: { kind: "self_review", safety_budget: 5 },
+				},
 				{ from: "fix", to: "review", on: { node_outcome: "success" } },
 				{ from: "review", to: "merge", on: { node_outcome: "success", when: "clean == true" } },
 			],
 		);
-		const { handlers, calls } = scripted({ review: (_ctx, call) => ({ outcome: "success", outputs: { clean: call >= 3 } }) });
+		const { handlers, calls } = scripted({
+			review: (_ctx, call) => ({ outcome: "success", outputs: { clean: call >= 3 } }),
+		});
 		const state = await runGraph(graph, runDir(), handlers, opened);
-		expect(calls.map((call) => `${call.node}#${call.iteration}`)).toEqual(["review#1", "fix#1", "review#2", "fix#2", "review#3", "merge#1"]);
+		expect(calls.map((call) => `${call.node}#${call.iteration}`)).toEqual([
+			"review#1",
+			"fix#1",
+			"review#2",
+			"fix#2",
+			"review#3",
+			"merge#1",
+		]);
 		expect(state.iterations).toEqual({ review: 3, fix: 2, merge: 1 });
 	});
 
@@ -115,8 +173,13 @@ describe("runGraph", () => {
 	});
 
 	test("an undeclared endless loop is stopped by maxSteps", async () => {
-		const graph = graphOf([agent("spin", { trigger: { event: "issues.opened" } })], [{ from: "spin", to: "spin", on: { node_outcome: "success" } }]);
-		await expect(runGraph(graph, runDir(), scripted({}).handlers, opened, { maxSteps: 10 })).rejects.toThrow("exceeded 10 node runs");
+		const graph = graphOf(
+			[agent("spin", { trigger: { event: "issues.opened" } })],
+			[{ from: "spin", to: "spin", on: { node_outcome: "success" } }],
+		);
+		await expect(runGraph(graph, runDir(), scripted({}).handlers, opened, { maxSteps: 10 })).rejects.toThrow(
+			"exceeded 10 node runs",
+		);
 	});
 });
 
@@ -131,7 +194,16 @@ describe("runGraph fan-out", () => {
 			[
 				{ from: "split", to: "chunk", on: { node_outcome: "success" } },
 				{ from: "chunk", to: "open-pr", on: { children: "all_done" } },
-				...(retry ? [{ from: "chunk", to: "chunk", on: { children: "any_failed" as const }, loop: { kind: "ci_repair" as const, safety_budget: 3 } }] : []),
+				...(retry
+					? [
+							{
+								from: "chunk",
+								to: "chunk",
+								on: { children: "any_failed" as const },
+								loop: { kind: "ci_repair" as const, safety_budget: 3 },
+							},
+						]
+					: []),
 			],
 		);
 
@@ -150,9 +222,16 @@ describe("runGraph fan-out", () => {
 		});
 		const state = await runGraph(fanGraph(2, false), runDir(), handlers, opened);
 		expect(peak).toBe(2);
-		expect(calls.filter((call) => call.node === "chunk").map((call) => call.item).sort()).toEqual(["a", "b", "c", "d", "e"]);
+		expect(
+			calls
+				.filter((call) => call.node === "chunk")
+				.map((call) => call.item)
+				.sort(),
+		).toEqual(["a", "b", "c", "d", "e"]);
 		expect(calls.at(-1)?.node).toBe("open-pr");
-		expect((state.outputs.chunk_results as { outputs: { done: string } }[]).map((result) => result.outputs.done)).toEqual(["a", "b", "c", "d", "e"]);
+		expect(
+			(state.outputs.chunk_results as { outputs: { done: string } }[]).map((result) => result.outputs.done),
+		).toEqual(["a", "b", "c", "d", "e"]);
 	});
 
 	test("a retried fan-out re-runs only the children that did not succeed", async () => {
@@ -167,7 +246,12 @@ describe("runGraph fan-out", () => {
 			},
 		});
 		const state = await runGraph(fanGraph(3, true), runDir(), handlers, opened);
-		expect(calls.filter((call) => call.node === "chunk").map((call) => `${call.item}#${call.iteration}`).sort()).toEqual(["a#1", "b#1", "b#2", "c#1"]);
+		expect(
+			calls
+				.filter((call) => call.node === "chunk")
+				.map((call) => `${call.item}#${call.iteration}`)
+				.sort(),
+		).toEqual(["a#1", "b#1", "b#2", "c#1"]);
 		expect(calls.at(-1)?.node).toBe("open-pr");
 		expect(state.iterations?.chunk).toBe(2);
 	});

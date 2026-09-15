@@ -1,5 +1,13 @@
-export const CANONICAL_STATUSES = ["Backlog", "ToDo", "In Progress", "Blocked", "Done", "Superseded", "Dropped"] as const;
-export type CanonicalStatus = typeof CANONICAL_STATUSES[number];
+export const CANONICAL_STATUSES = [
+	"Backlog",
+	"ToDo",
+	"In Progress",
+	"Blocked",
+	"Done",
+	"Superseded",
+	"Dropped",
+] as const;
+export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
 export type NodeKind = "agent" | "gate" | "automation" | "check-reference";
 export type AuthorAssociation = "OWNER" | "MEMBER" | "COLLABORATOR" | "AUTHOR";
 
@@ -75,11 +83,20 @@ export interface WorkflowGraph {
 	edges: GraphEdge[];
 }
 
-export interface Actor { login: string; association: AuthorAssociation | "NONE"; is_bot: boolean }
+export interface Actor {
+	login: string;
+	association: AuthorAssociation | "NONE";
+	is_bot: boolean;
+}
 export type GraphEvent =
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
 	| { type: "review"; state: string; actor: Actor }
-	| { type: "node.completed"; node: string; outcome: "success" | "failure" | "quota_exhausted"; outputs: Record<string, unknown> }
+	| {
+			type: "node.completed";
+			node: string;
+			outcome: "success" | "failure" | "quota_exhausted";
+			outputs: Record<string, unknown>;
+	  }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
 	| { type: "schedule"; schedule: string; now?: string }
 	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
@@ -98,7 +115,14 @@ export interface RunState {
 }
 
 export type PlanAction =
-	| { type: "run"; nodes: string[]; feedback?: string; revert?: "out_of_scope_commits"; resume_run_id?: string; alerts?: string[] }
+	| {
+			type: "run";
+			nodes: string[];
+			feedback?: string;
+			revert?: "out_of_scope_commits";
+			resume_run_id?: string;
+			alerts?: string[];
+	  }
 	| { type: "gate"; node: string; status: "Blocked" }
 	| { type: "hint"; node: string; message: string }
 	| { type: "comment"; node: string; status: "Blocked"; message: string }

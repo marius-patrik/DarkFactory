@@ -66,7 +66,8 @@ async function readJson<T>(path: string): Promise<T | undefined> {
 /** A trigger node for a fresh run: the node whose trigger matches the starting event. */
 function startNode(graph: WorkflowGraph, event: GraphEvent): string {
 	const byEvent = graph.nodes.find((node) => node.trigger?.event?.split("|").includes(event.type));
-	const bySchedule = event.type === "schedule" ? graph.nodes.find((node) => node.trigger?.schedule === event.schedule) : undefined;
+	const bySchedule =
+		event.type === "schedule" ? graph.nodes.find((node) => node.trigger?.schedule === event.schedule) : undefined;
 	return (byEvent ?? bySchedule ?? graph.nodes[0])?.id ?? "";
 }
 
@@ -125,14 +126,31 @@ async function runForeach(
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
 			await writeJson(resultPath, result);
-			await appendFile(join(childDir, "events.jsonl"), `${JSON.stringify({ type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs })}\n`);
+			await appendFile(
+				join(childDir, "events.jsonl"),
+				`${JSON.stringify({ type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs })}\n`,
+			);
 			results[index] = { ...result, index };
 		}
 	};
-	await Promise.all(Array.from({ length: Math.min(Math.max(1, spec.max_parallel ?? 1), Math.max(1, items.length)) }, worker));
-	state.children = results.map((result) => ({ run_id: `${state.run_id}/${node.id}/${result.index}`, node: node.id, eligible: result.outcome === "quota_exhausted" }));
-	state.outputs[`${node.id}_results`] = results.map((result) => ({ index: result.index, outcome: result.outcome, outputs: result.outputs }));
-	return { type: "children.completed", node: node.id, outcome: results.every((result) => result.outcome === "success") ? "all_done" : "any_failed" };
+	await Promise.all(
+		Array.from({ length: Math.min(Math.max(1, spec.max_parallel ?? 1), Math.max(1, items.length)) }, worker),
+	);
+	state.children = results.map((result) => ({
+		run_id: `${state.run_id}/${node.id}/${result.index}`,
+		node: node.id,
+		eligible: result.outcome === "quota_exhausted",
+	}));
+	state.outputs[`${node.id}_results`] = results.map((result) => ({
+		index: result.index,
+		outcome: result.outcome,
+		outputs: result.outputs,
+	}));
+	return {
+		type: "children.completed",
+		node: node.id,
+		outcome: results.every((result) => result.outcome === "success") ? "all_done" : "any_failed",
+	};
 }
 
 /**
@@ -190,7 +208,8 @@ export async function runGraph(
 		if (action.type !== "run") {
 			state.current_node = action.node;
 			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
-			if (action.type === "gate" || action.type === "comment") state.blocked_since ??= (options.now?.() ?? new Date()).toISOString();
+			if (action.type === "gate" || action.type === "comment")
+				state.blocked_since ??= (options.now?.() ?? new Date()).toISOString();
 			if (action.type === "comment" && /quota/iu.test(action.message)) state.quota_blocked = true;
 			await save();
 			await options.onAction?.(action, state);
@@ -199,7 +218,8 @@ export async function runGraph(
 		const nodeId = action.nodes[0];
 		const node = graph.nodes.find((candidate) => candidate.id === nodeId);
 		if (!node) throw new Error(`Planner chose unknown node ${nodeId}`);
-		if (++steps > maxSteps) throw new Error(`Run ${state.run_id} exceeded ${maxSteps} node runs; check the graph for an undeclared loop`);
+		if (++steps > maxSteps)
+			throw new Error(`Run ${state.run_id} exceeded ${maxSteps} node runs; check the graph for an undeclared loop`);
 		const iteration = (state.iterations[node.id] ?? 0) + 1;
 		state.iterations[node.id] = iteration;
 		state.current_node = node.id;
