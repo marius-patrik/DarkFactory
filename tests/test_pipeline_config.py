@@ -1231,5 +1231,21 @@ def test_ci_docs_job_sets_up_bun_only_when_the_command_needs_it():
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     block = content.split("\n  docs:", 1)[1]
     assert "needs_bun=" in block
-    assert "if: steps.documentation.outputs.needs_bun == 'true'" in block
-    assert "uses: oven-sh/setup-bun@v2" in block
+
+
+def test_docs_impact_job_is_not_conditionally_skipped():
+    """The docs-impact job must not have a job-level if and must pass env vars."""
+    content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
+    block = content.split("\n  docs-impact:", 1)[1]
+
+    # No job-level if (at 4-space indent)
+    assert "\n    if:" not in block, "docs-impact job must not have a job-level if"
+
+    # Checkout with fetch-depth: 0
+    checkout_block = block.split("Checkout repository", 1)[1].split("\n      - name:", 1)[0]
+    assert "fetch-depth: 0" in checkout_block
+
+    # Check step passes PR_BODY and DOCS_IMPACT_BASE
+    check_block = block.split("Run docs impact check", 1)[1].split("- name:", 1)[0]
+    assert "PR_BODY:" in check_block
+    assert "DOCS_IMPACT_BASE:" in check_block

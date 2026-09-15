@@ -79,7 +79,6 @@ def test_docs_impact_job_present():
     assert job is not None, "docs-impact job missing"
     assert job.get("name") == "docs-impact"
     assert job.get("runs-on") == "ubuntu-latest"
-    assert job.get("if") == "github.event_name == 'pull_request'"
     steps = job.get("steps", [])
     # checkout step
     assert any(

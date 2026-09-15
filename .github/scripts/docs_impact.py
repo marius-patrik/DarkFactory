@@ -11,39 +11,62 @@ Public surface files include:
 
 Documentation files (must be touched when public surface changes):
 - README.md
+- harness/README.md
 - PRD.md
+- any file under docs/
 - any file under .agents/notes/
 - any file under .agents/rules/
 
-Bypass marker in PR body: a line matching ``Docs: none (<reason>)``.
+Bypass marker in PR body: a line matching ``Docs: none (<reason>)`` where <reason> is non-empty.
 """
 
 import argparse
 import os
 import re
-import sys
 import subprocess
-from typing import List, Set
+import sys
+from typing import List, Optional, Set
 
-DOCS_REGEX = re.compile(r"Docs:\s*none\s*\(.*\)", re.IGNORECASE)
+DOCS_REGEX = re.compile(r"Docs:\s*none\s*\((.+?)\)", re.IGNORECASE)
 
 
-def get_changed_files_from_git() -> List[str]:
-    # Get list of changed files between HEAD and the merge base with origin/main
-    try:
-        merge_base = subprocess.check_output(
-            ["git", "merge-base", "HEAD", "origin/main"], text=True
-        ).strip()
-        output = subprocess.check_output(["git", "diff", "--name-only", merge_base], text=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error obtaining git diff: {e}", file=sys.stderr)
-        return []
+def get_merge_base(base: str, head: str = "HEAD") -> str:
+    """Return the merge base of base and head.
+
+    Args:
+        base: Reference to merge against.
+        head: Head reference (default HEAD).
+
+    Returns:
+        The merge base commit SHA.
+
+    Raises:
+        subprocess.CalledProcessError: If git fails.
+    """
+    return subprocess.check_output(["git", "merge-base", base, head], text=True).strip()
+
+
+def get_changed_files(base: str, diff_path: Optional[str] = None) -> List[str]:
+    """Return the list of changed files between base and HEAD.
+
+    Args:
+        base: Merge base reference.
+        diff_path: If given, read files from this path instead of git.
+
+    Returns:
+        List of changed file paths.
+
+    Raises:
+        subprocess.CalledProcessError: If git fails.
+    """
+    if diff_path:
+        with open(diff_path, "r", encoding="utf-8") as f:
+            return [line.strip() for line in f if line.strip()]
+    merge_base = get_merge_base(base, "HEAD")
+    output = subprocess.check_output(
+        ["git", "diff", "--name-only", f"{merge_base}...HEAD"], text=True
+    )
     return [line.strip() for line in output.splitlines() if line.strip()]
-
-
-def load_changed_files(diff_path: str) -> List[str]:
-    with open(diff_path, "r", encoding="utf-8") as f:
-        return [line.strip() for line in f if line.strip()]
 
 
 def is_public_surface(path: str) -> bool:
@@ -63,7 +86,9 @@ def is_public_surface(path: str) -> bool:
 
 
 def is_doc_file(path: str) -> bool:
-    if path in {"README.md", "PRD.md"}:
+    if path in {"README.md", "PRD.md", "harness/README.md"}:
+        return True
+    if path.startswith("docs/"):
         return True
     if path.startswith(".agents/notes/"):
         return True
@@ -73,7 +98,8 @@ def is_doc_file(path: str) -> bool:
 
 
 def has_bypass(pr_body: str) -> bool:
-    return bool(DOCS_REGEX.search(pr_body))
+    m = DOCS_REGEX.search(pr_body)
+    return bool(m and m.group(1).strip())
 
 
 def main() -> int:
@@ -81,34 +107,60 @@ def main() -> int:
     parser.add_argument(
         "--diff", help="Path to a file containing list of changed files (one per line)"
     )
+    parser.add_argument(
+        "--base",
+        default=os.environ.get("DOCS_IMPACT_BASE", ""),
+        help="Base ref or SHA for merge-base (default: DOCS_IMPACT_BASE env)",
+    )
+    parser.add_argument(
+        "--body-file",
+        help="Path to file containing PR body text",
+    )
     parser.add_argument("--pr-body", help="PR body text for bypass detection", default="")
     args = parser.parse_args()
 
+    # Read PR body: --body-file > env PR_BODY > --pr-body
+    pr_body = args.pr_body
+    if args.body_file:
+        with open(args.body_file, "r", encoding="utf-8") as f:
+            pr_body = f.read()
+    elif not pr_body:
+        pr_body = os.environ.get("PR_BODY", "")
+
     if args.diff:
-        changed = load_changed_files(args.diff)
+        changed = get_changed_files(args.base, diff_path=args.diff)
     else:
-        changed = get_changed_files_from_git()
+        if not args.base:
+            print(
+                "No --base given and DOCS_IMPACT_BASE env is unset; cannot compute diff",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            changed = get_changed_files(args.base)
+        except subprocess.CalledProcessError as e:
+            print(f"Git command failed: {e}", file=sys.stderr)
+            return 2
 
     if not changed:
         return 0
 
     public_changes: Set[str] = {p for p in changed if is_public_surface(p)}
     if not public_changes:
-        # No public surface changes => no docs requirement
         return 0
 
     doc_changes: Set[str] = {p for p in changed if is_doc_file(p)}
     if doc_changes:
         return 0
 
-    if has_bypass(args.pr_body):
+    if has_bypass(pr_body):
         return 0
 
     print("Public surface changes detected without documentation updates:")
     for p in sorted(public_changes):
         print(f"  - {p}")
     print(
-        "Please update README.md, PRD.md, or related .agents notes/rules, or add a Docs: none(<reason>) bypass."
+        "Please update README.md, harness/README.md, docs/, PRD.md, or related .agents notes/rules, or add a Docs: none(<reason>) bypass."
     )
     return 1
 

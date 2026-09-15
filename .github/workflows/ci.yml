@@ -383,13 +383,16 @@ jobs:
   docs-impact:
     name: docs-impact
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
+        with:
+          # The check diffs the PR against its base commit.
+          fetch-depth: 0
 
       - name: Check out the pinned pipeline
-        if: inputs.pipeline-ref != ''
+        if: github.event_name == 'pull_request' && inputs.pipeline-ref != ''
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo }}
@@ -397,6 +400,10 @@ jobs:
           path: .darkfactory-pipeline
 
       - name: Run docs impact check
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          DOCS_IMPACT_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           SCRIPTS=".github/scripts"
           [ -d .darkfactory-pipeline/.github/scripts ] && SCRIPTS=".darkfactory-pipeline/.github/scripts"
