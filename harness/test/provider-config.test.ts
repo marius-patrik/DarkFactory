@@ -1,16 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { fauxAssistantMessage, fauxToolCall, type Context } from "@earendil-works/pi-ai";
-import { prepareReplayPayload, providerFromConfig, ProviderRegistry } from "../src/providers/runtime.ts";
-import { BUILTIN_PROVIDER_CONFIG, loadProviderConfig, parseProviderConfigFile, type ProviderConfig } from "../src/providers/schema.ts";
-import { createConfiguredOAuth } from "../src/providers/oauth.ts";
+import { type Context, fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
 import { resolveGeneratedHeaders } from "../src/harness/runtime.ts";
+import { createConfiguredOAuth } from "../src/providers/oauth.ts";
+import { ProviderRegistry, prepareReplayPayload, providerFromConfig } from "../src/providers/runtime.ts";
+import {
+	BUILTIN_PROVIDER_CONFIG,
+	loadProviderConfig,
+	type ProviderConfig,
+	parseProviderConfigFile,
+} from "../src/providers/schema.ts";
 
 function openAICompatible(id = "fixture-cloud"): ProviderConfig {
 	return {
-		id, name: "Fixture Cloud", dialect: "openai-completions", baseUrl: "https://fixture.invalid/v1",
+		id,
+		name: "Fixture Cloud",
+		dialect: "openai-completions",
+		baseUrl: "https://fixture.invalid/v1",
 		auth: [{ kind: "api_key", slot: "api_key", placement: "header", name: "x-fixture-key" }],
-		requiredCredentialSlots: ["api_key"], staticHeaders: { "x-client": "df-test" },
-		models: { static: [{ id: "fixture-free", reasoning: true }], list: { path: "/models", itemsPath: "data", idPath: "id", namePath: "name" } },
+		requiredCredentialSlots: ["api_key"],
+		staticHeaders: { "x-client": "df-test" },
+		models: {
+			static: [{ id: "fixture-free", reasoning: true }],
+			list: { path: "/models", itemsPath: "data", idPath: "id", namePath: "name" },
+		},
 		quota: { rules: [{ kind: "rate_limited", statuses: [429], regex: "busy" }] },
 		capabilities: { tools: true, reasoning: true, images: false },
 	};
@@ -19,7 +31,14 @@ function openAICompatible(id = "fixture-cloud"): ProviderConfig {
 describe("config-driven provider registry", () => {
 	test("Google-to-Google hand-off marks a foreign completed function call with the configured placeholder", () => {
 		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
-		const replay = prepareReplayPayload(google, { contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }, { functionCall: { name: "other", args: {} } }] }] }) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
+		const replay = prepareReplayPayload(google, {
+			contents: [
+				{
+					role: "model",
+					parts: [{ functionCall: { name: "read", args: {} } }, { functionCall: { name: "other", args: {} } }],
+				},
+			],
+		}) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
 		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBe("skip_thought_signature_validator");
 		expect(replay.contents[0]!.parts[1]!.thoughtSignature).toBeUndefined();
 	});
@@ -28,8 +47,13 @@ describe("config-driven provider registry", () => {
 		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
 		const abortSignal = new AbortController().signal;
 		const handler = () => undefined;
-		const payload = { config: { abortSignal, tools: [{ handler }] }, contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }] }] };
-		const replay = prepareReplayPayload(google, payload) as typeof payload & { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
+		const payload = {
+			config: { abortSignal, tools: [{ handler }] },
+			contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }] }],
+		};
+		const replay = prepareReplayPayload(google, payload) as typeof payload & {
+			contents: Array<{ parts: Array<{ thoughtSignature?: string }> }>;
+		};
 		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBe("skip_thought_signature_validator");
 		expect(replay.config.abortSignal).toBe(abortSignal);
 		expect(payload.contents[0]!.parts[0]).not.toHaveProperty("thoughtSignature");
@@ -41,13 +65,25 @@ describe("config-driven provider registry", () => {
 		const google = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!;
 		const provider = providerFromConfig(google);
 		const target = provider.getModels().find((entry) => entry.id === "gemini-3.5-flash-lite")!;
-		const source = fauxAssistantMessage({ ...fauxToolCall("read", { path: "x" }, { id: "call-1" }), thoughtSignature: "YWJjZA==" }, { stopReason: "toolUse" });
+		const source = fauxAssistantMessage(
+			{ ...fauxToolCall("read", { path: "x" }, { id: "call-1" }), thoughtSignature: "YWJjZA==" },
+			{ stopReason: "toolUse" },
+		);
 		Object.assign(source, { api: "google-generative-ai", provider: "google", model: "gemini-3-flash-preview" });
-		const context: Context = { messages: [
-			{ role: "user", content: "go", timestamp: 1 },
-			source,
-			{ role: "toolResult", toolCallId: "call-1", toolName: "read", content: [{ type: "text", text: "ok" }], isError: false, timestamp: 3 },
-		] };
+		const context: Context = {
+			messages: [
+				{ role: "user", content: "go", timestamp: 1 },
+				source,
+				{
+					role: "toolResult",
+					toolCallId: "call-1",
+					toolName: "read",
+					content: [{ type: "text", text: "ok" }],
+					isError: false,
+					timestamp: 3,
+				},
+			],
+		};
 		let wire: { contents?: Array<{ parts?: Array<{ functionCall?: unknown; thoughtSignature?: string }> }> } = {};
 		const originalFetch = globalThis.fetch;
 		globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
@@ -56,7 +92,9 @@ describe("config-driven provider registry", () => {
 			throw new Error("captured mock request");
 		}) as unknown as typeof fetch;
 		try {
-			for await (const _event of provider.stream(target, context, { apiKey: "mock-key" })) { /* drain */ }
+			for await (const _event of provider.stream(target, context, { apiKey: "mock-key" })) {
+				/* drain */
+			}
 		} finally {
 			globalThis.fetch = originalFetch;
 		}
@@ -66,33 +104,130 @@ describe("config-driven provider registry", () => {
 
 	test("Google-to-OpenAI-compatible hand-off does not inject Google replay metadata", () => {
 		const openai = openAICompatible("openai-target");
-		const replay = prepareReplayPayload(openai, { contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }] }] }) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
+		const replay = prepareReplayPayload(openai, {
+			contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }] }],
+		}) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
 		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBeUndefined();
 	});
 	test("success: adding an OpenAI-compatible provider is only a config entry", async () => {
 		const entry = openAICompatible();
 		const registry = new ProviderRegistry(parseProviderConfigFile({ version: 1, providers: [entry] }));
 		const models = registry.models({
-			credentials: { read: async () => ({ type: "api_key", key: "secret" }), list: async () => [], modify: async (_id, fn) => fn(undefined), delete: async () => undefined },
+			credentials: {
+				read: async () => ({ type: "api_key", key: "secret" }),
+				list: async () => [],
+				modify: async (_id, fn) => fn(undefined),
+				delete: async () => undefined,
+			},
 			authContext: { env: async () => undefined, fileExists: async () => false },
 		});
 		const model = models.getModel(entry.id, "fixture-free")!;
-		expect(model).toMatchObject({ provider: entry.id, api: "openai-completions", baseUrl: "https://fixture.invalid/v1" });
+		expect(model).toMatchObject({
+			provider: entry.id,
+			api: "openai-completions",
+			baseUrl: "https://fixture.invalid/v1",
+		});
 		expect(await models.getAuth(model)).toMatchObject({ auth: { headers: { "x-fixture-key": "secret" } } });
 		expect(models.getProvider(entry.id)?.headers).toEqual({ "x-client": "df-test" });
 	});
 
+	test("routing: valid routing config passes validation", () => {
+		const entry = openAICompatible("routing-provider");
+		entry.routing = { enabled: true, exclude: ["*-fallback"] };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+	test("routing: enabled must be a boolean", () => {
+		const entry = openAICompatible("routing-bad");
+		entry.routing = { enabled: "no" } as never;
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(
+			"Provider routing-bad routing.enabled must be a boolean",
+		);
+	});
+	test("routing: exclude must be an array of non-empty model id globs", () => {
+		const entry = openAICompatible("routing-bad-exclude");
+		entry.routing = { exclude: [""] };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(
+			"Provider routing-bad-exclude routing.exclude must be an array of non-empty model id globs",
+		);
+	});
 	test("edge-input: rejects duplicate ids and unsupported dialects at the boundary", () => {
 		const entry = openAICompatible();
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry, entry] })).toThrow("duplicate provider");
-		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, dialect: "bespoke-api" }] })).toThrow("unsupported dialect");
-		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }] })).toThrow("regex is invalid");
+		expect(() => parseProviderConfigFile({ version: 1, providers: [{ ...entry, dialect: "bespoke-api" }] })).toThrow(
+			"unsupported dialect",
+		);
+		expect(() =>
+			parseProviderConfigFile({
+				version: 1,
+				providers: [{ ...entry, limits: { observe: true, bodyRules: [{ type: "window", regex: "[" }] } }],
+			}),
+		).toThrow("regex is invalid");
+	});
+
+	test("data: accepts minimal valid data configuration", () => {
+		const entry = openAICompatible("data-provider");
+		entry.data = {
+			collection: "logging",
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
+	test("data: rejects invalid collection values", () => {
+		const entry = openAICompatible("bad-data");
+		entry.data = {
+			collection: "invalid-collection" as any,
+			source: "unit-test",
+			checkedAt: "2023-01-01T00:00:00Z",
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(/data\.collection/);
+	});
+
+	test("data: accepts provider-level data and free.data override together", () => {
+		const entry = openAICompatible("data-override");
+		entry.free = {
+			kind: "permanent",
+			keyUrl: "https://example.com/key",
+			data: { collection: "logging", source: "free-docs", checkedAt: "2023-01-01T00:00:00Z" },
+		};
+		entry.data = { collection: "training", source: "provider-docs", checkedAt: "2023-01-02T00:00:00Z" };
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
+	});
+
+	test("data: rejects invalid free.data.collection", () => {
+		const entry = openAICompatible("bad-free-data");
+		entry.free = {
+			kind: "permanent",
+			keyUrl: "https://example.com/key",
+			data: { collection: "archival" as any, source: "free-docs", checkedAt: "2023-01-01T00:00:00Z" },
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow(/free\.data\.collection/);
+	});
+
+	test("data: free.data override works standalone without provider-level data", () => {
+		const entry = openAICompatible("free-only-data");
+		entry.free = {
+			kind: "permanent",
+			keyUrl: "https://example.com/key",
+			data: {
+				collection: "none",
+				source: "free-docs",
+				retentionDays: 30,
+				checkedAt: "2023-01-03T00:00:00Z",
+				sourceUrl: "https://example.com/terms",
+				note: "free tier",
+			},
+		};
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).not.toThrow();
 	});
 
 	test("local providers replace same-id defaults and append new entries", async () => {
 		const google = { ...openAICompatible("google"), name: "Local Google Override" };
 		const custom = openAICompatible("custom");
-		const loaded = await loadProviderConfig("C:/fixture", async () => JSON.stringify({ version: 1, providers: [google, custom] }));
+		const loaded = await loadProviderConfig("C:/fixture", async () =>
+			JSON.stringify({ version: 1, providers: [google, custom] }),
+		);
 		expect(loaded.providers.find((entry) => entry.id === "google")?.name).toBe("Local Google Override");
 		expect(loaded.providers.some((entry) => entry.id === "anthropic")).toBe(true);
 		expect(loaded.providers.at(-1)?.id).toBe("custom");
@@ -106,17 +241,38 @@ describe("config-driven provider registry", () => {
 
 	test("built-ins contain the required providers and importer declarations", () => {
 		const ids = BUILTIN_PROVIDER_CONFIG.providers.map((entry) => entry.id);
-		expect(ids.slice(0, 10)).toEqual(["google", "anthropic", "openai-codex", "grok-sub", "kimi-coding", "openrouter", "groq", "cerebras", "opencode-zen", "google-antigravity"]);
+		expect(ids.slice(0, 10)).toEqual([
+			"google",
+			"anthropic",
+			"openai-codex",
+			"grok-sub",
+			"kimi-coding",
+			"openrouter",
+			"groq",
+			"cerebras",
+			"opencode-zen",
+			"google-antigravity",
+		]);
 		// Every researched free provider follows the core set, each with a free-tier record and a unique id.
 		const free = ids.slice(10);
 		expect(free).toContain("mistral");
 		expect(free).toContain("nvidia-nim");
 		expect(free).toContain("kilo-gateway");
 		expect(new Set(ids).size).toBe(ids.length);
-		for (const id of free) expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === id)?.free?.keyUrl).toMatch(/^https:\/\//u);
-		expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "opencode-zen")?.models.static[0]?.id).toBe("big-pickle");
-		expect(BUILTIN_PROVIDER_CONFIG.providers.flatMap((entry) => entry.importers ?? []).map((entry) => entry.id).sort()).toEqual(["antigravity", "claude", "codex", "grok", "kimi"]);
-		const codexOauth = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "openai-codex")?.auth.find((entry) => entry.kind === "oauth");
+		for (const id of free)
+			expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === id)?.free?.keyUrl).toMatch(/^https:\/\//u);
+		expect(BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "opencode-zen")?.models.static[0]?.id).toBe(
+			"big-pickle",
+		);
+		expect(
+			BUILTIN_PROVIDER_CONFIG.providers
+				.flatMap((entry) => entry.importers ?? [])
+				.map((entry) => entry.id)
+				.sort(),
+		).toEqual(["antigravity", "claude", "codex", "grok", "kimi"]);
+		const codexOauth = BUILTIN_PROVIDER_CONFIG.providers
+			.find((entry) => entry.id === "openai-codex")
+			?.auth.find((entry) => entry.kind === "oauth");
 		expect(codexOauth?.redirectUri).toBe("http://localhost:1455/auth/callback");
 		expect(BUILTIN_PROVIDER_CONFIG.providers.every((entry) => entry.limits?.observe === true)).toBe(true);
 	});
@@ -137,21 +293,32 @@ describe("config-driven provider registry", () => {
 	test("optional API auth can supply a configured anonymous SDK sentinel", async () => {
 		const zen = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "opencode-zen")!;
 		const models = new ProviderRegistry(parseProviderConfigFile({ version: 1, providers: [zen] })).models({
-			credentials: { read: async () => undefined, list: async () => [], modify: async () => undefined, delete: async () => undefined },
+			credentials: {
+				read: async () => undefined,
+				list: async () => [],
+				modify: async () => undefined,
+				delete: async () => undefined,
+			},
 			authContext: { env: async () => undefined, fileExists: async () => false },
 		});
 		expect(await models.getAuth("opencode-zen")).toMatchObject({ auth: { apiKey: "public" }, source: "Anonymous" });
 	});
 
 	test("provider factory is generic across all configured dialects", () => {
-		for (const config of BUILTIN_PROVIDER_CONFIG.providers) expect(providerFromConfig(config).getModels().length).toBeGreaterThan(0);
+		for (const config of BUILTIN_PROVIDER_CONFIG.providers)
+			expect(providerFromConfig(config).getModels().length).toBeGreaterThan(0);
 	});
 
 	test("query API keys are handed to the dialect without provider branching", async () => {
 		const entry = openAICompatible("query-auth");
 		entry.auth = [{ kind: "api_key", slot: "api_key", placement: "query", name: "key" }];
 		const models = new ProviderRegistry({ version: 1, providers: [entry] }).models({
-			credentials: { read: async () => ({ type: "api_key", key: "query-secret" }), list: async () => [], modify: async (_id, fn) => fn(undefined), delete: async () => undefined },
+			credentials: {
+				read: async () => ({ type: "api_key", key: "query-secret" }),
+				list: async () => [],
+				modify: async (_id, fn) => fn(undefined),
+				delete: async () => undefined,
+			},
 			authContext: { env: async () => undefined, fileExists: async () => false },
 		});
 		expect(await models.getAuth(entry.id)).toMatchObject({ auth: { apiKey: "query-secret" } });
@@ -161,13 +328,24 @@ describe("config-driven provider registry", () => {
 		const entry = openAICompatible("anonymous");
 		entry.auth = [{ kind: "api_key", slot: "api_key", placement: "bearer", optional: true }];
 		entry.requiredCredentialSlots = [];
-		const models = new ProviderRegistry({ version: 1, providers: [entry] }).models({ authContext: { env: async () => undefined, fileExists: async () => false } });
+		const models = new ProviderRegistry({ version: 1, providers: [entry] }).models({
+			authContext: { env: async () => undefined, fileExists: async () => false },
+		});
 		expect(await models.getAuth(entry.id)).toMatchObject({ auth: {}, source: "Anonymous" });
 	});
 
 	test("malformed OAuth declarations fail validation before registration", () => {
 		const entry = openAICompatible("bad-oauth");
-		entry.auth = [{ kind: "oauth", slot: "oauth", flow: "device_code", tokenEndpoint: "https://token.invalid", clientId: { value: "client" }, scopes: [] }];
+		entry.auth = [
+			{
+				kind: "oauth",
+				slot: "oauth",
+				flow: "device_code",
+				tokenEndpoint: "https://token.invalid",
+				clientId: { value: "client" },
+				scopes: [],
+			},
+		];
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("deviceCodeEndpoint");
 	});
 
@@ -179,28 +357,48 @@ describe("config-driven provider registry", () => {
 
 	test("importers reject unsupported parser types", () => {
 		const entry = openAICompatible("import-policy");
-		entry.importers = [{ id: "fixture", parser: "unknown-parser", targetProvider: "import-policy", fieldMapping: {} } as never];
+		entry.importers = [
+			{ id: "fixture", parser: "unknown-parser", targetProvider: "import-policy", fieldMapping: {} } as never,
+		];
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("unsupported importer parser");
 	});
 
 	test("each built-in declares credential slots, capabilities, and a model source", () => {
 		for (const entry of BUILTIN_PROVIDER_CONFIG.providers) {
 			expect(Array.isArray(entry.requiredCredentialSlots)).toBe(true);
-			expect(entry.capabilities).toMatchObject({ tools: expect.any(Boolean), reasoning: expect.any(Boolean), images: expect.any(Boolean) });
+			expect(entry.capabilities).toMatchObject({
+				tools: expect.any(Boolean),
+				reasoning: expect.any(Boolean),
+				images: expect.any(Boolean),
+			});
 			expect(entry.models.static.length > 0 || entry.models.list).toBeTruthy();
 		}
 	});
 
 	test("generic PKCE exchanges mocked JSON tokens from config", async () => {
-		const flows = new Set(BUILTIN_PROVIDER_CONFIG.providers.flatMap((entry) => entry.auth).filter((auth) => auth.kind === "oauth").map((auth) => auth.flow));
+		const flows = new Set(
+			BUILTIN_PROVIDER_CONFIG.providers
+				.flatMap((entry) => entry.auth)
+				.filter((auth) => auth.kind === "oauth")
+				.map((auth) => auth.flow),
+		);
 		expect(flows).toEqual(new Set(["device_code", "pkce"]));
-		const config = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "anthropic")!.auth.find((auth) => auth.kind === "oauth")!;
+		const config = BUILTIN_PROVIDER_CONFIG.providers
+			.find((entry) => entry.id === "anthropic")!
+			.auth.find((auth) => auth.kind === "oauth")!;
 		const calls: Array<{ url: string; contentType: string | null }> = [];
-		const oauth = createConfiguredOAuth(config, { now: () => 1_000, fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
-			calls.push({ url: String(input), contentType: new Headers(init?.headers).get("content-type") });
-			return Response.json({ access_token: "access", refresh_token: "refresh", expires_in: 60 });
-		}) as typeof fetch });
-		const result = await oauth.login({ signal: new AbortController().signal, prompt: async () => "code", notify: () => undefined });
+		const oauth = createConfiguredOAuth(config, {
+			now: () => 1_000,
+			fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+				calls.push({ url: String(input), contentType: new Headers(init?.headers).get("content-type") });
+				return Response.json({ access_token: "access", refresh_token: "refresh", expires_in: 60 });
+			}) as typeof fetch,
+		});
+		const result = await oauth.login({
+			signal: new AbortController().signal,
+			prompt: async () => "code",
+			notify: () => undefined,
+		});
 		expect(result).toMatchObject({ access: "access", refresh: "refresh", expires: 61_000 });
 		expect(calls).toEqual([{ url: "https://platform.claude.com/v1/oauth/token", contentType: "application/json" }]);
 	});

@@ -5,44 +5,44 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { FileCredentialStore, defaultDfHome, parseAccountId, validateAccountRecord } from "./credentials.ts";
-import { DEFAULT_ROUTER_CONFIG, loadDfConfig, localCredentialFallback, type DfConfig } from "./config.ts";
+import { runCiCli } from "./ci/cli.ts";
+import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
+import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountRecord } from "./credentials.ts";
 import type { Candidate } from "./failover.ts";
+import { GitHubClient } from "./github/client.ts";
+import { GitHubRepository } from "./github/repository.ts";
+import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
+import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
+import { validateCandidateCredentials } from "./harness/runtime.ts";
 import {
+	type CandidateFailureReason,
 	ChainExhaustedError,
 	createFailoverSupervisor,
-	type CandidateFailureReason,
 	type HarnessEvent,
 } from "./harness/supervisor.ts";
-import { LimitLedger } from "./limits/ledger.ts";
-import { QuotaEngine } from "./limits/quota-engine.ts";
-import { buildQuotaReport } from "./limits/quota-report.ts";
-import { estimateTask, orderCandidates, type TaskSize } from "./limits/routing.ts";
-import { validateCandidateCredentials } from "./harness/runtime.ts";
-import { defaultSensitiveDataHook, parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
-import { ModelCatalog, isRunnableCatalogModel, type CatalogResult } from "./models/catalog.ts";
-import { ModelPoller } from "./models/poller.ts";
+import { runDoctorIdentities } from "./identities/index.ts";
+import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
 import { importClaudeAccount } from "./import/claude.ts";
 import { importCodexAccount } from "./import/codex.ts";
 import { importGrokAccount } from "./import/grok.ts";
-import { importKimiAccount } from "./import/kimi.ts";
 import { OsClaudeKeyringAdapter } from "./import/keyring.ts";
+import { importKimiAccount } from "./import/kimi.ts";
 import { OsHomeReader } from "./import/reader.ts";
-import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
-import { loadProviderConfig } from "./providers/schema.ts";
-import { ProviderRegistry } from "./providers/runtime.ts";
-import { classifyFailure } from "./quota.ts";
+import { LimitLedger } from "./limits/ledger.ts";
+import { QuotaEngine } from "./limits/quota-engine.ts";
+import { buildQuotaReport } from "./limits/quota-report.ts";
+import { estimateTask } from "./limits/routing.ts";
 import { loginProviderAccount } from "./login.ts";
+import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
+import { ModelPoller } from "./models/poller.ts";
+import { ProviderRegistry } from "./providers/runtime.ts";
+import { loadProviderConfig } from "./providers/schema.ts";
+import { classifyFailure } from "./quota.ts";
 import { redactErrorMessage } from "./redaction.ts";
-import { runCiCli } from "./ci/cli.ts";
-import { plan, validateGraph, type GraphEvent, type RunState } from "./graph/index.ts";
-import { secretsCommand } from "./secrets/cli.ts";
-import { GitHubClient } from "./github/client.ts";
-import { GitHubRepository } from "./github/repository.ts";
 import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
@@ -50,11 +50,11 @@ import type {
 	ModelCapability,
 	RouteResult,
 	RouterInput,
+	TaskSize as RouterTaskSize,
 	TaskKind,
 	TaskNeed,
-	TaskSize as RouterTaskSize,
 } from "./router/types.ts";
-import { runDoctorIdentities } from "./identities/index.ts";
+import { secretsCommand } from "./secrets/cli.ts";
 
 function usage(): string {
 	return [
@@ -65,7 +65,7 @@ function usage(): string {
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
 		"  df providers",
-		"  df models [--provider p] [--account label] [--refresh] [--usable|--stale] [--json]",
+		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
 		"  df account set <account-id> <slot> --type <api_key|header|cookie|other> [--from-vault NAME]  # value from stdin or the vault",
 		"  df account import <antigravity|claude|codex|grok|kimi> --account <label>",
@@ -147,14 +147,18 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 }
 
 export { parseCandidate } from "./harness/routing.ts";
+export { routerModels };
 
 async function providersCommand(registry: ProviderRegistry): Promise<void> {
-	console.log("provider\toauth-login\tsubscription");
-	const providers = providerList(registry).sort((a, b) => a.id.localeCompare(b.id));
-	for (const provider of providers) {
-		console.log(
-			`${provider.id}\t${provider.auth.oauth ? "yes" : "no"}\t${provider.auth.oauth?.isSubscription === true ? "yes" : "no"}`,
-		);
+	console.log("provider\toauth-login\tsubscription\tdata-collection");
+	// Use the raw provider configs to access free/data fields.
+	const entries = registry.entries.filter((e) => e.enabled !== false);
+	const sorted = entries.sort((a, b) => a.id.localeCompare(b.id));
+	for (const entry of sorted) {
+		const collection = entry.free?.data?.collection ?? entry.data?.collection ?? "unknown";
+		const hasOauth = entry.auth.some((a) => a.kind === "oauth");
+		const isSubscription = entry.auth.some((a) => a.kind === "oauth" && (a as any).isSubscription === true);
+		console.log(`${entry.id}\t${hasOauth ? "yes" : "no"}\t${isSubscription ? "yes" : "no"}\t${collection}`);
 	}
 }
 
@@ -443,7 +447,7 @@ async function accountSetCommand(store: FileCredentialStore, args: string[]): Pr
 async function answerPrompt(rl: ReturnType<typeof createInterface>, prompt: AuthPrompt): Promise<string> {
 	if (prompt.type === "select") {
 		console.log(prompt.message);
-		prompt.options.forEach((entry, index) => console.log(`  ${index + 1}. ${entry.label}`));
+		for (const [index, entry] of prompt.options.entries()) console.log(`  ${index + 1}. ${entry.label}`);
 		const selected = prompt.options[Number.parseInt(await rl.question("Selection: "), 10) - 1];
 		if (!selected) throw new Error("Invalid selection");
 		return selected.id;
@@ -553,6 +557,37 @@ function fauxProviders(enabled: boolean): { providers: Provider[]; optional: str
 	return { providers: [handle.provider], optional: ["faux"] };
 }
 
+/**
+ * Reports whether a stored account holds every required credential slot — the same check the runtime enforces before a
+ * run — so the router never offers a candidate that would fail authentication.
+ *
+ * @param store - Credential store to read.
+ * @param provider - Provider id.
+ * @param account - Account label.
+ * @param required - The provider's `requiredCredentialSlots`.
+ * @returns True when the credential exists and every slot is present; false on any read error.
+ */
+async function accountHasSlots(
+	store: FileCredentialStore,
+	provider: string,
+	account: string,
+	required: readonly string[],
+): Promise<boolean> {
+	try {
+		const credential = await store.forAccount(provider, account).read(provider);
+		if (!credential) return false;
+		const record = await store.readAccount(`${provider}:${account}`);
+		return required.every(
+			(slot) =>
+				(slot === "api_key" && credential.type === "api_key") ||
+				(slot === "oauth" && credential.type === "oauth") ||
+				record?.slots[slot] !== undefined,
+		);
+	} catch {
+		return false;
+	}
+}
+
 async function routerModels(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -582,6 +617,26 @@ async function routerModels(
 		accountSets.set(account.provider, accounts);
 	}
 	const accounts = new Map([...accountSets].map(([provider, values]) => [provider, [...values]]));
+	// A provider that requires credentials keeps only the accounts holding every required slot; with none left it leaves the
+	// candidate universe. Providers without required slots and anonymous transports (optional API key with an anonymous
+	// value) stay as declared.
+	const unavailable = new Set<string>();
+	for (const provider of registry.entries) {
+		const required = provider.requiredCredentialSlots ?? [];
+		if (
+			required.length === 0 ||
+			provider.auth.some((auth) => auth.kind === "api_key" && auth.optional && auth.anonymousValue !== undefined)
+		)
+			continue;
+		const usable: string[] = [];
+		for (const account of accounts.get(provider.id) ?? [])
+			if (await accountHasSlots(store, provider.id, account, required)) usable.push(account);
+		if (usable.length > 0) accounts.set(provider.id, usable);
+		else {
+			accounts.delete(provider.id);
+			unavailable.add(provider.id);
+		}
+	}
 	const fauxEnabled = args.includes("--faux") || process.env.DF_FAUX === "1";
 	const faux = fauxProviders(fauxEnabled);
 	const catalog = new ModelCatalog({
@@ -592,9 +647,10 @@ async function routerModels(
 		offline: fauxEnabled || process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
 	});
 	const catalogs = new Map<string, CatalogResult>();
+	const ledger = new LimitLedger(defaultDfHome());
 	await Promise.all(
 		registry.entries
-			.filter((provider) => provider.enabled !== false)
+			.filter((provider) => provider.enabled !== false && !unavailable.has(provider.id))
 			.map(async (provider) => {
 				const account = accounts.get(provider.id)?.[0] ?? "default";
 				if (provider.models.list && !provider.auth.some((auth) => auth.kind === "api_key" && auth.optional)) {
@@ -608,14 +664,24 @@ async function routerModels(
 					if (!credential && !knownAccount) return;
 				}
 				try {
-					catalogs.set(provider.id, await catalog.get(provider.id, { account }));
+					const result = await catalog.get(provider.id, { account });
+					// The poller decides what is usable from that listing: text-generation models only, free models on
+					// free tiers, minus routing.exclude and learned unavailability from the limit ledger (D3).
+					const poller = new ModelPoller({
+						catalog: { get: async () => result } as unknown as ModelCatalog,
+						providers: [provider],
+						accounts,
+						ledger,
+					});
+					const { usable } = await poller.poll(provider.id, account);
+					catalogs.set(provider.id, { ...result, models: usable });
 				} catch {
 					/* static declarations remain the offline fallback */
 				}
 			}),
 	);
 	const models = buildRouterCatalog({
-		providers: registry.entries,
+		providers: registry.entries.filter((provider) => !unavailable.has(provider.id)),
 		catalogs,
 		accounts,
 		overrides: config.router?.models,
@@ -630,6 +696,7 @@ async function routerModels(
 			quality: {},
 			limitTier: "standard",
 			source: "builtin",
+			collection: "none" as const,
 		});
 	return models;
 }

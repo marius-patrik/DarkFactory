@@ -12,7 +12,16 @@ export type ProviderDialect =
 	| "cloudcode-agent";
 export type FailureRuleKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
 export type ModelTier = "tight" | "standard" | "bulk";
-export type ConfiguredLimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth";
+export type ConfiguredLimitType =
+	| "rate"
+	| "daily"
+	| "window"
+	| "monthly"
+	| "overload"
+	| "auth"
+	| "billing"
+	| "access"
+	| "model";
 
 export interface ValueReference {
 	value?: string;
@@ -97,6 +106,7 @@ export interface FreeTierConfig {
 	notes?: string;
 	sourceUrl?: string;
 	checkedAt?: string;
+	data?: DataConfig;
 }
 export interface LimitBodyRuleConfig {
 	type: ConfiguredLimitType;
@@ -105,6 +115,8 @@ export interface LimitBodyRuleConfig {
 	resetAfterMs?: number;
 	dimension?: "requests" | "tokens" | "usage";
 	pool?: string;
+	status?: number;
+	answerText?: boolean;
 }
 export interface LimitPolicyConfig {
 	observe: boolean;
@@ -113,9 +125,14 @@ export interface LimitPolicyConfig {
 	defaults?: LimitDefaultConfig[];
 	declared?: DeclaredLimitConfig[];
 	bodyRules?: LimitBodyRuleConfig[];
+	recheckAfterMs?: number;
 	probe?: { enabled?: boolean; method?: "GET" | "POST"; path: string };
 	/** When the provider's daily quotas roll over; defaults to UTC midnight. */
 	dailyReset?: "utc-midnight" | "pacific-midnight";
+	/** How long before a model limit is rechecked; defaults to 24 hours. */
+	modelRecheckAfterMs?: number;
+	/** How long a rejected credential (401/403) keeps the account unavailable unless its credentials change; default 24 h. */
+	accessRecheckAfterMs?: number;
 }
 export interface ModelListConfig {
 	path: string;
@@ -144,6 +161,21 @@ export interface FailureRuleConfig {
 	regex?: string;
 	reset?: ResetSourceConfig[];
 	pool?: string;
+}
+/** Optional data‑collection configuration for a provider. */
+export interface DataConfig {
+	/** How the provider's data is used. */
+	collection: "none" | "logging" | "training" | "unknown";
+	/** Optional retention period in days. */
+	retentionDays?: number;
+	/** Source description for the data. */
+	source: string;
+	/** Optional HTTPS URL to the source of the data. */
+	sourceUrl?: string;
+	/** When the data source was last checked (ISO date). */
+	checkedAt: string;
+	/** Optional free‑form note. */
+	note?: string;
 }
 export interface ImporterConfig {
 	id: string;
@@ -174,6 +206,12 @@ export interface LoginHydrationConfig {
 	stripPrefix?: string;
 }
 export interface ProviderConfig {
+	routing?: {
+		/** If false, this provider is excluded from automatic routing. */
+		enabled?: boolean;
+		/** Glob patterns of model IDs to exclude from automatic routing. */
+		exclude?: string[];
+	};
 	id: string;
 	name: string;
 	enabled?: boolean;
@@ -187,12 +225,13 @@ export interface ProviderConfig {
 	models: { static: StaticModelConfig[]; list?: ModelListConfig };
 	quota?: { rules: FailureRuleConfig[] };
 	limits?: LimitPolicyConfig;
+	/** Optional data‑collection configuration for the provider. */
+	data?: DataConfig;
 	capabilities: { tools: boolean; reasoning: boolean; images: boolean };
 	importers?: ImporterConfig[];
 	request?: { path?: string; projectSlot?: string };
 	login?: { hydration?: LoginHydrationConfig[] };
 	replay?: { foreignToolCallThoughtSignature?: string };
-	routing?: { exclude?: string[] };
 	free?: FreeTierConfig;
 }
 export interface ProviderConfigFile {
@@ -280,15 +319,6 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 		if (replay.foreignToolCallThoughtSignature !== undefined)
 			text(replay.foreignToolCallThoughtSignature, `provider ${id} foreign tool-call thought signature`);
 	}
-	if (entry.routing !== undefined) {
-		const routing = object(entry.routing, `provider ${id} routing`);
-		if (routing.exclude !== undefined) {
-			if (!Array.isArray(routing.exclude)) throw new Error(`Provider ${id} routing.exclude must be an array`);
-			for (const pattern of routing.exclude)
-				if (typeof pattern !== "string" || !pattern.trim())
-					throw new Error(`Provider ${id} routing.exclude entries must be non-empty strings`);
-		}
-	}
 	if (entry.free !== undefined) {
 		const free = object(entry.free, `provider ${id} free`);
 		if (!["permanent", "renewable-credits", "trial-credits", "anonymous"].includes(String(free.kind)))
@@ -305,6 +335,39 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			(typeof free.checkedAt !== "string" || Number.isNaN(Date.parse(free.checkedAt)))
 		)
 			throw new Error(`Provider ${id} free.checkedAt must be an ISO date`);
+	}
+	if (entry.routing !== undefined) {
+		const routing = object(entry.routing, `provider ${id} routing`);
+		if (routing.enabled !== undefined && typeof routing.enabled !== "boolean")
+			throw new Error(`Provider ${id} routing.enabled must be a boolean`);
+		if (routing.exclude !== undefined) {
+			if (!Array.isArray(routing.exclude) || routing.exclude.some((g) => typeof g !== "string" || !g.trim()))
+				throw new Error(`Provider ${id} routing.exclude must be an array of non-empty model id globs`);
+		}
+	}
+	if (entry.free !== undefined && (entry.free as Record<string, unknown>).data !== undefined) {
+		const free = object(entry.free as unknown, `provider ${id} free`);
+		const freeData = object(free.data as unknown, `provider ${id} free.data`);
+		const collection = text(freeData.collection, `provider ${id} free.data.collection`);
+		if (!["none", "logging", "training", "unknown"].includes(collection))
+			throw new Error(`provider ${id} free.data.collection must be one of none, logging, training, unknown`);
+		if (freeData.retentionDays !== undefined) {
+			if (
+				typeof freeData.retentionDays !== "number" ||
+				!Number.isInteger(freeData.retentionDays) ||
+				freeData.retentionDays < 0
+			)
+				throw new Error(`provider ${id} free.data.retentionDays must be a non-negative integer`);
+		}
+		text(freeData.source, `provider ${id} free.data.source`);
+		if (freeData.sourceUrl !== undefined) {
+			if (typeof freeData.sourceUrl !== "string" || !/^https:\/\//u.test(freeData.sourceUrl))
+				throw new Error(`provider ${id} free.data.sourceUrl must be an https URL`);
+		}
+		if (typeof freeData.checkedAt !== "string" || Number.isNaN(Date.parse(freeData.checkedAt)))
+			throw new Error(`provider ${id} free.data.checkedAt must be an ISO date`);
+		if (freeData.note !== undefined && typeof freeData.note !== "string")
+			throw new Error(`provider ${id} free.data.note must be a string`);
 	}
 	if (entry.login !== undefined) {
 		const login = object(entry.login, `provider ${id} login`);
@@ -404,7 +467,11 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			if (!Array.isArray(limits.bodyRules)) throw new Error(`Provider ${id} limits.bodyRules must be an array`);
 			for (const rawRule of limits.bodyRules) {
 				const rule = object(rawRule, `provider ${id} limit body rule`);
-				if (!["rate", "daily", "window", "monthly", "overload", "auth"].includes(String(rule.type)))
+				if (
+					!["rate", "daily", "window", "monthly", "overload", "auth", "billing", "access", "model"].includes(
+						String(rule.type),
+					)
+				)
 					throw new Error(`Provider ${id} limit body rule has invalid type`);
 				const regex = text(rule.regex, `provider ${id} limit body regex`);
 				try {
@@ -414,6 +481,13 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 				}
 				if (rule.resetAfterMs !== undefined && (typeof rule.resetAfterMs !== "number" || rule.resetAfterMs <= 0))
 					throw new Error(`Provider ${id} limit body resetAfterMs must be positive`);
+				if (
+					rule.status !== undefined &&
+					(typeof rule.status !== "number" || !Number.isFinite(rule.status) || rule.status < 0)
+				)
+					throw new Error(`Provider ${id} limit body status must be a non‑negative finite number`);
+				if (rule.answerText !== undefined && typeof rule.answerText !== "boolean")
+					throw new Error(`Provider ${id} limit body answerText must be boolean`);
 			}
 		}
 		if (limits.probe !== undefined) {
@@ -424,6 +498,40 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			if (probe.method !== undefined && probe.method !== "GET" && probe.method !== "POST")
 				throw new Error(`Provider ${id} limits.probe.method is invalid`);
 		}
+		if (
+			limits.recheckAfterMs !== undefined &&
+			(typeof limits.recheckAfterMs !== "number" || limits.recheckAfterMs <= 0)
+		)
+			throw new Error(`Provider ${id} limits.recheckAfterMs must be positive`);
+		if (
+			limits.accessRecheckAfterMs !== undefined &&
+			(typeof limits.accessRecheckAfterMs !== "number" || limits.accessRecheckAfterMs <= 0)
+		)
+			throw new Error(`Provider ${id} limits.accessRecheckAfterMs must be positive`);
+		if (
+			limits.modelRecheckAfterMs !== undefined &&
+			(typeof limits.modelRecheckAfterMs !== "number" || limits.modelRecheckAfterMs <= 0)
+		)
+			throw new Error(`Provider ${id} limits.modelRecheckAfterMs must be positive`);
+	}
+	if (entry.data !== undefined) {
+		const data = object(entry.data, `provider ${id} data`);
+		const collection = text(data.collection, `provider ${id} data.collection`);
+		if (!["none", "logging", "training", "unknown"].includes(collection))
+			throw new Error(`provider ${id} data.collection must be one of none, logging, training, unknown`);
+		if (data.retentionDays !== undefined) {
+			if (typeof data.retentionDays !== "number" || !Number.isInteger(data.retentionDays) || data.retentionDays < 0)
+				throw new Error(`provider ${id} data.retentionDays must be a non-negative integer`);
+		}
+		text(data.source, `provider ${id} data.source`);
+		if (data.sourceUrl !== undefined) {
+			if (typeof data.sourceUrl !== "string" || !/^https:\/\//u.test(data.sourceUrl))
+				throw new Error(`provider ${id} data.sourceUrl must be an https URL`);
+		}
+		if (typeof data.checkedAt !== "string" || Number.isNaN(Date.parse(data.checkedAt)))
+			throw new Error(`provider ${id} data.checkedAt must be an ISO date`);
+		if (data.note !== undefined && typeof data.note !== "string")
+			throw new Error(`provider ${id} data.note must be a string`);
 	}
 	object(entry.capabilities, `provider ${id} capabilities`);
 	return entry as unknown as ProviderConfig;

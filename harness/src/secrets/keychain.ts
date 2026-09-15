@@ -1,10 +1,14 @@
-import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const SERVICE = "df-vault";
 const ACCOUNT = "vault-key";
 
-export type CommandRunner = (cmd: string, args: string[], stdin?: string) => Promise<{ stdout: string; exitCode: number }>;
+export type CommandRunner = (
+	cmd: string,
+	args: string[],
+	stdin?: string,
+) => Promise<{ stdout: string; exitCode: number }>;
 
 export interface KeychainOptions {
 	dfHome: string;
@@ -15,7 +19,11 @@ export interface KeychainOptions {
 
 const fileKeyPath = (home: string) => join(home, "vault.key");
 
-async function defaultRunner(cmd: string, args: string[], stdin?: string): Promise<{ stdout: string; exitCode: number }> {
+async function defaultRunner(
+	cmd: string,
+	args: string[],
+	stdin?: string,
+): Promise<{ stdout: string; exitCode: number }> {
 	if (stdin !== undefined) {
 		const proc = Bun.spawn([cmd, ...args], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
 		proc.stdin.write(stdin);
@@ -41,7 +49,16 @@ function getPlatform(options: KeychainOptions): string {
 // macOS
 async function storeMac(key: string, runner: CommandRunner): Promise<void> {
 	await runner("security", ["delete-generic-password", "-s", SERVICE, "-a", ACCOUNT]);
-	const { exitCode } = await runner("security", ["add-generic-password", "-s", SERVICE, "-a", ACCOUNT, "-w", key, "-U"]);
+	const { exitCode } = await runner("security", [
+		"add-generic-password",
+		"-s",
+		SERVICE,
+		"-a",
+		ACCOUNT,
+		"-w",
+		key,
+		"-U",
+	]);
 	if (exitCode !== 0) throw new Error("Failed to store vault key in macOS Keychain");
 }
 
@@ -56,7 +73,11 @@ async function deleteMac(runner: CommandRunner): Promise<void> {
 
 // Linux
 async function storeLinux(key: string, runner: CommandRunner): Promise<void> {
-	const { exitCode } = await runner("secret-tool", ["store", "--label", SERVICE, "service", SERVICE, "account", ACCOUNT], key);
+	const { exitCode } = await runner(
+		"secret-tool",
+		["store", "--label", SERVICE, "service", SERVICE, "account", ACCOUNT],
+		key,
+	);
 	if (exitCode !== 0) throw new Error("Failed to store vault key via secret-tool");
 }
 
@@ -139,10 +160,19 @@ export async function storeVaultKey(keyBase64: string, options: KeychainOptions)
 	const platform = getPlatform(options);
 	const runner = getRunner(options);
 	try {
-		if (platform === "darwin") { await storeMac(keyBase64, runner); return; }
-		if (platform === "win32") { await storeWindows(keyBase64, runner); return; }
-		if (platform === "linux") { await storeLinux(keyBase64, runner); return; }
-	} catch (error) {
+		if (platform === "darwin") {
+			await storeMac(keyBase64, runner);
+			return;
+		}
+		if (platform === "win32") {
+			await storeWindows(keyBase64, runner);
+			return;
+		}
+		if (platform === "linux") {
+			await storeLinux(keyBase64, runner);
+			return;
+		}
+	} catch {
 		if (!options.allowFileKey) {
 			throw new Error("OS keychain unavailable. Use --insecure-file-key to allow file-based key storage.");
 		}
@@ -161,7 +191,9 @@ export async function loadVaultKey(options: KeychainOptions): Promise<string | u
 		else if (platform === "win32") key = await loadWindows(runner);
 		else if (platform === "linux") key = await loadLinux(runner);
 		if (key) return key;
-	} catch { /* fall through to file */ }
+	} catch {
+		/* fall through to file */
+	}
 	if (options.allowFileKey) return loadFile(options.dfHome);
 	return undefined;
 }
@@ -173,6 +205,8 @@ export async function deleteVaultKey(options: KeychainOptions): Promise<void> {
 		if (platform === "darwin") await deleteMac(runner);
 		else if (platform === "win32") await deleteWindows(runner);
 		else if (platform === "linux") await deleteLinux(runner);
-	} catch { /* ignore */ }
+	} catch {
+		/* ignore */
+	}
 	await deleteFile(options.dfHome).catch(() => undefined);
 }

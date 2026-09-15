@@ -1,12 +1,10 @@
 import type { Candidate } from "../failover.ts";
-import type { QuotaEngine } from "../limits/quota-engine.ts";
-import type { ModelPoller } from "../models/poller.ts";
-
 import { parseChain } from "../harness/routing.ts";
-import { assessCandidate, estimateTask } from "../limits/routing.ts";
 import type { LimitLedger } from "../limits/ledger.ts";
-import { classifyTask, type CheapClassifier } from "./profile.ts";
+import type { QuotaEngine } from "../limits/quota-engine.ts";
+import { assessCandidate, estimateTask } from "../limits/routing.ts";
 import type { OutcomeStore } from "./outcomes.ts";
+import { type CheapClassifier, classifyTask } from "./profile.ts";
 import type {
 	ModelCapability,
 	RankedCandidate,
@@ -24,7 +22,6 @@ const DEFAULT_TIER_ORDER = {
 	medium: ["standard", "bulk", "tight"],
 	large: ["bulk", "standard", "tight"],
 } as const;
-type Poller = ModelPoller & { getUsableModels?: (providerId: string, account?: string) => Promise<ModelCapability[]> };
 
 function matches(policy: RouterPolicy, profile: TaskProfile): boolean {
 	const match = policy.match;
@@ -49,7 +46,6 @@ export interface RouteDependencies {
 	quota?: QuotaEngine;
 	config: RouterConfig;
 	models: readonly ModelCapability[];
-	modelPoller?: Poller;
 	ledger?: LimitLedger;
 	outcomes?: OutcomeStore;
 	sensitiveChain?: string;
@@ -64,8 +60,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	const explicit = input.explicitChain ?? input.explicitModel;
 	const graph = input.node?.chain ?? input.node?.model;
 	const constrained = profile.sensitivity === "sensitive" ? dependencies.sensitiveChain : undefined;
-	if (profile.sensitivity === "sensitive" && !constrained && !explicit && !graph)
-		throw new Error("Sensitive task requires sensitiveChain");
+
 	const hard =
 		input.reasoning === "hard" || input.node?.reasoning === "hard" ? dependencies.hardReasoningChain : undefined;
 	const source: RouteResult["source"] = explicit
@@ -90,27 +85,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		: (policy?.prefer.candidates?.map((entry) => parseChain(entry)[0]!) ??
 			dependencies.config.candidates?.map((entry) => parseChain(entry)[0]!) ??
 			(useGenerationCatalog ? [] : dependencies.defaultChain ? parseChain(dependencies.defaultChain) : []));
-	let availableModels = dependencies.models;
-	if (dependencies.modelPoller?.getUsableModels) {
-		try {
-			const scopes = [
-				...new Map(
-					dependencies.models.map((model) => [
-						`${model.candidate.provider}@${model.candidate.account ?? "default"}`,
-						model.candidate,
-					]),
-				).values(),
-			];
-			availableModels = (
-				await Promise.all(
-					scopes.map((candidate) => dependencies.modelPoller!.getUsableModels!(candidate.provider, candidate.account)),
-				)
-			).flat();
-		} catch {
-			availableModels = dependencies.models;
-		}
-	}
-	const byKey = new Map(availableModels.map((model) => [candidateKey(model.candidate), model]));
+	const byKey = new Map(dependencies.models.map((model) => [candidateKey(model.candidate), model]));
 	const universe: ModelCapability[] =
 		forced || preferred.length > 0
 			? preferred.map(
@@ -125,7 +100,37 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 							limitTier: "standard",
 						},
 				)
-			: [...availableModels];
+			: [...dependencies.models];
+	// Apply data‑collection policy filtering
+	const allowedCollections =
+		profile.sensitivity === "sensitive"
+			? (dependencies.config.dataCollection?.sensitive ?? ["none"])
+			: (dependencies.config.dataCollection?.normal ?? ["none", "logging", "training", "unknown"]);
+	// Reject disallowed providers in explicit chains for sensitive tasks
+	if (forced) {
+		const forcedCandidates = parseChain(forced);
+		for (const cand of forcedCandidates) {
+			const cap = byKey.get(candidateKey(cand));
+			const collection = cap?.collection ?? "unknown";
+			if (!allowedCollections.includes(collection)) {
+				throw new Error(
+					`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections.map((c) => `"${c}"`).join(", ")} (configure router.dataCollection.${profile.sensitivity === "sensitive" ? "sensitive" : "normal"} or provider data.collection)`,
+				);
+			}
+		}
+	}
+	const filtered = universe.filter((m) => allowedCollections.includes(m.collection ?? "unknown"));
+	// Only the derived universe can be empty for lack of configuration; an explicit chain or graph node names its models.
+	if (!forced && dependencies.models.length === 0) {
+		throw new Error(
+			"No usable model: add an account for a configured provider (df account set <provider>:<label> <slot> --type api_key), enable an anonymous provider, or check routing.enabled/routing.exclude in the provider config",
+		);
+	}
+	if (filtered.length === 0) {
+		throw new Error(
+			`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections.map((c) => `"${c}"`).join(", ")} (configure router.dataCollection.${profile.sensitivity === "sensitive" ? "sensitive" : "normal"} or provider data.collection)`,
+		);
+	}
 	const penalties =
 		dependencies.outcomes && dependencies.config.learning?.enabled !== false
 			? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.())
@@ -133,7 +138,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	const preference = new Map(preferred.map((candidate, index) => [candidateKey(candidate), index]));
 	const tierOrder = policy?.prefer.tiers ?? [...DEFAULT_TIER_ORDER[profile.size]];
 	const forcedOrder = !!forced || !!policy?.prefer.candidates;
-	const scored = universe
+	const scored = filtered
 		.map((model, index) => {
 			const preferredIndex = preference.get(candidateKey(model.candidate));
 			const tierIndex = tierOrder.indexOf(model.limitTier);
@@ -168,10 +173,12 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 				const verdict = assessCandidate(item.model.candidate, estimate, entries, item.model);
 				if (!verdict.eligible) skip = verdict.reason ?? "limited";
 			}
-			let quotaStatus;
+			let quotaStatus: Awaited<ReturnType<NonNullable<typeof dependencies.quota>["status"]>> | undefined;
 			if (dependencies.quota) {
 				quotaStatus = await dependencies.quota.status(item.model.candidate, now);
-				if (quotaStatus.state === "exhausted") {
+				if (quotaStatus.state === "unavailable") {
+					skip = `unavailable (${quotaStatus.reason}) until ${new Date(quotaStatus.until!).toISOString()}`;
+				} else if (quotaStatus.state === "exhausted") {
 					skip = "quota exhausted until " + new Date(quotaStatus.until!).toISOString();
 				} else if (quotaStatus.state === "waiting") {
 					if (!isForced) item.score += 50;

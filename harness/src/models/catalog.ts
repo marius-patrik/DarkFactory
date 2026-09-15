@@ -1,9 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { replaceFile } from "../storage/replace-file.ts";
 import { dirname, join } from "node:path";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
-import { FileCredentialStore, defaultDfHome } from "../credentials.ts";
+import { defaultDfHome, FileCredentialStore } from "../credentials.ts";
 import type { ModelListConfig, ProviderConfig } from "../providers/schema.ts";
+import { replaceFile } from "../storage/replace-file.ts";
 
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
@@ -154,11 +154,13 @@ function pathValues(value: unknown, path: string): Array<{ key?: string; value: 
 		const next: Array<{ key?: string; value: unknown }> = [];
 		for (const item of current) {
 			if (part === "*" && Array.isArray(item.value))
-				item.value.forEach((entry, key) => next.push({ key: String(key), value: entry }));
+				item.value.forEach((entry, key) => {
+					next.push({ key: String(key), value: entry });
+				});
 			else if (part === "*" && item.value && typeof item.value === "object")
-				Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) =>
-					next.push({ key, value: entry }),
-				);
+				Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) => {
+					next.push({ key, value: entry });
+				});
 			else if (item.value && typeof item.value === "object" && part in item.value)
 				next.push({ key: item.key, value: (item.value as Record<string, unknown>)[part] });
 		}
@@ -359,7 +361,7 @@ export class ModelCatalog {
 		const extras = account ? await this.store.requestHeaders(provider.id, account) : {};
 		const auth = authParts(credential, config);
 		const headers = mergeHeaders(config.staticHeaders ?? {}, auth.headers, extras);
-		let bodyObject = mapping.body ? structuredClone(mapping.body) : undefined;
+		const bodyObject = mapping.body ? structuredClone(mapping.body) : undefined;
 		if (bodyObject)
 			for (const [key, value] of Object.entries(bodyObject)) {
 				if (typeof value === "string" && value.startsWith("$slot:")) {
