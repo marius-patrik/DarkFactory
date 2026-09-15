@@ -88,7 +88,8 @@ def test_harness_job_runs_all_bun_gates_from_the_harness_directory():
     block = content.split("\n  harness:", 1)[1].split("\n  docs:", 1)[0]
 
     assert "uses: oven-sh/setup-bun@v2" in block
-    assert block.count("working-directory: harness") == 4
+    assert block.count("working-directory: harness") == 5
+    assert "biome ci --changed" in block
     for command in (
         "bun install --frozen-lockfile",
         "bun run typecheck",

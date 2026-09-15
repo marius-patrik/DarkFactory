@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { FileCredentialStore, accountId, validateAccountRecord } from "../src/credentials.ts";
+import { accountId, FileCredentialStore, validateAccountRecord } from "../src/credentials.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
 import { importCodexAccount } from "../src/import/codex.ts";
-import type { ProviderConfig } from "../src/providers/schema.ts";
 
 const roots: string[] = [];
 
@@ -26,17 +25,18 @@ function oauth(refresh: string, access: string): OAuthCredential {
 describe("FileCredentialStore", () => {
 	test("cross-process writers preserve every credential account", async () => {
 		const root = await temporaryHome();
-		const workers = Array.from({ length: 12 }, (_, index) => Bun.spawn([
-			process.execPath,
-			join(import.meta.dir, "fixtures", "store-writer.ts"),
-			"credentials",
-			root,
-			String(index),
-		], { stdout: "pipe", stderr: "pipe" }));
-		const results = await Promise.all(workers.map(async (worker) => ({
-			exit: await worker.exited,
-			stderr: await new Response(worker.stderr).text(),
-		})));
+		const workers = Array.from({ length: 12 }, (_, index) =>
+			Bun.spawn(
+				[process.execPath, join(import.meta.dir, "fixtures", "store-writer.ts"), "credentials", root, String(index)],
+				{ stdout: "pipe", stderr: "pipe" },
+			),
+		);
+		const results = await Promise.all(
+			workers.map(async (worker) => ({
+				exit: await worker.exited,
+				stderr: await new Response(worker.stderr).text(),
+			})),
+		);
 		expect(results).toEqual(Array.from({ length: 12 }, () => ({ exit: 0, stderr: "" })));
 		expect(await new FileCredentialStore(root).listAccounts()).toHaveLength(12);
 	});
@@ -54,10 +54,19 @@ describe("FileCredentialStore", () => {
 	test("models accounts as named, typed multi-slot records", async () => {
 		const store = new FileCredentialStore(await temporaryHome());
 		await store.setSlot(accountId("google-antigravity", "work"), "oauth", oauth("refresh-work", "access-work"));
-		await store.setSlot(accountId("google-antigravity", "work"), "x-goog-user-project", { type: "header", value: "project-work" });
+		await store.setSlot(accountId("google-antigravity", "work"), "x-goog-user-project", {
+			type: "header",
+			value: "project-work",
+		});
 		await store.setSlot(accountId("api-provider", "team"), "api_key", { type: "api_key", value: "test-key" });
-		await store.setSlot(accountId("api-provider", "team"), "OpenAI-Organization", { type: "header", value: "org-test" });
-		await store.setSlot(accountId("web-subscription", "personal"), "session", { type: "cookie", value: "session=test" });
+		await store.setSlot(accountId("api-provider", "team"), "OpenAI-Organization", {
+			type: "header",
+			value: "org-test",
+		});
+		await store.setSlot(accountId("web-subscription", "personal"), "session", {
+			type: "cookie",
+			value: "session=test",
+		});
 		await store.setSlot(accountId("web-subscription", "personal"), "bearer", { type: "other", value: "test-bearer" });
 
 		const accounts = await store.listAccounts();
@@ -69,7 +78,10 @@ describe("FileCredentialStore", () => {
 		expect(await store.requestHeaders("google-antigravity", "work")).toEqual({ "x-goog-user-project": "project-work" });
 		expect(await store.requestHeaders("api-provider", "team")).toEqual({ "OpenAI-Organization": "org-test" });
 		expect(await store.requestHeaders("web-subscription", "personal")).toEqual({ Cookie: "session=test" });
-		expect(await store.forAccount("api-provider", "team").read("api-provider")).toEqual({ type: "api_key", key: "test-key" });
+		expect(await store.forAccount("api-provider", "team").read("api-provider")).toEqual({
+			type: "api_key",
+			key: "test-key",
+		});
 		expect(await store.forAccount("web-subscription", "personal").read("web-subscription")).toBeUndefined();
 	});
 
@@ -88,7 +100,11 @@ describe("FileCredentialStore", () => {
 					oauth: {
 						name: "test oauth",
 						login: async () => oauth("unused", "unused"),
-						refresh: async (credential) => ({ ...credential, access: `new-${credential.refresh}`, expires: Date.now() + 3_600_000 }),
+						refresh: async (credential) => ({
+							...credential,
+							access: `new-${credential.refresh}`,
+							expires: Date.now() + 3_600_000,
+						}),
 						toAuth: async (credential) => ({ apiKey: credential.access }),
 					},
 				},
@@ -104,10 +120,19 @@ describe("FileCredentialStore", () => {
 		]);
 		expect(work?.auth.apiKey).toBe("new-refresh-work");
 		expect(personal?.auth.apiKey).toBe("new-refresh-personal");
-		expect(await store.getSlot("same-provider", "work", "oauth")).toMatchObject({ type: "oauth", access: "new-refresh-work" });
-		expect(await store.getSlot("same-provider", "personal", "oauth")).toMatchObject({ type: "oauth", access: "new-refresh-personal" });
+		expect(await store.getSlot("same-provider", "work", "oauth")).toMatchObject({
+			type: "oauth",
+			access: "new-refresh-work",
+		});
+		expect(await store.getSlot("same-provider", "personal", "oauth")).toMatchObject({
+			type: "oauth",
+			access: "new-refresh-personal",
+		});
 		expect(await store.getSlot("same-provider", "work", "x-account")).toEqual({ type: "header", value: "work" });
-		expect(await store.getSlot("same-provider", "personal", "x-account")).toEqual({ type: "header", value: "personal" });
+		expect(await store.getSlot("same-provider", "personal", "x-account")).toEqual({
+			type: "header",
+			value: "personal",
+		});
 	});
 
 	test("malformed storage fails without echoing secret input", async () => {
@@ -117,9 +142,9 @@ describe("FileCredentialStore", () => {
 		await expect(new FileCredentialStore(home).listAccounts()).rejects.toThrow("Invalid credentials file JSON");
 	});
 
-function testJwt(payload: Record<string, unknown>): string {
-	return `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.`;
-}
+	function testJwt(payload: Record<string, unknown>): string {
+		return `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.`;
+	}
 
 	test("import creates a df-owned account and later refreshes never touch the source file", async () => {
 		const root = await temporaryHome();
@@ -139,9 +164,16 @@ function testJwt(payload: Record<string, unknown>): string {
 		await writeFile(sourceFile, initialSourceContent, "utf8");
 
 		const store = new FileCredentialStore(join(root, "df"));
-		const reader = { home: sourceDir, read: async (p: string) => {
-			try { return await readFile(join(sourceDir, p), "utf8"); } catch { return undefined; }
-		} };
+		const reader = {
+			home: sourceDir,
+			read: async (p: string) => {
+				try {
+					return await readFile(join(sourceDir, p), "utf8");
+				} catch {
+					return undefined;
+				}
+			},
+		};
 		await importCodexAccount(store, "work", reader, "openai-codex", "openai");
 
 		const imported = await store.readAccount("openai-codex:work");
@@ -280,10 +312,26 @@ function testJwt(payload: Record<string, unknown>): string {
 		expect(() => validateAccountRecord(null, "p:l")).toThrow("must be an object");
 		expect(() => validateAccountRecord([1, 2], "p:l")).toThrow("must be an object");
 		expect(() => validateAccountRecord({}, "p:l")).toThrow("must contain at least one valid credential slot");
-		expect(() => validateAccountRecord({ slots: {} }, "p:l")).toThrow("must contain at least one valid credential slot");
-		expect(() => validateAccountRecord({ slots: { oauth: { type: "oauth", access: "" } } }, "p:l")).toThrow("Invalid credential slot");
-		expect(() => validateAccountRecord({ slots: { oauth: { type: "oauth", access: "a", refresh: "r", expires: "not-a-number" } } }, "p:l")).toThrow("Invalid credential slot");
-		expect(() => validateAccountRecord({ slots: { api_key: { type: "api_key", value: "" } } }, "p:l")).toThrow("Invalid credential slot");
-		expect(() => validateAccountRecord({ provider: "other", label: "l", slots: { api_key: { type: "api_key", value: "key" } } }, "p:l")).toThrow("does not match");
+		expect(() => validateAccountRecord({ slots: {} }, "p:l")).toThrow(
+			"must contain at least one valid credential slot",
+		);
+		expect(() => validateAccountRecord({ slots: { oauth: { type: "oauth", access: "" } } }, "p:l")).toThrow(
+			"Invalid credential slot",
+		);
+		expect(() =>
+			validateAccountRecord(
+				{ slots: { oauth: { type: "oauth", access: "a", refresh: "r", expires: "not-a-number" } } },
+				"p:l",
+			),
+		).toThrow("Invalid credential slot");
+		expect(() => validateAccountRecord({ slots: { api_key: { type: "api_key", value: "" } } }, "p:l")).toThrow(
+			"Invalid credential slot",
+		);
+		expect(() =>
+			validateAccountRecord(
+				{ provider: "other", label: "l", slots: { api_key: { type: "api_key", value: "key" } } },
+				"p:l",
+			),
+		).toThrow("does not match");
 	});
 });

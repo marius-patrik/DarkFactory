@@ -97,6 +97,20 @@ jobs:
         if: hashFiles('package.json') != ''
         run: npm run --if-present format
 
+      - name: Setup Bun for harness
+        if: hashFiles('harness/biome.json') != ''
+        uses: oven-sh/setup-bun@v2
+
+      - name: Format harness
+        # Only files this branch changed against the default branch: the one-time full reformat lands as its own pull
+        # request (plans/repository-truth.md Q1), so formatting every file here would conflict with every open branch.
+        if: hashFiles('harness/biome.json') != ''
+        working-directory: harness
+        run: |
+          bun install --frozen-lockfile
+          git fetch --no-tags origin "${{ github.event.repository.default_branch }}"
+          bun x biome check --write --changed --since="origin/${{ github.event.repository.default_branch }}" --no-errors-on-unmatched .
+
       - name: Commit and push formatting changes
         run: |
           # Tracked files only, and never submodules. `git add -A` staged the `.pipeline` gitlink
