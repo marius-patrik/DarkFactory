@@ -1,5 +1,0 @@
-{"type":"session","version":3,"id":"01a0a457-1540-7575-906b-ed1a21bec7d1","timestamp":"2026-09-15T09:12:45.632Z","cwd":"C:\\Users\\patrik\\df-rework\\lanes\\work\\F25-router-capacity\\repo\\.harness-test-Zv0No9\\workspace"}
-{"type":"model_change","id":"44676bd5","parentId":null,"timestamp":"2026-09-15T09:12:45.632Z","provider":"fatal-one","modelId":"model"}
-{"type":"thinking_level_change","id":"8fcd0ee1","parentId":"44676bd5","timestamp":"2026-09-15T09:12:45.632Z","thinkingLevel":"off"}
-{"type":"message","id":"9499049d","parentId":"8fcd0ee1","timestamp":"2026-09-15T09:12:45.681Z","message":{"role":"user","content":[{"type":"text","text":"go"}],"timestamp":1789463565681}}
-{"type":"message","id":"37712fa3","parentId":"9499049d","timestamp":"2026-09-15T09:12:45.682Z","message":{"role":"assistant","content":[],"api":"faux:1789463565621:ve2m2rh3lfc","provider":"fatal-one","model":"model","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"error","errorMessage":"bad request api_key=hidden","timestamp":1789463565682}}

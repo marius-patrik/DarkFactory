@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { Candidate } from "../src/failover.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
+import { QuotaEngine } from "../src/limits/quota-engine.ts";
+import type { DeclaredLimitConfig, ProviderConfig } from "../src/providers/schema.ts";
 import { classifyTask } from "../src/router/profile.ts";
 import { buildRouterCatalog } from "../src/router/catalog.ts";
 import { OutcomeStore } from "../src/router/outcomes.ts";
@@ -104,5 +106,57 @@ describe("router learning", () => {
 		const routed = await routeTask({ prompt: "Review it" }, { config, models: [first, second], outcomes: store, now: () => 1_000 });
 		expect(routed.chain.map((item) => item.provider)).toEqual(["two", "one"]);
 		expect(routed.ranked[1]?.details.join(" ")).toContain("recent-failure penalty");
+	});
+});
+
+describe("quota-aware ranking", () => {
+	const declared = (id: string, limits: DeclaredLimitConfig[]): ProviderConfig => ({
+		id, name: id, dialect: "openai-completions", baseUrl: `https://${id}.example/v1`,
+		auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }], requiredCredentialSlots: [],
+		models: { static: [{ id: "m" }] }, capabilities: { tools: true, reasoning: false, images: false },
+		limits: { observe: true, declared: limits },
+	});
+	const rpm: DeclaredLimitConfig[] = [{ type: "rate", dimension: "requests", limit: 5, windowMs: 60_000, source: "docs" }];
+	const daily: DeclaredLimitConfig[] = [{ type: "daily", dimension: "requests", limit: 2, windowMs: 86_400_000, reset: "fixed", source: "observed" }];
+	const now = Date.UTC(2026, 8, 15, 12);
+
+	async function engine(configs: ProviderConfig[]): Promise<QuotaEngine> {
+		const home = await mkdtemp(join(process.cwd(), ".harness-test-router-"));
+		temporary.push(home);
+		return new QuotaEngine(home, new LimitLedger(home), new Map(configs.map((config) => [config.id, config])));
+	}
+	const use = (quota: QuotaEngine, provider: string, times: number) => Promise.all(Array.from({ length: times }, (_, i) =>
+		quota.record({ provider, account: "default", model: "m", timestamp: now - 1_000 - i, inputTokens: 1, outputTokens: 1, success: true })));
+
+	test("a policy route prefers the candidate with more remaining capacity", async () => {
+		const quota = await engine([declared("busy", rpm), declared("idle", rpm)]);
+		await use(quota, "busy", 4);
+		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["standard"] } }] };
+		const result = await routeTask({ prompt: "Summarize this" }, { config, models: [candidate("busy", "m", "standard"), candidate("idle", "m", "standard")], quota, now: () => now });
+		expect(result.chain.map((item) => item.provider)).toEqual(["idle", "busy"]);
+		expect(result.ranked[0]!.details).toContain("capacity 100%");
+		expect(result.ranked[1]!.details).toContain("capacity 20%");
+	});
+
+	test("an exhausted candidate is skipped with the time it clears", async () => {
+		const quota = await engine([declared("spent", daily), declared("fresh", daily)]);
+		await use(quota, "spent", 2);
+		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["standard"] } }] };
+		const result = await routeTask({ prompt: "Summarize this" }, { config, models: [candidate("spent", "m", "standard"), candidate("fresh", "m", "standard")], quota, now: () => now });
+		const spent = result.ranked.find((item) => item.candidate.provider === "spent")!;
+		expect(spent.status).toBe("skipped");
+		expect(spent.reason).toBe(`quota exhausted until ${new Date(Date.UTC(2026, 8, 16)).toISOString()}`);
+		expect(result.chain.map((item) => item.provider)).toEqual(["fresh"]);
+	});
+
+	test("an explicit chain keeps its order and only drops exhausted members", async () => {
+		const quota = await engine([declared("first", rpm), declared("second", daily), declared("third", rpm)]);
+		await use(quota, "first", 4);
+		await use(quota, "second", 2);
+		const config: RouterConfig = { policies: [] };
+		const models = [candidate("first", "m", "standard"), candidate("second", "m", "standard"), candidate("third", "m", "standard")];
+		const result = await routeTask({ prompt: "Summarize this", explicitChain: "first/m@default,second/m@default,third/m@default" }, { config, models, quota, now: () => now });
+		expect(result.chain.map((item) => item.provider)).toEqual(["first", "third"]);
+		expect(result.ranked.find((item) => item.candidate.provider === "second")!.status).toBe("skipped");
 	});
 });

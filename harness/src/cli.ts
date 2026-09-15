@@ -382,18 +382,18 @@ async function resolveCliRoute(registry: ProviderRegistry, store: FileCredential
 	const home = defaultDfHome();
 	const learning = config.router?.learning;
 	        const ledger = new LimitLedger(home, { fallbackTtlMs: config.cooldownTtlMs, persist: (candidate) => candidate.provider !== "faux" });
-        const quota = process.env.DF_QUOTA === "off" ? undefined : new QuotaEngine(home, ledger, new Map(registry.entries.map((e) => [e.id, e])));
-        return routeTask(routerInput(args, prompt, config), {
-            config: config.router ?? DEFAULT_ROUTER_CONFIG,
-            models: await routerModels(registry, store, config, args),
-            ledger,
-            outcomes: new OutcomeStore(home, learning),
-            defaultChain: config.defaultChain,
-            sensitiveChain: config.sensitiveChain,
-            hardReasoningChain: config.hardReasoningChain,
-            ...(config.router?.classifier ? { classify: async (ambiguousPrompt: string, classifier: string) => classifyWithCandidate(registry, store, config, args, ambiguousPrompt, classifier) } : {}),
-            quota,
-        });
+		const quota = process.env.DF_QUOTA === "off" ? undefined : new QuotaEngine(home, ledger, new Map(registry.entries.map((e) => [e.id, e])));
+		return routeTask(routerInput(args, prompt, config), {
+			config: config.router ?? DEFAULT_ROUTER_CONFIG,
+			models: await routerModels(registry, store, config, args),
+			ledger,
+			outcomes: new OutcomeStore(home, learning),
+			defaultChain: config.defaultChain,
+			sensitiveChain: config.sensitiveChain,
+			hardReasoningChain: config.hardReasoningChain,
+			...(config.router?.classifier ? { classify: async (ambiguousPrompt: string, classifier: string) => classifyWithCandidate(registry, store, config, args, ambiguousPrompt, classifier) } : {}),
+			quota,
+		});
 }
 
 function parsedTaskKind(value: unknown): TaskKind | undefined {
