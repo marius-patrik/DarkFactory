@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
+import { replaceFile } from "../storage/replace-file";
 import type { WorkflowGraph, RunState } from "./types";
 
 /**
@@ -28,14 +29,31 @@ export async function loadRunState(dir: string, subject: string, graph: Workflow
 
 /**
  * Atomically save a RunState to a JSON file.
- * Writes to a temporary file then renames it to the final location.
+ *
+ * Serializes the state to JSON *before* touching the filesystem, so a
+ * serialization error (e.g. a circular reference) never leaves a temp file
+ * behind. The temp file is then replaced into place via `replaceFile` (which
+ * retries Windows lock errors). If writing or replacing fails, the temp file
+ * is deleted best-effort and the original error is rethrown.
  */
 export async function saveRunState(dir: string, subject: string, state: RunState): Promise<void> {
   const targetPath = join(dir, `${subject}.json`);
   const tmpPath = join(dir, `.tmp-${subject}-${Date.now()}.json`);
+  // Serialize first: a circular object or other stringify error throws here,
+  // before any file is created.
   const json = JSON.stringify(state, null, 2);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(tmpPath, json, { encoding: "utf8" });
-  // Rename (atomic on most platforms). If rename fails, the temp file may remain; we let the caller handle errors.
-  await fs.rename(tmpPath, targetPath);
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(tmpPath, json, { encoding: "utf8" });
+    await replaceFile(tmpPath, targetPath);
+  } catch (error) {
+    // Best-effort cleanup of the temp file; ignore deletion errors so the
+    // original error propagates. This only runs on failure (not on success).
+    try {
+      await fs.rm(tmpPath, { force: true });
+    } catch {
+      /* ignore */
+    }
+    throw error;
+  }
 }
