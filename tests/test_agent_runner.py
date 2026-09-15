@@ -2829,3 +2829,44 @@ class TestPrFeedbackRevision:
         assert ["push", "origin", "HEAD"] not in git_calls
         assert len(comments) == 1 and "### Feedback Fix Error" in comments[0]
         assert expected in comments[0] and "### Feedback addressed" not in comments[0]
+
+
+def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(monkeypatch):
+    """The quota exhaustion notice states the automatic resume time (UTC) and names /df resume."""
+    module = agent_runner_module()
+    posted_comments = []
+    monkeypatch.setattr(module, "save_checkpoint", lambda *a, **k: "checkpoint.json")
+    monkeypatch.setattr(module, "run_git", lambda *a, **k: "")
+    monkeypatch.setattr(
+        module,
+        "run_gh",
+        lambda args, repo=None: posted_comments.append(args) or "",
+    )
+    monkeypatch.setattr(module, "update_project_status_blocked", lambda *a, **k: None)
+    recorded_blocks = []
+    monkeypatch.setenv("GITHUB_RUN_ID", "run-123")
+    monkeypatch.setattr(
+        module,
+        "record_quota_block",
+        lambda repo, item_number, is_pr, reset_at, providers, run_id: recorded_blocks.append(
+            (repo, item_number, is_pr, reset_at, providers, run_id)
+        ),
+    )
+    monkeypatch.setattr(
+        module, "next_quota_reset", lambda detail, now: 1742054400.0
+    )  # 2025-03-15 16:00:00 UTC
+
+    module.checkpoint_and_notify_exhaustion(
+        issue_number=42,
+        repo="owner/repo",
+        error_detail="quota exceeded",
+        branch_name="feature/foo",
+    )
+
+    comment_body = next(
+        args[args.index("--body") + 1] for args in posted_comments if "--body" in args
+    )
+    assert "2025-03-15 16:00:00 UTC" in comment_body
+    assert "/df resume" in comment_body
+    assert len(recorded_blocks) == 1
+    assert recorded_blocks[0][3] == 1742054400.0
