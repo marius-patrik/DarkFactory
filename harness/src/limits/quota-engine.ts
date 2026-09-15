@@ -1,7 +1,8 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Candidate } from "../failover.ts";
 import { withFileLock } from "../storage/file-lock.ts";
+import { replaceFile } from "../storage/replace-file.ts";
 import type { DeclaredLimitConfig, LimitPolicyConfig, ProviderConfig } from "../providers/schema.ts";
 import { nextPacificMidnight } from "../quota.ts";
 import { LimitLedger } from "./ledger.ts";
@@ -156,7 +157,7 @@ export class QuotaEngine {
 			await mkdir(dirname(this.path), { recursive: true });
 			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
 			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
-			await rename(temp, this.path);
+			await replaceFile(temp, this.path);
 		});
 	}
 
