@@ -91,5 +91,8 @@ export async function resolveRouting(config: DfConfig, input: RoutingInput): Pro
 	if ((input.reasoning === "hard" || input.node?.reasoning === "hard") && config.hardReasoningChain) {
 		return { chain: parseChain(config.hardReasoningChain), source: "hard" };
 	}
-	return { chain: parseChain(config.defaultChain), source: "default" };
+	if (config.defaultChain) {
+		return { chain: parseChain(config.defaultChain), source: "default" };
+	}
+	return { chain: [], source: "default" };
 }

@@ -9,7 +9,7 @@ import type { LimitTier, ModelCapabilityOverride, ModelModality, RouterConfig, R
 export const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,google/gemini-3.7-flash@default,google/gemini-3.6-flash@default,google/gemini-3.5-flash@default,google/gemini-3-flash-preview@default,google/gemini-3.5-flash-lite@default,google/gemini-3.1-flash-lite@default,opencode-zen/big-pickle@default,openai-codex/gpt-5.6-luna@default,grok-sub/grok-4.6@default,kimi-coding/kimi-for-coding@default,groq/llama-3.3-70b-versatile@default,cerebras/llama-3.3-70b@default";
 
 export interface DfConfig {
-	defaultChain: string;
+	defaultChain?: string;
 	cooldownTtlMs?: number;
 	maxWaitMs?: number;
 	hardReasoningChain?: string;
@@ -138,8 +138,9 @@ export async function loadDfConfig(home: string, reader: ConfigReader = (path) =
 		credentialFiles = {};
 		for (const [account, path] of Object.entries(record.credentialFiles as Record<string, unknown>)) credentialFiles[account] = optionalString({ path }, "path")!;
 	}
+	const defaultChain = optionalString(record, "defaultChain");
 	return {
-		defaultChain: optionalString(record, "defaultChain") ?? DEFAULT_CHAIN,
+		...(defaultChain ? { defaultChain } : {}),
 		...(hardReasoningChain ? { hardReasoningChain } : {}),
 		...(sensitiveChain ? { sensitiveChain } : {}),
 		...(typeof cooldownTtlMs === "number" ? { cooldownTtlMs } : {}),
