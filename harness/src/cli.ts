@@ -129,7 +129,7 @@ function providerList(registry: ProviderRegistry, additional: readonly Provider[
 	return [...byId.values()];
 }
 
-async function modelsCommand(registry: ProviderRegistry, store: FileCredentialStore, args: string[]): Promise<void> {
+async function modelsCommand(registry: ProviderRegistry, store: FileCredentialStore, args: string[], ledger?: LimitLedger): Promise<void> {
 	const selected = option(args, "--provider");
 	const requestedAccount = option(args, "--account");
 	const refresh = args.includes("--refresh");
@@ -195,7 +195,7 @@ async function modelsCommand(registry: ProviderRegistry, store: FileCredentialSt
 				return result;
 			},
 		} as ModelCatalog;
-		const poller = new ModelPoller({ catalog: capturingCatalog, providers: [...registry.entries], accounts: accountMap });
+		const poller = new ModelPoller({ catalog: capturingCatalog, providers: [...registry.entries], accounts: accountMap, ledger });
 		const rows: Array<Record<string, string>> = [];
 		for (const provider of providers.sort((a, b) => a.id.localeCompare(b.id))) {
 			const account = resolveAccount(provider.id);
@@ -784,7 +784,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	switch (command) {
 		case "__packaging-smoke": return packagingSmoke();
 		case "providers": return providersCommand(registry);
-		case "models": return modelsCommand(registry, store, args.slice(1));
+		case "models": return modelsCommand(registry, store, args.slice(1), ledger);
 		case "accounts": return accountsCommand(store);
 		case "limits": return limitsCommand(ledger, args.slice(1));
 		case "quota": return quotaCommand(registry, store, ledger, config, args.slice(1));
