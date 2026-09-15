@@ -3,7 +3,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import type { Credential } from "@earendil-works/pi-ai";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
-import type { LimitTier, ModelCapabilityOverride, ModelModality, RouterConfig, RouterPolicy, TaskKind, TaskNeed, TaskSize } from "./router/types.ts";
+import type { CapabilityTier, DifficultyTierMapping, LimitTier, ModelCapabilityOverride, ModelModality, RouterConfig, RouterPolicy, TaskKind, TaskNeed, TaskSize } from "./router/types.ts";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
 export const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,google/gemini-3.7-flash@default,google/gemini-3.6-flash@default,google/gemini-3.5-flash@default,google/gemini-3-flash-preview@default,google/gemini-3.5-flash-lite@default,google/gemini-3.1-flash-lite@default,opencode-zen/big-pickle@default,openai-codex/gpt-5.6-luna@default,grok-sub/grok-4.6@default,kimi-coding/kimi-for-coding@default,groq/llama-3.3-70b-versatile@default,cerebras/llama-3.3-70b@default";
@@ -104,7 +104,53 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 		for (const field of ["windowMs", "maxPenalty", "maxRecords"] as const) if (value[field] !== undefined && (typeof value[field] !== "number" || value[field] <= 0)) throw new Error(`config.json router.learning.${field} must be positive`);
 		learning = value as RouterConfig["learning"];
 	}
-	return { policies, ...(classifier ? { classifier } : {}), ...(candidates ? { candidates } : {}), ...(models ? { models } : {}), ...(learning ? { learning } : {}) };
+	// capability tiers
+	let capabilityTiers: CapabilityTier[] | undefined;
+	if (record.capabilityTiers !== undefined) {
+		if (!Array.isArray(record.capabilityTiers)) throw new Error("config.json router.capabilityTiers must be an array");
+		const rawTiers = record.capabilityTiers as unknown[];
+		const parsed: CapabilityTier[] = [];
+		for (const [i, raw] of rawTiers.entries()) {
+			if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`config.json router.capabilityTiers[${i}] must be an object`);
+			const tier = raw as Record<string, unknown>;
+			const id = typeof tier.id === "string" && tier.id.trim() ? tier.id.trim() : undefined;
+			if (!id) throw new Error(`config.json router.capabilityTiers[${i}].id must be a non-empty string`);
+			if (!Array.isArray(tier.match)) throw new Error(`config.json router.capabilityTiers[${i}].match must be an array of valid strings`);
+			const matchRaw = tier.match as unknown[];
+			const match: string[] = [];
+			for (const [j, m] of matchRaw.entries()) {
+				if (typeof m !== "string" || !m) throw new Error(`config.json router.capabilityTiers[${i}].match[${j}] must be an array of valid strings`);
+				match.push(m);
+			}
+			parsed.push({ id, match });
+		}
+		capabilityTiers = parsed;
+	}
+	// default tier
+	let defaultTier: string;
+	if (record.defaultTier !== undefined) {
+		const value = record.defaultTier;
+		if (typeof value !== "string" || !value.trim()) throw new Error("config.json router.defaultTier must be a non-empty string");
+		defaultTier = value.trim();
+	} else {
+		defaultTier = "standard";
+	}
+	// difficulty tiers
+	let difficultyTiers: DifficultyTierMapping | undefined;
+	if (record.difficultyTiers !== undefined) {
+		if (!record.difficultyTiers || typeof record.difficultyTiers !== "object" || Array.isArray(record.difficultyTiers)) throw new Error("config.json router.difficultyTiers must be an object");
+		const dt = record.difficultyTiers as Record<string, unknown>;
+		const keys: ("easy" | "medium" | "hard")[] = ["easy", "medium", "hard"];
+		const mapping: Partial<DifficultyTierMapping> = {};
+		for (const key of keys) {
+			const value = dt[key];
+			if (typeof value !== "string" || !value.trim()) throw new Error(`config.json router.difficultyTiers.${key} must be a non-empty string`);
+			mapping[key] = value.trim();
+		}
+		if (mapping.easy === undefined || mapping.medium === undefined || mapping.hard === undefined) throw new Error("config.json router.difficultyTiers must have easy, medium, and hard");
+		difficultyTiers = mapping as DifficultyTierMapping;
+	}
+	return { policies, ...(classifier ? { classifier } : {}), ...(candidates ? { candidates } : {}), ...(models ? { models } : {}), ...(learning ? { learning } : {}), ...(capabilityTiers ? { capabilityTiers } : {}), defaultTier, ...(difficultyTiers ? { difficultyTiers } : {}) };
 }
 
 export async function loadDfConfig(home: string, reader: ConfigReader = (path) => readFile(path, "utf8")): Promise<DfConfig> {

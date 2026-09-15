@@ -84,4 +84,35 @@ describe("local configuration and credential sources", () => {
 		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
 		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }))).rejects.toThrow("provider/model@account");
 	});
+
+	test("parses capability tiers, default tier, and difficulty tiers", async () => {
+		const config = await loadDfConfig("C:/fixture", async () => JSON.stringify({ router: {
+			policies: [],
+			capabilityTiers: [{ id: "light", match: ["*-mini*", "*flash*"] }],
+			defaultTier: "standard",
+			difficultyTiers: { easy: "light", medium: "standard", hard: "strong" },
+		} }));
+		expect(config.router?.capabilityTiers).toEqual([{ id: "light", match: ["*-mini*", "*flash*"] }]);
+		expect(config.router?.defaultTier).toBe("standard");
+		expect(config.router?.difficultyTiers).toEqual({ easy: "light", medium: "standard", hard: "strong" });
+	});
+
+	test("defaults defaultTier to standard when omitted", async () => {
+		const config = await loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [] } }));
+		expect(config.router?.defaultTier).toBe("standard");
+		expect(config.router?.difficultyTiers).toBeUndefined();
+	});
+
+	test("rejects missing difficulty tier keys", async () => {
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], difficultyTiers: { easy: "light", medium: "standard" } } }))).rejects.toThrow("hard");
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], difficultyTiers: { easy: "light", medium: "standard", hard: "" } } }))).rejects.toThrow("hard");
+	});
+
+	test("rejects invalid tier configuration", async () => {
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], capabilityTiers: "not-an-array" } }))).rejects.toThrow("must be an array");
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], capabilityTiers: [{ id: "light", match: "*-mini*" }] } }))).rejects.toThrow("must be an array of valid strings");
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], capabilityTiers: [{ id: "", match: ["*-mini*"] }] } }))).rejects.toThrow("id must be a non-empty string");
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], capabilityTiers: [{ id: "light", match: [""] }] } }))).rejects.toThrow("must be an array of valid strings");
+		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ router: { policies: [], defaultTier: "" } }))).rejects.toThrow("must be a non-empty string");
+	});
 });
