@@ -9,7 +9,10 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "bun run ./scripts/build.ts"
+    "build": "bun run ./scripts/build.ts",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome ci ."
   },
   "dependencies": {
     "@earendil-works/pi-ai": "0.85.1",

@@ -40,3 +40,23 @@ describe("packageAssets without a native pi-tui module", () => {
 		}
 	});
 });
+
+describe("biome configuration", () => {
+	test("biome config exists and has correct settings", async () => {
+		const content = await readFile(new URL("../biome.json", import.meta.url), "utf8");
+		const json = JSON.parse(content);
+		expect(json.formatter?.indentStyle).toBe("tab");
+		expect(json.formatter?.lineWidth).toBe(120);
+		expect(json.formatter?.quoteStyle).toBe("double");
+		expect(json.linter?.rules?.recommended).toBe(true);
+		expect(json.linter?.rules?.noUnusedImports).toBe("error");
+		expect(json.linter?.rules?.noUnusedVariables).toBe("error");
+	});
+	test("package.json contains formatting scripts", async () => {
+		const pkgContent = await readFile(new URL("../package.json", import.meta.url), "utf8");
+		const pkg = JSON.parse(pkgContent);
+		expect(pkg.scripts?.format).toBe("biome format --write .");
+		expect(pkg.scripts?.lint).toBe("biome lint .");
+		expect(pkg.scripts?.check).toBe("biome ci .");
+	});
+});

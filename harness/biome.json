@@ -1,0 +1,14 @@
+{
+  "formatter": {
+    "indentStyle": "tab",
+    "lineWidth": 120,
+    "quoteStyle": "double"
+  },
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "noUnusedImports": "error",
+      "noUnusedVariables": "error"
+    }
+  }
+}
