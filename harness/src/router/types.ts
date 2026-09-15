@@ -62,6 +62,7 @@ export interface ModelCapability {
 	capabilityTier?: string;
 	reserve?: { requests?: number; tokens?: number };
 	source?: "live" | "cache" | "builtin" | "config";
+	collection?: "none" | "logging" | "training" | "unknown";
 }
 
 export interface ModelCapabilityOverride extends Partial<Omit<ModelCapability, "candidate">> {}
@@ -90,6 +91,8 @@ export interface RouterConfig {
 	capabilityTiers?: CapabilityTier[];
 	defaultTier?: string;
 	difficultyTiers?: DifficultyTierMapping;
+	dataCollection?: { normal?: string[]; sensitive?: string[] };
+
 }
 
 export interface RankedCandidate {

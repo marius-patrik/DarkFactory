@@ -86,3 +86,25 @@ test("graph with min_tier on agent nodes passes validation", () => {
 	}
 	expect(() => validateGraph(g)).not.toThrow();
 });
+test("validates foreach.items references upstream output", () => {
+	const issues = invalid((g) => {
+		// Add a node with foreach that references an output that doesn't exist upstream
+		g.nodes.push({
+			id: "foreach-node",
+			kind: "automation",
+			script: "echo",
+			foreach: { items: "nonexistent" },
+		});
+		g.edges.push({ from: "request-intake", to: "foreach-node", on: { node_outcome: "success" } });
+	});
+	expect(issues.some((i) => i.includes("foreach.items") && i.includes("not produced by an upstream node"))).toBe(true);
+});
+test("rejects children edges from nodes without foreach", () => {
+	const issues = invalid((g) => {
+		// Add an edge with children trigger from a node that doesn't have foreach
+		g.edges.push({ from: "request-intake", to: "implement", on: { children: "all_done" } });
+	});
+	expect(
+		issues.some((i) => i.includes("on.children") && i.includes("must originate from a node with a foreach field")),
+	).toBe(true);
+});

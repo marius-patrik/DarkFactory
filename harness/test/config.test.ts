@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { FileCredentialStore } from "../src/credentials.ts";
-import { DEFAULT_CHAIN, loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
+
+const LOCAL_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";
 
 const roots: string[] = [];
 
@@ -24,7 +26,7 @@ describe("local configuration and credential sources", () => {
 			await loadDfConfig("C:/fixture", async () => {
 				throw missing;
 			}),
-		).toEqual({ defaultChain: DEFAULT_CHAIN });
+		).toEqual({});
 	});
 
 	test("loads chains and a relative account key path", async () => {
@@ -53,7 +55,7 @@ describe("local configuration and credential sources", () => {
 	test("stored account wins over env, while env wins over the configured key file", async () => {
 		const root = await home();
 		let reads = 0;
-		const config = { defaultChain: DEFAULT_CHAIN, credentialFiles: { "google:default": "unused" } };
+		const config = { defaultChain: LOCAL_CHAIN, credentialFiles: { "google:default": "unused" } };
 		const fallback = localCredentialFallback(root, config, BUILTIN_PROVIDER_CONFIG, {
 			env: { GEMINI_API_KEY: "fixture-env-key" },
 			read: async () => {
@@ -76,7 +78,7 @@ describe("local configuration and credential sources", () => {
 
 	test("ambient API keys only resolve for the default account label", async () => {
 		const root = await home();
-		const fallback = localCredentialFallback(root, { defaultChain: DEFAULT_CHAIN }, BUILTIN_PROVIDER_CONFIG, {
+		const fallback = localCredentialFallback(root, { defaultChain: LOCAL_CHAIN }, BUILTIN_PROVIDER_CONFIG, {
 			env: { GEMINI_API_KEY: "fixture-env-key" },
 		});
 		expect(await fallback("google", "default")).toEqual({ type: "api_key", key: "fixture-env-key" });

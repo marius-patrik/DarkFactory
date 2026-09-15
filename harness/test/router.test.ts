@@ -5,9 +5,9 @@ import type { Candidate } from "../src/failover.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
 import { QuotaEngine } from "../src/limits/quota-engine.ts";
 import type { DeclaredLimitConfig, ProviderConfig } from "../src/providers/schema.ts";
-import { classifyTask } from "../src/router/profile.ts";
 import { buildRouterCatalog } from "../src/router/catalog.ts";
 import { OutcomeStore } from "../src/router/outcomes.ts";
+import { classifyTask } from "../src/router/profile.ts";
 import { routeTask } from "../src/router/router.ts";
 import type { ModelCapability, RouterConfig, TaskProfile } from "../src/router/types.ts";
 import { tierRank } from "../src/router/types.ts";
@@ -118,7 +118,28 @@ describe("policy routing", () => {
 	});
 
 	test("explicit and graph routes win; sensitive routing cannot escape sensitiveChain", async () => {
-		const models = [candidate("safe", "private", "standard"), candidate("other", "fast", "tight")];
+		const models = [
+			{
+				candidate: { provider: "safe", model: "private", account: "default" },
+				contextWindow: 128_000,
+				tools: true,
+				reasoning: true,
+				modalities: ["text"] as ModelCapability["modalities"],
+				quality: {},
+				limitTier: "standard" as ModelCapability["limitTier"],
+				collection: "none" as ModelCapability["collection"],
+			},
+			{
+				candidate: { provider: "other", model: "fast", account: "default" },
+				contextWindow: 128_000,
+				tools: true,
+				reasoning: true,
+				modalities: ["text"] as ModelCapability["modalities"],
+				quality: {},
+				limitTier: "tight" as ModelCapability["limitTier"],
+				collection: "none" as ModelCapability["collection"],
+			},
+		];
 		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["tight"] } }] };
 		const explicit = await routeTask(
 			{
@@ -178,10 +199,11 @@ describe("policy routing", () => {
 				contextWindow: 1_000_000,
 				tools: false,
 				reasoning: true,
-				modalities: ["text", "image_gen"],
+				modalities: ["text", "image_gen"] as ModelCapability["modalities"],
 				quality: { image: 5 },
-				limitTier: "bulk",
+				limitTier: "bulk" as ModelCapability["limitTier"],
 				reserve: undefined,
+				collection: "unknown" as ModelCapability["collection"],
 				source: "live",
 			},
 		]);
@@ -310,6 +332,35 @@ describe("quota-aware ranking", () => {
 		expect(result.chain.map((item) => item.provider)).toEqual(["fresh"]);
 	});
 
+	test("a candidate with learned unavailability is skipped with its reason, however soon it recovers", async () => {
+		const home = await mkdtemp(join(process.cwd(), ".harness-test-router-"));
+		temporary.push(home);
+		const ledger = new LimitLedger(home);
+		const quota = new QuotaEngine(
+			home,
+			ledger,
+			new Map([declared("billed", rpm), declared("fresh", rpm)].map((config) => [config.id, config])),
+		);
+		const resetAt = now + 60_000;
+		await ledger.record([
+			{ provider: "billed", account: "default", model: "m", type: "billing", observedAt: now, resetAt, source: "body" },
+		]);
+		const config: RouterConfig = { policies: [{ id: "all", match: {}, prefer: { tiers: ["standard"] } }] };
+		const result = await routeTask(
+			{ prompt: "Summarize this" },
+			{
+				config,
+				models: [candidate("billed", "m", "standard"), candidate("fresh", "m", "standard")],
+				quota,
+				now: () => now,
+			},
+		);
+		const billed = result.ranked.find((item) => item.candidate.provider === "billed")!;
+		expect(billed.status).toBe("skipped");
+		expect(billed.reason).toBe(`unavailable (learned billing (body)) until ${new Date(resetAt).toISOString()}`);
+		expect(result.chain.map((item) => item.provider)).toEqual(["fresh"]);
+	});
+
 	test("an explicit chain keeps its order and only drops exhausted members", async () => {
 		const quota = await engine([declared("first", rpm), declared("second", daily), declared("third", rpm)]);
 		await use(quota, "first", 4);
@@ -326,6 +377,300 @@ describe("quota-aware ranking", () => {
 		);
 		expect(result.chain.map((item) => item.provider)).toEqual(["first", "third"]);
 		expect(result.ranked.find((item) => item.candidate.provider === "second")!.status).toBe("skipped");
+	});
+
+	test("exposes provider data-collection in capability", () => {
+		const providers: ProviderConfig[] = [
+			{
+				id: "p1",
+				name: "P1",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p2",
+				name: "P2",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "logging", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p3",
+				name: "P3",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "training", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p4",
+				name: "P4",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "unknown", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p5",
+				name: "P5",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+			},
+		];
+		const caps = buildRouterCatalog({ providers });
+		const map = new Map(caps.map((c) => [c.candidate.provider, (c as any).collection]));
+		expect(map.get("p1")).toBe("none");
+		expect(map.get("p2")).toBe("logging");
+		expect(map.get("p3")).toBe("training");
+		expect(map.get("p4")).toBe("unknown");
+		expect(map.get("p5")).toBe("unknown");
+	});
+
+	test("free.data.collection overrides provider.data.collection for free-tier providers", () => {
+		const providers: ProviderConfig[] = [
+			{
+				id: "p1",
+				name: "P1",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+				free: {
+					kind: "permanent",
+					keyUrl: "https://example",
+					data: { collection: "training", source: "test", checkedAt: "2020-01-01" },
+				},
+			},
+			{
+				id: "p2",
+				name: "P2",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+			},
+			{
+				id: "p3",
+				name: "P3",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+			},
+		];
+		const caps = buildRouterCatalog({ providers });
+		const map = new Map(caps.map((c) => [c.candidate.provider, c.collection]));
+		expect(map.get("p1")).toBe("training");
+		expect(map.get("p2")).toBe("none");
+		expect(map.get("p3")).toBe("unknown");
+	});
+});
+
+/** Added tier override and unknown exclusion tests */
+
+describe("tier override and unknown exclusion", () => {
+	test("tier override respects free data collection for sensitive and normal tasks", async () => {
+		// Provider with logging collection but free tier overrides to none
+		const providers = [
+			{
+				id: "p1",
+				name: "Provider1",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				data: { collection: "logging", source: "test", checkedAt: "2020-01-01" },
+				free: {
+					kind: "permanent",
+					keyUrl: "https://example",
+					data: { collection: "none", source: "test", checkedAt: "2020-01-01" },
+				},
+			},
+		];
+		// Override the collection for the model to respect free tier override
+		const models = buildRouterCatalog({
+			providers: providers as ProviderConfig[],
+			overrides: { "p1/m": { collection: "none" } },
+		});
+		const config: RouterConfig = {
+			policies: [],
+			dataCollection: { sensitive: ["none"], normal: ["none", "logging", "training", "unknown"] },
+		};
+		// Sensitive task should succeed because collection is overridden to "none"
+		const sensitive = await routeTask(
+			{ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p1/m@default" },
+			{ config, models },
+		);
+		expect(sensitive.chain.length).toBe(1);
+		// Normal task should also succeed (unknown allowed) but we use same provider
+		const normal = await routeTask(
+			{ prompt: "normal", node: { sensitivity: "normal" }, explicitChain: "p1/m@default" },
+			{ config, models },
+		);
+		expect(normal.chain.length).toBe(1);
+	});
+
+	test("unknown collection is excluded for sensitive tasks but allowed for normal tasks", async () => {
+		const providers = [
+			{
+				id: "p2",
+				name: "Provider2",
+				dialect: "openai-completions",
+				baseUrl: "https://example",
+				auth: [{ kind: "api_key", slot: "api_key", placement: "bearer" }],
+				requiredCredentialSlots: [],
+				models: { static: [{ id: "m" }] },
+				capabilities: { tools: false, reasoning: false, images: false },
+				// No data field => defaults to unknown
+			},
+		];
+		const models = buildRouterCatalog({ providers: providers as ProviderConfig[] });
+		const config: RouterConfig = {
+			policies: [],
+			dataCollection: { sensitive: ["none"], normal: ["none", "logging", "training", "unknown"] },
+		};
+		// Sensitive task should be rejected
+		await expect(
+			routeTask(
+				{ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" },
+				{ config, models },
+			),
+		).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+		// Normal task should succeed
+		const normal = await routeTask(
+			{ prompt: "normal", node: { sensitivity: "normal" }, explicitChain: "p2/m@default" },
+			{ config, models },
+		);
+		expect(normal.chain.length).toBe(1);
+	});
+});
+
+describe("empty model list", () => {
+	test("routeTask with models: [] and no explicit chain rejects with No usable model guidance", async () => {
+		const config: RouterConfig = { policies: [] };
+		await expect(routeTask({ prompt: "hello" }, { config, models: [] })).rejects.toThrow("No usable model");
+	});
+	test("explicit chain is unaffected when models list is empty", async () => {
+		const models: ModelCapability[] = [];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "hello", explicitChain: "p1/m@default" }, { config, models });
+		expect(result.chain[0]?.provider).toBe("p1");
+	});
+});
+
+describe("data–collection policy", () => {
+	test("sensitive task with allowed collection none succeeds", async () => {
+		const models = [candidate("p1", "m", "standard", { collection: "none" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask(
+			{ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p1/m@default" },
+			{ config, models },
+		);
+		expect(result.chain.length).toBe(1);
+	});
+
+	test("sensitive task with only logging collection fails", async () => {
+		const models = [candidate("p2", "m", "standard", { collection: "logging" })];
+		const config: RouterConfig = { policies: [] };
+		await expect(
+			routeTask(
+				{ prompt: "secret", node: { sensitivity: "sensitive" }, explicitChain: "p2/m@default" },
+				{ config, models },
+			),
+		).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+
+	test("explicit chain with disallowed provider for sensitive task is rejected", async () => {
+		const models = [
+			candidate("p2", "m", "standard", { collection: "logging" }),
+			candidate("p1", "m", "standard", { collection: "none" }),
+		];
+		const config: RouterConfig = { policies: [] };
+		await expect(
+			routeTask(
+				{ prompt: "secret", explicitChain: "p2/m@default", node: { sensitivity: "sensitive" } },
+				{ config, models },
+			),
+		).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+
+	test("normal task can use any collection", async () => {
+		const models = [candidate("p2", "m", "standard", { collection: "logging" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "normal", node: { sensitivity: "normal" } }, { config, models });
+		expect(result.chain.length).toBe(1);
+	});
+	test("sensitive task with explicit chain and missing collection is rejected", async () => {
+		// Candidate not in models => defaults to unknown collection
+		const models: ModelCapability[] = []; // no models
+		const config: RouterConfig = { policies: [] };
+		await expect(
+			routeTask(
+				{ prompt: "secret", explicitChain: "p1/m@default", node: { sensitivity: "sensitive" } },
+				{ config, models },
+			),
+		).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+	test("sensitive task without sensitiveChain routes to none and skips training and unknown", async () => {
+		const models = [
+			candidate("p1", "m", "standard", { collection: "none" }),
+			candidate("p2", "m", "standard", { collection: "training" }),
+			candidate("p3", "m", "standard", { collection: "unknown" }),
+		];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "secret", node: { sensitivity: "sensitive" } }, { config, models });
+		// Should choose the none provider
+		expect(result.chain.length).toBe(1);
+		expect(result.chain[0]?.provider).toBe("p1");
+		// The other two should not be in the result
+		expect(result.ranked).toHaveLength(1);
+		expect(result.ranked[0]!.candidate.provider).toBe("p1");
+	});
+	test("sensitive task with no none collection throws fail-closed error", async () => {
+		const models = [
+			candidate("p1", "m", "standard", { collection: "training" }),
+			candidate("p2", "m", "standard", { collection: "unknown" }),
+		];
+		const config: RouterConfig = { policies: [] };
+		await expect(
+			routeTask({ prompt: "secret", node: { sensitivity: "sensitive" } }, { config, models }),
+		).rejects.toThrow(/No provider allowed for sensitive work: data collection must be one of "none"/);
+	});
+	test("normal task accepts unknown providers", async () => {
+		const models = [candidate("p1", "m", "standard", { collection: "unknown" })];
+		const config: RouterConfig = { policies: [] };
+		const result = await routeTask({ prompt: "normal", node: { sensitivity: "normal" } }, { config, models });
+		expect(result.chain.length).toBe(1);
+		expect(result.chain[0]?.provider).toBe("p1");
 	});
 });
 

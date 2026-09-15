@@ -20,6 +20,7 @@ export interface BaseNode {
 	board_status?: Partial<Record<"running" | "quota_blocked" | "blocked" | "done" | "rejected", CanonicalStatus>>;
 	trigger?: { event?: string; schedule?: string };
 	filter?: { label?: string; ignore_bots?: boolean };
+	foreach?: { items: string; max_parallel?: number; as?: string };
 }
 
 export interface AgentNode extends BaseNode {
@@ -31,6 +32,10 @@ export interface AgentNode extends BaseNode {
 	timeout?: string;
 	iteration?: { context_file: string; safety_budget?: number };
 	quota_policy?: { on_exhaustion: "checkpoint_and_block"; resume: "sweep_or_command" };
+	prompt?: string;
+	mode?: "read" | "write";
+	workdir?: string;
+	max_turns?: number;
 }
 
 export interface GateNode extends BaseNode {
@@ -62,7 +67,8 @@ export type EdgeOn =
 	| { schedule: true; when?: string }
 	| { node_outcome: "success" | "failure" | "quota_exhausted"; when?: string }
 	| { gate_outcome: "approved" | "rejected"; when?: string }
-	| { checks: "required_green" | "failed"; when?: string };
+	| { checks: "required_green" | "failed"; when?: string }
+	| { children: "all_done" | "any_failed"; when?: string };
 
 export interface GraphEdge {
 	from: string;
@@ -93,7 +99,8 @@ export type GraphEvent =
 			outputs: Record<string, unknown>;
 	  }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
-	| { type: "schedule"; schedule: string; now?: string };
+	| { type: "schedule"; schedule: string; now?: string }
+	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 
 export interface RunState {
 	run_id: string;
@@ -106,6 +113,7 @@ export interface RunState {
 	iterations?: Record<string, number>;
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
 	tier?: string;
+	children?: { run_id: string; node: string; eligible: boolean }[];
 }
 
 export type PlanAction =

@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import type { Credential } from "@earendil-works/pi-ai";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import type {
@@ -17,11 +16,9 @@ import type {
 } from "./router/types.ts";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
-export const DEFAULT_CHAIN =
-	"google/gemini-3.8-flash@default,google/gemini-3.7-flash@default,google/gemini-3.6-flash@default,google/gemini-3.5-flash@default,google/gemini-3-flash-preview@default,google/gemini-3.5-flash-lite@default,google/gemini-3.1-flash-lite@default,opencode-zen/big-pickle@default,openai-codex/gpt-5.6-luna@default,grok-sub/grok-4.6@default,kimi-coding/kimi-for-coding@default,groq/llama-3.3-70b-versatile@default,cerebras/llama-3.3-70b@default";
 
 export interface DfConfig {
-	defaultChain: string;
+	defaultChain?: string;
 	cooldownTtlMs?: number;
 	maxWaitMs?: number;
 	hardReasoningChain?: string;
@@ -70,6 +67,7 @@ const SIZES: TaskSize[] = ["small", "medium", "large"];
 const NEEDS: TaskNeed[] = ["tools", "reasoning", "vision", "long_context", "image_gen", "video_gen"];
 const TIERS: LimitTier[] = ["tight", "standard", "bulk"];
 const MODALITIES: ModelModality[] = ["text", "image", "video", "image_gen", "video_gen"];
+const COLLECTION_VALUES = ["none", "logging", "training", "unknown"];
 function stringArray(value: unknown, label: string, allowed?: readonly string[]): string[] | undefined {
 	if (value === undefined) return undefined;
 	if (
@@ -236,6 +234,19 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 			throw new Error("config.json router.difficultyTiers must have easy, medium, and hard");
 		difficultyTiers = mapping as DifficultyTierMapping;
 	}
+	let dataCollection: RouterConfig["dataCollection"];
+	if (record.dataCollection !== undefined) {
+		if (!record.dataCollection || typeof record.dataCollection !== "object" || Array.isArray(record.dataCollection))
+			throw new Error("config.json router.dataCollection must be an object");
+		const dc = record.dataCollection as Record<string, unknown>;
+		const normal = stringArray(dc.normal, "router.dataCollection.normal", COLLECTION_VALUES);
+		const sensitive = stringArray(dc.sensitive, "router.dataCollection.sensitive", COLLECTION_VALUES);
+		if (normal !== undefined || sensitive !== undefined)
+			dataCollection = {
+				...(normal !== undefined ? { normal } : {}),
+				...(sensitive !== undefined ? { sensitive } : {}),
+			};
+	}
 	return {
 		policies,
 		...(classifier ? { classifier } : {}),
@@ -245,6 +256,7 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 		...(capabilityTiers ? { capabilityTiers } : {}),
 		defaultTier,
 		...(difficultyTiers ? { difficultyTiers } : {}),
+		...(dataCollection ? { dataCollection } : {}),
 	};
 }
 
@@ -257,7 +269,7 @@ export async function loadDfConfig(
 	try {
 		raw = await reader(path);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") return { defaultChain: DEFAULT_CHAIN };
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
 		throw error;
 	}
 	let value: unknown;
@@ -293,8 +305,9 @@ export async function loadDfConfig(
 		for (const [account, path] of Object.entries(record.credentialFiles as Record<string, unknown>))
 			credentialFiles[account] = optionalString({ path }, "path")!;
 	}
+	const defaultChain = optionalString(record, "defaultChain");
 	return {
-		defaultChain: optionalString(record, "defaultChain") ?? DEFAULT_CHAIN,
+		...(defaultChain ? { defaultChain } : {}),
 		...(hardReasoningChain ? { hardReasoningChain } : {}),
 		...(sensitiveChain ? { sensitiveChain } : {}),
 		...(typeof cooldownTtlMs === "number" ? { cooldownTtlMs } : {}),

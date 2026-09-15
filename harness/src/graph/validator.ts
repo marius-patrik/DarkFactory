@@ -11,6 +11,9 @@ const base = z.object({
 	board_status: z.record(z.string(), z.string()).optional(),
 	trigger: z.object({ event: z.string().optional(), schedule: z.string().optional() }).optional(),
 	filter: z.object({ label: z.string().optional(), ignore_bots: z.boolean().optional() }).optional(),
+	foreach: z
+		.object({ items: z.string(), max_parallel: z.number().int().positive().optional(), as: z.string().optional() })
+		.optional(),
 });
 const nodeSchema = z.discriminatedUnion("kind", [
 	base.extend({
@@ -24,6 +27,10 @@ const nodeSchema = z.discriminatedUnion("kind", [
 		quota_policy: z
 			.object({ on_exhaustion: z.literal("checkpoint_and_block"), resume: z.literal("sweep_or_command") })
 			.optional(),
+		prompt: z.string().optional(),
+		mode: z.enum(["read", "write"]).optional(),
+		workdir: z.string().optional(),
+		max_turns: z.number().int().positive().optional(),
 	}),
 	base.extend({
 		kind: z.literal("gate"),
@@ -55,6 +62,7 @@ const onSchema = z.union([
 	z.object({ node_outcome: z.enum(["success", "failure", "quota_exhausted"]), when: z.string().optional() }).strict(),
 	z.object({ gate_outcome: z.enum(["approved", "rejected"]), when: z.string().optional() }).strict(),
 	z.object({ checks: z.enum(["required_green", "failed"]), when: z.string().optional() }).strict(),
+	z.object({ children: z.enum(["all_done", "any_failed"]), when: z.string().optional() }).strict(),
 ]);
 const rawSchema = z.object({
 	version: z.literal(1),
@@ -114,7 +122,7 @@ export function validateGraph(value: unknown): WorkflowGraph {
 		ids.add(node.id);
 		for (const [key, status] of Object.entries(node.board_status ?? {}))
 			if (!(CANONICAL_STATUSES as readonly string[]).includes(status!))
-				issues.push(`nodes[${node.id}].board_status.${key}: unknown canonical status \"${status}\"`);
+				issues.push(`nodes[${node.id}].board_status.${key}: unknown canonical status "${status}"`);
 		if (node.kind === "gate" && node.command !== STRICT_GATE_COMMAND)
 			issues.push(`nodes[${node.id}].command: must accept only /df approve|reject|revise and /approve|reject|revise`);
 		if (
@@ -122,15 +130,15 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			node.on_reject &&
 			!graph.nodes.some((candidate) => candidate.id === node.on_reject!.target)
 		)
-			issues.push(`nodes[${node.id}].on_reject.target: unknown node \"${node.on_reject.target}\"`);
+			issues.push(`nodes[${node.id}].on_reject.target: unknown node "${node.on_reject.target}"`);
 		if (node.kind === "agent")
 			for (const [index, candidate] of (node.chain ?? []).entries())
 				if (!/^[^/@]+\/[^@]+@[^@]+$/.test(candidate))
 					issues.push(`nodes[${node.id}].chain[${index}]: expected provider/model@account`);
 	}
 	graph.edges.forEach((edge, index) => {
-		if (!ids.has(edge.from)) issues.push(`edges[${index}].from: unknown node \"${edge.from}\"`);
-		if (!ids.has(edge.to)) issues.push(`edges[${index}].to: unknown node \"${edge.to}\"`);
+		if (!ids.has(edge.from)) issues.push(`edges[${index}].from: unknown node "${edge.from}"`);
+		if (!ids.has(edge.to)) issues.push(`edges[${index}].to: unknown node "${edge.to}"`);
 		if ("event" in edge.on && edge.on.filter.ignore_bots !== true)
 			issues.push(`edges[${index}].on.filter.ignore_bots: event ingress must explicitly be true`);
 		if (edge.on.when) {
@@ -138,7 +146,16 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			const words = [...edge.on.when.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?:==|!=)/g)].map((match) => match[1]!);
 			for (const word of words)
 				if (!source?.outputs?.includes(word))
-					issues.push(`edges[${index}].on.when: \"${word}\" is not a declared output of ${edge.from}`);
+					issues.push(`edges[${index}].on.when: "${word}" is not a declared output of ${edge.from}`);
+		}
+		// Validate children edges: must start at a node with foreach
+		if ("children" in edge.on) {
+			const sourceNode = graph.nodes.find((node) => node.id === edge.from);
+			if (!sourceNode?.foreach) {
+				issues.push(
+					`edges[${index}].on.children: edge with children trigger must originate from a node with a foreach field`,
+				);
+			}
 		}
 	});
 	for (const node of graph.nodes)
@@ -148,9 +165,23 @@ export function validateGraph(value: unknown): WorkflowGraph {
 					producer.outputs?.includes(input) &&
 					(producer.id === node.id || pathBetween(graph.edges, producer.id, node.id)),
 			);
-			if (!upstream)
-				issues.push(`nodes[${node.id}].inputs[${index}]: \"${input}\" is not produced by an upstream node`);
+			if (!upstream) issues.push(`nodes[${node.id}].inputs[${index}]: "${input}" is not produced by an upstream node`);
 		});
+	// Validate foreach.items: must be a declared output of an upstream node
+	graph.nodes.forEach((node, nodeIndex) => {
+		if (node.foreach) {
+			const { items } = node.foreach;
+			// Check that items is an output of some upstream node
+			const upstream = graph.nodes.some(
+				(producer) =>
+					producer.outputs?.includes(items) &&
+					(producer.id === node.id || pathBetween(graph.edges, producer.id, node.id)),
+			);
+			if (!upstream) {
+				issues.push(`nodes[${nodeIndex}].foreach.items: "${items}" is not produced by an upstream node`);
+			}
+		}
+	});
 	const roots = graph.nodes
 		.filter((node) => node.trigger?.event || node.trigger?.schedule || node.kind === "check-reference")
 		.map((node) => node.id);
@@ -179,7 +210,7 @@ export function validateGraph(value: unknown): WorkflowGraph {
 		(item): item is Extract<GraphNode, { kind: "check-reference" }> => item.kind === "check-reference",
 	))
 		if (!graph.checks.some((check) => check.name === node.check))
-			issues.push(`nodes[${node.id}].check: unknown external check \"${node.check}\"`);
+			issues.push(`nodes[${node.id}].check: unknown external check "${node.check}"`);
 	if (issues.length) throw new GraphValidationError([...new Set(issues)]);
 	return graph;
 }

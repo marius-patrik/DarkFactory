@@ -113,7 +113,7 @@ export async function applyBranchProtection(
 				contexts,
 			};
 		}
-	} catch (err: unknown) {
+	} catch {
 		// Rulesets not supported (404) or permission issue; fall back to classic branch protection
 	}
 
