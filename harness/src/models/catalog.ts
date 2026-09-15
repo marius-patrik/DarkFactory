@@ -1,9 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { replaceFile } from "../storage/replace-file.ts";
 import { dirname, join } from "node:path";
 import type { Credential, Model, Provider, ProviderHeaders } from "@earendil-works/pi-ai";
-import { FileCredentialStore, defaultDfHome } from "../credentials.ts";
+import { defaultDfHome, FileCredentialStore } from "../credentials.ts";
 import type { ModelListConfig, ProviderConfig } from "../providers/schema.ts";
+import { replaceFile } from "../storage/replace-file.ts";
 
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
@@ -51,15 +51,29 @@ function candidateModel(value: unknown, key?: string): CatalogModel | undefined 
 	if (typeof value === "string") return { id: value, name: value };
 	if (!value || typeof value !== "object") return undefined;
 	const item = value as Record<string, unknown>;
-	const nested = item.model && typeof item.model === "object" ? item.model as Record<string, unknown> : undefined;
-	const config = item.modelConfig && typeof item.modelConfig === "object" ? item.modelConfig as Record<string, unknown> : undefined;
-	const rawId = nonEmpty(item.id) ?? nonEmpty(item.modelId) ?? nonEmpty(item.modelConfigId) ??
-		nonEmpty(config?.id) ?? nonEmpty(nested?.id) ?? nonEmpty(item.name) ?? nonEmpty(key);
+	const nested = item.model && typeof item.model === "object" ? (item.model as Record<string, unknown>) : undefined;
+	const config =
+		item.modelConfig && typeof item.modelConfig === "object"
+			? (item.modelConfig as Record<string, unknown>)
+			: undefined;
+	const rawId =
+		nonEmpty(item.id) ??
+		nonEmpty(item.modelId) ??
+		nonEmpty(item.modelConfigId) ??
+		nonEmpty(config?.id) ??
+		nonEmpty(nested?.id) ??
+		nonEmpty(item.name) ??
+		nonEmpty(key);
 	if (!rawId) return undefined;
 	const id = rawId.startsWith("models/") ? rawId.slice("models/".length) : rawId;
 	if (!id) return undefined;
-	const name = nonEmpty(item.display_name) ?? nonEmpty(item.displayName) ?? nonEmpty(config?.displayName) ??
-		nonEmpty(nested?.displayName) ?? nonEmpty(item.name) ?? id;
+	const name =
+		nonEmpty(item.display_name) ??
+		nonEmpty(item.displayName) ??
+		nonEmpty(config?.displayName) ??
+		nonEmpty(nested?.displayName) ??
+		nonEmpty(item.name) ??
+		id;
 	const rawMethods = item.supportedGenerationMethods ?? item.supportedMethods;
 	const supportedMethods = Array.isArray(rawMethods)
 		? rawMethods.filter((method): method is string => typeof method === "string" && method.length > 0)
@@ -73,9 +87,16 @@ function pathValues(value: unknown, path: string): Array<{ key?: string; value: 
 	for (const part of path.split(".").filter(Boolean)) {
 		const next: Array<{ key?: string; value: unknown }> = [];
 		for (const item of current) {
-			if (part === "*" && Array.isArray(item.value)) item.value.forEach((entry, key) => { next.push({ key: String(key), value: entry }); });
-			else if (part === "*" && item.value && typeof item.value === "object") Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) => { next.push({ key, value: entry }); });
-			else if (item.value && typeof item.value === "object" && part in item.value) next.push({ key: item.key, value: (item.value as Record<string, unknown>)[part] });
+			if (part === "*" && Array.isArray(item.value))
+				item.value.forEach((entry, key) => {
+					next.push({ key: String(key), value: entry });
+				});
+			else if (part === "*" && item.value && typeof item.value === "object")
+				Object.entries(item.value as Record<string, unknown>).forEach(([key, entry]) => {
+					next.push({ key, value: entry });
+				});
+			else if (item.value && typeof item.value === "object" && part in item.value)
+				next.push({ key: item.key, value: (item.value as Record<string, unknown>)[part] });
 		}
 		current = next;
 	}
@@ -90,20 +111,30 @@ function mappedString(value: unknown, path: string | undefined, key?: string): s
 
 export function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
 	const raw = pathValues(value, mapping.itemsPath);
-	const entries = raw.length === 1 && Array.isArray(raw[0]?.value)
-		? (raw[0]!.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
-		: raw.length === 1 && raw[0]?.value && typeof raw[0].value === "object"
-			? Object.entries(raw[0].value as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
-			: raw;
+	const entries =
+		raw.length === 1 && Array.isArray(raw[0]?.value)
+			? (raw[0]!.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
+			: raw.length === 1 && raw[0]?.value && typeof raw[0].value === "object"
+				? Object.entries(raw[0].value as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
+				: raw;
 	const byId = new Map<string, CatalogModel>();
 	for (const entry of entries) {
 		const rawId = mappedString(entry.value, mapping.idPath, entry.key);
 		if (!rawId) continue;
-		const id = mapping.stripIdPrefix && rawId.startsWith(mapping.stripIdPrefix) ? rawId.slice(mapping.stripIdPrefix.length) : rawId;
+		const id =
+			mapping.stripIdPrefix && rawId.startsWith(mapping.stripIdPrefix)
+				? rawId.slice(mapping.stripIdPrefix.length)
+				: rawId;
 		if (!id) continue;
 		const methodsValue = mapping.methodsPath ? pathValues(entry.value, mapping.methodsPath)[0]?.value : undefined;
-		const methods = Array.isArray(methodsValue) ? methodsValue.filter((item): item is string => typeof item === "string" && !!item) : undefined;
-		byId.set(id, { id, name: mappedString(entry.value, mapping.namePath, entry.key) ?? id, ...(methods?.length ? { supportedMethods: [...new Set(methods)].sort() } : {}) });
+		const methods = Array.isArray(methodsValue)
+			? methodsValue.filter((item): item is string => typeof item === "string" && !!item)
+			: undefined;
+		byId.set(id, {
+			id,
+			name: mappedString(entry.value, mapping.namePath, entry.key) ?? id,
+			...(methods?.length ? { supportedMethods: [...new Set(methods)].sort() } : {}),
+		});
 	}
 	if (byId.size === 0) throw new Error(`Model catalog for provider ${provider} contained no valid models`);
 	return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
@@ -117,8 +148,10 @@ export function normalizeCatalogResponse(provider: string, value: unknown): Cata
 		const record = value as Record<string, unknown>;
 		const envelope = [record.data, record.models, record.availableModels, record.modelConfigs].find(Array.isArray);
 		if (Array.isArray(envelope)) entries = envelope.map((entry) => [undefined, entry]);
-		else if (record.models && typeof record.models === "object") entries = Object.entries(record.models as Record<string, unknown>);
-		else if (record.availableModels && typeof record.availableModels === "object") entries = Object.entries(record.availableModels as Record<string, unknown>);
+		else if (record.models && typeof record.models === "object")
+			entries = Object.entries(record.models as Record<string, unknown>);
+		else if (record.availableModels && typeof record.availableModels === "object")
+			entries = Object.entries(record.availableModels as Record<string, unknown>);
 		else entries = Object.entries(record);
 	}
 	if (!entries) throw new Error(`Invalid model catalog for provider ${provider}`);
@@ -134,15 +167,24 @@ export function normalizeCatalogResponse(provider: string, value: unknown): Cata
 function parseCache(provider: string, value: unknown): CatalogFile {
 	if (!value || typeof value !== "object") throw new Error(`Invalid cached model catalog for ${provider}`);
 	const file = value as Partial<CatalogFile>;
-	if (file.version !== 1 || file.provider !== provider || typeof file.fetchedAt !== "number" || !Array.isArray(file.models)) {
+	if (
+		file.version !== 1 ||
+		file.provider !== provider ||
+		typeof file.fetchedAt !== "number" ||
+		!Array.isArray(file.models)
+	) {
 		throw new Error(`Invalid cached model catalog for ${provider}`);
 	}
 	const models = file.models.map((entry) => candidateModel(entry)).filter((entry): entry is CatalogModel => !!entry);
-	if (models.length !== file.models.length || models.length === 0) throw new Error(`Invalid cached model catalog for ${provider}`);
+	if (models.length !== file.models.length || models.length === 0)
+		throw new Error(`Invalid cached model catalog for ${provider}`);
 	return { version: 1, provider, fetchedAt: file.fetchedAt, models };
 }
 
-function authParts(credential: Credential | undefined, config: ProviderConfig | undefined): { headers: ProviderHeaders; query: Record<string, string> } {
+function authParts(
+	credential: Credential | undefined,
+	config: ProviderConfig | undefined,
+): { headers: ProviderHeaders; query: Record<string, string> } {
 	if (!credential) return { headers: {}, query: {} };
 	const secret = credential.type === "oauth" ? credential.access : credential.key;
 	if (!secret) return { headers: {}, query: {} };
@@ -155,9 +197,11 @@ function authParts(credential: Credential | undefined, config: ProviderConfig | 
 
 function mergeHeaders(...sets: ProviderHeaders[]): Headers {
 	const headers = new Headers({ accept: "application/json" });
-	for (const set of sets) for (const [name, value] of Object.entries(set)) {
-		if (value === null) headers.delete(name); else headers.set(name, value);
-	}
+	for (const set of sets)
+		for (const [name, value] of Object.entries(set)) {
+			if (value === null) headers.delete(name);
+			else headers.set(name, value);
+		}
 	return headers;
 }
 
@@ -195,7 +239,6 @@ export class ModelCatalog {
 			if (error instanceof SyntaxError) throw new Error(`Invalid cached model catalog JSON for ${provider}`);
 			throw error;
 		}
-
 	}
 
 	private async save(file: CatalogFile): Promise<void> {
@@ -234,7 +277,10 @@ export class ModelCatalog {
 		const config = this.configs.get(provider.id);
 		if (!config) {
 			if (provider.refreshModels) return this.piDiscovery(provider, credential);
-			const response = await this.fetcher(`${PI_CATALOG_BASE_URL}/api/models/providers/${encodeURIComponent(provider.id)}`, { signal: AbortSignal.timeout(15_000) });
+			const response = await this.fetcher(
+				`${PI_CATALOG_BASE_URL}/api/models/providers/${encodeURIComponent(provider.id)}`,
+				{ signal: AbortSignal.timeout(15_000) },
+			);
 			if (!response.ok) throw new Error(`Model catalog request failed for ${provider.id}: HTTP ${response.status}`);
 			return normalizeCatalogResponse(provider.id, await response.json());
 		}
@@ -244,14 +290,17 @@ export class ModelCatalog {
 		const extras = account ? await this.store.requestHeaders(provider.id, account) : {};
 		const auth = authParts(credential, config);
 		const headers = mergeHeaders(config.staticHeaders ?? {}, auth.headers, extras);
-		let bodyObject = mapping.body ? structuredClone(mapping.body) : undefined;
-		if (bodyObject) for (const [key, value] of Object.entries(bodyObject)) {
-			if (typeof value === "string" && value.startsWith("$slot:")) {
-				const slot = value.slice("$slot:".length); const replacement = headers.get(slot);
-				if (!replacement) throw new Error(`Model catalog for ${provider.id} requires slot ${slot}`);
-				bodyObject[key] = replacement; headers.delete(slot);
+		const bodyObject = mapping.body ? structuredClone(mapping.body) : undefined;
+		if (bodyObject)
+			for (const [key, value] of Object.entries(bodyObject)) {
+				if (typeof value === "string" && value.startsWith("$slot:")) {
+					const slot = value.slice("$slot:".length);
+					const replacement = headers.get(slot);
+					if (!replacement) throw new Error(`Model catalog for ${provider.id} requires slot ${slot}`);
+					bodyObject[key] = replacement;
+					headers.delete(slot);
+				}
 			}
-		}
 		const body = bodyObject ? JSON.stringify(bodyObject) : undefined;
 		if (body) headers.set("content-type", "application/json");
 		const models = new Map<string, CatalogModel>();
@@ -261,11 +310,19 @@ export class ModelCatalog {
 			const url = new URL(target.url);
 			for (const [name, value] of Object.entries(auth.query)) url.searchParams.set(name, value);
 			if (pageToken) url.searchParams.set(mapping.pageTokenParam ?? "pageToken", pageToken);
-			const response = await this.fetcher(url, { method: target.method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(15_000) });
+			const response = await this.fetcher(url, {
+				method: target.method,
+				headers,
+				...(body ? { body } : {}),
+				signal: AbortSignal.timeout(15_000),
+			});
 			if (!response.ok) throw new Error(`Model catalog request failed for ${provider.id}: HTTP ${response.status}`);
 			let payload: unknown;
-			try { payload = await response.json(); }
-			catch { throw new Error(`Model catalog response was not JSON for ${provider.id}`); }
+			try {
+				payload = await response.json();
+			} catch {
+				throw new Error(`Model catalog response was not JSON for ${provider.id}`);
+			}
 			for (const model of normalizeConfiguredCatalog(provider.id, payload, mapping)) models.set(model.id, model);
 			const next = mapping.nextPageTokenPath ? mappedString(payload, mapping.nextPageTokenPath) : undefined;
 			if (next && seenTokens.has(next)) throw new Error(`Model catalog for ${provider.id} repeated a page token`);
@@ -281,12 +338,20 @@ export class ModelCatalog {
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
 		// Never let a prior cached static revision hide newly shipped models.
 		if (this.configs.get(providerId) && !this.configs.get(providerId)?.models.list) {
-			return { provider: providerId, models: provider.getModels().map((model) => ({ id: model.id, name: model.name })), source: "builtin" };
+			return {
+				provider: providerId,
+				models: provider.getModels().map((model) => ({ id: model.id, name: model.name })),
+				source: "builtin",
+			};
 		}
 		const cached = await this.cached(providerId);
 		if (this.offline) {
 			if (cached) return { provider: providerId, models: cached.models, source: "cache", fetchedAt: cached.fetchedAt };
-			return { provider: providerId, models: provider.getModels().map((model) => ({ id: model.id, name: model.name })), source: "builtin" };
+			return {
+				provider: providerId,
+				models: provider.getModels().map((model) => ({ id: model.id, name: model.name })),
+				source: "builtin",
+			};
 		}
 		if (!options.refresh && cached && this.now() - cached.fetchedAt < this.ttlMs) {
 			return { provider: providerId, models: cached.models, source: "cache", fetchedAt: cached.fetchedAt };
@@ -297,7 +362,14 @@ export class ModelCatalog {
 			await this.save(file);
 			return { provider: providerId, models, source: "live", fetchedAt: file.fetchedAt };
 		} catch (error) {
-			if (cached) return { provider: providerId, models: cached.models, source: "cache", fetchedAt: cached.fetchedAt, error: error instanceof Error ? error.message : String(error) };
+			if (cached)
+				return {
+					provider: providerId,
+					models: cached.models,
+					source: "cache",
+					fetchedAt: cached.fetchedAt,
+					error: error instanceof Error ? error.message : String(error),
+				};
 			throw error;
 		}
 	}
@@ -314,5 +386,8 @@ export function materializeCatalogModels(provider: Provider, catalog: CatalogRes
 }
 
 export function isRunnableCatalogModel(model: CatalogModel): boolean {
-	return !model.supportedMethods || model.supportedMethods.some((method) => method === "generateContent" || method === "streamGenerateContent");
+	return (
+		!model.supportedMethods ||
+		model.supportedMethods.some((method) => method === "generateContent" || method === "streamGenerateContent")
+	);
 }

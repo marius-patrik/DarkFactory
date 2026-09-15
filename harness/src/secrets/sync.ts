@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import { loadVault, saveVault, mergeVaults } from "./vault-store.ts";
 import type { Vault } from "./vault.ts";
+import { loadVault, mergeVaults, saveVault } from "./vault-store.ts";
 
 export interface SyncOptions {
 	dataRepoPath: string;
@@ -12,10 +12,7 @@ export interface SyncOptions {
 
 async function git(cwd: string, ...args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
 	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
-	const [stdout, stderr] = await Promise.all([
-		new Response(proc.stdout).text(),
-		new Response(proc.stderr).text(),
-	]);
+	const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
 	const exitCode = await proc.exited;
 	return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode };
 }
@@ -67,7 +64,12 @@ export async function commitAndPush(
 	const { stat: fsStat } = await import("node:fs/promises");
 	const existing: string[] = [];
 	for (const f of ["vault.enc.json", "vault.meta.json", "push-map.json"]) {
-		try { await fsStat(join(dataRepoPath, f)); existing.push(f); } catch { /* skip missing */ }
+		try {
+			await fsStat(join(dataRepoPath, f));
+			existing.push(f);
+		} catch {
+			/* skip missing */
+		}
 	}
 	if (existing.length === 0) return { pushed: false, output: "No files to commit" };
 	const addResult = await git(dataRepoPath, "add", ...existing);
@@ -91,8 +93,13 @@ export async function commitAndPush(
 		return { pushed: false, output: `Push failed: ${pushResult.stderr}` };
 	}
 	// Detect if push actually transferred commits
-	const didPush = committed || !(pushResult.stdout.includes("Everything up-to-date") || pushResult.stderr.includes("Everything up-to-date"));
-	return { pushed: didPush, output: pushResult.stdout || pushResult.stderr || (didPush ? "Pushed" : "Everything up-to-date") };
+	const didPush =
+		committed ||
+		!(pushResult.stdout.includes("Everything up-to-date") || pushResult.stderr.includes("Everything up-to-date"));
+	return {
+		pushed: didPush,
+		output: pushResult.stdout || pushResult.stderr || (didPush ? "Pushed" : "Everything up-to-date"),
+	};
 }
 
 async function readRemoteVault(options: SyncOptions, keyBase64: string): Promise<Vault | undefined> {
@@ -144,7 +151,11 @@ export async function syncDataRepo(
 		const pullResult = await git(options.dataRepoPath, "pull", "--rebase", remote, branch);
 		if (pullResult.exitCode !== 0) {
 			// Conflict? Try to abort and merge vaults if key available
-			const isConflict = pullResult.stderr.includes("CONFLICT") || pullResult.stdout.includes("CONFLICT") || pullResult.stderr.includes("conflict") || pullResult.stderr.includes("Failed to merge");
+			const isConflict =
+				pullResult.stderr.includes("CONFLICT") ||
+				pullResult.stdout.includes("CONFLICT") ||
+				pullResult.stderr.includes("conflict") ||
+				pullResult.stderr.includes("Failed to merge");
 			if (isConflict) {
 				await git(options.dataRepoPath, "rebase", "--abort").catch(() => undefined);
 				if (options.keyBase64) {

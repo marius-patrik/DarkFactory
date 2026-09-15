@@ -220,10 +220,7 @@ export async function getRunLogs(
 			status: string;
 			conclusion: string | null;
 		}>;
-	}>(
-		"GET",
-		`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/actions/runs/${runId}/jobs`,
-	);
+	}>("GET", `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/actions/runs/${runId}/jobs`);
 
 	let jobs = jobsData.jobs ?? [];
 	if (options.jobId !== undefined) {

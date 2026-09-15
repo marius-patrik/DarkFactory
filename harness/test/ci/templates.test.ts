@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { renderWorkflowTemplate, parseManagedHeader, verifyWorkflowHash } from "../../src/ci/templates.ts";
+import { parseManagedHeader, renderWorkflowTemplate, verifyWorkflowHash } from "../../src/ci/templates.ts";
 
 describe("Workflow templates & managed headers", () => {
 	it("renders template with variables and prepends managed header", () => {

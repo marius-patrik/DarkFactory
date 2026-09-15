@@ -127,10 +127,7 @@ export async function runCiDoctor(
 		}
 	}
 
-	const ok =
-		configResult.status === "pass" &&
-		workflowsResult.status !== "fail" &&
-		protectionResult.status !== "fail";
+	const ok = configResult.status === "pass" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
 
 	return {
 		ok,
