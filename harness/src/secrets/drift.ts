@@ -1,26 +1,54 @@
 import type { GitHubClient } from "../github/client.ts";
 import type { VaultMeta, PushMap } from "./vault.ts";
 
+/**
+ * Information about a secret stored in GitHub.
+ */
 export interface GitHubSecretInfo {
+	/** The name of the secret stored in GitHub. */
 	name: string;
+	/** ISO 8601 timestamp when the secret was created. */
 	created_at: string;
+	/** ISO 8601 timestamp when the secret was last updated. */
 	updated_at: string;
 }
 
+/**
+ * Entry describing the drift status of a single secret.
+ */
 export interface DriftEntry {
+	/** The name of the local secret in the vault. */
 	name: string;
+	/** The GitHub secret name (may differ from local name). */
 	ghName: string;
+	/** The drift status: match, vault-only, github-only, or stale. */
 	status: "match" | "vault-only" | "github-only" | "stale";
+	/** ISO 8601 timestamp of the last vault update. */
 	vaultUpdated?: string;
+	/** ISO 8601 timestamp of the last GitHub update. */
 	githubUpdated?: string;
 }
 
+/**
+ * Report describing drift between vault and GitHub secrets for a repository.
+ */
 export interface DriftReport {
+	/** The repository slug (owner/repo). */
 	repo: string;
+	/** List of drift entries for each secret. */
 	entries: DriftEntry[];
+	/** Whether all secrets are in sync (no drift detected). */
 	healthy: boolean;
 }
 
+/**
+ * Detects drift between local vault secrets and GitHub repository secrets.
+ * @param client - The GitHub client to fetch secrets data.
+ * @param repoSlug - The repository slug (owner/repo) to check.
+ * @param meta - The vault metadata containing secret entries.
+ * @param pushMap - The push map defining how secrets map to GitHub.
+ * @returns A drift report indicating whether secrets are in sync.
+ */
 export async function detectDrift(
 	client: GitHubClient,
 	repoSlug: string,

@@ -19,11 +19,28 @@ import { emptyVault } from "./vault.ts";
 import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 
+/**
+ * Information about a GitHub client and repository for a given repo slug.
+ */
+export interface GitHubClientInfo {
+	/** The GitHub client instance. */
+	client: GitHubClient;
+	/** The GitHub repository object. */
+	repository: GitHubRepository;
+}
+
+/**
+ * CLI dependencies for secrets commands.
+ */
 export interface SecretsCommandDeps {
+	/** Path to the user's DF home directory. */
 	dfHome: string;
+	/** Allow falling back to file-based key storage when OS keychain is unavailable. */
 	allowFileKey?: boolean;
+	/** Function to read a value from stdin (used for secure key/value input). */
 	stdin?: () => Promise<string>;
-	githubClient?: (repoSlug: string) => { client: GitHubClient; repository: GitHubRepository };
+	/** Function to get a GitHub client and repository for the given repo slug. */
+	githubClient?: (repoSlug: string) => GitHubClientInfo;
 }
 
 function option(args: string[], name: string): string | undefined {
@@ -61,6 +78,10 @@ function secretsHelp(): string {
 	].join("\n");
 }
 
+/**
+ * Main entry point for the secrets CLI command.
+ * Parses arguments and executes the requested secrets operation.
+ */
 export async function secretsCommand(args: string[], deps: SecretsCommandDeps): Promise<void> {
 	if (args.length === 0 || args[0] === "help" || args[0] === "--help" || args[0] === "-h") {
 		console.log(secretsHelp());

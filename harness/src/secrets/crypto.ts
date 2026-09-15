@@ -5,10 +5,18 @@ const ALGORITHM = "aes-256-gcm";
 const KEY_BYTE_LENGTH = 32;
 const IV_BYTE_LENGTH = 12;
 
+/**
+ * Generates a random vault key for encryption.
+ * Returns a 32-byte key encoded as base64.
+ */
 export function generateVaultKey(): string {
   return randomBytes(KEY_BYTE_LENGTH).toString("base64");
 }
 
+/**
+ * Validates whether a base64 string is a valid vault key.
+ * A valid key must be exactly 32 bytes when decoded from base64.
+ */
 export function isValidVaultKey(keyBase64: string): boolean {
   if (!keyBase64 || typeof keyBase64 !== "string") return false;
   try {
@@ -19,6 +27,12 @@ export function isValidVaultKey(keyBase64: string): boolean {
   }
 }
 
+/**
+ * Encrypts a vault using AES-256-GCM.
+ * @param vault - The vault object to encrypt.
+ * @param keyBase64 - The base64-encoded encryption key.
+ * @returns An encrypted vault envelope containing ciphertext, IV, and auth tag.
+ */
 export function encryptVault(vault: Vault, keyBase64: string): EncryptedVaultEnvelope {
   if (!isValidVaultKey(keyBase64)) throw new Error("Invalid vault key format");
   const key = Buffer.from(keyBase64, "base64");
@@ -38,6 +52,13 @@ export function encryptVault(vault: Vault, keyBase64: string): EncryptedVaultEnv
   };
 }
 
+/**
+ * Decrypts a vault envelope using AES-256-GCM.
+ * @param envelope - The encrypted vault envelope to decrypt.
+ * @param keyBase64 - The base64-encoded decryption key.
+ * @returns The decrypted vault object.
+ * @throws Error if the key is invalid, the envelope is corrupted, or the vault structure is invalid.
+ */
 export function decryptVault(envelope: EncryptedVaultEnvelope, keyBase64: string): Vault {
   if (!isValidVaultKey(keyBase64)) throw new Error("Invalid vault key format");
   if (!envelope || envelope.version !== 1 || envelope.algorithm !== ALGORITHM) {

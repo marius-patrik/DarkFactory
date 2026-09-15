@@ -4,12 +4,41 @@ import { join } from "node:path";
 const SERVICE = "df-vault";
 const ACCOUNT = "vault-key";
 
-export type CommandRunner = (cmd: string, args: string[], stdin?: string) => Promise<{ stdout: string; exitCode: number }>;
+/**
+ * Result of a command execution.
+ *
+ * @property stdout - The command's standard output.
+ * @property exitCode - The command's exit status code.
+ */
+export interface CommandResult {
+  /** The command's standard output. */
+  stdout: string;
+  /** The command's exit status code. */
+  exitCode: number;
+}
 
+/**
+ * Function type for running shell commands with optional stdin input.
+ *
+ * @param cmd - The command to run.
+ * @param args - Command arguments.
+ * @param stdin - Optional input to pipe to stdin.
+ * @returns The command output and exit code.
+ */
+export type CommandRunner = (cmd: string, args: string[], stdin?: string) => Promise<CommandResult>;
+
+
+/**
+ * Options for keychain operations.
+ */
 export interface KeychainOptions {
+	/** Path to the user's DF home directory. */
 	dfHome: string;
+	/** Allow falling back to file-based key storage when OS keychain is unavailable. */
 	allowFileKey?: boolean;
+	/** Override the platform detection (useful for testing). */
 	platform?: NodeJS.Platform;
+	/** Override the command runner (useful for testing). */
 	runner?: CommandRunner;
 }
 
@@ -135,6 +164,12 @@ async function deleteFile(home: string): Promise<void> {
 	}
 }
 
+/**
+ * Stores a vault key in the OS keychain (or file if allowed).
+ * @param keyBase64 - The base64-encoded vault key to store.
+ * @param options - Keychain options including dfHome and allowFileKey.
+ * @throws Error if OS keychain is unavailable and file fallback is not allowed.
+ */
 export async function storeVaultKey(keyBase64: string, options: KeychainOptions): Promise<void> {
 	const platform = getPlatform(options);
 	const runner = getRunner(options);
@@ -152,6 +187,11 @@ export async function storeVaultKey(keyBase64: string, options: KeychainOptions)
 	throw new Error("OS keychain unavailable and file-based key storage not allowed. Use --insecure-file-key.");
 }
 
+/**
+ * Loads a vault key from the OS keychain (or file if allowed).
+ * @param options - Keychain options including dfHome and allowFileKey.
+ * @returns The base64-encoded vault key, or undefined if not found.
+ */
 export async function loadVaultKey(options: KeychainOptions): Promise<string | undefined> {
 	const platform = getPlatform(options);
 	const runner = getRunner(options);
@@ -166,6 +206,10 @@ export async function loadVaultKey(options: KeychainOptions): Promise<string | u
 	return undefined;
 }
 
+/**
+ * Deletes a vault key from the OS keychain and file fallback.
+ * @param options - Keychain options including dfHome.
+ */
 export async function deleteVaultKey(options: KeychainOptions): Promise<void> {
 	const runner = getRunner(options);
 	const platform = getPlatform(options);
