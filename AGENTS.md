@@ -103,11 +103,11 @@ submitted through GitHub Pull Requests. Direct commits and pushes to the protect
 
 ### Rule 8 — Automated formatting and linting
 
-Formatting is not a review topic — it is automated. `rustfmt` for Rust, the workspace formatter
-(`bun format` when the TypeScript foundation lands) for TypeScript, and `black` (line length 100)
-for Python automation. The GitHub Actions bot formats the codebase on every push across branches and
-commits any adjustments. Lints are blocking: `cargo clippy -D warnings` today, the Bun-native lint
-gate after the workspace lands.
+Formatting is not a review topic — it is automated. `rustfmt` for Rust, Biome (`harness/biome.json`)
+for TypeScript, and `black` (line length 100) for Python automation. The GitHub Actions bot formats
+the codebase on every push across branches and commits any adjustments. Lints are blocking:
+`cargo clippy -D warnings` for Rust and `biome ci` for TypeScript. Until the one-time full harness
+reformat lands, Biome formats and checks the TypeScript files a change touches.
 
 ### Rule 9 — Issue binding, branch auto-deletion, and board status
 
