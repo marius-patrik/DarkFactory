@@ -114,6 +114,7 @@ function removeOptions(args: string[], names: readonly string[]): string[] {
 }
 
 export { parseCandidate } from "./harness/routing.ts";
+export { routerModels };
 
 async function providersCommand(registry: ProviderRegistry): Promise<void> {
 	console.log("provider\toauth-login\tsubscription");
@@ -340,6 +341,27 @@ function fauxProviders(enabled: boolean): { providers: Provider[]; optional: str
 	return { providers: [handle.provider], optional: ["faux"] };
 }
 
+/**
+ * Reports whether a stored account holds every required credential slot — the same check the runtime enforces before a
+ * run — so the router never offers a candidate that would fail authentication.
+ *
+ * @param store - Credential store to read.
+ * @param provider - Provider id.
+ * @param account - Account label.
+ * @param required - The provider's `requiredCredentialSlots`.
+ * @returns True when the credential exists and every slot is present; false on any read error.
+ */
+async function accountHasSlots(store: FileCredentialStore, provider: string, account: string, required: readonly string[]): Promise<boolean> {
+	try {
+		const credential = await store.forAccount(provider, account).read(provider);
+		if (!credential) return false;
+		const record = await store.readAccount(`${provider}:${account}`);
+		return required.every((slot) => (slot === "api_key" && credential.type === "api_key") || (slot === "oauth" && credential.type === "oauth") || record?.slots[slot] !== undefined);
+	} catch {
+		return false;
+	}
+}
+
 async function routerModels(registry: ProviderRegistry, store: FileCredentialStore, config: DfConfig, args: string[]): Promise<ModelCapability[]> {
 	const accountSets = new Map<string, Set<string>>();
 	const declarations = [config.defaultChain, config.hardReasoningChain, config.sensitiveChain, config.router?.classifier, ...(config.router?.candidates ?? []), ...(config.router?.policies.flatMap((policy) => policy.prefer.candidates ?? []) ?? [])];
@@ -353,6 +375,18 @@ async function routerModels(registry: ProviderRegistry, store: FileCredentialSto
 		const accounts = accountSets.get(account.provider) ?? new Set<string>(); accounts.add(account.label); accountSets.set(account.provider, accounts);
 	}
 	const accounts = new Map([...accountSets].map(([provider, values]) => [provider, [...values]]));
+	// A provider that requires credentials keeps only the accounts holding every required slot; with none left it leaves the
+	// candidate universe. Providers without required slots and anonymous transports (optional API key with an anonymous
+	// value) stay as declared.
+	const unavailable = new Set<string>();
+	for (const provider of registry.entries) {
+		const required = provider.requiredCredentialSlots ?? [];
+		if (required.length === 0 || provider.auth.some((auth) => auth.kind === "api_key" && auth.optional && auth.anonymousValue !== undefined)) continue;
+		const usable: string[] = [];
+		for (const account of accounts.get(provider.id) ?? []) if (await accountHasSlots(store, provider.id, account, required)) usable.push(account);
+		if (usable.length > 0) accounts.set(provider.id, usable);
+		else { accounts.delete(provider.id); unavailable.add(provider.id); }
+	}
 	const fauxEnabled = args.includes("--faux") || process.env.DF_FAUX === "1";
 	const faux = fauxProviders(fauxEnabled);
 	const catalog = new ModelCatalog({
@@ -360,7 +394,7 @@ async function routerModels(registry: ProviderRegistry, store: FileCredentialSto
 		offline: fauxEnabled || process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
 	});
 	const catalogs = new Map<string, CatalogResult>();
-	await Promise.all(registry.entries.filter((provider) => provider.enabled !== false).map(async (provider) => {
+	await Promise.all(registry.entries.filter((provider) => provider.enabled !== false && !unavailable.has(provider.id)).map(async (provider) => {
 		const account = accounts.get(provider.id)?.[0] ?? "default";
 		if (provider.models.list && !provider.auth.some((auth) => auth.kind === "api_key" && auth.optional)) {
 			const knownAccount = (accounts.get(provider.id)?.length ?? 0) > 0;
@@ -370,7 +404,7 @@ async function routerModels(registry: ProviderRegistry, store: FileCredentialSto
 		}
 		try { catalogs.set(provider.id, await catalog.get(provider.id, { account })); } catch { /* static declarations remain the offline fallback */ }
 	}));
-	const models = buildRouterCatalog({ providers: registry.entries, catalogs, accounts, overrides: config.router?.models });
+	const models = buildRouterCatalog({ providers: registry.entries.filter((provider) => !unavailable.has(provider.id)), catalogs, accounts, overrides: config.router?.models });
 	if (fauxEnabled) models.push({
 		candidate: { provider: "faux", model: "echo", account: "test" }, contextWindow: 128_000,
 		tools: true, reasoning: true, modalities: ["text", "image"], quality: {}, limitTier: "standard", source: "builtin",
