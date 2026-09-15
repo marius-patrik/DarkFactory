@@ -38,6 +38,7 @@ import { buildQuotaReport } from "./limits/quota-report.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { loginProviderAccount } from "./login.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
+import { ModelPoller } from "./models/poller.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
@@ -166,57 +167,129 @@ function providerList(registry: ProviderRegistry, additional: readonly Provider[
 	return [...byId.values()];
 }
 
-async function modelsCommand(registry: ProviderRegistry, store: FileCredentialStore, args: string[]): Promise<void> {
+async function modelsCommand(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	args: string[],
+	ledger?: LimitLedger,
+): Promise<void> {
 	const selected = option(args, "--provider");
 	const requestedAccount = option(args, "--account");
 	const refresh = args.includes("--refresh");
+	const json = args.includes("--json");
+	const usableFlag = args.includes("--usable");
+	const staleFlag = args.includes("--stale");
 	const providers = providerList(registry).filter((provider) => !selected || provider.id === selected);
 	if (selected && providers.length === 0) throw new Error(`Unknown provider ${selected}`);
 	const accounts = await store.listAccounts();
-	const catalog = new ModelCatalog({
-		home: defaultDfHome(),
-		providers,
-		providerConfigs: registry.entries,
-		store,
-		offline: process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
-	});
+	// Build account map for ModelPoller
+	const accountMap = new Map<string, string[]>();
+	for (const entry of accounts) {
+		const list = accountMap.get(entry.provider) ?? [];
+		list.push(entry.label);
+		accountMap.set(entry.provider, list);
+	}
+	// Helper to resolve account for a provider (same logic as original)
+	const resolveAccount = (providerId: string): string => {
+		return requestedAccount ?? accounts.find((e) => e.provider === providerId)?.label ?? "default";
+	};
 	let failures = 0;
-	console.log("provider\tmodel\tname\tmethods\tsource");
-	for (const provider of providers.sort((a, b) => a.id.localeCompare(b.id))) {
-		// Stored accounts first; otherwise "default", which resolves env vars and config.json credentialFiles.
-		const account = requestedAccount ?? accounts.find((entry) => entry.provider === provider.id)?.label ?? "default";
-		const config = registry.config(provider.id);
-		const anonymous = config?.auth.some((auth) => auth.kind === "api_key" && auth.optional) ?? false;
-		let credential: unknown;
-		try {
-			credential = await store.forAccount(provider.id, account).read(provider.id);
-		} catch (error) {
-			console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
-			failures++;
-			continue;
-		}
-		if (!credential && !anonymous && config?.models.list) {
-			if (selected) {
-				console.error(`[models] ${provider.id}@${account}: no credentials (df account import|set, or df login)`);
+	if (!usableFlag && !staleFlag) {
+		// Existing behavior – list all models from catalog
+		const catalog = new ModelCatalog({
+			home: defaultDfHome(),
+			providers,
+			providerConfigs: registry.entries,
+			store,
+			offline: process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
+		});
+		console.log("provider\tmodel\tname\tmethods\tsource");
+		for (const provider of providers.sort((a, b) => a.id.localeCompare(b.id))) {
+			const account = resolveAccount(provider.id);
+			const config = registry.config(provider.id);
+			const anonymous = config?.auth.some((auth) => auth.kind === "api_key" && auth.optional) ?? false;
+			let credential: unknown;
+			try {
+				credential = await store.forAccount(provider.id, account).read(provider.id);
+			} catch (error) {
+				console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
 				failures++;
-			} else console.error(`[models] ${provider.id}: skipped, no credentials for account ${account}`);
-			continue;
-		}
-		try {
-			const result = await catalog.get(provider.id, { account, refresh });
-			if (result.error) {
-				console.error(
-					`[models] ${provider.id}@${account}: live refresh failed (${result.error}); serving cached catalog`,
-				);
-				if (refresh) failures++;
+				continue;
 			}
-			for (const model of result.models)
-				console.log(
-					`${provider.id}\t${model.id}\t${model.name}\t${model.supportedMethods?.join(",") ?? "-"}\t${result.source}`,
-				);
-		} catch (error) {
-			console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
-			failures++;
+			if (!credential && !anonymous && config?.models.list) {
+				if (selected) {
+					console.error(`[models] ${provider.id}@${account}: no credentials (df account import|set, or df login)`);
+					failures++;
+				} else console.error(`[models] ${provider.id}: skipped, no credentials for account ${account}`);
+				continue;
+			}
+			try {
+				const result = await catalog.get(provider.id, { account, refresh });
+				if (result.error) {
+					console.error(
+						`[models] ${provider.id}@${account}: live refresh failed (${result.error}); serving cached catalog`,
+					);
+					if (refresh) failures++;
+				}
+				for (const model of result.models)
+					console.log(
+						`${provider.id}\t${model.id}\t${model.name}\t${model.supportedMethods?.join(",") ?? "-"}\t${result.source}`,
+					);
+			} catch (error) {
+				console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
+				failures++;
+			}
+		}
+	} else {
+		const sources = new Map<string, string>();
+		const catalog = new ModelCatalog({
+			home: defaultDfHome(),
+			providers,
+			providerConfigs: registry.entries,
+			store,
+			offline: process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
+		});
+		const capturingCatalog = {
+			get: async (providerId: string, options?: { account?: string; refresh?: boolean }) => {
+				const result = await catalog.get(providerId, { ...(options ?? {}), refresh: options?.refresh ?? refresh });
+				sources.set(`${providerId}\u0000${options?.account ?? ""}`, result.source);
+				return result;
+			},
+		} as ModelCatalog;
+		const poller = new ModelPoller({
+			catalog: capturingCatalog,
+			providers: [...registry.entries],
+			accounts: accountMap,
+			ledger,
+		});
+		const rows: Array<Record<string, string>> = [];
+		for (const provider of providers.sort((a, b) => a.id.localeCompare(b.id))) {
+			const account = resolveAccount(provider.id);
+			try {
+				const { usable, stale, excluded } = await poller.poll(provider.id, account);
+				const source = sources.get(`${provider.id}\u0000${account}`) ?? "live";
+				if (usableFlag) {
+					for (const model of usable)
+						rows.push({ provider: provider.id, model: model.id, account, source, reason: "" });
+					for (const model of excluded)
+						rows.push({ provider: provider.id, model: model.id, account, source, reason: model.reason });
+				}
+				if (staleFlag) {
+					for (const id of stale)
+						rows.push({ provider: provider.id, model: id, account, source, reason: "missing from live list" });
+				}
+			} catch (error) {
+				console.error(`[models] ${provider.id}@${account}: ${error instanceof Error ? error.message : String(error)}`);
+				failures++;
+			}
+		}
+		if (json) console.log(JSON.stringify(rows));
+		else {
+			console.log(usableFlag ? "model\tsource\treason" : "provider\tmodel\treason");
+			for (const row of rows) {
+				if (usableFlag) console.log(`${row.provider}/${row.model}@${row.account}\t${row.source}\t${row.reason || "-"}`);
+				else console.log(`${row.provider}\t${row.model}\t${row.reason}`);
+			}
 		}
 	}
 	if (failures > 0) process.exitCode = 1;
@@ -567,6 +640,7 @@ async function routerModels(
 		offline: fauxEnabled || process.env.DF_OFFLINE === "1" || process.env.PI_OFFLINE !== undefined,
 	});
 	const catalogs = new Map<string, CatalogResult>();
+	const ledger = new LimitLedger(defaultDfHome());
 	await Promise.all(
 		registry.entries
 			.filter((provider) => provider.enabled !== false && !unavailable.has(provider.id))
@@ -583,7 +657,17 @@ async function routerModels(
 					if (!credential && !knownAccount) return;
 				}
 				try {
-					catalogs.set(provider.id, await catalog.get(provider.id, { account }));
+					const result = await catalog.get(provider.id, { account });
+					// The poller decides what is usable from that listing: text-generation models only, free models on
+					// free tiers, minus routing.exclude and learned unavailability from the limit ledger (D3).
+					const poller = new ModelPoller({
+						catalog: { get: async () => result } as unknown as ModelCatalog,
+						providers: [provider],
+						accounts,
+						ledger,
+					});
+					const { usable } = await poller.poll(provider.id, account);
+					catalogs.set(provider.id, { ...result, models: usable });
 				} catch {
 					/* static declarations remain the offline fallback */
 				}
@@ -1254,7 +1338,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 		case "providers":
 			return providersCommand(registry);
 		case "models":
-			return modelsCommand(registry, store, args.slice(1));
+			return modelsCommand(registry, store, args.slice(1), ledger);
 		case "accounts":
 			return accountsCommand(store);
 		case "limits":
