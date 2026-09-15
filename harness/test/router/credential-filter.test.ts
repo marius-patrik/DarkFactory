@@ -6,6 +6,7 @@ import defaultsJson from "../../assets/providers.defaults.json";
 import { routerModels } from "../../src/cli.ts";
 import type { DfConfig } from "../../src/config.ts";
 import { FileCredentialStore } from "../../src/credentials.ts";
+import { LimitLedger } from "../../src/limits/ledger.ts";
 import { ProviderRegistry } from "../../src/providers/runtime.ts";
 import { type ProviderConfigFile, parseProviderConfigFile } from "../../src/providers/schema.ts";
 
@@ -69,4 +70,31 @@ test("a disabled provider stays excluded even with its credentials stored", asyn
 		expires: Date.now() + 60_000,
 	});
 	expect((await providers(credentials)).has("google-antigravity")).toBe(false);
+});
+
+test("a model with a learned model limit leaves the candidates while the account's other models stay", async () => {
+	const credentials = store();
+	await credentials.setSlot("google:work", "api_key", { type: "api_key", value: "fixture-key" });
+	const before = [...(await routerModels(registry(), credentials, config, []))].filter(
+		(model) => model.candidate.provider === "google",
+	);
+	expect(before.length).toBeGreaterThan(1);
+	const blocked = before[0]!.candidate.model;
+	const now = Date.now();
+	await new LimitLedger(process.env.DF_HOME!).record([
+		{
+			provider: "google",
+			account: "work",
+			model: blocked,
+			type: "model",
+			observedAt: now,
+			resetAt: now + 3_600_000,
+			source: "body",
+		},
+	]);
+	const after = (await routerModels(registry(), credentials, config, []))
+		.filter((model) => model.candidate.provider === "google")
+		.map((model) => model.candidate.model);
+	expect(after).not.toContain(blocked);
+	expect(after.length).toBe(before.length - 1);
 });

@@ -8,10 +8,36 @@ import { replaceFile } from "../storage/replace-file.ts";
 export const DEFAULT_MODEL_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const PI_CATALOG_BASE_URL = "https://pi.dev";
 
+const DIALECT_DEFAULTS: Record<string, ModelListConfig> = {
+	"openai-completions": { path: "/models", method: "GET", itemsPath: "data", idPath: "id", namePath: "display_name" },
+	"openai-responses": { path: "/models", method: "GET", itemsPath: "data", idPath: "id", namePath: "display_name" },
+	"google-generative-ai": {
+		path: "/models",
+		method: "GET",
+		itemsPath: "models",
+		idPath: "name",
+		namePath: "displayName",
+		stripIdPrefix: "models/",
+		methodsPath: "supportedGenerationMethods",
+	},
+	"anthropic-messages": {
+		path: "/v1/models",
+		method: "GET",
+		itemsPath: "data",
+		idPath: "id",
+		namePath: "display_name",
+	},
+};
+
 export interface CatalogModel {
 	id: string;
 	name: string;
 	supportedMethods?: string[];
+	/** Optional metadata fields */
+	contextLength?: number;
+	modalities?: string[];
+	tools?: boolean;
+	pricing?: { prompt?: string; completion?: string; free?: boolean };
 }
 
 interface CatalogFile {
@@ -47,6 +73,41 @@ function nonEmpty(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function modelMetadata(item: Record<string, unknown>, id: string, supportedMethods?: string[]): Partial<CatalogModel> {
+	const contextLength = [item.context_length, item.inputTokenLimit, item.context_window].find(
+		(value): value is number => typeof value === "number",
+	);
+	let modalities: string[] | undefined;
+	if (Array.isArray(item.modalities))
+		modalities = item.modalities.filter((value): value is string => typeof value === "string");
+	else if (Array.isArray(item.tasks))
+		modalities = item.tasks.filter((value): value is string => typeof value === "string");
+	else if (supportedMethods)
+		modalities = supportedMethods
+			.map((method) => (method === "generateContent" ? "text" : method === "predict" ? "image" : undefined))
+			.filter((value) => typeof value === "string") as string[];
+	const tools = Array.isArray(item.supported_parameters) && item.supported_parameters.includes("tools");
+	let pricing: CatalogModel["pricing"];
+	const free = id.includes(":free") || id.includes("-free");
+	if (item.pricing && typeof item.pricing === "object") {
+		const raw = item.pricing as Record<string, unknown>;
+		const prompt = typeof raw.prompt === "string" ? raw.prompt : undefined;
+		const completion = typeof raw.completion === "string" ? raw.completion : undefined;
+		if (prompt !== undefined || completion !== undefined || free || prompt === "0")
+			pricing = {
+				...(prompt !== undefined ? { prompt } : {}),
+				...(completion !== undefined ? { completion } : {}),
+				...(prompt === "0" || free ? { free: true } : {}),
+			};
+	} else if (free) pricing = { free: true };
+	return {
+		...(contextLength !== undefined ? { contextLength } : {}),
+		...(modalities?.length ? { modalities: [...new Set(modalities)] } : {}),
+		...(tools ? { tools: true } : {}),
+		...(pricing ? { pricing } : {}),
+	};
+}
+
 function candidateModel(value: unknown, key?: string): CatalogModel | undefined {
 	if (typeof value === "string") return { id: value, name: value };
 	if (!value || typeof value !== "object") return undefined;
@@ -78,7 +139,12 @@ function candidateModel(value: unknown, key?: string): CatalogModel | undefined 
 	const supportedMethods = Array.isArray(rawMethods)
 		? rawMethods.filter((method): method is string => typeof method === "string" && method.length > 0)
 		: undefined;
-	return { id, name, ...(supportedMethods?.length ? { supportedMethods: [...new Set(supportedMethods)].sort() } : {}) };
+	return {
+		id,
+		name,
+		...(supportedMethods?.length ? { supportedMethods: [...new Set(supportedMethods)].sort() } : {}),
+		...modelMetadata(item, id, supportedMethods),
+	};
 }
 
 /** Normalizes OpenAI, Anthropic, Google, pi.dev, and Antigravity catalog envelopes. */
@@ -126,7 +192,11 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 				? rawId.slice(mapping.stripIdPrefix.length)
 				: rawId;
 		if (!id) continue;
-		const methodsValue = mapping.methodsPath ? pathValues(entry.value, mapping.methodsPath)[0]?.value : undefined;
+		const entryRecord =
+			entry.value && typeof entry.value === "object" ? (entry.value as Record<string, unknown>) : undefined;
+		const methodsValue = mapping.methodsPath
+			? pathValues(entry.value, mapping.methodsPath)[0]?.value
+			: (entryRecord?.supportedGenerationMethods ?? entryRecord?.supportedMethods);
 		const methods = Array.isArray(methodsValue)
 			? methodsValue.filter((item): item is string => typeof item === "string" && !!item)
 			: undefined;
@@ -134,6 +204,7 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 			id,
 			name: mappedString(entry.value, mapping.namePath, entry.key) ?? id,
 			...(methods?.length ? { supportedMethods: [...new Set(methods)].sort() } : {}),
+			...modelMetadata(entryRecord ?? {}, id, methods),
 		});
 	}
 	if (byId.size === 0) throw new Error(`Model catalog for provider ${provider} contained no valid models`);
@@ -284,7 +355,7 @@ export class ModelCatalog {
 			if (!response.ok) throw new Error(`Model catalog request failed for ${provider.id}: HTTP ${response.status}`);
 			return normalizeCatalogResponse(provider.id, await response.json());
 		}
-		const mapping = config.models.list;
+		const mapping = config.models.list ?? DIALECT_DEFAULTS[config.dialect];
 		if (!mapping) return provider.getModels().map((entry) => ({ id: entry.id, name: entry.name }));
 		const target = { url: `${config.baseUrl.replace(/\/$/u, "")}${mapping.path}`, method: mapping.method ?? "GET" };
 		const extras = account ? await this.store.requestHeaders(provider.id, account) : {};
@@ -337,7 +408,11 @@ export class ModelCatalog {
 		if (!provider) throw new Error(`Unknown provider ${providerId}`);
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
 		// Never let a prior cached static revision hide newly shipped models.
-		if (this.configs.get(providerId) && !this.configs.get(providerId)?.models.list) {
+		if (
+			this.configs.get(providerId) &&
+			!this.configs.get(providerId)?.models.list &&
+			!DIALECT_DEFAULTS[this.configs.get(providerId)!.dialect]
+		) {
 			return {
 				provider: providerId,
 				models: provider.getModels().map((model) => ({ id: model.id, name: model.name })),
