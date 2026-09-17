@@ -232,7 +232,9 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 						);
 					}
 				} catch (e) {
-					summaryLines.push(`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`);
+					summaryLines.push(
+						`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`,
+					);
 				}
 				summaryLines.push("");
 			}
