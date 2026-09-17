@@ -1,12 +1,12 @@
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { type PlanAction } from "./types.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
 import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
 import { plan } from "./planner.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
+import type { PlanAction } from "./types.ts";
 import { validateGraph } from "./validator.ts";
 
 export interface DispatchOptions {
