@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { resolveDfFile } from "./utils/resolver";
 import { isAbsolute, join, resolve } from "node:path";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
@@ -203,10 +203,15 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 }
 
 export async function loadDfConfig(
-	home: string,
+	root: string,
 	reader: ConfigReader = (path) => readFile(path, "utf8"),
 ): Promise<DfConfig> {
-	const path = join(home, "config.json");
+	let path: string;
+	try {
+		path = resolveDfFile(root, "config");
+	} catch {
+		return {};
+	}
 	let raw: string;
 	try {
 		raw = await reader(path);
@@ -220,7 +225,7 @@ export async function loadDfConfig(
 	} catch {
 		throw new Error("Invalid $DF_HOME/config.json JSON");
 	}
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid $DF_HOME/config.json");
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Invalid ${path}`);
 	const record = value as Record<string, unknown>;
 	const hardReasoningChain = optionalString(record, "hardReasoningChain");
 	const sensitiveChain = optionalString(record, "sensitiveChain");

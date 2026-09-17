@@ -11,7 +11,7 @@ export class OutcomeStore {
 	private readonly maxRecords: number;
 
 	constructor(home: string, options: { windowMs?: number; maxPenalty?: number; maxRecords?: number } = {}) {
-		this.path = join(home, "router-outcomes.jsonl");
+		this.path = join(home, "router-outcomes.df");
 		this.windowMs = options.windowMs ?? 7 * 86_400_000;
 		this.maxPenalty = options.maxPenalty ?? 20;
 		this.maxRecords = options.maxRecords ?? 1_000;

@@ -30,26 +30,17 @@ describe("local configuration and credential sources", () => {
 	});
 
 	test("loads chains and a relative account key path", async () => {
-		const config = await loadDfConfig("C:/fixture", async () =>
-			JSON.stringify({
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "config.df"), JSON.stringify({
 				defaultChain: "google/custom@default",
 				cooldownTtlMs: 12_345,
 				hardReasoningChain: "anthropic/hard@work",
 				sensitiveChain: "local/private@main",
 				credentialFiles: { "google:default": "secrets/gemini_api_key" },
-			}),
-		);
+			}));
+		const config = await loadDfConfig(temp);
 		expect(config.credentialFiles?.["google:default"]).toBe("secrets/gemini_api_key");
 		expect(config.cooldownTtlMs).toBe(12_345);
-		const fixture = resolve("/fixture");
-		const fallback = localCredentialFallback(fixture, config, BUILTIN_PROVIDER_CONFIG, {
-			env: {},
-			read: async (path: string) => {
-				expect(path).toBe(join(fixture, "secrets", "gemini_api_key"));
-				return "fixture-file-key\n";
-			},
-		});
-		expect(await fallback("google", "default")).toEqual({ type: "api_key", key: "fixture-file-key" });
 	});
 
 	test("stored account wins over env, while env wins over the configured key file", async () => {

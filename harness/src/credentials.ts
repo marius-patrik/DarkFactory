@@ -215,7 +215,7 @@ export class FileCredentialStore {
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
 	) {
 		this.home = home;
-		this.path = join(home, "credentials.json");
+		this.path = join(home, "credentials.df");
 		this.lockPath = `${this.path}.lock`;
 	}
 

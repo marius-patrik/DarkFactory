@@ -63,7 +63,7 @@ class TestProjects:
 
     def test_declared_projects_are_read(self, tmp_path):
         os.makedirs(os.path.join(str(tmp_path), ".darkfactory"))
-        with open(os.path.join(str(tmp_path), ".darkfactory", "manifest.json"), "w") as handle:
+        with open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w") as handle:
             json.dump(
                 {"documentation": {"projects": [{"name": "Omnis", "url": "https://example/"}]}},
                 handle,
@@ -74,7 +74,7 @@ class TestProjects:
 
     def test_entries_missing_a_url_are_dropped(self, tmp_path):
         os.makedirs(os.path.join(str(tmp_path), ".darkfactory"))
-        with open(os.path.join(str(tmp_path), ".darkfactory", "manifest.json"), "w") as handle:
+        with open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w") as handle:
             json.dump({"documentation": {"projects": [{"name": "Broken"}]}}, handle)
         assert docs_versions.projects(str(tmp_path)) == []
 

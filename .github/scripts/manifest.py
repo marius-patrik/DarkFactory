@@ -11,13 +11,33 @@ pipeline, and a key added here later does not break repositories that have not a
 
 import json
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from resolver import resolve_df_file
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-#: Manifest location, relative to the repository root.
-MANIFEST_PATH = os.path.join(".darkfactory", "manifest.json")
+# ... existing code ...
 
-#: Legacy manifest location for consumer repos that have not migrated yet.
-LEGACY_MANIFEST_PATH = os.path.join(".github", "darkfactory.json")
+#: Manifest location, relative to the repository root.
+MANIFEST_PATH = "repo.df"
+LEGACY_MANIFEST_PATH = ".github/darkfactory.json"
+
+
+def resolve_manifest_path(root: str) -> str:
+    """Returns the path to the manifest.
+
+    Args:
+        root: Absolute path to the repository root.
+
+    Returns:
+        The path to the manifest file.
+
+    Raises:
+        ValueError: If the manifest cannot be resolved.
+    """
+    return resolve_df_file(root, "repo")
+
 
 #: Area labels used when a repository declares none. Deliberately about the pipeline itself, since
 #: that is the only domain a repository is guaranteed to have.
@@ -516,22 +536,18 @@ class Manifest:
 
 
 def resolve_manifest_path(root: str) -> str:
-    """Returns the path to the manifest, preferring the new location with a legacy fallback.
+    """Returns the path to the manifest.
 
     Args:
         root: Absolute path to the repository root.
 
     Returns:
-        The path to the manifest file. The new `.darkfactory/manifest.json` is preferred;
-        if it does not exist, the legacy `.github/darkfactory.json` is returned instead.
+        The path to the manifest file.
+
+    Raises:
+        ValueError: If the manifest cannot be resolved.
     """
-    primary = os.path.join(root, MANIFEST_PATH)
-    if os.path.isfile(primary):
-        return primary
-    legacy = os.path.join(root, LEGACY_MANIFEST_PATH)
-    if os.path.isfile(legacy):
-        return legacy
-    return primary
+    return resolve_df_file(root, "repo")
 
 
 def load(root: str = ".") -> Manifest:
@@ -545,8 +561,9 @@ def load(root: str = ".") -> Manifest:
     """
     root = os.path.abspath(root)
     path = resolve_manifest_path(root)
+
     data: Dict[str, Any] = {}
-    if os.path.isfile(path):
+    if path and os.path.isfile(path):
         try:
             with open(path, encoding="utf-8") as handle:
                 loaded = json.load(handle)

@@ -11,9 +11,9 @@ export interface VaultStoreOptions {
 	dataRepoPath: string;
 }
 
-function vaultEncPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.enc.json"); }
-function vaultMetaPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.meta.json"); }
-function pushMapPath(dataRepoPath: string): string { return join(dataRepoPath, "push-map.json"); }
+function vaultEncPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.enc.df"); }
+function vaultMetaPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.meta.df"); }
+function pushMapPath(dataRepoPath: string): string { return join(dataRepoPath, "push-map.df"); }
 function lockPath(dfHome: string): string { return join(dfHome, ".secrets.lock"); }
 
 async function atomicWrite(path: string, content: string): Promise<void> {
@@ -159,7 +159,7 @@ export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; confl
 /** Resolve the data repo path from config. */
 export async function resolveDataRepoPath(dfHome: string): Promise<string> {
 	try {
-		const configRaw = await readFile(join(dfHome, "config.json"), "utf8");
+		const configRaw = await readFile(join(dfHome, "config.df"), "utf8");
 		const config = JSON.parse(configRaw) as { dataRepo?: string };
 		if (config.dataRepo && typeof config.dataRepo === "string") return config.dataRepo;
 	} catch { /* use default */ }
