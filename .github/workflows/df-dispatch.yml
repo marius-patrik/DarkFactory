@@ -57,5 +57,6 @@ jobs:
       - name: Run DF Dispatch (shadow mode)
         env:
           GH_TOKEN: ${{ github.token }}
+          DF_SHADOW_VERIFY: "true"
         run: |
           bun .darkfactory-pipeline/harness/src/cli.ts graph dispatch --event-name "$GITHUB_EVENT_NAME" --event "$GITHUB_EVENT_PATH" --graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json --shadow --summary "$GITHUB_STEP_SUMMARY"
