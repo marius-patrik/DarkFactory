@@ -1,11 +1,11 @@
 import { appendFile, readFile } from "node:fs/promises";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
+import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
+import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
 import { plan } from "./planner.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
 import { validateGraph } from "./validator.ts";
-import { translateGitHubEvent, type TranslatedEvent } from "./events.ts";
-import { evaluateChecksGate, type CheckStateSource, type ChecksGateResult } from "./checks-gate.ts";
 
 export interface DispatchOptions {
 	eventName: string;
@@ -35,21 +35,35 @@ function parseArgs(argv: string[]): DispatchOptions {
 
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
-		if (arg === "--event-name") { eventName = argv[++i] ?? ""; continue; }
-		if (arg === "--event") { eventPath = argv[++i] ?? ""; continue; }
-		if (arg === "--graph") { graphPath = argv[++i]; continue; }
-		if (arg === "--runs") { runsPath = argv[++i]; continue; }
-		if (arg === "--shadow") {
-		const next = argv[i + 1];
-		if (next === "true" || next === "false") {
-			shadow = next === "true";
-			i++;
-		} else {
-			shadow = true;
+		if (arg === "--event-name") {
+			eventName = argv[++i] ?? "";
+			continue;
 		}
-		continue;
-	}
-		if (arg === "--summary") { summaryPath = argv[++i]; continue; }
+		if (arg === "--event") {
+			eventPath = argv[++i] ?? "";
+			continue;
+		}
+		if (arg === "--graph") {
+			graphPath = argv[++i];
+			continue;
+		}
+		if (arg === "--runs") {
+			runsPath = argv[++i];
+			continue;
+		}
+		if (arg === "--shadow") {
+			const next = argv[i + 1];
+			if (next === "true" || next === "false") {
+				shadow = next === "true";
+				i++;
+			} else {
+				shadow = true;
+			}
+			continue;
+		}
+		if (arg === "--summary") {
+			summaryPath = argv[++i];
+		}
 	}
 
 	return { eventName, eventPath, graphPath, runsPath, shadow, summaryPath };
@@ -94,7 +108,9 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	// A repository manifest carries the graph in its `graph` section; a standalone graph file is the graph itself.
 	const graphPath = opts.graphPath ?? ".darkfactory/manifest.json";
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
-	const workflowGraph = validateGraph(document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document);
+	const workflowGraph = validateGraph(
+		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,
+	);
 
 	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
@@ -114,7 +130,8 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
 			if (env.GITHUB_REPOSITORY) {
-				const checkStateSource: CheckStateSource = options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
+				const checkStateSource: CheckStateSource =
+					options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
 
 				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
 
@@ -143,9 +160,14 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	// Advance the run state to the selected node before persisting
 	if (action.type !== "none") {
 		let nodeId: string | undefined;
-		if (action.type === "run" && action.nodes.length > 0) { nodeId = action.nodes[0]; }
-		else if (action.type === "gate" || action.type === "hint" || action.type === "comment") { nodeId = action.node; }
-		if (nodeId !== undefined) { runState.current_node = nodeId; }
+		if (action.type === "run" && action.nodes.length > 0) {
+			nodeId = action.nodes[0];
+		} else if (action.type === "gate" || action.type === "hint" || action.type === "comment") {
+			nodeId = action.node;
+		}
+		if (nodeId !== undefined) {
+			runState.current_node = nodeId;
+		}
 	}
 
 	// Prepare the base output
@@ -154,17 +176,16 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 		event: translated.event.type,
 		current_node: runState.current_node,
 		action: action.type,
-		commands: action.type === "run" && action.nodes
- ? action.nodes.map((id) => `bun df run --node ${id}`) : [],
+		commands: action.type === "run" && action.nodes ? action.nodes.map((id) => `bun df run --node ${id}`) : [],
 	};
 
 	// If this is a checks.completed event with a non‑pending gate result, emit the checks JSON
 	const output =
 		translated.event.type === "checks.completed" && gateResult && gateResult.conclusion !== "pending"
 			? {
-				...baseOutput,
-				type: "checks",
-				result: gateResult.conclusion === "required_green" ? "pass" : "fail",
+					...baseOutput,
+					type: "checks",
+					result: gateResult.conclusion === "required_green" ? "pass" : "fail",
 				}
 			: baseOutput;
 
@@ -187,10 +208,9 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			`Event: ${translated.event.type}`,
 			`Current node: ${runState.current_node}`,
 			`Action: ${action.type}`,
-			...(action.type === "run" && action.nodes ? [
-				`Commands:`,
-				...action.nodes.map((id) => `- bun df run --node ${id}`),
-			] : []),
+			...(action.type === "run" && action.nodes
+				? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
+				: []),
 		];
 
 		if (summaryPath) await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
@@ -200,4 +220,4 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	}
 }
 
-export { type TranslatedEvent } from "./events.ts";
+export type { TranslatedEvent } from "./events.ts";
