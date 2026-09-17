@@ -8,10 +8,16 @@ export type Sensitivity = "normal" | "sensitive";
 export type LimitTier = "tight" | "standard" | "bulk";
 export type ModelModality = "text" | "image" | "video" | "image_gen" | "video_gen";
 
+export interface NeedDiagnostic {
+	need: TaskNeed;
+	reason: string;
+}
+
 export interface TaskProfile {
 	kind: TaskKind;
 	size: TaskSize;
 	needs: TaskNeed[];
+	diagnostics: NeedDiagnostic[];
 	sensitivity: Sensitivity;
 	contextTokens: number;
 }
