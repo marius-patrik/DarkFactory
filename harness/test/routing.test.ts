@@ -106,4 +106,24 @@ describe("model routing policy", () => {
 	test("default detector ignores prose that names credentials without containing one", () => {
 		expect(defaultSensitiveDataHook.detect({ prompt: "Explain how an API key works", toolResults: [] })).toBe(false);
 	});
+
+	test("regression case: PR #366 self-review handles fixture/example strings in source/test diffs without triggering sensitive routing", async () => {
+		const pr366DiffPrompt = `
+diff --git a/harness/test/routing.test.ts b/harness/test/routing.test.ts
+--- a/harness/test/routing.test.ts
++++ b/harness/test/routing.test.ts
+@@ -10,2 +10,4 @@
++	test("sensitive detector test fixture sk-1234567890abcdef AIzaSyFakeKey", () => {
++		expect(sensitive("sk-1234567890abcdef")).toBe(true);
++	});
+`;
+		expect(await defaultSensitiveDataHook.detect({ prompt: pr366DiffPrompt, toolResults: [] })).toBe(false);
+		expect((await resolveRouting(config, { prompt: pr366DiffPrompt })).source).toBe("default");
+	});
+
+	test("control case: actual credential-like value in runtime/tool-result context triggers sensitive routing", async () => {
+		const realSecretPrompt = "Here is the production access_token=sk-proj-liveProductionSecretKeyWithRealValue1234567890abcdef";
+		expect(await defaultSensitiveDataHook.detect({ prompt: realSecretPrompt, toolResults: [] })).toBe(true);
+		expect((await resolveRouting(config, { prompt: realSecretPrompt })).source).toBe("sensitive");
+	});
 });

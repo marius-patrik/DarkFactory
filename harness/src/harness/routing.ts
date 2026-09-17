@@ -56,7 +56,19 @@ function containsPersonalEmail(text: string): boolean {
 	return false;
 }
 
+/** Determines whether text content in source-code diffs, test files, or test fixtures is an example/test literal rather than a real secret. */
+function isFixtureOrTestLiteral(text: string): boolean {
+	const hasDiffMarkers =
+		/diff --git|---\s+[ab]\/|\+\+\+\s+[ab]\/|@@\s+-\d+,\d+\s+\+\d+,\d+\s+@@/iu.test(text);
+	const hasTestOrFixtureContext =
+		/\b(?:test|spec|fixture|example|mock|dummy|placeholder|sample)\b/iu.test(text) ||
+		/\b\/.+\.(?:test|spec)\.[a-z]+\b/iu.test(text);
+
+	return hasDiffMarkers && hasTestOrFixtureContext;
+}
+
 function sensitive(text: string): boolean {
+	if (isFixtureOrTestLiteral(text)) return false;
 	return SECRET_OR_PII.test(text) || containsPersonalEmail(text);
 }
 
