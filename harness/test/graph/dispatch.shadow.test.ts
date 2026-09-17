@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp as mkdtempNative, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { dispatch } from "../../src/graph/dispatch.ts";
 
 describe("dispatch shadow verification", () => {
@@ -32,8 +33,7 @@ describe("dispatch shadow verification", () => {
 	});
 
 	async function mkdtemp(): Promise<string> {
-		const id = Math.random().toString(36).slice(2);
-		return join("/tmp", `df-test-${id}`);
+		return await mkdtempNative(join(tmpdir(), "df-test-"));
 	}
 
 	it("identifies no drift (parity) when Python action matches TS action", async () => {

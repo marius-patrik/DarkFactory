@@ -83,11 +83,21 @@ function summaryTarget(explicit: string | undefined): string | undefined {
 	return explicit || process.env.GITHUB_STEP_SUMMARY || undefined;
 }
 
-/** Required check states from the GitHub API for the repository the workflow runs in. */
-function githubCheckSource(token: string, repository: string): CheckStateSource {
-	const [owner, repo] = repository.split("/");
-	if (!owner || !repo) throw new Error(`GITHUB_REPOSITORY must be owner/repo, got ${repository}`);
-	return new GitHubRepository(new GitHubClient({ token }), owner, repo);
+// Semantic comparison for actions
+function actionsMatch(pythonAction: any, tsAction: PlanAction): boolean {
+	if (pythonAction.type !== tsAction.type) return false;
+
+	if (tsAction.type === "run") {
+		// Compare nodes (ignoring order by sorting)
+		const pyNodes = (pythonAction.nodes ?? []).slice().sort();
+		const tsNodes = tsAction.nodes.slice().sort();
+		if (JSON.stringify(pyNodes) !== JSON.stringify(tsNodes)) return false;
+	} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
+		// Compare node
+		if (pythonAction.node !== tsAction.node) return false;
+	}
+	// 'none' type doesn't have relevant fields to compare beyond type
+	return true;
 }
 
 export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
@@ -115,12 +125,6 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
-	// Verification logic: Shadow verification diffs
-	if (opts.shadow && process.env.DF_SHADOW_VERIFY === "true") {
-		// Diffs TypeScript decisions against Python pipeline actions
-		// This is a placeholder for the logic required by acceptance criteria
-		console.log("Shadow mode: Performing verification diffs");
-	}
 
 	if (translated.event.type === "checks.completed") {
 		const env: GitHubTokenEnv & GitHubRepoEnv = {
@@ -160,14 +164,10 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 	// Advance the run state to the selected node before persisting
 	if (action.type !== "none") {
-		let nodeId: string | undefined;
 		if (action.type === "run" && action.nodes.length > 0) {
-			nodeId = action.nodes[0];
+			runState.current_node = action.nodes[0];
 		} else if (action.type === "gate" || action.type === "hint" || action.type === "comment") {
-			nodeId = action.node;
-		}
-		if (nodeId !== undefined) {
-			runState.current_node = nodeId;
+			runState.current_node = action.node;
 		}
 	}
 
@@ -200,12 +200,10 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 		let diffMessage = "### Verification Diff\n\n";
 		try {
 			const pythonAction = await readJsonFile(pythonActionPath);
-			const tsAction = { type: action.type, nodes: (action as any).nodes ?? [], node: (action as any).node };
-
-			if (JSON.stringify(pythonAction) === JSON.stringify(tsAction)) {
+			if (actionsMatch(pythonAction, action)) {
 				diffMessage += "No drift detected between TS and Python actions.";
 			} else {
-				diffMessage += `Drift detected!\nTS action: ${JSON.stringify(tsAction)}\nPython action: ${JSON.stringify(pythonAction)}`;
+				diffMessage += `Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`;
 			}
 		} catch (e) {
 			diffMessage += `Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`;
