@@ -46,10 +46,10 @@ function parseArgs(argv: string[]): DispatchOptions {
 				args.eventPath = argv[i++] ?? "";
 				break;
 			case "--graph":
-				args.graphPath = argv[i++];
+				if (i < argv.length) args.graphPath = argv[i++];
 				break;
 			case "--runs":
-				args.runsPath = argv[i++];
+				if (i < argv.length) args.runsPath = argv[i++];
 				break;
 			case "--shadow":
 				if (i < argv.length && (argv[i] === "true" || argv[i] === "false")) {
@@ -59,7 +59,7 @@ function parseArgs(argv: string[]): DispatchOptions {
 				}
 				break;
 			case "--summary":
-				args.summaryPath = argv[i++];
+				if (i < argv.length) args.summaryPath = argv[i++];
 				break;
 		}
 	}
@@ -214,7 +214,10 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 			// Verification logic: Shadow verification diffs
 			if (process.env.DF_SHADOW_VERIFY === "true") {
-				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(process.cwd(), "python_action.json");
+				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH;
+				if (!pythonActionPath) {
+					throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
+				}
 				summaryLines.push("### Verification Diff");
 				try {
 					const pythonAction = await readJsonFile(pythonActionPath);
@@ -247,10 +250,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			try {
 				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
 			} catch (e) {
-				if (process.env.DF_SHADOW_VERIFY === "true") {
-					throw new Error(`Failed to write shadow run summary: ${e}`);
-				}
-				console.error("Failed to write shadow run summary:", e);
+				throw new Error(`Failed to write shadow run summary: ${e}`);
 			}
 		}
 	} else {
