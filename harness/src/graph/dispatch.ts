@@ -1,4 +1,5 @@
 import { appendFile, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
@@ -194,9 +195,23 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 	// Verification logic: Shadow verification diffs
 	if (opts.shadow && process.env.DF_SHADOW_VERIFY === "true") {
+		const graphDir = graphPath ? join(graphPath, "..") : ".darkfactory";
+		const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(graphDir, "python_action.json");
+		let diffMessage = "### Verification Diff\n\n";
+		try {
+			const pythonAction = await readJsonFile(pythonActionPath);
+			const tsAction = { type: action.type, nodes: (action as any).nodes ?? [], node: (action as any).node };
+			
+			if (JSON.stringify(pythonAction) === JSON.stringify(tsAction)) {
+				diffMessage += "No drift detected between TS and Python actions.";
+			} else {
+				diffMessage += `Drift detected!\nTS action: ${JSON.stringify(tsAction)}\nPython action: ${JSON.stringify(pythonAction)}`;
+			}
+		} catch (e) {
+			diffMessage += `Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`;
+		}
 		const summaryPath = summaryTarget(opts.summaryPath);
-		const diffLines = ["### Verification Diff", "No drift detected between TS and Python actions."];
-		if (summaryPath) await appendFile(summaryPath, diffLines.join("\n") + "\n\n");
+		if (summaryPath) await appendFile(summaryPath, diffMessage + "\n\n");
 	}
 
 	// Handle shadow mode vs normal mode
