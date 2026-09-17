@@ -34,10 +34,10 @@ export interface RoutingDecision {
 const SECRET_OR_PII =
 	/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bAIza[0-9A-Za-z_-]{20,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}|\b\d{3}-\d{2}-\d{4}\b/giu;
 
+/** Explicitly reserved non-secret literals used only to prove fixture routing. */
 const SAFE_PROMPT_SENTINELS = [
-	"password=fixture-secret-value",
-	"password=fixture-secret",
-	"access_token=fixture-secret-123",
+	"password=darkfactory-safe-sentinel-000",
+	"access_token=darkfactory-safe-sentinel-000",
 ] as const;
 
 function stringify(value: unknown): string {
