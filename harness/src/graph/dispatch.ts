@@ -99,13 +99,17 @@ function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 
 	if (p.type !== tsAction.type) return false;
 
+	if (tsAction.type === "none") return p.type === "none";
+
 	try {
 		if (tsAction.type === "run") {
 			// Compare nodes
 			const pyNodes = Array.isArray(p.nodes) ? p.nodes : [];
+			if (!Array.isArray(tsAction.nodes)) return false;
 			deepStrictEqual(pyNodes.slice().sort(), tsAction.nodes.slice().sort());
 		} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
 			// Compare node
+			if (typeof tsAction.node === "undefined") return false;
 			deepStrictEqual(p.node, tsAction.node);
 		}
 		return true;
@@ -207,37 +211,34 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 	// Print the output
 	console.log(JSON.stringify(output));
 
-	// Verification logic: Shadow verification diffs
-	if (opts.shadow && process.env.DF_SHADOW_VERIFY === "true") {
-		const graphDir = graphPath ? join(graphPath, "..") : ".darkfactory";
-		const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(graphDir, "python_action.json");
-		let diffMessage = "### Verification Diff\n\n";
-		try {
-			const pythonAction = await readJsonFile(pythonActionPath);
-			if (actionsMatch(pythonAction, action)) {
-				diffMessage += "No drift detected between TS and Python actions.";
-			} else {
-				diffMessage += `Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`;
-			}
-		} catch (e) {
-			diffMessage += `Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`;
-		}
-		const summaryPath = summaryTarget(opts.summaryPath);
-		if (summaryPath) {
-			try {
-				await appendFile(summaryPath, diffMessage + "\n\n");
-			} catch (e) {
-				console.error("Failed to write verification summary:", e);
-			}
-		}
-	}
-
-	// Handle shadow mode vs normal mode
+	// Handle shadow mode
 	if (opts.shadow) {
-		// Append markdown summary instead of saving state
 		const summaryPath = summaryTarget(opts.summaryPath);
 		if (summaryPath) {
-			const summaryLines = [
+			const summaryLines: string[] = [];
+
+			// Verification logic: Shadow verification diffs
+			if (process.env.DF_SHADOW_VERIFY === "true") {
+				const graphDir = graphPath ? join(graphPath, "..") : ".darkfactory";
+				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(graphDir, "python_action.json");
+				summaryLines.push("### Verification Diff");
+				try {
+					const pythonAction = await readJsonFile(pythonActionPath);
+					if (actionsMatch(pythonAction, action)) {
+						summaryLines.push("No drift detected between TS and Python actions.");
+					} else {
+						summaryLines.push(
+							`Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`,
+						);
+					}
+				} catch (e) {
+					summaryLines.push(`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`);
+				}
+				summaryLines.push("");
+			}
+
+			// Append markdown summary
+			summaryLines.push(
 				`## Dispatch: ${subject}`,
 				`Event: ${translated.event.type}`,
 				`Current node: ${runState.current_node}`,
@@ -245,7 +246,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 				...(action.type === "run" && action.nodes
 					? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
 					: []),
-			];
+			);
 
 			try {
 				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
