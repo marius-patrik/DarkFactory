@@ -1,4 +1,4 @@
-import { deepStrictEqual } from "node:assert";
+import { AssertionError, deepStrictEqual } from "node:assert";
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { GitHubClient } from "../github/client.ts";
@@ -87,10 +87,16 @@ function githubCheckSource(token: string, repository: string): CheckStateSource 
 	return { checkStates: (ref) => repoInstance.checkStates(ref) };
 }
 
+interface PythonAction {
+	type: string;
+	nodes?: string[];
+	node?: string;
+}
+
 // Semantic comparison for actions
 function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 	if (!pythonAction || typeof pythonAction !== "object") return false;
-	const p = pythonAction as Record<string, unknown>;
+	const p = pythonAction as PythonAction;
 
 	if (p.type !== tsAction.type) return false;
 
@@ -108,13 +114,30 @@ function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 			deepStrictEqual(p.node, tsAction.node);
 		}
 		return true;
-	} catch {
-		return false;
+	} catch (e) {
+		if (e instanceof AssertionError) {
+			return false;
+		}
+		throw e;
 	}
 }
 
-export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
+export async function dispatch(
+	argv: string[],
+	options?: {
+		checkStateSource?: CheckStateSource;
+		shadowVerify?: boolean;
+		pythonActionPath?: string;
+	},
+): Promise<void> {
 	const opts = parseArgs(argv);
+
+	const shadowVerify = options?.shadowVerify ?? process.env.DF_SHADOW_VERIFY === "true";
+	const pythonActionPath = options?.pythonActionPath ?? process.env.DF_PYTHON_ACTION_PATH;
+
+	if (shadowVerify && !pythonActionPath) {
+		throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
+	}
 
 	// Load the event payload
 	const eventPayload = await readJsonFile(opts.eventPath);
@@ -213,14 +236,10 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			const summaryLines: string[] = [];
 
 			// Verification logic: Shadow verification diffs
-			if (process.env.DF_SHADOW_VERIFY === "true") {
-				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH;
-				if (!pythonActionPath) {
-					throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
-				}
+			if (shadowVerify) {
 				summaryLines.push("### Verification Diff");
 				try {
-					const pythonAction = await readJsonFile(pythonActionPath);
+					const pythonAction = await readJsonFile(pythonActionPath!);
 					if (actionsMatch(pythonAction, action)) {
 						summaryLines.push("No drift detected between TS and Python actions.");
 					} else {
