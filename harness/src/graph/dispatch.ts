@@ -1,5 +1,6 @@
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { deepStrictEqual } from "node:assert";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
@@ -80,10 +81,8 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 }
 
 /** The job summary to append to: --summary, else GITHUB_STEP_SUMMARY; outside Actions nothing is written. */
-function summaryTarget(explicit: string | undefined): string {
-	const target = explicit || process.env.GITHUB_STEP_SUMMARY;
-	if (!target) throw new Error("No summary target available");
-	return target;
+function summaryTarget(explicit: string | undefined): string | undefined {
+	return explicit || process.env.GITHUB_STEP_SUMMARY;
 }
 
 function githubCheckSource(token: string, repository: string): CheckStateSource {
@@ -100,17 +99,19 @@ function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 
 	if (p.type !== tsAction.type) return false;
 
-	if (tsAction.type === "run") {
-		// Compare nodes (ignoring order by sorting)
-		const pyNodes = Array.isArray(p.nodes) ? p.nodes.slice().sort() : [];
-		const tsNodes = tsAction.nodes.slice().sort();
-		if (JSON.stringify(pyNodes) !== JSON.stringify(tsNodes)) return false;
-	} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
-		// Compare node
-		if (p.node !== tsAction.node) return false;
+	try {
+		if (tsAction.type === "run") {
+			// Compare nodes
+			const pyNodes = Array.isArray(p.nodes) ? p.nodes : [];
+			deepStrictEqual(pyNodes.slice().sort(), tsAction.nodes.slice().sort());
+		} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
+			// Compare node
+			deepStrictEqual(p.node, tsAction.node);
+		}
+		return true;
+	} catch {
+		return false;
 	}
-	// 'none' type doesn't have relevant fields to compare beyond type
-	return true;
 }
 
 export async function dispatch(argv: string[], options?: { checkStateSource?: CheckStateSource }): Promise<void> {
@@ -222,24 +223,36 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			diffMessage += `Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`;
 		}
 		const summaryPath = summaryTarget(opts.summaryPath);
-		await appendFile(summaryPath, diffMessage + "\n\n");
+		if (summaryPath) {
+			try {
+				await appendFile(summaryPath, diffMessage + "\n\n");
+			} catch (e) {
+				console.error("Failed to write verification summary:", e);
+			}
+		}
 	}
 
-	// Handle shadow mode vs normal mode
+// Handle shadow mode vs normal mode
 	if (opts.shadow) {
 		// Append markdown summary instead of saving state
 		const summaryPath = summaryTarget(opts.summaryPath);
-		const summaryLines = [
-			`## Dispatch: ${subject}`,
-			`Event: ${translated.event.type}`,
-			`Current node: ${runState.current_node}`,
-			`Action: ${action.type}`,
-			...(action.type === "run" && action.nodes
-				? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
-				: []),
-		];
+		if (summaryPath) {
+			const summaryLines = [
+				`## Dispatch: ${subject}`,
+				`Event: ${translated.event.type}`,
+				`Current node: ${runState.current_node}`,
+				`Action: ${action.type}`,
+				...(action.type === "run" && action.nodes
+					? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
+					: []),
+			];
 
-		await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
+			try {
+				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
+			} catch (e) {
+				console.error("Failed to write shadow run summary:", e);
+			}
+		}
 	} else {
 		// Save the updated RunState
 		await saveRunState(runsDir, subject, runState);
