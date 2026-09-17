@@ -1,21 +1,10 @@
 import { defaultSensitiveDataHook } from "../harness/routing.ts";
-import type {
-	NeedDiagnostic,
-	RouterConfig,
-	RouterInput,
-	TaskKind,
-	TaskNeed,
-	TaskProfile,
-	TaskSize,
-} from "./types.ts";
+import type { NeedDiagnostic, RouterConfig, RouterInput, TaskKind, TaskNeed, TaskProfile, TaskSize } from "./types.ts";
 
 export type CheapClassifier = (prompt: string, candidate: string) => Promise<TaskKind>;
 
 const DIRECT_ARTIFACT_RULES: Array<[TaskKind, RegExp]> = [
-	[
-		"image",
-		/\b(?:generate|create|edit|draw|render|produce)\b.{0,32}\b(?:image|illustration|photo|sprite|texture)\b/iu,
-	],
+	["image", /\b(?:generate|create|edit|draw|render|produce)\b.{0,32}\b(?:image|illustration|photo|sprite|texture)\b/iu],
 	["video", /\b(?:generate|create|edit|render|produce)\b.{0,32}\b(?:video|animation|clip|movie)\b/iu],
 ];
 
