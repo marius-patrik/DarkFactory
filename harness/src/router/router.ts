@@ -247,11 +247,11 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			details,
 		});
 	}
-	for (const model of collectionRejected) {
+	const rejected: RankedCandidate[] = collectionRejected.map((model, index) => {
 		const collection = model.collection ?? "unknown";
-		ranked.push({
+		return {
 			candidate: model.candidate,
-			rank: ranked.length + 1,
+			rank: index + 1,
 			status: "skipped",
 			reason: `data collection ${JSON.stringify(collection)} is not allowed for ${profile.sensitivity} work`,
 			score: Number.POSITIVE_INFINITY,
@@ -261,13 +261,14 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 					.map((allowed) => JSON.stringify(allowed))
 					.join(", ")}`,
 			],
-		});
-	}
+		};
+	});
 	return {
 		profile,
 		source: source === "policy" && !policy ? "default" : source,
 		...(policy ? { policy: policy.id } : {}),
 		ranked,
+		rejected,
 		chain: ranked.filter((item) => item.status === "chosen").map((item) => item.candidate),
 	};
 }
