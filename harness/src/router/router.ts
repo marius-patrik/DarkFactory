@@ -71,7 +71,9 @@ function dataCollectionError(
 	return new Error(
 		`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections
 			.map((collection) => JSON.stringify(collection))
-			.join(", ")}. Candidate decisions: ${decisions || "no candidates configured"}. Configure router.dataCollection.${policyKey} and provider data.collection metadata.`,
+			.join(
+				", ",
+			)}. Candidate decisions: ${decisions || "no candidates configured"}. Configure router.dataCollection.${policyKey} and provider data.collection metadata.`,
 	);
 }
 
@@ -125,9 +127,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		profile.sensitivity === "sensitive"
 			? (dependencies.config.dataCollection?.sensitive ?? ["none"])
 			: (dependencies.config.dataCollection?.normal ?? ["none", "logging", "training", "unknown"]);
-	const collectionRejected = universe.filter(
-		(model) => !allowedCollections.includes(model.collection ?? "unknown"),
-	);
+	const collectionRejected = universe.filter((model) => !allowedCollections.includes(model.collection ?? "unknown"));
 	const filtered = universe.filter((model) => allowedCollections.includes(model.collection ?? "unknown"));
 
 	if (!forced && dependencies.models.length === 0) {
@@ -216,12 +216,12 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			if (quotaStatus.state === "waiting") {
 				details.push(`waiting until ${new Date(quotaStatus.until!).toISOString()}`);
 			} else if (quotaStatus.state === "available") {
-				const enforcedItems = quotaStatus.items.filter((candidate) => candidate.enforced && candidate.limit && candidate.limit > 0);
+				const enforcedItems = quotaStatus.items.filter(
+					(candidate) => candidate.enforced && candidate.limit && candidate.limit > 0,
+				);
 				let fraction = 1;
 				if (enforcedItems.length > 0) {
-					fraction = Math.min(
-						...enforcedItems.map((candidate) => (candidate.remaining ?? 0) / (candidate.limit ?? 1)),
-					);
+					fraction = Math.min(...enforcedItems.map((candidate) => (candidate.remaining ?? 0) / (candidate.limit ?? 1)));
 				}
 				const percent = Math.round(fraction * 100);
 				details.push(`capacity ${percent}%`);
