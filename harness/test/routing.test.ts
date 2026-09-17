@@ -109,7 +109,7 @@ diff --git a/harness/test/router.test.ts b/harness/test/router.test.ts
 --- a/harness/test/router.test.ts
 +++ b/harness/test/router.test.ts
 @@ -10,2 +10,4 @@
-+	test("routing fixture password=fixture-secret-value", () => {});
++	test("routing fixture password=darkfactory-safe-sentinel-000", () => {});
 `;
 		expect(await defaultSensitiveDataHook.detect({ prompt: safeDiff, toolResults: [] })).toBe(false);
 		expect((await resolveRouting(config, { prompt: safeDiff })).source).toBe("default");
@@ -131,14 +131,14 @@ diff --git a/harness/test/router.test.ts b/harness/test/router.test.ts
 		expect(
 			await defaultSensitiveDataHook.detect({
 				prompt: "Review this test fixture",
-				toolResults: ["password=fixture-secret-value"],
+				toolResults: ["password=darkfactory-safe-sentinel-000"],
 			}),
 		).toBe(true);
 		expect(
 			(
 				await resolveRouting(config, {
 					prompt: "Review this test fixture",
-					toolResults: ["password=fixture-secret-value"],
+					toolResults: ["password=darkfactory-safe-sentinel-000"],
 				})
 			).source,
 		).toBe("sensitive");
