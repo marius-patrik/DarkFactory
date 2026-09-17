@@ -201,7 +201,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 		try {
 			const pythonAction = await readJsonFile(pythonActionPath);
 			const tsAction = { type: action.type, nodes: (action as any).nodes ?? [], node: (action as any).node };
-			
+
 			if (JSON.stringify(pythonAction) === JSON.stringify(tsAction)) {
 				diffMessage += "No drift detected between TS and Python actions.";
 			} else {

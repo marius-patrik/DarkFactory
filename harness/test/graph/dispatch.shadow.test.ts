@@ -1,5 +1,5 @@
-import { expect, it, describe, beforeEach, afterEach } from "bun:test";
-import { mkdir, writeFile, rm, readFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { dispatch } from "../../src/graph/dispatch.ts";
 
