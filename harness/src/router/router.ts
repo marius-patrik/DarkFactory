@@ -55,6 +55,26 @@ export interface RouteDependencies {
 	now?: () => number;
 }
 
+function dataCollectionError(
+	profile: TaskProfile,
+	allowedCollections: readonly string[],
+	models: readonly ModelCapability[],
+): Error {
+	const decisions = models
+		.map((model) => {
+			const collection = model.collection ?? "unknown";
+			const allowed = allowedCollections.includes(collection);
+			return `${candidateKey(model.candidate)}: data.collection=${JSON.stringify(collection)} (${allowed ? "allowed" : "rejected"})`;
+		})
+		.join("; ");
+	const policyKey = profile.sensitivity === "sensitive" ? "sensitive" : "normal";
+	return new Error(
+		`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections
+			.map((collection) => JSON.stringify(collection))
+			.join(", ")}. Candidate decisions: ${decisions || "no candidates configured"}. Configure router.dataCollection.${policyKey} and provider data.collection metadata.`,
+	);
+}
+
 export async function routeTask(input: RouterInput, dependencies: RouteDependencies): Promise<RouteResult> {
 	const profile = await classifyTask(input, dependencies.config, dependencies.classify);
 	const explicit = input.explicitChain ?? input.explicitModel;
@@ -101,36 +121,24 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 						},
 				)
 			: [...dependencies.models];
-	// Apply data‑collection policy filtering
 	const allowedCollections =
 		profile.sensitivity === "sensitive"
 			? (dependencies.config.dataCollection?.sensitive ?? ["none"])
 			: (dependencies.config.dataCollection?.normal ?? ["none", "logging", "training", "unknown"]);
-	// Reject disallowed providers in explicit chains for sensitive tasks
-	if (forced) {
-		const forcedCandidates = parseChain(forced);
-		for (const cand of forcedCandidates) {
-			const cap = byKey.get(candidateKey(cand));
-			const collection = cap?.collection ?? "unknown";
-			if (!allowedCollections.includes(collection)) {
-				throw new Error(
-					`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections.map((c) => `"${c}"`).join(", ")} (configure router.dataCollection.${profile.sensitivity === "sensitive" ? "sensitive" : "normal"} or provider data.collection)`,
-				);
-			}
-		}
-	}
-	const filtered = universe.filter((m) => allowedCollections.includes(m.collection ?? "unknown"));
-	// Only the derived universe can be empty for lack of configuration; an explicit chain or graph node names its models.
+	const collectionRejected = universe.filter(
+		(model) => !allowedCollections.includes(model.collection ?? "unknown"),
+	);
+	const filtered = universe.filter((model) => allowedCollections.includes(model.collection ?? "unknown"));
+
 	if (!forced && dependencies.models.length === 0) {
 		throw new Error(
 			"No usable model: add an account for a configured provider (df account set <provider>:<label> <slot> --type api_key), enable an anonymous provider, or check routing.enabled/routing.exclude in the provider config",
 		);
 	}
 	if (filtered.length === 0) {
-		throw new Error(
-			`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections.map((c) => `"${c}"`).join(", ")} (configure router.dataCollection.${profile.sensitivity === "sensitive" ? "sensitive" : "normal"} or provider data.collection)`,
-		);
+		throw dataCollectionError(profile, allowedCollections, universe);
 	}
+
 	const penalties =
 		dependencies.outcomes && dependencies.config.learning?.enabled !== false
 			? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.())
@@ -179,18 +187,16 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 				if (quotaStatus.state === "unavailable") {
 					skip = `unavailable (${quotaStatus.reason}) until ${new Date(quotaStatus.until!).toISOString()}`;
 				} else if (quotaStatus.state === "exhausted") {
-					skip = "quota exhausted until " + new Date(quotaStatus.until!).toISOString();
+					skip = `quota exhausted until ${new Date(quotaStatus.until!).toISOString()}`;
 				} else if (quotaStatus.state === "waiting") {
 					if (!isForced) item.score += 50;
-				} else if (quotaStatus.state === "available") {
-					if (!isForced) {
-						const enforcedItems = quotaStatus.items.filter((i) => i.enforced && i.limit && i.limit > 0);
-						let fraction = 1;
-						if (enforcedItems.length > 0) {
-							fraction = Math.min(...enforcedItems.map((i) => (i.remaining ?? 0) / (i.limit ?? 1)));
-						}
-						item.score -= 10 * fraction;
+				} else if (quotaStatus.state === "available" && !isForced) {
+					const enforcedItems = quotaStatus.items.filter((entry) => entry.enforced && entry.limit && entry.limit > 0);
+					let fraction = 1;
+					if (enforcedItems.length > 0) {
+						fraction = Math.min(...enforcedItems.map((entry) => (entry.remaining ?? 0) / (entry.limit ?? 1)));
 					}
+					item.score -= 10 * fraction;
 				}
 			}
 			return { item, skip, quotaStatus };
@@ -198,30 +204,52 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	);
 	adjusted.sort((a, b) => a.item.score - b.item.score);
 	const ranked: RankedCandidate[] = [];
-	for (const [index, entry] of adjusted.entries()) {
+	for (const entry of adjusted) {
 		const { item, skip, quotaStatus } = entry;
-		const details: string[] = [`tier ${item.model.limitTier}`, `quality ${item.quality}`];
+		const details: string[] = [
+			`tier ${item.model.limitTier}`,
+			`quality ${item.quality}`,
+			`data collection ${item.model.collection ?? "unknown"} allowed`,
+		];
 		if (item.learning > 0) details.push(`recent-failure penalty ${item.learning.toFixed(2)}`);
 		if (!skip && quotaStatus) {
 			if (quotaStatus.state === "waiting") {
-				details.push("waiting until " + new Date(quotaStatus.until!).toISOString());
+				details.push(`waiting until ${new Date(quotaStatus.until!).toISOString()}`);
 			} else if (quotaStatus.state === "available") {
-				const enforcedItems = quotaStatus.items.filter((i) => i.enforced && i.limit && i.limit > 0);
+				const enforcedItems = quotaStatus.items.filter((candidate) => candidate.enforced && candidate.limit && candidate.limit > 0);
 				let fraction = 1;
 				if (enforcedItems.length > 0) {
-					fraction = Math.min(...enforcedItems.map((i) => (i.remaining ?? 0) / (i.limit ?? 1)));
+					fraction = Math.min(
+						...enforcedItems.map((candidate) => (candidate.remaining ?? 0) / (candidate.limit ?? 1)),
+					);
 				}
 				const percent = Math.round(fraction * 100);
-				details.push("capacity " + percent + "%");
+				details.push(`capacity ${percent}%`);
 			}
 		}
 		ranked.push({
 			candidate: item.model.candidate,
-			rank: index + 1,
+			rank: ranked.length + 1,
 			status: skip ? "skipped" : "chosen",
 			reason: skip ?? (source === "policy" ? `policy ${policy?.id ?? "default"}` : `${source} selection`),
 			score: item.score,
 			details,
+		});
+	}
+	for (const model of collectionRejected) {
+		const collection = model.collection ?? "unknown";
+		ranked.push({
+			candidate: model.candidate,
+			rank: ranked.length + 1,
+			status: "skipped",
+			reason: `data collection ${JSON.stringify(collection)} is not allowed for ${profile.sensitivity} work`,
+			score: Number.POSITIVE_INFINITY,
+			details: [
+				`tier ${model.limitTier}`,
+				`data collection ${JSON.stringify(collection)} rejected; allowed: ${allowedCollections
+					.map((allowed) => JSON.stringify(allowed))
+					.join(", ")}`,
+			],
 		});
 	}
 	return {
