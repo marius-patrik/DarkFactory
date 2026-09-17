@@ -27,7 +27,8 @@ describe("sensitive data-collection diagnostics", () => {
 			{ config, models: [model("private", "none"), model("logging", "logging")] },
 		);
 		expect(result.chain.map((candidate) => candidate.provider)).toEqual(["private"]);
-		const rejected = result.ranked.find((candidate) => candidate.candidate.provider === "logging");
+		expect(result.ranked.map((candidate) => candidate.candidate.provider)).toEqual(["private"]);
+		const rejected = result.rejected?.find((candidate) => candidate.candidate.provider === "logging");
 		expect(rejected).toMatchObject({
 			status: "skipped",
 			reason: 'data collection "logging" is not allowed for sensitive work',
