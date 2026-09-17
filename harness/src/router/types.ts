@@ -16,8 +16,18 @@ export interface TaskProfile {
 	contextTokens: number;
 }
 
-export interface AttachedContext { name?: string; tokens?: number; text?: string; modality?: "text" | "image" | "video" }
-export interface TaskHints { kind?: TaskKind; size?: TaskSize; needs?: TaskNeed[]; sensitivity?: Sensitivity }
+export interface AttachedContext {
+	name?: string;
+	tokens?: number;
+	text?: string;
+	modality?: "text" | "image" | "video";
+}
+export interface TaskHints {
+	kind?: TaskKind;
+	size?: TaskSize;
+	needs?: TaskNeed[];
+	sensitivity?: Sensitivity;
+}
 export interface RouterInput {
 	prompt: string;
 	attachedFiles?: readonly AttachedContext[];
@@ -43,9 +53,22 @@ export interface ModelCapability {
 }
 
 export interface ModelCapabilityOverride extends Partial<Omit<ModelCapability, "candidate">> {}
-export interface PolicyMatch { kind?: TaskKind[]; size?: TaskSize[]; needs?: TaskNeed[]; sensitivity?: Sensitivity[] }
-export interface CandidatePreference { candidates?: string[]; tiers?: LimitTier[]; quality?: TaskKind }
-export interface RouterPolicy { id: string; match: PolicyMatch; prefer: CandidatePreference }
+export interface PolicyMatch {
+	kind?: TaskKind[];
+	size?: TaskSize[];
+	needs?: TaskNeed[];
+	sensitivity?: Sensitivity[];
+}
+export interface CandidatePreference {
+	candidates?: string[];
+	tiers?: LimitTier[];
+	quality?: TaskKind;
+}
+export interface RouterPolicy {
+	id: string;
+	match: PolicyMatch;
+	prefer: CandidatePreference;
+}
 export interface RouterConfig {
 	classifier?: string;
 	candidates?: string[];
@@ -53,7 +76,6 @@ export interface RouterConfig {
 	policies: RouterPolicy[];
 	learning?: { enabled?: boolean; windowMs?: number; maxPenalty?: number; maxRecords?: number };
 	dataCollection?: { normal?: string[]; sensitive?: string[] };
-
 }
 
 export interface RankedCandidate {
@@ -70,6 +92,8 @@ export interface RouteResult {
 	source: "explicit" | "graph" | "sensitive" | "hard" | "policy" | "default";
 	policy?: string;
 	ranked: RankedCandidate[];
+	/** Candidates rejected before ranking by a hard routing policy such as data-collection eligibility. */
+	rejected?: RankedCandidate[];
 	chain: Candidate[];
 }
 
