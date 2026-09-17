@@ -29,47 +29,42 @@ interface GitHubRepoEnv {
 }
 
 function parseArgs(argv: string[]): DispatchOptions {
-	let eventName = "";
-	let eventPath = "";
-	let graphPath: string | undefined;
-	let runsPath: string | undefined;
-	let shadow = false;
-	let summaryPath: string | undefined;
+	const args: DispatchOptions = {
+		eventName: "",
+		eventPath: "",
+		shadow: false,
+	};
 
-	for (let i = 0; i < argv.length; i++) {
-		const arg = argv[i];
-		if (arg === "--event-name") {
-			eventName = argv[++i] ?? "";
-			continue;
-		}
-		if (arg === "--event") {
-			eventPath = argv[++i] ?? "";
-			continue;
-		}
-		if (arg === "--graph") {
-			graphPath = argv[++i];
-			continue;
-		}
-		if (arg === "--runs") {
-			runsPath = argv[++i];
-			continue;
-		}
-		if (arg === "--shadow") {
-			const next = argv[i + 1];
-			if (next === "true" || next === "false") {
-				shadow = next === "true";
-				i++;
-			} else {
-				shadow = true;
-			}
-			continue;
-		}
-		if (arg === "--summary") {
-			summaryPath = argv[++i];
+	let i = 0;
+	while (i < argv.length) {
+		const arg = argv[i++];
+		switch (arg) {
+			case "--event-name":
+				args.eventName = argv[i++] ?? "";
+				break;
+			case "--event":
+				args.eventPath = argv[i++] ?? "";
+				break;
+			case "--graph":
+				args.graphPath = argv[i++];
+				break;
+			case "--runs":
+				args.runsPath = argv[i++];
+				break;
+			case "--shadow":
+				if (i < argv.length && (argv[i] === "true" || argv[i] === "false")) {
+					args.shadow = argv[i++] === "true";
+				} else {
+					args.shadow = true;
+				}
+				break;
+			case "--summary":
+				args.summaryPath = argv[i++];
+				break;
 		}
 	}
 
-	return { eventName, eventPath, graphPath, runsPath, shadow, summaryPath };
+	return args;
 }
 
 async function readJsonFile(path: string): Promise<unknown> {
@@ -109,7 +104,7 @@ function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 			deepStrictEqual(pyNodes.slice().sort(), tsAction.nodes.slice().sort());
 		} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
 			// Compare node
-			if (typeof tsAction.node === "undefined") return false;
+			if (typeof p.node === "undefined") return false;
 			deepStrictEqual(p.node, tsAction.node);
 		}
 		return true;
@@ -219,8 +214,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 
 			// Verification logic: Shadow verification diffs
 			if (process.env.DF_SHADOW_VERIFY === "true") {
-				const graphDir = graphPath ? join(graphPath, "..") : ".darkfactory";
-				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(graphDir, "python_action.json");
+				const pythonActionPath = process.env.DF_PYTHON_ACTION_PATH ?? join(process.cwd(), "python_action.json");
 				summaryLines.push("### Verification Diff");
 				try {
 					const pythonAction = await readJsonFile(pythonActionPath);
@@ -253,6 +247,9 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			try {
 				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
 			} catch (e) {
+				if (process.env.DF_SHADOW_VERIFY === "true") {
+					throw new Error(`Failed to write shadow run summary: ${e}`);
+				}
 				console.error("Failed to write shadow run summary:", e);
 			}
 		}
