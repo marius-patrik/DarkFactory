@@ -42,6 +42,17 @@ function missingNeed(model: ModelCapability, need: TaskNeed, profile: TaskProfil
 	return !model.modalities.includes("video_gen");
 }
 
+function firstCandidate(value: string): Candidate {
+	const first = parseChain(value)[0];
+	if (!first) throw new Error(`Failover chain is empty: ${value}`);
+	return first;
+}
+
+function untilIso(until: number | undefined, state: string): string {
+	if (until === undefined) throw new Error(`Quota status ${state} is missing its until timestamp`);
+	return new Date(until).toISOString();
+}
+
 export interface RouteDependencies {
 	quota?: QuotaEngine;
 	config: RouterConfig;
@@ -104,8 +115,8 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		(profile.needs.includes("image_gen") || profile.needs.includes("video_gen"));
 	const preferred = forced
 		? parseChain(forced)
-		: (policy?.prefer.candidates?.map((entry) => parseChain(entry)[0]!) ??
-			dependencies.config.candidates?.map((entry) => parseChain(entry)[0]!) ??
+		: (policy?.prefer.candidates?.map(firstCandidate) ??
+			dependencies.config.candidates?.map(firstCandidate) ??
 			(useGenerationCatalog ? [] : dependencies.defaultChain ? parseChain(dependencies.defaultChain) : []));
 	const byKey = new Map(dependencies.models.map((model) => [candidateKey(model.candidate), model]));
 	const universe: ModelCapability[] =
@@ -185,9 +196,9 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			if (dependencies.quota) {
 				quotaStatus = await dependencies.quota.status(item.model.candidate, now);
 				if (quotaStatus.state === "unavailable") {
-					skip = `unavailable (${quotaStatus.reason}) until ${new Date(quotaStatus.until!).toISOString()}`;
+					skip = `unavailable (${quotaStatus.reason}) until ${untilIso(quotaStatus.until, quotaStatus.state)}`;
 				} else if (quotaStatus.state === "exhausted") {
-					skip = `quota exhausted until ${new Date(quotaStatus.until!).toISOString()}`;
+					skip = `quota exhausted until ${untilIso(quotaStatus.until, quotaStatus.state)}`;
 				} else if (quotaStatus.state === "waiting") {
 					if (!isForced) item.score += 50;
 				} else if (quotaStatus.state === "available" && !isForced) {
@@ -214,7 +225,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		if (item.learning > 0) details.push(`recent-failure penalty ${item.learning.toFixed(2)}`);
 		if (!skip && quotaStatus) {
 			if (quotaStatus.state === "waiting") {
-				details.push(`waiting until ${new Date(quotaStatus.until!).toISOString()}`);
+				details.push(`waiting until ${untilIso(quotaStatus.until, quotaStatus.state)}`);
 			} else if (quotaStatus.state === "available") {
 				const enforcedItems = quotaStatus.items.filter(
 					(candidate) => candidate.enforced && candidate.limit && candidate.limit > 0,
