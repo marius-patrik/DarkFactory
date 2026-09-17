@@ -1,5 +1,6 @@
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { type PlanAction } from "./types.ts";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
@@ -79,22 +80,34 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 }
 
 /** The job summary to append to: --summary, else GITHUB_STEP_SUMMARY; outside Actions nothing is written. */
-function summaryTarget(explicit: string | undefined): string | undefined {
-	return explicit || process.env.GITHUB_STEP_SUMMARY || undefined;
+function summaryTarget(explicit: string | undefined): string {
+	const target = explicit || process.env.GITHUB_STEP_SUMMARY;
+	if (!target) throw new Error("No summary target available");
+	return target;
+}
+
+function githubCheckSource(token: string, repository: string): CheckStateSource {
+	const [owner, repo] = repository.split("/");
+	if (!owner || !repo) throw new Error("Invalid GITHUB_REPOSITORY format");
+	const repoInstance = new GitHubRepository(new GitHubClient({ token }), owner, repo);
+	return { checkStates: (ref) => repoInstance.checkStates(ref) };
 }
 
 // Semantic comparison for actions
-function actionsMatch(pythonAction: any, tsAction: PlanAction): boolean {
-	if (pythonAction.type !== tsAction.type) return false;
+function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
+	if (!pythonAction || typeof pythonAction !== "object") return false;
+	const p = pythonAction as Record<string, unknown>;
+
+	if (p.type !== tsAction.type) return false;
 
 	if (tsAction.type === "run") {
 		// Compare nodes (ignoring order by sorting)
-		const pyNodes = (pythonAction.nodes ?? []).slice().sort();
+		const pyNodes = Array.isArray(p.nodes) ? p.nodes.slice().sort() : [];
 		const tsNodes = tsAction.nodes.slice().sort();
 		if (JSON.stringify(pyNodes) !== JSON.stringify(tsNodes)) return false;
 	} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
 		// Compare node
-		if (pythonAction.node !== tsAction.node) return false;
+		if (p.node !== tsAction.node) return false;
 	}
 	// 'none' type doesn't have relevant fields to compare beyond type
 	return true;
@@ -209,7 +222,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 			diffMessage += `Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`;
 		}
 		const summaryPath = summaryTarget(opts.summaryPath);
-		if (summaryPath) await appendFile(summaryPath, diffMessage + "\n\n");
+		await appendFile(summaryPath, diffMessage + "\n\n");
 	}
 
 	// Handle shadow mode vs normal mode
@@ -226,7 +239,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 				: []),
 		];
 
-		if (summaryPath) await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
+		await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
 	} else {
 		// Save the updated RunState
 		await saveRunState(runsDir, subject, runState);
