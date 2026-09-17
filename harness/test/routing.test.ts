@@ -122,7 +122,8 @@ diff --git a/harness/test/routing.test.ts b/harness/test/routing.test.ts
 	});
 
 	test("control case: actual credential-like value in runtime/tool-result context triggers sensitive routing", async () => {
-		const realSecretPrompt = "Here is the production access_token=sk-proj-liveProductionSecretKeyWithRealValue1234567890abcdef";
+		const realSecretPrompt =
+			"Here is the production access_token=sk-proj-liveProductionSecretKeyWithRealValue1234567890abcdef";
 		expect(await defaultSensitiveDataHook.detect({ prompt: realSecretPrompt, toolResults: [] })).toBe(true);
 		expect((await resolveRouting(config, { prompt: realSecretPrompt })).source).toBe("sensitive");
 	});
