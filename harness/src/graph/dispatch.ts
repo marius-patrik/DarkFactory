@@ -1,6 +1,6 @@
+import { deepStrictEqual } from "node:assert";
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { deepStrictEqual } from "node:assert";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
@@ -232,7 +232,7 @@ export async function dispatch(argv: string[], options?: { checkStateSource?: Ch
 		}
 	}
 
-// Handle shadow mode vs normal mode
+	// Handle shadow mode vs normal mode
 	if (opts.shadow) {
 		// Append markdown summary instead of saving state
 		const summaryPath = summaryTarget(opts.summaryPath);
