@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: read
+      checks: write
       issues: read
       pull-requests: read
     steps:
@@ -57,5 +57,7 @@ jobs:
       - name: Run DF Dispatch (shadow mode)
         env:
           GH_TOKEN: ${{ github.token }}
+          DF_SHADOW_VERIFY: "true"
+          DF_PYTHON_ACTION_PATH: ${{ github.workspace }}/.darkfactory-pipeline/harness/assets/python_action.json
         run: |
           bun .darkfactory-pipeline/harness/src/cli.ts graph dispatch --event-name "$GITHUB_EVENT_NAME" --event "$GITHUB_EVENT_PATH" --graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json --shadow --summary "$GITHUB_STEP_SUMMARY"
