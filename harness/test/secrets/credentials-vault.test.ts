@@ -1,10 +1,10 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { accountId, FileCredentialStore } from "../../src/credentials.ts";
 import { generateVaultKey } from "../../src/secrets/crypto.ts";
 import { saveVault } from "../../src/secrets/vault-store.ts";
-import { FileCredentialStore, accountId } from "../../src/credentials.ts";
 
 let root = "";
 let dfHome = "";
@@ -21,13 +21,30 @@ beforeEach(async () => {
 	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
 });
 
-afterEach(async () => { await rm(root, { recursive: true, force: true }); });
+afterEach(async () => {
+	await rm(root, { recursive: true, force: true });
+});
 
 describe("vault: credential source for df account set --from-vault", () => {
 	test("api_key resolved from vault at runtime, value never stored plaintext in credentials file", async () => {
 		const key = generateVaultKey();
 		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
-		await saveVault(dataRepo, { version: 1, entries: [{ name: "GEMINI_API_KEY", value: "real-api-key-xyz", scope: "actions", created: { by: "h", at: new Date().toISOString() }, updated: { by: "h", at: new Date().toISOString() } }] }, key);
+		await saveVault(
+			dataRepo,
+			{
+				version: 1,
+				entries: [
+					{
+						name: "GEMINI_API_KEY",
+						value: "real-api-key-xyz",
+						scope: "actions",
+						created: { by: "h", at: new Date().toISOString() },
+						updated: { by: "h", at: new Date().toISOString() },
+					},
+				],
+			},
+			key,
+		);
 
 		const store = new FileCredentialStore(dfHome);
 		await store.setSlot(accountId("google", "default"), "api_key", { type: "api_key", value: "vault:GEMINI_API_KEY" });
@@ -42,7 +59,10 @@ describe("vault: credential source for df account set --from-vault", () => {
 		expect(cred).toEqual({ type: "api_key", key: "real-api-key-xyz" });
 
 		// requestHeaders also resolves header slots from vault
-		await store.setSlot(accountId("google", "default"), "x-goog-header", { type: "header", value: "vault:GEMINI_API_KEY" });
+		await store.setSlot(accountId("google", "default"), "x-goog-header", {
+			type: "header",
+			value: "vault:GEMINI_API_KEY",
+		});
 		const headers = await store.requestHeaders("google", "default");
 		expect(headers["x-goog-header"]).toBe("real-api-key-xyz");
 
@@ -64,7 +84,22 @@ describe("vault: credential source for df account set --from-vault", () => {
 	test("account set --from-vault via CLI stores vault: reference (integration)", async () => {
 		const key = generateVaultKey();
 		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
-		await saveVault(dataRepo, { version: 1, entries: [{ name: "MY_VAULT_KEY", value: "vaulted-value-123", scope: "actions", created: { by: "h", at: new Date().toISOString() }, updated: { by: "h", at: new Date().toISOString() } }] }, key);
+		await saveVault(
+			dataRepo,
+			{
+				version: 1,
+				entries: [
+					{
+						name: "MY_VAULT_KEY",
+						value: "vaulted-value-123",
+						scope: "actions",
+						created: { by: "h", at: new Date().toISOString() },
+						updated: { by: "h", at: new Date().toISOString() },
+					},
+				],
+			},
+			key,
+		);
 		// Simulate `df account set google:default api_key --from-vault MY_VAULT_KEY`
 		// Use FileCredentialStore directly as CLI does
 		const store = new FileCredentialStore(dfHome);

@@ -1,6 +1,5 @@
-import { resolveDfFile } from "./utils/resolver";
-import { isAbsolute, join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
+import { isAbsolute, resolve } from "node:path";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import type {
@@ -13,6 +12,7 @@ import type {
 	TaskNeed,
 	TaskSize,
 } from "./router/types.ts";
+import { resolveDfFile } from "./utils/resolver";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
 

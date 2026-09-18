@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { validateIdentities, IdentitiesValidationError } from "./schema.ts";
 import { resolveDfFile } from "../utils/resolver.ts";
+import { IdentitiesValidationError, validateIdentities } from "./schema.ts";
 import type { ManifestIdentities } from "./types.ts";
 
 export type ManifestReader = (path: string) => Promise<string>;
@@ -14,9 +14,7 @@ export async function loadIdentities(
 	try {
 		raw = await reader(path);
 	} catch (error) {
-		throw new IdentitiesValidationError([
-			`Could not read manifest at ${path}: ${(error as Error).message}`,
-		]);
+		throw new IdentitiesValidationError([`Could not read manifest at ${path}: ${(error as Error).message}`]);
 	}
 
 	let parsed: unknown;

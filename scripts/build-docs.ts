@@ -43,20 +43,42 @@ export interface BuildDocsOptions {
   properdocsCommand?: string[];
 }
 
-const MANIFEST_PATH = path.join(".darkfactory", "manifest.json");
-const LEGACY_MANIFEST_PATH = path.join(".github", "darkfactory.json");
+const DF_REPO_PATH = path.join(".darkfactory", "repo.df");
+const ROOT_REPO_PATH = "repo.df";
+const LEGACY_MANIFEST_PATH = path.join(".darkfactory", "manifest.json");
+const OLD_LEGACY_MANIFEST_PATH = path.join(".github", "darkfactory.json");
 
 /**
- * Resolves the repository manifest, preferring its current location with a legacy fallback.
+ * Resolves the repository manifest, preferring repo.df (.darkfactory/repo.df or root repo.df) with legacy fallbacks.
  */
 export function resolveManifestPath(repoRoot: string): string {
-  const primary = path.join(repoRoot, MANIFEST_PATH);
-  if (fs.existsSync(primary)) {
-    return primary;
+  const dfPath = path.join(repoRoot, DF_REPO_PATH);
+  const rootPath = path.join(repoRoot, ROOT_REPO_PATH);
+
+  const dfExists = fs.existsSync(dfPath);
+  const rootExists = fs.existsSync(rootPath);
+
+  if (dfExists && rootExists) {
+    throw new Error(`Both ${dfPath} and ${rootPath} exist; only one is allowed.`);
+  }
+  if (dfExists) {
+    return dfPath;
+  }
+  if (rootExists) {
+    return rootPath;
   }
 
   const legacy = path.join(repoRoot, LEGACY_MANIFEST_PATH);
-  return fs.existsSync(legacy) ? legacy : primary;
+  if (fs.existsSync(legacy)) {
+    return legacy;
+  }
+
+  const oldLegacy = path.join(repoRoot, OLD_LEGACY_MANIFEST_PATH);
+  if (fs.existsSync(oldLegacy)) {
+    return oldLegacy;
+  }
+
+  return dfPath;
 }
 
 /**
@@ -311,7 +333,7 @@ export function generateManifestReference(manifest: any): string {
     "# Repository manifest reference",
     "",
     "Declarative configuration for DarkFactory pipelines, taxonomy, labels, and installed projects.",
-    "Generated from `.darkfactory/manifest.json` at build time.",
+    "Generated from repository manifest (`repo.df`) at build time.",
     "",
     "## Area taxonomy and labels",
     "",

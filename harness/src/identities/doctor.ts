@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { parseChain } from "../harness/routing.ts";
-import { loadIdentities } from "./loader.ts";
 import { resolveDfFile } from "../utils/resolver.ts";
+import { loadIdentities } from "./loader.ts";
 
 export interface DoctorIdentitiesOptions {
 	configPath?: string;
@@ -79,7 +79,7 @@ export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {
 export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 	const configPath = getOption(args, "--config");
 	const manifestPath = getOption(args, "--manifest");
-	
+
 	const result = await checkDoctorIdentities({
 		configPath,
 		manifestPath,

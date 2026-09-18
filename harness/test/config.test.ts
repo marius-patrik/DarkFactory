@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { FileCredentialStore } from "../src/credentials.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
@@ -32,13 +32,16 @@ describe("local configuration and credential sources", () => {
 
 	test("loads chains and a relative account key path", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
-		await writeFile(join(temp, "config.df"), JSON.stringify({
+		await writeFile(
+			join(temp, "config.df"),
+			JSON.stringify({
 				defaultChain: "google/custom@default",
 				cooldownTtlMs: 12_345,
 				hardReasoningChain: "anthropic/hard@work",
 				sensitiveChain: "local/private@main",
 				credentialFiles: { "google:default": "secrets/gemini_api_key" },
-			}));
+			}),
+		);
 		const config = await loadDfConfig(temp);
 		expect(config.credentialFiles?.["google:default"]).toBe("secrets/gemini_api_key");
 		expect(config.cooldownTtlMs).toBe(12_345);
@@ -88,39 +91,41 @@ describe("local configuration and credential sources", () => {
 	test("rejects malformed config without exposing its contents", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(join(temp, "config.df"), "{secret-content");
-		await expect(loadDfConfig(temp)).rejects.toThrow(
-			"Invalid config.df JSON",
-		);
+		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid config.df JSON");
 		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
-		await expect(loadDfConfig(temp)).rejects.toThrow(
-			"positive integer",
-		);
+		await expect(loadDfConfig(temp)).rejects.toThrow("positive integer");
 	});
 
 	test("validates and loads router policies, model overrides, and learning bounds", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
-		await writeFile(join(temp, "config.df"), JSON.stringify({
-			router: {
-				classifier: "cheap/classifier@default",
-				candidates: ["acme/fast@work"],
-				models: {
-					"acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" },
-				},
-				policies: [
-					{
-						id: "review",
-						match: { kind: ["review"], needs: ["tools"] },
-						prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
+		await writeFile(
+			join(temp, "config.df"),
+			JSON.stringify({
+				router: {
+					classifier: "cheap/classifier@default",
+					candidates: ["acme/fast@work"],
+					models: {
+						"acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" },
 					},
-				],
-				learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
-			},
-		}));
+					policies: [
+						{
+							id: "review",
+							match: { kind: ["review"], needs: ["tools"] },
+							prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
+						},
+					],
+					learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
+				},
+			}),
+		);
 		const config = await loadDfConfig(temp);
 		expect(config.router?.policies[0]?.id).toBe("review");
 		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
 		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
-		await writeFile(join(temp2, "config.df"), JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }));
+		await writeFile(
+			join(temp2, "config.df"),
+			JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
+		);
 		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
 	});
 
