@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { resolveDfFile } from "./utils/resolver";
 import { isAbsolute, join, resolve } from "node:path";
 import type { CredentialFallback } from "./credentials.ts";
@@ -206,12 +207,7 @@ export async function loadDfConfig(
 	root: string,
 	reader: ConfigReader = (path) => readFile(path, "utf8"),
 ): Promise<DfConfig> {
-	let path: string;
-	try {
-		path = resolveDfFile(root, "config");
-	} catch {
-		return {};
-	}
+	const path = resolveDfFile(root, "config");
 	let raw: string;
 	try {
 		raw = await reader(path);

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateVaultKey } from "../../src/secrets/crypto.ts";
@@ -7,18 +7,19 @@ import { saveVault } from "../../src/secrets/vault-store.ts";
 import { FileCredentialStore, accountId } from "../../src/credentials.ts";
 
 let root = "";
+let tempRoot = "";
 let dfHome = "";
 let dataRepo = "";
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "df-cred-vault-"));
 	dfHome = join(root, "home");
-	dataRepo = join(root, "data-df");
+	dataRepo = join(tempRoot || root, "data-df");
 	await Bun.spawn(["git", "init", dataRepo], { stdout: "pipe", stderr: "pipe" }).exited;
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.email", "t@t.com"]).exited;
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.name", "t"]).exited;
-	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo }), "utf8");
+	await mkdir(dfHome, { recursive: true });
+	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
 });
 
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
@@ -47,7 +48,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 		expect(headers["x-goog-header"]).toBe("real-api-key-xyz");
 
 		// Ensure credentials.json does not contain plaintext (it stores vault: reference)
-		const fileRaw = await Bun.file(join(dfHome, "credentials.json")).text();
+		const fileRaw = await Bun.file(join(dfHome, "credentials.df")).text();
 		expect(fileRaw).toContain("vault:GEMINI_API_KEY");
 		expect(fileRaw).not.toContain("real-api-key-xyz");
 	});

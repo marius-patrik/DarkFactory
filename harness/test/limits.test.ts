@@ -57,15 +57,15 @@ describe("limit observation", () => {
 });
 
 describe("persisted limit ledger", () => {
-	test("migrates quota.json and returns entries automatically after reset", async () => {
+	test("migrates quota.df and returns entries automatically after reset", async () => {
 		const root = await home();
-		await writeFile(join(root, "quota.json"), JSON.stringify({ version: 1, entries: {
+		await writeFile(join(root, "quota.df"), JSON.stringify({ version: 1, entries: {
 			"google/flash@one": { ...candidate, kind: "rate_limited", markedAt: 1_000, resetAt: 2_000 },
 		} }));
 		const ledger = new LimitLedger(root);
 		expect((await ledger.blocking(candidate, 1_500))[0]?.type).toBe("rate");
 		expect(await ledger.blocking(candidate, 2_000)).toEqual([]);
-		expect(await Bun.file(join(root, "limits.json")).exists()).toBe(true);
+		expect(await Bun.file(join(root, "limits.df")).exists()).toBe(true);
 	});
 
 	test("stores simultaneous request and token limits without overwriting", async () => {
@@ -83,7 +83,7 @@ describe("persisted limit ledger", () => {
 		await ledger.record([{ ...candidate, type: "daily", observedAt: 1, resetAt: 100, source: "rule", remaining: 0 }]);
 		expect(await ledger.clear("google:one")).toBe(1);
 		expect(await ledger.list()).toEqual([]);
-		expect(await Bun.file(join(root, "limits-audit.jsonl")).text()).toContain('"action":"clear"');
+		expect(await Bun.file(join(root, "limits-audit.df")).text()).toContain('"action":"clear"');
 	});
 
 	test("an enabled probe can defer unknown-reset recovery", async () => {

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateVaultKey } from "../../src/secrets/crypto.ts";
@@ -16,7 +16,7 @@ beforeEach(async () => {
 	dataRepo = join(tempRoot, "data-df");
 	await Bun.spawn(["git", "init", dataRepo], { stdout: "pipe", stderr: "pipe" }).exited;
 	// git config for commits
-	await Bun.spawn(["git", "-C", dataRepo, "config", "user.email", "test@test.com"], { stdout: "pipe" }).exited;
+	await Bun.spawn(["git", "-C", dataRepo, "config", "user.email", "test@test.com"], { stdout: "pipe", stderr: "pipe" }).exited;
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.name", "test"], { stdout: "pipe" }).exited;
 });
 
@@ -25,7 +25,7 @@ afterEach(async () => {
 });
 
 describe("vault file format and atomic writes", () => {
-	test("saves vault.enc.json encrypted and vault.meta.json without values", async () => {
+	test("saves vault.enc.df encrypted and vault.meta.df without values", async () => {
 		const key = generateVaultKey();
 		const vault = {
 			version: 1 as const,
@@ -33,14 +33,14 @@ describe("vault file format and atomic writes", () => {
 		};
 		await saveVault(dataRepo, vault, key);
 
-		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.json"), "utf8"));
+		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.df"), "utf8"));
 		expect(encRaw.version).toBe(1);
 		expect(encRaw.algorithm).toBe("aes-256-gcm");
 		expect(typeof encRaw.iv).toBe("string");
 		expect(typeof encRaw.ciphertext).toBe("string");
 		expect(JSON.stringify(encRaw)).not.toContain("super-secret-value");
 
-		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.json"), "utf8"));
+		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.df"), "utf8"));
 		expect(metaRaw.version).toBe(1);
 		expect(metaRaw.entries[0].name).toBe("MY_SECRET");
 		expect(JSON.stringify(metaRaw)).not.toContain("super-secret-value");
@@ -53,13 +53,13 @@ describe("vault file format and atomic writes", () => {
 		const loaded = await loadVault(dataRepo, key);
 		expect(loaded.entries).toHaveLength(0);
 
-		await writeFile(join(dataRepo, "vault.enc.json"), JSON.stringify({ version: 1, algorithm: "bad", iv: "x", tag: "y", ciphertext: "z" }), "utf8");
+		await writeFile(join(dataRepo, "vault.enc.df"), JSON.stringify({ version: 1, algorithm: "bad", iv: "x", tag: "y", ciphertext: "z" }), "utf8");
 		await expect(loadVault(dataRepo, key)).rejects.toThrow();
 	});
 
 	test("malformed JSON is rejected", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dataRepo, "vault.enc.json"), "not-json", "utf8");
+		await writeFile(join(dataRepo, "vault.enc.df"), "not-json", "utf8");
 		await expect(loadVault(dataRepo, key)).rejects.toThrow();
 	});
 
@@ -78,7 +78,7 @@ describe("vault file format and atomic writes", () => {
 		const lockExists = await Bun.file(join(dfHome, ".secrets.lock")).exists();
 		expect(lockExists).toBe(false);
 		// Verify 0600 on vault file (stat mode)
-		const st = await stat(join(dataRepo, "vault.enc.json"));
+		const st = await stat(join(dataRepo, "vault.enc.df"));
 		// Mode check: must not have group/other read on unix; skip strict on win32
 		if (process.platform !== "win32") {
 			expect(st.mode & 0o077).toBe(0);
@@ -109,9 +109,9 @@ describe("vault file format and atomic writes", () => {
 
 	test("resolveDataRepoPath respects config dataRepo", async () => {
 		const custom = join(tempRoot, "custom-data");
-		await Bun.spawn(["mkdir", "-p", custom]).exited;
-		await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-		await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo: custom }), "utf8");
+		await mkdir(custom, { recursive: true });
+		await mkdir(dfHome, { recursive: true });
+		await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo: custom }), "utf8");
 		const resolved = await resolveDataRepoPath(dfHome);
 		expect(resolved).toBe(custom);
 		const def = await resolveDataRepoPath(join(tempRoot, "nonexistent-home"));

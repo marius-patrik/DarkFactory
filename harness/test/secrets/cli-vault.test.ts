@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubClient } from "../../src/github/client.ts";
@@ -28,8 +28,8 @@ beforeEach(async () => {
 	await Bun.spawn(["git", "init", dataRepo], { stdout: "pipe", stderr: "pipe" }).exited;
 	await git(dataRepo, "config", "user.email", "t@t.com");
 	await git(dataRepo, "config", "user.name", "t");
-	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo }), "utf8");
+	await mkdir(dfHome, { recursive: true });
+	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
 });
 
 afterEach(async () => {
