@@ -47,21 +47,20 @@ describe("QuotaStore cooldown lifecycle", () => {
 		const root = await home();
 		const store = new QuotaStore(root, { persist: (entry) => entry.provider !== "faux" });
 		await store.mark({ provider: "faux", model: "echo", account: "test" }, "quota_exhausted", undefined, 1_000);
-		expect(await Bun.file(join(root, "quota.json")).exists()).toBe(false);
+		expect(await Bun.file(join(root, "quota.df")).exists()).toBe(false);
 	});
 
 	test("cross-process quota writers preserve every candidate", async () => {
 		const root = await home();
-		const workers = Array.from({ length: 12 }, (_, index) => Bun.spawn([
-			process.execPath,
-			join(import.meta.dir, "fixtures", "store-writer.ts"),
-			"quota",
-			root,
-			String(index),
-		], { stdout: "pipe", stderr: "pipe" }));
+		const workers = Array.from({ length: 12 }, (_, index) =>
+			Bun.spawn(
+				[process.execPath, join(import.meta.dir, "fixtures", "store-writer.ts"), "quota", root, String(index)],
+				{ stdout: "pipe", stderr: "pipe" },
+			),
+		);
 		const exits = await Promise.all(workers.map((worker) => worker.exited));
 		expect(exits).toEqual(Array(12).fill(0));
-		const stored = JSON.parse(await Bun.file(join(root, "limits.json")).text()) as { entries: Record<string, unknown> };
+		const stored = JSON.parse(await Bun.file(join(root, "limits.df")).text()) as { entries: Record<string, unknown> };
 		expect(Object.keys(stored.entries)).toHaveLength(12);
 	});
 
@@ -71,7 +70,13 @@ describe("QuotaStore cooldown lifecycle", () => {
 		await writeFile(lock, JSON.stringify({ pid: 999_999_999, token: "stale" }));
 		await utimes(lock, new Date(0), new Date(0));
 		let entered = false;
-		await withFileLock(lock, async () => { entered = true; }, { staleMs: 1, timeoutMs: 100 });
+		await withFileLock(
+			lock,
+			async () => {
+				entered = true;
+			},
+			{ staleMs: 1, timeoutMs: 100 },
+		);
 		expect(entered).toBe(true);
 	});
 });

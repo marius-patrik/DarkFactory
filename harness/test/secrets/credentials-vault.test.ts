@@ -66,8 +66,8 @@ describe("vault: credential source for df account set --from-vault", () => {
 		const headers = await store.requestHeaders("google", "default");
 		expect(headers["x-goog-header"]).toBe("real-api-key-xyz");
 
-		// Ensure credentials.json does not contain plaintext (it stores vault: reference)
-		const fileRaw = await Bun.file(join(dfHome, "credentials.json")).text();
+		// Ensure credentials.df does not contain plaintext (it stores vault: reference)
+		const fileRaw = await Bun.file(join(dfHome, "credentials.df")).text();
 		expect(fileRaw).toContain("vault:GEMINI_API_KEY");
 		expect(fileRaw).not.toContain("real-api-key-xyz");
 	});

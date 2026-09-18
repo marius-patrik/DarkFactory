@@ -138,7 +138,7 @@ describe("FileCredentialStore", () => {
 	test("malformed storage fails without echoing secret input", async () => {
 		const home = await temporaryHome();
 		await mkdir(home, { recursive: true });
-		await writeFile(join(home, "credentials.json"), "not-json-secret-material", "utf8");
+		await writeFile(join(home, "credentials.df"), "not-json-secret-material", "utf8");
 		await expect(new FileCredentialStore(home).listAccounts()).rejects.toThrow("Invalid credentials file JSON");
 	});
 
@@ -215,7 +215,7 @@ describe("FileCredentialStore", () => {
 
 	test("borrowed accounts in an old store migrate to df-owned", async () => {
 		const root = await temporaryHome();
-		const storePath = join(root, "credentials.json");
+		const storePath = join(root, "credentials.df");
 		const oldStore = {
 			version: 2,
 			accounts: {

@@ -388,6 +388,7 @@ describe("config-driven provider registry", () => {
 			.auth.find((auth) => auth.kind === "oauth")!;
 		const calls: Array<{ url: string; contentType: string | null }> = [];
 		const oauth = createConfiguredOAuth(config, {
+			isHeadless: true,
 			now: () => 1_000,
 			fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
 				calls.push({ url: String(input), contentType: new Headers(init?.headers).get("content-type") });

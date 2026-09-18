@@ -63,7 +63,7 @@ export async function commitAndPush(
 	// Add vault files; push-map may not exist yet - filter to existing files
 	const { stat: fsStat } = await import("node:fs/promises");
 	const existing: string[] = [];
-	for (const f of ["vault.enc.json", "vault.meta.json", "push-map.json"]) {
+	for (const f of ["vault.enc.df", "vault.meta.df", "push-map.df"]) {
 		try {
 			await fsStat(join(dataRepoPath, f));
 			existing.push(f);
@@ -107,7 +107,7 @@ async function readRemoteVault(options: SyncOptions, keyBase64: string): Promise
 	const branch = options.branch ?? "main";
 	// Ensure we have latest remote
 	await git(options.dataRepoPath, "fetch", remote);
-	const show = await git(options.dataRepoPath, "show", `${remote}/${branch}:vault.enc.json`);
+	const show = await git(options.dataRepoPath, "show", `${remote}/${branch}:vault.enc.df`);
 	if (show.exitCode !== 0) return undefined;
 	try {
 		const envelope = JSON.parse(show.stdout);

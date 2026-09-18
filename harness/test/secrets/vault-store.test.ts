@@ -52,14 +52,14 @@ describe("vault file format and atomic writes", () => {
 		};
 		await saveVault(dataRepo, vault, key);
 
-		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.json"), "utf8"));
+		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.df"), "utf8"));
 		expect(encRaw.version).toBe(1);
 		expect(encRaw.algorithm).toBe("aes-256-gcm");
 		expect(typeof encRaw.iv).toBe("string");
 		expect(typeof encRaw.ciphertext).toBe("string");
 		expect(JSON.stringify(encRaw)).not.toContain("super-secret-value");
 
-		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.json"), "utf8"));
+		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.df"), "utf8"));
 		expect(metaRaw.version).toBe(1);
 		expect(metaRaw.entries[0].name).toBe("MY_SECRET");
 		expect(JSON.stringify(metaRaw)).not.toContain("super-secret-value");
@@ -73,7 +73,7 @@ describe("vault file format and atomic writes", () => {
 		expect(loaded.entries).toHaveLength(0);
 
 		await writeFile(
-			join(dataRepo, "vault.enc.json"),
+			join(dataRepo, "vault.enc.df"),
 			JSON.stringify({ version: 1, algorithm: "bad", iv: "x", tag: "y", ciphertext: "z" }),
 			"utf8",
 		);
@@ -82,7 +82,7 @@ describe("vault file format and atomic writes", () => {
 
 	test("malformed JSON is rejected", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dataRepo, "vault.enc.json"), "not-json", "utf8");
+		await writeFile(join(dataRepo, "vault.enc.df"), "not-json", "utf8");
 		await expect(loadVault(dataRepo, key)).rejects.toThrow();
 	});
 
@@ -101,7 +101,7 @@ describe("vault file format and atomic writes", () => {
 		const lockExists = await Bun.file(join(dfHome, ".secrets.lock")).exists();
 		expect(lockExists).toBe(false);
 		// Verify 0600 on vault file (stat mode)
-		const st = await stat(join(dataRepo, "vault.enc.json"));
+		const st = await stat(join(dataRepo, "vault.enc.df"));
 		// Mode check: must not have group/other read on unix; skip strict on win32
 		if (process.platform !== "win32") {
 			expect(st.mode & 0o077).toBe(0);
