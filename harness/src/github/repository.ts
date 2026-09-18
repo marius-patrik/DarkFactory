@@ -12,6 +12,15 @@ export interface UpdateIssueInput { title?: string; body?: string; state?: "open
 export interface CreatePullRequestInput { title: string; head: string; base: string; body?: string; draft?: boolean; }
 export interface UpdatePullRequestInput { title?: string; body?: string; state?: "open" | "closed"; base?: string; draft?: boolean; }
 
+export interface CreateCheckRunInput {
+  name: string;
+  head_sha: string;
+  status: "queued" | "in_progress" | "completed";
+  conclusion?: "success" | "failure" | "neutral" | "cancelled" | "timed_out" | "action_required";
+  output: { title: string; summary: string; text?: string };
+  completed_at?: string;
+}
+
 export class GitHubRepository {
   readonly #client: GitHubClient;
   readonly #owner: string;
@@ -71,6 +80,19 @@ export class GitHubRepository {
     const query = "query($owner:String!,$repo:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){closingIssuesReferences(first:100,after:$cursor){nodes{number} pageInfo{hasNextPage endCursor}}}} rateLimit{cost remaining resetAt}}";
     const nodes = await this.#client.collectGraphQL<{ number: number }>(query, { owner: this.#owner, repo: this.#repo, number }, data => (data as any).repository.pullRequest.closingIssuesReferences);
     return [...new Set(nodes.map(node => node.number))].sort((a, b) => a - b);
+  }
+
+  async getDefaultBranchHeadSha(): Promise<string> {
+    const repoInfo = await this.#client.rest<{ default_branch?: string }>("GET", this.#path(""));
+    const defaultBranch = repoInfo.default_branch ?? "main";
+    const refInfo = await this.#client.rest<{ object?: { sha?: string } }>("GET", this.#path(`/git/ref/heads/${encodeURIComponent(defaultBranch)}`));
+    const sha = refInfo.object?.sha;
+    if (!sha) throw new Error(`Could not resolve default branch HEAD for ${defaultBranch}`);
+    return sha;
+  }
+
+  async createCheckRun(input: CreateCheckRunInput): Promise<any> {
+    return this.#client.rest("POST", this.#path("/check-runs"), input);
   }
 
   async setRepositorySecret(name: string, plaintext: string): Promise<void> { const key = await this.#publicKey(this.#path("/actions/secrets/public-key")); const encrypted_value = await sealSecret(key.key, plaintext); await this.#client.rest("PUT", this.#path(`/actions/secrets/${encodeURIComponent(name)}`), { encrypted_value, key_id: key.key_id }); }

@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: read
+      checks: write
       issues: read
       pull-requests: read
     steps:

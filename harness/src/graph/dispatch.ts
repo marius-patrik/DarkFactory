@@ -1,6 +1,6 @@
 import { AssertionError, deepStrictEqual } from "node:assert";
 import { appendFile, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
@@ -122,6 +122,46 @@ function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
 	}
 }
 
+export async function resolveCommitSha(
+	eventName: string,
+	eventPayload: any,
+	repoInstance?: GitHubRepository,
+): Promise<string> {
+	if (eventPayload && typeof eventPayload === "object") {
+		if (eventName === "pull_request" || eventName === "pull_request_review") {
+			const sha = eventPayload.pull_request?.head?.sha || eventPayload.review?.pull_request?.head?.sha;
+			if (sha) return sha;
+		}
+		if (eventName === "check_suite") {
+			const sha = eventPayload.check_suite?.head_sha;
+			if (sha) return sha;
+		}
+		if (eventName === "check_run") {
+			const sha = eventPayload.check_run?.head_sha;
+			if (sha) return sha;
+		}
+		if (eventName === "push") {
+			const sha = eventPayload.after || eventPayload.head_commit?.id;
+			if (sha) return sha;
+		}
+	}
+
+	if (repoInstance) {
+		try {
+			return await repoInstance.getDefaultBranchHeadSha();
+		} catch {
+			// fallback
+		}
+	}
+
+	if (eventPayload && typeof eventPayload === "object") {
+		if (eventPayload.head_sha) return eventPayload.head_sha;
+		if (eventPayload.pull_request?.head?.sha) return eventPayload.pull_request.head.sha;
+	}
+
+	return "HEAD";
+}
+
 export async function dispatch(
 	argv: string[],
 	options?: {
@@ -133,7 +173,10 @@ export async function dispatch(
 	const opts = parseArgs(argv);
 
 	const shadowVerify = options?.shadowVerify ?? process.env.DF_SHADOW_VERIFY === "true";
-	const pythonActionPath = options?.pythonActionPath ?? process.env.DF_PYTHON_ACTION_PATH;
+	const pythonActionPath =
+		options?.pythonActionPath ??
+		process.env.DF_PYTHON_ACTION_PATH ??
+		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.json") : ".darkfactory/python_action.json");
 
 	if (shadowVerify && !pythonActionPath) {
 		throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
@@ -229,47 +272,77 @@ export async function dispatch(
 	// Print the output
 	console.log(JSON.stringify(output));
 
-	// Handle shadow mode
-	if (opts.shadow) {
-		const summaryPath = summaryTarget(opts.summaryPath);
-		if (summaryPath) {
-			const summaryLines: string[] = [];
+	const isShadow = opts.shadow || process.env.DF_SHADOW_MODE === "true";
 
-			// Verification logic: Shadow verification diffs
-			if (shadowVerify) {
-				summaryLines.push("### Verification Diff");
-				try {
-					const pythonAction = await readJsonFile(pythonActionPath!);
-					if (actionsMatch(pythonAction, action)) {
-						summaryLines.push("No drift detected between TS and Python actions.");
-					} else {
-						summaryLines.push(
-							`Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`,
-						);
-					}
-				} catch (e) {
+	// Handle shadow mode
+	if (isShadow) {
+		const summaryPath = summaryTarget(opts.summaryPath);
+		const summaryLines: string[] = [];
+
+		// Verification logic: Shadow verification diffs
+		let parityMatch = true;
+		if (shadowVerify) {
+			summaryLines.push("### Verification Diff");
+			try {
+				const pythonAction = await readJsonFile(pythonActionPath!);
+				if (actionsMatch(pythonAction, action)) {
+					summaryLines.push("No drift detected between TS and Python actions.");
+				} else {
+					parityMatch = false;
 					summaryLines.push(
-						`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`,
+						`Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`,
 					);
 				}
-				summaryLines.push("");
+			} catch (e) {
+				summaryLines.push(
+					`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`,
+				);
 			}
+			summaryLines.push("");
+		}
 
-			// Append markdown summary
-			summaryLines.push(
-				`## Dispatch: ${subject}`,
-				`Event: ${translated.event.type}`,
-				`Current node: ${runState.current_node}`,
-				`Action: ${action.type}`,
-				...(action.type === "run" && action.nodes
-					? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
-					: []),
-			);
+		// Append markdown summary
+		summaryLines.push(
+			`## Dispatch: ${subject}`,
+			`Event: ${translated.event.type}`,
+			`Current node: ${runState.current_node}`,
+			`Action: ${action.type}`,
+			...(action.type === "run" && action.nodes
+				? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
+				: []),
+		);
 
+		if (summaryPath) {
 			try {
 				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
 			} catch (e) {
 				throw new Error(`Failed to write shadow run summary: ${e}`);
+			}
+		}
+
+		// Emit real GitHub Checks API check run using event-specific target SHA if token & repo present
+		const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+		const repo = process.env.GITHUB_REPOSITORY;
+		if (token && repo) {
+			try {
+				const [owner, name] = repo.split("/");
+				if (owner && name) {
+					const repoInstance = new GitHubRepository(new GitHubClient({ token }), owner, name);
+					const commitSha = await resolveCommitSha(opts.eventName, eventPayload, repoInstance);
+					await repoInstance.createCheckRun({
+						name: "df-dispatch",
+						head_sha: commitSha,
+						status: "completed",
+						conclusion: shadowVerify && !parityMatch ? "failure" : "success",
+						output: {
+							title: `DF Dispatch: ${subject} (${translated.event.type})`,
+							summary: summaryLines.join("\n"),
+						},
+						completed_at: new Date().toISOString(),
+					});
+				}
+			} catch {
+				// non-fatal if checks API call fails (e.g. in offline or unit test environments)
 			}
 		}
 	} else {
