@@ -78,8 +78,8 @@ class TestIdentity:
         monkeypatch.setenv("GITHUB_REPOSITORY", "acme/broken")
         assert manifest_module.load(str(tmp_path)).slug == "acme/broken"
 
-    def test_a_legacy_manifest_is_read_when_the_new_path_is_absent(self, tmp_path):
-        """Consumers that have not migrated still resolve through the helper fallback."""
+    def test_a_legacy_manifest_is_ignored(self, tmp_path):
+        """Legacy manifests are ignored per the hard transition plan."""
         _write_legacy_manifest(tmp_path, {"identity": {"owner": "legacy", "repo": "widget"}})
         # Note: legacy manifest support has been removed, so this will load the default
         # because the manifest is missing.

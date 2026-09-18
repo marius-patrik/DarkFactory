@@ -89,7 +89,7 @@ describe("local configuration and credential sources", () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(join(temp, "config.df"), "{secret-content");
 		await expect(loadDfConfig(temp)).rejects.toThrow(
-			"Invalid $DF_HOME/config.json JSON",
+			"Invalid config.df JSON",
 		);
 		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
 		await expect(loadDfConfig(temp)).rejects.toThrow(
