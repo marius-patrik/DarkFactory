@@ -1,4 +1,4 @@
-#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff
+#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
 = Praktická část
 
@@ -85,15 +85,15 @@ Python a Rust jsou dvě prostředí téže domény — kód se testuje a balí. 
 a LaTeX jsou dvě prostředí jiné domény — text se sází a publikuje.
 
 Toto rozlišení dovoluje popsat i repozitář, který obsahuje zároveň program
-a text — jako právě tato práce, jejíž praktickou částí je software popisovaný
-v @tab-prostredi. Bez něj by bylo nutné buď považovat sazbu za zvláštní případ
-kódu, nebo pro texty vytvořit samostatný systém.
+a text — například projekt kombinující aplikační logiku se sazební dokumentací.
+Bez něj by bylo nutné buď považovat sazbu za zvláštní případ kódu, nebo pro
+texty vytvářet zcela samostatný orchestrační systém.
 ]
 
 === Deklarace jako doplněk rozpoznávání
 
 #draft[
-Rozpoznávání prostředí nemůže předvídat veškeré specifické požadavky projektu. Repozitář této práce například přibaluje vlastní sadu písem v podadresáři `fonts/`, takže příkaz pro sazbu vyžaduje dodatečné parametry. Konfigurační manifest proto umožňuje výchozí parametry transparentně rozšířit nebo přepsat, aniž by bylo nutné vypnout automatické rozpoznávání prostředí jako celek.
+Rozpoznávání prostředí nemůže předvídat veškeré specifické požadavky projektu. Pokud projekt například přibaluje vlastní sadu písem v podadresáři `fonts/` nebo specifické systémové knihovny, příkaz pro sestavení vyžaduje dodatečné parametry. Konfigurační manifest proto umožňuje výchozí parametry transparentně rozšířit nebo přepsat, aniž by bylo nutné vypnout automatické rozpoznávání prostředí jako celek.
 
 #note[Placeholder: Zde bude uvedena ukázka deklarativního přepsání parametrů sestavení v novém schématu konfigurace přestavěného systému DarkFactory.]
 ]
@@ -166,6 +166,8 @@ Při rozšiřování systému DarkFactory na tvorbu a revizi akademických a odb
 #alert[Upozornění na hloubkovou nevyváženost kapitol, chybějící dekompozice komponent či nesoulad s osnovou práce.]
 
 #critique[Hloubková teoretická a architektonická oponentura bez servítků — odhalování slepých míst, neověřených předpokladů, bezpečnostních rizik a metodologických slabin formulovaných jako břitké otázky k obhajobě.]
+
+#blue-note[Metodické vymezení a rozsah práce — formulace hranic zkoumaného problému, metodická abstrakce (např. oddělení agentního inženýrství od strojového učení) a mantinely zadání.]
 
 #draft[
 V toku textu se uplatňují tyto zvýrazňovací a srovnávací funkce:

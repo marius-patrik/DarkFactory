@@ -1,4 +1,4 @@
-#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff
+#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
 = Obsah přiloženého média
 
@@ -67,6 +67,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   #issue[Chybná signatura funkce: chybí povinný parametr timeout.]
   #alert[Sekce postrádá shrnutí naměřených výsledků před diskusí.]
   #critique[Metodologická absence baseline prokazující přínos nového modulu.]
+  #blue-note[Metodické vymezení: rozsah práce a oddělení agentního inženýrství od strojového učení.]
 
   // --- 2. Textové revizní funkce (zvýraznění v toku textu) ---
   #draft[Tento odstavec tvoří neověřený koncept čekající na schválení.]
@@ -91,6 +92,8 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 #alert[Ukázka žlutého panelu strukturálního upozornění (`#alert` / `#struct-alert`): Hloubková nevyváženost podkapitol, nekonzistence osnovy či absence klíčových náležitostí práce.]
 
 #critique[Ukázka oranžového panelu oponentury (`#critique`): Břitká, nekompromisní oponentura — zpochybnění neověřených předpokladů, analýza slabin metodiky a příprava na otázky zkušební komise.]
+
+#blue-note[Ukázka modrého panelu metodického vymezení (`#blue-note` / `#scope-note`): Vymezení rozsahu práce, formulace mantinelů a architektonických abstrakcí.]
 
 Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Neověřený koncept (`#draft` / `#unconfirmed`)*: #draft[Tento text představuje koncept čekající na posouzení autorem.]
