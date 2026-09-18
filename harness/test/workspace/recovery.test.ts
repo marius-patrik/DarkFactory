@@ -112,3 +112,28 @@ test("provePlanApplies correctly validates plan applicability against base and r
 	expect(provePlanApplies(provenance, validPlan)).toBe(true);
 	expect(provePlanApplies(provenance, invalidPlan)).toBe(false);
 });
+
+test("intakeRecoveryWork preserves multiple target Request bindings and full provenance records", async () => {
+	temp = createTempRepo();
+	runGit(temp.repo, ["checkout", "-b", "feature/multi"]);
+	writeFileSync(join(temp.repo, "multi.txt"), "shared work");
+	runGit(temp.repo, ["add", "multi.txt"]);
+	runGit(temp.repo, ["commit", "-m", "multi request commit"], { env: TEST_IDENTITY });
+
+	const provenance = await intakeRecoveryWork({
+		repo: temp.repo,
+		sourceRef: "feature/multi",
+		targetRequests: ["#385", "#388"],
+		base: "main",
+		workRoot: temp.workRoot,
+	});
+
+	expect(provenance.targetRequests).toEqual(["#385", "#388"]);
+	expect(provenance.originalPath).toBe(temp.repo);
+	expect(provenance.originalRef).toBe("feature/multi");
+	expect(provenance.originalHEAD).toBeDefined();
+	expect(provenance.recoveryBranch).toContain("recovery/385-388");
+	expect(provenance.recoverySHA).toBeDefined();
+	expect(provenance.currentCanonicalBase).toBeDefined();
+});
+
