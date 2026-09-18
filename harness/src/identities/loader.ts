@@ -15,7 +15,7 @@ export async function loadIdentities(
 		raw = await reader(path);
 	} catch (error) {
 		throw new IdentitiesValidationError([
-			`Could not read manifest at ${manifestPath}: ${(error as Error).message}`,
+			`Could not read manifest at ${path}: ${(error as Error).message}`,
 		]);
 	}
 
@@ -23,7 +23,7 @@ export async function loadIdentities(
 	try {
 		parsed = JSON.parse(raw);
 	} catch {
-		throw new IdentitiesValidationError([`Invalid JSON in manifest at ${manifestPath}`]);
+		throw new IdentitiesValidationError([`Invalid JSON in manifest at ${path}`]);
 	}
 
 	return validateIdentities(parsed);
