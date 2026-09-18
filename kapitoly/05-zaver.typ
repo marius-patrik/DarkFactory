@@ -2,37 +2,43 @@
 
 = Závěr
 
-#diff[Hlavním cílem této práce bylo navrhnout, realizovat a v reálném provozu ověřit modulární systém pro autonomní vývoj softwaru, který převezme rutinní inženýrské úkony od přijetí požadavku po vytvoření strojově ověřené změny, aniž by slevil z principu lidského dohledu v rozhodujících fázích. Tento cíl byl beze zbytku naplněn: byl vyvinut systém DarkFactory, nasazen na tři produkční repozitáře a ověřen v reálném vývojovém cyklu.][Hlavním cílem této práce bylo navrhnout, realizovat a v reálném provozu ověřit modulární systém pro autonomní vývoj softwaru, který převezme rutinní inženýrské úkony od přijetí požadavku po vytvoření strojově ověřené změny, aniž by slevil z principu lidského dohledu v rozhodujících fázích. V rámci inženýrského cyklu se podařilo navrhnout, plně implementovat a empiricky ověřit systém DarkFactory, nasadit jej na tři produkční repozitáře a prověřit jeho robustnost nad šesti desítkami reálných vývojových požadavků.]
+#struct-alert[
+  *Závěr a vyhodnocení cílů v revizi*: Vzhledem k probíhající zásadní přestavbě systému DarkFactory jsou konkrétní empirické statistiky předchozí verze vyřazeny a nahrazeny strukturálními zástupnými bloky. Finální vyhodnocení a zodpovězení výzkumných otázek bude aktualizováno po dokončení evaluace nové verze.
+]
+
+#draft[
+Hlavním cílem této práce bylo navrhnout, realizovat a v reálném provozu ověřit modulární systém pro autonomní vývoj softwaru, který převezme rutinní inženýrské úkony od přijetí požadavku po vytvoření strojově ověřené změny, aniž by slevil z principu lidského dohledu v rozhodujících fázích. V rámci inženýrského cyklu byl navržen systém DarkFactory a nasazen na testovací repozitáře zahrnující jak programovací kód, tak akademickou sazbu.
+]
 
 #draft[
 Naplnění jednotlivých dílčích cílů lze ve vztahu ke stanovené metodice shrnout následovně:
 + *Současný stav a teoretická východiska (Kapitola 2)*: Práce systematicky zmapovala architekturu moderních dekodérových transformerů, mechanismus pozornosti, limity kontextového okna (včetně jevu _Context Rot_ a významu KV cache), techniky inženýrství promptů a formální strukturu autonomní ReAct smyčky alternující vnitřní rozvahu (_Thought_) a volání nástrojů (_Action_).
-+ *Architektonický návrh (Kapitola 3)*: Byla navržena třívrstvá dekompozice propojující platformu GitHub, řídicí Python jádro a hermetické kontejnerové prostředí. Životní cyklus požadavku byl formalizován jako orientovaný stavový diagram s explicitními schvalovacími branami.
-+ *Realizace a nasazení (Kapitola 3 a 4)*: Systém byl kompletně naprogramován a nasazen na tři repozitáře různého zaměření — vlastní repozitář systému DarkFactory, textový repozitář této odborné práce (`OdbornaPrace-paper`) a projekt `ChessWithQuests`.
-+ *Vyhodnocení a provozní analýza (Kapitola 4)*: Architektonické sjednocení na volané pracovní postupy a centrální manifest eliminovalo roztříštěnou údržbu jednoúčelových skriptů napříč projekty. Práce ukazuje, že samotná redukce řádků konfigurace není směrodatnou metrikou úspěchu; podstatou je přesun složitosti do typovaného a testovaného metaharnessu s údržbovou složitostí $O(1)$. Nejcennějším zjištěním byla identifikace čtyř subtilních chyb v distribuovaném řízení (uváznutí souběžnosti, skládání názvů kontrol, tiché selhání API zápisů a pevný předpoklad o přítomnosti Pythonu), které byly v systému deterministicky vyřešeny.
++ *Architektonický návrh (Kapitola 3)*: Byl navržen modulární model propojující platformu GitHub, řídicí orchestrační vrstvu a izolované běhové prostředí pro modely. Životní cyklus požadavku byl formalizován do stavového diagramu s explicitními schvalovacími branami.
++ *Realizace a nasazení (Kapitola 3 a 4)*: Systém byl nasazen a ověřen na repozitářích různého zaměření — vlastní vývojové prostředí systému, textový repozitář této odborné práce (`OdbornaPrace-paper`) a aplikační projekt `ChessWithQuests`.
++ *Vyhodnocení a provozní analýza (Kapitola 4)*: Architektonické sjednocení na sdílené pracovní postupy a centrální manifest eliminovalo roztříštěnou údržbu jednoúčelových skriptů napříč projekty s údržbovou složitostí $O(1)$. Provozní zkušenosti potvrdily, že klíčová úskalí neleží v generování kódu modely, nýbrž v distribuované orchestraci, řízení souběžnosti a dynamické detekci prostředí.
 
 V návaznosti na výsledky lze zodpovědět stanovené výzkumné otázky:
-- *Zodpovězení VO1 (Míra automatizace a role člověka)*: Vývojový proces od zadání v GitHub Issues po vytvoření ověřeného pull requestu lze plně zautomatizovat. Člověk v průběhu řešení nepsal ani neupravoval zdrojový kód, nýbrž působil výhradně jako architektonický dozor v rámci dvoustupňového schvalování (Human Gate: záměr a plán) a finálního schválení PR. Empirické ověření prokázalo 86,9% celkovou úspěšnost dokončení úloh při garantované nulové regresi v chráněné hlavní větvi.
-- *Zodpovězení VO2 (Doménová přenositelnost)*: Systém prokázal stoprocentní přenositelnost centrálního workflow mezi odlišnými doménami. Repozitář této odborné práce (`OdbornaPrace-paper`) využívá identické volané workflow a tutéž agentní pipeline jako softwarové projekty; veškerá doménová specifika (nástroj Typst, parametry sazby, cesty k písmům) jsou zapouzdřena v manifestu `.github/darkfactory.json` a dynamicky obsloužena detektorem `environment.py` bez nutnosti duplikovat či větvit sdílené šablony.
-- *Zodpovězení VO3 (Provozní odolnost a obnova)*: Víceúrovňový žebříček rotace kvót a atomický checkpointing spolehlivě zabránily haváriím integračních běhů při vyčerpání limitů API (aktivováno u 13,1 % požadavků). Při úplném vyčerpání runner čistě uložil stav do `.agent_runner_checkpoint.json` bez pádu CI. Integrovaná smyčka samooprav v Fázi 4 navíc dokázala autonomně opravit syntaktické a integrační chyby z testů, čímž zvýšila úspěšnost z 68,9 % (na první pokus) na finálních 86,9 % bez nutnosti lidského zásahu do kódu.
+- *Zodpovězení VO1 (Míra automatizace a role člověka)*: Vývojový proces od zadání v GitHub Issues po vytvoření ověřeného pull requestu lze úspěšně zautomatizovat. Člověk v průběhu řešení nepsal ani neupravoval zdrojový kód, nýbrž působil výhradně jako architektonický dozor v rámci vícefázového schvalování a finální revize pull requestu.
+  #note[Placeholder: Zde bude doplněna přesná kvantitativní úspěšnost po evaluaci nové verze DarkFactory.]
+- *Zodpovězení VO2 (Doménová přenositelnost)*: Systém prokázal přenositelnost centrálního workflow mezi odlišnými doménami. Repozitář této odborné práce (`OdbornaPrace-paper`) využívá tutéž agentní pipeline jako softwarové projekty; veškerá doménová specifika (nástroj Typst, parametry sazby) jsou zapouzdřena v deklarativní konfiguraci bez nutnosti větvit sdílené šablony.
+- *Zodpovězení VO3 (Provozní odolnost a obnova)*: Víceúrovňová rotace kvót a kontrolní body zabránily haváriím integračních běhů při vyčerpání limitů API. Integrovaná smyčka samooprav navíc dokázala autonomně vyřešit syntaktické a integrační regrese na základě zpětné vazby z testů.
+  #note[Placeholder: Zde budou doplněny konkrétní statistiky obnovy a spolehlivosti nové verze systému.]
 ]
 
 #draft[
-V průběhu vývoje a provozního testování vykrystalizovaly klíčové technické inovace, které tvoří hlavní přínos systému DarkFactory:
-- *Dvoustupňový Human Gate (oddělení záměru a plánu)*: Na rozdíl od běžných asistentů, kteří bezprostředně po zadání generují kód, DarkFactory zavádí povinné schválení *záměru* (`interpreted`) a následně technického *plánu* (`planned`) v diskusním vlákně GitHub Issues. Člověk tak rozhoduje o architektonických mantinelech předtím, než dojde k zásahu do souborového systému, a finální kód kontroluje až v rámci pull requestu.
-- *Žebříček rotace kvót (_Quota Rotation Ladder_)*: Pipeline eliminuje závislost na jediném poskytovateli jazykových modelů. Při vyčerpání kapacitních limitů (HTTP 429 či `RESOURCE_EXHAUSTED`) runner nesnižuje úroveň modelu na méně schopnou variantu v témže fondu, nýbrž rotuje autorizované účty a v případě potřeby přepíná mezi odlišnými CLI harnessy (Antigravity, Claude Code, Codex, Kimi, Grok, Cursor, Opencode).
-- *Bezeztrátová serializace štafety (_Lossless Baton Handover_)*: Při změně agenta dochází k atomickému otisku rozpracovaného stavu Gitu a serializaci dosavadního kontextu do strukturovaného kontrolního bodu (`.agent_runner_checkpoint.json`). Náhradní agent přebírá štafetu v přesném bodě přerušení bez ztráty rozpracovaného kódu a bez nutnosti znovu procházet celou historii úkolu od začátku.
-- *Jediný zdroj pravdy (`.github/darkfactory.json`)*: Veškeré odchylky repozitáře jsou soustředěny v jediném deklarativním manifestu. Centrální workflow zůstává ve všech repozitářích identické bajt po bajtu, což snížilo údržbovou složitost sdílené infrastruktury z lineární závislosti na počtu projektů na konstantní $O(1)$.
+Klíčové architektonické principy a přínosy systému DarkFactory:
+- *Vícefázový Human Gate*: Oddělení schvalování záměru a technického plánu v GitHub Issues před samotným zásahem do kódu zaručuje lidskou kontrolu nad architektonickými mantinely a šetří čas vývojáře.
+- *Orchestrace nezávislá na poskytovateli*: Pipeline eliminuje závislost na jediném poskytovateli jazykových modelů mechanismem rotace účtů a modelových fondů při vyčerpání limitů.
+- *Bezeztrátové předávání štafety*: Uložení rozpracovaného stavu a kontextu do kontrolního bodu umožňuje plynulé navázání náhradního modelu bez ztráty dosavadní práce.
+- *Jediný zdroj pravdy*: Veškeré odchylky repozitáře jsou deklarovány v konfiguračním manifestu, což udržuje sdílenou infrastrukturu snadno spravovatelnou.
 
-Ověřila se rovněž univerzálnost zvoleného konceptu: přidání domény textu si vyžádalo pouze rozšíření detektoru `environment.py` a doplnění sazebních úloh, nikoli změnu řídicího jádra. Výsledný text této práce byl vysázen a publikován týmž systémem, který pojednává.
+#note[Placeholder: Zde budou specifikovány nové technické inovace přestavěného systému DarkFactory.]
 ]
 
-#added[
-Z hlediska metodologické objektivity je nutné reflektovat absenci komparativní ablační studie (_ablation study_): práce prokázala vysokou end-to-end spolehlivost celého integrovaného systému, avšak exaktní měření mezního přínosu jednotlivých izolovaných prvků (např. vlivu dvoustupňového Human Gate na prodloužení celkové doby vyřešení požadavku oproti zisku v přesnosti) představuje otevřenou výzvu pro navazující akademický výzkum.
-
+#draft[
 Další rozvoj systému DarkFactory se nabízí ve čtyřech perspektivních směrech:
 1. *Formální verifikace*: Rozšíření aplikačních domén o interaktivní dokazovače vět a formální matematické prostředí (jazyk Lean 4).
 2. *Autonomní samoléčení*: Automatické generování izolovaných regresních testů přímo ze stack trace chyb v CI a pověření agenta jejich okamžitou nápravou.
-3. *Hybridní inferenční vrstva*: Zapojení lokálních open-weights modelů (např. spouštěných přes Ollama či vLLM) jako bezplatného prvního stupně pipeline pro rutinní syntaktickou kontrolu a formátování před delegováním komplexních kódovacích úloh na velká cloudová API.
-4. *Kryptografická bezpečnost dodavatelského řetězce*: Zavedení automatického podepisování commitů vygenerovaných agentem pomocí klíčů GPG či Sigstore pro nezpochybnitelnou provenienci kódu a právní auditovatelnost v moderních softwarových organizacích.
+3. *Hybridní inferenční vrstva*: Zapojení lokálních open-weights modelů jako bezplatného prvního stupně pipeline pro rutinní syntaktickou kontrolu před delegováním komplexních úloh na velká cloudová API.
+4. *Kryptografická bezpečnost dodavatelského řetězce*: Zavedení automatického podepisování commitů vygenerovaných agentem pomocí klíčů GPG či Sigstore pro nezpochybnitelnou provenienci kódu.
 ]

@@ -15,16 +15,14 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
   │   ├── img/                        # Vektorová procesní schémata (SVG) a grafické podklady
   │   ├── fonts/                      # Metricky shodná patková písma (Caladea)
   │   ├── bib/references.bib          # Bibliografická databáze citovaných zdrojů
-  │   ├── scripts/preview_server.py   # Lokální server pro živý náhled v Google Chrome
+  │   ├── scripts/                    # Pomocné a náhledové skripty
   │   ├── main.typ                    # Hlavní řídicí dokument sazby
   │   ├── metadata.typ                # Údaje o autorovi, vedoucím a anotace
   │   └── Makefile                    # Příkazy pro automatizovanou kompilaci a kontrolu
   ├── darkfactory/                    # Zdrojový kód systému DarkFactory (submodul)
-  │   ├── .github/workflows/          # Znovupoužitelné sdílené šablony GitHub Actions
-  │   ├── .github/scripts/            # Výkonné skriptové jádro v jazyce Python
-  │   ├── docker/Dockerfile.agent     # Hermetický kontejnerový sandbox pro modely
-  │   └── tests/                      # Automatizovaná testovací sada ověřující orchestraci
-  ├── out/main.pdf                    # Výsledný vysázený tiskový dokument v PDF
+  │   ├── .github/workflows/          # Sdílené šablony kontinuální integrace
+  │   └── src/                        # Výkonné orchestrační jádro systému
+  ├── out/prace.pdf                   # Výsledný vysázený tiskový dokument v PDF
   └── README.md                       # Dokumentace a návod na reprodukci prostředí
   ```,
   caption: [Stromová adresářová struktura odevzdaného elektronického archivu a doprovodných repozitářů.],
@@ -32,231 +30,32 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 
 = Schéma konfiguračního manifestu darkfactory.json
 
-#draft[
-Konfigurace každého klientského repozitáře zapojeného do pipeline je centralizována v souboru `.github/darkfactory.json`. Níže uvedené schéma specifikuje formální syntaxi podle standardu JSON Schema (Draft-07).
+#struct-alert[
+  *Příloha v rekonstrukci*: Formální JSON schéma manifestu bude doplněno po stabilizaci nového schématu v přestavěném systému DarkFactory.
 ]
 
-#figure(
-  ```json
-  {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "DarkFactoryRepositoryManifest",
-    "description": "Konfigurační schéma manifestu darkfactory.json pro autonomní vývojové pipeline.",
-    "type": "object",
-    "required": ["identity"],
-    "properties": {
-      "$schema": { "type": "string" },
-      "identity": {
-        "type": "object",
-        "required": ["owner", "repo"],
-        "properties": {
-          "owner": { "type": "string", "description": "Uživatelské jméno nebo organizace na GitHubu." },
-          "repo": { "type": "string", "description": "Název repozitáře." },
-          "display_name": { "type": "string", "description": "Čitelný název projektu." },
-          "default_branch": { "type": "string", "default": "main", "description": "Cílová hlavní vývojová větev." },
-          "agent_slug": { "type": "string", "description": "Identifikátor komentářů generovaných botem." },
-          "description": { "type": "string", "description": "Stručný popis účelu repozitáře." }
-        }
-      },
-      "versioning": {
-        "type": "object",
-        "properties": {
-          "mode": { "type": "string", "enum": ["semver", "calver", "none"], "default": "semver" },
-          "tag_prefix": { "type": "string", "default": "v" },
-          "initial": { "type": "string", "default": "0.1.0" },
-          "changelog_path": { "type": "string", "default": "CHANGELOG.md" }
-        }
-      },
-      "areas": {
-        "type": "object",
-        "description": "Taxonomie doménových oblastí pro automatické štítkování a směrování agentů.",
-        "additionalProperties": {
-          "type": "object",
-          "properties": {
-            "description": { "type": "string" },
-            "keywords": { "type": "array", "items": { "type": "string" } },
-            "color": { "type": "string", "pattern": "^[0-9a-fA-F]{6}$" }
-          }
-        }
-      },
-      "board": {
-        "type": "object",
-        "properties": {
-          "global_title": { "type": "string", "description": "Název nadřazené koordinační nástěnky." },
-          "link_boards": { "type": "array", "items": { "type": "string" } }
-        }
-      },
-      "required_checks": {
-        "type": "array",
-        "items": { "type": "string" },
-        "description": "Seznam povinných integračních kontrol podmiňujících sloučení pull requestu."
-      },
-      "upstream": {
-        "type": "object",
-        "required": ["repo", "ref"],
-        "properties": {
-          "repo": { "type": "string", "description": "Zdrojový repozitář sdíleného pipeline." },
-          "ref": { "type": "string", "description": "Připnutý commit SHA nebo verze upstreamu." }
-        }
-      }
-    }
-  }
-  ```,
-  caption: [Formální JSON schéma vymezující validní datové typy a strukturu souboru `darkfactory.json`.],
-) <kod-schema-manifestu>
+#note[Placeholder: Zde bude uvedeno úplné JSON Schema vymezující validní syntaxi nového konfiguračního manifestu.]
 
 = Sdílené workflow pro GitHub Actions
 
-#draft[
-Architektura DarkFactory striktně odděluje klientský repozitář od těla orchestračních úloh. Klientský repozitář obsahuje pouze tenké volající workflow (@kod-caller-workflow), které deleguje exekuci na centrální sdílené workflow (@kod-reusable-workflow) připnuté ke konkrétnímu otisku commitu.
+#struct-alert[
+  *Příloha v rekonstrukci*: Definice sdílených a volajících workflow pro GitHub Actions budou aktualizována po dokončení přestavby orchestrátoru.
 ]
 
-#figure(
-  ```yaml
-  name: Autonomous Agent
-
-  # Volající workflow v klientském repozitáři: žádný kód se nekopíruje,
-  # exekuce je plně delegována na sdílené tělo pipeline v DarkFactory.
-  on:
-    issues:
-      types: [opened]
-    issue_comment:
-      types: [created]
-    pull_request_review_comment:
-      types: [created]
-    workflow_dispatch:
-
-  permissions:
-    contents: write
-    issues: write
-    pull-requests: write
-    repository-projects: write
-    actions: write
-
-  jobs:
-    agent:
-      uses: marius-patrik/DarkFactory/.github/workflows/agent.yml@6d42a0ea793a3e1fc26876ff99662a94f82bb987
-      with:
-        agent-enabled: ${{ vars.AGENT_ENABLED }}
-        pipeline-repo: marius-patrik/DarkFactory
-        pipeline-ref: "6d42a0ea793a3e1fc26876ff99662a94f82bb987"
-      secrets: inherit
-  ```,
-  caption: [Deklarace volajícího workflow v klientském repozitáři (`.github/workflows/agent.yml`).],
-) <kod-caller-workflow>
-
-#draft[
-Centrální sdílené workflow v repozitáři `DarkFactory` definuje rozhraní `workflow_call`, přebírá parametry a spouští orchestrátor v izolovaném kontejneru:
-]
-
-#figure(
-  ```yaml
-  name: Autonomous Agent Runner
-  on:
-    workflow_call:
-      inputs:
-        pipeline-ref:
-          description: "Commit SHA pipeline repozitáře"
-          required: false
-          type: string
-        pipeline-repo:
-          description: "Repozitář obsahující runner a definici kontejneru"
-          required: false
-          type: string
-          default: "marius-patrik/DarkFactory"
-        agent-enabled:
-          description: "Přepínač běhu agenta"
-          required: false
-          type: string
-      secrets:
-        DARKFACTORY_APP_PRIVATE_KEY: { required: false }
-        GH_PROJECT_TOKEN: { required: false }
-        ANTIGRAVITY_REFRESH_TOKEN: { required: false }
-        CLAUDE_API_KEY: { required: false }
-        OPENAI_API_KEY: { required: false }
-
-  jobs:
-    run:
-      if: ${{ inputs.agent-enabled != 'false' }}
-      runs-on: ubuntu-latest
-      container:
-        image: ghcr.io/marius-patrik/darkfactory-agent:latest
-      steps:
-        - name: Checkout target repository
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-        - name: Execute Autonomous Lifecycle
-          run: python3 /opt/darkfactory/scripts/agent_runner.py
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            PIPELINE_REF: ${{ inputs.pipeline-ref }}
-  ```,
-  caption: [Ukázka rozhraní centrálního znovupoužitelného workflow v repozitáři `DarkFactory`.],
-) <kod-reusable-workflow>
+#note[Placeholder: Zde budou uvedeny ukázky znovupoužitelného a volajícího workflow nové verze DarkFactory.]
 
 = Systémové prompty plánovacího a kódovacího agenta
 
-#draft[
-Systémový prompt a přesně vymezené mantinely jsou klíčem k tomu, aby autonomní agent nepůsobil destruktivně a respektoval pravidla repozitáře. V systému DarkFactory jsou prompty dynamicky sestavovány skriptem `agent_runner.py`.
+#struct-alert[
+  *Příloha v rekonstrukci*: Systémové prompty pro plánovací a implementační fáze budou aktualizovány podle nových rolí a instrukčních šablon v přestavěném systému.
 ]
 
-#figure(
-  ```text
-  Draft a detailed, step-by-step Implementation Plan for Request #${request_number}:
-  Title: ${req_data.title}
-  Details: ${req_data.body}
-
-  Include Scope, Architectural & Code Changes, and Verification Steps.
-  The plan must specify exact file paths to create or modify and formulate 
-  corresponding unit test requirements.
-  Do NOT write the implementation code yet; formulate only the specification.
-  ```,
-  caption: [Systémový prompt pro plánovací fázi (`handle_plan`) generující strukturovaný návrh řešení.],
-) <kod-prompt-plan>
-
-#figure(
-  ```text
-  You are implementing a plan for a code repository.
-
-  ## Parent Request (#${request_number})
-  Title: ${request_title}
-  ${request_body}
-
-  ## Implementation Plan (#${plan_number})
-  Title: ${plan_title}
-  ${plan_body}
-
-  ## Instructions
-  Implement ALL changes described in the plan above.
-  Write production code and corresponding unit tests.
-  Follow the binding rules in AGENTS.md: inline API documentation on every 
-  public item, Conventional Commits, and a unit test for every behavior you add.
-  Do NOT create or modify files outside the scope of the plan.
-  ```,
-  caption: [Systémový prompt pro implementační fázi (`implement_prompt`) vymezující striktní pravidla zásahu.],
-) <kod-prompt-impl>
-
-#figure(
-  ````text
-  The following test failures occurred after implementing the plan:
-
-  ```
-  ${test_res.stdout}
-  ${test_res.stderr}
-  ```
-
-  Fix the failures while staying within the plan scope.
-  Do not introduce changes unrelated to the reported regressions.
-  Re-verify that all unit tests pass before concluding.
-  ````,
-  caption: [Samoopravný prompt (`fix_prompt`) vyvolaný automaticky při detekci selhání testovací sady v CI.],
-) <kod-prompt-fix>
+#note[Placeholder: Zde budou uvedeny kompletní systémové prompty pro jednotlivé fáze životního cyklu požadavku.]
 
 = Protokol revizních značek v sazebním systému Typst
 
 #draft[
-Tato příloha uvádí referenční definici a použití vizuálních revizních značek pro řízení a dohled nad generovaným textem v ekosystému DarkFactory.
+Tato příloha uvádí referenční definici a použití vizuálních revizních značek pro řízení a dohled nad generovaným textem v sazebním formátu Typst.
 ]
 
 #figure(
