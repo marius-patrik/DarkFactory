@@ -1,4 +1,4 @@
-#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff
+#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
 = Úvod
 
@@ -34,35 +34,28 @@ takového modelu vzniknout, aby jeho výstupu bylo možné důvěřovat.
 == Cíl práce
 
 #confirmed[
-Cílem této práce je navrhnout, realizovat a ověřit systém, který automatizuje
-vývojový proces od přijetí požadavku po vytvoření ověřené změny, aniž by se vzdal
-lidského schválení v rozhodujících bodech.
+Cílem této práce je představit principy agentního inženýrství (_agentic engineering_) a navrhnout architekturu řídicího harnessu pro automatizovaný softwarový vývoj, který provede vývojový požadavek celým procesem od zadání po ověřenou změnu, aniž by se vzdal lidského dohledu v rozhodujících bodech.
 
 Dílčí cíle:
 
-+ Popsat současný stav automatizace vývoje softwaru a orchestrace jazykových
-  modelů.
-+ Navrhnout architekturu systému, který provede požadavek celým procesem.
-+ Systém realizovat a nasadit na reálné repozitáře.
-+ Vyhodnotit jeho chování a pojmenovat omezení, na která v provozu narazil.
++ Popsat současný stav automatizace vývoje softwaru a teoretická východiska agentních systémů.
++ Vymezit principy agentního inženýrství a deterministického řízení jazykových modelů (harness, správa kontextu, detekce uvíznutí v ReAct smyčce).
++ Navrhnout architekturu řídicího harnessu pro spolehlivý a bezpečný běh kódovacích agentů.
++ Analyzovat bezpečnostní mantinely, limity kontextu a provozní úskalí autonomních vývojových procesů.
 ]
 
 #added[
 V návaznosti na stanovené cíle si práce klade tři konkrétní inženýrské výzkumné otázky:
-- *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po vytvoření funkčního pull requestu plně zautomatizovat tak, aby role vývojáře spočívala pouze ve schvalování záměru a plánu, aniž by musel sám psát kód nebo řešit syntaktické chyby?
-- *VO2 (Doménová přenositelnost)*: Lze identické centrální workflow a tutéž agentní pipeline použít pro programovací kód (Python) i pro sazbu textového dokumentu (Typst) pouhou změnou jediného konfiguračního souboru (`.github/darkfactory.json`)?
-- *VO3 (Provozní odolnost a obnova)*: Dokáže systém samostatně překonat vyčerpání API limitů (HTTP 429) a chyby v testech, aniž by došlo k havárii běhu v GitHub Actions nebo ke ztrátě rozpracovaného kódu?
-
-Odpovědi na tyto otázky jsou v práci ověřeny empirickým provozním nasazením na třech produkčních repozitářích, vyhodnocením úspěšnosti průchodu životním cyklem požadavků a analýzou chování systému při simulovaných i reálných výpadcích infrastruktury.
+- *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po vytvoření funkčního pull requestu strukturovat tak, aby role vývojáře spočívala v architektonickém dozoru a schvalování záměru (Human Gate), aniž by musel sám psát kód nebo řešit syntaktické regrese?
+- *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými deterministickými mechanismy (stuck detection, rozpočet tahů, circuit breaker) lze v řídicím harnessu zabránit patologiím jazykových modelů, jako je perseverace, oscilace či nekonečné zacyklení v ReAct smyčce?
+- *VO3 (Integrita paměti a eliminace sémantického posunu)*: Jakými postupy lze efektivně spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a destruktivní ztrátě architektonických invariantů při rekurzivní kompresi?
 ]
 
 == Metodika
 
-#confirmed[Práce je z povahy tématu konstrukční a inženýrská: primárním výstupem je funkční, plně integrovaný systém a empirické vyhodnocení jeho provozní spolehlivosti v reálném vývojovém prostředí. Postup odpovídá iterativnímu inženýrskému cyklu: po analýze teoretických východisek následoval návrh modulární architektury, implementace řídicího metaharnessu a jeho postupné nasazení na tři typově odlišné repozitáře:
-1. *DarkFactory*: mateřský repozitář systému (Python, GitHub Actions, metaharness).
-2. *OdbornaPrace-paper*: repozitář samotného rukopisu této práce (doména akademických textů a sazby v systému Typst).
-3. *ChessWithQuests*: aplikační projekt s herní logikou.
-
-Empirické ověření probíhalo longitudinálním sledováním reálných integračních běhů v prostředí GitHub Actions nad skutečnými požadavky (GitHub Issues) a pull requesty. Místo syntetických laboratorních benchmarků (např. izolovaného vyhodnocování na datasetech typu SWE-bench) se výzkum soustředil na end-to-end spolehlivost v produkčních podmínkách: sledována byla schopnost pipeline projít celým životním cyklem bez uváznutí, četnost vyčerpání kontextu či API limitů, chování záchranných mechanismů při rotaci modelů a zejména kvalitativní a kvantitativní analýza chyb, které se projevily v reálném provozu. Získané poznatky sloužily k průběžné optimalizaci a zpevnění mantinelů celého systému.]
+#confirmed[Práce je z povahy tématu teoreticko-architektonická a inženýrská: primárním výstupem je formulace principů agentního inženýrství a návrh robustní architektury řídicího harnessu pro automatizovaný softwarový vývoj. Postup odpovídá inženýrskému cyklu:
+1. *Koncepční analýza*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
+2. *Architektonický návrh*: Formulace modulárního modelu řídicího harnessu zahrnujícího správu stavu, exekuční pískoviště (sandbox), bezpečnostní pojistky a orchestraci subagentů.
+3. *Kritické zhodnocení*: Analýza navržených principů ve srovnání se současnými monolitickými agentními smyčkami a formulace provozních limitů autonomního inženýrství.]
 
 

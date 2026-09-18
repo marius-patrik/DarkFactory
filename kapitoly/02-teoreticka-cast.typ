@@ -1,4 +1,4 @@
-#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff
+#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
 = Teoretická část
 
@@ -71,123 +71,46 @@ výstup.
 
 == Jazykové modely a jejich orchestrace
 
-=== Transformer a LLM
-
-#draft[
-Transformer je architektura hlubokých neuronových sítí představená společností Google v roce 2017 v rámci výzkumu strojového překladu. Na rozdíl od starších architektur (např. rekurentních sítí RNN), které sekvence zpracovávaly krok po kroku a trpěly ztrátou dlouhodobého kontextu, využívá transformer mechanismus zvaný _attention_ (pozornost). Ten modelu umožňuje paralelně vyhodnocovat sémantické souvislosti mezi všemi tokeny v sekvenci bez ohledu na jejich vzájemnou vzdálenost.
-
-LLM neboli _Large Language Model_ (velký jazykový model) je rozsáhlá neuronová síť postavená na architektuře transformeru a předtrénovaná na textových datech o objemu stovek miliard až bilionů tokenů. Díky mechanismu pozornosti model dokáže zachytit hluboké syntaktické i sémantické struktury přirozeného jazyka, což se navenek projevuje schopností generalizace, abstrakce a generování korektního zdrojového kódu.
+#blue-note[
+  *Metodické vymezení a rozsah práce:*
+  Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující sekce věnované transformeru, tokenizeru, embeddingu a pozornosti jsou proto záměrně zredukovány na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů a fungování rozhraní nástrojů.
 ]
 
-#draft[
-Tento architektonický přelom popsala publikace _Attention Is All You Need_ @vaswani2017. Původní model byl koncipován jako *Encoder-Decoder* (kodér-dekodér) pro strojový překlad: obousměrný kodér nejprve zkomprimoval celou vstupní větu a dekodér za pomoci křížové pozornosti (_cross-attention_) generoval překlad v cílovém jazyce.
+=== Transformer a velké jazykové modely
 
-Ve vývoji softwaru a moderních agentních systémech se však naprostým standardem stala architektura *Decoder-only* (např. GPT, Claude, LLaMA či DeepSeek). Tyto modely pracují čistě autoregresivně — predikují vždy následující nejpravděpodobnější token na základě celého předcházejícího kontextu. Instrukce, pravidla, kontext repozitáře i rozepsaný kód tvoří jedinou společnou sekvenci, což umožňuje plynulé doplňování kódu i přímé generování volání nástrojů. Architektura pouze s dekodérem navíc vykazuje vynikající vlastnosti při škálování parametrů a efektivní správě KV cache v dlouhých kontextech.
+#draft[
+Základním stavebním kamenem moderních kódovacích agentů jsou velké jazykové modely (_Large Language Models_, LLM) vystavěné na architektuře dekodérového transformeru (_Decoder-only_, např. GPT, Claude, LLaMA či DeepSeek) @vaswani2017. Na rozdíl od starších sekvenčních architektur (RNN) zpracovává transformer vstupní data pomocí mechanismu pozornosti (_attention_), který umožňuje modelu paralelně zohledňovat vztahy mezi všemi prvky v zadaném kontextu bez ohledu na jejich vzájemnou vzdálenost.
+
+V agentním inženýrství model nevystupuje jako magický vševědoucí systém, nýbrž jako *stochastický autoregresivní generátor*: na základě zadané textové historie (kontextu) opakovaně predikuje nejpravděpodobnější následující symboly. Tyto symboly mohou reprezentovat jak přirozený jazyk či programovací kód, tak strukturované instrukce pro volání externích nástrojů.
 ]
 
 === Tokeny, tokenizér a embedding
 
 #draft[
-Text, se kterým člověk pracuje ve formě slov a vět, není pro neuronovou síť přímo srozumitelný. Model interně operuje pouze s čísly a maticovými operacemi. Aby bylo možné přirozený jazyk zpracovat, musí projít procesem tokenizace a následného převodu na vektorové reprezentace.
+Jazykový model neoperuje přímo se slovy či znaky, nýbrž s diskrétními jednotkami zvanými *tokeny*. Převod mezi surovým textem a číselnými identifikátory tokenů zajišťuje *tokenizér* — deterministický program pracující s pevným slovníkem dílčích slovních podjednotek (_sub-words_, např. algoritmem Byte-Pair Encoding). Běžná anglická slova odpovídají zpravidla jednomu tokenu (cca 3–4 znaky), zatímco méně časté výrazy, technické identifikátory nebo jazyky s bohatou flexí a diakritikou (včetně češtiny) jsou děleny do vícero tokenů.
 
-Základní jednotkou, kterou model vnímá, je *token*. Token nemusí odpovídat celému slovu ani jednotlivému znaku — moderní jazykové modely využívají tzv. sub-word tokenizaci (nejčastěji algoritmy jako Byte-Pair Encoding či WordPiece). Běžná slova jsou často reprezentována jediným tokenem, zatímco méně častá slova, odborné výrazy nebo slova v jazycích s bohatou morfologií a diakritikou (jako je čeština) jsou rozložena do více dílčích tokenů. Průměrně jeden token v angličtině odpovídá přibližně 3 až 4 znakům. V češtině je spotřeba tokenů na slovo znatelně vyšší, což má přímý dopad na efektivní kapacitu kontextového okna i výpočetní náklady inference.
+Před samotným výpočtem neuronové sítě je každý token převeden do vícerozměrného vektorového prostoru — tzv. *embeddingu*. Vektorové vnoření přiřazuje slovům geometrické souřadnice tak, aby sémanticky příbuzné koncepty (např. volání funkce a její definice) ležely v prostoru blízko sebe.
 
-Převod mezi surovým textovým řetězcem a posloupností celočíselných identifikátorů (token IDs) zajišťuje *tokenizér*. Jedná se o deterministický program, který vychází z pevně daného slovníku (tzv. vocabulary, obvykle čítajícího 32 000 až 128 000 unikátních tokenů). Tokenizér provádí obousměrný proces: při vstupu rozseká text na tokeny a přiřadí jim číselné indexy, při výstupu naopak generované indexy skládá zpět do souvislého textu (tzv. detokenizace).
-
-Samotné číslo tokenu však nenese žádnou informaci o jeho významu. Proto následuje vrstva zvaná *embedding* (vektorové vnoření). Každý token je převeden na spojitý vícerozměrný vektor (typicky o dimenzi 4 096 či 8 192 čísel). V tomto geometrickém prostoru jsou slova s podobným významem či kontextem umístěna blízko u sebe (např. měřeno kosinovou podobností).
-
-Jednotlivé geometrické směry a posuny v prostoru navíc odpovídají konkrétním sémantickým relacím a abstraktním vlastnostem. Zjednodušeným a klasickým příkladem fungování tohoto prostoru je vektorová aritmetika pojmů: pokud vezmeme vektor reprezentující pojem „žena“ a přičteme k němu vektor reprezentující posun k „panovnickému stavu / královskému statusu“, výsledný bod v prostoru leží nejblíže reprezentaci slova „královna“ ($arrow(v)("žena") + arrow(v)("královský status") approx arrow(v)("královna")$). Model tak nepracuje se slovy jako s izolovanými symboly, ale manipuluje se vztahy mezi nimi jako s algebraickými posuny ve vícerozměrném prostoru — což se v programování projevuje schopností zachytit vztahy mezi deklarací proměnné, jejím použitím a typovým kontextem.
-
-Aby architektura transformeru zohlednila také pořadí tokenů v sekvenci, přičítá se k sémantickému embeddingu poziční kódování (positional encoding, dnes standardně rotační embedding RoPE). Teprve takto vzniklé vektory vstupují do mechanismu pozornosti k dalšímu výpočtu.
+Z pohledu agentního inženýrství mají vlastnosti tokenizace tři zásadní provozní dopady:
+1. *Kapacitní strop kontextového okna*: Každý model má pevně stanovený maximální počet tokenů, které dokáže v jednom běhu pojmout.
+2. *Ekonomické náklady a latence*: Výpočetní náročnost i cena komerčních API se účtují za počet zpracovaných a vygenerovaných tokenů.
+3. *Jazyková asymetrie*: Texty v češtině spotřebovávají 2× až 3× více tokenů než ekvivalentní sdělení v angličtině. V autonomních pipeline je proto optimální udržovat vnitřní systémové prompty, technické plány a strukturované logy v angličtině.
 ]
 
-#figure(
-  image("../img/vector-embedding-queen.svg", width: 100%),
-  caption: [Geometrická reprezentace sémantických vztahů v embeddingovém prostoru: A) Klasická vektorová aritmetika pojmů ($arrow(v)("král") - arrow(v)("muž") + arrow(v)("žena") approx arrow(v)("královna")$), B) Izomorfní algebraické relace v programování (funkce $arrow$ metoda, proměnná $arrow$ atribut).],
-) <fig-embedding-queen>
+=== Mechanismus pozornosti a KV cache
 
 #draft[
-Grafické znázornění na @fig-embedding-queen ilustruje, jak vícerozměrné vektorové vnoření zachycuje abstraktní sémantické relace. Na levém panelu (A) je patrné, že vektorový posun reprezentující přechod k panovnickému stavu ($arrow(v)("panovník")$) má téměř identický směr a velikost jak mezi „mužem“ a „králem“, tak mezi „ženou“ a „královnou“. Pravý panel (B) ukazuje analogický princip v programovacím kódu: model vnímá vztah mezi volně stojící funkcí a metodou zapouzdřenou ve třídě jako paralelní posun ve vektorovém prostoru k relaci mezi globální proměnnou a atributem objektu. Díky této prostorové struktuře dokáže LLM provádět konzistentní refaktoring a typovou inferenci.
-]
+Mechanismus pozornosti (_Attention_) umožňuje transformeru dynamicky propojovat informace napříč celou historií sezení — například spojit chybový výpis kompilátoru z konce kontextu s deklarací proměnné na jeho začátku.
 
-#added[
-Praktický dopad sub-word tokenizace na efektivitu a kapacitní limity agenta demonstruje @tab-token-comparison. Identické větné sdělení vyžaduje v češtině 33 tokenů oproti pouhým 12 tokenům v angličtině (měřeno tokenizérem `cl100k_base`). Český text tak spotřebovává 2,75× více prostoru v kontextovém okně a úměrně tomu zvyšuje finanční náklady i latenci inference. V autonomních vývojových pipeline je proto optimální vést vnitřní systémové prompty, technické plány a strukturované logy v angličtině, zatímco lidská interakce v zadání může probíhat v mateřském jazyce vývojáře.
-
-#figure(
-  table(
-    columns: (auto, 1fr, auto, auto),
-    align: (left, left, center, center),
-    table.header([*Jazyk*], [*Znění věty*], [*Znaky*], [*Tokeny*]),
-    [Angličtina], [An autonomous software development system analyzes requirements and proposes code changes.], [90], [12],
-    [Čeština], [Autonomní systém pro vývoj softwaru analyzuje požadavky a navrhuje změny kódu.], [79], [33],
-  ),
-  caption: [Empirické porovnání tokenové náročnosti ekvivalentního větného významu v angličtině a češtině (tokenizér `cl100k_base`).],
-) <tab-token-comparison>
-]
-
-=== Mechanismus pozornosti a jeho typy
-
-#added[
-Zatímco tokenizér a embedding transformují diskrétní text do spojitého vektorového prostoru, funkčním jádrem architektury transformeru je mechanismus pozornosti (_attention mechanism_). Pozornost umožňuje modelu dynamicky vyhodnocovat sémantické relace mezi jednotlivými tokeny v sekvenci bez ohledu na jejich vzájemnou vzdálenost, a překonat tak fundamentální limit starších rekurentních architektur (RNN a LSTM), které trpěly postupnou ztrátou kontextu.
-
-==== Matematická podstata: Scaled Dot-Product Attention
-
-Základní stavební jednotkou představenou v práci @vaswani2017 je skalovaný skalární součin (_Scaled Dot-Product Attention_). Pro každý vstupní vektor tokenu se lineární projekcí generuje trojice vektorů:
-- *Dotaz ($Q$ -- Query)*: Vektor reprezentující informaci, kterou aktuální token v kontextu vyhledává.
-- *Klíč ($K$ -- Key)*: Vektor nesoucí charakteristiku a profil tokenu, podle něhož je identifikován.
-- *Hodnota ($V$ -- Value)*: Vektor obsahující vlastní sémantický obsah, který je v případě shody předán do dalších vrstev.
-
-Míra relevance mezi libovolnou dvojicí tokenů je dána skalárním součinem $Q K^T$. Výsledná matice afinity je škálována odmocninou dimenze klíče $sqrt(d_k)$, což zabraňuje prudkému růstu číselných hodnot a následné saturaci funkce softmax (která by vedla k vymizení gradientů při trénování). Výstupní kontextová reprezentace je definována jako vážený součet hodnot $V$:
-
-$ "Attention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k)) V $
-
-Z matematické formulace vyplývá klíčová vlastnost: výpočet součinu $Q K^T$ pro sekvenci délky $N$ vyžaduje sestavení matice o rozměrech $N times N$. Výpočetní složitost i paměťové nároky proto rostou *kvadraticky* $O(N^2)$ vzhledem k délce kontextu, což při zpracování rozsáhlých repozitářů a dlouhých agentních historií představuje primární výkonnostní limit.
-
-==== Směrové a funkční typy pozornosti
-
-Podle původu vektorů $Q$, $K$ a $V$ a směru toku informací se rozlišují tři základní funkční typy:
-+ *Vlastní pozornost (Self-Attention)*: Vektory $Q$, $K$ i $V$ jsou odvozeny ze stejné vstupní sekvence. Každý token v kontextu tak přímo interaguje se všemi ostatními tokeny kódové báze (např. provázání volání funkce s její definicí v jiném modulu).
-+ *Kauzální (maskovaná) pozornost (Causal / Masked Attention)*: Klíčový princip autoregresivních modelů (_Decoder-only_). Aby model při predikci kódu nemohl „nahlížet do budoucna“, je na matici skalárních součinů před aplikací softmaxu uvalena kauzální maska ($M_(i,j) = -infinity$ pro $j > i$). Tím je matematicky zaručeno, že token na pozici $i$ smí reflektovat výhradně předcházející tokeny na pozicích $j <= i$.
-+ *Křížová pozornost (Cross-Attention)*: Dotazy $Q$ pocházejí z generujícího dekodéru, zatímco klíče $K$ a hodnoty $V$ jsou přebírány z externí reprezentace — např. z vizuálního enkodéru zpracovávajícího screenshoty či diagramy v multimodálních architekturách.
-
-==== Architektury organizace hlav (Head Architectures)
-
-V praxi transformer nepočítá pozornost pouze jednou, nýbrž v paralelních projekčních podprostorech zvaných *hlavy* (_Multi-Head Attention_ -- MHA). Během inference se však ukázalo, že ukládání mezistavů klíčů a hodnot do mezipaměti grafické karty (_KV Cache_) pro všechny hlavy a vrstvy představuje kritické paměťové úzké hrdlo. To vedlo k vývoji několika architektonických variant (srovnání uvádí @tab-attention-types):
-
-+ *Multi-Head Attention (MHA)*: Původní architektura (@vaswani2017). Každá z $h$ hlav má vlastní nezávislé projekční váhy pro $Q$, $K$ i $V$. Poskytuje maximální reprezentační kapacitu, avšak velikost KV cache v paměti GPU roste strmě s počtem hlav a délkou kontextu.
-+ *Multi-Query Attention (MQA)*: Architektura navržená Shazeerem (2019). Všechny dotazové hlavy sdílejí jedinou společnou hlavu klíčů a hodnot ($K$ a $V$). Velikost KV cache v paměti klesá $h$-násobně, což radikálně zrychluje generování tokenů a snižuje paměťové nároky, avšak za cenu mírné degradace kvality u úloh vyžadujících komplexní logické uvažování.
-+ *Grouped-Query Attention (GQA)*: Zlatý standard současných produkčních modelů (např. LLaMA 3 či Mistral; @ainslie2023). Dotazové hlavy jsou rozděleny do $g$ skupin, přičemž každá skupina sdílí vlastní pár hlav $K$ a $V$. Představuje optimální kompromis: dosahuje kvality srovnatelné s MHA při paměťové úspoře blízké MQA (obvykle 12,5–25 % původní velikosti KV cache).
-+ *Multi-head Latent Attention (MLA)*: Moderní architektura vyvinutá pro modely DeepSeek-V2/V3. Místo prostého sdílení hlav komprimuje vektory klíčů a hodnot do nízkorozměrného latentního prostoru pomocí společné maticové komprese (_low-rank joint compression_). Během inference se do KV cache ukládá pouze kompaktní latentní vektor, což dramaticky redukuje paměťovou stopu a umožňuje obsluhu masivních kontextových oken.
-
-#figure(
-  table(
-    columns: (auto, auto, auto, auto, 1fr),
-    align: (left, center, center, center, left),
-    table.header([*Typ pozornosti*], [*Hlavy $Q$*], [*Hlavy $K, V$*], [*Velikost KV Cache*], [*Charakteristika a využití*]),
-    [MHA], [$h$], [$h$], [100 % (báze)], [Původní Transformer, GPT-3. Maximální exprese, vysoké nároky na VRAM.],
-    [MQA], [$h$], [1], [$1 / h$ (~3–6 %)], [Falcon, PaLM. Extrémní úspora paměti, možný mírný pokles přesnosti.],
-    [GQA], [$h$], [$g$ ($1 < g < h$)], [$g / h$ (~12–25 %)], [LLaMA 3, Mistral. Špičkový standard kombinující přesnost a propustnost.],
-    [MLA], [$h$], [Latentní komprese], [~5–10 %], [DeepSeek-V2, DeepSeek-V3. Nízkorozměrná latentní projekce s vysokou věrností.],
-  ),
-  caption: [Srovnání architektur organizace hlav mechanismu pozornosti a jejich dopad na paměťovou náročnost KV cache.],
-) <tab-attention-types>
-
-==== Hardwarové a algoritmické optimalizace pro škálování kontextu
-
-Kvadratická závislost $O(N^2)$ si vyžádala vývoj algoritmických a nízkoúrovňových hardwarových akcelerací:
-- *Sliding Window a Sparse Attention (SWA)*: Pozornost je omezena na lokální okno $W$ nejbližších sousedních tokenů (např. $W = 4096$ v modelu Mistral). Ačkoli v jedné vrstvě model nevidí celou sekvenci, skládáním vrstev nad sebou efektivní kontextové pole roste, zatímco výpočetní složitost klesá na lineární $O(N times W)$.
-- *FlashAttention*: Převratná optimalizace navržená Dao et al. (@dao2022, následovaná architekturami FlashAttention-2 a FlashAttention-3). FlashAttention neprovádí žádnou ztrátovou aproximaci — matematický výsledek je exaktní. Podstata spočívá v hardwarovém uvědomění (_IO-awareness_): namísto ukládání ohromné mezilehlé matice pozornosti $N times N$ do pomalé globální paměti grafické karty (HBM) rozděluje výpočet na bloky (tzv. _tiling_) a provádí normalizaci online algoritmem softmaxu přímo v rychlé čipové mezipaměti SRAM procesoru GPU. Tím dramaticky redukuje paměťové přenosy a umožňuje praktické škálování kontextového okna na stovky tisíc až miliony tokenů.
+Z výpočetního hlediska vyžaduje pozornost porovnání každého tokenu se všemi ostatními tokeny v sekvenci, což vede ke kvadratické výpočetní a paměťové složitosti $O(N^2)$ vzhledem k délce kontextu $N$. Aby nebylo nutné při každém vygenerovaném slově přepočítávat celou historii od začátku, ukládají inferenční enginy mezivýpočty do mezipaměti — tzv. *KV cache* (_Key-Value Cache_). Velikost a správa KV cache představují primární hardwarový limit pro délku kontextového okna a zásadní faktor pro rychlost odezvy agenta.
 ]
 
 === Multimodální modely
 
 #draft[
-Architekturu transformeru lze aplikovat i mimo oblast zpracování přirozeného jazyka. V moderní praxi lze tokenizovat v podstatě jakýkoli diskrétní či spojitý signál — ať už jde o rastrový obraz, sekvenci snímků videa, zvukové vlny nebo trajektorie pohybů v robotice. Zásadní posun nastává ve chvíli, kdy model disponuje oddělenými projekčními vrstvami pro různé typy vstupů (např. kombinací textového tokenizéru a vizuálního enkodéru, jako je ViT — _Vision Transformer_) a mechanismus pozornosti (_cross-attention_) operuje společně nad tokeny textu i obrazu. Model tak dokáže propojovat vizuální a textové sémantické reprezentace ve sdíleném vektorovém prostoru.
+Ačkoliv byl transformer původně navržen pro text, stejný princip lze aplikovat i na obrazové vstupy (_Vision-Language Models_, VLM). Obraz je rozložen na pravidelnou mřížku dlaždic (_patches_), které jsou lineární projekcí transformovány na vizuální tokeny se stejnou dimenzí vnoření jako tokeny textové. Mechanismus pozornosti pak operuje společně nad textem i obrazem.
 
-#diff[V kontextu automatizovaného vývoje softwaru a autonomních pipeline (jako je systém DarkFactory) se multimodální schopnosti uplatňují ve třech klíčových oblastech:
-+ *Vizuální regresní testování*: Model dokáže porovnat referenční snímek uživatelského rozhraní se stavem vygenerovaným v CI (např. při testování webových komponent bezhlavým prohlížečem) a identifikovat nežádoucí posuny rozvržení či stylové chyby.
-+ *Diagnostika chyb z artefaktů CI*: Při selhání integračních testů může pipeline předat agentovi screenshot chybové obrazovky nebo interaktivního prvku, z něhož agent rozpozná příčinu selhání snáze než z pouhého textového stack trace.
-+ *Interpretace grafických zadání*: Vývojář může v zadání úkolu (GitHub Issue) specifikovat požadovanou změnu formou náčrtku, wireframu či diagramu komponent. Multimodální agent takový grafický podklad přímo zanalyzuje a převede jej na strukturovaný kód.][Vizuálně schopné modely (tzv. _Vision-Language Models_ neboli VLM) tak nestaví na principiálně odlišných teoretických základech, nýbrž sdílejí identickou architekturu dekodérového transformeru jako čistě textové modely: rastrový obraz je rozložen na pravidelnou mřížku dlaždic (_patches_), které jsou lineární projekcí transformovány na vizuální tokeny se stejnou dimenzí vnoření jako tokeny textové. Ačkoli v kontextu softwarového inženýrství nabízejí tyto modely teoretický potenciál pro doplňkové úlohy (např. interpretaci grafických wireframů v zadání, vizuální regresní testování webových komponent či analýzu screenshotů z chybujících běhů v CI), v současné praxi zůstávají autonomní kódovací pipeline primárně postaveny na textových reprezentacích — tedy na práci se zdrojovým kódem, abstraktními syntaktickými stromy (AST), unifikovanými diffy v Gitu a textovými protokoly testovacích nástrojů.]
+Ačkoli multimodální modely nabízejí teoretický potenciál pro doplňkové softwarové úlohy (např. interpretaci grafických wireframů v zadání nebo vizuální kontrolu webového rozvržení), v agentním inženýrství zůstávají autonomní kódovací systémy primárně textové — staví na práci se zdrojovým kódem, abstraktními syntaktickými stromy (AST), unifikovanými diffy v Gitu a textovými protokoly testovacích nástrojů.
 ]
 
 === Context

@@ -59,6 +59,17 @@
   text(fill: rgb("9a3412"), size: 10.5pt)[🔥 *Hloubková kritika / Oponentura:* #body]
 )
 
+#let scope-note(body) = block(
+  fill: rgb("eff6ff"),
+  stroke: (left: 3pt + rgb("3b82f6")),
+  inset: (x: 10pt, y: 8pt),
+  radius: (right: 4pt),
+  width: 100%,
+  text(fill: rgb("1e40af"), size: 10.5pt)[📌 *Metodické vymezení / Rozsah práce:* #body]
+)
+
+#let blue-note = scope-note
+
 // Zelené zvýraznění pro nově přidaný text (nahrazuje původní koncept ai)
 #let added(body) = highlight(fill: rgb("bbf7d0"))[#body]
 #let ai = added
