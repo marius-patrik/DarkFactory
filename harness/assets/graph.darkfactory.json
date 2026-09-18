@@ -8,88 +8,189 @@
   ],
   "nodes": [
     {
-      "id": "request-intake", "kind": "automation", "script": "request-intake",
+      "id": "request-intake",
+      "kind": "automation",
+      "script": "request-intake",
       "description": "Drop bot ingress, classify the request, and add it to the board.",
-      "trigger": { "event": "issues.opened|issues.labeled" }, "filter": { "ignore_bots": true },
-      "outputs": ["request_issue"], "board_status": { "done": "Backlog" }
+      "trigger": { "event": "issues.opened|issues.labeled" },
+      "filter": { "ignore_bots": true },
+      "outputs": ["request_issue"],
+      "board_status": { "done": "Backlog" }
     },
     {
-      "id": "interpret-plan", "kind": "agent", "identity": "pipeline",
-      "inputs": ["request_issue", "revision_feedback"], "outputs": ["plan_comment"], "timeout": "10m",
+      "id": "planning",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["request_issue", "planning_feedback"],
+      "outputs": ["plan_artifact"],
+      "timeout": "10m",
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "Backlog" }
     },
     {
-      "id": "plan-gate", "kind": "gate",
+      "id": "planning-review",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["plan_artifact"],
+      "outputs": ["planning_findings"],
+      "iteration": { "context_file": ".df/planning-review.md", "safety_budget": 5 },
+      "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
+      "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "Backlog" }
+    },
+    {
+      "id": "planning-gate",
+      "kind": "gate",
       "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
       "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
-      "outputs": ["revision_feedback"], "on_reject": { "action": "route_to", "target": "interpret-plan" },
+      "outputs": ["planning_feedback"],
+      "on_reject": { "action": "route_to", "target": "planning" },
       "board_status": { "blocked": "Backlog", "rejected": "Backlog" }
     },
     {
-      "id": "implement", "kind": "agent", "identity": "pipeline", "reasoning": "hard",
+      "id": "implement",
+      "kind": "agent",
+      "identity": "pipeline",
+      "reasoning": "hard",
       "chain": ["google/gemini-3.8-flash@default", "openai-codex/gpt-5.6-sol@default"],
-      "inputs": ["plan_comment", "review_feedback"], "outputs": ["pr_number", "branch"], "timeout": "20m",
+      "inputs": ["plan_artifact", "review_feedback"],
+      "outputs": ["pr_number", "branch"],
+      "timeout": "20m",
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "In Progress" }
     },
     {
-      "id": "self-review", "kind": "agent", "identity": "pipeline",
-      "inputs": ["pr_number", "branch"], "outputs": ["review_clean", "deviation_detected"],
+      "id": "self-review",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["pr_number", "branch"],
+      "outputs": ["review_clean", "deviation_detected"],
       "iteration": { "context_file": ".df/review-summary.md", "safety_budget": 5 },
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "In Progress" }
     },
     {
-      "id": "deviation-gate", "kind": "gate",
-      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"], "requester_can_approve": true,
-      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$", "reminder_after_days": 7,
-      "outputs": ["review_feedback"], "on_reject": { "action": "revert_deviation", "target": "implement" },
+      "id": "deviation-gate",
+      "kind": "gate",
+      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "requester_can_approve": true,
+      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+      "reminder_after_days": 7,
+      "outputs": ["review_feedback"],
+      "on_reject": { "action": "revert_deviation", "target": "implement" },
       "board_status": { "blocked": "Blocked", "rejected": "Blocked" }
     },
     {
-      "id": "plan-alignment", "kind": "agent", "identity": "pipeline",
-      "inputs": ["pr_number", "plan_comment"], "outputs": ["aligned"],
+      "id": "plan-alignment",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["pr_number", "plan_artifact"],
+      "outputs": ["aligned"],
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "In Progress" }
     },
     {
-      "id": "merge-gate", "kind": "gate",
-      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"], "allow_review_state": ["APPROVED"],
-      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$", "outputs": ["review_feedback"],
-      "on_reject": { "action": "route_to", "target": "implement" }, "board_status": { "blocked": "Blocked" }
+      "id": "merge-gate",
+      "kind": "gate",
+      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "allow_review_state": ["APPROVED"],
+      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+      "outputs": ["review_feedback"],
+      "on_reject": { "action": "route_to", "target": "implement" },
+      "board_status": { "blocked": "Blocked" }
     },
     {
-      "id": "merge", "kind": "automation", "script": "pr-merge", "inputs": ["pr_number"],
-      "side_effects": { "close_bound_issues": true, "clear_checkpoints": true }, "board_status": { "done": "Done" }
+      "id": "merge",
+      "kind": "automation",
+      "script": "pr-merge",
+      "inputs": ["pr_number"],
+      "side_effects": { "close_bound_issues": true, "clear_checkpoints": true },
+      "board_status": { "done": "Done" }
     },
     {
-      "id": "resume-sweep", "kind": "automation", "script": "quota-resume",
+      "id": "resume-sweep",
+      "kind": "automation",
+      "script": "quota-resume",
       "trigger": { "schedule": "*/15 * * * *" }
     },
     {
-      "id": "board-sync", "kind": "automation", "script": "board-sync",
-      "trigger": { "event": "issues|pull_request|push:darkfactory", "schedule": "43 5 * * *" }, "filter": { "ignore_bots": true }
+      "id": "board-sync",
+      "kind": "automation",
+      "script": "board-sync",
+      "trigger": { "event": "issues|pull_request|push:darkfactory", "schedule": "43 5 * * *" },
+      "filter": { "ignore_bots": true }
     },
     { "id": "pipeline", "kind": "check-reference", "check": "pipeline", "required": true },
     { "id": "harness", "kind": "check-reference", "check": "harness", "required": true },
     { "id": "verify-bound-issue", "kind": "check-reference", "check": "verify-bound-issue", "required": true }
   ],
   "edges": [
-    { "from": "request-intake", "to": "interpret-plan", "on": { "event": "issues.opened|issues.labeled", "filter": { "label": "Request", "ignore_bots": true } } },
-    { "from": "request-intake", "to": "interpret-plan", "on": { "node_outcome": "success" } },
-    { "from": "interpret-plan", "to": "plan-gate", "on": { "node_outcome": "success" } },
-    { "from": "plan-gate", "to": "interpret-plan", "on": { "gate_outcome": "rejected" }, "loop": { "kind": "gate_revision", "safety_budget": 5 } },
-    { "from": "plan-gate", "to": "implement", "on": { "gate_outcome": "approved" } },
-    { "from": "self-review", "to": "deviation-gate", "on": { "node_outcome": "success", "when": "deviation_detected == true" } },
+    {
+      "from": "request-intake",
+      "to": "planning",
+      "on": { "event": "issues.opened|issues.labeled", "filter": { "label": "Request", "ignore_bots": true } }
+    },
+    { "from": "request-intake", "to": "planning", "on": { "node_outcome": "success" } },
+    { "from": "planning", "to": "planning-review", "on": { "node_outcome": "success" } },
+    {
+      "from": "planning-review",
+      "to": "planning-gate",
+      "on": { "node_outcome": "success", "when": "planning_findings == null" }
+    },
+    {
+      "from": "planning-review",
+      "to": "planning",
+      "on": { "node_outcome": "success", "when": "planning_findings != null" },
+      "loop": { "kind": "planning_revision", "safety_budget": 5 }
+    },
+    {
+      "from": "planning-gate",
+      "to": "planning",
+      "on": { "gate_outcome": "rejected" },
+      "loop": { "kind": "gate_revision", "safety_budget": 5 }
+    },
+    { "from": "planning-gate", "to": "implement", "on": { "gate_outcome": "approved" } },
+    {
+      "from": "self-review",
+      "to": "deviation-gate",
+      "on": { "node_outcome": "success", "when": "deviation_detected == true" }
+    },
     { "from": "implement", "to": "self-review", "on": { "node_outcome": "success" } },
-    { "from": "self-review", "to": "self-review", "on": { "node_outcome": "success", "when": "review_clean == false && deviation_detected == false" }, "loop": { "kind": "self_review", "safety_budget": 5 } },
-    { "from": "deviation-gate", "to": "self-review", "on": { "gate_outcome": "approved" }, "loop": { "kind": "self_review", "safety_budget": 5 } },
-    { "from": "deviation-gate", "to": "implement", "on": { "gate_outcome": "rejected" }, "loop": { "kind": "deviation_rework", "safety_budget": 5 } },
-    { "from": "self-review", "to": "plan-alignment", "on": { "node_outcome": "success", "when": "review_clean == true && deviation_detected == false" } },
+    {
+      "from": "self-review",
+      "to": "self-review",
+      "on": { "node_outcome": "success", "when": "review_clean == false && deviation_detected == false" },
+      "loop": { "kind": "self_review", "safety_budget": 5 }
+    },
+    {
+      "from": "deviation-gate",
+      "to": "self-review",
+      "on": { "gate_outcome": "approved" },
+      "loop": { "kind": "self_review", "safety_budget": 5 }
+    },
+    {
+      "from": "deviation-gate",
+      "to": "implement",
+      "on": { "gate_outcome": "rejected" },
+      "loop": { "kind": "deviation_rework", "safety_budget": 5 }
+    },
+    {
+      "from": "self-review",
+      "to": "plan-alignment",
+      "on": { "node_outcome": "success", "when": "review_clean == true && deviation_detected == false" }
+    },
     { "from": "plan-alignment", "to": "merge-gate", "on": { "checks": "required_green", "when": "aligned == true" } },
-    { "from": "plan-alignment", "to": "implement", "on": { "checks": "failed" }, "loop": { "kind": "ci_repair", "safety_budget": 5 } },
-    { "from": "merge-gate", "to": "implement", "on": { "gate_outcome": "rejected" }, "loop": { "kind": "gate_revision", "safety_budget": 5 } },
+    {
+      "from": "plan-alignment",
+      "to": "implement",
+      "on": { "checks": "failed" },
+      "loop": { "kind": "ci_repair", "safety_budget": 5 }
+    },
+    {
+      "from": "merge-gate",
+      "to": "implement",
+      "on": { "gate_outcome": "rejected" },
+      "loop": { "kind": "gate_revision", "safety_budget": 5 }
+    },
     { "from": "merge-gate", "to": "merge", "on": { "gate_outcome": "approved" } }
   ]
 }

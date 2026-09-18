@@ -60,7 +60,7 @@ export interface CheckReferenceNode extends BaseNode {
 }
 
 export type GraphNode = AgentNode | GateNode | AutomationNode | CheckReferenceNode;
-export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework";
+export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision";
 export type EdgeOn =
 	| { event: string; filter: { ignore_bots: true; label?: string }; when?: string }
 	| { schedule: true; when?: string }

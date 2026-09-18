@@ -25,9 +25,9 @@ describe("workflow graph validation", () => {
 	test("reports unknown gate rejection targets", () =>
 		expect(
 			invalid((g) => {
-				g.nodes.find((n: any) => n.id === "plan-gate").on_reject.target = "missing";
+				g.nodes.find((n: any) => n.id === "planning-gate").on_reject.target = "missing";
 			}),
-		).toContain('nodes[plan-gate].on_reject.target: unknown node "missing"'));
+		).toContain('nodes[planning-gate].on_reject.target: unknown node "missing"'));
 	test("reports unreachable nodes", () =>
 		expect(
 			invalid((g) => {
@@ -51,15 +51,15 @@ describe("workflow graph validation", () => {
 	test("validates guard outputs", () =>
 		expect(
 			invalid((g) => {
-				g.edges[5].on.when = "unknown == true";
+				g.edges[6].on.when = "unknown == true";
 			}),
-		).toContain('edges[5].on.when: "unknown" is not a declared output of self-review'));
+		).toContain('edges[6].on.when: "unknown" is not a declared output of planning-gate'));
 	test("rejects loose gate grammar", () =>
 		expect(
 			invalid((g) => {
-				g.nodes.find((n: any) => n.id === "plan-gate").command = "approve";
+				g.nodes.find((n: any) => n.id === "planning-gate").command = "approve";
 			}),
-		).toContain("nodes[plan-gate].command: must accept only /df approve|reject|revise and /approve|reject|revise"));
+		).toContain("nodes[planning-gate].command: must accept only /df approve|reject|revise and /approve|reject|revise"));
 	test("rejects noncanonical board statuses", () =>
 		expect(
 			invalid((g) => {
