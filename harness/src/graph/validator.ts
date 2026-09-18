@@ -74,7 +74,7 @@ const rawSchema = z.object({
 			on: onSchema,
 			loop: z
 				.object({
-					kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework"]),
+					kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework", "planning_revision"]),
 					safety_budget: z.number().int().positive().optional(),
 				})
 				.optional(),

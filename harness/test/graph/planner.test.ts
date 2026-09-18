@@ -8,11 +8,13 @@ const state = (node: string, extra: Partial<RunState> = {}): RunState => ({ run_
 describe("pure DarkFactory planner", () => {
 	const cases: [string, GraphEvent, RunState, PlanAction][] = [
 		["issue opened", { type: "issues.opened", actor: { login: "patrik", association: "OWNER", is_bot: false } }, state("request-intake"), { type: "run", nodes: ["request-intake"] }],
-		["intake completes", { type: "node.completed", node: "request-intake", outcome: "success", outputs: { request_issue: 68 } }, state("request-intake"), { type: "run", nodes: ["interpret-plan"] }],
-		["plan waits", { type: "node.completed", node: "interpret-plan", outcome: "success", outputs: { plan_comment: "p" } }, state("interpret-plan"), { type: "gate", node: "plan-gate", status: "Blocked" }],
-		["plan approved", { type: "comment", body: "/df approve", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("plan-gate"), { type: "run", nodes: ["implement"] }],
-		["plan revised", { type: "comment", body: "/revise", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("plan-gate"), { type: "run", nodes: ["interpret-plan"], feedback: "/revise" }],
-		["free text hint", { type: "comment", body: "looks good", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("plan-gate"), { type: "hint", node: "plan-gate", message: "Use /df approve, /df reject, or /df revise." }],
+		["intake completes", { type: "node.completed", node: "request-intake", outcome: "success", outputs: { request_issue: 68 } }, state("request-intake"), { type: "run", nodes: ["planning"] }],
+		["planning generates", { type: "node.completed", node: "planning", outcome: "success", outputs: { plan_artifact: "a" } }, state("planning"), { type: "run", nodes: ["planning-review"] }],
+		["planning review success", { type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: null } }, state("planning-review"), { type: "gate", node: "planning-gate", status: "Blocked" }],
+		["planning review fails", { type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: "issue" } }, state("planning-review"), { type: "run", nodes: ["planning"] }],
+		["planning approved", { type: "comment", body: "/df approve", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("planning-gate"), { type: "run", nodes: ["implement"] }],
+		["planning revised", { type: "comment", body: "/revise", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("planning-gate"), { type: "run", nodes: ["planning"], feedback: "/revise" }],
+		["free text hint", { type: "comment", body: "looks good", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("planning-gate"), { type: "hint", node: "planning-gate", message: "Use /df approve, /df reject, or /df revise." }],
 		["PR review approval", { type: "review", state: "APPROVED", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("merge-gate"), { type: "run", nodes: ["merge"] }],
 		["review findings loop", { type: "node.completed", node: "self-review", outcome: "success", outputs: { review_clean: false, deviation_detected: false } }, state("self-review"), { type: "run", nodes: ["self-review"] }],
 		["deviation", { type: "node.completed", node: "self-review", outcome: "success", outputs: { review_clean: false, deviation_detected: true } }, state("self-review"), { type: "gate", node: "deviation-gate", status: "Blocked" }],
@@ -27,8 +29,8 @@ describe("pure DarkFactory planner", () => {
 
 	test("bots never cross ingress", () => expect(plan(graph, { type: "issues.opened", actor: { login: "x[bot]", association: "OWNER", is_bot: true } }, state("request-intake"))).toEqual({ type: "none", reason: "bot ingress ignored" }));
 	test("unrelated labels do not enter request intake", () => expect(plan(graph, { type: "issues.labeled", label: "bug", actor: { login: "x", association: "OWNER", is_bot: false } }, state("request-intake"))).toEqual({ type: "none", reason: "event filter did not match" }));
-	test("gate authorization rejects outsiders", () => expect(plan(graph, { type: "comment", body: "/approve", actor: { login: "x", association: "NONE", is_bot: false } }, state("plan-gate"))).toEqual({ type: "none", reason: "actor is not authorized" }));
-	test("free text hints only once", () => expect(plan(graph, { type: "comment", body: "approve please", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("plan-gate", { hints: ["plan-gate"] }))).toEqual({ type: "none", reason: "gate command not recognized" }));
+	test("gate authorization rejects outsiders", () => expect(plan(graph, { type: "comment", body: "/approve", actor: { login: "x", association: "NONE", is_bot: false } }, state("planning-gate"))).toEqual({ type: "none", reason: "actor is not authorized" }));
+	test("free text hints only once", () => expect(plan(graph, { type: "comment", body: "approve please", actor: { login: "owner", association: "OWNER", is_bot: false } }, state("planning-gate", { hints: ["planning-gate"] }))).toEqual({ type: "none", reason: "gate command not recognized" }));
 	test("safety budget alerts but never caps loops", () => expect(plan(graph, { type: "node.completed", node: "self-review", outcome: "success", outputs: { review_clean: false, deviation_detected: false } }, state("self-review", { iterations: { "self-review": 5 } }))).toEqual({ type: "run", nodes: ["self-review"], alerts: ["self-review exceeded safety budget 5"] }));
 	test("deviation gate stays blocked and reminds at seven days", () => expect(plan(graph, { type: "schedule", schedule: "0 0 * * *", now: "2026-09-14T00:00:00Z" }, state("deviation-gate", { blocked_since: "2026-09-07T00:00:00Z" }))).toEqual({ type: "comment", node: "deviation-gate", status: "Blocked", message: "Reminder: the plan deviation is awaiting approval or rejection." }));
 });
