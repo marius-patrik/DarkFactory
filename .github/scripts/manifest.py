@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 #: Manifest location, relative to the repository root.
 MANIFEST_PATH = "repo.df"
-LEGACY_MANIFEST_PATH = ".github/darkfactory.json"
 
 
 def resolve_manifest_path(root: str) -> str:

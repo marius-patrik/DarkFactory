@@ -20,11 +20,12 @@ def resolve_df_file(root: str, name: str) -> str:
     df_exists = os.path.exists(df_path)
     root_exists = os.path.exists(root_path)
 
-    legacy_path = os.path.join(root, ".github", "darkfactory.json")
+    if df_exists and root_exists:
+        raise ValueError(f"Both {df_path} and {root_path} exist; only one is allowed.")
 
-    if df_exists or root_exists or (name == "repo" and os.path.exists(legacy_path)):
-        if df_exists and root_exists:
-            raise ValueError(f"Both {df_path} and {root_path} exist; only one is allowed.")
-        return df_path if df_exists else (root_path if root_exists else legacy_path)
+    if df_exists:
+        return df_path
+    if root_exists:
+        return root_path
 
-    return ""
+    raise ValueError(f"Neither {df_path} nor {root_path} found.")
