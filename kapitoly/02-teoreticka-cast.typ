@@ -184,13 +184,11 @@ Kvadratická závislost $O(N^2)$ si vyžádala vývoj algoritmických a nízkoú
 #draft[
 Architekturu transformeru lze aplikovat i mimo oblast zpracování přirozeného jazyka. V moderní praxi lze tokenizovat v podstatě jakýkoli diskrétní či spojitý signál — ať už jde o rastrový obraz, sekvenci snímků videa, zvukové vlny nebo trajektorie pohybů v robotice. Zásadní posun nastává ve chvíli, kdy model disponuje oddělenými projekčními vrstvami pro různé typy vstupů (např. kombinací textového tokenizéru a vizuálního enkodéru, jako je ViT — _Vision Transformer_) a mechanismus pozornosti (_cross-attention_) operuje společně nad tokeny textu i obrazu. Model tak dokáže propojovat vizuální a textové sémantické reprezentace ve sdíleném vektorovém prostoru.
 
-V kontextu automatizovaného vývoje softwaru a autonomních pipeline (jako je systém DarkFactory) se multimodální schopnosti uplatňují ve třech klíčových oblastech:
+#diff[V kontextu automatizovaného vývoje softwaru a autonomních pipeline (jako je systém DarkFactory) se multimodální schopnosti uplatňují ve třech klíčových oblastech:
 + *Vizuální regresní testování*: Model dokáže porovnat referenční snímek uživatelského rozhraní se stavem vygenerovaným v CI (např. při testování webových komponent bezhlavým prohlížečem) a identifikovat nežádoucí posuny rozvržení či stylové chyby.
 + *Diagnostika chyb z artefaktů CI*: Při selhání integračních testů může pipeline předat agentovi screenshot chybové obrazovky nebo interaktivního prvku, z něhož agent rozpozná příčinu selhání snáze než z pouhého textového stack trace.
-+ *Interpretace grafických zadání*: Vývojář může v zadání úkolu (GitHub Issue) specifikovat požadovanou změnu formou náčrtku, wireframu či diagramu komponent. Multimodální agent takový grafický podklad přímo zanalyzuje a převede jej na strukturovaný kód.
++ *Interpretace grafických zadání*: Vývojář může v zadání úkolu (GitHub Issue) specifikovat požadovanou změnu formou náčrtku, wireframu či diagramu komponent. Multimodální agent takový grafický podklad přímo zanalyzuje a převede jej na strukturovaný kód.][Vizuálně schopné modely (tzv. _Vision-Language Models_ neboli VLM) tak nestaví na principiálně odlišných teoretických základech, nýbrž sdílejí identickou architekturu dekodérového transformeru jako čistě textové modely: rastrový obraz je rozložen na pravidelnou mřížku dlaždic (_patches_), které jsou lineární projekcí transformovány na vizuální tokeny se stejnou dimenzí vnoření jako tokeny textové. Ačkoli v kontextu softwarového inženýrství nabízejí tyto modely teoretický potenciál pro doplňkové úlohy (např. interpretaci grafických wireframů v zadání, vizuální regresní testování webových komponent či analýzu screenshotů z chybujících běhů v CI), v současné praxi zůstávají autonomní kódovací pipeline primárně postaveny na textových reprezentacích — tedy na práci se zdrojovým kódem, abstraktními syntaktickými stromy (AST), unifikovanými diffy v Gitu a textovými protokoly testovacích nástrojů.]
 ]
-
-#issue[Rozpor mezi teoretickým popisem a stavem implementace: Podkapitola 2.3.3 uvádí využití multimodálních modelů v systému DarkFactory (vizuální regresní testování, diagnostika screenshotů z CI, wireframy) jako hotovou součást pipeline. V praktické části ani ve výsledcích však podpora pro obrazové vstupy integrována není (pipeline pracuje čistě s textovými diffy a logy). Je nutné text přeformulovat a uvést, že jde o teoretický potenciál či plánované rozšíření architektury.]
 
 === Context
 
@@ -211,11 +209,25 @@ Model je schopen přijmout pouze omezený objem vstupu; tomuto limitu se říká
 
 ==== Compaction
 
-#confirmed[Představuje proces sumarizace a zkrácení historie, který řídicí harness iniciuje ve chvíli, kdy zaplnění kontextového okna dosáhne stanoveného prahu. Zpravidla jde o vyvolání modelu se specifickou systémovou instrukcí pro bezeztrátovou syntézu dosavadního průběhu sezení a kompletním protokolem dosavadní komunikace. Výsledný zkrácený kontext následně v kontextovém okně nahradí původní rozsáhlou historii kroků.]
+#confirmed[Představuje proces sumarizace a zkrácení historie, který řídicí harness iniciuje ve chvíli, kdy zaplnění kontextového okna dosáhne stanoveného prahu. #diff[Zpravidla jde o vyvolání modelu se specifickou systémovou instrukcí pro bezeztrátovou syntézu dosavadního průběhu sezení a kompletním protokolem dosavadní komunikace.][Zpravidla jde o vyvolání modelu se specifickou systémovou instrukcí k syntéze dosavadního průběhu sezení a kompletním protokolem dosavadní komunikace.] Výsledný zkrácený kontext následně v kontextovém okně nahradí původní rozsáhlou historii kroků.]
+
+#added[
+===== Limity rekurzivní komprese a sémantický posun (Semantic Drift)
+
+Ačkoliv je proces komprese historie v řadě základních implementací prezentován jako přímočaré řešení konečné kapacity kontextového okna, z hlediska teorie informace a systémového inženýrství představuje *destruktivní ztrátovou kompresi*. Při zkracování dosavadní trajektorie model trpí výrazným *konfirmačním zkreslením* (_confirmation bias_): autoregresivní model při generování souhrnu nevybírá fakta nestranně, nýbrž sumarizuje primárně ty aspekty historie, které sám považuje za relevantní vzhledem ke svým vnitřním statistickým asociacím.
+
+Tato ztrátovost má fatální dopad na integritu vývojového kontextu:
+1. *Vymazání deterministických detailů*: Zkrácením nevratně zanikají přesná čísla řádků, signatury privátních funkcí, plné cesty souborů a doslovná znění chybových hlášení kompilátoru či testovacího frameworku (_stack traces_).
+2. *Ztráta negativních omezujících podmínek*: Zvláště náchylné k vymizení jsou explicitní negativní mantinely stanovené uživatelem v úvodu úlohy (např. „neměň veřejné rozhraní modulu X“ nebo „nepřidávej žádné externí závislosti“). V syntetizovaném souhrnu bývají tyto kritické podmínky zobecněny či zcela opomenuty, což v navazujících tazích vede k jejich okamžitému porušení.
+3. *Sémantický posun (_Semantic Drift_)*: Při dlouhotrvajících komplexních úlohách vyžadujících vícenásobnou rekurzivní kompresi dochází ke kaskádovému kumulování chyb (analogii hry na tichou poštu). Pokud je stav $S_(k+1)$ generován jako souhrn předchozího souhrnu $S_k$ a nového přírůstku $Delta_k$, drobné aproximační odchylky či halucinace z kola $k$ jsou v kole $k+1$ přijaty jako nezvratná historická fakta. Po několika cyklech komprese se vnitřní model reality agenta zcela rozejde se skutečným stavem repozitáře a původním zadáním.
+
+K překonání fundamentálních limitů textové rekurzivní komprese se v moderních agentních architekturách uplatňují tři rigorózní alternativy:
+- *Hierarchická epizodická paměť a vyhledávání (RAG)*: Kompletní doslovná historie tahů, výpisů nástrojů a diffů se nezkracuje přímo v kontextu, nýbrž persistuje do externí databáze (např. fulltextového či vektorového indexu). Do aktivního kontextu jsou následně deterministicky či sémanticky injektovány pouze ty minulé fragmenty, které jsou bezprostředně relevantní pro řešený podúkol.
+- *Persistentní graf stavu projektu (Project State Graph)*: Namísto nestrukturovaného volného textu udržuje harness explicitní strukturovaný stav projektu (např. formou formálního stavového schématu či grafového modelu), který deterministicky eviduje modifikované soubory, seznam nezodpovězených otázek, stav integračních testů a nezměnitelné invarianty. Aktualizace tohoto stavu se řídí přísným schématem a nepodléhá volné narativní degradaci.
+- *Selektivní prořezávání KV cache (Selective KV Cache Eviction)*: Místo manipulace s textovými tokeny probíhá řízení paměti přímo na úrovni tenzorů v inferenčním enginu. Algoritmy jako StreamingLLM @xiao2023 či $H_2 O$ (_Heavy Hitter Oracle_) @zhang2023 identifikují a v paměti trvale uchovávají tzv. kotevní tokeny pozornosti (_attention sinks_) a matematicky nejvýznamnější minulé stavy, zatímco redundantní mezilehlé stavy bezpečně uvolňují bez nutnosti destruktivního přepisování promptu.
+]
 
 ==== Context Rot a evaluace vybavování (Needle In A Haystack)
-
-#critique[Teoretická naivita rekurzivní komprese: Popsaný mechanismus komprese (Compaction) se v textu tváří jako elegantní a bezproblémové řešení, v reálu jde však o destruktivní ztrátovou kompresi. Model při rekurzivním zkracování historie trpí silným konfirmačním zkreslením — sumarizuje to, co sám považuje za podstatné, čímž nevratně maže přesná čísla řádků, jemné sémantické hrany zadání, negativní mantinely („tohle nikdy neměň“) a detaily chybových hlášení. Práce se vůbec nezabývá fundamentálním fenoménem sémantického posunu (_semantic drift_) po několika kolech komprese, ani moderními bezeztrátovými alternativami (hierarchická RAG paměť, persistentní graf stavu projektu či selective KV cache eviction).]
 
 #confirmed[Označuje empiricky zdokumentovanou degradaci schopnosti modelu věnovat rovnoměrnou pozornost všem částem historie (tzv. jev _Lost in the Middle_ @liu2024). Čím plnější je kontextové okno, tím méně jsou modely schopny spolehlivě vybavovat jemné detaily z úvodu sezení a dodržovat negativní omezující podmínky zadání.]
 
@@ -269,9 +281,13 @@ Harness je řídicí program obklopující jazykový model. Odlišuje se od infe
 === ReAct smyčka
 
 #draft[
-Smyčka ReAct (_Reasoning and Acting_) tvoří základní stavební kámen, který z jazykového modelu vytváří autonomního agenta namísto pouhého pasivního generátoru textu @yao2022. Princip nespočívá v pouhém přečtení vstupu a vykonání akce, nýbrž v soustavné alternaci vnitřní rozvahy (_Reasoning_ neboli _Thought_) a vnějšího jednání (_Acting_ neboli _Tool Call_). Model v každém kroku nejprve formuluje hypotézu či myšlenkový postup, na jehož základě provede cílenou akci.
+Smyčka ReAct (_Reasoning and Acting_) tvoří základní stavební kámen, který z jazykového modelu vytváří autonomního agenta namísto pouhého pasivního generátoru textu @yao2022. Princip nespočívá v jednorázovém vygenerování kódu či odpovědi, nýbrž v soustavné alternaci vnitřní rozvahy (_Reasoning_ neboli _Thought_) a vnějšího jednání (_Acting_ neboli _Tool Call_). Tento princip byl formálně zaveden v práci _ReAct: Synergizing Reasoning and Acting in Language Models_ (@yao2022, #link("https://arxiv.org/abs/2210.03629")[arXiv:2210.03629]).
 
-Po vykonání akce harness připojí vrácený výsledek (_Observation_) do kontextového okna na konec logu konverzace. V navazujícím kroku inference model zhodnotí nový stav a cyklus opakuje, dokud úkol není vyřešen nebo dokud nerozhodne, že má dostatek podkladů pro předání finální odpovědi uživateli. Tímto způsobem je dosaženo adaptivního řešení problémů namísto jednorázové slepé generace.
+Jak znázorňuje diagram na @fig-react-loop, po přijetí uživatelského zadání dochází k následujícímu iterativnímu cyklu:
+1. *Fáze rozvahy (_Thought_)*: Model v rámci inference analyzuje aktuální stav kontextu a formuluje hypotézu či myšlenkový postup, na jehož základě určí nejbližší nezbytný krok.
+2. *Vyvolání akce (_Tool Call_)*: Pokud krok vyžaduje externí operaci, model emituje strukturovaný požadavek na volání nástroje.
+3. *Vykonání v harnessu a pozorování (_Observation_)*: Řídicí harness zachytí požadavek, bezpečně jej provede v cílovém prostředí (terminál, souborový systém či MCP server) a vrácený výstup připojí do kontextového okna jako nové pozorování.
+4. *Navazující iterace*: Aktualizovaný kontext je předložen modelu v dalším tahu, čímž agent adaptivně reaguje na reálnou odezvu prostředí namísto slepé generace.
 ]
 
 #figure(
@@ -279,11 +295,26 @@ Po vykonání akce harness připojí vrácený výsledek (_Observation_) do kont
   caption: [Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.],
 ) <fig-react-loop>
 
-#draft[
-Diagram na @fig-react-loop znázorňuje základní iterativní cyklus moderních autonomních agentů. Po přijetí uživatelského zadání dochází v rámci inference k fázi rozvahy (_Reasoning_), kdy model formuluje vnitřní myšlenkový postup (_Thought_). Pokud je k vyřešení kroku zapotřebí externí akce, model vygeneruje strukturované volání nástroje (_Tool Call_). Řídicí harness tento požadavek zachytí, bezpečně vykoná v cílovém prostředí (terminál, souborový systém, API či MCP server) a vrácený výsledek (_Observation_) připojí na konec kontextového okna. Celý aktualizovaný kontext je následně předložen modelu v další iteraci, dokud není úkol kompletní a výsledek předán uživateli. Tento princip byl formálně zaveden v práci _ReAct: Synergizing Reasoning and Acting in Language Models_ (@yao2022, #link("https://arxiv.org/abs/2210.03629")[arXiv:2210.03629]).
+#added[
+==== Řízení divergence, detekce uvíznutí a rozpočet tahů (Step Budget)
+
+Základní teoretický popis smyčky ReAct předpokládá, že proces přirozeně konverguje k vyřešení problému nebo k rozhodnutí modelu o předání finální odpovědi uživateli. V reálné autonomní softwarové praxi je však tento předpoklad zásadně lichý: jazykový model je stochastický systém bez inherentních garancí terminace a při řešení neúplně specifikovaných či složitých chyb v repozitáři často podléhá patologickým stavům divergence:
+
+1. *Perseverace a zacyklení (_Perseveration & Infinite Loops_)*: Model opakovaně emituje identické volání nástroje se zcela shodnými parametry (např. čte tentýž neexistující soubor, provádí tentýž neúspěšný regex match nebo spouští tentýž selhávající test), a to i přesto, že z prostředí obdržel chybovou odezvu (_Observation_). Z hlediska pravděpodobnostní dynamiky dochází ke vzniku tzv. *atraktoru v kontextu*: přítomnost chybujícího pokusu a chybové hlášky v bezprostřední historii paradoxně zvyšuje podmíněnou pravděpodobnost, že model v dalším tahu vygeneruje velmi podobný tokenový sled.
+2. *Oscilace a těkání (_Thrashing_)*: Model střídavě přepíná mezi dvěma protichůdnými zásahy (např. úprava funkce A vyvolá regresi v modulu B, model následně zedituje modul B a rozbije modul A, načež změny cyklicky invertuje bez hlubšího pochopení systémové příčiny).
+3. *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Bez striktního vnějšího omezení může divergentní smyčka v krátkém čase zcela zaplnit kontextové okno a vyčerpat finanční rozpočet na API volání.
+
+Z těchto důvodů nesmí být rozhodnutí o ukončení cyklu ponecháno výhradně na autonomní vůli modelu. Řídicí harness musí vůči modelu vystupovat jako deterministický dozorčí mechanismus (_watchdog_) a prosazovat následující vrstvy ochrany:
+
+- *Rozpočet tahů a nákladů (_Step & Cost Budget_)*: Každému sezení či dílčímu podúkolu je přiřazen pevný rozpočet maximálního počtu tahů $T_"max"$ (typicky 25–50 kroků) a finanční strop pro spotřebu tokenů. Překročení tohoto rozpočtu vede k okamžitému a bezpodmínečnému zastavení inference.
+- *Algoritmická detekce uvíznutí (_Stuck Detection_)*: Běhové prostředí počítá pro každé volání nástroje kanonický hash jeho identifikátoru a normalizovaných argumentů:
+  $ h_t = "hash"("nástroj", "canonicalize"("argumenty")) $
+  Harness v klouzavém okně posledních $k$ tahů (např. $k=3$) detekuje identické volání $h_t = h_(t-1) = dots = h_(t-k+1)$ nebo periodické vzorce v posloupnosti hashů.
+- *Dvoustupňová intervenční strategie*:
+  1. _Měkká intervence (Synthetic Warning)_: Při první detekci repetice harness přeruší standardní tok a injektuje do kontextu syntetickou systémovou observaci s vysokou prioritou (např. _„Varování harnessu: Nástroj byl opakovaně vyvolán s identickými argumenty bez pozitivního posunu. Přehodnoťte hypotézu, změňte diagnostický přístup nebo požádejte o doplňující instrukce.“_). Tím se účinně rozbije pravděpodobnostní atraktor v matici pozornosti.
+  2. _Tvrdá intervence (Circuit Breaker)_: Pokud perseverace pokračuje i po varování, harness cyklus okamžitě ukončí, provede deterministický návrat (_rollback_) neuložených změn v repozitáři na poslední stabilní gitový commit a eskaluje stav lidskému operátorovi jako neřešitelnou anomálii.
 ]
 
-#critique[Absence bezpečnostních pojistek proti nekonečnému cyklu: Popis ReAct smyčky v sekci 2.3.8 uvádí, že cyklus se opakuje, dokud úkol není vyřešen nebo dokud model nerozhodne o předání odpovědi. V praxi však LLM velmi často upadají do perseverace a opakovaného volání téhož neúspěšného nástroje se stejnými parametry. Text postrádá teoretickou analýzu detekce uvíznutí (stuck detection), maximálního limitu tahů (step budget) a deterministického přerušení divergence ze strany řídicího harnessu.]
 
 === Vyvolávání nástrojů
 
