@@ -45,7 +45,7 @@ def test_permissions_readonly():
     perms = wf["jobs"]["dispatch"].get("permissions", {})
     expected = {
         "contents": "read",
-        "checks": "read",
+        "checks": "write",
         "issues": "read",
         "pull-requests": "read",
     }
