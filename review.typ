@@ -1,14 +1,15 @@
 #import "metadata.typ": meta
 #import "lib/odborna-prace.typ": odborna-prace, prilohy, note, issue, alert, struct-alert, ai, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
-// Čistá / raw verze práce: kompiluje se bez recenzních značek (calloutů), bez textu diffu
-// (zobrazuje pouze finální nový text bez zvýraznění) a bez vodoznaku.
-// Pro recenzní verzi spusťte `typst compile review.typ` nebo předejte argument `--input review=true`.
+// Recenzní verze práce (Review mode):
+// Obsahuje veškeré postranní recenzní panely (note, issue, alert, critique, blue-note),
+// textová zvýraznění (unconfirmed, added, confirmed), srovnávací diffy (červený přeškrtnutý text)
+// a vodoznak KONCEPT.
 #show: odborna-prace.with(
   meta: meta,
   logo: "/img/logo.jpeg",
-  review: sys.inputs.at("review", default: "false") in ("true", "1", "yes"),
-  koncept: if sys.inputs.at("review", default: "false") in ("true", "1", "yes") { "KONCEPT" } else { none },
+  review: true,
+  koncept: "KONCEPT",
 )
 
 #include "kapitoly/01-uvod.typ"

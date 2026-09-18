@@ -21,71 +21,115 @@
   heading(numbering: none, outlined: true, text-nadpisu)
 }
 
-#let note(body) = block(
-  fill: rgb("ecfdf5"),
-  stroke: (left: 3pt + rgb("10b981")),
-  inset: (x: 10pt, y: 8pt),
-  radius: (right: 4pt),
-  width: 100%,
-  text(fill: rgb("065f46"), size: 10.5pt)[💡 *Návrh na vylepšení:* #body]
-)
+#let review-state = state("review-mode", sys.inputs.at("review", default: "false") in ("true", "1", "yes"))
 
-#let issue(body) = block(
-  fill: rgb("fef2f2"),
-  stroke: (left: 3pt + rgb("ef4444")),
-  inset: (x: 10pt, y: 8pt),
-  radius: (right: 4pt),
-  width: 100%,
-  text(fill: rgb("991b1b"), size: 10.5pt)[⚠️ *Chyba / Nesrovnalost k opravě:* #body]
-)
+#let is-review() = context review-state.get()
 
-#let alert(body) = block(
-  fill: rgb("fefce8"),
-  stroke: (left: 3pt + rgb("eab308")),
-  inset: (x: 10pt, y: 8pt),
-  radius: (right: 4pt),
-  width: 100%,
-  text(fill: rgb("854d0e"), size: 10.5pt)[📐 *Strukturální upozornění:* #body]
-)
+#let note(body) = context if review-state.get() {
+  block(
+    fill: rgb("ecfdf5"),
+    stroke: (left: 3pt + rgb("10b981")),
+    inset: (x: 10pt, y: 8pt),
+    radius: (right: 4pt),
+    width: 100%,
+    text(fill: rgb("065f46"), size: 10.5pt)[💡 *Návrh na vylepšení:* #body]
+  )
+} else {
+  none
+}
+
+#let issue(body) = context if review-state.get() {
+  block(
+    fill: rgb("fef2f2"),
+    stroke: (left: 3pt + rgb("ef4444")),
+    inset: (x: 10pt, y: 8pt),
+    radius: (right: 4pt),
+    width: 100%,
+    text(fill: rgb("991b1b"), size: 10.5pt)[⚠️ *Chyba / Nesrovnalost k opravě:* #body]
+  )
+} else {
+  none
+}
+
+#let alert(body) = context if review-state.get() {
+  block(
+    fill: rgb("fefce8"),
+    stroke: (left: 3pt + rgb("eab308")),
+    inset: (x: 10pt, y: 8pt),
+    radius: (right: 4pt),
+    width: 100%,
+    text(fill: rgb("854d0e"), size: 10.5pt)[📐 *Strukturální upozornění:* #body]
+  )
+} else {
+  none
+}
 
 #let struct-alert = alert
 
-#let critique(body) = block(
-  fill: rgb("fff7ed"),
-  stroke: (left: 3pt + rgb("ea580c")),
-  inset: (x: 10pt, y: 8pt),
-  radius: (right: 4pt),
-  width: 100%,
-  text(fill: rgb("9a3412"), size: 10.5pt)[🔥 *Hloubková kritika / Oponentura:* #body]
-)
+#let critique(body) = context if review-state.get() {
+  block(
+    fill: rgb("fff7ed"),
+    stroke: (left: 3pt + rgb("ea580c")),
+    inset: (x: 10pt, y: 8pt),
+    radius: (right: 4pt),
+    width: 100%,
+    text(fill: rgb("9a3412"), size: 10.5pt)[🔥 *Hloubková kritika / Oponentura:* #body]
+  )
+} else {
+  none
+}
 
-#let scope-note(body) = block(
-  fill: rgb("eff6ff"),
-  stroke: (left: 3pt + rgb("3b82f6")),
-  inset: (x: 10pt, y: 8pt),
-  radius: (right: 4pt),
-  width: 100%,
-  text(fill: rgb("1e40af"), size: 10.5pt)[📌 *Metodické vymezení / Rozsah práce:* #body]
-)
+#let scope-note(body) = context if review-state.get() {
+  block(
+    fill: rgb("eff6ff"),
+    stroke: (left: 3pt + rgb("3b82f6")),
+    inset: (x: 10pt, y: 8pt),
+    radius: (right: 4pt),
+    width: 100%,
+    text(fill: rgb("1e40af"), size: 10.5pt)[📌 *Metodické vymezení / Rozsah práce:* #body]
+  )
+} else {
+  none
+}
 
 #let blue-note = scope-note
 
 // Zelené zvýraznění pro nově přidaný text (nahrazuje původní koncept ai)
-#let added(body) = highlight(fill: rgb("bbf7d0"))[#body]
+#let added(body) = context if review-state.get() {
+  highlight(fill: rgb("bbf7d0"))[#body]
+} else {
+  body
+}
 #let ai = added
 
-// Žluté zvýraznění pro neověřený text konceptu (draft)
-#let draft(body) = highlight(fill: rgb("fef08a"))[#body]
+// Žluté zvýraznění pro neověřený text konceptu (draft / unconfirmed)
+#let draft(body) = context if review-state.get() {
+  highlight(fill: rgb("fef08a"))[#body]
+} else {
+  body
+}
 #let unconfirmed = draft
 
 // Modré zvýraznění pro uživatelem potvrzený, avšak nefinalizovaný text (confirmed)
-#let confirmed(body) = highlight(fill: rgb("bfdbfe"))[#body]
+#let confirmed(body) = context if review-state.get() {
+  highlight(fill: rgb("bfdbfe"))[#body]
+} else {
+  body
+}
 
 // Červené zvýraznění s přeškrtnutím pro odstraněný text (removed)
-#let removed(body) = highlight(fill: rgb("fee2e2"))[#strike(stroke: 0.8pt + rgb("ef4444"))[#body]]
+#let removed(body) = context if review-state.get() {
+  highlight(fill: rgb("fee2e2"))[#strike(stroke: 0.8pt + rgb("ef4444"))[#body]]
+} else {
+  none
+}
 
-// Srovnávací diff funkce (původní červený + nový zelený text)
-#let diff(old, new) = [#removed(old) #added(new)]
+// Srovnávací diff funkce: v review módu (červený původní + zelený nový); v raw módu pouze nový text bez zvýraznění
+#let diff(old, new) = context if review-state.get() {
+  [#removed(old) #added(new)]
+} else {
+  new
+}
 
 #let titulni-list(meta, logo: none) = {
   set align(center)
@@ -182,8 +226,10 @@
   meta: (:),
   // Cesta k logu školy, např. "/img/logo.jpeg". `none` = bez loga.
   logo: none,
-  // Vodoznak přes každou stranu, dokud je text rozpracovaný. `none` = hotová práce.
-  koncept: none,
+  // Vodoznak přes každou stranu: v review módu "KONCEPT", v čistém módu none
+  koncept: auto,
+  // Režim zobrazení recenzních značek a diffu: auto (podle sys.inputs), true (review) nebo false (raw čistá verze)
+  review: auto,
   pismo: PISMO,
   velikost: 12pt,
   radkovani: 1.5,
@@ -196,6 +242,19 @@
   bib-styl: "iso-690-numeric",
   body,
 ) = {
+  let is-review = if review == auto {
+    sys.inputs.at("review", default: "false") in ("true", "1", "yes")
+  } else {
+    review
+  }
+  let vodoznak = if koncept == auto {
+    if is-review { "KONCEPT" } else { none }
+  } else {
+    koncept
+  }
+
+  review-state.update(is-review)
+
   set document(title: meta.nazev, author: meta.autor)
 
   // Okraje 2,5 cm; u hřbetu (vlevo) navíc 0,5 cm kvůli vazbě.
@@ -204,8 +263,8 @@
     margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm),
     // Titulní strana a přední část se počítají, ale nečíslují.
     footer: none,
-    background: if koncept != none {
-      rotate(-45deg, text(size: 90pt, fill: rgb(0, 0, 0, 18), weight: "bold", koncept))
+    background: if vodoznak != none {
+      rotate(-45deg, text(size: 90pt, fill: rgb(0, 0, 0, 18), weight: "bold", vodoznak))
     },
   )
 
