@@ -1,7 +1,6 @@
-import { existsSync, readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runGit, GitError } from "./git.ts";
-import { createWorktree } from "./createWorktree.ts";
+import { runGit } from "./git.ts";
 
 /**
  * Preservation of exact provenance for imported recovery work.
@@ -193,9 +192,11 @@ export async function intakeRecoveryWork(options: IntakeOptions): Promise<Recove
  * @param existingPlan - The existing planning record with baseSHA and recoverySHA details.
  * @returns True if the plan still applies, false if it must be regenerated.
  */
-export function provePlanApplies(provenance: RecoveryProvenance, existingPlan: { baseSHA: string; recoverySHA: string }): boolean {
+export function provePlanApplies(
+	provenance: RecoveryProvenance,
+	existingPlan: { baseSHA: string; recoverySHA: string },
+): boolean {
 	return (
-		provenance.currentCanonicalBase === existingPlan.baseSHA &&
-		provenance.recoverySHA === existingPlan.recoverySHA
+		provenance.currentCanonicalBase === existingPlan.baseSHA && provenance.recoverySHA === existingPlan.recoverySHA
 	);
 }

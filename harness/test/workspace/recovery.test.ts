@@ -1,9 +1,9 @@
 import { afterEach, expect, test } from "bun:test";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { intakeRecoveryWork, scanForSecrets, provePlanApplies } from "../../src/workspace/recovery.ts";
 import { runGit } from "../../src/workspace/git.ts";
-import { createTempRepo, type TempRepo, TEST_IDENTITY } from "./helpers.ts";
+import { intakeRecoveryWork, provePlanApplies, scanForSecrets } from "../../src/workspace/recovery.ts";
+import { createTempRepo, TEST_IDENTITY, type TempRepo } from "./helpers.ts";
 
 let temp: TempRepo | undefined;
 
@@ -38,7 +38,7 @@ test("intakeRecoveryWork imports a clean local branch preserving exact provenanc
 test("intakeRecoveryWork captures dirty tracked changes and untracked implementation bytes in a snapshot", async () => {
 	temp = createTempRepo();
 	runGit(temp.repo, ["checkout", "-b", "feature/dirty"]);
-	
+
 	// Dirty tracked change
 	writeFileSync(join(temp.repo, "README.md"), "# modified content");
 	// Untracked bytes
@@ -60,14 +60,14 @@ test("intakeRecoveryWork captures dirty tracked changes and untracked implementa
 test("scanForSecrets and intakeRecoveryWork block secret-bearing material", async () => {
 	temp = createTempRepo();
 	runGit(temp.repo, ["checkout", "-b", "feature/secrets"]);
-	
+
 	// Add secret-bearing file
 	writeFileSync(join(temp.repo, "config.json"), '{"api_key": "sk-live-abcdef0123456789abcdef0123456789"}');
 	runGit(temp.repo, ["add", "config.json"]);
 	runGit(temp.repo, ["commit", "-m", "add config with secret"], { env: TEST_IDENTITY });
 
-	expect(scanForSecrets('Bearer sk-proj-1234567890abcdef')).toBe(true);
-	expect(scanForSecrets('normal plain text')).toBe(false);
+	expect(scanForSecrets("Bearer sk-proj-1234567890abcdef")).toBe(true);
+	expect(scanForSecrets("normal plain text")).toBe(false);
 
 	let errorThrown = false;
 	try {
@@ -136,4 +136,3 @@ test("intakeRecoveryWork preserves multiple target Request bindings and full pro
 	expect(provenance.recoverySHA).toBeDefined();
 	expect(provenance.currentCanonicalBase).toBeDefined();
 });
-
