@@ -26,5 +26,5 @@ export function resolveDfFile(root: string, name: string): string {
 		return rootPath;
 	}
 
-	throw new Error(`Neither ${dfPath} nor ${rootPath} found.`);
+	return dfPath;
 }

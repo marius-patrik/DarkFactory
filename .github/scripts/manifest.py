@@ -11,11 +11,12 @@ pipeline, and a key added here later does not break repositories that have not a
 
 import json
 import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from resolver import resolve_df_file
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+try:
+    from .resolver import resolve_df_file
+except ImportError:
+    from resolver import resolve_df_file
 
 #: Manifest location, relative to the repository root.
 MANIFEST_PATH = "repo.df"
@@ -33,12 +34,7 @@ def resolve_manifest_path(root: str) -> str:
     Raises:
         ValueError: If the manifest cannot be resolved.
     """
-    try:
-        return resolve_df_file(root, "repo")
-    except ValueError as e:
-        if "Both" in str(e):
-            raise
-        return os.path.join(root, ".darkfactory", "repo.df")
+    return resolve_df_file(root, "repo")
 
 
 #: Area labels used when a repository declares none. Deliberately about the pipeline itself, since

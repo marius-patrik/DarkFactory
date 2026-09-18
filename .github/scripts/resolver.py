@@ -28,4 +28,4 @@ def resolve_df_file(root: str, name: str) -> str:
     if root_exists:
         return root_path
 
-    raise ValueError(f"Neither {df_path} nor {root_path} found.")
+    return df_path

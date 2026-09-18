@@ -298,3 +298,29 @@ class TestIdentities:
         assert custom["name"] == "Custom Provider"
         assert custom["verified"] is True
         assert loaded.identity_for("nonexistent") is None
+
+
+class TestResolverConflict:
+    """Test resolve_df_file and resolve_manifest_path behavior under conflict and absence."""
+
+    def test_resolve_df_file_neither_exists_returns_primary(self, tmp_path):
+        from resolver import resolve_df_file
+
+        path = resolve_df_file(str(tmp_path), "repo")
+        assert path == os.path.join(str(tmp_path), ".darkfactory", "repo.df")
+
+    def test_resolve_df_file_both_exist_raises_error(self, tmp_path):
+        from resolver import resolve_df_file
+
+        os.makedirs(os.path.join(str(tmp_path), ".darkfactory"), exist_ok=True)
+        open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w").close()
+        open(os.path.join(str(tmp_path), "repo.df"), "w").close()
+        with pytest.raises(ValueError, match="exist; only one is allowed"):
+            resolve_df_file(str(tmp_path), "repo")
+
+    def test_resolve_manifest_path_both_exist_raises_error(self, tmp_path):
+        os.makedirs(os.path.join(str(tmp_path), ".darkfactory"), exist_ok=True)
+        open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w").close()
+        open(os.path.join(str(tmp_path), "repo.df"), "w").close()
+        with pytest.raises(ValueError, match="exist; only one is allowed"):
+            manifest_module.resolve_manifest_path(str(tmp_path))
