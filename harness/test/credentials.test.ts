@@ -117,12 +117,12 @@ describe("FileCredentialStore", () => {
 		await expect(new FileCredentialStore(home).listAccounts()).rejects.toThrow("Invalid credentials file JSON");
 	});
 
-	function borrowedConfig(keyring = false): ProviderConfig {
+	function borrowedConfig(keyring = false, refreshMode: "write-back" | "reimport-only" | "never" = "reimport-only"): ProviderConfig {
 		return {
 			id: "borrowed", name: "Borrowed", dialect: "openai-completions", baseUrl: "https://example.test/v1",
 			auth: [{ kind: "oauth", slot: "oauth", flow: "pkce", authorizationEndpoint: "https://example.test/auth", tokenEndpoint: "https://example.test/token", clientId: { value: "client" }, scopes: [] }],
 			requiredCredentialSlots: ["oauth"], models: { static: [{ id: "model" }] }, capabilities: { tools: true, reasoning: false, images: false },
-			importers: [{ id: "fixture", parser: keyring ? "antigravity-keyring" : "kimi-code", ...(keyring ? { keyring: { service: "fixture", account: "main" } } : { path: "source.json" }), targetProvider: "borrowed", refresh: "reimport-first", formats: { expires: keyring ? "iso" : "epoch_milliseconds" }, fieldMapping: keyring ? { access: "token.access_token", refresh: "token.refresh_token", expires: "token.expiry" } : { access: "access", refresh: "refresh", expires: "expires" } }],
+			importers: [{ id: "fixture", parser: keyring ? "antigravity-keyring" : "kimi-code", ...(keyring ? { keyring: { service: "fixture", account: "main" } } : { path: "source.json" }), targetProvider: "borrowed", refresh: refreshMode, formats: { expires: keyring ? "iso" : "epoch_milliseconds" }, fieldMapping: keyring ? { access: "token.access_token", refresh: "token.refresh_token", expires: "token.expiry" } : { access: "access", refresh: "refresh", expires: "expires" } }],
 		};
 	}
 
@@ -149,9 +149,9 @@ describe("FileCredentialStore", () => {
 		expect(await store.getSlot("borrowed", "main", "oauth")).toMatchObject({ access: "source-current", refresh: "source-refresh" });
 	});
 
-	test("borrowed edge: an expired file source is reimport-first and is never refreshed or written back", async () => {
+	test("borrowed edge: an expired file source is reimport-only and is never refreshed or written back", async () => {
 		const root = await temporaryHome();
-		const config = borrowedConfig();
+		const config = borrowedConfig(false, "reimport-only");
 		const { source, store } = await borrowedStore(root, config);
 		const original = JSON.stringify({ access: "source-expired", refresh: "source-refresh", expires: 1, untouched: { keep: true } });
 		await writeFile(join(source, "source.json"), original, { mode: 0o600 });
@@ -159,7 +159,7 @@ describe("FileCredentialStore", () => {
 		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
 		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
 		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return { ...current, access: "rotated-access" }; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
-		await expect(models.getAuth("borrowed")).rejects.toThrow(/re-import/);
+		await expect(models.getAuth("borrowed")).rejects.toThrow(/run the source CLI/);
 		expect(refreshes).toBe(0);
 		expect(await readFile(join(source, "source.json"), "utf8")).toBe(original);
 	});
@@ -173,7 +173,42 @@ describe("FileCredentialStore", () => {
 		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
 		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
 		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return current; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
-		await expect(models.getAuth("borrowed")).rejects.toThrow(/re-import/);
+		await expect(models.getAuth("borrowed")).rejects.toThrow(/run the source CLI/);
 		expect(refreshes).toBe(0);
+	});
+
+	test("borrowed write-back: rotates tokens and writes back to source preserving other fields", async () => {
+		const root = await temporaryHome();
+		const config = borrowedConfig(false, "write-back");
+		const { source, store } = await borrowedStore(root, config);
+		await writeFile(join(source, "source.json"), JSON.stringify({ access: "source-expired", refresh: "source-refresh", expires: 1, untouched: { keep: true } }));
+		let refreshes = 0;
+		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
+		const models = createModels({ credentials: store.forAccount("borrowed", "main") });
+		models.setProvider({ ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshes++; return { ...current, access: "rotated-access", refresh: "rotated-refresh", expires: Date.now() + 3_600_000 }; }, toAuth: async (current) => ({ apiKey: current.access }) } } });
+		await models.getAuth("borrowed");
+		expect(refreshes).toBe(1);
+		const sourceContent = JSON.parse(await readFile(join(source, "source.json"), "utf8"));
+		expect(sourceContent.access).toBe("rotated-access");
+		expect(sourceContent.refresh).toBe("rotated-refresh");
+		expect(sourceContent.untouched).toEqual({ keep: true });
+		expect(sourceContent.expires).toBeGreaterThan(Date.now());
+	});
+
+	test("borrowed write-back: concurrent refreshes do not double-exchange (lock)", async () => {
+		const root = await temporaryHome();
+		const config = borrowedConfig(false, "write-back");
+		const { source, store } = await borrowedStore(root, config);
+		await writeFile(join(source, "source.json"), JSON.stringify({ access: "source-expired", refresh: "source-refresh", expires: 1 }));
+		let refreshCount = 0;
+		const faux = fauxProvider({ provider: "borrowed", models: [{ id: "model" }] });
+		const provider = { ...faux.provider, auth: { oauth: { name: "fixture", login: async () => oauth("x", "x"), refresh: async (current) => { refreshCount++; await Bun.sleep(10); return { ...current, access: `rotated-${refreshCount}`, refresh: `rotated-refresh-${refreshCount}`, expires: Date.now() + 3_600_000 }; }, toAuth: async (current) => ({ apiKey: current.access }) } } };
+		const models1 = createModels({ credentials: store.forAccount("borrowed", "main") });
+		models1.setProvider(provider);
+		const models2 = createModels({ credentials: store.forAccount("borrowed", "main") });
+		models2.setProvider(provider);
+		await Promise.all([models1.getAuth("borrowed"), models2.getAuth("borrowed")]);
+		// Only one refresh should have happened due to locking
+		expect(refreshCount).toBe(1);
 	});
 });

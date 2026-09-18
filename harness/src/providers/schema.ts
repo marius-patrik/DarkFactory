@@ -107,7 +107,7 @@ export interface ImporterConfig {
 	targetProvider: string;
 	apiKeyTargetProvider?: string;
 	fieldMapping: Record<string, string>;
-	refresh: "reimport-first";
+	refresh: "write-back" | "reimport-only" | "never";
 	formats?: { expires?: "epoch_seconds" | "epoch_milliseconds" | "iso" };
 }
 export interface GeneratedHeaderConfig {
@@ -201,7 +201,9 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 			text(importer.targetProvider, `provider ${id} importer targetProvider`);
 			if (importer.apiKeyTargetProvider !== undefined) text(importer.apiKeyTargetProvider, `provider ${id} importer apiKeyTargetProvider`);
 			if (!["claude-code", "codex", "grok-cli", "antigravity-keyring", "kimi-code"].includes(String(importer.parser))) throw new Error(`Provider ${id} has unsupported importer parser`);
-			if (importer.refresh !== "reimport-first") throw new Error(`Provider ${id} importer refresh must be reimport-first`);
+			if (importer.refresh !== "write-back" && importer.refresh !== "reimport-only" && importer.refresh !== "never") {
+				throw new Error(`Provider ${id} importer refresh must be write-back, reimport-only, or never`);
+			}
 			object(importer.fieldMapping, `provider ${id} importer fieldMapping`);
 		}
 	}

@@ -1,11 +1,12 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { AuthOperationOptions, OAuthCredential } from "@earendil-works/pi-ai";
-import type { AccountRecord, BorrowedCredentialCoordinator, BorrowedRefreshPlan } from "../credentials.ts";
+import type { AccountRecord, BorrowedCredentialCoordinator, BorrowedRefreshPlan, BorrowedRefreshMode, OAuthCredentialSlot } from "../credentials.ts";
 import type { ImporterConfig, ProviderConfig } from "../providers/schema.ts";
 import type { KeyringAdapter } from "./antigravity.ts";
 import { decodeKeychainPayload } from "./keyring.ts";
 import { jwtClaims } from "./shared.ts";
+import { withFileLock } from "../storage/file-lock.ts";
 
 const REFRESH_SKEW_MS = 30_000;
 
@@ -27,11 +28,32 @@ function getPath(document: Record<string, unknown>, path: string, sourceEntry?: 
 	return value;
 }
 
+function setPath(document: Record<string, unknown>, path: string, value: unknown, sourceEntry?: string): void {
+	const parts = resolvedPath(path, sourceEntry);
+	let current: Record<string, unknown> = document;
+	for (let i = 0; i < parts.length - 1; i++) {
+		const part = parts[i];
+		if (!part) return;
+		if (!current[part] || typeof current[part] !== "object" || Array.isArray(current[part])) {
+			current[part] = {};
+		}
+		current = current[part] as Record<string, unknown>;
+	}
+	const last = parts[parts.length - 1];
+	if (last) current[last] = value;
+}
+
 function expiry(value: unknown, format: ImporterConfig["formats"] extends infer T ? T : never): number | undefined {
 	const mode = (format as ImporterConfig["formats"] | undefined)?.expires;
 	if (mode === "iso") return typeof value === "string" ? Date.parse(value) : undefined;
 	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
 	return mode === "epoch_seconds" ? value * 1_000 : value;
+}
+
+function formatExpiry(value: number, format: ImporterConfig["formats"] extends infer T ? T : never): unknown {
+	const mode = (format as ImporterConfig["formats"] | undefined)?.expires;
+	if (mode === "iso") return new Date(value).toISOString();
+	return mode === "epoch_seconds" ? Math.floor(value / 1_000) : value;
 }
 
 function sourceEntry(document: Record<string, unknown>, importer: ImporterConfig, account: AccountRecord): string | undefined {
@@ -93,9 +115,74 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 	async prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan> {
 		options?.signal?.throwIfAborted();
 		const { importer, provider } = this.declaration(account);
+		const mode = importer.refresh ?? "never";
 		const source = await this.document(account, importer);
 		const credential = mappedCredential(source.value, importer, provider, account);
-		if (credential.expires > Date.now() + REFRESH_SKEW_MS) return { credential, refresh: false };
-		throw new Error(`Imported account ${account.id} is expired; re-import it from its source CLI`);
+		
+		// If the source has a newer valid token, use it without refreshing
+		if (credential.expires > Date.now() + REFRESH_SKEW_MS) {
+			return { credential: credential as OAuthCredentialSlot, refresh: false, mode };
+		}
+		
+		// Token is expired or about to expire
+		if (mode === "write-back" || mode === "reimport-only") {
+			// For write-back and reimport-only, we signal that a refresh is needed
+			// The actual refresh will be done by the caller (AccountCredentialStore.modify)
+			// which calls the OAuth refresh function
+			return { credential: credential as OAuthCredentialSlot, refresh: true, mode };
+		}
+		
+		// For "never" mode, we never refresh
+		throw new Error(`Imported account ${account.id} is expired; run the source CLI to refresh or \`df login\` a df-owned account`);
+	}
+
+	/**
+	 * Write the rotated OAuth tokens back to the source file/keyring.
+	 * Called after a successful refresh when the importer mode is "write-back".
+	 */
+	async writeBack(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: AuthOperationOptions): Promise<void> {
+		options?.signal?.throwIfAborted();
+		const { importer } = this.declaration(account);
+		const mode = importer.refresh ?? "never";
+		if (mode !== "write-back") return;
+		
+		if (account.metadata?.source_kind === "keyring" || importer.keyring) {
+			// Keyring write-back not implemented yet - would require OS-specific keyring write
+			// For now, we skip keyring write-back
+			return;
+		}
+		
+		const relative = account.metadata?.source_path ?? importer.path;
+		if (!relative) throw new Error("Borrowed credential file path is not configured");
+		const path = join(this.sourceHome, relative);
+		
+		// Read the current source file to preserve other fields
+		let document: Record<string, unknown>;
+		try {
+			document = record(JSON.parse(await readFile(path, "utf8")), "Borrowed credential source");
+		} catch (error) {
+			if (error instanceof SyntaxError) throw new Error("Borrowed credential source contains invalid JSON");
+			throw error;
+		}
+		
+		const entry = sourceEntry(document, importer, account);
+		
+		// Update the token fields in the document
+		setPath(document, importer.fieldMapping.access ?? "", newCredential.access, entry);
+		setPath(document, importer.fieldMapping.refresh ?? "", newCredential.refresh, entry);
+		if (importer.fieldMapping.expires) {
+			setPath(document, importer.fieldMapping.expires, formatExpiry(newCredential.expires, importer.formats), entry);
+		}
+		
+		// Atomic write: temp file + rename, preserve file mode
+		const tempPath = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+		let fileMode = 0o600;
+		try {
+			const stat = await import("node:fs/promises").then(fs => fs.stat(path)).catch(() => null);
+			if (stat) fileMode = stat.mode & 0o777;
+		} catch {}
+		
+		await writeFile(tempPath, `${JSON.stringify(document, null, 2)}\n`, { encoding: "utf8", mode: fileMode, flag: "wx" });
+		await rename(tempPath, path);
 	}
 }

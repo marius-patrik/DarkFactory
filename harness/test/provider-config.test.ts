@@ -170,10 +170,10 @@ describe("config-driven provider registry", () => {
 		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("targetProvider");
 	});
 
-	test("borrowed importers reject legacy refresh/write-back ownership policies", () => {
+	test("borrowed importers reject legacy refresh ownership policies", () => {
 		const entry = openAICompatible("import-policy");
-		entry.importers = [{ id: "fixture", parser: "kimi-code", path: "fixture.json", targetProvider: "import-policy", refresh: "write-back", fieldMapping: {} } as never];
-		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("reimport-first");
+		entry.importers = [{ id: "fixture", parser: "kimi-code", path: "fixture.json", targetProvider: "import-policy", refresh: "invalid-refresh" as never, fieldMapping: {} } as never];
+		expect(() => parseProviderConfigFile({ version: 1, providers: [entry] })).toThrow("write-back, reimport-only, or never");
 	});
 
 	test("each built-in declares credential slots, capabilities, and a model source", () => {

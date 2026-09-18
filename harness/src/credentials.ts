@@ -81,8 +81,9 @@ export interface AccountSummary {
 }
 
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
-export interface BorrowedRefreshPlan { credential: OAuthCredentialSlot; refresh: boolean }
-export interface BorrowedCredentialCoordinator { prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan> }
+export type BorrowedRefreshMode = "write-back" | "reimport-only" | "never";
+export interface BorrowedRefreshPlan { credential: OAuthCredentialSlot; refresh: boolean; mode: BorrowedRefreshMode }
+export interface BorrowedCredentialCoordinator { prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan>; writeBack?(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: AuthOperationOptions): Promise<void> }
 
 function throwIfAborted(options?: AuthOperationOptions): void {
 	options?.signal?.throwIfAborted();
@@ -360,13 +361,18 @@ export class AccountCredentialStore implements CredentialStore {
 		this.assertProvider(providerId);
 		return this.store.modifyAccount(this.id, async (current) => {
 			let input = current ? toPiCredential(current) : undefined;
+			let plan: { credential: OAuthCredentialSlot; refresh: boolean; mode: string } | undefined;
 			if (current?.metadata?.importer && input?.type === "oauth" && this.store.borrowed) {
-				const plan = await this.store.borrowed.prepare(current, options);
+				plan = await this.store.borrowed.prepare(current, options);
 				input = plan.credential;
 				if (!plan.refresh) {
 					const slotName = primarySlot(current, "oauth")?.[0] ?? "oauth";
 					current.slots[slotName] = clone(plan.credential);
 					return current;
+				}
+				// For reimport-only mode, we don't call the token endpoint
+				if (plan.mode === "reimport-only") {
+					throw new Error(`Imported account ${current.id} is expired; run the source CLI to refresh or \`df login\` a df-owned account`);
 				}
 			}
 			const next = await fn(input);
@@ -374,9 +380,17 @@ export class AccountCredentialStore implements CredentialStore {
 			const parsed = parseAccountId(this.id)!;
 			const account: AccountRecord = current ?? { id: this.id, provider: parsed.provider, label: parsed.label, slots: {} };
 			const slotName = next.type === "oauth" ? primarySlot(account, "oauth")?.[0] ?? "oauth" : primarySlot(account, "api_key")?.[0] ?? "api_key";
-			account.slots[slotName] = next.type === "oauth"
-				? { type: "oauth", access: next.access, refresh: next.refresh, expires: next.expires, ...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}) }
-				: { type: "api_key", value: next.key ?? "" };
+			let newCredential: CredentialSlot;
+			if (next.type === "oauth") {
+				newCredential = { type: "oauth", access: next.access, refresh: next.refresh, expires: next.expires, ...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}) };
+			} else {
+				newCredential = { type: "api_key", value: next.key ?? "" };
+			}
+			account.slots[slotName] = newCredential;
+			// After successful refresh, write back to source if configured
+			if (plan?.mode === "write-back" && next.type === "oauth" && this.store.borrowed?.writeBack) {
+				await this.store.borrowed.writeBack(account, newCredential as OAuthCredentialSlot, options);
+			}
 			return account;
 		}, options).then((account) => account ? toPiCredential(account) : undefined);
 	}
