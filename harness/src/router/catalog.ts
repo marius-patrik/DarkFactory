@@ -1,7 +1,7 @@
 import type { CatalogResult } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
-import type { CapabilityTier, ModelCapability, ModelCapabilityOverride, ModelModality, RouterConfig } from "./types.ts";
 import { capabilityTierFor } from "./tiers.ts";
+import type { CapabilityTier, ModelCapability, ModelCapabilityOverride, ModelModality, RouterConfig } from "./types.ts";
 
 function key(provider: string, model: string, account?: string): string {
 	return `${provider}/${model}${account ? `@${account}` : ""}`;
