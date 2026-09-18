@@ -21,6 +21,11 @@
   "release": {
     "metadata": "ignore"
   },
+  "pages": {
+    "build_type": "legacy",
+    "branch": "gh-pages",
+    "path": "/"
+  },
   "environment": {
     "$comment": "Detection finds typst.toml on its own. The commands are declared because this repository vendors its fonts, so the build is not the ecosystem default; formatting is off because typstyle would reflow hand-set Czech typography.",
     "testing": {
