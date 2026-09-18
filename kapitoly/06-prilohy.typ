@@ -80,7 +80,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
 ) <kod-znacky-typst>
 
 #unconfirmed[
-== Vizuální reprezentace jednotlivých prvků v sazbě
+*Vizuální reprezentace jednotlivých prvků v sazbě*
 
 Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních panelů a textových funkcí v jejich finální vizuální podobě:
 ]

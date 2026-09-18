@@ -320,7 +320,7 @@
   podekovani-strana(meta)
   anotace-strana(meta)
 
-  outline(title: "Obsah", depth: 3, indent: auto)
+  outline(title: "Obsah", depth: 2, indent: auto)
 
   if seznam-soucasti {
     pagebreak(weak: true)
