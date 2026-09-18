@@ -2,82 +2,19 @@
 
 = Teoretická část
 
-#confirmed[
-Tato kapitola vymezuje teoretické a architektonické principy, na nichž staví
-návrh řídicího harnessu pro automatizovaný vývoj softwaru. Architektura stojí na
-průniku dvou disciplín: deterministického softwarového inženýrství a stochastického
-agentního modelování.
-
-Z oblasti softwarového inženýrství práce čerpá ze správy verzí v distribuovaném
-prostředí @chacon2014 a z praxe kontinuální integrace (angl. _continuous integration_)
-@humble2010, při níž se každá změna ověřuje průběžně a v malých dávkách, aby se
-případné chyby zachytily bezprostředně u svého vzniku. Na tuto deterministickou
-kostru navazuje agentní inženýrství — řízení kontextového okna jazykových modelů,
-smyčky nástrojového uvažování (ReAct) s bezpečnostními pojistkami a formalizované
-zapojení člověka do rozhodovací smyčky (_Human-in-the-loop_). Cílem kapitoly není
-vyčerpávající přehled obecného strojového učení, nýbrž zavedení pojmů a principů
-v podobě, v jaké s nimi pracuje navržený harness.
-]
-
-== Řízení verzí
+== Řízení verzí a kontinuální integrace
 
 #confirmed[
-Systém pro řízení verzí uchovává historii změn zdrojového kódu. Distribuovaný
-model, jehož nejrozšířenějším zástupcem je Git, se od centralizovaného liší tím,
-že každý vývojář má úplnou kopii historie @chacon2014. Změny lze proto vytvářet
-a zkoumat i bez spojení se serverem a slučovat je až ve chvíli, kdy jsou hotové.
-]
+Základním stavebním kamenem deterministické infrastruktury pro autonomní vývoj softwaru je systém správy verzí (VCS) úzce provázaný s mechanismy kontinuální integrace. Distribuovaný model správy verzí, jehož nejrozšířenějším zástupcem je Git @chacon2014, formálně reprezentuje repozitář jako orientovaný acyklický graf (_Directed Acyclic Graph_, DAG). V tomto grafu tvoří uzly neměnné objekty revizí (_commits_) provázané kryptografickými hashy (SHA-1 či SHA-256) na své předchůdce, zatímco větve představují odlehčené, pohyblivé ukazatele (_refs_) na konkrétní uzly grafu. Každý přispěvatel má k dispozici úplnou lokální kopii historie, což umožňuje provádět i zkoumat změny nezávisle a slučovat je až ve chvíli jejich ověření.
 
-=== Větve a jejich role
-
-#confirmed[V moderních distribuovaných systémech správy verzí (zejména v systému Git @chacon2014) je repozitář formálně modelován jako orientovaný acyklický graf (_Directed Acyclic Graph_, DAG), jehož uzly tvoří neměnné objekty revizí (_commits_) provázané kryptografickými hashy (SHA-1 či SHA-256) na své rodičovské stavy. Větev v tomto modelu nepředstavuje fyzickou kopii souborů, nýbrž odlehčený, pohyblivý ukazatel (_ref_) na konkrétní uzel grafu.
-
-Tato grafová architektura má klíčový význam pro bezpečné zapojení autonomních agentů do vývojového procesu:
-- *Izolace stavu*: Agent operuje ve vyhrazené větvi (např. `feature/...` nebo `agent/...`), která odbočuje z hlavní vývojové linie (`main`). Veškeré pokusné mutace souborového systému, mezistavy a ladicí kroky zůstávají striktně izolované, aniž by ohrozily stabilitu produkčního kódu nebo práci ostatních členů týmu.
-- *Deterministický audit*: Každý krok agenta lze reprezentovat jako atomický commit s přesným časovým otiskem, autorskými metadaty a odkazem na kontextové zadání. Vzniká tak neměnná a zpětně ověřitelná historie změn.
-- *Strategie slučování*: Při integraci hotové větve do hlavní linie se uplatňují různé topologické strategie: přímý posun ukazatele (_fast-forward_), vytvoření explicitního slučovacího uzlu (_merge commit_), nebo sloučení celé sekvence dílčích mezikroků agenta do jediného čistého uzlu (_squash and merge_). Právě squashování je v autonomních pipeline preferováno, neboť eliminuje šum v podobě neúspěšných pokusů modelu a v hlavní větvi zanechává pouze finální, ověřený přírůstek.]
-
-=== Model pull requestu
-
-#confirmed[Sloučení větve do hlavní vývojové linie se v moderním kolaborativním softwarovém inženýrství odehrává prostřednictvím modelu *pull requestu* (PR, na platformě GitLab též _Merge Request_). Jde o formalizovaný procesní uzel, v němž autor větve předkládá navržený diff kódu k revizi dříve, než dojde k jeho trvalému začlenění do chráněné hlavní větve.
-
-V kontextu autonomního vývoje plní pull request dvě nezastupitelné funkce:
-1. *Strojová validační brána*: Na vytvoření nebo aktualizaci PR reaguje integrační server (CI), který v izolovaném kontejneru spustí sadu automatizovaných testů, typových kontrol a bezpečnostních linterů. Tím je objektivně ověřeno, že syntetický kód generovaný modelem splňuje stanovené standardy a nezpůsobuje regresi stávající funkcionality.
-2. *Lidská schvalovací brána (Human Gate)*: Pull request poskytuje přehledné rozhraní zobrazující řádkový diff změn, výsledky automatických testů a strukturovaný popis úprav. Člověk v roli recenzenta (_code reviewera_) tak může provést finální sémantickou kontrolu a rozhodnout o schválení či zamítnutí změny. Pull request tím představuje ideální architektonický styčný bod pro princip člověka ve smyčce (_Human-in-the-loop_).]
-
-
-== Kontinuální integrace
-
-#confirmed[
-V prostředí autonomního a poloautonomního vývoje slouží kontinuální integrace jako
-deterministický arbitr správnosti. Zatímco výstupy jazykového modelu jsou ze své
-podstaty stochastické a náchylné k halucinacím, integrační pipeline poskytuje
-reprodukovatelné testovací prostředí, které syntetické změny nekompromisně podrobuje
-exekutivní verifikaci dříve, než mohou ovlivnit stabilní větev.
-]
-
-=== Požadované kontroly
-
-#confirmed[
-Ke kontinuální integraci patří pojem _požadovaných kontrol_ (angl. required
-checks): množina úloh, které musí skončit úspěšně, jinak nelze změnu sloučit.
-Tím se z kvality stává vlastnost vynucovaná strojem, nikoli pouze dohodou mezi
-vývojáři.
-
-Návrh požadovaných kontrol má jedno nezřejmé úskalí. Úloha, která se za jistých
-okolností „přeskočí“, nehlásí žádný výsledek; je-li přitom uvedena mezi
-požadovanými, zablokuje slučování napořád. Kontrola proto musí vždy skončit
-nějakým závěrem — i kdyby jím bylo konstatování, že v daném repozitáři není
-co dělat.
-]
-
-=== Sestavení a artefakty
-
-#confirmed[
-Výsledkem sestavení bývá _artefakt_: spustitelný soubor, knihovna, nebo — jak
-ukazuje praktická část — vysázený dokument. Automatizace vydávání verzí spojuje
-artefakt se značkou v historii, takže ke každé vydané verzi existuje doložitelný
-výstup.
+Tato architektura poskytuje klíčové operační mechanismy pro zapojení autonomních agentů:
+- *Izolace stavu ve větvích*: Agent operuje ve vyhrazené pracovní větvi (např. `feature/...` nebo `agent/...`) odbočující z hlavní linie (`main`). Veškeré pokusné mutace souborového systému, mezistavy a ladicí iterace zůstávají striktně izolované, aniž by ohrozily stabilitu produkčního kódu nebo práci lidských spolupracovníků.
+- *Deterministický audit*: Každý krok agenta lze zachytit jako atomický commit s přesným časovým otiskem, autorskými metadaty a odkazem na kontextové zadání, což vytváří neměnnou a zpětně reprodukovatelnou historii změn.
+- *Strategie slučování*: Při integraci pracovní větve se uplatňují různé topologické strategie (přímý posun ukazatele či explicitní slučovací uzel). V agentických pipeline je preferováno sloučení celé sekvence dílčích mezikroků do jediného čistého uzlu (_squash and merge_), které eliminuje šum v podobě neúspěšných pokusů modelu a v hlavní větvi zanechává pouze finální, ověřený přírůstek.
+- *Model pull requestu*: Sloučení větve do chráněné hlavní linie se v moderním inženýrství odehrává prostřednictvím modelu *pull requestu* (PR, na platformě GitLab též _Merge Request_). Jde o formalizovaný procesní uzel předkládající navržený diff kódu k revizi. V agentickém vývoji plní PR nezastupitelnou roli lidské schvalovací brány (_Human Gate_): poskytuje přehledné rozhraní zobrazující řádkový diff, výsledky automatických testů a strukturovaný popis úprav, v němž člověk provádí finální sémantickou kontrolu dle principu _Human-in-the-loop_.
+- *Kontinuální integrace*: Na otevření či aktualizaci pull requestu bezprostředně reaguje integrační server. Kontinuální integrace (angl. _continuous integration_) představuje praxi, při níž se každá změna v malých dávkách automaticky sestaví a otestuje v izolovaném prostředí @humble2010, takže odchylky jsou zachyceny bezprostředně u svého vzniku. Vzhledem ke stochastické povaze jazykových modelů plní CI roli deterministického arbitra správnosti — stochastický generátor nekompromisně podrobuje exekutivní verifikaci.
+- *Požadované kontroly*: Ke kontinuální integraci patří pojem *požadovaných kontrol* (_required checks_) — množina automatických úloh (linting, statická typová analýza, jednotkové a integrační testy), které musí skončit úspěchem, jinak řídicí systém sloučení změny zablokuje. Z kvality se tak stává strojově vynucovaná vlastnost. Zásadním úskalím návrhu těchto kontrol je ošetření podmínečných běhů: úloha, která se za určitých okolností přeskočí a neohlásí žádný výsledek, může chráněnou větev trvale zablokovat. Každá kontrola proto musí deterministicky skončit explicitním výstupem (např. konstatováním, že pro daný typ souborů není definována žádná akce).
+- *Sestavení a artefakty*: Výsledkem úspěšného průchodu integrační pipeline bývá reprodukovatelný *artefakt* (spustitelný binární balíček, knihovna nebo vysázený dokument). Automatizace vydávání verzí propojuje vygenerovaný artefakt s konkrétní značkou (_tagem_) v historii gitu, čímž ke každé publikované verzi garantuje doložitelný a dohledatelný výstup.
 ]
 
 == Jazykové modely a jejich orchestrace
