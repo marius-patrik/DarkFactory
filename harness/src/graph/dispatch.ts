@@ -244,7 +244,8 @@ export async function dispatch(
 	// Advance the run state to the selected node before persisting
 	if (action.type !== "none") {
 		if (action.type === "run" && action.nodes.length > 0) {
-			runState.current_node = action.nodes[0];
+			const firstNode = action.nodes[0];
+			if (firstNode) runState.current_node = firstNode;
 		} else if (action.type === "gate" || action.type === "hint" || action.type === "comment") {
 			runState.current_node = action.node;
 		}
@@ -318,7 +319,7 @@ export async function dispatch(
 
 		if (summaryPath) {
 			try {
-				await appendFile(summaryPath, summaryLines.join("\n") + "\n\n");
+				await appendFile(summaryPath, `${summaryLines.join("\n")}\n\n`);
 			} catch (e) {
 				throw new Error(`Failed to write shadow run summary: ${e}`);
 			}
