@@ -678,6 +678,8 @@ async function routerModels(
 		catalogs,
 		accounts,
 		overrides: config.router?.models,
+		capabilityTiers: config.router?.capabilityTiers,
+		defaultTier: config.router?.defaultTier,
 	});
 	if (fauxEnabled)
 		models.push({
@@ -690,6 +692,7 @@ async function routerModels(
 			limitTier: "standard",
 			source: "builtin",
 			collection: "none" as const,
+			capabilityTier: "standard",
 		});
 	return models;
 }
