@@ -129,7 +129,7 @@ export async function resolveCommitSha(
 ): Promise<string> {
 	if (eventPayload && typeof eventPayload === "object") {
 		if (eventName === "pull_request" || eventName === "pull_request_review") {
-			const sha = eventPayload.pull_request?.head?.sha || eventPayload.review?.pull_request?.head?.sha;
+			const sha = eventPayload.pull_request?.head?.sha;
 			if (sha) return sha;
 		}
 		if (eventName === "check_suite") {
@@ -286,16 +286,20 @@ export async function dispatch(
 			try {
 				const pythonAction = await readJsonFile(pythonActionPath!);
 				if (actionsMatch(pythonAction, action)) {
-					summaryLines.push("No drift detected between TS and Python actions.");
+					summaryLines.push("✅ No drift detected between TS and Python actions.");
 				} else {
 					parityMatch = false;
 					summaryLines.push(
-						`Drift detected!\nTS action: ${JSON.stringify(action)}\nPython action: ${JSON.stringify(pythonAction)}`,
+						`❌ **Drift detected!**`,
+						`TS action: \`${JSON.stringify(action)}\``,
+						`Python action: \`${JSON.stringify(pythonAction)}\``,
 					);
 				}
 			} catch (e) {
+				parityMatch = false;
 				summaryLines.push(
-					`Incomplete/In-progress: Unable to verify. Error: ${e instanceof Error ? e.message : String(e)}`,
+					`⚠️ **Incomplete/In-progress:** Unable to verify.`,
+					`Error: ${e instanceof Error ? e.message : String(e)}`,
 				);
 			}
 			summaryLines.push("");

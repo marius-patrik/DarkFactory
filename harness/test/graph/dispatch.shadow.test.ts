@@ -153,6 +153,6 @@ describe("dispatch shadow verification", () => {
 
 		const summary = await readFile(summaryPath, "utf8");
 		expect(summary).toContain("### Verification Diff");
-		expect(summary).toContain("Incomplete/In-progress: Unable to verify.");
+		expect(summary).toContain("Unable to verify.");
 	});
 });
