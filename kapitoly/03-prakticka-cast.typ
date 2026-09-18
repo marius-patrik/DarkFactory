@@ -2,19 +2,16 @@
 
 = Praktická část
 
-#confirmed[
-Praktickou částí práce je systém *DarkFactory* — sada pravidel, skriptů
-a pracovních postupů, které z repozitáře udělají samostatně pracující vývojový
-provoz. Zdrojový kód je veřejně dostupný @darkfactory.
+#unconfirmed[
+Praktickou částí práce je systém *DarkFactory* — agentní harness instalovatelný jako aplikace pro platformu GitHub (GitHub App). Cílem systému je v maximální možné míře automatizovat rutinní fáze softwarového vývoje: od příjmu a sémantické analýzy požadavku v GitHub Issues, přes technické plánování a generování zdrojového kódu, až po spuštění validačních testů a vystavení pull requestu.
+
+Ačkoliv systém usiluje o co nejvyšší míru automatizace, v reálném inženýrském provozu jej nelze označit za plně autonomní. Jazykové modely jsou stochastické systémy, které nemohou nést konečnou architektonickou odpovědnost ani garantovat stoprocentní bezchybnost výstupu. DarkFactory proto funguje v kooperativním režimu s člověkem (_Human-in-the-loop_), kde je volnost agenta striktně ohraničena bezpečnostními mantinely řídicího harnessu a klíčové přechody podléhají explicitnímu schválení člověkem. Zdrojový kód systému je veřejně dostupný @darkfactory.
 ]
 
 == Cíl a rozsah systému
 
-#confirmed[
-Systém má převzít rutinní kroky vývojového procesu: přijetí požadavku, jeho
-interpretaci, naplánování, provedení změny a její ověření. Nemá nahradit
-rozhodování o tom, co se má stavět; to zůstává člověku, a systém je navržen tak,
-aby si toto rozhodnutí vyžádal dříve, než začne pracovat.
+#unconfirmed[
+Systém má převzít kognitivně rutinní a mechanické kroky vývojového procesu: strukturovanou interpretaci zadání, návrh technické dekompozice, implementaci v kódu a opravu regresí detekovaných testy. Nemá nahradit lidské rozhodování o tom, co a proč se má stavět; tato role zůstává člověku a harness je záměrně koncipován tak, aby si lidskou autorizaci vyžádal dříve, než provede zásadní či nevratné změny v repozitáři.
 ]
 
 == Architektura
