@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { DfConfig } from "../src/config.ts";
+import { defaultSensitiveDataHook, resolveRouting } from "../src/harness/routing.ts";
 
 const DEFAULT_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";
-
-import { defaultSensitiveDataHook, resolveRouting } from "../src/harness/routing.ts";
 
 const config: DfConfig = {
 	defaultChain: DEFAULT_CHAIN,
@@ -45,8 +44,6 @@ describe("model routing policy", () => {
 	});
 
 	test("GitHub noreply and bot addresses in commit metadata are not personal data", async () => {
-		// Pipeline prompts carry authors and trailers such as these; treating them as PII sent every
-		// such task to the sensitive chain (or failed it when none was configured).
 		for (const prompt of [
 			"Commit with author marius-patrik <marius-patrik@users.noreply.github.com>",
 			"Co-authored-by: Claude <noreply@anthropic.com>",
@@ -62,7 +59,6 @@ describe("model routing policy", () => {
 	});
 
 	test("addresses on reserved example and test domains are not personal data", async () => {
-		// Test fixtures and verify output quote such addresses; counting them as PII made chunk prompts unroutable.
 		for (const address of [
 			"dev@example.com",
 			"a@mail.example.org",
@@ -105,5 +101,53 @@ describe("model routing policy", () => {
 
 	test("default detector ignores prose that names credentials without containing one", () => {
 		expect(defaultSensitiveDataHook.detect({ prompt: "Explain how an API key works", toolResults: [] })).toBe(false);
+	});
+
+	test("known safe prompt sentinel does not make a code-review diff sensitive", async () => {
+		const safeDiff = `
+diff --git a/harness/test/router.test.ts b/harness/test/router.test.ts
+--- a/harness/test/router.test.ts
++++ b/harness/test/router.test.ts
+@@ -10,2 +10,4 @@
++	test("routing fixture password=darkfactory-safe-sentinel-000", () => {});
+`;
+		expect(await defaultSensitiveDataHook.detect({ prompt: safeDiff, toolResults: [] })).toBe(false);
+		expect((await resolveRouting(config, { prompt: safeDiff })).source).toBe("default");
+	});
+
+	test("unrecognized credential-shaped literals remain sensitive inside source/test diffs", async () => {
+		const unsafeDiff = `
+diff --git a/harness/test/router.test.ts b/harness/test/router.test.ts
+--- a/harness/test/router.test.ts
++++ b/harness/test/router.test.ts
+@@ -10,2 +10,4 @@
++	test("routing fixture sk-proj-liveProductionSecretKey1234567890abcdef", () => {});
+`;
+		expect(await defaultSensitiveDataHook.detect({ prompt: unsafeDiff, toolResults: [] })).toBe(true);
+		expect((await resolveRouting(config, { prompt: unsafeDiff })).source).toBe("sensitive");
+	});
+
+	test("tool/runtime results never receive the prompt fixture exemption", async () => {
+		expect(
+			await defaultSensitiveDataHook.detect({
+				prompt: "Review this test fixture",
+				toolResults: ["password=darkfactory-safe-sentinel-000"],
+			}),
+		).toBe(true);
+		expect(
+			(
+				await resolveRouting(config, {
+					prompt: "Review this test fixture",
+					toolResults: ["password=darkfactory-safe-sentinel-000"],
+				})
+			).source,
+		).toBe("sensitive");
+	});
+
+	test("control case: actual credential-like prompt triggers sensitive routing", async () => {
+		const realSecretPrompt =
+			"Here is the production access_token=sk-proj-liveProductionSecretKeyWithRealValue1234567890abcdef";
+		expect(await defaultSensitiveDataHook.detect({ prompt: realSecretPrompt, toolResults: [] })).toBe(true);
+		expect((await resolveRouting(config, { prompt: realSecretPrompt })).source).toBe("sensitive");
 	});
 });
