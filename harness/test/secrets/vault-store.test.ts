@@ -111,7 +111,7 @@ describe("vault file format and atomic writes", () => {
 		const custom = join(tempRoot, "custom-data");
 		await Bun.spawn(["mkdir", "-p", custom]).exited;
 		await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-		await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo: custom }), "utf8");
+		await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo: custom }), "utf8");
 		const resolved = await resolveDataRepoPath(dfHome);
 		expect(resolved).toBe(custom);
 		const def = await resolveDataRepoPath(join(tempRoot, "nonexistent-home"));

@@ -19,7 +19,7 @@ async function run(
 ) {
 	const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
 	temporary.push(home);
-	if (options.config) await writeFile(join(home, "config.json"), JSON.stringify(options.config), "utf8");
+	if (options.config) await writeFile(join(home, "config.df"), JSON.stringify(options.config), "utf8");
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
 	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "run", "--faux", "--json", ...args, prompt], {
@@ -46,7 +46,7 @@ describe("df run", () => {
 		const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
 		temporary.push(home);
 		await writeFile(
-			join(home, "config.json"),
+			join(home, "config.df"),
 			JSON.stringify({
 				defaultChain: "faux/echo@test",
 				router: { policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }] },

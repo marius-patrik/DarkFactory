@@ -23,7 +23,7 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 		if (!key) return undefined;
 		let dataRepoPath: string;
 		try {
-			const raw = await readFile(join(home, "config.json"), "utf8");
+			const raw = await readFile(join(home, "config.df"), "utf8");
 			const cfg = JSON.parse(raw) as { dataRepo?: string };
 			dataRepoPath = cfg.dataRepo && typeof cfg.dataRepo === "string" ? cfg.dataRepo : join(home, "data-df");
 		} catch {

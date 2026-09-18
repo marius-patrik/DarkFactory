@@ -18,7 +18,7 @@ beforeEach(async () => {
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.email", "t@t.com"]).exited;
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.name", "t"]).exited;
 	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo }), "utf8");
+	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
 });
 
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
