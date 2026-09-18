@@ -33,7 +33,12 @@ def resolve_manifest_path(root: str) -> str:
     Raises:
         ValueError: If the manifest cannot be resolved.
     """
-    return resolve_df_file(root, "repo")
+    try:
+        return resolve_df_file(root, "repo")
+    except ValueError as e:
+        if "Both" in str(e):
+            raise
+        return os.path.join(root, ".darkfactory", "repo.df")
 
 
 #: Area labels used when a repository declares none. Deliberately about the pipeline itself, since
@@ -544,7 +549,12 @@ def resolve_manifest_path(root: str) -> str:
     Raises:
         ValueError: If the manifest cannot be resolved.
     """
-    return resolve_df_file(root, "repo")
+    try:
+        return resolve_df_file(root, "repo")
+    except ValueError as e:
+        if "Both" in str(e):
+            raise
+        return os.path.join(root, ".darkfactory", "repo.df")
 
 
 def load(root: str = ".") -> Manifest:

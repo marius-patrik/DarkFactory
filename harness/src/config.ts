@@ -225,7 +225,7 @@ export async function loadDfConfig(
 	try {
 		value = JSON.parse(raw) as unknown;
 	} catch {
-		throw new Error("Invalid $DF_HOME/config.json JSON");
+		throw new Error("Invalid config.df JSON");
 	}
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Invalid ${path}`);
 	const record = value as Record<string, unknown>;
