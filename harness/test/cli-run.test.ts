@@ -19,7 +19,7 @@ async function run(
 ) {
 	const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
 	temporary.push(home);
-	if (options.config) await writeFile(join(home, "config.json"), JSON.stringify(options.config), "utf8");
+	if (options.config) await writeFile(join(home, "config.df"), JSON.stringify(options.config), "utf8");
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
 	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "run", "--faux", "--json", ...args, prompt], {
@@ -46,7 +46,7 @@ describe("df run", () => {
 		const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
 		temporary.push(home);
 		await writeFile(
-			join(home, "config.json"),
+			join(home, "config.df"),
 			JSON.stringify({
 				defaultChain: "faux/echo@test",
 				router: { policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }] },
@@ -85,7 +85,7 @@ describe("df run", () => {
 	test("df run records per-kind outcomes for the learning hook", async () => {
 		const result = await run("hello");
 		expect(result.exitCode).toBe(0);
-		const lines = (await readFile(join(result.home, "router-outcomes.jsonl"), "utf8")).trim().split(/\r?\n/u);
+		const lines = (await readFile(join(result.home, "router-outcomes.df"), "utf8")).trim().split(/\r?\n/u);
 		expect(lines.length).toBeGreaterThanOrEqual(1);
 		for (const line of lines) {
 			expect(JSON.parse(line) as unknown).toMatchObject({
@@ -211,7 +211,7 @@ describe("df run", () => {
 			type: "error",
 			exitCode: 2,
 		});
-		expect(await Bun.file(join(result.home, "quota.json")).exists()).toBe(false);
+		expect(await Bun.file(join(result.home, "quota.df")).exists()).toBe(false);
 	});
 
 	test("returns 3 when every candidate has an auth failure", async () => {
@@ -243,7 +243,7 @@ describe("df run", () => {
 			config: { maxWaitMs: 1 },
 			setup: async (home) => {
 				await writeFile(
-					join(home, "quota.json"),
+					join(home, "quota.df"),
 					JSON.stringify({
 						version: 1,
 						entries: {
@@ -276,9 +276,9 @@ describe("df run", () => {
 			version: 1,
 			entries: { preserved: { provider: "real", model: "model", account: "default", kind: "auth", markedAt: 1 } },
 		});
-		const result = await run("__df_quota__", { setup: (home) => writeFile(join(home, "quota.json"), marker, "utf8") });
+		const result = await run("__df_quota__", { setup: (home) => writeFile(join(home, "quota.df"), marker, "utf8") });
 		expect(result.exitCode).toBe(2);
-		expect(await readFile(join(result.home, "quota.json"), "utf8")).toBe(marker);
+		expect(await readFile(join(result.home, "quota.df"), "utf8")).toBe(marker);
 	});
 
 	test("df providers shows data-collection column", async () => {
@@ -336,7 +336,7 @@ describe("df run", () => {
 				},
 			],
 		};
-		await writeFile(join(home, "providers.json"), JSON.stringify(providersConfig), "utf8");
+		await writeFile(join(home, "providers.df"), JSON.stringify(providersConfig), "utf8");
 		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "providers"], {
 			cwd: process.cwd(),
 			env: { DF_HOME: home, PATH: process.env.PATH ?? "" },

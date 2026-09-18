@@ -274,7 +274,7 @@ describe("admission control", () => {
 				(i % 2 ? engine : other).record({ ...a, timestamp: now + i, inputTokens: 1, outputTokens: 1, success: true }),
 			),
 		);
-		const file = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as { events: unknown[] };
+		const file = JSON.parse(await readFile(join(root, "usage.df"), "utf8")) as { events: unknown[] };
 		expect(file.events).toHaveLength(20);
 		expect((await engine.status(a, now + 100)).items[0]).toMatchObject({ used: 20, remaining: 80, state: "available" });
 	});
@@ -286,7 +286,7 @@ describe("admission control", () => {
 		const now = Date.now();
 		await engine.record({ ...a, timestamp: now - 2 * 86_400_000, inputTokens: 1, outputTokens: 1, success: true });
 		await engine.record({ ...a, timestamp: now, inputTokens: 1, outputTokens: 1, success: true });
-		const file = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as {
+		const file = JSON.parse(await readFile(join(root, "usage.df"), "utf8")) as {
 			events: Array<{ timestamp: number }>;
 		};
 		expect(file.events.map((event) => event.timestamp)).toEqual([now]);
@@ -487,7 +487,7 @@ describe("supervisor admission", () => {
 		supervisor.session.dispose();
 		expect(result.content.some((block) => block.type === "text" && block.text === "from b")).toBe(true);
 		expect(skipped).toHaveLength(1);
-		const usage = JSON.parse(await readFile(join(root, "usage.json"), "utf8")) as {
+		const usage = JSON.parse(await readFile(join(root, "usage.df"), "utf8")) as {
 			events: Array<{ provider: string; success: boolean }>;
 		};
 		expect(usage.events.map((event) => [event.provider, event.success])).toEqual([

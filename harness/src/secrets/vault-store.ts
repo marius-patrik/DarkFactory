@@ -1,20 +1,38 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { replaceFile } from "../storage/replace-file.ts";
-import { join, dirname } from "node:path";
 import { hostname } from "node:os";
+import { dirname, join } from "node:path";
 import { withFileLock } from "../storage/file-lock.ts";
-import { encryptVault, decryptVault } from "./crypto.ts";
-import { vaultToMeta, emptyVault, emptyPushMap, type Vault, type VaultEntry, type VaultMeta, type PushMap, type EncryptedVaultEnvelope, type SecretScope } from "./vault.ts";
+import { replaceFile } from "../storage/replace-file.ts";
+import { decryptVault, encryptVault } from "./crypto.ts";
+import {
+	type EncryptedVaultEnvelope,
+	emptyPushMap,
+	emptyVault,
+	type PushMap,
+	type SecretScope,
+	type Vault,
+	type VaultEntry,
+	type VaultMeta,
+	vaultToMeta,
+} from "./vault.ts";
 
 export interface VaultStoreOptions {
 	dfHome: string;
 	dataRepoPath: string;
 }
 
-function vaultEncPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.enc.json"); }
-function vaultMetaPath(dataRepoPath: string): string { return join(dataRepoPath, "vault.meta.json"); }
-function pushMapPath(dataRepoPath: string): string { return join(dataRepoPath, "push-map.json"); }
-function lockPath(dfHome: string): string { return join(dfHome, ".secrets.lock"); }
+function vaultEncPath(dataRepoPath: string): string {
+	return join(dataRepoPath, "vault.enc.df");
+}
+function vaultMetaPath(dataRepoPath: string): string {
+	return join(dataRepoPath, "vault.meta.df");
+}
+function pushMapPath(dataRepoPath: string): string {
+	return join(dataRepoPath, "push-map.df");
+}
+function lockPath(dfHome: string): string {
+	return join(dfHome, ".secrets.lock");
+}
 
 async function atomicWrite(path: string, content: string): Promise<void> {
 	await mkdir(dirname(path), { recursive: true });
@@ -23,7 +41,9 @@ async function atomicWrite(path: string, content: string): Promise<void> {
 		await writeFile(tmp, content, { encoding: "utf8", mode: 0o600, flag: "wx" });
 		await replaceFile(tmp, path);
 	} catch (error) {
-		await Bun.file(tmp).delete().catch(() => undefined);
+		await Bun.file(tmp)
+			.delete()
+			.catch(() => undefined);
 		throw error;
 	}
 }
@@ -50,8 +70,8 @@ export async function loadVault(dataRepoPath: string, keyBase64: string): Promis
 export async function saveVault(dataRepoPath: string, vault: Vault, keyBase64: string): Promise<void> {
 	const envelope = encryptVault(vault, keyBase64);
 	const meta = vaultToMeta(vault);
-	await atomicWrite(vaultEncPath(dataRepoPath), JSON.stringify(envelope, null, 2) + "\n");
-	await atomicWrite(vaultMetaPath(dataRepoPath), JSON.stringify(meta, null, 2) + "\n");
+	await atomicWrite(vaultEncPath(dataRepoPath), `${JSON.stringify(envelope, null, 2)}\n`);
+	await atomicWrite(vaultMetaPath(dataRepoPath), `${JSON.stringify(meta, null, 2)}\n`);
 }
 
 export async function loadVaultMeta(dataRepoPath: string): Promise<VaultMeta | undefined> {
@@ -63,7 +83,7 @@ export async function loadPushMap(dataRepoPath: string): Promise<PushMap> {
 }
 
 export async function savePushMap(dataRepoPath: string, pushMap: PushMap): Promise<void> {
-	await atomicWrite(pushMapPath(dataRepoPath), JSON.stringify(pushMap, null, 2) + "\n");
+	await atomicWrite(pushMapPath(dataRepoPath), `${JSON.stringify(pushMap, null, 2)}\n`);
 }
 
 function stamp(): { by: string; at: string } {
@@ -89,7 +109,7 @@ export async function vaultSet(
 			name,
 			value,
 			scope,
-			created: existing >= 0 ? vault.entries[existing]!.created : now,
+			created: existing >= 0 ? (vault.entries[existing]?.created ?? now) : now,
 			updated: now,
 		};
 		if (existing >= 0) vault.entries[existing] = entry;
@@ -108,17 +128,11 @@ export async function vaultGet(
 	return vault.entries.find((e) => e.name === name);
 }
 
-export async function vaultList(
-	dataRepoPath: string,
-): Promise<VaultMeta> {
+export async function vaultList(dataRepoPath: string): Promise<VaultMeta> {
 	return (await loadVaultMeta(dataRepoPath)) ?? { version: 1, entries: [] };
 }
 
-export async function vaultRm(
-	opts: VaultStoreOptions,
-	keyBase64: string,
-	name: string,
-): Promise<boolean> {
+export async function vaultRm(opts: VaultStoreOptions, keyBase64: string, name: string): Promise<boolean> {
 	return withVaultLock(opts.dfHome, async () => {
 		const vault = await loadVault(opts.dataRepoPath, keyBase64);
 		const index = vault.entries.findIndex((e) => e.name === name);
@@ -144,9 +158,13 @@ export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; confl
 			const remoteTime = new Date(entry.updated.at).getTime();
 			if (remoteTime > localTime) {
 				byName.set(entry.name, entry);
-				conflicts.push(`${entry.name}: remote (${entry.updated.by}@${entry.updated.at}) wins over local (${existing.updated.by}@${existing.updated.at})`);
+				conflicts.push(
+					`${entry.name}: remote (${entry.updated.by}@${entry.updated.at}) wins over local (${existing.updated.by}@${existing.updated.at})`,
+				);
 			} else if (remoteTime < localTime) {
-				conflicts.push(`${entry.name}: local (${existing.updated.by}@${existing.updated.at}) wins over remote (${entry.updated.by}@${entry.updated.at})`);
+				conflicts.push(
+					`${entry.name}: local (${existing.updated.by}@${existing.updated.at}) wins over remote (${entry.updated.by}@${entry.updated.at})`,
+				);
 			}
 		}
 	}
@@ -159,9 +177,11 @@ export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; confl
 /** Resolve the data repo path from config. */
 export async function resolveDataRepoPath(dfHome: string): Promise<string> {
 	try {
-		const configRaw = await readFile(join(dfHome, "config.json"), "utf8");
+		const configRaw = await readFile(join(dfHome, "config.df"), "utf8");
 		const config = JSON.parse(configRaw) as { dataRepo?: string };
 		if (config.dataRepo && typeof config.dataRepo === "string") return config.dataRepo;
-	} catch { /* use default */ }
+	} catch {
+		/* use default */
+	}
 	return join(dfHome, "data-df");
 }

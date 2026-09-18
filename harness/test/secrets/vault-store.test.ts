@@ -1,10 +1,21 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, readFile, stat, writeFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateVaultKey } from "../../src/secrets/crypto.ts";
-import { loadVault, saveVault, vaultSet, vaultGet, vaultList, vaultRm, loadPushMap, savePushMap, mergeVaults, resolveDataRepoPath } from "../../src/secrets/vault-store.ts";
 import { emptyVault } from "../../src/secrets/vault.ts";
+import {
+	loadPushMap,
+	loadVault,
+	mergeVaults,
+	resolveDataRepoPath,
+	savePushMap,
+	saveVault,
+	vaultGet,
+	vaultList,
+	vaultRm,
+	vaultSet,
+} from "../../src/secrets/vault-store.ts";
 
 let tempRoot = "";
 let dfHome = "";
@@ -29,18 +40,26 @@ describe("vault file format and atomic writes", () => {
 		const key = generateVaultKey();
 		const vault = {
 			version: 1 as const,
-			entries: [{ name: "MY_SECRET", value: "super-secret-value", scope: "actions" as const, created: { by: "h", at: new Date().toISOString() }, updated: { by: "h", at: new Date().toISOString() } }],
+			entries: [
+				{
+					name: "MY_SECRET",
+					value: "super-secret-value",
+					scope: "actions" as const,
+					created: { by: "h", at: new Date().toISOString() },
+					updated: { by: "h", at: new Date().toISOString() },
+				},
+			],
 		};
 		await saveVault(dataRepo, vault, key);
 
-		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.json"), "utf8"));
+		const encRaw = JSON.parse(await readFile(join(dataRepo, "vault.enc.df"), "utf8"));
 		expect(encRaw.version).toBe(1);
 		expect(encRaw.algorithm).toBe("aes-256-gcm");
 		expect(typeof encRaw.iv).toBe("string");
 		expect(typeof encRaw.ciphertext).toBe("string");
 		expect(JSON.stringify(encRaw)).not.toContain("super-secret-value");
 
-		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.json"), "utf8"));
+		const metaRaw = JSON.parse(await readFile(join(dataRepo, "vault.meta.df"), "utf8"));
 		expect(metaRaw.version).toBe(1);
 		expect(metaRaw.entries[0].name).toBe("MY_SECRET");
 		expect(JSON.stringify(metaRaw)).not.toContain("super-secret-value");
@@ -53,13 +72,17 @@ describe("vault file format and atomic writes", () => {
 		const loaded = await loadVault(dataRepo, key);
 		expect(loaded.entries).toHaveLength(0);
 
-		await writeFile(join(dataRepo, "vault.enc.json"), JSON.stringify({ version: 1, algorithm: "bad", iv: "x", tag: "y", ciphertext: "z" }), "utf8");
+		await writeFile(
+			join(dataRepo, "vault.enc.df"),
+			JSON.stringify({ version: 1, algorithm: "bad", iv: "x", tag: "y", ciphertext: "z" }),
+			"utf8",
+		);
 		await expect(loadVault(dataRepo, key)).rejects.toThrow();
 	});
 
 	test("malformed JSON is rejected", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dataRepo, "vault.enc.json"), "not-json", "utf8");
+		await writeFile(join(dataRepo, "vault.enc.df"), "not-json", "utf8");
 		await expect(loadVault(dataRepo, key)).rejects.toThrow();
 	});
 
@@ -78,7 +101,7 @@ describe("vault file format and atomic writes", () => {
 		const lockExists = await Bun.file(join(dfHome, ".secrets.lock")).exists();
 		expect(lockExists).toBe(false);
 		// Verify 0600 on vault file (stat mode)
-		const st = await stat(join(dataRepo, "vault.enc.json"));
+		const st = await stat(join(dataRepo, "vault.enc.df"));
 		// Mode check: must not have group/other read on unix; skip strict on win32
 		if (process.platform !== "win32") {
 			expect(st.mode & 0o077).toBe(0);
@@ -104,14 +127,14 @@ describe("vault file format and atomic writes", () => {
 	test("push-map is stored separately and atomic", async () => {
 		await savePushMap(dataRepo, { MY_SECRET: { repos: ["o/r"], ghName: "MY_SECRET" } });
 		const map = await loadPushMap(dataRepo);
-		expect(map.MY_SECRET!.ghName).toBe("MY_SECRET");
+		expect(map.MY_SECRET?.ghName).toBe("MY_SECRET");
 	});
 
 	test("resolveDataRepoPath respects config dataRepo", async () => {
 		const custom = join(tempRoot, "custom-data");
 		await Bun.spawn(["mkdir", "-p", custom]).exited;
 		await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-		await writeFile(join(dfHome, "config.json"), JSON.stringify({ dataRepo: custom }), "utf8");
+		await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo: custom }), "utf8");
 		const resolved = await resolveDataRepoPath(dfHome);
 		expect(resolved).toBe(custom);
 		const def = await resolveDataRepoPath(join(tempRoot, "nonexistent-home"));
@@ -122,15 +145,39 @@ describe("vault file format and atomic writes", () => {
 		const local = {
 			version: 1 as const,
 			entries: [
-				{ name: "X", value: "local-val", scope: "actions" as const, created: { by: "h", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "h", at: "2026-01-01T00:00:00.000Z" } },
-				{ name: "ONLY_LOCAL", value: "a", scope: "actions" as const, created: { by: "h", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "h", at: "2026-01-01T00:00:00.000Z" } },
+				{
+					name: "X",
+					value: "local-val",
+					scope: "actions" as const,
+					created: { by: "h", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "h", at: "2026-01-01T00:00:00.000Z" },
+				},
+				{
+					name: "ONLY_LOCAL",
+					value: "a",
+					scope: "actions" as const,
+					created: { by: "h", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "h", at: "2026-01-01T00:00:00.000Z" },
+				},
 			],
 		};
 		const remote = {
 			version: 1 as const,
 			entries: [
-				{ name: "X", value: "remote-val", scope: "actions" as const, created: { by: "h", at: "2026-01-01T00:00:00.000Z" }, updated: { by: "h", at: "2026-01-02T00:00:00.000Z" } },
-				{ name: "ONLY_REMOTE", value: "b", scope: "actions" as const, created: { by: "h", at: "2026-01-02T00:00:00.000Z" }, updated: { by: "h", at: "2026-01-02T00:00:00.000Z" } },
+				{
+					name: "X",
+					value: "remote-val",
+					scope: "actions" as const,
+					created: { by: "h", at: "2026-01-01T00:00:00.000Z" },
+					updated: { by: "h", at: "2026-01-02T00:00:00.000Z" },
+				},
+				{
+					name: "ONLY_REMOTE",
+					value: "b",
+					scope: "actions" as const,
+					created: { by: "h", at: "2026-01-02T00:00:00.000Z" },
+					updated: { by: "h", at: "2026-01-02T00:00:00.000Z" },
+				},
 			],
 		};
 		const { merged, conflicts } = mergeVaults(local, remote);

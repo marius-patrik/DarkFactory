@@ -563,8 +563,8 @@ export async function loadProviderConfig(
 	let local: ProviderConfigFile | undefined;
 	try {
 		local = parseProviderConfigFile(
-			JSON.parse(await reader(join(home, "providers.json"))) as unknown,
-			"$DF_HOME/providers.json",
+			JSON.parse(await reader(join(home, "providers.df"))) as unknown,
+			"$DF_HOME/providers.df",
 		);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {

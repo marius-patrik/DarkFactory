@@ -13,9 +13,15 @@ test("replaceFile retries while the target is locked by another process, then su
 	const renames: [string, string][] = [];
 	const waits: number[] = [];
 	await replaceFile("state.json.tmp", "state.json", {
-		rename: async (from, to) => { renames.push([from, to]); const code = failures.shift(); if (code) throw errno(code); },
+		rename: async (from, to) => {
+			renames.push([from, to]);
+			const code = failures.shift();
+			if (code) throw errno(code);
+		},
 		delaysMs: [1, 2, 3, 4],
-		sleep: async (ms) => { waits.push(ms); },
+		sleep: async (ms) => {
+			waits.push(ms);
+		},
 	});
 	expect(renames).toHaveLength(4);
 	expect(waits).toEqual([1, 2, 3]);
@@ -23,14 +29,27 @@ test("replaceFile retries while the target is locked by another process, then su
 
 test("replaceFile gives up after the last retry with the lock error", async () => {
 	let attempts = 0;
-	const replacing = replaceFile("a.tmp", "a", { rename: async () => { attempts++; throw errno("EPERM"); }, delaysMs: [1, 1], sleep: async () => undefined });
+	const replacing = replaceFile("a.tmp", "a", {
+		rename: async () => {
+			attempts++;
+			throw errno("EPERM");
+		},
+		delaysMs: [1, 1],
+		sleep: async () => undefined,
+	});
 	await expect(replacing).rejects.toMatchObject({ code: "EPERM" });
 	expect(attempts).toBe(3);
 });
 
 test("replaceFile does not retry errors that are not a lock", async () => {
 	let attempts = 0;
-	const replacing = replaceFile("a.tmp", "a", { rename: async () => { attempts++; throw errno("ENOENT"); }, sleep: async () => undefined });
+	const replacing = replaceFile("a.tmp", "a", {
+		rename: async () => {
+			attempts++;
+			throw errno("ENOENT");
+		},
+		sleep: async () => undefined,
+	});
 	await expect(replacing).rejects.toMatchObject({ code: "ENOENT" });
 	expect(attempts).toBe(1);
 });
@@ -38,7 +57,7 @@ test("replaceFile does not retry errors that are not a lock", async () => {
 test("replaceFile replaces the target on disk", async () => {
 	const dir = await mkdtemp(join(tmpdir(), "df-replace-"));
 	try {
-		const target = join(dir, "limits.json");
+		const target = join(dir, "limits.df");
 		await writeFile(target, "old");
 		await writeFile(`${target}.tmp`, "new");
 		await replaceFile(`${target}.tmp`, target);
@@ -51,7 +70,7 @@ test("replaceFile replaces the target on disk", async () => {
 test("concurrent writers and readers of one ledger file all finish", async () => {
 	const dir = await mkdtemp(join(tmpdir(), "df-replace-"));
 	try {
-		const target = join(dir, "limits.json");
+		const target = join(dir, "limits.df");
 		await writeFile(target, "0");
 		const writers = Array.from({ length: 20 }, async (_, index) => {
 			const temporary = `${target}.${index}.tmp`;

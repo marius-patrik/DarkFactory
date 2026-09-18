@@ -347,7 +347,7 @@ def test_area_lists_match_the_manifest(path, pattern):
     }
     assert found, f"{path} lists no areas at all"
     assert found == declared, (
-        f"{path} disagrees with .darkfactory/manifest.json; "
+        f"{path} disagrees with .darkfactory/repo.df; "
         f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
     )
 

@@ -30,7 +30,7 @@ and must not be copied verbatim to consumers, whose areas differ.
 
 ## Enforcement
 
-- `.darkfactory/manifest.json` `areas` declaration is the source of truth.
+- `.darkfactory/repo.df` `areas` declaration is the source of truth.
 - `tests/test_pipeline_config.py::test_area_lists_match_the_manifest` checks the request template
   and the PR template against the manifest.
 

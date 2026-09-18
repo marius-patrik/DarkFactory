@@ -311,7 +311,7 @@ def render_manifest(
     description: str = "",
     pipeline_repo: str = "marius-patrik/DarkFactory",
 ) -> str:
-    """Renders a starter `.darkfactory/manifest.json` from what the repository is made of.
+    """Renders a starter `.darkfactory/repo.df` from what the repository is made of.
 
     Args:
         owner: Repository owner login.
@@ -439,7 +439,7 @@ def plan(
         f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
         for name in installed
     }
-    files[os.path.join(".darkfactory", "manifest.json")] = render_manifest(
+    files[os.path.join(".darkfactory", "repo.df")] = render_manifest(
         owner, repo, ref, root, branch, description, pipeline_repo
     )
     return files
@@ -482,7 +482,7 @@ it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 
-`.darkfactory/manifest.json` carries a starter set. Areas drive **labels, Conventional Commit scopes
+`.darkfactory/repo.df` carries a starter set. Areas drive **labels, Conventional Commit scopes
 and agent routing**, so they are worth getting right. Replace them with this repository's own
 domains, then re-run the install workflow to reconcile the labels.
 
@@ -515,7 +515,7 @@ python .github/scripts/repo_settings.py --apply
 ---
 
 Close this issue when the four are done. The pipeline is [{pipeline_repo}](https://github.com/{pipeline_repo});
-this repository pins a commit of it in `.darkfactory/manifest.json`, and bumping that pin is how
+this repository pins a commit of it in `.darkfactory/repo.df`, and bumping that pin is how
 {name} adopts an update.
 """
 
@@ -664,7 +664,7 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     contexts nothing reports.
 
     If the manifest still lives at the legacy `.github/darkfactory.json`, it is migrated to
-    `.darkfactory/manifest.json`.
+    `.darkfactory/repo.df`.
 
     Args:
         root: Repository root.
@@ -674,7 +674,7 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     Returns:
         True when the manifest on disk changed.
     """
-    new_path = os.path.join(root, ".darkfactory", "manifest.json")
+    new_path = os.path.join(root, ".darkfactory", "repo.df")
     legacy_path = os.path.join(root, ".github", "darkfactory.json")
 
     # Find existing manifest, preferring new location.
@@ -704,14 +704,14 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
         with open(new_path, "w", encoding="utf-8") as handle:
             handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
         os.remove(legacy_path)
-        print("  migrated .github/darkfactory.json -> .darkfactory/manifest.json")
+        print("  migrated .github/darkfactory.json -> .darkfactory/repo.df")
         return True
 
     if not changed:
         return False
     with open(new_path, "w", encoding="utf-8") as handle:
         handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-    print("  reconciled .darkfactory/manifest.json")
+    print("  reconciled .darkfactory/repo.df")
     return True
 
 
@@ -761,8 +761,8 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     # opposite, and both go through the same path so neither is a special case.
     written += retarget(root, ref)
     written += ensure_secrets_pass(root)
-    if reconcile_manifest(root, ref, files[os.path.join(".darkfactory", "manifest.json")]):
-        written.append(os.path.join(".darkfactory", "manifest.json"))
+    if reconcile_manifest(root, ref, files[os.path.join(".darkfactory", "repo.df")]):
+        written.append(os.path.join(".darkfactory", "repo.df"))
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
             handle.write(f"written={'true' if written else 'false'}\n")

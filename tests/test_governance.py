@@ -212,7 +212,7 @@ def test_prd_does_not_duplicate_manifest_taxonomy_or_graph() -> None:
     """Executable declarations live in the manifest, not in the product document.
 
     The PRD must not re-state the area taxonomy or a hardcoded stage graph, because those have one
-    executable home (`.darkfactory/manifest.json` and the workflow graph) and any copy drifts.
+    executable home (`.darkfactory/repo.df` and the workflow graph) and any copy drifts.
     """
     prd = _read("PRD.md")
     assert "AREA_LABELS" not in prd

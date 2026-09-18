@@ -11,7 +11,7 @@ export class OutcomeStore {
 	private readonly maxRecords: number;
 
 	constructor(home: string, options: { windowMs?: number; maxPenalty?: number; maxRecords?: number } = {}) {
-		this.path = join(home, "router-outcomes.jsonl");
+		this.path = join(home, "router-outcomes.df");
 		this.windowMs = options.windowMs ?? 7 * 86_400_000;
 		this.maxPenalty = options.maxPenalty ?? 20;
 		this.maxRecords = options.maxRecords ?? 1_000;
@@ -24,12 +24,25 @@ export class OutcomeStore {
 
 	private async read(): Promise<CandidateOutcome[]> {
 		let text: string;
-		try { text = await readFile(this.path, "utf8"); }
-		catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
-		return text.trim().split(/\r?\n/u).filter(Boolean).slice(-this.maxRecords).flatMap((line) => {
-			try { const value = JSON.parse(line) as CandidateOutcome; return value?.candidate && typeof value.observedAt === "number" ? [value] : []; }
-			catch { return []; }
-		});
+		try {
+			text = await readFile(this.path, "utf8");
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+			throw error;
+		}
+		return text
+			.trim()
+			.split(/\r?\n/u)
+			.filter(Boolean)
+			.slice(-this.maxRecords)
+			.flatMap((line) => {
+				try {
+					const value = JSON.parse(line) as CandidateOutcome;
+					return value?.candidate && typeof value.observedAt === "number" ? [value] : [];
+				} catch {
+					return [];
+				}
+			});
 	}
 
 	async penalties(kind: TaskKind, now = Date.now()): Promise<Map<string, number>> {

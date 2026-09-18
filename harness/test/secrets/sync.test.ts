@@ -74,7 +74,7 @@ describe("sync against local bare repo", () => {
 			],
 		};
 		await saveVault(cloneA, vault, key);
-		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
+		await git(cloneA, "add", "vault.enc.df", "vault.meta.df");
 		await git(cloneA, "commit", "-m", "add secret");
 		const pushed = await syncDataRepo({ dataRepoPath: cloneA, keyBase64: key });
 		expect(pushed.pushed).toBe(true);
@@ -102,7 +102,7 @@ describe("sync against local bare repo", () => {
 			],
 		};
 		await saveVault(cloneA, baseVault, key);
-		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
+		await git(cloneA, "add", "vault.enc.df", "vault.meta.df");
 		await git(cloneA, "commit", "-m", "base");
 		await git(cloneA, "push", "origin", "main");
 		await git(cloneB, "pull", "--rebase", "origin", "main");
@@ -121,7 +121,7 @@ describe("sync against local bare repo", () => {
 			],
 		};
 		await saveVault(cloneA, vaultA, key);
-		await git(cloneA, "add", "vault.enc.json", "vault.meta.json");
+		await git(cloneA, "add", "vault.enc.df", "vault.meta.df");
 		await git(cloneA, "commit", "-m", "update A");
 		await git(cloneA, "push", "origin", "main");
 
@@ -139,7 +139,7 @@ describe("sync against local bare repo", () => {
 			],
 		};
 		await saveVault(cloneB, vaultB, key);
-		await git(cloneB, "add", "vault.enc.json", "vault.meta.json");
+		await git(cloneB, "add", "vault.enc.df", "vault.meta.df");
 		await git(cloneB, "commit", "-m", "update B");
 
 		// Sync B: should pull, detect conflict, merge by updated.at (A wins), report conflict
@@ -162,7 +162,7 @@ describe("sync against local bare repo", () => {
 		await git(orphan, "config", "user.name", "x");
 		const key = generateVaultKey();
 		await saveVault(orphan, emptyVault(), key);
-		await git(orphan, "add", "vault.enc.json", "vault.meta.json");
+		await git(orphan, "add", "vault.enc.df", "vault.meta.df");
 		await git(orphan, "commit", "-m", "init");
 		const result = await syncDataRepo({ dataRepoPath: orphan, keyBase64: key });
 		expect(result.pullOutput).toContain("No remote");
