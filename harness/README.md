@@ -67,7 +67,7 @@ provider config. Set
 `DF_OFFLINE=1` to use a cached catalog, or pi's built-in catalog when no cache exists.
 Online failures may use an existing stale cache but never silently fall back to built-ins.
 
-Configure routing in `$DF_HOME/config.json`; relative key paths resolve from
+Configure routing in `$DF_HOME/config.df`; relative key paths resolve from
 `$DF_HOME`:
 
 ```json

@@ -103,7 +103,7 @@ def test_writing_never_overwrites_what_is_already_there(tmp_path):
     (target / "ci.yml").write_text("name: mine\n", encoding="utf-8")
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
     assert (target / "ci.yml").read_text(encoding="utf-8") == "name: mine\n"
-    assert (tmp_path / ".darkfactory" / "manifest.json").is_file(), "the rest is still written"
+    assert (tmp_path / ".darkfactory" / "repo.df").is_file(), "the rest is still written"
 
 
 class TestConfigurationIssue:
@@ -328,7 +328,7 @@ class TestReinstallingAdoptsTheUpdate:
             tmp_path: Pytest temporary directory.
         """
         root = self._installed(tmp_path)
-        path = os.path.join(root, ".darkfactory", "manifest.json")
+        path = os.path.join(root, ".darkfactory", "repo.df")
         with open(path, encoding="utf-8") as handle:
             manifest = json.load(handle)
         del manifest["required_checks"]
@@ -352,7 +352,7 @@ class TestReinstallingAdoptsTheUpdate:
             tmp_path: Pytest temporary directory.
         """
         root = self._installed(tmp_path)
-        new_path = os.path.join(root, ".darkfactory", "manifest.json")
+        new_path = os.path.join(root, ".darkfactory", "repo.df")
         legacy_path = os.path.join(root, ".github", "darkfactory.json")
         os.makedirs(os.path.dirname(legacy_path), exist_ok=True)
         os.replace(new_path, legacy_path)

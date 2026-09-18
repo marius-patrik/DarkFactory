@@ -1,7 +1,7 @@
 """Tests for the per-repository manifest.
 
 The pipeline is distributed byte-for-byte, so anything repository-specific has to come from
-`.darkfactory/manifest.json`. These tests cover the two ways that goes wrong: a manifest that is
+`.darkfactory/repo.df`. These tests cover the two ways that goes wrong: a manifest that is
 missing or malformed and takes the pipeline down with it, and repository-specific values leaking
 back into the shared code.
 """
@@ -26,9 +26,7 @@ def _write_manifest(root, data):
         data: Document to serialise.
     """
     os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
-    with open(
-        os.path.join(str(root), ".darkfactory", "manifest.json"), "w", encoding="utf-8"
-    ) as fh:
+    with open(os.path.join(str(root), ".darkfactory", "repo.df"), "w", encoding="utf-8") as fh:
         json.dump(data, fh)
 
 
@@ -74,19 +72,19 @@ class TestIdentity:
 
     def test_a_malformed_manifest_does_not_crash_the_pipeline(self, tmp_path, monkeypatch):
         os.makedirs(os.path.join(str(tmp_path), ".darkfactory"))
-        path = os.path.join(str(tmp_path), ".darkfactory", "manifest.json")
+        path = os.path.join(str(tmp_path), ".darkfactory", "repo.df")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write("{ this is not json")
         monkeypatch.setenv("GITHUB_REPOSITORY", "acme/broken")
         assert manifest_module.load(str(tmp_path)).slug == "acme/broken"
 
-    def test_a_legacy_manifest_is_read_when_the_new_path_is_absent(self, tmp_path):
-        """Consumers that have not migrated still resolve through the helper fallback."""
+    def test_a_legacy_manifest_is_ignored(self, tmp_path):
+        """Legacy manifests are ignored per the hard transition plan."""
         _write_legacy_manifest(tmp_path, {"identity": {"owner": "legacy", "repo": "widget"}})
+        # Note: legacy manifest support has been removed, so this will load the default
+        # because the manifest is missing.
         loaded = manifest_module.load(str(tmp_path))
-        assert loaded.slug == "legacy/widget"
-        resolved = manifest_module.resolve_manifest_path(str(tmp_path))
-        assert resolved == os.path.join(str(tmp_path), manifest_module.LEGACY_MANIFEST_PATH)
+        assert loaded.slug != "legacy/widget"
 
 
 class TestAreas:
@@ -300,3 +298,29 @@ class TestIdentities:
         assert custom["name"] == "Custom Provider"
         assert custom["verified"] is True
         assert loaded.identity_for("nonexistent") is None
+
+
+class TestResolverConflict:
+    """Test resolve_df_file and resolve_manifest_path behavior under conflict and absence."""
+
+    def test_resolve_df_file_neither_exists_returns_primary(self, tmp_path):
+        from resolver import resolve_df_file
+
+        path = resolve_df_file(str(tmp_path), "repo")
+        assert path == os.path.join(str(tmp_path), ".darkfactory", "repo.df")
+
+    def test_resolve_df_file_both_exist_raises_error(self, tmp_path):
+        from resolver import resolve_df_file
+
+        os.makedirs(os.path.join(str(tmp_path), ".darkfactory"), exist_ok=True)
+        open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w").close()
+        open(os.path.join(str(tmp_path), "repo.df"), "w").close()
+        with pytest.raises(ValueError, match="exist; only one is allowed"):
+            resolve_df_file(str(tmp_path), "repo")
+
+    def test_resolve_manifest_path_both_exist_raises_error(self, tmp_path):
+        os.makedirs(os.path.join(str(tmp_path), ".darkfactory"), exist_ok=True)
+        open(os.path.join(str(tmp_path), ".darkfactory", "repo.df"), "w").close()
+        open(os.path.join(str(tmp_path), "repo.df"), "w").close()
+        with pytest.raises(ValueError, match="exist; only one is allowed"):
+            manifest_module.resolve_manifest_path(str(tmp_path))

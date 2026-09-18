@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { FileCredentialStore } from "../src/credentials.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
@@ -30,7 +31,9 @@ describe("local configuration and credential sources", () => {
 	});
 
 	test("loads chains and a relative account key path", async () => {
-		const config = await loadDfConfig("C:/fixture", async () =>
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(
+			join(temp, "config.df"),
 			JSON.stringify({
 				defaultChain: "google/custom@default",
 				cooldownTtlMs: 12_345,
@@ -39,13 +42,13 @@ describe("local configuration and credential sources", () => {
 				credentialFiles: { "google:default": "secrets/gemini_api_key" },
 			}),
 		);
+		const config = await loadDfConfig(temp);
 		expect(config.credentialFiles?.["google:default"]).toBe("secrets/gemini_api_key");
 		expect(config.cooldownTtlMs).toBe(12_345);
-		const fixture = resolve("/fixture");
-		const fallback = localCredentialFallback(fixture, config, BUILTIN_PROVIDER_CONFIG, {
+		const fallback = localCredentialFallback(temp, config, BUILTIN_PROVIDER_CONFIG, {
 			env: {},
 			read: async (path: string) => {
-				expect(path).toBe(join(fixture, "secrets", "gemini_api_key"));
+				expect(path).toBe(join(temp, "secrets", "gemini_api_key"));
 				return "fixture-file-key\n";
 			},
 		});
@@ -86,16 +89,17 @@ describe("local configuration and credential sources", () => {
 	});
 
 	test("rejects malformed config without exposing its contents", async () => {
-		await expect(loadDfConfig("C:/fixture", async () => "{secret-content")).rejects.toThrow(
-			"Invalid $DF_HOME/config.json JSON",
-		);
-		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ cooldownTtlMs: 0 }))).rejects.toThrow(
-			"positive integer",
-		);
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "config.df"), "{secret-content");
+		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid config.df JSON");
+		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
+		await expect(loadDfConfig(temp)).rejects.toThrow("positive integer");
 	});
 
 	test("validates and loads router policies, model overrides, and learning bounds", async () => {
-		const config = await loadDfConfig("C:/fixture", async () =>
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(
+			join(temp, "config.df"),
 			JSON.stringify({
 				router: {
 					classifier: "cheap/classifier@default",
@@ -114,12 +118,22 @@ describe("local configuration and credential sources", () => {
 				},
 			}),
 		);
+		const config = await loadDfConfig(temp);
 		expect(config.router?.policies[0]?.id).toBe("review");
 		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
-		await expect(
-			loadDfConfig("C:/fixture", async () =>
-				JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
-			),
-		).rejects.toThrow("provider/model@account");
+		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(
+			join(temp2, "config.df"),
+			JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
+		);
+		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
+	});
+
+	test("throws error when both .darkfactory/config.df and root config.df exist simultaneously", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await mkdir(join(temp, ".darkfactory"));
+		await writeFile(join(temp, ".darkfactory", "config.df"), "{}");
+		await writeFile(join(temp, "config.df"), "{}");
+		await expect(loadDfConfig(temp)).rejects.toThrow("exist; only one is allowed");
 	});
 });

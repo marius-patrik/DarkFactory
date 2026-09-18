@@ -37,10 +37,10 @@ export class LimitLedger {
 	private readonly persist: (candidate: Candidate) => boolean;
 
 	constructor(home: string, options: { fallbackTtlMs?: number; persist?: (candidate: Candidate) => boolean } = {}) {
-		this.path = join(home, "limits.json");
+		this.path = join(home, "limits.df");
 		this.lockPath = `${this.path}.lock`;
-		this.auditPath = join(home, "limits-audit.jsonl");
-		this.quotaPath = join(home, "quota.json");
+		this.auditPath = join(home, "limits-audit.df");
+		this.quotaPath = join(home, "quota.df");
 		this.fallbackTtlMs = options.fallbackTtlMs ?? 15 * 60_000;
 		this.persist = options.persist ?? (() => true);
 	}

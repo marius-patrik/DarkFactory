@@ -29,7 +29,7 @@ const provider = {
 async function run(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
 	const home = await mkdtemp(join(tmpdir(), "df-cli-models-"));
 	temporary.push(home);
-	await writeFile(join(home, "providers.json"), JSON.stringify({ version: 1, providers: [provider] }), "utf8");
+	await writeFile(join(home, "providers.df"), JSON.stringify({ version: 1, providers: [provider] }), "utf8");
 	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "models", "--provider", provider.id, ...args], {
 		cwd: process.cwd(),
 		env: {
@@ -81,7 +81,7 @@ describe("df models", () => {
 		const home = await mkdtemp(join(tmpdir(), "df-cli-models-"));
 		temporary.push(home);
 		await writeFile(
-			join(home, "providers.json"),
+			join(home, "providers.df"),
 			JSON.stringify({
 				version: 1,
 				providers: [

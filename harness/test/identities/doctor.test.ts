@@ -10,7 +10,7 @@ import { checkDoctorIdentities, runDoctorIdentities } from "../../src/identities
 describe("doctor identities", () => {
 	it("succeeds when all providers in defaultChain have identity entries", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
-		const configPath = join(tempDir, "config.json");
+		const configPath = join(tempDir, "config.df");
 		const manifestPath = join(tempDir, "manifest.json");
 
 		try {
@@ -54,7 +54,7 @@ describe("doctor identities", () => {
 
 	it("fails when a provider in defaultChain has no identity entry", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
-		const configPath = join(tempDir, "config.json");
+		const configPath = join(tempDir, "config.df");
 		const manifestPath = join(tempDir, "manifest.json");
 
 		try {
@@ -99,7 +99,7 @@ describe("doctor identities", () => {
 
 	it("passes when no chains are configured", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
-		const configPath = join(tempDir, "config.json");
+		const configPath = join(tempDir, "config.df");
 		const manifestPath = join(tempDir, "manifest.json");
 
 		try {
@@ -122,7 +122,7 @@ describe("doctor identities", () => {
 
 	it("checks providers from only sensitiveChain", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
-		const configPath = join(tempDir, "config.json");
+		const configPath = join(tempDir, "config.df");
 		const manifestPath = join(tempDir, "manifest.json");
 
 		try {

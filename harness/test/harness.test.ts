@@ -484,7 +484,7 @@ describe("AgentSession harness", () => {
 			providerConfigs: new Map([["google", BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")!]]),
 		});
 		await supervisor.prompt("go");
-		const limits = JSON.parse(await readFile(join(home, "limits.json"), "utf8")) as {
+		const limits = JSON.parse(await readFile(join(home, "limits.df"), "utf8")) as {
 			entries: Record<string, { resetAt?: number }>;
 		};
 		// 1_700_000_000_000 is 2023-11-14 22:13 UTC; the next Pacific midnight is 2023-11-15 08:00 UTC.

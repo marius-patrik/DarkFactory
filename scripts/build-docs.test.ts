@@ -23,15 +23,27 @@ import {
 describe("Repository path compatibility", () => {
   it("prefers the current manifest path and falls back to the legacy path", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-path-test-"));
-    const current = path.join(tempDir, ".darkfactory", "manifest.json");
-    const legacy = path.join(tempDir, ".github", "darkfactory.json");
+    const dfRepo = path.join(tempDir, ".darkfactory", "repo.df");
+    const rootRepo = path.join(tempDir, "repo.df");
+    const legacy = path.join(tempDir, ".darkfactory", "manifest.json");
+    const oldLegacy = path.join(tempDir, ".github", "darkfactory.json");
+    fs.mkdirSync(path.dirname(oldLegacy), { recursive: true });
+    fs.writeFileSync(oldLegacy, "{}");
+
+    expect(resolveManifestPath(tempDir)).toBe(oldLegacy);
     fs.mkdirSync(path.dirname(legacy), { recursive: true });
     fs.writeFileSync(legacy, "{}");
-
     expect(resolveManifestPath(tempDir)).toBe(legacy);
-    fs.mkdirSync(path.dirname(current), { recursive: true });
-    fs.writeFileSync(current, "{}");
-    expect(resolveManifestPath(tempDir)).toBe(current);
+
+    fs.writeFileSync(dfRepo, "{}");
+    expect(resolveManifestPath(tempDir)).toBe(dfRepo);
+
+    fs.unlinkSync(dfRepo);
+    fs.writeFileSync(rootRepo, "{}");
+    expect(resolveManifestPath(tempDir)).toBe(rootRepo);
+
+    fs.writeFileSync(dfRepo, "{}");
+    expect(() => resolveManifestPath(tempDir)).toThrow("only one is allowed");
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });

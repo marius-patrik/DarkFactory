@@ -148,7 +148,7 @@ export class QuotaEngine {
 		readonly providerConfigs: ReadonlyMap<string, ProviderConfig>,
 		readonly options: QuotaEngineOptions = {},
 	) {
-		this.path = join(home, "usage.json");
+		this.path = join(home, "usage.df");
 		this.lockPath = `${this.path}.lock`;
 	}
 

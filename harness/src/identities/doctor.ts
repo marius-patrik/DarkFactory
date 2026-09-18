@@ -1,7 +1,6 @@
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { parseChain } from "../harness/routing.ts";
+import { resolveDfFile } from "../utils/resolver.ts";
 import { loadIdentities } from "./loader.ts";
 
 export interface DoctorIdentitiesOptions {
@@ -22,14 +21,8 @@ function getOption(args: string[], name: string): string | undefined {
 }
 
 export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {}): Promise<DoctorIdentitiesResult> {
-	let configPath = options.configPath ?? ".darkfactory/df/config.json";
-	if (!options.configPath && !existsSync(configPath) && existsSync(join("..", configPath))) {
-		configPath = join("..", configPath);
-	}
-	let manifestPath = options.manifestPath ?? ".darkfactory/manifest.json";
-	if (!options.manifestPath && !existsSync(manifestPath) && existsSync(join("..", manifestPath))) {
-		manifestPath = join("..", manifestPath);
-	}
+	const configPath = options.configPath ?? resolveDfFile(process.cwd(), "config");
+	const manifestPath = options.manifestPath ?? resolveDfFile(process.cwd(), "repo");
 	const reader = options.reader ?? ((p) => readFile(p, "utf8"));
 
 	let configRaw: string;
@@ -86,13 +79,10 @@ export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {
 export async function runDoctorIdentities(args: string[] = []): Promise<void> {
 	const configPath = getOption(args, "--config");
 	const manifestPath = getOption(args, "--manifest");
-	const repo = getOption(args, "--repo");
-	const resolvedConfig = configPath ?? (repo ? join(repo, ".darkfactory/df/config.json") : undefined);
-	const resolvedManifest = manifestPath ?? (repo ? join(repo, ".darkfactory/manifest.json") : undefined);
 
 	const result = await checkDoctorIdentities({
-		configPath: resolvedConfig,
-		manifestPath: resolvedManifest,
+		configPath,
+		manifestPath,
 	});
 
 	if (!result.ok) {

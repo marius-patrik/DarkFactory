@@ -24,7 +24,7 @@ def _manifest(root, block):
         block: The `license` object.
     """
     os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
-    with open(os.path.join(str(root), ".darkfactory", "manifest.json"), "w", encoding="utf-8") as h:
+    with open(os.path.join(str(root), ".darkfactory", "repo.df"), "w", encoding="utf-8") as h:
         json.dump({"license": block}, h)
 
 

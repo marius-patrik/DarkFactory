@@ -1,9 +1,15 @@
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
-import { replaceFile } from "./storage/replace-file.ts";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { AuthOperationOptions, Credential, CredentialInfo, CredentialStore, ProviderHeaders } from "@earendil-works/pi-ai";
+import type {
+	AuthOperationOptions,
+	Credential,
+	CredentialInfo,
+	CredentialStore,
+	ProviderHeaders,
+} from "@earendil-works/pi-ai";
 import { withFileLock } from "./storage/file-lock.ts";
+import { replaceFile } from "./storage/replace-file.ts";
 
 const VAULT_PREFIX = "vault:";
 
@@ -18,12 +24,14 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 			try {
 				const { loadVaultKey } = await import("./secrets/keychain.ts");
 				key = await loadVaultKey({ dfHome: home, allowFileKey: true });
-			} catch { return undefined; }
+			} catch {
+				return undefined;
+			}
 		}
 		if (!key) return undefined;
 		let dataRepoPath: string;
 		try {
-			const raw = await readFile(join(home, "config.json"), "utf8");
+			const raw = await readFile(join(home, "config.df"), "utf8");
 			const cfg = JSON.parse(raw) as { dataRepo?: string };
 			dataRepoPath = cfg.dataRepo && typeof cfg.dataRepo === "string" ? cfg.dataRepo : join(home, "data-df");
 		} catch {
@@ -49,7 +57,13 @@ async function resolveSlotValue(home: string, raw: string): Promise<string> {
 const FILE_VERSION = 2;
 const ACCOUNT_SEPARATOR = ":";
 
-export type OAuthCredentialSlot = { type: "oauth"; access: string; refresh: string; expires: number; accountId?: string };
+export type OAuthCredentialSlot = {
+	type: "oauth";
+	access: string;
+	refresh: string;
+	expires: number;
+	accountId?: string;
+};
 
 export type CredentialSlot =
 	| OAuthCredentialSlot
@@ -98,21 +112,38 @@ function isNonEmptyString(value: unknown): value is string {
 export function isSlot(value: unknown): value is CredentialSlot {
 	if (!value || typeof value !== "object") return false;
 	const slot = value as Record<string, unknown>;
-	if (slot.type === "oauth") return isNonEmptyString(slot.access) && isNonEmptyString(slot.refresh) && typeof slot.expires === "number" &&
-		(slot.accountId === undefined || isNonEmptyString(slot.accountId));
-	return (slot.type === "api_key" || slot.type === "header" || slot.type === "cookie" || slot.type === "other") && isNonEmptyString(slot.value);
+	if (slot.type === "oauth")
+		return (
+			isNonEmptyString(slot.access) &&
+			isNonEmptyString(slot.refresh) &&
+			typeof slot.expires === "number" &&
+			(slot.accountId === undefined || isNonEmptyString(slot.accountId))
+		);
+	return (
+		(slot.type === "api_key" || slot.type === "header" || slot.type === "cookie" || slot.type === "other") &&
+		isNonEmptyString(slot.value)
+	);
 }
 
 export function isMetadata(value: unknown): value is Record<string, string> | undefined {
-	return value === undefined || (typeof value === "object" && value !== null && Object.values(value).every((entry) => typeof entry === "string"));
+	return (
+		value === undefined ||
+		(typeof value === "object" && value !== null && Object.values(value).every((entry) => typeof entry === "string"))
+	);
 }
 
 export function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
 	const account = value as Record<string, unknown>;
-	return account.id === id && isNonEmptyString(account.provider) && isNonEmptyString(account.label) &&
-		isMetadata(account.metadata) && typeof account.slots === "object" && account.slots !== null &&
-		Object.entries(account.slots).every(([name, slot]) => isNonEmptyString(name) && isSlot(slot));
+	return (
+		account.id === id &&
+		isNonEmptyString(account.provider) &&
+		isNonEmptyString(account.label) &&
+		isMetadata(account.metadata) &&
+		typeof account.slots === "object" &&
+		account.slots !== null &&
+		Object.entries(account.slots).every(([name, slot]) => isNonEmptyString(name) && isSlot(slot))
+	);
 }
 
 export function validateAccountRecord(value: unknown, expectedId?: string): AccountRecord {
@@ -130,7 +161,12 @@ export function validateAccountRecord(value: unknown, expectedId?: string): Acco
 		throw new Error(`Account record label (${record.label}) does not match id (${id})`);
 	}
 	if (!isMetadata(record.metadata)) throw new Error("Account metadata must be string key-value pairs");
-	if (!record.slots || typeof record.slots !== "object" || Array.isArray(record.slots) || Object.keys(record.slots).length === 0) {
+	if (
+		!record.slots ||
+		typeof record.slots !== "object" ||
+		Array.isArray(record.slots) ||
+		Object.keys(record.slots).length === 0
+	) {
 		throw new Error("Account record must contain at least one valid credential slot");
 	}
 	for (const [name, slot] of Object.entries(record.slots)) {
@@ -148,7 +184,8 @@ export function validateAccountRecord(value: unknown, expectedId?: string): Acco
 function parseFile(value: unknown): CredentialFile {
 	if (!value || typeof value !== "object") throw new Error("Invalid credentials file");
 	const file = value as { version?: unknown; accounts?: unknown };
-	if (file.version !== FILE_VERSION || !file.accounts || typeof file.accounts !== "object") throw new Error("Invalid credentials file");
+	if (file.version !== FILE_VERSION || !file.accounts || typeof file.accounts !== "object")
+		throw new Error("Invalid credentials file");
 	for (const [id, account] of Object.entries(file.accounts)) {
 		if (!isAccount(account, id)) throw new Error("Invalid account entry");
 	}
@@ -156,7 +193,12 @@ function parseFile(value: unknown): CredentialFile {
 }
 
 export function accountId(provider: string, label: string): string {
-	if (!isNonEmptyString(provider) || !isNonEmptyString(label) || provider.includes(ACCOUNT_SEPARATOR) || label.includes(ACCOUNT_SEPARATOR)) {
+	if (
+		!isNonEmptyString(provider) ||
+		!isNonEmptyString(label) ||
+		provider.includes(ACCOUNT_SEPARATOR) ||
+		label.includes(ACCOUNT_SEPARATOR)
+	) {
 		throw new Error("Provider and account label must be non-empty and cannot contain ':'");
 	}
 	return `${provider}${ACCOUNT_SEPARATOR}${label}`;
@@ -178,10 +220,14 @@ function primarySlot(account: AccountRecord, type: CredentialSlot["type"]): [str
 
 function toPiCredential(account: AccountRecord): Credential | undefined {
 	const oauth = primarySlot(account, "oauth");
-	if (oauth?.[1].type === "oauth") return {
-		type: "oauth", access: oauth[1].access, refresh: oauth[1].refresh, expires: oauth[1].expires,
-		...(oauth[1].accountId ? { accountId: oauth[1].accountId } : {}),
-	};
+	if (oauth?.[1].type === "oauth")
+		return {
+			type: "oauth",
+			access: oauth[1].access,
+			refresh: oauth[1].refresh,
+			expires: oauth[1].expires,
+			...(oauth[1].accountId ? { accountId: oauth[1].accountId } : {}),
+		};
 	const apiKey = primarySlot(account, "api_key");
 	if (apiKey?.[1].type === "api_key") return { type: "api_key", key: apiKey[1].value };
 	return undefined;
@@ -191,7 +237,11 @@ async function resolveAccountVaultSlots(home: string, account: AccountRecord): P
 	let changed = false;
 	const resolved: AccountRecord = { ...account, slots: { ...account.slots } };
 	for (const [name, slot] of Object.entries(resolved.slots)) {
-		if (slot.type !== "oauth" && typeof (slot as { value?: string }).value === "string" && (slot as { value: string }).value.startsWith(VAULT_PREFIX)) {
+		if (
+			slot.type !== "oauth" &&
+			typeof (slot as { value?: string }).value === "string" &&
+			(slot as { value: string }).value.startsWith(VAULT_PREFIX)
+		) {
 			const raw = (slot as { value: string }).value;
 			const vaultName = raw.slice(VAULT_PREFIX.length);
 			const resolvedValue = await resolveVaultValue(home, vaultName);
@@ -215,7 +265,7 @@ export class FileCredentialStore {
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
 	) {
 		this.home = home;
-		this.path = join(home, "credentials.json");
+		this.path = join(home, "credentials.df");
 		this.lockPath = `${this.path}.lock`;
 	}
 
@@ -254,7 +304,9 @@ export class FileCredentialStore {
 			await replaceFile(temporary, this.path);
 			await chmod(this.path, 0o600).catch(() => undefined);
 		} catch (error) {
-			await Bun.file(temporary).delete().catch(() => undefined);
+			await Bun.file(temporary)
+				.delete()
+				.catch(() => undefined);
 			throw error;
 		}
 	}
@@ -322,17 +374,25 @@ export class FileCredentialStore {
 
 	async listAccounts(options?: AuthOperationOptions): Promise<AccountSummary[]> {
 		throwIfAborted(options);
-		return Object.values((await this.load()).accounts).map((account) => ({
-			id: account.id,
-			provider: account.provider,
-			label: account.label,
-			...(account.metadata ? { metadata: clone(account.metadata) } : {}),
-			slots: Object.entries(account.slots).map(([name, slot]) => ({ name, type: slot.type })).sort((a, b) => a.name.localeCompare(b.name)),
-		})).sort((a, b) => a.id.localeCompare(b.id));
+		return Object.values((await this.load()).accounts)
+			.map((account) => ({
+				id: account.id,
+				provider: account.provider,
+				label: account.label,
+				...(account.metadata ? { metadata: clone(account.metadata) } : {}),
+				slots: Object.entries(account.slots)
+					.map(([name, slot]) => ({ name, type: slot.type }))
+					.sort((a, b) => a.name.localeCompare(b.name)),
+			}))
+			.sort((a, b) => a.id.localeCompare(b.id));
 	}
 
 	/** Extra request material pi's two credential shapes cannot represent. */
-	async requestHeaders(provider: string, label: string, slotHeaders: Readonly<Record<string, string>> = {}): Promise<ProviderHeaders> {
+	async requestHeaders(
+		provider: string,
+		label: string,
+		slotHeaders: Readonly<Record<string, string>> = {},
+	): Promise<ProviderHeaders> {
 		let account = await this.readAccount(accountId(provider, label));
 		if (!account) return {};
 		account = await resolveAccountVaultSlots(this.home, account);
@@ -354,10 +414,14 @@ export class FileCredentialStore {
 		const slot = (await this.readAccount(accountId(provider, label)))?.slots[slotName];
 		if (!slot || slot.type === "oauth") return slot;
 		const resolved = await resolveSlotValue(this.home, slot.value);
-		return resolved === slot.value ? slot : { ...slot, value: resolved } as CredentialSlot;
+		return resolved === slot.value ? slot : ({ ...slot, value: resolved } as CredentialSlot);
 	}
 
-	async readCredential(provider: string, label: string, options?: AuthOperationOptions): Promise<Credential | undefined> {
+	async readCredential(
+		provider: string,
+		label: string,
+		options?: AuthOperationOptions,
+	): Promise<Credential | undefined> {
 		throwIfAborted(options);
 		let account = await this.readAccount(accountId(provider, label), options);
 		if (account) account = await resolveAccountVaultSlots(this.home, account);
@@ -372,7 +436,10 @@ export class FileCredentialStore {
 
 /** pi's one-provider CredentialStore view of exactly one df account. */
 export class AccountCredentialStore implements CredentialStore {
-	constructor(private readonly store: FileCredentialStore, readonly id: string) {}
+	constructor(
+		private readonly store: FileCredentialStore,
+		readonly id: string,
+	) {}
 
 	private provider(): string {
 		const parsed = parseAccountId(this.id);
@@ -402,29 +469,56 @@ export class AccountCredentialStore implements CredentialStore {
 		options?: AuthOperationOptions,
 	): Promise<Credential | undefined> {
 		this.assertProvider(providerId);
-		return this.store.modifyAccount(this.id, async (current) => {
-			const input = current ? toPiCredential(current) : undefined;
-			const next = await fn(input);
-			if (next === undefined) return undefined;
-			const parsed = parseAccountId(this.id)!;
-			const account: AccountRecord = current ?? { id: this.id, provider: parsed.provider, label: parsed.label, slots: {} };
-			const slotName = next.type === "oauth" ? primarySlot(account, "oauth")?.[0] ?? "oauth" : primarySlot(account, "api_key")?.[0] ?? "api_key";
-			account.slots[slotName] = next.type === "oauth"
-				? { type: "oauth", access: next.access, refresh: next.refresh, expires: next.expires, ...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}) }
-				: { type: "api_key", value: next.key ?? "" };
-			return account;
-		}, options).then((account) => account ? toPiCredential(account) : undefined);
+		return this.store
+			.modifyAccount(
+				this.id,
+				async (current) => {
+					const input = current ? toPiCredential(current) : undefined;
+					const next = await fn(input);
+					if (next === undefined) return undefined;
+					const parsed = parseAccountId(this.id)!;
+					const account: AccountRecord = current ?? {
+						id: this.id,
+						provider: parsed.provider,
+						label: parsed.label,
+						slots: {},
+					};
+					const slotName =
+						next.type === "oauth"
+							? (primarySlot(account, "oauth")?.[0] ?? "oauth")
+							: (primarySlot(account, "api_key")?.[0] ?? "api_key");
+					account.slots[slotName] =
+						next.type === "oauth"
+							? {
+									type: "oauth",
+									access: next.access,
+									refresh: next.refresh,
+									expires: next.expires,
+									...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}),
+								}
+							: { type: "api_key", value: next.key ?? "" };
+					return account;
+				},
+				options,
+			)
+			.then((account) => (account ? toPiCredential(account) : undefined));
 	}
 
 	delete(providerId: string, options?: AuthOperationOptions): Promise<void> {
 		this.assertProvider(providerId);
-		return this.store.modifyAccount(this.id, async (current) => {
-			if (!current) return undefined;
-			const oauth = primarySlot(current, "oauth")?.[0];
-			const apiKey = primarySlot(current, "api_key")?.[0];
-			if (oauth) delete current.slots[oauth];
-			else if (apiKey) delete current.slots[apiKey];
-			return current;
-		}, options).then(() => undefined);
+		return this.store
+			.modifyAccount(
+				this.id,
+				async (current) => {
+					if (!current) return undefined;
+					const oauth = primarySlot(current, "oauth")?.[0];
+					const apiKey = primarySlot(current, "api_key")?.[0];
+					if (oauth) delete current.slots[oauth];
+					else if (apiKey) delete current.slots[apiKey];
+					return current;
+				},
+				options,
+			)
+			.then(() => undefined);
 	}
 }

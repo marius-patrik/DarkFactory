@@ -197,7 +197,7 @@ describe("QuotaStore numeric resetAt persistence", () => {
 			undefined,
 			1_000,
 		);
-		const raw = JSON.parse(await readFile(join(home, "limits.json"), "utf8"));
+		const raw = JSON.parse(await readFile(join(home, "limits.df"), "utf8"));
 		const entry = Object.values(raw.entries)[0] as { resetAt: number };
 		expect(typeof entry.resetAt).toBe("number");
 		expect(entry.resetAt).toBe(1_000 + 45_000);
