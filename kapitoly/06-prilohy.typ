@@ -2,7 +2,7 @@
 
 = Obsah přiloženého média
 
-#draft[
+#unconfirmed[
 Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablonu, řídicí skripty a zdrojový kód autonomního systému DarkFactory.
 ]
 
@@ -54,7 +54,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 
 = Protokol revizních značek v sazebním systému Typst
 
-#draft[
+#unconfirmed[
 Tato příloha uvádí referenční definici a použití vizuálních revizních značek pro řízení a dohled nad generovaným textem v sazebním formátu Typst.
 ]
 
@@ -79,7 +79,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   caption: [Ukázka zápisu a použití revizních značek a textových funkcí v jazyce Typst.],
 ) <kod-znacky-typst>
 
-#draft[
+#unconfirmed[
 == Vizuální reprezentace jednotlivých prvků v sazbě
 
 Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních panelů a textových funkcí v jejich finální vizuální podobě:
@@ -96,13 +96,13 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 #blue-note[Ukázka modrého panelu metodického vymezení (`#blue-note` / `#scope-note`): Vymezení rozsahu práce, formulace mantinelů a architektonických abstrakcí.]
 
 Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
-- *Neověřený koncept (`#draft` / `#unconfirmed`)*: #draft[Tento text představuje koncept čekající na posouzení autorem.]
+- *Neověřený koncept (`#draft` / `#unconfirmed`)*: #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
 - *Nově přidaný text (`#added`)*: #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
 - *Potvrzený text (`#confirmed`)*: #confirmed[Text byl předběžně odsouhlasen uživatelem, čeká na finální začištění.]
 - *Navrženo k odstranění (`#removed`)*: #removed[Tato neaktuální věta je navržena k úplnému smazání z rukopisu.]
 - *Srovnávací diff (`#diff`)*: #diff[Původní chybné nebo nepřesné znění pasáže.][Nové přesné, fakticky a formálně ověřené znění pasáže.]
 - *Čistý neoznačený text*: Představuje finální, autorsky schválený text v hlase autora bez jakéhokoliv podbarvení.
 
-#draft[
-Každá značka plní přesně vymezenou komunikační roli v procesu lidského schvalování: zatímco finální text zůstává zcela bez zvýraznění, veškeré neověřené pasáže konceptu jsou zřetelně žluté (`#draft`), nově přidané části zelené (`#added`), potvrzené části modré (`#confirmed`) a opravy zviditelněné přes srovnávací diff (`#diff`). Náměty, chyby, strukturální vady i břitká kritika jsou navíc striktně separovány do barevných postranních panelů na okraji textu.
+#unconfirmed[
+Každá značka plní přesně vymezenou komunikační roli v procesu lidského schvalování: zatímco finální text zůstává zcela bez zvýraznění, veškeré neověřené pasáže konceptu jsou zřetelně žluté (`#draft` / `#unconfirmed`), nově přidané části zelené (`#added`), potvrzené části modré (`#confirmed`) a opravy zviditelněné přes srovnávací diff (`#diff`). Náměty, chyby, strukturální vady i břitká kritika jsou navíc striktně separovány do barevných postranních panelů na okraji textu.
 ]

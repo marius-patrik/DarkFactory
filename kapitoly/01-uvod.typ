@@ -2,60 +2,38 @@
 
 = Úvod
 
-#confirmed[
-Vývoj softwaru se za posledních dvacet let z velké části zautomatizoval.
-Sestavení programu, spuštění testů, kontrola stylu i nasazení do provozu dnes
-obstarávají stroje a nikdo je nepovažuje za práci hodnou lidského času. Jeden
-krok však zůstal ruční: samotná změna zdrojového kódu. Právě tam se tvoří většina
-prodlev — mezi okamžikem, kdy někdo popíše požadavek, a okamžikem, kdy se změna
-dostane k uživatelům.
+== Motivace a vymezení problému
 
-Výrobní průmysl zná pojem _dark factory_, tedy „temná továrna“: provoz, který
-běží bez lidské obsluhy, a proto v něm nemusí svítit. Nejde o představu úplného
-vyloučení člověka — i temná továrna má konstruktéry, kteří rozhodují, co se bude
-vyrábět — nýbrž o vyloučení člověka z opakujících se úkonů. Tato práce zkoumá,
-jak stejný princip uplatnit ve vývoji softwaru.
+#unconfirmed[
+Vývoj softwaru se za posledních dvacet let z velké části zautomatizoval. Sestavení programu, spuštění testů, kontrola stylu i nasazení do provozu dnes obstarávají stroje a nikdo je nepovažuje za práci hodnou lidského času. Jeden krok však dlouho zůstával výhradně ruční: samotná změna zdrojového kódu. Právě tam vzniká většina časových prodlev — v intervalu mezi okamžikem, kdy vývojář či zákazník formuluje požadavek, a okamžikem, kdy se otestovaná změna dostane k uživatelům.
+
+Výrobní průmysl pro vysoce automatizované provozy zavedl pojem _dark factory_ („temná továrna“) — výrobní halu pracující bez lidské obsluhy, v níž není nutné svítit. Smyslem tohoto konceptu není naprosté vytlačení člověka (i temná továrna vyžaduje inženýry a konstruktéry, kteří určují, co a proč se má vyrábět), nýbrž eliminace člověka z mechanicky se opakujících úkonů.
+
+S příchodem velkých jazykových modelů se otevřela cesta k uplatnění téhož principu v softwarovém inženýrství. Většina současných nástrojů však řeší pouze izolovaný krok: vygenerují návrh změny kódu, který musí člověk manuálně zasadit do kontextu, spustit v lokálním prostředí a vyřešit případné syntaktické regrese. V teorii i praxi dosud chybí ucelený popis toho, jak má autonomní agent zapadnout do celého vývojového cyklu — kdo a na základě jakých podkladů schvaluje jeho záměr, jaké deterministické záruky zabrání rozpadu procesu při selhání modelu a jakým způsobem se objektivně ověřuje správnost výsledku. Předmětem této práce proto není triviální otázka, zda jazykový model dokáže napsat fragment kódu, nýbrž otázka, jaká kontrolní architektura (harness) musí model obklopovat, aby jeho výstupům bylo možné v produkčním repozitáři důvěřovat.
 ]
 
-== Motivace
+== Cíl práce a výzkumné otázky
 
-#confirmed[
-S rozšířením velkých jazykových modelů se objevila možnost automatizovat i psaní
-kódu. Většina dostupných nástrojů však řeší jen dílčí krok: vygenerují návrh
-změny, který někdo musí zasadit do procesu, ověřit a schválit. Chybí popis toho,
-jak má takový nástroj zapadnout do vývojového procesu jako celku — kdo schvaluje,
-co se stane při selhání a jak se pozná, že je výsledek správný.
-
-Právě tato mezera je předmětem práce. Zajímavá není otázka, zda model dokáže
-napsat kód; to je dnes doloženo. Zajímavá je otázka, jaké okolí musí kolem
-takového modelu vzniknout, aby jeho výstupu bylo možné důvěřovat.
-]
-
-== Cíl práce
-
-#confirmed[
-Cílem této práce je představit principy agentního inženýrství (_agentic engineering_) a navrhnout architekturu řídicího harnessu pro automatizovaný softwarový vývoj, který provede vývojový požadavek celým procesem od zadání po ověřenou změnu, aniž by se vzdal lidského dohledu v rozhodujících bodech.
+#unconfirmed[
+Cílem práce je představit teoretické principy agentního inženýrství (_agentic engineering_) a navrhnout architekturu řídicího harnessu pro automatizovaný softwarový vývoj, který provede vývojový požadavek celým životním cyklem od zadání po ověřenou změnu, aniž by se vzdal lidského dohledu v klíčových rozhodovacích bodech.
 
 Dílčí cíle:
++ Popsat současný stav automatizace softwarového vývoje a vymezit deterministické základy (správu verzí a kontinuální integraci).
++ Analyzovat principy agentního inženýrství a limity velkých jazykových modelů (dynamika kontextového okna, jev Context Rot, ztrátová komprese a sémantický posun).
++ Navrhnout modulární architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct) s deterministickou detekcí uvíznutí, rozpočtem tahů a bezpečnostními pískovišti.
++ Vymezit mechanismy zapojení člověka do smyčky (_Human-in-the-loop_), formalizovat schvalovací brány a navrhnout protokol revizních značek pro dohled nad textovými výstupy.
 
-+ Popsat současný stav automatizace vývoje softwaru a teoretická východiska agentních systémů.
-+ Vymezit principy agentního inženýrství a deterministického řízení jazykových modelů (harness, správa kontextu, detekce uvíznutí v ReAct smyčce).
-+ Navrhnout architekturu řídicího harnessu pro spolehlivý a bezpečný běh kódovacích agentů.
-+ Analyzovat bezpečnostní mantinely, limity kontextu a provozní úskalí autonomních vývojových procesů.
-]
-
-#added[
-V návaznosti na stanovené cíle si práce klade tři konkrétní inženýrské výzkumné otázky:
+V návaznosti na stanovené cíle práce zkoumá tři klíčové inženýrské výzkumné otázky:
 - *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po vytvoření funkčního pull requestu strukturovat tak, aby role vývojáře spočívala v architektonickém dozoru a schvalování záměru (Human Gate), aniž by musel sám psát kód nebo řešit syntaktické regrese?
 - *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými deterministickými mechanismy (stuck detection, rozpočet tahů, circuit breaker) lze v řídicím harnessu zabránit patologiím jazykových modelů, jako je perseverace, oscilace či nekonečné zacyklení v ReAct smyčce?
 - *VO3 (Integrita paměti a eliminace sémantického posunu)*: Jakými postupy lze efektivně spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a destruktivní ztrátě architektonických invariantů při rekurzivní kompresi?
 ]
 
-== Metodika
+== Metodika práce
 
-#confirmed[Práce je z povahy tématu teoreticko-architektonická a inženýrská: primárním výstupem je formulace principů agentního inženýrství a návrh robustní architektury řídicího harnessu pro automatizovaný softwarový vývoj. Postup odpovídá inženýrskému cyklu:
+#unconfirmed[
+Práce je z povahy tématu teoreticko-architektonická a inženýrská: primárním výstupem je formulace principů agentního inženýrství a návrh robustní architektury řídicího harnessu pro automatizovaný softwarový vývoj. Postup odpovídá inženýrskému cyklu:
 1. *Koncepční analýza*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
 2. *Architektonický návrh*: Formulace modulárního modelu řídicího harnessu zahrnujícího správu stavu, exekuční pískoviště (sandbox), bezpečnostní pojistky a orchestraci subagentů.
-3. *Kritické zhodnocení*: Analýza navržených principů ve srovnání se současnými monolitickými agentními smyčkami a formulace provozních limitů autonomního inženýrství.]
-
-
+3. *Kritické zhodnocení*: Analýza navržených principů ve srovnání se současnými monolitickými agentními smyčkami a formulace provozních limitů autonomního inženýrství.
+]

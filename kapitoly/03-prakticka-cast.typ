@@ -2,59 +2,29 @@
 
 = Praktická část
 
+== Cíl a rozsah systému DarkFactory
+
 #unconfirmed[
 Praktickou částí práce je systém *DarkFactory* — agentní harness instalovatelný jako aplikace pro platformu GitHub (GitHub App). Cílem systému je v maximální možné míře automatizovat rutinní fáze softwarového vývoje: od příjmu a sémantické analýzy požadavku v GitHub Issues, přes technické plánování a generování zdrojového kódu, až po spuštění validačních testů a vystavení pull requestu.
 
 Ačkoliv systém usiluje o co nejvyšší míru automatizace, v reálném inženýrském provozu jej nelze označit za plně autonomní. Jazykové modely jsou stochastické systémy, které nemohou nést konečnou architektonickou odpovědnost ani garantovat stoprocentní bezchybnost výstupu. DarkFactory proto funguje v kooperativním režimu s člověkem (_Human-in-the-loop_), kde je volnost agenta striktně ohraničena bezpečnostními mantinely řídicího harnessu a klíčové přechody podléhají explicitnímu schválení člověkem. Zdrojový kód systému je veřejně dostupný @darkfactory.
-]
 
-== Cíl a rozsah systému
-
-#unconfirmed[
 Systém má převzít kognitivně rutinní a mechanické kroky vývojového procesu: strukturovanou interpretaci zadání, návrh technické dekompozice, implementaci v kódu a opravu regresí detekovaných testy. Nemá nahradit lidské rozhodování o tom, co a proč se má stavět; tato role zůstává člověku a harness je záměrně koncipován tak, aby si lidskou autorizaci vyžádal dříve, než provede zásadní či nevratné změny v repozitáři.
 ]
 
-== Architektura
+== Architektura a životní cyklus požadavku
 
 #struct-alert[
-  *Architektura v rekonstrukci*: Vzhledem k probíhající zásadní přestavbě systému DarkFactory byla dosavadní implementační dekompozice modulů a skriptů dočasně nahrazena zástupnými strukturálními bloky. Nová architektura, komponentní diagram a specifikace rozhraní budou doplněny po stabilizaci nové verze.
+  *Architektura a životní cyklus v rekonstrukci*: Vzhledem k probíhající zásadní přestavbě systému DarkFactory byla dosavadní implementační dekompozice modulů, stavový automat životního cyklu a konfigurační model dočasně nahrazeny zástupnými strukturálními bloky. Nová architektura, komponentní diagram a specifikace rozhraní budou doplněny po stabilizaci nové verze.
 ]
 
-#draft[
-Systém DarkFactory je navržen jako modulární stavebnice složená z řídicích orchestračních modulů, šablon pracovních postupů pro kontinuální integraci a hermetického#footnote(numbering: "*")[Pojem *hermetické prostředí* (angl. _hermetic environment_) označuje v softwarovém inženýrství takové výpočetní a běhové prostředí, které je zcela izolované od nekontrolovaných stavů hostitelského operačního systému a okolní sítě. Veškeré nástroje, knihovny a systémové závislosti jsou v něm explicitně deklarovány a uzamčeny na konkrétních verzích, což zaručuje absolutní determinismus a reprodukovatelnost: proces spuštěný v hermetickém kontejneru skončí vždy identickým výsledkem bez ohledu na to, kde a kdy byl vyvolán.] běhového prostředí. Architektura striktně odděluje deklarativní konfiguraci konkrétního repozitáře od samotné logiky orchestrace.
+#unconfirmed[
+Systém DarkFactory je navržen jako modulární stavebnice složená z řídicích orchestračních modulů, sdílených šablon pracovních postupů pro kontinuální integraci a hermetického#footnote(numbering: "*")[Pojem *hermetické prostředí* (angl. _hermetic environment_) označuje v softwarovém inženýrství takové výpočetní a běhové prostředí, které je zcela izolované od nekontrolovaných stavů hostitelského operačního systému a okolní sítě. Veškeré nástroje, knihovny a systémové závislosti jsou v něm explicitně deklarovány a uzamčeny na konkrétních verzích, což zaručuje absolutní determinismus a reprodukovatelnost: proces spuštěný v hermetickém kontejneru skončí vždy identickým výsledkem bez ohledu na to, kde a kdy byl vyvolán.] běhového prostředí. Architektura striktně odděluje deklarativní konfiguraci konkrétního repozitáře od samotné logiky orchestrace.
 
-=== Koncepce a systémové vrstvy
+Životní cyklus požadavku formalizuje přechody mezi stavy v orientovaném acyklickém grafu (DAG) od zadání úkolu v GitHub Issues přes plánování, implementaci, automatické testování až po vystavení pull requestu a sloučení do hlavní větve.
 
-#note[Placeholder: Zde bude doplněna nová vrstevnatá dekompozice přestavěného systému DarkFactory včetně nového komponentního schématu nahrazujícího původní skriptové jádro.]
-
-=== Sdílení pracovních postupů
-
-#note[Placeholder: Zde bude popsán nový distribuční a konzumační model workflow napříč spravovanými repozitáři po dokončení přestavby.]
-
-=== Konfigurační model repozitáře
-
-#note[Placeholder: Zde bude specifikováno nové deklarativní schéma konfiguračního manifestu vymezujícího identitu repozitáře, doménové oblasti a projektová pravidla.]
+Aby systém věděl, které validační a orchestrační úlohy má v repozitáři spustit, provádí automatickou detekci technologie na základě přítomnosti konfiguračních souborů balíčků:
 ]
-
-== Životní cyklus požadavku
-
-#struct-alert[
-  *Životní cyklus v rekonstrukci*: Stavový automat řízení požadavků, definice exekučních fází a systém validačních bran procházejí revizí v návaznosti na celkovou přestavbu DarkFactory.
-]
-
-#draft[
-Životní cyklus požadavku formalizuje přechody mezi stavy od zadání úkolu v GitHub Issues přes plánování, implementaci, automatické testování až po vystavení pull requestu a sloučení do hlavní větve.
-
-#note[Placeholder: Zde bude doplněn nový stavový diagram životního cyklu a detailní popis jednotlivých fází nového běhového automatu.]
-]
-
-== Popis prostředí repozitáře
-
-#draft[
-Aby systém věděl, které úlohy má spustit, musí rozpoznat, z čeho se repozitář
-skládá. Rozpoznávání vychází z názvů souborů popisujících balíček; jejich
-přítomnost je spolehlivější než jakýkoli ruční záznam, protože se nemůže rozejít
-se skutečností.
 
 #figure(
   table(
@@ -71,89 +41,33 @@ se skutečností.
   ),
   caption: [Rozpoznávání prostředí podle souboru popisujícího balíček.],
 ) <tab-prostredi>
+
+#unconfirmed[
+Rozlišení dvou úrovní se ukázalo jako nutné v průběhu vývoje: _prostředí_ určuje, jaké konkrétní binární nástroje jsou vyžadovány (např. Python vs. Rust), zatímco _doména_ specifikuje způsob řízení výstupu (např. kompilace a testy v doméně kódu oproti sazbě a generování PDF v doméně textu). Toto rozlišení umožňuje obsloužit repozitář kombinující programový kód se sazební dokumentací. Konfigurační manifest navíc umožňuje automaticky detekované parametry deklarativně přepsat či doplnit (např. o specifické cesty k písmům).
 ]
 
-=== Domény a prostředí
+#note[Placeholder: Zde bude doplněna nová vrstevnatá dekompozice přestavěného systému DarkFactory, stavový diagram životního cyklu požadavku a deklarativní schéma konfiguračního manifestu.]
 
-#draft[
-Rozlišení dvou úrovní se ukázalo jako nutné až v průběhu práce. _Prostředí_ říká,
-jaký nástroj je potřeba; _doména_ říká, jakému způsobu řízení výsledek podléhá.
-Python a Rust jsou dvě prostředí téže domény — kód se testuje a balí. Typst
-a LaTeX jsou dvě prostředí jiné domény — text se sází a publikuje.
-
-Toto rozlišení dovoluje popsat i repozitář, který obsahuje zároveň program
-a text — například projekt kombinující aplikační logiku se sazební dokumentací.
-Bez něj by bylo nutné buď považovat sazbu za zvláštní případ kódu, nebo pro
-texty vytvářet zcela samostatný orchestrační systém.
-]
-
-=== Deklarace jako doplněk rozpoznávání
-
-#draft[
-Rozpoznávání prostředí nemůže předvídat veškeré specifické požadavky projektu. Pokud projekt například přibaluje vlastní sadu písem v podadresáři `fonts/` nebo specifické systémové knihovny, příkaz pro sestavení vyžaduje dodatečné parametry. Konfigurační manifest proto umožňuje výchozí parametry transparentně rozšířit nebo přepsat, aniž by bylo nutné vypnout automatické rozpoznávání prostředí jako celek.
-
-#note[Placeholder: Zde bude uvedena ukázka deklarativního přepsání parametrů sestavení v novém schématu konfigurace přestavěného systému DarkFactory.]
-]
-
-== Orchestrace napříč poskytovateli
+== Orchestrační jádro a validační infrastruktura
 
 #struct-alert[
-  *Orchestrační jádro v rekonstrukci*: Mechanismus předávání štafety, řízení kontextového okna a integrace klientských harnessů budou aktualizovány podle nového orchestračního enginu.
+  *Orchestrace a validační subsystém v rekonstrukci*: Mechanismus rotace poskytovatelů LLM, správa tokenů, verifikační pipeline a správa nastavení jako kód procházejí rekonstrukcí podle nového orchestračního enginu DarkFactory.
 ]
 
-#draft[
-Systém neváže na jednoho poskytovatele modelu. Úkol je popsán způsobem nezávislým
-na rozhraní a předán prvnímu dostupnému poskytovateli; vyčerpá-li tento kvótu,
-předá se tentýž úkol dalšímu v pořadí, místo aby se proces zastavil.
-
-Tato vlastnost byla přímou reakcí na provozní zkušenost: zastavení celého procesu
-kvůli vyčerpané kvótě jediného poskytovatele bylo nejčastější příčinou prostoje.
-
-#note[Placeholder: Zde bude doplněn detailní popis nového modelu rotace, správy tokenů, bezpečnostního oddělení tajemství a bezeztrátové serializace kontextu po přestavbě systému.]
+#unconfirmed[
+Orchestrační jádro systému řeší čtyři klíčové provozní výzvy autonomního běhu:
+- *Orchestrace napříč poskytovateli a rotace modelů*: Systém neváže vývoj na jediné komerční rozhraní. Úkoly jsou popsány nezávisle na formátu konkrétního poskytovatele. Pokud primární model vyčerpá kvótu nebo je nedostupný, harness automaticky předá stav navazujícímu modelu v rotačním žebříčku, což eliminuje prostoje pipeline způsobené limity API.
+- *Deterministické ověřování změn*: Každá změna podléhá požadovaným kontrolám v CI pipeline. Úlohy jsou navrženy tak, aby vždy deterministicky skončily explicitním výstupem a zamezily permanentnímu zablokování větve v důsledku přeskočených kontrol.
+- *Projektová automatizace a správa nastavení jako kód*: Veškeré nastavení repozitáře, pravidla ochrany větví i projektové nástěnky (GitHub Projects) jsou spravovány deklarativně, což zaručuje plnou auditovatelnost a reprodukovatelnost konfigurace.
+- *Automaticky odvozovaná živá dokumentace (_Living Documentation_)*: V moderním softwarovém vývoji představuje manuální údržba dokumentace trvalý zdroj desynchronizace. DarkFactory proto prosazuje odvozování veškeré dokumentace a specifikací přímo ze zdrojového kódu a strukturovaných inline komentářů s automatickou validací v CI.
 ]
 
-== Ověřování změn
-
-#struct-alert[
-  *Verifikační pipeline v rekonstrukci*: Způsob deterministického vyhodnocování integračních úloh a zpracování chybových stavů bude přizpůsoben nové architektuře.
-]
-
-#draft[
-Každá změna musí projít požadovanými kontrolami. Ty jsou navrženy tak, aby vždy
-skončily nějakým výsledkem — úloha, která se může „přeskočit“, by jinak
-zablokovala slučování napořád, jak bylo vysvětleno v kapitole 2.
-
-#note[Placeholder: Zde bude popsána nová podoba verifikačních úloh, cachování závislostí a automatického reportování incidentů po přestavbě systému.]
-]
-
-== Projektová automatizace a správa nastavení jako kód
-
-#struct-alert[
-  *Projektová automatizace v rekonstrukci*: Nástroje pro synchronizaci GitHub Projects, nastavení repozitáře a ochranu větví procházejí rekonstrukcí.
-]
-
-#draft[
-Automatizace repozitáře zajišťuje auditovatelnost a konzistentní správu projektových pravidel bez nutnosti manuálních zásahů v rozhraní platformy.
-
-#note[Placeholder: Zde bude popsána nová implementace projektové synchronizace a správy repozitářových pravidel jako kód v přestavěném systému DarkFactory.]
-]
-
-== Automaticky generovaná dokumentace
-
-#struct-alert[
-  *Dokumentační subsystém v rekonstrukci*: Generování a validace živé dokumentace budou přizpůsobeny novému rozhraní systému DarkFactory.
-]
-
-#draft[
-V moderním softwarovém vývoji představuje manuální údržba dokumentace permanentní zdroj chyb a desynchronizace: jakmile se kód vyvíjí rychleji než textové popisy, dokumentace se nevyhnutelně stává zastaralou a nespolehlivou. Systém DarkFactory proto prosazuje striktní princip stoprocentního odvozování veškeré projektové a API dokumentace přímo ze zdrojového kódu a strukturovaných inline komentářů (tzv. _living documentation_).
-
-#note[Placeholder: Zde bude doplněno nové procesní schéma a popis generování a striktní validace živé dokumentace v CI pipeline.]
-]
+#note[Placeholder: Zde bude doplněn detailní popis nového modelu rotace poskytovatelů, správy tokenových rozpočtů, cachování závislostí a generování živé dokumentace po dokončení přestavby.]
 
 == Systém revizních značek pro lidský dohled nad akademickým textem
 
-#draft[
-Při rozšiřování systému DarkFactory na tvorbu a revizi akademických a odborných textů (doména textu) vyvstala potřeba formalizovat spolupráci člověka a autonomního agenta přímo v sazebním formátu Typst. Výsledkem je protokol vizuálních revizních značek (*Review Markers*) a textových revizních funkcí, který barevně a sémanticky rozlišuje stav zpracování jednotlivých pasáží:
+#unconfirmed[
+Při rozšiřování systému DarkFactory na tvorbu a revizi odborných textů (doména textu) vyvstala potřeba formalizovat spolupráci člověka a agenta přímo v sazebním formátu Typst. Výsledkem je protokol vizuálních revizních značek (*Review Markers*) a textových revizních funkcí, který barevně a sémanticky rozlišuje stav zpracování jednotlivých pasáží:
 ]
 
 #note[Konstruktivní doporučení, nápady na rozšíření, doplnění schémat či návrhy na praktické propojení. Po zapracování se panel smaže.]
@@ -166,17 +80,14 @@ Při rozšiřování systému DarkFactory na tvorbu a revizi akademických a odb
 
 #blue-note[Metodické vymezení a rozsah práce — formulace hranic zkoumaného problému, metodická abstrakce (např. oddělení agentního inženýrství od strojového učení) a mantinely zadání.]
 
-#draft[
+#unconfirmed[
 V toku textu se uplatňují tyto zvýrazňovací a srovnávací funkce:
-]
+- *Neověřený koncept (`#draft[...]` / `#unconfirmed[...]`)*: Označuje neověřený text konceptu čekající na autorské posouzení a revizi.
+- *Nově přidaný text (`#added[...]`)*: Označuje nově přidaný text vygenerovaný autonomním agentem na základě požadavku či doporučení.
+- *Potvrzený text (`#confirmed[...]`)*: Označuje text potvrzený uživatelem, který dosud neprošel finální integrací.
+- *Navrženo k odstranění (`#removed[...]`)*: Označuje text navržený k odstranění z rukopisu.
+- *Srovnávací diff (`#diff(old, new)`)*: Zobrazuje původní text přeškrtnutý v červené barvě následovaný novým textem v zelené barvě.
+- *Čistý neoznačený text*: Představuje finální, autorsky schválený a přijatý text v hlase autora.
 
-- #draft[Žluté zvýraznění (`#draft[...]` / `#unconfirmed[...]`): Označuje neověřený text konceptu čekající na autorské posouzení a revizi.]
-- #added[Zelené zvýraznění (`#added[...]`): Označuje nově přidaný text vygenerovaný autonomním agentem na základě požadavku či doporučení.]
-- #confirmed[Modré zvýraznění (`#confirmed[...]`): Označuje text potvrzený uživatelem, který dosud neprošel finální integrací.]
-- #removed[Červené zvýraznění s přeškrtnutím (`#removed[...]`): Označuje text navržený k odstranění z rukopisu.]
-- #diff[Původní nahrazovaný text][Srovnávací diff (`#diff(old, new)`): Zobrazuje původní text přeškrtnutý v červené barvě následovaný novým textem v zelené barvě.]
-- Čistý neoznačený text představuje finální, autorsky schválený a přijatý text v hlase autora (v rozpracovaném stavu konceptu jsou veškeré dosud neuzavřené pasáže zviditelněny revizními funkcemi).
-
-#draft[
 Tento protokol umožňuje autonomnímu agentovi navrhovat změny s transparentním vyznačením míry jistoty a člověku poskytuje okamžitou vizuální kontrolu nad tím, které části rukopisu již prošly lidskou redakcí a které ještě čekají na posouzení.
 ]
