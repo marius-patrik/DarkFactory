@@ -17,8 +17,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from resolver import resolve_df_file
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-# ... existing code ...
-
 #: Manifest location, relative to the repository root.
 MANIFEST_PATH = "repo.df"
 LEGACY_MANIFEST_PATH = ".github/darkfactory.json"

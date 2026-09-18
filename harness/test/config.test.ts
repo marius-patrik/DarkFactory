@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { FileCredentialStore } from "../src/credentials.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
@@ -41,6 +42,14 @@ describe("local configuration and credential sources", () => {
 		const config = await loadDfConfig(temp);
 		expect(config.credentialFiles?.["google:default"]).toBe("secrets/gemini_api_key");
 		expect(config.cooldownTtlMs).toBe(12_345);
+		const fallback = localCredentialFallback(temp, config, BUILTIN_PROVIDER_CONFIG, {
+			env: {},
+			read: async (path: string) => {
+				expect(path).toBe(join(temp, "secrets", "gemini_api_key"));
+				return "fixture-file-key\n";
+			},
+		});
+		expect(await fallback("google", "default")).toEqual({ type: "api_key", key: "fixture-file-key" });
 	});
 
 	test("stored account wins over env, while env wins over the configured key file", async () => {
@@ -77,40 +86,49 @@ describe("local configuration and credential sources", () => {
 	});
 
 	test("rejects malformed config without exposing its contents", async () => {
-		await expect(loadDfConfig("C:/fixture", async () => "{secret-content")).rejects.toThrow(
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "config.df"), "{secret-content");
+		await expect(loadDfConfig(temp)).rejects.toThrow(
 			"Invalid $DF_HOME/config.json JSON",
 		);
-		await expect(loadDfConfig("C:/fixture", async () => JSON.stringify({ cooldownTtlMs: 0 }))).rejects.toThrow(
+		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
+		await expect(loadDfConfig(temp)).rejects.toThrow(
 			"positive integer",
 		);
 	});
 
 	test("validates and loads router policies, model overrides, and learning bounds", async () => {
-		const config = await loadDfConfig("C:/fixture", async () =>
-			JSON.stringify({
-				router: {
-					classifier: "cheap/classifier@default",
-					candidates: ["acme/fast@work"],
-					models: {
-						"acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" },
-					},
-					policies: [
-						{
-							id: "review",
-							match: { kind: ["review"], needs: ["tools"] },
-							prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
-						},
-					],
-					learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "config.df"), JSON.stringify({
+			router: {
+				classifier: "cheap/classifier@default",
+				candidates: ["acme/fast@work"],
+				models: {
+					"acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" },
 				},
-			}),
-		);
+				policies: [
+					{
+						id: "review",
+						match: { kind: ["review"], needs: ["tools"] },
+						prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
+					},
+				],
+				learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
+			},
+		}));
+		const config = await loadDfConfig(temp);
 		expect(config.router?.policies[0]?.id).toBe("review");
 		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
-		await expect(
-			loadDfConfig("C:/fixture", async () =>
-				JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
-			),
-		).rejects.toThrow("provider/model@account");
+		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp2, "config.df"), JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }));
+		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
+	});
+
+	test("throws error when both .darkfactory/config.df and root config.df exist simultaneously", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await mkdir(join(temp, ".darkfactory"));
+		await writeFile(join(temp, ".darkfactory", "config.df"), "{}");
+		await writeFile(join(temp, "config.df"), "{}");
+		await expect(loadDfConfig(temp)).rejects.toThrow("exist; only one is allowed");
 	});
 });

@@ -1,5 +1,6 @@
 import { resolveDfFile } from "./utils/resolver";
 import { isAbsolute, join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import type {
@@ -209,7 +210,8 @@ export async function loadDfConfig(
 	let path: string;
 	try {
 		path = resolveDfFile(root, "config");
-	} catch {
+	} catch (error) {
+		if ((error as Error).message.includes("Both") && (error as Error).message.includes("exist")) throw error;
 		return {};
 	}
 	let raw: string;

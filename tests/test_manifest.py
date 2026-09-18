@@ -81,13 +81,8 @@ class TestIdentity:
     def test_a_legacy_manifest_is_read_when_the_new_path_is_absent(self, tmp_path):
         """Consumers that have not migrated still resolve through the helper fallback."""
         _write_legacy_manifest(tmp_path, {"identity": {"owner": "legacy", "repo": "widget"}})
-        # Make sure that load(tmp_path) really loads our temporary manifest.
-        # It seems it was failing because it was falling back to the default manifest of the current directory.
-        # We need to make sure `resolve_df_file` finds something.
-
-        # Let's ensure the legacy manifest is found.
-        # Oh wait, my `resolve_df_file` *only* looks for repo.df!
-        # It needs to support legacy manifest location if I want the test to work.
+        loaded = manifest_module.load(str(tmp_path))
+        assert loaded.slug == "legacy/widget"
 
 
 class TestAreas:
