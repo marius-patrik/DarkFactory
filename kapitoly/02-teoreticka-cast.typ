@@ -3,10 +3,20 @@
 = Teoretická část
 
 #confirmed[
-Tato kapitola vymezuje pojmy, o které se opírá praktická část: řízení verzí,
-kontinuální integraci, orchestraci jazykových modelů a princip zapojení člověka
-do smyčky (_Human-in-the-loop_). Cílem není vyčerpávající přehled, nýbrž zavedení
-pojmů v podobě, v jaké s nimi pracuje navržený systém.
+Tato kapitola vymezuje teoretické a architektonické principy, na nichž staví
+návrh řídicího harnessu pro automatizovaný vývoj softwaru. Architektura stojí na
+průniku dvou disciplín: deterministického softwarového inženýrství a stochastického
+agentního modelování.
+
+Z oblasti softwarového inženýrství práce čerpá ze správy verzí v distribuovaném
+prostředí @chacon2014 a z praxe kontinuální integrace (angl. _continuous integration_)
+@humble2010, při níž se každá změna ověřuje průběžně a v malých dávkách, aby se
+případné chyby zachytily bezprostředně u svého vzniku. Na tuto deterministickou
+kostru navazuje agentní inženýrství — řízení kontextového okna jazykových modelů,
+smyčky nástrojového uvažování (ReAct) s bezpečnostními pojistkami a formalizované
+zapojení člověka do rozhodovací smyčky (_Human-in-the-loop_). Cílem kapitoly není
+vyčerpávající přehled obecného strojového učení, nýbrž zavedení pojmů a principů
+v podobě, v jaké s nimi pracuje navržený harness.
 ]
 
 == Řízení verzí
@@ -39,10 +49,11 @@ V kontextu autonomního vývoje plní pull request dvě nezastupitelné funkce:
 == Kontinuální integrace
 
 #confirmed[
-Kontinuální integrace (angl. _continuous integration_) je praxe, při níž se
-každá změna automaticky sestaví a otestuje @humble2010. Namísto dlouhých období,
-kdy se změny hromadí a slučují až na konci, se ověřuje průběžně a v malých
-dávkách, takže chyba je odhalena blízko svému vzniku.
+V prostředí autonomního a poloautonomního vývoje slouží kontinuální integrace jako
+deterministický arbitr správnosti. Zatímco výstupy jazykového modelu jsou ze své
+podstaty stochastické a náchylné k halucinacím, integrační pipeline poskytuje
+reprodukovatelné testovací prostředí, které syntetické změny nekompromisně podrobuje
+exekutivní verifikaci dříve, než mohou ovlivnit stabilní větev.
 ]
 
 === Požadované kontroly
