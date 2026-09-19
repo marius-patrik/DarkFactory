@@ -26,6 +26,38 @@
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
 #let word-stats-state = state("word-stats-state", (words: 0, chars: 0))
 
+// Strukturální stav šablony: hlavní číslované kapitoly dostávají samostatnou
+// titulní stranu, přílohy používají vlastní kompaktní režim.
+#let appendix-mode-state = state("gjkt-appendix-mode", false)
+
+#let chapter-title-page(it) = context {
+  let chapter-no = counter(heading).display(it.numbering)
+
+  pagebreak(weak: true)
+  v(1fr)
+  align(center)[
+    #text(
+      size: 11pt,
+      weight: "bold",
+      tracking: 1.5pt,
+      fill: rgb("#64748b"),
+    )[
+      #ui-label([KAPITOLA], [CHAPTER]) #chapter-no
+    ]
+    #v(14pt)
+    #text(size: 26pt, weight: "bold", hyphenate: false)[#it.body]
+  ]
+  v(1fr)
+  pagebreak()
+}
+
+#let regular-level-one-heading(it) = block(
+  above: 21pt,
+  below: 10pt,
+  sticky: true,
+  text(size: 16pt, weight: "bold", it),
+)
+
 #let nadpis-bez-cisla(text-nadpisu) = {
   heading(numbering: none, outlined: true, text-nadpisu)
 }
@@ -262,11 +294,17 @@
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
-  // Mezera před nadpisem = velikost písma nadpisu + 5 b, a je vždy větší
-  // než mezera pod nadpisem, aby bylo zřejmé, ke které kapitole text patří.
-  show heading.where(level: 1): it => {
-    if it.numbering != none { pagebreak(weak: true) }
-    block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
+  // Hlavní číslované kapitoly mají vlastní titulní stranu. Manuskript pouze
+  // deklaruje sémantický nadpis úrovně 1; veškeré stránkování a vizuální
+  // zpracování kapitoly vlastní šablona. Nečíslované nadpisy přední části
+  // a nadpisy příloh zůstávají kompaktní.
+  show heading.where(level: 1): it => context {
+    let in-appendix = appendix-mode-state.get()
+    if it.numbering != none and not in-appendix {
+      chapter-title-page(it)
+    } else {
+      regular-level-one-heading(it)
+    }
   }
   show heading.where(level: 2): it => {
     block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
@@ -437,10 +475,14 @@
 #let prilohy(body) = {
   pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]
+  appendix-mode-state.update(true)
+
   // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
   nadpis-bez-cisla[#confirmed[#ui-label([Seznam příloh], [List of appendices])]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(supplement: [Příloha]))
   [#body <appendix>]
+
+  appendix-mode-state.update(false)
 }
