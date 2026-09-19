@@ -19,7 +19,11 @@
     "ref": "7ecba1617f553e6a34ceb31177e1ac84d08c350f"
   },
   "release": {
-    "metadata": "ignore"
+    "metadata": "ignore",
+    "assets": [
+      "out/prace.pdf",
+      "out/prace-review.pdf"
+    ]
   },
   "pages": {
     "build_type": "legacy",
