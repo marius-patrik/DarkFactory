@@ -240,11 +240,7 @@ export class FailoverSupervisor {
 		if (budget && remaining !== undefined && remaining <= 0) throw this.timeoutError(budget);
 	}
 
-	private async withinDeadline<T>(
-		operation: Promise<T>,
-		budget?: RunDeadline,
-		abortAgent = false,
-	): Promise<T> {
+	private async withinDeadline<T>(operation: Promise<T>, budget?: RunDeadline, abortAgent = false): Promise<T> {
 		if (!budget) return operation;
 		this.assertWithinDeadline(budget);
 		const remaining = this.remainingMs(budget)!;
