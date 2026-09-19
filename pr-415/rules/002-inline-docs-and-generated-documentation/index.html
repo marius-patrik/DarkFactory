@@ -1,0 +1,316 @@
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DF-RULE-002 — Inline docstrings and generated documentation · DarkFactory</title>
+    <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="../../assets/theme.css"><script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("docs-theme");
+          if (stored) document.documentElement.setAttribute("data-theme", stored);
+          else if (window.matchMedia("(prefers-color-scheme: light)").matches)
+            document.documentElement.setAttribute("data-theme", "light");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="header">
+      <div class="header__inner">
+        <button class="icon-button header__menu" aria-label="Toggle navigation" data-nav-toggle>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+
+        <a class="header__brand" href="../..">
+          <span class="header__mark" aria-hidden="true"></span>
+          <span class="header__name">DarkFactory</span>
+        </a>
+
+        <div class="header__search">
+          <svg class="header__search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input type="search" id="search-input" placeholder="Search documentation…"
+                 autocomplete="off" spellcheck="false" aria-label="Search documentation">
+          <kbd class="header__kbd">/</kbd>
+          <div class="search-results" id="search-results" hidden></div>
+        </div>
+
+        <div class="header__actions">
+          <button class="icon-button" data-theme-toggle aria-label="Toggle colour scheme">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+            </svg>
+          </button>
+          <a class="icon-button" href="https://github.com/marius-patrik/DarkFactory" aria-label="marius-patrik/DarkFactory">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 5.2 4.9 4.9 0 0 0 19.9 1.6S18.7 1.2 16 3a13.4 13.4 0 0 0-7 0C6.3 1.2 5.1 1.6 5.1 1.6A4.9 4.9 0 0 0 5 5.2 5.2 5.2 0 0 0 3.6 8.8c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" data-nav><div class="switcher" data-switcher hidden>
+  <label class="switcher__group">
+    <span class="switcher__label">Version</span>
+    <select class="switcher__select" data-switcher-versions aria-label="Documentation version"></select>
+  </label>
+  <label class="switcher__group" data-switcher-projects-group hidden>
+    <span class="switcher__label">Project</span>
+    <select class="switcher__select" data-switcher-projects aria-label="Project"></select>
+  </label>
+</div><nav aria-label="Documentation">
+
+
+<ul class="nav nav--depth-0">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../..">Overview</a>
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Product</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../prd/">Requirements</a>
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Decisions</span>
+      
+<ul class="nav nav--depth-2">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/">Overview</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0001-domains-above-environments/">ADR-0001 — Domains sit above environments</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0002-agent-pipeline-is-harness-agnostic/">ADR-0002 — The agent pipeline is harness-agnostic</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../architecture/decisions/process/">Process</a>
+    </li>
+</ul>
+
+    </li>
+</ul>
+
+    </li>
+    <li class="nav__section nav__section--active">
+      <span class="nav__label">Rules</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../">Overview</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../001-unit-tests/">DF-RULE-001 — Unit tests</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link nav__link--active"
+         href="./">DF-RULE-002 — Inline docstrings and generated documentation</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../003-product-requirements-and-adrs/">DF-RULE-003 — Product requirements and ADRs</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../004-english-language/">DF-RULE-004 — English language consistency</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../005-commit-granularity/">DF-RULE-005 — Commit granularity</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../006-ci-readiness/">DF-RULE-006 — CI readiness</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../007-branches-and-pull-requests/">DF-RULE-007 — Branches and pull requests</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../008-formatting-and-linting/">DF-RULE-008 — Formatting and linting</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../009-issue-binding-and-board-status/">DF-RULE-009 — Issue binding, branch auto-deletion, and board status</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../010-approved-delivery-plan/">DF-RULE-010 — Approved delivery plan</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../011-review-approval-and-auto-merge/">DF-RULE-011 — Review approval and auto-merge</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../012-request-capture-and-confirmation/">DF-RULE-012 — Request capture and confirmation</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../013-specification-and-work-tracking/">DF-RULE-013 — Specification and work tracking</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../014-agent-runtime-and-resilience/">DF-RULE-014 — Agent runtime and resilience</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../015-repository-taxonomy/">DF-RULE-015 — Repository taxonomy</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../016-security-and-secrets/">DF-RULE-016 — Security and secrets</a>
+    </li>
+</ul>
+
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Reference</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../reference/manifest/">Manifest</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../reference/workflows/">Workflows</a>
+    </li>
+</ul>
+
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../agents/">Contributing & Agent Rules</a>
+    </li>
+    <li class="nav__section">
+      <span class="nav__label">Notes</span>
+      
+<ul class="nav nav--depth-1">
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../notes/bootstrap/">Bootstrap runbook</a>
+    </li>
+    <li class="nav__item">
+      <a class="nav__link"
+         href="../../notes/vision_capture/">Capture provenance</a>
+    </li>
+</ul>
+
+    </li>
+</ul>
+</nav>
+      </aside>
+
+      <main class="content" id="content">
+        <article class="prose">
+          <h1 id="rule-2-inline-docstrings-and-generated-documentation">Rule 2 — Inline docstrings and generated documentation<a class="headerlink" href="#rule-2-inline-docstrings-and-generated-documentation" title="Permanent link">&para;</a></h1>
+<h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
+<p>All source MUST carry complete API documentation inline:</p>
+<ul>
+<li><strong>Rust</strong>: <code>///</code> doc comments on every public item, with <code># Errors</code> and <code># Panics</code> sections where
+  applicable. <code>cargo doc</code> MUST build with zero warnings.</li>
+<li><strong>TypeScript</strong>: TSDoc on every exported symbol.</li>
+<li><strong>Python</strong> (automation): Google-style docstrings (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>) with PEP 484
+  type annotations.</li>
+</ul>
+<p>Documentation MUST be generated from source and hand-written architecture notes. No static
+per-module markdown mirror and no manually maintained documentation index are stored in the
+repository. All documentation builds MUST use the command declared by the repository environment
+and succeed with zero warnings and zero errors. DarkFactory declares
+<code>bun run scripts/build-docs.ts</code>, which stages its repository sources, invokes ProperDocs in strict
+mode, and deploys the result automatically to GitHub Pages.</p>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<p>A committed documentation mirror creates two sources of truth that drift. Generating the site from
+the canonical files means the published pages and the repository content cannot disagree.</p>
+<h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>.github/scripts/docs_hooks.py</code> maps canonical files to virtual pages at build time; the docs
+  build is a required status check in <code>ci.yml</code>.</li>
+<li><code>properdocs.yml</code> configures the strict build.</li>
+</ul>
+<h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
+<p>None.</p>
+<h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
+<p>Docs-site owns generated presentation, selection of the installed sites, and the mandatory-rule
+projection. The Python hooks are port-source, not an extension target, per <code>cli-release</code> and PRD
+section 10.</p>
+        </article>
+        <nav class="pager" aria-label="Page navigation">
+          <a class="pager__link pager__link--prev" href="../001-unit-tests/">
+            <span class="pager__label">Previous</span>
+            <span class="pager__title">DF-RULE-001 — Unit tests</span>
+          </a>
+          <a class="pager__link pager__link--next" href="../003-product-requirements-and-adrs/">
+            <span class="pager__label">Next</span>
+            <span class="pager__title">DF-RULE-003 — Product requirements and ADRs</span>
+          </a>
+        </nav>
+
+        <footer class="footer">
+          <span>DarkFactory</span>
+          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/rules/002-inline-docs-and-generated-documentation.md">Edit this page</a>
+        </footer>
+      </main>
+
+      <aside class="toc">
+        <div class="toc__title">On this page</div>
+        <ul class="toc__list">
+          <li><a href="#requirement">Requirement</a>
+          </li>
+          <li><a href="#rationale">Rationale</a>
+          </li>
+          <li><a href="#enforcement">Enforcement</a>
+          </li>
+          <li><a href="#exceptions">Exceptions</a>
+          </li>
+          <li><a href="#change-control">Change control</a>
+          </li>
+        </ul>
+      </aside>
+    </div>
+
+    <script id="search-base" type="application/json">"../.."</script>
+    <script src="../../assets/theme.js" defer></script>
+    <script src="../../search/main.js" defer></script>
+  </body>
+</html>
