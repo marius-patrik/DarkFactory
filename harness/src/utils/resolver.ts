@@ -26,5 +26,5 @@ export function resolveDfFile(root: string, name: string): string {
 		return rootPath;
 	}
 
-	throw new Error(`${name}.df not found in ${root} (checked .darkfactory/${name}.df and ${name}.df)`);
+	return dfPath;
 }
