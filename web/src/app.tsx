@@ -952,20 +952,20 @@ export function ViewerApp() {
   const canSplit = Boolean(rawPath && reviewPath);
   const formatLabel = format === "markdown" ? "Markdown" : format.toUpperCase();
 
-  const activeVariant = manifest?.variants.find((variant) => variant.profile === profileName);
+  const selectedVariant = manifest?.variants.find((variant) => variant.profile === profileName);
   const formatTarget = (nextFormat: ArtifactFormat) => {
-    if (!manifest || !activeVariant) return "#";
+    if (!manifest || !selectedVariant) return "#";
     const targetMode: ViewerMode = viewMode === "split" ? "final" : mode;
     const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
     const file = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(activeVariant, targetMode, nextFormat),
+      artifactFilename(selectedVariant, targetMode, nextFormat),
     );
     const peer = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(activeVariant, peerMode, nextFormat),
+      artifactFilename(selectedVariant, peerMode, nextFormat),
     );
     return viewerHref({
       file,
