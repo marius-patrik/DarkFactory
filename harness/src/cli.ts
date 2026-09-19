@@ -23,6 +23,8 @@ import {
 	ChainExhaustedError,
 	createFailoverSupervisor,
 	type HarnessEvent,
+	type RunDeadline,
+	RunTimeoutError,
 } from "./harness/supervisor.ts";
 import { runDoctorIdentities } from "./identities/index.ts";
 import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
@@ -60,7 +62,7 @@ function usage(): string {
 	return [
 		"Usage:",
 		"  df | df chat [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard]",
-		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--json] <prompt>",
+		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--timeout 15m0s] [--json] <prompt>",
 		"  df route [--kind kind] [--size size] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
@@ -131,6 +133,52 @@ function option(args: string[], name: string): string | undefined {
 
 function options(args: string[], name: string): string[] {
 	return args.flatMap((value, index) => (value === name && args[index + 1] ? [args[index + 1]!] : []));
+}
+
+export function parseDurationMs(value: string): number {
+	const input = value.trim();
+	if (!input) throw new Error("--timeout requires a duration such as 30s or 15m0s");
+	const part = /(\d+(?:\.\d+)?)(ms|h|m|s)/gy;
+	let index = 0;
+	let total = 0;
+	while (index < input.length) {
+		part.lastIndex = index;
+		const match = part.exec(input);
+		if (!match || match.index !== index) throw new Error(`Invalid --timeout duration: ${value}`);
+		const amount = Number(match[1]);
+		const unit = match[2];
+		const multiplier = unit === "h" ? 3_600_000 : unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1;
+		total += amount * multiplier;
+		index = part.lastIndex;
+	}
+	if (!Number.isFinite(total) || total <= 0 || !Number.isSafeInteger(Math.ceil(total)))
+		throw new Error("--timeout must be a positive finite duration");
+	return Math.ceil(total);
+}
+
+function makeRunDeadline(value: string | undefined, startedAt: number): RunDeadline | undefined {
+	if (value === undefined) return undefined;
+	const budgetMs = parseDurationMs(value);
+	return { startedAt, budgetMs, deadlineAt: startedAt + budgetMs };
+}
+
+async function withinRunDeadline<T>(operation: Promise<T>, budget?: RunDeadline): Promise<T> {
+	if (!budget) return operation;
+	const remaining = budget.deadlineAt - Date.now();
+	if (remaining <= 0)
+		throw new RunTimeoutError(budget.budgetMs, Math.max(0, Date.now() - budget.startedAt));
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timeout = new Promise<never>((_, reject) => {
+		timer = setTimeout(
+			() => reject(new RunTimeoutError(budget.budgetMs, Math.max(0, Date.now() - budget.startedAt))),
+			remaining,
+		);
+	});
+	try {
+		return await Promise.race([operation, timeout]);
+	} finally {
+		if (timer !== undefined) clearTimeout(timer);
+	}
 }
 
 function removeOptions(args: string[], names: readonly string[]): string[] {
@@ -826,7 +874,7 @@ async function routeCommand(
 		.join(" ")
 		.trim();
 	if (!prompt) throw new Error("route requires a prompt");
-	const route = await resolveCliRoute(registry, store, config, args, prompt);
+	const route = await withinRunDeadline(resolveCliRoute(registry, store, config, args, prompt), budget);
 	if (args.includes("--json")) console.log(JSON.stringify(route));
 	else printRoute(route);
 }
@@ -888,6 +936,8 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 		);
 	else if (event.type === "waiting")
 		console.error(`\n[waiting] ${event.reason} until ${new Date(event.until).toISOString()}`);
+	else if (event.type === "timeout")
+		console.error(`\n[timeout] run ${event.sessionId} exceeded ${event.budgetMs}ms after ${event.elapsedMs}ms`);
 	else if (event.type === "limit")
 		console.error(
 			`[limit] ${event.entry.provider}/${event.entry.account}/${event.entry.model} ${event.entry.type} until ${new Date(event.entry.resetAt).toISOString()}`,
@@ -1054,6 +1104,8 @@ async function runCommand(
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	const startedAt = Date.now();
+	const budget = makeRunDeadline(option(args, "--timeout"), startedAt);
 	const chainValue = option(args, "--chain");
 	const modelValue = option(args, "--model");
 	if (chainValue && modelValue) throw new Error("Use only one of --chain or --model");
@@ -1077,6 +1129,7 @@ async function runCommand(
 				"--need",
 				"--context-tokens",
 				"--max-turns",
+				"--timeout",
 				"--prompt-file",
 				"--allow",
 				"--deny",
@@ -1092,15 +1145,18 @@ async function runCommand(
 	if (executableChain.length === 0)
 		throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
 	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
-	const supervisor = await createCliSupervisor(
-		registry,
-		store,
-		config,
-		["run", ...args],
-		executableChain,
-		json,
-		task,
-		route.profile.kind,
+	const supervisor = await withinRunDeadline(
+		createCliSupervisor(
+			registry,
+			store,
+			config,
+			["run", ...args],
+			executableChain,
+			json,
+			task,
+			route.profile.kind,
+		),
+		budget,
 	);
 	if (json)
 		console.log(
@@ -1115,7 +1171,7 @@ async function runCommand(
 			`[session ${supervisor.session.sessionId}] ${supervisor.activeCandidate.provider}/${supervisor.activeCandidate.account}/${supervisor.activeCandidate.model}`,
 		);
 	try {
-		const message = await supervisor.prompt(prompt, maxTurns);
+		const message = await supervisor.prompt(prompt, maxTurns, budget);
 		if (!json) process.stdout.write("\n");
 		else
 			console.log(
@@ -1385,7 +1441,9 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 }
 
 export function exitCodeFor(error: unknown): number {
-	return error instanceof ChainExhaustedError ? error.exitCode : 1;
+	if (error instanceof ChainExhaustedError) return error.exitCode;
+	if (error instanceof RunTimeoutError) return error.exitCode;
+	return 1;
 }
 
 if (import.meta.main) {
@@ -1399,6 +1457,14 @@ if (import.meta.main) {
 					message,
 					exitCode,
 					...(error instanceof ChainExhaustedError ? { reasons: error.reasons, limits: error.limits } : {}),
+					...(error instanceof RunTimeoutError
+						? {
+							kind: "timeout",
+							budgetMs: error.budgetMs,
+							elapsedMs: error.elapsedMs,
+							...(error.sessionId ? { sessionId: error.sessionId } : {}),
+						}
+						: {}),
 				}),
 			);
 		console.error(message);
