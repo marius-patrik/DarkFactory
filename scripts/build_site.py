@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import os
@@ -47,12 +48,22 @@ VARIANTS = (
 OUT = Path("out")
 SITE = Path("site")
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--allow-missing",
+    action="store_true",
+    help="build the HTML/manifest even when PDFs are absent (used by docs-only CI)",
+)
+args = parser.parse_args()
+
 SITE.mkdir(parents=True, exist_ok=True)
 
 for variant in VARIANTS:
     for key in ("final", "review"):
         source = OUT / variant[key]
         if not source.is_file():
+            if args.allow_missing:
+                continue
             raise SystemExit(f"missing generated PDF: {source}")
         shutil.copy2(source, SITE / source.name)
 
@@ -166,4 +177,4 @@ page = f"""<!doctype html>
 
 (SITE / "index.html").write_text(page, encoding="utf-8")
 (SITE / ".nojekyll").touch()
-print(f"ok: built Pages site with {len(VARIANTS) * 2} PDF links")
+print(f"ok: built Pages site definition for {len(VARIANTS) * 2} PDF links")
