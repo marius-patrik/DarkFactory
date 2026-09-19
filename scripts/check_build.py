@@ -165,6 +165,12 @@ registry_source = Path("templates/registry.typ").read_text(encoding="utf-8")
 if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = vocabulary" not in registry_source:
     fail("template registry must export the shared terminology vocabulary")
 
+terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
+if "proper: translation(" not in terms_source:
+    fail("canonical terminology must use proper/formal name records")
+if "define-term(\n    id:" in terms_source and "proper:" not in terms_source:
+    fail("legacy flat term schema detected")
+
 for path in sorted(Path("kapitoly").glob("*.typ")):
     source = path.read_text(encoding="utf-8")
     if '#term("' in source or "explanation:" in source:
