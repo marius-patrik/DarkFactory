@@ -147,9 +147,19 @@ prohlížeče. Zdroj je v `web/viewer.html`, `web/viewer.css` a
 je se všemi final/review variantami.
 
 Viewer používá PDF.js a zachovává PDF jako kanonický vizuální výstup Typstu. Nabízí
-thumbnail sidebar, plynulé stránkování, page jump, zoom, fit-width, final/review switch,
-fullscreen, světlý/tmavý režim a přímé stažení PDF.
+thumbnail sidebar, plynulé stránkování, page jump, zoom, fit-width, Raw/Review přepínání,
+synchronizovaný Raw + Review split view, fullscreen, světlý/tmavý režim a přímé stažení PDF.
 
 Oficiální UI webové aplikace Typst se zde nevkládá: není distribuováno jako
 self-hostovatelná/embeddable open-source komponenta. Experimentální Typst HTML export
 proto není produkčním viewerem této práce.
+
+
+### Klíčová slova a encyklopedie
+
+Terminologický front matter je rozdělen do dvou samostatných sekcí:
+
+- **Klíčová slova | Keywords** — pouze stručný dynamický seznam skutečně použitých termínů.
+- **Encyklopedie | Encyclopedia** — detailní záznamy stejných použitých termínů včetně českých/anglických vysvětlení.
+
+Obě sekce vznikají ze stejné deduplikované množiny použití `terms.*`. Inline hvězdičkové odkazy míří na detailní záznam v encyklopedii, nikoli na krátký seznam klíčových slov.
