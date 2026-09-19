@@ -49,6 +49,72 @@
   }
 }
 
+
+// Bilingvní hodnota je datový objekt, ne předem vysázený obsah. Stejná data lze
+// použít v anotaci, názvech sekcí i dalších překládaných částech dokumentu.
+#let translation(cs: none, en: none) = {
+  assert(cs != none or en != none, message: "translation requires at least one language")
+  (cs: cs, en: en)
+}
+
+#let resolve-language(language, school-both: false) = context {
+  if language != "auto" {
+    language
+  } else {
+    let profile = profile-state.get()
+    if profile == "cs" {
+      "cs"
+    } else if profile == "en" {
+      "en"
+    } else if profile == "school" and not school-both {
+      "cs"
+    } else {
+      "both"
+    }
+  }
+}
+
+#let translation-heading(value, language: "auto", school-both: true) = context {
+  let lang = resolve-language(language, school-both: school-both)
+  if lang == "cs" {
+    value.cs
+  } else if lang == "en" {
+    value.en
+  } else {
+    [#value.cs | #value.en]
+  }
+}
+
+#let render-translation(
+  value,
+  language: "auto",
+  school-both: true,
+  labels: false,
+  stacked: true,
+  spacing: 4pt,
+) = context {
+  let lang = resolve-language(language, school-both: school-both)
+  let part(code, body) = if labels {
+    [#language-badge(code) #h(0.35em) #body]
+  } else {
+    body
+  }
+
+  if lang == "cs" {
+    text(lang: "cs")[#part("CZ", value.cs)]
+  } else if lang == "en" {
+    text(lang: "en")[#part("EN", value.en)]
+  } else if stacked {
+    block(breakable: true)[
+      #text(lang: "cs")[#part("CZ", value.cs)]
+      #v(spacing)
+      #text(lang: "en")[#part("EN", value.en)]
+    ]
+  } else {
+    [#text(lang: "en")[#part("EN", value.en)] #h(0.5em) #text(lang: "cs")[#part("CZ", value.cs)]]
+  }
+}
+
 #let note(body) = context if review-state.get() {
   [#block(
     fill: rgb("ecfdf5"),
@@ -169,149 +235,143 @@
   new
 }
 
-#let default-terms = (
-  (
-    en: "Agent",
-    cs: "Agent",
-    explanation_en: "A software system driven by a language model and equipped with tools, capable of independently planning, observing the state of its environment, and carrying out multi-step actions toward a specified goal.",
-    explanation_cs: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného cíle.",
-  ),
-  (
-    en: "Agent Loop",
-    cs: "Agentní smyčka",
-    explanation_en: "An iterative execution cycle of an autonomous agent, based on the ReAct pattern (Reasoning + Acting), in which the model alternates between reasoning, tool calls, and evaluation of observations from the runtime environment.",
-    explanation_cs: "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.",
-  ),
-  (
-    en: "Chatbot",
-    cs: "Chatbot",
-    explanation_en: "A language-model-based system designed primarily for text interaction with a user; it responds to conversational requests but does not by itself provide an autonomous execution loop for modifying the surrounding environment.",
-    explanation_cs: "Systém založený na jazykovém modelu určený především k textové interakci s uživatelem; odpovídá na požadavky v konverzaci, ale sám o sobě neposkytuje autonomní prováděcí smyčku pro změny okolního prostředí.",
-  ),
-  (
-    en: "Context Rot",
-    cs: "Degradace kontextu",
-    explanation_en: "A practical term for degradation in a model's ability to reliably use relevant information as the context becomes long, noisy, or internally competing, which can lead to missed instructions and lost relationships between facts.",
-    explanation_cs: "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí.",
-  ),
-  (
-    en: "Embedding",
-    cs: "Vektorová reprezentace",
-    explanation_en: "A multidimensional vector representation used to encode tokens or other data so that numerical operations can capture useful relationships between representations.",
-    explanation_cs: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy.",
-  ),
-  (
-    en: "Git",
-    cs: "Git",
-    explanation_en: "A distributed version-control system for recording source-history changes, branching, merging, and returning to earlier repository states.",
-    explanation_cs: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.",
-  ),
-  (
-    en: "GitHub",
-    cs: "GitHub",
-    explanation_en: "A platform for hosting Git repositories and coordinating software-development workflows such as Issues, Pull Requests, and CI/CD automation.",
-    explanation_cs: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.",
-  ),
-  (
-    en: "Harness",
-    cs: "Řídicí harness",
-    explanation_en: "The application and orchestration layer surrounding a model's inference core; it provides tools, context management, guardrails, state handling, and control over the execution lifecycle.",
-    explanation_cs: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.",
-  ),
-  (
-    en: "Human-in-the-loop",
-    cs: "Zapojení člověka do smyčky",
-    explanation_en: "A design pattern in which a human operator remains part of the system's decision process, for example through approval gates before selected consequential actions.",
-    explanation_cs: "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací.",
-  ),
-  (
-    en: "MCP",
-    cs: "MCP",
-    explanation_en: "Model Context Protocol, an open protocol for connecting AI applications to external tools, resources, and data sources through standardized interfaces.",
-    explanation_cs: "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC.",
-  ),
-  (
-    en: "Plugins",
-    cs: "Zásuvné moduly",
-    explanation_en: "Programmatic extension modules that add specialized adapters, tools, or deterministic execution behavior to the harness runtime.",
-    explanation_cs: "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
-  ),
-  (
-    en: "Prompt Engineering",
-    cs: "Promptové inženýrství",
-    explanation_en: "The systematic design and structuring of instructions and prompts used to shape and constrain the behavior of a language model.",
-    explanation_cs: "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.",
-  ),
-  (
-    en: "Pull Request",
-    cs: "Pull Request",
-    explanation_en: "A formal proposal to integrate changes from one repository branch into another, providing a place for automated checks, human review, and discussion.",
-    explanation_cs: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách.",
-  ),
-  (
-    en: "Skills",
-    cs: "Dovednosti",
-    explanation_en: "Reusable packages of instructions, procedural rules, and optional helper resources that a harness can load into an agent's context for a particular class of task.",
-    explanation_cs: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
-  ),
-)
-
-#let term-label = <thesis-term-meta>
+#let term-use-label = <thesis-term-use>
 
 #let keyword-id(name) = "kw-" + lower(name).replace(regex("[^a-z0-9]+"), "-").trim("-")
 
-// Standardní podoba odborného termínu podle publikačního profilu.
-#let term-display(en, cs) = context {
-  let profile = profile-state.get()
-  if profile == "cs" {
-    text(lang: "cs")[#cs]
-  } else if profile == "en" {
-    text(lang: "en")[#en]
+// Konstruktor termínu. Výsledkem je plně přenositelná datová hodnota, kterou lze
+// uložit do proměnné a libovolněkrát odkazovat s různým způsobem vykreslení.
+#let define-term(
+  en: none,
+  cs: none,
+  id: none,
+  explanation_en: none,
+  explanation_cs: none,
+  keyword: true,
+) = {
+  assert(en != none, message: "term requires an English canonical name")
+  let resolved-id = if id == none { keyword-id(en) } else { id }
+  assert(resolved-id != "", message: "term id must not be empty")
+  (
+    kind: "term",
+    id: resolved-id,
+    en: en,
+    cs: if cs == none { en } else { cs },
+    explanation_en: explanation_en,
+    explanation_cs: explanation_cs,
+    keyword: keyword,
+  )
+}
+
+#let term-language(language) = context {
+  if language != "auto" {
+    language
   } else {
-    [#text(lang: "en")[#en] (#text(lang: "cs")[#cs])]
+    let profile = profile-state.get()
+    if profile == "cs" {
+      "cs"
+    } else if profile == "en" {
+      "en"
+    } else {
+      "both"
+    }
   }
 }
 
-#let bilingual-term(en, cs) = [#text(lang: "en")[#en] (#text(lang: "cs")[#cs])]
-
-/// Zavedení odborného termínu v textu.
-/// Parametr explanation zůstává kompatibilní se staršími voláními a chápe se
-/// jako české vysvětlení; nové texty mohou předat explanation_en / explanation_cs.
-#let term(name, cs: none, explanation: none, explanation_en: none, explanation_cs: none) = {
-  let id = keyword-id(name)
-  let found = default-terms.find(t => t.en == name)
-  let cs-name = if cs != none { cs } else if found != none { found.cs } else { name }
-  let en-expl = if explanation_en != none {
-    explanation_en
-  } else if found != none {
-    found.explanation_en
+#let term-name(value, language: "auto") = context {
+  let lang = term-language(language)
+  if lang == "cs" {
+    text(lang: "cs")[#value.cs]
+  } else if lang == "en" {
+    text(lang: "en")[#value.en]
+  } else if value.en == value.cs {
+    text(lang: "en")[#value.en]
   } else {
-    none
+    [#text(lang: "en")[#value.en] (#text(lang: "cs")[#value.cs])]
   }
-  let cs-expl = if explanation_cs != none {
-    explanation_cs
-  } else if explanation != none {
+}
+
+#let term-explanation(value, language: "auto", stacked: true) = context {
+  let lang = term-language(language)
+  if lang == "cs" {
+    if value.explanation_cs != none {
+      text(lang: "cs")[#value.explanation_cs]
+    }
+  } else if lang == "en" {
+    if value.explanation_en != none {
+      text(lang: "en")[#value.explanation_en]
+    }
+  } else if stacked {
+    block(breakable: true)[
+      #if value.explanation_en != none {
+        [#language-badge("EN") #h(0.35em) #text(lang: "en")[#value.explanation_en]]
+      }
+      #if value.explanation_en != none and value.explanation_cs != none { v(2pt) }
+      #if value.explanation_cs != none {
+        [#language-badge("CZ") #h(0.35em) #text(lang: "cs")[#value.explanation_cs]]
+      }
+    ]
+  } else {
+    [
+      #if value.explanation_en != none {
+        [#language-badge("EN") #h(0.25em) #text(lang: "en")[#value.explanation_en]]
+      }
+      #if value.explanation_en != none and value.explanation_cs != none { h(0.5em) }
+      #if value.explanation_cs != none {
+        [#language-badge("CZ") #h(0.25em) #text(lang: "cs")[#value.explanation_cs]]
+      }
+    ]
+  }
+}
+
+// Jediný renderer všech použití termínu.
+// render: "term" | "explanation" | "both"
+// language: "auto" | "cs" | "en" | "both"
+// register=true přidá použitý termín do dynamického seznamu klíčových slov.
+#let term(
+  value,
+  render: "term",
+  language: "auto",
+  register: true,
+  linked: true,
+  marker: true,
+  emphasized: true,
+  explanation-stacked: false,
+  separator: [ — ],
+) = context {
+  assert(value.kind == "term", message: "term() expects a value created by define-term()")
+  assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
+  assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
+
+  if register and value.keyword {
+    [#metadata(value) #term-use-label]
+  }
+
+  let name = term-name(value, language: language)
+  let displayed-name = if emphasized { [_*#name*_] } else { name }
+  let referenced-name = if linked {
+    link(label("kw-" + value.id))[#displayed-name]
+  } else {
+    displayed-name
+  }
+  let with-marker = if marker and render != "explanation" {
+    [#referenced-name#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[★]]
+  } else {
+    referenced-name
+  }
+  let explanation = term-explanation(value, language: language, stacked: explanation-stacked)
+
+  if render == "term" {
+    with-marker
+  } else if render == "explanation" {
     explanation
-  } else if found != none {
-    found.explanation_cs
   } else {
-    none
+    [#with-marker#if explanation != none { [#separator#explanation] }]
   }
-
-  if en-expl != none or cs-expl != none {
-    [#metadata((
-      name: name,
-      cs: cs-name,
-      explanation_en: en-expl,
-      explanation_cs: cs-expl,
-      id: id,
-    )) #term-label]
-  }
-
-  link(label(id))[_*#term-display(name, cs-name)*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[★]]
 }
 
 #let kw = term
+#let render-term = term
 
 #let language-badge(code) = text(
   size: 8.5pt,
@@ -319,57 +379,70 @@
   fill: rgb("#475569"),
 )[[#code]]
 
-#let keyword-heading() = context {
-  let profile = profile-state.get()
-  if profile == "cs" {
-    [Klíčová slova]
-  } else if profile == "en" {
-    [Keywords]
-  } else {
-    [Klíčová slova | Keywords]
+#let used-terms() = context {
+  let items = ()
+  for entry in query(term-use-label) {
+    let value = entry.value
+    if value.keyword and not items.any(item => item.id == value.id) {
+      items.push(value)
+    }
   }
+  items.sorted(key: item => lower(item.en))
 }
 
-#let keyword-name(item) = context {
-  let profile = profile-state.get()
-  if profile == "cs" {
-    text(lang: "cs")[#item.cs]
-  } else if profile == "en" {
-    text(lang: "en")[#item.en]
-  } else {
-    bilingual-term(item.en, item.cs)
-  }
-}
-
-/// Jeden renderer terminologického přehledu pro všechny profily.
+// Dynamický terminologický přehled: pouze termíny skutečně použité v dané
+// kompilaci, deduplikované podle stabilního id.
 #let render-keywords() = context {
-  let profile = profile-state.get()
-  let items = default-terms.sorted(key: t => lower(t.en))
+  let items = used-terms()
 
-  text(size: 11pt)[
-    #items.map(t => keyword-name(t)).join([, ])
-  ]
-
-  v(12pt)
-
-  for item in items {
-    let id = keyword-id(item.en)
-    block(
-      breakable: false,
-      above: 6pt,
-      below: 7pt,
-      width: 100%,
-    )[
-      #text(weight: "bold", size: 11pt)[#keyword-name(item)] #label(id) \
-      #v(2pt)
-      #if profile in ("school", "merged", "en") {
-        [#language-badge("EN") #h(0.35em) #text(lang: "en", size: 10pt)[#item.explanation_en]]
-      }
-      #if profile in ("school", "merged") { [\ #v(1pt)] }
-      #if profile in ("school", "merged", "cs") {
-        [#language-badge("CZ") #h(0.35em) #text(lang: "cs", size: 10pt)[#item.explanation_cs]]
-      }
+  if items.len() == 0 {
+    [—]
+  } else {
+    text(size: 11pt)[
+      #items.map(item => term(
+        item,
+        render: "term",
+        language: "auto",
+        register: false,
+        linked: false,
+        marker: false,
+        emphasized: false,
+      )).join([, ])
     ]
+
+    v(12pt)
+
+    for item in items {
+      block(
+        breakable: false,
+        above: 6pt,
+        below: 7pt,
+        width: 100%,
+      )[
+        #text(weight: "bold", size: 11pt)[
+          #term(
+            item,
+            render: "term",
+            language: "auto",
+            register: false,
+            linked: false,
+            marker: false,
+            emphasized: false,
+          )
+        ] #label("kw-" + item.id) \
+        #v(2pt)
+        #term(
+          item,
+          render: "explanation",
+          language: "auto",
+          register: false,
+          linked: false,
+          marker: false,
+          emphasized: false,
+          explanation-stacked: true,
+        )
+      ]
+    }
   }
 }
 
