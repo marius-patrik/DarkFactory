@@ -87,7 +87,7 @@ Klíčové mechanismy ochrany zahrnují:
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
-== #finalized[LLM, chatboti a agenti]
+== #finalized[#term(terms.language_model, name-type: "industry", language: "en", marker: false, linked: false, emphasized: false), chatboti a agenti]
 
 #blue-note[
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
@@ -220,7 +220,7 @@ Srovnání obou přístupů:
 ]
 
 #unconfirmed[
-=== Agentní smyčka a prováděcí cyklus ReAct
+=== #diff[Agentní smyčka a prováděcí cyklus ReAct][#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]
 
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého řídicího harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
