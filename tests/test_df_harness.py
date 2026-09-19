@@ -228,6 +228,22 @@ class TestDfPromptFile:
         assert seen["prompt"] == "the exact prompt" + agent_runner.ANSWER_CONTRACT
         assert not os.path.exists(seen["path"]), "the prompt file must be removed"
 
+    def test_explicit_review_kind_survives_specialized_prompt_vocabulary(self, monkeypatch):
+        """Quoted feature vocabulary cannot override the stage kind declared by the pipeline."""
+        seen = {}
+
+        def fake_run(argv, **kwargs):
+            seen["argv"] = list(argv)
+            return subprocess.CompletedProcess(
+                argv, 0, stdout=_stream({"type": "text_delta", "delta": "reviewed"}), stderr=""
+            )
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        prompt = "Review this implementation plan: create an illustration and generate a video clip."
+        assert agent_runner.run_agent_prompt(prompt, kind="review") == "reviewed"
+        assert seen["argv"][-2:] == ["--kind", "review"]
+
+
     def test_a_json_answer_after_tools_is_returned(self, monkeypatch):
         """End to end: event stream in, final text out."""
 
