@@ -1,382 +1,557 @@
-# DarkFactory — Canonical Completion Plan
+# DarkFactory — Canonical Optimized Completion Plan
 
 ## Purpose
 
-This document is the single cross-Request execution plan for completing `marius-patrik/DarkFactory`.
+This is the single cross-Request execution plan for completing DarkFactory.
 
 It defines:
 
-- the final product state;
-- cross-Request dependencies and execution order;
-- recovery-work ownership;
-- production-cutover, release, fleet-migration and final-acceptance gates.
+- the final product and architecture;
+- the optimized dependency model;
+- recovery-work ownership and reconciliation;
+- the earliest safe self-hosting cutover;
+- package/capability, docs, web, auth and release convergence;
+- fleet migration and final acceptance.
 
-It does **not** duplicate live workflow state, per-Request implementation detail, or transient checkpoints. GitHub Requests, PRs and Actions remain the source for current execution status.
+It deliberately does **not** store workflow run IDs, transient PR heads, current step names or checkpoint diaries. GitHub issues, PRs and Actions are the source of live execution status.
 
 **Canonical branch:** `darkfactory`  
-**Parent completion Request:** #68  
-**Final fleet acceptance Request:** #361
+**Parent completion Epic:** #68  
+**Final fleet acceptance:** #361
 
 ---
 
 ## 1. Source-of-truth hierarchy
 
-Use the following order when information differs:
+When sources differ, use this order:
 
-1. The current Request body defines the requested behavior and explicit acceptance criteria.
-2. The latest owner-finalized `darkfactory-final-planning` / `darkfactory-plan` record for that Request defines its approved implementation interpretation.
-3. This document defines cross-Request sequencing, program-wide invariants and completion gates.
-4. GitHub issue/PR/Actions state defines what is running, blocked, merged or failed **right now**.
+1. Current owner-approved product requirements in `PRD.md`.
+2. Current Request body and explicit acceptance criteria.
+3. Accepted ADRs under `.agents/notes/adr/`.
+4. Latest owner-finalized Planning for the affected Request.
+5. This file for cross-Request sequencing, optimization, recovery ownership and final gates.
+6. GitHub issue/PR/Actions state for live execution status.
 
-`PLAN.md` must not contain workflow run IDs, observed step names, temporary branch heads, “checkpoint supersedes…” sections, or other execution diary material. Those facts age too quickly and belong in GitHub state.
-
-All completion Requests were planning-finalized before execution. If a Request body, accepted behavior, recovery input or dependency contract materially changes, re-review only that Request. Discovery of the concrete current-tree owner for already-approved behavior does not by itself invalidate Planning.
-
-No manual product implementation is authorized as a workaround around the DarkFactory pipeline.
+Material product/architecture changes update PRD/ADR/Request state before implementation. Concrete current-tree ownership discovered during implementation does not invalidate Planning unless behavior or architecture changes.
 
 ---
 
-## 2. Current durable baseline
+## 2. Optimization rules
 
-The following durable facts define the starting point for the remaining program:
+The program was previously over-serialized. The following rules are now explicit.
 
-- #414 restored the default-branch bootstrap/CI baseline through merged PR #415 and is terminal.
-- #413 is the first unresolved bootstrap dependency: the legacy stage owner must forward the stage's already-known semantic kind into `df run --kind`.
-- #365 remains downstream of #413 and owns TypeScript inference when a caller does not declare a kind.
-- #340 remains open. Draft PR #407 is an implementation artifact, not accepted completion; it must not merge until the routing bootstrap is corrected and its broad/out-of-scope changes are reconciled.
-- The TypeScript graph exists but production is still dual-engine: `agent.yml` still delegates through Python, `df-dispatch.yml` is still shadow-mode, `bin/darkfactory` still launches Python, release/install remain Python-driven, and production shell/`gh` mutation paths still exist.
-- The hard-transition contract is not yet repository-wide: graph/runtime state still includes `.df/` directory semantics and JSON run-state persistence.
-- The published harness package is still `0.0.0`, private, and points its `df` bin at TypeScript source.
-- The preserved `recovery/*` branches remain available and are governed inputs, not permission to bypass the normal Request lifecycle.
+### 2.1 Start-work dependencies are not merge dependencies
 
-This section contains only durable program facts. Live execution state must be read from GitHub.
+A Request may begin analysis, recovery reconciliation, implementation or testing before every downstream interface is merged when:
+
+- its behavioral contract is settled;
+- its work can be isolated on a branch/worktree;
+- unresolved interfaces are named rather than guessed;
+- final merge waits for the interfaces it actually consumes.
+
+Only mutable-base conflicts or real interface uncertainty justify idle waiting.
+
+### 2.2 Merge dependencies are not final-acceptance dependencies
+
+A feature does not need every future product surface to exist before it can merge. Final fleet/release acceptance may require capabilities that are not prerequisites for an earlier core cutover.
+
+### 2.3 Recovery work is implementation, not archaeology
+
+The preserved September branches are already durable. They may be inspected, rebased, decomposed and reconciled immediately. Full productized #388 recovery is **not** a prerequisite for consuming already-preserved recovery branches.
+
+Recovered work is the starting implementation where still valid. Do not regenerate finished work from clean trunk merely because its old source path changed.
+
+### 2.4 Integrate recovered work into final homes
+
+The package/capability foundation lands before bulk recovery merge. Recovered TypeScript work is adapted directly into final packages/capabilities instead of first being merged into the monolithic `harness/` tree and migrated again.
+
+### 2.5 Self-host early
+
+The main acceleration target is #359. DarkFactory should become the production engine as soon as the **core Request lifecycle** is reliable. Features such as final docs/web polish, stacked PRs, full recovery productization, TUI, Epic UX and final release polish should then be completed through the real df-native pipeline.
+
+### 2.6 Temporary bootstrap-authoring exception
+
+Until #359 is complete, a narrowly-scoped direct patch may be authored when the current pipeline defect prevents the pipeline from correctly implementing its own bootstrap repair.
+
+This exception:
+
+- applies only to bootstrap/architecture convergence required to make df self-hosting;
+- never skips a Request, Planning, tests, independent review, owner approval or PR/check/merge gate;
+- never permits bypassing recovery provenance;
+- must not become a normal implementation path;
+- expires permanently when #359 closes.
 
 ---
 
-## 3. Final product contract
+## 3. Final architecture
 
-DarkFactory is complete only when all of these are true together:
+### 3.1 Bun workspace
 
-1. `df` is the sole production orchestration and mutation engine.
-2. The legacy Python automation is not required or invoked by normal production operation.
-3. Production GitHub mutations use typed df-owned interfaces; subprocess/shell `gh` mutation paths are gone.
-4. The declared graph executes the real Request lifecycle through production handlers, including persisted interruption/resume.
-5. `repo.df` and `config.df` obey the #340 hard transition: `.darkfactory/<name>.df` or root `<name>.df`, both-present is an error, legacy paths are not read, and `.df` is a filename extension rather than a directory.
-6. Df-managed config/state/result/review/audit artifacts use canonical `.df` filenames with no final JSON/JSONL compatibility aliases.
-7. Pipeline stages preserve explicit stage semantics; undeclared callers infer task capabilities from what the current step must do rather than feature nouns.
-8. Every df-backed agent stage has one bounded elapsed-time budget across failover and tools, with typed timeout/cancellation outcomes and deterministic recovery.
-9. Natural model stop is valid completion; mutation truth is derived from engine-observed effects rather than mandatory submit/JSON rituals or model claims.
-10. Recovery intake, deterministic git/rebase/conflict handling, hooks, detected quality, Request/Epic relationships and stacked PRs are first-class df behavior rather than parallel subsystems.
-11. The supported CLI/TUI/dashboard/docs surface reflects one current command/state/provider model.
-12. The release artifact is publishable and installable without Python, a DarkFactory source checkout, or Bun on the npm execution path.
-13. All six intended consumer repositories are migrated by released `df`, not by manual file copying, and pass final drift/governance checks.
-14. Documentation, README/PRD, ADRs/notes, rules, generated API docs, dashboard and packaged assets describe the shipped system.
-15. `audit.df` independently records the accepted final state.
-16. #361 closes green.
-17. The original #68 declarable-graph acceptance criteria are re-run against the final installed system and pass.
-18. Only then is #68 closed.
+DarkFactory becomes a root Bun workspace with these first-party packages:
 
-A merged PR, closed Request or green unit suite is evidence toward these conditions, not a substitute for them.
+- `@darkfactory/protocol` — browser/runtime-safe schemas, serialized contracts and cross-surface types;
+- `@darkfactory/core` — execution kernel, graph/run state, provider/router machinery, config resolution and capability loading;
+- `@darkfactory/capability` — capability ABI, loader and deterministic adapter/build tooling;
+- `@darkfactory/github` — typed GitHub REST/GraphQL substrate with browser/server-safe entrypoints;
+- `@darkfactory/keychain` — all machine/harness credential custody and authentication;
+- `@darkfactory/auth` — human/browser GitHub App authentication and web sessions;
+- `@darkfactory/docs` — headless documentation compiler/content graph;
+- `@darkfactory/cli` — `df` executable, command composition and TUI ownership;
+- `@darkfactory/web` — the only first-party web renderer/application.
+
+The old `@darkfactory/harness` may exist only as a temporary migration shim and is removed before final release.
+
+### 3.2 Core mechanisms versus capabilities
+
+Core owns mechanisms. Agentic/product behavior lives in first-class versioned capabilities under root `capabilities/`.
+
+Initial capability set includes at least:
+
+- code;
+- paper;
+- math;
+- docs;
+- git;
+- github;
+- planning;
+- review;
+- ci;
+- release;
+- recovery;
+- hooks;
+- epics;
+- stacks.
+
+Each capability uses one canonical TypeScript definition and may contribute detection/setup, tools, commands, graph behavior, deterministic actions, verification, hooks, docs, web surfaces, release outputs and audit metadata.
+
+Supported integration artifacts are generated from that canonical definition, including native DarkFactory, Pi ExtensionAPI, standalone MCP server and supported Claude/Codex/agent skill/plugin forms. No independent handwritten implementation per harness.
+
+### 3.3 Domains remain separate from capabilities
+
+The existing semantic model remains:
+
+`ecosystem -> package -> domain`
+
+with first-class multi-domain repositories.
+
+Initial semantic domains include `code`, `paper` and `math`. Capabilities are orthogonal; for example `docs`, `git` or `review` may apply across multiple domains.
+
+### 3.4 Configuration
+
+- `repo.df`: repository/product declaration and final #340 repository contract.
+- `config.df`: runtime/user/provider configuration and final #340 runtime contract.
+- `docs.df`: native DarkFactory documentation configuration.
+- `properdocs.yml` and `mkdocs.yml`: accepted compatibility inputs to the docs compiler, not final runtime dependencies.
+
+A `.df` suffix is a file extension, never a directory convention.
+
+### 3.5 Credentials and authentication
+
+`@darkfactory/keychain` is the only machine/harness credential owner. It covers secure storage, encrypted fallback, environment/import sources, provider OAuth/API keys, refresh/rotation, multi-account slots, borrowed CLI credentials, GitHub App private-key/JWT/installation-token flows, CLI-side user credentials, redaction, secret scanning and credential diagnostics.
+
+Capabilities declare credential requirements and receive scoped handles; they do not read raw credential files, environment variables or OS keychains directly.
+
+`@darkfactory/auth` separately owns human/browser GitHub App login, PKCE/state, confidential exchange/refresh broker integration, session restoration and logout/revocation. Browser artifacts cannot import keychain/private-key code.
+
+### 3.6 Documentation and README
+
+`@darkfactory/docs` replaces ProperDocs/MkDocs as the execution engine and produces one typed content graph from canonical prose, ADRs/rules, real TypeScript/TSDoc API extraction, capability docs, repository/graph/workflow metadata and other supported package extractors.
+
+TypeDoc may remain an internal TypeScript extractor.
+
+The same semantic homepage source renders:
+
+- the docs home page; and
+- committed `README.md` Markdown.
+
+CI fails on deterministic README projection drift.
+
+### 3.7 Web UI
+
+`@darkfactory/web` is one prebuilt React/TypeScript application released by DarkFactory and reused unchanged by every consumer.
+
+Preferred UI stack:
+
+- React + TypeScript;
+- shadcn/ui;
+- lucide-animated;
+- Motion;
+- Dagre;
+- Wouter;
+- Dockview only where a docking/workspace surface materially benefits from it.
+
+Consumers compile repository-specific content/data only; they do not rebuild the React application.
+
+The app is hosted on GitHub Pages and remains dynamic by reading live GitHub REST/GraphQL state through browser-safe GitHub/auth packages.
+
+DarkFactory Web is the primary day-to-day operator UI. GitHub remains the durable control plane, authorization authority and event bus; normal DarkFactory operation should not require using the github.com UI except where GitHub itself requires a consent/review surface.
+
+A minimal auth broker performs confidential GitHub App user-token exchange/refresh only. It is not a DarkFactory backend, state store or execution API.
 
 ---
 
-## 4. Execution protocol for every Request
+## 4. Final product invariants
 
-Before releasing a Request into implementation:
+DarkFactory is complete only when all of these are true:
 
-1. Re-fetch the current Request and its latest owner-finalized Planning.
-2. Confirm all dependencies in the work map below are terminal or the named recovery milestone is satisfied.
-3. Confirm any required recovery source and its exact provenance.
-4. Resolve the current canonical base/default branch dynamically.
-5. Re-review Planning only if behavior, scope, recovery input or dependency contracts materially changed.
-6. Release the normal pipeline gate (`/df approve` or its final equivalent).
-7. Keep implementation, detected verification, review/fix, scope-amendment handling, final alignment, checks and merge inside the governed pipeline.
-8. Update recovery/provenance/board/run state from the pipeline result.
-9. Close the Request only when its own acceptance criteria are actually satisfied.
+1. `df` is the sole production orchestration/mutation engine.
+2. Normal production does not require legacy Python orchestration.
+3. Production GitHub mutations use typed df-owned GitHub interfaces; shell/subprocess `gh` mutation is gone.
+4. The graph runs the real Request lifecycle with durable interruption/resume.
+5. The final #340 `repo.df`/`config.df`/`.df` hard transition is repository-wide.
+6. The package/capability architecture in ADR-0017 is the shipped ownership model.
+7. Official capabilities are versioned/loadable and representative generated adapters are proven.
+8. Pipeline stages preserve explicit task semantics; undeclared inference does not confuse task subject with required capability.
+9. Every agent stage has one bounded elapsed-time budget across failover/tools.
+10. Natural model stop is accepted; mutation truth comes from observed effects, not model claims or mandatory submit JSON.
+11. Keychain is the sole machine credential owner; auth is the sole browser/human login owner.
+12. Recovery, git, hooks, quality, Epic/Request and stack behavior are first-class capabilities or shared mechanisms, not parallel systems.
+13. Docs are compiled by `@darkfactory/docs`, contain actual TypeScript API documentation, and README is a deterministic projection of the same content source.
+14. The shared `@darkfactory/web` release runs on GitHub Pages across consumers without per-repo frontend rebuild.
+15. The operator surfaces (CLI/TUI/web/docs) consume one protocol/state/capability model.
+16. First-party packages/capabilities publish under the planned `darkfactory` GitHub organization with lockstep product SemVer initially and a separate capability ABI version.
+17. Release assets include the CLI/runtime, capability artifacts/adapters and prebuilt web bundle required by the shipped product.
+18. All six intended consumers migrate using released df, not manual copy-based installation.
+19. `audit.df` independently proves final state.
+20. #361 is green and the original #68 graph contract passes against the installed release.
 
-Where an existing PR/branch is mentioned as recovery evidence, the pipeline may repair, restack or replace it. The master requirement is preservation of valid authorized work plus an explicit disposition of anything rejected or superseded.
+A merged PR, closed issue or passing unit suite is evidence, not final acceptance by itself.
 
 ---
 
 ## 5. Recovery ledger
 
-These preserved branches are already accounted for and must keep the following ownership/disposition:
+The preserved branches remain authoritative recovery inputs:
 
-| Recovery source | Owner / disposition |
+| Recovery source | Final owner / disposition |
 |---|---|
-| `recovery/pr-376-clean` | #340 recovery/provenance input |
-| `recovery/f48-layout` | #340 recovery/provenance input |
-| `recovery/f28-dispatch` | Historical #242 provenance only; no unique valid implementation remains |
-| `recovery/f14-borrowed-refresh` | #248; unique F14 delta must receive a governed disposition |
+| `recovery/pr-376-clean` | #340 / package-convergence input |
+| `recovery/f48-layout` | #340 / #420 convergence input |
+| `recovery/f28-dispatch` | Historical #242 provenance; no unique valid implementation |
+| `recovery/f14-borrowed-refresh` | #248 -> #422 keychain owner |
 | `recovery/f40-capability-tiers` | #331 |
-| `recovery/f38-result-capture` | #329, only after #331 |
-| `recovery/f42-tsdoc` | #334 multi-source recovery |
-| `recovery/f42-tsdoc-w2` | #334 multi-source recovery |
-| `recovery/f42-tsdoc-w3` | #334 multi-source recovery |
-| `recovery/f42-tsdoc-w4` | #334 multi-source recovery |
-| `recovery/f44-readme-prd` | #336 |
+| `recovery/f38-result-capture` | #329 |
+| `recovery/f42-tsdoc` | #334 -> #424 docs package |
+| `recovery/f42-tsdoc-w2` | #334 -> #424 docs package |
+| `recovery/f42-tsdoc-w3` | #334 -> #424 docs package |
+| `recovery/f42-tsdoc-w4` | #334 -> #424 docs package |
+| `recovery/f44-readme-prd` | #336 -> final hooks/docs owners |
 | `recovery/f45-adrs` | #337 |
-| `recovery/f47-hooks` | #339 |
-| `recovery/f49-detected-quality` | #341 migration evidence/seed |
-| `recovery/d4-docs-generator` | #335 |
-| `recovery/fix-empty-agent-output` | Provenance only; no unique work remains |
+| `recovery/f47-hooks` | #339 -> hooks capability |
+| `recovery/f49-detected-quality` | #341 migration seed |
+| `recovery/d4-docs-generator` | #335/#424 |
+| `recovery/fix-empty-agent-output` | Provenance only; fully subsumed |
 
-Additional holds:
+Additional recovery work:
 
-- **#251 TUI:** search surviving Git history/session/recovery evidence before implementation. Import unique state through #388 or record an explicit no-unique-state disposition.
-- **#358 F30-4:** perform the same discovery before #358. Import unique state through #388 or record an explicit no-unique-state disposition.
-- **#365 rejected branch / PR #366:** evidence only. Reuse exact useful deltas only after reconciling them against the finalized #365 contract.
-- **F28:** retain as provenance; do not reopen #242 solely for the historical test difference.
-- **F14:** the preserved unique commit is `ffe1f0f`; #248 must not close without a terminal governed disposition for that delta.
+- #251: find/preserve exact prior TUI state before replacement implementation.
+- #358: find/preserve any unique F30-4 orchestration state.
+- #365 PR #366: evidence only; reuse only compatible deltas.
 
-Every governed intake records source/ref/snapshot, recovery SHA, canonical base, target Request(s), Planning identity, imported-state hash, secret-scan result, overlap and reconciliation result.
+Every recovered source receives an explicit integrated/superseded/rejected disposition before #361.
 
----
-
-## 6. Authoritative work map
-
-This table replaces the old duplicated phase list, dependency diagram, wave list and immediate-action section. Each open completion Request appears once here.
-
-| Order | Request(s) | Requires | Program role / exit condition |
-|---|---|---|---|
-| A1 | #413 | #414 terminal | Forward the current pipeline stage's existing semantic kind into `df run --kind` without a second router or policy table. |
-| A2 | #365 | #413 | Fix undeclared-caller stage-vs-subject inference in TypeScript while preserving deterministic direct artifact intent and sensitivity rules. |
-| A3 | #340 | #413, #365 | Finish the `repo.df` / `config.df` / `.df` hard transition. If PR #407 remains the implementation artifact, restack/reconcile it, remove unrelated formatter sweep, make checks/review/alignment green, then merge governedly. |
-| A4 | #406 | #340 | Add one df-native elapsed-time budget per logical stage/run, including failover/tools; bootstrap Python forwards the same budget until #359 removes it. |
-| A5 | #391 | #406 | Complete the durable unified Planning + review/fix lifecycle, structured context/provenance/staleness, persistence/resume and final alignment using #340-compliant state. |
-| A6 | #388 early milestone | #391 | Make governed recovery intake/provenance production-usable before recovery-heavy Requests proceed; #388 stays open until its full contract is later proven. |
-| B1 | #248 | #388 early + F14 intake | Governedly reconcile the unique borrowed-credential refresh recovery delta with current account/provider contracts. |
-| B2 | #331 | #388 early + F40 intake | Complete capability tiers, minimum-tier routing, single-step escalation/reset and diagnostics. |
-| B3 | #341 | #340 + #388 early + F49 intake | Establish one TypeScript detector/quality contract used by doctor, CI, protection, verification and docs. |
-| B4 | #252 | #365 | Complete Gemini image/video generation using the live provider/account/routing system; engineering work about modalities must remain ordinary engineering. May run in parallel with other post-#365 lanes. |
-| C1 | #329 | #331 + #388 early + F38 intake | Complete natural-stop result capture and engine-observed mutation truth under normal routing/sensitivity/quota rules. |
-| C2 | #334 | #341 + #388 early + F42/W2/W3/W4 intake | Reconcile recovered TSDoc against current exports and produce a strict single generated API source. |
-| C3 | #339 | #341 + #388 early + F47 intake | Establish one df hook/rule engine reused locally, in lanes and in CI. |
-| C4 | #335 | #334 + #341 + #388 early + D4 intake | Publish the harness API and architecture from the same detector/generated API source. |
-| C5 | #358 | #329 + #331 + #391 + F30-4 discovery/disposition | Make graph handlers/orchestration production-real: agent/automation/check/gate effects, exactly-once resume, review/fix, alignment and final persistence. |
-| C6 | #332 | #358 + #329 + #331 | Add safe parallel fine-grained chunks with isolated worktrees, ordered merge-back, failure isolation and persisted resume. |
-| D1 | #384 | #358 + #339 | Complete the deterministic git/rebase/conflict/continue/abort substrate with dirty-tree protection and lease-safe updates. |
-| D2 | #317 | #384 + #358 + #341 + #339 | Use the deterministic substrate for branch repair and reject false code-change claims from observed effect evidence, not keywords. |
-| D3 | #385 | #358 | Complete the first-class Epic/Request relationship graph and deterministic reconciliation. |
-| D4 | #386 | #384 + #358 + #385 + #339 | Complete stacked PR topology, restack/retarget, dependency-aware merge order, conflict resume and audit semantics. |
-| D5 | #388 full | #391 + #358 + #384 + #339 + #385 + #386 | Prove the complete governed recovery product with at least one real preserved recovery lane through intake -> Planning -> implementation -> review/fix -> alignment -> merge -> terminal provenance. |
-| E1 | #359 | #340 + #406 + #391 + #331 + #329 + #358 + #332 + #341 + #339 + #384 + #317 + #385 + #386 + #388 full | Cut all production mutation/orchestration over to df, activate the real graph, retire Python and shell/`gh` production mutation, and prove a live df-only lifecycle plus persisted resume. |
-| F1 | #403 | #359 + #341 | Establish the complete supported operator command surface and one command registry/source of truth. |
-| F2 | #251 | #403 + #359 + TUI discovery/disposition | Build the TUI on the shared command registry and final provider/quota/CI APIs; bare interactive `df` enters the TUI while non-DarkFactory invocations still coexist correctly with system `df(1)`. |
-| F3 | #390 | #251 + #335 + #341 + #359 | Complete the dashboard/web-UI foundation without duplicating provider/quota/state engines or exposing secrets. |
-| F4 | #336 | #339 + #341 + product/runtime surfaces materially final + F44 intake | Enforce docs impact in the real hook/detector owners and rewrite/fact-check README/PRD against shipped reality. |
-| F5 | #337 | architecture/product surfaces materially final + F45 intake | Reconcile notes/ADRs, preserve history, mark superseded decisions and eliminate normative contradictions. |
-| G1 | #360 | All product/engine/docs Requests above terminal, including #248/#251/#252/#317/#329/#331/#332/#334/#335/#336/#337/#339/#340/#341/#358/#359/#365/#384/#385/#386/#388/#390/#391/#403/#406/#413 | Publish/install the final supported df artifact and prove clean-machine install/update and packaged runtime behavior. |
-| G2 | Fleet migration | #360 | Migrate all five non-DarkFactory consumers with the released artifact and re-check DarkFactory itself. Prove idempotency by running install/update twice. |
-| G3 | #361 | Fleet migration | Run the six-repository acceptance/audit, produce internally consistent `audit.df`, and close only when every program acceptance condition is green. |
-| G4 | #68 | #361 | Re-run the original declarable-graph contract against the final installed system; close only with no required child, unexplained recovery work/PR or legacy alternate production engine. |
-
-Dependency rules are authoritative from this table. Work may run in parallel only when its complete `Requires` set is satisfied and concurrent work does not invalidate the same mutable base/artifact.
+Recovery analysis/reconciliation may proceed immediately. A branch's **merge** waits only for the interfaces it actually consumes.
 
 ---
 
-## 7. Boundary contracts
+## 6. Optimized execution program
 
-### 7.1 #340 hard-transition boundary
+### Wave 0 — planning and architecture convergence
 
-Before any later runtime/release work may treat naming/storage as stable:
+Already authorized:
 
-- one resolver owns `repo.df` and `config.df`;
-- `.darkfactory/<name>.df` then root is the only supported location pair;
-- both-present is an error;
-- old manifest/config paths are not read;
-- `.df/` directory semantics are gone;
-- df-owned run/result/review/config/state artifacts use `.df` filenames in their actual owning locations;
-- repository-wide search/tests prove no compatibility alias reads or stale installer/runtime/docs behavior.
+- #420 package/workspace split;
+- #421 capability ABI/adapters;
+- #422 keychain;
+- #423 browser auth;
+- #424 docs engine/content graph/README projection;
+- #425 shared web control surface.
 
-### 7.2 #391 lifecycle boundary
+ADRs 0017–0020 define the durable architectural decisions.
 
-The final lifecycle is:
+### Wave 1 — bootstrap repair and package foundation
 
-Request/context resolution -> Planning draft -> Planning Review -> automatic planning fix/re-review until clean -> one owner Planning gate -> implementation -> deterministic verification -> implementation review/fix loop -> scope-amendment gate only when needed -> final alignment -> checks -> final merge gate -> merge/reconciliation.
+Work starts in parallel:
 
-Planning and implementation review should share generic machinery where semantics are genuinely common rather than creating duplicate engines.
+- **#413**: replace malformed/stale implementation with the narrow stage-kind bridge; no Python task taxonomy.
+- **#365**: prepare the TypeScript undeclared-inference fix; merge after #413.
+- **#420**: build root Bun workspace and package boundaries on a branch; merge after immediate bootstrap branches are stable enough to avoid unnecessary conflict.
+- **#421**: design/implement the minimum capability ABI and loader against #420; full adapter breadth may continue later.
+- **#340**: rebuild/reconcile a clean hard-transition branch from current trunk + valid PR407/PR376/F48 input instead of preserving unrelated sweep history.
+- **#406**: implement elapsed-time budgeting concurrently and rebase onto final core ownership.
+- **#391**: continue unified Planning/review lifecycle implementation concurrently; final merge waits for final state ownership.
 
-### 7.3 #388 recovery boundary
+The objective is to eliminate bootstrap defects and establish final homes before mass recovery landing.
 
-Early #388 is an intake/provenance prerequisite; full #388 is a product acceptance gate.
+### Wave 2 — mass recovery reconciliation
 
-The full live recovery proof must demonstrate:
+As soon as #420 package boundaries and #421 ABI shapes are concrete enough, prepare all recovery lanes concurrently:
 
-recovery provenance -> Request binding -> current Planning context -> reviewed Planning -> execution release -> imported implementation reconciliation -> verification -> review/fix iteration(s) -> optional scope amendment -> final alignment -> checks/review/merge -> terminal provenance.
+- F14 -> #422/#248;
+- F40 -> #331;
+- F38 -> #329;
+- F42 x4 -> #334/#424;
+- F44 -> #336;
+- F45 -> #337;
+- F47 -> #339;
+- F49 -> #341;
+- D4 -> #424/#335;
+- TUI recovery -> #251;
+- F30-4 discovery -> #358.
 
-Recovered bytes never silently bypass gates or overwrite secrets, and stale Planning approval cannot be reused after material imported-state change.
+Preparation includes rebase/diff, overlap analysis, test execution and adaptation into final package/capability locations. It does not wait for #388 full productization.
 
-### 7.4 #359 production-cutover boundary
+### Wave 3 — core self-hosting chain
 
-Immediately before cutover, derive a fresh mutation ledger from the **then-current** tree. It must cover at least:
+These are the **merge gates** for the earliest safe #359 cutover:
 
-- Request intake and comments;
-- Planning/review/gates;
-- agent/implementation dispatch;
-- PR create/update;
-- branch repair;
-- implementation review/fix;
-- check waiting;
-- merge/issue closure;
-- board/project reconciliation;
-- quota checkpoint/resume;
-- failure reporting;
-- repository settings/protection;
-- workflow install/update;
-- install/update and release mutations that remain coupled.
+1. #413
+2. #365
+3. #420 package foundation
+4. #421 minimum capability ABI/loader
+5. #340 final file/config/state naming
+6. #406 bounded runtime
+7. #391 durable unified Planning/review lifecycle
+8. #422 keychain core migration sufficient for production credentials
+9. #331 capability-tier routing
+10. #329 natural-stop result capture
+11. #341 normalized detection + capability-action resolution needed by production verification
+12. #358 production graph handlers/resume
+13. #317 truthful branch-repair/answer path
+14. **#359 production cutover**
 
-For each mutation record trigger, legacy owner, permissions, side effects, final df owner, unit/integration proof, live proof and deletion/retention rationale.
+#248 may complete alongside #422; its F14 behavior must have a terminal disposition before final release. #252 may proceed in parallel after #365/#421.
 
-Do not delete a legacy mutation owner before replacement proof. Close #359 only after:
+### #359 cutover definition
 
-- `df-dispatch` (or its final renamed equivalent) is the sole mutating production dispatcher;
-- the production graph executes real handlers;
-- normal production no longer depends on Python orchestration;
-- production shell/subprocess GitHub mutation is gone;
-- a live df-only Request lifecycle passes;
-- a persisted interruption/quota-resume case passes.
+#359 no longer waits for #332, #384, #385, #386, #388 full, TUI, docs/web or final release polish unless a concrete core lifecycle dependency is discovered.
 
-Any Python retained after #359 must be explicitly non-mutating, non-orchestrating and unnecessary for normal df operation.
+Before cutover derive a fresh mutation ledger covering Request intake/comments, Planning/review/gates, dispatch, PR create/update, branch repair, checks, review/fix, merge/closure, board state, quota resume, failures, settings/workflows and any still-coupled install/release mutation.
 
-### 7.5 #360 release boundary
+Close #359 only when:
 
-The final distribution must provide:
+- df is the sole mutating production dispatcher;
+- the live Request lifecycle uses the unified #391 Planning flow;
+- production handlers are real;
+- a live df-only Request lifecycle succeeds;
+- persisted interruption/resume succeeds;
+- legacy Python/shell GitHub mutation is not required for normal production.
 
-- one real SemVer authority;
-- a publishable package;
-- an npm path that runs built Node-compatible JavaScript without Bun/source checkout;
-- native targets only where CI can build **and execute** them on compatible runners;
-- portable verified checksums and source-commit provenance;
-- every runtime graph/schema/workflow/skill/TUI/dashboard/native/data asset actually required;
-- initial installation without Python or preinstalled df;
-- supported update;
-- POSIX system-`df` coexistence;
-- Windows direct executable behavior;
-- no supported legacy Python front door.
+At that point the bootstrap-authoring exception expires.
 
-Clean-directory smoke must cover at least:
+### Wave 4 — self-hosted parallel completion
 
-`df --version`, `df status`, `df doctor`, `df route`, `df ci status`, offline-capable `df run`, `df work`, install/update, compatible-TTY TUI launch, and packaged docs/dashboard assets where applicable.
+Once #359 is green, use df itself to finish in parallel:
 
-Release automation itself is df-native after #359.
+- #332 safe parallel chunks;
+- #339 hook/rule capability from F47;
+- #384 deterministic git capability;
+- #385 Epic/Request relationships;
+- #386 stacked PR capability;
+- #388 full governed recovery product/live E2E;
+- #403 final composed CLI/command registry;
+- #251 TUI from recovered state;
+- #248 remaining OAuth/keychain recovery acceptance;
+- #252 multimodal provider capability;
+- #423 auth package/broker;
+- #424 docs engine;
+- #334 complete TSDoc/export coverage;
+- #335 generated API/architecture publication;
+- #425 shared web platform;
+- #390 quota/operator dashboard views;
+- #336 generated README + docs-impact policy;
+- #337 final ADR/notes reconciliation.
+
+Dependencies still apply where one feature consumes another, but unrelated lanes should not wait for each other.
+
+### Wave 5 — distribution and canary
+
+Immediately after #359, produce a **canary/pre-release** sufficient to test:
+
+- clean install of df;
+- package resolution;
+- official capability loading;
+- one consumer repository;
+- GitHub Packages publication mechanics;
+- prebuilt web artifact deployment;
+- update behavior.
+
+This is early feedback, not #360 final acceptance.
+
+Final #360 then publishes the completed lockstep package/capability set and release assets under the `darkfactory` GitHub organization.
+
+### Wave 6 — fleet and closure
+
+1. #360 final release.
+2. Migrate five non-DarkFactory consumers using released df; re-check DarkFactory itself.
+3. Run install/update twice to prove idempotency.
+4. #361 generates and validates `audit.df`.
+5. Re-run original #68 graph acceptance against the installed release.
+6. Close #68 only when no required child, unexplained recovery source, legacy production engine or unexplained implementation PR remains.
 
 ---
 
-## 8. Fleet migration and final acceptance
+## 7. Authoritative Request map
 
-Resolve consumers by stable GitHub repository identity, not historical name strings.
+| Request | Start gate | Merge/exit gate |
+|---|---|---|
+| #413 | now | narrow kind bridge + green checks |
+| #365 | now | #413 merged |
+| #420 | now | bootstrap branch conflicts reconciled |
+| #421 | #420 package shape available | #420 merged; ABI/loader green |
+| #340 | now using recovery inputs | #420 final ownership available; hard-transition proof |
+| #406 | now | final core ownership + #340 naming |
+| #391 | now | #340/#406 persistence/runtime contracts |
+| #422 | #420 shape available + F14 recovery | production keychain owner green |
+| #248 | F14/#422 reconciliation | keychain contract + unique F14 disposition |
+| #331 | F40 reconciliation now | final router/core ownership |
+| #329 | F38 reconciliation now | #331 merged |
+| #341 | F49 analysis now | #420/#421/#340; normalized detection/capability actions |
+| #358 | F30-4 discovery now | #329/#331/#391 + production owners |
+| #317 | preparation after #341 shape | #358/#341; truthful mutation evidence |
+| #359 | mutation-ledger preparation now | core self-hosting chain above |
+| #252 | #365/#421 shapes | provider/capability integration green |
+| #332 | design may start before cutover | #358/#329/#331; preferably self-hosted |
+| #339 | F47 reconciliation now | #421 + #341 actions + final mutation owners |
+| #384 | primitive work may start now | #358 persisted conflicts + #339 hooks where applicable |
+| #385 | model design may start now | #358 Request/state owner |
+| #386 | topology design may start now | #384/#385/#358 |
+| #388 full | recovery product work may start now | #391/#358/#384/#385/#386 + live recovery E2E |
+| #403 | command model may start after #420/#421 | final composed post-cutover surface |
+| #251 | recovery discovery now | #403 + recovered TUI reconciliation |
+| #423 | #420 protocol/github boundaries | GitHub App auth/browser/broker tests |
+| #424 | D4/F42/F44 analysis now | #420/#421 + docs/content graph green |
+| #334 | F42 reconciliation now | final public exports + #424 extraction |
+| #335 | D4 analysis now | #424/#334/#341 |
+| #425 | UI architecture may start now | #423 auth + #424 content boundary + shared web release |
+| #390 | quota-view work may start once #425 shell exists | #425 + shipped quota/provider protocol |
+| #336 | F44 reconciliation now | #424 generated README + #339/#341 docs-impact owners |
+| #337 | F45 reconciliation now | architecture/product materially final |
+| #360 | canary immediately after #359 | all required final product Requests terminal |
+| #361 | prepare audit schema before release | six-repo released-df migration green |
+| #68 | final audit preparation | #361 + original graph acceptance green |
+
+---
+
+## 8. Release and publication contract
+
+### 8.1 Versioning
+
+Initially all first-party packages and official capabilities use one lockstep DarkFactory SemVer. The capability ABI has its own compatibility version.
+
+### 8.2 GitHub Packages
+
+The intended namespace is the new `darkfactory` GitHub organization, enabling clean scoped packages such as:
+
+- `@darkfactory/core`;
+- `@darkfactory/cli`;
+- `@darkfactory/web`;
+- `@darkfactory/capability-code`.
+
+### 8.3 Standard installation
+
+The normal df installation is batteries-included with official capabilities, while third-party capabilities use the same loader/ABI. Users are not required to install the official capability set one package at a time.
+
+### 8.4 Release assets
+
+Final release assets include, as applicable:
+
+- CLI/runtime artifacts;
+- checksums and source provenance;
+- prebuilt DarkFactory Web bundle;
+- official capability bundles;
+- generated MCP/plugin/skill forms;
+- runtime schemas/graph/data required for source-free operation.
+
+The npm execution path remains Node-compatible and does not require Bun or a source checkout.
+
+---
+
+## 9. Docs/web deployment contract
+
+A consumer deployment consists of:
+
+1. released prebuilt DarkFactory web bundle;
+2. repository-specific docs/content/data compiled by df;
+3. GitHub Pages publication.
+
+The consumer does not compile the frontend.
+
+The live browser uses GitHub user authentication through #423 and reads GitHub state directly. Privileged automation remains App/df-owned.
+
+No API key, refresh token, GitHub App private key or machine credential may be embedded into static Pages artifacts.
+
+---
+
+## 10. Final fleet acceptance
+
+Resolve repositories by stable GitHub identity rather than historical names.
 
 Current fleet:
 
-1. `DarkFactory`
-2. `omnis`
-3. `ChessWithQuests`
-4. `OdbornaPrace-paper` (historical `OdbornaPrace`)
-5. `template-OdbornaPrace`
-6. `OdbornaPrace-mono` (historical `mono-OdbornaPrace`)
+1. DarkFactory
+2. omnis
+3. ChessWithQuests
+4. OdbornaPrace-paper
+5. template-OdbornaPrace
+6. OdbornaPrace-mono
 
-The five non-DarkFactory consumers must be migrated with released `df`. DarkFactory must also pass final install/update drift checks.
+Per repository, final audit covers at least:
 
-Per repository, final migration/doctor/audit covers:
-
-- stable repository ID and current canonical name;
-- SHA/default branch;
-- df release version and source commit;
-- `repo.df` / `config.df` resolution;
-- managed-file drift;
-- workflow pins;
-- branch protection and required checks;
-- detected test/lint/format/docs actions;
-- credential/provider/account diagnostics without secret exposure;
-- board reconciliation;
-- Request/Epic and stack graphs;
-- docs/build/deploy behavior;
+- stable repository ID/name/SHA/default branch;
+- installed df release/source;
+- repo/config/docs resolution;
+- package/domain/capability detection;
+- managed-file/workflow drift;
+- protection and required checks;
+- test/lint/format/docs actions;
+- keychain/auth diagnostics without secret exposure;
+- Request/Epic and stack state;
+- recovery provenance/dispositions;
+- docs/API/README generation;
+- shared web deployment/auth boundary;
+- release/package/capability provenance;
 - install/update idempotency.
 
-No manual copy-based migration counts as final evidence.
-
-### `audit.df`
-
-#361 produces a machine-readable `audit.df` containing at minimum:
-
-- df version and source commit;
-- all six stable repository IDs/current names/SHAs/default branches;
-- repo/config and state-naming evidence;
-- doctor/drift/workflow/protection/required-check results;
-- detected verification actions;
-- board, Request/Epic and stack audits;
-- git/conflict/resume evidence;
-- complete recovery ledger and dispositions;
-- #388 live-import provenance;
-- Planning identities/approvals and implementation review/fix/alignment evidence;
-- #359 zero-legacy-production-dependency proof;
-- release/platform smoke;
-- dashboard/docs/rules/API/skills evidence;
-- released-df-only E2E and resume evidence;
-- remaining Request/PR audit.
-
-#361 closes only when this artifact is internally consistent and all required checks are green.
+`audit.df` records these results plus #359 zero-legacy proof, a released-df-only lifecycle/resume proof and remaining Request/PR audit.
 
 ---
 
-## 9. Final #68 closure
+## 11. Regressions that must not return
 
-After #361 is terminal green, re-run the original #68 contract against the **installed released product**:
-
-- one authoritative node/edge workflow declaration;
-- consumer node changes do not require hand-editing duplicated workflow YAML;
-- graph validation rejects cycles, unknown nodes and unreachable required checks;
-- generated/managed workflow rendering is deterministic;
-- regenerated workflow diff is clean;
-- intentionally external/static checks are represented consistently through graph/check-reference semantics rather than drifting duplicated automation.
-
-Then confirm:
-
-- no required child Request remains open;
-- no recovery source lacks a terminal disposition;
-- no unexplained implementation PR/local-only work remains;
-- no alternate legacy production engine remains;
-- #361 is closed green.
-
-Only then close #68.
-
----
-
-## 10. Regressions the program must not reintroduce
-
-- `.darkfactory/manifest.json`
-- `.github/darkfactory.json` as the final consumer contract
-- `.darkfactory/df/config.json`
-- `.df/` directories
-- hard-coded `main`
-- a second provider/model catalog
-- a second git engine
-- a second hook engine
-- a second Request/Epic state model
-- a second stack state model
-- a second Planning/review engine
-- keyword-based mutation-truth validation
-- mandatory task-level submit/JSON completion
-- subprocess/shell `gh` production mutation
-- Python as the production orchestration engine
-- source-tree-only installation
-- fixed historical test counts as acceptance
-- historical repository names as stable identity
-- manual consumer-file copying as final installation proof
-- manual recovery merging outside the governed pipeline
-- treating a merged PR or closed issue as proof beyond its actual acceptance evidence
+- `.darkfactory/manifest.json` or `.github/darkfactory.json` as final repository contract;
+- `.darkfactory/df/config.json`;
+- `.df/` directories;
+- hard-coded `main`;
+- final monolithic `@darkfactory/harness` ownership;
+- a second provider/model catalog;
+- a second credential/keychain system;
+- provider/capability-owned raw secret storage;
+- a second auth/RBAC database for the web UI;
+- a second git, hook, Request/Epic, stack or Planning/review engine;
+- hard-coded repository-specific language/action tables where capabilities should contribute behavior;
+- mandatory task submit/JSON completion;
+- keyword-based mutation truth;
+- production shell `gh` mutation;
+- Python as production orchestration;
+- ProperDocs/MkDocs as final docs runtime;
+- separate docs/dashboard frontends;
+- per-consumer React builds;
+- README maintained independently from the canonical docs homepage content;
+- manual consumer installation or manual recovery merge as final proof;
+- fixed historical test counts as acceptance.
 
 ---
 
-## 11. Maintenance rule for this file
+## 12. Maintenance rule
 
-Update `PLAN.md` only when one of these changes:
+Update this file only when one of these changes:
 
-- a cross-Request dependency;
-- a program-wide invariant;
-- a recovery owner/disposition;
-- a boundary/final acceptance contract;
+- final architecture;
+- a cross-Request start/merge/final dependency;
+- recovery ownership/disposition;
+- self-hosting/cutover boundary;
+- release/fleet/final acceptance;
 - the set of Requests required for completion.
 
-Do **not** append checkpoints when a run starts, a workflow step changes, a PR head moves, or a Request merely changes live status. Those transitions are tracked by GitHub and should not turn the master plan back into an execution log.
+Do not append transient run state or checkpoints. GitHub already owns live status.
