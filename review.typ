@@ -1,5 +1,5 @@
 #import "metadata.typ": meta
-#import "lib/odborna-prace.typ": odborna-prace, prilohy, note, issue, alert, struct-alert, ai, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
+#import "lib/odborna-prace.typ": odborna-prace, prilohy, note, issue, alert, struct-alert, ai, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note, term, kw
 
 // Recenzní verze práce (Review mode):
 // Obsahuje veškeré postranní recenzní panely (note, issue, alert, critique, blue-note),

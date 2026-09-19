@@ -17,6 +17,11 @@
 // v adresáři `fonts/`, takže sazba je všude identická.
 #let PISMO = ("Caladea", "New Computer Modern")
 
+#import "wordometer.typ": string-word-count, extract-text, word-count-of
+
+#let word-count-total = state("word-count-total", 0)
+#let word-count-core = state("word-count-core", 0)
+
 #let nadpis-bez-cisla(text-nadpisu) = {
   heading(numbering: none, outlined: true, text-nadpisu)
 }
@@ -26,40 +31,40 @@
 #let is-review() = context review-state.get()
 
 #let note(body) = context if review-state.get() {
-  block(
+  [#block(
     fill: rgb("ecfdf5"),
     stroke: (left: 3pt + rgb("10b981")),
     inset: (x: 10pt, y: 8pt),
     radius: (right: 4pt),
     width: 100%,
     text(fill: rgb("065f46"), size: 10.5pt)[💡 *Návrh na vylepšení:* #body]
-  )
+  ) <callout>]
 } else {
   none
 }
 
 #let issue(body) = context if review-state.get() {
-  block(
+  [#block(
     fill: rgb("fef2f2"),
     stroke: (left: 3pt + rgb("ef4444")),
     inset: (x: 10pt, y: 8pt),
     radius: (right: 4pt),
     width: 100%,
     text(fill: rgb("991b1b"), size: 10.5pt)[⚠️ *Chyba / Nesrovnalost k opravě:* #body]
-  )
+  ) <callout>]
 } else {
   none
 }
 
 #let alert(body) = context if review-state.get() {
-  block(
+  [#block(
     fill: rgb("fefce8"),
     stroke: (left: 3pt + rgb("eab308")),
     inset: (x: 10pt, y: 8pt),
     radius: (right: 4pt),
     width: 100%,
     text(fill: rgb("854d0e"), size: 10.5pt)[📐 *Strukturální upozornění:* #body]
-  )
+  ) <callout>]
 } else {
   none
 }
@@ -67,27 +72,27 @@
 #let struct-alert = alert
 
 #let critique(body) = context if review-state.get() {
-  block(
+  [#block(
     fill: rgb("fff7ed"),
     stroke: (left: 3pt + rgb("ea580c")),
     inset: (x: 10pt, y: 8pt),
     radius: (right: 4pt),
     width: 100%,
     text(fill: rgb("9a3412"), size: 10.5pt)[🔥 *Hloubková kritika / Oponentura:* #body]
-  )
+  ) <callout>]
 } else {
   none
 }
 
 #let scope-note(body) = context if review-state.get() {
-  block(
+  [#block(
     fill: rgb("eff6ff"),
     stroke: (left: 3pt + rgb("3b82f6")),
     inset: (x: 10pt, y: 8pt),
     radius: (right: 4pt),
     width: 100%,
     text(fill: rgb("1e40af"), size: 10.5pt)[📌 *Metodické vymezení / Rozsah práce:* #body]
-  )
+  ) <callout>]
 } else {
   none
 }
@@ -120,7 +125,7 @@
 
 // Červené zvýraznění s přeškrtnutím pro odstraněný text (removed)
 #let removed(body) = context if review-state.get() {
-  highlight(fill: rgb("fee2e2"))[#strike(stroke: 0.8pt + rgb("ef4444"))[#body]]
+  [#highlight(fill: rgb("fee2e2"))[#strike(stroke: 0.8pt + rgb("ef4444"))[#body]] <removed-diff>]
 } else {
   none
 }
@@ -131,6 +136,88 @@
 } else {
   new
 }
+
+#let default-terms = (
+  "Agent": "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného cíle.",
+  "Agent Loop": "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.",
+  "Chatbot": "Systém založený na jazykovém modelu určený k pasivní textové interakci s uživatelem; odpovídá na jednotlivé dotazy v chatu, avšak nedisponuje nástroji pro samostatnou modifikaci okolního prostředí.",
+  "Context Rot": "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí.",
+  "Embedding": "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy.",
+  "Git": "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.",
+  "GitHub": "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.",
+  "Harness": "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.",
+  "Human-in-the-loop": "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací.",
+  "MCP": "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC.",
+  "Plugins": "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
+  "Prompt Engineering": "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.",
+  "Pull Request": "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách.",
+  "Skills": "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
+)
+
+#let term-label = <thesis-term-meta>
+
+/// Funkce pro zavedení a odkazování odborného termínu v textu.
+/// V textu termín vysází tučně a kurzívou s klikatelným symbolem šipky (▾),
+/// který odkazuje na jeho definici v sekci Klíčová slova.
+/// Pokud je předán parametr `explanation`, termín se dynamicky zaregistruje
+/// a vykreslí v přehledu klíčových slov.
+#let term(name, explanation: none) = {
+  let id = "kw-" + lower(name).replace(regex("[^a-z0-9]+"), "-").trim("-")
+  let expl = if explanation != none { explanation } else { default-terms.at(name, default: none) }
+  if expl != none {
+    [#metadata((name: name, explanation: expl, id: id)) #term-label]
+  }
+  link(label(id))[_*#name*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[▾]]
+}
+
+#let kw = term
+
+/// Vykreslení klíčových slov a odborných termínů
+#let render-keywords() = context {
+  let entries = query(term-label)
+  let seen = (:)
+  let unique = ()
+  for e in entries {
+    let d = e.value
+    let key = lower(d.name)
+    if key not in seen and d.explanation != none and d.explanation != "" {
+      seen.insert(key, true)
+      unique.push(d)
+    }
+  }
+  // Pokud ještě dotaz nevrátil záznamy (v 1. běhu), použij default-terms
+  if unique.len() == 0 {
+    for (k, v) in default-terms {
+      let id = "kw-" + lower(k).replace(regex("[^a-z0-9]+"), "-").trim("-")
+      unique.push((name: k, explanation: v, id: id))
+    }
+  }
+  unique = unique.sorted(key: x => x.name)
+
+  if unique.len() > 0 {
+    block(width: 100%, [
+      #set text(size: 9.5pt)
+      #grid(
+        columns: (1fr),
+        row-gutter: 6pt,
+        ..unique.map(item => block(
+          fill: rgb("#f8fafc"),
+          stroke: (left: 2.5pt + rgb("#2563eb")),
+          inset: (x: 8pt, y: 5pt),
+          radius: (right: 3pt),
+          width: 100%,
+          [
+            #text(weight: "bold", size: 10pt, fill: rgb("#0f172a"))[#item.name] #label(item.id) \
+            #v(-2pt)
+            #text(size: 9pt, fill: rgb("#334155"))[#item.explanation]
+          ]
+        ))
+      )
+    ])
+  }
+}
+
+#let word-stats-state = state("word-stats-state", (total: 5863, core: 3523))
 
 #let titulni-list(meta, logo: none) = {
   set align(center)
@@ -176,6 +263,24 @@
   set align(center)
   text(size: 12pt, str(meta.rok))
 
+  context if review-state.get() {
+    v(0.6cm)
+    let s = word-stats-state.get()
+    block(
+      fill: rgb("#f8fafc"),
+      stroke: 0.5pt + rgb("#cbd5e1"),
+      inset: (x: 12pt, y: 7pt),
+      radius: 4pt,
+      [
+        #text(size: 9.5pt, weight: "bold", fill: rgb("#1e293b"))[📊 Rozsah textu práce (pouze v recenzním režimu):] \
+        #v(2pt)
+        #text(size: 9pt, fill: rgb("#334155"))[
+          *Celkový počet slov:* #s.total #h(1.5em) | #h(1.5em) *Jádro práce (bez balastu):* #s.core
+        ]
+      ]
+    )
+  }
+
   pagebreak()
 }
 
@@ -212,7 +317,9 @@
   meta.anotace
 
   nadpis-bez-cisla[#confirmed[Klíčová slova]]
-  confirmed(meta.klicova-slova.join(", "))
+  render-keywords()
+
+  pagebreak(weak: true)
 
   nadpis-bez-cisla[#confirmed[Annotation]]
   meta.abstract
@@ -255,6 +362,7 @@
   }
 
   review-state.update(is-review)
+
 
   set document(title: meta.nazev, author: meta.autor)
 
@@ -338,6 +446,8 @@
     font: pismo, size: 11pt, counter(page).display("1"),
   )))
 
+  [#metadata("body-start") <body-start-anchor>]
+
   body
 
   // ── Zadní část ───────────────────────────────────────────
@@ -345,16 +455,82 @@
     pagebreak(weak: true)
     bibliography(bibliografie, style: bib-styl, title: "Seznam zdrojů", full: true)
   }
+
+  if is-review {
+    context {
+      let start_anchors = query(<body-start-anchor>)
+    let app_anchors = query(<appendix-start-anchor>)
+    let start_page = if start_anchors.len() > 0 { start_anchors.first().location().page() } else { 0 }
+    let end_page = if app_anchors.len() > 0 { app_anchors.first().location().page() } else { 999999 }
+
+    let pars = query(par)
+    let lists = query(list)
+    let enums = query(enum)
+    let callouts = query(<callout>)
+    let diffs_old = query(<removed-diff>)
+
+    let callout_words = 0
+    for c in callouts {
+      callout_words += string-word-count(extract-text(c)).words
+    }
+
+    let diff_old_words = 0
+    for d in diffs_old {
+      diff_old_words += string-word-count(extract-text(d)).words
+    }
+
+    let total_words = 0
+    let core_words = 0
+
+    for p in pars {
+      let pg = p.location().page()
+      let w = string-word-count(extract-text(p.body)).words
+      total_words += w
+      if pg >= start_page and pg < end_page {
+        core_words += w
+      }
+    }
+
+    for l in lists {
+      let pg = l.location().page()
+      let w = string-word-count(extract-text(l)).words
+      total_words += w
+      if pg >= start_page and pg < end_page {
+        core_words += w
+      }
+    }
+
+    for e in enums {
+      let pg = e.location().page()
+      let w = string-word-count(extract-text(e)).words
+      total_words += w
+      if pg >= start_page and pg < end_page {
+        core_words += w
+      }
+    }
+
+    let core_clean = calc.max(0, core_words - callout_words - diff_old_words)
+    if pars.len() >= 130 {
+      word-stats-state.update(curr => {
+        if curr.total == total_words and curr.core == core_clean {
+          curr
+        } else {
+          (total: total_words, core: core_clean)
+        }
+      })
+    }
+  }}
 }
 
 // Přílohy se číslují a odkazuje se na ně v textu; obsahuje-li práce
 // přílohy, musí obsahovat i jejich seznam.
 #let prilohy(body) = {
   pagebreak(weak: true)
+  [#metadata("appendix-start") <appendix-start-anchor>]
   // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
   nadpis-bez-cisla[#confirmed[Seznam příloh]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(supplement: [Příloha]))
-  body
+  [#body <appendix>]
 }

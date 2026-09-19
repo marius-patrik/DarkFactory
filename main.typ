@@ -1,5 +1,5 @@
 #import "metadata.typ": meta
-#import "lib/odborna-prace.typ": odborna-prace, prilohy, note, issue, alert, struct-alert, ai, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
+#import "lib/odborna-prace.typ": odborna-prace, prilohy, note, issue, alert, struct-alert, ai, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note, term, kw
 
 // Čistá / raw verze práce: kompiluje se bez recenzních značek (calloutů), bez textu diffu
 // (zobrazuje pouze finální nový text bez zvýraznění) a bez vodoznaku.

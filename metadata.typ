@@ -42,10 +42,7 @@
     and indispensable human-in-the-loop governance via approval gates.
   ],
 
-  klicova-slova: (
-    "agentní inženýrství", "řídicí harness", "GitHub App", "DarkFactory",
-    "automatizace vývoje", "orchestrace agentů", "jazykové modely",
-  ),
+  klicova-slova: (),
   keywords: (
     "agentic engineering", "harness architecture", "GitHub App", "DarkFactory",
     "software development automation", "agent orchestration", "language models",

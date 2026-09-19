@@ -36,6 +36,8 @@ When working on the thesis manuscript (`mono-OdbornaPrace`), agents must strictl
   - **Blue Highlight (`#confirmed[...]`)**: Marks text confirmed by the user/author but not yet fully finalized.
   - **Red Highlight with Strikethrough (`#removed[...]`)**: Marks text proposed for removal.
   - **Srovnávací Diff (`#diff(old, new)`)**: Shows original text struck through in red (`#removed`) followed by new text in green (`#added`).
+- **Mandatory Diff Markers for ANY Text Modification**:
+  Whenever modifying, replacing, editing, rewording, or updating ANY text in the manuscript, agents MUST ALWAYS wrap the change in diff markers (`#diff[original text][new text]`). Direct replacement of text without `#diff` is strictly prohibited. This ensures all modifications are visually tracked and auditable in review mode.
 - **Typst Formatting & Stability**:
   - Avoid fragile external diagramming packages that trigger runtime panics (e.g., incompatible Fletcher/CeTZ versions). Prefer clean vector SVGs in `img/`.
   - Watch out for escape sequences in Typst (e.g., do not use `\r` in math/text; use unicode `→` or `$arrow$`).
