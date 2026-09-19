@@ -275,9 +275,13 @@ describe("limits reset when the provider says, not on a short timer", () => {
 		]);
 		expect(await ledger.recover(1_000, async () => false)).toEqual([]);
 		const [first] = await ledger.list();
-		expect(first!.resetAt - 1_000).toBeGreaterThanOrEqual(2_000);
-		expect(await ledger.recover(first!.resetAt, async () => false)).toEqual([]);
+		expect(first).toBeDefined();
+		if (!first) throw new Error("expected first recovered limit");
+		expect(first.resetAt - 1_000).toBeGreaterThanOrEqual(2_000);
+		expect(await ledger.recover(first.resetAt, async () => false)).toEqual([]);
 		const [second] = await ledger.list();
-		expect(second!.resetAt - first!.resetAt).toBeGreaterThanOrEqual(2 * (first!.resetAt - 1_000));
+		expect(second).toBeDefined();
+		if (!second) throw new Error("expected second recovered limit");
+		expect(second.resetAt - first.resetAt).toBeGreaterThanOrEqual(2 * (first.resetAt - 1_000));
 	});
 });
