@@ -3,6 +3,8 @@
 How this repository was brought up, what still needs a human, and how to reproduce the whole thing
 if it is ever recreated or used to bootstrap a new autonomous project.
 
+> **Completion-program annotation (2026-09-19).** This file is a historical bootstrap runbook. Do not use its `main`, Python-script, legacy credential or workflow instructions as current architecture. The current canonical branch is resolved dynamically (DarkFactory currently uses `darkfactory`), the target production engine is TypeScript df, and current architecture/execution are defined by `PRD.md`, ADR-0017–0020 and `PLAN.md`. Historical commands below are intentionally preserved as provenance.
+>
 > **Migration annotation (2026-09-13, knowledge-layout).** After this runbook was written the
 > governance layout changed: `ARCHITECTURE.md` became `PRD.md`, `VISION.md` and `ROADMAP.md` were
 > retired, and the canonical locations for rules and notes became `.agents/rules/` and
