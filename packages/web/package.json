@@ -1,0 +1,19 @@
+{
+  "name": "@darkfactory/web",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/protocol": "workspace:*",
+    "@darkfactory/auth": "workspace:*",
+    "@darkfactory/github": "workspace:*",
+    "@darkfactory/docs": "workspace:*"
+  }
+}
