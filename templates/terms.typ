@@ -68,7 +68,7 @@
   ),
   mcp: define-term(
     id: "mcp",
-    cs: "Model Context Protocol",
+    cs: "Model Context Protocol (MCP)",
     en: "Model Context Protocol (MCP)",
     explanation_cs: "Model Context Protocol — otevřený standard původně navržený společností Anthropic pro standardizovanou komunikaci AI aplikací s externími nástroji, zdroji a daty prostřednictvím zpráv JSON-RPC.",
     explanation_en: "Model Context Protocol — an open standard originally introduced by Anthropic for standardized communication between AI applications and external tools, resources, and data through JSON-RPC messages.",
