@@ -259,50 +259,29 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-14-harness-agnostic-agent-runtime-and-conversational-lifecycle">Rule 14 — Harness-agnostic agent runtime and conversational lifecycle<a class="headerlink" href="#rule-14-harness-agnostic-agent-runtime-and-conversational-lifecycle" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-14-capability-driven-agent-runtime-and-resilience">Rule 14 — Capability-driven agent runtime and resilience<a class="headerlink" href="#rule-14-capability-driven-agent-runtime-and-resilience" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>An autonomous AI agent runs containerized in GitHub Actions (<code>docker/Dockerfile.agent</code>). It is
-<strong>harness-agnostic</strong>: no pipeline code knows which coding-agent CLI is executing.</p>
+<p>DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.</p>
 <ul>
-<li><strong>Harness registry</strong>: <code>.github/scripts/harnesses.py</code> declares each CLI — Antigravity (<code>agy</code>),
-  Claude Code (<code>claude</code>), OpenAI Codex (<code>codex</code>), Kimi (<code>kimi</code>), Grok (<code>grok</code>), Cursor
-  (<code>cursor-agent</code>), and opencode (<code>opencode</code>) — as a binary, an argv template, the credentials it
-  accepts, and its quota pools. Adding a harness is a data change; changing one is a configuration
-  change.</li>
-<li><strong>No hardcoded invocation</strong>: every field is overridable at runtime through the
-  <code>AGENT_HARNESS_CONFIG</code> repository variable, and the order through <code>AGENT_HARNESS_CHAIN</code>, so an
-  upstream flag rename never requires a code change or a container rebuild.</li>
-<li><strong>Graceful degradation</strong>: harnesses whose binary is absent from <code>PATH</code>, or whose credentials are
-  unset, are skipped rather than failed. An image carrying four of seven CLIs is a working image
-  with a shorter fallback chain.</li>
-<li><strong>Resilience</strong>: exhaustion moves to the next account, then the next pool, then the next harness.
-  Only when every account of every pool of every harness is spent does the agent checkpoint and
-  block. Authentication uses repository secrets only; the account being run is named in the log, its
-  credential never is.</li>
-<li><strong>Conversational lifecycle</strong>: incoming issues are auto-classified, the agent answers feedback and
-  executes adjustments on Request issues and pull requests, bots are ignored to prevent
-  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and self-reviews it
-  in separate runs: each review run posts all findings and dispatches a fix run, which dispatches
-  the next review, until a review finds nothing (identical findings twice block the PR). On quota
-  exhaustion the agent saves a checkpoint, moves
-  the item to <code>Blocked</code>, comments the resume instructions, and exits cleanly.</li>
+<li>Core owns execution, routing primitives, persistence/resume and capability loading.</li>
+<li>Agentic/product behaviors are versioned capabilities.</li>
+<li>One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.</li>
+<li>Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.</li>
+<li>Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.</li>
+<li>Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.</li>
+<li>Every logical agent stage has one bounded elapsed-time budget across model failover and tools.</li>
+<li>Natural model stop is accepted; mutation truth comes from observed effects.</li>
+<li>Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.</li>
+<li>CI agent execution remains containerizable/non-root.</li>
 </ul>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Outputs must be classified by their real outcome, not by exit code, and no provider's short-term
-quota may idly sleep while an unused account still has capacity.</p>
+<p>The runtime should be resilient and harness-portable without duplicating product behavior for each external agent implementation.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>docker/Dockerfile.agent</code> image; <code>.github/scripts/harnesses.py</code> registry.</li>
-<li>Runner/quota and review-cap tests in <code>tests/test_agent_runner.py</code>.</li>
-<li>PRD section 7 states runtime and continuity outcomes.</li>
-</ul>
+<p>Core/router/runtime tests plus capability adapter tests and live df-only acceptance.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
-<p>None.</p>
+<p>Legacy Python invocation exists only during the controlled pre-#359 migration and is not an extension target.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Owner is <code>rotation</code> (outcome classification, cross-provider handoff, repository-variable quota
-state, scheduled resume). Provider, model, and account details are manifest declarations, not rule
-text. Checkpoint filenames and concrete mechanics are operational details, not product
-requirements.</p>
+<p>Provider/model/account data lives in final configuration/keychain/catalog owners; this rule defines runtime behavior only.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../013-specification-and-work-tracking/">

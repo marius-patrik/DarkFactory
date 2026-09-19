@@ -259,38 +259,30 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-9-issue-binding-branch-auto-deletion-and-board-status">Rule 9 — Issue binding, branch auto-deletion, and board status<a class="headerlink" href="#rule-9-issue-binding-branch-auto-deletion-and-board-status" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-9-request-binding-branch-cleanup-and-board-status">Rule 9 — Request binding, branch cleanup and board status<a class="headerlink" href="#rule-9-request-binding-branch-cleanup-and-board-status" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
+<p>Every delivery PR MUST explicitly bind every Request it satisfies.</p>
+<p>A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.</p>
+<p>Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.</p>
+<p>Request/PR/project status uses one canonical reconciliation model with the seven states:</p>
 <ul>
-<li><strong>Issue Binding</strong>: Every pull request MUST bind a tracked GitHub issue using closing keywords in
-  the PR description (e.g. <code>Closes #123</code>, <code>Fixes #123</code>, <code>Resolves #123</code>).</li>
-<li><strong>Branch Auto-Deletion</strong>: Merging closes the bound issue and deletes the remote branch
-  (<code>delete_branch_on_merge: true</code> and <code>--delete-branch</code>); the local branch MUST be pruned.</li>
-<li><strong>Project Board Status Taxonomy</strong>: All issues and pull requests are added to the DarkFactory
-  GitHub Project with automated status movements:</li>
-<li><code>Backlog</code>: Staged items planned for future consideration.</li>
-<li><code>ToDo</code>: Approved requests or plans ready for implementation.</li>
-<li><code>In Progress</code>: Active branches, pull requests, or ongoing development.</li>
-<li><code>Blocked</code>: Items impeded by external dependencies, blockers, or agent quota exhaustion.</li>
-<li><code>Done</code>: Completed and merged pull requests and resolved issues.</li>
-<li><code>Superseded</code>: Items rendered obsolete or outranked by subsequent architectural decisions.</li>
-<li><code>Dropped</code>: Items closed without implementation or cancelled.</li>
+<li><code>Backlog</code></li>
+<li><code>ToDo</code></li>
+<li><code>In Progress</code></li>
+<li><code>Blocked</code></li>
+<li><code>Done</code></li>
+<li><code>Superseded</code></li>
+<li><code>Dropped</code></li>
 </ul>
+<p>A Request reaches Done only from its own terminal evidence or explicit valid shared-plan/multi-Request completion.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>A PR that merges without a bound issue leaves no reason to have existed. Board status is the shared
-lifecycle view for humans and the agent, exactly one system-owned schema.</p>
+<p>Explicit bindings preserve the reason a PR exists while permitting coherent multi-Request/Epic delivery without duplicating implementation.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/scripts/project_automation.py</code> moves statuses; <code>repo_settings.py</code> wires auto-merge and
-  deletion.</li>
-<li><code>.github/workflows/verify-pr-issue.yml</code> and <code>PULL_REQUEST_TEMPLATE.md</code> enforce the binding
-  pattern.</li>
-</ul>
+<p>The Request/Epic/stack/GitHub capabilities reconcile PR bindings, project status and branch cleanup.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>None.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Board reconciliation and merge strategy have one executable source each; PR-bound statuses converge
-on the system-owned schema. Local-branch pruning is a convention, not a centrally enforceable act.</p>
+<p>Relationship semantics belong to the first-class Request/Epic/stack model, not ad-hoc PR text parsing.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../008-formatting-and-linting/">

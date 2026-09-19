@@ -259,38 +259,27 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-12-user-request-decomposition-verbatim-prompting-and-confirmation-gate">Rule 12 — User request decomposition, verbatim prompting, and confirmation gate<a class="headerlink" href="#rule-12-user-request-decomposition-verbatim-prompting-and-confirmation-gate" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-12-verbatim-request-capture-and-planning-gate">Rule 12 — Verbatim Request capture and Planning gate<a class="headerlink" href="#rule-12-verbatim-request-capture-and-planning-gate" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>Every incoming user prompt or task MUST immediately be converted into one or more tracked GitHub
-issues labeled <code>Request</code> before any planning, branching, or code changes begin.</p>
+<p>Every incoming governed task MUST be represented by one or more tracked GitHub Requests before implementation.</p>
 <ul>
-<li><strong>Issue Template</strong>: Use <code>.github/ISSUE_TEMPLATE/request.yml</code> for structured request filing.</li>
-<li><strong>Decomposition</strong>: A single user message containing multiple distinct tasks MUST be decomposed
-  into multiple focused <code>Request</code> issues.</li>
-<li><strong>Verbatim Wording</strong>: Each <code>Request</code> issue body MUST contain the exact, verbatim wording of the
-  user request.</li>
-<li><strong>Interpretation Section</strong>: Below the verbatim wording, each <code>Request</code> issue MUST include an
-  <code>### Interpretation</code> section specifying how the request is understood, the architectural scope,
-  and the proposed verification.</li>
-<li><strong>Confirmation Gate</strong>: The interpretation requires explicit user confirmation (commenting
-  <code>approve</code>) before any implementation plan is made.</li>
-<li><strong>Two gates, one issue</strong>: Once the interpretation is approved, the plan is posted as a comment on
-  the same issue and approved there. All subsequent branches and pull requests bind to that issue.</li>
+<li>Preserve the user's verbatim wording.</li>
+<li>Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.</li>
+<li>Resolve Request/Epic/dependency/recovery relationships explicitly.</li>
+<li>Generate one unified Planning artifact from the verbatim Request and authoritative context.</li>
+<li>Independently review/fix Planning until clean.</li>
+<li>Require one explicit owner Planning Approval before implementation.</li>
+<li>Subsequent delivery remains bound to the Request(s) or an explicitly approved shared-plan record.</li>
 </ul>
+<p>There is no final separate <code>Interpretation</code> section/gate that must be approved before Planning can exist.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Verbatim capture stops the agent from rewriting intent at ingestion; the confirmation gate stops it
-from planning against a misreading.</p>
+<p>Verbatim capture protects intent; reviewed Planning protects interpretation and implementation approach without serializing two redundant human approvals.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/ISSUE_TEMPLATE/request.yml</code> encodes the verbatim-wording requirement for issue filing.</li>
-<li><code>tests/test_pipeline_config.py</code> checks the template demands the unedited request and the
-  <code>### Interpretation</code> section.</li>
-</ul>
+<p>Request intake and #391 Planning lifecycle validate the contract.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>None.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Wording converges with <code>merge-gates</code>; the single-gate flow, when approved, supersedes the gate
-naming here without splitting the issue.</p>
+<p>Multi-Request/shared-plan behavior follows #385 and never waives explicit Request coverage.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../011-review-approval-and-auto-merge/">

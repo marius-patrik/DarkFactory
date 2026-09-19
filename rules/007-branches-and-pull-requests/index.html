@@ -261,37 +261,24 @@
         <article class="prose">
           <h1 id="rule-7-branch-and-pull-request-workflow">Rule 7 — Branch and pull request workflow<a class="headerlink" href="#rule-7-branch-and-pull-request-workflow" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>All changes, features, refactors, and bug fixes MUST be developed on dedicated topic branches and
-submitted through GitHub Pull Requests. Direct commits and pushes to the protected default branch
-(<code>main</code> for DarkFactory consumers; the manifest-declared default branch) are prohibited.</p>
+<p>All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.</p>
 <ul>
-<li><strong>Branch Naming</strong>: Lowercase, hyphen-separated, descriptive (e.g. <code>feature/substrate-bus-codec</code>).
-  Branch names MUST NOT contain issue numbers.</li>
-<li><strong>Bot-Authored PRs</strong>: Pull requests MUST be authored by <code>github-actions[bot]</code> via
-  <code>.github/workflows/open-pr.yml</code> so the repository maintainer is not registered as author and can
-  natively review and approve them.</li>
-<li><strong>Draft Status</strong>: Every pull request MUST be opened in Draft and remain in draft throughout
-  development and review until explicitly approved.</li>
-<li><strong>Up-to-Date with Main</strong>: Every pull request branch MUST contain the latest default branch before
-  merge (strict required status checks).</li>
-<li><strong>Required CI Checks</strong>: All required checks MUST pass green before merging.</li>
-<li><strong>Branch Protection</strong>: The default branch MUST remain protected with required status checks,
-  branch up-to-date enforcement, and pull request review enforcement.</li>
+<li>Branch names are lowercase, descriptive and do not depend on issue numbers.</li>
+<li>The repository's actual canonical/default branch is resolved dynamically; <code>main</code> is never assumed.</li>
+<li>Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.</li>
+<li>PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.</li>
+<li>Required checks and current-base requirements must pass before merge.</li>
+<li>Branch protection remains enabled with the final detected/generated check contract.</li>
+<li>Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.</li>
 </ul>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Topic branches keep every review archaeology traceable, and bot authorship keeps the human as
-reviewer rather than author.</p>
+<p>Topic branches preserve review/provenance while dynamic base resolution and lease safety prevent automation from overwriting repository history.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/scripts/agent_runner.py</code> builds branch names (no issue numbers) and drafts PRs.</li>
-<li><code>tests/test_agent_runner.py</code> pins branch-naming behavior.</li>
-<li><code>.github/scripts/repo_settings.py</code> configures branch protection idempotently.</li>
-</ul>
+<p>The final git/GitHub/hook capabilities and repository protection settings enforce this contract.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
-<p>None.</p>
+<p>The temporary bootstrap-authoring exception in <code>PLAN.md</code> changes who may author a repair, not the required PR/check/review/merge evidence.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Prerequisite <code>gh-client</code> replaces literal <code>gh</code> invocations; <code>harness-auth</code> owns the canonical
-automation identity for bot-authored PRs.</p>
+<p>Concrete workflow/script owners may change during #359 cutover; this rule names behavior, not legacy file paths.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../006-ci-readiness/">

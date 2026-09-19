@@ -259,36 +259,28 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-15-conventional-commits-and-taxonomy-enforcement">Rule 15 — Conventional commits and taxonomy enforcement<a class="headerlink" href="#rule-15-conventional-commits-and-taxonomy-enforcement" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-15-commits-repository-taxonomy-and-domains">Rule 15 — Commits, repository taxonomy and domains<a class="headerlink" href="#rule-15-commits-repository-taxonomy-and-domains" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
+<p>Commits use Conventional Commits: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code>.</p>
+<p>Allowed base types are <code>feat</code>, <code>fix</code>, <code>chore</code>, <code>docs</code>, <code>refactor</code>, <code>test</code>, and <code>ci</code>.</p>
+<p>Repository area labels/scopes are declared by final <code>repo.df</code>, not a legacy manifest path.</p>
+<p>Project classification separates:</p>
 <ul>
-<li><strong>Format</strong>: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code> (e.g. <code>feat(term): add cell matrix buffer</code>).</li>
-<li><strong>Allowed Types</strong>: <code>feat</code>, <code>fix</code> (mapped from <code>bug</code>), <code>chore</code>, <code>docs</code>, <code>refactor</code>, <code>test</code>, <code>ci</code>.</li>
-<li><strong>Allowed Area Scopes &amp; Labels</strong>:
-  The taxonomy is <strong>per repository</strong>, declared in <code>.darkfactory/manifest.json</code> under <code>areas</code>. The
-  labels, the permitted commit scopes, and the agent's request classifier all read that one
-  declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
-  block with its own domains; the areas below are DarkFactory's own.</li>
-<li><code>area:agents</code>: Harness orchestration, provider adapters, personas, approvals.</li>
-<li><code>area:governance</code>: Agent rules, branch protection, required checks, project board taxonomy.</li>
-<li><code>area:release</code>: Versioning modes, tagging, asset packaging, release notes.</li>
-<li><code>area:docs</code>: Documentation site, theme, architecture notes.</li>
-<li><code>area:ci</code>: GitHub Actions workflows, containers, runner scripts, repository automation.</li>
+<li>ecosystem/toolchain;</li>
+<li>package;</li>
+<li>semantic domain (initially including code, paper and math);</li>
+<li>capability.</li>
 </ul>
+<p>A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.</p>
+<p>Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>The manifest is the executable source; the rule text is a convenience mirror for DarkFactory itself
-and must not be copied verbatim to consumers, whose areas differ.</p>
+<p>Separating domain from capability preserves multi-domain repositories while keeping extension behavior modular.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.darkfactory/repo.df</code> <code>areas</code> declaration is the source of truth.</li>
-<li><code>tests/test_pipeline_config.py::test_area_lists_match_the_manifest</code> checks the request template
-  and the PR template against the manifest.</li>
-</ul>
+<p>Final repo.df resolver, #341 detection/capability resolution and hooks validate the taxonomy.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
-<p>Consumers override the area block with their own declaration.</p>
+<p>Consumers define their own repository areas and installed/applicable capabilities.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Add or rename an area by changing the manifest only; commit scopes and labels follow automatically.
-Thin-rule counterpart of DF-RULE-005 (granularity).</p>
+<p>Taxonomy changes occur through repo.df/capability declarations; rule prose does not become a second list of consumer-specific areas.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../014-agent-runtime-and-resilience/">

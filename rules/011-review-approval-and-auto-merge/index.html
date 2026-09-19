@@ -259,35 +259,28 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-11-pull-request-review-approval-and-auto-merge">Rule 11 — Pull request review approval and auto-merge<a class="headerlink" href="#rule-11-pull-request-review-approval-and-auto-merge" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-11-pull-request-review-approval-and-governed-merge">Rule 11 — Pull request review approval and governed merge<a class="headerlink" href="#rule-11-pull-request-review-approval-and-governed-merge" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>Pull requests require official GitHub review approval before merging. The default branch protection
-requires at least one approving review on the last commit with stale reviews dismissed, without
-blocking the last pusher.</p>
+<p>Pull requests require the final repository protection/review contract before merge.</p>
+<p>Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.</p>
+<p>Merge readiness requires:</p>
 <ul>
-<li><strong>Native Approval</strong>: Because PRs are authored by <code>github-actions[bot]</code>, the maintainer can select
-  <strong>Approve</strong> in the GitHub UI, comment <code>/approve</code>, <code>approve</code>, <code>lgtm</code>, or run a native <code>gh pr
-  review &lt;id&gt; --approve</code>.</li>
-<li><strong>Auto-Merge Activation</strong>: <code>.github/workflows/pr-approval-automerge.yml</code> listens for approvals
-  from the maintainer, marks the draft PR ready, and activates auto-merge with branch auto-deletion.</li>
-<li><strong>Post-Merge Reconciliation</strong>: On merge, automation sets the project status of the PR and all
-  bound issues to <code>Done</code>, applies the <code>Done</code> label, removes <code>In Progress</code>, and verifies bound issues
-  are closed.</li>
+<li>current-base/stack validity;</li>
+<li>required checks green;</li>
+<li>implementation review/fix clean;</li>
+<li>final Planning alignment;</li>
+<li>any required scope-amendment approval;</li>
+<li>official final review/merge authorization.</li>
 </ul>
+<p>After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>A single approved, squash-merged, auto-deleted history is the fastest correct loop the system can
-maintain without claiming human review that did not happen.</p>
+<p>Review state and merge authority must be based on GitHub/df evidence, not model prose or workflow-specific shortcuts.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/scripts/repo_settings.py</code> configures required reviews, stale-dismissal, and auto-merge.</li>
-<li><code>.github/scripts/handle_pr_approval.py</code> drives the approval webhook path.</li>
-<li>Merge strategy has one executable source; review-cap limits live in the agent loop.</li>
-</ul>
+<p>Final GitHub/graph/Request capabilities and branch protection own the behavior; legacy workflow/script names are not normative.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>None.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Identity, <code>gh</code>-vs-API invocation, and merge mode are resolved by <code>harness-auth</code>, <code>gh-client</code>, and
-the merge-strategy owner; rule text names behavior, not implementation literals.</p>
+<p>The final command registry and GitHub App identity may evolve without changing these authorization invariants.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../010-approved-delivery-plan/">

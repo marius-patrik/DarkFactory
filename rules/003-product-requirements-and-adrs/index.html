@@ -261,26 +261,25 @@
         <article class="prose">
           <h1 id="rule-3-product-requirements-and-adrs">Rule 3 — Product requirements and ADRs<a class="headerlink" href="#rule-3-product-requirements-and-adrs" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>Product requirements are defined by <code>PRD.md</code>, the single normative product document. Executable
-declarations (providers, taxonomy, workflow graph, installed consumers) live in
-<code>.darkfactory/manifest.json</code>, and mandatory contribution behavior in <code>.agents/rules/*.md</code>. Any
-deviation from <code>PRD.md</code> MUST be explicitly approved by the user and recorded as a discrete ADR
-under <code>.agents/notes/adr/</code> before it is implemented.</p>
-<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>One product contract prevents two documents overriding each other. Decisions justify themselves in
-discrete ADRs; the requirement that changed stays in the PRD.</p>
-<h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
+<p><code>PRD.md</code> is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.</p>
+<p>Executable declarations use the final DarkFactory contracts:</p>
 <ul>
-<li><code>tests/test_governance.py::test_prd_is_the_only_normative_product_document</code></li>
-<li><code>tests/test_governance.py::test_legacy_knowledge_files_are_absent</code></li>
+<li><code>repo.df</code> for repository/product declaration;</li>
+<li><code>config.df</code> for runtime/user/provider configuration;</li>
+<li><code>docs.df</code> for native documentation configuration;</li>
+<li>the declarable workflow graph for execution topology;</li>
+<li><code>.agents/rules/*.md</code> for mandatory contribution/governance behavior.</li>
 </ul>
+<p>Legacy manifest/config paths are not normative final contracts.</p>
+<p>A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.</p>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<p>Stable requirements, executable declarations and decision history have separate owners so no generated view can silently override product intent.</p>
+<h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
+<p>Governance checks ensure PRD remains the single normative product document and architecture changes are represented by ADRs.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>None.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Owned jointly with <code>merge-gates</code> (interpretation/plan wording) and <code>workflow-graph</code> (node
-topology). ADR numbering is per-file under <code>.agents/notes/adr/</code>; the deprecated multi-record
-<code>architecture_decisions.md</code> ledger was split into one discrete file per decision on 2026-09-13 and
-removed.</p>
+<p>Planning/graph/package/capability changes update the owning Request/ADR/PRD rather than creating parallel specification files.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../002-inline-docs-and-generated-documentation/">

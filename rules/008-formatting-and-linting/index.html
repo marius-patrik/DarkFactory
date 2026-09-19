@@ -261,25 +261,18 @@
         <article class="prose">
           <h1 id="rule-8-automated-formatting-and-linting">Rule 8 — Automated formatting and linting<a class="headerlink" href="#rule-8-automated-formatting-and-linting" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, Biome (<code>harness/biome.json</code>)
-for TypeScript, and <code>black</code> (line length 100) for Python automation. The GitHub Actions bot formats
-the codebase on every push across branches and commits any adjustments. Lints are blocking:
-<code>cargo clippy -D warnings</code> for Rust and <code>biome ci</code> for TypeScript. Until the one-time full harness
-reformat lands, Biome formats and checks the TypeScript files a change touches.</p>
+<p>Formatting is deterministic automation, not a review topic.</p>
+<p>The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.</p>
+<p>Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.</p>
+<p>Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Deterministic formatting removes style disagreement from review and from agent loopback, so a model
-never normalizes the tree by hand during an implementation pass.</p>
+<p>One detected quality contract keeps local mutation, graph verification and CI from disagreeing about what “formatted” or “lint clean” means.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/workflows/auto-format.yml</code> reformats on every push.</li>
-<li>Formatting and lint gates are required jobs in <code>ci.yml</code> (the <code>harness</code> job runs <code>biome ci</code>).</li>
-</ul>
+<h1 id="341-the-hooks-capability-and-generated-ci-consume-the-same-action-model">341, the hooks capability and generated CI consume the same action model.<a class="headerlink" href="#341-the-hooks-capability-and-generated-ci-consume-the-same-action-model" title="Permanent link">&para;</a></h1>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
-<p>Formatting gates apply to source languages present in the tree; generated artifacts are excluded
-where declared.</p>
+<p>Unsupported/missing quality actions are diagnosed explicitly; they are not silently treated as passing.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Changing a formatter or its configuration (<code>harness/biome.json</code>, black's line length) is a
-reviewed change; the one-time full reformat lands as its own pull request (plans/repository-truth.md Q1).</p>
+<p>Formatter/tool changes are reviewed capability/package configuration changes.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../007-branches-and-pull-requests/">

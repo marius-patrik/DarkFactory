@@ -259,26 +259,22 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-16-security-and-secrets">Rule 16 — Security and secrets<a class="headerlink" href="#rule-16-security-and-secrets" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-16-security-authentication-and-secrets">Rule 16 — Security, authentication and secrets<a class="headerlink" href="#rule-16-security-authentication-and-secrets" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>No credential, token, refresh token, cookie, or private key is ever committed, echoed into workflow
-logs, or written into issue or PR bodies. All secrets live in GitHub repository secrets or the local
-OS keychain. Workflow logs must be assumed public. Credentials exist only in DarkFactory's own
-environment and are never propagated to consumer repositories; consumers authenticate through their
-own secrets. No secret value is ever named in a rule or a rule reference.</p>
+<p>No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.</p>
+<p><code>@darkfactory/keychain</code> is the sole machine/harness credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.</p>
+<p><code>@darkfactory/auth</code> separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.</p>
+<p>The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.</p>
+<p>GitHub user authority and GitHub App installation authority remain distinct.</p>
+<p>Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Mistakenly captured credentials are permanent: logs and issues outlive rotations. Keeping the
-system's own credentials private to DarkFactory keeps the fleet secure by construction.</p>
+<p>Centralized custody and explicit browser/machine trust boundaries minimize secret lifetime and prevent capability/plugin code from silently widening access.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Secret-backed workflows and repository settings; credential-focused tests in the test suite.</li>
-<li>No repository-wide secret scanning gate exists today — any claims of one must not be made.</li>
-</ul>
+<p>Keychain/auth import-boundary, redaction, secret-scan and credential-flow tests; workflow/browser artifact audits.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
 <p>None.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Owned by <code>harness-auth</code>: provider identities, vault access, and secret flows. Rules never list
-credential variable names; the manifest declares identities.</p>
+<p>Credential names/values are never copied into rule text. Provider-specific flows belong to keychain/provider capability contracts.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../015-repository-taxonomy/">
