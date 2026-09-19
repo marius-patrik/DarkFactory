@@ -42,7 +42,6 @@ def test_agents_file_exists_and_is_the_canonical_source():
         ), "CONTRIBUTING.md must resolve to AGENTS.md"
 
 
-
 def test_agents_mandates_branches_prs_ci_and_protection():
     """DF-RULE-007 keeps normal work on dedicated PR branches behind current-base checks."""
     content = _read("AGENTS.md").lower()
@@ -75,7 +74,10 @@ def test_agents_points_repository_taxonomy_to_repo_df():
     """DF-RULE-015 keeps repository area taxonomy in repo.df instead of duplicating it in prose."""
     content = _read("AGENTS.md")
     assert "Repository area labels/scopes are declared by final `repo.df`" in content
-    assert "Request classification, commit-scope validation and labels consume the same declared taxonomy" in content
+    assert (
+        "Request classification, commit-scope validation and labels consume the same declared taxonomy"
+        in content
+    )
 
 
 def test_prd_is_the_normative_product_document_with_explicit_authority_hierarchy():
@@ -94,6 +96,7 @@ def test_prd_is_the_normative_product_document_with_explicit_authority_hierarchy
         os.path.join(REPO_ROOT, "ARCHITECTURE.md")
     ), "ARCHITECTURE.md must be retired; PRD.md carries its durable content"
     assert not os.path.exists(os.path.join(REPO_ROOT, "VISION.md")), "VISION.md must be retired"
+
 
 def test_legacy_knowledge_files_are_absent():
     """No legacy knowledge ledger may remain tracked.
@@ -136,7 +139,6 @@ def test_every_adr_is_a_discrete_record_with_status_and_date():
     ], "ADR numbers must be the consecutive 0001..NNNN sequence"
 
 
-
 def test_prd_names_current_modular_architecture_and_capability_boundary():
     """The PRD keeps the accepted package/capability architecture rather than retired D1-D8 shorthand."""
     prd = _read("PRD.md")
@@ -154,6 +156,7 @@ def test_prd_names_current_modular_architecture_and_capability_boundary():
         assert package in prd
     assert "Core owns mechanisms" in prd
     assert "Agentic/product behavior belongs in versioned capabilities" in prd
+
 
 def test_dockerfile_enforces_non_root_user():
     """D4 claims agent processes execute with non-root privileges.
