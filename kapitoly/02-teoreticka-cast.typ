@@ -20,6 +20,16 @@ Základní deterministická infrastruktura pro autonomní vývoj softwaru staví
 - *Reprodukovatelné artefakty*: Výstupy úspěšného průchodu integrační pipeline (spustitelné binární balíčky, knihovny, vysázená PDF dokumentace) svázané s konkrétní verzovací značkou (_tagem_) v historii gitu.
 ]
 
+#critique[
+  *Nestálost testů (Flaky Tests) jako systémová slepá skvrna:*
+  Text prezentuje kontinuální integraci jako nekompromisního deterministického arbitra správnosti. V praxi však integrační a end-to-end testy běžně trpí stochastickou nestálostí (časování asynchronních operací, síťové prodlevy, race conditions). Pokud model narazí na náhodně selhávající test, ReAct smyčka začne horečně upravovat funkční kód ve snaze vyřešit neexistující defekt, čímž vnese do repozitáře skryté regrese. Pro spolehlivý provoz musí harness obsahovat mechanismy detekce nestálosti (automatický opakovaný běh v čistém prostředí, izolace stavu) a striktně rozlišovat selhání infrastruktury od regresí modelu.
+]
+
+#note[
+  *Řešení divergencí dlouho běžících větví:*
+  Doporučujeme doplnit princip deterministického rebase: pokud se hlavní větev (`main`) během autonomního běhu agenta posune, harness musí před spuštěním finální validační pipeline provést automatický rebase a ověřit, zda nedošlo k syntaktickým či logickým merge konfliktům.
+]
+
 == Jazykové modely a dynamika kontextového okna
 
 #blue-note[
@@ -61,6 +71,11 @@ Základní principy velkých jazykových modelů z hlediska agentního inženýr
 - *Few-shot a Chain-of-Thought*: Vzorové ukázky řešení a vedení modelu k explicitní formulaci mezikroků uvažování před samotným zápisem kódu.
 - *Úskalí negativních instrukcí*: Modely často porušují zákazy formulované negací (např. „nemazať existující testy“), protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázané pojmy dříve, než autoregresní proces uplatní logický operátor negace.
   - *Inženýrské řešení*: Afirmativní formulace pravidel (pozitivní vymezení povolených mantinelů) kombinovaná s deterministickou ochranou v harnessu (připojení chráněných souborů pouze pro čtení, blokace v CI).
+]
+
+#note[
+  *Doporučení schématu správy kontextu:*
+  Doporučujeme zařadit srovnávací diagram znázorňující rozdíl mezi destruktivní rekurzivní textovou kompresí (Compaction) a tenzorovým prořezáváním KV cache (StreamingLLM / $H_2 O$) či externím grafem stavu projektu. Schéma pomůže vizualizovat zachování klíčových kotev pozornosti.
 ]
 
 == Architektura řídicího harnessu a orchestrace
@@ -122,6 +137,11 @@ Základní komponenty řídicího systému:
 - *Pracovní postupy jako grafy (DAG / Graph Engineering)*: Formalizace fází životního cyklu jako orientovaného acyklického grafu (detekce $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
 ]
 
+#critique[
+  *Nekontrolovaná mutace v konceptu Meta Harness:*
+  Povolení samořízené evoluce harnessu samotným agentem (modifikace vlastních instrukcí, pravidel a nástrojů) představuje obrovské bezpečnostní a stabilitní riziko. Pokud agent v iteraci $k$ v důsledku mírné halucinace uvolní bezpečnostní pravidlo nebo oslabí validační podmínku, v iteraci $k+1$ ji přijme jako normu (uncontained meta-harness mutation). Pro produkční enterprise prostředí je nezbytné, aby řídicí harness obsahoval kryptograficky podepsané, neměnné jádro pravidel (Immutable Policy Core), které agent nesmí za žádných okolností modifikovat.
+]
+
 == Zapojení člověka do smyčky (Human-in-the-loop)
 
 #unconfirmed[
@@ -135,4 +155,9 @@ Principy řízeného lidského dohledu nad autonomním vývojem:
   - *Prevence únavy z revizí (_Review Fatigue_)*: Vyvážená frekvence kontrol — zamezení mikromanagementu na úrovni jednotlivých souborů při zachování kontroly nad celkovým architektonickým směrem.
 - *Dohledatelnost původního zadání*: Trvalé uchovávání doslovného znění požadavku (GitHub Issue) bez ztrátových parafrází modelem, což brání vymizení okrajových podmínek v průběhu vývoje.
 - *Transparentnost selhání a deterministická eskalace*: Zákaz tichého pohlcování chyb či halucinovaných omluv při selhání. Při vyčerpání rozpočtu tahů nebo selhání testů harness vygeneruje strukturovaný diagnostický incident (diff, chybové hlášení, stav kontextu) a předá jej vývojáři k manuálnímu zásahu.
+]
+
+#critique[
+  *Kognitivní limity lidské schvalovací brány (Review Fatigue):*
+  Spoléhání se na finální sémantickou kontrolu diffu v pull requestu naráží na lidské kognitivní limity. Výzkumy prokazují, že u rozsáhlých diffů (nad 300–400 řádků) dramaticky klesá hloubka lidské pozornosti — vývojář kód pouze zběžně prohlédne a spoléhá na zelenou fajfku z CI. Aby byla lidská brána efektivní, harness musí diffy rozkládat do sémanticky sevřených mikrokroků, generovat interaktivní vysvětlení netriviálních rozhodnutí a explicitně zvýrazňovat změny v kritických architektonických komponentách.
 ]

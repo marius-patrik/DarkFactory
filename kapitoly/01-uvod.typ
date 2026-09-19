@@ -11,6 +11,11 @@
 - *Ústřední inženýrská otázka*: Nezkoumáme triviální otázku, zda jazykový model dokáže napsat fragment kódu, nýbrž jaká kontrolní architektura (*harness*) musí model obklopovat, aby jeho výstupům bylo možné v produkčním repozitáři spolehlivě důvěřovat.
 ]
 
+#note[
+  *Doporučení k motivaci:*
+  Doporučujeme doplnit srovnávací diagram analogie mezi fyzickou temnou továrnou (materiál $arrow$ montážní linka $arrow$ kontrola jakosti $arrow$ expedice) a agentním vývojem softwaru (GitHub Issue $arrow$ agentní harness $arrow$ CI validace $arrow$ PR/Release). Vizuální metafora výrazně zlepší srozumitelnost pro komisi.
+]
+
 == Cíl práce a výzkumné otázky
 
 #unconfirmed[
@@ -29,6 +34,11 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 - *VO3 (Integrita paměti a eliminace sémantického posunu)*: Jak spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a ztrátě architektonických invariantů při kompresi?
 ]
 
+#critique[
+  *Oponentura k výzkumným otázkám:*
+  Otázka VO1 je formulována binárně („Lze vývojový proces strukturovat...“), což svádí k tautologické odpovědi. Rigorózní oponent bude žádat empirické vymezení: Jaké procento rutinních úloh (např. oprava chyby se selhávajícím testem vs. komplexní refaktoring) harness reálně odbaví bez ručního zásahu do kódu? Doporučujeme otázku v obhajobě doplnit o kritérium mezní složitosti úkolu a míry redukce kognitivní zátěže člověka.
+]
+
 == Metodika práce
 
 #unconfirmed[
@@ -37,4 +47,9 @@ Práce má teoreticko-architektonický a inženýrský charakter. Postup sleduje
 - *1. Koncepční analýza*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
 - *2. Architektonický návrh*: Formulace modulárního modelu řídicího harnessu, správy stavu, exekučního pískoviště, bezpečnostních pojistek a orchestrace subagentů.
 - *3. Kritické zhodnocení*: Porovnání navržených principů s volnými agentními smyčkami a vymezení provozních limitů autonomního inženýrství.
+]
+
+#alert[
+  *Chybějící evaluační rámec v metodice:*
+  Metodika práce v současné podobě popisuje inženýrský postup, ale postrádá formální specifikaci evaluačního rámce: definici vzorku úloh pro ověření spolehlivosti (syntetické úlohy vs. reálné bugfixy), stanovení kontrolních metrik (úspěšnost na první pokus, spotřeba tokenů na úspěšný PR) a srovnávací baseline.
 ]

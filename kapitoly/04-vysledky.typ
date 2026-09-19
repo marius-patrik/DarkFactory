@@ -23,6 +23,11 @@ Architektonické principy centralizovaného harnessu:
 - *Univerzální orchestrační automat*: Řídicí harness obsluhuje obě domény shodným stavovým automatem bez větvení integrační logiky.
 ]
 
+#critique[
+  *Riziko kaskádového rozpadu při centralizaci šablon:*
+  Argumentace údržbovou složitostí $O(1)$ zamlčuje druhou stranu mince: chybná nebo nekompatibilní změna v centrálním harnessu okamžitě ohrožuje buildy ve všech klientských repozitářích (kaskádové selhání upstreamu). V textu je nezbytné obhájit, proč je absolutně vyžadováno striktní připínání na konkrétní neměnný SHA hash commitu, a jaké postupy postupného nasazování (canary testing) harness využívá pro ověření změn před jejich plošným nasazením.
+]
+
 == Provozní metriky a spolehlivost agentních běhů
 
 #struct-alert[
@@ -57,6 +62,11 @@ Porovnání navrženého harnessu se současnými platformami (SWE-agent @yao202
   - *Efemérní CI kontejnery*: Běh v izolovaném sandboxu s minimálními oprávněními tokenů a auditovatelným protokolem všech operací.
 ]
 
+#note[
+  *Doporučení empirického srovnání se SWE-bench:*
+  Pro rigorózní akademické zhodnocení doporučujeme po stabilizaci nového jádra DarkFactory podrobit harness standardnímu benchmarku SWE-bench Lite. Porovnání úspěšnosti (`Pass@1`) a spotřeby tokenů vůči referenčním systémům (SWE-agent, AutoCodeRover) poskytne nezpochybnitelný empirický důkaz funkčnosti navržených bezpečnostních pojistek.
+]
+
 == Systémová a metodická omezení
 
 #unconfirmed[
@@ -65,4 +75,9 @@ Limity navržené architektury:
 - *1. Hranice deterministické verifikovatelnosti*: Autonomie je spolehlivá pouze u objektivně testovatelných změn (kód, testy, typy). U subjektivních úloh (UX ergonomie, grafický design, stylistická formulace textu) zůstává role modelu asistenční a validaci provádí člověk.
 - *2. Propustnost a dostupnost inferenčních API*: Rotační žebříček tlumí lokální výpadky, avšak globální kvóty a latence cloudových poskytovatelů tvoří pevný strop průchodnosti pipeline.
 - *3. Absence vícevláknového řešení konfliktů*: Souběžná práce mnoha autonomních agentů a lidí nad týmiž soubory a řešení komplexních merge konfliktů představuje otevřenou výzvu pro navazující výzkum.
+]
+
+#critique[
+  *Metodologická závislost na kvalitě testovací sady repozitáře:*
+  Celá premisa deterministického ověřování předpokládá, že repozitář disponuje kvalitní a přísnou testovací sadou. V praxi je však pokrytí kódu testy často nízké nebo testy ověřují pouze triviální scénáře. Pokud agent provede změnu, která projde chudou sadou testů, ale zavleče subtilní architektonickou vadu, deterministická brána selhává. V diskusi je nutné rozebrat pokročilé techniky verifikace, např. mutační testování (_mutation testing_) či generování regresních testů agentem před samotným zásahem do produkčního kódu.
 ]

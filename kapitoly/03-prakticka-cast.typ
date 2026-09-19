@@ -18,6 +18,11 @@
   - *Lidský inženýr*: Vymezení záměru (co a proč stavět), schvalování technických plánů a finální sémantická kontrola kódu v PR.
 ]
 
+#critique[
+  *Bezpečnostní perimetr aplikace GitHub App:*
+  Architektura DarkFactory staví na instalaci jako GitHub App s právy zápisu do repozitáře a správy pull requestů. Pro podnikové nasazení to představuje zásadní vektor útoku: pokud model podlehne nepřímému prompt injection útoku (např. ze zlomyslného komentáře v issue či neznámého balíčku), získává přístup k interním tokenům repozitáře. Při obhajobě je nutné explicitně vymezit, jak harness izoluje tajnosti repozitáře, omezuje síťový provoz sandboxu a vynucuje princip nejmenších oprávnění (_least privilege_).
+]
+
 == Architektura a životní cyklus požadavku
 
 #struct-alert[
@@ -78,6 +83,11 @@ Klíčové operační mechanismy orchestračního jádra:
 - *Automaticky odvozovaná živá dokumentace (_Living Documentation_)*: Dokumentace a specifikace jsou generovány přímo ze zdrojového kódu a strukturovaných inline komentářů s automatickou validací v CI.
 ]
 
+#critique[
+  *Asymetrie formátů a ztráta kontextu při rotaci poskytovatelů:*
+  Rotace modelů různých poskytovatelů (např. přepnutí z Claude na GPT či DeepSeek při vyčerpání kvóty) naráží na zásadní odlišnosti v tokenizérech, syntaxi nástrojů (XML vs. JSON schemas) a vnímání systémového promptu. Při náhlém předání kontextu hrozí ztráta návaznosti v rozpracovaném plánu. Text musí vysvětlit přítomnost normalizační vrstvy (provider adapter), která udržuje historii tahů a výpisy nástrojů v neutrální kanonické reprezentaci.
+]
+
 #note[Placeholder: Zde bude doplněn detailní popis nového modelu rotace poskytovatelů, správy tokenových rozpočtů, cachování závislostí a generování živé dokumentace po dokončení přestavby.]
 
 == Systém revizních značek pro lidský dohled nad akademickým textem
@@ -111,4 +121,9 @@ Protokol vizuálních revizních značek pro formát Typst formalizuje dohled č
 - *Navrženo k odstranění (`#removed[...]`)*: Červené přeškrtnutí — zastaralý text navržený ke smazání.
 - *Srovnávací diff (`#diff(old, new)`)*: Červený původní text přeškrtnutý následovaný zeleným novým textem.
 - *Čistý neoznačený text*: Finální, autorsky schválený text v hlase autora bez podbarvení.
+]
+
+#note[
+  *Automatizovaná kontrola revizních značek v CI:*
+  Doporučujeme propojit protokol revizních značek s validační pipeline DarkFactory: CI linter by měl ověřit, že před finálním vydáním nezůstala v rukopisu žádná neuzavřená značka vady (`#issue`) a že publikovaná čistá verze `prace.pdf` deterministicky potlačuje všechny interní callouty a diffy.
 ]
