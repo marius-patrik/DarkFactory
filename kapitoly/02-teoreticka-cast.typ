@@ -4,9 +4,9 @@
 
 == #confirmed[Git a GitHub (Správa verzí)]
 
-=== Úvod do správy verzí a GitHubu
+=== #confirmed[Úvod]
 
-#unconfirmed[
+#confirmed[
 Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém *Git* v kombinaci s platformou *GitHub*.
 
 Klíčové komponenty infrastruktury zahrnují:
@@ -94,9 +94,9 @@ Klíčové mechanismy ochrany zahrnují:
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
 
-=== Úvod do velkých jazykových modelů
+=== #confirmed[Úvod]
 
-#unconfirmed[
+#confirmed[
 V agentním softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
 
 Základní principy fungování modelu zahrnují:
@@ -195,13 +195,11 @@ Příčiny a inženýrská řešení tohoto jevu:
 
 == #confirmed[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]
 
-=== Úvod do řídicích harnessů
+=== #confirmed[Úvod]
 
 #confirmed[
 V terminologii agentního inženýrství označuje pojem *harness* (řídicí postroj) aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu. Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
-]
 
-#unconfirmed[
 Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná *agentní smyčka* (_Agent Loop_).
 ]
 
