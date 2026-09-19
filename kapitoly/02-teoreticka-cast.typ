@@ -88,7 +88,7 @@ Klíčové mechanismy ochrany zahrnují:
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
-== LLM, chatboti, agenti a agentní inženýrství (kontext, prompt, smyčka, graf)
+== LLMs, Chatbots and Agents
 
 #blue-note[
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
@@ -193,7 +193,7 @@ Příčiny a inženýrská řešení tohoto jevu:
 - *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
-== Architektura řídicího harnessu a orchestrace
+== Harness and Agentic Engineering (Prompt, Context, Loop, Graph...)
 
 === Úvod do řídicích harnessů
 
