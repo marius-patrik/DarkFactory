@@ -156,9 +156,7 @@ describe("loadIdentities", () => {
 	});
 
 	it("throws IdentitiesValidationError when manifest file does not exist", async () => {
-		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(
-			IdentitiesValidationError,
-		);
+		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(IdentitiesValidationError);
 	});
 
 	it("throws IdentitiesValidationError when manifest JSON is invalid", async () => {

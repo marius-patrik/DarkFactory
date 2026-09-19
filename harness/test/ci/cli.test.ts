@@ -13,10 +13,10 @@ describe("df ci CLI commands", () => {
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
+				join(temp, ".darkfactory", "ci.df"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 
 			// df ci install --repo <temp>
@@ -41,10 +41,10 @@ describe("df ci CLI commands", () => {
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
+				join(temp, ".darkfactory", "ci.df"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 
 			const { fetch } = scripted([

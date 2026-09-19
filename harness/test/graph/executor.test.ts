@@ -65,7 +65,7 @@ describe("runGraph", () => {
 			outputs: { plan_text: "do it" },
 			iterations: { plan: 1, apply: 1 },
 		});
-		expect(JSON.parse(readFileSync(join(dir, "state.json"), "utf8"))).toEqual(state);
+		expect(JSON.parse(readFileSync(join(dir, "state.df"), "utf8"))).toEqual(state);
 		const events = readFileSync(join(dir, "events.jsonl"), "utf8")
 			.trim()
 			.split("\n")

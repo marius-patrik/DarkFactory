@@ -568,7 +568,8 @@ export async function loadProviderConfig(
 		);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-			if (error instanceof SyntaxError) throw new Error(`Invalid provider configuration JSON at ${join(home, "providers.df")}`);
+			if (error instanceof SyntaxError)
+				throw new Error(`Invalid provider configuration JSON at ${join(home, "providers.df")}`);
 			throw error;
 		}
 	}

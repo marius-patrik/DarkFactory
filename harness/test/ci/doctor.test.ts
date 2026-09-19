@@ -14,14 +14,14 @@ describe("df ci doctor", () => {
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
+				join(temp, ".darkfactory", "ci.df"),
 				JSON.stringify({
 					alert_after: 2,
 					checks: [
 						{ name: "ci-pipeline", required: true, workflow: "ci.yml" },
 						{ name: "verify-bound-issue", required: true, workflow: "verify-bound-issue.yml" },
 					],
-				})
+				}),
 			);
 			await installWorkflows(temp);
 
@@ -60,10 +60,10 @@ describe("df ci doctor", () => {
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
+				join(temp, ".darkfactory", "ci.df"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 			await installWorkflows(temp);
 

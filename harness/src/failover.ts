@@ -101,7 +101,9 @@ export async function runFailoverTurn(options: RunTurnOptions): Promise<TurnResu
 				...(options.fetchFor ? { fetch: options.fetchFor(candidate) } : {}),
 				maxRetries: 0,
 				maxRetryDelayMs: 1_000,
-				onResponse(value) { response = value; },
+				onResponse(value) {
+					response = value;
+				},
 			});
 			for await (const event of stream) {
 				if (event.type === "text_delta") options.onText?.(event.delta);
@@ -110,8 +112,12 @@ export async function runFailoverTurn(options: RunTurnOptions): Promise<TurnResu
 			const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
 			if (message.stopReason !== "error" && message.stopReason !== "aborted") {
 				const event: StepEvent = {
-					type: "attempt", ...candidate, stopReason: message.stopReason, usage: message.usage,
-					errorClass: null, durationMs,
+					type: "attempt",
+					...candidate,
+					stopReason: message.stopReason,
+					usage: message.usage,
+					errorClass: null,
+					durationMs,
 					errorMessage: null,
 				};
 				steps.push(event);
@@ -119,11 +125,22 @@ export async function runFailoverTurn(options: RunTurnOptions): Promise<TurnResu
 				return { message, candidate, steps };
 			}
 			const config = options.providerConfigs?.get(candidate.provider);
-			const failure = classifyFailure({ message, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
+			const failure = classifyFailure(
+				{ message, response },
+				config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined,
+			);
 			lastFailure = redactErrorMessage(message.errorMessage ?? message.stopReason);
 			const event: StepEvent = {
-				type: "attempt", ...candidate, stopReason: message.stopReason, usage: message.usage,
-				durationMs, classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
+				type: "attempt",
+				...candidate,
+				stopReason: message.stopReason,
+				usage: message.usage,
+				durationMs,
+				classification: failure.kind,
+				errorClass: failure.errorClass ?? null,
+				errorMessage: lastFailure,
+				resetAt: failure.resetAt,
+				pool: failure.pool,
 			};
 			steps.push(event);
 			options.onStep?.(event);
@@ -135,12 +152,23 @@ export async function runFailoverTurn(options: RunTurnOptions): Promise<TurnResu
 		} catch (error) {
 			if (error instanceof TerminalAttemptError) throw error;
 			const config = options.providerConfigs?.get(candidate.provider);
-			const failure = classifyFailure({ error, response }, config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined);
+			const failure = classifyFailure(
+				{ error, response },
+				config?.quota ? { rules: config.quota.rules, model: candidate.model } : undefined,
+			);
 			const durationMs = Math.max(0, (options.now ?? performance.now)() - started);
 			lastFailure = redactErrorMessage(error);
 			const event: StepEvent = {
-				type: "attempt", ...candidate, stopReason: "threw", usage: null, durationMs,
-				classification: failure.kind, errorClass: failure.errorClass ?? null, errorMessage: lastFailure, resetAt: failure.resetAt, pool: failure.pool,
+				type: "attempt",
+				...candidate,
+				stopReason: "threw",
+				usage: null,
+				durationMs,
+				classification: failure.kind,
+				errorClass: failure.errorClass ?? null,
+				errorMessage: lastFailure,
+				resetAt: failure.resetAt,
+				pool: failure.pool,
 			};
 			steps.push(event);
 			options.onStep?.(event);

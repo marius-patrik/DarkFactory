@@ -13,16 +13,28 @@ const COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 function configuredApiKey(config: ApiKeyAuthConfig): ApiKeyAuth {
 	return {
 		name: "API key",
-		async login(interaction) { const key = (await interaction.prompt({ type: "secret", message: "API key" })).trim(); if (!key) throw new Error("API key cannot be empty"); return { type: "api_key", key }; },
+		async login(interaction) {
+			const key = (await interaction.prompt({ type: "secret", message: "API key" })).trim();
+			if (!key) throw new Error("API key cannot be empty");
+			return { type: "api_key", key };
+		},
 		async resolve({ ctx, credential }) {
 			let key = credential?.key;
-			for (const env of config.env ?? []) { key ??= await ctx.env(env); if (key) break; }
+			for (const env of config.env ?? []) {
+				key ??= await ctx.env(env);
+				if (key) break;
+			}
 			const anonymous = !key && !!config.anonymousValue;
 			key ??= config.anonymousValue;
 			if (!key) return config.optional ? { auth: {}, source: "Anonymous" } : undefined;
 			// pi's SDK-backed dialects read only `apiKey`; placement adds the configured header on top.
-			if (config.placement === "bearer") return { auth: { apiKey: key, headers: { Authorization: `Bearer ${key}` } }, source: anonymous ? "Anonymous" : "API key" };
-			if (config.placement === "header") return { auth: { apiKey: key, headers: { [config.name ?? "x-api-key"]: key } }, source: "API key" };
+			if (config.placement === "bearer")
+				return {
+					auth: { apiKey: key, headers: { Authorization: `Bearer ${key}` } },
+					source: anonymous ? "Anonymous" : "API key",
+				};
+			if (config.placement === "header")
+				return { auth: { apiKey: key, headers: { [config.name ?? "x-api-key"]: key } }, source: "API key" };
 			return { auth: { apiKey: key }, source: "API key" };
 		},
 	};
@@ -30,7 +42,8 @@ function configuredApiKey(config: ApiKeyAuthConfig): ApiKeyAuth {
 export function prepareReplayPayload(config: ProviderConfig, payload: unknown): unknown {
 	const placeholder = config.replay?.foreignToolCallThoughtSignature;
 	if (!placeholder) return payload;
-	if (!payload || typeof payload !== "object" || !Array.isArray((payload as { contents?: unknown }).contents)) return payload;
+	if (!payload || typeof payload !== "object" || !Array.isArray((payload as { contents?: unknown }).contents))
+		return payload;
 	// Copy only the path to each changed part: real payloads carry non-cloneable values (abort signals, tool handlers).
 	let changed = false;
 	const contents = (payload as { contents: unknown[] }).contents.map((content) => {
@@ -60,25 +73,60 @@ function replayOptions(config: ProviderConfig, options: StreamOptions | undefine
 function streams(config: ProviderConfig): ProviderStreams {
 	let base: ProviderStreams;
 	switch (config.dialect) {
-		case "openai-completions": base = openAICompletionsApi(); break;
-		case "openai-responses": base = openAIResponsesApi(); break;
-		case "openai-codex-responses": base = openAICodexResponsesApi(); break;
-		case "anthropic-messages": base = anthropicMessagesApi(); break;
-		case "google-generative-ai": base = googleGenerativeAIApi(); break;
-		case "cloudcode-agent": base = cloudcodeAgentApi(config); break;
+		case "openai-completions":
+			base = openAICompletionsApi();
+			break;
+		case "openai-responses":
+			base = openAIResponsesApi();
+			break;
+		case "openai-codex-responses":
+			base = openAICodexResponsesApi();
+			break;
+		case "anthropic-messages":
+			base = anthropicMessagesApi();
+			break;
+		case "google-generative-ai":
+			base = googleGenerativeAIApi();
+			break;
+		case "cloudcode-agent":
+			base = cloudcodeAgentApi(config);
+			break;
 	}
 	return {
 		stream: (requestModel, context, options) => base.stream(requestModel, context, replayOptions(config, options)),
-		streamSimple: (requestModel, context, options) => base.streamSimple(requestModel, context, replayOptions(config, options)),
+		streamSimple: (requestModel, context, options) =>
+			base.streamSimple(requestModel, context, replayOptions(config, options)),
 	};
 }
 function model(config: ProviderConfig, entry: ProviderConfig["models"]["static"][number]): Model<any> {
-	return { id: entry.id, name: entry.name ?? entry.id, api: config.dialect, provider: config.id, baseUrl: config.baseUrl, reasoning: entry.reasoning ?? config.capabilities.reasoning, input: entry.input ?? (config.capabilities.images ? ["text", "image"] : ["text"]), cost: COST, contextWindow: entry.contextWindow ?? 128_000, maxTokens: entry.maxTokens ?? 32_768 };
+	return {
+		id: entry.id,
+		name: entry.name ?? entry.id,
+		api: config.dialect,
+		provider: config.id,
+		baseUrl: config.baseUrl,
+		reasoning: entry.reasoning ?? config.capabilities.reasoning,
+		input: entry.input ?? (config.capabilities.images ? ["text", "image"] : ["text"]),
+		cost: COST,
+		contextWindow: entry.contextWindow ?? 128_000,
+		maxTokens: entry.maxTokens ?? 32_768,
+	};
 }
 export function providerFromConfig(config: ProviderConfig): Provider {
 	const apiKey = config.auth.find((entry): entry is ApiKeyAuthConfig => entry.kind === "api_key");
 	const oauth = config.auth.find((entry) => entry.kind === "oauth");
-	return createProvider({ id: config.id, name: config.name, baseUrl: config.baseUrl, headers: config.staticHeaders, auth: { ...(apiKey ? { apiKey: configuredApiKey(apiKey) } : {}), ...(oauth ? { oauth: createConfiguredOAuth(oauth) } : {}) }, models: config.models.static.map((entry) => model(config, entry)), api: streams(config) });
+	return createProvider({
+		id: config.id,
+		name: config.name,
+		baseUrl: config.baseUrl,
+		headers: config.staticHeaders,
+		auth: {
+			...(apiKey ? { apiKey: configuredApiKey(apiKey) } : {}),
+			...(oauth ? { oauth: createConfiguredOAuth(oauth) } : {}),
+		},
+		models: config.models.static.map((entry) => model(config, entry)),
+		api: streams(config),
+	});
 }
 export class ProviderRegistry {
 	readonly entries: readonly ProviderConfig[];
@@ -89,6 +137,13 @@ export class ProviderRegistry {
 		this.byId = new Map(file.providers.map((entry) => [entry.id, entry]));
 		this.providers = this.entries.filter((entry) => entry.enabled !== false).map(providerFromConfig);
 	}
-	config(id: string): ProviderConfig | undefined { return this.byId.get(id); }
-	models(options?: CreateModelsOptions): MutableModels { const result = createModels(options); result.clearProviders(); for (const provider of this.providers) result.setProvider(provider); return result; }
+	config(id: string): ProviderConfig | undefined {
+		return this.byId.get(id);
+	}
+	models(options?: CreateModelsOptions): MutableModels {
+		const result = createModels(options);
+		result.clearProviders();
+		for (const provider of this.providers) result.setProvider(provider);
+		return result;
+	}
 }

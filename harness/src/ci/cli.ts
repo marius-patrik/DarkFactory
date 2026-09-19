@@ -58,10 +58,14 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				log(`Installed ${report.installed.length} workflow(s): ${report.installed.join(", ")}`);
 			}
 			if (report.skippedModified.length > 0) {
-				log(`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`);
+				log(
+					`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`,
+				);
 			}
 			if (report.skippedUnmanaged.length > 0) {
-				log(`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s) (use --force to overwrite): ${report.skippedUnmanaged.join(", ")}`);
+				log(
+					`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s) (use --force to overwrite): ${report.skippedUnmanaged.join(", ")}`,
+				);
 			}
 			return 0;
 		}
@@ -84,7 +88,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				log(`${report.upToDate.length} workflow(s) already up-to-date: ${report.upToDate.join(", ")}`);
 			}
 			if (report.skippedModified.length > 0) {
-				log(`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`);
+				log(
+					`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`,
+				);
 			}
 			if (report.skippedUnmanaged.length > 0) {
 				log(`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s): ${report.skippedUnmanaged.join(", ")}`);
@@ -130,7 +136,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			for (const c of status.checks) {
 				const symbol = c.conclusion === "success" ? "✓" : c.conclusion === "failure" ? "✗" : "⟳";
 				const req = c.required ? "[required]" : "[optional]";
-				log(`  ${symbol} ${c.name.padEnd(25)} ${req.padEnd(12)} status=${c.status} conclusion=${c.conclusion ?? "none"}`);
+				log(
+					`  ${symbol} ${c.name.padEnd(25)} ${req.padEnd(12)} status=${c.status} conclusion=${c.conclusion ?? "none"}`,
+				);
 			}
 
 			return status.state === "failed" ? 1 : 0;

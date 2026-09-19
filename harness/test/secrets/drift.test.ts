@@ -9,9 +9,24 @@ describe("drift detection", () => {
 		const meta: VaultMeta = {
 			version: 1,
 			entries: [
-				{ name: "A", scope: "actions", created: { by: "h", at: "2026-01-01T00:00:00Z" }, updated: { by: "h", at: "2026-01-02T00:00:00Z" } },
-				{ name: "B", scope: "actions", created: { by: "h", at: "2026-01-01T00:00:00Z" }, updated: { by: "h", at: "2026-01-02T00:00:00Z" } },
-				{ name: "C", scope: "actions", created: { by: "h", at: "2026-01-01T00:00:00Z" }, updated: { by: "h", at: "2026-01-02T00:00:00Z" } },
+				{
+					name: "A",
+					scope: "actions",
+					created: { by: "h", at: "2026-01-01T00:00:00Z" },
+					updated: { by: "h", at: "2026-01-02T00:00:00Z" },
+				},
+				{
+					name: "B",
+					scope: "actions",
+					created: { by: "h", at: "2026-01-01T00:00:00Z" },
+					updated: { by: "h", at: "2026-01-02T00:00:00Z" },
+				},
+				{
+					name: "C",
+					scope: "actions",
+					created: { by: "h", at: "2026-01-01T00:00:00Z" },
+					updated: { by: "h", at: "2026-01-02T00:00:00Z" },
+				},
 			],
 		};
 		const pushMap: PushMap = {
@@ -21,7 +36,13 @@ describe("drift detection", () => {
 		};
 		// GitHub has A and B, missing C, plus extra D not in pushMap
 		const mock = scripted([
-			json({ secrets: [{ name: "A", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" }, { name: "B", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" }, { name: "D", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" }] }),
+			json({
+				secrets: [
+					{ name: "A", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" },
+					{ name: "B", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" },
+					{ name: "D", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-02T00:00:00Z" },
+				],
+			}),
 		]);
 		const client = new GitHubClient({ token: "t", fetch: mock.fetch });
 		const report = await detectDrift(client, "owner/repo", meta, pushMap);
@@ -36,10 +57,19 @@ describe("drift detection", () => {
 	test("healthy when all mapped secrets match", async () => {
 		const meta: VaultMeta = {
 			version: 1,
-			entries: [{ name: "X", scope: "actions", created: { by: "h", at: "2026-01-01T00:00:00Z" }, updated: { by: "h", at: "2026-01-01T00:00:00Z" } }],
+			entries: [
+				{
+					name: "X",
+					scope: "actions",
+					created: { by: "h", at: "2026-01-01T00:00:00Z" },
+					updated: { by: "h", at: "2026-01-01T00:00:00Z" },
+				},
+			],
 		};
 		const pushMap: PushMap = { X: { repos: ["owner/repo"], ghName: "X" } };
-		const mock = scripted([json({ secrets: [{ name: "X", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" }] })]);
+		const mock = scripted([
+			json({ secrets: [{ name: "X", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" }] }),
+		]);
 		const client = new GitHubClient({ token: "t", fetch: mock.fetch });
 		const report = await detectDrift(client, "owner/repo", meta, pushMap);
 		expect(report.healthy).toBe(true);

@@ -24,7 +24,10 @@ describe("ToolPolicy regression triplet", () => {
 
 	test("denied-failure: explicit command deny wins", () => {
 		const cwd = resolve("workspace");
-		const decision = new ToolPolicy({ cwd, deny: ["command:echo forbidden"] }).evaluate({ toolName: "bash", input: { command: "echo forbidden" } });
+		const decision = new ToolPolicy({ cwd, deny: ["command:echo forbidden"] }).evaluate({
+			toolName: "bash",
+			input: { command: "echo forbidden" },
+		});
 		expect(decision.allowed).toBe(false);
 		expect(decision.reason).toContain("denied by policy");
 	});
