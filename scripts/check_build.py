@@ -63,8 +63,13 @@ for path in (
     *sorted(Path("kapitoly").glob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
-    if 'lib/odborna-prace.typ' in source:
-        fail(f"legacy template import remains in {path}")
+    active_imports = [
+        line.strip()
+        for line in source.splitlines()
+        if line.lstrip().startswith("#import ")
+    ]
+    if any('lib/odborna-prace.typ' in line for line in active_imports):
+        fail(f"legacy active template import remains in {path}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
