@@ -5,6 +5,7 @@
 
 Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablonu, řídicí skripty a zdrojový kód autonomního systému DarkFactory.
 
+#diff[
 #figure(
   ```text
   mono-OdbornaPrace/
@@ -25,7 +26,31 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
   └── README.md                       # Dokumentace a návod na reprodukci prostředí
   ```,
   caption: [Stromová adresářová struktura odevzdaného elektronického archivu a doprovodných repozitářů.],
+)
+][
+#figure(
+  ```text
+  DarkFactory-Paper/
+  ├── kapitoly/                       # Text jednotlivých kapitol práce
+  ├── packages/
+  │   └── odborna-prace-template/     # Interní Typst package sazby a review systému
+  │       ├── src/lib.typ
+  │       ├── src/wordometer.typ
+  │       └── typst.toml
+  ├── darkfactory/                    # Jediný git submodule; praktická část DarkFactory
+  ├── img/                            # Diagramy a grafické podklady
+  ├── fonts/                          # Přibalená písma pro reprodukovatelnou sazbu
+  ├── bib/references.bib              # Bibliografická databáze
+  ├── scripts/                        # CI, Pages a náhledové pomocné skripty
+  ├── main.typ                        # Jediný kanonický vstup kompilace
+  ├── thesis.typ                      # Sestavení rukopisu
+  ├── metadata.typ                    # Metadata, anotace a jazykové varianty
+  ├── Makefile                        # Osm profilových/review výstupů a CI kontrakt
+  └── README.md                       # Dokumentace repozitáře
+  ```,
+  caption: [Aktuální stromová struktura odevzdaného repozitáře práce a připojené praktické části.],
 ) <kod-strom-prilohy>
+]
 ]
 
 #unconfirmed[
@@ -63,6 +88,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 
 Tato příloha uvádí referenční definici a použití vizuálních revizních značek pro řízení a dohled nad generovaným textem v sazebním formátu Typst.
 
+#diff[
 #figure(
   ```typ
   #import "lib/odborna-prace.typ": note, issue, alert, critique, added, draft, confirmed, diff
@@ -82,7 +108,31 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   #diff[Původní chybné znění textu.][Nové opravené znění textu po revizi.]
   ```,
   caption: [Ukázka zápisu a použití revizních značek a textových funkcí v jazyce Typst.],
+)
+][
+#figure(
+  ```typ
+  #import "../packages/odborna-prace-template/src/lib.typ": \
+    note, issue, alert, critique, blue-note, \
+    added, draft, unconfirmed, confirmed, removed, diff
+
+  // --- 1. Review callouty ---
+  #note[Doplňte porovnání rychlosti kompilace mezi verzemi 0.1 a 0.2.]
+  #issue[Chybná signatura funkce: chybí povinný parametr timeout.]
+  #alert[Sekce postrádá shrnutí naměřených výsledků před diskusí.]
+  #critique[Metodologická absence baseline prokazující přínos nového modulu.]
+  #blue-note[Metodické vymezení rozsahu práce.]
+
+  // --- 2. Textové review funkce ---
+  #unconfirmed[Neověřený koncept.]
+  #added[Nově přidaný text.]
+  #confirmed[Uživatelem potvrzený text.]
+  #removed[Text navržený k odstranění.]
+  #diff[Původní znění.][Nové znění.]
+  ```,
+  caption: [Aktuální zápis revizních značek importovaných z interního Typst package.],
 ) <kod-znacky-typst>
+]
 
 *Vizuální reprezentace jednotlivých prvků v sazbě*
 
@@ -108,9 +158,9 @@ Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 
 Role značek v lidském dohledu:
 - *Čistý neoznačený text*: Schválený autorský text v hlase autora.
-- *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
+- #diff[*Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.][*Žluté podtržení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.]
 - *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.
-- *Modré podbarvení (`#confirmed`)*: Uživatelem odsouhlasený text.
-- *Srovnávací diff (`#diff`)*: Transparentní vizualizace navržených oprav.
+- #diff[*Modré podbarvení (`#confirmed`)*: Uživatelem odsouhlasený text.][*Zelené podtržení (`#confirmed`)*: Uživatelem odsouhlasený, ale ještě nefinalizovaný text.]
+- #diff[*Srovnávací diff (`#diff`)*: Transparentní vizualizace navržených oprav.][*Srovnávací diff (`#diff`)*: GitHub-style červený řádek `-` pro původní text a zelený řádek `+` pro navrženou náhradu.]
 - *Postranní panely (Callouty)*: Striktní oddělení námětů, chyb a oponentury od těla textu.
 ]
