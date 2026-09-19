@@ -45,7 +45,7 @@ describe("hard .df transition", () => {
 			"harness/src/limits/quota-engine.ts": [".lock`", ".tmp`"],
 			"harness/src/models/catalog.ts": ["${provider}.json", ".tmp`"],
 			"harness/src/secrets/vault-store.ts": [".secrets.lock", ".tmp`"],
-			"harness/src/graph/run-state.ts": ["${subject}.json", ".tmp-", ".json`"],
+			"harness/src/graph/run-state.ts": ["${subject}.json", ".tmp.json", ".json`"],
 			"harness/src/graph/executor.ts": ["state.json", "events.jsonl", "result.json", ".tmp`"],
 			".github/scripts/agent_runner.py": ["credentials.json", "config.json", ".antigravity_checkpoint.json"],
 		};
