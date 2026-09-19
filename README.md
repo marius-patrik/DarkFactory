@@ -11,7 +11,7 @@ který práci zároveň sází, testuje a publikuje.
 
 Aktivní architektura má pouze dva repozitáře:
 
-- **DarkFactory-Paper** — rukopis, sazba, interní Typst šablonu a integrační bod praktické části.
+- **DarkFactory-Paper** — rukopis, sazba, interní Typst šablona a integrační bod praktické části.
 - **DarkFactory** — vlastní agentní harness; v tomto repozitáři je připojen jako jediný submodule `darkfactory/`.
 
 Dřívější `OdbornaPrace-mono` wrapper už není potřeba. Samostatná šablona byla
@@ -57,7 +57,7 @@ make watch      # živý náhled školního final profilu
 make build      # všechny 4 final profily
 make review     # všechny 4 review profily
 make all        # všech 8 PDF
-make ci         # všech 8 PDF + kontrola artefaktů a release manifestu
+make ci         # 8 PDF výchozí šablony + smoke test všech šablon + kontrola architektury
 make site       # sestaví PDF a lokální podobu GitHub Pages
 ```
 
