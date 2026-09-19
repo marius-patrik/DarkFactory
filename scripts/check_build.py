@@ -81,6 +81,7 @@ template_root = Path("templates/gjkt-odborna-prace")
 for required in (
     Path("templates/common.typ"),
     Path("templates/registry.typ"),
+    Path("templates/terms.typ"),
     template_root / "template.typ",
     template_root / "wordometer.typ",
     template_root / "README.md",
@@ -158,6 +159,18 @@ for path in sorted(Path("kapitoly").glob("*.typ")):
         )
         if any(token in stripped for token in forbidden):
             fail(f"layout directive belongs in template, not {path}:{line_number}: {stripped}")
+
+# Shared terminology must remain declarative and centralized.
+registry_source = Path("templates/registry.typ").read_text(encoding="utf-8")
+if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = vocabulary" not in registry_source:
+    fail("template registry must export the shared terminology vocabulary")
+
+for path in sorted(Path("kapitoly").glob("*.typ")):
+    source = path.read_text(encoding="utf-8")
+    if '#term("' in source or "explanation:" in source:
+        fail(f"chapter contains an ad-hoc term definition instead of terms.<id>: {path}")
+    if "#accepted[#diff" in source or "#finalized[#diff" in source:
+        fail(f"accepted/finalized content must not retain a diff: {path}")
 
 # Legacy review marker API must not return.
 for path in (
