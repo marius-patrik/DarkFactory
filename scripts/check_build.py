@@ -379,6 +379,7 @@ for required in (
     "Columns2Icon",
     "MinusIcon",
     "PlusIcon",
+    "RefreshCwIcon",
     "PanelLeftIcon",
     "PanelRightIcon",
     "ModePicker",
@@ -399,6 +400,11 @@ icon_source = Path("web/src/components/animated-icon.tsx").read_text(encoding="u
 for required in ("lucide-animated", "lucide-react", "STATIC_FALLBACKS"):
     if required not in icon_source:
         fail(f"viewer icon adapter missing fallback contract: {required}")
+for required in ("MinusIcon: Minus", "RefreshCwIcon: RefreshCw"):
+    if required not in icon_source:
+        fail(f"viewer icon adapter missing guaranteed static fallback: {required}")
+if 'label="Refresh page"' not in app_source or "window.location.reload()" not in app_source:
+    fail("viewer must expose an in-UI refresh page action")
 
 template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(encoding="utf-8")
 if '"KONCEPT"' in template_source:

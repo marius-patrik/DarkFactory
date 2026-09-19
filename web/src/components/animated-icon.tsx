@@ -3,8 +3,10 @@ import * as AnimatedIcons from "lucide-animated";
 import {
   Maximize,
   Minimize,
+  Minus,
   PanelLeft,
   PanelRight,
+  RefreshCw,
 } from "lucide-react";
 
 type AnimatedIconProps = HTMLAttributes<HTMLDivElement> & {
@@ -34,6 +36,10 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   MaximizeIcon: Maximize,
   Minimize,
   MinimizeIcon: Minimize,
+  Minus,
+  MinusIcon: Minus,
+  RefreshCw,
+  RefreshCwIcon: RefreshCw,
 };
 
 export function AnimatedIcon({

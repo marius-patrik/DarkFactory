@@ -954,6 +954,11 @@ export function ViewerApp() {
 
           <div className="toolbar-right">
             <TooltipAction
+              label="Refresh page"
+              icon={["RefreshCwIcon", "RotateCwIcon"]}
+              onClick={() => window.location.reload()}
+            />
+            <TooltipAction
               label={viewMode === "split" ? "Exit split view" : "Split view"}
               icon={["Columns2Icon", "PanelLeftRightIcon"]}
               href={canSplit ? splitTarget : undefined}
