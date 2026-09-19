@@ -48,6 +48,7 @@ VARIANTS = (
 
 DEFAULT_TEMPLATE = "gjkt-odborna-prace"
 PDFJS_VERSION = "6.3.289"
+WORK_TITLE = "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj"
 OUT = Path("out")
 SITE = Path("site")
 WEB = Path("web")
@@ -85,6 +86,7 @@ def viewer_href(
     template_name: str,
     filename: str,
     *,
+    profile: str,
     title: str,
     mode: str,
     peer_filename: str,
@@ -93,6 +95,8 @@ def viewer_href(
     return "viewer.html?" + urlencode(
         {
             "file": href_for(template_name, filename),
+            "template": template_name,
+            "profile": profile,
             "title": title,
             "mode": mode,
             "peer": href_for(template_name, peer_filename),
@@ -113,7 +117,7 @@ for template_name in template_names:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
 
-for asset in ("viewer.html", "viewer.css", "viewer.js"):
+for asset in ("viewer.html", "viewer.css", "viewer.js", "icons.js"):
     source = WEB / asset
     if not source.is_file():
         raise SystemExit(f"missing viewer source asset: {source}")
@@ -121,6 +125,7 @@ for asset in ("viewer.html", "viewer.css", "viewer.js"):
 
 manifest = {
     "commit": os.environ.get("GITHUB_SHA", ""),
+    "work_title": WORK_TITLE,
     "default_template": DEFAULT_TEMPLATE,
     "templates": template_names,
     "variants": VARIANTS,
@@ -147,6 +152,7 @@ for template_name in template_names:
         final_view = viewer_href(
             template_name,
             variant["final"],
+            profile=variant["profile"],
             title=variant["title"],
             mode="final",
             peer_filename=variant["review"],
@@ -155,6 +161,7 @@ for template_name in template_names:
         review_view = viewer_href(
             template_name,
             variant["review"],
+            profile=variant["profile"],
             title=variant["title"],
             mode="review",
             peer_filename=variant["final"],
@@ -270,6 +277,7 @@ for required in (
     SITE / "viewer.html",
     SITE / "viewer.css",
     SITE / "viewer.js",
+    SITE / "icons.js",
     SITE / "variants.json",
 ):
     if not required.is_file() or required.stat().st_size == 0:
