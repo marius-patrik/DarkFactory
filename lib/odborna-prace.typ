@@ -48,9 +48,9 @@
 #let bilingual(cs, en, stacked: true) = context {
   let mode = language-state.get()
   if mode == "cs" {
-    cs
+    text(lang: "cs")[#cs]
   } else if mode == "en" {
-    en
+    text(lang: "en")[#en]
   } else if stacked {
     block(breakable: true)[
       #text(lang: "cs")[#cs]
@@ -198,67 +198,67 @@
     en: "Context Rot",
     cs: "Degradace kontextu",
     explanation_en: "A practical term for degradation in a model's ability to reliably use relevant information as the context becomes long, noisy, or internally competing, which can lead to missed instructions and lost relationships between facts.",
-    explanation_cs: "Praktické označení pro zhoršování schopnosti modelu spolehlivě využívat relevantní informace při dlouhém, zašuměném nebo vzájemně si konkurujícím kontextu, což může vést k přehlížení instrukcí a ztrátě souvislostí.",
+    explanation_cs: "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí.",
   ),
   (
     en: "Embedding",
     cs: "Vektorová reprezentace",
     explanation_en: "A multidimensional vector representation used to encode tokens or other data so that numerical operations can capture useful relationships between representations.",
-    explanation_cs: "Vícerozměrná vektorová reprezentace tokenů nebo jiných dat, která umožňuje numerickými operacemi zachycovat užitečné vztahy mezi reprezentacemi.",
+    explanation_cs: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy.",
   ),
   (
     en: "Git",
     cs: "Git",
     explanation_en: "A distributed version-control system for recording source-history changes, branching, merging, and returning to earlier repository states.",
-    explanation_cs: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení, slučování změn a návrat k předchozím stavům repozitáře.",
+    explanation_cs: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.",
   ),
   (
     en: "GitHub",
     cs: "GitHub",
     explanation_en: "A platform for hosting Git repositories and coordinating software-development workflows such as Issues, Pull Requests, and CI/CD automation.",
-    explanation_cs: "Platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí funkcí jako Issues, Pull Requests a automatizace CI/CD.",
+    explanation_cs: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.",
   ),
   (
     en: "Harness",
     cs: "Řídicí harness",
     explanation_en: "The application and orchestration layer surrounding a model's inference core; it provides tools, context management, guardrails, state handling, and control over the execution lifecycle.",
-    explanation_cs: "Aplikační a orchestrační vrstva obklopující inferenční jádro modelu; zajišťuje nástroje, správu kontextu, bezpečnostní mantinely, práci se stavem a řízení prováděcího životního cyklu.",
+    explanation_cs: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.",
   ),
   (
     en: "Human-in-the-loop",
     cs: "Zapojení člověka do smyčky",
     explanation_en: "A design pattern in which a human operator remains part of the system's decision process, for example through approval gates before selected consequential actions.",
-    explanation_cs: "Návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu systému, například prostřednictvím schvalovacích bran před vybranými významnými akcemi.",
+    explanation_cs: "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací.",
   ),
   (
     en: "MCP",
     cs: "MCP",
     explanation_en: "Model Context Protocol, an open protocol for connecting AI applications to external tools, resources, and data sources through standardized interfaces.",
-    explanation_cs: "Model Context Protocol, otevřený protokol pro připojování AI aplikací k externím nástrojům, zdrojům a datům prostřednictvím standardizovaných rozhraní.",
+    explanation_cs: "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC.",
   ),
   (
     en: "Plugins",
     cs: "Zásuvné moduly",
     explanation_en: "Programmatic extension modules that add specialized adapters, tools, or deterministic execution behavior to the harness runtime.",
-    explanation_cs: "Programové rozšiřující moduly, které do běhového prostředí harnessu přidávají specializované adaptéry, nástroje nebo deterministické prováděcí chování.",
+    explanation_cs: "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
   ),
   (
     en: "Prompt Engineering",
     cs: "Promptové inženýrství",
     explanation_en: "The systematic design and structuring of instructions and prompts used to shape and constrain the behavior of a language model.",
-    explanation_cs: "Systematický návrh a strukturování instrukcí a promptů používaných k usměrnění a omezení chování jazykového modelu.",
+    explanation_cs: "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.",
   ),
   (
     en: "Pull Request",
     cs: "Pull Request",
     explanation_en: "A formal proposal to integrate changes from one repository branch into another, providing a place for automated checks, human review, and discussion.",
-    explanation_cs: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který poskytuje prostor pro automatizované kontroly, lidskou revizi a diskusi.",
+    explanation_cs: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách.",
   ),
   (
     en: "Skills",
     cs: "Dovednosti",
     explanation_en: "Reusable packages of instructions, procedural rules, and optional helper resources that a harness can load into an agent's context for a particular class of task.",
-    explanation_cs: "Znovupoužitelné balíčky instrukcí, procedurálních pravidel a případných pomocných zdrojů, které může harness načíst do kontextu agenta pro určitý typ úlohy.",
+    explanation_cs: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
   ),
 )
 
@@ -507,7 +507,10 @@
     },
   )
 
-  set text(font: pismo, size: velikost, lang: if language == "en" { "en" } else { "cs" }, hyphenate: true)
+  // Neobalený historický text je zatím český. Bilingvní helper nastavuje jazyk
+  // jednotlivých CS/EN větví sám, takže EN režim neaplikuje anglické dělení slov
+  // na dosud nepřeložené české kapitoly.
+  set text(font: pismo, size: velikost, lang: "cs", hyphenate: true)
   set par(
     justify: true,
     leading: radkovani * 0.65em,
