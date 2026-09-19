@@ -1,5 +1,6 @@
 TYPST ?= typst
 PYTHON ?= python3
+NPM ?= npm
 FONTS := --font-path fonts
 MAIN := main.typ
 
@@ -19,14 +20,15 @@ OUT_REVIEW_CS := $(OUT_DIR)/prace-cs-review.pdf
 OUT_REVIEW_EN := $(OUT_DIR)/prace-en-review.pdf
 OUT_REVIEW_MERGED := $(OUT_DIR)/prace-bilingual-review.pdf
 
-.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged all all-templates template-check verify ci site watch png clean check
+.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged all all-templates template-check web-install web-check web-build verify ci site watch png clean check
 
 help:
 	@echo "make all             – 8 PDF pro TEMPLATE=$(TEMPLATE)"
 	@echo "make all-templates   – 8 PDF pro každou šablonu pod out/templates/<template>/"
 	@echo "make template-check  – rychlý school/final smoke každé objevené šablony"
-	@echo "make ci              – defaultní 8 PDF + plná 8×N template matice + kontrola"
-	@echo "make site            – CI matice + GitHub Pages pro všechny šablony"
+	@echo "make web-check       – TypeScript kontrola + produkční Vite build React vieweru"
+	@echo "make ci              – PDF matice + React/TypeScript viewer + kontrola architektury"
+	@echo "make site            – CI matice + React GitHub Pages pro všechny šablony"
 	@echo "make watch           – živý náhled TEMPLATE=$(TEMPLATE), school/final"
 	@echo "Templates: $(TEMPLATES)"
 
@@ -77,17 +79,26 @@ template-check:
 		$(TYPST) compile $(FONTS) --input template=$$template --input profile=school $(MAIN) out/template-check/$$template.pdf; \
 	done
 
+web-install:
+	$(NPM) --prefix web install --no-audit --no-fund
+
+web-check: web-install
+	$(NPM) --prefix web run check
+
+web-build: web-install
+	$(NPM) --prefix web run build
+
 verify:
 	$(PYTHON) scripts/check_build.py
 
-ci: all all-templates verify
+ci: all all-templates web-check verify
 
 site:
 	@if command -v $(TYPST) >/dev/null 2>&1; then \
 		$(MAKE) ci && $(PYTHON) scripts/build_site.py; \
 	else \
-		echo "Typst unavailable: validating Pages structure without PDF copies"; \
-		$(PYTHON) scripts/build_site.py --allow-missing; \
+		echo "Typst unavailable: building React Pages structure without PDF copies"; \
+		$(MAKE) web-build && $(PYTHON) scripts/build_site.py --allow-missing; \
 	fi
 
 check: ci

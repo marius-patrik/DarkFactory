@@ -208,71 +208,92 @@ for path in (
         if legacy in source:
             fail(f"legacy confirmed review state remains in {path}: {legacy}")
 
-viewer_sources = {
-    "web/viewer.html": Path("web/viewer.html"),
-    "web/viewer.css": Path("web/viewer.css"),
-    "web/viewer.js": Path("web/viewer.js"),
-    "web/icons.js": Path("web/icons.js"),
-}
-for name, path in viewer_sources.items():
+viewer_required = (
+    Path("web/package.json"),
+    Path("web/components.json"),
+    Path("web/vite.config.ts"),
+    Path("web/index.html"),
+    Path("web/viewer.html"),
+    Path("web/src/main.tsx"),
+    Path("web/src/app.tsx"),
+    Path("web/src/pdf-document.tsx"),
+    Path("web/src/viewer.css"),
+    Path("web/src/components/animated-icon.tsx"),
+    Path("web/src/components/ui/button.tsx"),
+    Path("web/src/components/ui/tooltip.tsx"),
+    Path("web/src/components/ui/dropdown-menu.tsx"),
+    Path("web/src/components/ui/context-menu.tsx"),
+)
+for path in viewer_required:
     if not path.is_file() or path.stat().st_size == 0:
-        fail(f"missing custom Pages viewer asset: {name}")
+        fail(f"missing React viewer source: {path}")
 
-viewer_js = viewer_sources["web/viewer.js"].read_text(encoding="utf-8")
-for required in (
-    'viewMode = params.get("view") === "split"',
-    'source: "paper-split"',
-    'source: "paper-viewer"',
-    "new pdfjsLib.TextLayer",
-    "new pdfjsLib.AnnotationLayer",
-    'addEventListener("contextmenu"',
-    '"paper-viewer-sidebar-side"',
-    '"paper-viewer-sidebar-mode"',
-    '!event.ctrlKey && !event.metaKey',
-    'splitSyncScroll',
-    'fetch("variants.json"',
+for legacy in (
+    Path("web/viewer.js"),
+    Path("web/viewer.css"),
+    Path("web/icons.js"),
 ):
-    if required not in viewer_js:
-        fail(f"custom viewer missing interaction contract: {required}")
+    if legacy.exists():
+        fail(f"legacy static viewer asset must not remain: {legacy}")
 
-viewer_html = viewer_sources["web/viewer.html"].read_text(encoding="utf-8")
-for required in (
-    'data-icon="HomeIcon"',
-    'id="version-select"',
-    'id="sync-scroll"',
-    'id="sidebar-menu"',
-    'class="statusbar"',
+package = json.loads(Path("web/package.json").read_text(encoding="utf-8"))
+dependencies = {**package.get("dependencies", {}), **package.get("devDependencies", {})}
+for dependency in (
+    "react",
+    "react-dom",
+    "typescript",
+    "vite",
+    "motion",
+    "@dagrejs/dagre",
+    "lucide-animated",
+    "pdfjs-dist",
+    "@radix-ui/react-tooltip",
+    "@radix-ui/react-context-menu",
+    "@radix-ui/react-dropdown-menu",
+    "tailwindcss",
 ):
-    if required not in viewer_html:
-        fail(f"custom viewer shell missing UI contract: {required}")
+    if dependency not in dependencies:
+        fail(f"React viewer missing required dependency: {dependency}")
 
-icons_js = viewer_sources["web/icons.js"].read_text(encoding="utf-8")
-if "lucide-animated@1.0.5" not in icons_js:
-    fail("custom viewer must use the pinned lucide-animated icon runtime")
+app_source = Path("web/src/app.tsx").read_text(encoding="utf-8")
+for required in (
+    "TooltipAction",
+    "Columns2Icon",
+    "MinusIcon",
+    "PlusIcon",
+    "PanelLeftIcon",
+    "PanelRightIcon",
+    "ContextMenu",
+    "status-actions",
+    "identity-separator",
+    "motion.section",
+):
+    if required not in app_source:
+        fail(f"React viewer missing UI contract: {required}")
+if app_source.count('className="identity-separator"') < 2:
+    fail("toolbar identity must contain separators both after Home and before version")
 
-node = shutil.which("node")
-if node:
-    for script in (viewer_sources["web/viewer.js"], viewer_sources["web/icons.js"]):
-        result = subprocess.run(
-            [node, "--check", "--input-type=module"],
-            input=script.read_text(encoding="utf-8"),
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            fail(f"JavaScript syntax error in {script}: {result.stderr.strip()}")
+pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
+for required in ("dagre.layout", "TextLayer", "AnnotationLayer", "ContextMenu", "Minimap"):
+    if required not in pdf_source:
+        fail(f"React PDF viewer missing interaction contract: {required}")
+
+vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
+for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
+    if required not in vite_source:
+        fail(f"Vite config missing multi-page React contract: {required}")
 
 site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
 for required in (
-    'split_view = final_view + "&view=split"',
-    '>Split</a>',
-    'viewer.html?',
-    '"work_title": WORK_TITLE',
-    '"icons.js"',
-    'profile=variant["profile"]',
+    'WEB_DIST = Path("web/dist")',
+    "shutil.copytree(WEB_DIST, SITE)",
+    '"React + PDF.js"',
+    '"shadcn/ui"',
+    '"Motion"',
+    '"Dagre"',
 ):
     if required not in site_builder:
-        fail(f"Pages builder missing viewer publication contract: {required}")
+        fail(f"Pages builder missing React viewer publication contract: {required}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
