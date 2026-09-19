@@ -1,4 +1,4 @@
-#import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note, term, kw
+#import "../packages/odborna-prace-template/src/lib.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note, term, kw
 
 = #confirmed[Praktická část – Návrh architektury]
 
