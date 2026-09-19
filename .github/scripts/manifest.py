@@ -545,12 +545,7 @@ def resolve_manifest_path(root: str) -> str:
     Raises:
         ValueError: If the manifest cannot be resolved.
     """
-    try:
-        return resolve_df_file(root, "repo")
-    except ValueError as e:
-        if "Both" in str(e):
-            raise
-        return os.path.join(root, ".darkfactory", "repo.df")
+    return resolve_df_file(root, "repo")
 
 
 def load(root: str = ".") -> Manifest:

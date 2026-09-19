@@ -6,6 +6,7 @@ import { GitHubRepository } from "../github/repository.ts";
 import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
 import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
 import { plan } from "./planner.ts";
+import { resolveDfFile } from "../utils/resolver.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
 import type { PlanAction } from "./types.ts";
 import { validateGraph } from "./validator.ts";
@@ -176,7 +177,7 @@ export async function dispatch(
 	const pythonActionPath =
 		options?.pythonActionPath ??
 		process.env.DF_PYTHON_ACTION_PATH ??
-		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.json") : ".darkfactory/python_action.json");
+		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.df") : resolveDfFile(process.cwd(), "python_action"));
 
 	if (shadowVerify && !pythonActionPath) {
 		throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
@@ -196,7 +197,7 @@ export async function dispatch(
 
 	// Load the graph
 	// A repository manifest carries the graph in its `graph` section; a standalone graph file is the graph itself.
-	const graphPath = opts.graphPath ?? ".darkfactory/manifest.json";
+	const graphPath = opts.graphPath ?? resolveDfFile(process.cwd(), "repo");
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const workflowGraph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,

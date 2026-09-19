@@ -43,13 +43,9 @@ export interface BuildDocsOptions {
   properdocsCommand?: string[];
 }
 
-const DF_REPO_PATH = path.join(".darkfactory", "repo.df");
-const ROOT_REPO_PATH = "repo.df";
-const LEGACY_MANIFEST_PATH = path.join(".darkfactory", "manifest.json");
-const OLD_LEGACY_MANIFEST_PATH = path.join(".github", "darkfactory.json");
-
 /**
- * Resolves the repository manifest, preferring repo.df (.darkfactory/repo.df or root repo.df) with legacy fallbacks.
+ * Resolves the repository manifest path: .darkfactory/repo.df then repo.df.
+ * Throws if both exist or neither exists (hard transition).
  */
 export function resolveManifestPath(repoRoot: string): string {
   const dfPath = path.join(repoRoot, DF_REPO_PATH);
@@ -68,17 +64,7 @@ export function resolveManifestPath(repoRoot: string): string {
     return rootPath;
   }
 
-  const legacy = path.join(repoRoot, LEGACY_MANIFEST_PATH);
-  if (fs.existsSync(legacy)) {
-    return legacy;
-  }
-
-  const oldLegacy = path.join(repoRoot, OLD_LEGACY_MANIFEST_PATH);
-  if (fs.existsSync(oldLegacy)) {
-    return oldLegacy;
-  }
-
-  return dfPath;
+  throw new Error(`repo.df not found in ${repoRoot} (checked .darkfactory/repo.df and repo.df)`);
 }
 
 /**

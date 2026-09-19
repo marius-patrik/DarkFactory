@@ -25,6 +25,7 @@ import {
 	type HarnessEvent,
 } from "./harness/supervisor.ts";
 import { runDoctorIdentities } from "./identities/index.ts";
+import { resolveDfFile } from "./utils/resolver";
 import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
 import { importClaudeAccount } from "./import/claude.ts";
 import { importCodexAccount } from "./import/codex.ts";
@@ -1256,8 +1257,8 @@ async function graphCommand(args: string[]): Promise<void> {
 	// Repository-specific data lives in .darkfactory/: the graph is the `graph` section of the manifest.
 	const graphPath =
 		subcommand === "validate"
-			? (args[1] ?? ".darkfactory/manifest.json")
-			: (option(args, "--graph") ?? ".darkfactory/manifest.json");
+			? (args[1] ?? resolveDfFile(process.cwd(), "repo"))
+			: (option(args, "--graph") ?? resolveDfFile(process.cwd(), "repo"));
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const graph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,

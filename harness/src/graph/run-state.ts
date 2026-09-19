@@ -8,7 +8,7 @@ import type { RunState, WorkflowGraph } from "./types";
  * If the state file does not exist, create a fresh state.
  */
 export async function loadRunState(dir: string, subject: string, graph: WorkflowGraph): Promise<RunState> {
-	const runsPath = join(dir, `${subject}.json`);
+	const runsPath = join(dir, `${subject}.df`);
 	try {
 		const data = await fs.readFile(runsPath, "utf8");
 		return JSON.parse(data) as RunState;
@@ -37,8 +37,8 @@ export async function loadRunState(dir: string, subject: string, graph: Workflow
  * is deleted best-effort and the original error is rethrown.
  */
 export async function saveRunState(dir: string, subject: string, state: RunState): Promise<void> {
-	const targetPath = join(dir, `${subject}.json`);
-	const tmpPath = join(dir, `.tmp-${subject}-${Date.now()}.json`);
+	const targetPath = join(dir, `${subject}.df`);
+	const tmpPath = join(dir, `.tmp-${subject}-${Date.now()}.df`);
 	// Serialize first: a circular object or other stringify error throws here,
 	// before any file is created.
 	const json = JSON.stringify(state, null, 2);

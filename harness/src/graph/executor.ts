@@ -110,7 +110,7 @@ async function runForeach(
 			const index = next++;
 			const childDir = join(runDir, "children", node.id, String(index));
 			await mkdir(childDir, { recursive: true });
-			const resultPath = join(childDir, "result.json");
+			const resultPath = join(childDir, "result.df");
 			const previous = await readJson<NodeResult>(resultPath);
 			if (previous?.outcome === "success") {
 				results[index] = { ...previous, index };
@@ -178,7 +178,7 @@ export async function runGraph(
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
 	await mkdir(runDir, { recursive: true });
-	const statePath = join(runDir, "state.json");
+	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.jsonl");
 	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
 	const state: RunState = (await readJson<RunState>(statePath)) ?? {

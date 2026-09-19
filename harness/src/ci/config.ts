@@ -1,19 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { resolveDfFile } from "../utils/resolver";
 import { ciFileSchema, type CiConfig, type ResolvedCheck } from "./schema.ts";
 
-export const CI_CONFIG_RELATIVE_PATH = join(".darkfactory", "ci.json");
-
 export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
-	const absolutePath = resolve(repoDir, CI_CONFIG_RELATIVE_PATH);
+	const absolutePath = resolveDfFile(repoDir, "ci");
 	let content: string;
 	try {
 		content = await readFile(absolutePath, "utf-8");
 	} catch (err: unknown) {
-		const code = (err as { code?: string })?.code;
-		if (code === "ENOENT") {
-			throw new Error(`.darkfactory/ci.json not found in ${repoDir}`);
-		}
 		throw err;
 	}
 
@@ -27,7 +22,7 @@ export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
 	const result = ciFileSchema.safeParse(parsedJson);
 	if (!result.success) {
 		const issues = result.error.issues.map((i) => `${i.path.join(".") || "root"}: ${i.message}`).join("; ");
-		throw new Error(`Invalid .darkfactory/ci.json schema: ${issues}`);
+		throw new Error(`Invalid ${absolutePath} schema: ${issues}`);
 	}
 
 	return result.data;
