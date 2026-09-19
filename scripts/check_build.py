@@ -254,7 +254,8 @@ node = shutil.which("node")
 if node:
     for script in (viewer_sources["web/viewer.js"], viewer_sources["web/icons.js"]):
         result = subprocess.run(
-            [node, "--check", str(script)],
+            [node, "--check", "--input-type=module"],
+            input=script.read_text(encoding="utf-8"),
             capture_output=True,
             text=True,
         )
