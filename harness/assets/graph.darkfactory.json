@@ -22,18 +22,9 @@
       "kind": "agent",
       "identity": "pipeline",
       "inputs": ["request_issue", "planning_feedback"],
-      "outputs": ["plan_artifact"],
+      "outputs": ["plan_artifact", "planning_findings"],
+      "iteration": { "context_file": ".df/planning.md", "safety_budget": 5 },
       "timeout": "10m",
-      "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
-      "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "Backlog" }
-    },
-    {
-      "id": "planning-review",
-      "kind": "agent",
-      "identity": "pipeline",
-      "inputs": ["plan_artifact"],
-      "outputs": ["planning_findings"],
-      "iteration": { "context_file": ".df/planning-review.md", "safety_budget": 5 },
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "Backlog" }
     },
@@ -130,14 +121,9 @@
       "on": { "event": "issues.opened|issues.labeled", "filter": { "label": "Request", "ignore_bots": true } }
     },
     { "from": "request-intake", "to": "planning", "on": { "node_outcome": "success" } },
-    { "from": "planning", "to": "planning-review", "on": { "node_outcome": "success" } },
+    { "from": "planning", "to": "planning-gate", "on": { "node_outcome": "success", "when": "planning_findings == null" } },
     {
-      "from": "planning-review",
-      "to": "planning-gate",
-      "on": { "node_outcome": "success", "when": "planning_findings == null" }
-    },
-    {
-      "from": "planning-review",
+      "from": "planning",
       "to": "planning",
       "on": { "node_outcome": "success", "when": "planning_findings != null" },
       "loop": { "kind": "planning_revision", "safety_budget": 5 }

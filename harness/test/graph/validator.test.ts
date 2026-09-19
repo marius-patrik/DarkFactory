@@ -51,9 +51,9 @@ describe("workflow graph validation", () => {
 	test("validates guard outputs", () =>
 		expect(
 			invalid((g) => {
-				g.edges[6].on.when = "unknown == true";
+				g.edges[2].on.when = "unknown == null";
 			}),
-		).toContain('edges[6].on.when: "unknown" is not a declared output of planning-gate'));
+		).toContain('edges[2].on.when: "unknown" is not a declared output of planning'));
 	test("rejects loose gate grammar", () =>
 		expect(
 			invalid((g) => {
