@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Process · DarkFactory</title>
+    <title>ADR-0017 — Modular packages and first-class capabilities · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,12 +119,12 @@
          href="../0005-versioning-scheme-is-a-per-repository-choice/">ADR-0005 — The versioning scheme is a per-repository choice</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link"
-         href="../0017-modular-packages-and-capabilities/">ADR-0017 — Modular packages and first-class capabilities</a>
+      <a class="nav__link nav__link--active"
+         href="./">ADR-0017 — Modular packages and first-class capabilities</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link nav__link--active"
-         href="./">Process</a>
+      <a class="nav__link"
+         href="../process/">Process</a>
     </li>
 </ul>
 
@@ -247,37 +247,83 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="architecture-decision-records">Architecture Decision Records<a class="headerlink" href="#architecture-decision-records" title="Permanent link">&para;</a></h1>
-<p>Numbered, append-only. An ADR is added when an open decision from <code>PRD.md</code> §13 is resolved, or when
-any deviation from <code>PRD.md</code> is approved (<code>.agents/rules/003-product-requirements-and-adrs.md</code>).
-One decision, one file: each discrete ADR in this directory.</p>
-<p>Each record states the decision, the alternatives that were rejected <strong>and why</strong>, and what the
-decision forecloses. "We chose X because it is better" is not an ADR.</p>
-<p><strong>Status values:</strong> <code>Proposed</code> (awaiting the maintainer's approval) · <code>Accepted</code> · <code>Superseded by
-ADR-NNNN</code>. An ADR only binds the implementation once it is <code>Accepted</code>.</p>
-<p>Numbering is per-file and sequential within this directory. <code>0001</code> is taken; the next decision is
-<code>0006</code>. The deprecated <code>architecture_decisions.md</code> ledger that once held all records was split into
-one file per decision on 2026-09-13 and removed; its four records became this directory's
-<code>0002</code>–<code>0005</code>.</p>
+          <h1 id="adr-0017-modular-packages-and-first-class-capabilities">ADR-0017 — Modular packages and first-class capabilities<a class="headerlink" href="#adr-0017-modular-packages-and-first-class-capabilities" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted<br />
+<strong>Date</strong>: 2026-09-19<br />
+<strong>Resolves</strong>: Final TypeScript package boundaries and extensibility model</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>DarkFactory's TypeScript runtime has grown inside one private <code>@darkfactory/harness</code> package. At the same time, recovered work spans routing, result capture, docs, hooks, quality, git and other product areas. Landing that work into the monolith and moving it again would create unnecessary churn.</p>
+<p>The repository already distinguishes ecosystems from semantic domains and supports multi-domain repositories. That abstraction is useful and should not be replaced.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>DarkFactory becomes a root Bun workspace with publishable first-party packages:</p>
+<ul>
+<li><code>@darkfactory/protocol</code></li>
+<li><code>@darkfactory/core</code></li>
+<li><code>@darkfactory/capability</code></li>
+<li><code>@darkfactory/github</code></li>
+<li><code>@darkfactory/keychain</code></li>
+<li><code>@darkfactory/auth</code></li>
+<li><code>@darkfactory/docs</code></li>
+<li><code>@darkfactory/cli</code></li>
+<li><code>@darkfactory/web</code></li>
+</ul>
+<p><code>@darkfactory/harness</code> may exist only as a migration shim and is not a final public package.</p>
+<p>Core owns mechanisms: execution, graph/run persistence, provider/router machinery, config resolution and capability loading. Agentic/product behavior is implemented as versioned capability modules under root <code>capabilities/</code>.</p>
+<p>Initial first-party capabilities include code, paper, math, docs, git, github, planning, review, ci, release, recovery, hooks, epics and stacks. Additional agentic behavior follows the same rule.</p>
+<p>A canonical TypeScript capability definition is the only implementation source. Build tooling deterministically produces supported adapters/artifacts such as native DarkFactory, Pi ExtensionAPI, MCP server and supported Claude/Codex/agent skill/plugin forms.</p>
+<p>Domains remain semantic classifications such as <code>code</code>, <code>paper</code> and <code>math</code>. Capabilities are orthogonal and can apply across domains. Multi-domain projects remain first-class.</p>
+<p>Official packages/capabilities use lockstep DarkFactory SemVer initially, while the capability ABI has its own compatibility version.</p>
+<h2 id="rejected-alternatives">Rejected alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="keep-one-harness-package">Keep one harness package<a class="headerlink" href="#keep-one-harness-package" title="Permanent link">&para;</a></h3>
+<p>Rejected because it makes unrelated runtime, UI, docs, GitHub and secret-bearing code share one ownership boundary and forces recovered work through another later migration.</p>
+<h3 id="replace-domains-with-capabilities">Replace domains with capabilities<a class="headerlink" href="#replace-domains-with-capabilities" title="Permanent link">&para;</a></h3>
+<p>Rejected because domains answer “what kind of project/package is this?” while capabilities answer “what can DarkFactory do?”. They are different axes and multi-domain repositories need both.</p>
+<h3 id="hand-write-one-integration-per-agent-harness">Hand-write one integration per agent harness<a class="headerlink" href="#hand-write-one-integration-per-agent-harness" title="Permanent link">&para;</a></h3>
+<p>Rejected because behavior would drift across Pi, MCP, Claude and Codex forms. Adapters are generated from one capability source.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Bulk recovery reconciliation should happen after package/capability boundaries exist.</li>
+<li>
+<h1 id="341-evolves-from-central-command-tables-toward-detection-capability-resolution">341 evolves from central command tables toward detection + capability resolution.<a class="headerlink" href="#341-evolves-from-central-command-tables-toward-detection-capability-resolution" title="Permanent link">&para;</a></h1>
+</li>
+<li>CLI/TUI/web/docs surfaces consume the same capability metadata.</li>
+<li>Third-party capabilities can extend project support without modifying core.</li>
+</ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../0017-modular-packages-and-capabilities/">
+          <a class="pager__link pager__link--prev" href="../0005-versioning-scheme-is-a-per-repository-choice/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">ADR-0017 — Modular packages and first-class capabilities</span>
+            <span class="pager__title">ADR-0005 — The versioning scheme is a per-repository choice</span>
           </a>
-          <a class="pager__link pager__link--next" href="../../../rules/">
+          <a class="pager__link pager__link--next" href="../process/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">Overview</span>
+            <span class="pager__title">Process</span>
           </a>
         </nav>
 
         <footer class="footer">
           <span>DarkFactory</span>
-          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/process.md">Edit this page</a>
+          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/0017-modular-packages-and-capabilities.md">Edit this page</a>
         </footer>
       </main>
 
-      <aside class="toc toc--empty">
+      <aside class="toc">
+        <div class="toc__title">On this page</div>
+        <ul class="toc__list">
+          <li><a href="#context">Context</a>
+          </li>
+          <li><a href="#decision">Decision</a>
+          </li>
+          <li><a href="#rejected-alternatives">Rejected alternatives</a>
+            <ul>
+              <li><a href="#keep-one-harness-package">Keep one harness package</a></li>
+              <li><a href="#replace-domains-with-capabilities">Replace domains with capabilities</a></li>
+              <li><a href="#hand-write-one-integration-per-agent-harness">Hand-write one integration per agent harness</a></li>
+            </ul>
+          </li>
+          <li><a href="#consequences">Consequences</a>
+          </li>
+        </ul>
       </aside>
     </div>
 
