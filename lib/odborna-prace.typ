@@ -40,15 +40,15 @@
 #let language-mode() = context language-state.get()
 
 // Jeden abstraktní jazykový přepínač pro budoucí bilingvní text celé práce.
-// mode: "cs" | "en" | "merged"; block=true skládá obě jazykové varianty
-// pod sebe, block=false je vhodné pro krátké inline popisky.
-#let bilingual(cs, en, block: true) = context {
+// mode: "cs" | "en" | "merged"; stacked=true skládá obě jazykové varianty
+// pod sebe, stacked=false je vhodné pro krátké inline popisky.
+#let bilingual(cs, en, stacked: true) = context {
   let mode = language-state.get()
   if mode == "cs" {
     cs
   } else if mode == "en" {
     en
-  } else if block {
+  } else if stacked {
     block(breakable: true)[
       #text(lang: "cs")[#cs]
       #v(4pt)
