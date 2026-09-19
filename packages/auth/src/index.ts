@@ -1,4 +1,6 @@
 /** @packageDocumentation
- * auth package boundary. Runtime ownership migrates here during the #420 convergence.
+ * Browser-safe human authentication boundary.
+ *
+ * #423 owns the concrete GitHub OAuth implementation. This package intentionally has no machine-keychain imports.
  */
-export {};
+export type { AuthorAssociation } from "@darkfactory/protocol/workflow";
