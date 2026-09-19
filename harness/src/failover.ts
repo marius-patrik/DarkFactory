@@ -8,14 +8,11 @@ import type {
 	Usage,
 } from "@earendil-works/pi-ai";
 import { classifyFailure, type FailureClassification } from "./quota.ts";
+import type { Candidate } from "../../packages/protocol/src/model.ts";
 import type { ProviderConfig } from "./providers/schema.ts";
 import { redactErrorMessage } from "./redaction.ts";
 
-export interface Candidate {
-	provider: string;
-	account: string;
-	model: string;
-}
+export type { Candidate } from "../../packages/protocol/src/model.ts";
 
 export interface StepEvent {
 	type: "attempt";
