@@ -1,4 +1,4 @@
 /** @packageDocumentation
- * docs package boundary. Runtime ownership migrates here during the #420 convergence.
+ * Documentation content/compiler package boundary. #424 migrates the first-party docs engine here.
  */
-export {};
+export type { WorkflowGraph } from "@darkfactory/protocol/workflow";
