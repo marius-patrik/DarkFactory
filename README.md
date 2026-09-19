@@ -168,9 +168,15 @@ proto není produkčním viewerem této práce.
 
 ### Klíčová slova a encyklopedie
 
-Terminologický front matter je rozdělen do dvou samostatných sekcí:
+Terminologie používá dvě oddělené reprezentace:
 
-- **Klíčová slova | Keywords** — pouze stručný dynamický seznam skutečně použitých termínů.
-- **Encyklopedie | Encyclopedia** — detailní záznamy stejných použitých termínů včetně českých/anglických vysvětlení.
+- **Klíčová slova | Keywords** zůstávají ve front matteru jako stručný dynamický seznam skutečně použitých termínů.
+- **Encyklopedie | Encyclopedia** je v zadní části dokumentu bezprostředně před **Seznamem příloh | List of appendices**.
 
-Obě sekce vznikají ze stejné deduplikované množiny použití `terms.*`. Inline hvězdičkové odkazy míří na detailní záznam v encyklopedii, nikoli na krátký seznam klíčových slov.
+Encyklopedie je abecedně seskupena podle počátečního písmene kanonického názvu.
+`Encyklopedie` je outlined nadpis úrovně 1, jednotlivá písmena úroveň 2 a každý
+použitý keyword vlastní outlined sekce úrovně 3. Díky hloubce Obsahu 3 se v
+`Obsah | Contents` zobrazí jak písmenné skupiny, tak každý jednotlivý keyword.
+
+Obě reprezentace vznikají ze stejné deduplikované množiny použití `terms.*`.
+Inline hvězdičkové odkazy míří na stabilní detailní záznam v encyklopedii.

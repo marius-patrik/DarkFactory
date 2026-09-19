@@ -556,33 +556,59 @@
 // Detailní terminologický přehled je samostatná encyklopedie. Používá stejnou
 // dynamickou množinu termínů jako klíčová slova; hvězdičkové odkazy v rukopisu
 // míří na zde umístěné stabilní labely.
+#let encyclopedia-sort-name(item) = {
+  if item.proper.cs != none { str(item.proper.cs) } else { str(item.proper.en) }
+}
+
+#let encyclopedia-letter(item) = upper(encyclopedia-sort-name(item).slice(0, 1))
+
 #let render-encyclopedia() = context {
   let items = collect-used-terms(query(term-use-label))
 
   if items.len() == 0 {
     [—]
   } else {
+    let current-letter = none
+
     for item in items {
+      let letter = encyclopedia-letter(item)
+
+      if letter != current-letter {
+        current-letter = letter
+        heading(
+          level: 2,
+          numbering: none,
+          outlined: true,
+        )[#letter]
+      }
+
+      // Every used keyword is a real level-3 outlined section. The document
+      // outline has depth 3, so Encyclopedia -> letter -> keyword is visible
+      // directly in Obsah while preserving stable kw-* link targets.
+      heading(
+        level: 3,
+        numbering: none,
+        outlined: true,
+      )[
+        #term(
+          item,
+          render: "term",
+          language: "auto",
+          name-type: item.keyword_name_type,
+          register: false,
+          linked: false,
+          marker: false,
+          emphasized: false,
+        )
+      ]
+      [#label("kw-" + item.id)]
+
       block(
         breakable: false,
-        above: 6pt,
+        above: 2pt,
         below: 7pt,
         width: 100%,
       )[
-        #text(weight: "bold", size: 11pt)[
-          #term(
-            item,
-            render: "term",
-            language: "auto",
-            name-type: item.keyword_name_type,
-            name-separator: "bar",
-            register: false,
-            linked: false,
-            marker: false,
-            emphasized: false,
-          )
-        ] #label("kw-" + item.id) \
-        #v(2pt)
         #term(
           item,
           render: "explanation",

@@ -29,3 +29,8 @@ The GJKT template owns:
 
 Appendices intentionally use the compact appendix heading mode rather than the main
 chapter title-page treatment.
+
+The terminology encyclopedia is emitted by the appendix wrapper immediately before
+the list of appendices. It is alphabetically grouped as level-2 letter headings with
+level-3 term headings, all outlined so both levels appear in the document contents.
+The core word-count boundary is placed before this back-matter encyclopedia.

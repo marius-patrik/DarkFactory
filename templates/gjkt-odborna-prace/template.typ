@@ -237,12 +237,6 @@
     render-keywords(),
   )
 
-  front-matter-section(
-    translation(cs: [Encyklopedie], en: [Encyclopedia]),
-    render-encyclopedia(),
-    break-after: false,
-  )
-
   pagebreak()
 }
 
@@ -422,7 +416,7 @@
   context {
     let core = sel => selector(sel)
       .after(<body-start-anchor>, inclusive: false)
-      .before(<appendix-start-anchor>, inclusive: false)
+      .before(<body-end-anchor>, inclusive: false)
 
     // Blokové struktury mohou obsahovat text, který není samostatným odstavcem.
     // Počítáme proto jen jejich nejvyšší úroveň a odstavce uvnitř nich vynecháme,
@@ -541,6 +535,14 @@
 // Přílohy se číslují a odkazuje se na ně v textu; obsahuje-li práce
 // přílohy, musí obsahovat i jejich seznam.
 #let prilohy(body) = {
+  [#metadata("body-end") <body-end-anchor>]
+  pagebreak(weak: true)
+
+  // Encyklopedie patří do zadní části bezprostředně před Seznam příloh.
+  // Její písmena i jednotlivé termíny jsou outlined a vstupují do Obsahu.
+  nadpis-bez-cisla[#finalized[#ui-label([Encyklopedie], [Encyclopedia])]]
+  render-encyclopedia()
+
   pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]
   appendix-mode-state.update(true)

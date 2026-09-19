@@ -113,6 +113,16 @@ for renderer in ("render-keywords", "render-encyclopedia"):
         fail(f"missing shared terminology renderer: {renderer}")
 
 for required in (
+    "#let encyclopedia-sort-name",
+    "#let encyclopedia-letter",
+    "heading(\n          level: 2",
+    "heading(\n        level: 3",
+    'label("kw-" + item.id)',
+):
+    if required not in common_source:
+        fail(f"Encyclopedia missing alphabetical outlined hierarchy contract: {required}")
+
+for required in (
     "#let term-proper-name",
     "#let term-industry-name",
     'text("[")',
@@ -148,14 +158,29 @@ if "=== Model #term(terms.pull_request" in chapter2_source:
     fail("legacy section 2.1.3 title must not return")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
-for front_matter_contract in (
+for terminology_contract in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
-    "translation(cs: [Encyklopedie], en: [Encyclopedia])",
     "render-keywords()",
     "render-encyclopedia()",
+    'ui-label([Encyklopedie], [Encyclopedia])',
+    'ui-label([Seznam příloh], [List of appendices])',
+    '<body-end-anchor>',
 ):
-    if front_matter_contract not in gjkt_source:
-        fail(f"GJKT template missing terminology front-matter contract: {front_matter_contract}")
+    if terminology_contract not in gjkt_source:
+        fail(f"GJKT template missing terminology/back-matter contract: {terminology_contract}")
+
+encyclopedia_pos = gjkt_source.find('ui-label([Encyklopedie], [Encyclopedia])')
+appendix_list_pos = gjkt_source.find('ui-label([Seznam příloh], [List of appendices])', encyclopedia_pos)
+if encyclopedia_pos < 0 or appendix_list_pos < 0 or encyclopedia_pos >= appendix_list_pos:
+    fail("Encyclopedia must be emitted immediately before the list of appendices in back matter")
+
+front_matter_start = gjkt_source.find("#let anotace-strana")
+front_matter_end = gjkt_source.find("#let template(", front_matter_start)
+if "render-encyclopedia()" in gjkt_source[front_matter_start:front_matter_end]:
+    fail("Encyclopedia must not remain in front matter")
+
+if '.before(<body-end-anchor>, inclusive: false)' not in gjkt_source:
+    fail("core-text extent must stop before back-matter Encyclopedia and appendices")
 
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
     if forbidden in gjkt_source:
