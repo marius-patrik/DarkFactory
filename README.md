@@ -141,12 +141,23 @@ Termíny se stejným českým a anglickým názvem se zobrazí pouze jednou.
 
 ## Webový viewer
 
-GitHub Pages používá vlastní viewer namísto přesměrování do nativního PDF vieweru
-prohlížeče. Zdroj je v `web/viewer.html`, `web/viewer.css` a
-`web/viewer.js`; `scripts/build_site.py` pouze publikuje statické assety a propojuje
-je se všemi final/review variantami.
+GitHub Pages je samostatná React + TypeScript aplikace v `web/`, sestavovaná přes Vite.
+UI používá shadcn/ui (Radix primitives + Tailwind), Motion pro přechody a Dagre pro
+layout minimapy stránek. PDF z Typstu zůstává kanonickým vizuálním výstupem a
+PDF.js nad ním renderuje canvas, textovou vrstvu i annotation vrstvu, takže text
+zůstává označitelný/kopírovatelný a PDF odkazy jsou interaktivní.
 
-Viewer používá PDF.js a zachovává PDF jako kanonický vizuální výstup Typstu. Nad canvas vrstvou renderuje také PDF.js textovou a annotation vrstvu, takže text lze označovat/kopírovat a interní i externí odkazy z PDF jsou interaktivní. Ovládací prvky používají `lucide-animated` ikony. UI nabízí přepínání Raw/Review/Split, výběr publikační verze z titulku, persistentní sidebar vlevo/vpravo, thumbnail/minimap režim, page jump, zoom a fit-width ve spodním status baru, Ctrl/⌘+scroll a pinch zoom, fullscreen, světlý/tmavý režim a přímé stažení PDF. Split view může volitelně synchronizovat průběžnou scroll pozici obou dokumentů.
+Viewer nabízí Raw, Review a Split režim, výběr publikační verze, persistentní sidebar
+vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jump,
+fit-width a `− / +` zoom ve spodním status baru, Ctrl/⌘+scroll a pinch zoom,
+světlý/tmavý režim, fullscreen a přímé stažení PDF. Sidebar toggle používá podle
+strany ikonu levého/pravého sidebaru a sedí na krajním okraji toolbaru; identita
+dokumentu je `Home \\ Název práce \\ Verze`. Všechny ikonové ovládací prvky mají
+hover tooltipy. Split view může volitelně synchronizovat průběžnou scroll pozici
+obou dokumentů.
+
+`make web-check` provede TypeScript kontrolu a produkční Vite build; `make site`
+publikuje bundlované assety společně s PDF maticí a `variants.json`.
 
 Oficiální UI webové aplikace Typst se zde nevkládá: není distribuováno jako
 self-hostovatelná/embeddable open-source komponenta. Experimentální Typst HTML export
