@@ -1,7 +1,8 @@
 import type { AssistantMessage, ProviderResponse } from "@earendil-works/pi-ai";
+import type { FailureKind } from "../../packages/protocol/src/model.ts";
 import type { FailureRuleConfig } from "./providers/schema.ts";
 
-export type FailureKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
+export type { FailureKind } from "../../packages/protocol/src/model.ts";
 
 export interface FailureInput {
 	error?: unknown;
