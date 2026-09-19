@@ -10,19 +10,17 @@
 == Sjednocení pracovních postupů a přenositelnost napříč doménami
 
 #unconfirmed[
-Základním architektonickým principem navrženého harnessu je centralizované sdílení pracovních postupů namísto jejich ad-hoc kopírování do jednotlivých projektů. Klientské repozitáře neudržují vlastní izolované sady validačních skriptů, linterů ani integračních definic; namísto toho delegují exekuci na centrální znovupoužitelné šablony a veškerou projektovou specifičnost deklarují v jediném manifestu.
+Architektonické principy centralizovaného harnessu:
 
-Skutečný inženýrský přínos sjednocení spočívá v kvalitativních a architektonických vlastnostech:
-- *Údržbová složitost $O(1)$*: Před sjednocením vyžadovala jakákoli oprava či bezpečnostní aktualizace v CI procesu samostatnou manuální úpravu a pull request v každém projektu zvlášť ($O(N)$). V centralizovaném modelu je úprava provedena pouze jednou v řídicím harnessu a spotřebitelské projekty ji přebírají posunem připnuté verze v manifestu.
-- *Statická kontrola a testovatelnost*: Centralizované jádro harnessu podléhá striktní typové kontrole a je pokryto sadou jednotkových testů.
-- *Omezení jediného bodu selhání (SPOF)*: Riziko nechtěných či nekompatibilních změn je deterministicky eliminováno verzováním: projekty odkazují na neměnný kryptografický SHA hash commitu či sémantický tag.
-- *Konzistentní agentní prostředí*: Zajištění, že životní cyklus požadavku, správa kontextu, rotace poskytovatelů i vyhodnocování validačních bran probíhají ve všech projektech exaktně stejným způsobem.
-
-Klíčovou vlastností modulární architektury je striktní oddělení domény od prostředí. Zatímco prostředí specifikuje konkrétní sadu exekučních binárek (např. Python, Rust, Typst), doména vymezuje způsob řízení a verifikace výstupu:
-- *Doména programového kódu*: Výstup podléhá kompilaci, statické analýze a exekuci jednotkových testů s měřením pokrytí.
-- *Doména textu a dokumentace*: Výstup podléhá sazební kompilaci, kontrole terminologie a generování statických auditovatelných artefaktů (např. PDF dokumentace).
-
-Díky deklarativnímu konfiguračnímu modelu dokáže řídicí harness obsluhovat obě domény identickým orchestračním automatem, aniž by bylo nutné duplikovat integrační infrastrukturu či větvit agentní smyčky.
+- *Centralizace pracovních postupů*: Klientské repozitáře neudržují vlastní izolované skripty; exekuci delegují na centrální znovupoužitelné šablony a specifičnost projektu vymezují v deklarativním manifestu.
+- *Údržbová složitost $O(1)$*: Bezpečnostní oprava či aktualizace v harnessu je provedena jednou a spotřebitelské projekty ji přebírají posunem připnuté verze ($O(1)$ oproti $O(N)$ manuálním úpravám v každém repozitáři zvlášť).
+- *Statická kontrola jádra*: Jádro harnessu podléhá striktní typové kontrole a jednotkovému testování před každým vydáním.
+- *Omezení jediného bodu selhání (SPOF)*: Projekty odkazují na neměnný kryptografický SHA hash commitu či sémantický tag, což vylučuje nechtěné regresní změny.
+- *Konzistentní agentní prostředí*: Jednotný životní cyklus požadavků, správa kontextu, rotace modelů i vyhodnocení validačních bran napříč všemi projekty.
+- *Oddělení prostředí od domény*:
+  - *Doména programového kódu*: Kompilace, statická analýza, jednotkové testy a měření pokrytí.
+  - *Doména textu a dokumentace*: Sazební kompilace, kontrola terminologie a generování auditovatelných PDF artefaktů.
+- *Univerzální orchestrační automat*: Řídicí harness obsluhuje obě domény shodným stavovým automatem bez větvení integrační logiky.
 ]
 
 == Provozní metriky a spolehlivost agentních běhů
@@ -36,26 +34,35 @@ Díky deklarativnímu konfiguračnímu modelu dokáže řídicí harness obsluho
 == Poznatky a systémová úskalí z provozu
 
 #unconfirmed[
-Praktické zkušenosti s během autonomních agentů v CI odhalily, že nejkritičtější úskalí neleží v neschopnosti modelů generovat syntakticky správný kód, nýbrž v distribuovaném řízení a systémové orchestraci:
-- *Řízení souběžnosti a zámky*: Koordinace volajících a volaných úloh vyžaduje striktní hierarchizaci a zámky na úrovni větví, aby nedocházelo k uváznutí workflow nebo kolizím při souběžných integračních bězích.
-- *Transparentnost hlášení selhání*: Systém nesmí tlumit výjimky a maskovat chyby; každé selhání API nebo nástroje musí být transparentně zaznamenáno v kontextu a eskalováno. Tiché maskování chyb vytváří iluzi stability a vede k rozsáhlým halucinacím modelu.
-- *Dynamická detekce prostředí*: Systém nesmí spoléhat na implicitní předpoklady o technologiích v repozitáři, ale odvozovat exekuční plán z deklarativních manifestů.
+Poznatky z nasazení autonomních agentů v CI:
+
+- *Řízení souběžnosti a větvené zámky*: Paralelní integrační běhy vyžadují striktní zámky na úrovni větví, aby nedocházelo ke kolizím a uváznutí workflow.
+- *Transparentnost hlášení selhání*: Zákaz tichého pohlcování výjimek; každá chyba nástroje nebo API musí být zaznamenána do kontextu a eskalována člověku. Tiché maskování chyb vede k masivním halucinacím modelu.
+- *Deklarativní detekce prostředí*: Vyloučení implicitních předpokladů o repozitáři; veškeré kroky se deterministicky odvozují z přítomnosti souborů a deklarativního manifestu.
 ]
 
 == Diskuse: Porovnání architektur
 
 #unconfirmed[
-Zásadní otázkou je, jak si navržená architektura řídicího harnessu stojí ve srovnání se současnými agentními vývojovými platformami (např. SWE-agent @yao2022, Devin či GitHub Copilot Workspace):
-- *Deterministický DAG vs. nekonečná agentní smyčka*: Systémy jako SWE-agent spouštějí jediný monolitický model v interaktivní terminálové smyčce, kde model sám rozhoduje o ukončení práce. Pokud model uvízne v bludném kruhu nebo halucinuje, snadno vyčerpá celý rozpočet tokenů. Navržený harness naproti tomu uzavírá model do deterministického orientovaného acyklického grafu (DAG): každý krok (plánování, implementace, verifikace) má striktně alokovaný rozpočet tahů a samostatnou kontextovou izolaci.
-- *Granularita lidského dohledu*: Většina komerčních nástrojů staví na paradigmatu „jedno zadání $arrow$ finální pull request“. Pokud agent na začátku špatně pochopí záměr, vygeneruje stovky řádků nepoužitelného kódu, jehož následná revize vývojáře vyčerpává (_review fatigue_). Harness toto riziko eliminuje vícefázovým schvalováním (Human Gate): člověk autorizuje záměr a technický plán dříve, než je spuštěn samotný kódovací agent.
-- *Bezpečnost a hermetičnost*: Běh autonomního agenta přímo na nechráněném vývojovém stroji přináší riziko poškození konfigurace nebo úniku tajemství. Navržený harness prosazuje exekuci v efemérních kontejnerech CI platformy s oddělenými oprávněními tokenů a auditovatelným protokolem každého provedeného příkazu.
+Porovnání navrženého harnessu se současnými platformami (SWE-agent @yao2022, Devin, Copilot Workspace):
+
+- *Deterministický DAG vs. nekonečná smyčka*:
+  - *Volné smyčky (SWE-agent)*: Monolitický model v interaktivním terminálu sám rozhoduje o ukončení; při uvíznutí v atraktoru snadno vyčerpá rozpočet tokenů.
+  - *Navržený harness*: Model je uzavřen do deterministického grafu (DAG) se striktně alokovaným rozpočtem tahů na každou fázi a izolací kontextu.
+- *Granularita lidského dohledu*:
+  - *Jednorázový přístup*: Přímé vygenerování celého PR; při špatném pochopení zadání vede ke stovkám řádků vadného kódu a únavě vývojáře z revizí (_review fatigue_).
+  - *Dvoufázové schvalování*: Člověk autorizuje záměr a technický plán dříve, než agent začne zasahovat do repozitáře.
+- *Bezpečnost a hermetičnost*:
+  - *Lokální stroje*: Riziko poškození prostředí či úniku tajemství při spouštění netestovaného kódu.
+  - *Efemérní CI kontejnery*: Běh v izolovaném sandboxu s minimálními oprávněními tokenů a auditovatelným protokolem všech operací.
 ]
 
 == Systémová a metodická omezení
 
 #unconfirmed[
-Dosažená zjištění je třeba interpretovat s ohledem na tři fundamentální omezení:
-1. *Hranice deterministické verifikovatelnosti*: Systém vyžaduje, aby bylo správnost navržené změny možné objektivně ověřit automatizovanými testy, lintery či kompilátorem. U úloh subjektivní či kreativní povahy — jako je ergonomie uživatelského rozhraní, ladění vizuálních stylů nebo stylistická formulace odborného textu — zůstává autonomní přínos omezen na vygenerování prvotního návrhu, jehož validaci musí provést člověk.
-2. *Propustnost a dostupnost inferenčních API*: Ačkoli rotační žebříček poskytovatelů minimalizuje dopad výpadku jedné služby, celková průchodnost pipeline je limitována globálními kvótami a latencí cloudových API. Při souběžném zpracování většího množství požadavků může dojít k vyčerpání všech dostupných účtů, což pipeline dočasně pozastaví.
-3. *Absence vícevláknového řešení konfliktů*: Architektura se soustředí na deterministické řešení izolovaných požadavků. Řízení komplexních merge konfliktů a vzájemných interferencí při souběžné práci velkého množství lidských vývojářů a autonomních agentů nad stejnými větvemi zůstává otevřenou výzvou pro navazující výzkum.
+Limity navržené architektury:
+
+- *1. Hranice deterministické verifikovatelnosti*: Autonomie je spolehlivá pouze u objektivně testovatelných změn (kód, testy, typy). U subjektivních úloh (UX ergonomie, grafický design, stylistická formulace textu) zůstává role modelu asistenční a validaci provádí člověk.
+- *2. Propustnost a dostupnost inferenčních API*: Rotační žebříček tlumí lokální výpadky, avšak globální kvóty a latence cloudových poskytovatelů tvoří pevný strop průchodnosti pipeline.
+- *3. Absence vícevláknového řešení konfliktů*: Souběžná práce mnoha autonomních agentů a lidí nad týmiž soubory a řešení komplexních merge konfliktů představuje otevřenou výzvu pro navazující výzkum.
 ]

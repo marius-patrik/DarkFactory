@@ -104,5 +104,11 @@ Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Čistý neoznačený text*: Představuje finální, autorsky schválený text v hlase autora bez jakéhokoliv podbarvení.
 
 #unconfirmed[
-Každá značka plní přesně vymezenou komunikační roli v procesu lidského schvalování: zatímco finální text zůstává zcela bez zvýraznění, veškeré neověřené pasáže konceptu jsou zřetelně žluté (`#draft` / `#unconfirmed`), nově přidané části zelené (`#added`), potvrzené části modré (`#confirmed`) a opravy zviditelněné přes srovnávací diff (`#diff`). Náměty, chyby, strukturální vady i břitká kritika jsou navíc striktně separovány do barevných postranních panelů na okraji textu.
+Role značek v lidském dohledu:
+- *Čistý neoznačený text*: Schválený autorský text v hlase autora.
+- *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
+- *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.
+- *Modré podbarvení (`#confirmed`)*: Uživatelem odsouhlasený text.
+- *Srovnávací diff (`#diff`)*: Transparentní vizualizace navržených oprav.
+- *Postranní panely (Callouty)*: Striktní oddělení námětů, chyb a oponentury od těla textu.
 ]
