@@ -239,10 +239,11 @@ class TestDfPromptFile:
             )
 
         monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
-        prompt = "Review this implementation plan: create an illustration and generate a video clip."
+        prompt = (
+            "Review this implementation plan: create an illustration and generate a video clip."
+        )
         assert agent_runner.run_agent_prompt(prompt, kind="review") == "reviewed"
         assert seen["argv"][-2:] == ["--kind", "review"]
-
 
     def test_a_json_answer_after_tools_is_returned(self, monkeypatch):
         """End to end: event stream in, final text out."""
