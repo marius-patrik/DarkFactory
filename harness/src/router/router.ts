@@ -4,7 +4,7 @@ import type { LimitLedger } from "../limits/ledger.ts";
 import type { QuotaEngine } from "../limits/quota-engine.ts";
 import { assessCandidate, estimateTask } from "../limits/routing.ts";
 import type { OutcomeStore } from "./outcomes.ts";
-import { type CheapClassifier, classifyTask } from "./profile.ts";
+import { type CheapClassifier, classifyTaskWithDiagnostics } from "./profile.ts";
 import type {
 	ModelCapability,
 	RankedCandidate,
@@ -89,7 +89,8 @@ function dataCollectionError(
 }
 
 export async function routeTask(input: RouterInput, dependencies: RouteDependencies): Promise<RouteResult> {
-	const profile = await classifyTask(input, dependencies.config, dependencies.classify);
+	const classified = await classifyTaskWithDiagnostics(input, dependencies.config, dependencies.classify);
+	const profile = classified.profile;
 	const explicit = input.explicitChain ?? input.explicitModel;
 	const graph = input.node?.chain ?? input.node?.model;
 	const constrained = profile.sensitivity === "sensitive" ? dependencies.sensitiveChain : undefined;
@@ -218,6 +219,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 	for (const entry of adjusted) {
 		const { item, skip, quotaStatus } = entry;
 		const details: string[] = [
+			...classified.details.map((detail) => `profile: ${detail}`),
 			`tier ${item.model.limitTier}`,
 			`quality ${item.quality}`,
 			`data collection ${item.model.collection ?? "unknown"} allowed`,
@@ -256,6 +258,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			reason: `data collection ${JSON.stringify(collection)} is not allowed for ${profile.sensitivity} work`,
 			score: Number.POSITIVE_INFINITY,
 			details: [
+				...classified.details.map((detail) => `profile: ${detail}`),
 				`tier ${model.limitTier}`,
 				`data collection ${JSON.stringify(collection)} rejected; allowed: ${allowedCollections
 					.map((allowed) => JSON.stringify(allowed))
