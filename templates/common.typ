@@ -57,20 +57,17 @@
   (cs: cs, en: en)
 }
 
-#let resolve-language(language, school-both: false) = context {
+#let resolve-language(language, profile, school-both: false) = {
   if language != "auto" {
     language
+  } else if profile == "cs" {
+    "cs"
+  } else if profile == "en" {
+    "en"
+  } else if profile == "school" and not school-both {
+    "cs"
   } else {
-    let profile = profile-state.get()
-    if profile == "cs" {
-      "cs"
-    } else if profile == "en" {
-      "en"
-    } else if profile == "school" and not school-both {
-      "cs"
-    } else {
-      "both"
-    }
+    "both"
   }
 }
 
@@ -104,7 +101,7 @@
   separator: "bar",
   order: "cs-en",
 ) = context {
-  let lang = resolve-language(language, school-both: school-both)
+  let lang = resolve-language(language, profile-state.get(), school-both: school-both)
   let part(code, body) = if labels {
     [#language-badge(code) #h(0.35em) #body]
   } else {
@@ -306,23 +303,20 @@
   )
 }
 
-#let term-language(language) = context {
+#let term-language(language, profile) = {
   if language != "auto" {
     language
+  } else if profile == "cs" {
+    "cs"
+  } else if profile == "en" {
+    "en"
   } else {
-    let profile = profile-state.get()
-    if profile == "cs" {
-      "cs"
-    } else if profile == "en" {
-      "en"
-    } else {
-      "both"
-    }
+    "both"
   }
 }
 
 #let term-name(value, language: "auto", separator: "bar", order: "cs-en") = context {
-  let lang = term-language(language)
+  let lang = term-language(language, profile-state.get())
   if str(value.en) == str(value.cs) and lang == "both" {
     text(lang: "cs")[#value.cs]
   } else {
@@ -345,7 +339,7 @@
   order: "cs-en",
 ) = context {
   assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
-  let lang = term-language(language)
+  let lang = term-language(language, profile-state.get())
 
   if value.explanation_cs == none and value.explanation_en == none {
     none
