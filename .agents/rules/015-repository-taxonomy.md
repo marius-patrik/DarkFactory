@@ -6,39 +6,39 @@ applies_to: [agents, automation, contributors]
 activation: always
 owners: [system-audit, cli-release]
 ---
-# Rule 15 — Conventional commits and taxonomy enforcement
+# Rule 15 — Commits, repository taxonomy and domains
 
 ## Requirement
 
-- **Format**: `<type>(<scope>): <description>` (e.g. `feat(term): add cell matrix buffer`).
-- **Allowed Types**: `feat`, `fix` (mapped from `bug`), `chore`, `docs`, `refactor`, `test`, `ci`.
-- **Allowed Area Scopes & Labels**:
-  The taxonomy is **per repository**, declared in `.darkfactory/manifest.json` under `areas`. The
-  labels, the permitted commit scopes, and the agent's request classifier all read that one
-  declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
-  block with its own domains; the areas below are DarkFactory's own.
-  - `area:agents`: Harness orchestration, provider adapters, personas, approvals.
-  - `area:governance`: Agent rules, branch protection, required checks, project board taxonomy.
-  - `area:release`: Versioning modes, tagging, asset packaging, release notes.
-  - `area:docs`: Documentation site, theme, architecture notes.
-  - `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation.
+Commits use Conventional Commits: `<type>(<scope>): <description>`.
+
+Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
+
+Repository area labels/scopes are declared by final `repo.df`, not a legacy manifest path.
+
+Project classification separates:
+
+- ecosystem/toolchain;
+- package;
+- semantic domain (initially including code, paper and math);
+- capability.
+
+A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.
+
+Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.
 
 ## Rationale
 
-The manifest is the executable source; the rule text is a convenience mirror for DarkFactory itself
-and must not be copied verbatim to consumers, whose areas differ.
+Separating domain from capability preserves multi-domain repositories while keeping extension behavior modular.
 
 ## Enforcement
 
-- `.darkfactory/repo.df` `areas` declaration is the source of truth.
-- `tests/test_pipeline_config.py::test_area_lists_match_the_manifest` checks the request template
-  and the PR template against the manifest.
+Final repo.df resolver, #341 detection/capability resolution and hooks validate the taxonomy.
 
 ## Exceptions
 
-Consumers override the area block with their own declaration.
+Consumers define their own repository areas and installed/applicable capabilities.
 
 ## Change control
 
-Add or rename an area by changing the manifest only; commit scopes and labels follow automatically.
-Thin-rule counterpart of DF-RULE-005 (granularity).
+Taxonomy changes occur through repo.df/capability declarations; rule prose does not become a second list of consumer-specific areas.
