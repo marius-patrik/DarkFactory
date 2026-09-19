@@ -134,6 +134,31 @@ for path in (
     if path.name != "thesis.typ" and any("templates/gjkt-odborna-prace" in line for line in imports):
         fail(f"manuscript bypasses template registry in {path}")
 
+# Chapter files contain semantic content only. Structural page/layout directives
+# belong to the selected document template so the same manuscript can be rendered
+# by another template without editing chapter sources.
+for path in sorted(Path("kapitoly").glob("*.typ")):
+    in_fence = False
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        forbidden = (
+            "#pagebreak",
+            "#set page",
+            "#set text",
+            "#set par",
+            "#set heading",
+            "#show heading",
+            "#align(",
+            "#pad(",
+        )
+        if any(token in stripped for token in forbidden):
+            fail(f"layout directive belongs in template, not {path}:{line_number}: {stripped}")
+
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 release_assets = {Path(value) for value in manifest.get("release", {}).get("assets", [])}
