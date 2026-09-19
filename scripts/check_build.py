@@ -31,6 +31,40 @@ for path in EXPECTED:
         if handle.read(5) != b"%PDF-":
             fail(f"{path} is not a PDF")
 
+
+TEMPLATE_NAMES = tuple(
+    sorted(
+        path.parent.name
+        for path in Path("templates").glob("*/template.typ")
+    )
+)
+if not TEMPLATE_NAMES:
+    fail("no document templates discovered")
+
+TEMPLATE_FILENAMES = tuple(path.name for path in EXPECTED)
+for template_name in TEMPLATE_NAMES:
+    template_out = Path("out/templates") / template_name
+    matrix = tuple(template_out / name for name in TEMPLATE_FILENAMES)
+    for path in matrix:
+        if not path.is_file():
+            fail(f"missing template matrix artifact: {path}")
+        if path.stat().st_size < 1024:
+            fail(f"{path} is unexpectedly small ({path.stat().st_size} bytes)")
+        with path.open("rb") as handle:
+            if handle.read(5) != b"%PDF-":
+                fail(f"{path} is not a PDF")
+
+    for final_name, review_name in (
+        ("prace.pdf", "prace-review.pdf"),
+        ("prace-cs.pdf", "prace-cs-review.pdf"),
+        ("prace-en.pdf", "prace-en-review.pdf"),
+        ("prace-bilingual.pdf", "prace-bilingual-review.pdf"),
+    ):
+        final = template_out / final_name
+        review = template_out / review_name
+        if final.read_bytes() == review.read_bytes():
+            fail(f"template review output is byte-identical to final output: {template_name}/{final_name}")
+
 # Repository architecture invariants.
 gitmodules = Path(".gitmodules")
 if not gitmodules.is_file():
@@ -119,4 +153,4 @@ for final, review in pairs:
     if final.read_bytes() == review.read_bytes():
         fail(f"review output is byte-identical to final output: {final}")
 
-print(f"ok: validated {len(EXPECTED)} PDFs, template architecture, repository architecture, and release manifest")
+print(f"ok: validated {len(EXPECTED)} canonical PDFs + {len(TEMPLATE_NAMES)} complete template matrices, architecture, and release manifest")
