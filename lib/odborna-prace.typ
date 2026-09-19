@@ -570,7 +570,7 @@
       chars: calc.max(0, chars),
     )
     word-stats-state.update(stats)
-    metadata(stats) <word-stats>
+    [#metadata(stats) <word-stats>]
   }
 }
 
