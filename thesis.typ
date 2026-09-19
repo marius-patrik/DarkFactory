@@ -1,5 +1,5 @@
 #import "metadata.typ": meta
-#import "lib/odborna-prace.typ": odborna-prace, prilohy
+#import "packages/odborna-prace-template/src/lib.typ": odborna-prace, prilohy
 
 // Jediný vstupní bod pro obě výstupní varianty práce.
 // Rozdíl mezi normal/review se předává pouze jako režim šabloně;
