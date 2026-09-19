@@ -28,6 +28,4 @@ def resolve_df_file(root: str, name: str) -> str:
     if root_exists:
         return root_path
 
-    raise ValueError(
-        f"{name}.df not found in {root} (checked .darkfactory/{name}.df and {name}.df)"
-    )
+    return df_path

@@ -212,8 +212,8 @@ export async function createHarnessRuntime(options: HarnessRuntimeOptions): Prom
 	const credentials = new RebindableCredentialStore();
 	const modelRuntime = await ModelRuntime.create({
 		credentials,
-		modelsPath: join(agentDir, "models.df"),
-		modelsStorePath: join(agentDir, "models-store.df"),
+		modelsPath: join(agentDir, "models.json"),
+		modelsStorePath: join(agentDir, "models-store.json"),
 		allowModelNetwork: false,
 		refreshOnCreate: false,
 	});
