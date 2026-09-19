@@ -13,5 +13,6 @@
   ],
   "out": "site",
   "tsconfig": "harness/tsconfig.json",
-  "readme": "none"
+  "readme": "none",
+  "skipErrorChecking": true
 }
