@@ -38,6 +38,13 @@
     explanation_cs: "Vícerozměrná vektorová reprezentace tokenů nebo jiných dat, v níž numerické vztahy mezi vektory zachycují užitečné sémantické vztahy mezi reprezentacemi.",
     explanation_en: "A multidimensional vector representation of tokens or other data in which numerical relationships between vectors capture useful semantic relationships between representations.",
   ),
+  version_control: define-term(
+    id: "version-control",
+    cs: "Správa verzí",
+    en: "Version Control",
+    explanation_cs: "Správa a sledování změn zdrojových souborů a dalších verzovaných artefaktů tak, aby bylo možné změny bezpečně větvit, slučovat, auditovat a v případě potřeby vracet.",
+    explanation_en: "The management and tracking of changes to source files and other versioned artifacts so changes can be safely branched, merged, audited, and reverted when necessary.",
+  ),
   git: define-term(
     id: "git",
     cs: "Git",
@@ -51,6 +58,13 @@
     en: "GitHub",
     explanation_cs: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu pomocí Issues a Pull Requests a automatizaci CI/CD pracovních postupů.",
     explanation_en: "A platform for hosting Git repositories and coordinating the software-development lifecycle through features such as Issues, Pull Requests, and CI/CD automation.",
+  ),
+  agentic_engineering: define-term(
+    id: "agentic-engineering",
+    cs: "Agentní inženýrství",
+    en: "Agentic Engineering",
+    explanation_cs: "Inženýrská disciplína zaměřená na návrh, orchestrace a provoz agentních systémů kolem jazykových modelů, včetně nástrojů, kontextu, prováděcích smyček, bezpečnostních mantinelů a lidského dohledu.",
+    explanation_en: "An engineering discipline focused on designing, orchestrating, and operating agentic systems around language models, including tools, context, execution loops, guardrails, and human oversight.",
   ),
   harness: define-term(
     id: "harness",
