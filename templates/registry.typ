@@ -61,4 +61,6 @@
 #let render-term = common.render-term
 #let kw = common.kw
 #let terms = vocabulary
-\n#let render-keywords = common.render-keywords\n#let render-encyclopedia = common.render-encyclopedia\n
+
+#let render-keywords = common.render-keywords
+#let render-encyclopedia = common.render-encyclopedia
