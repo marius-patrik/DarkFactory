@@ -9,6 +9,10 @@ const title = params.get("title") || "DarkFactory-Paper";
 const mode = params.get("mode") || "final";
 const peer = params.get("peer") || "";
 const peerLabel = params.get("peer_label") || "";
+const viewMode = params.get("view") === "split" ? "split" : "single";
+const embedded = params.get("embedded") === "1";
+
+if (embedded) document.documentElement.dataset.embedded = "true";
 
 function safePdfPath(value) {
   if (!value || !value.toLowerCase().endsWith(".pdf")) return null;
@@ -32,13 +36,15 @@ const els = {
   title: document.querySelector(".doc-title"),
   mobileTitle: document.querySelector(".mobile-title"),
   peer: document.querySelector("#peer-link"),
+  split: document.querySelector("#split-link"),
   download: document.querySelector("#download-link"),
   native: document.querySelector("#native-link"),
 };
 
 els.title.textContent = title;
 els.mobileTitle.textContent = mode === "review" ? "Review" : "Final";
-document.title = `${title} · ${mode === "review" ? "Review" : "Final"}`;
+document.title = `${title} · ${viewMode === "split" ? "Raw / Review" : mode === "review" ? "Review" : "Raw"}`;
+if (embedded) els.content.classList.add("sidebar-hidden");
 
 if (!pdfPath) {
   els.loading.className = "error";
@@ -53,11 +59,28 @@ if (peerPath) {
   peerParams.set("file", peerPath);
   peerParams.set("mode", mode === "review" ? "final" : "review");
   peerParams.set("peer", pdfPath);
-  peerParams.set("peer_label", mode === "review" ? "Review" : "Final");
+  peerParams.set("peer_label", mode === "review" ? "Review" : "Raw");
+  peerParams.delete("view");
+  peerParams.delete("embedded");
   els.peer.href = `viewer.html?${peerParams.toString()}`;
-  els.peer.textContent = peerLabel || (mode === "review" ? "Final" : "Review");
+  els.peer.textContent = peerLabel || (mode === "review" ? "Raw" : "Review");
 } else {
   els.peer.hidden = true;
+}
+
+const rawPath = mode === "review" ? peerPath : pdfPath;
+const reviewPath = mode === "review" ? pdfPath : peerPath;
+if (rawPath && reviewPath) {
+  const splitParams = new URLSearchParams(params);
+  splitParams.set("file", rawPath);
+  splitParams.set("mode", "final");
+  splitParams.set("peer", reviewPath);
+  splitParams.set("peer_label", "Review");
+  splitParams.set("view", "split");
+  splitParams.delete("embedded");
+  els.split.href = `viewer.html?${splitParams.toString()}`;
+} else {
+  els.split.hidden = true;
 }
 
 let pdf = null;
@@ -68,6 +91,19 @@ let pageInfos = [];
 let visiblePages = new Set();
 let renderVersion = 0;
 let scrollFrame = 0;
+let splitController = null;
+
+function emitState() {
+  if (!embedded || window.parent === window) return;
+  window.parent.postMessage({
+    source: "paper-viewer",
+    kind: "state",
+    page: currentPage,
+    total: pdf?.numPages || 0,
+    scaleMode,
+    manualScale,
+  }, "*");
+}
 
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -267,6 +303,7 @@ async function load() {
       requestAnimationFrame(() => scrollToPage(hashPage));
     }
     updateCurrentPage();
+    emitState();
   } catch (error) {
     console.error(error);
     els.loading.className = "error";
@@ -275,31 +312,176 @@ async function load() {
   }
 }
 
-document.querySelector("#sidebar-toggle").addEventListener("click", () => {
-  els.content.classList.toggle("sidebar-hidden");
-  setTimeout(rerenderVisible, 170);
-});
-document.querySelector("#zoom-in").addEventListener("click", () => {
+function singleUrl(file, targetMode, other) {
+  const target = new URLSearchParams(params);
+  target.set("file", file);
+  target.set("mode", targetMode);
+  if (other) {
+    target.set("peer", other);
+    target.set("peer_label", targetMode === "review" ? "Raw" : "Review");
+  } else {
+    target.delete("peer");
+    target.delete("peer_label");
+  }
+  target.delete("view");
+  target.delete("embedded");
+  return `viewer.html?${target.toString()}`;
+}
+
+function childUrl(file, childMode) {
+  const target = new URLSearchParams();
+  target.set("file", file);
+  target.set("title", title);
+  target.set("mode", childMode);
+  target.set("embedded", "1");
+  return `viewer.html?${target.toString()}`;
+}
+
+function setupSplit() {
+  if (!rawPath || !reviewPath) {
+    els.loading.className = "error";
+    els.loading.innerHTML = "<div><strong>Split view unavailable.</strong>Both raw and review PDFs are required.</div>";
+    return null;
+  }
+
+  document.querySelector("#sidebar-toggle").hidden = true;
+  els.mobileTitle.textContent = "Split";
+  els.peer.textContent = "Raw";
+  els.peer.href = singleUrl(rawPath, "final", reviewPath);
+  els.split.textContent = "Single";
+  els.split.href = singleUrl(rawPath, "final", reviewPath);
+  els.download.href = rawPath;
+  els.native.href = rawPath;
+
+  els.content.className = "content split-view";
+  els.content.innerHTML = `
+    <section class="split-column">
+      <div class="split-label">Raw</div>
+      <iframe title="Raw document" src="${childUrl(rawPath, "final")}"></iframe>
+    </section>
+    <section class="split-column">
+      <div class="split-label">Review</div>
+      <iframe title="Review document" src="${childUrl(reviewPath, "review")}"></iframe>
+    </section>
+  `;
+
+  const frames = [...els.content.querySelectorAll("iframe")];
+
+  function send(command, payload = {}, except = null) {
+    for (const frame of frames) {
+      if (except && frame.contentWindow === except) continue;
+      frame.contentWindow?.postMessage({ source: "paper-split", command, ...payload }, "*");
+    }
+  }
+
+  addEventListener("message", event => {
+    if (!frames.some(frame => frame.contentWindow === event.source)) return;
+    const data = event.data;
+    if (!data || data.source !== "paper-viewer" || data.kind !== "state") return;
+
+    if (data.total) {
+      els.pageTotal.textContent = `/ ${data.total}`;
+      els.pageInput.max = String(data.total);
+    }
+    if (data.page && data.page !== currentPage) {
+      currentPage = data.page;
+      els.pageInput.value = String(currentPage);
+      send("page", { page: currentPage }, event.source);
+      history.replaceState(null, "", `${location.pathname}${location.search}#page=${currentPage}`);
+    }
+  });
+
+  const hashPage = Number(new URLSearchParams(location.hash.replace(/^#/, "")).get("page"));
+  if (hashPage > 0) currentPage = hashPage;
+  els.pageInput.value = String(currentPage);
+  updateZoomLabel();
+
+  return { send };
+}
+
+function goToPage(number) {
+  if (viewMode === "split" && splitController) {
+    currentPage = Math.max(1, Number(number) || 1);
+    els.pageInput.value = String(currentPage);
+    splitController.send("page", { page: currentPage });
+    return;
+  }
+  scrollToPage(number);
+}
+
+function zoomIn() {
+  if (viewMode === "split" && splitController) {
+    if (scaleMode === "fit") manualScale = 1;
+    scaleMode = "manual";
+    manualScale = Math.min(2.5, manualScale + .1);
+    updateZoomLabel();
+    splitController.send("zoom", { mode: "manual", scale: manualScale });
+    return;
+  }
   if (scaleMode === "fit") manualScale = scaleFor(pageInfos[currentPage - 1] || { baseWidth: 595 });
   scaleMode = "manual";
   manualScale = Math.min(2.5, manualScale + .1);
   updateZoomLabel();
   rerenderVisible();
-});
-document.querySelector("#zoom-out").addEventListener("click", () => {
+  emitState();
+}
+
+function zoomOut() {
+  if (viewMode === "split" && splitController) {
+    if (scaleMode === "fit") manualScale = 1;
+    scaleMode = "manual";
+    manualScale = Math.max(.45, manualScale - .1);
+    updateZoomLabel();
+    splitController.send("zoom", { mode: "manual", scale: manualScale });
+    return;
+  }
   if (scaleMode === "fit") manualScale = scaleFor(pageInfos[currentPage - 1] || { baseWidth: 595 });
   scaleMode = "manual";
   manualScale = Math.max(.45, manualScale - .1);
   updateZoomLabel();
   rerenderVisible();
-});
-document.querySelector("#fit-width").addEventListener("click", () => {
+  emitState();
+}
+
+function fitWidth() {
   scaleMode = "fit";
   updateZoomLabel();
+  if (viewMode === "split" && splitController) {
+    splitController.send("zoom", { mode: "fit" });
+    return;
+  }
   rerenderVisible();
+  emitState();
+}
+
+addEventListener("message", event => {
+  if (!embedded) return;
+  const data = event.data;
+  if (!data || data.source !== "paper-split") return;
+  if (data.command === "page") {
+    scrollToPage(data.page);
+  } else if (data.command === "zoom") {
+    if (data.mode === "fit") {
+      scaleMode = "fit";
+    } else {
+      scaleMode = "manual";
+      manualScale = Math.max(.45, Math.min(2.5, Number(data.scale) || 1));
+    }
+    updateZoomLabel();
+    rerenderVisible();
+    emitState();
+  }
 });
-document.querySelector("#prev-page").addEventListener("click", () => scrollToPage(currentPage - 1));
-document.querySelector("#next-page").addEventListener("click", () => scrollToPage(currentPage + 1));
+
+document.querySelector("#sidebar-toggle").addEventListener("click", () => {
+  els.content.classList.toggle("sidebar-hidden");
+  setTimeout(rerenderVisible, 170);
+});
+document.querySelector("#zoom-in").addEventListener("click", zoomIn);
+document.querySelector("#zoom-out").addEventListener("click", zoomOut);
+document.querySelector("#fit-width").addEventListener("click", fitWidth);
+document.querySelector("#prev-page").addEventListener("click", () => goToPage(currentPage - 1));
+document.querySelector("#next-page").addEventListener("click", () => goToPage(currentPage + 1));
 document.querySelector("#theme-toggle").addEventListener("click", () =>
   setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark")
 );
@@ -307,10 +489,10 @@ document.querySelector("#fullscreen").addEventListener("click", async () => {
   if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
   else await document.exitFullscreen?.();
 });
-els.pageInput.addEventListener("change", () => scrollToPage(els.pageInput.value));
+els.pageInput.addEventListener("change", () => goToPage(els.pageInput.value));
 els.pageInput.addEventListener("keydown", event => {
   if (event.key === "Enter") {
-    scrollToPage(els.pageInput.value);
+    goToPage(els.pageInput.value);
     els.pageInput.blur();
   }
 });
@@ -318,17 +500,21 @@ els.stage.addEventListener("scroll", () => {
   if (!scrollFrame) scrollFrame = requestAnimationFrame(updateCurrentPage);
 }, { passive: true });
 addEventListener("resize", () => {
-  if (scaleMode === "fit") rerenderVisible();
+  if (viewMode === "split") {
+    splitController?.send("zoom", { mode: scaleMode, scale: manualScale });
+  } else if (scaleMode === "fit") {
+    rerenderVisible();
+  }
 });
 addEventListener("keydown", event => {
   const tag = document.activeElement?.tagName?.toLowerCase();
   if (tag === "input" || tag === "textarea") return;
   if (event.key === "ArrowLeft" || event.key === "PageUp") {
     event.preventDefault();
-    scrollToPage(currentPage - 1);
+    goToPage(currentPage - 1);
   } else if (event.key === "ArrowRight" || event.key === "PageDown") {
     event.preventDefault();
-    scrollToPage(currentPage + 1);
+    goToPage(currentPage + 1);
   } else if (event.key === "+" || event.key === "=") {
     event.preventDefault();
     document.querySelector("#zoom-in").click();
@@ -341,4 +527,8 @@ addEventListener("keydown", event => {
   }
 });
 
-load();
+if (viewMode === "split" && !embedded) {
+  splitController = setupSplit();
+} else {
+  load();
+}
