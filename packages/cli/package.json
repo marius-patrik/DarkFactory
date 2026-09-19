@@ -1,0 +1,18 @@
+{
+  "name": "@darkfactory/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/protocol": "workspace:*",
+    "@darkfactory/core": "workspace:*",
+    "@darkfactory/capability": "workspace:*"
+  }
+}

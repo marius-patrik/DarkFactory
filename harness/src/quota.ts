@@ -1,7 +1,8 @@
 import type { AssistantMessage, ProviderResponse } from "@earendil-works/pi-ai";
+import type { FailureKind } from "../../packages/protocol/src/model.ts";
 import type { FailureRuleConfig } from "./providers/schema.ts";
 
-export type FailureKind = "quota_exhausted" | "rate_limited" | "auth" | "transient" | "fatal";
+export type { FailureKind } from "../../packages/protocol/src/model.ts";
 
 export interface FailureInput {
 	error?: unknown;
@@ -10,7 +11,10 @@ export interface FailureInput {
 	now?: number;
 }
 
-export interface FailurePolicy { rules: readonly FailureRuleConfig[]; model?: string }
+export interface FailurePolicy {
+	rules: readonly FailureRuleConfig[];
+	model?: string;
+}
 
 export interface FailureClassification {
 	kind: FailureKind;
@@ -37,9 +41,11 @@ interface ErrorDetails {
 // - pi's outer classifier treats quota/billing as non-retryable and transient text as retryable:
 //   packages/ai/src/utils/retry.ts:7-24,26-90,235-240.
 
-const QUOTA = /insufficient[_ ]quota|quota (?:exceeded|exhausted)|usage limit|monthly limit|freeusagelimiterror|gousagelimiterror|out of (?:budget|credits?)|billing|credit balance/i;
+const QUOTA =
+	/insufficient[_ ]quota|quota (?:exceeded|exhausted)|usage limit|monthly limit|freeusagelimiterror|gousagelimiterror|out of (?:budget|credits?)|billing|credit balance/i;
 /** Balance, credit and daily-cap wordings of free gateways (seen 2026-09-15 on Hugging Face, DeepInfra, Ollama Cloud, Venice, Cline, Pollinations). */
-const GATEWAY_QUOTA = /depleted your (?:monthly )?(?:included )?credits|positive balance|insufficient (?:usd|balance|funds|credits?)|requires a subscription or usage credits|daily (?:free )?limit reached|inference_cap_error|reached its budget/i;
+const GATEWAY_QUOTA =
+	/depleted your (?:monthly )?(?:included )?credits|positive balance|insufficient (?:usd|balance|funds|credits?)|requires a subscription or usage credits|daily (?:free )?limit reached|inference_cap_error|reached its budget/i;
 const PROVIDER_QUOTA_WORDINGS: readonly RegExp[] = [
 	/\baccess[\s_-]+terminated[\s_-]+error\b/i,
 	/\breach(?:ed|es)?\b.{0,24}\busage[\s_-]+limit\b/i,
@@ -50,7 +56,8 @@ const PROVIDER_QUOTA_WORDINGS: readonly RegExp[] = [
 ];
 const RATE = /rate.?limit|too many requests|resourceexhausted|throttl/i;
 const AUTH = /unauthori[sz]ed|forbidden|invalid[_ ](?:api[_ ]key|token|grant)|authentication|credential|oauth/i;
-const TRANSIENT = /overloaded|service.?unavailable|server.?error|internal.?error|network.?error|connection|fetch failed|getaddrinfo|enotfound|eai_again|timed? out|timeout|socket|stream ended|retry your request|retry delay|unavailable|high demand/i;
+const TRANSIENT =
+	/overloaded|service.?unavailable|server.?error|internal.?error|network.?error|connection|fetch failed|getaddrinfo|enotfound|eai_again|timed? out|timeout|socket|stream ended|retry your request|retry delay|unavailable|high demand/i;
 
 function details(error: unknown): ErrorDetails {
 	if (!(error instanceof Error)) return { message: error === undefined ? "" : String(error) };
@@ -59,9 +66,10 @@ function details(error: unknown): ErrorDetails {
 		name: error.name,
 		message: error.message,
 		status: typeof item.status === "number" ? item.status : undefined,
-		headers: item.headers instanceof Headers || (item.headers && typeof item.headers === "object")
-			? item.headers as Headers | Record<string, string>
-			: undefined,
+		headers:
+			item.headers instanceof Headers || (item.headers && typeof item.headers === "object")
+				? (item.headers as Headers | Record<string, string>)
+				: undefined,
 		code: typeof item.code === "string" ? item.code : undefined,
 	};
 }
@@ -98,16 +106,28 @@ function googleErrorFacts(message: string, now: number): { status?: string; rese
 	const retrySeconds = Number(message.match(/"retryDelay"\s*:\s*"([0-9]+(?:\.[0-9]+)?)s"/i)?.[1]);
 	const retryInSeconds = Number(message.match(/Please retry in ([0-9]+(?:\.[0-9]+)?)s/i)?.[1]);
 	const fromTextRetry = !Number.isFinite(retrySeconds) && Number.isFinite(retryInSeconds);
-	const effectiveRetry = Number.isFinite(retrySeconds) ? retrySeconds : Number.isFinite(retryInSeconds) ? retryInSeconds : NaN;
+	const effectiveRetry = Number.isFinite(retrySeconds)
+		? retrySeconds
+		: Number.isFinite(retryInSeconds)
+			? retryInSeconds
+			: NaN;
 	const ceilRetry = Number.isFinite(effectiveRetry) ? Math.ceil(effectiveRetry) : NaN;
 	const textJitter = fromTextRetry ? 1000 : 0;
 	const resetText = message.match(/"(?:resetTime|resetAt)"\s*:\s*"([^"]+)"/i)?.[1];
 	const resetParsed = resetText ? Date.parse(resetText) : NaN;
-	const resetAt = Number.isFinite(ceilRetry) ? now + ceilRetry * 1000 + textJitter : Number.isFinite(resetParsed) ? resetParsed : undefined;
+	const resetAt = Number.isFinite(ceilRetry)
+		? now + ceilRetry * 1000 + textJitter
+		: Number.isFinite(resetParsed)
+			? resetParsed
+			: undefined;
 	const explicit = message.match(/"(?:pool|quotaId|quotaMetric|modelId)"\s*:\s*"([A-Za-z0-9_.:/-]+)"/i)?.[1];
 	const lower = `${explicit ?? ""} ${message}`.toLowerCase();
 	const family = lower.includes("gemini") ? "gemini" : /claude|gpt|oss/.test(lower) ? "claude-gpt" : undefined;
-	const window = /weekly|7[- ]?day/.test(lower) ? "weekly" : /five[- ]?hour|5[- ]?hour|5h/.test(lower) ? "five-hour" : undefined;
+	const window = /weekly|7[- ]?day/.test(lower)
+		? "weekly"
+		: /five[- ]?hour|5[- ]?hour|5h/.test(lower)
+			? "five-hour"
+			: undefined;
 	const pool = family && window ? `${family}:${window}` : explicit;
 	return { ...(status ? { status } : {}), ...(resetAt !== undefined ? { resetAt } : {}), ...(pool ? { pool } : {}) };
 }
@@ -128,7 +148,11 @@ function jsonBody(message: string): unknown {
 			if (character === '"') quoted = true;
 			else if (character === "{") depth++;
 			else if (character === "}" && --depth === 0) {
-				try { return JSON.parse(message.slice(index, end + 1)) as unknown; } catch { break; }
+				try {
+					return JSON.parse(message.slice(index, end + 1)) as unknown;
+				} catch {
+					break;
+				}
 			}
 		}
 	}
@@ -148,7 +172,7 @@ export function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
 		}
 		if (current && typeof current === "object") {
 			const obj = current as Record<string, unknown>;
-			const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+			const errorObj = obj.error && typeof obj.error === "object" ? (obj.error as Record<string, unknown>) : undefined;
 			const nestedString =
 				(typeof errorObj?.message === "string" ? errorObj.message : undefined) ??
 				(typeof obj.message === "string" ? obj.message : undefined) ??
@@ -169,7 +193,7 @@ export function unwrapNestedJson(value: unknown, maxDepth = 5): unknown {
 function extractErrorMessage(body: unknown, fallback: string): string {
 	if (body && typeof body === "object") {
 		const obj = body as Record<string, unknown>;
-		const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+		const errorObj = obj.error && typeof obj.error === "object" ? (obj.error as Record<string, unknown>) : undefined;
 		if (typeof errorObj?.message === "string") return errorObj.message;
 		if (typeof obj.message === "string") return obj.message;
 	}
@@ -182,15 +206,16 @@ function valuesAt(value: unknown, path: string): unknown[] {
 		const next: unknown[] = [];
 		for (const current of values) {
 			if (part === "*" && Array.isArray(current)) next.push(...current);
-			else if (part === "*" && current && typeof current === "object") next.push(...Object.values(current as Record<string, unknown>));
+			else if (part === "*" && current && typeof current === "object")
+				next.push(...Object.values(current as Record<string, unknown>));
 			else if (part.includes("|")) {
 				for (const key of part.split("|")) {
 					if (current && typeof current === "object" && key in current) {
 						next.push((current as Record<string, unknown>)[key]);
 					}
 				}
-			}
-			else if (current && typeof current === "object" && part in current) next.push((current as Record<string, unknown>)[part]);
+			} else if (current && typeof current === "object" && part in current)
+				next.push((current as Record<string, unknown>)[part]);
 		}
 		values = next;
 	}
@@ -198,7 +223,10 @@ function valuesAt(value: unknown, path: string): unknown[] {
 }
 
 function pacificOffset(at: number): number {
-	const part = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" }).formatToParts(new Date(at)).find((entry) => entry.type === "timeZoneName")?.value ?? "GMT-8";
+	const part =
+		new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+			.formatToParts(new Date(at))
+			.find((entry) => entry.type === "timeZoneName")?.value ?? "GMT-8";
 	const match = part.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/u);
 	if (!match) return -8 * 60 * 60 * 1000;
 	const minutes = Number(match[2]) * 60 + Number(match[3] ?? 0);
@@ -206,12 +234,27 @@ function pacificOffset(at: number): number {
 }
 
 export function nextPacificMidnight(now: number): number {
-	const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(now)).map((entry) => [entry.type, entry.value]));
+	const parts = Object.fromEntries(
+		new Intl.DateTimeFormat("en-CA", {
+			timeZone: "America/Los_Angeles",
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		})
+			.formatToParts(new Date(now))
+			.map((entry) => [entry.type, entry.value]),
+	);
 	const localTomorrow = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + 1);
 	return localTomorrow - pacificOffset(localTomorrow + 12 * 60 * 60 * 1000);
 }
 
-function configuredReset(rule: FailureRuleConfig, body: unknown, headers: Headers | Record<string, string> | undefined, now: number, message?: string): number | undefined {
+function configuredReset(
+	rule: FailureRuleConfig,
+	body: unknown,
+	headers: Headers | Record<string, string> | undefined,
+	now: number,
+	message?: string,
+): number | undefined {
 	for (const source of rule.reset ?? []) {
 		if (source.kind === "header" && source.header) {
 			const parsed = parseResetAt(headers ? { [source.header]: header(headers, source.header) ?? "" } : undefined, now);
@@ -222,13 +265,19 @@ function configuredReset(rule: FailureRuleConfig, body: unknown, headers: Header
 			if (source.path) {
 				for (const value of valuesAt(body, source.path)) {
 					const match = typeof value === "string" ? value.match(/^([0-9]+(?:\.[0-9]+)?)s$/u) : undefined;
-					if (match) { seconds = Number(match[1]); break; }
+					if (match) {
+						seconds = Number(match[1]);
+						break;
+					}
 				}
 			}
 			if (seconds === undefined) {
 				for (const value of valuesAt(body, "error.details.*.retryDelay")) {
 					const match = typeof value === "string" ? value.match(/^([0-9]+(?:\.[0-9]+)?)s$/u) : undefined;
-					if (match) { seconds = Number(match[1]); break; }
+					if (match) {
+						seconds = Number(match[1]);
+						break;
+					}
 				}
 			}
 			if (seconds === undefined && message) {
@@ -249,7 +298,14 @@ function configuredReset(rule: FailureRuleConfig, body: unknown, headers: Header
 	return undefined;
 }
 
-function configuredClassification(policy: FailurePolicy | undefined, status: number | undefined, message: string, headers: Headers | Record<string, string> | undefined, now: number, body: unknown): FailureClassification | undefined {
+function configuredClassification(
+	policy: FailurePolicy | undefined,
+	status: number | undefined,
+	message: string,
+	headers: Headers | Record<string, string> | undefined,
+	now: number,
+	body: unknown,
+): FailureClassification | undefined {
 	if (!policy) return undefined;
 	const unwrappedMessage = extractErrorMessage(body, message);
 	for (const rule of policy.rules) {
@@ -260,10 +316,21 @@ function configuredClassification(policy: FailurePolicy | undefined, status: num
 		}
 		if (rule.equals !== undefined && !candidates.includes(rule.equals)) continue;
 		if (rule.regex !== undefined) {
-			let pattern: RegExp; try { pattern = new RegExp(rule.regex, "iu"); } catch { continue; }
+			let pattern: RegExp;
+			try {
+				pattern = new RegExp(rule.regex, "iu");
+			} catch {
+				continue;
+			}
 			if (!candidates.some((value) => pattern.test(value))) continue;
 		}
-		const resetAt = configuredReset(rule, body, headers, now, unwrappedMessage !== message ? `${message} ${unwrappedMessage}` : message);
+		const resetAt = configuredReset(
+			rule,
+			body,
+			headers,
+			now,
+			unwrappedMessage !== message ? `${message} ${unwrappedMessage}` : message,
+		);
 		return {
 			kind: rule.kind,
 			...(status === undefined ? {} : { status }),
@@ -276,7 +343,12 @@ function configuredClassification(policy: FailurePolicy | undefined, status: num
 
 /** Ported from dsh-stack: distinguishes exhausted plans from bad credentials. */
 export function isExhaustedQuota(detail: string | undefined): boolean {
-	return detail !== undefined && (QUOTA.test(detail) || GATEWAY_QUOTA.test(detail) || PROVIDER_QUOTA_WORDINGS.some((pattern) => pattern.test(detail)));
+	return (
+		detail !== undefined &&
+		(QUOTA.test(detail) ||
+			GATEWAY_QUOTA.test(detail) ||
+			PROVIDER_QUOTA_WORDINGS.some((pattern) => pattern.test(detail)))
+	);
 }
 
 /** A reset the provider only states in prose: "Try again in 22h 16m", "try again in 45s". */
@@ -286,7 +358,9 @@ export function proseResetAt(message: string, now: number): number | undefined {
 	let total = 0;
 	for (const part of match[1]!.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
 		const unit = part[2]!.toLowerCase();
-		total += Number(part[1]) * (unit === "d" ? 86_400_000 : unit === "h" ? 3_600_000 : unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1);
+		total +=
+			Number(part[1]) *
+			(unit === "d" ? 86_400_000 : unit === "h" ? 3_600_000 : unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1);
 	}
 	return total > 0 ? now + total : undefined;
 }
@@ -301,11 +375,11 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 	let status = input.response?.status ?? raw.status;
 	if (status === undefined && body && typeof body === "object") {
 		const obj = body as Record<string, unknown>;
-		const errorObj = obj.error && typeof obj.error === "object" ? obj.error as Record<string, unknown> : undefined;
+		const errorObj = obj.error && typeof obj.error === "object" ? (obj.error as Record<string, unknown>) : undefined;
 		const code = errorObj?.code ?? obj.code;
 		if (typeof code === "number") status = code;
 		else {
-			const statusText = (errorObj?.status ?? obj.status);
+			const statusText = errorObj?.status ?? obj.status;
 			if (typeof statusText === "string") {
 				const upper = statusText.toUpperCase();
 				if (upper === "UNAVAILABLE") status = 503;
@@ -333,7 +407,11 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 	const configured = configuredClassification(policy, status, message, headers, now, body);
 	if (configured) return { ...(raw.name ? { errorClass: raw.name } : {}), ...configured };
 	const base = {
-		...(raw.name ? { errorClass: raw.name } : input.message?.stopReason === "error" ? { errorClass: "AssistantMessageError" } : {}),
+		...(raw.name
+			? { errorClass: raw.name }
+			: input.message?.stopReason === "error"
+				? { errorClass: "AssistantMessageError" }
+				: {}),
 		...(status === undefined ? {} : { status }),
 		...(resetAt === undefined ? {} : { resetAt }),
 		...(google.pool === undefined ? {} : { pool: google.pool }),
@@ -351,8 +429,13 @@ export function classifyFailure(input: FailureInput, policy?: FailurePolicy): Fa
 	}
 	if (status === 401 || status === 403 || AUTH.test(fullMessage)) return { kind: "auth", ...base };
 	if (status === 429 || RATE.test(fullMessage)) return { kind: "rate_limited", ...base };
-	if (status === 408 || status === 409 || (status !== undefined && status >= 500) ||
-		raw.name === "TypeError" || TRANSIENT.test(fullMessage)) {
+	if (
+		status === 408 ||
+		status === 409 ||
+		(status !== undefined && status >= 500) ||
+		raw.name === "TypeError" ||
+		TRANSIENT.test(fullMessage)
+	) {
 		return { kind: "transient", ...base };
 	}
 	return { kind: "fatal", ...base };

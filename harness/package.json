@@ -15,9 +15,11 @@
     "check": "biome ci ."
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "0.85.1",
     "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1",
     "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-tui": "0.85.1",
+    "@silvia-odwyer/photon-node": "0.3.4",
     "jose": "6.1.0",
     "libsodium-wrappers": "0.8.2",
     "zod": "4.1.5"
