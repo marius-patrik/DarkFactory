@@ -299,7 +299,7 @@
     )) #term-label]
   }
 
-  link(label(id))[_*#term-display(name, cs-name)*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[▾]]
+  link(label(id))[_*#term-display(name, cs-name)*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[★]]
 }
 
 #let kw = term
