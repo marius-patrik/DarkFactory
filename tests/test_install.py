@@ -345,25 +345,22 @@ class TestReinstallingAdoptsTheUpdate:
         assert after["identity"]["display_name"] == "Chosen By Hand", "choices are not overwritten"
         assert after["upstream"]["ref"] == "bbbbbbb", "the pin is what a reinstall exists to move"
 
-    def test_a_legacy_manifest_is_migrated(self, tmp_path):
-        """An older installation still living at `.github/darkfactory.json` is moved.
+    def test_a_legacy_manifest_is_not_migrated(self, tmp_path):
+        """Hard transition leaves an obsolete manifest untouched instead of importing it.
 
         Args:
             tmp_path: Pytest temporary directory.
         """
         root = self._installed(tmp_path)
-        new_path = os.path.join(root, ".darkfactory", "repo.df")
+        canonical_path = os.path.join(root, ".darkfactory", "repo.df")
         legacy_path = os.path.join(root, ".github", "darkfactory.json")
         os.makedirs(os.path.dirname(legacy_path), exist_ok=True)
-        os.replace(new_path, legacy_path)
+        os.replace(canonical_path, legacy_path)
 
         planned = install.render_manifest("o", "r", "bbbbbbb", root=root)
-        assert install.reconcile_manifest(root, "bbbbbbb", planned)
-        assert os.path.isfile(new_path), "the manifest must live at the new path"
-        assert not os.path.exists(legacy_path), "the legacy file must be removed"
-        with open(new_path, encoding="utf-8") as handle:
-            after = json.load(handle)
-        assert after["upstream"]["ref"] == "bbbbbbb"
+        assert not install.reconcile_manifest(root, "bbbbbbb", planned)
+        assert not os.path.exists(canonical_path)
+        assert os.path.isfile(legacy_path), "installer must not migrate an obsolete path"
 
     def test_an_up_to_date_manifest_is_left_alone(self, tmp_path):
         """A reinstall that changes nothing must produce no diff to review.
