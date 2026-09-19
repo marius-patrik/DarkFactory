@@ -1,4 +1,4 @@
-#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
+#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note
 
 #unconfirmed[
 = Obsah přiloženého média
@@ -65,7 +65,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
 
 #figure(
   ```typ
-  #import "lib/odborna-prace.typ": note, issue, alert, critique, added, draft, confirmed, diff
+  #import "../templates/registry.typ": note, issue, alert, critique, added, draft, accepted, finalized, diff
 
   // --- 1. Panely na okraji textu (Callouty) ---
   #note[Doplňte porovnání rychlosti kompilace mezi verzemi 0.1 a 0.2.]
@@ -77,7 +77,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   // --- 2. Textové revizní funkce (zvýraznění v toku textu) ---
   #draft[Tento odstavec tvoří neověřený koncept čekající na schválení.]
   #added[Nově vygenerovaná sekce automaticky začleněná agentem.]
-  #confirmed[Uživatelem zkontrolovaný text, který ještě nebyl finalizován.]
+  #accepted[Uživatelem přijatý text, který ještě nebyl finalizován.]
   #removed[Zastaralý text navržený k odstranění.]
   #diff[Původní chybné znění textu.][Nové opravené znění textu po revizi.]
   ```,
@@ -101,16 +101,16 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Neověřený koncept (`#draft` / `#unconfirmed`)*: #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
 - *Nově přidaný text (`#added`)*: #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
-- *Potvrzený text (`#confirmed`)*: #confirmed[Text byl předběžně odsouhlasen uživatelem, čeká na finální začištění.]
+- *Přijatý text (`#accepted`)*: #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]\n- *Finalizovaný text (`#finalized`)*: #finalized[Text nebo struktura je považována za uzavřenou součást práce.]
 - *Navrženo k odstranění (`#removed`)*: #removed[Tato neaktuální věta je navržena k úplnému smazání z rukopisu.]
 - *Srovnávací diff (`#diff`)*: #diff[Původní chybné nebo nepřesné znění pasáže.][Nové přesné, fakticky a formálně ověřené znění pasáže.]
-- *Čistý neoznačený text*: Představuje finální, autorsky schválený text v hlase autora bez jakéhokoliv podbarvení.
+- *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu; sám o sobě neznamená finalizaci.
 
 Role značek v lidském dohledu:
-- *Čistý neoznačený text*: Schválený autorský text v hlase autora.
+- *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu.
 - *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
 - *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.
-- *Modré podbarvení (`#confirmed`)*: Uživatelem odsouhlasený text.
+- *Modré podtržení (`#accepted`)*: Uživatelem přijatý text, který zůstává dále editovatelný.\n- *Zelené podtržení (`#finalized`)*: Uzavřený text nebo strukturální prvek.
 - *Srovnávací diff (`#diff`)*: Transparentní vizualizace navržených oprav.
 - *Postranní panely (Callouty)*: Striktní oddělení námětů, chyb a oponentury od těla textu.
 ]
