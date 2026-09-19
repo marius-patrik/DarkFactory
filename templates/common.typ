@@ -282,7 +282,7 @@
 // Konstruktor termínu. Výsledkem je plně přenositelná datová hodnota, kterou lze
 // uložit do proměnné a libovolněkrát odkazovat s různým způsobem vykreslení.
 #let define-term(
-  proper,
+  proper: none,
   industry: none,
   id: none,
   explanation_en: none,
