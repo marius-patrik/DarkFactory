@@ -507,8 +507,8 @@
   items.sorted(key: item => lower(str(if item.proper.cs != none { item.proper.cs } else { item.proper.en })))
 }
 
-// Dynamický terminologický přehled: pouze termíny skutečně použité v dané
-// kompilaci, deduplikované podle stabilního id.
+// Krátký dynamický seznam klíčových slov: pouze termíny skutečně použité
+// v dané kompilaci, deduplikované podle stabilního id.
 #let render-keywords() = context {
   let items = collect-used-terms(query(term-use-label))
 
@@ -528,9 +528,18 @@
         emphasized: false,
       )).join([, ])
     ]
+  }
+}
 
-    v(12pt)
+// Detailní terminologický přehled je samostatná encyklopedie. Používá stejnou
+// dynamickou množinu termínů jako klíčová slova; hvězdičkové odkazy v rukopisu
+// míří na zde umístěné stabilní labely.
+#let render-encyclopedia() = context {
+  let items = collect-used-terms(query(term-use-label))
 
+  if items.len() == 0 {
+    [—]
+  } else {
     for item in items {
       block(
         breakable: false,
@@ -544,6 +553,7 @@
             render: "term",
             language: "auto",
             name-type: item.keyword_name_type,
+            name-separator: "bar",
             register: false,
             linked: false,
             marker: false,
