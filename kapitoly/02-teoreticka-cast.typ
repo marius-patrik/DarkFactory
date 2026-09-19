@@ -268,11 +268,7 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
-#diff[#finalized[
-=== Dovednosti (Skills)
-]][
-=== #term(terms.skills, marker: false, linked: false, emphasized: false)
-]
+=== #finalized[#term(terms.skills, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false)]
 
 #accepted[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline").]
 
