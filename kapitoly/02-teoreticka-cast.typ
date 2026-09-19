@@ -268,7 +268,7 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
-#accepted[
+#finalized[
 === Dovednosti (Skills)
 ]
 
