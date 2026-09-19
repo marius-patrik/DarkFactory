@@ -2041,6 +2041,7 @@ def run_agent_prompt(
     base_delay: float = 1.0,
     backoff_factor: float = 2.0,
     checkpoint_context: Optional[Dict[str, Any]] = None,
+    kind: Optional[str] = None,
 ) -> str:
     """Executes a prompt non-interactively against the first harness that succeeds.
 
@@ -2062,6 +2063,7 @@ def run_agent_prompt(
         base_delay: Initial retry delay in seconds.
         backoff_factor: Exponential backoff multiplier.
         checkpoint_context: Optional context for checkpointing when every attempt is exhausted.
+        kind: Optional semantic task kind forwarded to df; omission preserves df inference.
 
     Returns:
         Agent text output, or an explicit error description prefixed
@@ -2100,7 +2102,7 @@ def run_agent_prompt(
         # an argv element, so long prompts never meet an argument-length limit. The file is written
         # per retry and removed in the loop's ``finally`` below.
         needs_prompt_file = any(harnesses.PROMPT_FILE in token for token in harness.template)
-        argv = harness.build_argv(prompt + ANSWER_CONTRACT, current_model, timeout)
+        argv = harness.build_argv(prompt + ANSWER_CONTRACT, current_model, timeout, kind=kind)
 
         try:
             env = credential_env(base_env, attempt)
@@ -2138,7 +2140,11 @@ def run_agent_prompt(
                 with os.fdopen(fd, "w", encoding="utf-8") as stream:
                     stream.write(prompt + ANSWER_CONTRACT)
                 argv = harness.build_argv(
-                    prompt + ANSWER_CONTRACT, current_model, timeout, prompt_file=retry_prompt_file
+                    prompt + ANSWER_CONTRACT,
+                    current_model,
+                    timeout,
+                    prompt_file=retry_prompt_file,
+                    kind=kind,
                 )
             try:
                 res = subprocess.run(argv, capture_output=True, text=True, check=True, env=env)
@@ -2420,7 +2426,7 @@ def handle_interpret(issue_number: int, repo: str, feedback: str = ""):
         ],
         "is_pr": False,
     }
-    interpretation = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
+    interpretation = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx, kind="classify")
 
     if is_quota_exhaustion_notice(interpretation):
         return
@@ -2584,7 +2590,9 @@ def handle_plan(request_number: int, plan_number: int, repo: str, feedback: str 
         ],
         "is_pr": False,
     }
-    plan_body = run_agent_prompt(prompt, timeout=PLAN_TIMEOUT, checkpoint_context=checkpoint_ctx)
+    plan_body = run_agent_prompt(
+        prompt, timeout=PLAN_TIMEOUT, checkpoint_context=checkpoint_ctx, kind="plan"
+    )
 
     if is_quota_exhaustion_notice(plan_body):
         return
@@ -2626,7 +2634,7 @@ def handle_respond(issue_or_pr_num: int, comment_text: str, repo: str, is_pr: bo
         "Provide a direct, helpful, and concise response addressing the feedback and detailing next actions.\n"
         "Cite repository files as plain `path/to/file` code spans, never as file:// URLs."
     )
-    response = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx)
+    response = run_agent_prompt(prompt, checkpoint_context=checkpoint_ctx, kind="chat")
     if is_quota_exhaustion_notice(response):
         return
 
@@ -3298,7 +3306,10 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             "cwd": cwd,
         }
         impl_result = run_agent_prompt(
-            implement_prompt, timeout="15m0s", checkpoint_context=checkpoint_ctx
+            implement_prompt,
+            timeout="15m0s",
+            checkpoint_context=checkpoint_ctx,
+            kind="implement",
         )
         if is_quota_exhaustion_notice(impl_result):
             return
@@ -3337,7 +3348,10 @@ def handle_implement(plan_number: int, request_number: int, repo: str):
             "Executed test suite (failures detected; attempting automated fix)"
         ]
         fix_result = run_agent_prompt(
-            fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
+            fix_prompt,
+            timeout="10m0s",
+            checkpoint_context=checkpoint_ctx,
+            kind="fix",
         )
         if is_quota_exhaustion_notice(fix_result):
             return
@@ -3738,7 +3752,9 @@ def run_pr_feedback_fix(
         "completed_steps": ["Feedback fix"],
         "cwd": cwd,
     }
-    result = run_agent_prompt(prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx)
+    result = run_agent_prompt(
+        prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx, kind="fix"
+    )
     if is_quota_exhaustion_notice(result):
         return
     if result.startswith("[DarkFactory Agent Execution Error]"):
@@ -3884,7 +3900,10 @@ def run_self_review_iteration(
         "cwd": cwd,
     }
     review_result = run_agent_prompt(
-        review_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
+        review_prompt,
+        timeout=REVIEW_TIMEOUT,
+        checkpoint_context=checkpoint_ctx,
+        kind="review",
     )
 
     if is_quota_exhaustion_notice(review_result):
@@ -4113,7 +4132,10 @@ def run_self_review_fix(
             "cwd": cwd,
         }
         fix_result = run_agent_prompt(
-            fix_prompt, timeout="10m0s", checkpoint_context=checkpoint_ctx
+            fix_prompt,
+            timeout="10m0s",
+            checkpoint_context=checkpoint_ctx,
+            kind="fix",
         )
 
         if is_quota_exhaustion_notice(fix_result):
@@ -4266,7 +4288,10 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         ],
     }
     alignment_result = run_agent_prompt(
-        alignment_prompt, timeout=REVIEW_TIMEOUT, checkpoint_context=checkpoint_ctx
+        alignment_prompt,
+        timeout=REVIEW_TIMEOUT,
+        checkpoint_context=checkpoint_ctx,
+        kind="review",
     )
 
     if is_quota_exhaustion_notice(alignment_result):
