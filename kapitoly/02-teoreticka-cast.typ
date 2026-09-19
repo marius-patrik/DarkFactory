@@ -268,11 +268,13 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
-#unconfirmed[
+#confirmed[
 === Dovednosti (Skills)
+]
 
 #confirmed[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (#term("Skills", explanation: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.")).]
 
+#unconfirmed[
 Architektura dovedností staví na následujících principech:
 - *Definiční soubor `SKILL.md`*: Dovednost tvoří adresář obsahující definiční soubor se strukturovanou hlavičkou (YAML frontmatter vymezující název a popis role) a detailním návodem k použití.
 - *Dynamické načítání pro úsporu kontextu*: Do výchozího promptu se vloží pouze stručný přehled dostupných dovedností. Kompletní instrukce a skripty se do kontextu načtou až v okamžiku, kdy agent danou dovednost explicitně vyvolá.
