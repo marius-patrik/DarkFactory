@@ -72,7 +72,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   #issue[Chybná signatura funkce: chybí povinný parametr timeout.]
   #alert[Sekce postrádá shrnutí naměřených výsledků před diskusí.]
   #critique[Metodologická absence baseline prokazující přínos nového modulu.]
-  #blue-note[Metodické vymezení: rozsah práce a oddělení agentního inženýrství od strojového učení.]
+  #blue-note[Metodické vymezení: rozsah práce a oddělení agentického inženýrství od strojového učení.]
 
   // --- 2. Textové revizní funkce (zvýraznění v toku textu) ---
   #draft[Tento odstavec tvoří neověřený koncept čekající na schválení.]
@@ -89,7 +89,7 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   caption: [Ukázka zápisu a použití revizních značek a textových funkcí v jazyce Typst.],
 ) <kod-znacky-typst>
 
-*Vizuální reprezentace jednotlivých prvků v sazbě*
+== Vizuální reprezentace jednotlivých prvků v sazbě
 
 Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních panelů a textových funkcí v jejich finální vizuální podobě:
 
@@ -103,7 +103,7 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 
 #blue-note[Ukázka modrého panelu metodického vymezení (`#blue-note` / `#scope-note`): Vymezení rozsahu práce, formulace mantinelů a architektonických abstrakcí.]
 
-Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
+== Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce
 - *Neověřený koncept (`#draft` / `#unconfirmed`)*: #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
 - *Nově přidaný text (`#added`)*: #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
 - *Přijatý text (`#accepted`)*: #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]
@@ -112,7 +112,7 @@ Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Srovnávací diff (`#diff`)*: #diff[Původní platné znění pasáže.][Navržené nové znění čekající na posouzení.]
 - *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu; sám o sobě neznamená finalizaci.
 
-Role značek v lidském dohledu:
+== Role značek v lidském dohledu
 - *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu.
 - *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
 - *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.

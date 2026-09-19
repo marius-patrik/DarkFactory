@@ -43,7 +43,7 @@
 #heading(level: 1, numbering: none)[#finalized[#ui-label([Klíčová slova], [Keywords])]]
 #render-keywords()
 
-#outline(title: ui-label([Obsah], [Contents]), depth: 3)
+#outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
 #include "kapitoly/01-uvod.typ"
 #include "kapitoly/02-teoreticka-cast.typ"
@@ -64,4 +64,5 @@
 #heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
 #counter(heading).update(0)
 #set heading(numbering: "A.1", supplement: [Příloha])
+#outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
 #include "kapitoly/06-prilohy.typ"

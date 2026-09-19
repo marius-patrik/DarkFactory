@@ -177,13 +177,35 @@ for required in (
 
 chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
 finalized_main_goal = (
-    "#finalized[\n*Hlavní cíl:*\n"
-    "Vymezit teoretické principy agentního inženýrství (_agentic engineering_) "
+    "=== #finalized[Hlavní cíl]\n\n"
+    "#finalized[\n"
+    "Vymezit teoretické principy agentického inženýrství (_agentic engineering_) "
     "a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj "
     "softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.\n]"
 )
 if finalized_main_goal not in chapter1_source:
     fail("main thesis goal must remain finalized exactly as approved")
+
+for required_heading in (
+    "=== #finalized[Hlavní cíl]",
+    "=== #accepted[Dílčí cíle]",
+    "=== Výzkumné otázky",
+):
+    if required_heading not in chapter1_source:
+        fail(f"chapter 1 pseudo-section must remain a real numbered heading: {required_heading}")
+
+finalized_agent_harness = (
+    "#finalized[\n"
+    "Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model "
+    "dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — "
+    "značovaná jako *agent harness* — musí model obklopovat, aby bylo možné jeho "
+    "výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry "
+    "autonomie se zachováním lidského dohledu.\n]"
+)
+if finalized_agent_harness not in chapter1_source:
+    fail("agent harness definition sentence must remain finalized with the approved wording")
+if "označovaná jako *řídicí harness*" in chapter1_source:
+    fail("legacy řídicí harness wording must not return")
 
 chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
 if "= #finalized[Teoretická část: Vymezení konceptu]" not in chapter2_source:
@@ -198,7 +220,7 @@ finalized_scaling_title = (
     "Workflows (Graphs)\\]]"
 )
 if finalized_scaling_title not in chapter2_source:
-    fail("section 2.3.8 must retain the finalized bilingual scaling title")
+    fail("scaling section must retain the finalized bilingual title")
 if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
     fail("legacy section 2.3.8 title must not return")
 
@@ -213,6 +235,25 @@ if "=== #finalized[Pull Request]" not in chapter2_source:
     fail("section 2.1.3 title must remain finalized as Pull Request")
 if "=== Model #term(terms.pull_request" in chapter2_source:
     fail("legacy section 2.1.3 title must not return")
+
+if "=== #finalized[Větve (Branches)]" not in chapter2_source:
+    fail("section 2.1.2 must remain finalized as Větve (Branches)")
+if "Větve (Branches) a izolace kódu" in chapter2_source:
+    fail("legacy section 2.1.2 title must not return")
+for required_heading in (
+    "=== Spouštění nástrojů [Tool Calling]",
+    "=== Sandbox",
+):
+    if required_heading not in chapter2_source:
+        fail(f"tool runtime split missing numbered section: {required_heading}")
+if "=== Běhové prostředí nástrojů a pískoviště (Sandbox)" in chapter2_source:
+    fail("combined tool-runtime/sandbox section must not return")
+accepted_react_caption = (
+    "caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) "
+    "a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]]"
+)
+if accepted_react_caption not in chapter2_source:
+    fail("ReAct figure caption must retain accepted state")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for terminology_contract in (
@@ -245,6 +286,14 @@ for forbidden in ('state("review-mode"', 'state("publication-profile"'):
         fail("concrete templates must not own shared review/profile state")
 if '#import "../common.typ"' not in gjkt_source:
     fail("GJKT template must consume the shared manuscript API")
+
+if "outline(title: ui-label([Obsah], [Contents]), depth: 6, indent: auto)" not in gjkt_source:
+    fail("document contents must expose nested numbered sections through depth 6")
+if "heading.where(level: 1, supplement: [Příloha])" not in gjkt_source:
+    fail("Seznam příloh must contain top-level appendices only")
+for level in (4, 5, 6):
+    if f"show heading.where(level: {level})" not in gjkt_source:
+        fail(f"nested numbered heading level {level} must retain explicit document styling")
 
 def active_typst_imports(source: str) -> list[str]:
     imports: list[str] = []
@@ -301,6 +350,10 @@ if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = voc
     fail("template registry must export the shared terminology vocabulary")
 
 terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
+if 'proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering")' not in terms_source:
+    fail("Agentic Engineering Czech canonical term must be Agentické inženýrství")
+if 'proper: translation(cs: "Agentní inženýrství", en: "Agentic Engineering")' in terms_source:
+    fail("legacy Agentní inženýrství canonical term must not return")
 if 'proper: translation(cs: "Rozšíření", en: "Plugins")' not in terms_source:
     fail("Plugins Czech proper term must remain Rozšíření")
 if "Zásuvné moduly" in terms_source:
@@ -482,11 +535,17 @@ for required in (
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 4:
-    fail("toolbar path must separate Home, work title, publication version, Final/Review/Split mode, and compiled format")
+if app_source.count('className="identity-separator"') < 5:
+    fail("toolbar path must end with PDF page navigation after the compiled-format selector")
 for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
     if required not in app_source:
         fail(f"compiled-format path selector missing contract: {required}")
+
+for required in ('className="path-page-switcher"', 'className="path-page-control"', 'label="Previous page"', 'label="Next page"'):
+    if required not in app_source:
+        fail(f"page switcher must live at the tail of the path navigation: {required}")
+if 'className="page-control"' in app_source:
+    fail("legacy bottom-status page switcher must not return")
 if "peerTarget" in app_source:
     fail("Final/Review switching must live in the path bar, not the toolbar action cluster")
 
@@ -496,6 +555,8 @@ for required in (
     'src={path}',
     'format === "html"',
     'Loading compiled Markdown',
+    'data-theme',
+    'theme: "dark" | "light"',
 ):
     if required not in compiled_artifact_source:
         fail(f"compiled artifact viewer must render generated files directly: {required}")
@@ -560,9 +621,20 @@ for required in (
     "html_to_markdown",
     'parser.add_argument("--source", default="web-publication.typ")',
     'output.with_suffix(".md")',
+    'darkfactory-publication-style',
+    'style_compiled_html',
+    'nav[role="doc-toc"]',
 ):
     if required not in web_export_source:
         fail(f"web exporter missing compiled HTML/Markdown contract: {required}")
+
+web_publication_source = web_publication.read_text(encoding="utf-8")
+for required in (
+    "#outline(title: ui-label([Obsah], [Contents]), depth: 6)",
+    "heading.where(level: 1, supplement: [Příloha])",
+):
+    if required not in web_publication_source:
+        fail(f"semantic web publication missing section/appendix hierarchy contract: {required}")
 
 makefile_source = Path("Makefile").read_text(encoding="utf-8")
 for required in (

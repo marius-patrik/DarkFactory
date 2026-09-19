@@ -76,8 +76,8 @@
 
   agentic_engineering: define-term(
     id: "agentic-engineering",
-    proper: translation(cs: "Agentní inženýrství", en: "Agentic Engineering"),
-    explanation_cs: "Inženýrská disciplína zaměřená na návrh, orchestraci a provoz agentních systémů kolem jazykových modelů, včetně nástrojů, kontextu, prováděcích smyček, bezpečnostních mantinelů a lidského dohledu.",
+    proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering"),
+    explanation_cs: "Inženýrská disciplína zaměřená na návrh, orchestraci a provoz agentických systémů kolem jazykových modelů, včetně nástrojů, kontextu, prováděcích smyček, bezpečnostních mantinelů a lidského dohledu.",
     explanation_en: "An engineering discipline focused on designing, orchestrating, and operating agentic systems around language models, including tools, context, execution loops, guardrails, and human oversight.",
   ),
 

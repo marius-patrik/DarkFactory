@@ -24,7 +24,7 @@
 
   annotation: translation(
     cs: accepted[
-      Tato odborná práce se zabývá principy agentního inženýrství (_agentic engineering_)
+      Tato odborná práce se zabývá principy agentického inženýrství (_agentic engineering_)
       a architekturou řídicích harnessů pro automatizovaný vývoj softwaru. Praktickým
       přínosem práce je návrh a implementace systému DarkFactory — agentního harnessu
       instalovatelného jako aplikace pro platformu GitHub (GitHub App). Systém usiluje

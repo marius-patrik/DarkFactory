@@ -918,7 +918,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={artifactPath} format={format} embedded />
+          <CompiledArtifactView path={artifactPath} format={format} embedded theme={theme} />
         )}
       </div>
     );
@@ -1092,6 +1092,43 @@ export function ViewerApp() {
               markdownHref={markdownTarget}
               htmlHref={htmlTarget}
             />
+            {format === "pdf" && (
+              <>
+                <span className="identity-separator" aria-hidden="true">\</span>
+                <div className="path-page-switcher" aria-label="Page navigation">
+                  <TooltipAction
+                    label="Previous page"
+                    icon={["ChevronLeftIcon"]}
+                    onClick={() => goToPage(state.page - 1)}
+                    className="path-page-action"
+                  />
+                  <label className="path-page-control">
+                    <input
+                      value={pageDraft}
+                      type="number"
+                      min={1}
+                      max={state.total || undefined}
+                      aria-label="Page number"
+                      onChange={(event) => setPageDraft(event.target.value)}
+                      onBlur={submitPage}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          submitPage();
+                          event.currentTarget.blur();
+                        }
+                      }}
+                    />
+                    <span>/ {state.total || "–"}</span>
+                  </label>
+                  <TooltipAction
+                    label="Next page"
+                    icon={["ChevronRightIcon"]}
+                    onClick={() => goToPage(state.page + 1)}
+                    className="path-page-action"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="toolbar-right">
@@ -1204,7 +1241,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={artifactPath} format={format} embedded={false} />
+          <CompiledArtifactView path={artifactPath} format={format} embedded={false} theme={theme} />
         )}
       </main>
 
@@ -1214,41 +1251,6 @@ export function ViewerApp() {
         <div className="status-center">
           {format === "pdf" ? (
             <>
-
-          <div className="status-group">
-            <TooltipAction
-              label="Previous page"
-              icon={["ChevronLeftIcon"]}
-              onClick={() => goToPage(state.page - 1)}
-              className="status-action"
-            />
-            <label className="page-control">
-              <input
-                value={pageDraft}
-                type="number"
-                min={1}
-                max={state.total || undefined}
-                aria-label="Page number"
-                onChange={(event) => setPageDraft(event.target.value)}
-                onBlur={submitPage}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    submitPage();
-                    event.currentTarget.blur();
-                  }
-                }}
-              />
-              <span>/ {state.total || "–"}</span>
-            </label>
-            <TooltipAction
-              label="Next page"
-              icon={["ChevronRightIcon"]}
-              onClick={() => goToPage(state.page + 1)}
-              className="status-action"
-            />
-          </div>
-
-          <span className="status-divider" />
 
           <div className="status-group">
             <TooltipAction

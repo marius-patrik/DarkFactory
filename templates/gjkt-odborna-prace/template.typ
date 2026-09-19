@@ -343,6 +343,17 @@
   show heading.where(level: 3): it => {
     block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
   }
+  // Všechny hlubší sémantické sekce zůstávají skutečnými číslovanými nadpisy.
+  // Nesnižujeme je na ručně tučný text jen proto, že jsou zanořené.
+  show heading.where(level: 4): it => {
+    block(above: 14pt, below: 6pt, sticky: true, text(size: 11pt, weight: "bold", it))
+  }
+  show heading.where(level: 5): it => {
+    block(above: 12pt, below: 5pt, sticky: true, text(size: 10.5pt, weight: "bold", it))
+  }
+  show heading.where(level: 6): it => {
+    block(above: 10pt, below: 4pt, sticky: true, text(size: 10pt, weight: "bold", it))
+  }
 
   // Popisky součástí textu: stejné písmo jako text, velikost 10 b.
   show figure.caption: set text(size: 10pt)
@@ -372,7 +383,7 @@
   podekovani-strana(meta)
   anotace-strana(meta)
 
-  outline(title: ui-label([Obsah], [Contents]), depth: 3, indent: auto)
+  outline(title: ui-label([Obsah], [Contents]), depth: 6, indent: auto)
 
   if seznam-soucasti {
     pagebreak(weak: true)
@@ -552,7 +563,7 @@
   nadpis-bez-cisla[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
-  outline(title: none, target: heading.where(supplement: [Příloha]))
+  outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
   [#body <appendix>]
 
   appendix-mode-state.update(false)

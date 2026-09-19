@@ -11,7 +11,10 @@ Inspirací pro překonání tohoto omezení je průmyslový koncept *temné tov�
 
 Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntézy kódu, avšak stávající nástroje vykazují zásadní limity. Většina současných řešení (konverzační asistenti a doplňování kódu v editoru) řeší pouze izolovaný krok v podobě návrhu textového fragmentu. Chybí jim hlubší integrace do vývojového cyklu repozitáře: přímá práce se souborovým systémem, schopnost interpretovat výstupy překladače, iterativně odstraňovat syntaktické regrese a respektovat deterministická pravidla projektu.
 
-Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — označovaná jako *řídicí harness* — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
+]
+
+#finalized[
+Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — značovaná jako *agent harness* — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
 ]
 
 #note[
@@ -21,13 +24,15 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
 
 == #finalized[Cíl práce a výzkumné otázky]
 
+=== #finalized[Hlavní cíl]
+
 #finalized[
-*Hlavní cíl:*
-Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.
+Vymezit teoretické principy agentického inženýrství (_agentic engineering_) a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.
 ]
 
+=== #accepted[Dílčí cíle]
+
 #accepted[
-*Dílčí cíle:*
 - Vymezit infrastrukturu pro správu verzí (Git, GitHub a kontinuální integraci).
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).
 - Navrhnout architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct), bezpečnostní pískoviště a hierarchickou orchestraci subagentů.
@@ -35,7 +40,8 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 ]
 
 #unconfirmed[
-*Výzkumné otázky:*
+=== Výzkumné otázky
+
 - *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po pull request strukturovat tak, aby role vývojáře spočívala výhradně v architektonickém dozoru a schvalování záměru (Human Gate), bez nutnosti ručního psaní rutinního kódu?
 - *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými architektonickými mechanismy lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?
 - *VO3 (Integrita paměti a eliminace sémantického posunu)*: Jak spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a ztrátě architektonických invariantů při kompresi?

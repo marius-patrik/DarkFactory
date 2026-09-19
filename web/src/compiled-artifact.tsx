@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";
 
@@ -6,13 +6,16 @@ export function CompiledArtifactView({
   path,
   format,
   embedded,
+  theme,
 }: {
   path: string;
   format: Exclude<ArtifactFormat, "pdf">;
   embedded: boolean;
+  theme: "dark" | "light";
 }) {
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState("");
+  const htmlFrame = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (format !== "markdown") {
@@ -41,13 +44,22 @@ export function CompiledArtifactView({
     };
   }, [format, path]);
 
+  useEffect(() => {
+    if (format !== "html") return;
+    htmlFrame.current?.contentDocument?.documentElement.setAttribute("data-theme", theme);
+  }, [format, theme]);
+
   if (format === "html") {
     return (
       <div className={embedded ? "compiled-artifact embedded-artifact" : "compiled-artifact"}>
         <iframe
+          ref={htmlFrame}
           className="compiled-html-frame"
           src={path}
           title="Compiled HTML publication"
+          onLoad={(event) => {
+            event.currentTarget.contentDocument?.documentElement.setAttribute("data-theme", theme);
+          }}
         />
       </div>
     );

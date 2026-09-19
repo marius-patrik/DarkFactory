@@ -18,9 +18,9 @@ Klíčové komponenty infrastruktury zahrnují:
 Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním protokolem, nýbrž jako standardní přispěvatel, který plně respektuje běžné vývojářské zvyklosti a nástroje.
 ]
 
-#unconfirmed[
-=== Větve (Branches) a izolace kódu
+=== #finalized[Větve (Branches)]
 
+#unconfirmed[
 Základním bezpečnostním pravidlem při zapojení autonomních agentů do vývoje je striktní izolace rozpracovaného kódu. Stabilní kód v hlavní větvi (`main`) nesmí být nikdy přímo vystaven experimentům a chybám modelu. Agent proto veškeré úpravy provádí ve vyhrazených pracovních větvích odbočených ze základní linie projektu.
 
 Tento princip přináší následující výhody:
@@ -90,13 +90,13 @@ Klíčové mechanismy ochrany zahrnují:
 == #finalized[#term(terms.language_model, name-type: "industry", language: "en", marker: false, linked: false, emphasized: false), chatboti a agenti]
 
 #blue-note[
-  Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
+  Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentické inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
 
 === #finalized[Úvod]
 
 #accepted[
-V agentním softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
+V agentickém softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
 
 Základní principy fungování modelu zahrnují:
 - *Autoregresivní predikce*: Model zpracovává zadanou sekvenci textu a na jejím základě iterativně předpovídá nejpravděpodobnější následující symboly (tokeny).
@@ -172,7 +172,7 @@ Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti 
 #unconfirmed[
 === #term(terms.context_rot, marker: false, linked: false, emphasized: false)
 
-Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #diff[Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).][Tento jev se v agentním inženýrství označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
+Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #diff[Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).][Tento jev se v agentickém inženýrství označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
 
 V praxi se projevuje dvěma hlavními mechanismy:
 - *Lost in the Middle* @liu2024: Pozornostní vrstvy transformeru spolehlivě vnímají informace na samém začátku a konci okna, zatímco fakta umístěná uprostřed dlouhého textu jsou často přehlížena.
@@ -198,7 +198,7 @@ Příčiny a inženýrská řešení tohoto jevu:
 === #finalized[Úvod]
 
 #accepted[
-V terminologii agentního inženýrství používá tato práce pojem #term(terms.harness). #term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false). Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
+V terminologii agentického inženýrství používá tato práce pojem #term(terms.harness). #term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false). Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
 
 Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
 ]
@@ -237,20 +237,25 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
 
-#figure(
-  image("../img/react-loop.svg", width: 100%),
-  caption: [Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.],
-) <fig-react-loop>
 ]
 
+#figure(
+  image("../img/react-loop.svg", width: 100%),
+  caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
+) <fig-react-loop>
+
 #unconfirmed[
-=== Běhové prostředí nástrojů a pískoviště (Sandbox)
+=== Spouštění nástrojů [Tool Calling]
 
 Aby mohl agent provádět reálné inženýrské operace, musí mu řídicí harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
 
-V praxi se uplatňují dva základní modely:
-- *Strukturované volání nástrojů (_Tool / Function Calling_)*: Vstupy a výstupy jsou striktně validovány vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
-- *Přímé spouštění kódu (_Code Execution_)*: Agent generuje přímo skripty (bash, Python), které harness spouští v izolovaném terminálu. Poskytuje maximální flexibilitu pro softwarový vývoj, avšak vyžaduje nekompromisní bezpečnostní izolaci.
+*Strukturované volání nástrojů (_Tool / Function Calling_)* používá vstupy a výstupy striktně validované vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
+]
+
+#unconfirmed[
+=== Sandbox
+
+*Přímé spouštění kódu (_Code Execution_)* umožňuje agentovi generovat skripty (bash, Python), které harness spouští v izolovaném terminálu. Tento model poskytuje maximální flexibilitu pro softwarový vývoj, avšak vyžaduje nekompromisní bezpečnostní izolaci.
 ]
 
 #critique[

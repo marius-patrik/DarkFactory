@@ -157,12 +157,11 @@ publikuje vždy trojici artefaktů `.pdf`, `.html` a `.md`.
 
 Viewer nabízí Final, Review a Split režim, výběr publikační verze a samostatný přepínač
 formátu PDF / Markdown / HTML. Identita dokumentu je
-`Home \\ Název práce \\ Verze \\ Final/Review/Split \\ PDF/Markdown/HTML`.
+`Home \\ Název práce \\ Verze \\ Final/Review/Split \\ PDF/Markdown/HTML \\ Stránka` v PDF režimu.
 Přepnutí formátu zachovává vybranou verzi i režim a načte přímo příslušný kompilovaný
 artefakt. Markdown view zobrazuje skutečný obsah vygenerovaného `.md`; HTML view
 vkládá skutečný vygenerovaný `.html`. PDF režim navíc nabízí persistentní sidebar
-vlevo/vpravo s thumbnail/minimap reprezentací, page jump, fit-width a `− / +` zoom,
-Ctrl/⌘+scroll a pinch zoom. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
+vlevo/vpravo s thumbnail/minimap reprezentací; přepínač stránky je poslední segment horní path lišty, zatímco fit-width a `− / +` zoom zůstávají ve spodním status baru. Zoom podporuje Ctrl/⌘+scroll a pinch. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
 Markdown režimu skryté. Všechny formáty lze stáhnout nebo otevřít přímo.
 
 Všechny ikonové ovládací prvky mají hover tooltipy. Review PDF nepřidává automatický
@@ -187,8 +186,7 @@ Terminologie používá dvě oddělené reprezentace:
 
 Rejstřík je abecedně seskupen podle počátečního písmene kanonického názvu.
 `Rejstřík` je outlined nadpis úrovně 1, jednotlivá písmena úroveň 2 a každý
-kanonický termín vlastní outlined sekce úrovně 3. Díky hloubce Obsahu 3 se v
-`Obsah | Contents` zobrazí jak písmenné skupiny, tak každý jednotlivý termín.
+kanonický termín vlastní outlined sekce úrovně 3. Obsah podporuje číslovanou hierarchii do hloubky 6; rejstřík si zachovává vlastní outlined hierarchii písmen a termínů.
 
 Inline hvězdičkové odkazy míří na stabilní `kw-<id>` záznam v rejstříku. Rejstřík
 proto obsahuje i kanonické pojmy, které se v aktuálním profilu rukopisu přímo nepoužily.

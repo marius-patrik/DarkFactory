@@ -295,6 +295,45 @@ a {
   color: var(--accent-strong);
 }
 
+.path-page-switcher {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.path-page-action {
+  width: 28px;
+  height: 28px;
+}
+
+.path-page-control {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: .78rem;
+  white-space: nowrap;
+}
+
+.path-page-control input {
+  width: 38px;
+  height: 24px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 5px;
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.path-page-control input:focus {
+  border-color: var(--accent);
+}
+
 .viewer-main,
 .document-content,
 .stage,
@@ -836,6 +875,22 @@ a {
 
   .version-select {
     max-width: 42vw;
+  }
+
+  .path-page-switcher {
+    gap: 0;
+  }
+
+  .path-page-action {
+    width: 25px;
+  }
+
+  .path-page-control {
+    font-size: .72rem;
+  }
+
+  .path-page-control input {
+    width: 34px;
   }
 
   .toolbar-right {
