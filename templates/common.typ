@@ -585,22 +585,23 @@
       // Every used keyword is a real level-3 outlined section. The document
       // outline has depth 3, so Encyclopedia -> letter -> keyword is visible
       // directly in Obsah while preserving stable kw-* link targets.
-      heading(
-        level: 3,
-        numbering: none,
-        outlined: true,
-      )[
-        #term(
-          item,
-          render: "term",
-          language: "auto",
-          name-type: item.keyword_name_type,
-          register: false,
-          linked: false,
-          marker: false,
-          emphasized: false,
-        )
-        #label("kw-" + item.id)
+      [
+        #heading(
+          level: 3,
+          numbering: none,
+          outlined: true,
+        )[
+          #term(
+            item,
+            render: "term",
+            language: "auto",
+            name-type: item.keyword_name_type,
+            register: false,
+            linked: false,
+            marker: false,
+            emphasized: false,
+          )
+        ] #label("kw-" + item.id)
       ]
 
       block(

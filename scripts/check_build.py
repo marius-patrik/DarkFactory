@@ -116,7 +116,7 @@ for required in (
     "#let encyclopedia-sort-name",
     "#let encyclopedia-letter",
     "heading(\n          level: 2",
-    "heading(\n        level: 3",
+    "#heading(\n          level: 3",
     'label("kw-" + item.id)',
 ):
     if required not in common_source:
@@ -125,6 +125,8 @@ if ".slice(0, 1)" in common_source:
     fail("Encyclopedia grouping must use grapheme-safe first() rather than byte-index slicing")
 if "encyclopedia-sort-name(item).first()" not in common_source:
     fail("Encyclopedia grouping must derive its letter with grapheme-safe first()")
+if '] #label("kw-" + item.id)' not in common_source:
+    fail("Encyclopedia keyword labels must attach to headings in markup mode")
 
 for required in (
     "#let term-proper-name",
