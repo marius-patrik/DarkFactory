@@ -246,6 +246,7 @@ for dependency in (
     "motion",
     "@dagrejs/dagre",
     "lucide-animated",
+    "lucide-react",
     "pdfjs-dist",
     "@radix-ui/react-tooltip",
     "@radix-ui/react-context-menu",
@@ -263,6 +264,8 @@ for required in (
     "PlusIcon",
     "PanelLeftIcon",
     "PanelRightIcon",
+    "ModePicker",
+    "MaximizeIcon",
     "ContextMenu",
     "status-actions",
     "identity-separator",
@@ -270,8 +273,19 @@ for required in (
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 2:
-    fail("toolbar identity must contain separators both after Home and before version")
+if app_source.count('className="identity-separator"') < 3:
+    fail("toolbar path must separate Home, work title, publication version, and Final/Review mode")
+if "peerTarget" in app_source:
+    fail("Final/Review switching must live in the path bar, not the toolbar action cluster")
+
+icon_source = Path("web/src/components/animated-icon.tsx").read_text(encoding="utf-8")
+for required in ("lucide-animated", "lucide-react", "STATIC_FALLBACKS"):
+    if required not in icon_source:
+        fail(f"viewer icon adapter missing fallback contract: {required}")
+
+template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(encoding="utf-8")
+if '"KONCEPT"' in template_source:
+    fail("review template must not add the KONCEPT page-background watermark")
 
 pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
 for required in ("dagre.layout", "TextLayer", "AnnotationLayer", "ContextMenu", "Minimap"):

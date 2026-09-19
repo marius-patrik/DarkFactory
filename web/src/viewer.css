@@ -225,6 +225,38 @@ a {
   font-size: .82rem;
 }
 
+.mode-trigger-wrap {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.mode-select {
+  height: 30px;
+  gap: 5px;
+  padding: 0 5px 0 6px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.mode-select:hover {
+  color: var(--text);
+}
+
+.mode-menu {
+  min-width: 148px;
+}
+
+.mode-item {
+  justify-content: space-between;
+}
+
+.mode-item.active {
+  background: var(--thumb-active);
+  color: var(--accent-strong);
+}
+
 .viewer-main,
 .document-content,
 .stage,

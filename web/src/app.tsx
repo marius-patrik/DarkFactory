@@ -331,6 +331,68 @@ function VersionPicker({
   );
 }
 
+function ModePicker({
+  mode,
+  viewMode,
+  finalHref,
+  reviewHref,
+}: {
+  mode: ViewerMode;
+  viewMode: ViewMode;
+  finalHref: string;
+  reviewHref: string;
+}) {
+  const label =
+    viewMode === "split" ? "Final + Review" : mode === "review" ? "Review" : "Final";
+
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="mode-trigger-wrap">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="mode-select"
+                aria-label="Switch Final / Review"
+              >
+                <span>{label}</span>
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Switch Final / Review</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="mode-menu">
+        <DropdownMenuItem
+          className={viewMode === "single" && mode === "final" ? "mode-item active" : "mode-item"}
+          onSelect={() => {
+            window.location.href = finalHref;
+          }}
+        >
+          <span>Final</span>
+          {viewMode === "single" && mode === "final" && (
+            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className={viewMode === "single" && mode === "review" ? "mode-item active" : "mode-item"}
+          onSelect={() => {
+            window.location.href = reviewHref;
+          }}
+        >
+          <span>Review</span>
+          {viewMode === "single" && mode === "review" && (
+            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+          )}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function PublicationIndex() {
   const { manifest, error } = useManifest();
 
@@ -751,28 +813,29 @@ export function ViewerApp() {
   }
 
   const workTitle = manifest?.work_title || DEFAULT_WORK_TITLE;
-  const peerTarget =
-    viewMode === "split"
-      ? rawPath && reviewPath
-        ? viewerHref({
-            file: reviewPath,
-            peer: rawPath,
-            template: templateName,
-            profile: profileName,
-            title: versionTitle,
-            mode: "review",
-          })
-        : "#"
-      : peerPath
-        ? viewerHref({
-            file: peerPath,
-            peer: pdfPath,
-            template: templateName,
-            profile: profileName,
-            title: versionTitle,
-            mode: mode === "review" ? "final" : "review",
-          })
-        : "#";
+  const finalTarget =
+    rawPath && reviewPath
+      ? viewerHref({
+          file: rawPath,
+          peer: reviewPath,
+          template: templateName,
+          profile: profileName,
+          title: versionTitle,
+          mode: "final",
+        })
+      : "#";
+
+  const reviewTarget =
+    rawPath && reviewPath
+      ? viewerHref({
+          file: reviewPath,
+          peer: rawPath,
+          template: templateName,
+          profile: profileName,
+          title: versionTitle,
+          mode: "review",
+        })
+      : "#";
 
   const splitTarget =
     rawPath && reviewPath
@@ -864,20 +927,16 @@ export function ViewerApp() {
             ) : (
               <span className="version-fallback">{versionTitle}</span>
             )}
+            <span className="identity-separator" aria-hidden="true">\</span>
+            <ModePicker
+              mode={mode}
+              viewMode={viewMode}
+              finalHref={finalTarget}
+              reviewHref={reviewTarget}
+            />
           </div>
 
           <div className="toolbar-right">
-            <TooltipAction
-              label={
-                viewMode === "split"
-                  ? "Open Review only"
-                  : mode === "review"
-                    ? "Open Raw"
-                    : "Open Review"
-              }
-              icon={["FileTextIcon", "FilesIcon"]}
-              href={peerTarget}
-            />
             <TooltipAction
               label={viewMode === "split" ? "Exit split view" : "Split view"}
               icon={["Columns2Icon", "PanelLeftRightIcon"]}
@@ -1070,7 +1129,7 @@ export function ViewerApp() {
           />
           <TooltipAction
             label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-            icon={fullscreen ? ["Minimize2Icon"] : ["Maximize2Icon"]}
+            icon={fullscreen ? ["MinimizeIcon", "Minimize2Icon"] : ["MaximizeIcon", "Maximize2Icon"]}
             onClick={() => void toggleFullscreen()}
             className="status-action"
           />

@@ -151,9 +151,11 @@ Viewer nabízí Raw, Review a Split režim, výběr publikační verze, persiste
 vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jump,
 fit-width a `− / +` zoom ve spodním status baru, Ctrl/⌘+scroll a pinch zoom,
 světlý/tmavý režim, fullscreen a přímé stažení PDF. Sidebar toggle používá podle
-strany ikonu levého/pravého sidebaru a sedí na krajním okraji toolbaru; identita
-dokumentu je `Home \\ Název práce \\ Verze`. Všechny ikonové ovládací prvky mají
-hover tooltipy. Split view může volitelně synchronizovat průběžnou scroll pozici
+strany garantovanou ikonu levého/pravého sidebaru a sedí na krajním okraji toolbaru.
+Identita dokumentu je `Home \\ Název práce \\ Verze \\ Final/Review`; přepínač
+Final/Review je součástí stejné path lišty, zatímco Split zůstává samostatnou akcí.
+Všechny ikonové ovládací prvky mají hover tooltipy. Review PDF nepřidává automatický
+`KONCEPT` vodoznak. Split view může volitelně synchronizovat průběžnou scroll pozici
 obou dokumentů.
 
 `make web-check` provede TypeScript kontrolu a produkční Vite build; `make site`

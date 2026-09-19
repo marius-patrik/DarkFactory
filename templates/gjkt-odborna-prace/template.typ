@@ -250,8 +250,8 @@
   meta: (:),
   // Cesta k logu školy, např. "/img/logo.jpeg". `none` = bez loga.
   logo: none,
-  // Vodoznak přes každou stranu: v review módu "KONCEPT", v čistém módu none
-  koncept: auto,
+  // Volitelný explicitní vodoznak. Review režim žádný automatický vodoznak nepřidává.
+  koncept: none,
   // Režim zobrazení recenzních značek a diffu: auto (podle sys.inputs), true (review) nebo false (raw čistá verze)
   review: auto,
   // Publikační profil: "school", "cs", "en" nebo "merged".
@@ -275,11 +275,7 @@
   } else {
     review
   }
-  let vodoznak = if koncept == auto {
-    if is-review { "KONCEPT" } else { none }
-  } else {
-    koncept
-  }
+  let vodoznak = if koncept == auto { none } else { koncept }
 
   let resolved-profile = if language == none {
     profile
