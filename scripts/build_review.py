@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile a review PDF with the canonical final word/character count.
+"""Compile a review PDF with the canonical raw/final word/character count.
 
 The final count is obtained from the same Typst document, template and publication
 profile with review mode disabled. The review build then receives those values as
@@ -37,7 +37,7 @@ common = []
 for font_path in args.font_path:
     common.extend(["--font-path", font_path])
 
-query_expr = "query(<word-stats>).last().value.confirmed"
+query_expr = "query(<word-stats>).last().value.raw"
 query_cmd = [
     args.typst,
     "eval",
@@ -75,14 +75,14 @@ compile_cmd = [
     "--input",
     f"profile={args.profile}",
     "--input",
-    f"confirmed-words={words}",
+    f"raw-words={words}",
     "--input",
-    f"confirmed-chars={chars}",
+    f"raw-chars={chars}",
     args.main,
     str(output),
 ]
 run(compile_cmd)
 print(
     f"ok: review {args.template}/{args.profile}: "
-    f"confirmed={words} words/{chars} chars -> {output}"
+    f"raw={words} words/{chars} chars -> {output}"
 )
