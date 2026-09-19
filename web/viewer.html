@@ -2,53 +2,113 @@
 <html lang="cs" data-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
   <meta name="theme-color" content="#2b2d31">
   <title>DarkFactory-Paper viewer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/web/pdf_viewer.css">
   <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
   <div class="viewer">
     <header class="toolbar">
       <div class="toolbar-left">
-        <a class="icon-btn" href="./" title="Back to variants" aria-label="Back to variants">←</a>
-        <button class="icon-btn" id="sidebar-toggle" type="button" title="Toggle thumbnails" aria-label="Toggle thumbnails">☰</button>
-        <span class="doc-title">DarkFactory-Paper</span>
-        <span class="mobile-title">Final</span>
-      </div>
+        <a class="icon-btn" href="./" title="Home" aria-label="Home">
+          <span data-icon="HomeIcon" data-icon-size="18"></span>
+        </a>
 
-      <div class="toolbar-center">
-        <button class="icon-btn" id="prev-page" type="button" title="Previous page" aria-label="Previous page">‹</button>
-        <label class="page-control">
-          <input id="page-input" type="number" min="1" value="1" aria-label="Page number">
-          <span id="page-total">/ –</span>
-        </label>
-        <button class="icon-btn" id="next-page" type="button" title="Next page" aria-label="Next page">›</button>
-        <span class="separator"></span>
-        <button class="icon-btn" id="zoom-out" type="button" title="Zoom out" aria-label="Zoom out">−</button>
-        <span class="zoom-control" id="zoom-value">Fit</span>
-        <button class="icon-btn" id="zoom-in" type="button" title="Zoom in" aria-label="Zoom in">+</button>
-        <button class="text-btn" id="fit-width" type="button" title="Fit width">Fit</button>
+        <button class="icon-btn" id="sidebar-toggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
+          <span data-icon="PanelLeftIcon|PanelsTopLeftIcon|MenuIcon" data-icon-size="18"></span>
+        </button>
+
+        <div class="document-identity">
+          <span class="work-title" id="work-title">Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj</span>
+          <span class="identity-separator">\</span>
+          <div class="version-picker">
+            <button class="version-select" id="version-select" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span id="version-title">Školní česká verze</span>
+              <span data-icon="ChevronsUpDownIcon" data-icon-size="16"></span>
+            </button>
+            <div class="version-menu" id="version-menu" role="listbox" hidden></div>
+          </div>
+        </div>
       </div>
 
       <div class="toolbar-right">
-        <a class="text-btn primary" id="peer-link" href="#">Review</a>\n        <a class="text-btn" id="split-link" href="#">Split</a>
-        <a class="text-btn desktop-only" id="download-link" href="#" download>Download</a>
-        <a class="text-btn desktop-only" id="native-link" href="#" target="_blank" rel="noopener">PDF</a>
+        <a class="icon-btn" id="peer-link" href="#" title="Switch Raw / Review" aria-label="Switch Raw / Review">
+          <span data-icon="FileTextIcon|FilesIcon" data-icon-size="18"></span>
+        </a>
+        <a class="icon-btn" id="split-link" href="#" title="Split Raw / Review" aria-label="Split Raw / Review">
+          <span data-icon="Columns2Icon|PanelTopOpenIcon" data-icon-size="18"></span>
+        </a>
+        <button class="icon-btn split-only" id="sync-scroll" type="button" title="Synchronize split scrolling" aria-label="Synchronize split scrolling" hidden>
+          <span data-icon="LinkIcon" data-icon-size="18"></span>
+        </button>
+        <a class="icon-btn desktop-only" id="download-link" href="#" download title="Download PDF" aria-label="Download PDF">
+          <span data-icon="DownloadIcon" data-icon-size="18"></span>
+        </a>
+        <a class="icon-btn desktop-only" id="native-link" href="#" target="_blank" rel="noopener" title="Open native PDF" aria-label="Open native PDF">
+          <span data-icon="ExternalLinkIcon|FileTextIcon" data-icon-size="18"></span>
+        </a>
         <span class="separator desktop-only"></span>
-        <button class="icon-btn desktop-only" id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme">☀</button>
-        <button class="icon-btn desktop-only" id="fullscreen" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+        <button class="icon-btn desktop-only" id="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme">
+          <span id="theme-icon" data-icon="SunIcon|MoonIcon" data-icon-size="18"></span>
+        </button>
+        <button class="icon-btn desktop-only" id="fullscreen" type="button" title="Fullscreen" aria-label="Fullscreen">
+          <span data-icon="MaximizeIcon|Maximize2Icon" data-icon-size="18"></span>
+        </button>
       </div>
     </header>
 
-    <main class="content">
-      <aside class="sidebar" aria-label="Page thumbnails"></aside>
+    <main class="content" data-sidebar-side="left" data-sidebar-mode="thumbnails">
+      <aside class="sidebar" aria-label="Page navigation"></aside>
       <section class="stage" aria-label="Document">
         <div class="pages"></div>
         <div class="loading">Loading document…</div>
       </section>
     </main>
+
+    <footer class="statusbar">
+      <div class="status-group status-pages">
+        <button class="status-btn" id="prev-page" type="button" title="Previous page" aria-label="Previous page">
+          <span data-icon="ChevronLeftIcon" data-icon-size="17"></span>
+        </button>
+        <label class="page-control">
+          <input id="page-input" type="number" min="1" value="1" aria-label="Page number">
+          <span id="page-total">/ –</span>
+        </label>
+        <button class="status-btn" id="next-page" type="button" title="Next page" aria-label="Next page">
+          <span data-icon="ChevronRightIcon" data-icon-size="17"></span>
+        </button>
+      </div>
+
+      <div class="status-divider"></div>
+
+      <div class="status-group status-zoom">
+        <button class="status-btn" id="zoom-out" type="button" title="Zoom out" aria-label="Zoom out">
+          <span data-icon="ZoomOutIcon" data-icon-size="17"></span>
+        </button>
+        <button class="zoom-value" id="zoom-value" type="button" title="Fit width">Fit</button>
+        <button class="status-btn" id="zoom-in" type="button" title="Zoom in" aria-label="Zoom in">
+          <span data-icon="ZoomInIcon" data-icon-size="17"></span>
+        </button>
+        <button class="status-btn" id="fit-width" type="button" title="Fit width" aria-label="Fit width">
+          <span data-icon="ScanIcon|Maximize2Icon" data-icon-size="17"></span>
+        </button>
+      </div>
+    </footer>
   </div>
+
+  <div class="context-menu" id="sidebar-menu" role="menu" hidden>
+    <button type="button" data-sidebar-action="move">
+      <span data-icon="PanelRightIcon|PanelLeftIcon" data-icon-size="16"></span>
+      <span id="sidebar-move-label">Move sidebar right</span>
+    </button>
+    <button type="button" data-sidebar-action="minimap">
+      <span data-icon="MapIcon|MapPinnedIcon" data-icon-size="16"></span>
+      <span id="sidebar-mode-label">Convert to minimap</span>
+    </button>
+  </div>
+
   <script type="module" src="viewer.js"></script>
 </body>
 </html>
