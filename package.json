@@ -8,7 +8,7 @@
     "harness"
   ],
   "scripts": {
-    "test": "bun test harness/test packages",
+    "test": "bun run --cwd harness test",
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check"
   }
