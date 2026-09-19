@@ -384,13 +384,13 @@ class TestDfSetup:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        config_dir = tmp_path / ".darkfactory" / "df"
+        config_dir = tmp_path / ".darkfactory"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.json").write_text('{"defaultChain": "x"}', encoding="utf-8")
+        (config_dir / "config.df").write_text('{"defaultChain": "x"}', encoding="utf-8")
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
         self._record(monkeypatch)
         df_home = agent_runner.setup_df_accounts()
-        copied = os.path.join(df_home, "config.json")
+        copied = os.path.join(df_home, "config.df")
         assert os.path.isfile(copied)
         with open(copied, encoding="utf-8") as handle:
             assert json.load(handle) == {"defaultChain": "x"}
@@ -400,11 +400,11 @@ class TestDfSetup:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        fallback = tmp_path / ".darkfactory-pipeline" / ".darkfactory" / "df"
+        fallback = tmp_path / ".darkfactory-pipeline" / ".darkfactory"
         fallback.mkdir(parents=True)
-        (fallback / "config.json").write_text('{"defaultChain": "y"}', encoding="utf-8")
+        (fallback / "config.df").write_text('{"defaultChain": "y"}', encoding="utf-8")
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
-        assert agent_runner.find_df_config() == str(fallback / "config.json")
+        assert agent_runner.find_df_config() == str(fallback / "config.df")
 
     def test_a_missing_df_binary_is_a_notice_not_a_failure(self, monkeypatch):
         """Args:
@@ -456,12 +456,12 @@ class TestDfLoginRotation:
         df_home = tmp_path / "df-home"
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
-        (df_home / "credentials.json").write_text(
+        (df_home / "credentials.df").write_text(
             json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
         states = agent_runner.snapshot_df_login_files()
-        (df_home / "credentials.json").write_text(
+        (df_home / "credentials.df").write_text(
             json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}), encoding="utf-8"
         )
 
@@ -482,7 +482,7 @@ class TestDfLoginRotation:
         df_home = tmp_path / "df-home"
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
-        (df_home / "credentials.json").write_text(
+        (df_home / "credentials.df").write_text(
             json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "same"}}}), encoding="utf-8"
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "same"}')
@@ -499,7 +499,7 @@ class TestDfLoginRotation:
         df_home = tmp_path / "df-home"
         df_home.mkdir()
         monkeypatch.setenv("DF_HOME", str(df_home))
-        (df_home / "credentials.json").write_text(
+        (df_home / "credentials.df").write_text(
             json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v1"}}}), encoding="utf-8"
         )
         monkeypatch.setenv("DF_ACCOUNT_OPENAI_CODEX", '{"auth": "v1"}')
@@ -507,7 +507,7 @@ class TestDfLoginRotation:
 
         def fake_run(argv, **kwargs):
             # simulate df rotating the account record in the credentials store
-            (df_home / "credentials.json").write_text(
+            (df_home / "credentials.df").write_text(
                 json.dumps({"accounts": {"openai-codex:pipeline": {"auth": "v2"}}}),
                 encoding="utf-8",
             )
