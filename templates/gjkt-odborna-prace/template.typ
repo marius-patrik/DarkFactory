@@ -20,7 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, confirmed, unconfirmed, keyword-heading, render-keywords
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, keyword-heading, render-keywords
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -106,11 +106,11 @@
   context {
     let profile = profile-state.get()
     if profile == "merged" {
-      text(size: 25pt, weight: "bold", hyphenate: false, confirmed(meta.nazev))
+      text(size: 25pt, weight: "bold", hyphenate: false, finalized(meta.nazev))
       v(0.25cm)
-      text(size: 17pt, weight: "bold", hyphenate: false, confirmed(meta.at("nazev-en", default: meta.nazev)))
+      text(size: 17pt, weight: "bold", hyphenate: false, finalized(meta.at("nazev-en", default: meta.nazev)))
     } else {
-      text(size: 26pt, weight: "bold", hyphenate: false, confirmed(title-for(meta)))
+      text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-for(meta)))
     }
   }
 
@@ -135,12 +135,12 @@
 
     // Obě hodnoty používají stejné review funkce jako samotný rukopis:
     // potvrzený rozsah je vždy přítomen, review rozsah se v čisté verzi
-    // automaticky ztratí přes unconfirmed().
+    // automaticky ztratí přes unfinalized().
     let rozsahy = stack(
       dir: ttb,
       spacing: 3pt,
-      confirmed(range-line(s.confirmed)),
-      unconfirmed(range-line(s.review)),
+      finalized(range-line(s.confirmed)),
+      unfinalized(range-line(s.review)),
     )
 
     grid(
@@ -165,7 +165,7 @@
 }
 
 #let prohlaseni(meta) = {
-  nadpis-bez-cisla[#confirmed[#ui-label([Prohlášení], [Declaration])]]
+  nadpis-bez-cisla[#finalized[#ui-label([Prohlášení], [Declaration])]]
 
   let zkratka = meta.at("skola-zkratka", default: meta.skola)
   let cs = confirmed[
@@ -206,7 +206,7 @@
   let profile = profile-state.get()
 
   if profile in ("school", "cs", "merged") {
-    nadpis-bez-cisla[#confirmed[Anotace]]
+    nadpis-bez-cisla[#finalized[Anotace]]
     meta.anotace
   }
 
@@ -215,13 +215,13 @@
   }
 
   if profile in ("school", "en", "merged") {
-    nadpis-bez-cisla[#confirmed[Annotation]]
+    nadpis-bez-cisla[#finalized[Annotation]]
     meta.abstract
   }
 
   pagebreak(weak: true)
 
-  nadpis-bez-cisla[#confirmed[#keyword-heading()]]
+  nadpis-bez-cisla[#finalized[#keyword-heading()]]
   render-keywords()
 
   pagebreak()
@@ -501,7 +501,7 @@
     )
 
     // V čisté kompilaci je review-stats zároveň potvrzený rozsah, protože
-    // unconfirmed() nic nevysází. Review build dostane potvrzený rozsah z
+    // unfinalized() nic nevysází. Review build dostane potvrzený rozsah z
     // předchozího Typst eval nad stejným template/profile vstupem.
     let confirmed-words-input = sys.inputs.at("confirmed-words", default: none)
     let confirmed-chars-input = sys.inputs.at("confirmed-chars", default: none)
@@ -531,7 +531,7 @@
   appendix-mode-state.update(true)
 
   // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
-  nadpis-bez-cisla[#confirmed[#ui-label([Seznam příloh], [List of appendices])]]
+  nadpis-bez-cisla[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(supplement: [Příloha]))
