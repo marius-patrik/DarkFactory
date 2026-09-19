@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ADR-0004 — The repository environment is detected; declaration is the exception · DarkFactory</title>
+    <title>ADR-0019 — GitHub-backed web control plane with GitHub App user authentication · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,8 +111,8 @@
          href="../0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link nav__link--active"
-         href="./">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+      <a class="nav__link"
+         href="../0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -127,8 +127,8 @@
          href="../0018-first-party-docs-and-shared-web/">ADR-0018 — First-party documentation engine and one shared web renderer</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link"
-         href="../0019-github-backed-web-auth-and-control-plane/">ADR-0019 — GitHub-backed web control plane with GitHub App user authentication</a>
+      <a class="nav__link nav__link--active"
+         href="./">ADR-0019 — GitHub-backed web control plane with GitHub App user authentication</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -259,50 +259,53 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="adr-0004-the-repository-environment-is-detected-declaration-is-the-exception">ADR-0004 — The repository environment is detected; declaration is the exception<a class="headerlink" href="#adr-0004-the-repository-environment-is-detected-declaration-is-the-exception" title="Permanent link">&para;</a></h1>
-<p><strong>Status</strong>: Accepted · 2026-09-07</p>
+          <h1 id="adr-0019-github-backed-web-control-plane-with-github-app-user-authentication">ADR-0019 — GitHub-backed web control plane with GitHub App user authentication<a class="headerlink" href="#adr-0019-github-backed-web-control-plane-with-github-app-user-authentication" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted<br />
+<strong>Date</strong>: 2026-09-19<br />
+<strong>Resolves</strong>: Final DarkFactory Web control-plane model and human authentication</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The pipeline runs in repositories with nothing in common: a Python package, a Rust and TypeScript
-desktop application, a template with no build at all. Each workflow had begun re-deriving this for
-itself with <code>hashFiles</code>, so the answer to "is there Rust here" existed in several places and could
-disagree with itself.</p>
+<p>DarkFactory already uses GitHub issues, pull requests, reviews, checks, projects and the DarkFactory GitHub App as its durable coordination surface. The desired web UI should replace normal day-to-day use of the GitHub website without introducing a second state database or a full DarkFactory application server.</p>
+<p>A static GitHub Pages bundle cannot safely contain a GitHub App client secret or private key.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><code>.github/scripts/environment.py</code> answers it once. It walks the repository, identifies every package
-manifest, resolves workspace members for npm, Bun, pnpm, Yarn and Cargo, and derives the test,
-format and documentation command for each ecosystem from the package manager actually in use. The
-manifest's <code>environment</code> block overrides or extends any of it.</p>
-<p>Detection is the default because it cannot drift: a repository that grows a <code>Cargo.toml</code> starts
-building Rust with no configuration change. Declaration covers what detection cannot see.</p>
-<h2 id="alternatives-rejected">Alternatives rejected<a class="headerlink" href="#alternatives-rejected" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Declare everything.</strong> Accurate the day it is written. The failure mode is silent: a new package
-  is simply never built or tested, and nothing reports it.</li>
-<li><strong>Keep <code>hashFiles</code> in each workflow.</strong> Only answers "does this file exist", so it cannot express
-  workspace members, monorepo layout, or which package manager is in use.</li>
-<li><strong>A build-tool abstraction such as Nix or Bazel.</strong> Solves this and much more, at the cost of
-  requiring every consumer repository to adopt it.</li>
-</ul>
+<p>DarkFactory Web is a dynamic GitHub-backed client hosted on GitHub Pages. It reads live repository state through browser-safe GitHub APIs and combines that with compiled repository content.</p>
+<p><code>@darkfactory/auth</code> owns human/browser authentication using the existing DarkFactory GitHub App. The normal login uses GitHub App user authorization with PKCE and a minimal confidential token exchange/refresh broker.</p>
+<p>The broker is authentication infrastructure only. It has no repository/Request/pipeline/model state, no project database and no DarkFactory execution API.</p>
+<p>User authority comes from GitHub: the intersection of the App installation, App permissions and the authenticated user's own repository permissions. DarkFactory does not maintain a parallel RBAC database.</p>
+<p>Human-attributed actions use user authority where appropriate. Privileged automation remains owned by the GitHub App installation identity and df. The UI represents those operations as canonical GitHub-backed intents/events rather than performing privileged automation itself.</p>
+<p>The target product is that DarkFactory Web becomes the primary day-to-day operator interface; direct use of github.com remains optional except where GitHub itself requires a consent/review surface.</p>
+<h2 id="rejected-alternatives">Rejected alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="put-github-app-secrets-into-pages">Put GitHub App secrets into Pages<a class="headerlink" href="#put-github-app-secrets-into-pages" title="Permanent link">&para;</a></h3>
+<p>Rejected because browser/static assets cannot securely hold confidential App credentials.</p>
+<h3 id="add-a-full-darkfactory-web-backend">Add a full DarkFactory web backend<a class="headerlink" href="#add-a-full-darkfactory-web-backend" title="Permanent link">&para;</a></h3>
+<p>Rejected because GitHub already provides the durable state/event/control plane and duplicating it would create reconciliation and authorization problems.</p>
+<h3 id="use-a-separate-darkfactory-permission-database">Use a separate DarkFactory permission database<a class="headerlink" href="#use-a-separate-darkfactory-permission-database" title="Permanent link">&para;</a></h3>
+<p>Rejected because GitHub user + installation permissions already define the authoritative access boundary.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Detection heuristics are a maintenance surface; a new ecosystem is a data change to <code>MANIFESTS</code>.</li>
-<li>Lockfiles are scoped per ecosystem. A flat lookup reported a Cargo workspace's package manager as
-  Bun purely because <code>bun.lock</code> sat beside it in a polyglot root.</li>
+<li>
+<h1 id="423-owns-the-auth-packagebroker">423 owns the auth package/broker.<a class="headerlink" href="#423-owns-the-auth-packagebroker" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="425-owns-the-reusable-web-app">425 owns the reusable web app.<a class="headerlink" href="#425-owns-the-reusable-web-app" title="Permanent link">&para;</a></h1>
+</li>
+<li>Browser bundles have strict import boundaries from server/keychain code.</li>
+<li>Web UI and CLI may share protocol schemas without sharing secret custody.</li>
 </ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../0003-repository-identity-is-data-not-code/">
+          <a class="pager__link pager__link--prev" href="../0018-first-party-docs-and-shared-web/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">ADR-0003 — Repository identity is data, not code</span>
+            <span class="pager__title">ADR-0018 — First-party documentation engine and one shared web renderer</span>
           </a>
-          <a class="pager__link pager__link--next" href="../0005-versioning-scheme-is-a-per-repository-choice/">
+          <a class="pager__link pager__link--next" href="../0020-auth-keychain-separation/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">ADR-0005 — The versioning scheme is a per-repository choice</span>
+            <span class="pager__title">ADR-0020 — Separate human web authentication from machine credential custody</span>
           </a>
         </nav>
 
         <footer class="footer">
           <span>DarkFactory</span>
-          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception.md">Edit this page</a>
+          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/0019-github-backed-web-auth-and-control-plane.md">Edit this page</a>
         </footer>
       </main>
 
@@ -313,7 +316,12 @@ building Rust with no configuration change. Declaration covers what detection ca
           </li>
           <li><a href="#decision">Decision</a>
           </li>
-          <li><a href="#alternatives-rejected">Alternatives rejected</a>
+          <li><a href="#rejected-alternatives">Rejected alternatives</a>
+            <ul>
+              <li><a href="#put-github-app-secrets-into-pages">Put GitHub App secrets into Pages</a></li>
+              <li><a href="#add-a-full-darkfactory-web-backend">Add a full DarkFactory web backend</a></li>
+              <li><a href="#use-a-separate-darkfactory-permission-database">Use a separate DarkFactory permission database</a></li>
+            </ul>
           </li>
           <li><a href="#consequences">Consequences</a>
           </li>

@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ADR-0004 — The repository environment is detected; declaration is the exception · DarkFactory</title>
+    <title>ADR-0020 — Separate human web authentication from machine credential custody · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,8 +111,8 @@
          href="../0003-repository-identity-is-data-not-code/">ADR-0003 — Repository identity is data, not code</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link nav__link--active"
-         href="./">ADR-0004 — The repository environment is detected; declaration is the exception</a>
+      <a class="nav__link"
+         href="../0004-repository-environment-is-detected-declaration-is-the-exception/">ADR-0004 — The repository environment is detected; declaration is the exception</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -131,8 +131,8 @@
          href="../0019-github-backed-web-auth-and-control-plane/">ADR-0019 — GitHub-backed web control plane with GitHub App user authentication</a>
     </li>
     <li class="nav__item">
-      <a class="nav__link"
-         href="../0020-auth-keychain-separation/">ADR-0020 — Separate human web authentication from machine credential custody</a>
+      <a class="nav__link nav__link--active"
+         href="./">ADR-0020 — Separate human web authentication from machine credential custody</a>
     </li>
     <li class="nav__item">
       <a class="nav__link"
@@ -259,50 +259,49 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="adr-0004-the-repository-environment-is-detected-declaration-is-the-exception">ADR-0004 — The repository environment is detected; declaration is the exception<a class="headerlink" href="#adr-0004-the-repository-environment-is-detected-declaration-is-the-exception" title="Permanent link">&para;</a></h1>
-<p><strong>Status</strong>: Accepted · 2026-09-07</p>
+          <h1 id="adr-0020-separate-human-web-authentication-from-machine-credential-custody">ADR-0020 — Separate human web authentication from machine credential custody<a class="headerlink" href="#adr-0020-separate-human-web-authentication-from-machine-credential-custody" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted<br />
+<strong>Date</strong>: 2026-09-19<br />
+<strong>Resolves</strong>: Credential/auth ownership across browser, harness and automation</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The pipeline runs in repositories with nothing in common: a Python package, a Rust and TypeScript
-desktop application, a template with no build at all. Each workflow had begun re-deriving this for
-itself with <code>hashFiles</code>, so the answer to "is there Rust here" existed in several places and could
-disagree with itself.</p>
+<p>DarkFactory handles many credential forms: provider API keys, OAuth refresh/access tokens, multiple provider accounts, imported CLI credentials, GitHub App private keys and installation tokens, local user credentials and browser GitHub sessions.</p>
+<p>Combining all of these behind one browser-visible auth package would weaken security boundaries, while leaving credential handling scattered across providers and capabilities causes duplicated refresh/storage/redaction behavior.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><code>.github/scripts/environment.py</code> answers it once. It walks the repository, identifies every package
-manifest, resolves workspace members for npm, Bun, pnpm, Yarn and Cargo, and derives the test,
-format and documentation command for each ecosystem from the package manager actually in use. The
-manifest's <code>environment</code> block overrides or extends any of it.</p>
-<p>Detection is the default because it cannot drift: a repository that grows a <code>Cargo.toml</code> starts
-building Rust with no configuration change. Declaration covers what detection cannot see.</p>
-<h2 id="alternatives-rejected">Alternatives rejected<a class="headerlink" href="#alternatives-rejected" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Declare everything.</strong> Accurate the day it is written. The failure mode is silent: a new package
-  is simply never built or tested, and nothing reports it.</li>
-<li><strong>Keep <code>hashFiles</code> in each workflow.</strong> Only answers "does this file exist", so it cannot express
-  workspace members, monorepo layout, or which package manager is in use.</li>
-<li><strong>A build-tool abstraction such as Nix or Bazel.</strong> Solves this and much more, at the cost of
-  requiring every consumer repository to adopt it.</li>
-</ul>
+<p>Two first-class packages own all authentication concerns:</p>
+<h3 id="darkfactorykeychain"><code>@darkfactory/keychain</code><a class="headerlink" href="#darkfactorykeychain" title="Permanent link">&para;</a></h3>
+<p>The sole machine/harness credential-custody and authentication subsystem. It owns secure storage, encrypted fallback, environment/import sources, provider login/OAuth/device flows, multi-account slots, refresh/rotation, borrowed credentials, GitHub App private-key/JWT/installation-token flows, CLI-side user credentials, redaction, secret scanning, diagnostics and scoped credential access.</p>
+<p>Capabilities and other packages declare credential requirements and request scoped handles. They do not read raw environment variables, credential files or OS keychains directly.</p>
+<h3 id="darkfactoryauth"><code>@darkfactory/auth</code><a class="headerlink" href="#darkfactoryauth" title="Permanent link">&para;</a></h3>
+<p>The human/browser session layer used by DarkFactory Web. It owns GitHub App user login, PKCE/state, token exchange/refresh broker integration, session restoration and logout/revocation. It cannot import keychain/private-key machinery into browser artifacts.</p>
+<p>The same GitHub identity ecosystem may be used in both environments, but custody models remain distinct.</p>
+<h2 id="rejected-alternatives">Rejected alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="one-universal-auth-package">One universal auth package<a class="headerlink" href="#one-universal-auth-package" title="Permanent link">&para;</a></h3>
+<p>Rejected because browser code and machine secret custody have fundamentally different trust boundaries.</p>
+<h3 id="provider-owned-credential-storage">Provider-owned credential storage<a class="headerlink" href="#provider-owned-credential-storage" title="Permanent link">&para;</a></h3>
+<p>Rejected because every provider would reimplement storage, refresh, multi-account behavior and redaction.</p>
+<h3 id="give-capabilities-raw-secrets-by-default">Give capabilities raw secrets by default<a class="headerlink" href="#give-capabilities-raw-secrets-by-default" title="Permanent link">&para;</a></h3>
+<p>Rejected because it expands secret lifetime and makes third-party capabilities unnecessarily trusted.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Detection heuristics are a maintenance surface; a new ecosystem is a data change to <code>MANIFESTS</code>.</li>
-<li>Lockfiles are scoped per ecosystem. A flat lookup reported a Cargo workspace's package manager as
-  Bun purely because <code>bun.lock</code> sat beside it in a polyglot root.</li>
+<li>F14/#248 and existing credential/secrets/login code converge into keychain.</li>
+<li>Browser/auth tests must prove private-key/keychain code is unreachable from web bundles.</li>
+<li>The capability ABI includes credential requirements rather than storage APIs.</li>
 </ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
-          <a class="pager__link pager__link--prev" href="../0003-repository-identity-is-data-not-code/">
+          <a class="pager__link pager__link--prev" href="../0019-github-backed-web-auth-and-control-plane/">
             <span class="pager__label">Previous</span>
-            <span class="pager__title">ADR-0003 — Repository identity is data, not code</span>
+            <span class="pager__title">ADR-0019 — GitHub-backed web control plane with GitHub App user authentication</span>
           </a>
-          <a class="pager__link pager__link--next" href="../0005-versioning-scheme-is-a-per-repository-choice/">
+          <a class="pager__link pager__link--next" href="../process/">
             <span class="pager__label">Next</span>
-            <span class="pager__title">ADR-0005 — The versioning scheme is a per-repository choice</span>
+            <span class="pager__title">Process</span>
           </a>
         </nav>
 
         <footer class="footer">
           <span>DarkFactory</span>
-          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/0004-repository-environment-is-detected-declaration-is-the-exception.md">Edit this page</a>
+          <a href="https://github.com/marius-patrik/DarkFactory/edit/main/architecture/decisions/0020-auth-keychain-separation.md">Edit this page</a>
         </footer>
       </main>
 
@@ -312,8 +311,17 @@ building Rust with no configuration change. Declaration covers what detection ca
           <li><a href="#context">Context</a>
           </li>
           <li><a href="#decision">Decision</a>
+            <ul>
+              <li><a href="#darkfactorykeychain">@darkfactory/keychain</a></li>
+              <li><a href="#darkfactoryauth">@darkfactory/auth</a></li>
+            </ul>
           </li>
-          <li><a href="#alternatives-rejected">Alternatives rejected</a>
+          <li><a href="#rejected-alternatives">Rejected alternatives</a>
+            <ul>
+              <li><a href="#one-universal-auth-package">One universal auth package</a></li>
+              <li><a href="#provider-owned-credential-storage">Provider-owned credential storage</a></li>
+              <li><a href="#give-capabilities-raw-secrets-by-default">Give capabilities raw secrets by default</a></li>
+            </ul>
           </li>
           <li><a href="#consequences">Consequences</a>
           </li>
