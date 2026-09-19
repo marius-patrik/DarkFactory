@@ -143,7 +143,11 @@ export async function classifyTaskWithDiagnostics(
 		needs.push("long_context");
 		needDetails.push(`need 'long_context' inferred from ${contextTokens} context tokens`);
 	}
-	if (["plan", "implement", "review", "fix"].includes(kind) || input.reasoning === "hard" || input.node?.reasoning === "hard") {
+	if (
+		["plan", "implement", "review", "fix"].includes(kind) ||
+		input.reasoning === "hard" ||
+		input.node?.reasoning === "hard"
+	) {
 		needs.push("reasoning");
 		needDetails.push(`need 'reasoning' inferred from ${kind} stage semantics`);
 	}
