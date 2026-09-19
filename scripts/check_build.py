@@ -135,6 +135,18 @@ if finalized_scaling_title not in chapter2_source:
 if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
     fail("legacy section 2.3.8 title must not return")
 
+finalized_version_control_title = (
+    "== #finalized[Správa verzí \\[Version Control\\], Plánování \\[Planning\\], "
+    "Kontinuální integrace \\[Continuous Integration\\] (CI a GitHub Actions) "
+    "a Požadované kontroly \\[Required Checks\\]]"
+)
+if finalized_version_control_title not in chapter2_source:
+    fail("section 2.1 must retain the finalized expanded engineering title")
+if "=== #finalized[Pull Request]" not in chapter2_source:
+    fail("section 2.1.3 title must remain finalized as Pull Request")
+if "=== Model #term(terms.pull_request" in chapter2_source:
+    fail("legacy section 2.1.3 title must not return")
+
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for front_matter_contract in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
@@ -399,9 +411,22 @@ if 'splitHref={canSplit ? splitTarget : "#"}' not in app_source:
     fail("Final/Review path selector must also expose Split mode")
 
 pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
-for required in ("dagre.layout", "TextLayer", "AnnotationLayer", "ContextMenu", "Minimap"):
+for required in (
+    "dagre.layout",
+    "TextLayer",
+    "AnnotationLayer",
+    "ContextMenu",
+    "Minimap",
+    "class AnnotationLinkService",
+    "goToDestination",
+    "getDestinationHash",
+    "addLinkAttributes",
+    "getPageIndex",
+):
     if required not in pdf_source:
         fail(f"React PDF viewer missing interaction contract: {required}")
+if "PDFLinkService" in pdf_source or "setViewer({" in pdf_source:
+    fail("custom PDF renderer must not depend on a partial PDFViewer/PDFLinkService surrogate")
 
 vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
 for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):

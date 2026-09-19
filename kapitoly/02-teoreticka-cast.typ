@@ -2,7 +2,7 @@
 
 = #finalized[Teoretická část – Analýza konceptu]
 
-== #finalized[#term(terms.version_control, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false)]
+== #finalized[Správa verzí \[Version Control\], Plánování \[Planning\], Kontinuální integrace \[Continuous Integration\] (CI a GitHub Actions) a Požadované kontroly \[Required Checks\]]
 
 === #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 #accepted[
@@ -32,9 +32,9 @@ Tento princip přináší následující výhody:
 Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné aktivity v repozitáři, pracovní větev agenta se musí před dokončením zaktualizovat (`git rebase` nebo `git merge`), aby byla zajištěna bezkonfliktní integrace.
 ]
 
-#unconfirmed[
-=== Model #term(terms.pull_request, marker: false, linked: false, emphasized: false)
+=== #finalized[Pull Request]
 
+#unconfirmed[
 #diff[Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (*Human-in-the-loop*):][#term(terms.pull_request, render: "both", detail-language: "cs", detail-style: "inline"). V tomto bodě se plně uplatňuje princip #term(terms.human_in_the_loop):] agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
 
 Rozhraní pull requestu integruje všechny podstatné informace na jednom místě:

@@ -143,7 +143,9 @@ GitHub Pages je samostatná React + TypeScript aplikace v `web/`, sestavovaná p
 UI používá shadcn/ui (Radix primitives + Tailwind), Motion pro přechody a Dagre pro
 layout minimapy stránek. PDF z Typstu zůstává kanonickým vizuálním výstupem a
 PDF.js nad ním renderuje canvas, textovou vrstvu i annotation vrstvu, takže text
-zůstává označitelný/kopírovatelný a PDF odkazy jsou interaktivní.
+zůstává označitelný/kopírovatelný a PDF odkazy jsou interaktivní. Interní PDF
+destinace vlastní annotation link service překládá přímo na navigaci mezi stránkami
+custom vieweru; externí URL zůstávají běžnými odkazy.
 
 Viewer nabízí Raw, Review a Split režim, výběr publikační verze, persistentní sidebar
 vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jump,

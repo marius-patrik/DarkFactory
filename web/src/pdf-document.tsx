@@ -11,7 +11,6 @@ import {
 } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import { EventBus, PDFLinkService } from "pdfjs-dist/web/pdf_viewer.mjs";
 import * as dagre from "@dagrejs/dagre";
 import { motion } from "motion/react";
 import { AnimatedIcon } from "@/components/animated-icon";
@@ -62,6 +61,111 @@ type ViewerProps = {
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+
+type PdfDestination = string | any[];
+
+class AnnotationLinkService {
+  externalLinkEnabled = true;
+  externalLinkTarget = 2;
+  externalLinkRel = "noopener noreferrer";
+  eventBus = null;
+
+  constructor(
+    private readonly pdf: any,
+    private readonly navigateToPage: (page: number, behavior?: ScrollBehavior) => void,
+    private readonly getCurrentPage: () => number,
+  ) {}
+
+  addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow = false) {
+    if (!url) return;
+    link.href = url;
+    link.title = url;
+    link.target = newWindow || this.externalLinkTarget === 2 ? "_blank" : "";
+    link.rel = this.externalLinkRel;
+  }
+
+  getAnchorUrl(anchor: string) {
+    return anchor || "#";
+  }
+
+  getDestinationHash(_dest: PdfDestination) {
+    // AnnotationLayer intercepts internal-link clicks and calls goToDestination.
+    // Keeping a harmless href preserves keyboard/focus semantics without letting
+    // the browser navigate away from the custom viewer.
+    return "#";
+  }
+
+  async goToDestination(dest: PdfDestination) {
+    try {
+      const explicitDest = typeof dest === "string"
+        ? await this.pdf.getDestination(dest)
+        : await dest;
+      if (!Array.isArray(explicitDest) || explicitDest.length === 0) return;
+
+      const destRef = explicitDest[0];
+      let pageNumber: number | null = null;
+
+      if (Number.isInteger(destRef)) {
+        pageNumber = destRef + 1;
+      } else if (destRef && typeof destRef === "object") {
+        const cached = this.pdf.cachedPageNumber?.(destRef);
+        pageNumber = cached || (await this.pdf.getPageIndex(destRef)) + 1;
+      }
+
+      if (
+        pageNumber !== null &&
+        Number.isInteger(pageNumber) &&
+        pageNumber >= 1 &&
+        pageNumber <= this.pdf.numPages
+      ) {
+        this.navigateToPage(pageNumber, "smooth");
+      }
+    } catch (error) {
+      console.warn("PDF destination navigation failed", dest, error);
+    }
+  }
+
+  goToPage(value: number | string) {
+    const pageNumber = typeof value === "string" ? Number(value) : value;
+    if (Number.isInteger(pageNumber) && pageNumber >= 1 && pageNumber <= this.pdf.numPages) {
+      this.navigateToPage(pageNumber, "smooth");
+    }
+  }
+
+  executeNamedAction(action: string) {
+    const current = this.getCurrentPage();
+    switch (action) {
+      case "NextPage":
+        this.goToPage(current + 1);
+        break;
+      case "PrevPage":
+        this.goToPage(current - 1);
+        break;
+      case "FirstPage":
+        this.goToPage(1);
+        break;
+      case "LastPage":
+        this.goToPage(this.pdf.numPages);
+        break;
+      default:
+        break;
+    }
+  }
+
+  async executeSetOCGState(_action: unknown) {
+    // Optional-content actions are not needed by the thesis PDFs. Keep the
+    // interface complete so AnnotationLayer can safely bind such annotations.
+  }
+
+  async getAttachmentContent(id: string) {
+    try {
+      return await this.pdf.getAttachmentContent?.(id);
+    } catch {
+      return null;
+    }
+  }
 }
 
 function Minimap({
@@ -553,31 +657,15 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
     }, []);
 
     useEffect(() => {
-      if (!pdf) return;
-      const eventBus = new EventBus();
-      const service = new PDFLinkService({
-        eventBus,
-        externalLinkTarget: 2,
-        externalLinkRel: "noopener noreferrer",
-      } as any);
-      service.setDocument(pdf);
-      (service as any).setViewer({
-        get currentPageNumber() {
-          return currentPage;
-        },
-        set currentPageNumber(value: number) {
-          goToPage(value);
-        },
-        get pagesCount() {
-          return pdf.numPages;
-        },
-        get isInPresentationMode() {
-          return false;
-        },
-        scrollPageIntoView({ pageNumber }: { pageNumber: number }) {
-          goToPage(pageNumber);
-        },
-      });
+      if (!pdf) {
+        setLinkService(null);
+        return;
+      }
+      const service = new AnnotationLinkService(
+        pdf,
+        goToPage,
+        () => currentPage,
+      );
       setLinkService(service);
     }, [currentPage, goToPage, pdf]);
 

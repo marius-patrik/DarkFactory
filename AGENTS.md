@@ -98,6 +98,7 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Inline term links/★ markers target encyclopedia entries; do not restore detailed entries under the keyword heading.
 
 - The viewer must preserve PDF.js text and annotation layers above each page canvas so rendered text stays selectable/copyable and PDF links remain clickable.
+- The custom renderer owns PDF navigation. Annotation links must use a purpose-built link service that resolves named/explicit destinations to the viewer's `goToPage`; do not bind `PDFLinkService` to a partial fake `PDFViewer`.
 - Viewer controls prefer the pinned `lucide-animated` React package and use narrow `lucide-react` fallbacks for glyphs the animated set does not provide; do not allow icon buttons to render blank or regress to Unicode/text symbols. Every icon action uses a shadcn tooltip.
 - Sidebar position (`left`/`right`) and representation (`thumbnails`/`minimap`) are persistent user settings. The toggle sits at the extreme toolbar edge matching the sidebar side, visibly uses the corresponding left/right sidebar icon, and exposes sidebar move/minimap actions through a shadcn context menu.
 - The toolbar path is `Home \\ work title \\ publication version \\ Final/Review/Split`. The mode path-segment selector must expose all three modes: Final, Review, and Split. Publication version and mode are compact path selectors backed by the current viewer URLs.
