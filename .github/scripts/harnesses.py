@@ -50,6 +50,10 @@ TIMEOUT = "{{TIMEOUT}}"
 #: an argument-length limit. The runner writes the file and passes its path via ``prompt_file``.
 PROMPT_FILE = "{{PROMPT_FILE}}"
 
+#: Optional semantic task kind passed only to harnesses whose template declares it.
+#: When omitted, df keeps its existing TypeScript inference path.
+KIND = "{{KIND}}"
+
 
 @dataclass(frozen=True)
 class LoginFile:
@@ -320,6 +324,7 @@ class Harness:
         model: Optional[str],
         timeout: str,
         prompt_file: Optional[str] = None,
+        kind: Optional[str] = None,
     ) -> List[str]:
         """Renders the argv for one invocation.
 
@@ -334,6 +339,7 @@ class Harness:
             model: Model id, or ``None`` to use the harness default.
             timeout: Print-mode timeout as a Go duration string.
             prompt_file: Path of the file holding the prompt, for ``PROMPT_FILE`` templates.
+            kind: Optional semantic task kind for templates carrying ``KIND``.
 
         Returns:
             Full argv including the binary.
@@ -349,6 +355,11 @@ class Harness:
                     pending_flag = None
                     continue
                 token = token.replace(MODEL, model)
+            elif KIND in token:
+                if kind is None:
+                    pending_flag = None
+                    continue
+                token = token.replace(KIND, kind)
             elif token.startswith("-"):
                 if pending_flag is not None:
                     argv.append(pending_flag)
@@ -373,7 +384,7 @@ REGISTRY: Dict[str, Harness] = {
         binary="df",
         # The prompt travels by file so long prompts never meet an argument-length limit, and
         # ``--json`` so the runner can parse the event stream into the final answer text.
-        template=["run", "--json", "--prompt-file", PROMPT_FILE],
+        template=["run", "--json", "--prompt-file", PROMPT_FILE, "--kind", KIND],
         # No pools: df owns model choice and in-flight failover across its own chain, so there is
         # nothing for the runner to fall back between. No auth declaration either: df reads its own
         # accounts from DF_HOME, configured by the runner's setup step before dispatch.
