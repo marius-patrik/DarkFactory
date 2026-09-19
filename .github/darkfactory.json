@@ -41,15 +41,24 @@
     "testing": {
       "typst": {
         "command": "make ci"
+      },
+      "node": {
+        "command": "make web-check"
       }
     },
     "release": {
       "typst": {
         "command": "make ci"
+      },
+      "node": {
+        "command": "make web-build"
       }
     },
     "formatting": {
       "typst": {
+        "enabled": false
+      },
+      "node": {
         "enabled": false
       }
     },
@@ -57,6 +66,9 @@
       "typst": {
         "command": "make site",
         "source": "Typst publication matrix"
+      },
+      "node": {
+        "enabled": false
       }
     }
   },
