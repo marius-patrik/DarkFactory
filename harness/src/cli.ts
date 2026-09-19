@@ -873,7 +873,7 @@ async function routeCommand(
 		.join(" ")
 		.trim();
 	if (!prompt) throw new Error("route requires a prompt");
-	const route = await withinRunDeadline(resolveCliRoute(registry, store, config, args, prompt), budget);
+	const route = await resolveCliRoute(registry, store, config, args, prompt);
 	if (args.includes("--json")) console.log(JSON.stringify(route));
 	else printRoute(route);
 }
@@ -1137,7 +1137,7 @@ async function runCommand(
 				.join(" ")
 				.trim();
 	if (!prompt) throw new Error("run requires a prompt or --prompt-file");
-	const route = await resolveCliRoute(registry, store, config, args, prompt);
+	const route = await withinRunDeadline(resolveCliRoute(registry, store, config, args, prompt), budget);
 	if (json) console.log(JSON.stringify({ type: "route", ...route }));
 	else printRoute(route, console.error);
 	const executableChain = executableChainFor(route);
