@@ -1,22 +1,19 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import {
 	CAPABILITY_ABI_VERSION,
 	CapabilityAbiError,
+	type CapabilityRuntimeContext,
 	createMcpAdapter,
 	createNativeAdapter,
 	createPiAdapter,
 	defineCapability,
-	supportsCapabilityAbi,
-	type CapabilityRuntimeContext,
 	type PiToolRegistration,
+	supportsCapabilityAbi,
 } from "../../packages/capability/src/index.ts";
-import {
-	discoverCapabilities,
-	resolveCapabilities,
-} from "../../packages/capability/src/loader.ts";
+import { discoverCapabilities, resolveCapabilities } from "../../packages/capability/src/loader.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
@@ -64,9 +61,7 @@ describe("capability ABI", () => {
 		expect(supportsCapabilityAbi("2")).toBe(false);
 		const definition = fixture();
 		expect(definition.version).toBe("1.2.3");
-		expect(() =>
-			createNativeAdapter({ ...definition, abiVersion: "2" }, context),
-		).toThrow(CapabilityAbiError);
+		expect(() => createNativeAdapter({ ...definition, abiVersion: "2" }, context)).toThrow(CapabilityAbiError);
 	});
 
 	test("one canonical tool definition drives native, Pi and MCP adapters", async () => {
