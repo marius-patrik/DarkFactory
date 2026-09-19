@@ -121,6 +121,10 @@ for required in (
 ):
     if required not in common_source:
         fail(f"Encyclopedia missing alphabetical outlined hierarchy contract: {required}")
+if ".slice(0, 1)" in common_source:
+    fail("Encyclopedia grouping must use grapheme-safe first() rather than byte-index slicing")
+if "encyclopedia-sort-name(item).first()" not in common_source:
+    fail("Encyclopedia grouping must derive its letter with grapheme-safe first()")
 
 for required in (
     "#let term-proper-name",

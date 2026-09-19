@@ -560,7 +560,7 @@
   if item.proper.cs != none { str(item.proper.cs) } else { str(item.proper.en) }
 }
 
-#let encyclopedia-letter(item) = upper(encyclopedia-sort-name(item).slice(0, 1))
+#let encyclopedia-letter(item) = upper(encyclopedia-sort-name(item).first())
 
 #let render-encyclopedia() = context {
   let items = collect-used-terms(query(term-use-label))
@@ -600,8 +600,8 @@
           marker: false,
           emphasized: false,
         )
+        #label("kw-" + item.id)
       ]
-      [#label("kw-" + item.id)]
 
       block(
         breakable: false,
