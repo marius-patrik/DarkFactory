@@ -43,33 +43,40 @@ The bootstrap baseline has advanced since the previous plan revision.
 
 - #414 is terminal and restored the original bootstrap/CI baseline.
 - #431 is terminal and synchronized governance/docs tests and projections with the accepted architecture.
-- #413 is terminal through PR #428 / commit `6570769bc1d566a6386e7d555d7a06e41d2285f8`.
-  - Declared pipeline stage kind now reaches `df run --kind`.
-  - The rejected duplicate Python TaskKind design was not retained.
-  - #365 is now the first unsatisfied critical-path Request.
+- #413 is terminal: declared pipeline stage kind reaches `df run --kind` without a duplicate Python task taxonomy.
+- #365 is terminal: task-profile inference is now part of the settled routing foundation.
+- #406 is terminal: one bounded elapsed-time budget is enforced across a df run/stage.
+- #420 is terminal: the root Bun workspace and first-party package boundaries are established.
+- #421 is terminal: the minimum versioned capability ABI/loader exists, including official code/paper/math capability packages and generated adapter contracts.
 
-These completed bootstrap items are not repeated in the active Request map below.
+These completed foundations are not repeated in the active Request map below.
 
 ### Stale implementation artifacts
 
-- PR #407 is **not** the merge vehicle for #340. It predates the architecture convergence, is broadly contaminated by unrelated changes, and remains useful only as implementation/recovery evidence together with PR376/F48.
-- The surviving #365 feature branch is a rejected/stale implementation branch. It may provide useful deltas in `router/profile.ts` / `router/types.ts`, but it is not approved implementation and must be reconciled against current #365 Planning.
+- PR #407 is closed and superseded. It remains #340 recovery evidence only together with PR376/F48.
+- The rejected #365 implementation branch / PR #366 is terminal evidence only. #365 itself is complete and no further reconciliation is required from that branch.
 
 ### Current architectural foundation
 
 ADR-0017 through ADR-0020 and Requests #420–#425 define the final package/capability, docs/web and auth/keychain architecture.
 
-The product target remains:
+Already landed:
 
 - root Bun workspace;
-- first-party packages `protocol/core/capability/github/keychain/auth/docs/cli/web`;
-- agentic/product behavior as versioned capabilities;
-- `code`, `paper`, `math` retained as semantic domains;
-- first-party docs engine and one shared web application;
-- GitHub-backed web control plane;
-- strict separation of browser auth and machine keychain custody.
+- first-party package identities `protocol/core/capability/github/keychain/auth/docs/cli/web`;
+- browser-safe protocol/GitHub boundaries;
+- versioned capability ABI/loader;
+- official `code`, `paper`, and `math` capability packages.
 
-The old monolithic `@darkfactory/harness` layout is migration input only.
+Still to converge:
+
+- #422 moves machine credential custody fully into `@darkfactory/keychain`;
+- #423 implements browser/human GitHub auth in `@darkfactory/auth`;
+- #424 replaces ProperDocs/MkDocs with the first-party docs engine;
+- #425 provides the shared prebuilt GitHub-backed web application;
+- remaining runtime ownership must leave the temporary monolithic harness shim as later owner Requests land.
+
+The final product still requires first-party docs, one shared web application, GitHub-backed control-plane behavior, and strict browser-auth versus machine-keychain separation.
 
 ### Production state
 
@@ -143,7 +150,7 @@ A failing topic/recovery branch blocks that branch and dependent work, but does 
 |---|---|
 | `recovery/pr-376-clean` | #340 evidence/input |
 | `recovery/f48-layout` | #340 / #420 evidence/input |
-| PR #407 | #340 evidence only; do not repair/merge wholesale |
+| PR #407 | Closed/superseded; #340 evidence only |
 | `recovery/f28-dispatch` | Historical #242 provenance; no unique valid implementation |
 | `recovery/f14-borrowed-refresh` | #248 -> #422 keychain |
 | `recovery/f40-capability-tiers` | #331 |
@@ -158,7 +165,7 @@ A failing topic/recovery branch blocks that branch and dependent work, but does 
 | `recovery/f49-detected-quality` | #341 migration seed |
 | `recovery/d4-docs-generator` | #424 / #335 |
 | `recovery/fix-empty-agent-output` | Provenance only; fully subsumed |
-| rejected #365 branch / PR #366 | Optional implementation evidence only |
+| rejected #365 branch / PR #366 | Terminal rejected evidence; #365 completed |
 
 Additional discovery obligations:
 
@@ -173,18 +180,12 @@ Every recovery source must have an explicit terminal disposition before #361.
 
 ## 5. Active critical path to self-hosting
 
-#413 is complete. The remaining merge path to the earliest safe #359 cutover is:
+The bootstrap/package/runtime foundations (#413, #365, #406, #420, #421) are complete.
+
+The remaining merge path to the earliest safe #359 cutover is:
 
 ```text
-#365  task-profile inference
-  ↓
-#420  root workspace / final package boundaries
-  ↓
-#421  minimum capability ABI + loader
-  ↓
 #340  final repo.df/config.df/.df hard transition
-  ↓
-#406  bounded elapsed-time runtime
   ↓
 #391  durable unified Planning/review lifecycle
   ↓
@@ -207,18 +208,15 @@ This is a **merge/cutover path**, not a rule that all development must happen se
 
 ### Immediate development concurrency
 
-The following may be worked now in parallel:
+The following should proceed in parallel where interfaces allow:
 
-- #365 implementation/reconciliation;
-- #420 workspace/package implementation;
-- #421 ABI design against the emerging #420 shape;
-- #340 clean convergence from current trunk + PR376/F48/#407 evidence;
-- #406 runtime-budget implementation;
-- #391 lifecycle completion;
-- all recovery analysis/reconciliation;
-- #422 keychain recovery/migration design;
+- finish #340 hard-transition convergence and merged-tree proof;
+- #391 lifecycle completion on the settled runtime budget and final persistence naming;
+- #422 keychain recovery/migration;
 - #331 F40 reconciliation;
-- #341 F49 reconciliation and detector/capability-action design;
+- #329 F38 reconciliation behind the final #331 behavior;
+- #341 F49 reconciliation and capability-driven quality/action design;
+- all remaining recovery analysis/reconciliation;
 - #423 auth;
 - #424 docs engine;
 - #425 web shell.
@@ -227,14 +225,13 @@ Merge only when each lane's actual interfaces are stable.
 
 ### Important merge constraints
 
-- #420 may be implemented now, but final integration waits for #365's router/task-profile interface to be stable.
-- #421 minimum ABI/loader merges on the final #420 workspace.
-- #340 is rebuilt cleanly on the final package ownership; PR #407 is not carried forward wholesale.
-- #406 may be authored now but merges against final core/runtime ownership and #340 naming.
-- #391 may be authored now but merges on final #340/#406 persistence/runtime contracts.
+- #340 must close the hard transition without retaining legacy manifest/config/state aliases or migration readers.
+- #391 consumes the completed #406 runtime budget and final #340 persistence contracts.
 - #422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth may continue later.
-- #331/#329 recovery work may be prepared before their final package locations land.
-- #341 must consume the #420/#421 package/capability model rather than creating a new central hard-coded action table.
+- #331/#329 recovery work may be prepared before their final merge dependencies land.
+- #341 must consume the landed package/capability model rather than creating a new central hard-coded action table.
+- #358 must use the final #391 lifecycle and the final #329/#331 runtime behavior.
+- #317 completes the truthful branch-repair/mutation-observation path required by #359.
 
 ---
 
@@ -410,20 +407,16 @@ After #360:
 
 ## 11. Active Request map
 
-Only still-open completion Requests are listed here. Satisfied bootstrap Requests #413/#414 and completed baseline repair #431 are intentionally omitted.
+Only still-open completion Requests are listed here. Completed foundations #413/#414/#365/#406/#420/#421 and baseline repair #431 are intentionally omitted.
 
 | Request | Start now? | Merge / completion gate |
 |---|---|---|
-| #365 | yes | current Planning; reconcile stale branch; green task-profile semantics |
-| #420 | yes | #365 interface stable; workspace/package boundary green |
-| #421 | yes | #420 final workspace; minimum ABI/loader green |
-| #340 | yes | #420/#421 ownership stable; hard-transition proof |
-| #406 | yes | final core ownership + #340 naming |
-| #391 | yes | #340/#406 persistence/runtime contracts |
-| #422 | yes | #420/#421 package boundaries + F14 reconciliation; production subset before #359 |
+| #340 | yes | hard-transition search/tests green on merged `darkfactory` |
+| #391 | yes | #340 final persistence contract; completed #406 runtime budget |
+| #422 | yes | landed package/capability boundaries + F14 reconciliation; production subset before #359 |
 | #331 | yes | F40 reconciled into final router/core owner |
 | #329 | yes | #331 final behavior + F38 reconciliation |
-| #341 | yes | #420/#421/#340; capability-driven quality/action model |
+| #341 | yes | #340 + landed capability ABI; capability-driven quality/action model |
 | #358 | yes | F30-4 disposition + #329/#331/#391 |
 | #317 | prepare | #358 + #341 truthful observed-effect path |
 | #359 | prepare ledger | core critical path above |
@@ -437,8 +430,8 @@ Only still-open completion Requests are listed here. Satisfied bootstrap Request
 | #388 | yes | full product exits on #391/#358/#384/#385/#386 + live recovery E2E |
 | #403 | prepare | #420/#421 command contract; final after #359 |
 | #251 | recovery now | #403 + recovered TUI reconciliation |
-| #423 | yes | #420 protocol/github boundary; auth tests |
-| #424 | yes | #420/#421 + D4/F42/F44 reconciliation |
+| #423 | yes | landed protocol/github boundary; auth tests |
+| #424 | yes | landed package/capability foundation + D4/F42/F44 reconciliation |
 | #334 | recovery now | final exports + #424 extraction |
 | #335 | recovery now | #424/#334/#341 |
 | #425 | yes | #423 auth + #424 content boundary |
