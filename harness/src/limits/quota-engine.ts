@@ -149,7 +149,7 @@ export class QuotaEngine {
 		readonly options: QuotaEngineOptions = {},
 	) {
 		this.path = join(home, "usage.df");
-		this.lockPath = `${this.path}.lock`;
+		this.lockPath = `${this.path}.lock.df`;
 	}
 
 	private retentionMs(): number {
@@ -178,7 +178,7 @@ export class QuotaEngine {
 			const cutoff = newest - this.retentionMs();
 			const events = [...existing.filter((item) => item.timestamp > cutoff), full];
 			await mkdir(dirname(this.path), { recursive: true });
-			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+			const temp = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp.df`;
 			await writeFile(temp, `${JSON.stringify({ version: 1, events } satisfies UsageStoreFile)}\n`, {
 				encoding: "utf8",
 				mode: 0o600,
