@@ -260,17 +260,18 @@
       <main class="content" id="content">
         <article class="prose">
           <h1 id="architecture-decision-records">Architecture Decision Records<a class="headerlink" href="#architecture-decision-records" title="Permanent link">&para;</a></h1>
-<p>Numbered, append-only. An ADR is added when an open decision from <code>PRD.md</code> §13 is resolved, or when
-any deviation from <code>PRD.md</code> is approved (<code>.agents/rules/003-product-requirements-and-adrs.md</code>).
-One decision, one file: each discrete ADR in this directory.</p>
-<p>Each record states the decision, the alternatives that were rejected <strong>and why</strong>, and what the
-decision forecloses. "We chose X because it is better" is not an ADR.</p>
-<p><strong>Status values:</strong> <code>Proposed</code> (awaiting the maintainer's approval) · <code>Accepted</code> · <code>Superseded by
-ADR-NNNN</code>. An ADR only binds the implementation once it is <code>Accepted</code>.</p>
-<p>Numbering is per-file and sequential within this directory. <code>0001</code> is taken; the next decision is
-<code>0006</code>. The deprecated <code>architecture_decisions.md</code> ledger that once held all records was split into
-one file per decision on 2026-09-13 and removed; its four records became this directory's
-<code>0002</code>–<code>0005</code>.</p>
+<p>Numbered, append-only. Add an ADR whenever an owner-approved architectural/product decision materially changes or narrows the PRD, or when a significant design choice needs durable rationale.</p>
+<p>Each record states the decision, rejected alternatives and consequences. ADRs explain <strong>why</strong>; current requirements stay in <code>PRD.md</code>.</p>
+<p><strong>Status values:</strong> <code>Proposed</code> · <code>Accepted</code> · <code>Superseded by ADR-NNNN</code>.</p>
+<p>The deprecated multi-record <code>architecture_decisions.md</code> ledger was split into one file per decision on 2026-09-13 and removed.</p>
+<p>The current sequence reaches <strong>ADR-0020</strong>; the next new decision is <strong>ADR-0021</strong>.</p>
+<p>Recent convergence decisions:</p>
+<ul>
+<li>ADR-0017 — modular packages and first-class capabilities;</li>
+<li>ADR-0018 — first-party documentation engine and one shared web renderer;</li>
+<li>ADR-0019 — GitHub-backed web control plane with GitHub App user authentication;</li>
+<li>ADR-0020 — separate human web authentication from machine credential custody.</li>
+</ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../0020-auth-keychain-separation/">

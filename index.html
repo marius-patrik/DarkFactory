@@ -260,231 +260,185 @@
       <main class="content" id="content">
         <article class="prose">
           <h1 id="darkfactory">DarkFactory<a class="headerlink" href="#darkfactory" title="Permanent link">&para;</a></h1>
-<p><strong>Turn-key template repository for fully autonomous, governed software engineering pipelines ("Lights-Out Software Engineering").</strong></p>
-<p>One engine, fully automated delivery. DarkFactory provides a complete, battle-tested autonomous software factory setup where feature requests, bug reports, and refactors are ingested, interpreted, planned, implemented, self-reviewed, and merged under rigorous human approval gates.</p>
+<p><strong>Autonomous, governed software delivery built around a self-hosting <code>df</code> engine, versioned capabilities and GitHub as the durable control plane.</strong></p>
 <blockquote>
-<p><strong>Status: Template repository.</strong> Instantiate this repository to bootstrap any new or existing software project with an enterprise-grade autonomous development pipeline, strict branch protection, project board automation, and multi-harness agent orchestration.</p>
+<p><strong>Status:</strong> architecture convergence and completion are in progress. <code>PRD.md</code> defines the target product; <code>PLAN.md</code> defines the optimized path from the current hybrid system to the final self-hosting release.</p>
 </blockquote>
-<hr />
-<h2 id="the-dark-factory-model">The Dark Factory Model<a class="headerlink" href="#the-dark-factory-model" title="Permanent link">&para;</a></h2>
-<p>In manufacturing, a <strong>Dark Factory</strong> (or <em>lights-out factory</em>) operates autonomously with zero or minimal on-site human intervention. DarkFactory brings this paradigm to software engineering:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>user request  ──▶  Request issue      ──▶  interpretation  ──▶  maintainer comments `approve`
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                   (verbatim wording)      (agent)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                                                    │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                                                    ▼
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                   Plan issue (sub-issue) ──▶  maintainer comments `approve`
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                                    │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                                                    ▼
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                   branch ─▶ Draft PR (bot-authored) ─▶ self-review loop ─▶ plan alignment
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                                                    │
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                                                    ▼
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                   maintainer Review Approval ──▶  auto-merge  ──▶  issues closed, board set to Done
+<h2 id="product-model">Product model<a class="headerlink" href="#product-model" title="Permanent link">&para;</a></h2>
+<p>A DarkFactory Request moves through one governed lifecycle:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>verbatim Request + context
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>unified Planning
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>independent Planning review/fix until clean
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>owner Planning Approval
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>implementation
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        ↓
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>deterministic verification
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        ↓
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>implementation review/fix
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        ↓
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>scope amendment only if required
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ↓
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>final alignment + checks + review
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        ↓
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>merge/reconciliation
 </code></pre></div>
-<h3 id="two-explicit-human-gates">Two Explicit Human Gates<a class="headerlink" href="#two-explicit-human-gates" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Interpretation Gate</strong>: You approve the agent's interpretation of your verbatim request before any planning begins.</li>
-<li><strong>Plan Gate</strong>: You approve the structured implementation plan before any code is written.</li>
-</ol>
-<p>Once both gates are approved, the autonomous pipeline generates the branch, drafts the PR, runs self-review cycles, enforces plan alignment, and waits for your native GitHub PR review approval before auto-merging.</p>
-<hr />
-<h2 id="core-pillars-features">Core Pillars &amp; Features<a class="headerlink" href="#core-pillars-features" title="Permanent link">&para;</a></h2>
+<p>The final production system does not rely on separate interpretation/plan approval gates or model claims about repository mutations.</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<p>DarkFactory is converging from the current monolithic private harness into a root Bun workspace:</p>
 <table>
 <thead>
 <tr>
-<th>Capability</th>
-<th>Description</th>
+<th>Package</th>
+<th>Responsibility</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Multi-Harness Agent Runner</strong></td>
-<td>Native support for Antigravity (<code>agy</code>), Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with configurable priority order.</td>
+<td><code>@darkfactory/protocol</code></td>
+<td>Browser/runtime-safe schemas, serialized state and shared contracts</td>
 </tr>
 <tr>
-<td><strong>Quota &amp; Error Resilience</strong></td>
-<td>Automatic quota exhaustion detection, exponential backoff, state checkpointing, and graceful multi-model fallback.</td>
+<td><code>@darkfactory/core</code></td>
+<td>Execution kernel, graph/run state, routing/provider mechanisms and capability loading</td>
 </tr>
 <tr>
-<td><strong>Two-Gate Human Governance</strong></td>
-<td>Non-negotiable human sign-offs on interpretation and planning prevent hallucinated scope drift.</td>
+<td><code>@darkfactory/capability</code></td>
+<td>Capability ABI, loader and generated adapter/build tooling</td>
 </tr>
 <tr>
-<td><strong>Bot-Authored Draft PRs</strong></td>
-<td>Pull requests are opened by <code>github-actions[bot]</code> so maintainers can natively review, comment, and approve them on GitHub.</td>
+<td><code>@darkfactory/github</code></td>
+<td>Typed GitHub REST/GraphQL substrate</td>
 </tr>
 <tr>
-<td><strong>Project Board Automation</strong></td>
-<td>Live 7-state taxonomy synchronization on GitHub Projects v2 (<code>Backlog</code>, <code>ToDo</code>, <code>In Progress</code>, <code>Blocked</code>, <code>Done</code>, <code>Superseded</code>, <code>Dropped</code>).</td>
+<td><code>@darkfactory/keychain</code></td>
+<td>Machine/harness credentials, OAuth, tokens, refresh, secure storage and GitHub App credentials</td>
 </tr>
 <tr>
-<td><strong>Settings as Code</strong></td>
-<td>Complete GitHub repository configuration (labels, branch protection, permissions, auto-merge, Pages) executed idempotently via <code>repo_settings.py</code>.</td>
+<td><code>@darkfactory/auth</code></td>
+<td>Human/browser GitHub App authentication and web sessions</td>
 </tr>
 <tr>
-<td><strong>Generated Documentation</strong></td>
-<td>A Bun generator stages canonical repository sources, builds them with ProperDocs, and removes the transient source tree after publishing to GitHub Pages.</td>
+<td><code>@darkfactory/docs</code></td>
+<td>Headless documentation compiler and content graph</td>
 </tr>
 <tr>
-<td><strong>Strict CI &amp; Test Guards</strong></td>
-<td>Guarded language jobs (<code>hashFiles</code>) prevent false skips while product code is bootstrapping, keeping required status checks green.</td>
+<td><code>@darkfactory/cli</code></td>
+<td><code>df</code> CLI, command composition and TUI</td>
+</tr>
+<tr>
+<td><code>@darkfactory/web</code></td>
+<td>Shared React web application for docs and operator UI</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="repository-structure">Repository Structure<a class="headerlink" href="#repository-structure" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PRD.md</code></td>
-<td><strong>Normative.</strong> Product requirements, constraints, actors, and acceptance measures.</td>
-</tr>
-<tr>
-<td><code>AGENTS.md</code></td>
-<td><strong>Normative.</strong> The binding rules for every contributor (human or AI agent); generated from <code>.agents/rules/</code>.</td>
-</tr>
-<tr>
-<td><code>.darkfactory/manifest.json</code></td>
-<td><strong>Executable.</strong> Per-repository identity, areas, versioning, and board declaration for the shared pipeline.</td>
-</tr>
-<tr>
-<td><code>_rules</code> / <code>_notes</code></td>
-<td>Root aliases (symlinks) to <code>.agents/rules/</code> and <code>.agents/notes/</code>.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/agent.yml</code></td>
-<td>Containerized autonomous agent workflow dispatched on issues, comments, and PR reviews.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/ci.yml</code></td>
-<td>Multi-Python CI pipeline, guarded language verification, and docs validation.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/project-automation.yml</code></td>
-<td>GitHub Project board transitions driven by issue and PR lifecycle events.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/pr-approval-automerge.yml</code></td>
-<td>Maintainer approval detection, PR auto-merge, and post-merge board reconciliation.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/open-pr.yml</code></td>
-<td>Opens draft pull requests authored by the bot.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/auto-format.yml</code></td>
-<td>Automated code formatting on push across all branches.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/verify-pr-issue.yml</code></td>
-<td>Enforces that every pull request binds an open issue.</td>
-</tr>
-<tr>
-<td><code>.github/workflows/deploy-docs.yml</code></td>
-<td>Automated documentation site deployment to GitHub Pages.</td>
-</tr>
-<tr>
-<td><code>.github/scripts/agent_runner.py</code></td>
-<td>Multi-stage autonomous agent execution pipeline with quota backoff and checkpoint/resume.</td>
-</tr>
-<tr>
-<td><code>.github/scripts/harnesses.py</code></td>
-<td>CLI harness abstraction layer driving Antigravity, Claude, Codex, Kimi, and other runners.</td>
-</tr>
-<tr>
-<td><code>.github/scripts/project_automation.py</code></td>
-<td>GitHub Projects v2 GraphQL client managing board status transitions.</td>
-</tr>
-<tr>
-<td><code>.github/scripts/handle_pr_approval.py</code></td>
-<td>Pull request approval detection and auto-merge handler.</td>
-</tr>
-<tr>
-<td><code>.github/scripts/repo_settings.py</code></td>
-<td>Declarative GitHub repository settings, labels, and branch protection as code.</td>
-</tr>
-<tr>
-<td><code>docker/Dockerfile.agent</code></td>
-<td>Reproducible container environment equipped with Python, uv, Node/Bun, Rust, and Git.</td>
-</tr>
-<tr>
-<td><code>tests/</code></td>
-<td>120+ unit tests validating governance rules, pipeline configs, harnesses, and automation.</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="quickstart-using-this-template">Quickstart: Using This Template<a class="headerlink" href="#quickstart-using-this-template" title="Permanent link">&para;</a></h2>
-<h3 id="1-create-your-repository">1. Create your repository<a class="headerlink" href="#1-create-your-repository" title="Permanent link">&para;</a></h3>
-<p>Click <strong>Use this template</strong> on GitHub, or run:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>repo<span class="w"> </span>create<span class="w"> </span>my-project<span class="w"> </span>--template<span class="w"> </span>marius-patrik/DarkFactory<span class="w"> </span>--public<span class="w"> </span>--clone
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>my-project
-</code></pre></div></p>
-<h3 id="2-install-development-tools">2. Install development tools<a class="headerlink" href="#2-install-development-tools" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-dev.txt
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pytest<span class="w"> </span>-v
+<p>The old <code>@darkfactory/harness</code> boundary is transitional and will not be the final public package architecture.</p>
+<h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
+<p>Core contains mechanisms. Agentic/product behavior is implemented as versioned first-party capabilities under <code>capabilities/</code>.</p>
+<p>The initial set includes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>code        paper       math        docs
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git         github      planning    review
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>ci          release     recovery    hooks
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>epics       stacks      ...
 </code></pre></div>
-<h3 id="3-bootstrap-repository-settings">3. Bootstrap repository settings<a class="headerlink" href="#3-bootstrap-repository-settings" title="Permanent link">&para;</a></h3>
-<p>Configure GitHub labels, merge permissions, and topics without locking protection yet:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>.github/scripts/repo_settings.py<span class="w"> </span>--apply<span class="w"> </span>--skip-protection
-</code></pre></div></p>
-<h3 id="4-create-your-project-board-and-set-secrets">4. Create your Project board and set secrets<a class="headerlink" href="#4-create-your-project-board-and-set-secrets" title="Permanent link">&para;</a></h3>
+<p>One canonical TypeScript capability definition can be built into native DarkFactory/Pi integration, an MCP server, and supported Claude/Codex/agent skill/plugin forms. Official capabilities ship with standard df while third-party capabilities use the same ABI/loader.</p>
+<h3 id="domains-are-not-capabilities">Domains are not capabilities<a class="headerlink" href="#domains-are-not-capabilities" title="Permanent link">&para;</a></h3>
+<p>DarkFactory keeps ecosystem/package/domain classification separate from behavior.</p>
+<p>A single repository may contain, for example:</p>
+<ul>
+<li>a TypeScript implementation in the <code>code</code> domain;</li>
+<li>a Typst/LaTeX thesis in the <code>paper</code> domain;</li>
+<li>Lean/proof work in the <code>math</code> domain.</li>
+</ul>
+<p>Capabilities such as docs, git, review and CI can apply across several domains.</p>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Final configuration is split by concern:</p>
+<ul>
+<li><code>repo.df</code> — repository/product declaration;</li>
+<li><code>config.df</code> — runtime/user/provider configuration;</li>
+<li><code>docs.df</code> — native documentation configuration.</li>
+</ul>
+<p>For repo/config, the final #340 contract accepts either <code>.darkfactory/&lt;name&gt;.df</code> or root <code>&lt;name&gt;.df</code>; both-present is an error. <code>.df</code> is a filename extension, never a directory.</p>
+<p><code>properdocs.yml</code> and <code>mkdocs.yml</code> remain supported as documentation compatibility inputs, not as final runtime dependencies.</p>
+<h2 id="credentials-and-github-authentication">Credentials and GitHub authentication<a class="headerlink" href="#credentials-and-github-authentication" title="Permanent link">&para;</a></h2>
+<p>Two packages deliberately separate trust boundaries.</p>
+<h3 id="darkfactorykeychain"><code>@darkfactory/keychain</code><a class="headerlink" href="#darkfactorykeychain" title="Permanent link">&para;</a></h3>
+<p>Owns all machine/harness credential custody: provider keys/OAuth, refresh tokens, multi-account slots, imported CLI credentials, GitHub App private-key/JWT/installation tokens, local user credentials, redaction and secret scanning.</p>
+<p>Capabilities declare credential requirements rather than reading raw environment variables or keychains themselves.</p>
+<h3 id="darkfactoryauth"><code>@darkfactory/auth</code><a class="headerlink" href="#darkfactoryauth" title="Permanent link">&para;</a></h3>
+<p>Owns human authentication for DarkFactory Web through the existing DarkFactory GitHub App.</p>
+<p>The Pages application uses user authorization; a minimal confidential broker handles token exchange/refresh only. GitHub remains the authorization authority and durable control plane. The broker is not a DarkFactory project/state/execution backend.</p>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<p>DarkFactory is replacing ProperDocs/MkDocs execution with its own <code>@darkfactory/docs</code> engine.</p>
+<p>The final compiler combines:</p>
+<ul>
+<li>root Markdown/product docs;</li>
+<li>ADRs and rules;</li>
+<li>actual TypeScript/TSDoc API documentation;</li>
+<li>capability-contributed docs;</li>
+<li>repository/graph/workflow metadata;</li>
+<li>supported API extraction from other ecosystems.</li>
+</ul>
+<p>TypeDoc may be used internally for TypeScript extraction.</p>
+<p>The docs homepage and this README will be rendered from the same semantic content graph so they cannot drift independently.</p>
+<h2 id="darkfactory-web">DarkFactory Web<a class="headerlink" href="#darkfactory-web" title="Permanent link">&para;</a></h2>
+<p>Every consumer uses the same prebuilt <code>@darkfactory/web</code> release artifact. Consumer repositories compile their own content/data but do <strong>not</strong> rebuild the React application.</p>
+<p>The application is hosted on GitHub Pages and reads live GitHub state directly through browser-safe GitHub/auth interfaces.</p>
+<p>Target UI stack:</p>
+<ul>
+<li>React + TypeScript;</li>
+<li>shadcn/ui;</li>
+<li>lucide-animated;</li>
+<li>Motion;</li>
+<li>Dagre;</li>
+<li>Wouter;</li>
+<li>Dockview where useful.</li>
+</ul>
+<p>The web application is intended to replace normal day-to-day use of the GitHub website for DarkFactory operations while keeping GitHub itself as the durable issue/PR/check/project/event/authorization layer.</p>
+<h2 id="self-hosting-and-completion-strategy">Self-hosting and completion strategy<a class="headerlink" href="#self-hosting-and-completion-strategy" title="Permanent link">&para;</a></h2>
+<p>The optimized program no longer waits for every product feature before switching engines.</p>
+<p>The critical path is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bootstrap routing
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      ↓
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>final package/capability foundations
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      ↓
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>repo/config/state + runtime/lifecycle
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      ↓
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>routing + natural-stop result capture
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      ↓
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>production graph handlers + branch repair
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      ↓
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>#359: df becomes the production engine
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      ↓
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>remaining features completed through df itself
+</code></pre></div>
+<p>Recovered September work is reconciled in parallel into its final package/capability homes rather than regenerated from scratch.</p>
+<p>See <a href="plan/">PLAN.md</a> for the authoritative execution program and recovery map.</p>
+<h2 id="distribution">Distribution<a class="headerlink" href="#distribution" title="Permanent link">&para;</a></h2>
+<p>First-party packages and capabilities are intended to publish under the <code>darkfactory</code> GitHub organization.</p>
+<p>Initial first-party releases use one lockstep DarkFactory SemVer plus a separately versioned capability ABI.</p>
+<p>Final releases include the CLI/runtime, official capabilities and generated adapters, checksums/provenance, and the prebuilt web bundle.</p>
+<h2 id="fleet-acceptance">Fleet acceptance<a class="headerlink" href="#fleet-acceptance" title="Permanent link">&para;</a></h2>
+<p>The final released system is proved across six repositories:</p>
 <ol>
-<li>Create a GitHub Project v2 named <strong>DarkFactory</strong> (or your project name).</li>
-<li>Set the repository variable:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_NUMBER<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;project-number&gt;"</span>
-</code></pre></div></li>
-<li>Set your pipeline secrets:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Required for GitHub Project writes and bot PR CI triggers:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>GH_PROJECT_TOKEN
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Provider secrets (for whichever agent harness you use):</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>ANTIGRAVITY_REFRESH_TOKEN
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>ANTIGRAVITY_CLIENT_ID
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>ANTIGRAVITY_CLIENT_SECRET
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Enable the autonomous agent runner:</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AGENT_ENABLED<span class="w"> </span>--body<span class="w"> </span><span class="s2">"true"</span>
-</code></pre></div></li>
+<li>DarkFactory</li>
+<li>omnis</li>
+<li>ChessWithQuests</li>
+<li>OdbornaPrace-paper</li>
+<li>template-OdbornaPrace</li>
+<li>OdbornaPrace-mono</li>
 </ol>
-<h3 id="5-apply-branch-protection">5. Apply branch protection<a class="headerlink" href="#5-apply-branch-protection" title="Permanent link">&para;</a></h3>
-<p>Once initial commits are landed and CI reports green:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>.github/scripts/repo_settings.py<span class="w"> </span>--apply
-</code></pre></div></p>
-<p>From this moment on, your repository operates as an autonomous Dark Factory!</p>
-<hr />
-<h2 id="the-darkfactory-command">The <code>darkfactory</code> command<a class="headerlink" href="#the-darkfactory-command" title="Permanent link">&para;</a></h2>
-<p>One front door for a deployment. Every subcommand delegates to the module that already implements
-it, so there is one implementation of each behaviour and the two cannot drift.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ln<span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">/bin/darkfactory"</span><span class="w"> </span>/usr/local/bin/darkfactory
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>darkfactory<span class="w"> </span>status<span class="w">                  </span><span class="c1"># why is nothing happening</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>darkfactory<span class="w"> </span>describe<span class="w">                </span><span class="c1"># what is this repository made of</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>darkfactory<span class="w"> </span>auth<span class="w"> </span>--repo<span class="w"> </span>owner/name<span class="w">  </span><span class="c1"># set harness credentials from this machine</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>darkfactory<span class="w"> </span>license<span class="w">                 </span><span class="c1"># apply the licence the manifest declares</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>darkfactory<span class="w"> </span>submodules<span class="w">              </span><span class="c1"># pin and update submodules</span>
-</code></pre></div>
-<p><code>status</code> answers the question an operator actually has, by checking the things that are silently
-absent rather than loudly broken - a missing credential, an agent that was never switched on, a
-repository where the pipeline was never installed.</p>
-<h2 id="typescript-harness">TypeScript harness<a class="headerlink" href="#typescript-harness" title="Permanent link">&para;</a></h2>
-<p>The integrated Bun-based operator CLI, agent runtime, typed GitHub client, and CI-management engine live in <a href="https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harness/README.md"><code>harness/README.md</code></a>, with the <code>df</code> command as their shared entry point.</p>
-<h2 id="local-development-testing">Local Development &amp; Testing<a class="headerlink" href="#local-development-testing" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Run unit tests</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>pytest<span class="w"> </span>-v
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Check formatting</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>black<span class="w"> </span>--check<span class="w"> </span>.
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Serve documentation locally</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>properdocs<span class="w"> </span>serve
-</code></pre></div>
-<hr />
+<p>Final acceptance produces <code>audit.df</code>, proves source-free install/update and df-only lifecycle/resume, accounts for every recovery source, validates docs/web/auth/capabilities, and then re-runs the original #68 declarable-graph contract.</p>
+<h2 id="normative-references">Normative references<a class="headerlink" href="#normative-references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="prd/">PRD.md</a> — product requirements and architecture</li>
+<li><a href="plan/">PLAN.md</a> — optimized completion/recovery/cutover plan</li>
+<li><a href="agents/">AGENTS.md</a> — projection of canonical contribution/governance rules</li>
+<li><a href="architecture/decisions/">ADRs</a> — accepted architecture decisions</li>
+</ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
 <p>GPL-3.0. See <a href="LICENSE">LICENSE</a>.</p>
         </article>
@@ -504,29 +458,34 @@ repository where the pipeline was never installed.</p>
       <aside class="toc">
         <div class="toc__title">On this page</div>
         <ul class="toc__list">
-          <li><a href="#the-dark-factory-model">The Dark Factory Model</a>
+          <li><a href="#product-model">Product model</a>
+          </li>
+          <li><a href="#architecture">Architecture</a>
+          </li>
+          <li><a href="#capabilities">Capabilities</a>
             <ul>
-              <li><a href="#two-explicit-human-gates">Two Explicit Human Gates</a></li>
+              <li><a href="#domains-are-not-capabilities">Domains are not capabilities</a></li>
             </ul>
           </li>
-          <li><a href="#core-pillars-features">Core Pillars &amp; Features</a>
+          <li><a href="#configuration">Configuration</a>
           </li>
-          <li><a href="#repository-structure">Repository Structure</a>
-          </li>
-          <li><a href="#quickstart-using-this-template">Quickstart: Using This Template</a>
+          <li><a href="#credentials-and-github-authentication">Credentials and GitHub authentication</a>
             <ul>
-              <li><a href="#1-create-your-repository">1. Create your repository</a></li>
-              <li><a href="#2-install-development-tools">2. Install development tools</a></li>
-              <li><a href="#3-bootstrap-repository-settings">3. Bootstrap repository settings</a></li>
-              <li><a href="#4-create-your-project-board-and-set-secrets">4. Create your Project board and set secrets</a></li>
-              <li><a href="#5-apply-branch-protection">5. Apply branch protection</a></li>
+              <li><a href="#darkfactorykeychain">@darkfactory/keychain</a></li>
+              <li><a href="#darkfactoryauth">@darkfactory/auth</a></li>
             </ul>
           </li>
-          <li><a href="#the-darkfactory-command">The darkfactory command</a>
+          <li><a href="#documentation">Documentation</a>
           </li>
-          <li><a href="#typescript-harness">TypeScript harness</a>
+          <li><a href="#darkfactory-web">DarkFactory Web</a>
           </li>
-          <li><a href="#local-development-testing">Local Development &amp; Testing</a>
+          <li><a href="#self-hosting-and-completion-strategy">Self-hosting and completion strategy</a>
+          </li>
+          <li><a href="#distribution">Distribution</a>
+          </li>
+          <li><a href="#fleet-acceptance">Fleet acceptance</a>
+          </li>
+          <li><a href="#normative-references">Normative references</a>
           </li>
           <li><a href="#license">License</a>
           </li>

@@ -365,27 +365,28 @@ tests. Behavior is verified per change or per pull request, not by an artificial
 for every commit. Rust code is tested with <code>cargo test</code>, TypeScript with <code>bun test</code>, and repository
 automation (<code>.github/scripts/</code>) with <code>pytest</code>. All applicable suites MUST pass before a push is
 considered green.</p>
-<h3 id="rule-2-inline-docstrings-and-generated-documentation">Rule 2 — Inline docstrings and generated documentation<a class="headerlink" href="#rule-2-inline-docstrings-and-generated-documentation" title="Permanent link">&para;</a></h3>
-<p>All source MUST carry complete API documentation inline:</p>
+<h3 id="rule-2-inline-documentation-and-generated-documentation">Rule 2 — Inline documentation and generated documentation<a class="headerlink" href="#rule-2-inline-documentation-and-generated-documentation" title="Permanent link">&para;</a></h3>
+<p>Public source APIs MUST be documented inline.</p>
 <ul>
-<li><strong>Rust</strong>: <code>///</code> doc comments on every public item, with <code># Errors</code> and <code># Panics</code> sections where
-  applicable. <code>cargo doc</code> MUST build with zero warnings.</li>
-<li><strong>TypeScript</strong>: TSDoc on every exported symbol.</li>
-<li><strong>Python</strong> (automation): Google-style docstrings (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>) with PEP 484
-  type annotations.</li>
+<li><strong>TypeScript</strong>: TSDoc on every exported public symbol in first-party packages and capabilities.</li>
+<li><strong>Rust</strong>: <code>///</code> documentation on public items, including error/panic behavior where applicable.</li>
+<li><strong>Python</strong>: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.</li>
 </ul>
-<p>Documentation MUST be generated from source and hand-written architecture notes. No static
-per-module markdown mirror and no manually maintained documentation index are stored in the
-repository. All documentation builds MUST use the command declared by the repository environment
-and succeed with zero warnings and zero errors. DarkFactory declares
-<code>bun run scripts/build-docs.ts</code>, which stages its repository sources, invokes ProperDocs in strict
-mode, and deploys the result automatically to GitHub Pages.</p>
+<p>Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is <code>@darkfactory/docs</code>; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is <code>docs.df</code>, with <code>properdocs.yml</code> and <code>mkdocs.yml</code> accepted only as compatibility inputs.</p>
+<p>The same canonical homepage/content graph MUST render both the published docs homepage and committed <code>README.md</code>. CI MUST fail on deterministic README projection drift.</p>
+<p>The final web rendering layer is <code>@darkfactory/web</code>; docs must not maintain a second frontend or theme runtime.</p>
 <h3 id="rule-3-product-requirements-and-adrs">Rule 3 — Product requirements and ADRs<a class="headerlink" href="#rule-3-product-requirements-and-adrs" title="Permanent link">&para;</a></h3>
-<p>Product requirements are defined by <code>PRD.md</code>, the single normative product document. Executable
-declarations (providers, taxonomy, workflow graph, installed consumers) live in
-<code>.darkfactory/manifest.json</code>, and mandatory contribution behavior in <code>.agents/rules/*.md</code>. Any
-deviation from <code>PRD.md</code> MUST be explicitly approved by the user and recorded as a discrete ADR
-under <code>.agents/notes/adr/</code> before it is implemented.</p>
+<p><code>PRD.md</code> is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.</p>
+<p>Executable declarations use the final DarkFactory contracts:</p>
+<ul>
+<li><code>repo.df</code> for repository/product declaration;</li>
+<li><code>config.df</code> for runtime/user/provider configuration;</li>
+<li><code>docs.df</code> for native documentation configuration;</li>
+<li>the declarable workflow graph for execution topology;</li>
+<li><code>.agents/rules/*.md</code> for mandatory contribution/governance behavior.</li>
+</ul>
+<p>Legacy manifest/config paths are not normative final contracts.</p>
+<p>A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.</p>
 <h3 id="rule-4-english-language-consistency">Rule 4 — English language consistency<a class="headerlink" href="#rule-4-english-language-consistency" title="Permanent link">&para;</a></h3>
 <p>All code, identifiers, comments, docstrings, commit messages, issues, and documentation MUST be
 written in English.</p>
@@ -395,97 +396,79 @@ commits across all branches MUST follow the Conventional Commits format
 <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code> (e.g. <code>feat(core): add substrate bus frame codec</code>). The allowed
 types and the area taxonomy are defined by DF-RULE-015; this rule covers granularity only.</p>
 <h3 id="rule-6-ci-readiness-and-verification">Rule 6 — CI readiness and verification<a class="headerlink" href="#rule-6-ci-readiness-and-verification" title="Permanent link">&para;</a></h3>
-<p>Every push MUST leave green status on GitHub Actions across every job in <code>ci.yml</code>. A red build is a
-stop-the-line event: no further feature work proceeds until it is green. The set of required status
-checks is declared by repository settings (<code>.github/scripts/repo_settings.py</code> against the manifest)
-and enforced by branch protection.</p>
+<p>The canonical/default branch MUST remain green on its required checks. A red canonical branch is a stop-the-line event for repository-wide delivery until restored.</p>
+<p>A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not globally halt unrelated isolated branches whose own required checks are green. Parallel work is allowed when it cannot consume or hide the failing branch state.</p>
+<p>Required checks are derived from the final normalized package/capability quality contract and synchronized with branch protection. A branch may not merge while any required check for its current head is red, missing or stale.</p>
 <h3 id="rule-7-branch-and-pull-request-workflow">Rule 7 — Branch and pull request workflow<a class="headerlink" href="#rule-7-branch-and-pull-request-workflow" title="Permanent link">&para;</a></h3>
-<p>All changes, features, refactors, and bug fixes MUST be developed on dedicated topic branches and
-submitted through GitHub Pull Requests. Direct commits and pushes to the protected default branch
-(<code>main</code> for DarkFactory consumers; the manifest-declared default branch) are prohibited.</p>
+<p>All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.</p>
 <ul>
-<li><strong>Branch Naming</strong>: Lowercase, hyphen-separated, descriptive (e.g. <code>feature/substrate-bus-codec</code>).
-  Branch names MUST NOT contain issue numbers.</li>
-<li><strong>Bot-Authored PRs</strong>: Pull requests MUST be authored by <code>github-actions[bot]</code> via
-  <code>.github/workflows/open-pr.yml</code> so the repository maintainer is not registered as author and can
-  natively review and approve them.</li>
-<li><strong>Draft Status</strong>: Every pull request MUST be opened in Draft and remain in draft throughout
-  development and review until explicitly approved.</li>
-<li><strong>Up-to-Date with Main</strong>: Every pull request branch MUST contain the latest default branch before
-  merge (strict required status checks).</li>
-<li><strong>Required CI Checks</strong>: All required checks MUST pass green before merging.</li>
-<li><strong>Branch Protection</strong>: The default branch MUST remain protected with required status checks,
-  branch up-to-date enforcement, and pull request review enforcement.</li>
+<li>Branch names are lowercase, descriptive and do not depend on issue numbers.</li>
+<li>The repository's actual canonical/default branch is resolved dynamically; <code>main</code> is never assumed.</li>
+<li>Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.</li>
+<li>PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.</li>
+<li>Required checks and current-base requirements must pass before merge.</li>
+<li>Branch protection remains enabled with the final detected/generated check contract.</li>
+<li>Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.</li>
 </ul>
 <h3 id="rule-8-automated-formatting-and-linting">Rule 8 — Automated formatting and linting<a class="headerlink" href="#rule-8-automated-formatting-and-linting" title="Permanent link">&para;</a></h3>
-<p>Formatting is not a review topic — it is automated. <code>rustfmt</code> for Rust, Biome (<code>harness/biome.json</code>)
-for TypeScript, and <code>black</code> (line length 100) for Python automation. The GitHub Actions bot formats
-the codebase on every push across branches and commits any adjustments. Lints are blocking:
-<code>cargo clippy -D warnings</code> for Rust and <code>biome ci</code> for TypeScript. Until the one-time full harness
-reformat lands, Biome formats and checks the TypeScript files a change touches.</p>
-<h3 id="rule-9-issue-binding-branch-auto-deletion-and-board-status">Rule 9 — Issue binding, branch auto-deletion, and board status<a class="headerlink" href="#rule-9-issue-binding-branch-auto-deletion-and-board-status" title="Permanent link">&para;</a></h3>
+<p>Formatting is deterministic automation, not a review topic.</p>
+<p>The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.</p>
+<p>Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.</p>
+<p>Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.</p>
+<h3 id="rule-9-request-binding-branch-cleanup-and-board-status">Rule 9 — Request binding, branch cleanup and board status<a class="headerlink" href="#rule-9-request-binding-branch-cleanup-and-board-status" title="Permanent link">&para;</a></h3>
+<p>Every delivery PR MUST explicitly bind every Request it satisfies.</p>
+<p>A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.</p>
+<p>Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.</p>
+<p>Request/PR/project status uses one canonical reconciliation model with the seven states:</p>
 <ul>
-<li><strong>Issue Binding</strong>: Every pull request MUST bind a tracked GitHub issue using closing keywords in
-  the PR description (e.g. <code>Closes #123</code>, <code>Fixes #123</code>, <code>Resolves #123</code>).</li>
-<li><strong>Branch Auto-Deletion</strong>: Merging closes the bound issue and deletes the remote branch
-  (<code>delete_branch_on_merge: true</code> and <code>--delete-branch</code>); the local branch MUST be pruned.</li>
-<li><strong>Project Board Status Taxonomy</strong>: All issues and pull requests are added to the DarkFactory
-  GitHub Project with automated status movements:</li>
-<li><code>Backlog</code>: Staged items planned for future consideration.</li>
-<li><code>ToDo</code>: Approved requests or plans ready for implementation.</li>
-<li><code>In Progress</code>: Active branches, pull requests, or ongoing development.</li>
-<li><code>Blocked</code>: Items impeded by external dependencies, blockers, or agent quota exhaustion.</li>
-<li><code>Done</code>: Completed and merged pull requests and resolved issues.</li>
-<li><code>Superseded</code>: Items rendered obsolete or outranked by subsequent architectural decisions.</li>
-<li><code>Dropped</code>: Items closed without implementation or cancelled.</li>
+<li><code>Backlog</code></li>
+<li><code>ToDo</code></li>
+<li><code>In Progress</code></li>
+<li><code>Blocked</code></li>
+<li><code>Done</code></li>
+<li><code>Superseded</code></li>
+<li><code>Dropped</code></li>
 </ul>
-<h3 id="rule-10-pre-implementation-planning-and-plan-review">Rule 10 — Pre-implementation planning and plan review<a class="headerlink" href="#rule-10-pre-implementation-planning-and-plan-review" title="Permanent link">&para;</a></h3>
-<p>Before implementation begins on any task, the implementation plan MUST be posted as a comment on the
-same <code>Request</code> issue and approved there. The plan MUST detail objectives, architectural and code
-changes, and verification steps.</p>
-<p>Both approval gates remain: the interpretation is approved before a plan is written, and the plan is
-approved before any code is. One unit of work is one issue, so a pull request binds one thing and
-closing it closes one thing.</p>
+<p>A Request reaches Done only from its own terminal evidence or explicit valid shared-plan/multi-Request completion.</p>
+<h3 id="rule-10-reviewed-planning-and-implementation-alignment">Rule 10 — Reviewed Planning and implementation alignment<a class="headerlink" href="#rule-10-reviewed-planning-and-implementation-alignment" title="Permanent link">&para;</a></h3>
+<p>Before implementation begins, each governed unit of work MUST have one current unified Planning artifact.</p>
+<p>Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified implementation approach, dependencies, recovery inputs and verification expectations.</p>
+<p>Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner Planning Approval.</p>
+<p>There is no separate interpretation approval gate and plan approval gate in the final lifecycle.</p>
+<p>After implementation:</p>
 <ul>
-<li><strong>Implementation Review Gate</strong>: Prior to merging the bound pull request, an implementation review
-  MUST be conducted and commented on the same issue, confirming the implementation matches the plan
-  exactly (<code>Matches Plan: Yes</code>).</li>
-<li><strong>Plan Alignment</strong>: If the implementation diverged from the plan, an alignment comment
-  (<code>Plan Alignment:</code>) detailing all deviations MUST be posted and explicitly approved before the
-  pull request can be merged. CI enforces the presence of both the plan and the pre-merge review on
-  all bound issues.</li>
+<li>deterministic verification runs;</li>
+<li>implementation review/fix loops until clean;</li>
+<li>material scope outside approved Planning requires the lighter scope-amendment approval;</li>
+<li>final alignment validates the implementation against approved Planning plus approved amendments;</li>
+<li>required checks/review/merge gates remain mandatory.</li>
 </ul>
-<h3 id="rule-11-pull-request-review-approval-and-auto-merge">Rule 11 — Pull request review approval and auto-merge<a class="headerlink" href="#rule-11-pull-request-review-approval-and-auto-merge" title="Permanent link">&para;</a></h3>
-<p>Pull requests require official GitHub review approval before merging. The default branch protection
-requires at least one approving review on the last commit with stale reviews dismissed, without
-blocking the last pusher.</p>
+<p>Planning approval becomes stale after a material Request/base/dependency/recovery-context change and cannot be silently reused.</p>
+<h3 id="rule-11-pull-request-review-approval-and-governed-merge">Rule 11 — Pull request review approval and governed merge<a class="headerlink" href="#rule-11-pull-request-review-approval-and-governed-merge" title="Permanent link">&para;</a></h3>
+<p>Pull requests require the final repository protection/review contract before merge.</p>
+<p>Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.</p>
+<p>Merge readiness requires:</p>
 <ul>
-<li><strong>Native Approval</strong>: Because PRs are authored by <code>github-actions[bot]</code>, the maintainer can select
-  <strong>Approve</strong> in the GitHub UI, comment <code>/approve</code>, <code>approve</code>, <code>lgtm</code>, or run a native <code>gh pr
-  review &lt;id&gt; --approve</code>.</li>
-<li><strong>Auto-Merge Activation</strong>: <code>.github/workflows/pr-approval-automerge.yml</code> listens for approvals
-  from the maintainer, marks the draft PR ready, and activates auto-merge with branch auto-deletion.</li>
-<li><strong>Post-Merge Reconciliation</strong>: On merge, automation sets the project status of the PR and all
-  bound issues to <code>Done</code>, applies the <code>Done</code> label, removes <code>In Progress</code>, and verifies bound issues
-  are closed.</li>
+<li>current-base/stack validity;</li>
+<li>required checks green;</li>
+<li>implementation review/fix clean;</li>
+<li>final Planning alignment;</li>
+<li>any required scope-amendment approval;</li>
+<li>official final review/merge authorization.</li>
 </ul>
-<h3 id="rule-12-user-request-decomposition-verbatim-prompting-and-confirmation-gate">Rule 12 — User request decomposition, verbatim prompting, and confirmation gate<a class="headerlink" href="#rule-12-user-request-decomposition-verbatim-prompting-and-confirmation-gate" title="Permanent link">&para;</a></h3>
-<p>Every incoming user prompt or task MUST immediately be converted into one or more tracked GitHub
-issues labeled <code>Request</code> before any planning, branching, or code changes begin.</p>
+<p>After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.</p>
+<h3 id="rule-12-verbatim-request-capture-and-planning-gate">Rule 12 — Verbatim Request capture and Planning gate<a class="headerlink" href="#rule-12-verbatim-request-capture-and-planning-gate" title="Permanent link">&para;</a></h3>
+<p>Every incoming governed task MUST be represented by one or more tracked GitHub Requests before implementation.</p>
 <ul>
-<li><strong>Issue Template</strong>: Use <code>.github/ISSUE_TEMPLATE/request.yml</code> for structured request filing.</li>
-<li><strong>Decomposition</strong>: A single user message containing multiple distinct tasks MUST be decomposed
-  into multiple focused <code>Request</code> issues.</li>
-<li><strong>Verbatim Wording</strong>: Each <code>Request</code> issue body MUST contain the exact, verbatim wording of the
-  user request.</li>
-<li><strong>Interpretation Section</strong>: Below the verbatim wording, each <code>Request</code> issue MUST include an
-  <code>### Interpretation</code> section specifying how the request is understood, the architectural scope,
-  and the proposed verification.</li>
-<li><strong>Confirmation Gate</strong>: The interpretation requires explicit user confirmation (commenting
-  <code>approve</code>) before any implementation plan is made.</li>
-<li><strong>Two gates, one issue</strong>: Once the interpretation is approved, the plan is posted as a comment on
-  the same issue and approved there. All subsequent branches and pull requests bind to that issue.</li>
+<li>Preserve the user's verbatim wording.</li>
+<li>Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.</li>
+<li>Resolve Request/Epic/dependency/recovery relationships explicitly.</li>
+<li>Generate one unified Planning artifact from the verbatim Request and authoritative context.</li>
+<li>Independently review/fix Planning until clean.</li>
+<li>Require one explicit owner Planning Approval before implementation.</li>
+<li>Subsequent delivery remains bound to the Request(s) or an explicitly approved shared-plan record.</li>
 </ul>
+<p>There is no final separate <code>Interpretation</code> section/gate that must be approved before Planning can exist.</p>
 <h3 id="rule-13-specification-sequence-and-when-issues-may-exist">Rule 13 — Specification sequence and when issues may exist<a class="headerlink" href="#rule-13-specification-sequence-and-when-issues-may-exist" title="Permanent link">&para;</a></h3>
 <p>Specification proceeds in one direction, and each stage is locked before the next begins:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>PRD.md  →  ADRs (.agents/notes/adr/)  →  issues
@@ -505,54 +488,40 @@ issues labeled <code>Request</code> before any planning, branching, or code chan
 <li>The workflow graph, GitHub parent/sub-issue relationships, and project fields are the work
   ledger; no separate planning document shadows them.</li>
 </ul>
-<h3 id="rule-14-harness-agnostic-agent-runtime-and-conversational-lifecycle">Rule 14 — Harness-agnostic agent runtime and conversational lifecycle<a class="headerlink" href="#rule-14-harness-agnostic-agent-runtime-and-conversational-lifecycle" title="Permanent link">&para;</a></h3>
-<p>An autonomous AI agent runs containerized in GitHub Actions (<code>docker/Dockerfile.agent</code>). It is
-<strong>harness-agnostic</strong>: no pipeline code knows which coding-agent CLI is executing.</p>
+<h3 id="rule-14-capability-driven-agent-runtime-and-resilience">Rule 14 — Capability-driven agent runtime and resilience<a class="headerlink" href="#rule-14-capability-driven-agent-runtime-and-resilience" title="Permanent link">&para;</a></h3>
+<p>DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.</p>
 <ul>
-<li><strong>Harness registry</strong>: <code>.github/scripts/harnesses.py</code> declares each CLI — Antigravity (<code>agy</code>),
-  Claude Code (<code>claude</code>), OpenAI Codex (<code>codex</code>), Kimi (<code>kimi</code>), Grok (<code>grok</code>), Cursor
-  (<code>cursor-agent</code>), and opencode (<code>opencode</code>) — as a binary, an argv template, the credentials it
-  accepts, and its quota pools. Adding a harness is a data change; changing one is a configuration
-  change.</li>
-<li><strong>No hardcoded invocation</strong>: every field is overridable at runtime through the
-  <code>AGENT_HARNESS_CONFIG</code> repository variable, and the order through <code>AGENT_HARNESS_CHAIN</code>, so an
-  upstream flag rename never requires a code change or a container rebuild.</li>
-<li><strong>Graceful degradation</strong>: harnesses whose binary is absent from <code>PATH</code>, or whose credentials are
-  unset, are skipped rather than failed. An image carrying four of seven CLIs is a working image
-  with a shorter fallback chain.</li>
-<li><strong>Resilience</strong>: exhaustion moves to the next account, then the next pool, then the next harness.
-  Only when every account of every pool of every harness is spent does the agent checkpoint and
-  block. Authentication uses repository secrets only; the account being run is named in the log, its
-  credential never is.</li>
-<li><strong>Conversational lifecycle</strong>: incoming issues are auto-classified, the agent answers feedback and
-  executes adjustments on Request issues and pull requests, bots are ignored to prevent
-  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and self-reviews it
-  in separate runs: each review run posts all findings and dispatches a fix run, which dispatches
-  the next review, until a review finds nothing (identical findings twice block the PR). On quota
-  exhaustion the agent saves a checkpoint, moves
-  the item to <code>Blocked</code>, comments the resume instructions, and exits cleanly.</li>
+<li>Core owns execution, routing primitives, persistence/resume and capability loading.</li>
+<li>Agentic/product behaviors are versioned capabilities.</li>
+<li>One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.</li>
+<li>Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.</li>
+<li>Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.</li>
+<li>Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.</li>
+<li>Every logical agent stage has one bounded elapsed-time budget across model failover and tools.</li>
+<li>Natural model stop is accepted; mutation truth comes from observed effects.</li>
+<li>Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.</li>
+<li>CI agent execution remains containerizable/non-root.</li>
 </ul>
-<h3 id="rule-15-conventional-commits-and-taxonomy-enforcement">Rule 15 — Conventional commits and taxonomy enforcement<a class="headerlink" href="#rule-15-conventional-commits-and-taxonomy-enforcement" title="Permanent link">&para;</a></h3>
+<h3 id="rule-15-commits-repository-taxonomy-and-domains">Rule 15 — Commits, repository taxonomy and domains<a class="headerlink" href="#rule-15-commits-repository-taxonomy-and-domains" title="Permanent link">&para;</a></h3>
+<p>Commits use Conventional Commits: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code>.</p>
+<p>Allowed base types are <code>feat</code>, <code>fix</code>, <code>chore</code>, <code>docs</code>, <code>refactor</code>, <code>test</code>, and <code>ci</code>.</p>
+<p>Repository area labels/scopes are declared by final <code>repo.df</code>, not a legacy manifest path.</p>
+<p>Project classification separates:</p>
 <ul>
-<li><strong>Format</strong>: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code> (e.g. <code>feat(term): add cell matrix buffer</code>).</li>
-<li><strong>Allowed Types</strong>: <code>feat</code>, <code>fix</code> (mapped from <code>bug</code>), <code>chore</code>, <code>docs</code>, <code>refactor</code>, <code>test</code>, <code>ci</code>.</li>
-<li><strong>Allowed Area Scopes &amp; Labels</strong>:
-  The taxonomy is <strong>per repository</strong>, declared in <code>.darkfactory/manifest.json</code> under <code>areas</code>. The
-  labels, the permitted commit scopes, and the agent's request classifier all read that one
-  declaration, so the three cannot drift apart. A repository adopting this pipeline replaces the
-  block with its own domains; the areas below are DarkFactory's own.</li>
-<li><code>area:agents</code>: Harness orchestration, provider adapters, personas, approvals.</li>
-<li><code>area:governance</code>: Agent rules, branch protection, required checks, project board taxonomy.</li>
-<li><code>area:release</code>: Versioning modes, tagging, asset packaging, release notes.</li>
-<li><code>area:docs</code>: Documentation site, theme, architecture notes.</li>
-<li><code>area:ci</code>: GitHub Actions workflows, containers, runner scripts, repository automation.</li>
+<li>ecosystem/toolchain;</li>
+<li>package;</li>
+<li>semantic domain (initially including code, paper and math);</li>
+<li>capability.</li>
 </ul>
-<h3 id="rule-16-security-and-secrets">Rule 16 — Security and secrets<a class="headerlink" href="#rule-16-security-and-secrets" title="Permanent link">&para;</a></h3>
-<p>No credential, token, refresh token, cookie, or private key is ever committed, echoed into workflow
-logs, or written into issue or PR bodies. All secrets live in GitHub repository secrets or the local
-OS keychain. Workflow logs must be assumed public. Credentials exist only in DarkFactory's own
-environment and are never propagated to consumer repositories; consumers authenticate through their
-own secrets. No secret value is ever named in a rule or a rule reference.</p>
+<p>A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.</p>
+<p>Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.</p>
+<h3 id="rule-16-security-authentication-and-secrets">Rule 16 — Security, authentication and secrets<a class="headerlink" href="#rule-16-security-authentication-and-secrets" title="Permanent link">&para;</a></h3>
+<p>No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.</p>
+<p><code>@darkfactory/keychain</code> is the sole machine/harness credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.</p>
+<p><code>@darkfactory/auth</code> separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.</p>
+<p>The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.</p>
+<p>GitHub user authority and GitHub App installation authority remain distinct.</p>
+<p>Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../reference/workflows/">
@@ -577,21 +546,21 @@ own secrets. No secret value is ever named in a rule or a rule reference.</p>
           <li><a href="#index">Index</a>
             <ul>
               <li><a href="#rule-1-unit-tests">Rule 1 — Unit tests</a></li>
-              <li><a href="#rule-2-inline-docstrings-and-generated-documentation">Rule 2 — Inline docstrings and generated documentation</a></li>
+              <li><a href="#rule-2-inline-documentation-and-generated-documentation">Rule 2 — Inline documentation and generated documentation</a></li>
               <li><a href="#rule-3-product-requirements-and-adrs">Rule 3 — Product requirements and ADRs</a></li>
               <li><a href="#rule-4-english-language-consistency">Rule 4 — English language consistency</a></li>
               <li><a href="#rule-5-commit-granularity">Rule 5 — Commit granularity</a></li>
               <li><a href="#rule-6-ci-readiness-and-verification">Rule 6 — CI readiness and verification</a></li>
               <li><a href="#rule-7-branch-and-pull-request-workflow">Rule 7 — Branch and pull request workflow</a></li>
               <li><a href="#rule-8-automated-formatting-and-linting">Rule 8 — Automated formatting and linting</a></li>
-              <li><a href="#rule-9-issue-binding-branch-auto-deletion-and-board-status">Rule 9 — Issue binding, branch auto-deletion, and board status</a></li>
-              <li><a href="#rule-10-pre-implementation-planning-and-plan-review">Rule 10 — Pre-implementation planning and plan review</a></li>
-              <li><a href="#rule-11-pull-request-review-approval-and-auto-merge">Rule 11 — Pull request review approval and auto-merge</a></li>
-              <li><a href="#rule-12-user-request-decomposition-verbatim-prompting-and-confirmation-gate">Rule 12 — User request decomposition, verbatim prompting, and confirmation gate</a></li>
+              <li><a href="#rule-9-request-binding-branch-cleanup-and-board-status">Rule 9 — Request binding, branch cleanup and board status</a></li>
+              <li><a href="#rule-10-reviewed-planning-and-implementation-alignment">Rule 10 — Reviewed Planning and implementation alignment</a></li>
+              <li><a href="#rule-11-pull-request-review-approval-and-governed-merge">Rule 11 — Pull request review approval and governed merge</a></li>
+              <li><a href="#rule-12-verbatim-request-capture-and-planning-gate">Rule 12 — Verbatim Request capture and Planning gate</a></li>
               <li><a href="#rule-13-specification-sequence-and-when-issues-may-exist">Rule 13 — Specification sequence and when issues may exist</a></li>
-              <li><a href="#rule-14-harness-agnostic-agent-runtime-and-conversational-lifecycle">Rule 14 — Harness-agnostic agent runtime and conversational lifecycle</a></li>
-              <li><a href="#rule-15-conventional-commits-and-taxonomy-enforcement">Rule 15 — Conventional commits and taxonomy enforcement</a></li>
-              <li><a href="#rule-16-security-and-secrets">Rule 16 — Security and secrets</a></li>
+              <li><a href="#rule-14-capability-driven-agent-runtime-and-resilience">Rule 14 — Capability-driven agent runtime and resilience</a></li>
+              <li><a href="#rule-15-commits-repository-taxonomy-and-domains">Rule 15 — Commits, repository taxonomy and domains</a></li>
+              <li><a href="#rule-16-security-authentication-and-secrets">Rule 16 — Security, authentication and secrets</a></li>
             </ul>
           </li>
         </ul>
