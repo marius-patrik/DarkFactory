@@ -2,9 +2,9 @@
 
 = #finalized[Teoretická část – Analýza konceptu]
 
-== #diff[#finalized[Git a GitHub (Správa verzí)]][#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false) (Správa verzí)]
+== #finalized[#term(terms.version_control, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false)]
 
-=== #finalized[Úvod]
+=== #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 #accepted[
 Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github).
 
@@ -182,7 +182,7 @@ Při komplexním křížovém refaktoringu ve velkém kontextu proto model čast
 ]
 
 #unconfirmed[
-=== #term(terms.prompt_engineering, marker: false, linked: false, emphasized: false) a negativní instrukce
+=== #term(terms.prompt_engineering, name-separator: "paren", name-order: "en-cs", marker: false, linked: false, emphasized: false) a negativní instrukce
 
 #diff[Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
  Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
@@ -193,7 +193,7 @@ Příčiny a inženýrská řešení tohoto jevu:
 - *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
-== #diff[#finalized[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]][#term(terms.harness, marker: false, linked: false, emphasized: false) a agentní inženýrství (prompt, kontext, smyčka, graf...)]
+== #accepted[#term(terms.agentic_engineering, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false) a #term(terms.harness, language: "en", marker: false, linked: false, emphasized: false)]
 
 === #finalized[Úvod]
 
@@ -203,7 +203,7 @@ V terminologii agentního inženýrství používá tato práce pojem #term(term
 Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
 ]
 
-=== #diff[#finalized[Agent vs. Chatbot]][#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]
+=== #finalized[#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]
 
 #accepted[
 #term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline"). Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
