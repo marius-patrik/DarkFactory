@@ -57,18 +57,29 @@ for required in (
 if Path("lib/odborna-prace.typ").exists() or Path("lib/wordometer.typ").exists():
     fail("legacy root lib/ template copies must not reappear")
 
+def active_typst_imports(source: str) -> list[str]:
+    imports: list[str] = []
+    in_fence = False
+    for line in source.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence and line.lstrip().startswith("#import "):
+            imports.append(stripped)
+    return imports
+
+
 for path in (
     Path("metadata.typ"),
     Path("thesis.typ"),
     *sorted(Path("kapitoly").glob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
-    active_imports = [
-        line.strip()
-        for line in source.splitlines()
-        if line.lstrip().startswith("#import ")
-    ]
-    if any('lib/odborna-prace.typ' in line for line in active_imports):
+    if any(
+        'lib/odborna-prace.typ' in line
+        for line in active_typst_imports(source)
+    ):
         fail(f"legacy active template import remains in {path}")
 
 manifest_path = Path(".github/darkfactory.json")
