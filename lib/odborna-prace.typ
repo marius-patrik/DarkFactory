@@ -484,7 +484,7 @@
     // Blokové struktury mohou obsahovat text, který není samostatným odstavcem.
     // Počítáme proto jen jejich nejvyšší úroveň a odstavce uvnitř nich vynecháme,
     // aby žádný text nebyl započítán dvakrát.
-    let containers = selector(list).or(enum).or(terms).or(table)
+    let containers = selector(list).or(enum).or(terms).or(table).or(figure.caption)
     let nested-par-locs = query(core(selector(par).within(containers))).map(it => it.location())
     let nested-list-locs = query(core(selector(list).within(containers))).map(it => it.location())
     let nested-enum-locs = query(core(selector(enum).within(containers))).map(it => it.location())
@@ -493,67 +493,76 @@
 
     let words = 0
     let chars = 0
-
-    let add-content = item => {
-      let s = string-word-count(extract-text(item))
-      words += s.words
-      chars += s.characters
-    }
+    let stats-of = item => string-word-count(extract-text(item))
 
     for p in query(core(par)) {
       if p.location() not in nested-par-locs {
-        add-content(p.body)
+        let s = stats-of(p.body)
+        words += s.words
+        chars += s.characters
       }
     }
 
     for item in query(core(list)) {
       if item.location() not in nested-list-locs {
-        add-content(item)
+        let s = stats-of(item)
+        words += s.words
+        chars += s.characters
       }
     }
 
     for item in query(core(enum)) {
       if item.location() not in nested-enum-locs {
-        add-content(item)
+        let s = stats-of(item)
+        words += s.words
+        chars += s.characters
       }
     }
 
     for item in query(core(terms)) {
       if item.location() not in nested-terms-locs {
-        add-content(item)
+        let s = stats-of(item)
+        words += s.words
+        chars += s.characters
       }
     }
 
     for item in query(core(table)) {
       if item.location() not in nested-table-locs {
-        add-content(item)
+        let s = stats-of(item)
+        words += s.words
+        chars += s.characters
       }
     }
 
     for h in query(core(heading)) {
-      add-content(h.body)
+      let s = stats-of(h.body)
+      words += s.words
+      chars += s.characters
     }
 
     // Popisky obrázků nejsou odstavce ani tabulky, ale jsou součástí práce.
     for caption in query(core(figure.caption)) {
-      add-content(caption)
-    }
-
-    let subtract-content = item => {
-      let s = string-word-count(extract-text(item))
-      words -= s.words
-      chars -= s.characters
+      let s = stats-of(caption)
+      words += s.words
+      chars += s.characters
     }
 
     // Pracovní vrstvy review dokumentu nejsou součástí skutečného rozsahu.
     for item in query(core(<callout>)) {
-      subtract-content(item)
+      let s = stats-of(item)
+      words -= s.words
+      chars -= s.characters
     }
     for item in query(core(<removed-diff>)) {
-      subtract-content(item)
+      let s = stats-of(item)
+      words -= s.words
+      chars -= s.characters
     }
     for item in query(core(<diff-prefix>)) {
-      subtract-content(item)
+      let s = stats-of(item)
+      words -= s.words
+      chars -= s.characters
     }
 
     let stats = (
