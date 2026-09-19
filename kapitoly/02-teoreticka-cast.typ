@@ -2,77 +2,83 @@
 
 = Teoretická část
 
-== Deterministická vývojová infrastruktura
+== Správa verzí (Git a GitHub)
 
-=== Úvod do deterministické infrastruktury
+=== Úvod do správy verzí a GitHubu
 
 #unconfirmed[
-- *Potřeba determinismu v agentním vývoji*: Jazykové modely generují stochastické výstupy s proměnlivou mírou spolehlivosti. Aby bylo možné začlenit autonomního agenta do produkčního repozitáře, musí být obklopen nekompromisní deterministickou infrastrukturou.
-- *Repozitář jako stavový prostor*: Vývojový proces formalizujeme jako přechody mezi diskrétními stavy souborového systému.
-- *Orientovaný acyklický graf (Git DAG)* @chacon2014:
-  - *Uzly grafu*: Neměnné objekty revizí (_commits_) provázané kryptografickými hashy (SHA-1 či SHA-256) na své předchůdce.
-  - *Hrany grafu*: Jednosměrné reference definující kauzální historii změn.
-  - *Úplná lokální kopie*: Každý přispěvatel i agent disponuje celou historií projektu, což umožňuje nezávislé provádění i audit operací.
+- *Proč správa verzí*: Jazykové modely generují kód na základě pravděpodobnosti a dělají chyby. Správa verzí poskytuje bezpečné prostředí, kde lze každou změnu sledovat, testovat a v případě chyby kdykoliv vrátit k funkčnímu stavu.
+- *Nástroj Git* @chacon2014: Standardní distribuovaný verzovací nástroj. Kód se ukládá do historie v podobě jednotlivých revizí (_commitů_). Agent i vývojář pracují lokálně s plnou kopií repozitáře a mohou provádět úpravy, větvení i testování nezávisle na síti.
+- *Platforma GitHub*: Webová služba postavená nad Gitem, která slouží jako centrální bod pro sdílení kódu a automatizaci:
+  - *Zadávání a sledování úkolů (Issues)*: Textové zadání požadavků, hlášení chyb a diskuse, ze kterých agent čerpá zadání.
+  - *Přehled a kontrola změn (Pull Requests)*: Rozhraní pro revizi diffu a schvalování kódu před jeho začleněním.
+  - *Automatizace (GitHub Actions)*: Běhové prostředí pro automatické spouštění testů, linterů a překladů.
+- *Praktická role v práci*: Namísto teoretických abstrakcí práce přímo využívá Git a ekosystém GitHubu jako reálný základ pro řízení autonomního vývoje.
 ]
 
-=== Větve a větvová izolace
+=== Větve (Branches) a izolace kódu
 
 #unconfirmed[
-- *Větve jako pohyblivé ukazatele (_Refs_)*: Odlehčené ukazatele na konkrétní uzly v grafu revizí.
-- *Izolace pracovní větve*: Agent operuje výhradně ve vyhrazené větvi (`feature/...` či `agent/...`) odbočené z hlavní linie (`main`).
-  - *Ochrana produkčního kódu*: Pokusné mutace, dočasné mezistavy a syntaktické chyby modelu zůstávají striktně odděleny od stabilního kódu.
-  - *Vyloučení interferencí*: Zamezení kolizím s rozpracovanou prací lidských vývojářů v repozitáři.
-- *Deterministický audit trail*: Záznam každého kroku agenta jako atomického commitu se strojovými metadaty (identifikátor agenta, časový otisk, odkaz na issue).
+- *Větve (Branches)*: Samostatné vývojové linky v Gitu odbočené ze základního kódu. Umožňují pracovat na novém úkolu odděleně od ostatních.
+- *Hlavní větev (`main`)*: Reprezentuje stabilní, otestovaný stav projektu připravený k nasazení. Do této větve nikdo (ani člověk, ani agent) nezapisuje přímo.
+- *Pracovní větev agenta*: Agent si pro každý úkol vytvoří novou samostatnou větev (např. `task/...` nebo `agent/...`):
+  - *Oddělení chyb a pokusů*: Pokusy, mezistavy ani nefunkční kód neovlivňují stabilitu hlavní větve ani práci ostatních vývojářů.
+  - *Bezpečné zahození*: Pokud se agent vydá špatným směrem nebo selže, celou větev lze smazat jedním příkazem bez následků pro projekt.
+- *Aktualizace větve*: Pokud se hlavní větev během práce posune dopředu, pracovní větev agenta se zaktualizuje (`rebase` nebo `merge`), aby se předešlo konfliktům při slučování.
 ]
 
-=== Model pull requestu
+=== Model pull requestu (PR)
 
 #unconfirmed[
-- *Model pull requestu (PR / Merge Request)*: Formalizovaný procesní uzel předkládající navržený diff kódu k posouzení před jeho integrací.
+- *Pull Request (PR)*: Standardní způsob, jak na GitHubu navrhnout změny z pracovní větve k začlenění do větve hlavní (`main`).
 - *Komponenty rozhraní PR*:
-  - Řádkový diff (přehledné zobrazení přidaných a odebraných řádků).
-  - Výsledky automatických kontrol z integračního serveru.
-  - Strukturovaný popis záměru a realizovaných změn vygenerovaný agentem.
-- *Role v agentickém vývoji (Human Gate)*: Hlavní schvalovací brána, v níž člověk provádí finální sémantickou revizi podle principu _Human-in-the-loop_.
+  - *Rozdíl kódu (_Diff_)*: Přehledné řádkové srovnání — zeleně přidané řádky, červeně odebrané řádky.
+  - *Popis změn*: Agent v popisu PR srozumitelně shrne, jaké změny provedl, proč je zvolil a na jaké issue reagoval.
+  - *Výsledky kontrol*: Přehled stavu automatických testů z GitHub Actions (zelená / červená).
+  - *Diskusní vlákno*: Prostor pro komentáře, připomínky a požadavky na úpravy ze strany vývojáře.
+- *Schvalovací brána člověka (Human Gate)*: PR slouží jako hlavní kontrolní bod podle principu _Human-in-the-loop_. Člověk zkontroluje navržený kód a rozhodne o jeho schválení či zamítnutí.
 ]
 
-=== Strategie slučování (Squash and Merge)
+=== Slučování změn (Squash and Merge)
 
 #unconfirmed[
-- *Slučovací strategie*: Topologický způsob začlenění pracovní větve do chráněné hlavní linie (`main`).
-- *Rebase a Fast-Forward*: Přeskládání commitů do lineární historie; u agentních běhů však zanechává v historii množství drobných, neúspěšných pokusů.
-- *Squash and Merge*: Sloučení celé sekvence dílčích mezikroků a ladicích pokusů modelu do jediného čistého uzlu.
-  - *Eliminace šumu*: V hlavní větvi repozitáře zůstává pouze finální, ověřený přírůstek s kompletním souhrnem.
-  - *Čistá historie*: Zjednodušení budoucího auditu a deterministického návratu změn (`git revert`).
+- *Způsoby sloučení na GitHubu*:
+  - *Klasický merge commit*: Přenese všechny jednotlivé commity z větve a vytvoří slučovací uzel.
+  - *Rebase and Merge*: Přeskládá commity z větve lineárně za sebou.
+  - *Squash and Merge*: Vezme všechny commity z pracovní větve, spojí je do jediného nového commitu a ten vloží do `main`.
+- *Význam Squash and Merge pro agenty*:
+  - *Skrytí interního šumu*: Agent při řešení úlohy často vytvoří desítky drobných commitů (opravy překlepů, dílčí pokusy po selhání testu). Tyto mezikroky nemají pro historii projektu trvalou hodnotu.
+  - *Čistá a přehledná historie*: V hlavní větvi repozitáře zůstane za každý vyřešený úkol právě jeden ucelený commit s popisem.
+  - *Jednoduchý návrat změn (`git revert`)*: Pokud by změna v budoucnu způsobila problém, lze celý úkol vrátit jediným příkazem bez nutnosti rozplétat dílčí mezikroky.
 ]
 
-#note[
-  *Řešení divergencí dlouho běžících větví:*
-  Doporučujeme doplnit princip deterministického rebase: pokud se hlavní větev (`main`) během autonomního běhu agenta posune, harness musí před spuštěním finální validační pipeline provést automatický rebase a ověřit, zda nedošlo k syntaktickým či logickým merge konfliktům.
-]
-
-=== Kontinuální integrace (CI)
+=== Kontinuální integrace (CI a GitHub Actions)
 
 #unconfirmed[
-- *Kontinuální integrace (CI)* @humble2010: Praxe průběžného, automatického sestavování a testování každé navržené změny v izolovaném prostředí.
-- *Deterministický arbitr správnosti*: V agentickém inženýrství plní CI nezastupitelnou roli neúprosného verifikátoru. Stochastický výstup LLM nepovažujeme za funkční kód, dokud neprojde exekutivním ověřením testy a kompilátorem.
-- *Izolované běhové prostředí*: Každý testovací běh probíhá v čistém, předem definovaném kontejneru, což vylučuje závislost na lokálním stavu vývojářského počítače.
+- *Kontinuální integrace (CI)* @humble2010: Automatizované sestavování a testování kódu při každé změně (pushnutí do větve nebo otevření pull requestu).
+- *GitHub Actions*: Nástroj přímo integrovaný v GitHubu, který spouští definované pracovní postupy (_workflows_) v izolovaných virtuálních prostředích (např. kontejnerech).
+- *Ověření funkčnosti kódu*: Samotný jazykový model kód pouze generuje na základě pravděpodobnosti; neví, zda je kód funkční. Skutečné ověření probíhá až v CI spuštěním překladače a testů.
+- *Zpětná vazba pro agenta*: Pokud krok v CI selže, chybový protokol slouží agentovi jako přesný vstup pro další iteraci opravy.
+- *Nezávislost na lokálním prostředí*: CI běží na čistém systému se stanovenými verzemi závislostí, což vylučuje chyby způsobené odlišnostmi v lokálním nastavení vývojáře.
 ]
 
 #critique[
-  *Nestálost testů (Flaky Tests) jako systémová slepá skvrna:*
-  Text prezentuje kontinuální integraci jako nekompromisního deterministického arbitra správnosti. V praxi však integrační a end-to-end testy běžně trpí stochastickou nestálostí (časování asynchronních operací, síťové prodlevy, race conditions). Pokud model narazí na náhodně selhávající test, ReAct smyčka začne horečně upravovat funkční kód ve snaze vyřešit neexistující defekt, čímž vnese do repozitáře skryté regrese. Pro spolehlivý provoz musí harness obsahovat mechanismy detekce nestálosti (automatický opakovaný běh v čistém prostředí, izolace stavu) a striktně rozlišovat selhání infrastruktury od regresí modelu.
+  *Nestálost testů (Flaky Tests) v integračních bězích:*
+  Spoléhání se na automatické testy v CI naráží na problém nestálých testů (_flaky tests_), které občas selžou kvůli časování, síťové odezvě či asynchronním stavům, aniž by kód obsahoval chybu. Pokud agent narazí na takto náhodně selhávající test, může začít nesmyslně upravovat správný kód ve snaze chybu odstranit. CI pipeline proto musí nestálé testy minimalizovat nebo umožnit automatické opakování selhaného běhu v čistém prostředí.
 ]
 
-=== Požadované kontroly (Required Checks)
+=== Požadované kontroly (Required Checks) a ochrana větví
 
 #unconfirmed[
-- *Požadované kontroly (_Required Checks_)*: Množina automatických úloh v CI pipeline, jejichž úspěšné dokončení je podmínkou pro povolení sloučení PR:
-  - *Statická analýza a linting*: Kontrola formátování, typové správnosti a dodržování architektonických pravidel.
-  - *Jednotkové testy (Unit Tests)*: Deterministické ověření izolovaných funkcí a tříd.
-  - *Integrační a integrační testy*: Ověření vazeb mezi moduly a externími službami.
-- *Pravidlo deterministického zakončení*: Každá kontrola musí skončit explicitním úspěchem či neúspěchem. Úloha, která se tiše přeskočí bez nahlášení výsledku, může chráněnou větev trvale zablokovat.
-- *Reprodukovatelné artefakty*: Výstupy úspěšné pipeline (binární balíčky, knihovny, vysázená PDF dokumentace) vázané na neměnné značky (_tagy_) v historii gitu.
+- *Pravidla ochrany větví (_Branch Protection Rules_)*: Bezpečnostní nastavení GitHubu chránící větev `main` před nechtěným poškozením:
+  - Zákaz přímého pushování do hlavní větve.
+  - Zákaz mazání hlavní větve a přepisování její historie (`force push`).
+- *Požadované kontroly (_Required Checks_)*: Seznam úloh v GitHub Actions, které musí projít úspěšně (zelený stav), aby bylo technicky možné PR sloučit:
+  - *Linter a formátování*: Kontrola dodržení kódového stylu a základních syntaktických pravidel.
+  - *Typová kontrola a build*: Ověření, že kód lze bez chyb zkompilovat a typy odpovídají.
+  - *Automatické testy*: Běh jednotkových a integračních testů s definovaným očekávaným chováním.
+- *Pravidlo deterministického výsledku*: Každá kontrola musí skončit jednoznačným stavem (úspěch / selhání). Tiché přeskočení testu nesmí být považováno za splněnou podmínku.
+- *Povinné schválení člověkem*: Požadavek na explicitní schválení kódu lidským vývojářem před sloučením do produkční větve.
 ]
 
 == Kognitivní jádro a správa kontextového okna

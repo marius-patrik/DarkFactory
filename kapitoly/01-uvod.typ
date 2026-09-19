@@ -23,7 +23,7 @@
 Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.
 
 *Dílčí cíle:*
-- Vymezit deterministické základy infrastruktury (správu verzí a kontinuální integraci).
+- Vymezit infrastrukturu pro správu verzí (Git, GitHub a kontinuální integraci).
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).
 - Navrhnout architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct), bezpečnostní pískoviště a hierarchickou orchestraci subagentů.
 - Formalizovat mechanismy zapojení člověka do smyčky (_Human-in-the-loop_), schvalovací brány a protokol revizních značek pro dohled nad textovými výstupy.
