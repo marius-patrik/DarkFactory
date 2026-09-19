@@ -1,4 +1,13 @@
 /** @packageDocumentation
- * cli package boundary. Runtime ownership migrates here during the #420 convergence.
+ * Composed df CLI surface.
+ *
+ * The executable implementation remains in the temporary harness only for the #420 migration and is removed by the
+ * later CLI/cutover work. Consumers can already address it through the final package identity.
  */
-export {};
+export {
+	executableChainFor,
+	exitCodeFor,
+	main,
+	parseDurationMs,
+	redactToolInput,
+} from "../../../harness/src/cli.ts";
