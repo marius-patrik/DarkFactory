@@ -368,10 +368,9 @@ finalized_annotation_cs = (
     "      a implementace systému DarkFactory — agentního harnessu instalovatelného jako aplikace\n"
     "      pro platformu GitHub (GitHub App). Systém usiluje o maximální možnou míru automatizace\n"
     "      vývojového cyklu od interpretace požadavků v GitHub Issues, přes plánování, až po vývoj\n"
-    "      kódu a vystavení pull requestu. Práce reflektuje, že současné agentní systémy nelze vnímat\n"
-    "      jako plně autonomní: jazykové modely vyžadují deterministické mantinely proti uvíznutí\n"
-    "      v nekonečných cyklech, správu kontextu a zapojení člověka formou schvalovacích bran\n"
-    "      (_Human-in-the-loop_).\n"
+    "      kódu a sloučení změn. Práce reflektuje, že současné agentní systémy nelze vnímat\n"
+    "      jako plně autonomní: jazykové modely vyžadují deterministické mantinely, správu kontextu\n"
+    "      a zapojení člověka (_Human-in-the-loop_).\n"
     "    ]"
 )
 finalized_annotation_en = (
@@ -381,10 +380,9 @@ finalized_annotation_en = (
     "      the architecture of these systems. The practical contribution of the thesis is the\n"
     "      design and implementation of DarkFactory — an agentic harness installable as a GitHub App.\n"
     "      The system aims to maximize automation of the development lifecycle, from interpreting\n"
-    "      requirements in GitHub Issues, through planning, to code development and pull request\n"
-    "      delivery. The thesis reflects that current agentic systems cannot be regarded as fully\n"
-    "      autonomous: language models require deterministic guardrails against becoming stuck in\n"
-    "      infinite loops, context management, and human involvement through approval gates\n"
+    "      requirements in GitHub Issues, through planning, to code development and merging changes.\n"
+    "      The thesis reflects that current agentic systems cannot be regarded as fully autonomous:\n"
+    "      language models require deterministic guardrails, context management, and human involvement\n"
     "      (_Human-in-the-loop_).\n"
     "    ]"
 )
@@ -395,8 +393,14 @@ for legacy in (
     "sémantické analýzy požadavků",
     "technické plánování",
     "generování kódu",
+    "vystavení pull requestu",
     "bez sémantického posunu",
-    "především\n        kontinuální zapojení člověka",
+    "proti uvíznutí",
+    "v nekonečných cyklech",
+    "formou schvalovacích bran",
+    "through approval gates",
+    "against becoming stuck in",
+    "infinite loops",
 ):
     if legacy in metadata_source:
         fail(f"legacy annotation wording must not return: {legacy}")

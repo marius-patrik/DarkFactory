@@ -30,10 +30,9 @@
       a implementace systému DarkFactory — agentního harnessu instalovatelného jako aplikace
       pro platformu GitHub (GitHub App). Systém usiluje o maximální možnou míru automatizace
       vývojového cyklu od interpretace požadavků v GitHub Issues, přes plánování, až po vývoj
-      kódu a vystavení pull requestu. Práce reflektuje, že současné agentní systémy nelze vnímat
-      jako plně autonomní: jazykové modely vyžadují deterministické mantinely proti uvíznutí
-      v nekonečných cyklech, správu kontextu a zapojení člověka formou schvalovacích bran
-      (_Human-in-the-loop_).
+      kódu a sloučení změn. Práce reflektuje, že současné agentní systémy nelze vnímat
+      jako plně autonomní: jazykové modely vyžadují deterministické mantinely, správu kontextu
+      a zapojení člověka (_Human-in-the-loop_).
     ],
     en: finalized[
       This thesis examines the principles of agentic engineering: effective engineering
@@ -41,10 +40,9 @@
       the architecture of these systems. The practical contribution of the thesis is the
       design and implementation of DarkFactory — an agentic harness installable as a GitHub App.
       The system aims to maximize automation of the development lifecycle, from interpreting
-      requirements in GitHub Issues, through planning, to code development and pull request
-      delivery. The thesis reflects that current agentic systems cannot be regarded as fully
-      autonomous: language models require deterministic guardrails against becoming stuck in
-      infinite loops, context management, and human involvement through approval gates
+      requirements in GitHub Issues, through planning, to code development and merging changes.
+      The thesis reflects that current agentic systems cannot be regarded as fully autonomous:
+      language models require deterministic guardrails, context management, and human involvement
       (_Human-in-the-loop_).
     ],
   ),
