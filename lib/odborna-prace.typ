@@ -116,9 +116,9 @@
 }
 #let unconfirmed = draft
 
-// Modré zvýraznění pro uživatelem potvrzený, avšak nefinalizovaný text (confirmed)
+// Zelený podtržený text pro uživatelem potvrzený, avšak nefinalizovaný text (confirmed)
 #let confirmed(body) = context if review-state.get() {
-  highlight(fill: rgb("bfdbfe"))[#body]
+  underline(stroke: 1.3pt + rgb("#16a34a"), offset: 2.5pt)[#body]
 } else {
   body
 }
