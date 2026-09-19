@@ -118,7 +118,7 @@ describe("Keychain with Injected Command Runner", () => {
       const loaded = await loadVaultKey(options);
       expect(loaded).toBe("fallback-key-value");
 
-      const fileStat = await stat(join(tempDir, "vault.key"));
+      const fileStat = await stat(join(tempDir, "vault-key.df"));
       expect(fileStat.isFile()).toBe(true);
 
       // Verify not loaded if allowFileKey is false
