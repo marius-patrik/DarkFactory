@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -186,6 +187,87 @@ if "proper: translation(" not in terms_source:
     fail("canonical terminology must use proper/formal name records")
 if "define-term(\n    id:" in terms_source and "proper:" not in terms_source:
     fail("legacy flat term schema detected")
+
+term_ids = re.findall(r'id:\s*"([^"]+)"', terms_source)
+duplicate_term_ids = sorted({term_id for term_id in term_ids if term_ids.count(term_id) > 1})
+if duplicate_term_ids:
+    fail(f"canonical terminology contains duplicate stable ids: {duplicate_term_ids}")
+
+required_term_ids = {
+    "mcp",
+    "skills",
+    "script",
+    "plugins",
+    "hook",
+    "chatbot",
+    "agent",
+    "token",
+    "tokenizer",
+    "language-model",
+    "transformer",
+    "context-window",
+    "context-compaction",
+    "context-rot",
+    "human-in-the-loop",
+    "agentic-engineering",
+    "software-engineering",
+    "pull-request",
+    "continuous-integration",
+    "github-actions",
+    "dag",
+    "container",
+    "kv-cache",
+    "turn",
+    "context-engineering",
+    "prompt-engineering",
+    "loop-engineering",
+    "graph-engineering",
+    "rag",
+    "merge",
+    "squash",
+    "branch",
+}
+missing_term_ids = sorted(required_term_ids - set(term_ids))
+if missing_term_ids:
+    fail(f"canonical terminology missing required concepts: {missing_term_ids}")
+
+required_term_keys = (
+    "mcp",
+    "skills",
+    "script",
+    "plugins",
+    "hook",
+    "chatbot",
+    "agent",
+    "token",
+    "tokenizer",
+    "language_model",
+    "transformer",
+    "context_window",
+    "compaction",
+    "context_rot",
+    "human_in_the_loop",
+    "agentic_engineering",
+    "software_engineering",
+    "pull_request",
+    "continuous_integration",
+    "github_actions",
+    "dag",
+    "container",
+    "kv_cache",
+    "turn",
+    "context_engineering",
+    "prompt_engineering",
+    "loop_engineering",
+    "graph_engineering",
+    "rag",
+    "merge",
+    "squash",
+    "branch",
+)
+for term_key in required_term_keys:
+    if f"\n  {term_key}:" not in terms_source:
+        fail(f"canonical terminology missing public vocabulary key: {term_key}")
 
 for path in sorted(Path("kapitoly").glob("*.typ")):
     source = path.read_text(encoding="utf-8")

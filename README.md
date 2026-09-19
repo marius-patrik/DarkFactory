@@ -105,6 +105,11 @@ ji vykresluje ve stejné sekční komponentě jako dynamický přehled klíčov�
 Kanonické odborné pojmy jsou definovány pouze jednou v `templates/terms.typ` pomocí
 `define-term(...)` a v rukopisu se používají přes `terms.<id>`.
 
+CI kontroluje unikátnost stabilních term `id` a povinné jádro terminologie. Již
+existující termy zůstávají kanonické (např. `language_model` pro LLM,
+`skills` pro Skill a `plugins` pro Plugin); nové koncepty se nepřidávají jako
+paralelní duplicity pod jinými identitami.
+
 ```typ
 #term(terms.harness)
 #term(terms.harness, render: "explanation", detail-language: "cs")
