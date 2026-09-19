@@ -30,11 +30,18 @@ Environment:
     AGENT_MODEL_CHAIN: Global model override applied to whichever harness runs first.
 """
 
-import json
-import os
-import shutil
-from dataclasses import dataclass, field, replace
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from enum import Enum, unique
+
+
+@unique
+class TaskKind(Enum):
+    PLAN = "plan"
+    IMPLEMENT = "implement"
+    REVIEW = "review"
+    FIX = "fix"
+    CLASSIFY = "classify"
+    CHAT = "chat"
+
 
 #: Placeholder substituted with the prompt text when building argv.
 PROMPT = "{{PROMPT}}"
@@ -230,6 +237,7 @@ class Harness:
     nix_attr: str = ""
     description: str = ""
     login_file: Optional[LoginFile] = None
+    supports_kind: bool = False
 
     def __post_init__(self) -> None:
         """Propagates the login file to the auth declaration when defined here.
@@ -335,11 +343,21 @@ class Harness:
             model: Model id, or ``None`` to use the harness default.
             timeout: Print-mode timeout as a Go duration string.
             prompt_file: Path of the file holding the prompt, for ``PROMPT_FILE`` templates.
-            kind: Optional task kind ("plan", "implement", "review", "fix", "classify", "chat", etc.).
+            kind: Optional task kind.
 
         Returns:
             Full argv including the binary.
         """
+        if kind is not None:
+            if not self.supports_kind:
+                raise ValueError(f"Harness {self.name!r} does not support task kind.")
+            try:
+                TaskKind(kind)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid task kind: {kind!r}. Supported: {[k.value for k in TaskKind]}"
+                )
+
         argv: List[str] = [self.binary]
         pending_flag: Optional[str] = None
 
@@ -366,7 +384,7 @@ class Harness:
             argv.append(pending_flag)
         argv.extend(self.extra_args)
 
-        if kind and self.name == "df":
+        if kind and self.supports_kind:
             argv.extend(["--kind", kind])
 
         return argv
@@ -386,6 +404,7 @@ REGISTRY: Dict[str, Harness] = {
         pools=(),
         auth=None,
         description="DarkFactory's own agent harness (df run)",
+        supports_kind=True,
     ),
     "antigravity": Harness(
         name="antigravity",

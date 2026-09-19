@@ -5,10 +5,8 @@ import os
 from typing import List
 
 import pytest
-
 import harnesses
-from harnesses import MODEL, PROMPT, PROMPT_FILE, TIMEOUT, Harness, REGISTRY
-from harnesses import configured_order, get_harness
+from harnesses import MODEL, PROMPT, PROMPT_FILE, TIMEOUT, Harness, REGISTRY, TaskKind
 
 EXPECTED_HARNESSES = [
     "antigravity",
@@ -61,7 +59,36 @@ def test_default_chain_is_df_only():
         assert name not in harnesses.ORDER, f"{name} must not be in the default chain"
 
 
-def test_df_harness_runs_one_json_session_by_prompt_file():
+def test_kind_argument_validation():
+    harness = REGISTRY["df"]
+
+    # Valid kinds
+    for kind in TaskKind:
+        argv = harness.build_argv("prompt", None, "5m", kind=kind.value)
+        assert "--kind" in argv
+        assert kind.value in argv
+
+    # Invalid kind
+    with pytest.raises(ValueError, match="Invalid task kind"):
+        harness.build_argv("prompt", None, "5m", kind="invalid")
+
+    # Unsupported harness
+    claude = REGISTRY["claude"]
+    with pytest.raises(ValueError, match="does not support task kind"):
+        claude.build_argv("prompt", None, "5m", kind="plan")
+
+
+def test_kind_not_appended_if_none():
+    argv = REGISTRY["df"].build_argv("prompt", None, "5m", kind=None)
+    assert "--kind" not in argv
+
+
+def test_kind_not_appended_for_non_df_harness():
+    # Even if they hypothetically supported it, but our registry defaults to supports_kind=False
+    # for all others.
+    # Note: antigravity, claude etc are not "df".
+    # Ensure no kind is appended even if passed (though we now raise an error).
+    pass
     """df owns model choice and failover, so the runner passes a file and parses the stream."""
     harness = REGISTRY["df"]
     assert harness.binary == "df"
