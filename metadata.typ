@@ -2,7 +2,7 @@
 //  Metadata práce.
 // ─────────────────────────────────────────────────────────────
 
-#import "lib/odborna-prace.typ": draft, added, unconfirmed, confirmed
+#import "packages/odborna-prace-template/src/lib.typ": draft, added, unconfirmed, confirmed
 
 #let meta = (
   // Oficiální školní varianta zachovává současný název.
