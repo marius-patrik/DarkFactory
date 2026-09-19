@@ -25,7 +25,7 @@
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
 #let word-stats-state = state("word-stats-state", (
-  confirmed: (words: 0, chars: 0),
+  raw: (words: 0, chars: 0),
   review: (words: 0, chars: 0),
 ))
 
@@ -139,7 +139,7 @@
     let rozsahy = stack(
       dir: ttb,
       spacing: 3pt,
-      finalized(range-line(s.confirmed)),
+      finalized(range-line(s.raw)),
       unfinalized(range-line(s.review)),
     )
 
@@ -168,7 +168,7 @@
   nadpis-bez-cisla[#finalized[#ui-label([Prohlášení], [Declaration])]]
 
   let zkratka = meta.at("skola-zkratka", default: meta.skola)
-  let cs = confirmed[
+  let cs = finalized[
     Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval/a
     samostatně pod dohledem vedoucího uvedeného na první straně. Všechny
     použité zdroje jsou uvedeny v seznamu zdrojů a informace z nich získané
@@ -177,7 +177,7 @@
     tištěný zdroj např. pro další studentské práce či pro prezentaci
     vzdělávání na #zkratka.
   ]
-  let en = confirmed[
+  let en = finalized[
     I declare that I prepared this specialized thesis independently under the
     supervision of the supervisor named on the title page. All sources used
     are listed in the bibliography and information derived from them is cited
@@ -402,7 +402,7 @@
 
   // ── Jednotný výpočet rozsahu pro normal i review ──────────
   // Počítá se pouze vlastní text práce (Úvod–Závěr). Normal verze skryje
-  // unconfirmed text, review jej zobrazí; confirmed je v obou. Tím vznikne
+  // unconfirmed text, review jej zobrazí; accepted/finalized jsou v obou. Tím vznikne
   // správný počet bez druhého paralelního zdroje pravdy.
   context {
     let core = sel => selector(sel)
@@ -503,19 +503,19 @@
     // V čisté kompilaci je review-stats zároveň potvrzený rozsah, protože
     // unfinalized() nic nevysází. Review build dostane potvrzený rozsah z
     // předchozího Typst eval nad stejným template/profile vstupem.
-    let confirmed-words-input = sys.inputs.at("confirmed-words", default: none)
-    let confirmed-chars-input = sys.inputs.at("confirmed-chars", default: none)
-    let confirmed-stats = if is-review and confirmed-words-input != none and confirmed-chars-input != none {
+    let raw-words-input = sys.inputs.at("raw-words", default: none)
+    let raw-chars-input = sys.inputs.at("raw-chars", default: none)
+    let raw-stats = if is-review and raw-words-input != none and raw-chars-input != none {
       (
-        words: int(confirmed-words-input),
-        chars: int(confirmed-chars-input),
+        words: int(raw-words-input),
+        chars: int(raw-chars-input),
       )
     } else {
       review-stats
     }
 
     let stats = (
-      confirmed: confirmed-stats,
+      raw: raw-stats,
       review: review-stats,
     )
     word-stats-state.update(stats)
