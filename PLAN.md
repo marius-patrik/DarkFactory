@@ -4,45 +4,91 @@
 **Repository:** `marius-patrik/DarkFactory`  
 **Canonical branch audited:** `darkfactory`  
 **Audited trunk SHA:** `8cf6eb310982b615a1d8cbcfe3d51a5156799fdd`  
+**Current checkpoint base SHA:** `e9c1d50c4b5c741e31d282cf9de2131abeb37989`  
 **Plan date:** 2026-09-19  
 **Parent completion Request:** #68  
 **Final acceptance Request:** #361  
 
 ---
 
-# ACTIVE EXECUTION CHECKPOINT — 2026-09-19 13:56 Europe/Prague
+# ACTIVE EXECUTION CHECKPOINT — after #414 / PR #415 merge
 
-This checkpoint is authoritative for continuation and supersedes any older "Immediate next execution action" wording later in this document.
+This checkpoint is authoritative for continuation and supersedes older immediate-action wording elsewhere in this document.
 
-## Current active execution
+## Verified terminal bootstrap work
 
-- **#340** was released through the DarkFactory pipeline with `/df approve`.
-- GitHub Actions run **35440107744** (`Autonomous Agent`) completed successfully and produced **PR #407**.
-- PR #407 is open and draft on base `darkfactory`.
-- PR #407's own verification reports **63 failed, 905 passed** and therefore does **not** satisfy #340 yet.
-- Preview Documentation failed on the PR; Verify Bound Issue passed; CI/self-review activity was still in flight at the time of this checkpoint.
-- Do **not** merge/close #340 until the full detected verification, review/fix, alignment and final gate contract is green.
+- **#414 — restore the default-branch CI baseline** is terminal.
+- Governed artifact: **PR #415**.
+- PR head: `885f12d1a0b3585195abba0aec194322070881bf`.
+- PR #415 merged into `darkfactory`; merge/base SHA: **`e9c1d50c4b5c741e31d282cf9de2131abeb37989`**.
+- Verified PR-head checks include:
+  - Auto Format — green;
+  - CI — green;
+  - Preview Documentation — green;
+  - Verify Bound Issue — green.
+- #414 is closed with `Done`.
+- One earlier Autonomous Agent run for #414 ended in a duplicate/non-fast-forward push failure. That failed wrapper run is **not** the terminal artifact; PR #415 + its checks + merge are the accepted execution evidence.
+- The final #414 delta was intentionally one file, `harness/src/ci/config.ts`, after current-base discovery proved the required `scripts/build-docs.ts` repo.df constants were already present. Owner scope amendment on #414 records that reconciliation.
 
-## Bootstrap defect discovered while tracing #340
+## Current active execution — #413
 
-The current Python bootstrap runner declares stage budgets such as a 15-minute implementation budget, but the registered df harness invokes:
+- **#413 — pipeline stages pass their declared task kind to df run** is the current bootstrap dependency.
+- Final Planning and an owner-finalized `darkfactory-plan` marker are present on #413.
+- #414's merge satisfied #413's hold.
+- A fresh `/df approve` released #413 after #414 merged.
+- Active Autonomous Agent run: **35445297663** on base `e9c1d50c4b5c741e31d282cf9de2131abeb37989`.
+- Current observed step: **Dispatch agent in container**.
+- No #413 implementation branch/PR had been published at the instant of this checkpoint.
+- Do not start a second #413 implementation while run 35445297663 remains active.
 
-`df run --json --prompt-file <file>`
+### #413 acceptance reminder
 
-Current TypeScript `df run` has `--max-turns` but no elapsed-time execution-budget input. The Python runner therefore cannot pass its declared wall-clock budget into df. A model/tool execution can keep the Actions dispatch alive indefinitely.
+The bridge must pass the pipeline stage's already-known semantic kind through the existing harness argv construction into the existing `df run --kind` contract:
 
-This is now tracked by finalized Request **#406 — df run enforces bounded stage execution time so pipeline runs cannot hang indefinitely**.
+- interpretation/classification -> `classify`;
+- Planning -> `plan`;
+- implementation -> `implement`;
+- implementation verification repair -> `fix`;
+- owner PR-feedback repair -> `fix`;
+- self-review -> `review`;
+- self-review repair -> `fix`;
+- final Planning/alignment review -> `review`;
+- ordinary response -> `chat`.
 
-### #406 sequencing
+It must not create another router/policy table or alter provider/model/sensitivity/quota/failover semantics. #365 still owns inference correctness when callers do not declare a kind.
 
-- Finish #340 first if its existing PR #407 can be repaired through the normal pipeline without another wedged execution.
-- Once #340 is terminal green, execute #406 before #391.
-- If #340 needs another implementation/fix dispatch and that dispatch wedges because of the same unbounded-execution defect, execute #406 as the bootstrap reliability fix before resuming #340.
-- Never start conflicting parallel implementations of the same Request.
+## #340 / PR #407 — held for bootstrap repair
 
-## Current tooling constraint
+- #340 remains open and in progress.
+- PR **#407** remains open/draft.
+- Current PR #407 head: `e2deec522ddd93a6e9083d93e6a5b71308227316`.
+- The first feedback path initially fell back to conversation because the direct-Request PR did not expose a legacy Plan reference; adding `Plan: #340` made the real `pr-feedback-fix` stage reachable.
+- The resulting feedback commit did push, but it also reformatted a broad unrelated portion of the harness and PR CI remained red.
+- Self-review repeatedly misrouted as `video`/`video_gen` because the bootstrap runner failed to pass the stage's declared task kind into df. That concrete failure produced #413.
+- **Do not accept, merge, or close #340 from PR #407 in its present state.**
+- After #413 and #365 are terminal, repair/reconcile PR #407 through DarkFactory on the then-current base:
+  1. rebase/restack safely against current `darkfactory`;
+  2. remove/revert unrelated formatter sweep and any out-of-scope changes;
+  3. preserve only #340-authorized hard-transition work;
+  4. make detected CI/docs checks green;
+  5. run self-review/fix with explicit `review`/`fix` stage semantics;
+  6. complete final alignment and governed merge.
 
-The connected GitHub toolset in this execution session exposes workflow reads/reruns but no authenticated workflow-run cancellation operation. This is an orchestration/tooling limitation, not permission to bypass DarkFactory implementation governance.
+## Bootstrap continuation spine
+
+The current strict order is:
+
+`#414 DONE -> #413 ACTIVE -> #365 -> repair/finish #340/#407 -> #406 -> #391 -> #388 early intake -> remaining dependency waves`
+
+Rationale:
+
+- #413 fixes declared stage semantics in the current Python bootstrap runner.
+- #365 then fixes TypeScript stage-vs-subject inference for callers without an explicit kind.
+- Only after both routing layers are correct should #340's review/fix loop be resumed.
+- #406 then supplies a real elapsed-time budget for df-backed stages.
+- #391 then completes the durable unified Planning/review lifecycle used by the remaining program.
+
+No manual product implementation is authorized as a workaround.
 
 ---
 
@@ -59,7 +105,7 @@ The executable `/df approve` command was intentionally **not** used during plann
 
 ## 1.1 Finalized open Request set
 
-The current open completion set is 28 Requests:
+The current open completion set is 29 Requests:
 
 | Request | Finalized purpose |
 |---|---|
@@ -91,6 +137,7 @@ The current open completion set is 28 Requests:
 | #391 | Reopened unified Planning/review-loop completion |
 | #403 | Final supported df CLI/operator command surface |
 | #406 | Bounded df-run stage execution time / cancellation reliability |
+| #413 | Bootstrap stage-owner -> `df run --kind` propagation |
 
 ### Planning-finalization changes made before this plan
 
@@ -102,6 +149,12 @@ The current open completion set is 28 Requests:
 - Filed and finalized **#406** after live #340 execution proved the df-backed runner has no enforced elapsed-time stage budget despite declaring one in the Python bootstrap runner.
 - Superseded the bot-generated post-final legacy Interpretation on #403 so the canonical finalized Planning remains authoritative.
 - No implementation PR was opened during this finalization pass.
+
+### Execution-time bootstrap Requests added after plan publication
+
+- **#413** was added after live #407 self-review repeatedly routed ordinary review work as `video_gen`. It is a narrow bootstrap bridge: the current stage owner passes the existing semantic TaskKind to the existing `df run --kind` contract.
+- **#414** was added to break a temporary bootstrap cycle while the default branch itself was red. It restored the baseline through **PR #415**, which is merged green at `e9c1d50c4b5c741e31d282cf9de2131abeb37989`. #414 is terminal and is not part of the current open count.
+- #414's accepted scope was reconciled against the implementation base by an explicit owner scope amendment: the documentation constants were already present, so the merged delta was limited to the remaining `harness/src/ci/config.ts` lint blocker.
 
 If a Request body, accepted behavior, recovery input or dependency contract materially changes during execution, only that affected Planning artifact is invalidated and re-reviewed. Ordinary discovery of the concrete source owner behind a deliberately discovery-held plan is **not** a planning change.
 
@@ -285,25 +338,92 @@ No global re-planning phase exists in this master plan.
 
 # 6. PHASE 1 — Repair the foundations used by every later lane
 
-## 1A. #340 — finish the hard naming/state transition
+## 1A. #414 — restore the bootstrap/default-branch baseline — COMPLETED
 
-**Release first.**
+#414 is terminal.
 
-Eliminate repository-wide regressions before other final-state work relies on them:
+Accepted evidence:
 
+- PR #415 head `885f12d1a0b3585195abba0aec194322070881bf`;
+- Auto Format green;
+- CI green;
+- Preview Documentation green;
+- Verify Bound Issue green;
+- merged base `e9c1d50c4b5c741e31d282cf9de2131abeb37989`;
+- #414 closed `Done`.
+
+The earlier duplicate-push Autonomous Agent failure is historical execution noise, not the terminal result.
+
+## 1B. #413 — propagate declared pipeline stage kind into df — ACTIVE
+
+**Execute immediately after #414. This is the current active lane.**
+
+Required:
+
+- reuse the existing TypeScript `TaskKind` vocabulary;
+- thread the already-known stage semantic through the existing Python bootstrap harness argv builder into `df run --kind`;
+- mapping:
+  - classify/interpret -> `classify`;
+  - Planning -> `plan`;
+  - implementation -> `implement`;
+  - implementation repair -> `fix`;
+  - owner PR-feedback repair -> `fix`;
+  - self-review -> `review`;
+  - self-review repair -> `fix`;
+  - final alignment -> `review`;
+  - ordinary response -> `chat`;
+- preserve df inference when a caller intentionally supplies no explicit kind;
+- no second router, model table or policy system;
+- no weakening of account/provider eligibility, sensitivity, quota or failover;
+- focused tests prove embedded Request/diff/media vocabulary cannot override an explicit stage kind.
+
+**Exit:** the current bootstrap pipeline can reliably invoke review/fix/plan/implement semantics without prompt-body vocabulary reclassifying the stage.
+
+## 1C. #365 — fix stage-vs-subject inference for undeclared callers
+
+Run immediately after #413 and before resuming #340.
+
+Required behavior:
+
+- implementation/planning/review/fix/docs/tests **about** specialized image/video capabilities remain ordinary engineering work;
+- genuine direct artifact-generation remains specialized;
+- direct artifact intent outranks generic `create`/`implement` ambiguity;
+- an optional cheap classifier cannot erase explicit artifact intent;
+- sensitivity/secret inference is unchanged;
+- diagnostics explain capability inference and candidate acceptance/skips.
+
+#413 and #365 are complementary:
+- #413 preserves stage semantics when the stage owner already knows them;
+- #365 fixes inference when no explicit kind is supplied.
+
+**Exit:** governed coding/review work cannot be misrouted merely because its subject matter mentions specialized generation.
+
+## 1D. #340 — finish the hard naming/state transition
+
+Resume #340 only after #413 and #365 are terminal.
+
+PR #407 is an existing implementation artifact, but it is **not accepted as-is**. Reconcile it through DarkFactory against the then-current base before review continues.
+
+Required repair of the current lane:
+
+- safely rebase/restack the branch against current `darkfactory`;
+- remove/revert the broad unrelated formatter sweep introduced by the previous feedback repair;
+- keep only #340-authorized changes;
 - remove `.darkfactory/df/config.json` as a supported/current contract;
 - remove `.df/` directory semantics;
 - remove legacy manifest/config resolver reads;
 - converge df-owned persistence to `.df` filenames in real owning locations;
 - ensure root-vs-`.darkfactory` resolution is consistent across runtime, installer, docs and workflows;
 - both root and `.darkfactory` versions of the same logical config are an error;
-- do not mechanically rename unrelated user data.
+- do not mechanically rename unrelated user data;
+- detected CI/docs checks green;
+- self-review/fix and final alignment green under corrected stage semantics.
 
-**Exit:** repository-wide tests/search prove the final resolver/state rules.
+**Exit:** repository-wide tests/search prove the final resolver/state rules and PR #407 (or its governed replacement if the pipeline determines replacement is required) merges with no unrelated formatter sweep.
 
-## 1B. #406 — bounded df-run execution time
+## 1E. #406 — bounded df-run execution time
 
-Execute immediately after #340 under the normal path. If a subsequent #340 repair dispatch demonstrably wedges on the same defect, #406 becomes the bootstrap unblocker before resuming #340.
+Execute immediately after #340.
 
 Required:
 
@@ -319,9 +439,9 @@ Required:
 
 **Exit:** a df-backed Actions implementation dispatch cannot remain unbounded solely because the agent never stops.
 
-## 1C. #391 — complete the unified Planning/review infrastructure
+## 1F. #391 — complete the unified Planning/review infrastructure
 
-Run immediately after #340.
+Run immediately after #406.
 
 PR #398's graph declaration is the starting point, not the full acceptance.
 
@@ -344,7 +464,7 @@ Finish:
 
 **Exit:** remaining implementation can execute through the actual final lifecycle that was already semantically finalized on GitHub.
 
-## 1D. #388 — complete the early intake/provenance substrate enough for recovery waves
+## 1G. #388 — complete the early intake/provenance substrate enough for recovery waves
 
 #388 stays open until its full later integration is proven, but its early intake capability must become production-usable now.
 
@@ -406,20 +526,11 @@ For every intake, record:
 
 This phase can run partly in parallel with later recovery imports.
 
-## 3A. #365 — fix stage-vs-subject task inference
+## 3A. #365 — bootstrap prerequisite already executed in Phase 1
 
-Finish first.
+Do not create a second #365 implementation here. Phase 3 assumes #365 is already terminal from Phase 1.
 
-Required behavior:
-
-- implementation/planning/review/fix/docs/tests **about** specialized image/video capabilities remain ordinary engineering work;
-- genuine direct artifact-generation remains specialized;
-- direct artifact intent outranks generic `create`/`implement` ambiguity;
-- an optional cheap classifier cannot erase explicit artifact intent;
-- sensitivity/secret inference is unchanged;
-- diagnostics explain capability inference and candidate acceptance/skips.
-
-**Exit:** #252 can be planned/executed by normal coding models.
+Its completed behavior is the prerequisite for #252 and for any later caller that relies on task-kind inference rather than supplying an explicit kind.
 
 ## 3B. #252 — Gemini image/video generation
 
@@ -1149,7 +1260,18 @@ PLANNING FINALIZATION
 (already completed before this document)
         |
         v
-#340 hard transition
+#414 baseline repair [DONE: PR #415 -> e9c1d50]
+        |
+        v
+#413 explicit pipeline stage kind [ACTIVE]
+        |
+        v
+#365 undeclared-caller task inference
+        |
+        +-------------------------------> #252 image/video generation
+        |
+        v
+#340 hard transition / repair PR #407
         |
         v
 #406 bounded df-run execution
@@ -1170,7 +1292,7 @@ PLANNING FINALIZATION
         +--> D4 ------------------------------> #335                               |   |
         +--> F44/F45 held for late truth pass                                      |   |
                                            |                                       |   |
-#365 -> #252                              v                                       |   |
+                                           v                                       |   |
                                       #384 git ------------------------------------+   |
                                            |                                           |
                                            +--> #317                                    |
@@ -1208,52 +1330,54 @@ Parallel work is allowed only where these dependency edges and the finalized Req
 
 # 21. Recommended execution waves
 
-## Wave A — foundations
-1. #340
-2. #406
-3. #391
-4. #388 early intake milestone
+## Wave A — bootstrap + foundations
+1. #414 — **completed / PR #415 merged**
+2. #413 — explicit stage-kind bridge
+3. #365 — undeclared-caller task inference
+4. repair/reconcile and finish #340 / PR #407
+5. #406
+6. #391
+7. #388 early intake milestone
 
-## Wave B — recover + bootstrap
-5. Intake F14/F40/F42/F44/F45/F47/F49/D4
-6. #365
-7. #248
-8. #331
-9. #341
+## Wave B — recover + detector
+8. Intake F14/F40/F42/F44/F45/F47/F49/D4
+9. #248
+10. #331
+11. #341
 
 ## Wave C — core runtime
-10. #329
-11. #358
-12. #332
-13. #334
-14. #339
-15. #335
+12. #329
+13. #358
+14. #332
+15. #334
+16. #339
+17. #335
 
 ## Wave D — deterministic delivery/governance
-16. #384
-17. #317
-18. #385
-19. #386
-20. #388 full completion
+18. #384
+19. #317
+20. #385
+21. #386
+22. #388 full completion
 
 ## Wave E — cutover
-21. #359
+23. #359
 
 ## Wave F — user-facing final product
-22. #251
-23. #403
-24. #252 if not already completed in parallel
-25. #390
-26. #336
-27. #337
+24. #251
+25. #403
+26. #252 if not already completed in parallel after #365
+27. #390
+28. #336
+29. #337
 
 ## Wave G — distribution/fleet
-28. #360
-29. five-consumer migration
-30. #361
-31. #68
+30. #360
+31. five-consumer migration
+32. #361
+33. #68
 
-The numbering is execution order, not Request priority. Independent lanes may run concurrently where dependency-safe.
+The numbering is execution order, not Request priority. Independent lanes may run concurrently only where dependency-safe and where no active bootstrap lane would be invalidated by a moving base.
 
 ---
 
@@ -1342,6 +1466,7 @@ DarkFactory is ready to declare complete only if every answer is **YES**:
 - [ ] Is every recovery source integrated or explicitly dispositioned?
 - [ ] Did at least one real recovery lane pass through full #388 governance?
 - [ ] Is #340 clean repository-wide?
+- [ ] Do governed stages preserve their declared semantic kind through the #413 bridge until the Python bootstrap runner is retired?
 - [ ] Is every df-backed stage execution bounded by the #406 elapsed-time contract?
 - [ ] Is #391's real structured Planning/review lifecycle complete?
 - [ ] Does the graph execute production handlers?
@@ -1369,11 +1494,15 @@ DarkFactory is ready to declare complete only if every answer is **YES**:
 
 # 26. Immediate continuation action
 
-1. Continue #340 through PR #407's pipeline review/fix/verification/alignment lifecycle.
-2. Do not merge #407 while its verification is red or documentation/required checks fail.
-3. If #407's repair loop converges, merge/close #340 and execute #406.
-4. If a #340 repair dispatch wedges due to the discovered missing elapsed-time bound, execute #406 first, then resume #340.
-5. After both #340 and #406 are terminal green, release #391.
-6. Continue the dependency waves from there.
+1. **Continue active #413 run 35445297663.** Do not create a duplicate implementation while it remains active.
+2. When #413 publishes a branch/PR, verify the diff is limited to the bootstrap stage-kind bridge and focused tests. Require green detected checks, self-review/fix, alignment and governed merge.
+3. After #413 is terminal green, execute **#365** through the pipeline.
+4. After #365 is terminal green, return to **#340 / PR #407**. Rebase/reconcile it against the then-current base and remove the broad unrelated formatter sweep before accepting further review.
+5. Finish #340 only after CI/docs, self-review/fix and final alignment are green under corrected stage semantics.
+6. Execute **#406** next and prove real elapsed-time stage bounds.
+7. Execute **#391** after #406, then continue #388 early intake and the remaining dependency waves.
+8. Treat #414 as terminal evidence: PR #415 merged at `e9c1d50c4b5c741e31d282cf9de2131abeb37989`; do not reopen it merely because an earlier duplicate-push wrapper run failed.
+9. Keep `PLAN.md` updated at every clean handoff where the active dependency or accepted terminal evidence changes materially.
 
 No manual product implementation is authorized as a workaround.
+
