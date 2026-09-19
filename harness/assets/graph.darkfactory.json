@@ -121,7 +121,11 @@
       "on": { "event": "issues.opened|issues.labeled", "filter": { "label": "Request", "ignore_bots": true } }
     },
     { "from": "request-intake", "to": "planning", "on": { "node_outcome": "success" } },
-    { "from": "planning", "to": "planning-gate", "on": { "node_outcome": "success", "when": "planning_findings == null" } },
+    {
+      "from": "planning",
+      "to": "planning-gate",
+      "on": { "node_outcome": "success", "when": "planning_findings == null" }
+    },
     {
       "from": "planning",
       "to": "planning",
