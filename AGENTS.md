@@ -66,3 +66,16 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - `term(...)` supports name-only, explanation-only, and combined rendering, independent language selection/order for name and detail, and automatic keyword registration.
 - If prose defines a canonical term, render that definition from the shared term value (for example `render: "both"` or `render: "explanation"`) instead of copying the definition into chapter text.
 - Bilingual thesis rendering defaults to Czech first, English second; the shared renderer supports reversing the order when required.
+
+
+## Deferred Practical Chapters
+- `kapitoly/03-prakticka-cast.typ` and `kapitoly/04-vysledky.typ` are intentionally empty apart from their finalized top-level headings.
+- Do **not** draft, restore, infer, or pre-fill either chapter while DarkFactory is still under development.
+- Required order:
+  1. Finish and stabilize the practical DarkFactory system.
+  2. Inspect and verify the actual production implementation, workflows, configuration, interfaces, tests, and behavior.
+  3. Write Chapter 3 from that verified implementation only.
+  4. Perform the evaluation/measurements against the completed system described in Chapter 3.
+  5. Write Chapter 4 from those observed results only.
+- Chapter 4 must never be written before Chapter 3 and must not contain hypothetical, provisional, or architecture-derived “results”.
+- Do not restore text removed from Chapters 3 or 4 from Git history unless the user explicitly requests it; the old text described provisional architectures and measurements.
