@@ -6,42 +6,34 @@ applies_to: [agents, automation, contributors]
 activation: always
 owners: [docs-site, tests-audit]
 ---
-# Rule 2 — Inline docstrings and generated documentation
+# Rule 2 — Inline documentation and generated documentation
 
 ## Requirement
 
-All source MUST carry complete API documentation inline:
+Public source APIs MUST be documented inline.
 
-- **Rust**: `///` doc comments on every public item, with `# Errors` and `# Panics` sections where
-  applicable. `cargo doc` MUST build with zero warnings.
-- **TypeScript**: TSDoc on every exported symbol.
-- **Python** (automation): Google-style docstrings (`Args:`, `Returns:`, `Raises:`) with PEP 484
-  type annotations.
+- **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
+- **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
+- **Python**: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.
 
-Documentation MUST be generated from source and hand-written architecture notes. No static
-per-module markdown mirror and no manually maintained documentation index are stored in the
-repository. All documentation builds MUST use the command declared by the repository environment
-and succeed with zero warnings and zero errors. DarkFactory declares
-`bun run scripts/build-docs.ts`, which stages its repository sources, invokes ProperDocs in strict
-mode, and deploys the result automatically to GitHub Pages.
+Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is `docs.df`, with `properdocs.yml` and `mkdocs.yml` accepted only as compatibility inputs.
+
+The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
+
+The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
 ## Rationale
 
-A committed documentation mirror creates two sources of truth that drift. Generating the site from
-the canonical files means the published pages and the repository content cannot disagree.
+One content graph prevents API docs, README and the published site from becoming independent sources of product truth.
 
 ## Enforcement
 
-- `.github/scripts/docs_hooks.py` maps canonical files to virtual pages at build time; the docs
-  build is a required status check in `ci.yml`.
-- `properdocs.yml` configures the strict build.
+Docs/API/README checks consume the final #341 capability-aware detection contract and #424 docs compiler. Required API surfaces build with zero required documentation warnings.
 
 ## Exceptions
 
-None.
+Generated or intentionally private/internal symbols may be excluded only by the canonical docs/export policy.
 
 ## Change control
 
-Docs-site owns generated presentation, selection of the installed sites, and the mandatory-rule
-projection. The Python hooks are port-source, not an extension target, per `cli-release` and PRD
-section 10.
+Presentation belongs to the shared web package; source extraction/content ownership belongs to the docs package/capabilities.
