@@ -5,11 +5,11 @@
 #import "templates/registry.typ": draft, added, unconfirmed, accepted, finalized
 
 #let meta = (
-  // Oficiální školní varianta zachovává současný název.
-  nazev: "Úvod do agentického AI a harness pro automatizovaný softwarový vývoj",
-  // Volitelné projekce používané pouze při alternativní kompilaci.
-  nazev-cs: "Úvod do agentické umělé inteligence a řídicího systému pro automatizovaný softwarový vývoj",
-  nazev-en: "Introduction to Agentic AI and a Harness for Automated Software Development",
+  // Oficiální školní varianta.
+  nazev: "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj",
+  // Volitelné jazykové projekce používané při alternativní kompilaci.
+  nazev-cs: "Agentické inženýrství a návrh řídicího systému pro automatizovaný softwarový vývoj",
+  nazev-en: "Agentic Engineering and Harness Design for Automated Software Development",
   podnazev: none,
 
   autor: "Patrik Marius",
