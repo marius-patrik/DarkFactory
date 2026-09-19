@@ -7,9 +7,9 @@
   V souladu se zaměřením práce na principy agentního inženýrství a architekturu řídicího harnessu se tato kapitola soustředí na systémové a architektonické vlastnosti navrženého řešení: modularitu, determinismus, bezpečnostní izolaci a srovnání s existujícími přístupy (monolitické agentní smyčky vs. řízené DAG workflow).
 ]
 
+#unconfirmed[
 == Sjednocení pracovních postupů a přenositelnost napříč doménami
 
-#unconfirmed[
 Jedním z klíčových přínosů navržené architektury je možnost sjednotit automatizované pracovní postupy napříč různorodými technologickými ekosystémy. Místo vytváření proprietárních ad-hoc skriptů pro každý projekt zvlášť staví řešení na centralizovaném řídicím harnessu:
 - *Centralizace pracovních postupů*: Klientské repozitáře neudržují vlastní izolované skripty; exekuci delegují na centrální znovupoužitelné šablony a specifičnost projektu vymezují v deklarativním manifestu.
 - *Údržbová složitost $O(1)$*: Bezpečnostní oprava či aktualizace v harnessu je provedena jednou a spotřebitelské projekty ji přebírají posunem připnuté verze ($O(1)$ oproti $O(N)$ manuálním úpravám v každém repozitáři zvlášť).
@@ -25,6 +25,7 @@ Díky oddělení prostředí od domény dokáže řídicí harness obsluhovat ja
   Argumentace údržbovou složitostí $O(1)$ zamlčuje druhou stranu mince: chybná nebo nekompatibilní změna v centrálním harnessu okamžitě ohrožuje buildy ve všech klientských repozitářích (kaskádové selhání upstreamu). V textu je nezbytné obhájit, proč je absolutně vyžadováno striktní připínání na konkrétní neměnný SHA hash commitu, a jaké postupy postupného nasazování (canary testing) harness využívá pro ověření změn před jejich plošným nasazením.
 ]
 
+#unconfirmed[
 == Provozní metriky a spolehlivost agentních běhů
 
 #struct-alert[
@@ -32,19 +33,20 @@ Díky oddělení prostředí od domény dokáže řídicí harness obsluhovat ja
 ]
 
 #note[Placeholder: Zde bude zařazena nová tabulka empirických metrik (počet zpracovaných požadavků, úspěšnost PR na první pokus, úspěšnost po automatické samoopravě, průměrná spotřeba tokenů na tah, časová latence a spolehlivost rotace modelů).]
-
-== Poznatky a systémová úskalí z provozu
+]
 
 #unconfirmed[
+== Poznatky a systémová úskalí z provozu
+
 Praktické nasazení autonomních vývojových agentů do prostředí kontinuální integrace přineslo řadu cenných inženýrských poznatků:
 - *Řízení souběžnosti a větvené zámky*: Paralelní integrační běhy vyžadují striktní zámky na úrovni větví, aby nedocházelo ke kolizím a uváznutí workflow.
 - *Transparentnost hlášení selhání*: Zákaz tichého pohlcování výjimek; každá chyba nástroje nebo API musí být zaznamenána do kontextu a eskalována člověku. Tiché maskování chyb vede k masivním halucinacím modelu.
 - *Deklarativní detekce prostředí*: Vyloučení implicitních předpokladů o repozitáři; veškeré kroky se deterministicky odvozují z přítomnosti souborů a deklarativního manifestu.
 ]
 
+#unconfirmed[
 == Diskuse: Porovnání architektur
 
-#unconfirmed[
 Porovnání navrženého přístupu se současnými referenčními platformami (jako jsou SWE-agent @yao2022, Devin či Copilot Workspace) odhaluje zásadní architektonické rozdíly:
 - *Deterministický DAG vs. nekonečná smyčka*:
   - *Volné smyčky (SWE-agent)*: Monolitický model v interaktivním terminálu sám rozhoduje o ukončení; při uvíznutí v atraktoru snadno vyčerpá rozpočet tokenů.
@@ -62,9 +64,9 @@ Porovnání navrženého přístupu se současnými referenčními platformami (
   Pro rigorózní akademické zhodnocení doporučujeme po stabilizaci nového jádra DarkFactory podrobit harness standardnímu benchmarku SWE-bench Lite. Porovnání úspěšnosti (`Pass@1`) a spotřeby tokenů vůči referenčním systémům (SWE-agent, AutoCodeRover) poskytne nezpochybnitelný empirický důkaz funkčnosti navržených bezpečnostních pojistek.
 ]
 
+#unconfirmed[
 == Systémová a metodická omezení
 
-#unconfirmed[
 Přes dosažené výsledky naráží navržená architektura na několik principiálních limitů, které vymezují hranice její současné použitelnosti:
 - *1. Hranice deterministické verifikovatelnosti*: Autonomie je spolehlivá pouze u objektivně testovatelných změn (kód, testy, typy). U subjektivních úloh (UX ergonomie, grafický design, stylistická formulace textu) zůstává role modelu asistenční a validaci provádí člověk.
 - *2. Propustnost a dostupnost inferenčních API*: Rotační žebříček tlumí lokální výpadky, avšak globální kvóty a latence cloudových poskytovatelů tvoří pevný strop průchodnosti pipeline.

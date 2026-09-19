@@ -45,7 +45,9 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 == #confirmed[Metodika práce]
 
 #unconfirmed[
-Práce má teoreticko-architektonický a inženýrský charakter. Postup sleduje strukturu inženýrského cyklu:
+Práce má teoreticko-architektonický a inženýrský charakter. #diff[Postup sleduje strukturu inženýrského cyklu:][Vzhledem k dynamickému vývoji v oblasti autonomního softwarového vývoje práce důsledně zachovává a integruje zavedené anglické odborné názvy (např. _harness_, _pull request_, _agent loop_, _prompt engineering_, _skills_ či _context rot_). Použití této terminologie je integrální součástí práce, neboť tyto anglické pojmy představují de facto celosvětové průmyslové standardy (_industry standards_), jejichž doslovný český překlad by byl nejednoznačný, zavádějící či v rozporu s běžnou inženýrskou praxí.
+
+Postup práce sleduje strukturu inženýrského cyklu:]
 
 - *1. Koncepční analýza*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
 - *2. Architektonický návrh*: Formulace modulárního modelu řídicího harnessu, správy stavu, exekučního pískoviště, bezpečnostních pojistek a orchestrace subagentů.

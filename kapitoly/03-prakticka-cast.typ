@@ -2,9 +2,9 @@
 
 = #confirmed[Praktická část]
 
+#unconfirmed[
 == Cíl a rozsah systému DarkFactory
 
-#unconfirmed[
 Praktickým ztělesněním teoretických principů zkoumaných v této práci je systém *DarkFactory* @darkfactory. Jedná se o agentní řídicí harness navržený jako aplikace pro platformu GitHub (GitHub App), který rozšiřuje standardní vývojářské prostředí o schopnost autonomního odbavování softwarových úkolů.
 
 Hlavním cílem systému je maximalizace automatizace rutinních a mechanických fází vývojového cyklu:
@@ -22,13 +22,13 @@ Systém záměrně neusiluje o nekritickou plnou autonomii. Vzhledem ke stochast
   Architektura DarkFactory staví na instalaci jako GitHub App s právy zápisu do repozitáře a správy pull requestů. Pro podnikové nasazení to představuje zásadní vektor útoku: pokud model podlehne nepřímému prompt injection útoku (např. ze zlomyslného komentáře v issue či neznámého balíčku), získává přístup k interním tokenům repozitáře. Při obhajobě je nutné explicitně vymezit, jak harness izoluje tajnosti repozitáře, omezuje síťový provoz sandboxu a vynucuje princip nejmenších oprávnění (_least privilege_).
 ]
 
+#unconfirmed[
 == Architektura a životní cyklus požadavku
 
 #struct-alert[
   *Architektura a životní cyklus v rekonstrukci*: Vzhledem k probíhající zásadní přestavbě systému DarkFactory byla dosavadní implementační dekompozice modulů, stavový automat životního cyklu a konfigurační model dočasně nahrazeny zástupnými strukturálními bloky. Nová architektura, komponentní diagram a specifikace rozhraní budou doplněny po stabilizaci nové verze.
 ]
 
-#unconfirmed[
 Architektura systému DarkFactory vychází ze striktního oddělení sdílené orchestrační logiky od specifické konfigurace jednotlivých klientských repozitářů. Veškeré výpočetní operace probíhají v hermetickém běhovém prostředí#footnote(numbering: "*")[Pojem *hermetické prostředí* označuje výpočetní prostředí zcela izolované od nekontrolovaných stavů hostitelského systému a sítě. Veškeré nástroje, knihovny a závislosti jsou explicitně uzamčeny na konkrétních verzích, což zaručuje determinismus a reprodukovatelnost.], což zaručuje reprodukovatelnost výsledků nezávisle na okolním stavu.
 
 Životní cyklus zpracování každého požadavku je formalizován jako stavový automat (orientovaný acyklický graf), který provádí požadavek následujícími fázemi:
@@ -44,7 +44,6 @@ Architektura systému DarkFactory vychází ze striktního oddělení sdílené 
 Pro zajištění univerzální použitelnosti systém implementuje dvouúrovňovou detekci projektů:
 - *Prostředí (_Environment_)*: Určuje vyžadované binární nástroje a balíčkovací manažery podle detekovaných souborů (viz @tab-prostredi).
 - *Doména (_Domain_)*: Určuje způsob řízení výstupů (doména programového kódu vs. textová sazba a dokumentace).
-]
 
 #figure(
   table(
@@ -62,19 +61,18 @@ Pro zajištění univerzální použitelnosti systém implementuje dvouúrovňov
   caption: [Rozpoznávání prostředí podle souboru popisujícího balíček.],
 ) <tab-prostredi>
 
-#unconfirmed[
 Všechny automaticky rozpoznané parametry lze v klientském repozitáři deklarativně přepsat nebo rozšířit pomocí konfiguračního manifestu (např. o explicitní cesty k písmům nebo dodatečné integrační kontroly).
 ]
 
 #note[Placeholder: Zde bude doplněna nová vrstevnatá dekompozice přestavěného systému DarkFactory, stavový diagram životního cyklu požadavku a deklarativní schéma konfiguračního manifestu.]
 
+#unconfirmed[
 == Orchestrační jádro a validační infrastruktura
 
 #struct-alert[
   *Orchestrace a validační subsystém v rekonstrukci*: Mechanismus rotace poskytovatelů LLM, správa tokenů, verifikační pipeline a správa nastavení jako kód procházejí rekonstrukcí podle nového orchestračního enginu DarkFactory.
 ]
 
-#unconfirmed[
 Výkonné jádro orchestrátoru zajišťuje koordinaci mezi klientským repozitářem, jazykovými modely a validační infrastrukturou. Spolehlivost a odolnost systému v nepřetržitém provozu garantují následující operační mechanismy:
 
 - *Rotace poskytovatelů LLM*: Úkoly jsou definovány nezávisle na formátu konkrétního poskytovatele. Při vyčerpání kvóty nebo výpadku API primárního modelu harness automaticky přepne na navazující model v rotačním žebříčku, což eliminuje prostoje pipeline.
@@ -90,40 +88,4 @@ Výkonné jádro orchestrátoru zajišťuje koordinaci mezi klientským repozit�
 
 #note[Placeholder: Zde bude doplněn detailní popis nového modelu rotace poskytovatelů, správy tokenových rozpočtů, cachování závislostí a generování živé dokumentace po dokončení přestavby.]
 
-== Systém revizních značek pro lidský dohled nad akademickým textem
 
-#unconfirmed[
-Protokol vizuálních revizních značek pro formát Typst formalizuje dohled člověka nad generovaným textem:
-
-*1. Postranní revizní panely (Callouty):*
-- `#note[...]` (zelený): Konstruktivní náměty na vylepšení, doplnění diagramů a praktické vazby.
-- `#issue[...]` (červený): Věcné nesrovnalosti, logické mezery, překlepy a duplicitní obsah.
-- `#alert[...]` / `#struct-alert[...]` (žlutý): Strukturální nevyváženost, chybějící sekce a osnovové neshody.
-- `#critique[...]` (oranžový): Hloubková oponentura, slepá místa, zpochybnění neověřených předpokladů k obhajobě.
-- `#blue-note[...]` (modrý): Metodické vymezení, rozsah práce a konceptuální mantinely zadání.
-]
-
-#note[Konstruktivní doporučení, nápady na rozšíření, doplnění schémat či návrhy na praktické propojení. Po zapracování se panel smaže.]
-
-#issue[Detekované věcné nepřesnosti, logické mezery, překlepy nebo duplicita obsahu. Značka přesně formuluje vadu a zaniká s jejím odstraněním.]
-
-#alert[Upozornění na hloubkovou nevyváženost kapitol, chybějící dekompozice komponent či nesoulad s osnovou práce.]
-
-#critique[Hloubková teoretická a architektonická oponentura bez servítků — odhalování slepých míst, neověřených předpokladů, bezpečnostních rizik a metodologických slabin formulovaných jako břitké otázky k obhajobě.]
-
-#blue-note[Metodické vymezení a rozsah práce — formulace hranic zkoumaného problému, metodická abstrakce (např. oddělení agentního inženýrství od strojového učení) a mantinely zadání.]
-
-#unconfirmed[
-*2. Textové revizní funkce v toku textu:*
-- *Neověřený koncept (`#draft[...]` / `#unconfirmed[...]`)*: Žluté podbarvení — koncept čekající na posouzení a revizi autorem.
-- *Nově přidaný text (`#added[...]`)*: Zelené podbarvení — nově vygenerovaný text začleněný agentem.
-- *Potvrzený text (`#confirmed[...]`)*: Modré podbarvení — text potvrzený uživatelem, čekající na finální integraci.
-- *Navrženo k odstranění (`#removed[...]`)*: Červené přeškrtnutí — zastaralý text navržený ke smazání.
-- *Srovnávací diff (`#diff(old, new)`)*: Červený původní text přeškrtnutý následovaný zeleným novým textem.
-- *Čistý neoznačený text*: Finální, autorsky schválený text v hlase autora bez podbarvení.
-]
-
-#note[
-  *Automatizovaná kontrola revizních značek v CI:*
-  Doporučujeme propojit protokol revizních značek s validační pipeline DarkFactory: CI linter by měl ověřit, že před finálním vydáním nezůstala v rukopisu žádná neuzavřená značka vady (`#issue`) a že publikovaná čistá verze `prace.pdf` deterministicky potlačuje všechny interní callouty a diffy.
-]

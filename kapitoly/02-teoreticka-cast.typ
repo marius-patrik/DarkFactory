@@ -19,9 +19,9 @@ Klíčové komponenty infrastruktury zahrnují:
 Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním protokolem, nýbrž jako standardní přispěvatel, který plně respektuje běžné vývojářské zvyklosti a nástroje.
 ]
 
+#unconfirmed[
 === Větve (Branches) a izolace kódu
 
-#unconfirmed[
 Základním bezpečnostním pravidlem při zapojení autonomních agentů do vývoje je striktní izolace rozpracovaného kódu. Stabilní kód v hlavní větvi (`main`) nesmí být nikdy přímo vystaven experimentům a chybám modelu. Agent proto veškeré úpravy provádí ve vyhrazených pracovních větvích odbočených ze základní linie projektu.
 
 Tento princip přináší následující výhody:
@@ -33,9 +33,9 @@ Tento princip přináší následující výhody:
 Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné aktivity v repozitáři, pracovní větev agenta se musí před dokončením zaktualizovat (`git rebase` nebo `git merge`), aby byla zajištěna bezkonfliktní integrace.
 ]
 
+#unconfirmed[
 === Model pull requestu (PR)
 
-#unconfirmed[
 Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (*Human-in-the-loop*): agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
 
 Rozhraní pull requestu integruje všechny podstatné informace na jednom místě:
@@ -47,9 +47,9 @@ Rozhraní pull requestu integruje všechny podstatné informace na jednom míst�
 Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický záměr a rozhoduje o schválení, vrácení k dopracování, či zamítnutí pull requestu.
 ]
 
+#unconfirmed[
 === Slučování změn (Squash and Merge)
 
-#unconfirmed[
 Způsob, jakým se změny z pracovní větve začlení do větve hlavní, má zásadní dopad na dlouhodobou udržitelnost a čitelnost repozitáře. Autonomní agent při řešení úlohy obvykle postupuje iterativní metodou pokus-omyl: upraví soubor, spustí testy, odhalí překlep a provede další drobný commit. V pracovní větvi tak vzniká dlouhá sekvence pomocných a experimentálních záznamů.
 
 Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí commity a rebase je lineárně přeskládá, v agentním vývoji se jako optimální strategie uplatňuje *Squash and Merge*:
@@ -58,9 +58,9 @@ Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí co
 - *Atomický návrat změn (`git revert`)*: Pokud se v budoucnu ukáže, že začleněná úprava zanesla do produkce nečekanou vadu, lze celý úkol vrátit jediným atomickým příkazem bez nutnosti rozplétat desítky dílčích mezikroků.
 ]
 
+#unconfirmed[
 === Kontinuální integrace (CI a GitHub Actions)
 
-#unconfirmed[
 Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní *kontinuální integrace* (CI) @humble2010.
 
 V rámci platformy GitHub zajišťuje kontinuální integraci vestavěný nástroj *GitHub Actions*:
@@ -74,9 +74,9 @@ V rámci platformy GitHub zajišťuje kontinuální integraci vestavěný nástr
   Spoléhání se na automatické testy v CI naráží na problém nestálých testů (_flaky tests_), které občas selžou kvůli časování, síťové odezvě či asynchronním stavům, aniž by kód obsahoval chybu. Pokud agent narazí na takto náhodně selhávající test, může začít nesmyslně upravovat správný kód ve snaze chybu odstranit. CI pipeline proto musí nestálé testy minimalizovat nebo umožnit automatické opakování selhaného běhu v čistém prostředí.
 ]
 
+#unconfirmed[
 === Požadované kontroly (Required Checks) a ochrana větví
 
-#unconfirmed[
 K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno. GitHub za tímto účelem poskytuje pravidla ochrany větví (_Branch Protection Rules_), která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
 
 Klíčové mechanismy ochrany zahrnují:
@@ -106,7 +106,7 @@ Základní principy fungování modelu zahrnují:
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
-=== Tokeny, tokenizace a embedding
+=== #confirmed[Tokeny, tokenizace a embedding]
 
 #confirmed[
 Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vstupní text je nejprve deterministickým algoritmem převeden na číselné reprezentace, se kterými následně počítají maticové vrstvy neuronové sítě.
@@ -121,9 +121,9 @@ Tento proces zahrnuje následující pojmy:
 Z inženýrského hlediska je proto žádoucí vést systémové prompty, technické plány i komunikaci mezi nástroji v angličtině, aby se šetřila kapacita kontextu a snížila latence inference.
 ]
 
+#unconfirmed[
 === Tahy a správa KV cache
 
-#unconfirmed[
 Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobíhá spojitě, nýbrž v diskrétních krocích označovaných jako *tahy* (_turns_). Každý tah představuje jednu ucelenou výměnu zprávy, na niž systém reaguje.
 
 Životní cyklus tahů a správa paměti zahrnují:
@@ -135,9 +135,9 @@ Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobí
 - *Kontextové okno (_Context Window_)*: Pevně limitovaná kapacita paměti modelu. Tento strop je dán hardwarovými limity GPU akcelerátorů a kvadratickou složitostí plné pozornosti ($O(N^2)$ vzhledem k délce sekvence).
 ]
 
+#unconfirmed[
 === Kompakce kontextu a ztrátová komprese
 
-#unconfirmed[
 Při rozsáhlejších úlohách se kontextové okno nevyhnutelně zaplní. V okamžiku, kdy objem historie dosáhne kritické hranice, musí řídicí harness přistoupit ke *kompakci kontextu* (_compaction_) — model je vyzván, aby dosavadní průběh sezení zkrátil do syntetického souhrnu, který nahradí starší část historie.
 
 Tento proces však představuje destruktivní ztrátovou kompresi:
@@ -146,9 +146,9 @@ Tento proces však představuje destruktivní ztrátovou kompresi:
 - *Konfirmační zkreslení (_Confirmation Bias_)*: Model v souhrnu upřednostňuje fakta odpovídající jeho vnitřním statistickým asociacím na úkor netriviálních specifik konkrétního projektu.
 ]
 
+#unconfirmed[
 === Sémantický posun (Semantic Drift)
 
-#unconfirmed[
 Opakovaná ztrátová komprese vede k závažné patologii známé jako *sémantický posun* (_Semantic Drift_). Pokud je historie sezení v dlouhém vývojovém běhu shrnována vícekrát po sobě, vzniká řetězec ztrátových transformací ($S_(k+1) = f(S_k, Delta_k)$).
 
 Rizika sémantického posunu spočívají v těchto jevech:
@@ -158,9 +158,9 @@ Rizika sémantického posunu spočívají v těchto jevech:
 Výsledkem je stav, kdy agent sebevědomě reportuje vyřešení úkolu, ačkoliv reálný kód zůstává v nefunkčním či neúplném stavu.
 ]
 
+#unconfirmed[
 === Alternativní paměťové architektury (RAG a stavový graf)
 
-#unconfirmed[
 Aby se předešlo ztrátě informací způsobené kompakcí, moderní agentní architektury přesouvají část paměti mimo samotné kontextové okno. Namísto spoléhání se na jediný lineární textový kontext se uplatňují strukturovaná externí úložiště.
 
 K hlavním přístupům patří:
@@ -170,9 +170,9 @@ K hlavním přístupům patří:
 Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti na ztrátovém rekurzivním shrnování.
 ]
 
+#unconfirmed[
 === Degradace pozornosti (Context Rot)
 
-#unconfirmed[
 Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).
 
 V praxi se projevuje dvěma hlavními mechanismy:
@@ -182,9 +182,9 @@ V praxi se projevuje dvěma hlavními mechanismy:
 Při komplexním křížovém refaktoringu ve velkém kontextu proto model často přehlédne klíčové souvislosti, které by v menším a čistším okně zpracoval bez potíží.
 ]
 
+#unconfirmed[
 === Promptové inženýrství a negativní instrukce
 
-#unconfirmed[
 Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely. Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
 
 Příčiny a inženýrská řešení tohoto jevu:
@@ -219,9 +219,9 @@ Srovnání obou přístupů:
   - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
 ]
 
+#unconfirmed[
 === Agentní smyčka a prováděcí cyklus ReAct
 
-#unconfirmed[
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého řídicího harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
 V každé iteraci agentní smyčky harness zajišťuje tyto klíčové funkce:
@@ -236,16 +236,16 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 4. *Navazující iterace*: Model v dalším tahu analyzuje získanou odezvu a rozhoduje o dalším kroku.
 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
-]
 
 #figure(
   image("../img/react-loop.svg", width: 100%),
   caption: [Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.],
 ) <fig-react-loop>
-
-=== Běhové prostředí nástrojů a pískoviště (Sandbox)
+]
 
 #unconfirmed[
+=== Běhové prostředí nástrojů a pískoviště (Sandbox)
+
 Aby mohl agent provádět reálné inženýrské operace, musí mu řídicí harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
 
 V praxi se uplatňují dva základní modely:
@@ -257,9 +257,9 @@ V praxi se uplatňují dva základní modely:
   *Iluzorní bezpečnost pískoviště*: Přímé spouštění netestovaného syntetického kódu v běžném Docker kontejneru nelze považovat za plnohodnotnou bezpečnostní hranici (_security boundary_). Přístup k síti otevírá prostor pro útoky typu Server-Side Request Forgery (SSRF), úniky environmentálních tajností (GitHub tokeny, API klíče k LLM) přes skryté síťové kanály a kompromitaci CI infrastruktury. Pro bezpečný produkční provoz je nezbytná formální izolace na bázi microVM (např. AWS Firecracker, gVisor) a striktní izolace síťových jmenných prostorů.
 ]
 
+#unconfirmed[
 === Patologie divergence: perseverace a oscilace
 
-#unconfirmed[
 Ponechání jazykového modelu v neomezené prováděcí smyčce vede k předvídatelným selháním. V důsledku autoregresivní povahy se v kontextu snadno vytvoří pravděpodobnostní atraktor, který model uvězní v neproduktivním cyklu.
 
 Mezi typické patologie patří:
@@ -268,9 +268,9 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
+#unconfirmed[
 === Dovednosti (Skills)
 
-#unconfirmed[
 Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (_Skills_).
 
 Architektura dovedností staví na následujících principech:
@@ -279,9 +279,9 @@ Architektura dovedností staví na následujících principech:
 - *Skripty a záchytné body (_Scripts & Hooks_)*: Dovednosti mohou obsahovat deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
 ]
 
+#unconfirmed[
 === Model Context Protocol (MCP servery)
 
-#unconfirmed[
 Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard *Model Context Protocol (MCP)* @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.
 
 Základní vlastnosti protokolu MCP:
@@ -289,9 +289,9 @@ Základní vlastnosti protokolu MCP:
 - *Architektonické oddělení*: Implementace nástrojů běží jako samostatný proces mimo jádro harnessu. MCP servery fungují jako znovupoužitelné komponenty, které lze snadno sdílet napříč různými agenty a projekty.
 ]
 
+#unconfirmed[
 === Škálování: hierarchičtí subagenti a DAG workflow
 
-#unconfirmed[
 Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
 
 Klíčové přístupy ke škálování zahrnují:
@@ -299,9 +299,9 @@ Klíčové přístupy ke škálování zahrnují:
 - *Pracovní postupy jako grafy (DAG / Graph Engineering)*: Životní cyklus požadavku je modelován jako orientovaný acyklický graf (příjem $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
 ]
 
+#unconfirmed[
 === Zapojení člověka do smyčky (Human-in-the-loop)
 
-#unconfirmed[
 Základním principem navrženého řešení není nekritická plná autonomie, nýbrž efektivní kooperace člověka a stroje. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
 Řízení lidského dohledu staví na těchto pilířích:

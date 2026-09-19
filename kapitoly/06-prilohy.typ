@@ -1,10 +1,9 @@
 #import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
+#unconfirmed[
 = Obsah přiloženého média
 
-#unconfirmed[
 Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablonu, řídicí skripty a zdrojový kód autonomního systému DarkFactory.
-]
 
 #figure(
   ```text
@@ -27,7 +26,9 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
   ```,
   caption: [Stromová adresářová struktura odevzdaného elektronického archivu a doprovodných repozitářů.],
 ) <kod-strom-prilohy>
+]
 
+#unconfirmed[
 = Schéma konfiguračního manifestu darkfactory.json
 
 #struct-alert[
@@ -35,7 +36,9 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 ]
 
 #note[Placeholder: Zde bude uvedeno úplné JSON Schema vymezující validní syntaxi nového konfiguračního manifestu.]
+]
 
+#unconfirmed[
 = Sdílené workflow pro GitHub Actions
 
 #struct-alert[
@@ -43,7 +46,9 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 ]
 
 #note[Placeholder: Zde budou uvedeny ukázky znovupoužitelného a volajícího workflow nové verze DarkFactory.]
+]
 
+#unconfirmed[
 = Systémové prompty plánovacího a kódovacího agenta
 
 #struct-alert[
@@ -51,12 +56,12 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 ]
 
 #note[Placeholder: Zde budou uvedeny kompletní systémové prompty pro jednotlivé fáze životního cyklu požadavku.]
-
-= Protokol revizních značek v sazebním systému Typst
+]
 
 #unconfirmed[
+= Protokol revizních značek v sazebním systému Typst
+
 Tato příloha uvádí referenční definici a použití vizuálních revizních značek pro řízení a dohled nad generovaným textem v sazebním formátu Typst.
-]
 
 #figure(
   ```typ
@@ -79,11 +84,9 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   caption: [Ukázka zápisu a použití revizních značek a textových funkcí v jazyce Typst.],
 ) <kod-znacky-typst>
 
-#unconfirmed[
 *Vizuální reprezentace jednotlivých prvků v sazbě*
 
 Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních panelů a textových funkcí v jejich finální vizuální podobě:
-]
 
 #note[Ukázka zeleného panelu doporučení (`#note`): Konstruktivní návrh na vylepšení, doplnění diagramu nebo námět na architektonickou optimalizaci.]
 
@@ -103,7 +106,6 @@ Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Srovnávací diff (`#diff`)*: #diff[Původní chybné nebo nepřesné znění pasáže.][Nové přesné, fakticky a formálně ověřené znění pasáže.]
 - *Čistý neoznačený text*: Představuje finální, autorsky schválený text v hlase autora bez jakéhokoliv podbarvení.
 
-#unconfirmed[
 Role značek v lidském dohledu:
 - *Čistý neoznačený text*: Schválený autorský text v hlase autora.
 - *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
