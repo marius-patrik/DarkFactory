@@ -1,12 +1,12 @@
-#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, terms
 
 = #finalized[Teoretická část – Analýza konceptu]
 
-== #finalized[Git a GitHub (Správa verzí)]
+== #diff[#finalized[Git a GitHub (Správa verzí)]][#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false) (Správa verzí)]
 
 === #finalized[Úvod]
 #accepted[
-Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. #diff[Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém *Git* v kombinaci s platformou *GitHub*.][Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term("Git", explanation: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.") v kombinaci s platformou #term("GitHub", explanation: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.") .]
+Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github) .
 
 Klíčové komponenty infrastruktury zahrnují:
 - *Distribuovaný systém Git* @chacon2014: Ukládá kompletní historii projektu v podobě jednotlivých revizí (_commitů_). Vývojář i agent pracují s plnou lokální kopií repozitáře, což umožňuje provádět změny, přepínat větve a spouštět lokální testy zcela nezávisle na síťovém připojení.
@@ -33,9 +33,9 @@ Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné a
 ]
 
 #unconfirmed[
-=== Model pull requestu (PR)
+=== Model #term(terms.pull_request, marker: false, linked: false, emphasized: false)
 
-#diff[Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (*Human-in-the-loop*):][#term("Pull Request", explanation: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách.") představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip #term("Human-in-the-loop", explanation: "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací.") :] agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
+#diff[Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (*Human-in-the-loop*):][#term(terms.pull_request, render: "both", detail-language: "cs", detail-style: "inline"). V tomto bodě se plně uplatňuje princip #term(terms.human_in_the_loop) :] agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
 
 Rozhraní pull requestu integruje všechny podstatné informace na jednom místě:
 - *Řádkový diff*: Vizuální srovnání původního a nového stavu, kde jsou jasně barevně odlišeny přidané, změněné a smazané řádky.
@@ -105,7 +105,7 @@ Základní principy fungování modelu zahrnují:
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
-=== #finalized[Tokeny, tokenizace a embedding]
+=== #diff[#finalized[Tokeny, tokenizace a embedding]][Tokeny, tokenizace a #term(terms.embedding, marker: false, linked: false, emphasized: false)]
 
 #accepted[
 Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vstupní text je nejprve deterministickým algoritmem převeden na číselné reprezentace, se kterými následně počítají maticové vrstvy neuronové sítě.
@@ -113,7 +113,7 @@ Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vs
 Tento proces zahrnuje následující pojmy:
 ]
 - #accepted[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).]
-- #accepted[#diff[*Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů][#term("Embedding", explanation: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy."): Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů] (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #accepted[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
 - #accepted[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
 #accepted[
@@ -170,9 +170,9 @@ Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti 
 ]
 
 #unconfirmed[
-=== Degradace pozornosti (Context Rot)
+=== #term(terms.context_rot, marker: false, linked: false, emphasized: false)
 
-Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #diff[Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).][Tento jev se v agentním inženýrství označuje jako #term("Context Rot", explanation: "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí.") (degradace pozornosti).]
+Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #diff[Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).][Tento jev se v agentním inženýrství označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
 
 V praxi se projevuje dvěma hlavními mechanismy:
 - *Lost in the Middle* @liu2024: Pozornostní vrstvy transformeru spolehlivě vnímají informace na samém začátku a konci okna, zatímco fakta umístěná uprostřed dlouhého textu jsou často přehlížena.
@@ -182,9 +182,9 @@ Při komplexním křížovém refaktoringu ve velkém kontextu proto model čast
 ]
 
 #unconfirmed[
-=== Promptové inženýrství a negativní instrukce
+=== #term(terms.prompt_engineering, marker: false, linked: false, emphasized: false) a negativní instrukce
 
-#diff[Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][Disciplína #term("Prompt Engineering", explanation: "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
+#diff[Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
  Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
 
 Příčiny a inženýrská řešení tohoto jevu:
@@ -193,20 +193,20 @@ Příčiny a inženýrská řešení tohoto jevu:
 - *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
-== #finalized[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]
+== #diff[#finalized[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]][#term(terms.harness, marker: false, linked: false, emphasized: false) a agentní inženýrství (prompt, kontext, smyčka, graf...)]
 
 === #finalized[Úvod]
 
 #accepted[
-#diff[V terminologii agentního inženýrství označuje pojem *harness* (řídicí postroj) aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu.][V terminologii agentního inženýrství označuje pojem #term("Harness", explanation: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.") aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu.] Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
+V terminologii agentního inženýrství používá tato práce pojem #term(terms.harness). #term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false). Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
 
-#diff[Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná *agentní smyčka* (_Agent Loop_).][Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná #term("Agent Loop", explanation: "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.") (agentní smyčka).]
+Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
 ]
 
-=== #finalized[Agent vs. Chatbot]
+=== #diff[#finalized[Agent vs. Chatbot]][#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]
 
 #accepted[
-#diff[Rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.][Rozdíl mezi konverzačním #term("Chatbot", explanation: "Systém založený na jazykovém modelu určený k pasivní textové interakci s uživatelem; odpovídá na jednotlivé dotazy v chatu, avšak nedisponuje nástroji pro samostatnou modifikaci okolního prostředí.")em a autonomním #term("Agent", explanation: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného inženýrského cíle.")em nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.]
+#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline"). Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
 
 Srovnání obou přístupů:
 - *Konverzační chatbot*:
@@ -268,11 +268,13 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
-#finalized[
+#diff[#finalized[
 === Dovednosti (Skills)
+]][
+=== #term(terms.skills, marker: false, linked: false, emphasized: false)
 ]
 
-#accepted[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (#term("Skills", explanation: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.")).]
+#accepted[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline").]
 
 #unconfirmed[
 Architektura dovedností staví na následujících principech:
@@ -280,13 +282,13 @@ Architektura dovedností staví na následujících principech:
 - *Dynamické načítání pro úsporu kontextu*: Do výchozího promptu se vloží pouze stručný přehled dostupných dovedností. Kompletní instrukce a skripty se do kontextu načtou až v okamžiku, kdy agent danou dovednost explicitně vyvolá.
 - *Skripty a záchytné body (_Scripts & Hooks_)*: Dovednosti mohou obsahovat deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
 
-#diff[][Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term("Plugins", explanation: "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.") (zásuvné moduly). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.]
+#diff[][Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term(terms.plugins, render: "both", detail-language: "cs", detail-style: "inline"). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.]
 ]
 
 #unconfirmed[
-=== Model Context Protocol (MCP servery)
+=== #term(terms.mcp, marker: false, linked: false, emphasized: false) servery
 
-#diff[Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard *Model Context Protocol (MCP)* @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.][Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard #term("MCP", explanation: "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC.") @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.]
+#diff[Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard *Model Context Protocol (MCP)* @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.][Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl #term(terms.mcp, render: "both", detail-language: "cs", detail-style: "inline") @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.]
 
 Základní vlastnosti protokolu MCP:
 - *Protokolové rozhraní*: Komunikace probíhá prostřednictvím standardu JSON-RPC (přes standardní vstup/výstup `stdio` nebo proud událostí `Server-Sent Events / SSE`).
@@ -304,7 +306,7 @@ Klíčové přístupy ke škálování zahrnují:
 ]
 
 #unconfirmed[
-=== Zapojení člověka do smyčky (Human-in-the-loop)
+=== #term(terms.human_in_the_loop, marker: false, linked: false, emphasized: false)
 
 Základním principem navrženého řešení není nekritická plná autonomie, nýbrž efektivní kooperace člověka a stroje. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
