@@ -663,9 +663,6 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     matters: an installation written before the pipeline generated it protects the branch against
     contexts nothing reports.
 
-    If the manifest still lives at the legacy `.github/darkfactory.json`, it is migrated to
-    `.darkfactory/repo.df`.
-
     Args:
         root: Repository root.
         ref: Pipeline commit to pin.
@@ -674,15 +671,8 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     Returns:
         True when the manifest on disk changed.
     """
-    new_path = os.path.join(root, ".darkfactory", "repo.df")
-    legacy_path = os.path.join(root, ".github", "darkfactory.json")
-
-    # Find existing manifest, preferring new location.
-    if os.path.isfile(new_path):
-        path = new_path
-    elif os.path.isfile(legacy_path):
-        path = legacy_path
-    else:
+    path = manifest.resolve_manifest_path(root)
+    if not os.path.isfile(path):
         return False
 
     with open(path, encoding="utf-8") as handle:
@@ -698,20 +688,11 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
 
     changed = json.dumps(current, sort_keys=True) != before
 
-    # Migrate legacy location to the new path.
-    if path == legacy_path:
-        os.makedirs(os.path.dirname(new_path), exist_ok=True)
-        with open(new_path, "w", encoding="utf-8") as handle:
-            handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-        os.remove(legacy_path)
-        print("  migrated .github/darkfactory.json -> .darkfactory/repo.df")
-        return True
-
     if not changed:
         return False
-    with open(new_path, "w", encoding="utf-8") as handle:
+    with open(path, "w", encoding="utf-8") as handle:
         handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-    print("  reconciled .darkfactory/repo.df")
+    print(f"  reconciled {os.path.relpath(path, root)}")
     return True
 
 
