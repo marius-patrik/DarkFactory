@@ -37,10 +37,6 @@
         Je praxe ve které se jednoduše snažíme napsat co nejlepší prompt pro docílení našeho nasazení pomocí modelu.
 
 
-    Meta Harness
-        V reálném světe se ukázalo že nejefektivnější harness je takový, který dá samotnému agentovi rozhodnou moc nad jeho architekturou a možnost kontiunální změny tedy evoluce. Toto je sice velice efektivní pro maximalizovaní práce agenta, ale v realném světe se toto dá nasadit pouze pro osobního agenta. Například pro costumer support bota firma určitě nestojí o to aby jejich model přišel na to jak dělat něco jiného.
-
-
     Multimodální modely
         Architektura transformeru se dá nasadit na více než pouze jazyk. V praxi se dá tokenizovat vlastně cokoliv a tedy můžeme natrénovat model pro cokoliv. Ať už je to generovaní videí či obrazků nebo například ovladání robota, 3D animace a spousta dalšího.
 
@@ -74,7 +70,6 @@
 
 
 Sources: 
-    Meta Harness: End to end optimization of Agent Harnesses = https://arxiv.org/abs/2603.28052 ;
     Google: Attention is all you need = https://arxiv.org/abs/1706.03762 ; 
     Anthropic MCP server documentation = https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro#explore-mcp ;
     Deepseek Harness = https://arxiv.org/abs/2608.25512 ;

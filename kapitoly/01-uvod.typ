@@ -25,12 +25,12 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 *Dílčí cíle:*
 - Vymezit deterministické základy infrastruktury (správu verzí a kontinuální integraci).
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).
-- Navrhnout architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct) s detekcí uvíznutí, rozpočtem tahů a bezpečnostním pískovištěm.
+- Navrhnout architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct), bezpečnostní pískoviště a hierarchickou orchestraci subagentů.
 - Formalizovat mechanismy zapojení člověka do smyčky (_Human-in-the-loop_), schvalovací brány a protokol revizních značek pro dohled nad textovými výstupy.
 
 *Výzkumné otázky:*
 - *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po pull request strukturovat tak, aby role vývojáře spočívala výhradně v architektonickém dozoru a schvalování záměru (Human Gate), bez nutnosti ručního psaní rutinního kódu?
-- *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými deterministickými mechanismy (stuck detection, rozpočet tahů, circuit breaker) lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?
+- *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými architektonickými mechanismy lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?
 - *VO3 (Integrita paměti a eliminace sémantického posunu)*: Jak spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a ztrátě architektonických invariantů při kompresi?
 ]
 

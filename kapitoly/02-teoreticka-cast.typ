@@ -134,12 +134,6 @@
 #unconfirmed[
 - *Hierarchická epizodická paměť (RAG)*: Ukládání doslovné historie tahů a výpisů nástrojů do externí databáze; selektivní injekce pouze bezprostředně relevantních fragmentů do aktivního okna.
 - *Persistentní graf stavu projektu (_Project State Graph_)*: Udržování explicitního strukturovaného stavu repozitáře (změněné soubory, otevřené úkoly, výsledky testů, invarianty) mimo kontextové okno.
-- *Selektivní prořezávání KV cache*: Tenzorové uvolňování paměti s udržením klíčových kotev pozornosti (_attention sinks_) na úrovni inference (StreamingLLM @xiao2023, $H_2 O$ @zhang2023).
-]
-
-#note[
-  *Doporučení schématu správy kontextu:*
-  Doporučujeme zařadit srovnávací diagram znázorňující rozdíl mezi destruktivní rekurzivní textovou kompresí (Compaction) a tenzorovým prořezáváním KV cache (StreamingLLM / $H_2 O$) či externím grafem stavu projektu. Schéma pomůže vizualizovat zachování klíčových kotev pozornosti.
 ]
 
 === Degradace pozornosti (Context Rot)
@@ -219,18 +213,6 @@
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i rozpočtu na volání API.
 ]
 
-=== Deterministické pojistky a Circuit Breaker
-
-#unconfirmed[
-- *Rozpočet tahů a nákladů (_Step & Cost Budget_)*: Pevný limit maximálního počtu tahů $T_"max"$ (typicky 25–50 kroků) a finanční strop pro tokeny; při překročení dochází k okamžitému zastavení inference.
-- *Algoritmická detekce uvíznutí (_Stuck Detection_)*: Výpočet kanonického hashe volání nástroje v čase $t$:
-  $ h_t = "hash"("nástroj", "canonicalize"("argumenty")) $
-  Harness v klouzavém okně posledních $k$ tahů detekuje shodu $h_t = h_(t-1) = dots = h_(t-k+1)$ nebo cyklické periody.
-- *Dvoustupňová intervence*:
-  - *1. stupeň*: Injekce syntetického varování rozbíjejícího pravděpodobnostní atraktor v matici pozornosti.
-  - *2. stupeň (Circuit Breaker)*: Tvrdé přerušení cyklu, automatický návrat změn v gitu na poslední stabilní commit (`git checkout`) a eskalace člověku.
-]
-
 === Dovednosti (Skills)
 
 #unconfirmed[
@@ -245,19 +227,6 @@
 - *Model Context Protocol (MCP)* @anthropic-mcp: Otevřený standard propojující jazykové modely s externími nástroji a datovými zdroji.
 - *Protokolové rozhraní*: Komunikace probíhá přes protokol JSON-RPC (prostřednictvím `stdio` nebo `Server-Sent Events / SSE`).
 - *Architektonické oddělení*: Striktní oddělení běhového prostředí agenta od implementace nástrojů. MCP servery fungují jako samostatné, znovupoužitelné komponenty běžící mimo jádro harnessu.
-]
-
-=== Meta Harness a jeho bezpečnostní hranice
-
-#unconfirmed[
-- *Koncept Meta Harness* @metaharness2026: Samořízená evoluce a adaptace harnessu samotným agentem (úprava vlastních pravidel, konfigurací a promptů).
-- *Využití*: Vhodné pro osobní agenty maximalizující autonomii při řešení unikátních problémů.
-- *Rizika*: V podnikovém nasazení vyžaduje striktní deterministické ohraničení vylučující svévolnou modifikaci systémových pravidel.
-]
-
-#critique[
-  *Nekontrolovaná mutace v konceptu Meta Harness:*
-  Povolení samořízené evoluce harnessu samotným agentem (modifikace vlastních instrukcí, pravidel a nástrojů) představuje obrovské bezpečnostní a stabilitní riziko. Pokud agent v iteraci $k$ v důsledku mírné halucinace uvolní bezpečnostní pravidlo nebo oslabí validační podmínku, v iteraci $k+1$ ji přijme jako normu (uncontained meta-harness mutation). Pro produkční enterprise prostředí je nezbytné, aby řídicí harness obsahoval kryptograficky podepsané, neměnné jádro pravidel (Immutable Policy Core), které agent nesmí za žádných okolností modifikovat.
 ]
 
 === Škálování: hierarchičtí subagenti a DAG workflow
