@@ -88,10 +88,9 @@ Klíčové mechanismy ochrany zahrnují:
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
-== Kognitivní jádro a správa kontextového okna
+== LLM, chatboti, agenti a agentní inženýrství (kontext, prompt, smyčka, graf)
 
 #blue-note[
-  *Metodické vymezení a rozsah práce:*
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
 
