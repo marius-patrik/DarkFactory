@@ -1,11 +1,7 @@
 /** @packageDocumentation
- * Capability ABI package boundary.
- *
- * #421 owns the executable ABI/loader. #420 establishes the dependency-safe package identity without duplicating a
- * second capability system.
+ * Canonical DarkFactory capability ABI and deterministic in-process adapters.
+ * Filesystem discovery is intentionally isolated at @darkfactory/capability/loader.
  */
-export type {
-	TaskKind,
-	TaskNeed,
-	TaskProfile,
-} from "@darkfactory/protocol/model";
+export * from "./abi.ts";
+export * from "./compatibility.ts";
+export * from "./adapters.ts";

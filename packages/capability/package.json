@@ -4,7 +4,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./abi": "./src/abi.ts",
+    "./adapters": "./src/adapters.ts",
+    "./loader": "./src/loader.ts"
   },
   "files": [
     "src"
