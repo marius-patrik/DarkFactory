@@ -28,6 +28,7 @@ edit this projection.
 | `DF-RULE-015` | Repository taxonomy | `.agents/rules/015-repository-taxonomy.md` |
 | `DF-RULE-016` | Security and secrets | `.agents/rules/016-security-and-secrets.md` |
 
+
 ---
 
 ### Rule 1 — Unit tests
@@ -40,15 +41,33 @@ considered green.
 
 ### Rule 2 — Inline documentation and generated documentation
 
-Public APIs MUST be documented inline. TypeScript uses TSDoc on exported public symbols across first-party packages/capabilities; Rust and any retained migration Python use their ecosystem documentation conventions.
+Public source APIs MUST be documented inline.
 
-The final documentation engine is `@darkfactory/docs`, with `docs.df` as the native configuration and ProperDocs/MkDocs files accepted only as compatibility inputs. The same canonical homepage/content graph renders both the published docs homepage and committed `README.md`; CI fails on projection drift. Web presentation belongs only to `@darkfactory/web`.
+- **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
+- **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
+- **Python**: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.
+
+Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is `docs.df`, with `properdocs.yml` and `mkdocs.yml` accepted only as compatibility inputs.
+
+The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
+
+The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
 ### Rule 3 — Product requirements and ADRs
 
-`PRD.md` is the normative product requirements document. Current Request bodies define feature-specific behavior and accepted ADRs record durable architecture/rationale. Executable declarations use `repo.df`, `config.df`, `docs.df`, the workflow graph and canonical rules. Legacy manifest/config paths are not final contracts.
+`PRD.md` is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.
 
-Material PRD deviations require owner approval and an accepted numbered ADR before implementation.
+Executable declarations use the final DarkFactory contracts:
+
+- `repo.df` for repository/product declaration;
+- `config.df` for runtime/user/provider configuration;
+- `docs.df` for native documentation configuration;
+- the declarable workflow graph for execution topology;
+- `.agents/rules/*.md` for mandatory contribution/governance behavior.
+
+Legacy manifest/config paths are not normative final contracts.
+
+A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
 ### Rule 4 — English language consistency
 
@@ -64,47 +83,104 @@ types and the area taxonomy are defined by DF-RULE-015; this rule covers granula
 
 ### Rule 6 — CI readiness and verification
 
-The canonical/default branch MUST remain green on required checks; a red canonical branch is a repository-wide stop-the-line event.
+The canonical/default branch MUST remain green on its required checks. A red canonical branch is a stop-the-line event for repository-wide delivery until restored.
 
-A failing topic/recovery branch blocks that branch's merge and dependent work, but does not globally halt unrelated isolated branches whose own checks are green. Required checks come from the final normalized package/capability quality contract, and no branch may merge with red, missing or stale required checks.
+A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not globally halt unrelated isolated branches whose own required checks are green. Parallel work is allowed when it cannot consume or hide the failing branch state.
+
+Required checks are derived from the final normalized package/capability quality contract and synchronized with branch protection. A branch may not merge while any required check for its current head is red, missing or stale.
 
 ### Rule 7 — Branch and pull request workflow
 
-Normal product changes use dedicated delivery branches and pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.
+All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.
 
-The actual repository default/canonical branch is resolved dynamically; `main` is never assumed. Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity. Required checks/current-base conditions must pass before merge. History rewrites use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.
+- Branch names are lowercase, descriptive and do not depend on issue numbers.
+- The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
+- Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.
+- PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.
+- Required checks and current-base requirements must pass before merge.
+- Branch protection remains enabled with the final detected/generated check contract.
+- Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.
 
 ### Rule 8 — Automated formatting and linting
 
-Formatting is deterministic automation, not a review topic. The final #341 detection + capability-resolution contract determines formatter/linter actions for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration.
+Formatting is deterministic automation, not a review topic.
 
-Local verification, graph verification and CI consume the same normalized quality-action model. Unsupported/missing actions are diagnosed explicitly rather than silently treated as passing.
+The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
+
+Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
+
+Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.
 
 ### Rule 9 — Request binding, branch cleanup and board status
 
-Every delivery PR explicitly binds every Request it satisfies. A PR may satisfy multiple Requests only when #385 shared-plan/multi-Request rules prove valid coverage; Epic membership or stack topology never implies completion.
+Every delivery PR MUST explicitly bind every Request it satisfies.
 
-Merged branches are cleaned up when safe. The canonical seven project states remain `Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`, `Superseded`, and `Dropped`. A Request reaches Done only from its own terminal evidence or valid shared-plan completion.
+A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
+
+Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.
+
+Request/PR/project status uses one canonical reconciliation model with the seven states:
+
+- `Backlog`
+- `ToDo`
+- `In Progress`
+- `Blocked`
+- `Done`
+- `Superseded`
+- `Dropped`
+
+A Request reaches Done only from its own terminal evidence or explicit valid shared-plan/multi-Request completion.
 
 ### Rule 10 — Reviewed Planning and implementation alignment
 
-Before implementation, each governed unit of work has one current unified Planning artifact containing the semantic interpretation, evidence-justified implementation approach, dependencies, recovery inputs and verification expectations.
+Before implementation begins, each governed unit of work MUST have one current unified Planning artifact.
 
-Planning runs an independent review/fix loop until clean, followed by one explicit owner Planning Approval. Separate interpretation and plan approval gates are retired.
+Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified implementation approach, dependencies, recovery inputs and verification expectations.
 
-Implementation then runs deterministic verification, implementation review/fix, any required scope-amendment approval, final alignment, checks and final merge authorization. Material context changes invalidate stale Planning approval.
+Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner Planning Approval.
+
+There is no separate interpretation approval gate and plan approval gate in the final lifecycle.
+
+After implementation:
+
+- deterministic verification runs;
+- implementation review/fix loops until clean;
+- material scope outside approved Planning requires the lighter scope-amendment approval;
+- final alignment validates the implementation against approved Planning plus approved amendments;
+- required checks/review/merge gates remain mandatory.
+
+Planning approval becomes stale after a material Request/base/dependency/recovery-context change and cannot be silently reused.
 
 ### Rule 11 — Pull request review approval and governed merge
 
-Pull requests require the final repository protection/review contract before merge. Native GitHub review approval and canonical authorized DarkFactory approval commands are valid only for authorized actors; free-text cannot advance a gate.
+Pull requests require the final repository protection/review contract before merge.
 
-Merge readiness requires current-base/stack validity, green required checks, clean implementation review/fix, final Planning alignment, any required scope-amendment approval and final review/merge authorization. After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.
+Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.
+
+Merge readiness requires:
+
+- current-base/stack validity;
+- required checks green;
+- implementation review/fix clean;
+- final Planning alignment;
+- any required scope-amendment approval;
+- official final review/merge authorization.
+
+After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.
 
 ### Rule 12 — Verbatim Request capture and Planning gate
 
-Every governed task is represented by one or more tracked GitHub Requests before implementation. Preserve verbatim user wording, decompose genuinely independent tasks, and resolve Request/Epic/dependency/recovery relationships explicitly.
+Every incoming governed task MUST be represented by one or more tracked GitHub Requests before implementation.
 
-Generate one unified Planning artifact, independently review/fix it until clean, and require one owner Planning Approval before implementation. There is no final separate Interpretation gate. Delivery remains explicitly bound to the covered Request(s) or an approved shared-plan record.
+- Preserve the user's verbatim wording.
+- Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
+- Resolve Request/Epic/dependency/recovery relationships explicitly.
+- Generate one unified Planning artifact from the verbatim Request and authoritative context.
+- Independently review/fix Planning until clean.
+- Require one explicit owner Planning Approval before implementation.
+- Subsequent delivery remains bound to the Request(s) or an explicitly approved shared-plan record.
+
+There is no final separate `Interpretation` section/gate that must be approved before Planning can exist.
 
 ### Rule 13 — Specification sequence and when issues may exist
 
@@ -130,20 +206,48 @@ PRD.md  →  ADRs (.agents/notes/adr/)  →  issues
 
 ### Rule 14 — Capability-driven agent runtime and resilience
 
-DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry. Core owns execution, routing primitives, persistence/resume and capability loading; agentic/product behavior is versioned capabilities.
+DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.
 
-One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters. Explicit task kind is preserved where known; undeclared inference separates subject from required capability. Routing respects sensitivity, data-collection policy, capability needs, quotas and capability tiers. Every logical stage has one bounded elapsed-time budget across failover/tools. Natural model stop is valid; mutation truth comes from observed effects. Legacy Python invocation is migration-only until #359.
+- Core owns execution, routing primitives, persistence/resume and capability loading.
+- Agentic/product behaviors are versioned capabilities.
+- One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.
+- Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.
+- Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.
+- Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.
+- Every logical agent stage has one bounded elapsed-time budget across model failover and tools.
+- Natural model stop is accepted; mutation truth comes from observed effects.
+- Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.
+- CI agent execution remains containerizable/non-root.
 
 ### Rule 15 — Commits, repository taxonomy and domains
 
-Commits use Conventional Commits `<type>(<scope>): <description>` with the canonical allowed base types. Repository area labels/scopes are declared by final `repo.df`.
+Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
-Project classification keeps ecosystem, package, semantic domain and capability distinct. Repositories may be multi-package/polyglot/multi-domain. Initial domains include code, paper and math; capabilities are orthogonal. Request classification, commit-scope validation and labels consume the same declared taxonomy rather than copied lists.
+Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
+
+Repository area labels/scopes are declared by final `repo.df`, not a legacy manifest path.
+
+Project classification separates:
+
+- ecosystem/toolchain;
+- package;
+- semantic domain (initially including code, paper and math);
+- capability.
+
+A repository may contain multiple packages, ecosystems and domains. Capabilities are orthogonal and may apply across domains.
+
+Request classification, commit-scope validation and repository labels consume the same declared taxonomy rather than copied lists.
 
 ### Rule 16 — Security, authentication and secrets
 
 No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.
 
-`@darkfactory/keychain` is the sole machine/harness credential-custody owner; other packages/capabilities request scoped access rather than reading raw credential stores. `@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions, and browser bundles cannot import keychain/private-key/server-confidential code.
+`@darkfactory/keychain` is the sole machine/harness credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.
 
-GitHub user authority and GitHub App installation authority remain distinct. Secret-bearing recovery material is preserved locally and blocked from publication rather than leaked or discarded.
+`@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.
+
+The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.
+
+GitHub user authority and GitHub App installation authority remain distinct.
+
+Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
