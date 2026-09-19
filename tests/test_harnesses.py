@@ -72,6 +72,22 @@ def test_df_harness_runs_one_json_session_by_prompt_file():
     assert argv == ["df", "run", "--json", "--prompt-file", "/tmp/p.md"]
 
 
+def test_df_harness_passes_explicit_task_kind():
+    """An explicit stage kind reaches the existing df CLI contract."""
+    argv = REGISTRY["df"].build_argv(
+        "review this diff", None, "5m0s", prompt_file="/tmp/p.md", kind="review"
+    )
+    assert argv == [
+        "df",
+        "run",
+        "--json",
+        "--prompt-file",
+        "/tmp/p.md",
+        "--kind",
+        "review",
+    ]
+
+
 def test_df_build_argv_falls_back_to_the_prompt_text():
     """Without a written file the placeholder degrades to the prompt itself, never emptiness."""
     argv = REGISTRY["df"].build_argv("do the thing", None, "5m0s")
