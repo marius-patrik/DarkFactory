@@ -6,33 +6,32 @@ applies_to: [agents, automation]
 activation: always
 owners: [harness-auth, system-audit]
 ---
-# Rule 11 — Pull request review approval and auto-merge
+# Rule 11 — Pull request review approval and governed merge
 
 ## Requirement
 
-Pull requests require official GitHub review approval before merging. The default branch protection
-requires at least one approving review on the last commit with stale reviews dismissed, without
-blocking the last pusher.
+Pull requests require the final repository protection/review contract before merge.
 
-- **Native Approval**: Because PRs are authored by `github-actions[bot]`, the maintainer can select
-  **Approve** in the GitHub UI, comment `/approve`, `approve`, `lgtm`, or run a native `gh pr
-  review <id> --approve`.
-- **Auto-Merge Activation**: `.github/workflows/pr-approval-automerge.yml` listens for approvals
-  from the maintainer, marks the draft PR ready, and activates auto-merge with branch auto-deletion.
-- **Post-Merge Reconciliation**: On merge, automation sets the project status of the PR and all
-  bound issues to `Done`, applies the `Done` label, removes `In Progress`, and verifies bound issues
-  are closed.
+Native GitHub review approval and the canonical authorized DarkFactory approval command grammar are both valid only when the current actor is authorized. Free-text that merely resembles approval cannot advance a gate.
+
+Merge readiness requires:
+
+- current-base/stack validity;
+- required checks green;
+- implementation review/fix clean;
+- final Planning alignment;
+- any required scope-amendment approval;
+- official final review/merge authorization.
+
+After merge, df deterministically reconciles bound Requests/PRs/project state and safe branch cleanup.
 
 ## Rationale
 
-A single approved, squash-merged, auto-deleted history is the fastest correct loop the system can
-maintain without claiming human review that did not happen.
+Review state and merge authority must be based on GitHub/df evidence, not model prose or workflow-specific shortcuts.
 
 ## Enforcement
 
-- `.github/scripts/repo_settings.py` configures required reviews, stale-dismissal, and auto-merge.
-- `.github/scripts/handle_pr_approval.py` drives the approval webhook path.
-- Merge strategy has one executable source; review-cap limits live in the agent loop.
+Final GitHub/graph/Request capabilities and branch protection own the behavior; legacy workflow/script names are not normative.
 
 ## Exceptions
 
@@ -40,5 +39,4 @@ None.
 
 ## Change control
 
-Identity, `gh`-vs-API invocation, and merge mode are resolved by `harness-auth`, `gh-client`, and
-the merge-strategy owner; rule text names behavior, not implementation literals.
+The final command registry and GitHub App identity may evolve without changing these authorization invariants.
