@@ -65,7 +65,7 @@ závislosti na konkrétní instalaci písem.
 
 ## GitHub Pages
 
-Pages web publikuje všechny dokumentové šablony a pod každou všech osm profile/review variant. Odkazy míří přímo na PDF, takže se otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace vieweru.
+Pages web publikuje všechny dokumentové šablony a pod každou všech osm profile/review variant. Primární odkazy otevírají vlastní statický dokumentový viewer v `web/`, který používá PDF.js nad přesným PDF výstupem Typstu; přímé PDF zůstává dostupné pro stažení a jako fallback.
 
 <https://marius-patrik.github.io/DarkFactory-Paper/>
 
@@ -137,3 +137,19 @@ Renderer podporuje:
 
 Výchozí školní/merged sazba používá češtinu jako první jazyk a angličtinu jako druhý.
 Termíny se stejným českým a anglickým názvem se zobrazí pouze jednou.
+
+
+## Webový viewer
+
+GitHub Pages používá vlastní viewer namísto přesměrování do nativního PDF vieweru
+prohlížeče. Zdroj je v `web/viewer.html`, `web/viewer.css` a
+`web/viewer.js`; `scripts/build_site.py` pouze publikuje statické assety a propojuje
+je se všemi final/review variantami.
+
+Viewer používá PDF.js a zachovává PDF jako kanonický vizuální výstup Typstu. Nabízí
+thumbnail sidebar, plynulé stránkování, page jump, zoom, fit-width, final/review switch,
+fullscreen, světlý/tmavý režim a přímé stažení PDF.
+
+Oficiální UI webové aplikace Typst se zde nevkládá: není distribuováno jako
+self-hostovatelná/embeddable open-source komponenta. Experimentální Typst HTML export
+proto není produkčním viewerem této práce.
