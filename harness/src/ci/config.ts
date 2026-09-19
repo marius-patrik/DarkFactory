@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { ciFileSchema, type CiConfig, type ResolvedCheck } from "./schema.ts";
 
-export const CI_CONFIG_RELATIVE_PATH = join(".darkfactory", "ci.json");
+export const CI_CONFIG_RELATIVE_PATH = ".darkfactory/ci.json";
 
 export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
 	const absolutePath = resolve(repoDir, CI_CONFIG_RELATIVE_PATH);
