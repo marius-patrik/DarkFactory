@@ -1,7 +1,6 @@
 TYPST ?= typst
 FONTS := --font-path fonts
 MAIN  := main.typ
-REVIEW := review.typ
 OUT   := out/prace.pdf
 OUT_REVIEW := out/prace-review.pdf
 
@@ -23,7 +22,7 @@ build:
 
 review:
 	@mkdir -p $(dir $(OUT_REVIEW))
-	$(TYPST) compile $(FONTS) $(REVIEW) $(OUT_REVIEW)
+	$(TYPST) compile $(FONTS) --input review=true $(MAIN) $(OUT_REVIEW)
 	@echo "Hotovo (recenzní verze): $(OUT_REVIEW)"
 
 all: build review
@@ -38,7 +37,7 @@ png:
 
 check:
 	$(TYPST) compile $(FONTS) $(MAIN) --format pdf /dev/stdout > /dev/null
-	$(TYPST) compile $(FONTS) $(REVIEW) --format pdf /dev/stdout > /dev/null
+	$(TYPST) compile $(FONTS) --input review=true $(MAIN) --format pdf /dev/stdout > /dev/null
 
 clean:
 	rm -rf out
