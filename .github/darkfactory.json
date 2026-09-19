@@ -30,12 +30,12 @@
     "$comment": "Detection finds typst.toml on its own. The commands are declared because this repository vendors its fonts, so the build is not the ecosystem default; formatting is off because typstyle would reflow hand-set Czech typography.",
     "testing": {
       "typst": {
-        "command": "typst compile --font-path fonts main.typ out/prace.pdf"
+        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts review.typ out/prace-review.pdf"
       }
     },
     "release": {
       "typst": {
-        "command": "typst compile --font-path fonts main.typ out/prace.pdf"
+        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts review.typ out/prace-review.pdf"
       }
     },
     "formatting": {
