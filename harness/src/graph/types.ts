@@ -1,6 +1,3 @@
-export {
-	CANONICAL_STATUSES,
-} from "../../../packages/protocol/src/workflow.ts";
 export type {
 	Actor,
 	AgentNode,
@@ -20,3 +17,4 @@ export type {
 	RunState,
 	WorkflowGraph,
 } from "../../../packages/protocol/src/workflow.ts";
+export { CANONICAL_STATUSES } from "../../../packages/protocol/src/workflow.ts";
