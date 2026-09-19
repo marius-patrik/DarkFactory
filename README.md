@@ -1,168 +1,198 @@
 # DarkFactory
 
-**Turn-key template repository for fully autonomous, governed software engineering pipelines ("Lights-Out Software Engineering").**
+**Autonomous, governed software delivery built around a self-hosting `df` engine, versioned capabilities and GitHub as the durable control plane.**
 
-One engine, fully automated delivery. DarkFactory provides a complete, battle-tested autonomous software factory setup where feature requests, bug reports, and refactors are ingested, interpreted, planned, implemented, self-reviewed, and merged under rigorous human approval gates.
+> **Status:** architecture convergence and completion are in progress. `PRD.md` defines the target product; `PLAN.md` defines the optimized path from the current hybrid system to the final self-hosting release.
 
-> **Status: Template repository.** Instantiate this repository to bootstrap any new or existing software project with an enterprise-grade autonomous development pipeline, strict branch protection, project board automation, and multi-harness agent orchestration.
+## Product model
 
----
+A DarkFactory Request moves through one governed lifecycle:
 
-## The Dark Factory Model
-
-In manufacturing, a **Dark Factory** (or *lights-out factory*) operates autonomously with zero or minimal on-site human intervention. DarkFactory brings this paradigm to software engineering:
-
+```text
+verbatim Request + context
+        ↓
+unified Planning
+        ↓
+independent Planning review/fix until clean
+        ↓
+owner Planning Approval
+        ↓
+implementation
+        ↓
+deterministic verification
+        ↓
+implementation review/fix
+        ↓
+scope amendment only if required
+        ↓
+final alignment + checks + review
+        ↓
+merge/reconciliation
 ```
-user request  ──▶  Request issue      ──▶  interpretation  ──▶  maintainer comments `approve`
-                   (verbatim wording)      (agent)
-                                                    │
-                                                    ▼
-                   Plan issue (sub-issue) ──▶  maintainer comments `approve`
-                                                    │
-                                                    ▼
-                   branch ─▶ Draft PR (bot-authored) ─▶ self-review loop ─▶ plan alignment
-                                                    │
-                                                    ▼
-                   maintainer Review Approval ──▶  auto-merge  ──▶  issues closed, board set to Done
-```
 
-### Two Explicit Human Gates
-1. **Interpretation Gate**: You approve the agent's interpretation of your verbatim request before any planning begins.
-2. **Plan Gate**: You approve the structured implementation plan before any code is written.
+The final production system does not rely on separate interpretation/plan approval gates or model claims about repository mutations.
 
-Once both gates are approved, the autonomous pipeline generates the branch, drafts the PR, runs self-review cycles, enforces plan alignment, and waits for your native GitHub PR review approval before auto-merging.
+## Architecture
 
----
+DarkFactory is converging from the current monolithic private harness into a root Bun workspace:
 
-## Core Pillars & Features
-
-| Capability | Description |
+| Package | Responsibility |
 |---|---|
-| **Multi-Harness Agent Runner** | Native support for Antigravity (`agy`), Claude Code, Codex, Kimi, Grok, Cursor, and Opencode with configurable priority order. |
-| **Quota & Error Resilience** | Automatic quota exhaustion detection, exponential backoff, state checkpointing, and graceful multi-model fallback. |
-| **Two-Gate Human Governance** | Non-negotiable human sign-offs on interpretation and planning prevent hallucinated scope drift. |
-| **Bot-Authored Draft PRs** | Pull requests are opened by `github-actions[bot]` so maintainers can natively review, comment, and approve them on GitHub. |
-| **Project Board Automation** | Live 7-state taxonomy synchronization on GitHub Projects v2 (`Backlog`, `ToDo`, `In Progress`, `Blocked`, `Done`, `Superseded`, `Dropped`). |
-| **Settings as Code** | Complete GitHub repository configuration (labels, branch protection, permissions, auto-merge, Pages) executed idempotently via `repo_settings.py`. |
-| **Generated Documentation** | A Bun generator stages canonical repository sources, builds them with ProperDocs, and removes the transient source tree after publishing to GitHub Pages. |
-| **Strict CI & Test Guards** | Guarded language jobs (`hashFiles`) prevent false skips while product code is bootstrapping, keeping required status checks green. |
+| `@darkfactory/protocol` | Browser/runtime-safe schemas, serialized state and shared contracts |
+| `@darkfactory/core` | Execution kernel, graph/run state, routing/provider mechanisms and capability loading |
+| `@darkfactory/capability` | Capability ABI, loader and generated adapter/build tooling |
+| `@darkfactory/github` | Typed GitHub REST/GraphQL substrate |
+| `@darkfactory/keychain` | Machine/harness credentials, OAuth, tokens, refresh, secure storage and GitHub App credentials |
+| `@darkfactory/auth` | Human/browser GitHub App authentication and web sessions |
+| `@darkfactory/docs` | Headless documentation compiler and content graph |
+| `@darkfactory/cli` | `df` CLI, command composition and TUI |
+| `@darkfactory/web` | Shared React web application for docs and operator UI |
 
----
+The old `@darkfactory/harness` boundary is transitional and will not be the final public package architecture.
 
-## Repository Structure
+## Capabilities
 
-| Path | Purpose |
-|---|---|
-| `PRD.md` | **Normative.** Product requirements, constraints, actors, and acceptance measures. |
-| `AGENTS.md` | **Normative.** The binding rules for every contributor (human or AI agent); generated from `.agents/rules/`. |
-| `.darkfactory/manifest.json` | **Executable.** Per-repository identity, areas, versioning, and board declaration for the shared pipeline. |
-| `_rules` / `_notes` | Root aliases (symlinks) to `.agents/rules/` and `.agents/notes/`. |
-| `.github/workflows/agent.yml` | Containerized autonomous agent workflow dispatched on issues, comments, and PR reviews. |
-| `.github/workflows/ci.yml` | Multi-Python CI pipeline, guarded language verification, and docs validation. |
-| `.github/workflows/project-automation.yml` | GitHub Project board transitions driven by issue and PR lifecycle events. |
-| `.github/workflows/pr-approval-automerge.yml` | Maintainer approval detection, PR auto-merge, and post-merge board reconciliation. |
-| `.github/workflows/open-pr.yml` | Opens draft pull requests authored by the bot. |
-| `.github/workflows/auto-format.yml` | Automated code formatting on push across all branches. |
-| `.github/workflows/verify-pr-issue.yml` | Enforces that every pull request binds an open issue. |
-| `.github/workflows/deploy-docs.yml` | Automated documentation site deployment to GitHub Pages. |
-| `.github/scripts/agent_runner.py` | Multi-stage autonomous agent execution pipeline with quota backoff and checkpoint/resume. |
-| `.github/scripts/harnesses.py` | CLI harness abstraction layer driving Antigravity, Claude, Codex, Kimi, and other runners. |
-| `.github/scripts/project_automation.py` | GitHub Projects v2 GraphQL client managing board status transitions. |
-| `.github/scripts/handle_pr_approval.py` | Pull request approval detection and auto-merge handler. |
-| `.github/scripts/repo_settings.py` | Declarative GitHub repository settings, labels, and branch protection as code. |
-| `docker/Dockerfile.agent` | Reproducible container environment equipped with Python, uv, Node/Bun, Rust, and Git. |
-| `tests/` | 120+ unit tests validating governance rules, pipeline configs, harnesses, and automation. |
+Core contains mechanisms. Agentic/product behavior is implemented as versioned first-party capabilities under `capabilities/`.
 
----
+The initial set includes:
 
-## Quickstart: Using This Template
-
-### 1. Create your repository
-Click **Use this template** on GitHub, or run:
-```bash
-gh repo create my-project --template marius-patrik/DarkFactory --public --clone
-cd my-project
+```text
+code        paper       math        docs
+git         github      planning    review
+ci          release     recovery    hooks
+epics       stacks      ...
 ```
 
-### 2. Install development tools
-```bash
-pip install -r requirements-dev.txt
-pytest -v
+One canonical TypeScript capability definition can be built into native DarkFactory/Pi integration, an MCP server, and supported Claude/Codex/agent skill/plugin forms. Official capabilities ship with standard df while third-party capabilities use the same ABI/loader.
+
+### Domains are not capabilities
+
+DarkFactory keeps ecosystem/package/domain classification separate from behavior.
+
+A single repository may contain, for example:
+
+- a TypeScript implementation in the `code` domain;
+- a Typst/LaTeX thesis in the `paper` domain;
+- Lean/proof work in the `math` domain.
+
+Capabilities such as docs, git, review and CI can apply across several domains.
+
+## Configuration
+
+Final configuration is split by concern:
+
+- `repo.df` — repository/product declaration;
+- `config.df` — runtime/user/provider configuration;
+- `docs.df` — native documentation configuration.
+
+For repo/config, the final #340 contract accepts either `.darkfactory/<name>.df` or root `<name>.df`; both-present is an error. `.df` is a filename extension, never a directory.
+
+`properdocs.yml` and `mkdocs.yml` remain supported as documentation compatibility inputs, not as final runtime dependencies.
+
+## Credentials and GitHub authentication
+
+Two packages deliberately separate trust boundaries.
+
+### `@darkfactory/keychain`
+
+Owns all machine/harness credential custody: provider keys/OAuth, refresh tokens, multi-account slots, imported CLI credentials, GitHub App private-key/JWT/installation tokens, local user credentials, redaction and secret scanning.
+
+Capabilities declare credential requirements rather than reading raw environment variables or keychains themselves.
+
+### `@darkfactory/auth`
+
+Owns human authentication for DarkFactory Web through the existing DarkFactory GitHub App.
+
+The Pages application uses user authorization; a minimal confidential broker handles token exchange/refresh only. GitHub remains the authorization authority and durable control plane. The broker is not a DarkFactory project/state/execution backend.
+
+## Documentation
+
+DarkFactory is replacing ProperDocs/MkDocs execution with its own `@darkfactory/docs` engine.
+
+The final compiler combines:
+
+- root Markdown/product docs;
+- ADRs and rules;
+- actual TypeScript/TSDoc API documentation;
+- capability-contributed docs;
+- repository/graph/workflow metadata;
+- supported API extraction from other ecosystems.
+
+TypeDoc may be used internally for TypeScript extraction.
+
+The docs homepage and this README will be rendered from the same semantic content graph so they cannot drift independently.
+
+## DarkFactory Web
+
+Every consumer uses the same prebuilt `@darkfactory/web` release artifact. Consumer repositories compile their own content/data but do **not** rebuild the React application.
+
+The application is hosted on GitHub Pages and reads live GitHub state directly through browser-safe GitHub/auth interfaces.
+
+Target UI stack:
+
+- React + TypeScript;
+- shadcn/ui;
+- lucide-animated;
+- Motion;
+- Dagre;
+- Wouter;
+- Dockview where useful.
+
+The web application is intended to replace normal day-to-day use of the GitHub website for DarkFactory operations while keeping GitHub itself as the durable issue/PR/check/project/event/authorization layer.
+
+## Self-hosting and completion strategy
+
+The optimized program no longer waits for every product feature before switching engines.
+
+The critical path is:
+
+```text
+bootstrap routing
+      ↓
+final package/capability foundations
+      ↓
+repo/config/state + runtime/lifecycle
+      ↓
+routing + natural-stop result capture
+      ↓
+production graph handlers + branch repair
+      ↓
+#359: df becomes the production engine
+      ↓
+remaining features completed through df itself
 ```
 
-### 3. Bootstrap repository settings
-Configure GitHub labels, merge permissions, and topics without locking protection yet:
-```bash
-python .github/scripts/repo_settings.py --apply --skip-protection
-```
+Recovered September work is reconciled in parallel into its final package/capability homes rather than regenerated from scratch.
 
-### 4. Create your Project board and set secrets
-1. Create a GitHub Project v2 named **DarkFactory** (or your project name).
-2. Set the repository variable:
-   ```bash
-   gh variable set PROJECT_NUMBER --body "<project-number>"
-   ```
-3. Set your pipeline secrets:
-   ```bash
-   # Required for GitHub Project writes and bot PR CI triggers:
-   gh secret set GH_PROJECT_TOKEN
-   
-   # Provider secrets (for whichever agent harness you use):
-   gh secret set ANTIGRAVITY_REFRESH_TOKEN
-   gh secret set ANTIGRAVITY_CLIENT_ID
-   gh secret set ANTIGRAVITY_CLIENT_SECRET
-   
-   # Enable the autonomous agent runner:
-   gh variable set AGENT_ENABLED --body "true"
-   ```
+See [PLAN.md](PLAN.md) for the authoritative execution program and recovery map.
 
-### 5. Apply branch protection
-Once initial commits are landed and CI reports green:
-```bash
-python .github/scripts/repo_settings.py --apply
-```
+## Distribution
 
-From this moment on, your repository operates as an autonomous Dark Factory!
+First-party packages and capabilities are intended to publish under the `darkfactory` GitHub organization.
 
----
+Initial first-party releases use one lockstep DarkFactory SemVer plus a separately versioned capability ABI.
 
-## The `darkfactory` command
+Final releases include the CLI/runtime, official capabilities and generated adapters, checksums/provenance, and the prebuilt web bundle.
 
-One front door for a deployment. Every subcommand delegates to the module that already implements
-it, so there is one implementation of each behaviour and the two cannot drift.
+## Fleet acceptance
 
-```bash
-ln -s "$(pwd)/bin/darkfactory" /usr/local/bin/darkfactory
+The final released system is proved across six repositories:
 
-darkfactory status                  # why is nothing happening
-darkfactory describe                # what is this repository made of
-darkfactory auth --repo owner/name  # set harness credentials from this machine
-darkfactory license                 # apply the licence the manifest declares
-darkfactory submodules              # pin and update submodules
-```
+1. DarkFactory
+2. omnis
+3. ChessWithQuests
+4. OdbornaPrace-paper
+5. template-OdbornaPrace
+6. OdbornaPrace-mono
 
-`status` answers the question an operator actually has, by checking the things that are silently
-absent rather than loudly broken - a missing credential, an agent that was never switched on, a
-repository where the pipeline was never installed.
+Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, accounts for every recovery source, validates docs/web/auth/capabilities, and then re-runs the original #68 declarable-graph contract.
 
-## TypeScript harness
+## Normative references
 
-The integrated Bun-based operator CLI, agent runtime, typed GitHub client, and CI-management engine live in [`harness/README.md`](https://github.com/marius-patrik/DarkFactory/blob/darkfactory/harness/README.md), with the `df` command as their shared entry point.
-
-## Local Development & Testing
-
-```bash
-# Run unit tests
-pytest -v
-
-# Check formatting
-black --check .
-
-# Serve documentation locally
-properdocs serve
-```
-
----
+- [PRD.md](PRD.md) — product requirements and architecture
+- [PLAN.md](PLAN.md) — optimized completion/recovery/cutover plan
+- [AGENTS.md](AGENTS.md) — projection of canonical contribution/governance rules
+- [ADRs](.agents/notes/adr/) — accepted architecture decisions
 
 ## License
 
