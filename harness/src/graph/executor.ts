@@ -66,7 +66,12 @@ async function readJson<T>(path: string): Promise<T | undefined> {
 		}
 		return undefined;
 	}
-	return JSON.parse(await readFile(path, "utf8")) as T;
+	const content = await readFile(path, "utf8");
+	try {
+		return JSON.parse(content) as T;
+	} catch (err) {
+		throw new Error(`Invalid JSON in ${path}: ${err instanceof Error ? err.message : String(err)}`);
+	}
 }
 
 /** A trigger node for a fresh run: the node whose trigger matches the starting event. */

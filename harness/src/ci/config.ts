@@ -9,7 +9,7 @@ export async function loadCiConfig(repoDir = process.cwd()): Promise<CiConfig> {
 	try {
 		content = await readFile(absolutePath, "utf-8");
 	} catch (err: unknown) {
-		throw err;
+		throw new Error(`Failed to read ${absolutePath}: ${err instanceof Error ? err.message : String(err)}`);
 	}
 
 	let parsedJson: unknown;
