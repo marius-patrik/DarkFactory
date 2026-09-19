@@ -6,36 +6,35 @@ applies_to: [agents, automation]
 activation: always
 owners: [merge-gates]
 ---
-# Rule 10 — Pre-implementation planning and plan review
+# Rule 10 — Reviewed Planning and implementation alignment
 
 ## Requirement
 
-Before implementation begins on any task, the implementation plan MUST be posted as a comment on the
-same `Request` issue and approved there. The plan MUST detail objectives, architectural and code
-changes, and verification steps.
+Before implementation begins, each governed unit of work MUST have one current unified Planning artifact.
 
-Both approval gates remain: the interpretation is approved before a plan is written, and the plan is
-approved before any code is. One unit of work is one issue, so a pull request binds one thing and
-closing it closes one thing.
+Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified implementation approach, dependencies, recovery inputs and verification expectations.
 
-- **Implementation Review Gate**: Prior to merging the bound pull request, an implementation review
-  MUST be conducted and commented on the same issue, confirming the implementation matches the plan
-  exactly (`Matches Plan: Yes`).
-- **Plan Alignment**: If the implementation diverged from the plan, an alignment comment
-  (`Plan Alignment:`) detailing all deviations MUST be posted and explicitly approved before the
-  pull request can be merged. CI enforces the presence of both the plan and the pre-merge review on
-  all bound issues.
+Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner Planning Approval.
+
+There is no separate interpretation approval gate and plan approval gate in the final lifecycle.
+
+After implementation:
+
+- deterministic verification runs;
+- implementation review/fix loops until clean;
+- material scope outside approved Planning requires the lighter scope-amendment approval;
+- final alignment validates the implementation against approved Planning plus approved amendments;
+- required checks/review/merge gates remain mandatory.
+
+Planning approval becomes stale after a material Request/base/dependency/recovery-context change and cannot be silently reused.
 
 ## Rationale
 
-Two human gates — interpretation and plan — prevent scope drift before code exists; the review gate
-proves delivered code matches what was approved.
+One independently-reviewed Planning artifact preserves human intent while eliminating duplicate gates and repeated manual correction of invented plan details.
 
 ## Enforcement
 
-- `.github/scripts/agent_runner.py` implements the two-gate flow and the review loop.
-- `tests/test_governance.py` asserts the interpretation/plan markers exist in AGENTS.md.
-- `ci.yml` checks bound issues carry plan and review.
+#391 provides the durable Planning/review/fix lifecycle and shared review machinery.
 
 ## Exceptions
 
@@ -43,5 +42,4 @@ None.
 
 ## Change control
 
-Wording evolves with `merge-gates`; node topology belongs to `workflow-graph`. This rule keeps the
-invariants, not the stage diagram.
+Stage topology may evolve, but one reviewed Planning approval before implementation and final alignment remain invariants.
