@@ -2,7 +2,7 @@
 
 Every workflow and script in `.github/` is distributed byte-for-byte to each repository that uses
 this pipeline. Anything that differs between them - the owner and repository name, the project
-board, the area taxonomy, the versioning mode - lives in `.darkfactory/manifest.json` instead of
+board, the area taxonomy, the versioning mode - lives in `.darkfactory/repo.df` (or root `repo.df`) instead of
 being hardcoded, so an update to the pipeline is a fast-forward rather than a merge conflict.
 
 Keys are read with defaults throughout: a repository that declares nothing still gets a working
@@ -126,7 +126,7 @@ DEFAULT_IDENTITIES: Dict[str, Any] = {
 
 
 class Manifest:
-    """The parsed contents of a repository's `darkfactory.json`.
+    """The parsed contents of a repository's `repo.df`.
 
     Attributes:
         root: Absolute path to the repository root.
