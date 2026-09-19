@@ -105,6 +105,22 @@ Základní principy fungování modelu zahrnují:
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
+=== #finalized[#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]
+
+#accepted[
+#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline"). Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
+
+Srovnání obou přístupů:
+- *Konverzační chatbot*:
+  - Reaguje pouze na přímé textové výzvy v uzavřeném okně chatu.
+  - Nemá přímý přístup k souborovému systému ani k nástrojům operačního systému.
+  - Uživatel musí navržený kód ručně zkopírovat, vložit do projektu a otestovat.
+- *Autonomní agent*:
+  - Je vybaven sadou výkonných nástrojů (_tools_) pro práci s repozitářem.
+  - Aktivně prozkoumává soubory, modifikuje zdrojový kód, spouští testy a interpretuje jejich návratové kódy.
+  - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
+]
+
 === #finalized[Tokeny, tokenizace a Vektorová reprezentace \[Embedding\]]
 
 #finalized[
@@ -181,18 +197,6 @@ V praxi se projevuje dvěma hlavními mechanismy:
 Při komplexním křížovém refaktoringu ve velkém kontextu proto model často přehlédne klíčové souvislosti, které by v menším a čistším okně zpracoval bez potíží.
 ]
 
-#unconfirmed[
-=== #term(terms.prompt_engineering, name-separator: "paren", name-order: "en-cs", marker: false, linked: false, emphasized: false) a negativní instrukce
-
-#diff[Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
- Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
-
-Příčiny a inženýrská řešení tohoto jevu:
-- *Úskalí negativních instrukcí*: Zákazy formulované negací (např. „nemazat existující testy“) modely často porušují, protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázaný pojem dříve, než autoregresní proces uplatní logický operátor negace.
-- *Afirmativní formulace*: Pravidla je nutné formulovat pozitivně — namísto výčtu zákazů vymezit přesný postup a povolené mantinely chování.
-- *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
-]
-
 == #accepted[#term(terms.agentic_engineering, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false) a #term(terms.harness, language: "en", marker: false, linked: false, emphasized: false)]
 
 === #finalized[Úvod]
@@ -203,20 +207,16 @@ V terminologii agentického inženýrství používá tato práce pojem #term(te
 Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
 ]
 
-=== #finalized[#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]
+#unconfirmed[
+=== #term(terms.prompt_engineering, name-separator: "paren", name-order: "en-cs", marker: false, linked: false, emphasized: false) a negativní instrukce
 
-#accepted[
-#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline"). Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
+#diff[Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
+ Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
 
-Srovnání obou přístupů:
-- *Konverzační chatbot*:
-  - Reaguje pouze na přímé textové výzvy v uzavřeném okně chatu.
-  - Nemá přímý přístup k souborovému systému ani k nástrojům operačního systému.
-  - Uživatel musí navržený kód ručně zkopírovat, vložit do projektu a otestovat.
-- *Autonomní agent*:
-  - Je vybaven sadou výkonných nástrojů (_tools_) pro práci s repozitářem.
-  - Aktivně prozkoumává soubory, modifikuje zdrojový kód, spouští testy a interpretuje jejich návratové kódy.
-  - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
+Příčiny a inženýrská řešení tohoto jevu:
+- *Úskalí negativních instrukcí*: Zákazy formulované negací (např. „nemazat existující testy“) modely často porušují, protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázaný pojem dříve, než autoregresní proces uplatní logický operátor negace.
+- *Afirmativní formulace*: Pravidla je nutné formulovat pozitivně — namísto výčtu zákazů vymezit přesný postup a povolené mantinely chování.
+- *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
 #unconfirmed[
@@ -287,7 +287,7 @@ Architektura dovedností staví na následujících principech:
 ]
 
 #unconfirmed[
-=== #term(terms.mcp, marker: false, linked: false, emphasized: false) servery
+=== #finalized[#term(terms.mcp, marker: false, linked: false, emphasized: false) servery]
 
 #diff[Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard *Model Context Protocol (MCP)* @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.][Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl #term(terms.mcp, render: "both", detail-language: "cs", detail-style: "inline") @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.]
 

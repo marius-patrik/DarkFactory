@@ -17,11 +17,6 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
 Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — značovaná jako *agent harness* — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
 ]
 
-#note[
-  *Doporučení k motivaci:*
-  Doporučujeme doplnit srovnávací diagram analogie mezi fyzickou temnou továrnou (materiál $arrow$ montážní linka $arrow$ kontrola jakosti $arrow$ expedice) a agentním vývojem softwaru (GitHub Issue $arrow$ agentní harness $arrow$ CI validace $arrow$ PR/Release). Vizuální metafora výrazně zlepší srozumitelnost pro komisi.
-]
-
 == #finalized[Cíl práce a výzkumné otázky]
 
 === #finalized[Hlavní cíl]

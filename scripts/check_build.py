@@ -186,6 +186,14 @@ for required in (
         fail(f"canonical term-name renderer missing global naming contract: {required}")
 
 chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
+for removed_motivation in (
+    "Doporučení k motivaci",
+    "fyzickou temnou továrnou",
+    "montážní linka",
+    "Vizuální metafora výrazně zlepší srozumitelnost pro komisi",
+):
+    if removed_motivation in chapter1_source:
+        fail(f"removed motivation-diagram recommendation must not return: {removed_motivation}")
 finalized_main_goal = (
     "=== #finalized[Hlavní cíl]\n\n"
     "#finalized[\n"
@@ -218,6 +226,17 @@ if "označovaná jako *řídicí harness*" in chapter1_source:
     fail("legacy řídicí harness wording must not return")
 
 chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
+llm_section_pos = chapter2_source.find('== #finalized[#term(terms.language_model')
+agent_vs_pos = chapter2_source.find('=== #finalized[#term(terms.agent, marker: false')
+agentic_section_pos = chapter2_source.find('== #accepted[#term(terms.agentic_engineering')
+prompt_engineering_pos = chapter2_source.find('=== #term(terms.prompt_engineering')
+agent_loop_pos = chapter2_source.find('=== #diff[Agentní smyčka')
+if not (0 <= llm_section_pos < agent_vs_pos < agentic_section_pos):
+    fail("Agent vs. Chatbot must live under the LLM/chatbots/agents section")
+if not (0 <= agentic_section_pos < prompt_engineering_pos < agent_loop_pos):
+    fail("Prompt Engineering must live under Agentic Engineering before the agent-loop section")
+if "=== #finalized[#term(terms.mcp, marker: false, linked: false, emphasized: false) servery]" not in chapter2_source:
+    fail("Model Context Protocol (MCP) servery title must remain finalized")
 if "= #finalized[Teoretická část: Vymezení konceptu]" not in chapter2_source:
     fail("theoretical chapter title must remain finalized as Teoretická část: Vymezení konceptu")
 if "=== #finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]" not in chapter2_source:
