@@ -1,6 +1,6 @@
 import React from "https://esm.sh/react@18.3.1";
 import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
-import * as AnimatedIcons from "https://esm.sh/lucide-animated@1.0.5?deps=react@18.3.1,motion@12.23.24";
+import * as AnimatedIcons from "https://esm.sh/lucide-animated@1.0.5?deps=react@18.3.1,motion@13.4.0";
 
 const roots = new WeakMap();
 
