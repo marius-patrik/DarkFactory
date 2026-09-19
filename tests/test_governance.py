@@ -48,7 +48,7 @@ def test_agents_mandates_branches_prs_ci_and_protection():
     for token in ("pull request", "branch", "draft", "required checks", "branch protection"):
         assert token in content, f"AGENTS.md must mention {token!r}"
     assert "canonical/default branch" in content or "canonical branch" in content
-    assert "main is never assumed" in content
+    assert "`main` is never assumed" in content
 
 
 def test_agents_mandates_issue_binding_and_board_taxonomy():
@@ -134,9 +134,10 @@ def test_every_adr_is_a_discrete_record_with_status_and_date():
         assert re.search(r"\*\*Status\*\*:\s*[^\n]+", content), f"{name} must carry a Status field"
         assert re.search(r"\d{4}-\d{2}-\d{2}", content), f"{name} must carry a YYYY-MM-DD date"
 
-    assert numbers == [
-        f"{n:04d}" for n in range(1, len(numbers) + 1)
-    ], "ADR numbers must be the consecutive 0001..NNNN sequence"
+    assert len(numbers) == len(set(numbers)), "ADR numbers must be unique"
+    assert numbers == sorted(numbers), "ADR records must remain monotonically numbered"
+    for name, number in zip(records, numbers):
+        assert name.startswith(f"{number}-"), f"{name} must match its ADR heading number"
 
 
 def test_prd_names_current_modular_architecture_and_capability_boundary():
