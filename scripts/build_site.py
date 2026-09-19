@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+from urllib.parse import urlencode
 
 VARIANTS = (
     {
@@ -21,7 +22,7 @@ VARIANTS = (
     },
     {
         "profile": "cs",
-        "title": "Čistě česká verze",
+        "title": "Čéstě česká verze",
         "subtitle": "Czech projection with Czech terminology where bilingual helpers are used",
         "final": "prace-cs.pdf",
         "review": "prace-cs-review.pdf",
@@ -48,6 +49,7 @@ VARIANTS = (
 DEFAULT_TEMPLATE = "gjkt-odborna-prace"
 OUT = Path("out")
 SITE = Path("site")
+PDFJS_VERSION = "6.3.289"
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -65,15 +67,39 @@ if not template_names:
 
 SITE.mkdir(parents=True, exist_ok=True)
 
+
 def source_for(template_name: str, filename: str) -> Path:
     if template_name == DEFAULT_TEMPLATE:
         return OUT / filename
     return OUT / "templates" / template_name / filename
 
+
 def href_for(template_name: str, filename: str) -> str:
     if template_name == DEFAULT_TEMPLATE:
         return filename
     return f"templates/{template_name}/{filename}"
+
+
+def viewer_href(
+    template_name: str,
+    filename: str,
+    *,
+    title: str,
+    mode: str,
+    peer_filename: str,
+    peer_label: str,
+) -> str:
+    params = urlencode(
+        {
+            "file": href_for(template_name, filename),
+            "title": title,
+            "mode": mode,
+            "peer": href_for(template_name, peer_filename),
+            "peer_label": peer_label,
+        }
+    )
+    return f"viewer.html?{params}"
+
 
 for template_name in template_names:
     for variant in VARIANTS:
@@ -92,117 +118,47 @@ manifest = {
     "default_template": DEFAULT_TEMPLATE,
     "templates": template_names,
     "variants": VARIANTS,
+    "viewer": {
+        "engine": "PDF.js",
+        "pdfjs_version": PDFJS_VERSION,
+        "entrypoint": "viewer.html",
+    },
 }
 (SITE / "variants.json").write_text(
     json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
 
-sections = []
-for template_name in template_names:
-    cards = []
-    for variant in VARIANTS:
-        badge = (
-            '<span class="badge">recommended / doporučená</span>'
-            if template_name == DEFAULT_TEMPLATE and variant["recommended"]
-            else ""
-        )
-        final_href = href_for(template_name, variant["final"])
-        review_href = href_for(template_name, variant["review"])
-        cards.append(
-            f"""
-            <article class="card">
-              <div class="card-head">
-                <h3>{html.escape(variant["title"])}</h3>
-                {badge}
-              </div>
-              <p>{html.escape(variant["subtitle"])}</p>
-              <div class="actions">
-                <a class="primary" href="{html.escape(final_href)}">Open final PDF</a>
-                <a href="{html.escape(review_href)}">Open review PDF</a>
-              </div>
-            </article>
-            """
-        )
+VIEWER_CSS = """
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light dark;
+  --bg: #202124;
+  --toolbar: #2b2d31;
+  --toolbar-border: #3b3d42;
+  --sidebar: #25272b;
+  --surface: #303238;
+  --surface-2: #393c43;
+  --text: #f2f3f5;
+  --muted: #a8adb7;
+  --accent: #4b8bf5;
+  --accent-strong: #74a7ff;
+  --page-shadow: 0 10px 35px rgba(0, 0, 0, .35);
+  --thumb-active: rgba(75, 139, 245, .18);
+}
 
-    default_label = " <span class=\"template-default\">default</span>" if template_name == DEFAULT_TEMPLATE else ""
-    sections.append(
-        f"""
-        <section class="template-section">
-          <h2>{html.escape(template_name)}{default_label}</h2>
-          <div class="grid">
-            {''.join(cards)}
-          </div>
-        </section>
-        """
-    )
-
-page = f"""<!doctype html>
-<html lang="cs">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DarkFactory-Paper - publikované verze</title>
-  <style>
-    :root {{
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color-scheme: light dark;
-    }}
-    body {{ margin: 0; background: Canvas; color: CanvasText; }}
-    main {{ width: min(1080px, calc(100% - 32px)); margin: 48px auto; }}
-    h1 {{ margin-bottom: 8px; }}
-    .intro {{ max-width: 800px; opacity: .78; margin-bottom: 32px; line-height: 1.5; }}
-    .template-section {{ margin-top: 34px; }}
-    .template-section h2 {{ display: flex; align-items: center; gap: 10px; }}
-    .template-default, .badge {{
-      font-size: .72rem; padding: 3px 7px; border: 1px solid currentColor;
-      border-radius: 999px; opacity: .72; white-space: nowrap; font-weight: 500;
-    }}
-    .grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }}
-    .card {{
-      border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-      border-radius: 12px; padding: 18px;
-      background: color-mix(in srgb, Canvas 96%, CanvasText 4%);
-    }}
-    .card-head {{
-      display: flex; gap: 10px; align-items: center; justify-content: space-between;
-    }}
-    .card h3 {{ font-size: 1.04rem; margin: 0; }}
-    .card p {{ line-height: 1.45; opacity: .78; min-height: 3.8em; }}
-    .actions {{ display: flex; gap: 8px; flex-wrap: wrap; }}
-    a {{
-      color: inherit; text-decoration: none;
-      border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
-      border-radius: 8px; padding: 8px 10px;
-    }}
-    a.primary {{ font-weight: 650; }}
-    footer {{ margin-top: 36px; opacity: .65; font-size: .9rem; }}
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Odborná práce / Thesis</h1>
-    <p class="intro">
-      Všechny varianty vznikají z jednoho rukopisu. Výstup je určen kombinací
-      dokumentové šablony, publikačního profilu a final/review režimu. Odkazy míří
-      přímo na PDF a otevírají se v nativním PDF vieweru prohlížeče.
-    </p>
-    {''.join(sections)}
-    <footer>
-      Build commit: {html.escape(os.environ.get("GITHUB_SHA", "local")[:12] or "local")}
-    </footer>
-  </main>
-</body>
-</html>
-"""
-
-(SITE / "index.html").write_text(page, encoding="utf-8")
-(SITE / ".nojekyll").touch()
-print(
-    f"ok: built Pages definition for {len(template_names)} templates x "
-    f"{len(VARIANTS) * 2} variants"
-)
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e9eaed;
+  --toolbar: #ffffff;
+  --toolbar-border: #d7d9de;
+  --sidebar: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --text: #202124;
+  --muted: #686d76;
+  --accent: #326edb;
+  --accent-strong: #235fcb;
+  --page-shadow: 0 10px 34px rgba(20, 25, 34, .16);
+  --thumb-active: rgba(50, 110, 219, .13);
+}
