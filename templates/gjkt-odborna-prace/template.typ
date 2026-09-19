@@ -20,7 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, keyword-heading, render-keywords
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -202,27 +202,41 @@
   pagebreak()
 }
 
-#let anotace-strana(meta) = context {
-  let profile = profile-state.get()
+#let front-matter-section(title, body, break-after: true) = {
+  nadpis-bez-cisla[
+    #finalized[
+      #translation-heading(
+        title,
+        language: "auto",
+        school-both: true,
+        separator: "bar",
+        order: "cs-en",
+      )
+    ]
+  ]
+  body
+  if break-after { pagebreak(weak: true) }
+}
 
-  if profile in ("school", "cs", "merged") {
-    nadpis-bez-cisla[#finalized[Anotace]]
-    meta.anotace
-  }
+#let anotace-strana(meta) = {
+  front-matter-section(
+    translation(cs: [Anotace], en: [Annotation]),
+    render-translation(
+      meta.annotation,
+      language: "auto",
+      school-both: true,
+      labels: true,
+      stacked: true,
+      spacing: 8pt,
+      order: "cs-en",
+    ),
+  )
 
-  if profile in ("school", "merged") {
-    pagebreak(weak: true)
-  }
-
-  if profile in ("school", "en", "merged") {
-    nadpis-bez-cisla[#finalized[Annotation]]
-    meta.abstract
-  }
-
-  pagebreak(weak: true)
-
-  nadpis-bez-cisla[#finalized[#keyword-heading()]]
-  render-keywords()
+  front-matter-section(
+    translation(cs: [Klíčová slova], en: [Keywords]),
+    render-keywords(),
+    break-after: false,
+  )
 
   pagebreak()
 }
