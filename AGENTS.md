@@ -22,7 +22,7 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
   - When a suggestion is incorporated, implement the change and delete the `#note[...]` callout block.
 - **Red Callout (`#issue[...]` — ⚠️ *Chyba / Nesrovnalost k opravě:*)**:
   - Highlights factual inaccuracies, conceptual misconceptions, terminology blunders, logical gaps, grammatical/typing errors, and duplicate content.
-  - When correcting errors or removing text, use `#diff[old][new]` to visually show the replaced original text struck through in red and the corrected text in green.
+  - When correcting errors or removing text, use `#diff[old][new]` to show the original as a red `-` diff and the replacement as a green `+` diff.
   - Removed once the underlying defect is resolved in the manuscript.
 - **Orange Callout (`#critique[...]` — 🔥 *Hloubková kritika / Oponentura:* )**:
   - Uncompromising, rigorous, deep academic and architectural critique ("no holding back").
@@ -46,8 +46,8 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - **Preferred Preview Mode**: Standard native browser PDF view inside Google Chrome with automatic live reload.
 - **Never Use Custom Canvas/Web Viewers**: Do NOT use `tinymist preview` or web-canvas / SVG previewers with custom control toolbars. The user strictly prefers the normal, native Google Chrome PDF viewer interface.
 - **Preview Architecture & Commands**:
-  1. Background compiler: `typst watch --font-path fonts main.typ out/main.pdf` in `prace/`.
-  2. Background live reload server: `python3 scripts/preview_server.py` in `prace/` (serves the native Chrome PDF viewer via an auto-reloading iframe at `http://127.0.0.1:3333`).
+  1. Background compiler: `make watch` from the repository root (or `typst watch --font-path fonts --input template=gjkt-odborna-prace --input profile=school main.typ out/prace.pdf`).
+  2. Background live reload server: `python3 scripts/preview_server.py` from the repository root (serves the native Chrome PDF viewer via an auto-reloading iframe at `http://127.0.0.1:3333`).
   3. Browser launch: `open -a "Google Chrome" "http://127.0.0.1:3333"`.
 
 
