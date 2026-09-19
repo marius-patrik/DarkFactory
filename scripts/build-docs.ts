@@ -107,6 +107,7 @@ export function rewriteLinks(markdown: string, destPath: string): string {
   const linkRewrites: Record<string, string> = {
     "README.md": "index.md",
     "PRD.md": "prd.md",
+    "PLAN.md": "plan.md",
     "AGENTS.md": "agents.md",
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
@@ -476,6 +477,7 @@ export function stageDocs(repoRoot: string, stagingDir: string): void {
   const rootPages: Array<[string, string]> = [
     ["README.md", "index.md"],
     ["PRD.md", "prd.md"],
+    ["PLAN.md", "plan.md"],
     ["AGENTS.md", "agents.md"],
     [path.join(".agents", "notes", "bootstrap.md"), path.join("notes", "bootstrap.md")],
     [path.join(".agents", "notes", "vision_capture.md"), path.join("notes", "vision_capture.md")],

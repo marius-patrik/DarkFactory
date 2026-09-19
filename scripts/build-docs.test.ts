@@ -49,9 +49,10 @@ describe("Repository path compatibility", () => {
   });
 
   it("rewrites links that use the root rule and note aliases", () => {
-    const markdown = "[rule](_rules/001-unit-tests.md) [decision](_notes/adr/0001-domains.md)";
+    const markdown =
+      "[rule](_rules/001-unit-tests.md) [decision](_notes/adr/0001-domains.md) [plan](PLAN.md)";
     expect(rewriteLinks(markdown, "architecture/overview.md")).toBe(
-      "[rule](../rules/001-unit-tests.md) [decision](../architecture/decisions/0001-domains.md)"
+      "[rule](../rules/001-unit-tests.md) [decision](../architecture/decisions/0001-domains.md) [plan](../plan.md)"
     );
   });
 });
@@ -233,6 +234,7 @@ describe("Staging and cleanup lifecycle", () => {
 
     expect(fs.existsSync(path.join(tempDir, "index.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "prd.md"))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, "plan.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "agents.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "rules", "index.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "rules", "001-unit-tests.md"))).toBe(true);
