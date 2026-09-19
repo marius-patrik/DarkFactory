@@ -205,9 +205,9 @@ V terminologii agentního inženýrství označuje pojem *harness* (řídicí po
 Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná *agentní smyčka* (_Agent Loop_).
 ]
 
-=== Autonomní agent vs. konverzační chatbot
+=== #confirmed[Agent vs. Chatbot]
 
-#unconfirmed[
+#confirmed[
 Rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.
 
 Srovnání obou přístupů:
