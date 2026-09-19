@@ -260,271 +260,360 @@
       <main class="content" id="content">
         <article class="prose">
           <h1 id="darkfactory-product-requirements-document">DarkFactory — Product Requirements Document<a class="headerlink" href="#darkfactory-product-requirements-document" title="Permanent link">&para;</a></h1>
-<p><strong>Status: NORMATIVE.</strong> <code>PRD.md</code> is the single normative source for DarkFactory's product
-outcomes, constraints, actors, and acceptance measures. It succeeds the former
-<code>ARCHITECTURE.md</code>/<code>VISION.md</code> pair and removes their two-document override relationship; the
-non-normative provenance record of the scoping conversations lives under
-<code>.agents/notes/vision_capture.md</code>.</p>
-<h2 id="1-authority-and-scope">1. Authority and scope<a class="headerlink" href="#1-authority-and-scope" title="Permanent link">&para;</a></h2>
-<p>Product requirements in this document are normative. They rank below nothing else except the
-facts of the platform they run on.</p>
+<p><strong>Status: NORMATIVE.</strong></p>
+<p>DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. Execution sequencing belongs in <code>PLAN.md</code>; live state belongs in GitHub.</p>
+<h2 id="1-authority">1. Authority<a class="headerlink" href="#1-authority" title="Permanent link">&para;</a></h2>
 <ol>
-<li><code>PRD.md</code> defines stable product outcomes, constraints, actors, and acceptance measures.</li>
-<li><code>.darkfactory/manifest.json</code> and the declarable workflow graph define the mutable executable
-   declarations: providers and identities, taxonomy, graph nodes and edges, and installed
-   consumers.</li>
-<li><code>.agents/rules/*.md</code> define mandatory contribution and agent behavior.</li>
-<li><code>.agents/notes/adr/*.md</code> record why significant decisions were made; they do not override
-   current PRD requirements.</li>
-<li>Other <code>.agents/notes/</code> files are historical captures and runbooks and are non-normative.</li>
-<li>Published documentation is a generated view; it is never a source of truth.</li>
+<li><code>PRD.md</code> defines product requirements and architecture.</li>
+<li>Current Request bodies define approved feature-specific behavior.</li>
+<li>Accepted ADRs under <code>.agents/notes/adr/</code> record durable decisions and rationale.</li>
+<li><code>repo.df</code>, <code>config.df</code>, <code>docs.df</code> and the workflow graph are executable declarations.</li>
+<li><code>.agents/rules/*.md</code> define mandatory contribution/governance behavior.</li>
+<li>Generated docs/README/web views are projections, not independent sources of truth.</li>
 </ol>
-<p>A deviation from this document must be explicitly approved by the user and recorded in a numbered
-ADR under <code>.agents/notes/adr/</code> before it is implemented (<code>.agents/rules/003-product-requirements-and-adrs.md</code>).</p>
-<h2 id="2-problem-and-product-vision">2. Problem and product vision<a class="headerlink" href="#2-problem-and-product-vision" title="Permanent link">&para;</a></h2>
-<p>In manufacturing, a <strong>dark factory</strong> is a production facility operated entirely by robotics and
-automated systems; lights remain off because machines do not need light to perform precision
-assembly. DarkFactory brings the same paradigm to software engineering: routine but multi-step
-work — ingesting feature requests and bug reports, formulating disambiguated plans, writing code,
-tests and documentation, running bounded self-review passes, opening bot-authored draft pull
-requests, and merging on maintainer approval — proceeds autonomously, "with the lights off".</p>
-<p>The central thesis is that autonomous development must be constrained so that it can be trusted:</p>
+<p>A material deviation from this document requires owner approval and an accepted ADR.</p>
+<h2 id="2-product-vision">2. Product vision<a class="headerlink" href="#2-product-vision" title="Permanent link">&para;</a></h2>
+<p>DarkFactory turns a repository into a governed autonomous software factory.</p>
+<p>A human supplies intent and approvals. DarkFactory performs planning, implementation, deterministic verification, review/fix iteration, alignment, Git/GitHub mutation, CI coordination, merge/reconciliation, release and audit through one production engine.</p>
+<p>The system must be:</p>
 <ul>
-<li><strong>zero hallucinated scope drift</strong> — agents never invent work the user did not approve;</li>
-<li><strong>zero unattended regressions</strong> — changes are verified by real suites and gates before merge;</li>
-<li><strong>total alignment with human intent</strong> — the verbatim request and explicit approvals are the
-  contract, never an agent's paraphrase of them.</li>
+<li><strong>self-hosting</strong> — df is used to finish and evolve DarkFactory itself;</li>
+<li><strong>governed</strong> — explicit approval gates bind human intent;</li>
+<li><strong>resumable</strong> — interruption, quota exhaustion and conflicts do not lose completed effects;</li>
+<li><strong>truthful</strong> — completion/mutation claims come from observed state, not agent prose;</li>
+<li><strong>extensible</strong> — new project-specific behavior can be added as capabilities rather than rebuilding core;</li>
+<li><strong>multi-domain</strong> — one repository may contain code, papers, mathematics and other supported package types;</li>
+<li><strong>GitHub-native</strong> — GitHub remains the durable issue/PR/check/project/event/authorization control plane;</li>
+<li><strong>source-free in production</strong> — released df installs and runs without a DarkFactory source checkout.</li>
 </ul>
-<p>DarkFactory is delivered as a turn-key template repository: a consumer instantiates it and receives
-an enterprise-grade autonomous pipeline (agent orchestration, branch protection, project board
-automation, documentation publication) without designing any of it.</p>
-<h2 id="3-users-and-jobs">3. Users and jobs<a class="headerlink" href="#3-users-and-jobs" title="Permanent link">&para;</a></h2>
+<h2 id="3-actors">3. Actors<a class="headerlink" href="#3-actors" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Actor</th>
-<th>Job</th>
+<th>Responsibility</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Maintainer / operator</strong></td>
-<td>Approves interpretations, plans, and final review; monitors status; supplies credentials and the project board.</td>
+<td>Maintainer/operator</td>
+<td>Supplies intent, approves Planning/scope amendments/final merge as required, operates df through CLI/TUI/web.</td>
 </tr>
 <tr>
-<td><strong>Pipeline agent</strong></td>
-<td>Executes the workflow graph autonomously: interpret, plan, implement, self-review, align, open the PR, respond to feedback.</td>
+<td>DarkFactory engine</td>
+<td>Executes graph/runtime mechanisms, routing, persistence, capability loading and deterministic effects.</td>
 </tr>
 <tr>
-<td><strong>Consumer repository</strong></td>
-<td>Receives and runs the shared pipeline (workflows, scripts, rules) against its own manifest, with its own governance preserved.</td>
+<td>Capability</td>
+<td>Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work.</td>
 </tr>
 <tr>
-<td><strong>Docs reader</strong></td>
-<td>Reads generated documentation and canonical root documents; never a source of truth.</td>
+<td>DarkFactory GitHub App</td>
+<td>Automation identity and privileged GitHub execution identity.</td>
+</tr>
+<tr>
+<td>Authenticated web user</td>
+<td>Human identity used by DarkFactory Web for user-attributed GitHub access/actions.</td>
+</tr>
+<tr>
+<td>Consumer repository</td>
+<td>Supplies project-specific declarations/data while consuming released df and the shared web application.</td>
 </tr>
 </tbody>
 </table>
-<p>System-only operation is explicit: DarkFactory performs all pipeline work. There is no manual or
-local human substitute for a governed step, and no feature is exempt from the approval gates
-because it is "only" a script.</p>
-<h2 id="4-goals-and-non-goals">4. Goals and non-goals<a class="headerlink" href="#4-goals-and-non-goals" title="Permanent link">&para;</a></h2>
-<h3 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">&para;</a></h3>
+<h2 id="4-workspace-and-package-architecture">4. Workspace and package architecture<a class="headerlink" href="#4-workspace-and-package-architecture" title="Permanent link">&para;</a></h2>
+<p>DarkFactory is a root Bun workspace.</p>
+<p>The final first-party package boundaries are:</p>
 <ul>
-<li><strong>Autonomous delivery</strong>: from verbatim request to merged PR with only human approval gates.</li>
-<li><strong>Anti-hallucination</strong>: verbatim request capture and explicit approval semantics (section 5).</li>
-<li><strong>Auditability</strong>: every lifecycle transition, review iteration, and outcome is traceable to an
-  issue, a PR, and the board's status history.</li>
-<li><strong>Full quota use</strong>: the pipeline consumes every available provider quota before it pauses;
-  an unused account is always preferred over sleeping.</li>
-<li><strong>Classified outcomes</strong>: a finished step is classified as success, failure, or blocked, never
-  guessed from a zero exit code.</li>
+<li><code>@darkfactory/protocol</code> — browser/runtime-safe schemas, serialized state/event contracts and shared types;</li>
+<li><code>@darkfactory/core</code> — execution kernel, graph/run state, provider/router mechanisms, config resolution and capability loader;</li>
+<li><code>@darkfactory/capability</code> — capability ABI, loader and deterministic adapter/build tooling;</li>
+<li><code>@darkfactory/github</code> — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;</li>
+<li><code>@darkfactory/keychain</code> — machine/harness credential custody and authentication;</li>
+<li><code>@darkfactory/auth</code> — human/browser GitHub App authentication and sessions;</li>
+<li><code>@darkfactory/docs</code> — headless documentation compiler/content graph;</li>
+<li><code>@darkfactory/cli</code> — <code>df</code> command, command composition and interactive TUI ownership;</li>
+<li><code>@darkfactory/web</code> — the sole first-party web application/renderer.</li>
 </ul>
-<h3 id="non-goals-current">Non-goals (current)<a class="headerlink" href="#non-goals-current" title="Permanent link">&para;</a></h3>
+<p>The existing <code>@darkfactory/harness</code> package is migration-only and does not survive as a final public architecture boundary.</p>
+<p>Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.</p>
+<h2 id="5-capability-architecture">5. Capability architecture<a class="headerlink" href="#5-capability-architecture" title="Permanent link">&para;</a></h2>
+<p>Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under root <code>capabilities/</code>.</p>
+<p>The initial first-party capability set includes at least:</p>
 <ul>
-<li><strong>No web UI.</strong> The operator surface is the terminal (<code>df status</code> / TUI) and GitHub itself.</li>
-<li><strong>No installation into <code>PersonalCode</code> or <code>dsh-stack</code>.</strong> Their code may be mined and attributed
-  during the TypeScript port, but they are never pipeline consumers.</li>
-<li><strong>Provider subscription terms are out of scope.</strong> The pipeline neither negotiates nor
-  guarantees third-party licensing, quota contracts, or data terms.</li>
-<li><strong>No manual substitute.</strong> A step performed by hand outside the workflow graph is not a
-  pipeline feature.</li>
+<li>code;</li>
+<li>paper;</li>
+<li>math;</li>
+<li>docs;</li>
+<li>git;</li>
+<li>github;</li>
+<li>planning;</li>
+<li>review;</li>
+<li>ci;</li>
+<li>release;</li>
+<li>recovery;</li>
+<li>hooks;</li>
+<li>epics;</li>
+<li>stacks.</li>
 </ul>
-<h2 id="5-product-workflow-invariants">5. Product workflow invariants<a class="headerlink" href="#5-product-workflow-invariants" title="Permanent link">&para;</a></h2>
-<p>The workflow graph, its nodes, edges, and stage sequence are declared (workflow-graph workstream)
-and are authoritative over any diagram. Whatever the graph's current shape, these invariants hold:</p>
+<p>A capability may contribute:</p>
 <ul>
-<li><strong>Verbatim request fidelity.</strong> The incoming request is captured into a <code>Request</code> issue exactly
-  as worded; agents never rewrite or summarize it prior to interpretation.</li>
-<li><strong>Two explicit human gates, one issue.</strong> The interpretation is approved before a plan is
-  written, and the plan is approved before any code is written. Approved plans live as comments on
-  the same <code>Request</code> issue; one issue is one unit of work, so one PR binds it and closing one
-  closes the other. The merge-gates workstream may merge these into a single gate; the invariant
-  is that no code is written before an explicit human approval of intent and of approach.</li>
-<li><strong>Implementation-review gate.</strong> Before the bound PR merges, a review confirming the
-  implementation matches the approved plan exactly (<code>Matches Plan: Yes</code>) is recorded on the issue;
-  divergences are recorded as <code>Plan Alignment:</code> comments and explicitly approved.</li>
-<li><strong>Traceability.</strong> Every PR binds a tracked issue with a closing keyword; every issue and PR is
-  on the project board with one of the seven statuses.</li>
-<li><strong>Bounded review.</strong> Automated self-review is bounded (maximum three iterations) so no run burns
-  unbounded tokens.</li>
-<li><strong>Board invariant.</strong> The seven board statuses — <code>Backlog</code>, <code>ToDo</code>, <code>In Progress</code>, <code>Blocked</code>,
-  <code>Done</code>, <code>Superseded</code>, <code>Dropped</code> — are mutually exclusive and system-enforced identically across
-  every installed repository.</li>
+<li>repository/package detection and setup;</li>
+<li>tools and commands;</li>
+<li>graph-node behavior;</li>
+<li>deterministic actions;</li>
+<li>verification/quality actions;</li>
+<li>hooks/rules;</li>
+<li>documentation;</li>
+<li>web surfaces/metadata;</li>
+<li>release outputs;</li>
+<li>audit records;</li>
+<li>credential requirements.</li>
 </ul>
-<h2 id="6-df-functional-requirements">6. <code>df</code> functional requirements<a class="headerlink" href="#6-df-functional-requirements" title="Permanent link">&para;</a></h2>
-<p>The target distribution is one command, <code>df</code>, built as a TypeScript/Bun executable. It replaces
-the loose collection of scripts as the front door and is the only supported interface.</p>
+<p>Capabilities do not own raw credential storage.</p>
+<p>One canonical TypeScript capability definition is the implementation source. Build tooling deterministically produces supported integration forms, including:</p>
 <ul>
-<li><strong>Interactive TUI / harness</strong>: an operator session for inspecting state and approving gates.</li>
-<li><strong><code>df run …</code></strong>: headless execution of one workflow-graph node from CI or a scheduler.</li>
-<li><strong><code>df status</code></strong>: why nothing is happening — missing credential, agent never switched on,
-  repository never installed, quota blocked — checked against the things that are silently absent.</li>
-<li><strong><code>df doctor</code></strong>: repository/pipeline diagnostics against the manifest.</li>
-<li><strong><code>df install</code></strong>: conflict-safe installation and governance propagation into consumer
-  repositories (section 8).</li>
-<li><strong><code>df work</code></strong>: queue inspection and manipulation.</li>
-<li><strong>Server-compatible boundary</strong>: <code>df run</code> must be embeddable behind a server later without
-  redesign; the current boundaries are TUI, headless node execution, and install.</li>
+<li>native DarkFactory/Pi integration;</li>
+<li>Pi ExtensionAPI tools/commands;</li>
+<li>standalone MCP server form;</li>
+<li>supported Claude/Codex/agent skills/plugins/manifests.</li>
 </ul>
-<h2 id="7-agent-runtime-and-provider-continuity">7. Agent runtime and provider continuity<a class="headerlink" href="#7-agent-runtime-and-provider-continuity" title="Permanent link">&para;</a></h2>
-<p>The runtime executes coding-agent CLIs through a harness abstraction; no pipeline code knows which
-CLI is running. Providers, models, and accounts are manifest declarations, never hardcoded.</p>
+<p>There must not be independent handwritten implementations of the same capability for each harness.</p>
+<p>Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.</p>
+<p>The capability ABI is versioned independently from product SemVer.</p>
+<h2 id="6-domains-ecosystems-and-project-detection">6. Domains, ecosystems and project detection<a class="headerlink" href="#6-domains-ecosystems-and-project-detection" title="Permanent link">&para;</a></h2>
+<p>DarkFactory retains separate concepts:</p>
 <ul>
-<li><strong>Embedded <code>pi</code></strong>: autonomous execution runs from a self-contained package (Bun compiled
-  binary), not from a checked-out repository alone.</li>
-<li><strong>Cross-provider mid-session handoff</strong>: an approved step can continue on the next provider when
-  the current one exhausts capacity, without restarting the step.</li>
-<li><strong>Full available quota</strong>: rotation escalates across accounts, then pools, then harnesses; each
-  rung is a fresh quota, never a weaker model.</li>
-<li><strong>Classified outcomes</strong>: steps report success, failure, or blocked explicitly.</li>
-<li><strong>Repository-variable quota state</strong>: quota state lives in repository variables so it survives
-  runner restarts; a scheduled resume sweep continues paused work.</li>
-<li><strong>Containers</strong>: execution is hermetic and non-root (D4); see section 9.</li>
+<li><strong>ecosystem</strong> — toolchain/package format, such as Bun/Node, Python, Rust, Typst, LaTeX or Lean;</li>
+<li><strong>package</strong> — one buildable unit in a repository/workspace;</li>
+<li><strong>domain</strong> — the semantic kind of work, initially including <code>code</code>, <code>paper</code> and <code>math</code>;</li>
+<li><strong>capability</strong> — behavior DarkFactory can perform.</li>
 </ul>
-<h2 id="8-installation-and-fleet-governance">8. Installation and fleet governance<a class="headerlink" href="#8-installation-and-fleet-governance" title="Permanent link">&para;</a></h2>
+<p>Repositories may be polyglot and multi-domain simultaneously.</p>
+<p>Detection discovers repository/package/domain evidence. Capability resolution then selects applicable capability-contributed actions such as test, lint, format, docs, setup and release behavior.</p>
+<p>The final system must not rely on one ever-growing repository-specific language/command table when behavior can be provided by a capability.</p>
+<h2 id="7-configuration-and-persisted-state">7. Configuration and persisted state<a class="headerlink" href="#7-configuration-and-persisted-state" title="Permanent link">&para;</a></h2>
+<h3 id="71-repositoryruntime-configuration">7.1 Repository/runtime configuration<a class="headerlink" href="#71-repositoryruntime-configuration" title="Permanent link">&para;</a></h3>
+<p>The final #340 hard-transition rules apply:</p>
 <ul>
-<li>DarkFactory is installed only in the six declared consumers
-  (<code>marius-patrik/DarkFactory</code>, <code>omnis</code>, <code>ChessWithQuests</code>, <code>OdbornaPrace</code>,
-  <code>template-OdbornaPrace</code>, <code>mono-OdbornaPrace</code>), all recorded in the manifest <code>installed_on</code>.
-  <code>PersonalCode</code> and <code>dsh-stack</code> are excluded.</li>
-<li>GitHub interaction is API-only (shared API client); no subprocess <code>gh</code> calls.</li>
-<li>Board statuses are identical system-enforced across every installed site.</li>
-<li>Governance propagation is conflict-safe: files with an unknown prior hash are never
-  overwritten; an existing repository <code>AGENTS.md</code> is preserved byte-for-byte as a
-  repository-policy overlay before the aggregate is generated.</li>
-<li>PRD and notes content are never propagated to consumers; only the rules, adapters, and
-  directory conventions are managed, and project-specific knowledge stays owned by the consumer.</li>
-<li>A consumer repository that keeps notes adopts <code>.agents/notes</code> (runbooks, captures, and one ADR
-  per decision under <code>.agents/notes/adr/</code>) exactly as DarkFactory does; the layout convention is
-  what is shared, never the notes themselves.</li>
+<li>repository declaration is <code>repo.df</code>;</li>
+<li>runtime/user/provider configuration is <code>config.df</code>;</li>
+<li>accepted location is <code>.darkfactory/&lt;name&gt;.df</code> or root <code>&lt;name&gt;.df</code>;</li>
+<li>both locations for the same logical file is an error;</li>
+<li>legacy manifest/config paths are not read;</li>
+<li><code>.df</code> is a filename extension, never a directory.</li>
 </ul>
-<h2 id="9-identity-security-and-secrets">9. Identity, security, and secrets<a class="headerlink" href="#9-identity-security-and-secrets" title="Permanent link">&para;</a></h2>
+<h3 id="72-documentation-configuration">7.2 Documentation configuration<a class="headerlink" href="#72-documentation-configuration" title="Permanent link">&para;</a></h3>
+<p>Documentation uses <code>docs.df</code> as the native DarkFactory configuration.</p>
+<p><code>properdocs.yml</code> and <code>mkdocs.yml</code> are accepted compatibility inputs to <code>@darkfactory/docs</code>, but ProperDocs/MkDocs are not final runtime dependencies.</p>
+<p>Documentation configuration does not move into <code>repo.df</code> or <code>config.df</code>.</p>
+<h3 id="73-state">7.3 State<a class="headerlink" href="#73-state" title="Permanent link">&para;</a></h3>
+<p>Df-owned config/state/result/review/audit artifacts use appropriate <code>.df</code> filenames in their owning locations. Final production does not maintain JSON/JSONL aliases merely for legacy compatibility.</p>
+<h2 id="8-governed-request-lifecycle">8. Governed Request lifecycle<a class="headerlink" href="#8-governed-request-lifecycle" title="Permanent link">&para;</a></h2>
+<p>The final Request lifecycle is:</p>
+<ol>
+<li>capture verbatim Request/context and relationships;</li>
+<li>generate one unified Planning artifact;</li>
+<li>independently review Planning;</li>
+<li>automatically fix/re-review Planning until clean;</li>
+<li>one explicit owner Planning Approval;</li>
+<li>implement;</li>
+<li>deterministic verification;</li>
+<li>implementation review/fix loop until clean;</li>
+<li>scope-amendment approval only when implementation/review identifies material work outside approved Planning;</li>
+<li>final alignment against approved Planning plus approved amendments;</li>
+<li>external/static checks;</li>
+<li>final review/merge authorization;</li>
+<li>merge and deterministic reconciliation.</li>
+</ol>
+<p>Separate interpretation and plan approval gates are retired.</p>
+<p>Planning/review/fix state is durable and resumable. Planning becomes stale when material Request, dependency, recovery or base context changes; stale approval is never silently reused.</p>
+<p>A model stopping naturally is valid completion. Code-node truth derives from engine-observed workspace/diff/scope/verification/commit evidence. Judgement prose may be structurally extracted through ordinary routed model calls.</p>
+<p>Model claims such as “pushed”, “merged”, “committed” or “resolved” are not accepted as mutation proof without corresponding observed effects.</p>
+<h2 id="9-runtime-routing-and-resilience">9. Runtime, routing and resilience<a class="headerlink" href="#9-runtime-routing-and-resilience" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Credentials exist only in DarkFactory (GitHub repository secrets or the local keychain) and are
-  never propagated to consumers or committed.</li>
-<li>Workflow logs must be assumed public: no credential, refresh token, or private key is ever
-  echoed into them.</li>
-<li>The automation identity is the <code>darkfactory-pipeline</code> GitHub App; a real Claude identity is
-  declared in the harness registry. Exact identities and credential names are manifest
-  declarations, not prose.</li>
-<li>D4 — <strong>Containerized sandbox isolation</strong>: agent processes execute inside a hermetic container
-  with non-root privileges and strict env scoping. Non-root execution is enforced by a <code>USER agent</code>
-  directive in <code>docker/Dockerfile.agent</code>; the unprivileged user is created with uid 1001, matching
-  the GitHub runner's user so the bind-mounted workspace stays writable without loosening
-  permissions. Containerized runners never inherit ambient host credentials.</li>
+<li>Pipeline stages pass explicit semantic task kind where known.</li>
+<li>Undeclared inference separates task subject from required capability; engineering work about images/video must not be misrouted to media-generation tools.</li>
+<li>Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.</li>
+<li>Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.</li>
+<li>Quota/provider failover is durable and does not repeat already-completed deterministic effects.</li>
+<li>Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.</li>
+<li>Turn limits and elapsed-time limits are independent safety bounds.</li>
+<li>Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.</li>
+<li>The runtime remains containerizable/non-root for CI execution.</li>
 </ul>
-<h2 id="10-platform-and-distribution-constraints">10. Platform and distribution constraints<a class="headerlink" href="#10-platform-and-distribution-constraints" title="Permanent link">&para;</a></h2>
+<h2 id="10-git-github-and-governance">10. Git, GitHub and governance<a class="headerlink" href="#10-git-github-and-governance" title="Permanent link">&para;</a></h2>
+<p>Production GitHub interaction uses <code>@darkfactory/github</code>; production shell/subprocess <code>gh</code> mutation is not allowed.</p>
+<p>Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. Models may assist conflict resolution but do not own deterministic git state.</p>
+<p>Capabilities provide higher-level behaviors such as:</p>
 <ul>
-<li><strong>Runtime/toolchain</strong>: TypeScript on Bun. The Python automation is the migration source and
-  port target; it is sunset, not an extension target.</li>
-<li><strong><code>bun test</code></strong> is the test command; <code>bun build --compile</code> produces all-platform binaries.</li>
-<li>The published npm package remains Node-compatible for consumers that do not run Bun.</li>
-<li>No harness submodule: every provider CLI is installed inside the prepared image, never checked
-  out as a submodule of this repository.</li>
-<li>Code may be cannibalized from <code>dsh-stack</code> and <code>PersonalCode</code> and attributed, but DarkFactory
-  never depends on them or installs into them.</li>
+<li>GitHub Request/PR/project operations;</li>
+<li>hooks/rule enforcement;</li>
+<li>Epic/Request relationships;</li>
+<li>stacked PR topology;</li>
+<li>recovery intake/reconciliation.</li>
 </ul>
-<h2 id="11-boards-documentation-and-observable-acceptance">11. Boards, documentation, and observable acceptance<a class="headerlink" href="#11-boards-documentation-and-observable-acceptance" title="Permanent link">&para;</a></h2>
+<p>Static CI checks remain external to the runtime graph where appropriate; graph check-reference nodes observe them rather than duplicating them.</p>
+<p>The repository default branch is always discovered from repository state/config, never hard-coded to <code>main</code>.</p>
+<h2 id="11-keychain-and-machine-credentials">11. Keychain and machine credentials<a class="headerlink" href="#11-keychain-and-machine-credentials" title="Permanent link">&para;</a></h2>
+<p><code>@darkfactory/keychain</code> is the sole machine/harness credential owner.</p>
+<p>It covers:</p>
 <ul>
-<li>The board invariant of section 5 is mandatory across every installed repository; the executable
-  schema lives in the manifest, not duplicated here.</li>
-<li>Documentation is generated from source: <code>PRD.md</code>, <code>.agents/rules/*.md</code>, and
-  <code>.agents/notes/adr/*.md</code> are read directly by the docs generator into an ignored transient
-  staging directory; no static documentation tree is committed.</li>
-<li>The documentation site's project selector lists every <code>installed_on</code> repository, with
-  cross-project preview links falling back to the other project's main site.</li>
+<li>OS-native secure storage;</li>
+<li>encrypted fallback where supported;</li>
+<li>environment/import sources;</li>
+<li>provider API keys;</li>
+<li>provider OAuth/device/login flows;</li>
+<li>access/refresh token refresh and rotation;</li>
+<li>multiple accounts/credential slots;</li>
+<li>borrowed external-CLI credentials without mutating the source CLI;</li>
+<li>GitHub App private key/JWT/installation-token handling;</li>
+<li>CLI-side GitHub user credentials;</li>
+<li>scopes/audience/expiry metadata;</li>
+<li>redaction;</li>
+<li>secret scanning;</li>
+<li>import/export;</li>
+<li>diagnostics.</li>
 </ul>
-<h2 id="12-migration-and-compatibility">12. Migration and compatibility<a class="headerlink" href="#12-migration-and-compatibility" title="Permanent link">&para;</a></h2>
+<p>Other packages/capabilities request scoped credential handles. They do not directly inspect secret environment variables, credential files or OS keychains.</p>
+<p>Secret values are never committed, written to issues/PRs, included in generated docs/static Pages assets or emitted in logs.</p>
+<h2 id="12-human-web-authentication">12. Human web authentication<a class="headerlink" href="#12-human-web-authentication" title="Permanent link">&para;</a></h2>
+<p><code>@darkfactory/auth</code> is separate from keychain and owns DarkFactory Web human authentication.</p>
+<p>It uses the existing DarkFactory GitHub App.</p>
+<p>The normal browser flow provides:</p>
 <ul>
-<li>The Python scripts are the reference implementation being ported to TypeScript/Bun <code>df</code>;
-  compatibility is staged and rollback-capable.</li>
-<li>Publication stays Node-compatible while binaries extend platform coverage.</li>
-<li>Consumer migration is contract-based: managed files are versioned by hash; a schema version is
-  recorded in each manifest; conflicts are reported in the plan and open an approval-gated
-  migration request. Consumers migrate in the declared rollout order (DarkFactory first, omnis
-  last because it carries the deepest independent governance corpus).</li>
+<li>GitHub App user authorization;</li>
+<li>PKCE and state/CSRF protection;</li>
+<li>minimal confidential token exchange/refresh broker;</li>
+<li>expiring access-token/session management;</li>
+<li>refresh;</li>
+<li>logout/revocation;</li>
+<li>session restoration.</li>
 </ul>
-<h2 id="13-decisions">13. Decisions<a class="headerlink" href="#13-decisions" title="Permanent link">&para;</a></h2>
-<p>Durable decisions are recorded in discrete ADRs under <code>.agents/notes/adr/</code> and tracked as issues;
-this document records only the decisions that bind product acceptance:</p>
-<table>
-<thead>
-<tr>
-<th>ID</th>
-<th>Decision</th>
-<th>Where expressed</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>D1</td>
-<td>Harness-agnostic agent pipeline</td>
-<td><code>.agents/rules/014-agent-runtime-and-resilience.md</code>, harness registry</td>
-</tr>
-<tr>
-<td>D2</td>
-<td>Two-gate human approval contract</td>
-<td>Section 5, <code>.agents/rules/010-approved-delivery-plan.md</code></td>
-</tr>
-<tr>
-<td>D3</td>
-<td>GitHub-native state synchronization</td>
-<td>Section 11, board automation</td>
-</tr>
-<tr>
-<td>D4</td>
-<td>Containerized sandbox isolation — non-root <code>USER agent</code>, uid 1001, strict env scoping</td>
-<td>Section 9, <code>docker/Dockerfile.agent</code></td>
-</tr>
-<tr>
-<td>D5</td>
-<td>Conventional commits and automated formatting</td>
-<td><code>.agents/rules/005-commit-granularity.md</code>, <code>.agents/rules/008-formatting-and-linting.md</code>, manifest</td>
-</tr>
-<tr>
-<td>D6</td>
-<td>Pure-code repository settings</td>
-<td>manifest-driven settings automation</td>
-</tr>
-<tr>
-<td>D7</td>
-<td>Virtual documentation publishing</td>
-<td>Section 11, docs generator</td>
-</tr>
-<tr>
-<td>D8</td>
-<td>Multi-tier fallback and quota ladder</td>
-<td>Section 7, <code>.agents/rules/014-agent-runtime-and-resilience.md</code></td>
-</tr>
-</tbody>
-</table>
-<p>Decisions invalidated by the TypeScript/Bun <code>df</code> target, embedded <code>pi</code>, the merged approval gate,
-and the declared workflow graph are superseded — either by new ADRs or by the executable
-declarations that replaced them. Open questions are tracked as issues, not maintained in this
-document; the sections above state only the invariants that must hold regardless of how the open
-design workstreams (merge-gates, workflow-graph, harness-auth, rotation, gh-client, cli-release,
-docs-site, install-audit) resolve them.</p>
+<p>The broker is authentication infrastructure only. It has no DarkFactory project database, Request/pipeline state, model credentials or execution API.</p>
+<p>Authorization derives from GitHub user permissions plus the App installation/permissions. DarkFactory does not maintain a second RBAC database.</p>
+<p>Human-attributed GitHub actions retain user identity. Privileged automation remains the GitHub App/df identity.</p>
+<p>Browser artifacts cannot contain/import the GitHub App private key, confidential broker credentials or keychain implementation.</p>
+<h2 id="13-documentation">13. Documentation<a class="headerlink" href="#13-documentation" title="Permanent link">&para;</a></h2>
+<p><code>@darkfactory/docs</code> is the final documentation engine.</p>
+<p>It compiles one typed content graph from:</p>
+<ul>
+<li>canonical Markdown/root documents;</li>
+<li>ADRs and rules;</li>
+<li>actual TypeScript/TSDoc API extraction;</li>
+<li>capability-contributed documentation;</li>
+<li>repository/graph/workflow metadata;</li>
+<li>supported API extractors for other ecosystems.</li>
+</ul>
+<p>TypeDoc may be used internally as the TypeScript/TSDoc extractor.</p>
+<p>Documentation builds are deterministic, strict and zero-warning for required API surfaces.</p>
+<p>The docs homepage and committed <code>README.md</code> are two renderers of the same canonical semantic content. CI fails when the README projection drifts.</p>
+<p>README is therefore not an independent product-description source.</p>
+<h2 id="14-darkfactory-web">14. DarkFactory Web<a class="headerlink" href="#14-darkfactory-web" title="Permanent link">&para;</a></h2>
+<p><code>@darkfactory/web</code> is the only first-party web UI.</p>
+<p>It is a prebuilt React/TypeScript application released once per DarkFactory version and reused unchanged by consumer repositories.</p>
+<p>Preferred design stack:</p>
+<ul>
+<li>React;</li>
+<li>TypeScript;</li>
+<li>shadcn/ui;</li>
+<li>lucide-animated;</li>
+<li>Motion;</li>
+<li>Dagre;</li>
+<li>Wouter;</li>
+<li>Dockview where a docking/workspace layout is materially useful.</li>
+</ul>
+<p>A consumer does not rebuild the frontend. Its Pages artifact combines the released web bundle with repository-specific compiled content/data.</p>
+<p>The application remains dynamic on GitHub Pages by reading live GitHub REST/GraphQL state through browser-safe GitHub/auth interfaces.</p>
+<p>The target web surface includes, as shipped capabilities become available:</p>
+<ul>
+<li>repository overview;</li>
+<li>Requests and Planning;</li>
+<li>Epics/dependencies;</li>
+<li>recovery;</li>
+<li>PRs/stacks;</li>
+<li>checks/runs;</li>
+<li>graph execution;</li>
+<li>providers/accounts/quota status where safe;</li>
+<li>releases;</li>
+<li>capabilities;</li>
+<li>project configuration;</li>
+<li>audit;</li>
+<li>documentation.</li>
+</ul>
+<p>DarkFactory Web becomes the primary day-to-day operator interface. Direct use of github.com UI is optional for normal DarkFactory operation except where GitHub itself requires a consent/review surface.</p>
+<p>The web application is not a second state database or privileged mutation engine.</p>
+<h2 id="15-cli-and-tui">15. CLI and TUI<a class="headerlink" href="#15-cli-and-tui" title="Permanent link">&para;</a></h2>
+<p>The supported command is <code>df</code> from <code>@darkfactory/cli</code>.</p>
+<p>One command registry composes core/capability commands and drives:</p>
+<ul>
+<li>CLI dispatch/help;</li>
+<li>wrapper/system-<code>df</code> coexistence;</li>
+<li>interactive TUI;</li>
+<li>web/operator command metadata where applicable.</li>
+</ul>
+<p>Bare interactive <code>df</code> enters the TUI when appropriate. Headless commands remain scriptable.</p>
+<p>The CLI/TUI/web surfaces consume the same protocol/state/provider/capability models.</p>
+<h2 id="16-installation-release-and-versioning">16. Installation, release and versioning<a class="headerlink" href="#16-installation-release-and-versioning" title="Permanent link">&para;</a></h2>
+<p>First-party packages and official capabilities are published under the planned <code>darkfactory</code> GitHub organization.</p>
+<p>Initial first-party versioning is lockstep: one DarkFactory SemVer across first-party packages/capabilities, with a separate capability ABI version.</p>
+<p>The final release contains, as required:</p>
+<ul>
+<li>Node-compatible npm execution path;</li>
+<li>supported native artifacts where CI can build <strong>and execute</strong> them;</li>
+<li>source commit/version provenance;</li>
+<li>checksums;</li>
+<li>official capabilities;</li>
+<li>capability adapter artifacts/MCP/plugin/skill forms;</li>
+<li>graph/schema/runtime data;</li>
+<li>prebuilt DarkFactory Web bundle.</li>
+</ul>
+<p>Initial installation must not require Python, a source checkout or a pre-existing df installation.</p>
+<p>The standard installation includes official capabilities while allowing third-party capabilities through the same loader.</p>
+<p>A canary/pre-release after the core #359 self-hosting cutover is used to discover packaging/consumer/web deployment problems early. Final acceptance remains #360.</p>
+<h2 id="17-consumerfleet-model">17. Consumer/fleet model<a class="headerlink" href="#17-consumerfleet-model" title="Permanent link">&para;</a></h2>
+<p>The intended fleet contains six repositories identified by stable GitHub repository identity rather than historical names:</p>
+<ol>
+<li>DarkFactory;</li>
+<li>omnis;</li>
+<li>ChessWithQuests;</li>
+<li>OdbornaPrace-paper;</li>
+<li>template-OdbornaPrace;</li>
+<li>OdbornaPrace-mono.</li>
+</ol>
+<p>Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.</p>
+<p>Capabilities should handle project/repository-specific setup wherever possible, including quality actions, docs, hooks, release and workflow configuration.</p>
+<p>Install/update is idempotent and drift-aware.</p>
+<h2 id="18-security-requirements">18. Security requirements<a class="headerlink" href="#18-security-requirements" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No credential/token/private key in source, logs, issues, PRs, docs or Pages assets.</li>
+<li>Browser packages have enforced import boundaries from machine-secret code.</li>
+<li>Third-party capabilities receive only declared/scoped credential access.</li>
+<li>GitHub user authorization is not treated as GitHub App installation authority.</li>
+<li>History rewriting uses lease-safe expected-old-SHA semantics; blind force push is forbidden.</li>
+<li>Recovery never pushes secret-bearing local material.</li>
+<li>Authentication and authorization failures fail closed.</li>
+</ul>
+<h2 id="19-final-acceptance">19. Final acceptance<a class="headerlink" href="#19-final-acceptance" title="Permanent link">&para;</a></h2>
+<p>DarkFactory is final only when:</p>
+<ul>
+<li>df is the only normal production orchestration/mutation engine;</li>
+<li>no required legacy Python production path remains;</li>
+<li>package/capability architecture is shipped;</li>
+<li>official capabilities and representative generated adapters are proven;</li>
+<li>keychain/auth security boundaries are proven;</li>
+<li>real TypeScript API docs are published;</li>
+<li>README generation from docs content is deterministic;</li>
+<li>shared web UI is deployed across the fleet without consumer frontend rebuild;</li>
+<li>released df installs/updates source-free;</li>
+<li>all six repositories pass governance, detection, capability, docs/web, release and drift checks;</li>
+<li>every preserved recovery source has an explicit terminal disposition;</li>
+<li><code>audit.df</code> is internally consistent;</li>
+<li>
+<h1 id="361-is-green">361 is green;<a class="headerlink" href="#361-is-green" title="Permanent link">&para;</a></h1>
+</li>
+<li>the original #68 declarable-graph contract passes against the installed final release.</li>
+</ul>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="..">
@@ -546,35 +635,48 @@ docs-site, install-audit) resolve them.</p>
       <aside class="toc">
         <div class="toc__title">On this page</div>
         <ul class="toc__list">
-          <li><a href="#1-authority-and-scope">1. Authority and scope</a>
+          <li><a href="#1-authority">1. Authority</a>
           </li>
-          <li><a href="#2-problem-and-product-vision">2. Problem and product vision</a>
+          <li><a href="#2-product-vision">2. Product vision</a>
           </li>
-          <li><a href="#3-users-and-jobs">3. Users and jobs</a>
+          <li><a href="#3-actors">3. Actors</a>
           </li>
-          <li><a href="#4-goals-and-non-goals">4. Goals and non-goals</a>
+          <li><a href="#4-workspace-and-package-architecture">4. Workspace and package architecture</a>
+          </li>
+          <li><a href="#5-capability-architecture">5. Capability architecture</a>
+          </li>
+          <li><a href="#6-domains-ecosystems-and-project-detection">6. Domains, ecosystems and project detection</a>
+          </li>
+          <li><a href="#7-configuration-and-persisted-state">7. Configuration and persisted state</a>
             <ul>
-              <li><a href="#goals">Goals</a></li>
-              <li><a href="#non-goals-current">Non-goals (current)</a></li>
+              <li><a href="#71-repositoryruntime-configuration">7.1 Repository/runtime configuration</a></li>
+              <li><a href="#72-documentation-configuration">7.2 Documentation configuration</a></li>
+              <li><a href="#73-state">7.3 State</a></li>
             </ul>
           </li>
-          <li><a href="#5-product-workflow-invariants">5. Product workflow invariants</a>
+          <li><a href="#8-governed-request-lifecycle">8. Governed Request lifecycle</a>
           </li>
-          <li><a href="#6-df-functional-requirements">6. df functional requirements</a>
+          <li><a href="#9-runtime-routing-and-resilience">9. Runtime, routing and resilience</a>
           </li>
-          <li><a href="#7-agent-runtime-and-provider-continuity">7. Agent runtime and provider continuity</a>
+          <li><a href="#10-git-github-and-governance">10. Git, GitHub and governance</a>
           </li>
-          <li><a href="#8-installation-and-fleet-governance">8. Installation and fleet governance</a>
+          <li><a href="#11-keychain-and-machine-credentials">11. Keychain and machine credentials</a>
           </li>
-          <li><a href="#9-identity-security-and-secrets">9. Identity, security, and secrets</a>
+          <li><a href="#12-human-web-authentication">12. Human web authentication</a>
           </li>
-          <li><a href="#10-platform-and-distribution-constraints">10. Platform and distribution constraints</a>
+          <li><a href="#13-documentation">13. Documentation</a>
           </li>
-          <li><a href="#11-boards-documentation-and-observable-acceptance">11. Boards, documentation, and observable acceptance</a>
+          <li><a href="#14-darkfactory-web">14. DarkFactory Web</a>
           </li>
-          <li><a href="#12-migration-and-compatibility">12. Migration and compatibility</a>
+          <li><a href="#15-cli-and-tui">15. CLI and TUI</a>
           </li>
-          <li><a href="#13-decisions">13. Decisions</a>
+          <li><a href="#16-installation-release-and-versioning">16. Installation, release and versioning</a>
+          </li>
+          <li><a href="#17-consumerfleet-model">17. Consumer/fleet model</a>
+          </li>
+          <li><a href="#18-security-requirements">18. Security requirements</a>
+          </li>
+          <li><a href="#19-final-acceptance">19. Final acceptance</a>
           </li>
         </ul>
       </aside>
