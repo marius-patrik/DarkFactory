@@ -228,7 +228,7 @@ for required in (
     'addEventListener("contextmenu"',
     '"paper-viewer-sidebar-side"',
     '"paper-viewer-sidebar-mode"',
-    'event.ctrlKey && !event.metaKey',
+    '!event.ctrlKey && !event.metaKey',
     'splitSyncScroll',
     'fetch("variants.json"',
 ):
