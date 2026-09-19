@@ -1,6 +1,4 @@
 /** @packageDocumentation
- * Typed GitHub transport and repository mechanisms.
- *
- * During #420 this entrypoint is a compatibility adapter over the pre-workspace source tree.
+ * Browser-safe GitHub data contracts. Server/machine transport is exposed separately from ./node during migration.
  */
-export * from "../../../harness/src/github/index.ts";
+export * from "./types.ts";
