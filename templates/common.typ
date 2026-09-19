@@ -138,16 +138,20 @@
 #let unconfirmed = draft
 
 // Přijatý text: autor jej schválil a je součástí raw/final výstupu,
-// ale stále může projít dalším začištěním. V review zůstává zeleně podtržený.
+// ale stále může projít dalším začištěním. V review je modře podtržený.
 #let accepted(body) = context if review-state.get() {
-  underline(stroke: 1.3pt + rgb("#16a34a"), offset: 2.5pt)[#body]
+  underline(stroke: 1.3pt + rgb("#2563eb"), offset: 2.5pt)[#body]
 } else {
   body
 }
 
 // Finalizovaný text/struktura: považuje se za uzavřenou součást dokumentu.
-// Záměrně se vysazuje čistě v review i raw verzi; rozdíl je sémantický ve zdroji.
-#let finalized(body) = body
+// V review je zeleně podtržený; v raw/final verzi se vysází bez zvýraznění.
+#let finalized(body) = context if review-state.get() {
+  underline(stroke: 1.3pt + rgb("#16a34a"), offset: 2.5pt)[#body]
+} else {
+  body
+}
 
 // GitHub-style červený diff pro odstraněný text: bez přeškrtnutí, červené pozadí, tmavě červený text a prefix "-"
 #let removed(body) = context if review-state.get() {
