@@ -45,6 +45,7 @@ if "marius-patrik/DarkFactory.git" not in gitmodules_text:
 
 template_root = Path("templates/gjkt-odborna-prace")
 for required in (
+    Path("templates/common.typ"),
     Path("templates/registry.typ"),
     template_root / "template.typ",
     template_root / "wordometer.typ",
@@ -61,6 +62,19 @@ if (template_root / "typst.toml").exists():
 registry = Path("templates/registry.typ").read_text(encoding="utf-8")
 if '"gjkt-odborna-prace"' not in registry:
     fail("GJKT template is not registered")
+if '#import "common.typ" as common' not in registry:
+    fail("template registry must import the shared manuscript API")
+for semantic in ("confirmed", "unconfirmed", "diff", "term", "bilingual"):
+    expected = f"#let {semantic} = common.{semantic}"
+    if expected not in registry:
+        fail(f"registry semantic helper is not routed through common.typ: {semantic}")
+
+gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
+for forbidden in ('state("review-mode"', 'state("publication-profile"'):
+    if forbidden in gjkt_source:
+        fail("concrete templates must not own shared review/profile state")
+if '#import "../common.typ"' not in gjkt_source:
+    fail("GJKT template must consume the shared manuscript API")
 
 def active_typst_imports(source: str) -> list[str]:
     imports: list[str] = []
