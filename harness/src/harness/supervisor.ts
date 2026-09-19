@@ -107,7 +107,7 @@ export class RunTimeoutError extends Error {
 	constructor(
 		readonly budgetMs: number,
 		readonly elapsedMs: number,
-		readonly sessionId: string,
+		readonly sessionId?: string,
 	) {
 		super(`Run execution budget expired after ${elapsedMs}ms (budget ${budgetMs}ms)`);
 		this.name = "RunTimeoutError";
