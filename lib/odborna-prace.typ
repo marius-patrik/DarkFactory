@@ -17,10 +17,17 @@
 // v adresáři `fonts/`, takže sazba je všude identická.
 #let PISMO = ("Caladea", "New Computer Modern")
 
-#import "wordometer.typ": string-word-count, extract-text, word-count-of
+#import "wordometer.typ": string-word-count, extract-text
 
-#let word-count-total = state("word-count-total", 0)
-#let word-count-core = state("word-count-core", 0)
+// Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
+// mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
+#let word-stats-state = state("word-stats-state", (words: 0, chars: 0))
+
+// Sdílené stavební prvky sazby pro ručně skládané části dokumentu.
+// Běžný markdownový text používá stejné hodnoty přes globální set pravidla níže.
+#let body-paragraph(body) = block(breakable: true, body)
+#let bullet-list(..items) = list(indent: 0pt, body-indent: 0.75em, spacing: 4pt, ..items)
+#let numbered-list(..items) = enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt, ..items)
 
 #let nadpis-bez-cisla(text-nadpisu) = {
   heading(numbering: none, outlined: true, text-nadpisu)
@@ -102,7 +109,7 @@
 // GitHub-style zelený diff pro nově přidaný text: zelené pozadí, tmavě zelený text a prefix "+"
 #let added(body) = context if review-state.get() {
   highlight(fill: rgb("#dafbe1"))[
-    #text(fill: rgb("#116329"))[#text("+ ")#body]
+    #text(fill: rgb("#116329"))[[#text("+ ") <diff-prefix>]#body]
   ]
 } else {
   body
@@ -128,7 +135,7 @@
 // GitHub-style červený diff pro odstraněný text: bez přeškrtnutí, červené pozadí, tmavě červený text a prefix "-"
 #let removed(body) = context if review-state.get() {
   [#highlight(fill: rgb("#ffebe9"))[
-    #text(fill: rgb("#82071e"))[#text("- ")#body]
+    #text(fill: rgb("#82071e"))[[#text("- ") <diff-prefix>]#body]
   ] <removed-diff>]
 } else {
   none
@@ -209,8 +216,6 @@
   }
 }
 
-#let word-stats-state = state("word-stats-state", (total-words: 5863, total-chars: 28966, core-words: 3523, core-chars: 23440))
-
 #let titulni-list(meta, logo: none) = {
   set align(center)
   // Titulní list se nezarovnává do bloku — roztahování mezer v názvu práce
@@ -246,15 +251,24 @@
 
   context {
     let is-rev = review-state.get()
-    let s = word-stats-state.get()
+    // final() dovolí zobrazit počet na titulní straně, i když se vypočítá až
+    // na konci dokumentu. Neexistuje žádná ručně udržovaná výchozí hodnota.
+    let s = word-stats-state.final()
+    let rozsah = [Rozsah práce: #s.words slov / #s.chars znaků]
+    let rozsah-vysazeny = if is-rev {
+      text(size: 9pt, fill: rgb("#64748b"), rozsah)
+    } else {
+      rozsah
+    }
 
     grid(
       columns: (1fr, auto),
+      column-gutter: 1.2em,
       row-gutter: 4pt,
       [Autor práce: #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]],
-      if is-rev { text(size: 9pt, fill: rgb("#64748b"))[Celkem: #s.total-words slov / #s.total-chars znaků] },
+      rozsah-vysazeny,
       if meta.at("vedouci", default: none) != none [Vedoucí práce: #meta.vedouci],
-      if is-rev { text(size: 9pt, fill: rgb("#64748b"))[Jádro: #s.core-words slov / #s.core-chars znaků] },
+      none,
       ..if meta.at("konzultant", default: none) != none {
         ([Konzultant: #meta.konzultant], none)
       } else { () },
@@ -373,6 +387,13 @@
     // První řádek odstavce se zleva zvlášť neodsazuje.
     first-line-indent: 0pt,
   )
+
+  // Jednotná kostra seznamů: dostatek prostoru pro čitelnost, ale bez
+  // vertikálního "nafukování" práce. Delší seznamy se smějí přirozeně dělit.
+  set list(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
+  set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
+  set terms(indent: 0pt, hanging-indent: 1.6em, spacing: 4pt)
+
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
@@ -380,13 +401,13 @@
   // než mezera pod nadpisem, aby bylo zřejmé, ke které kapitole text patří.
   show heading.where(level: 1): it => {
     if it.numbering != none { pagebreak(weak: true) }
-    block(above: 21pt, below: 10pt, text(size: 16pt, weight: "bold", it))
+    block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
   }
   show heading.where(level: 2): it => {
-    block(above: 19pt, below: 9pt, text(size: 14pt, weight: "bold", it))
+    block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
   }
   show heading.where(level: 3): it => {
-    block(above: 17pt, below: 8pt, text(size: 12pt, weight: "bold", it))
+    block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
   }
 
   // Popisky součástí textu: stejné písmo jako text, velikost 10 b.
@@ -444,88 +465,76 @@
     bibliography(bibliografie, style: bib-styl, title: "Seznam zdrojů", full: true)
   }
 
-  if is-review {
-    context {
-      let start_anchors = query(<body-start-anchor>)
-    let app_anchors = query(<appendix-start-anchor>)
-    let start_page = if start_anchors.len() > 0 { start_anchors.first().location().page() } else { 0 }
-    let end_page = if app_anchors.len() > 0 { app_anchors.first().location().page() } else { 999999 }
+  // ── Jednotný výpočet rozsahu pro normal i review ──────────
+  // Počítá se pouze vlastní text práce (Úvod–Závěr). Rozdíl mezi verzemi
+  // vzniká přirozeně tím, co confirmed/unconfirmed skutečně vysází:
+  // normal skryje unconfirmed, review jej zobrazí. Callouty, odstraněná
+  // strana diffu a vizuální +/- prefixy se do rozsahu nezapočítávají.
+  context {
+    let start-anchors = query(<body-start-anchor>)
+    let app-anchors = query(<appendix-start-anchor>)
+    let start-page = if start-anchors.len() > 0 { start-anchors.first().location().page() } else { 0 }
+    let end-page = if app-anchors.len() > 0 { app-anchors.first().location().page() } else { 999999 }
 
-    let pars = query(par)
-    let lists = query(list)
-    let enums = query(enum)
-    let callouts = query(<callout>)
-    let diffs_old = query(<removed-diff>)
+    let words = 0
+    let chars = 0
 
-    let callout_words = 0
-    let callout_chars = 0
-    for c in callouts {
-      let sc = string-word-count(extract-text(c))
-      callout_words += sc.words
-      callout_chars += sc.characters
-    }
-
-    let diff_old_words = 0
-    let diff_old_chars = 0
-    for d in diffs_old {
-      let sd = string-word-count(extract-text(d))
-      diff_old_words += sd.words
-      diff_old_chars += sd.characters
-    }
-
-    let total_words = 0
-    let total_chars = 0
-    let core_words = 0
-    let core_chars = 0
-
-    for p in pars {
+    // Odstavce pokrývají běžný text i text uvnitř položek seznamů.
+    for p in query(par) {
       let pg = p.location().page()
-      let sc = string-word-count(extract-text(p.body))
-      total_words += sc.words
-      total_chars += sc.characters
-      if pg >= start_page and pg < end_page {
-        core_words += sc.words
-        core_chars += sc.characters
+      if pg >= start-page and pg < end-page {
+        let s = string-word-count(extract-text(p.body))
+        words += s.words
+        chars += s.characters
       }
     }
 
-    for l in lists {
-      let pg = l.location().page()
-      let sc = string-word-count(extract-text(l))
-      total_words += sc.words
-      total_chars += sc.characters
-      if pg >= start_page and pg < end_page {
-        core_words += sc.words
-        core_chars += sc.characters
+    // Nadpisy nejsou odstavce, ale patří do rozsahu práce.
+    for h in query(heading) {
+      let pg = h.location().page()
+      if pg >= start-page and pg < end-page {
+        let s = string-word-count(extract-text(h.body))
+        words += s.words
+        chars += s.characters
       }
     }
 
-    for e in enums {
-      let pg = e.location().page()
-      let sc = string-word-count(extract-text(e))
-      total_words += sc.words
-      total_chars += sc.characters
-      if pg >= start_page and pg < end_page {
-        core_words += sc.words
-        core_chars += sc.characters
+    // Recenzní panely jsou pracovní metadata, nikoli text práce.
+    for item in query(<callout>) {
+      let pg = item.location().page()
+      if pg >= start-page and pg < end-page {
+        let s = string-word-count(extract-text(item))
+        words -= s.words
+        chars -= s.characters
       }
     }
 
-    let total_clean_words = calc.max(0, total_words - callout_words - diff_old_words)
-    let total_clean_chars = calc.max(0, total_chars - callout_chars - diff_old_chars)
-    let core_clean_words = calc.max(0, core_words - callout_words - diff_old_words)
-    let core_clean_chars = calc.max(0, core_chars - callout_chars - diff_old_chars)
-    if pars.len() >= 130 {
-      word-stats-state.update(curr => {
-        let new = (total-words: total_clean_words, total-chars: total_clean_chars, core-words: core_clean_words, core-chars: core_clean_chars)
-        if curr.total-words == new.total-words and curr.core-words == new.core-words {
-          curr
-        } else {
-          new
-        }
-      })
+    // Ve review módu je stará strana diffu viditelná, ale není součástí
+    // výsledného textu. Normal verze ji vůbec nevysází.
+    for item in query(<removed-diff>) {
+      let pg = item.location().page()
+      if pg >= start-page and pg < end-page {
+        let s = string-word-count(extract-text(item))
+        words -= s.words
+        chars -= s.characters
+      }
     }
-  }}
+
+    // +/- jsou pouze vizuální diff značky a nesmí měnit počet znaků.
+    for item in query(<diff-prefix>) {
+      let pg = item.location().page()
+      if pg >= start-page and pg < end-page {
+        let s = string-word-count(extract-text(item))
+        words -= s.words
+        chars -= s.characters
+      }
+    }
+
+    word-stats-state.update((
+      words: calc.max(0, words),
+      chars: calc.max(0, chars),
+    ))
+  }
 }
 
 // Přílohy se číslují a odkazuje se na ně v textu; obsahuje-li práce
