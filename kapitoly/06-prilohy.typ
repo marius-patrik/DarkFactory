@@ -79,7 +79,12 @@ Tato příloha uvádí referenční definici a použití vizuálních revizních
   #added[Nově vygenerovaná sekce automaticky začleněná agentem.]
   #accepted[Uživatelem přijatý text, který ještě nebyl finalizován.]
   #removed[Zastaralý text navržený k odstranění.]
-  #diff[Původní chybné znění textu.][Nové opravené znění textu po revizi.]
+  // Návrh změny: nový text je automaticky unconfirmed a raw drží starou stranu.
+  #diff[Původní chybné znění textu.][Navržené nové znění textu.]
+
+  // Po schválení se diff odstraní a zůstane pouze správná delta:
+  #accepted[Schválené nové znění textu.]
+  #finalized[Uzavřené nové znění nebo strukturální prvek.]
   ```,
   caption: [Ukázka zápisu a použití revizních značek a textových funkcí v jazyce Typst.],
 ) <kod-znacky-typst>
@@ -101,16 +106,18 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce:
 - *Neověřený koncept (`#draft` / `#unconfirmed`)*: #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
 - *Nově přidaný text (`#added`)*: #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
-- *Přijatý text (`#accepted`)*: #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]\n- *Finalizovaný text (`#finalized`)*: #finalized[Text nebo struktura je považována za uzavřenou součást práce.]
+- *Přijatý text (`#accepted`)*: #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]
+- *Finalizovaný text (`#finalized`)*: #finalized[Text nebo struktura je považována za uzavřenou součást práce.]
 - *Navrženo k odstranění (`#removed`)*: #removed[Tato neaktuální věta je navržena k úplnému smazání z rukopisu.]
-- *Srovnávací diff (`#diff`)*: #diff[Původní chybné nebo nepřesné znění pasáže.][Nové přesné, fakticky a formálně ověřené znění pasáže.]
+- *Srovnávací diff (`#diff`)*: #diff[Původní platné znění pasáže.][Navržené nové znění čekající na posouzení.]
 - *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu; sám o sobě neznamená finalizaci.
 
 Role značek v lidském dohledu:
 - *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu.
 - *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
 - *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.
-- *Modré podtržení (`#accepted`)*: Uživatelem přijatý text, který zůstává dále editovatelný.\n- *Zelené podtržení (`#finalized`)*: Uzavřený text nebo strukturální prvek.
-- *Srovnávací diff (`#diff`)*: Transparentní vizualizace navržených oprav.
+- *Modré podtržení (`#accepted`)*: Uživatelem přijatý text, který zůstává dále editovatelný.
+- *Zelené podtržení (`#finalized`)*: Uzavřený text nebo strukturální prvek.
+- *Srovnávací diff (`#diff`)*: Návrh změny; review zobrazí starou červenou stranu a novou zelenou stranu, jejíž obsah je současně neověřený. Raw/final zachová staré znění až do schválení. Po přijetí nebo finalizaci se diff zcela odstraní.
 - *Postranní panely (Callouty)*: Striktní oddělení námětů, chyb a oponentury od těla textu.
 ]
