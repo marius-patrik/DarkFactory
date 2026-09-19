@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 EXPECTED = (
@@ -210,20 +212,66 @@ viewer_sources = {
     "web/viewer.html": Path("web/viewer.html"),
     "web/viewer.css": Path("web/viewer.css"),
     "web/viewer.js": Path("web/viewer.js"),
+    "web/icons.js": Path("web/icons.js"),
 }
 for name, path in viewer_sources.items():
     if not path.is_file() or path.stat().st_size == 0:
         fail(f"missing custom Pages viewer asset: {name}")
 
 viewer_js = viewer_sources["web/viewer.js"].read_text(encoding="utf-8")
-for required in ('viewMode = params.get("view") === "split"', 'source: "paper-split"', 'source: "paper-viewer"'):
+for required in (
+    'viewMode = params.get("view") === "split"',
+    'source: "paper-split"',
+    'source: "paper-viewer"',
+    "new pdfjsLib.TextLayer",
+    "new pdfjsLib.AnnotationLayer",
+    'addEventListener("contextmenu"',
+    '"paper-viewer-sidebar-side"',
+    '"paper-viewer-sidebar-mode"',
+    'event.ctrlKey && !event.metaKey',
+    'splitSyncScroll',
+    'fetch("variants.json"',
+):
     if required not in viewer_js:
-        fail(f"custom viewer missing split-view synchronization contract: {required}")
+        fail(f"custom viewer missing interaction contract: {required}")
+
+viewer_html = viewer_sources["web/viewer.html"].read_text(encoding="utf-8")
+for required in (
+    'data-icon="HomeIcon"',
+    'id="version-select"',
+    'id="sync-scroll"',
+    'id="sidebar-menu"',
+    'class="statusbar"',
+):
+    if required not in viewer_html:
+        fail(f"custom viewer shell missing UI contract: {required}")
+
+icons_js = viewer_sources["web/icons.js"].read_text(encoding="utf-8")
+if "lucide-animated@1.0.5" not in icons_js:
+    fail("custom viewer must use the pinned lucide-animated icon runtime")
+
+node = shutil.which("node")
+if node:
+    for script in (viewer_sources["web/viewer.js"], viewer_sources["web/icons.js"]):
+        result = subprocess.run(
+            [node, "--check", str(script)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            fail(f"JavaScript syntax error in {script}: {result.stderr.strip()}")
 
 site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
-for required in ('split_view = final_view + "&view=split"', '>Split</a>', 'viewer.html?'):
+for required in (
+    'split_view = final_view + "&view=split"',
+    '>Split</a>',
+    'viewer.html?',
+    '"work_title": WORK_TITLE',
+    '"icons.js"',
+    'profile=variant["profile"]',
+):
     if required not in site_builder:
-        fail(f"Pages builder missing raw/review/split viewer route: {required}")
+        fail(f"Pages builder missing viewer publication contract: {required}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
