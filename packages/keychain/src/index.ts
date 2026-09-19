@@ -11,7 +11,6 @@ export {
 } from "../../../harness/src/credentials.ts";
 export type {
 	AccountRecord,
-	Credential,
 	CredentialFallback,
 	CredentialSlot,
 } from "../../../harness/src/credentials.ts";
