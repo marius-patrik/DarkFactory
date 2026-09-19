@@ -20,7 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords, render-encyclopedia
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -235,6 +235,11 @@
   front-matter-section(
     translation(cs: [Klíčová slova], en: [Keywords]),
     render-keywords(),
+  )
+
+  front-matter-section(
+    translation(cs: [Encyklopedie], en: [Encyclopedia]),
+    render-encyclopedia(),
     break-after: false,
   )
 
