@@ -63,7 +63,7 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 ## Terminology & Translation Model
 - Canonical terminology lives in `templates/terms.typ` as values created by `define-term(...)`.
 - Manuscript files use shared values exported as `terms.<id>`; do not call `term()` with ad-hoc string names or duplicate explanations.
-- `term(...)` supports name-only, explanation-only, and combined rendering, independent language selection/order for name and detail, and automatic keyword registration.
+- `term(...)` supports name-only, explanation-only, and combined rendering; independent language selection/order for name and detail; automatic keyword registration; and `name-type: "proper" | "industry" | "both" | "auto"` for formal vs common industry naming.
 - If prose defines a canonical term, render that definition from the shared term value (for example `render: "both"` or `render: "explanation"`) instead of copying the definition into chapter text.
 - Bilingual thesis rendering defaults to Czech first, English second; the shared renderer supports reversing the order when required.
 
@@ -79,3 +79,6 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
   5. Write Chapter 4 from those observed results only.
 - Chapter 4 must never be written before Chapter 3 and must not contain hypothetical, provisional, or architecture-derived “results”.
 - Do not restore text removed from Chapters 3 or 4 from Git history unless the user explicitly requests it; the old text described provisional architectures and measurements.
+
+- Proper vs industry names are data, not ad-hoc prose. Example: a term may define proper `Smyčka ReAct / ReAct Loop` and industry `Agent Loop`, or proper `Jazykový model / Large Language Model` and industry `LLM`.
+- For Czech concepts whose English industry name is important (for example `Dovednosti / Skills`), store the English industry form in the term variable and let the renderer decide whether to show the proper name, industry name, or both.
