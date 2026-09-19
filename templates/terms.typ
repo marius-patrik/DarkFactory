@@ -41,7 +41,7 @@
   version_control: define-term(
     id: "version-control",
     cs: "Správa verzí",
-    en: "Version Control",
+    en: "Version control",
     explanation_cs: "Správa a sledování změn zdrojových souborů a dalších verzovaných artefaktů tak, aby bylo možné změny bezpečně větvit, slučovat, auditovat a v případě potřeby vracet.",
     explanation_en: "The management and tracking of changes to source files and other versioned artifacts so changes can be safely branched, merged, audited, and reverted when necessary.",
   ),
