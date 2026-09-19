@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DarkFactory — Canonical Optimized Completion Plan · DarkFactory</title>
+    <title>DarkFactory — Canonical Completion Plan · DarkFactory</title>
     <meta name="description" content="Turn-key template for autonomous, governed software engineering pipelines.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -259,175 +259,124 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="darkfactory-canonical-optimized-completion-plan">DarkFactory — Canonical Optimized Completion Plan<a class="headerlink" href="#darkfactory-canonical-optimized-completion-plan" title="Permanent link">&para;</a></h1>
+          <h1 id="darkfactory-canonical-completion-plan">DarkFactory — Canonical Completion Plan<a class="headerlink" href="#darkfactory-canonical-completion-plan" title="Permanent link">&para;</a></h1>
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
-<p>This is the single cross-Request execution plan for completing DarkFactory.</p>
+<p>This is the durable cross-Request execution plan for completing DarkFactory.</p>
 <p>It defines:</p>
 <ul>
-<li>the final product and architecture;</li>
-<li>the optimized dependency model;</li>
-<li>recovery-work ownership and reconciliation;</li>
-<li>the earliest safe self-hosting cutover;</li>
-<li>package/capability, docs, web, auth and release convergence;</li>
-<li>fleet migration and final acceptance.</li>
+<li>the remaining critical path to self-hosting;</li>
+<li>which work may proceed in parallel;</li>
+<li>recovery ownership and disposition;</li>
+<li>merge/cutover/release/fleet gates;</li>
+<li>the final acceptance path through #361 and #68.</li>
 </ul>
-<p>It deliberately does <strong>not</strong> store workflow run IDs, transient PR heads, current step names or checkpoint diaries. GitHub issues, PRs and Actions are the source of live execution status.</p>
+<p>It does <strong>not</strong> contain workflow run IDs, temporary branch heads, execution diaries or per-run checkpoints. GitHub issues, PRs and Actions remain the source of live execution state.</p>
 <p><strong>Canonical branch:</strong> <code>darkfactory</code><br />
 <strong>Parent completion Epic:</strong> #68<br />
 <strong>Final fleet acceptance:</strong> #361</p>
 <hr />
-<h2 id="1-source-of-truth-hierarchy">1. Source-of-truth hierarchy<a class="headerlink" href="#1-source-of-truth-hierarchy" title="Permanent link">&para;</a></h2>
+<h2 id="1-authority">1. Authority<a class="headerlink" href="#1-authority" title="Permanent link">&para;</a></h2>
 <p>When sources differ, use this order:</p>
 <ol>
-<li>Current owner-approved product requirements in <code>PRD.md</code>.</li>
-<li>Current Request body and explicit acceptance criteria.</li>
+<li><code>PRD.md</code> for current product requirements and architecture.</li>
+<li>Current Request body for feature-specific accepted behavior.</li>
 <li>Accepted ADRs under <code>.agents/notes/adr/</code>.</li>
-<li>Latest owner-finalized Planning for the affected Request.</li>
+<li>Latest owner-finalized <code>darkfactory-final-planning</code> for the affected Request.</li>
 <li>This file for cross-Request sequencing, optimization, recovery ownership and final gates.</li>
 <li>GitHub issue/PR/Actions state for live execution status.</li>
 </ol>
-<p>Material product/architecture changes update PRD/ADR/Request state before implementation. Concrete current-tree ownership discovered during implementation does not invalidate Planning unless behavior or architecture changes.</p>
+<p>Material product or architecture changes update PRD/ADR/Request state before implementation. Concrete current-tree ownership discovered during implementation does not invalidate Planning unless behavior or architecture changes.</p>
 <hr />
-<h2 id="2-optimization-rules">2. Optimization rules<a class="headerlink" href="#2-optimization-rules" title="Permanent link">&para;</a></h2>
-<p>The program was previously over-serialized. The following rules are now explicit.</p>
-<h3 id="21-start-work-dependencies-are-not-merge-dependencies">2.1 Start-work dependencies are not merge dependencies<a class="headerlink" href="#21-start-work-dependencies-are-not-merge-dependencies" title="Permanent link">&para;</a></h3>
-<p>A Request may begin analysis, recovery reconciliation, implementation or testing before every downstream interface is merged when:</p>
+<h2 id="2-durable-baseline">2. Durable baseline<a class="headerlink" href="#2-durable-baseline" title="Permanent link">&para;</a></h2>
+<p>The bootstrap baseline has advanced since the previous plan revision.</p>
+<h3 id="satisfied-prerequisites">Satisfied prerequisites<a class="headerlink" href="#satisfied-prerequisites" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<h1 id="414-is-terminal-and-restored-the-original-bootstrapci-baseline">414 is terminal and restored the original bootstrap/CI baseline.<a class="headerlink" href="#414-is-terminal-and-restored-the-original-bootstrapci-baseline" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="431-is-terminal-and-synchronized-governancedocs-tests-and-projections-with-the-accepted-architecture">431 is terminal and synchronized governance/docs tests and projections with the accepted architecture.<a class="headerlink" href="#431-is-terminal-and-synchronized-governancedocs-tests-and-projections-with-the-accepted-architecture" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="413-is-terminal-through-pr-428-commit-6570769bc1d566a6386e7d555d7a06e41d2285f8">413 is terminal through PR #428 / commit <code>6570769bc1d566a6386e7d555d7a06e41d2285f8</code>.<a class="headerlink" href="#413-is-terminal-through-pr-428-commit-6570769bc1d566a6386e7d555d7a06e41d2285f8" title="Permanent link">&para;</a></h1>
+</li>
+<li>Declared pipeline stage kind now reaches <code>df run --kind</code>.</li>
+<li>The rejected duplicate Python TaskKind design was not retained.</li>
+<li>
+<h1 id="365-is-now-the-first-unsatisfied-critical-path-request">365 is now the first unsatisfied critical-path Request.<a class="headerlink" href="#365-is-now-the-first-unsatisfied-critical-path-request" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<p>These completed bootstrap items are not repeated in the active Request map below.</p>
+<h3 id="stale-implementation-artifacts">Stale implementation artifacts<a class="headerlink" href="#stale-implementation-artifacts" title="Permanent link">&para;</a></h3>
+<ul>
+<li>PR #407 is <strong>not</strong> the merge vehicle for #340. It predates the architecture convergence, is broadly contaminated by unrelated changes, and remains useful only as implementation/recovery evidence together with PR376/F48.</li>
+<li>The surviving #365 feature branch is a rejected/stale implementation branch. It may provide useful deltas in <code>router/profile.ts</code> / <code>router/types.ts</code>, but it is not approved implementation and must be reconciled against current #365 Planning.</li>
+</ul>
+<h3 id="current-architectural-foundation">Current architectural foundation<a class="headerlink" href="#current-architectural-foundation" title="Permanent link">&para;</a></h3>
+<p>ADR-0017 through ADR-0020 and Requests #420–#425 define the final package/capability, docs/web and auth/keychain architecture.</p>
+<p>The product target remains:</p>
+<ul>
+<li>root Bun workspace;</li>
+<li>first-party packages <code>protocol/core/capability/github/keychain/auth/docs/cli/web</code>;</li>
+<li>agentic/product behavior as versioned capabilities;</li>
+<li><code>code</code>, <code>paper</code>, <code>math</code> retained as semantic domains;</li>
+<li>first-party docs engine and one shared web application;</li>
+<li>GitHub-backed web control plane;</li>
+<li>strict separation of browser auth and machine keychain custody.</li>
+</ul>
+<p>The old monolithic <code>@darkfactory/harness</code> layout is migration input only.</p>
+<h3 id="production-state">Production state<a class="headerlink" href="#production-state" title="Permanent link">&para;</a></h3>
+<p>The system is still pre-cutover:</p>
+<ul>
+<li>Python remains part of normal production orchestration;</li>
+<li>production GitHub mutation is not yet fully df-owned;</li>
+<li>df-dispatch is not yet the sole production mutating path;</li>
+<li>
+<h1 id="359-therefore-remains-the-primary-program-milestone">359 therefore remains the primary program milestone.<a class="headerlink" href="#359-therefore-remains-the-primary-program-milestone" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<hr />
+<h2 id="3-execution-rules">3. Execution rules<a class="headerlink" href="#3-execution-rules" title="Permanent link">&para;</a></h2>
+<h3 id="31-start-work-dependencies-are-not-merge-dependencies">3.1 Start-work dependencies are not merge dependencies<a class="headerlink" href="#31-start-work-dependencies-are-not-merge-dependencies" title="Permanent link">&para;</a></h3>
+<p>A Request may begin recovery analysis, implementation or tests before every merge dependency lands when:</p>
 <ul>
 <li>its behavioral contract is settled;</li>
-<li>its work can be isolated on a branch/worktree;</li>
-<li>unresolved interfaces are named rather than guessed;</li>
+<li>work can be isolated;</li>
+<li>unresolved interfaces are explicit;</li>
 <li>final merge waits for the interfaces it actually consumes.</li>
 </ul>
-<p>Only mutable-base conflicts or real interface uncertainty justify idle waiting.</p>
-<h3 id="22-merge-dependencies-are-not-final-acceptance-dependencies">2.2 Merge dependencies are not final-acceptance dependencies<a class="headerlink" href="#22-merge-dependencies-are-not-final-acceptance-dependencies" title="Permanent link">&para;</a></h3>
-<p>A feature does not need every future product surface to exist before it can merge. Final fleet/release acceptance may require capabilities that are not prerequisites for an earlier core cutover.</p>
-<h3 id="23-recovery-work-is-implementation-not-archaeology">2.3 Recovery work is implementation, not archaeology<a class="headerlink" href="#23-recovery-work-is-implementation-not-archaeology" title="Permanent link">&para;</a></h3>
-<p>The preserved September branches are already durable. They may be inspected, rebased, decomposed and reconciled immediately. Full productized #388 recovery is <strong>not</strong> a prerequisite for consuming already-preserved recovery branches.</p>
-<p>Recovered work is the starting implementation where still valid. Do not regenerate finished work from clean trunk merely because its old source path changed.</p>
-<h3 id="24-integrate-recovered-work-into-final-homes">2.4 Integrate recovered work into final homes<a class="headerlink" href="#24-integrate-recovered-work-into-final-homes" title="Permanent link">&para;</a></h3>
-<p>The package/capability foundation lands before bulk recovery merge. Recovered TypeScript work is adapted directly into final packages/capabilities instead of first being merged into the monolithic <code>harness/</code> tree and migrated again.</p>
-<h3 id="25-self-host-early">2.5 Self-host early<a class="headerlink" href="#25-self-host-early" title="Permanent link">&para;</a></h3>
-<p>The main acceleration target is #359. DarkFactory should become the production engine as soon as the <strong>core Request lifecycle</strong> is reliable. Features such as final docs/web polish, stacked PRs, full recovery productization, TUI, Epic UX and final release polish should then be completed through the real df-native pipeline.</p>
-<h3 id="26-temporary-bootstrap-authoring-exception">2.6 Temporary bootstrap-authoring exception<a class="headerlink" href="#26-temporary-bootstrap-authoring-exception" title="Permanent link">&para;</a></h3>
-<p>Until #359 is complete, a narrowly-scoped direct patch may be authored when the current pipeline defect prevents the pipeline from correctly implementing its own bootstrap repair.</p>
-<p>This exception:</p>
-<ul>
-<li>applies only to bootstrap/architecture convergence required to make df self-hosting;</li>
-<li>never skips a Request, Planning, tests, independent review, owner approval or PR/check/merge gate;</li>
-<li>never permits bypassing recovery provenance;</li>
-<li>must not become a normal implementation path;</li>
-<li>expires permanently when #359 closes.</li>
-</ul>
-<hr />
-<h2 id="3-final-architecture">3. Final architecture<a class="headerlink" href="#3-final-architecture" title="Permanent link">&para;</a></h2>
-<h3 id="31-bun-workspace">3.1 Bun workspace<a class="headerlink" href="#31-bun-workspace" title="Permanent link">&para;</a></h3>
-<p>DarkFactory becomes a root Bun workspace with these first-party packages:</p>
-<ul>
-<li><code>@darkfactory/protocol</code> — browser/runtime-safe schemas, serialized contracts and cross-surface types;</li>
-<li><code>@darkfactory/core</code> — execution kernel, graph/run state, provider/router machinery, config resolution and capability loading;</li>
-<li><code>@darkfactory/capability</code> — capability ABI, loader and deterministic adapter/build tooling;</li>
-<li><code>@darkfactory/github</code> — typed GitHub REST/GraphQL substrate with browser/server-safe entrypoints;</li>
-<li><code>@darkfactory/keychain</code> — all machine/harness credential custody and authentication;</li>
-<li><code>@darkfactory/auth</code> — human/browser GitHub App authentication and web sessions;</li>
-<li><code>@darkfactory/docs</code> — headless documentation compiler/content graph;</li>
-<li><code>@darkfactory/cli</code> — <code>df</code> executable, command composition and TUI ownership;</li>
-<li><code>@darkfactory/web</code> — the only first-party web renderer/application.</li>
-</ul>
-<p>The old <code>@darkfactory/harness</code> may exist only as a temporary migration shim and is removed before final release.</p>
-<h3 id="32-core-mechanisms-versus-capabilities">3.2 Core mechanisms versus capabilities<a class="headerlink" href="#32-core-mechanisms-versus-capabilities" title="Permanent link">&para;</a></h3>
-<p>Core owns mechanisms. Agentic/product behavior lives in first-class versioned capabilities under root <code>capabilities/</code>.</p>
-<p>Initial capability set includes at least:</p>
-<ul>
-<li>code;</li>
-<li>paper;</li>
-<li>math;</li>
-<li>docs;</li>
-<li>git;</li>
-<li>github;</li>
-<li>planning;</li>
-<li>review;</li>
-<li>ci;</li>
-<li>release;</li>
-<li>recovery;</li>
-<li>hooks;</li>
-<li>epics;</li>
-<li>stacks.</li>
-</ul>
-<p>Each capability uses one canonical TypeScript definition and may contribute detection/setup, tools, commands, graph behavior, deterministic actions, verification, hooks, docs, web surfaces, release outputs and audit metadata.</p>
-<p>Supported integration artifacts are generated from that canonical definition, including native DarkFactory, Pi ExtensionAPI, standalone MCP server and supported Claude/Codex/agent skill/plugin forms. No independent handwritten implementation per harness.</p>
-<h3 id="33-domains-remain-separate-from-capabilities">3.3 Domains remain separate from capabilities<a class="headerlink" href="#33-domains-remain-separate-from-capabilities" title="Permanent link">&para;</a></h3>
-<p>The existing semantic model remains:</p>
-<p><code>ecosystem -&gt; package -&gt; domain</code></p>
-<p>with first-class multi-domain repositories.</p>
-<p>Initial semantic domains include <code>code</code>, <code>paper</code> and <code>math</code>. Capabilities are orthogonal; for example <code>docs</code>, <code>git</code> or <code>review</code> may apply across multiple domains.</p>
-<h3 id="34-configuration">3.4 Configuration<a class="headerlink" href="#34-configuration" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>repo.df</code>: repository/product declaration and final #340 repository contract.</li>
-<li><code>config.df</code>: runtime/user/provider configuration and final #340 runtime contract.</li>
-<li><code>docs.df</code>: native DarkFactory documentation configuration.</li>
-<li><code>properdocs.yml</code> and <code>mkdocs.yml</code>: accepted compatibility inputs to the docs compiler, not final runtime dependencies.</li>
-</ul>
-<p>A <code>.df</code> suffix is a file extension, never a directory convention.</p>
-<h3 id="35-credentials-and-authentication">3.5 Credentials and authentication<a class="headerlink" href="#35-credentials-and-authentication" title="Permanent link">&para;</a></h3>
-<p><code>@darkfactory/keychain</code> is the only machine/harness credential owner. It covers secure storage, encrypted fallback, environment/import sources, provider OAuth/API keys, refresh/rotation, multi-account slots, borrowed CLI credentials, GitHub App private-key/JWT/installation-token flows, CLI-side user credentials, redaction, secret scanning and credential diagnostics.</p>
-<p>Capabilities declare credential requirements and receive scoped handles; they do not read raw credential files, environment variables or OS keychains directly.</p>
-<p><code>@darkfactory/auth</code> separately owns human/browser GitHub App login, PKCE/state, confidential exchange/refresh broker integration, session restoration and logout/revocation. Browser artifacts cannot import keychain/private-key code.</p>
-<h3 id="36-documentation-and-readme">3.6 Documentation and README<a class="headerlink" href="#36-documentation-and-readme" title="Permanent link">&para;</a></h3>
-<p><code>@darkfactory/docs</code> replaces ProperDocs/MkDocs as the execution engine and produces one typed content graph from canonical prose, ADRs/rules, real TypeScript/TSDoc API extraction, capability docs, repository/graph/workflow metadata and other supported package extractors.</p>
-<p>TypeDoc may remain an internal TypeScript extractor.</p>
-<p>The same semantic homepage source renders:</p>
-<ul>
-<li>the docs home page; and</li>
-<li>committed <code>README.md</code> Markdown.</li>
-</ul>
-<p>CI fails on deterministic README projection drift.</p>
-<h3 id="37-web-ui">3.7 Web UI<a class="headerlink" href="#37-web-ui" title="Permanent link">&para;</a></h3>
-<p><code>@darkfactory/web</code> is one prebuilt React/TypeScript application released by DarkFactory and reused unchanged by every consumer.</p>
-<p>Preferred UI stack:</p>
-<ul>
-<li>React + TypeScript;</li>
-<li>shadcn/ui;</li>
-<li>lucide-animated;</li>
-<li>Motion;</li>
-<li>Dagre;</li>
-<li>Wouter;</li>
-<li>Dockview only where a docking/workspace surface materially benefits from it.</li>
-</ul>
-<p>Consumers compile repository-specific content/data only; they do not rebuild the React application.</p>
-<p>The app is hosted on GitHub Pages and remains dynamic by reading live GitHub REST/GraphQL state through browser-safe GitHub/auth packages.</p>
-<p>DarkFactory Web is the primary day-to-day operator UI. GitHub remains the durable control plane, authorization authority and event bus; normal DarkFactory operation should not require using the github.com UI except where GitHub itself requires a consent/review surface.</p>
-<p>A minimal auth broker performs confidential GitHub App user-token exchange/refresh only. It is not a DarkFactory backend, state store or execution API.</p>
-<hr />
-<h2 id="4-final-product-invariants">4. Final product invariants<a class="headerlink" href="#4-final-product-invariants" title="Permanent link">&para;</a></h2>
-<p>DarkFactory is complete only when all of these are true:</p>
+<p>Do not idle independent work because another branch is unfinished.</p>
+<h3 id="32-merge-dependencies-are-not-final-acceptance-dependencies">3.2 Merge dependencies are not final-acceptance dependencies<a class="headerlink" href="#32-merge-dependencies-are-not-final-acceptance-dependencies" title="Permanent link">&para;</a></h3>
+<p>A feature may merge before unrelated final-product capabilities exist. Final release/fleet acceptance is a separate gate.</p>
+<h3 id="33-recovery-work-is-existing-implementation">3.3 Recovery work is existing implementation<a class="headerlink" href="#33-recovery-work-is-existing-implementation" title="Permanent link">&para;</a></h3>
+<p>Preserved recovery refs are starting implementation, not inspiration.</p>
+<p>For each recovery lane:</p>
 <ol>
-<li><code>df</code> is the sole production orchestration/mutation engine.</li>
-<li>Normal production does not require legacy Python orchestration.</li>
-<li>Production GitHub mutations use typed df-owned GitHub interfaces; shell/subprocess <code>gh</code> mutation is gone.</li>
-<li>The graph runs the real Request lifecycle with durable interruption/resume.</li>
-<li>The final #340 <code>repo.df</code>/<code>config.df</code>/<code>.df</code> hard transition is repository-wide.</li>
-<li>The package/capability architecture in ADR-0017 is the shipped ownership model.</li>
-<li>Official capabilities are versioned/loadable and representative generated adapters are proven.</li>
-<li>Pipeline stages preserve explicit task semantics; undeclared inference does not confuse task subject with required capability.</li>
-<li>Every agent stage has one bounded elapsed-time budget across failover/tools.</li>
-<li>Natural model stop is accepted; mutation truth comes from observed effects, not model claims or mandatory submit JSON.</li>
-<li>Keychain is the sole machine credential owner; auth is the sole browser/human login owner.</li>
-<li>Recovery, git, hooks, quality, Epic/Request and stack behavior are first-class capabilities or shared mechanisms, not parallel systems.</li>
-<li>Docs are compiled by <code>@darkfactory/docs</code>, contain actual TypeScript API documentation, and README is a deterministic projection of the same content source.</li>
-<li>The shared <code>@darkfactory/web</code> release runs on GitHub Pages across consumers without per-repo frontend rebuild.</li>
-<li>The operator surfaces (CLI/TUI/web/docs) consume one protocol/state/capability model.</li>
-<li>First-party packages/capabilities publish under the planned <code>darkfactory</code> GitHub organization with lockstep product SemVer initially and a separate capability ABI version.</li>
-<li>Release assets include the CLI/runtime, capability artifacts/adapters and prebuilt web bundle required by the shipped product.</li>
-<li>All six intended consumers migrate using released df, not manual copy-based installation.</li>
-<li><code>audit.df</code> independently proves final state.</li>
-<li>
-<h1 id="361-is-green-and-the-original-68-graph-contract-passes-against-the-installed-release">361 is green and the original #68 graph contract passes against the installed release.<a class="headerlink" href="#361-is-green-and-the-original-68-graph-contract-passes-against-the-installed-release" title="Permanent link">&para;</a></h1>
-</li>
+<li>inspect exact preserved state;</li>
+<li>compare with current <code>darkfactory</code>;</li>
+<li>retain valid behavior/tests;</li>
+<li>reject stale assumptions explicitly;</li>
+<li>adapt the remaining delta into its <strong>final package/capability home</strong>;</li>
+<li>record a terminal integrated/superseded/rejected disposition.</li>
 </ol>
-<p>A merged PR, closed issue or passing unit suite is evidence, not final acceptance by itself.</p>
+<p>Do not regenerate valid recovered work from scratch.</p>
+<h3 id="34-bootstrap-authoring-exception">3.4 Bootstrap-authoring exception<a class="headerlink" href="#34-bootstrap-authoring-exception" title="Permanent link">&para;</a></h3>
+<p>Until #359 closes, direct authoring is permitted only when the current pipeline defect prevents the pipeline from correctly repairing the bootstrap/architecture needed for self-hosting.</p>
+<p>It never waives:</p>
+<ul>
+<li>Request coverage;</li>
+<li>finalized Planning;</li>
+<li>tests;</li>
+<li>review/alignment;</li>
+<li>PR/check/merge gates;</li>
+<li>recovery provenance.</li>
+</ul>
+<p>The exception expires permanently at #359.</p>
+<h3 id="35-ci-concurrency-rule">3.5 CI concurrency rule<a class="headerlink" href="#35-ci-concurrency-rule" title="Permanent link">&para;</a></h3>
+<p>A red canonical/default branch is a repository-wide stop-the-line event.</p>
+<p>A failing topic/recovery branch blocks that branch and dependent work, but does not block unrelated isolated work whose own required checks are green.</p>
 <hr />
-<h2 id="5-recovery-ledger">5. Recovery ledger<a class="headerlink" href="#5-recovery-ledger" title="Permanent link">&para;</a></h2>
-<p>The preserved branches remain authoritative recovery inputs:</p>
+<h2 id="4-recovery-ledger">4. Recovery ledger<a class="headerlink" href="#4-recovery-ledger" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -438,11 +387,15 @@
 <tbody>
 <tr>
 <td><code>recovery/pr-376-clean</code></td>
-<td>#340 / package-convergence input</td>
+<td>#340 evidence/input</td>
 </tr>
 <tr>
 <td><code>recovery/f48-layout</code></td>
-<td>#340 / #420 convergence input</td>
+<td>#340 / #420 evidence/input</td>
+</tr>
+<tr>
+<td>PR #407</td>
+<td>#340 evidence only; do not repair/merge wholesale</td>
 </tr>
 <tr>
 <td><code>recovery/f28-dispatch</code></td>
@@ -450,7 +403,7 @@
 </tr>
 <tr>
 <td><code>recovery/f14-borrowed-refresh</code></td>
-<td>#248 -&gt; #422 keychain owner</td>
+<td>#248 -&gt; #422 keychain</td>
 </tr>
 <tr>
 <td><code>recovery/f40-capability-tiers</code></td>
@@ -462,23 +415,23 @@
 </tr>
 <tr>
 <td><code>recovery/f42-tsdoc</code></td>
-<td>#334 -&gt; #424 docs package</td>
+<td>#334 -&gt; #424</td>
 </tr>
 <tr>
 <td><code>recovery/f42-tsdoc-w2</code></td>
-<td>#334 -&gt; #424 docs package</td>
+<td>#334 -&gt; #424</td>
 </tr>
 <tr>
 <td><code>recovery/f42-tsdoc-w3</code></td>
-<td>#334 -&gt; #424 docs package</td>
+<td>#334 -&gt; #424</td>
 </tr>
 <tr>
 <td><code>recovery/f42-tsdoc-w4</code></td>
-<td>#334 -&gt; #424 docs package</td>
+<td>#334 -&gt; #424</td>
 </tr>
 <tr>
 <td><code>recovery/f44-readme-prd</code></td>
-<td>#336 -&gt; final hooks/docs owners</td>
+<td>#336</td>
 </tr>
 <tr>
 <td><code>recovery/f45-adrs</code></td>
@@ -486,7 +439,7 @@
 </tr>
 <tr>
 <td><code>recovery/f47-hooks</code></td>
-<td>#339 -&gt; hooks capability</td>
+<td>#339 hooks capability</td>
 </tr>
 <tr>
 <td><code>recovery/f49-detected-quality</code></td>
@@ -494,452 +447,285 @@
 </tr>
 <tr>
 <td><code>recovery/d4-docs-generator</code></td>
-<td>#335/#424</td>
+<td>#424 / #335</td>
 </tr>
 <tr>
 <td><code>recovery/fix-empty-agent-output</code></td>
 <td>Provenance only; fully subsumed</td>
 </tr>
+<tr>
+<td>rejected #365 branch / PR #366</td>
+<td>Optional implementation evidence only</td>
+</tr>
 </tbody>
 </table>
-<p>Additional recovery work:</p>
+<p>Additional discovery obligations:</p>
 <ul>
 <li>
-<h1 id="251-findpreserve-exact-prior-tui-state-before-replacement-implementation">251: find/preserve exact prior TUI state before replacement implementation.<a class="headerlink" href="#251-findpreserve-exact-prior-tui-state-before-replacement-implementation" title="Permanent link">&para;</a></h1>
+<h1 id="251-locatepreserve-any-unique-prior-tui-implementation-before-replacement-work">251: locate/preserve any unique prior TUI implementation before replacement work.<a class="headerlink" href="#251-locatepreserve-any-unique-prior-tui-implementation-before-replacement-work" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="358-findpreserve-any-unique-f30-4-orchestration-state">358: find/preserve any unique F30-4 orchestration state.<a class="headerlink" href="#358-findpreserve-any-unique-f30-4-orchestration-state" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="365-pr-366-evidence-only-reuse-only-compatible-deltas">365 PR #366: evidence only; reuse only compatible deltas.<a class="headerlink" href="#365-pr-366-evidence-only-reuse-only-compatible-deltas" title="Permanent link">&para;</a></h1>
+<h1 id="358-locatepreserve-any-unique-f30-4-orchestration-implementation-before-replacement-work">358: locate/preserve any unique F30-4 orchestration implementation before replacement work.<a class="headerlink" href="#358-locatepreserve-any-unique-f30-4-orchestration-implementation-before-replacement-work" title="Permanent link">&para;</a></h1>
 </li>
 </ul>
-<p>Every recovered source receives an explicit integrated/superseded/rejected disposition before #361.</p>
-<p>Recovery analysis/reconciliation may proceed immediately. A branch's <strong>merge</strong> waits only for the interfaces it actually consumes.</p>
+<p>Full #388 productization is <strong>not</strong> required to consume already-preserved refs. It remains the reusable recovery-product/live-E2E acceptance.</p>
+<p>Every recovery source must have an explicit terminal disposition before #361.</p>
 <hr />
-<h2 id="6-optimized-execution-program">6. Optimized execution program<a class="headerlink" href="#6-optimized-execution-program" title="Permanent link">&para;</a></h2>
-<h3 id="wave-0-planning-and-architecture-convergence">Wave 0 — planning and architecture convergence<a class="headerlink" href="#wave-0-planning-and-architecture-convergence" title="Permanent link">&para;</a></h3>
-<p>Already authorized:</p>
+<h2 id="5-active-critical-path-to-self-hosting">5. Active critical path to self-hosting<a class="headerlink" href="#5-active-critical-path-to-self-hosting" title="Permanent link">&para;</a></h2>
+<h1 id="413-is-complete-the-remaining-merge-path-to-the-earliest-safe-359-cutover-is">413 is complete. The remaining merge path to the earliest safe #359 cutover is:<a class="headerlink" href="#413-is-complete-the-remaining-merge-path-to-the-earliest-safe-359-cutover-is" title="Permanent link">&para;</a></h1>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>#365  task-profile inference
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>#420  root workspace / final package boundaries
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>#421  minimum capability ABI + loader
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>#340  final repo.df/config.df/.df hard transition
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>#406  bounded elapsed-time runtime
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  ↓
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>#391  durable unified Planning/review lifecycle
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  ↓
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>#422  production-critical keychain migration
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  ↓
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>#331  capability-tier routing
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  ↓
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>#329  natural-stop result capture
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  ↓
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>#341  package/domain detection + capability quality actions
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>  ↓
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>#358  production graph handlers / durable resume
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  ↓
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>#317  truthful branch-repair / mutation evidence
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  ↓
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>#359  df-only production cutover
+</code></pre></div>
+<p>This is a <strong>merge/cutover path</strong>, not a rule that all development must happen serially.</p>
+<h3 id="immediate-development-concurrency">Immediate development concurrency<a class="headerlink" href="#immediate-development-concurrency" title="Permanent link">&para;</a></h3>
+<p>The following may be worked now in parallel:</p>
 <ul>
 <li>
-<h1 id="420-packageworkspace-split">420 package/workspace split;<a class="headerlink" href="#420-packageworkspace-split" title="Permanent link">&para;</a></h1>
+<h1 id="365-implementationreconciliation">365 implementation/reconciliation;<a class="headerlink" href="#365-implementationreconciliation" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="421-capability-abiadapters">421 capability ABI/adapters;<a class="headerlink" href="#421-capability-abiadapters" title="Permanent link">&para;</a></h1>
+<h1 id="420-workspacepackage-implementation">420 workspace/package implementation;<a class="headerlink" href="#420-workspacepackage-implementation" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="422-keychain">422 keychain;<a class="headerlink" href="#422-keychain" title="Permanent link">&para;</a></h1>
+<h1 id="421-abi-design-against-the-emerging-420-shape">421 ABI design against the emerging #420 shape;<a class="headerlink" href="#421-abi-design-against-the-emerging-420-shape" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="423-browser-auth">423 browser auth;<a class="headerlink" href="#423-browser-auth" title="Permanent link">&para;</a></h1>
+<h1 id="340-clean-convergence-from-current-trunk-pr376f48407-evidence">340 clean convergence from current trunk + PR376/F48/#407 evidence;<a class="headerlink" href="#340-clean-convergence-from-current-trunk-pr376f48407-evidence" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="424-docs-enginecontent-graphreadme-projection">424 docs engine/content graph/README projection;<a class="headerlink" href="#424-docs-enginecontent-graphreadme-projection" title="Permanent link">&para;</a></h1>
+<h1 id="406-runtime-budget-implementation">406 runtime-budget implementation;<a class="headerlink" href="#406-runtime-budget-implementation" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="425-shared-web-control-surface">425 shared web control surface.<a class="headerlink" href="#425-shared-web-control-surface" title="Permanent link">&para;</a></h1>
+<h1 id="391-lifecycle-completion">391 lifecycle completion;<a class="headerlink" href="#391-lifecycle-completion" title="Permanent link">&para;</a></h1>
 </li>
-</ul>
-<p>ADRs 0017–0020 define the durable architectural decisions.</p>
-<h3 id="wave-1-bootstrap-repair-and-package-foundation">Wave 1 — bootstrap repair and package foundation<a class="headerlink" href="#wave-1-bootstrap-repair-and-package-foundation" title="Permanent link">&para;</a></h3>
-<p>Work starts in parallel:</p>
-<ul>
-<li><strong>#413</strong>: replace malformed/stale implementation with the narrow stage-kind bridge; no Python task taxonomy.</li>
-<li><strong>#365</strong>: prepare the TypeScript undeclared-inference fix; merge after #413.</li>
-<li><strong>#420</strong>: build root Bun workspace and package boundaries on a branch; merge after immediate bootstrap branches are stable enough to avoid unnecessary conflict.</li>
-<li><strong>#421</strong>: design/implement the minimum capability ABI and loader against #420; full adapter breadth may continue later.</li>
-<li><strong>#340</strong>: rebuild/reconcile a clean hard-transition branch from current trunk + valid PR407/PR376/F48 input instead of preserving unrelated sweep history.</li>
-<li><strong>#406</strong>: implement elapsed-time budgeting concurrently and rebase onto final core ownership.</li>
-<li><strong>#391</strong>: continue unified Planning/review lifecycle implementation concurrently; final merge waits for final state ownership.</li>
-</ul>
-<p>The objective is to eliminate bootstrap defects and establish final homes before mass recovery landing.</p>
-<h3 id="wave-2-mass-recovery-reconciliation">Wave 2 — mass recovery reconciliation<a class="headerlink" href="#wave-2-mass-recovery-reconciliation" title="Permanent link">&para;</a></h3>
-<p>As soon as #420 package boundaries and #421 ABI shapes are concrete enough, prepare all recovery lanes concurrently:</p>
-<ul>
-<li>F14 -&gt; #422/#248;</li>
-<li>F40 -&gt; #331;</li>
-<li>F38 -&gt; #329;</li>
-<li>F42 x4 -&gt; #334/#424;</li>
-<li>F44 -&gt; #336;</li>
-<li>F45 -&gt; #337;</li>
-<li>F47 -&gt; #339;</li>
-<li>F49 -&gt; #341;</li>
-<li>D4 -&gt; #424/#335;</li>
-<li>TUI recovery -&gt; #251;</li>
-<li>F30-4 discovery -&gt; #358.</li>
-</ul>
-<p>Preparation includes rebase/diff, overlap analysis, test execution and adaptation into final package/capability locations. It does not wait for #388 full productization.</p>
-<h3 id="wave-3-core-self-hosting-chain">Wave 3 — core self-hosting chain<a class="headerlink" href="#wave-3-core-self-hosting-chain" title="Permanent link">&para;</a></h3>
-<p>These are the <strong>merge gates</strong> for the earliest safe #359 cutover:</p>
-<ol>
+<li>all recovery analysis/reconciliation;</li>
 <li>
-<h1 id="413">413<a class="headerlink" href="#413" title="Permanent link">&para;</a></h1>
+<h1 id="422-keychain-recoverymigration-design">422 keychain recovery/migration design;<a class="headerlink" href="#422-keychain-recoverymigration-design" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="365">365<a class="headerlink" href="#365" title="Permanent link">&para;</a></h1>
+<h1 id="331-f40-reconciliation">331 F40 reconciliation;<a class="headerlink" href="#331-f40-reconciliation" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="420-package-foundation">420 package foundation<a class="headerlink" href="#420-package-foundation" title="Permanent link">&para;</a></h1>
+<h1 id="341-f49-reconciliation-and-detectorcapability-action-design">341 F49 reconciliation and detector/capability-action design;<a class="headerlink" href="#341-f49-reconciliation-and-detectorcapability-action-design" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="421-minimum-capability-abiloader">421 minimum capability ABI/loader<a class="headerlink" href="#421-minimum-capability-abiloader" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="340-final-fileconfigstate-naming">340 final file/config/state naming<a class="headerlink" href="#340-final-fileconfigstate-naming" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="406-bounded-runtime">406 bounded runtime<a class="headerlink" href="#406-bounded-runtime" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="391-durable-unified-planningreview-lifecycle">391 durable unified Planning/review lifecycle<a class="headerlink" href="#391-durable-unified-planningreview-lifecycle" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="422-keychain-core-migration-sufficient-for-production-credentials">422 keychain core migration sufficient for production credentials<a class="headerlink" href="#422-keychain-core-migration-sufficient-for-production-credentials" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="331-capability-tier-routing">331 capability-tier routing<a class="headerlink" href="#331-capability-tier-routing" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="329-natural-stop-result-capture">329 natural-stop result capture<a class="headerlink" href="#329-natural-stop-result-capture" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="341-normalized-detection-capability-action-resolution-needed-by-production-verification">341 normalized detection + capability-action resolution needed by production verification<a class="headerlink" href="#341-normalized-detection-capability-action-resolution-needed-by-production-verification" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="358-production-graph-handlersresume">358 production graph handlers/resume<a class="headerlink" href="#358-production-graph-handlersresume" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="317-truthful-branch-repairanswer-path">317 truthful branch-repair/answer path<a class="headerlink" href="#317-truthful-branch-repairanswer-path" title="Permanent link">&para;</a></h1>
-</li>
-<li><strong>#359 production cutover</strong></li>
-</ol>
-<h1 id="248-may-complete-alongside-422-its-f14-behavior-must-have-a-terminal-disposition-before-final-release-252-may-proceed-in-parallel-after-365421">248 may complete alongside #422; its F14 behavior must have a terminal disposition before final release. #252 may proceed in parallel after #365/#421.<a class="headerlink" href="#248-may-complete-alongside-422-its-f14-behavior-must-have-a-terminal-disposition-before-final-release-252-may-proceed-in-parallel-after-365421" title="Permanent link">&para;</a></h1>
-<h3 id="359-cutover-definition">#359 cutover definition<a class="headerlink" href="#359-cutover-definition" title="Permanent link">&para;</a></h3>
-<h1 id="359-no-longer-waits-for-332-384-385-386-388-full-tui-docsweb-or-final-release-polish-unless-a-concrete-core-lifecycle-dependency-is-discovered">359 no longer waits for #332, #384, #385, #386, #388 full, TUI, docs/web or final release polish unless a concrete core lifecycle dependency is discovered.<a class="headerlink" href="#359-no-longer-waits-for-332-384-385-386-388-full-tui-docsweb-or-final-release-polish-unless-a-concrete-core-lifecycle-dependency-is-discovered" title="Permanent link">&para;</a></h1>
-<p>Before cutover derive a fresh mutation ledger covering Request intake/comments, Planning/review/gates, dispatch, PR create/update, branch repair, checks, review/fix, merge/closure, board state, quota resume, failures, settings/workflows and any still-coupled install/release mutation.</p>
-<p>Close #359 only when:</p>
-<ul>
-<li>df is the sole mutating production dispatcher;</li>
-<li>the live Request lifecycle uses the unified #391 Planning flow;</li>
-<li>production handlers are real;</li>
-<li>a live df-only Request lifecycle succeeds;</li>
-<li>persisted interruption/resume succeeds;</li>
-<li>legacy Python/shell GitHub mutation is not required for normal production.</li>
-</ul>
-<p>At that point the bootstrap-authoring exception expires.</p>
-<h3 id="wave-4-self-hosted-parallel-completion">Wave 4 — self-hosted parallel completion<a class="headerlink" href="#wave-4-self-hosted-parallel-completion" title="Permanent link">&para;</a></h3>
-<p>Once #359 is green, use df itself to finish in parallel:</p>
-<ul>
-<li>
-<h1 id="332-safe-parallel-chunks">332 safe parallel chunks;<a class="headerlink" href="#332-safe-parallel-chunks" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="339-hookrule-capability-from-f47">339 hook/rule capability from F47;<a class="headerlink" href="#339-hookrule-capability-from-f47" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="384-deterministic-git-capability">384 deterministic git capability;<a class="headerlink" href="#384-deterministic-git-capability" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="385-epicrequest-relationships">385 Epic/Request relationships;<a class="headerlink" href="#385-epicrequest-relationships" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="386-stacked-pr-capability">386 stacked PR capability;<a class="headerlink" href="#386-stacked-pr-capability" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="388-full-governed-recovery-productlive-e2e">388 full governed recovery product/live E2E;<a class="headerlink" href="#388-full-governed-recovery-productlive-e2e" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="403-final-composed-clicommand-registry">403 final composed CLI/command registry;<a class="headerlink" href="#403-final-composed-clicommand-registry" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="251-tui-from-recovered-state">251 TUI from recovered state;<a class="headerlink" href="#251-tui-from-recovered-state" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="248-remaining-oauthkeychain-recovery-acceptance">248 remaining OAuth/keychain recovery acceptance;<a class="headerlink" href="#248-remaining-oauthkeychain-recovery-acceptance" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="252-multimodal-provider-capability">252 multimodal provider capability;<a class="headerlink" href="#252-multimodal-provider-capability" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="423-auth-packagebroker">423 auth package/broker;<a class="headerlink" href="#423-auth-packagebroker" title="Permanent link">&para;</a></h1>
+<h1 id="423-auth">423 auth;<a class="headerlink" href="#423-auth" title="Permanent link">&para;</a></h1>
 </li>
 <li>
 <h1 id="424-docs-engine">424 docs engine;<a class="headerlink" href="#424-docs-engine" title="Permanent link">&para;</a></h1>
 </li>
 <li>
-<h1 id="334-complete-tsdocexport-coverage">334 complete TSDoc/export coverage;<a class="headerlink" href="#334-complete-tsdocexport-coverage" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="335-generated-apiarchitecture-publication">335 generated API/architecture publication;<a class="headerlink" href="#335-generated-apiarchitecture-publication" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="425-shared-web-platform">425 shared web platform;<a class="headerlink" href="#425-shared-web-platform" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="390-quotaoperator-dashboard-views">390 quota/operator dashboard views;<a class="headerlink" href="#390-quotaoperator-dashboard-views" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="336-generated-readme-docs-impact-policy">336 generated README + docs-impact policy;<a class="headerlink" href="#336-generated-readme-docs-impact-policy" title="Permanent link">&para;</a></h1>
-</li>
-<li>
-<h1 id="337-final-adrnotes-reconciliation">337 final ADR/notes reconciliation.<a class="headerlink" href="#337-final-adrnotes-reconciliation" title="Permanent link">&para;</a></h1>
+<h1 id="425-web-shell">425 web shell.<a class="headerlink" href="#425-web-shell" title="Permanent link">&para;</a></h1>
 </li>
 </ul>
-<p>Dependencies still apply where one feature consumes another, but unrelated lanes should not wait for each other.</p>
-<h3 id="wave-5-distribution-and-canary">Wave 5 — distribution and canary<a class="headerlink" href="#wave-5-distribution-and-canary" title="Permanent link">&para;</a></h3>
-<p>Immediately after #359, produce a <strong>canary/pre-release</strong> sufficient to test:</p>
+<p>Merge only when each lane's actual interfaces are stable.</p>
+<h3 id="important-merge-constraints">Important merge constraints<a class="headerlink" href="#important-merge-constraints" title="Permanent link">&para;</a></h3>
 <ul>
-<li>clean install of df;</li>
+<li>
+<h1 id="420-may-be-implemented-now-but-final-integration-waits-for-365s-routertask-profile-interface-to-be-stable">420 may be implemented now, but final integration waits for #365's router/task-profile interface to be stable.<a class="headerlink" href="#420-may-be-implemented-now-but-final-integration-waits-for-365s-routertask-profile-interface-to-be-stable" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="421-minimum-abiloader-merges-on-the-final-420-workspace">421 minimum ABI/loader merges on the final #420 workspace.<a class="headerlink" href="#421-minimum-abiloader-merges-on-the-final-420-workspace" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="340-is-rebuilt-cleanly-on-the-final-package-ownership-pr-407-is-not-carried-forward-wholesale">340 is rebuilt cleanly on the final package ownership; PR #407 is not carried forward wholesale.<a class="headerlink" href="#340-is-rebuilt-cleanly-on-the-final-package-ownership-pr-407-is-not-carried-forward-wholesale" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="406-may-be-authored-now-but-merges-against-final-coreruntime-ownership-and-340-naming">406 may be authored now but merges against final core/runtime ownership and #340 naming.<a class="headerlink" href="#406-may-be-authored-now-but-merges-against-final-coreruntime-ownership-and-340-naming" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="391-may-be-authored-now-but-merges-on-final-340406-persistenceruntime-contracts">391 may be authored now but merges on final #340/#406 persistence/runtime contracts.<a class="headerlink" href="#391-may-be-authored-now-but-merges-on-final-340406-persistenceruntime-contracts" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="422-must-provide-the-credential-subset-needed-by-the-production-engine-before-359-non-critical-keychain-breadth-may-continue-later">422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth may continue later.<a class="headerlink" href="#422-must-provide-the-credential-subset-needed-by-the-production-engine-before-359-non-critical-keychain-breadth-may-continue-later" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="331329-recovery-work-may-be-prepared-before-their-final-package-locations-land">331/#329 recovery work may be prepared before their final package locations land.<a class="headerlink" href="#331329-recovery-work-may-be-prepared-before-their-final-package-locations-land" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="341-must-consume-the-420421-packagecapability-model-rather-than-creating-a-new-central-hard-coded-action-table">341 must consume the #420/#421 package/capability model rather than creating a new central hard-coded action table.<a class="headerlink" href="#341-must-consume-the-420421-packagecapability-model-rather-than-creating-a-new-central-hard-coded-action-table" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<hr />
+<h2 id="6-359-cutover-boundary">6. #359 cutover boundary<a class="headerlink" href="#6-359-cutover-boundary" title="Permanent link">&para;</a></h2>
+<h1 id="359-is-intentionally-an-early-self-hosting-cutover-not-the-final-product-completion-gate">359 is intentionally an <strong>early self-hosting cutover</strong>, not the final product-completion gate.<a class="headerlink" href="#359-is-intentionally-an-early-self-hosting-cutover-not-the-final-product-completion-gate" title="Permanent link">&para;</a></h1>
+<p>It does <strong>not</strong> wait for #332, #384, #385, #386, #388 full, TUI, docs/web completion or final release polish unless current implementation proves one of them is actually required for the core Request lifecycle.</p>
+<p>Immediately before cutover, derive a fresh mutation ledger covering at least:</p>
+<ul>
+<li>Request intake/comments;</li>
+<li>Planning/review/gates;</li>
+<li>agent dispatch;</li>
+<li>PR create/update;</li>
+<li>branch repair;</li>
+<li>checks;</li>
+<li>implementation review/fix;</li>
+<li>merge/closure;</li>
+<li>board reconciliation;</li>
+<li>quota checkpoint/resume;</li>
+<li>failure reporting;</li>
+<li>settings/workflow mutation still required by the core lifecycle.</li>
+</ul>
+<p>Close #359 only when all are true:</p>
+<ol>
+<li>df is the sole mutating production dispatcher for the core lifecycle.</li>
+<li>Production graph handlers are real, not shadow-only.</li>
+<li>The live lifecycle uses #391 unified Planning.</li>
+<li>A real df-only Request lifecycle succeeds end to end.</li>
+<li>Persisted interruption/resume succeeds.</li>
+<li>Normal production no longer requires Python orchestration.</li>
+<li>Normal production no longer requires shell/subprocess GitHub mutation.</li>
+</ol>
+<p>At #359:</p>
+<ul>
+<li>the bootstrap-authoring exception expires;</li>
+<li>remaining completion work must run through the real df-native system.</li>
+</ul>
+<hr />
+<h2 id="7-parallel-work-outside-the-cutover-path">7. Parallel work outside the cutover path<a class="headerlink" href="#7-parallel-work-outside-the-cutover-path" title="Permanent link">&para;</a></h2>
+<p>These Requests should not unnecessarily slow #359.</p>
+<h3 id="providerruntime-extension">Provider/runtime extension<a class="headerlink" href="#providerruntime-extension" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<h1 id="248-f14-oauthkeychain-recovery-complete-with-422final-release">248 — F14 OAuth/keychain recovery; complete with #422/final release.<a class="headerlink" href="#248-f14-oauthkeychain-recovery-complete-with-422final-release" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="252-gemini-imagevideo-generation-proceed-once-365421-interfaces-are-usable">252 — Gemini image/video generation; proceed once #365/#421 interfaces are usable.<a class="headerlink" href="#252-gemini-imagevideo-generation-proceed-once-365421-interfaces-are-usable" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="332-safe-parallel-fine-grained-chunks-final-after-358329331">332 — safe parallel fine-grained chunks; final after #358/#329/#331.<a class="headerlink" href="#332-safe-parallel-fine-grained-chunks-final-after-358329331" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<h3 id="deliverygovernance-capabilities">Delivery/governance capabilities<a class="headerlink" href="#deliverygovernance-capabilities" title="Permanent link">&para;</a></h3>
+<p>Preparation may begin before cutover; final implementation should use the self-hosted system where practical:</p>
+<ul>
+<li>
+<h1 id="339-hooks-capability-from-f47">339 — hooks capability from F47;<a class="headerlink" href="#339-hooks-capability-from-f47" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="384-deterministic-gitrebaseconflict-capability">384 — deterministic git/rebase/conflict capability;<a class="headerlink" href="#384-deterministic-gitrebaseconflict-capability" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="385-epicrequest-relationship-capability">385 — Epic/Request relationship capability;<a class="headerlink" href="#385-epicrequest-relationship-capability" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="386-stacked-pr-capability">386 — stacked PR capability;<a class="headerlink" href="#386-stacked-pr-capability" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="388-full-reusable-governed-recovery-product">388 — full reusable governed recovery product.<a class="headerlink" href="#388-full-reusable-governed-recovery-product" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<h3 id="operator-surfaces">Operator surfaces<a class="headerlink" href="#operator-surfaces" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<h1 id="403-final-composed-clicommand-registry">403 — final composed CLI/command registry;<a class="headerlink" href="#403-final-composed-clicommand-registry" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="251-tui-recovery-first">251 — TUI, recovery-first;<a class="headerlink" href="#251-tui-recovery-first" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="423-humanbrowser-github-auth">423 — human/browser GitHub auth;<a class="headerlink" href="#423-humanbrowser-github-auth" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="425-shared-prebuilt-web-application">425 — shared prebuilt web application;<a class="headerlink" href="#425-shared-prebuilt-web-application" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="390-quotaoperator-dashboard-surfaces-on-425">390 — quota/operator dashboard surfaces on #425.<a class="headerlink" href="#390-quotaoperator-dashboard-surfaces-on-425" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<h1 id="424-first-party-docs-compilercontent-graph">424 — first-party docs compiler/content graph;<a class="headerlink" href="#424-first-party-docs-compilercontent-graph" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="334-complete-tsdocexport-coverage-from-f42">334 — complete TSDoc/export coverage from F42;<a class="headerlink" href="#334-complete-tsdocexport-coverage-from-f42" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="335-generated-apiarchitecture-publication">335 — generated API/architecture publication;<a class="headerlink" href="#335-generated-apiarchitecture-publication" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="336-generated-readme-docs-impact-enforcement-from-f44">336 — generated README + docs-impact enforcement from F44;<a class="headerlink" href="#336-generated-readme-docs-impact-enforcement-from-f44" title="Permanent link">&para;</a></h1>
+</li>
+<li>
+<h1 id="337-final-adrnotes-reconciliation-from-f45">337 — final ADR/notes reconciliation from F45.<a class="headerlink" href="#337-final-adrnotes-reconciliation-from-f45" title="Permanent link">&para;</a></h1>
+</li>
+</ul>
+<hr />
+<h2 id="8-self-hosted-completion-wave">8. Self-hosted completion wave<a class="headerlink" href="#8-self-hosted-completion-wave" title="Permanent link">&para;</a></h2>
+<p>After #359, finish remaining product work through df itself.</p>
+<p>Independent lanes should run concurrently subject to real interface dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git/hooks/governance     operator surfaces       docs/web
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>--------------------     -----------------       ----------------
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>#339 hooks               #403 CLI registry       #423 auth
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>#384 git                 #251 TUI                #424 docs
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>#385 epics               #248 auth/keychain      #334 TSDoc
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>#386 stacks              #252 multimodal         #335 API docs
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>#388 recovery full       #332 parallelism        #425 web
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                                                #390 dashboard
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                                                #336 README/docs-impact
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                                                #337 ADR reconciliation
+</code></pre></div>
+<p>Do not reintroduce a serial "finish one entire column first" schedule.</p>
+<hr />
+<h2 id="9-distribution">9. Distribution<a class="headerlink" href="#9-distribution" title="Permanent link">&para;</a></h2>
+<h3 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h3>
+<p>First-party packages and official capabilities initially use one lockstep DarkFactory SemVer.</p>
+<p>The capability ABI has its own compatibility version.</p>
+<h3 id="namespace">Namespace<a class="headerlink" href="#namespace" title="Permanent link">&para;</a></h3>
+<p>The intended GitHub Packages namespace is the planned <code>darkfactory</code> GitHub organization.</p>
+<h3 id="standard-installation">Standard installation<a class="headerlink" href="#standard-installation" title="Permanent link">&para;</a></h3>
+<p>The normal df installation is batteries-included with official capabilities while third-party capabilities use the same loader/ABI.</p>
+<h3 id="canary">Canary<a class="headerlink" href="#canary" title="Permanent link">&para;</a></h3>
+<p>As soon as #359 is complete, publish a canary/pre-release sufficient to test:</p>
+<ul>
+<li>source-free install;</li>
 <li>package resolution;</li>
 <li>official capability loading;</li>
-<li>one consumer repository;</li>
-<li>GitHub Packages publication mechanics;</li>
-<li>prebuilt web artifact deployment;</li>
-<li>update behavior.</li>
+<li>update behavior;</li>
+<li>one real consumer;</li>
+<li>GitHub Packages mechanics;</li>
+<li>prebuilt web bundle deployment.</li>
 </ul>
-<p>This is early feedback, not #360 final acceptance.</p>
-<p>Final #360 then publishes the completed lockstep package/capability set and release assets under the <code>darkfactory</code> GitHub organization.</p>
-<h3 id="wave-6-fleet-and-closure">Wave 6 — fleet and closure<a class="headerlink" href="#wave-6-fleet-and-closure" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<h1 id="360-final-release">360 final release.<a class="headerlink" href="#360-final-release" title="Permanent link">&para;</a></h1>
-</li>
-<li>Migrate five non-DarkFactory consumers using released df; re-check DarkFactory itself.</li>
-<li>Run install/update twice to prove idempotency.</li>
-<li>
-<h1 id="361-generates-and-validates-auditdf">361 generates and validates <code>audit.df</code>.<a class="headerlink" href="#361-generates-and-validates-auditdf" title="Permanent link">&para;</a></h1>
-</li>
-<li>Re-run original #68 graph acceptance against the installed release.</li>
-<li>Close #68 only when no required child, unexplained recovery source, legacy production engine or unexplained implementation PR remains.</li>
-</ol>
-<hr />
-<h2 id="7-authoritative-request-map">7. Authoritative Request map<a class="headerlink" href="#7-authoritative-request-map" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Request</th>
-<th>Start gate</th>
-<th>Merge/exit gate</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>#413</td>
-<td>now</td>
-<td>narrow kind bridge + green checks</td>
-</tr>
-<tr>
-<td>#365</td>
-<td>now</td>
-<td>#413 merged</td>
-</tr>
-<tr>
-<td>#420</td>
-<td>now</td>
-<td>bootstrap branch conflicts reconciled</td>
-</tr>
-<tr>
-<td>#421</td>
-<td>#420 package shape available</td>
-<td>#420 merged; ABI/loader green</td>
-</tr>
-<tr>
-<td>#340</td>
-<td>now using recovery inputs</td>
-<td>#420 final ownership available; hard-transition proof</td>
-</tr>
-<tr>
-<td>#406</td>
-<td>now</td>
-<td>final core ownership + #340 naming</td>
-</tr>
-<tr>
-<td>#391</td>
-<td>now</td>
-<td>#340/#406 persistence/runtime contracts</td>
-</tr>
-<tr>
-<td>#422</td>
-<td>#420 shape available + F14 recovery</td>
-<td>production keychain owner green</td>
-</tr>
-<tr>
-<td>#248</td>
-<td>F14/#422 reconciliation</td>
-<td>keychain contract + unique F14 disposition</td>
-</tr>
-<tr>
-<td>#331</td>
-<td>F40 reconciliation now</td>
-<td>final router/core ownership</td>
-</tr>
-<tr>
-<td>#329</td>
-<td>F38 reconciliation now</td>
-<td>#331 merged</td>
-</tr>
-<tr>
-<td>#341</td>
-<td>F49 analysis now</td>
-<td>#420/#421/#340; normalized detection/capability actions</td>
-</tr>
-<tr>
-<td>#358</td>
-<td>F30-4 discovery now</td>
-<td>#329/#331/#391 + production owners</td>
-</tr>
-<tr>
-<td>#317</td>
-<td>preparation after #341 shape</td>
-<td>#358/#341; truthful mutation evidence</td>
-</tr>
-<tr>
-<td>#359</td>
-<td>mutation-ledger preparation now</td>
-<td>core self-hosting chain above</td>
-</tr>
-<tr>
-<td>#252</td>
-<td>#365/#421 shapes</td>
-<td>provider/capability integration green</td>
-</tr>
-<tr>
-<td>#332</td>
-<td>design may start before cutover</td>
-<td>#358/#329/#331; preferably self-hosted</td>
-</tr>
-<tr>
-<td>#339</td>
-<td>F47 reconciliation now</td>
-<td>#421 + #341 actions + final mutation owners</td>
-</tr>
-<tr>
-<td>#384</td>
-<td>primitive work may start now</td>
-<td>#358 persisted conflicts + #339 hooks where applicable</td>
-</tr>
-<tr>
-<td>#385</td>
-<td>model design may start now</td>
-<td>#358 Request/state owner</td>
-</tr>
-<tr>
-<td>#386</td>
-<td>topology design may start now</td>
-<td>#384/#385/#358</td>
-</tr>
-<tr>
-<td>#388 full</td>
-<td>recovery product work may start now</td>
-<td>#391/#358/#384/#385/#386 + live recovery E2E</td>
-</tr>
-<tr>
-<td>#403</td>
-<td>command model may start after #420/#421</td>
-<td>final composed post-cutover surface</td>
-</tr>
-<tr>
-<td>#251</td>
-<td>recovery discovery now</td>
-<td>#403 + recovered TUI reconciliation</td>
-</tr>
-<tr>
-<td>#423</td>
-<td>#420 protocol/github boundaries</td>
-<td>GitHub App auth/browser/broker tests</td>
-</tr>
-<tr>
-<td>#424</td>
-<td>D4/F42/F44 analysis now</td>
-<td>#420/#421 + docs/content graph green</td>
-</tr>
-<tr>
-<td>#334</td>
-<td>F42 reconciliation now</td>
-<td>final public exports + #424 extraction</td>
-</tr>
-<tr>
-<td>#335</td>
-<td>D4 analysis now</td>
-<td>#424/#334/#341</td>
-</tr>
-<tr>
-<td>#425</td>
-<td>UI architecture may start now</td>
-<td>#423 auth + #424 content boundary + shared web release</td>
-</tr>
-<tr>
-<td>#390</td>
-<td>quota-view work may start once #425 shell exists</td>
-<td>#425 + shipped quota/provider protocol</td>
-</tr>
-<tr>
-<td>#336</td>
-<td>F44 reconciliation now</td>
-<td>#424 generated README + #339/#341 docs-impact owners</td>
-</tr>
-<tr>
-<td>#337</td>
-<td>F45 reconciliation now</td>
-<td>architecture/product materially final</td>
-</tr>
-<tr>
-<td>#360</td>
-<td>canary immediately after #359</td>
-<td>all required final product Requests terminal</td>
-</tr>
-<tr>
-<td>#361</td>
-<td>prepare audit schema before release</td>
-<td>six-repo released-df migration green</td>
-</tr>
-<tr>
-<td>#68</td>
-<td>final audit preparation</td>
-<td>#361 + original graph acceptance green</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="8-release-and-publication-contract">8. Release and publication contract<a class="headerlink" href="#8-release-and-publication-contract" title="Permanent link">&para;</a></h2>
-<h3 id="81-versioning">8.1 Versioning<a class="headerlink" href="#81-versioning" title="Permanent link">&para;</a></h3>
-<p>Initially all first-party packages and official capabilities use one lockstep DarkFactory SemVer. The capability ABI has its own compatibility version.</p>
-<h3 id="82-github-packages">8.2 GitHub Packages<a class="headerlink" href="#82-github-packages" title="Permanent link">&para;</a></h3>
-<p>The intended namespace is the new <code>darkfactory</code> GitHub organization, enabling clean scoped packages such as:</p>
+<p>The canary is feedback, not #360 final acceptance.</p>
+<h3 id="360-final-release">#360 final release<a class="headerlink" href="#360-final-release" title="Permanent link">&para;</a></h3>
+<p>Final distribution must include, where applicable:</p>
 <ul>
-<li><code>@darkfactory/core</code>;</li>
-<li><code>@darkfactory/cli</code>;</li>
-<li><code>@darkfactory/web</code>;</li>
-<li><code>@darkfactory/capability-code</code>.</li>
-</ul>
-<h3 id="83-standard-installation">8.3 Standard installation<a class="headerlink" href="#83-standard-installation" title="Permanent link">&para;</a></h3>
-<p>The normal df installation is batteries-included with official capabilities, while third-party capabilities use the same loader/ABI. Users are not required to install the official capability set one package at a time.</p>
-<h3 id="84-release-assets">8.4 Release assets<a class="headerlink" href="#84-release-assets" title="Permanent link">&para;</a></h3>
-<p>Final release assets include, as applicable:</p>
-<ul>
-<li>CLI/runtime artifacts;</li>
-<li>checksums and source provenance;</li>
-<li>prebuilt DarkFactory Web bundle;</li>
-<li>official capability bundles;</li>
+<li>Node-compatible npm execution;</li>
+<li>supported native artifacts with native smoke tests;</li>
+<li>version/source provenance and checksums;</li>
+<li>official capabilities;</li>
 <li>generated MCP/plugin/skill forms;</li>
-<li>runtime schemas/graph/data required for source-free operation.</li>
+<li>required graph/schema/runtime assets;</li>
+<li>prebuilt DarkFactory Web bundle;</li>
+<li>source-free install/update.</li>
 </ul>
-<p>The npm execution path remains Node-compatible and does not require Bun or a source checkout.</p>
+<p>No final Python front door or source checkout requirement.</p>
 <hr />
-<h2 id="9-docsweb-deployment-contract">9. Docs/web deployment contract<a class="headerlink" href="#9-docsweb-deployment-contract" title="Permanent link">&para;</a></h2>
-<p>A consumer deployment consists of:</p>
-<ol>
-<li>released prebuilt DarkFactory web bundle;</li>
-<li>repository-specific docs/content/data compiled by df;</li>
-<li>GitHub Pages publication.</li>
-</ol>
-<p>The consumer does not compile the frontend.</p>
-<p>The live browser uses GitHub user authentication through #423 and reads GitHub state directly. Privileged automation remains App/df-owned.</p>
-<p>No API key, refresh token, GitHub App private key or machine credential may be embedded into static Pages artifacts.</p>
-<hr />
-<h2 id="10-final-fleet-acceptance">10. Final fleet acceptance<a class="headerlink" href="#10-final-fleet-acceptance" title="Permanent link">&para;</a></h2>
-<p>Resolve repositories by stable GitHub identity rather than historical names.</p>
-<p>Current fleet:</p>
+<h2 id="10-fleet-and-final-acceptance">10. Fleet and final acceptance<a class="headerlink" href="#10-fleet-and-final-acceptance" title="Permanent link">&para;</a></h2>
+<p>The final fleet is resolved by stable GitHub repository identity:</p>
 <ol>
 <li>DarkFactory</li>
 <li>omnis</li>
@@ -948,61 +734,241 @@
 <li>template-OdbornaPrace</li>
 <li>OdbornaPrace-mono</li>
 </ol>
-<p>Per repository, final audit covers at least:</p>
-<ul>
-<li>stable repository ID/name/SHA/default branch;</li>
-<li>installed df release/source;</li>
-<li>repo/config/docs resolution;</li>
-<li>package/domain/capability detection;</li>
-<li>managed-file/workflow drift;</li>
-<li>protection and required checks;</li>
-<li>test/lint/format/docs actions;</li>
-<li>keychain/auth diagnostics without secret exposure;</li>
-<li>Request/Epic and stack state;</li>
-<li>recovery provenance/dispositions;</li>
-<li>docs/API/README generation;</li>
-<li>shared web deployment/auth boundary;</li>
-<li>release/package/capability provenance;</li>
-<li>install/update idempotency.</li>
-</ul>
-<p><code>audit.df</code> records these results plus #359 zero-legacy proof, a released-df-only lifecycle/resume proof and remaining Request/PR audit.</p>
+<p>After #360:</p>
+<ol>
+<li>migrate the five non-DarkFactory consumers using released df;</li>
+<li>re-check DarkFactory through the same install/update contract;</li>
+<li>run install/update twice to prove idempotency;</li>
+<li>verify package/domain/capability detection, workflows, protection, checks, docs/web/auth and recovery provenance;</li>
+<li>produce <code>audit.df</code>;</li>
+<li>close #361 only when the six-repo audit is internally consistent and green;</li>
+<li>rerun the original #68 declarable-graph contract against the installed release;</li>
+<li>close #68 only when no required child, unexplained recovery source, unexplained implementation PR or legacy alternate production engine remains.</li>
+</ol>
 <hr />
-<h2 id="11-regressions-that-must-not-return">11. Regressions that must not return<a class="headerlink" href="#11-regressions-that-must-not-return" title="Permanent link">&para;</a></h2>
+<h2 id="11-active-request-map">11. Active Request map<a class="headerlink" href="#11-active-request-map" title="Permanent link">&para;</a></h2>
+<p>Only still-open completion Requests are listed here. Satisfied bootstrap Requests #413/#414 and completed baseline repair #431 are intentionally omitted.</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Start now?</th>
+<th>Merge / completion gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#365</td>
+<td>yes</td>
+<td>current Planning; reconcile stale branch; green task-profile semantics</td>
+</tr>
+<tr>
+<td>#420</td>
+<td>yes</td>
+<td>#365 interface stable; workspace/package boundary green</td>
+</tr>
+<tr>
+<td>#421</td>
+<td>yes</td>
+<td>#420 final workspace; minimum ABI/loader green</td>
+</tr>
+<tr>
+<td>#340</td>
+<td>yes</td>
+<td>#420/#421 ownership stable; hard-transition proof</td>
+</tr>
+<tr>
+<td>#406</td>
+<td>yes</td>
+<td>final core ownership + #340 naming</td>
+</tr>
+<tr>
+<td>#391</td>
+<td>yes</td>
+<td>#340/#406 persistence/runtime contracts</td>
+</tr>
+<tr>
+<td>#422</td>
+<td>yes</td>
+<td>#420/#421 package boundaries + F14 reconciliation; production subset before #359</td>
+</tr>
+<tr>
+<td>#331</td>
+<td>yes</td>
+<td>F40 reconciled into final router/core owner</td>
+</tr>
+<tr>
+<td>#329</td>
+<td>yes</td>
+<td>#331 final behavior + F38 reconciliation</td>
+</tr>
+<tr>
+<td>#341</td>
+<td>yes</td>
+<td>#420/#421/#340; capability-driven quality/action model</td>
+</tr>
+<tr>
+<td>#358</td>
+<td>yes</td>
+<td>F30-4 disposition + #329/#331/#391</td>
+</tr>
+<tr>
+<td>#317</td>
+<td>prepare</td>
+<td>#358 + #341 truthful observed-effect path</td>
+</tr>
+<tr>
+<td>#359</td>
+<td>prepare ledger</td>
+<td>core critical path above</td>
+</tr>
+<tr>
+<td>#248</td>
+<td>yes</td>
+<td>#422 + terminal F14 disposition</td>
+</tr>
+<tr>
+<td>#252</td>
+<td>prepare</td>
+<td>#365/#421 usable interfaces</td>
+</tr>
+<tr>
+<td>#332</td>
+<td>prepare</td>
+<td>#358/#329/#331; preferably self-hosted</td>
+</tr>
+<tr>
+<td>#339</td>
+<td>yes</td>
+<td>F47 + #421/#341 final owners</td>
+</tr>
+<tr>
+<td>#384</td>
+<td>prepare</td>
+<td>#358 persisted conflict/run model</td>
+</tr>
+<tr>
+<td>#385</td>
+<td>prepare</td>
+<td>#358 Request/state owner</td>
+</tr>
+<tr>
+<td>#386</td>
+<td>prepare</td>
+<td>#384/#385/#358</td>
+</tr>
+<tr>
+<td>#388</td>
+<td>yes</td>
+<td>full product exits on #391/#358/#384/#385/#386 + live recovery E2E</td>
+</tr>
+<tr>
+<td>#403</td>
+<td>prepare</td>
+<td>#420/#421 command contract; final after #359</td>
+</tr>
+<tr>
+<td>#251</td>
+<td>recovery now</td>
+<td>#403 + recovered TUI reconciliation</td>
+</tr>
+<tr>
+<td>#423</td>
+<td>yes</td>
+<td>#420 protocol/github boundary; auth tests</td>
+</tr>
+<tr>
+<td>#424</td>
+<td>yes</td>
+<td>#420/#421 + D4/F42/F44 reconciliation</td>
+</tr>
+<tr>
+<td>#334</td>
+<td>recovery now</td>
+<td>final exports + #424 extraction</td>
+</tr>
+<tr>
+<td>#335</td>
+<td>recovery now</td>
+<td>#424/#334/#341</td>
+</tr>
+<tr>
+<td>#425</td>
+<td>yes</td>
+<td>#423 auth + #424 content boundary</td>
+</tr>
+<tr>
+<td>#390</td>
+<td>prepare</td>
+<td>#425 shell + shipped quota/provider protocol</td>
+</tr>
+<tr>
+<td>#336</td>
+<td>recovery now</td>
+<td>#424 README renderer + #339/#341 docs-impact owners</td>
+</tr>
+<tr>
+<td>#337</td>
+<td>recovery now</td>
+<td>architecture/product materially final</td>
+</tr>
+<tr>
+<td>#360</td>
+<td>canary after #359</td>
+<td>all required final product Requests terminal</td>
+</tr>
+<tr>
+<td>#361</td>
+<td>prepare audit schema</td>
+<td>six-repo released-df migration green</td>
+</tr>
+<tr>
+<td>#68</td>
+<td>final only</td>
+<td>#361 + original graph acceptance green</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-regressions-that-must-not-return">12. Regressions that must not return<a class="headerlink" href="#12-regressions-that-must-not-return" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>.darkfactory/manifest.json</code> or <code>.github/darkfactory.json</code> as final repository contract;</li>
-<li><code>.darkfactory/df/config.json</code>;</li>
+<li>legacy manifest/config paths as final contracts;</li>
 <li><code>.df/</code> directories;</li>
 <li>hard-coded <code>main</code>;</li>
-<li>final monolithic <code>@darkfactory/harness</code> ownership;</li>
-<li>a second provider/model catalog;</li>
-<li>a second credential/keychain system;</li>
+<li>final monolithic <code>@darkfactory/harness</code>;</li>
+<li>duplicate provider/model catalogs;</li>
+<li>duplicate credential/keychain systems;</li>
 <li>provider/capability-owned raw secret storage;</li>
-<li>a second auth/RBAC database for the web UI;</li>
-<li>a second git, hook, Request/Epic, stack or Planning/review engine;</li>
-<li>hard-coded repository-specific language/action tables where capabilities should contribute behavior;</li>
+<li>a second web RBAC/state database;</li>
+<li>duplicate git/hook/Request-Epic/stack/Planning-review engines;</li>
+<li>hard-coded repository-specific quality tables where capabilities should contribute actions;</li>
 <li>mandatory task submit/JSON completion;</li>
-<li>keyword-based mutation truth;</li>
+<li>keyword/model-claim mutation truth;</li>
 <li>production shell <code>gh</code> mutation;</li>
-<li>Python as production orchestration;</li>
+<li>Python production orchestration;</li>
 <li>ProperDocs/MkDocs as final docs runtime;</li>
 <li>separate docs/dashboard frontends;</li>
 <li>per-consumer React builds;</li>
-<li>README maintained independently from the canonical docs homepage content;</li>
-<li>manual consumer installation or manual recovery merge as final proof;</li>
+<li>independently maintained README product content;</li>
+<li>manual consumer installation as final proof;</li>
+<li>manual recovery merge outside governed delivery;</li>
 <li>fixed historical test counts as acceptance.</li>
 </ul>
 <hr />
-<h2 id="12-maintenance-rule">12. Maintenance rule<a class="headerlink" href="#12-maintenance-rule" title="Permanent link">&para;</a></h2>
-<p>Update this file only when one of these changes:</p>
+<h2 id="13-maintenance-rule">13. Maintenance rule<a class="headerlink" href="#13-maintenance-rule" title="Permanent link">&para;</a></h2>
+<p>Update <code>PLAN.md</code> only when one of these changes:</p>
 <ul>
-<li>final architecture;</li>
+<li>a durable architecture decision;</li>
 <li>a cross-Request start/merge/final dependency;</li>
 <li>recovery ownership/disposition;</li>
-<li>self-hosting/cutover boundary;</li>
+<li>
+<h1 id="359-cutover-requirements">359 cutover requirements;<a class="headerlink" href="#359-cutover-requirements" title="Permanent link">&para;</a></h1>
+</li>
 <li>release/fleet/final acceptance;</li>
-<li>the set of Requests required for completion.</li>
+<li>the set of Requests required for completion;</li>
+<li>a prerequisite becomes permanently satisfied and keeping it in the active plan would misrepresent the remaining critical path.</li>
 </ul>
-<p>Do not append transient run state or checkpoints. GitHub already owns live status.</p>
+<p>Do not append transient workflow/PR/run checkpoints. GitHub already owns live execution state.</p>
         </article>
 
         <footer class="footer">
@@ -1016,62 +982,61 @@
         <ul class="toc__list">
           <li><a href="#purpose">Purpose</a>
           </li>
-          <li><a href="#1-source-of-truth-hierarchy">1. Source-of-truth hierarchy</a>
+          <li><a href="#1-authority">1. Authority</a>
           </li>
-          <li><a href="#2-optimization-rules">2. Optimization rules</a>
+          <li><a href="#2-durable-baseline">2. Durable baseline</a>
             <ul>
-              <li><a href="#21-start-work-dependencies-are-not-merge-dependencies">2.1 Start-work dependencies are not merge dependencies</a></li>
-              <li><a href="#22-merge-dependencies-are-not-final-acceptance-dependencies">2.2 Merge dependencies are not final-acceptance dependencies</a></li>
-              <li><a href="#23-recovery-work-is-implementation-not-archaeology">2.3 Recovery work is implementation, not archaeology</a></li>
-              <li><a href="#24-integrate-recovered-work-into-final-homes">2.4 Integrate recovered work into final homes</a></li>
-              <li><a href="#25-self-host-early">2.5 Self-host early</a></li>
-              <li><a href="#26-temporary-bootstrap-authoring-exception">2.6 Temporary bootstrap-authoring exception</a></li>
+              <li><a href="#satisfied-prerequisites">Satisfied prerequisites</a></li>
+              <li><a href="#stale-implementation-artifacts">Stale implementation artifacts</a></li>
+              <li><a href="#current-architectural-foundation">Current architectural foundation</a></li>
+              <li><a href="#production-state">Production state</a></li>
             </ul>
           </li>
-          <li><a href="#3-final-architecture">3. Final architecture</a>
+          <li><a href="#3-execution-rules">3. Execution rules</a>
             <ul>
-              <li><a href="#31-bun-workspace">3.1 Bun workspace</a></li>
-              <li><a href="#32-core-mechanisms-versus-capabilities">3.2 Core mechanisms versus capabilities</a></li>
-              <li><a href="#33-domains-remain-separate-from-capabilities">3.3 Domains remain separate from capabilities</a></li>
-              <li><a href="#34-configuration">3.4 Configuration</a></li>
-              <li><a href="#35-credentials-and-authentication">3.5 Credentials and authentication</a></li>
-              <li><a href="#36-documentation-and-readme">3.6 Documentation and README</a></li>
-              <li><a href="#37-web-ui">3.7 Web UI</a></li>
+              <li><a href="#31-start-work-dependencies-are-not-merge-dependencies">3.1 Start-work dependencies are not merge dependencies</a></li>
+              <li><a href="#32-merge-dependencies-are-not-final-acceptance-dependencies">3.2 Merge dependencies are not final-acceptance dependencies</a></li>
+              <li><a href="#33-recovery-work-is-existing-implementation">3.3 Recovery work is existing implementation</a></li>
+              <li><a href="#34-bootstrap-authoring-exception">3.4 Bootstrap-authoring exception</a></li>
+              <li><a href="#35-ci-concurrency-rule">3.5 CI concurrency rule</a></li>
             </ul>
           </li>
-          <li><a href="#4-final-product-invariants">4. Final product invariants</a>
+          <li><a href="#4-recovery-ledger">4. Recovery ledger</a>
           </li>
-          <li><a href="#5-recovery-ledger">5. Recovery ledger</a>
-          </li>
-          <li><a href="#6-optimized-execution-program">6. Optimized execution program</a>
+          <li><a href="#5-active-critical-path-to-self-hosting">5. Active critical path to self-hosting</a>
             <ul>
-              <li><a href="#wave-0-planning-and-architecture-convergence">Wave 0 — planning and architecture convergence</a></li>
-              <li><a href="#wave-1-bootstrap-repair-and-package-foundation">Wave 1 — bootstrap repair and package foundation</a></li>
-              <li><a href="#wave-2-mass-recovery-reconciliation">Wave 2 — mass recovery reconciliation</a></li>
-              <li><a href="#wave-3-core-self-hosting-chain">Wave 3 — core self-hosting chain</a></li>
-              <li><a href="#359-cutover-definition">#359 cutover definition</a></li>
-              <li><a href="#wave-4-self-hosted-parallel-completion">Wave 4 — self-hosted parallel completion</a></li>
-              <li><a href="#wave-5-distribution-and-canary">Wave 5 — distribution and canary</a></li>
-              <li><a href="#wave-6-fleet-and-closure">Wave 6 — fleet and closure</a></li>
+              <li><a href="#immediate-development-concurrency">Immediate development concurrency</a></li>
+              <li><a href="#important-merge-constraints">Important merge constraints</a></li>
             </ul>
           </li>
-          <li><a href="#7-authoritative-request-map">7. Authoritative Request map</a>
+          <li><a href="#6-359-cutover-boundary">6. #359 cutover boundary</a>
           </li>
-          <li><a href="#8-release-and-publication-contract">8. Release and publication contract</a>
+          <li><a href="#7-parallel-work-outside-the-cutover-path">7. Parallel work outside the cutover path</a>
             <ul>
-              <li><a href="#81-versioning">8.1 Versioning</a></li>
-              <li><a href="#82-github-packages">8.2 GitHub Packages</a></li>
-              <li><a href="#83-standard-installation">8.3 Standard installation</a></li>
-              <li><a href="#84-release-assets">8.4 Release assets</a></li>
+              <li><a href="#providerruntime-extension">Provider/runtime extension</a></li>
+              <li><a href="#deliverygovernance-capabilities">Delivery/governance capabilities</a></li>
+              <li><a href="#operator-surfaces">Operator surfaces</a></li>
+              <li><a href="#documentation">Documentation</a></li>
             </ul>
           </li>
-          <li><a href="#9-docsweb-deployment-contract">9. Docs/web deployment contract</a>
+          <li><a href="#8-self-hosted-completion-wave">8. Self-hosted completion wave</a>
           </li>
-          <li><a href="#10-final-fleet-acceptance">10. Final fleet acceptance</a>
+          <li><a href="#9-distribution">9. Distribution</a>
+            <ul>
+              <li><a href="#versioning">Versioning</a></li>
+              <li><a href="#namespace">Namespace</a></li>
+              <li><a href="#standard-installation">Standard installation</a></li>
+              <li><a href="#canary">Canary</a></li>
+              <li><a href="#360-final-release">#360 final release</a></li>
+            </ul>
           </li>
-          <li><a href="#11-regressions-that-must-not-return">11. Regressions that must not return</a>
+          <li><a href="#10-fleet-and-final-acceptance">10. Fleet and final acceptance</a>
           </li>
-          <li><a href="#12-maintenance-rule">12. Maintenance rule</a>
+          <li><a href="#11-active-request-map">11. Active Request map</a>
+          </li>
+          <li><a href="#12-regressions-that-must-not-return">12. Regressions that must not return</a>
+          </li>
+          <li><a href="#13-maintenance-rule">13. Maintenance rule</a>
           </li>
         </ul>
       </aside>
