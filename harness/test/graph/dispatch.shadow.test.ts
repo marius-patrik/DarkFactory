@@ -13,7 +13,7 @@ describe("dispatch shadow verification", () => {
 		await mkdir(join(tmpDir, runsDir), { recursive: true });
 		await mkdir(join(tmpDir, ".darkfactory"), { recursive: true });
 		await writeFile(
-			join(tmpDir, ".darkfactory", "manifest.json"),
+			join(tmpDir, ".darkfactory", "graph.df"),
 			JSON.stringify({
 				graph: {
 					version: 1,
@@ -54,7 +54,7 @@ describe("dispatch shadow verification", () => {
 
 		// TS planner produces: { type: "run", nodes: ["trigger"], node: undefined }
 		await writeFile(
-			join(tmpDir, ".darkfactory", "python_action.json"),
+			join(tmpDir, ".darkfactory", "python-action.df"),
 			JSON.stringify({ type: "run", nodes: ["trigger"], node: undefined }),
 		);
 
@@ -64,7 +64,7 @@ describe("dispatch shadow verification", () => {
 			"--event",
 			eventPath,
 			"--graph",
-			join(tmpDir, ".darkfactory", "manifest.json"),
+			join(tmpDir, ".darkfactory", "graph.df"),
 			"--runs",
 			join(tmpDir, runsDir),
 			"--shadow",
@@ -95,7 +95,7 @@ describe("dispatch shadow verification", () => {
 
 		// Python action produces different output
 		await writeFile(
-			join(tmpDir, ".darkfactory", "python_action.json"),
+			join(tmpDir, ".darkfactory", "python-action.df"),
 			JSON.stringify({ type: "none", nodes: [], node: undefined }),
 		);
 
@@ -105,7 +105,7 @@ describe("dispatch shadow verification", () => {
 			"--event",
 			eventPath,
 			"--graph",
-			join(tmpDir, ".darkfactory", "manifest.json"),
+			join(tmpDir, ".darkfactory", "graph.df"),
 			"--runs",
 			join(tmpDir, runsDir),
 			"--shadow",
@@ -143,7 +143,7 @@ describe("dispatch shadow verification", () => {
 			"--event",
 			eventPath,
 			"--graph",
-			join(tmpDir, ".darkfactory", "manifest.json"),
+			join(tmpDir, ".darkfactory", "graph.df"),
 			"--runs",
 			join(tmpDir, runsDir),
 			"--shadow",
