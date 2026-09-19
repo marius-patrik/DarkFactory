@@ -158,8 +158,9 @@ for template_name in template_names:
             title=variant["title"],
             mode="review",
             peer_filename=variant["final"],
-            peer_label="Final",
+            peer_label="Raw",
         )
+        split_view = final_view + "&view=split"
         final_pdf = href_for(template_name, variant["final"])
         cards.append(
             f"""
@@ -170,8 +171,9 @@ for template_name in template_names:
               </div>
               <p>{html.escape(variant["subtitle"])}</p>
               <div class="actions">
-                <a class="primary" href="{html.escape(final_view)}">View final</a>
+                <a class="primary" href="{html.escape(final_view)}">Raw</a>
                 <a href="{html.escape(review_view)}">Review</a>
+                <a href="{html.escape(split_view)}">Split</a>
                 <a class="quiet" href="{html.escape(final_pdf)}" download>PDF</a>
               </div>
             </article>
