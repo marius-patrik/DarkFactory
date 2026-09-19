@@ -287,6 +287,12 @@ template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(en
 if '"KONCEPT"' in template_source:
     fail("review template must not add the KONCEPT page-background watermark")
 
+thesis_source = Path("thesis.typ").read_text(encoding="utf-8")
+if '"KONCEPT"' in thesis_source:
+    fail("thesis composition must not force the KONCEPT review watermark")
+if 'splitHref={canSplit ? splitTarget : "#"}' not in app_source:
+    fail("Final/Review path selector must also expose Split mode")
+
 pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
 for required in ("dagre.layout", "TextLayer", "AnnotationLayer", "ContextMenu", "Minimap"):
     if required not in pdf_source:

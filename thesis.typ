@@ -16,7 +16,7 @@
     logo: "/img/logo.jpeg",
     review: review,
     profile: profile,
-    koncept: if review { "KONCEPT" } else { none },
+    koncept: none,
   )[
     #include "kapitoly/01-uvod.typ"
     #include "kapitoly/02-teoreticka-cast.typ"

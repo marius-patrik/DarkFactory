@@ -336,14 +336,15 @@ function ModePicker({
   viewMode,
   finalHref,
   reviewHref,
+  splitHref,
 }: {
   mode: ViewerMode;
   viewMode: ViewMode;
   finalHref: string;
   reviewHref: string;
+  splitHref: string;
 }) {
-  const label =
-    viewMode === "split" ? "Final + Review" : mode === "review" ? "Review" : "Final";
+  const label = viewMode === "split" ? "Split" : mode === "review" ? "Review" : "Final";
 
   return (
     <DropdownMenu>
@@ -385,6 +386,20 @@ function ModePicker({
         >
           <span>Review</span>
           {viewMode === "single" && mode === "review" && (
+            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className={viewMode === "split" ? "mode-item active" : "mode-item"}
+          onSelect={() => {
+            window.location.href = splitHref;
+          }}
+        >
+          <span className="mode-option-label">
+            <AnimatedIcon names={["Columns2Icon", "PanelLeftRightIcon"]} size={15} />
+            Split
+          </span>
+          {viewMode === "split" && (
             <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
           )}
         </DropdownMenuItem>
@@ -933,6 +948,7 @@ export function ViewerApp() {
               viewMode={viewMode}
               finalHref={finalTarget}
               reviewHref={reviewTarget}
+              splitHref={canSplit ? splitTarget : "#"}
             />
           </div>
 

@@ -252,6 +252,12 @@ a {
   justify-content: space-between;
 }
 
+.mode-option-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .mode-item.active {
   background: var(--thumb-active);
   color: var(--accent-strong);

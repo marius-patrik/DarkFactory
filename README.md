@@ -152,8 +152,8 @@ vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jum
 fit-width a `− / +` zoom ve spodním status baru, Ctrl/⌘+scroll a pinch zoom,
 světlý/tmavý režim, fullscreen a přímé stažení PDF. Sidebar toggle používá podle
 strany garantovanou ikonu levého/pravého sidebaru a sedí na krajním okraji toolbaru.
-Identita dokumentu je `Home \\ Název práce \\ Verze \\ Final/Review`; přepínač
-Final/Review je součástí stejné path lišty, zatímco Split zůstává samostatnou akcí.
+Identita dokumentu je `Home \\ Název práce \\ Verze \\ Final/Review/Split`; přepínač
+režimu je součástí stejné path lišty a nabízí Final, Review i Split.
 Všechny ikonové ovládací prvky mají hover tooltipy. Review PDF nepřidává automatický
 `KONCEPT` vodoznak. Split view může volitelně synchronizovat průběžnou scroll pozici
 obou dokumentů.
