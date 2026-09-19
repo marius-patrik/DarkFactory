@@ -20,35 +20,50 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, confirmed, keyword-heading, render-keywords
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, confirmed, unconfirmed, keyword-heading, render-keywords
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
-#let word-stats-state = state("word-stats-state", (words: 0, chars: 0))
+#let word-stats-state = state("word-stats-state", (
+  confirmed: (words: 0, chars: 0),
+  review: (words: 0, chars: 0),
+))
 
 // Strukturální stav šablony: hlavní číslované kapitoly dostávají samostatnou
 // titulní stranu, přílohy používají vlastní kompaktní režim.
 #let appendix-mode-state = state("gjkt-appendix-mode", false)
 
-#let chapter-title-page(it) = context {
+#let chapter-title-page(it, logo: none) = context {
   let chapter-no = counter(heading).display(it.numbering)
 
   pagebreak(weak: true)
-  v(1fr)
-  align(center)[
-    #text(
-      size: 11pt,
-      weight: "bold",
-      tracking: 1.5pt,
-      fill: rgb("#64748b"),
-    )[
-      #ui-label([KAPITOLA], [CHAPTER]) #chapter-no
+  [
+    #v(1fr)
+    #align(center)[
+      #if logo != none {
+        block(image(logo, height: 2.2cm))
+        v(14pt)
+      }
+      #text(
+        size: 11pt,
+        weight: "bold",
+        tracking: 1.5pt,
+        fill: rgb("#64748b"),
+      )[
+        #ui-label([KAPITOLA], [CHAPTER]) #chapter-no
+      ]
+      #v(14pt)
+      #text(size: 26pt, weight: "bold", hyphenate: false)[#it.body]
     ]
-    #v(14pt)
-    #text(size: 26pt, weight: "bold", hyphenate: false)[#it.body]
+    #v(1fr)
+    <chapter-title-page>
   ]
-  v(1fr)
   pagebreak()
+
+  // Titulní strana kapitoly je fyzická strana dokumentu, ale není součástí
+  // logického číslování. Po přechodu na první obsahovou stranu kapitoly proto
+  // logický čítač vrátíme o jednu.
+  counter(page).update(n => n - 1)
 }
 
 #let regular-level-one-heading(it) = block(
@@ -113,21 +128,27 @@
   set text(size: 12pt)
 
   context {
-    let is-rev = review-state.get()
     let s = word-stats-state.final()
-    let rozsah = [#ui-label([Rozsah práce], [Extent]): #s.words #ui-label([slov], [words]) / #s.chars #ui-label([znaků], [characters])]
-    let rozsah-vysazeny = if is-rev {
-      text(size: 9pt, fill: rgb("#64748b"))[#rozsah]
-    } else {
-      rozsah
-    }
+    let range-line(stats) = [
+      #ui-label([Rozsah práce], [Extent]): #stats.words #ui-label([slov], [words]) / #stats.chars #ui-label([znaků], [characters])
+    ]
+
+    // Obě hodnoty používají stejné review funkce jako samotný rukopis:
+    // potvrzený rozsah je vždy přítomen, review rozsah se v čisté verzi
+    // automaticky ztratí přes unconfirmed().
+    let rozsahy = stack(
+      dir: ttb,
+      spacing: 3pt,
+      confirmed(range-line(s.confirmed)),
+      unconfirmed(range-line(s.review)),
+    )
 
     grid(
       columns: (1fr, auto),
       column-gutter: 1.2em,
       row-gutter: 4pt,
       [#ui-label([Autor práce], [Author]): #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]],
-      rozsah-vysazeny,
+      rozsahy,
       if meta.at("vedouci", default: none) != none [#ui-label([Vedoucí práce], [Supervisor]): #meta.vedouci],
       none,
       ..if meta.at("konzultant", default: none) != none {
@@ -301,7 +322,7 @@
   show heading.where(level: 1): it => context {
     let in-appendix = appendix-mode-state.get()
     if it.numbering != none and not in-appendix {
-      chapter-title-page(it)
+      chapter-title-page(it, logo: logo)
     } else {
       regular-level-one-heading(it)
     }
@@ -354,9 +375,20 @@
   // ── Vlastní text ─────────────────────────────────────────
   // Čísla stran se uvádí od úvodu; za stranu 1 se považuje titulní strana,
   // proto se čítač nikde nenuluje.
-  set page(footer: context align(center, text(
-    font: pismo, size: 11pt, counter(page).display("1"),
-  )))
+  set page(footer: context {
+    let physical-page = here().page()
+    let is-chapter-title = query(<chapter-title-page>).any(
+      item => item.location().page() == physical-page
+    )
+
+    if not is-chapter-title {
+      align(center, text(
+        font: pismo,
+        size: 11pt,
+        counter(page).display("1"),
+      ))
+    }
+  })
 
   [#metadata("body-start") <body-start-anchor>]
 
@@ -387,83 +419,121 @@
     let nested-terms-locs = query(core(selector(terms).within(containers))).map(it => it.location())
     let nested-table-locs = query(core(selector(table).within(containers))).map(it => it.location())
 
-    let words = 0
-    let chars = 0
+    let review-words = 0
+    let review-chars = 0
     let stats-of = item => string-word-count(extract-text(item))
 
     for p in query(core(par)) {
       if p.location() not in nested-par-locs {
         let s = stats-of(p.body)
-        words += s.words
-        chars += s.characters
+        review-words += s.words
+        review-chars += s.characters
       }
     }
 
     for item in query(core(list)) {
       if item.location() not in nested-list-locs {
         let s = stats-of(item)
-        words += s.words
-        chars += s.characters
+        review-words += s.words
+        review-chars += s.characters
       }
     }
 
     for item in query(core(enum)) {
       if item.location() not in nested-enum-locs {
         let s = stats-of(item)
-        words += s.words
-        chars += s.characters
+        review-words += s.words
+        review-chars += s.characters
       }
     }
 
     for item in query(core(terms)) {
       if item.location() not in nested-terms-locs {
         let s = stats-of(item)
-        words += s.words
-        chars += s.characters
+        review-words += s.words
+        review-chars += s.characters
       }
     }
 
     for item in query(core(table)) {
       if item.location() not in nested-table-locs {
         let s = stats-of(item)
-        words += s.words
-        chars += s.characters
+        review-words += s.words
+        review-chars += s.characters
       }
     }
 
     for h in query(core(heading)) {
       let s = stats-of(h.body)
-      words += s.words
-      chars += s.characters
+      review-words += s.words
+      review-chars += s.characters
     }
 
     // Popisky obrázků nejsou odstavce ani tabulky, ale jsou součástí práce.
     for caption in query(core(figure.caption)) {
       let s = stats-of(caption)
-      words += s.words
-      chars += s.characters
+      review-words += s.words
+      review-chars += s.characters
     }
 
     // Pracovní vrstvy review dokumentu nejsou součástí skutečného rozsahu.
     for item in query(core(<callout>)) {
       let s = stats-of(item)
-      words -= s.words
-      chars -= s.characters
+      review-words -= s.words
+      review-chars -= s.characters
     }
     for item in query(core(<removed-diff>)) {
       let s = stats-of(item)
-      words -= s.words
-      chars -= s.characters
+      review-words -= s.words
+      review-chars -= s.characters
     }
     for item in query(core(<diff-prefix>)) {
       let s = stats-of(item)
-      words -= s.words
-      chars -= s.characters
+      review-words -= s.words
+      review-chars -= s.characters
     }
 
+    // Review rozsah odpovídá review rukopisu po odečtení pracovních calloutů,
+    // odstraněné strany diffů a vizuálních +/- prefixů.
+    let review-stats = (
+      words: calc.max(0, review-words),
+      chars: calc.max(0, review-chars),
+    )
+
+    // Z review rukopisu odvodíme čistý potvrzený rozsah odečtením obsahu,
+    // který unconfirmed() skutečně vysázelo. Pracovní prvky uvnitř
+    // unconfirmed bloků už byly z review-stats odečteny, proto je odečteme
+    // i z hrubého unconfirmed součtu před výpočtem rozdílu.
+    let unconfirmed-words = 0
+    let unconfirmed-chars = 0
+    for item in query(core(<unconfirmed-text>)) {
+      let s = stats-of(item)
+      unconfirmed-words += s.words
+      unconfirmed-chars += s.characters
+    }
+    for item in query(core(selector(<callout>).within(<unconfirmed-text>))) {
+      let s = stats-of(item)
+      unconfirmed-words -= s.words
+      unconfirmed-chars -= s.characters
+    }
+    for item in query(core(selector(<removed-diff>).within(<unconfirmed-text>))) {
+      let s = stats-of(item)
+      unconfirmed-words -= s.words
+      unconfirmed-chars -= s.characters
+    }
+    for item in query(core(selector(<diff-prefix>).within(<unconfirmed-text>))) {
+      let s = stats-of(item)
+      unconfirmed-words -= s.words
+      unconfirmed-chars -= s.characters
+    }
+
+    let confirmed-stats = (
+      words: calc.max(0, review-stats.words - calc.max(0, unconfirmed-words)),
+      chars: calc.max(0, review-stats.chars - calc.max(0, unconfirmed-chars)),
+    )
     let stats = (
-      words: calc.max(0, words),
-      chars: calc.max(0, chars),
+      confirmed: confirmed-stats,
+      review: review-stats,
     )
     word-stats-state.update(stats)
     [#metadata(stats) <word-stats>]
