@@ -500,96 +500,20 @@
       chars: calc.max(0, review-chars),
     )
 
-    // Z review rukopisu odvodíme potvrzený rozsah stejnou strukturální
-    // metodou jako hlavní počítadlo. unconfirmed() vkládá explicitní start/end
-    // metadata, takže každou review-only oblast změříme přesně mezi jejími
-    // hranicemi bez závislosti na stromu layout elementů.
-    let unconfirmed-words = 0
-    let unconfirmed-chars = 0
-    let boundaries = query(core(<unconfirmed-boundary>))
-
-    for (i, boundary) in boundaries.enumerate() {
-      if boundary.value == "start" {
-        assert(i + 1 < boundaries.len(), message: "unconfirmed start without end boundary")
-        let ending = boundaries.at(i + 1)
-        assert(ending.value == "end", message: "nested/overlapping unconfirmed ranges are not supported in the counted thesis body")
-        let start-loc = boundary.location()
-        let end-loc = ending.location()
-        let segment = sel => core(
-          selector(sel)
-            .after(start-loc, inclusive: false)
-            .before(end-loc, inclusive: false)
-        )
-
-        for p in query(segment(par)) {
-          if p.location() not in nested-par-locs {
-            let s = stats-of(p.body)
-            unconfirmed-words += s.words
-            unconfirmed-chars += s.characters
-          }
-        }
-        for item in query(segment(list)) {
-          if item.location() not in nested-list-locs {
-            let s = stats-of(item)
-            unconfirmed-words += s.words
-            unconfirmed-chars += s.characters
-          }
-        }
-        for item in query(segment(enum)) {
-          if item.location() not in nested-enum-locs {
-            let s = stats-of(item)
-            unconfirmed-words += s.words
-            unconfirmed-chars += s.characters
-          }
-        }
-        for item in query(segment(terms)) {
-          if item.location() not in nested-terms-locs {
-            let s = stats-of(item)
-            unconfirmed-words += s.words
-            unconfirmed-chars += s.characters
-          }
-        }
-        for item in query(segment(table)) {
-          if item.location() not in nested-table-locs {
-            let s = stats-of(item)
-            unconfirmed-words += s.words
-            unconfirmed-chars += s.characters
-          }
-        }
-        for h in query(segment(heading)) {
-          let s = stats-of(h.body)
-          unconfirmed-words += s.words
-          unconfirmed-chars += s.characters
-        }
-        for caption in query(segment(figure.caption)) {
-          let s = stats-of(caption)
-          unconfirmed-words += s.words
-          unconfirmed-chars += s.characters
-        }
-
-        // Pracovní vrstvy se stejně jako v celkovém review rozsahu nepočítají.
-        for item in query(segment(<callout>)) {
-          let s = stats-of(item)
-          unconfirmed-words -= s.words
-          unconfirmed-chars -= s.characters
-        }
-        for item in query(segment(<removed-diff>)) {
-          let s = stats-of(item)
-          unconfirmed-words -= s.words
-          unconfirmed-chars -= s.characters
-        }
-        for item in query(segment(<diff-prefix>)) {
-          let s = stats-of(item)
-          unconfirmed-words -= s.words
-          unconfirmed-chars -= s.characters
-        }
-      }
+    // V čisté kompilaci je review-stats zároveň potvrzený rozsah, protože
+    // unconfirmed() nic nevysází. Review build dostane potvrzený rozsah z
+    // předchozího Typst eval nad stejným template/profile vstupem.
+    let confirmed-words-input = sys.inputs.at("confirmed-words", default: none)
+    let confirmed-chars-input = sys.inputs.at("confirmed-chars", default: none)
+    let confirmed-stats = if is-review and confirmed-words-input != none and confirmed-chars-input != none {
+      (
+        words: int(confirmed-words-input),
+        chars: int(confirmed-chars-input),
+      )
+    } else {
+      review-stats
     }
 
-    let confirmed-stats = (
-      words: calc.max(0, review-stats.words - calc.max(0, unconfirmed-words)),
-      chars: calc.max(0, review-stats.chars - calc.max(0, unconfirmed-chars)),
-    )
     let stats = (
       confirmed: confirmed-stats,
       review: review-stats,
