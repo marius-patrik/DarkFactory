@@ -82,3 +82,11 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 - Proper vs industry names are data, not ad-hoc prose. Example: a term may define proper `Smyčka ReAct / ReAct Loop` and industry `Agent Loop`, or proper `Jazykový model / Large Language Model` and industry `LLM`.
 - For Czech concepts whose English industry name is important (for example `Dovednosti / Skills`), store the English industry form in the term variable and let the renderer decide whether to show the proper name, industry name, or both.
+
+
+## GitHub Pages Viewer
+- Published Pages variants open through the custom static viewer in `web/viewer.*`, not the browser-native PDF viewer.
+- PDF remains the canonical rendered document; the viewer uses PDF.js and must retain a direct PDF download/native fallback.
+- Keep the Pages viewer dependency-free at build time: static assets are copied by `scripts/build_site.py`; runtime PDF.js is version-pinned.
+- Do not replace the production viewer with Typst HTML export while Typst documents that target as experimental/not production-ready.
+- The local live-preview workflow above remains the native Chrome PDF viewer unless the user explicitly asks to change local preview too.
