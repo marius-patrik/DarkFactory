@@ -6,25 +6,29 @@ applies_to: [agents, automation, contributors]
 activation: always
 owners: [harness-auth]
 ---
-# Rule 16 — Security and secrets
+# Rule 16 — Security, authentication and secrets
 
 ## Requirement
 
-No credential, token, refresh token, cookie, or private key is ever committed, echoed into workflow
-logs, or written into issue or PR bodies. All secrets live in GitHub repository secrets or the local
-OS keychain. Workflow logs must be assumed public. Credentials exist only in DarkFactory's own
-environment and are never propagated to consumer repositories; consumers authenticate through their
-own secrets. No secret value is ever named in a rule or a rule reference.
+No credential, access token, refresh token, cookie, client secret or private key may be committed, logged, written to issues/PRs, included in generated docs or embedded in static web assets.
+
+`@darkfactory/keychain` is the sole machine/harness credential-custody owner. Other packages/capabilities declare credential requirements and receive scoped access; they do not read raw credential files, secret environment variables or OS keychains directly.
+
+`@darkfactory/auth` separately owns human/browser GitHub App authentication and sessions. Browser bundles cannot import keychain/private-key/server-confidential code.
+
+The web auth broker may hold only credentials required for confidential user-token exchange/refresh and is not a DarkFactory state/execution backend.
+
+GitHub user authority and GitHub App installation authority remain distinct.
+
+Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
 
 ## Rationale
 
-Mistakenly captured credentials are permanent: logs and issues outlive rotations. Keeping the
-system's own credentials private to DarkFactory keeps the fleet secure by construction.
+Centralized custody and explicit browser/machine trust boundaries minimize secret lifetime and prevent capability/plugin code from silently widening access.
 
 ## Enforcement
 
-- Secret-backed workflows and repository settings; credential-focused tests in the test suite.
-- No repository-wide secret scanning gate exists today — any claims of one must not be made.
+Keychain/auth import-boundary, redaction, secret-scan and credential-flow tests; workflow/browser artifact audits.
 
 ## Exceptions
 
@@ -32,5 +36,4 @@ None.
 
 ## Change control
 
-Owned by `harness-auth`: provider identities, vault access, and secret flows. Rules never list
-credential variable names; the manifest declares identities.
+Credential names/values are never copied into rule text. Provider-specific flows belong to keychain/provider capability contracts.
