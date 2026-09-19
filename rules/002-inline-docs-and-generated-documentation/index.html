@@ -259,37 +259,25 @@
 
       <main class="content" id="content">
         <article class="prose">
-          <h1 id="rule-2-inline-docstrings-and-generated-documentation">Rule 2 — Inline docstrings and generated documentation<a class="headerlink" href="#rule-2-inline-docstrings-and-generated-documentation" title="Permanent link">&para;</a></h1>
+          <h1 id="rule-2-inline-documentation-and-generated-documentation">Rule 2 — Inline documentation and generated documentation<a class="headerlink" href="#rule-2-inline-documentation-and-generated-documentation" title="Permanent link">&para;</a></h1>
 <h2 id="requirement">Requirement<a class="headerlink" href="#requirement" title="Permanent link">&para;</a></h2>
-<p>All source MUST carry complete API documentation inline:</p>
+<p>Public source APIs MUST be documented inline.</p>
 <ul>
-<li><strong>Rust</strong>: <code>///</code> doc comments on every public item, with <code># Errors</code> and <code># Panics</code> sections where
-  applicable. <code>cargo doc</code> MUST build with zero warnings.</li>
-<li><strong>TypeScript</strong>: TSDoc on every exported symbol.</li>
-<li><strong>Python</strong> (automation): Google-style docstrings (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>) with PEP 484
-  type annotations.</li>
+<li><strong>TypeScript</strong>: TSDoc on every exported public symbol in first-party packages and capabilities.</li>
+<li><strong>Rust</strong>: <code>///</code> documentation on public items, including error/panic behavior where applicable.</li>
+<li><strong>Python</strong>: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.</li>
 </ul>
-<p>Documentation MUST be generated from source and hand-written architecture notes. No static
-per-module markdown mirror and no manually maintained documentation index are stored in the
-repository. All documentation builds MUST use the command declared by the repository environment
-and succeed with zero warnings and zero errors. DarkFactory declares
-<code>bun run scripts/build-docs.ts</code>, which stages its repository sources, invokes ProperDocs in strict
-mode, and deploys the result automatically to GitHub Pages.</p>
+<p>Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is <code>@darkfactory/docs</code>; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is <code>docs.df</code>, with <code>properdocs.yml</code> and <code>mkdocs.yml</code> accepted only as compatibility inputs.</p>
+<p>The same canonical homepage/content graph MUST render both the published docs homepage and committed <code>README.md</code>. CI MUST fail on deterministic README projection drift.</p>
+<p>The final web rendering layer is <code>@darkfactory/web</code>; docs must not maintain a second frontend or theme runtime.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>A committed documentation mirror creates two sources of truth that drift. Generating the site from
-the canonical files means the published pages and the repository content cannot disagree.</p>
+<p>One content graph prevents API docs, README and the published site from becoming independent sources of product truth.</p>
 <h2 id="enforcement">Enforcement<a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>.github/scripts/docs_hooks.py</code> maps canonical files to virtual pages at build time; the docs
-  build is a required status check in <code>ci.yml</code>.</li>
-<li><code>properdocs.yml</code> configures the strict build.</li>
-</ul>
+<p>Docs/API/README checks consume the final #341 capability-aware detection contract and #424 docs compiler. Required API surfaces build with zero required documentation warnings.</p>
 <h2 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h2>
-<p>None.</p>
+<p>Generated or intentionally private/internal symbols may be excluded only by the canonical docs/export policy.</p>
 <h2 id="change-control">Change control<a class="headerlink" href="#change-control" title="Permanent link">&para;</a></h2>
-<p>Docs-site owns generated presentation, selection of the installed sites, and the mandatory-rule
-projection. The Python hooks are port-source, not an extension target, per <code>cli-release</code> and PRD
-section 10.</p>
+<p>Presentation belongs to the shared web package; source extraction/content ownership belongs to the docs package/capabilities.</p>
         </article>
         <nav class="pager" aria-label="Page navigation">
           <a class="pager__link pager__link--prev" href="../001-unit-tests/">
