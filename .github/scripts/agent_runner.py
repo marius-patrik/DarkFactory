@@ -58,6 +58,7 @@ from commands import (
     parse_pr_command,
 )
 from harnesses import Harness, resolve_attempts
+from resolver import resolve_df_file
 
 #: Repository-specific configuration, read once at import.
 _MANIFEST = _manifest_module.load(
@@ -75,7 +76,7 @@ except ImportError:
     except (ValueError, TypeError):
         PROJECT_NUMBER = 1
 
-CHECKPOINT_FILENAME = ".antigravity_checkpoint.json"
+CHECKPOINT_FILENAME = ".antigravity-checkpoint.df"
 WORKSPACE_DIR = os.environ.get("GITHUB_WORKSPACE", "/workspace")
 STATE_DIR = os.environ.get("STATE_DIR", WORKSPACE_DIR)
 
@@ -130,7 +131,7 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
 
 TYPE_LABELS = ["feat", "bug", "chore", "refactor", "test", "ci", "docs"]
 # The area taxonomy is a property of the repository, not of the pipeline, so it comes from
-# `.darkfactory/manifest.json`. `repo_settings` creates the labels from the same source, which is
+# `.darkfactory/repo.df`. `repo_settings` creates the labels from the same source, which is
 # what keeps the labels the agent applies and the labels that exist from drifting apart.
 AREA_LABELS = [name for name, _colour, _description in _MANIFEST.area_labels]
 
@@ -1615,7 +1616,7 @@ def checkpoint_and_notify_exhaustion(
         "#### Checkpoint Information\n"
         f"- **Branch**: `{branch_name or 'N/A'}`\n"
         f"- **Automatic Resume**: {reset_at_utc}\n"
-        "- **Checkpoint**: Progress preserved in `.antigravity_checkpoint.json`\n"
+        "- **Checkpoint**: Progress preserved in `.antigravity-checkpoint.df`\n"
         "- **Project Status**: Updated to `Blocked`\n\n"
         "#### Instructions to Resume\n"
         f"{RESUME_INSTRUCTIONS}\n"
@@ -1848,20 +1849,21 @@ def df_setup_secret_names() -> Tuple[str, ...]:
 
 
 def find_df_config() -> Optional[str]:
-    """Locates the df chain config for this run.
+    """Locates config.df using the canonical hard-transition resolver.
 
-    Repository-specific data lives in ``.darkfactory/``: the target repository's own
-    ``.darkfactory/df/config.json`` wins, falling back to the pipeline's copy checked out at
-    ``.darkfactory-pipeline/`` when a consumer has none yet.
+    The target repository is authoritative. A checked-out pipeline config is only a bootstrap
+    default when the target declares no config. Each root independently enforces the
+    .darkfactory/config.df vs root config.df duplicate error.
 
     Returns:
-        Path of the config file, or ``None`` when neither exists.
+        Path of the config file, or ``None`` when neither root declares one.
     """
-    candidates = (
-        os.path.join(WORKSPACE_DIR, ".darkfactory", "df", "config.json"),
-        os.path.join(WORKSPACE_DIR, ".darkfactory-pipeline", ".darkfactory", "df", "config.json"),
+    roots = (
+        WORKSPACE_DIR,
+        os.path.join(WORKSPACE_DIR, ".darkfactory-pipeline"),
     )
-    for path in candidates:
+    for root in roots:
+        path = resolve_df_file(root, "config")
         if os.path.isfile(path):
             return path
     return None
@@ -1897,11 +1899,11 @@ def setup_df_accounts() -> str:
     try:
         source = find_df_config()
         if source:
-            shutil.copy(source, os.path.join(df_home, "config.json"))
+            shutil.copy(source, os.path.join(df_home, "config.df"))
             print(f"Using df chain config from {source}.")
         else:
             print(
-                "No .darkfactory/df/config.json found; df uses its built-in default chain.",
+                "No config.df found; df uses its built-in default chain.",
                 file=sys.stderr,
             )
     except Exception as exc:  # noqa: BLE001 - a missing config must not stop the run
@@ -1960,7 +1962,7 @@ def snapshot_df_login_files() -> List[Tuple[str, str, Optional[Any]]]:
     """
     states: List[Tuple[str, str, Optional[Any]]] = []
     df_home = os.environ.get("DF_HOME", "")
-    store_path = os.path.join(df_home, "credentials.json") if df_home else ""
+    store_path = os.path.join(df_home, "credentials.df") if df_home else ""
     accounts_store: Dict[str, Any] = {}
     if store_path and os.path.isfile(store_path):
         try:
@@ -1985,7 +1987,7 @@ def snapshot_df_login_files() -> List[Tuple[str, str, Optional[Any]]]:
 def finish_df_login_files(states: List[Tuple[str, str, Optional[Any]]]) -> None:
     """Writes rotated df account records back to the secret they came from.
 
-    Compares the stored record under ``DF_HOME/credentials.json`` with the value loaded before
+    Compares the stored record under ``DF_HOME/credentials.df`` with the value loaded before
     the run. If tokens were refreshed, the updated record is written back using
     :func:`persist_rotated_token` so a refreshed token never strands the secret.
 
@@ -1993,7 +1995,7 @@ def finish_df_login_files(states: List[Tuple[str, str, Optional[Any]]]) -> None:
         states: Snapshot taken by :func:`snapshot_df_login_files` before the invocation.
     """
     df_home = os.environ.get("DF_HOME", "")
-    store_path = os.path.join(df_home, "credentials.json") if df_home else ""
+    store_path = os.path.join(df_home, "credentials.df") if df_home else ""
     if not store_path or not os.path.isfile(store_path):
         return
 
