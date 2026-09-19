@@ -159,6 +159,20 @@ for path in sorted(Path("kapitoly").glob("*.typ")):
         if any(token in stripped for token in forbidden):
             fail(f"layout directive belongs in template, not {path}:{line_number}: {stripped}")
 
+# Legacy review marker API must not return.
+for path in (
+    Path("templates/common.typ"),
+    Path("templates/registry.typ"),
+    Path("templates/gjkt-odborna-prace/template.typ"),
+    Path("metadata.typ"),
+    Path("AGENTS.md"),
+    *sorted(Path("kapitoly").glob("*.typ")),
+):
+    source = path.read_text(encoding="utf-8")
+    for legacy in ("#confirmed[", "#let confirmed", "common.confirmed"):
+        if legacy in source:
+            fail(f"legacy confirmed review state remains in {path}: {legacy}")
+
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 release_assets = {Path(value) for value in manifest.get("release", {}).get("assets", [])}
