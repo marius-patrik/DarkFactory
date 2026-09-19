@@ -59,6 +59,14 @@ function inferKind(prompt: string): KindInference {
 
 	const hits = KIND_RULES.filter(([, pattern]) => pattern.test(prompt));
 	const first = hits[0];
+	if (engineeringStage && first) {
+		return {
+			kind: first[0],
+			ambiguous: false,
+			reason: `${first[2]}; explicit engineering-stage intent takes precedence over quoted/subject artifact wording`,
+			directArtifact: false,
+		};
+	}
 	if (hits.length === 1 && first) {
 		return { kind: first[0], ambiguous: false, reason: first[2], directArtifact: false };
 	}
