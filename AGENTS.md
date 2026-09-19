@@ -69,8 +69,8 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 
 ## Deferred Practical Chapters
-- `kapitoly/03-prakticka-cast.typ` and `kapitoly/04-vysledky.typ` are intentionally empty apart from their finalized top-level headings.
-- Do **not** draft, restore, infer, or pre-fill either chapter while DarkFactory is still under development.
+- `kapitoly/03-prakticka-cast.typ` and `kapitoly/04-vysledky.typ` intentionally contain no prose before DarkFactory is finished. Explicitly user-approved finalized heading stubs are allowed; they must remain title-only.
+- Do **not** draft, restore, infer, or pre-fill prose, claims, architecture descriptions, or results in either chapter while DarkFactory is still under development.
 - Required order:
   1. Finish and stabilize the practical DarkFactory system.
   2. Inspect and verify the actual production implementation, workflows, configuration, interfaces, tests, and behavior.
