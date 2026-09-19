@@ -1,6 +1,6 @@
-#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
+#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note
 
-= #confirmed[Výsledky a diskuse]
+= #finalized[Výsledky a diskuse]
 
 #blue-note[
   *Metodické vymezení výsledků a diskuse:*
