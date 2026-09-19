@@ -13,7 +13,8 @@ export function nativeAssetCandidates(platform: string, arch: string): NativeAss
 	if (!["darwin", "linux", "win32"].includes(platform) || !["arm64", "x64"].includes(arch)) return [];
 	const directory = `native/${platform}/prebuilds/${platform}-${arch}`;
 	const current = platform === "linux" ? "linux-platform-x11.node" : `${platform}-platform.node`;
-	const legacy = platform === "darwin" ? "darwin-modifiers.node" : platform === "win32" ? "win32-console-mode.node" : undefined;
+	const legacy =
+		platform === "darwin" ? "darwin-modifiers.node" : platform === "win32" ? "win32-console-mode.node" : undefined;
 	return [current, ...(legacy ? [legacy] : [])].map((file) => ({
 		platform,
 		arch,
@@ -37,7 +38,11 @@ export function dependencyAssetPath(root: string, ...segments: string[]): string
 	return join(moduleRoots[0]!, ...segments);
 }
 
-export async function packageAssets(root = process.cwd(), platform = process.platform, arch = process.arch): Promise<void> {
+export async function packageAssets(
+	root = process.cwd(),
+	platform = process.platform,
+	arch = process.arch,
+): Promise<void> {
 	const dist = join(root, "dist");
 	await mkdir(dist, { recursive: true });
 	await copyFile(
