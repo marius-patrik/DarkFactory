@@ -2,8 +2,8 @@
   "$comment": "Everything the shared pipeline needs and cannot detect. The pipeline itself is identical across every repository that uses it; this file is the only thing that differs.",
   "identity": {
     "owner": "marius-patrik",
-    "repo": "OdbornaPrace-paper",
-    "display_name": "OdbornaPrace-paper",
+    "repo": "DarkFactory-Paper",
+    "display_name": "DarkFactory-Paper",
     "default_branch": "main",
     "description": "Odborná práce: autonomní pipeline pro vývoj softwaru (GJKT)",
     "topics": [
@@ -37,7 +37,7 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "The paper uses one Typst renderer with four publication profiles (school/cs/en/merged) and final/review modes. CI compiles and validates all eight PDFs; release builds the same matrix; Pages uses the repository site builder to expose every PDF as a direct native-viewer link. Formatting remains disabled because typstyle would reflow hand-set Czech typography.",
+    "$comment": "The paper is one Typst project with switchable document templates under templates/. The default gjkt-odborna-prace template renders four publication profiles and final/review modes. CI builds the eight default PDFs, smoke-compiles every discovered template, validates architecture, and Pages exposes the default publication matrix.",
     "testing": {
       "typst": {
         "command": "make ci"

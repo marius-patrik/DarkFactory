@@ -11,10 +11,12 @@
 //    • čísla stran v zápatí, na střed, 11 b, od úvodu
 //
 //  Šablona sama neobsahuje žádné jméno ani logo.
+//  Exportuje funkci `template(..)[body]`, kterou vybírá centrální registry.
 // ─────────────────────────────────────────────────────────────
 
 // Caladea je patkové písmo metricky shodné s Cambrií a je přibaleno
 // v adresáři `fonts/`, takže sazba je všude identická.
+#let template-id = "gjkt-odborna-prace"
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
@@ -536,7 +538,7 @@
   pagebreak()
 }
 
-#let odborna-prace(
+#let template(
   meta: (:),
   // Cesta k logu školy, např. "/img/logo.jpeg". `none` = bez loga.
   logo: none,

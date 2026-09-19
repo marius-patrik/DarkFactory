@@ -1,24 +1,31 @@
 #import "metadata.typ": meta
-#import "packages/odborna-prace-template/src/lib.typ": odborna-prace, prilohy
+#import "templates/registry.typ": default-template, template-for, appendices-for
 
-// Jediný vstupní bod pro obě výstupní varianty práce.
-// Rozdíl mezi normal/review se předává pouze jako režim šabloně;
-// samotný obsah kapitol, sazba i výpočet rozsahu jsou společné.
-#let thesis(review: false, profile: "school", language: none) = odborna-prace(
-  meta: meta,
-  logo: "/img/logo.jpeg",
-  review: review,
-  profile: profile,
-  language: language,
-  koncept: if review { "KONCEPT" } else { none },
-)[
-  #include "kapitoly/01-uvod.typ"
-  #include "kapitoly/02-teoreticka-cast.typ"
-  #include "kapitoly/03-prakticka-cast.typ"
-  #include "kapitoly/04-vysledky.typ"
-  #include "kapitoly/05-zaver.typ"
+// Jediný zdroj obsahu práce. Konkrétní dokumentová šablona je zvolena
+// samostatně, takže stejný rukopis lze kompilovat více šablonami.
+#let thesis(
+  review: false,
+  profile: "school",
+  template-name: default-template,
+) = {
+  let render = template-for(template-name)
+  let appendices = appendices-for(template-name)
 
-  #prilohy[
-    #include "kapitoly/06-prilohy.typ"
+  render(
+    meta: meta,
+    logo: "/img/logo.jpeg",
+    review: review,
+    profile: profile,
+    koncept: if review { "KONCEPT" } else { none },
+  )[
+    #include "kapitoly/01-uvod.typ"
+    #include "kapitoly/02-teoreticka-cast.typ"
+    #include "kapitoly/03-prakticka-cast.typ"
+    #include "kapitoly/04-vysledky.typ"
+    #include "kapitoly/05-zaver.typ"
+
+    #appendices[
+      #include "kapitoly/06-prilohy.typ"
+    ]
   ]
-]
+}

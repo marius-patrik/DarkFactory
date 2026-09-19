@@ -11,16 +11,31 @@ který práci zároveň sází, testuje a publikuje.
 
 Aktivní architektura má pouze dva repozitáře:
 
-- **DarkFactory-Paper** — rukopis, sazba, interní Typst package a integrační bod praktické části.
+- **DarkFactory-Paper** — rukopis, sazba, interní Typst šablonu a integrační bod praktické části.
 - **DarkFactory** — vlastní agentní harness; v tomto repozitáři je připojen jako jediný submodule `darkfactory/`.
 
 Dřívější `OdbornaPrace-mono` wrapper už není potřeba. Samostatná šablona byla
-přesunuta dovnitř práce jako `packages/odborna-prace-template/`, takže sazba a
+přesunuta dovnitř práce jako `templates/gjkt-odborna-prace/`, takže sazba a
 rukopis se nemohou verzově rozcházet.
+
+## Dokumentové šablony
+
+Výchozí šablona je `gjkt-odborna-prace`. Každá šablona žije v `templates/<name>/`
+a exportuje funkci `template(...)[body]`. Rukopis importuje pouze
+`templates/registry.typ`, takže konkrétní sazbu lze přepnout bez kopírování textu.
+
+```bash
+make all TEMPLATE=gjkt-odborna-prace
+make all-templates
+make template-check
+```
+
+`make all-templates` kompiluje všech osm profil/review variant pro každou nalezenou
+šablonu do `out/templates/<template>/`.
 
 ## Publikační profily
 
-Celá práce používá jediný renderer `main.typ -> thesis() -> odborna-prace()`.
+Celá práce používá jediný rukopis a volitelnou dokumentovou šablonu: `main.typ -> thesis() -> templates/registry.typ -> template(...)`.
 Výstup určuje pouze publikační profil a přepínač review:
 
 | Profil | Final | Review | Účel |
@@ -58,7 +73,7 @@ závislosti na konkrétní instalaci písem.
 Pages web publikuje výběr všech osmi variant. Odkazy míří přímo na PDF, takže se
 otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace vieweru.
 
-<https://marius-patrik.github.io/OdbornaPrace-paper/>
+<https://marius-patrik.github.io/DarkFactory-Paper/>
 
 ## Struktura
 
@@ -68,7 +83,7 @@ otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace v
 | `thesis.typ` | společné sestavení obsahu práce |
 | `metadata.typ` | název, autor, škola, anotace a jazykové varianty metadata |
 | `kapitoly/*.typ` | text práce |
-| `packages/odborna-prace-template/` | interní Typst package: sazba, review vrstva, profily, termíny a počítání rozsahu |
+| `templates/gjkt-odborna-prace/` | interní Typst šablonu: sazba, review vrstva, profily, termíny a počítání rozsahu |
 | `scripts/check_build.py` | statická CI kontrola osmi PDF a release assetů |
 | `scripts/build_site.py` | generátor Pages selectoru |
 | `bib/references.bib` | zdroje ve formátu BibTeX |
@@ -79,7 +94,7 @@ otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace v
 
 | | |
 | :--- | :--- |
-| Publikované verze | <https://marius-patrik.github.io/OdbornaPrace-paper/> |
-| Vydané verze | [Releases](https://github.com/marius-patrik/OdbornaPrace-paper/releases) |
-| Šablona | interní package `packages/odborna-prace-template/` |
+| Publikované verze | <https://marius-patrik.github.io/DarkFactory-Paper/> |
+| Vydané verze | [Releases](https://github.com/marius-patrik/DarkFactory-Paper/releases) |
+| Šablona | interní šablona `templates/gjkt-odborna-prace/` |
 | Praktická část | [`DarkFactory`](https://github.com/marius-patrik/DarkFactory) |

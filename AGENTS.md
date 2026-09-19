@@ -54,6 +54,6 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 ## Repository Architecture
 - The thesis repository is `DarkFactory-Paper`.
-- `packages/odborna-prace-template/` is the internal Typst package and the only source of truth for thesis rendering/review helpers.
+- `templates/gjkt-odborna-prace/` is the current document-template implementation. Manuscript files import `templates/registry.typ`, never a concrete template directly.
 - `darkfactory/` is the only git submodule and points to the practical DarkFactory repository.
-- Do not recreate a wrapper monorepo or a separate template submodule/repository dependency.
+- Do not recreate a wrapper monorepo, nested Typst package, or separate template repository. New layouts belong under `templates/<name>/` and must be registered in `templates/registry.typ`.

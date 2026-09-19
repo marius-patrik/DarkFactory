@@ -1,4 +1,4 @@
-#import "../packages/odborna-prace-template/src/lib.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
+#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
 = #confirmed[Závěr]
 

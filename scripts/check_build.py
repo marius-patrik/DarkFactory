@@ -43,19 +43,24 @@ if '[submodule "darkfactory"]' not in gitmodules_text:
 if "marius-patrik/DarkFactory.git" not in gitmodules_text:
     fail("darkfactory submodule must point to marius-patrik/DarkFactory")
 
-package_root = Path("packages/odborna-prace-template")
+template_root = Path("templates/gjkt-odborna-prace")
 for required in (
-    package_root / "typst.toml",
-    package_root / "src/lib.typ",
-    package_root / "src/wordometer.typ",
-    package_root / "Makefile",
-    package_root / "tests/smoke.typ",
+    Path("templates/registry.typ"),
+    template_root / "template.typ",
+    template_root / "wordometer.typ",
+    template_root / "README.md",
 ):
     if not required.is_file():
-        fail(f"missing internal template package file: {required}")
+        fail(f"missing document-template file: {required}")
 
-if Path("lib/odborna-prace.typ").exists() or Path("lib/wordometer.typ").exists():
-    fail("legacy root lib/ template copies must not reappear")
+if Path("packages").exists():
+    fail("legacy packages/ directory must not reappear")
+if (template_root / "typst.toml").exists():
+    fail("document templates are implementations, not nested Typst packages")
+
+registry = Path("templates/registry.typ").read_text(encoding="utf-8")
+if '"gjkt-odborna-prace"' not in registry:
+    fail("GJKT template is not registered")
 
 def active_typst_imports(source: str) -> list[str]:
     imports: list[str] = []
@@ -69,18 +74,17 @@ def active_typst_imports(source: str) -> list[str]:
             imports.append(stripped)
     return imports
 
-
 for path in (
     Path("metadata.typ"),
     Path("thesis.typ"),
     *sorted(Path("kapitoly").glob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
-    if any(
-        'lib/odborna-prace.typ' in line
-        for line in active_typst_imports(source)
-    ):
-        fail(f"legacy active template import remains in {path}")
+    imports = active_typst_imports(source)
+    if any("packages/odborna-prace-template" in line for line in imports):
+        fail(f"legacy package import remains in {path}")
+    if path.name != "thesis.typ" and any("templates/gjkt-odborna-prace" in line for line in imports):
+        fail(f"manuscript bypasses template registry in {path}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -101,4 +105,4 @@ for final, review in pairs:
     if final.read_bytes() == review.read_bytes():
         fail(f"review output is byte-identical to final output: {final}")
 
-print(f"ok: validated {len(EXPECTED)} Typst PDF artifacts, repository architecture, and release manifest")
+print(f"ok: validated {len(EXPECTED)} PDFs, template architecture, repository architecture, and release manifest")
