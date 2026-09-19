@@ -60,9 +60,9 @@ describe("run-state load/save", () => {
     await saveRunState(tmpDir, subject, state);
     const loaded = await loadRunState(tmpDir, subject, graph);
     expect(loaded.outputs).toEqual({ foo: "bar" });
-    // Ensure only the final json file exists, no *.tmp* files.
+    // Ensure only the final .df file exists, no *.tmp* files.
     const files = await readdir(tmpDir);
-    expect(files).toContain(`${subject}.json`);
+    expect(files).toContain(`${subject}.df`);
     const tmpFiles = files.filter((f) => f.includes("tmp"));
     expect(tmpFiles.length).toBe(0);
   });
