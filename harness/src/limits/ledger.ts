@@ -162,7 +162,7 @@ export class LimitLedger {
 	async recover(now = Date.now(), confirm?: (entry: LimitEntry) => Promise<boolean>): Promise<LimitEntry[]> {
 		const recovered: LimitEntry[] = [];
 		await withFileLock(this.lockPath, async () => {
-			const file = (await this.readExisting()) ?? (await this.migrateQuota());
+			const file = (await this.readExisting()) ?? empty();
 			for (const [key, entry] of Object.entries(file.entries)) {
 				if (entry.resetAt > now) continue;
 				if (entry.source === "default" && confirm && !(await confirm(entry))) {
