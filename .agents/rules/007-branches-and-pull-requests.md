@@ -10,39 +10,28 @@ owners: [harness-auth]
 
 ## Requirement
 
-All changes, features, refactors, and bug fixes MUST be developed on dedicated topic branches and
-submitted through GitHub Pull Requests. Direct commits and pushes to the protected default branch
-(`main` for DarkFactory consumers; the manifest-declared default branch) are prohibited.
+All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.
 
-- **Branch Naming**: Lowercase, hyphen-separated, descriptive (e.g. `feature/substrate-bus-codec`).
-  Branch names MUST NOT contain issue numbers.
-- **Bot-Authored PRs**: Pull requests MUST be authored by `github-actions[bot]` via
-  `.github/workflows/open-pr.yml` so the repository maintainer is not registered as author and can
-  natively review and approve them.
-- **Draft Status**: Every pull request MUST be opened in Draft and remain in draft throughout
-  development and review until explicitly approved.
-- **Up-to-Date with Main**: Every pull request branch MUST contain the latest default branch before
-  merge (strict required status checks).
-- **Required CI Checks**: All required checks MUST pass green before merging.
-- **Branch Protection**: The default branch MUST remain protected with required status checks,
-  branch up-to-date enforcement, and pull request review enforcement.
+- Branch names are lowercase, descriptive and do not depend on issue numbers.
+- The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
+- Automation-authored PRs use the canonical DarkFactory GitHub App/bot identity so the human maintainer can independently review them.
+- PRs remain draft while implementation/review is active and become merge-ready only through the governed gate.
+- Required checks and current-base requirements must pass before merge.
+- Branch protection remains enabled with the final detected/generated check contract.
+- Rewrites/pushes use deterministic git owners and lease-safe expected-old-SHA semantics; blind force push is forbidden.
 
 ## Rationale
 
-Topic branches keep every review archaeology traceable, and bot authorship keeps the human as
-reviewer rather than author.
+Topic branches preserve review/provenance while dynamic base resolution and lease safety prevent automation from overwriting repository history.
 
 ## Enforcement
 
-- `.github/scripts/agent_runner.py` builds branch names (no issue numbers) and drafts PRs.
-- `tests/test_agent_runner.py` pins branch-naming behavior.
-- `.github/scripts/repo_settings.py` configures branch protection idempotently.
+The final git/GitHub/hook capabilities and repository protection settings enforce this contract.
 
 ## Exceptions
 
-None.
+The temporary bootstrap-authoring exception in `PLAN.md` changes who may author a repair, not the required PR/check/review/merge evidence.
 
 ## Change control
 
-Prerequisite `gh-client` replaces literal `gh` invocations; `harness-auth` owns the canonical
-automation identity for bot-authored PRs.
+Concrete workflow/script owners may change during #359 cutover; this rule names behavior, not legacy file paths.
