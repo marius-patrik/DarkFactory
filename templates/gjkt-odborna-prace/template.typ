@@ -135,12 +135,12 @@
 
     // Obě hodnoty používají stejné review funkce jako samotný rukopis:
     // potvrzený rozsah je vždy přítomen, review rozsah se v čisté verzi
-    // automaticky ztratí přes unfinalized().
+    // automaticky ztratí přes unconfirmed().
     let rozsahy = stack(
       dir: ttb,
       spacing: 3pt,
       finalized(range-line(s.raw)),
-      unfinalized(range-line(s.review)),
+      unconfirmed(range-line(s.review)),
     )
 
     grid(
@@ -501,7 +501,7 @@
     )
 
     // V čisté kompilaci je review-stats zároveň potvrzený rozsah, protože
-    // unfinalized() nic nevysází. Review build dostane potvrzený rozsah z
+    // unconfirmed() nic nevysází. Review build dostane potvrzený rozsah z
     // předchozího Typst eval nad stejným template/profile vstupem.
     let raw-words-input = sys.inputs.at("raw-words", default: none)
     let raw-chars-input = sys.inputs.at("raw-chars", default: none)
