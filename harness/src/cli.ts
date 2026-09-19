@@ -165,8 +165,7 @@ function makeRunDeadline(value: string | undefined, startedAt: number): RunDeadl
 async function withinRunDeadline<T>(operation: Promise<T>, budget?: RunDeadline): Promise<T> {
 	if (!budget) return operation;
 	const remaining = budget.deadlineAt - Date.now();
-	if (remaining <= 0)
-		throw new RunTimeoutError(budget.budgetMs, Math.max(0, Date.now() - budget.startedAt));
+	if (remaining <= 0) throw new RunTimeoutError(budget.budgetMs, Math.max(0, Date.now() - budget.startedAt));
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<never>((_, reject) => {
 		timer = setTimeout(
@@ -1146,16 +1145,7 @@ async function runCommand(
 		throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
 	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
 	const supervisor = await withinRunDeadline(
-		createCliSupervisor(
-			registry,
-			store,
-			config,
-			["run", ...args],
-			executableChain,
-			json,
-			task,
-			route.profile.kind,
-		),
+		createCliSupervisor(registry, store, config, ["run", ...args], executableChain, json, task, route.profile.kind),
 		budget,
 	);
 	if (json)
@@ -1459,11 +1449,11 @@ if (import.meta.main) {
 					...(error instanceof ChainExhaustedError ? { reasons: error.reasons, limits: error.limits } : {}),
 					...(error instanceof RunTimeoutError
 						? {
-							kind: "timeout",
-							budgetMs: error.budgetMs,
-							elapsedMs: error.elapsedMs,
-							...(error.sessionId ? { sessionId: error.sessionId } : {}),
-						}
+								kind: "timeout",
+								budgetMs: error.budgetMs,
+								elapsedMs: error.elapsedMs,
+								...(error.sessionId ? { sessionId: error.sessionId } : {}),
+							}
 						: {}),
 				}),
 			);
