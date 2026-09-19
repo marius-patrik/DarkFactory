@@ -1,3 +1,4 @@
+#import "common.typ" as common
 #import "gjkt-odborna-prace/template.typ" as gjkt
 
 // Centrální registry šablon. Manuskript importuje pouze tento soubor;
@@ -27,30 +28,28 @@
   }
 }
 
-// Sdílený autorský/review kontrakt. Při přidání nové šablony musí registry
-// namapovat stejné semantické helpery; kapitoly proto nikdy neimportují
-// implementaci konkrétní šablony.
-#let body-paragraph = gjkt.body-paragraph
-#let bullet-list = gjkt.bullet-list
-#let numbered-list = gjkt.numbered-list
-#let paragraph = gjkt.paragraph
-#let bullets = gjkt.bullets
-#let numbered = gjkt.numbered
-#let bilingual = gjkt.bilingual
-#let localized = gjkt.localized
-#let note = gjkt.note
-#let issue = gjkt.issue
-#let alert = gjkt.alert
-#let struct-alert = gjkt.struct-alert
-#let critique = gjkt.critique
-#let scope-note = gjkt.scope-note
-#let blue-note = gjkt.blue-note
-#let added = gjkt.added
-#let ai = gjkt.ai
-#let draft = gjkt.draft
-#let unconfirmed = gjkt.unconfirmed
-#let confirmed = gjkt.confirmed
-#let removed = gjkt.removed
-#let diff = gjkt.diff
-#let term = gjkt.term
-#let kw = gjkt.kw
+// Sdílený autorský/review kontrakt je mimo konkrétní šablony.
+#let body-paragraph = common.body-paragraph
+#let bullet-list = common.bullet-list
+#let numbered-list = common.numbered-list
+#let paragraph = common.paragraph
+#let bullets = common.bullets
+#let numbered = common.numbered
+#let bilingual = common.bilingual
+#let localized = common.localized
+#let note = common.note
+#let issue = common.issue
+#let alert = common.alert
+#let struct-alert = common.struct-alert
+#let critique = common.critique
+#let scope-note = common.scope-note
+#let blue-note = common.blue-note
+#let added = common.added
+#let ai = common.ai
+#let draft = common.draft
+#let unconfirmed = common.unconfirmed
+#let confirmed = common.confirmed
+#let removed = common.removed
+#let diff = common.diff
+#let term = common.term
+#let kw = common.kw
