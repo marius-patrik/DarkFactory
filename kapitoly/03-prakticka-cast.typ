@@ -5,17 +5,16 @@
 == Cíl a rozsah systému DarkFactory
 
 #unconfirmed[
-- *Systém DarkFactory* @darkfactory: Agentní harness instalovatelný jako aplikace pro platformu GitHub (GitHub App).
-- *Cíl systému*: Maximalizace automatizace rutinních fází softwarového inženýrství:
-  - Sémantická analýza požadavků v GitHub Issues.
-  - Technické plánování a dekompozice úlohy.
-  - Generování a úprava zdrojového kódu.
-  - Běh validačních testů a automatické opravy chyb.
-  - Otevření strukturovaného pull requestu.
-- *Míra autonomie*: Kooperativní model se zapojením člověka (_Human-in-the-loop_). Vzhledem ke stochastické povaze LLM nelze systém označit za plně autonomní; modely nemohou nést konečnou architektonickou odpovědnost.
-- *Dělba rolí*:
-  - *Autonomní agent*: Kognitivně rutinní a mechanické operace (průzkum souborů, syntéza kódu, řešení syntaktických regresí, běh testů).
-  - *Lidský inženýr*: Vymezení záměru (co a proč stavět), schvalování technických plánů a finální sémantická kontrola kódu v PR.
+Praktickým ztělesněním teoretických principů zkoumaných v této práci je systém *DarkFactory* @darkfactory. Jedná se o agentní řídicí harness navržený jako aplikace pro platformu GitHub (GitHub App), který rozšiřuje standardní vývojářské prostředí o schopnost autonomního odbavování softwarových úkolů.
+
+Hlavním cílem systému je maximalizace automatizace rutinních a mechanických fází vývojového cyklu:
+- *Sémantická analýza zadání*: Interpretace textového popisu problému z GitHub Issues a extrakce omezujících podmínek.
+- *Technické plánování*: Průzkum dotčených souborů repozitáře a návrh postupu implementace.
+- *Generování a úprava kódu*: Provádění konkrétních změn v souborovém systému v izolované větvi.
+- *Běh testů a samooprava*: Spouštění validačních kontrol a iterativní náprava detekovaných syntaktických regresí.
+- *Vystavení pull requestu*: Otevření strukturovaného návrhu změn s vygenerovaným diffem a souhrnem.
+
+Systém záměrně neusiluje o nekritickou plnou autonomii. Vzhledem ke stochastické povaze jazykových modelů DarkFactory staví na kooperativním modelu se zapojením člověka (_Human-in-the-loop_). Role jsou striktně rozděleny: autonomní agent obstarává kognitivně rutinní činnosti (navigaci v kódu, tvorbu dílčích funkcí a opravy chyb z testů), zatímco lidský inženýr si ponechává výhradní kontrolu nad architektonickým záměrem, schvalováním plánů a finální sémantickou revizí v pull requestu.
 ]
 
 #critique[
@@ -30,20 +29,21 @@
 ]
 
 #unconfirmed[
-- *Architektonická modularita*: Striktní oddělení deklarativního konfiguračního manifestu klientského repozitáře od sdílené orchestrační logiky.
-- *Hermetické běhové prostředí*#footnote(numbering: "*")[Pojem *hermetické prostředí* označuje výpočetní prostředí zcela izolované od nekontrolovaných stavů hostitelského systému a sítě. Veškeré nástroje, knihovny a závislosti jsou explicitně uzamčeny na konkrétních verzích, což zaručuje determinismus a reprodukovatelnost.]: Izolovaný běh úloh v kontejnerech se zamčenými verzemi závislostí a nástrojů.
-- *Životní cyklus požadavku (Stavový automat / DAG)*:
-  - *1. Příjem*: Detekce nového zadání v GitHub Issues.
-  - *2. Plánování*: Analýza kódu a návrh kroků implementace.
-  - *3. Lidská brána 1*: Schválení plánu vývojářem.
-  - *4. Implementace*: Autonomní editace souborů v izolované větvi.
-  - *5. Validace*: Běh testů a kontrol v CI s automatickou samoopravou chyb.
-  - *6. Vystavení PR*: Otevření pull requestu s popisem a diffem.
-  - *7. Lidská brána 2*: Finální kontrola a schválení člověkem.
-  - *8. Integrace*: Automatické sloučení do hlavní větve (_squash and merge_).
-- *Dvouúrovňová detekce projektů*:
-  - *Prostředí (_Environment_)*: Určuje vyžadované binární nástroje a balíčkovací manažery podle detekovaných souborů (viz @tab-prostredi).
-  - *Doména (_Domain_)*: Určuje způsob řízení výstupů (doména programového kódu vs. textová sazba a dokumentace).
+Architektura systému DarkFactory vychází ze striktního oddělení sdílené orchestrační logiky od specifické konfigurace jednotlivých klientských repozitářů. Veškeré výpočetní operace probíhají v hermetickém běhovém prostředí#footnote(numbering: "*")[Pojem *hermetické prostředí* označuje výpočetní prostředí zcela izolované od nekontrolovaných stavů hostitelského systému a sítě. Veškeré nástroje, knihovny a závislosti jsou explicitně uzamčeny na konkrétních verzích, což zaručuje determinismus a reprodukovatelnost.], což zaručuje reprodukovatelnost výsledků nezávisle na okolním stavu.
+
+Životní cyklus zpracování každého požadavku je formalizován jako stavový automat (orientovaný acyklický graf), který provádí požadavek následujícími fázemi:
+- *1. Příjem zadání*: Detekce nového nebo aktualizovaného úkolu v GitHub Issues.
+- *2. Technické plánování*: Průzkum repozitáře a sestavení dekompozice změn.
+- *3. Lidská schvalovací brána 1*: Pozastavení běhu a autorizace navrženého plánu vývojářem.
+- *4. Autonomní implementace*: Editace souborů a úprava kódu v dedikované větvi.
+- *5. Validační pipeline*: Běh automatických testů v CI s možností automatické samoopravy chyb.
+- *6. Vystavení PR*: Otevření pull requestu s vygenerovaným popisem a řádkovým diffem.
+- *7. Lidská schvalovací brána 2*: Finální kontrola a schválení člověkem.
+- *8. Integrace*: Automatické sloučení do hlavní větve metodou _Squash and Merge_.
+
+Pro zajištění univerzální použitelnosti systém implementuje dvouúrovňovou detekci projektů:
+- *Prostředí (_Environment_)*: Určuje vyžadované binární nástroje a balíčkovací manažery podle detekovaných souborů (viz @tab-prostredi).
+- *Doména (_Domain_)*: Určuje způsob řízení výstupů (doména programového kódu vs. textová sazba a dokumentace).
 ]
 
 #figure(
@@ -63,7 +63,7 @@
 ) <tab-prostredi>
 
 #unconfirmed[
-- *Deklarativní manifest*: Umožňuje automaticky detekované parametry deklarativně přepsat či rozšířit (např. o explicitní cesty k písmům nebo dodatečné integrační kontroly).
+Všechny automaticky rozpoznané parametry lze v klientském repozitáři deklarativně přepsat nebo rozšířit pomocí konfiguračního manifestu (např. o explicitní cesty k písmům nebo dodatečné integrační kontroly).
 ]
 
 #note[Placeholder: Zde bude doplněna nová vrstevnatá dekompozice přestavěného systému DarkFactory, stavový diagram životního cyklu požadavku a deklarativní schéma konfiguračního manifestu.]
@@ -75,7 +75,7 @@
 ]
 
 #unconfirmed[
-Klíčové operační mechanismy orchestračního jádra:
+Výkonné jádro orchestrátoru zajišťuje koordinaci mezi klientským repozitářem, jazykovými modely a validační infrastrukturou. Spolehlivost a odolnost systému v nepřetržitém provozu garantují následující operační mechanismy:
 
 - *Rotace poskytovatelů LLM*: Úkoly jsou definovány nezávisle na formátu konkrétního poskytovatele. Při vyčerpání kvóty nebo výpadku API primárního modelu harness automaticky přepne na navazující model v rotačním žebříčku, což eliminuje prostoje pipeline.
 - *Deterministické ověřování změn*: Každý zásah do kódu podléhá požadovaným kontrolám v CI. Úlohy končí explicitním stavem, čímž brání zablokování větve v důsledku přeskočených kontrol.

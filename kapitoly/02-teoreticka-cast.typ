@@ -7,59 +7,66 @@
 === Úvod do správy verzí a GitHubu
 
 #unconfirmed[
-- *Proč správa verzí*: Jazykové modely generují kód na základě pravděpodobnosti a dělají chyby. Správa verzí poskytuje bezpečné prostředí, kde lze každou změnu sledovat, testovat a v případě chyby kdykoliv vrátit k funkčnímu stavu.
-- *Nástroj Git* @chacon2014: Standardní distribuovaný verzovací nástroj. Kód se ukládá do historie v podobě jednotlivých revizí (_commitů_). Agent i vývojář pracují lokálně s plnou kopií repozitáře a mohou provádět úpravy, větvení i testování nezávisle na síti.
-- *Platforma GitHub*: Webová služba postavená nad Gitem, která slouží jako centrální bod pro sdílení kódu a automatizaci:
-  - *Zadávání a sledování úkolů (Issues)*: Textové zadání požadavků, hlášení chyb a diskuse, ze kterých agent čerpá zadání.
-  - *Přehled a kontrola změn (Pull Requests)*: Rozhraní pro revizi diffu a schvalování kódu před jeho začleněním.
-  - *Automatizace (GitHub Actions)*: Běhové prostředí pro automatické spouštění testů, linterů a překladů.
-- *Praktická role v práci*: Namísto teoretických abstrakcí práce přímo využívá Git a ekosystém GitHubu jako reálný základ pro řízení autonomního vývoje.
+Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém *Git* v kombinaci s platformou *GitHub*.
+
+Klíčové komponenty infrastruktury zahrnují:
+- *Distribuovaný systém Git* @chacon2014: Ukládá kompletní historii projektu v podobě jednotlivých revizí (_commitů_). Vývojář i agent pracují s plnou lokální kopií repozitáře, což umožňuje provádět změny, přepínat větve a spouštět lokální testy zcela nezávisle na síťovém připojení.
+- *Platforma GitHub*: Slouží jako centrální bod pro sdílení kódu, týmovou koordinaci a automatizaci:
+  - *Zadávání a sledování úkolů (Issues)*: Strukturovaná textová zadání požadavků a hlášení chyb, která agentovi slouží jako výchozí specifikace úlohy.
+  - *Revize změn (Pull Requests)*: Uživatelské rozhraní pro přehledné zobrazení diffu, diskusi nad kódem a formální schválení člověkem.
+  - *Automatizace (GitHub Actions)*: Běhové prostředí pro automatické spouštění testů, linterů a překladů při každé události v repozitáři.
+
+Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním protokolem, nýbrž jako standardní přispěvatel, který plně respektuje běžné vývojářské zvyklosti a nástroje.
 ]
 
 === Větve (Branches) a izolace kódu
 
 #unconfirmed[
-- *Větve (Branches)*: Samostatné vývojové linky v Gitu odbočené ze základního kódu. Umožňují pracovat na novém úkolu odděleně od ostatních.
-- *Hlavní větev (`main`)*: Reprezentuje stabilní, otestovaný stav projektu připravený k nasazení. Do této větve nikdo (ani člověk, ani agent) nezapisuje přímo.
-- *Pracovní větev agenta*: Agent si pro každý úkol vytvoří novou samostatnou větev (např. `task/...` nebo `agent/...`):
-  - *Oddělení chyb a pokusů*: Pokusy, mezistavy ani nefunkční kód neovlivňují stabilitu hlavní větve ani práci ostatních vývojářů.
-  - *Bezpečné zahození*: Pokud se agent vydá špatným směrem nebo selže, celou větev lze smazat jedním příkazem bez následků pro projekt.
-- *Aktualizace větve*: Pokud se hlavní větev během práce posune dopředu, pracovní větev agenta se zaktualizuje (`rebase` nebo `merge`), aby se předešlo konfliktům při slučování.
+Základním bezpečnostním pravidlem při zapojení autonomních agentů do vývoje je striktní izolace rozpracovaného kódu. Stabilní kód v hlavní větvi (`main`) nesmí být nikdy přímo vystaven experimentům a chybám modelu. Agent proto veškeré úpravy provádí ve vyhrazených pracovních větvích odbočených ze základní linie projektu.
+
+Tento princip přináší následující výhody:
+- *Ochrana produkční větve*: Hlavní větev (`main`) reprezentuje stabilní, otestovaný stav připravený k nasazení. Přímé zapisování do této větve je zakázáno jak lidským vývojářům, tak autonomním agentům.
+- *Dedikovaná větev pro každý úkol*: Agent pro každé zadání dynamicky vytvoří novou samostatnou větev (např. `task/123-oprava-parseru` či `agent/feature-auth`).
+- *Izolace chyb a mezistavů*: Případné syntaktické chyby, dočasné nefunkční stavy ani neúspěšné hypotézy neovlivňují stabilitu hlavní větve ani práci ostatních vývojářů v týmu.
+- *Bezpečné zahození nezdařených běhů*: Pokud se agent dostane do slepé uličky nebo vyčerpá přidělený rozpočet kroků, celou větev lze smazat jedním příkazem bez jakýchkoliv následků pro zbytek repozitáře.
+
+Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné aktivity v repozitáři, pracovní větev agenta se musí před dokončením zaktualizovat (`git rebase` nebo `git merge`), aby byla zajištěna bezkonfliktní integrace.
 ]
 
 === Model pull requestu (PR)
 
 #unconfirmed[
-- *Pull Request (PR)*: Standardní způsob, jak na GitHubu navrhnout změny z pracovní větve k začlenění do větve hlavní (`main`).
-- *Komponenty rozhraní PR*:
-  - *Rozdíl kódu (_Diff_)*: Přehledné řádkové srovnání — zeleně přidané řádky, červeně odebrané řádky.
-  - *Popis změn*: Agent v popisu PR srozumitelně shrne, jaké změny provedl, proč je zvolil a na jaké issue reagoval.
-  - *Výsledky kontrol*: Přehled stavu automatických testů z GitHub Actions (zelená / červená).
-  - *Diskusní vlákno*: Prostor pro komentáře, připomínky a požadavky na úpravy ze strany vývojáře.
-- *Schvalovací brána člověka (Human Gate)*: PR slouží jako hlavní kontrolní bod podle principu _Human-in-the-loop_. Člověk zkontroluje navržený kód a rozhodne o jeho schválení či zamítnutí.
+Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (*Human-in-the-loop*): agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
+
+Rozhraní pull requestu integruje všechny podstatné informace na jednom místě:
+- *Řádkový diff*: Vizuální srovnání původního a nového stavu, kde jsou jasně barevně odlišeny přidané, změněné a smazané řádky.
+- *Strukturovaný souhrn změn*: Agent v popisu PR srozumitelně shrne, jaké úpravy provedl, jakou logiku zvolil a na které původní issue reagoval.
+- *Výsledky automatických kontrol*: Přehled stavu automatizovaných testů a linterů z GitHub Actions (zelený či červený indikátor).
+- *Revizní diskuse*: Možnost vývojáře přidávat komentáře k libovolnému řádku kódu, klást doplňující dotazy nebo vyžadovat přepracování konkrétních částí.
+
+Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický záměr a rozhoduje o schválení, vrácení k dopracování, či zamítnutí pull requestu.
 ]
 
 === Slučování změn (Squash and Merge)
 
 #unconfirmed[
-- *Způsoby sloučení na GitHubu*:
-  - *Klasický merge commit*: Přenese všechny jednotlivé commity z větve a vytvoří slučovací uzel.
-  - *Rebase and Merge*: Přeskládá commity z větve lineárně za sebou.
-  - *Squash and Merge*: Vezme všechny commity z pracovní větve, spojí je do jediného nového commitu a ten vloží do `main`.
-- *Význam Squash and Merge pro agenty*:
-  - *Skrytí interního šumu*: Agent při řešení úlohy často vytvoří desítky drobných commitů (opravy překlepů, dílčí pokusy po selhání testu). Tyto mezikroky nemají pro historii projektu trvalou hodnotu.
-  - *Čistá a přehledná historie*: V hlavní větvi repozitáře zůstane za každý vyřešený úkol právě jeden ucelený commit s popisem.
-  - *Jednoduchý návrat změn (`git revert`)*: Pokud by změna v budoucnu způsobila problém, lze celý úkol vrátit jediným příkazem bez nutnosti rozplétat dílčí mezikroky.
+Způsob, jakým se změny z pracovní větve začlení do větve hlavní, má zásadní dopad na dlouhodobou udržitelnost a čitelnost repozitáře. Autonomní agent při řešení úlohy obvykle postupuje iterativní metodou pokus-omyl: upraví soubor, spustí testy, odhalí překlep a provede další drobný commit. V pracovní větvi tak vzniká dlouhá sekvence pomocných a experimentálních záznamů.
+
+Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí commity a rebase je lineárně přeskládá, v agentním vývoji se jako optimální strategie uplatňuje *Squash and Merge*:
+- *Sloučení mezikroků*: Všechny commity z pracovní větve jsou spojeny do jediného nového commitu, který je vložen do `main`.
+- *Eliminace interního šumu*: Pomocné commity vzniklé při ladění testů se do hlavní větve vůbec nedostanou; historie projektu zůstává čistá a přehledná podle pravidla: jeden úkol = jeden commit.
+- *Atomický návrat změn (`git revert`)*: Pokud se v budoucnu ukáže, že začleněná úprava zanesla do produkce nečekanou vadu, lze celý úkol vrátit jediným atomickým příkazem bez nutnosti rozplétat desítky dílčích mezikroků.
 ]
 
 === Kontinuální integrace (CI a GitHub Actions)
 
 #unconfirmed[
-- *Kontinuální integrace (CI)* @humble2010: Automatizované sestavování a testování kódu při každé změně (pushnutí do větve nebo otevření pull requestu).
-- *GitHub Actions*: Nástroj přímo integrovaný v GitHubu, který spouští definované pracovní postupy (_workflows_) v izolovaných virtuálních prostředích (např. kontejnerech).
-- *Ověření funkčnosti kódu*: Samotný jazykový model kód pouze generuje na základě pravděpodobnosti; neví, zda je kód funkční. Skutečné ověření probíhá až v CI spuštěním překladače a testů.
-- *Zpětná vazba pro agenta*: Pokud krok v CI selže, chybový protokol slouží agentovi jako přesný vstup pro další iteraci opravy.
-- *Nezávislost na lokálním prostředí*: CI běží na čistém systému se stanovenými verzemi závislostí, což vylučuje chyby způsobené odlišnostmi v lokálním nastavení vývojáře.
+Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní *kontinuální integrace* (CI) @humble2010.
+
+V rámci platformy GitHub zajišťuje kontinuální integraci vestavěný nástroj *GitHub Actions*:
+- *Spouštění v čistých kontejnerech*: Každé workflow běží v nově alokovaném virtuálním prostředí se zamčenými verzemi nástrojů a závislostí, což vylučuje chyby způsobené lokálním stavem počítače vývojáře.
+- *Automatická exekuce*: Integrační pipeline se automaticky spouští při každém pushi do pracovní větve i při otevření pull requestu.
+- *Deterministická zpětná vazba pro agenta*: Pokud překlad nebo testy selžou, chybový protokol z terminálu je předán zpět do kontextu agenta, který na jeho základě provede informovanou opravu kódu.
 ]
 
 #critique[
@@ -70,15 +77,15 @@
 === Požadované kontroly (Required Checks) a ochrana větví
 
 #unconfirmed[
-- *Pravidla ochrany větví (_Branch Protection Rules_)*: Bezpečnostní nastavení GitHubu chránící větev `main` před nechtěným poškozením:
-  - Zákaz přímého pushování do hlavní větve.
-  - Zákaz mazání hlavní větve a přepisování její historie (`force push`).
-- *Požadované kontroly (_Required Checks_)*: Seznam úloh v GitHub Actions, které musí projít úspěšně (zelený stav), aby bylo technicky možné PR sloučit:
-  - *Linter a formátování*: Kontrola dodržení kódového stylu a základních syntaktických pravidel.
-  - *Typová kontrola a build*: Ověření, že kód lze bez chyb zkompilovat a typy odpovídají.
-  - *Automatické testy*: Běh jednotkových a integračních testů s definovaným očekávaným chováním.
-- *Pravidlo deterministického výsledku*: Každá kontrola musí skončit jednoznačným stavem (úspěch / selhání). Tiché přeskočení testu nesmí být považováno za splněnou podmínku.
-- *Povinné schválení člověkem*: Požadavek na explicitní schválení kódu lidským vývojářem před sloučením do produkční větve.
+K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno. GitHub za tímto účelem poskytuje pravidla ochrany větví (_Branch Protection Rules_), která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
+
+Klíčové mechanismy ochrany zahrnují:
+- *Požadované kontroly (_Required Checks_)*: Seznam úloh v GitHub Actions, které musí skončit explicitním úspěchem (zelený stav), aby bylo technicky možné pull request sloučit:
+  - *Statická analýza a linter*: Kontrola dodržení kódového stylu, odhalování mrtvého kódu a základních syntaktických prohřešků.
+  - *Typová kontrola a build*: Jistota, že kód lze bez chyb zkompilovat a že typový systém nezaznamenal nekonzistence.
+  - *Automatizované testy*: Úspěšný průchod jednotkových i integračních testů ověřujících požadované chování.
+- *Pravidlo deterministického výsledku*: Každá kontrola musí skončit jednoznačným výsledkem; tiché přeskočení testu nebo nejednoznačný stav sloučení zablokuje.
+- *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
 == Kognitivní jádro a správa kontextového okna
@@ -91,72 +98,98 @@
 === Úvod do velkých jazykových modelů
 
 #unconfirmed[
-- *Velké jazykové modely (LLM)* @vaswani2017: Architektura dekodérového transformeru (_Decoder-only_, např. řady Claude, GPT, LLaMA, DeepSeek).
-- *Stochastický autoregresivní generátor*: Model na základě zadané textové historie (kontextu) opakovaně predikuje nejpravděpodobnější následující symboly.
-- *Role v agentním inženýrství*: Model nevystupuje jako orákulum se znalostí reálného světa, nýbrž jako generátor hypotéz, kódu a strukturovaných volání nástrojů řízený promptem a kontextem.
+V agentním softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
+
+Základní principy fungování modelu zahrnují:
+- *Autoregresivní predikce*: Model zpracovává zadanou sekvenci textu a na jejím základě iterativně předpovídá nejpravděpodobnější následující symboly (tokeny).
+- *Stochastická povaha*: Vzhledem k pravděpodobnostnímu vzorkování může model na totožný vstup reagovat mírně odlišně, což vyžaduje deterministické mantinely v nadřazeném řídicím harnessu.
+
+Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
 === Tokeny, tokenizace a embedding
 
 #unconfirmed[
-- *Tokeny*: Základní diskrétní celočíselné jednotky, se kterými neuronová síť počítá (podmnožiny slov, slabiky, znaky).
-- *Tokenizér*: Deterministický algoritmus (např. Byte-Pair Encoding, BPE) převádějící vstupní text na posloupnost tokenů a naopak.
-- *Embedding*: Projekce tokenů do vícerozměrného vektorového prostoru, v němž geometrická vzdálenost odpovídá sémantické příbuznosti pojmů.
-- *Jazyková asymetrie tokenizace*: Text v češtině spotřebovává kvůli bohaté flexi a diakritice 2× až 3× více tokenů než ekvivalent v angličtině.
-  - *Inženýrské doporučení*: Vnitřní systémové prompty, technické plány i logy harnessu vést v angličtině pro minimalizaci nákladů a latence.
+Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vstupní text je nejprve deterministickým algoritmem převeden na číselné reprezentace, se kterými následně počítají maticové vrstvy neuronové sítě.
+
+Tento proces zahrnuje následující pojmy:
+- *Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).
+- *Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů.
+- *Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.
+
+Z inženýrského hlediska je proto žádoucí vést systémové prompty, technické plány i komunikaci mezi nástroji v angličtině, aby se šetřila kapacita kontextu a snížila latence inference.
 ]
 
 === Tahy a správa KV cache
 
 #unconfirmed[
-- *Tahy (_Turns_)*: Diskrétní kroky výměny informací v agentní smyčce:
-  - *Tah uživatele / prostředí (_User/Environment Turn_)*: Zadání úkolu nebo vnější událost.
-  - *Tah modelu (_Model Turn_)*: Odpověď modelu nebo emitování požadavku na nástroj.
-  - *Tah vykonání nástroje (_Tool Execution Turn_)*: Výsledek operace vrácený harnessu.
-- *KV cache (Key-Value Cache)*: Ukládání mezivýpočtů matic pozornosti klíčů a hodnot pro již zpracovanou historii tahů.
-  - *Výpočetní úspora*: Inferenční engine při novém tahu nemusí přepočítávat celou historii od začátku.
-- *Kontextové okno (_Context Window_)*: Pevně limitovaná kapacita paměti modelu. Omezeno kvadratickou složitostí mechanismu pozornosti ($O(N^2)$ vzhledem k délce sekvence $N$) a velikostí paměti GPU akcelerátorů.
+Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobíhá spojitě, nýbrž v diskrétních krocích označovaných jako *tahy* (_turns_). Každý tah představuje jednu ucelenou výměnu zprávy, na niž systém reaguje.
+
+Životní cyklus tahů a správa paměti zahrnují:
+- *Typy tahů v agentní smyčce*:
+  - *Tah uživatele či prostředí (_User Turn_)*: Nové zadání úkolu nebo vnější událost.
+  - *Tah modelu (_Model Turn_)*: Vygenerovaná odpověď nebo strukturovaný požadavek na spuštění nástroje.
+  - *Tah nástroje (_Tool Execution Turn_)*: Zpětné hlášení výsledku exekuce (výpis souboru, výstup kompilátoru).
+- *Správa KV cache (Key-Value Cache)*: Aby inferenční engine nemusel při každém novém tahu přepočítávat celou historii od začátku, ukládá mezivýpočty klíčů a hodnot matic pozornosti do paměti.
+- *Kontextové okno (_Context Window_)*: Pevně limitovaná kapacita paměti modelu. Tento strop je dán hardwarovými limity GPU akcelerátorů a kvadratickou složitostí plné pozornosti ($O(N^2)$ vzhledem k délce sekvence).
 ]
 
 === Kompakce kontextu a ztrátová komprese
 
 #unconfirmed[
-- *Kompakce historie (_Compaction_)*: Vyzvání modelu k vytvoření syntetického souhrnu dosavadního průběhu sezení pro uvolnění kapacity kontextového okna.
-- *Destruktivní ztrátová komprese*: Autoregresivní model při rekurzivním zkracování podléhá konfirmačnímu zkreslení (_confirmation bias_) a preferuje fakta odpovídající jeho vnitřním statistickým asociacím:
-  - *Vymazání deterministických detailů*: Nevratný zánik čísel řádků, signatur privátních funkcí, přesných cest v souborech a doslovných chybových hlášení kompilátoru.
-  - *Ztráta negativních omezení*: Zákazy (neměnit veřejné API, nepřidávat externí knihovny) bývají v souhrnu zevšeobecněny nebo zcela vypuštěny.
+Při rozsáhlejších úlohách se kontextové okno nevyhnutelně zaplní. V okamžiku, kdy objem historie dosáhne kritické hranice, musí řídicí harness přistoupit ke *kompakci kontextu* (_compaction_) — model je vyzván, aby dosavadní průběh sezení zkrátil do syntetického souhrnu, který nahradí starší část historie.
+
+Tento proces však představuje destruktivní ztrátovou kompresi:
+- *Ztráta deterministických detailů*: Model při rekurzivním zkracování vynechává přesná čísla řádků, signatury privátních funkcí, přesné cesty k souborům a doslovná chybová hlášení kompilátoru.
+- *Oslabení negativních pravidel*: Explicitní zákazy (např. neměnit veřejné rozhraní API) bývají v souhrnu zevšeobecněny nebo zcela vypuštěny.
+- *Konfirmační zkreslení (_Confirmation Bias_)*: Model v souhrnu upřednostňuje fakta odpovídající jeho vnitřním statistickým asociacím na úkor netriviálních specifik konkrétního projektu.
 ]
 
 === Sémantický posun (Semantic Drift)
 
 #unconfirmed[
-- *Mechanismus posunu*: Kaskádové kumulování drobných zkreslení a halucinací při vícenásobné rekurzivní kompresi ($S_(k+1) = f(S_k, Delta_k)$).
-- *Efekt tiché pošty*: Drobné nepřesnosti z kola $k$ jsou v kole $k+1$ přijaty jako nezvratná historická fakta.
-- *Důsledek pro repozitář*: Po několika cyklech komprese se vnitřní model reality agenta zcela rozejde se skutečným stavem zdrojového kódu v souborovém systému.
+Opakovaná ztrátová komprese vede k závažné patologii známé jako *sémantický posun* (_Semantic Drift_). Pokud je historie sezení v dlouhém vývojovém běhu shrnována vícekrát po sobě, vzniká řetězec ztrátových transformací ($S_(k+1) = f(S_k, Delta_k)$).
+
+Rizika sémantického posunu spočívají v těchto jevech:
+- *Efekt tiché pošty*: Drobné zkreslení či halucinace vzniklá v kole $k$ je v kole $k+1$ přijata jako nezpochybnitelný historický fakt.
+- *Divergence modelu od reality*: Po několika cyklech komprese se vnitřní model reality agenta zcela rozejde se skutečným stavem zdrojového kódu v souborovém systému.
+
+Výsledkem je stav, kdy agent sebevědomě reportuje vyřešení úkolu, ačkoliv reálný kód zůstává v nefunkčním či neúplném stavu.
 ]
 
 === Alternativní paměťové architektury (RAG a stavový graf)
 
 #unconfirmed[
-- *Hierarchická epizodická paměť (RAG)*: Ukládání doslovné historie tahů a výpisů nástrojů do externí databáze; selektivní injekce pouze bezprostředně relevantních fragmentů do aktivního okna.
-- *Persistentní graf stavu projektu (_Project State Graph_)*: Udržování explicitního strukturovaného stavu repozitáře (změněné soubory, otevřené úkoly, výsledky testů, invarianty) mimo kontextové okno.
+Aby se předešlo ztrátě informací způsobené kompakcí, moderní agentní architektury přesouvají část paměti mimo samotné kontextové okno. Namísto spoléhání se na jediný lineární textový kontext se uplatňují strukturovaná externí úložiště.
+
+K hlavním přístupům patří:
+- *Hierarchická epizodická paměť (RAG)*: Ukládání doslovných protokolů nástrojů a historie úloh do externí databáze; do kontextu se selektivně injektují pouze bezprostředně relevantní fragmenty.
+- *Persistentní graf stavu projektu (_Project State Graph_)*: Udržování explicitního, strukturovaného přehledu o stavu repozitáře (seznam modifikovaných souborů, otevřené úkoly, výsledky testů a platné invarianty) mimo kontextové okno.
+
+Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti na ztrátovém rekurzivním shrnování.
 ]
 
 === Degradace pozornosti (Context Rot)
 
 #unconfirmed[
-- *Context Rot*: Degradace schopnosti modelu rovnoměrně využívat informace v dlouhém kontextovém okně (jev _Lost in the Middle_ @liu2024).
-- *Multi-Needle Reasoning*: Schopnost současně nalézt a logicky propojit několik na sobě závislých faktů napříč soubory; s rostoucí délkou kontextu prudce klesá.
-- *Důsledek pro vývoj*: Ačkoliv model deklaruje podporu stovek tisíc tokenů, při komplexním křížovém refaktoringu ve velkém kontextu často přehlédne klíčové souvislosti.
+Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. Tento jev se označuje jako *degradace pozornosti* (_Context Rot_).
+
+V praxi se projevuje dvěma hlavními mechanismy:
+- *Lost in the Middle* @liu2024: Pozornostní vrstvy transformeru spolehlivě vnímají informace na samém začátku a konci okna, zatímco fakta umístěná uprostřed dlouhého textu jsou často přehlížena.
+- *Multi-Needle Reasoning*: Schopnost logicky provázat několik na sobě závislých informací rozptýlených napříč různými soubory; s rostoucí délkou kontextu tato schopnost prudce klesá.
+
+Při komplexním křížovém refaktoringu ve velkém kontextu proto model často přehlédne klíčové souvislosti, které by v menším a čistším okně zpracoval bez potíží.
 ]
 
 === Promptové inženýrství a negativní instrukce
 
 #unconfirmed[
-- *Systémový prompt*: Základní direktiva definující identitu agenta, dostupné nástroje a mantinely (formát commitů, zákaz destruktivních příkazů) @anthropic-prompt.
-- *Few-shot a Chain-of-Thought (CoT)*: Vzorové ukázky řešení a vedení modelu k explicitní formulaci mezikroků uvažování před samotným zápisem kódu.
-- *Úskalí negativních instrukcí*: Modely často porušují zákazy formulované negací (např. „nemazať existující testy“), protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázané pojmy dříve, než autoregresní proces uplatní logický operátor negace.
-  - *Inženýrské řešení*: Afirmativní formulace pravidel (pozitivní vymezení povolených mantinelů) kombinovaná s deterministickou ochranou v harnessu (připojení chráněných souborů pouze pro čtení, blokace v CI).
+Základní chování agenta vymezuje *systémový prompt* @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely. Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
+
+Příčiny a inženýrská řešení tohoto jevu:
+- *Úskalí negativních instrukcí*: Zákazy formulované negací (např. „nemazat existující testy“) modely často porušují, protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázaný pojem dříve, než autoregresní proces uplatní logický operátor negace.
+- *Afirmativní formulace*: Pravidla je nutné formulovat pozitivně — namísto výčtu zákazů vymezit přesný postup a povolené mantinely chování.
+- *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
 == Architektura řídicího harnessu a orchestrace
@@ -164,35 +197,42 @@
 === Úvod do řídicích harnessů
 
 #unconfirmed[
-- *Vymezení pojmu harness*: Řídicí a dozorčí program obklopující inferenční jádro. Samotné inferenční jádro provádí pouze maticové násobení vah sítě; veškerou orchestraci řídí harness.
-- *Funkce harnessu*:
-  - Inicializace a správa sezení.
-  - Konstrukce a dynamická injekce promptu.
-  - Zajištění bezpečného běhu a izolace nástrojů.
-  - Řízení stavových přechodů a vynucování bezpečnostních pojistek.
+V terminologii agentního inženýrství označuje pojem *harness* (řídicí postroj) aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu. Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
+
+Mezi klíčové funkce řídicího harnessu patří:
+- *Inicializace a správa sezení*: Sestavení systémového promptu, dynamická injekce kontextu repozitáře a sledování spotřeby tokenů.
+- *Běhové prostředí nástrojů*: Bezpečné spouštění příkazů v operačním systému a zpětné předávání výstupů modelu.
+- *Řízení stavových přechodů a vynucování mantinelů*: Dohled nad dodržováním procesních pravidel, zastavení zacyklených běhů a vynucování lidských schvalovacích bran.
+
+Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu, nikoliv pouze na samotném jazykovém modelu.
 ]
 
 === Autonomní agent vs. konverzační chatbot
 
 #unconfirmed[
+Rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.
+
+Srovnání obou přístupů:
 - *Konverzační chatbot*:
-  - Generuje pasivní textové odpovědi v uzavřeném rozhraní.
-  - Nemá přímý přístup k souborovému systému ani k operačnímu systému.
-  - Uživatel musí navržený kód manuálně zkopírovat, spustit a otestovat.
+  - Reaguje pouze na přímé textové výzvy v uzavřeném okně chatu.
+  - Nemá přímý přístup k souborovému systému ani k nástrojům operačního systému.
+  - Uživatel musí navržený kód ručně zkopírovat, vložit do projektu a otestovat.
 - *Autonomní agent*:
-  - Vybaven sadou výkonných nástrojů (_tools_).
-  - Aktivně čte repozitář, modifikuje soubory, spouští testy a interpretuje jejich výstupy.
-  - Uzavřen v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu prostředí.
+  - Je vybaven sadou výkonných nástrojů (_tools_) pro práci s repozitářem.
+  - Aktivně prozkoumává soubory, modifikuje zdrojový kód, spouští testy a interpretuje jejich návratové kódy.
+  - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
 ]
 
 === Prováděcí cyklus ReAct
 
 #unconfirmed[
-- *ReAct smyčka (_Reasoning + Acting_)* @yao2022: Čtyřfázový prováděcí cyklus znázorněný na @fig-react-loop:
-  1. *Rozvaha (_Thought_)*: Analýza aktuálního stavu kontextu modelem a formulace nejbližšího záměru.
-  2. *Volání nástroje (_Tool Call_)*: Emitování strukturovaného požadavku na provedení konkrétní akce.
-  3. *Vykonání a pozorování (_Observation_)*: Bezpečný běh akce v harnessu a vložení výstupu do kontextu.
-  4. *Navazující iterace*: Předložení aktualizovaného kontextu modelu v dalším tahu.
+Základním operačním vzorem autonomního agenta je prováděcí smyčka *ReAct* (_Reasoning + Acting_) @yao2022. Tento vzor propojuje uvažování modelu s přímým vykonáváním akcí a interpretací jejich výsledků.
+
+Prováděcí cyklus sestává ze čtyř navazujících fází znázorněných na @fig-react-loop:
+1. *Rozvaha (_Thought_)*: Model vyhodnotí aktuální stav kontextu a formuluje svůj nejbližší záměr.
+2. *Volání nástroje (_Tool Call_)*: Emitování strukturovaného požadavku na provedení konkrétní akce s určenými parametry.
+3. *Vykonání a pozorování (_Observation_)*: Harness bezpečně provede akci v systému a výstup (výpis souboru či chybovou zprávu) vloží zpět do kontextu.
+4. *Navazující iterace*: Model v dalším tahu analyzuje získanou odezvu a rozhoduje o navazujícím kroku.
 ]
 
 #figure(
@@ -203,8 +243,11 @@
 === Běhové prostředí nástrojů a pískoviště (Sandbox)
 
 #unconfirmed[
-- *Strukturované volání nástrojů (_Tool / Function Calling_)*: Validace vstupů a výstupů proti JSON schématům. Spolehlivé pro atomické operace, ale nese tokenovou režii schémat.
-- *Přímé spouštění kódu (_Code Execution_)*: Spouštění generovaných skriptů v sandboxu. Maximální flexibilita, avšak vyžaduje striktní bezpečnostní izolaci.
+Aby mohl agent provádět reálné inženýrské operace, musí mu řídicí harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
+
+V praxi se uplatňují dva základní modely:
+- *Strukturované volání nástrojů (_Tool / Function Calling_)*: Vstupy a výstupy jsou striktně validovány vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
+- *Přímé spouštění kódu (_Code Execution_)*: Agent generuje přímo skripty (bash, Python), které harness spouští v izolovaném terminálu. Poskytuje maximální flexibilitu pro softwarový vývoj, avšak vyžaduje nekompromisní bezpečnostní izolaci.
 ]
 
 #critique[
@@ -214,45 +257,57 @@
 === Patologie divergence: perseverace a oscilace
 
 #unconfirmed[
-- *Perseverace a zacyklení*: Opakované emitování identického volání nástroje se stejnými argumenty (např. čtení neexistujícího souboru) i po obdržení chybové zprávy. V kontextu vzniká pravděpodobnostní atraktor, který nutí model k opakování chybného vzorce.
-- *Oscilace a těkání (_Thrashing_)*: Střídavé přepínání mezi dvěma protichůdnými zásahy (úprava modulu A rozbije modul B a následná oprava B rozbije A).
-- *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i rozpočtu na volání API.
+Ponechání jazykového modelu v neomezené prováděcí smyčce vede k předvídatelným selháním. V důsledku autoregresivní povahy se v kontextu snadno vytvoří pravděpodobnostní atraktor, který model uvězní v neproduktivním cyklu.
+
+Mezi typické patologie patří:
+- *Perseverace a zacyklení*: Opakované volání identického nástroje se stejnými neplatnými argumenty (např. čtení neexistujícího souboru) i po obdržení chybové zprávy.
+- *Oscilace a těkání (_Thrashing_)*: Střídavé přepínání mezi dvěma protichůdnými zásahy (úprava modulu A rozbije modul B a následná oprava B rozbije modul A).
+- *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
 === Dovednosti (Skills)
 
 #unconfirmed[
-- *Koncept dovedností (_Skills_)*: Adresáře instrukcí a referencí se souborem `SKILL.md` (YAML frontmatter).
-- *Efektivita kontextu*: Do výchozího systémového promptu se načítají pouze stručná metadata (název a popis role); detailní návod a skripty se načítají dynamicky až při explicitním vyvolání nástroje.
-- *Skripty a záchytné body (_Scripts & Hooks_)*: Deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
+Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (_Skills_).
+
+Architektura dovedností staví na následujících principech:
+- *Definiční soubor `SKILL.md`*: Dovednost tvoří adresář obsahující definiční soubor se strukturovanou hlavičkou (YAML frontmatter vymezující název a popis role) a detailním návodem k použití.
+- *Dynamické načítání pro úsporu kontextu*: Do výchozího promptu se vloží pouze stručný přehled dostupných dovedností. Kompletní instrukce a skripty se do kontextu načtou až v okamžiku, kdy agent danou dovednost explicitně vyvolá.
+- *Skripty a záchytné body (_Scripts & Hooks_)*: Dovednosti mohou obsahovat deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
 ]
 
 === Model Context Protocol (MCP servery)
 
 #unconfirmed[
-- *Model Context Protocol (MCP)* @anthropic-mcp: Otevřený standard propojující jazykové modely s externími nástroji a datovými zdroji.
-- *Protokolové rozhraní*: Komunikace probíhá přes protokol JSON-RPC (prostřednictvím `stdio` nebo `Server-Sent Events / SSE`).
-- *Architektonické oddělení*: Striktní oddělení běhového prostředí agenta od implementace nástrojů. MCP servery fungují jako samostatné, znovupoužitelné komponenty běžící mimo jádro harnessu.
+Pro sjednocení rozhraní mezi jazykovými modely a externími nástroji či datovými zdroji vznikl otevřený standard *Model Context Protocol (MCP)* @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP univerzální protokol.
+
+Základní vlastnosti protokolu MCP:
+- *Protokolové rozhraní*: Komunikace probíhá prostřednictvím standardu JSON-RPC (přes standardní vstup/výstup `stdio` nebo proud událostí `Server-Sent Events / SSE`).
+- *Architektonické oddělení*: Implementace nástrojů běží jako samostatný proces mimo jádro harnessu. MCP servery fungují jako znovupoužitelné komponenty, které lze snadno sdílet napříč různými agenty a projekty.
 ]
 
 === Škálování: hierarchičtí subagenti a DAG workflow
 
 #unconfirmed[
-- *Subagenti (_Subagents_)*: Hierarchická dekompozice úlohy orchestrátorem na specializované agenty (průzkumník repozitáře, plánovač, kódovací dělník). Kontext subagenta je po dokončení zahozen a orchestrátoru je předán pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
-- *Pracovní postupy jako grafy (DAG / Graph Engineering)*: Formalizace fází životního cyklu jako orientovaného acyklického grafu (detekce $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
+Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
+
+Klíčové přístupy ke škálování zahrnují:
+- *Subagenti (_Subagents_)*: Hlavní orchestrátor dekomponuje rozsáhlou úlohu a deleguje dílčí kroky na specializované agenty (např. průzkumník repozitáře, plánovač, kódovací dělník). Po dokončení je kontext subagenta zahozen a orchestrátor obdrží pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
+- *Pracovní postupy jako grafy (DAG / Graph Engineering)*: Životní cyklus požadavku je modelován jako orientovaný acyklický graf (příjem $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
 ]
 
 === Zapojení člověka do smyčky (Human-in-the-loop)
 
 #unconfirmed[
-- *Princip Human-in-the-loop*: Cílem není nekritická plná autonomie, nýbrž automatizace rutinních a mechanických kroků v kombinaci s lidským rozhodováním tam, kde je změna nevratná nebo kde chybí jednoznačné algoritmické měřítko správnosti.
-- *Lidské schvalovací brány (_Human Gates_)*: Formální procesní uzly, v nichž se automatický běh pozastaví a vyčká na autorizaci operátora.
-  - *Dvoufázové schvalování*:
-    - *1. brána (Záměr a plán)*: Člověk autorizuje technický plán a rozpad požadavku dříve, než agent začne modifikovat kód.
-    - *2. brána (Sémantická revize)*: Člověk provádí finální kontrolu diffu v pull requestu před jeho začleněním do hlavní větve.
-  - *Prevence únavy z revizí (_Review Fatigue_)*: Vyvážená frekvence kontrol — zamezení mikromanagementu na úrovni jednotlivých souborů při zachování kontroly nad celkovým architektonickým směrem.
+Základním principem navrženého řešení není nekritická plná autonomie, nýbrž efektivní kooperace člověka a stroje. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
+
+Řízení lidského dohledu staví na těchto pilířích:
+- *Lidské schvalovací brány (_Human Gates_)*: Formální procesní uzly, v nichž se automatický běh pozastaví a vyčká na autorizaci operátora:
+  - *1. brána (Záměr a plán)*: Člověk autorizuje technický plán a rozpad požadavku dříve, než agent začne modifikovat kód v souborech.
+  - *2. brána (Sémantická revize)*: Člověk provádí finální kontrolu diffu v pull requestu před jeho začleněním do hlavní větve.
+- *Prevence únavy z revizí (_Review Fatigue_)*: Vyvážená frekvence kontrol — zamezení mikromanagementu na úrovni jednotlivých souborů při zachování kontroly nad celkovým architektonickým směrem.
 - *Dohledatelnost původního zadání*: Trvalé uchovávání doslovného znění požadavku (GitHub Issue) bez ztrátových parafrází modelem, což brání vymizení okrajových podmínek v průběhu vývoje.
-- *Transparentnost selhání a deterministická eskalace*: Zákaz tichého pohlcování chyb či halucinovaných omluv při selhání. Při vyčerpání rozpočtu tahů nebo selhání testů harness vygeneruje strukturovaný diagnostický incident (diff, chybové hlášení, stav kontextu) a předá jej vývojáři k manuálnímu zásahu.
+- *Transparentnost selhání a deterministická eskalace*: Zákaz tichého pohlcování chyb či halucinovaných omluv při selhání. Při vyčerpání rozpočtu nebo selhání testů harness vygeneruje strukturovaný diagnostický incident (diff, chybové hlášení, stav kontextu) a předá jej vývojáři k manuálnímu zásahu.
 ]
 
 #critique[

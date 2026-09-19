@@ -5,10 +5,13 @@
 == Motivace a vymezení problému
 
 #unconfirmed[
-- *Současný stav automatizace*: Sestavení programu, běh testů, statická analýza i nasazení do produkce jsou dnes plně automatizovány stroji. Úzké hrdlo procesu tvoří samotná modifikace zdrojového kódu — časová prodleva mezi zadáním požadavku a vytvořením otestované změny.
-- *Koncept temné továrny (_Dark Factory_)*: Průmyslový model plně automatizovaného provozu běžícího bez stálé lidské obsluhy (není nutné svítit). Cílem není vytlačení člověka (inženýr a konstruktér určují záměr a specifikaci), nýbrž úplná eliminace člověka z mechanických, opakujících se úkonů.
-- *Limity stávajících nástrojů na bázi LLM*: Většina stávajících řešení (chatovací asistenti, doplňování kódu) řeší pouze izolovaný krok — návrh fragmentu kódu. Chybí ucelená integrace do vývojového cyklu: kontextové zasazení, exekuce v repozitáři, řešení syntaktických regresí a řízení deterministických záruk.
-- *Ústřední inženýrská otázka*: Nezkoumáme triviální otázku, zda jazykový model dokáže napsat fragment kódu, nýbrž jaká kontrolní architektura (*harness*) musí model obklopovat, aby jeho výstupům bylo možné v produkčním repozitáři spolehlivě důvěřovat.
+V moderním softwarovém inženýrství dosáhla automatizace vysokého stupně zralosti. Sestavení zdrojových kódů, běh testovacích sad, statická analýza i nasazování do produkce probíhají běžně bez nutnosti lidského zásahu. Hlavním úzkým hrdlem celého vývojového procesu tak zůstává samotná tvorba a modifikace zdrojového kódu — časová prodleva mezi zadáním nového požadavku v podobě úkolu či hlášení chyby a vytvořením otestované, bezpečně začlenitelné změny.
+
+Inspirací pro překonání tohoto omezení je průmyslový koncept *temné továrny* (_Dark Factory_) — plně automatizovaného výrobního provozu, který funguje samostatně bez nutnosti stálé přítomnosti lidské obsluhy. Cílem tohoto přístupu není vytlačení lidského inženýra, nýbrž posun jeho role: člověk definuje záměr, architekturu a funkční specifikaci, zatímco mechanické, rutinní a opakující se úkony přebírají autonomní systémy.
+
+Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntézy kódu, avšak stávající nástroje vykazují zásadní limity. Většina současných řešení (konverzační asistenti a doplňování kódu v editoru) řeší pouze izolovaný krok v podobě návrhu textového fragmentu. Chybí jim hlubší integrace do vývojového cyklu repozitáře: přímá práce se souborovým systémem, schopnost interpretovat výstupy překladače, iterativně odstraňovat syntaktické regrese a respektovat deterministická pravidla projektu.
+
+Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — označovaná jako *řídicí harness* — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
 ]
 
 #note[
