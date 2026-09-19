@@ -1,5 +1,8 @@
 # df agent harness
 
+> **Architecture convergence notice — 2026-09-19.** This directory documents the current migration implementation, not the final package architecture. ADR-0017 and Requests #420/#421 replace the final monolithic `@darkfactory/harness` boundary with the root Bun workspace (`protocol/core/capability/github/keychain/auth/docs/cli/web`) plus first-class capabilities. Preserve useful behavior/tests here during recovery, but move it into the final owning package/capability rather than treating this directory structure as normative. Credential ownership converges into `@darkfactory/keychain`; browser login into `@darkfactory/auth`. See `PRD.md` and `PLAN.md`.
+
+
 `df` is a Bun CLI around pi's coding-agent SDK. It provides durable multi-turn sessions,
 pi's `read`, `write`, `edit`, and `bash` tools, deterministic tool policy, live model
 catalogs, and ordered account/provider failover.
