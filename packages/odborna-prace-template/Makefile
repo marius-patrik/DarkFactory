@@ -7,7 +7,7 @@ OUT := /tmp/odborna-prace-template-smoke.pdf
 ci: check
 
 check:
-	$(TYPST) compile $(SMOKE) $(OUT)
+	$(TYPST) compile --root . $(SMOKE) $(OUT)
 	@test -s $(OUT)
 	@rm -f $(OUT)
 	@echo "ok: internal Typst package smoke test"
