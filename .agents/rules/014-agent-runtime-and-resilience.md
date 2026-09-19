@@ -6,54 +6,35 @@ applies_to: [agents, automation]
 activation: always
 owners: [rotation]
 ---
-# Rule 14 — Harness-agnostic agent runtime and conversational lifecycle
+# Rule 14 — Capability-driven agent runtime and resilience
 
 ## Requirement
 
-An autonomous AI agent runs containerized in GitHub Actions (`docker/Dockerfile.agent`). It is
-**harness-agnostic**: no pipeline code knows which coding-agent CLI is executing.
+DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.
 
-- **Harness registry**: `.github/scripts/harnesses.py` declares each CLI — Antigravity (`agy`),
-  Claude Code (`claude`), OpenAI Codex (`codex`), Kimi (`kimi`), Grok (`grok`), Cursor
-  (`cursor-agent`), and opencode (`opencode`) — as a binary, an argv template, the credentials it
-  accepts, and its quota pools. Adding a harness is a data change; changing one is a configuration
-  change.
-- **No hardcoded invocation**: every field is overridable at runtime through the
-  `AGENT_HARNESS_CONFIG` repository variable, and the order through `AGENT_HARNESS_CHAIN`, so an
-  upstream flag rename never requires a code change or a container rebuild.
-- **Graceful degradation**: harnesses whose binary is absent from `PATH`, or whose credentials are
-  unset, are skipped rather than failed. An image carrying four of seven CLIs is a working image
-  with a shorter fallback chain.
-- **Resilience**: exhaustion moves to the next account, then the next pool, then the next harness.
-  Only when every account of every pool of every harness is spent does the agent checkpoint and
-  block. Authentication uses repository secrets only; the account being run is named in the log, its
-  credential never is.
-- **Conversational lifecycle**: incoming issues are auto-classified, the agent answers feedback and
-  executes adjustments on Request issues and pull requests, bots are ignored to prevent
-  self-reply loops, and on plan approval the agent opens a bot-authored Draft PR and self-reviews it
-  in separate runs: each review run posts all findings and dispatches a fix run, which dispatches
-  the next review, until a review finds nothing (identical findings twice block the PR). On quota
-  exhaustion the agent saves a checkpoint, moves
-  the item to `Blocked`, comments the resume instructions, and exits cleanly.
+- Core owns execution, routing primitives, persistence/resume and capability loading.
+- Agentic/product behaviors are versioned capabilities.
+- One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.
+- Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.
+- Provider/account/model selection respects sensitivity, data-collection policy, capability requirements, quotas and capability tiers.
+- Exhaustion/failure moves through the configured eligible failover chain without repeating deterministic effects.
+- Every logical agent stage has one bounded elapsed-time budget across model failover and tools.
+- Natural model stop is accepted; mutation truth comes from observed effects.
+- Quota/provider interruption checkpoints durable state and resumes without duplicating completed effects.
+- CI agent execution remains containerizable/non-root.
 
 ## Rationale
 
-Outputs must be classified by their real outcome, not by exit code, and no provider's short-term
-quota may idly sleep while an unused account still has capacity.
+The runtime should be resilient and harness-portable without duplicating product behavior for each external agent implementation.
 
 ## Enforcement
 
-- `docker/Dockerfile.agent` image; `.github/scripts/harnesses.py` registry.
-- Runner/quota and review-cap tests in `tests/test_agent_runner.py`.
-- PRD section 7 states runtime and continuity outcomes.
+Core/router/runtime tests plus capability adapter tests and live df-only acceptance.
 
 ## Exceptions
 
-None.
+Legacy Python invocation exists only during the controlled pre-#359 migration and is not an extension target.
 
 ## Change control
 
-Owner is `rotation` (outcome classification, cross-provider handoff, repository-variable quota
-state, scheduled resume). Provider, model, and account details are manifest declarations, not rule
-text. Checkpoint filenames and concrete mechanics are operational details, not product
-requirements.
+Provider/model/account data lives in final configuration/keychain/catalog owners; this rule defines runtime behavior only.
