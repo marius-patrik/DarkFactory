@@ -35,10 +35,10 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "Detection finds typst.toml on its own. All normal/review and cs/en/merged PDFs use the same thesis() renderer through main.typ. The commands use the repository Makefile because fonts and the six-output matrix are repository-specific; formatting remains off because typstyle would reflow hand-set Czech typography.",
+    "$comment": "Detection finds typst.toml on its own. All normal/review and cs/en/merged PDFs use the same thesis() renderer through main.typ. CI and release both run the six-output Makefile matrix so the paper artifact exists for pipeline upload; formatting remains off because typstyle would reflow hand-set Czech typography.",
     "testing": {
       "typst": {
-        "command": "make check"
+        "command": "make all"
       }
     },
     "release": {
