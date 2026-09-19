@@ -18,7 +18,7 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
 		let key: string | undefined;
 		try {
-			key = (await readFile(join(home, "vault.key"), "utf8")).trim();
+			key = (await readFile(join(home, "vault-key.df"), "utf8")).trim();
 		} catch {
 			// Fall back to keychain helper if file not present
 			try {
@@ -266,7 +266,7 @@ export class FileCredentialStore {
 	) {
 		this.home = home;
 		this.path = join(home, "credentials.df");
-		this.lockPath = `${this.path}.lock`;
+		this.lockPath = `${this.path}.lock.df`;
 	}
 
 	private async load(): Promise<CredentialFile> {
@@ -297,7 +297,7 @@ export class FileCredentialStore {
 	private async save(file: CredentialFile, options?: AuthOperationOptions): Promise<void> {
 		throwIfAborted(options);
 		await mkdir(dirname(this.path), { recursive: true });
-		const temporary = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+		const temporary = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp.df`;
 		try {
 			await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 			throwIfAborted(options);
