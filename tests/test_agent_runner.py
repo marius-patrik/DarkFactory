@@ -1,5 +1,6 @@
 """Unit tests for the autonomous agent runner's pure helpers."""
 
+import inspect
 import json
 from pathlib import Path
 import os
@@ -24,6 +25,27 @@ from agent_runner import (
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+@pytest.mark.parametrize(
+    ("function_name", "expected_kinds"),
+    [
+        ("handle_interpret", ("classify",)),
+        ("handle_plan", ("plan",)),
+        ("handle_respond", ("chat",)),
+        ("handle_implement", ("implement", "fix")),
+        ("run_pr_feedback_fix", ("fix",)),
+        ("run_self_review_iteration", ("review",)),
+        ("run_self_review_fix", ("fix",)),
+        ("handle_plan_alignment", ("review",)),
+    ],
+)
+def test_governed_stage_declares_existing_task_kind(function_name: str, expected_kinds: tuple[str, ...]):
+    """Every governed bootstrap stage declares its semantic kind at the df boundary."""
+    source = inspect.getsource(getattr(agent_runner, function_name))
+    assert source.count("run_agent_prompt(") == len(expected_kinds)
+    for kind in expected_kinds:
+        assert source.count(f'kind="{kind}"') == 1
 
 
 @pytest.mark.parametrize(
