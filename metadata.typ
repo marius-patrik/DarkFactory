@@ -2,7 +2,7 @@
 //  Metadata práce.
 // ─────────────────────────────────────────────────────────────
 
-#import "templates/registry.typ": draft, added, unconfirmed, confirmed
+#import "templates/registry.typ": draft, added, unconfirmed, accepted, finalized
 
 #let meta = (
   // Oficiální školní varianta zachovává současný název.
@@ -22,7 +22,7 @@
   mesto: "Hradci Králové",
   rok: 2026,
 
-  anotace: confirmed[
+  anotace: accepted[
     Tato odborná práce se zabývá principy agentního inženýrství (_agentic engineering_)
     a architekturou řídicích harnessů pro automatizovaný vývoj softwaru. Praktickým
     přínosem práce je návrh a implementace systému DarkFactory — agentního harnessu
@@ -34,7 +34,7 @@
     v nekonečných cyklech, správu kontextu bez sémantického posunu a především
     kontinuální zapojení člověka formou schvalovacích bran (_Human-in-the-loop_).
   ],
-  abstract: confirmed[
+  abstract: accepted[
     This thesis explores the foundational principles of agentic engineering and harness
     architecture for automated software development. The practical contribution of the
     work is the design and implementation of DarkFactory — an agentic harness installable
