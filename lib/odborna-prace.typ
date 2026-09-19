@@ -103,10 +103,11 @@
 #let ai = added
 
 // Žluté zvýraznění pro neověřený text konceptu (draft / unconfirmed)
+// V ne-revizní (raw) verzi se neověřený text zcela vynechává (none)
 #let draft(body) = context if review-state.get() {
   highlight(fill: rgb("fef08a"))[#body]
 } else {
-  body
+  none
 }
 #let unconfirmed = draft
 
@@ -149,7 +150,7 @@
   v(1fr)
 
   // Nadpis se nedělí na slabiky — dělení slov v názvu práce působí nedbale.
-  text(size: 26pt, weight: "bold", hyphenate: false, meta.nazev)
+  text(size: 26pt, weight: "bold", hyphenate: false, confirmed(meta.nazev))
 
   if meta.at("podnazev", default: none) != none {
     v(0.4cm)
@@ -179,10 +180,10 @@
 }
 
 #let prohlaseni(meta) = {
-  nadpis-bez-cisla[Prohlášení]
+  nadpis-bez-cisla[#confirmed[Prohlášení]]
 
   let zkratka = meta.at("skola-zkratka", default: meta.skola)
-  [
+  confirmed[
     Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval/a
     samostatně pod dohledem vedoucího uvedeného na první straně. Všechny
     použité zdroje jsou uvedeny v seznamu zdrojů a informace z nich získané
@@ -207,17 +208,17 @@
 }
 
 #let anotace-strana(meta) = {
-  nadpis-bez-cisla[Anotace]
+  nadpis-bez-cisla[#confirmed[Anotace]]
   meta.anotace
 
-  nadpis-bez-cisla[Klíčová slova]
-  meta.klicova-slova.join(", ")
+  nadpis-bez-cisla[#confirmed[Klíčová slova]]
+  confirmed(meta.klicova-slova.join(", "))
 
-  nadpis-bez-cisla[Annotation]
+  nadpis-bez-cisla[#confirmed[Annotation]]
   meta.abstract
 
-  nadpis-bez-cisla[Keywords]
-  meta.keywords.join(", ")
+  nadpis-bez-cisla[#confirmed[Keywords]]
+  confirmed(meta.keywords.join(", "))
 
   pagebreak()
 }
@@ -351,7 +352,7 @@
 #let prilohy(body) = {
   pagebreak(weak: true)
   // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
-  nadpis-bez-cisla[Seznam příloh]
+  nadpis-bez-cisla[#confirmed[Seznam příloh]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(supplement: [Příloha]))

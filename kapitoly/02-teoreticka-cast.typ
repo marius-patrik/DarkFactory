@@ -1,6 +1,6 @@
 #import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
-= Teoretická část
+= #confirmed[Teoretická část]
 
 == #confirmed[Git a GitHub (Správa verzí)]
 

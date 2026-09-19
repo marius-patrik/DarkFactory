@@ -1,6 +1,6 @@
 #import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
-= Praktická část
+= #confirmed[Praktická část]
 
 == Cíl a rozsah systému DarkFactory
 

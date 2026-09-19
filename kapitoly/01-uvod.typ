@@ -1,8 +1,8 @@
 #import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
-= Úvod
+= #confirmed[Úvod]
 
-== Motivace a vymezení problému
+== #confirmed[Motivace a vymezení problému]
 
 #unconfirmed[
 V moderním softwarovém inženýrství dosáhla automatizace vysokého stupně zralosti. Sestavení zdrojových kódů, běh testovacích sad, statická analýza i nasazování do produkce probíhají běžně bez nutnosti lidského zásahu. Hlavním úzkým hrdlem celého vývojového procesu tak zůstává samotná tvorba a modifikace zdrojového kódu — časová prodleva mezi zadáním nového požadavku v podobě úkolu či hlášení chyby a vytvořením otestované, bezpečně začlenitelné změny.
@@ -19,7 +19,7 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
   Doporučujeme doplnit srovnávací diagram analogie mezi fyzickou temnou továrnou (materiál $arrow$ montážní linka $arrow$ kontrola jakosti $arrow$ expedice) a agentním vývojem softwaru (GitHub Issue $arrow$ agentní harness $arrow$ CI validace $arrow$ PR/Release). Vizuální metafora výrazně zlepší srozumitelnost pro komisi.
 ]
 
-== Cíl práce a výzkumné otázky
+== #confirmed[Cíl práce a výzkumné otázky]
 
 #unconfirmed[
 *Hlavní cíl:*
@@ -42,7 +42,7 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
   Otázka VO1 je formulována binárně („Lze vývojový proces strukturovat...“), což svádí k tautologické odpovědi. Rigorózní oponent bude žádat empirické vymezení: Jaké procento rutinních úloh (např. oprava chyby se selhávajícím testem vs. komplexní refaktoring) harness reálně odbaví bez ručního zásahu do kódu? Doporučujeme otázku v obhajobě doplnit o kritérium mezní složitosti úkolu a míry redukce kognitivní zátěže člověka.
 ]
 
-== Metodika práce
+== #confirmed[Metodika práce]
 
 #unconfirmed[
 Práce má teoreticko-architektonický a inženýrský charakter. Postup sleduje strukturu inženýrského cyklu:

@@ -1,6 +1,6 @@
 #import "../lib/odborna-prace.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note
 
-= Výsledky a diskuse
+= #confirmed[Výsledky a diskuse]
 
 #blue-note[
   *Metodické vymezení výsledků a diskuse:*
