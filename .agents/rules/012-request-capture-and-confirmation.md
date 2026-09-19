@@ -6,36 +6,29 @@ applies_to: [agents, automation]
 activation: always
 owners: [merge-gates]
 ---
-# Rule 12 — User request decomposition, verbatim prompting, and confirmation gate
+# Rule 12 — Verbatim Request capture and Planning gate
 
 ## Requirement
 
-Every incoming user prompt or task MUST immediately be converted into one or more tracked GitHub
-issues labeled `Request` before any planning, branching, or code changes begin.
+Every incoming governed task MUST be represented by one or more tracked GitHub Requests before implementation.
 
-- **Issue Template**: Use `.github/ISSUE_TEMPLATE/request.yml` for structured request filing.
-- **Decomposition**: A single user message containing multiple distinct tasks MUST be decomposed
-  into multiple focused `Request` issues.
-- **Verbatim Wording**: Each `Request` issue body MUST contain the exact, verbatim wording of the
-  user request.
-- **Interpretation Section**: Below the verbatim wording, each `Request` issue MUST include an
-  `### Interpretation` section specifying how the request is understood, the architectural scope,
-  and the proposed verification.
-- **Confirmation Gate**: The interpretation requires explicit user confirmation (commenting
-  `approve`) before any implementation plan is made.
-- **Two gates, one issue**: Once the interpretation is approved, the plan is posted as a comment on
-  the same issue and approved there. All subsequent branches and pull requests bind to that issue.
+- Preserve the user's verbatim wording.
+- Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
+- Resolve Request/Epic/dependency/recovery relationships explicitly.
+- Generate one unified Planning artifact from the verbatim Request and authoritative context.
+- Independently review/fix Planning until clean.
+- Require one explicit owner Planning Approval before implementation.
+- Subsequent delivery remains bound to the Request(s) or an explicitly approved shared-plan record.
+
+There is no final separate `Interpretation` section/gate that must be approved before Planning can exist.
 
 ## Rationale
 
-Verbatim capture stops the agent from rewriting intent at ingestion; the confirmation gate stops it
-from planning against a misreading.
+Verbatim capture protects intent; reviewed Planning protects interpretation and implementation approach without serializing two redundant human approvals.
 
 ## Enforcement
 
-- `.github/ISSUE_TEMPLATE/request.yml` encodes the verbatim-wording requirement for issue filing.
-- `tests/test_pipeline_config.py` checks the template demands the unedited request and the
-  `### Interpretation` section.
+Request intake and #391 Planning lifecycle validate the contract.
 
 ## Exceptions
 
@@ -43,5 +36,4 @@ None.
 
 ## Change control
 
-Wording converges with `merge-gates`; the single-gate flow, when approved, supersedes the gate
-naming here without splitting the issue.
+Multi-Request/shared-plan behavior follows #385 and never waives explicit Request coverage.
