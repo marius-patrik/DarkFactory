@@ -9,3 +9,5 @@ Thumbs.db
 
 .pipeline/
 .darkfactory/
+web/node_modules/
+web/dist/
