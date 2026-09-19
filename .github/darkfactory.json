@@ -37,7 +37,7 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "The paper is one Typst project with switchable document templates under templates/. The default gjkt-odborna-prace template renders four publication profiles and final/review modes. CI builds the eight default PDFs, smoke-compiles every discovered template, validates architecture, and Pages exposes the default publication matrix.",
+    "$comment": "The paper is one Typst project with template-neutral manuscript semantics in templates/common.typ, selection in templates/registry.typ, and switchable document templates under templates/<name>/. CI builds the canonical eight PDFs plus a complete eight-output matrix for every discovered template, validates architecture, and Pages exposes every template/profile/review combination. Release assets remain the canonical default-template eight PDFs.",
     "testing": {
       "typst": {
         "command": "make ci"
