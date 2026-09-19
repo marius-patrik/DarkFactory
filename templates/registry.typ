@@ -1,4 +1,5 @@
 #import "common.typ" as common
+#import "terms.typ": vocabulary
 #import "gjkt-odborna-prace/template.typ" as gjkt
 
 // Centrální registry šablon. Manuskript importuje pouze tento soubor;
@@ -37,6 +38,9 @@
 #let numbered = common.numbered
 #let bilingual = common.bilingual
 #let localized = common.localized
+#let translation = common.translation
+#let render-translation = common.render-translation
+#let translation-heading = common.translation-heading
 #let note = common.note
 #let issue = common.issue
 #let alert = common.alert
@@ -52,5 +56,8 @@
 #let finalized = common.finalized
 #let removed = common.removed
 #let diff = common.diff
+#let define-term = common.define-term
 #let term = common.term
+#let render-term = common.render-term
 #let kw = common.kw
+#let terms = vocabulary
