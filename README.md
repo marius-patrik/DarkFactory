@@ -94,3 +94,37 @@ Pages web publikuje všechny dokumentové šablony a pod každou všech osm prof
 | Vydané verze | [Releases](https://github.com/marius-patrik/DarkFactory-Paper/releases) |
 | Šablona | interní šablona `templates/gjkt-odborna-prace/` |
 | Praktická část | [`DarkFactory`](https://github.com/marius-patrik/DarkFactory) |
+
+
+## Terminologie a překlady
+
+Překládaný obsah používá sdílené datové hodnoty namísto paralelních polí a ručně
+duplikovaného formátování. Anotace je uložena jako jediná bilingvní hodnota a šablona
+ji vykresluje ve stejné sekční komponentě jako dynamický přehled klíčových slov.
+
+Kanonické odborné pojmy jsou definovány pouze jednou v `templates/terms.typ` pomocí
+`define-term(...)` a v rukopisu se používají přes `terms.<id>`.
+
+```typ
+#term(terms.harness)
+#term(terms.harness, render: "explanation", detail-language: "cs")
+#term(
+  terms.harness,
+  render: "both",
+  name-order: "cs-en",
+  detail-order: "cs-en",
+  name-separator: "bar",
+  detail-style: "inline",
+)
+```
+
+Renderer podporuje:
+- `render: "term" | "explanation" | "both"`,
+- nezávislé `name-language` a `detail-language`,
+- nezávislé `name-order: "cs-en" | "en-cs"` a `detail-order`,
+- `name-separator: "bar" | "paren" | "dash"`,
+- inline nebo skládaný detail,
+- automatickou registraci skutečně použitých termínů do sekce klíčových slov.
+
+Výchozí školní/merged sazba používá češtinu jako první jazyk a angličtinu jako druhý.
+Termíny se stejným českým a anglickým názvem se zobrazí pouze jednou.
