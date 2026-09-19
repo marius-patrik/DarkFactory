@@ -72,6 +72,63 @@ describe("task profiles", () => {
 		).toBe("sensitive");
 		expect(calls).toBe(1);
 	});
+
+	test("keeps engineering work about specialized modalities on engineering stage semantics", async () => {
+		const cases = [
+			["Implement image generation support for Gemini", "implement", ["tools", "reasoning"]],
+			["Add video model support to the provider router", "implement", ["tools", "reasoning"]],
+			["Test video provider routing", "implement", ["tools", "reasoning"]],
+			["Document image APIs and generation behavior", "summarize", []],
+			['Review this change and the quoted example "Create an illustration of a sunset"', "review", ["reasoning"]],
+			['Fix handling for the example "Create a video clip of rain"', "fix", ["tools", "reasoning"]],
+		] as const;
+		for (const [prompt, kind, required] of cases) {
+			const profile = await classifyTask({ prompt }, { classifier: "cheap/model@default" }, async () => "image");
+			expect(profile.kind).toBe(kind);
+			for (const need of required) expect(profile.needs).toContain(need);
+			expect(profile.needs).not.toContain("image_gen");
+			expect(profile.needs).not.toContain("video_gen");
+		}
+	});
+
+	test("direct artifact production is deterministic even with a classifier configured", async () => {
+		let calls = 0;
+		const classify = async () => {
+			calls++;
+			return "implement" as const;
+		};
+		const image = await classifyTask(
+			{ prompt: "Create an illustration of a sunset over Prague" },
+			{ classifier: "cheap/model@default" },
+			classify,
+		);
+		expect(image.kind).toBe("image");
+		expect(image.needs).toContain("image_gen");
+		expect(image.needs).not.toContain("tools");
+
+		const video = await classifyTask(
+			{ prompt: "Create a video clip of rain on a window" },
+			{ classifier: "cheap/model@default" },
+			classify,
+		);
+		expect(video.kind).toBe("video");
+		expect(video.needs).toContain("video_gen");
+		expect(calls).toBe(0);
+	});
+
+	test("declared pipeline stages keep #252/#363 implementation work on coding capabilities", async () => {
+		for (const prompt of [
+			"Enable Gemini image and video generation models from df",
+			"Implement image generation and video model support",
+		]) {
+			const profile = await classifyTask({
+				prompt,
+				node: { kind: "implement" },
+			});
+			expect(profile.kind).toBe("implement");
+			expect(profile.needs).toEqual(["tools", "reasoning"]);
+		}
+	});
 });
 
 describe("policy routing", () => {
@@ -114,6 +171,8 @@ describe("policy routing", () => {
 			["text", "skipped", "missing tools"],
 		]);
 		expect(result.chain).toEqual([{ provider: "bulk", model: "coder", account: "default" }]);
+		expect(result.ranked[0]?.details.join(" ")).toContain("profile: kind 'review'");
+		expect(result.ranked[0]?.details.join(" ")).toContain("need 'reasoning'");
 	});
 
 	test("explicit and graph routes win; sensitive routing cannot escape sensitiveChain", async () => {
