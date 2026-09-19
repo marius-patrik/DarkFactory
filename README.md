@@ -7,6 +7,17 @@ Práce se zabývá návrhem a realizací autonomního systému pro vývoj softwa
 Praktickou částí je systém [DarkFactory](https://github.com/marius-patrik/DarkFactory),
 který práci zároveň sází, testuje a publikuje.
 
+## Repozitářová architektura
+
+Aktivní architektura má pouze dva repozitáře:
+
+- **DarkFactory-Paper** — rukopis, sazba, interní Typst package a integrační bod praktické části.
+- **DarkFactory** — vlastní agentní harness; v tomto repozitáři je připojen jako jediný submodule `darkfactory/`.
+
+Dřívější `OdbornaPrace-mono` wrapper už není potřeba. Samostatná šablona byla
+přesunuta dovnitř práce jako `packages/odborna-prace-template/`, takže sazba a
+rukopis se nemohou verzově rozcházet.
+
 ## Publikační profily
 
 Celá práce používá jediný renderer `main.typ -> thesis() -> odborna-prace()`.
@@ -57,11 +68,12 @@ otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace v
 | `thesis.typ` | společné sestavení obsahu práce |
 | `metadata.typ` | název, autor, škola, anotace a jazykové varianty metadata |
 | `kapitoly/*.typ` | text práce |
-| `lib/odborna-prace.typ` | sazba, review vrstva, profily, termíny a počítání rozsahu |
+| `packages/odborna-prace-template/` | interní Typst package: sazba, review vrstva, profily, termíny a počítání rozsahu |
 | `scripts/check_build.py` | statická CI kontrola osmi PDF a release assetů |
 | `scripts/build_site.py` | generátor Pages selectoru |
 | `bib/references.bib` | zdroje ve formátu BibTeX |
 | `img/` | obrázky včetně loga školy |
+| `darkfactory/` | jediný git submodule; praktická část DarkFactory |
 
 ## Odkazy
 
@@ -69,5 +81,5 @@ otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace v
 | :--- | :--- |
 | Publikované verze | <https://marius-patrik.github.io/OdbornaPrace-paper/> |
 | Vydané verze | [Releases](https://github.com/marius-patrik/OdbornaPrace-paper/releases) |
-| Šablona | [`template-OdbornaPrace`](https://github.com/marius-patrik/template-OdbornaPrace) |
+| Šablona | interní package `packages/odborna-prace-template/` |
 | Praktická část | [`DarkFactory`](https://github.com/marius-patrik/DarkFactory) |
