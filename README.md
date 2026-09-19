@@ -111,14 +111,23 @@ Kanonické odborné pojmy jsou definovány pouze jednou v `templates/terms.typ` 
 #term(
   terms.harness,
   render: "both",
+  name-type: "both",           // proper | industry | both | auto
   name-order: "cs-en",
   detail-order: "cs-en",
   name-separator: "bar",
+  name-type-separator: "paren",
   detail-style: "inline",
 )
 ```
 
+Každý termín může mít dvě pojmenovací vrstvy:
+- `proper` — formální/úplný název, samostatně pro češtinu a angličtinu,
+- `industry` — běžná průmyslová zkratka nebo zažitý anglický název.
+
+Například `language_model` má proper `Jazykový model / Large Language Model` a industry `LLM`; `agent_loop` má proper `Smyčka ReAct / ReAct Loop` a industry `Agent Loop`; `skills` má český proper název `Dovednosti` a industry formu `Skills`.
+
 Renderer podporuje:
+- `name-type: "proper" | "industry" | "both" | "auto"`,
 - `render: "term" | "explanation" | "both"`,
 - nezávislé `name-language` a `detail-language`,
 - nezávislé `name-order: "cs-en" | "en-cs"` a `detail-order`,
