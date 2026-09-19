@@ -11,3 +11,21 @@ The project selects templates through `templates/registry.typ`. Shared manuscrip
 Files:
 - `template.typ` — GJKT document structure and layout implementation.
 - `wordometer.typ` — text extraction/counting helper used by the template.
+
+
+## Chapter presentation
+
+Numbered level-1 headings in the main body are rendered as dedicated chapter title
+pages by `template.typ`. The manuscript only declares semantic headings with Typst
+heading syntax; it must not insert chapter page breaks, vertical spacing, or heading
+layout itself.
+
+The GJKT template owns:
+- chapter title pages and chapter page breaks,
+- heading hierarchy and spacing,
+- page margins, footer/page numbers and front matter,
+- paragraph/list/table/figure typography,
+- appendix heading behavior.
+
+Appendices intentionally use the compact appendix heading mode rather than the main
+chapter title-page treatment.
