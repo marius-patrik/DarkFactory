@@ -45,11 +45,9 @@ export interface BuildDocsOptions {
 
 const DF_REPO_PATH = path.join(".darkfactory", "repo.df");
 const ROOT_REPO_PATH = "repo.df";
-const LEGACY_MANIFEST_PATH = path.join(".darkfactory", "manifest.json");
-const OLD_LEGACY_MANIFEST_PATH = path.join(".github", "darkfactory.json");
 
 /**
- * Resolves the repository manifest, preferring repo.df (.darkfactory/repo.df or root repo.df) with legacy fallbacks.
+ * Resolves repo.df using the hard-transition contract: .darkfactory/repo.df or root repo.df, never both.
  */
 export function resolveManifestPath(repoRoot: string): string {
   const dfPath = path.join(repoRoot, DF_REPO_PATH);
@@ -66,16 +64,6 @@ export function resolveManifestPath(repoRoot: string): string {
   }
   if (rootExists) {
     return rootPath;
-  }
-
-  const legacy = path.join(repoRoot, LEGACY_MANIFEST_PATH);
-  if (fs.existsSync(legacy)) {
-    return legacy;
-  }
-
-  const oldLegacy = path.join(repoRoot, OLD_LEGACY_MANIFEST_PATH);
-  if (fs.existsSync(oldLegacy)) {
-    return oldLegacy;
   }
 
   return dfPath;
@@ -327,7 +315,7 @@ export function generateAdrIndex(adrs: AdrRecord[]): string {
 }
 
 /**
- * Generates tables for taxonomy, labels, projects, and installed repositories from darkfactory.json.
+ * Generates tables for taxonomy, labels, projects, and installed repositories from repo.df.
  */
 export function generateManifestReference(manifest: any): string {
   const lines: string[] = [
