@@ -74,14 +74,14 @@
   }
 }
 
-#let translation-heading(value, language: "auto", school-both: true) = context {
-  let lang = resolve-language(language, school-both: school-both)
-  if lang == "cs" {
-    value.cs
-  } else if lang == "en" {
-    value.en
+#let pair-content(cs, en, separator: "bar") = {
+  assert(separator in ("bar", "paren", "dash"), message: "separator must be bar, paren, or dash")
+  if separator == "paren" {
+    [#cs (#en)]
+  } else if separator == "dash" {
+    [#cs — #en]
   } else {
-    [#value.cs | #value.en]
+    [#cs | #en]
   }
 }
 
@@ -92,6 +92,7 @@
   labels: false,
   stacked: true,
   spacing: 4pt,
+  separator: "bar",
 ) = context {
   let lang = resolve-language(language, school-both: school-both)
   let part(code, body) = if labels {
@@ -99,21 +100,37 @@
   } else {
     body
   }
+  let cs = text(lang: "cs")[#part("CZ", value.cs)]
+  let en = text(lang: "en")[#part("EN", value.en)]
 
   if lang == "cs" {
-    text(lang: "cs")[#part("CZ", value.cs)]
+    cs
   } else if lang == "en" {
-    text(lang: "en")[#part("EN", value.en)]
+    en
   } else if stacked {
     block(breakable: true)[
-      #text(lang: "cs")[#part("CZ", value.cs)]
+      #cs
       #v(spacing)
-      #text(lang: "en")[#part("EN", value.en)]
+      #en
     ]
   } else {
-    [#text(lang: "en")[#part("EN", value.en)] #h(0.5em) #text(lang: "cs")[#part("CZ", value.cs)]]
+    pair-content(cs, en, separator: separator)
   }
 }
+
+#let translation-heading(
+  value,
+  language: "auto",
+  school-both: true,
+  separator: "bar",
+) = render-translation(
+  value,
+  language: language,
+  school-both: school-both,
+  labels: false,
+  stacked: false,
+  separator: separator,
+)
 
 #let note(body) = context if review-state.get() {
   [#block(
@@ -278,76 +295,81 @@
   }
 }
 
-#let term-name(value, language: "auto") = context {
+#let term-name(value, language: "auto", separator: "bar") = context {
   let lang = term-language(language)
-  if lang == "cs" {
+  if value.en == value.cs and lang == "both" {
     text(lang: "cs")[#value.cs]
-  } else if lang == "en" {
-    text(lang: "en")[#value.en]
-  } else if value.en == value.cs {
-    text(lang: "en")[#value.en]
   } else {
-    [#text(lang: "en")[#value.en] (#text(lang: "cs")[#value.cs])]
+    render-translation(
+      translation(cs: value.cs, en: value.en),
+      language: lang,
+      school-both: true,
+      labels: false,
+      stacked: false,
+      separator: separator,
+    )
   }
 }
 
-#let term-explanation(value, language: "auto", stacked: true) = context {
+#let term-explanation(
+  value,
+  language: "auto",
+  style: "stacked",
+) = context {
+  assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
   let lang = term-language(language)
-  if lang == "cs" {
-    if value.explanation_cs != none {
-      text(lang: "cs")[#value.explanation_cs]
-    }
-  } else if lang == "en" {
-    if value.explanation_en != none {
-      text(lang: "en")[#value.explanation_en]
-    }
-  } else if stacked {
-    block(breakable: true)[
-      #if value.explanation_en != none {
-        [#language-badge("EN") #h(0.35em) #text(lang: "en")[#value.explanation_en]]
-      }
-      #if value.explanation_en != none and value.explanation_cs != none { v(2pt) }
-      #if value.explanation_cs != none {
-        [#language-badge("CZ") #h(0.35em) #text(lang: "cs")[#value.explanation_cs]]
-      }
-    ]
+  let details = translation(cs: value.explanation_cs, en: value.explanation_en)
+
+  if lang == "cs" and value.explanation_cs == none {
+    none
+  } else if lang == "en" and value.explanation_en == none {
+    none
+  } else if lang == "both" and value.explanation_cs == none and value.explanation_en == none {
+    none
   } else {
-    [
-      #if value.explanation_en != none {
-        [#language-badge("EN") #h(0.25em) #text(lang: "en")[#value.explanation_en]]
-      }
-      #if value.explanation_en != none and value.explanation_cs != none { h(0.5em) }
-      #if value.explanation_cs != none {
-        [#language-badge("CZ") #h(0.25em) #text(lang: "cs")[#value.explanation_cs]]
-      }
-    ]
+    render-translation(
+      details,
+      language: lang,
+      school-both: true,
+      labels: true,
+      stacked: style == "stacked",
+      spacing: 2pt,
+      separator: "bar",
+    )
   }
 }
 
 // Jediný renderer všech použití termínu.
 // render: "term" | "explanation" | "both"
-// language: "auto" | "cs" | "en" | "both"
-// register=true přidá použitý termín do dynamického seznamu klíčových slov.
+// language nastavuje společný fallback; name-language/detail-language jej mohou
+// nezávisle přepsat. detail-style="inline" vkládá definici přímo do věty.
 #let term(
   value,
   render: "term",
   language: "auto",
+  name-language: none,
+  detail-language: none,
+  name-separator: "bar",
+  detail-style: "inline",
   register: true,
   linked: true,
   marker: true,
   emphasized: true,
-  explanation-stacked: false,
   separator: [ — ],
 ) = context {
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
+  assert(name-separator in ("bar", "paren", "dash"), message: "term name separator must be bar, paren, or dash")
+  assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
 
   if register and value.keyword {
     [#metadata(value) #term-use-label]
   }
 
-  let name = term-name(value, language: language)
+  let name-lang = if name-language == none { language } else { name-language }
+  let detail-lang = if detail-language == none { language } else { detail-language }
+  let name = term-name(value, language: name-lang, separator: name-separator)
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let referenced-name = if linked {
     link(label("kw-" + value.id))[#displayed-name]
@@ -359,7 +381,7 @@
   } else {
     referenced-name
   }
-  let explanation = term-explanation(value, language: language, stacked: explanation-stacked)
+  let explanation = term-explanation(value, language: detail-lang, style: detail-style)
 
   if render == "term" {
     with-marker
@@ -403,6 +425,7 @@
         item,
         render: "term",
         language: "auto",
+        name-separator: "bar",
         register: false,
         linked: false,
         marker: false,
@@ -439,7 +462,7 @@
           linked: false,
           marker: false,
           emphasized: false,
-          explanation-stacked: true,
+          detail-style: "stacked",
         )
       ]
     }
