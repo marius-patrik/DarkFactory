@@ -10,28 +10,26 @@ owners: [tests-audit]
 
 ## Requirement
 
-Formatting is not a review topic — it is automated. `rustfmt` for Rust, Biome (`harness/biome.json`)
-for TypeScript, and `black` (line length 100) for Python automation. The GitHub Actions bot formats
-the codebase on every push across branches and commits any adjustments. Lints are blocking:
-`cargo clippy -D warnings` for Rust and `biome ci` for TypeScript. Until the one-time full harness
-reformat lands, Biome formats and checks the TypeScript files a change touches.
+Formatting is deterministic automation, not a review topic.
+
+The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
+
+Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
+
+Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.
 
 ## Rationale
 
-Deterministic formatting removes style disagreement from review and from agent loopback, so a model
-never normalizes the tree by hand during an implementation pass.
+One detected quality contract keeps local mutation, graph verification and CI from disagreeing about what “formatted” or “lint clean” means.
 
 ## Enforcement
 
-- `.github/workflows/auto-format.yml` reformats on every push.
-- Formatting and lint gates are required jobs in `ci.yml` (the `harness` job runs `biome ci`).
+#341, the hooks capability and generated CI consume the same action model.
 
 ## Exceptions
 
-Formatting gates apply to source languages present in the tree; generated artifacts are excluded
-where declared.
+Unsupported/missing quality actions are diagnosed explicitly; they are not silently treated as passing.
 
 ## Change control
 
-Changing a formatter or its configuration (`harness/biome.json`, black's line length) is a
-reviewed change; the one-time full reformat lands as its own pull request (plans/repository-truth.md Q1).
+Formatter/tool changes are reviewed capability/package configuration changes.
