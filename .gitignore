@@ -33,7 +33,7 @@ site/
 .properdocs-source/
 
 # Agent pipeline
-.antigravity_checkpoint.json
+.antigravity-checkpoint.df
 
 # IDE / Editor / OS
 .vscode/
