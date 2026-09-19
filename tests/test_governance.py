@@ -75,7 +75,7 @@ def test_agents_points_repository_taxonomy_to_repo_df():
     content = _read("AGENTS.md")
     assert "Repository area labels/scopes are declared by final `repo.df`" in content
     assert (
-        "Request classification, commit-scope validation and labels consume the same declared taxonomy"
+        "Request classification, commit-scope validation and repository labels consume the same declared taxonomy"
         in content
     )
 
