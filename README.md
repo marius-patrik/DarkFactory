@@ -113,35 +113,28 @@ paralelní duplicity pod jinými identitami.
 ```typ
 #term(terms.harness)
 #term(terms.harness, render: "explanation", detail-language: "cs")
-#term(
-  terms.harness,
-  render: "both",
-  name-type: "both",           // proper | industry | both | auto
-  name-order: "cs-en",
-  detail-order: "cs-en",
-  name-separator: "bar",
-  name-type-separator: "paren",
-  detail-style: "inline",
-)
+#term(terms.harness, render: "both", detail-language: "cs", detail-style: "inline")
 ```
 
 Každý termín může mít dvě pojmenovací vrstvy:
 - `proper` — formální/úplný název, samostatně pro češtinu a angličtinu,
 - `industry` — běžná průmyslová zkratka nebo zažitý anglický název.
 
-Například `language_model` má proper `Jazykový model / Large Language Model` a industry `LLM`; `agent_loop` má proper `Smyčka ReAct / ReAct Loop` a industry `Agent Loop`; `skills` má český proper název `Dovednosti` a industry formu `Skills`.
+Všechny termíny používají jediný kanonický formát názvu **Čeština [English] (Industry)**.
+Anglický proper název je v bilingvním zobrazení vždy v hranatých závorkách a industry
+název či zkratka vždy v kulatých závorkách. Duplicitní vrstvy se automaticky potlačí:
+například `language_model` se vykreslí jako `Jazykový model [Large Language Model] (LLM)`,
+zatímco termín se shodným českým a anglickým názvem neopakuje stejný text dvakrát.
 
 Renderer podporuje:
-- `name-type: "proper" | "industry" | "both" | "auto"`,
 - `render: "term" | "explanation" | "both"`,
 - nezávislé `name-language` a `detail-language`,
-- nezávislé `name-order: "cs-en" | "en-cs"` a `detail-order`,
-- `name-separator: "bar" | "paren" | "dash"`,
-- inline nebo skládaný detail,
+- `detail-order` a inline nebo skládaný detail,
 - automatickou registraci skutečně použitých termínů do sekce klíčových slov.
 
-Výchozí školní/merged sazba používá češtinu jako první jazyk a angličtinu jako druhý.
-Termíny se stejným českým a anglickým názvem se zobrazí pouze jednou.
+Historické parametry pro změnu formátu názvu (`name-type`, `name-order`,
+`name-separator`, `name-type-separator`) zůstávají pouze kvůli kompatibilitě
+existujícího zdroje; vizuální formát termínu již nemění.
 
 
 ## Webový viewer

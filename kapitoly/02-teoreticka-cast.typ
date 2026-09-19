@@ -292,7 +292,7 @@ Základní vlastnosti protokolu MCP:
 ]
 
 #unconfirmed[
-=== Škálování: hierarchičtí subagenti a DAG workflow
+=== #finalized[Škálování: Multiagentní systémy (Subagenti) a grafy (DAG workflows) \[Scaling: Multiagent Systems (Subagents) and DAG Workflows (Graphs)\]]
 
 Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
 

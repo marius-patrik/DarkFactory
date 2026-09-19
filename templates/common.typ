@@ -326,53 +326,72 @@
   }
 }
 
-#let term-name-layer(
-  value,
-  layer,
-  language: "auto",
-  separator: "bar",
-  order: "cs-en",
-) = context {
-  let names = if layer == "proper" { value.proper } else { value.industry }
-  if names == none {
+#let term-proper-name(value, language: "auto") = context {
+  let lang = term-language(language, profile-state.get())
+  let cs = value.proper.cs
+  let en = value.proper.en
+
+  if lang == "cs" {
+    if cs != none { text(lang: "cs")[#cs] } else { text(lang: "en")[#en] }
+  } else if lang == "en" {
+    if en != none { text(lang: "en")[#en] } else { text(lang: "cs")[#cs] }
+  } else if cs == none {
+    text(lang: "en")[#en]
+  } else if en == none {
+    text(lang: "cs")[#cs]
+  } else if str(cs) == str(en) {
+    text(lang: "en")[#en]
+  } else {
+    [
+      #text(lang: "cs")[#cs]
+      #h(0.25em)
+      #text("[")
+      #text(lang: "en")[#en]
+      #text("]")
+    ]
+  }
+}
+
+#let term-industry-name(value, language: "auto") = context {
+  if value.industry == none {
     none
   } else {
     let lang = term-language(language, profile-state.get())
-    let same = names.cs != none and names.en != none and str(names.cs) == str(names.en)
-    if same and lang == "both" {
-      text(lang: "en")[#names.en]
+    let cs = value.industry.cs
+    let en = value.industry.en
+
+    if lang == "cs" {
+      if cs != none { text(lang: "cs")[#cs] } else { text(lang: "en")[#en] }
+    } else if lang == "en" {
+      if en != none { text(lang: "en")[#en] } else { text(lang: "cs")[#cs] }
+    } else if en != none {
+      text(lang: "en")[#en]
     } else {
-      render-translation(
-        names,
-        language: lang,
-        school-both: true,
-        labels: false,
-        stacked: false,
-        separator: separator,
-        order: order,
-      )
+      text(lang: "cs")[#cs]
     }
   }
 }
 
-#let industry-name-redundant(value, language) = {
+#let industry-name-redundant(value) = {
   if value.industry == none {
     true
   } else {
-    let p = value.proper
-    let i = value.industry
-    if language == "cs" {
-      i.cs != none and p.cs != none and str(i.cs) == str(p.cs)
-    } else if language == "en" {
-      i.en != none and p.en != none and str(i.en) == str(p.en)
-    } else {
-      let candidates = (p.cs, p.en).filter(x => x != none).map(str)
-      let industry-values = (i.cs, i.en).filter(x => x != none).map(str)
-      industry-values.len() > 0 and industry-values.all(x => x in candidates)
-    }
+    let proper-values = (value.proper.cs, value.proper.en)
+      .filter(x => x != none)
+      .map(str)
+    let industry-values = (value.industry.cs, value.industry.en)
+      .filter(x => x != none)
+      .map(str)
+
+    industry-values.len() > 0 and industry-values.all(x => x in proper-values)
   }
 }
 
+// Canonical term-name presentation:
+//   Czech [English] (Industry)
+// English is always square-bracketed in bilingual rendering; the industry/common
+// name is always parenthesized. Duplicate Czech/English or industry labels collapse.
+// The historical formatting arguments remain accepted only for source compatibility.
 #let term-name(
   value,
   language: "auto",
@@ -382,20 +401,23 @@
   type-separator: "paren",
 ) = context {
   assert(name-type in ("auto", "proper", "industry", "both"), message: "term name type must be auto, proper, industry, or both")
+  assert(separator in ("bar", "paren", "dash"), message: "separator must be bar, paren, or dash")
+  assert(order in ("cs-en", "en-cs"), message: "term name order must be cs-en or en-cs")
   assert(type-separator in ("bar", "paren", "dash"), message: "term type separator must be bar, paren, or dash")
-  let lang = term-language(language, profile-state.get())
-  let resolved-type = if name-type == "auto" { value.default_name_type } else { name-type }
-  let proper = term-name-layer(value, "proper", language: lang, separator: separator, order: order)
-  let industry = term-name-layer(value, "industry", language: lang, separator: separator, order: order)
 
-  if resolved-type == "proper" or industry == none {
-    proper
-  } else if resolved-type == "industry" {
-    industry
-  } else if industry-name-redundant(value, lang) {
+  let proper = term-proper-name(value, language: language)
+  let industry = term-industry-name(value, language: language)
+
+  if industry == none or industry-name-redundant(value) {
     proper
   } else {
-    pair-content(proper, industry, separator: type-separator, order: "cs-en")
+    [
+      #proper
+      #h(0.25em)
+      #text("(")
+      #industry
+      #text(")")
+    ]
   }
 }
 

@@ -112,6 +112,29 @@ for renderer in ("render-keywords", "render-encyclopedia"):
     if f"#let {renderer}" not in common_source:
         fail(f"missing shared terminology renderer: {renderer}")
 
+for required in (
+    "#let term-proper-name",
+    "#let term-industry-name",
+    'text("[")',
+    'text("]")',
+    'text("(")',
+    'text(")")',
+    "Czech [English] (Industry)",
+):
+    if required not in common_source:
+        fail(f"canonical term-name renderer missing global naming contract: {required}")
+
+chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
+finalized_scaling_title = (
+    "=== #finalized[Škálování: Multiagentní systémy (Subagenti) a grafy "
+    "(DAG workflows) \\[Scaling: Multiagent Systems (Subagents) and DAG "
+    "Workflows (Graphs)\\]]"
+)
+if finalized_scaling_title not in chapter2_source:
+    fail("section 2.3.8 must retain the finalized bilingual scaling title")
+if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
+    fail("legacy section 2.3.8 title must not return")
+
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for front_matter_contract in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
