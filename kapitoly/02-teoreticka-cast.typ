@@ -2,7 +2,7 @@
 
 = Teoretická část
 
-== Správa verzí (Git a GitHub)
+== #confirmed[Git and GitHub (Správa verzí)]
 
 === Úvod do správy verzí a GitHubu
 
@@ -88,7 +88,7 @@ Klíčové mechanismy ochrany zahrnují:
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
-== LLMs, Chatbots and Agents
+== #confirmed[LLMs, Chatbots and Agents]
 
 #blue-note[
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
@@ -114,7 +114,7 @@ Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vs
 Tento proces zahrnuje následující pojmy:
 ]
 - #confirmed[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).]
-- #unconfirmed[*Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #confirmed[*Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
 - #confirmed[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
 #confirmed[
@@ -193,7 +193,7 @@ Příčiny a inženýrská řešení tohoto jevu:
 - *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
-== Harness and Agentic Engineering (Prompt, Context, Loop, Graph...)
+== #confirmed[Harness and Agentic Engineering (Prompt, Context, Loop, Graph...)]
 
 === Úvod do řídicích harnessů
 
