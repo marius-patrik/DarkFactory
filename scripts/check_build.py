@@ -98,7 +98,7 @@ if '"gjkt-odborna-prace"' not in registry:
     fail("GJKT template is not registered")
 if '#import "common.typ" as common' not in registry:
     fail("template registry must import the shared manuscript API")
-for semantic in ("confirmed", "unconfirmed", "diff", "term", "bilingual"):
+for semantic in ("accepted", "finalized", "unconfirmed", "diff", "term", "bilingual"):
     expected = f"#let {semantic} = common.{semantic}"
     if expected not in registry:
         fail(f"registry semantic helper is not routed through common.typ: {semantic}")
