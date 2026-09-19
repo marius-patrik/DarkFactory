@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { ciFileSchema, type CiConfig, type ResolvedCheck } from "./schema.ts";
+import { type CiConfig, ciFileSchema, type ResolvedCheck } from "./schema.ts";
 
 export const CI_CONFIG_RELATIVE_PATH = ".darkfactory/ci.json";
 
