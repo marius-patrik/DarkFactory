@@ -1,4 +1,4 @@
-import { CAPABILITY_ABI_VERSION, type CapabilityDefinition, type CapabilityModule } from "./abi.ts";
+import { CAPABILITY_ABI_VERSION, defineCapability, type CapabilityDefinition, type CapabilityModule } from "./abi.ts";
 
 export class CapabilityAbiError extends Error {
 	constructor(
@@ -22,5 +22,5 @@ export function assertCapabilityCompatible(definition: CapabilityDefinition): Ca
 export function definitionFromModule(module: CapabilityModule): CapabilityDefinition {
 	const definition = module.capability ?? module.default;
 	if (!definition) throw new Error("Capability module must export capability or default");
-	return assertCapabilityCompatible(definition);
+	return assertCapabilityCompatible(defineCapability(definition));
 }
