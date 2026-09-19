@@ -85,9 +85,9 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 
 ## GitHub Pages Viewer
-- Published Pages variants open through the custom static viewer in `web/viewer.*`, not the browser-native PDF viewer. The UI exposes Raw, Review, and synchronized Raw + Review Split modes.
-- PDF remains the canonical rendered document; the viewer uses PDF.js and must retain a direct PDF download/native fallback.
-- Keep the Pages viewer dependency-free at build time: static assets are copied by `scripts/build_site.py`; runtime PDF.js is version-pinned.
+- Published Pages are a React + TypeScript multi-page Vite application under `web/`. Use shadcn/ui primitives, Tailwind, Motion, Dagre, `lucide-animated`, and PDF.js; do not restore the legacy handwritten `viewer.js/viewer.css/icons.js` shell.
+- PDF remains the canonical rendered document; PDF.js must retain canvas, selectable text, annotation/link layers, direct PDF download, and a native-PDF fallback.
+- `make web-check` is the viewer type/build gate; `scripts/build_site.py` publishes `web/dist` together with the generated PDF matrix and runtime `variants.json`.
 - Do not replace the production viewer with Typst HTML export while Typst documents that target as experimental/not production-ready.
 - The local live-preview workflow above remains the native Chrome PDF viewer unless the user explicitly asks to change local preview too.
 
@@ -95,8 +95,8 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Inline term links/★ markers target encyclopedia entries; do not restore detailed entries under the keyword heading.
 
 - The viewer must preserve PDF.js text and annotation layers above each page canvas so rendered text stays selectable/copyable and PDF links remain clickable.
-- Viewer controls use the pinned `lucide-animated` runtime; do not regress to Unicode/text-symbol toolbar icons.
-- Sidebar position (`left`/`right`) and representation (`thumbnails`/`minimap`) are persistent user settings and are exposed from the sidebar context menu.
-- The toolbar identity is `work title \\ publication version`; the publication version is a clickable selector backed by `variants.json`.
-- Page-number and zoom controls belong to the bottom status bar. Zoom must support buttons, Ctrl/⌘+wheel/trackpad pinch, and two-touch pinch.
+- Viewer controls use the pinned `lucide-animated` React package and shadcn tooltips; do not regress to Unicode/text-symbol toolbar icons or title-only hover hints.
+- Sidebar position (`left`/`right`) and representation (`thumbnails`/`minimap`) are persistent user settings. The toggle sits at the extreme toolbar edge matching the sidebar side, uses `PanelLeftIcon`/`PanelRightIcon`, and exposes sidebar move/minimap actions through a shadcn context menu.
+- The toolbar identity is `Home \\ work title \\ publication version`; the publication version is a clickable selector backed by `variants.json`.
+- Split mode uses the dedicated two-column/split-view icon. Page-number and zoom controls belong to the bottom status bar, zoom-out/in use minus/plus icons, and theme/fullscreen controls also belong to the status bar. Zoom must support buttons, Ctrl/⌘+wheel/trackpad pinch, and two-touch pinch.
 - Split view provides an explicit persisted scroll-synchronization toggle. Parent toolbar navigation/zoom targets both panes regardless; free scrolling only mirrors continuously when synchronization is enabled.
