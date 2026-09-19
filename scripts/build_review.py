@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 
 
-def run(args: list[str], *, capture: bool = false) -> str:
+def run(args: list[str], *, capture: bool = False) -> str:
     result = subprocess.run(
         args,
         check=True,
