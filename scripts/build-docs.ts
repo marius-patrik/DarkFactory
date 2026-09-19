@@ -43,6 +43,9 @@ export interface BuildDocsOptions {
   properdocsCommand?: string[];
 }
 
+const DF_REPO_PATH = path.join(".darkfactory", "repo.df");
+const ROOT_REPO_PATH = "repo.df";
+
 /**
  * Resolves the repository manifest path: .darkfactory/repo.df then repo.df.
  * Throws if both exist or neither exists (hard transition).

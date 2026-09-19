@@ -59,7 +59,13 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 async function readJson<T>(path: string): Promise<T | undefined> {
-	if (!existsSync(path)) return undefined;
+	if (!existsSync(path)) {
+		const jsonPath = path.replace(/\.df$/, ".json");
+		if (existsSync(jsonPath)) {
+			console.warn(`[WARN] Legacy ${jsonPath} exists, but expected ${path}. Migration may have been interrupted.`);
+		}
+		return undefined;
+	}
 	return JSON.parse(await readFile(path, "utf8")) as T;
 }
 

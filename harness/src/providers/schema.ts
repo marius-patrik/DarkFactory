@@ -564,11 +564,11 @@ export async function loadProviderConfig(
 	try {
 		local = parseProviderConfigFile(
 			JSON.parse(await reader(join(home, "providers.df"))) as unknown,
-			"$DF_HOME/providers.df",
+			join(home, "providers.df"),
 		);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-			if (error instanceof SyntaxError) throw new Error("Invalid $DF_HOME/providers.df JSON");
+			if (error instanceof SyntaxError) throw new Error(`Invalid provider configuration JSON at ${join(home, "providers.df")}`);
 			throw error;
 		}
 	}

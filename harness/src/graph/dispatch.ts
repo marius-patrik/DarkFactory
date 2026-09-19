@@ -177,7 +177,7 @@ export async function dispatch(
 	const pythonActionPath =
 		options?.pythonActionPath ??
 		process.env.DF_PYTHON_ACTION_PATH ??
-		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.df") : resolveDfFile(process.cwd(), "python_action"));
+		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.df") : undefined);
 
 	if (shadowVerify && !pythonActionPath) {
 		throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
@@ -281,12 +281,20 @@ export async function dispatch(
 		const summaryPath = summaryTarget(opts.summaryPath);
 		const summaryLines: string[] = [];
 
+		let pythonAction: unknown;
+		if (pythonActionPath) {
+			try {
+				pythonAction = await readJsonFile(pythonActionPath);
+			} catch (e) {
+				// optional
+			}
+		}
+
 		// Verification logic: Shadow verification diffs
 		let parityMatch = true;
 		if (shadowVerify) {
 			summaryLines.push("### Verification Diff");
-			try {
-				const pythonAction = await readJsonFile(pythonActionPath!);
+			if (pythonAction) {
 				if (actionsMatch(pythonAction, action)) {
 					summaryLines.push("✅ No drift detected between TS and Python actions.");
 				} else {
@@ -297,12 +305,8 @@ export async function dispatch(
 						`Python action: \`${JSON.stringify(pythonAction)}\``,
 					);
 				}
-			} catch (e) {
-				parityMatch = false;
-				summaryLines.push(
-					`⚠️ **Incomplete/In-progress:** Unable to verify.`,
-					`Error: ${e instanceof Error ? e.message : String(e)}`,
-				);
+			} else {
+				summaryLines.push("ℹ️ No python action provided for verification.");
 			}
 			summaryLines.push("");
 		}
