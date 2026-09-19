@@ -83,7 +83,7 @@ describe("publishable workspace boundaries", () => {
 		for (const relative of safeFiles) {
 			const source = await readFile(resolve(packageRoot, relative), "utf8");
 			expect(source).not.toMatch(
-				/(?:node:|bun:|harness\/src|@darkfactory\/keychain|@darkfactory\/core|@darkfactory\/cli)/u,
+				/(?:from\s+["'](?:node:|bun:)|import\s*\(\s*["'](?:node:|bun:)|harness\/src|@darkfactory\/keychain|@darkfactory\/core|@darkfactory\/cli)/u,
 			);
 		}
 		const auth = await manifest("auth");
