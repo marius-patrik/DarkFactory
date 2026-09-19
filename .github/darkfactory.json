@@ -43,7 +43,7 @@
         "command": "make ci"
       },
       "node": {
-        "command": "make web-check"
+        "command": "npm install --no-audit --no-fund && npm run check"
       }
     },
     "release": {
@@ -51,7 +51,7 @@
         "command": "make ci"
       },
       "node": {
-        "command": "make web-build"
+        "enabled": false
       }
     },
     "formatting": {
