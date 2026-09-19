@@ -6,35 +6,35 @@ applies_to: [agents, automation, contributors]
 activation: always
 owners: [system-audit]
 ---
-# Rule 9 — Issue binding, branch auto-deletion, and board status
+# Rule 9 — Request binding, branch cleanup and board status
 
 ## Requirement
 
-- **Issue Binding**: Every pull request MUST bind a tracked GitHub issue using closing keywords in
-  the PR description (e.g. `Closes #123`, `Fixes #123`, `Resolves #123`).
-- **Branch Auto-Deletion**: Merging closes the bound issue and deletes the remote branch
-  (`delete_branch_on_merge: true` and `--delete-branch`); the local branch MUST be pruned.
-- **Project Board Status Taxonomy**: All issues and pull requests are added to the DarkFactory
-  GitHub Project with automated status movements:
-  - `Backlog`: Staged items planned for future consideration.
-  - `ToDo`: Approved requests or plans ready for implementation.
-  - `In Progress`: Active branches, pull requests, or ongoing development.
-  - `Blocked`: Items impeded by external dependencies, blockers, or agent quota exhaustion.
-  - `Done`: Completed and merged pull requests and resolved issues.
-  - `Superseded`: Items rendered obsolete or outranked by subsequent architectural decisions.
-  - `Dropped`: Items closed without implementation or cancelled.
+Every delivery PR MUST explicitly bind every Request it satisfies.
+
+A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
+
+Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.
+
+Request/PR/project status uses one canonical reconciliation model with the seven states:
+
+- `Backlog`
+- `ToDo`
+- `In Progress`
+- `Blocked`
+- `Done`
+- `Superseded`
+- `Dropped`
+
+A Request reaches Done only from its own terminal evidence or explicit valid shared-plan/multi-Request completion.
 
 ## Rationale
 
-A PR that merges without a bound issue leaves no reason to have existed. Board status is the shared
-lifecycle view for humans and the agent, exactly one system-owned schema.
+Explicit bindings preserve the reason a PR exists while permitting coherent multi-Request/Epic delivery without duplicating implementation.
 
 ## Enforcement
 
-- `.github/scripts/project_automation.py` moves statuses; `repo_settings.py` wires auto-merge and
-  deletion.
-- `.github/workflows/verify-pr-issue.yml` and `PULL_REQUEST_TEMPLATE.md` enforce the binding
-  pattern.
+The Request/Epic/stack/GitHub capabilities reconcile PR bindings, project status and branch cleanup.
 
 ## Exceptions
 
@@ -42,5 +42,4 @@ None.
 
 ## Change control
 
-Board reconciliation and merge strategy have one executable source each; PR-bound statuses converge
-on the system-owned schema. Local-branch pruning is a convention, not a centrally enforceable act.
+Relationship semantics belong to the first-class Request/Epic/stack model, not ad-hoc PR text parsing.
