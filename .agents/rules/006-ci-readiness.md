@@ -10,21 +10,19 @@ owners: [system-audit]
 
 ## Requirement
 
-Every push MUST leave green status on GitHub Actions across every job in `ci.yml`. A red build is a
-stop-the-line event: no further feature work proceeds until it is green. The set of required status
-checks is declared by repository settings (`.github/scripts/repo_settings.py` against the manifest)
-and enforced by branch protection.
+The canonical/default branch MUST remain green on its required checks. A red canonical branch is a stop-the-line event for repository-wide delivery until restored.
+
+A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not globally halt unrelated isolated branches whose own required checks are green. Parallel work is allowed when it cannot consume or hide the failing branch state.
+
+Required checks are derived from the final normalized package/capability quality contract and synchronized with branch protection. A branch may not merge while any required check for its current head is red, missing or stale.
 
 ## Rationale
 
-CI is the single authoritative execution environment. Green status on the declared required checks
-is what makes a merge safe; anything red invalidates the working tree as a review baseline.
+CI is authoritative for merge safety, but branch-local failure should not serialize unrelated work. The repository only needs global stop-the-line behavior when the canonical baseline itself is broken.
 
 ## Enforcement
 
-- `.github/workflows/ci.yml` required status checks, wired into branch protection by
-  `repo_settings.py`.
-- Hooks run before review continues; a red required check blocks merging branch protection.
+Generated/detected CI plus branch protection and df reconciliation enforce the required-check set.
 
 ## Exceptions
 
@@ -32,4 +30,4 @@ None.
 
 ## Change control
 
-The job set and required checks are configured, not invented per session; owned with `system-audit`.
+Required-check ownership follows #341 and final CI/repository settings; no session may invent or silently drop checks.
