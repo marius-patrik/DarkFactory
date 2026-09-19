@@ -94,11 +94,11 @@ describe("dispatch checks-gate", () => {
       expect(obj.result).toBe("pass");
 
       // verify RunState file exists and current_node matches plan
-      const runStatePath = path.join(tmpDir, "1.json");
+      const runStatePath = path.join(tmpDir, "1.df");
       const runState = JSON.parse(await fs.readFile(runStatePath, "utf8"));
       expect(runState.current_node).toBe("next");
 
-      // ensure no temporary files remain beside the final subject.json
+      // ensure no temporary files remain beside the final subject.df
       const entries = await fs.readdir(tmpDir);
       const tmpFiles = entries.filter((e) => e.endsWith(".tmp") || e.includes(".tmp-"));
       expect(tmpFiles).toHaveLength(0);
