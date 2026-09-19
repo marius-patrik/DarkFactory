@@ -45,7 +45,7 @@
     },
     "release": {
       "typst": {
-        "command": "make all"
+        "command": "make ci"
       }
     },
     "formatting": {
