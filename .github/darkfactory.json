@@ -5,7 +5,7 @@
     "repo": "DarkFactory-Paper",
     "display_name": "DarkFactory-Paper",
     "default_branch": "main",
-    "description": "Odborná práce: autonomní pipeline pro vývoj softwaru (GJKT)",
+    "description": "Odborná práce o agentickém AI a DarkFactory: harness pro automatizovaný softwarový vývoj, přepínatelné Typst šablony a reprodukovatelné výstupy.",
     "topics": [
       "typst",
       "thesis",
