@@ -131,7 +131,7 @@
 // Žlutý podtržený text pro neověřený text konceptu (draft / unconfirmed)
 // V ne-revizní (raw) verzi se neověřený text zcela vynechává (none)
 #let draft(body) = context if review-state.get() {
-  underline(stroke: 1.3pt + rgb("#eab308"), offset: 2.5pt)[#body]
+  [#underline(stroke: 1.3pt + rgb("#eab308"), offset: 2.5pt)[#body] <unconfirmed-text>]
 } else {
   none
 }
