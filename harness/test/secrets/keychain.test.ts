@@ -13,7 +13,7 @@ describe("Keychain with Injected Command Runner", () => {
 			commands.push({ cmd, args });
 			if (cmd === "security" && args[0] === "add-generic-password") {
 				const wIdx = args.indexOf("-w");
-				storedPassword = args[wIdx + 1]!;
+				storedPassword = args[wIdx + 1] ?? "";
 				return { stdout: "", exitCode: 0 };
 			}
 			if (cmd === "security" && args[0] === "find-generic-password") {
