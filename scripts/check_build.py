@@ -104,7 +104,21 @@ for semantic in ("accepted", "finalized", "unconfirmed", "diff", "term", "biling
     if expected not in registry:
         fail(f"registry semantic helper is not routed through common.typ: {semantic}")
 
+common_source = Path("templates/common.typ").read_text(encoding="utf-8")
+for renderer in ("render-keywords", "render-encyclopedia"):
+    if f"#let {renderer}" not in common_source:
+        fail(f"missing shared terminology renderer: {renderer}")
+
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
+for front_matter_contract in (
+    "translation(cs: [Klíčová slova], en: [Keywords])",
+    "translation(cs: [Encyklopedie], en: [Encyclopedia])",
+    "render-keywords()",
+    "render-encyclopedia()",
+):
+    if front_matter_contract not in gjkt_source:
+        fail(f"GJKT template missing terminology front-matter contract: {front_matter_contract}")
+
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
     if forbidden in gjkt_source:
         fail("concrete templates must not own shared review/profile state")
@@ -191,6 +205,25 @@ for path in (
     for legacy in ("#confirmed[", "#let confirmed", "common.confirmed"):
         if legacy in source:
             fail(f"legacy confirmed review state remains in {path}: {legacy}")
+
+viewer_sources = {
+    "web/viewer.html": Path("web/viewer.html"),
+    "web/viewer.css": Path("web/viewer.css"),
+    "web/viewer.js": Path("web/viewer.js"),
+}
+for name, path in viewer_sources.items():
+    if not path.is_file() or path.stat().st_size == 0:
+        fail(f"missing custom Pages viewer asset: {name}")
+
+viewer_js = viewer_sources["web/viewer.js"].read_text(encoding="utf-8")
+for required in ('viewMode = params.get("view") === "split"', 'source: "paper-split"', 'source: "paper-viewer"'):
+    if required not in viewer_js:
+        fail(f"custom viewer missing split-view synchronization contract: {required}")
+
+site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
+for required in ('split_view = final_view + "&view=split"', '>Split</a>', 'viewer.html?'):
+    if required not in site_builder:
+        fail(f"Pages builder missing raw/review/split viewer route: {required}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
