@@ -24,9 +24,9 @@ OUT_REVIEW_MERGED := $(OUT_DIR)/prace-bilingual-review.pdf
 help:
 	@echo "make all             – 8 PDF pro TEMPLATE=$(TEMPLATE)"
 	@echo "make all-templates   – 8 PDF pro každou šablonu pod out/templates/<template>/"
-	@echo "make template-check  – smoke compile school profilu každé objevené šablony"
-	@echo "make ci              – defaultní 8 PDF + template smoke + statická kontrola"
-	@echo "make site            – defaultní 8 PDF + GitHub Pages web"
+	@echo "make template-check  – rychlý school/final smoke každé objevené šablony"
+	@echo "make ci              – defaultní 8 PDF + plná 8×N template matice + kontrola"
+	@echo "make site            – CI matice + GitHub Pages pro všechny šablony"
 	@echo "make watch           – živý náhled TEMPLATE=$(TEMPLATE), school/final"
 	@echo "Templates: $(TEMPLATES)"
 
@@ -84,11 +84,11 @@ template-check:
 verify:
 	$(PYTHON) scripts/check_build.py
 
-ci: all template-check verify
+ci: all all-templates verify
 
 site:
 	@if command -v $(TYPST) >/dev/null 2>&1; then \
-		$(MAKE) all verify && $(PYTHON) scripts/build_site.py; \
+		$(MAKE) ci && $(PYTHON) scripts/build_site.py; \
 	else \
 		echo "Typst unavailable: validating Pages structure without PDF copies"; \
 		$(PYTHON) scripts/build_site.py --allow-missing; \
