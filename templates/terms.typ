@@ -111,9 +111,9 @@
 
   plugins: define-term(
     id: "plugins",
-    proper: translation(cs: "Zásuvné moduly", en: "Plugins"),
+    proper: translation(cs: "Rozšíření", en: "Plugins"),
     industry: translation(cs: "Plugins", en: "Plugins"),
-    explanation_cs: "Zásuvné moduly běžící přímo v prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
+    explanation_cs: "Rozšíření běžící přímo v prostředí harnessu, která rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
     explanation_en: "Programmatic extension modules running directly in the harness environment that extend its execution core with specialized system adapters, tool drivers, and deterministic hooks.",
   ),
 

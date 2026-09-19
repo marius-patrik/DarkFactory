@@ -21,10 +21,12 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
 
 == #finalized[Cíl práce a výzkumné otázky]
 
-#accepted[
+#finalized[
 *Hlavní cíl:*
 Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.
+]
 
+#accepted[
 *Dílčí cíle:*
 - Vymezit infrastrukturu pro správu verzí (Git, GitHub a kontinuální integraci).
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).

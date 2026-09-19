@@ -20,7 +20,8 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords, render-encyclopedia
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords, render-index
+#import "../terms.typ": vocabulary
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -538,10 +539,10 @@
   [#metadata("body-end") <body-end-anchor>]
   pagebreak(weak: true)
 
-  // Encyklopedie patří do zadní části bezprostředně před Seznam příloh.
-  // Její písmena i jednotlivé termíny jsou outlined a vstupují do Obsahu.
-  nadpis-bez-cisla[#finalized[#ui-label([Encyklopedie], [Encyclopedia])]]
-  render-encyclopedia()
+  // Rejstřík patří do zadní části bezprostředně před Seznam příloh.
+  // Obsahuje všechny kanonické termíny, abecední skupiny i jednotlivé položky v Obsahu.
+  nadpis-bez-cisla[#finalized[#ui-label([Rejstřík], [Index])]]
+  render-index(vocabulary.values())
 
   pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]

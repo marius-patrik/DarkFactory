@@ -145,7 +145,8 @@ layout minimapy stránek. PDF z Typstu zůstává kanonickým vizuálním výstu
 PDF.js nad ním renderuje canvas, textovou vrstvu i annotation vrstvu, takže text
 zůstává označitelný/kopírovatelný a PDF odkazy jsou interaktivní. Interní PDF
 destinace vlastní annotation link service překládá přímo na navigaci mezi stránkami
-custom vieweru; externí URL zůstávají běžnými odkazy.
+custom vieweru. Nad PDF.js callbacky je navíc capture-phase fallback navázaný přímo
+na data jednotlivých anotací, takže interní cíle i externí URL zůstávají klikatelné.
 
 Viewer nabízí Raw, Review a Split režim, výběr publikační verze, persistentní sidebar
 vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jump,
@@ -166,17 +167,17 @@ self-hostovatelná/embeddable open-source komponenta. Experimentální Typst HTM
 proto není produkčním viewerem této práce.
 
 
-### Klíčová slova a encyklopedie
+### Klíčová slova a rejstřík
 
 Terminologie používá dvě oddělené reprezentace:
 
 - **Klíčová slova | Keywords** zůstávají ve front matteru jako stručný dynamický seznam skutečně použitých termínů.
-- **Encyklopedie | Encyclopedia** je v zadní části dokumentu bezprostředně před **Seznamem příloh | List of appendices**.
+- **Rejstřík | Index** je v zadní části dokumentu bezprostředně před **Seznamem příloh | List of appendices** a obsahuje celý kanonický katalog termínů deduplikovaný podle stabilního `id`.
 
-Encyklopedie je abecedně seskupena podle počátečního písmene kanonického názvu.
-`Encyklopedie` je outlined nadpis úrovně 1, jednotlivá písmena úroveň 2 a každý
-použitý keyword vlastní outlined sekce úrovně 3. Díky hloubce Obsahu 3 se v
-`Obsah | Contents` zobrazí jak písmenné skupiny, tak každý jednotlivý keyword.
+Rejstřík je abecedně seskupen podle počátečního písmene kanonického názvu.
+`Rejstřík` je outlined nadpis úrovně 1, jednotlivá písmena úroveň 2 a každý
+kanonický termín vlastní outlined sekce úrovně 3. Díky hloubce Obsahu 3 se v
+`Obsah | Contents` zobrazí jak písmenné skupiny, tak každý jednotlivý termín.
 
-Obě reprezentace vznikají ze stejné deduplikované množiny použití `terms.*`.
-Inline hvězdičkové odkazy míří na stabilní detailní záznam v encyklopedii.
+Inline hvězdičkové odkazy míří na stabilní `kw-<id>` záznam v rejstříku. Rejstřík
+proto obsahuje i kanonické pojmy, které se v aktuálním profilu rukopisu přímo nepoužily.

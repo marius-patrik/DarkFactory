@@ -108,25 +108,30 @@ for semantic in ("accepted", "finalized", "unconfirmed", "diff", "term", "biling
         fail(f"registry semantic helper is not routed through common.typ: {semantic}")
 
 common_source = Path("templates/common.typ").read_text(encoding="utf-8")
-for renderer in ("render-keywords", "render-encyclopedia"):
+for renderer in ("render-keywords", "render-index"):
     if f"#let {renderer}" not in common_source:
         fail(f"missing shared terminology renderer: {renderer}")
 
 for required in (
-    "#let encyclopedia-sort-name",
-    "#let encyclopedia-letter",
+    "#let collect-canonical-terms",
+    "#let index-sort-name",
+    "#let index-letter",
     "heading(\n          level: 2",
     "#heading(\n          level: 3",
     'label("kw-" + item.id)',
 ):
     if required not in common_source:
-        fail(f"Encyclopedia missing alphabetical outlined hierarchy contract: {required}")
+        fail(f"Index missing alphabetical outlined hierarchy contract: {required}")
 if ".slice(0, 1)" in common_source:
-    fail("Encyclopedia grouping must use grapheme-safe first() rather than byte-index slicing")
-if "encyclopedia-sort-name(item).first()" not in common_source:
-    fail("Encyclopedia grouping must derive its letter with grapheme-safe first()")
+    fail("Index grouping must use grapheme-safe first() rather than byte-index slicing")
+if "index-sort-name(item).first()" not in common_source:
+    fail("Index grouping must derive its letter with grapheme-safe first()")
+if "#let render-index(values)" not in common_source:
+    fail("Index must accept the complete canonical vocabulary")
+if "collect-canonical-terms(values)" not in common_source:
+    fail("Index must deduplicate the complete canonical vocabulary by stable term id")
 if '] #label("kw-" + item.id)' not in common_source:
-    fail("Encyclopedia keyword labels must attach to headings in markup mode")
+    fail("Index keyword labels must attach to headings in markup mode")
 
 for required in (
     "#let term-proper-name",
@@ -140,7 +145,23 @@ for required in (
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
 
+chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
+finalized_main_goal = (
+    "#finalized[\n*Hlavní cíl:*\n"
+    "Vymezit teoretické principy agentního inženýrství (_agentic engineering_) "
+    "a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj "
+    "softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.\n]"
+)
+if finalized_main_goal not in chapter1_source:
+    fail("main thesis goal must remain finalized exactly as approved")
+
 chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
+if "= #finalized[Teoretická část: Vymezení konceptu]" not in chapter2_source:
+    fail("theoretical chapter title must remain finalized as Teoretická část: Vymezení konceptu")
+if "=== #finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]" not in chapter2_source:
+    fail("tokenization/vector representation section title must remain finalized")
+if "=== #diff[#finalized[Tokeny, tokenizace a embedding]" in chapter2_source:
+    fail("legacy token section title diff must not return")
 finalized_scaling_title = (
     "=== #finalized[Škálování: Multiagentní systémy (Subagenti) a grafy "
     "(DAG workflows) \\[Scaling: Multiagent Systems (Subagents) and DAG "
@@ -167,26 +188,27 @@ gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for terminology_contract in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
     "render-keywords()",
-    "render-encyclopedia()",
-    'ui-label([Encyklopedie], [Encyclopedia])',
+    "render-index(vocabulary.values())",
+    '#import "../terms.typ": vocabulary',
+    'ui-label([Rejstřík], [Index])',
     'ui-label([Seznam příloh], [List of appendices])',
     '<body-end-anchor>',
 ):
     if terminology_contract not in gjkt_source:
         fail(f"GJKT template missing terminology/back-matter contract: {terminology_contract}")
 
-encyclopedia_pos = gjkt_source.find('ui-label([Encyklopedie], [Encyclopedia])')
-appendix_list_pos = gjkt_source.find('ui-label([Seznam příloh], [List of appendices])', encyclopedia_pos)
-if encyclopedia_pos < 0 or appendix_list_pos < 0 or encyclopedia_pos >= appendix_list_pos:
-    fail("Encyclopedia must be emitted immediately before the list of appendices in back matter")
+index_pos = gjkt_source.find('ui-label([Rejstřík], [Index])')
+appendix_list_pos = gjkt_source.find('ui-label([Seznam příloh], [List of appendices])', index_pos)
+if index_pos < 0 or appendix_list_pos < 0 or index_pos >= appendix_list_pos:
+    fail("Index must be emitted immediately before the list of appendices in back matter")
 
 front_matter_start = gjkt_source.find("#let anotace-strana")
 front_matter_end = gjkt_source.find("#let template(", front_matter_start)
-if "render-encyclopedia()" in gjkt_source[front_matter_start:front_matter_end]:
-    fail("Encyclopedia must not remain in front matter")
+if "render-index(vocabulary.values())" in gjkt_source[front_matter_start:front_matter_end]:
+    fail("Index must not remain in front matter")
 
 if '.before(<body-end-anchor>, inclusive: false)' not in gjkt_source:
-    fail("core-text extent must stop before back-matter Encyclopedia and appendices")
+    fail("core-text extent must stop before back-matter Index and appendices")
 
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
     if forbidden in gjkt_source:
@@ -249,6 +271,10 @@ if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = voc
     fail("template registry must export the shared terminology vocabulary")
 
 terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
+if 'proper: translation(cs: "Rozšíření", en: "Plugins")' not in terms_source:
+    fail("Plugins Czech proper term must remain Rozšíření")
+if "Zásuvné moduly" in terms_source:
+    fail("legacy Czech Plugins term Zásuvné moduly must not return")
 if "proper: translation(" not in terms_source:
     fail("canonical terminology must use proper/formal name records")
 if "define-term(\n    id:" in terms_source and "proper:" not in terms_source:
@@ -459,6 +485,10 @@ for required in (
     "getDestinationHash",
     "addLinkAttributes",
     "getPageIndex",
+    "installAnnotationInteractions",
+    'closest<HTMLElement>("[data-element-id]")',
+    "stopImmediatePropagation",
+    "window.open(annotation.url",
 ):
     if required not in pdf_source:
         fail(f"React PDF viewer missing interaction contract: {required}")

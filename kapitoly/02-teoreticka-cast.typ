@@ -1,6 +1,6 @@
 #import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, terms
 
-= #finalized[Teoretická část – Analýza konceptu]
+= #finalized[Teoretická část: Vymezení konceptu]
 
 == #finalized[Správa verzí \[Version Control\], Plánování \[Planning\], Kontinuální integrace \[Continuous Integration\] (CI a GitHub Actions) a Požadované kontroly \[Required Checks\]]
 
@@ -105,18 +105,18 @@ Základní principy fungování modelu zahrnují:
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
-=== #diff[#finalized[Tokeny, tokenizace a embedding]][Tokeny, tokenizace a #term(terms.embedding, marker: false, linked: false, emphasized: false)]
+=== #finalized[Tokeny, tokenizace a Vektorová reprezentace \[Embedding\]]
 
-#accepted[
+#finalized[
 Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vstupní text je nejprve deterministickým algoritmem převeden na číselné reprezentace, se kterými následně počítají maticové vrstvy neuronové sítě.
 
 Tento proces zahrnuje následující pojmy:
 ]
-- #accepted[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).]
-- #accepted[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
-- #accepted[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
+- #finalized[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte Pair Encoding, BPE).]
+- #finalized[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #finalized[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
-#accepted[
+#finalized[
 Z inženýrského hlediska je proto žádoucí vést systémové prompty, technické plány i komunikaci mezi nástroji v angličtině, aby se šetřila kapacita kontextu a snížila latence inference.
 ]
 

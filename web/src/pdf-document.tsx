@@ -168,6 +168,60 @@ class AnnotationLinkService {
   }
 }
 
+type PdfLinkAnnotation = {
+  id?: string;
+  url?: string;
+  newWindow?: boolean;
+  dest?: PdfDestination;
+  action?: string;
+};
+
+function installAnnotationInteractions(
+  node: HTMLElement,
+  annotations: PdfLinkAnnotation[],
+  linkService: AnnotationLinkService,
+) {
+  const byId = new Map(
+    annotations
+      .filter((annotation) => annotation.id)
+      .map((annotation) => [annotation.id as string, annotation]),
+  );
+
+  const onClick = (event: MouseEvent) => {
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest<HTMLElement>("[data-element-id]");
+    if (!target || !node.contains(target)) return;
+
+    const id = target.dataset.elementId;
+    const annotation = id ? byId.get(id) : undefined;
+    if (!annotation) return;
+
+    if (annotation.dest) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void linkService.goToDestination(annotation.dest);
+      return;
+    }
+
+    if (annotation.action) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      linkService.executeNamedAction(annotation.action);
+      return;
+    }
+
+    if (annotation.url) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const opened = window.open(annotation.url, "_blank", "noopener,noreferrer");
+      if (opened) opened.opener = null;
+    }
+  };
+
+  node.addEventListener("click", onClick, true);
+  return () => node.removeEventListener("click", onClick, true);
+}
+
 function Minimap({
   pages,
   activePage,
@@ -420,6 +474,7 @@ const PdfPage = memo(function PdfPage({
 
     let disposed = false;
     let renderTask: any = null;
+    let removeAnnotationInteractions: (() => void) | null = null;
     setRendered(false);
 
     void (async () => {
@@ -488,6 +543,13 @@ const PdfPage = memo(function PdfPage({
               renderForms: false,
               annotationStorage: pdf.annotationStorage,
             });
+            if (!disposed) {
+              removeAnnotationInteractions = installAnnotationInteractions(
+                annotationLayerNode,
+                annotations,
+                linkService,
+              );
+            }
           }
         } catch (error) {
           if (!disposed) console.warn("annotation layer failed", info.number, error);
@@ -501,6 +563,7 @@ const PdfPage = memo(function PdfPage({
 
     return () => {
       disposed = true;
+      removeAnnotationInteractions?.();
       renderTask?.cancel?.();
     };
   }, [info.number, linkService, pdf, scale, visible]);

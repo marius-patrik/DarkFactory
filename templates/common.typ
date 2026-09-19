@@ -553,17 +553,27 @@
   }
 }
 
-// Detailní terminologický přehled je samostatná encyklopedie. Používá stejnou
-// dynamickou množinu termínů jako klíčová slova; hvězdičkové odkazy v rukopisu
-// míří na zde umístěné stabilní labely.
-#let encyclopedia-sort-name(item) = {
+// Detailní terminologický Rejstřík je úplný katalog kanonických termínů.
+// Na rozdíl od krátkého seznamu klíčových slov není omezen jen na pojmy použité
+// v aktuálním rukopisu; aliasy se deduplikují podle stabilního term id.
+#let collect-canonical-terms(values) = {
+  let items = ()
+  for value in values {
+    if value.keyword and not items.any(item => item.id == value.id) {
+      items.push(value)
+    }
+  }
+  items.sorted(key: item => lower(str(if item.proper.cs != none { item.proper.cs } else { item.proper.en })))
+}
+
+#let index-sort-name(item) = {
   if item.proper.cs != none { str(item.proper.cs) } else { str(item.proper.en) }
 }
 
-#let encyclopedia-letter(item) = upper(encyclopedia-sort-name(item).first())
+#let index-letter(item) = upper(index-sort-name(item).first())
 
-#let render-encyclopedia() = context {
-  let items = collect-used-terms(query(term-use-label))
+#let render-index(values) = {
+  let items = collect-canonical-terms(values)
 
   if items.len() == 0 {
     [—]
@@ -571,7 +581,7 @@
     let current-letter = none
 
     for item in items {
-      let letter = encyclopedia-letter(item)
+      let letter = index-letter(item)
 
       if letter != current-letter {
         current-letter = letter
@@ -582,9 +592,6 @@
         )[#letter]
       }
 
-      // Every used keyword is a real level-3 outlined section. The document
-      // outline has depth 3, so Encyclopedia -> letter -> keyword is visible
-      // directly in Obsah while preserving stable kw-* link targets.
       [
         #heading(
           level: 3,
@@ -624,4 +631,3 @@
     }
   }
 }
-
