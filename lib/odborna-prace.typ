@@ -37,19 +37,21 @@
 }
 
 #let review-state = state("review-mode", sys.inputs.at("review", default: "false") in ("true", "1", "yes"))
-#let language-state = state("language-mode", "cs")
+#let profile-state = state("publication-profile", "school")
 
 #let is-review() = context review-state.get()
-#let language-mode() = context language-state.get()
+#let profile-mode() = context profile-state.get()
 
-// Jeden abstraktní jazykový přepínač pro budoucí bilingvní text celé práce.
-// mode: "cs" | "en" | "merged"; stacked=true skládá obě jazykové varianty
-// pod sebe, stacked=false je vhodné pro krátké inline popisky.
+// Publikační profily:
+// - school: český text + hlavní anglické odborné termíny + bilingvní anotace/keywords
+// - cs: čistě česká projekce
+// - en: anglická projekce
+// - merged: plně bilingvní projekce
 #let bilingual(cs, en, stacked: true) = context {
-  let mode = language-state.get()
-  if mode == "cs" {
+  let profile = profile-state.get()
+  if profile in ("school", "cs") {
     text(lang: "cs")[#cs]
-  } else if mode == "en" {
+  } else if profile == "en" {
     text(lang: "en")[#en]
   } else if stacked {
     block(breakable: true)[
@@ -63,6 +65,17 @@
 }
 
 #let localized = bilingual
+
+#let ui-label(cs, en) = context {
+  let profile = profile-state.get()
+  if profile in ("school", "cs") {
+    text(lang: "cs")[#cs]
+  } else if profile == "en" {
+    text(lang: "en")[#en]
+  } else {
+    [#text(lang: "cs")[#cs] | #text(lang: "en")[#en]]
+  }
+}
 
 #let note(body) = context if review-state.get() {
   [#block(
@@ -266,8 +279,18 @@
 
 #let keyword-id(name) = "kw-" + lower(name).replace(regex("[^a-z0-9]+"), "-").trim("-")
 
-// Standardní podoba bilingvního odborného termínu v seznamech:
-// anglický termín je primární, český ekvivalent je vždy v závorkách.
+// Standardní podoba odborného termínu podle publikačního profilu.
+#let term-display(en, cs) = context {
+  let profile = profile-state.get()
+  if profile == "cs" {
+    text(lang: "cs")[#cs]
+  } else if profile == "en" {
+    text(lang: "en")[#en]
+  } else {
+    [#text(lang: "en")[#en] (#text(lang: "cs")[#cs])]
+  }
+}
+
 #let bilingual-term(en, cs) = [#text(lang: "en")[#en] (#text(lang: "cs")[#cs])]
 
 /// Zavedení odborného termínu v textu.
@@ -304,9 +327,7 @@
     )) #term-label]
   }
 
-  // V souvislém textu zůstává hlavní anglický termín stručný; bilingvní podoba
-  // se standardně používá v terminologickém přehledu níže.
-  link(label(id))[_*#name*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[▾]]
+  link(label(id))[_*#term-display(name, cs-name)*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[▾]]
 }
 
 #let kw = term
@@ -317,14 +338,35 @@
   fill: rgb("#475569"),
 )[[#code]]
 
-/// Jediný renderer terminologického přehledu.
-/// Krátký seznam i detail používají shodnou EN (CZ) podobu termínu.
-/// Detail vždy obsahuje anglické i české vysvětlení.
-#let render-keywords() = {
+#let keyword-heading() = context {
+  let profile = profile-state.get()
+  if profile == "cs" {
+    [Klíčová slova]
+  } else if profile == "en" {
+    [Keywords]
+  } else {
+    [Klíčová slova | Keywords]
+  }
+}
+
+#let keyword-name(item) = context {
+  let profile = profile-state.get()
+  if profile == "cs" {
+    text(lang: "cs")[#item.cs]
+  } else if profile == "en" {
+    text(lang: "en")[#item.en]
+  } else {
+    bilingual-term(item.en, item.cs)
+  }
+}
+
+/// Jeden renderer terminologického přehledu pro všechny profily.
+#let render-keywords() = context {
+  let profile = profile-state.get()
   let items = default-terms.sorted(key: t => lower(t.en))
 
   text(size: 11pt)[
-    #items.map(t => bilingual-term(t.en, t.cs)).join([, ])
+    #items.map(t => keyword-name(t)).join([, ])
   ]
 
   v(12pt)
@@ -337,19 +379,32 @@
       below: 7pt,
       width: 100%,
     )[
-      #text(weight: "bold", size: 11pt)[#bilingual-term(item.en, item.cs)] #label(id) \
+      #text(weight: "bold", size: 11pt)[#keyword-name(item)] #label(id) \
       #v(2pt)
-      #language-badge("EN") #h(0.35em) #text(lang: "en", size: 10pt)[#item.explanation_en] \
-      #v(1pt)
-      #language-badge("CZ") #h(0.35em) #text(lang: "cs", size: 10pt)[#item.explanation_cs]
+      #if profile in ("school", "merged", "en") {
+        [#language-badge("EN") #h(0.35em) #text(lang: "en", size: 10pt)[#item.explanation_en]]
+      }
+      #if profile in ("school", "merged") { [\ #v(1pt)] }
+      #if profile in ("school", "merged", "cs") {
+        [#language-badge("CZ") #h(0.35em) #text(lang: "cs", size: 10pt)[#item.explanation_cs]]
+      }
     ]
+  }
+}
+
+#let title-for(meta) = context {
+  let profile = profile-state.get()
+  if profile == "cs" {
+    meta.at("nazev-cs", default: meta.nazev)
+  } else if profile == "en" {
+    meta.at("nazev-en", default: meta.nazev)
+  } else {
+    meta.nazev
   }
 }
 
 #let titulni-list(meta, logo: none) = {
   set align(center)
-  // Titulní list se nezarovnává do bloku — roztahování mezer v názvu práce
-  // vypadá jako chyba sazby.
   set par(justify: false)
 
   if logo != none {
@@ -363,8 +418,16 @@
 
   v(1fr)
 
-  // Nadpis se nedělí na slabiky — dělení slov v názvu práce působí nedbale.
-  text(size: 26pt, weight: "bold", hyphenate: false, confirmed(meta.nazev))
+  context {
+    let profile = profile-state.get()
+    if profile == "merged" {
+      text(size: 25pt, weight: "bold", hyphenate: false, confirmed(meta.nazev))
+      v(0.25cm)
+      text(size: 17pt, weight: "bold", hyphenate: false, confirmed(meta.at("nazev-en", default: meta.nazev)))
+    } else {
+      text(size: 26pt, weight: "bold", hyphenate: false, confirmed(title-for(meta)))
+    }
+  }
 
   if meta.at("podnazev", default: none) != none {
     v(0.4cm)
@@ -372,7 +435,7 @@
   }
 
   v(0.7cm)
-  text(size: 15pt, tracking: 2pt, "ODBORNÁ PRÁCE")
+  text(size: 15pt, tracking: 2pt, ui-label([ODBORNÁ PRÁCE], [THESIS]))
 
   v(1fr)
 
@@ -381,10 +444,8 @@
 
   context {
     let is-rev = review-state.get()
-    // final() dovolí zobrazit počet na titulní straně, i když se vypočítá až
-    // na konci dokumentu. Neexistuje žádná ručně udržovaná výchozí hodnota.
     let s = word-stats-state.final()
-    let rozsah = [Rozsah práce: #s.words slov / #s.chars znaků]
+    let rozsah = [#ui-label([Rozsah práce], [Extent]): #s.words #ui-label([slov], [words]) / #s.chars #ui-label([znaků], [characters])]
     let rozsah-vysazeny = if is-rev {
       text(size: 9pt, fill: rgb("#64748b"))[#rozsah]
     } else {
@@ -395,12 +456,12 @@
       columns: (1fr, auto),
       column-gutter: 1.2em,
       row-gutter: 4pt,
-      [Autor práce: #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]],
+      [#ui-label([Autor práce], [Author]): #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]],
       rozsah-vysazeny,
-      if meta.at("vedouci", default: none) != none [Vedoucí práce: #meta.vedouci],
+      if meta.at("vedouci", default: none) != none [#ui-label([Vedoucí práce], [Supervisor]): #meta.vedouci],
       none,
       ..if meta.at("konzultant", default: none) != none {
-        ([Konzultant: #meta.konzultant], none)
+        ([#ui-label([Konzultant], [Consultant]): #meta.konzultant], none)
       } else { () },
     )
   }
@@ -413,10 +474,10 @@
 }
 
 #let prohlaseni(meta) = {
-  nadpis-bez-cisla[#confirmed[Prohlášení]]
+  nadpis-bez-cisla[#confirmed[#ui-label([Prohlášení], [Declaration])]]
 
   let zkratka = meta.at("skola-zkratka", default: meta.skola)
-  confirmed[
+  let cs = confirmed[
     Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval/a
     samostatně pod dohledem vedoucího uvedeného na první straně. Všechny
     použité zdroje jsou uvedeny v seznamu zdrojů a informace z nich získané
@@ -425,9 +486,19 @@
     tištěný zdroj např. pro další studentské práce či pro prezentaci
     vzdělávání na #zkratka.
   ]
+  let en = confirmed[
+    I declare that I prepared this specialized thesis independently under the
+    supervision of the supervisor named on the title page. All sources used
+    are listed in the bibliography and information derived from them is cited
+    in the text. I agree that the printed version may be archived at
+    #meta.skola and used there as a reference for future student work or for
+    presenting education at #zkratka.
+  ]
+
+  bilingual(cs, en)
 
   v(1.5cm)
-  [V #meta.mesto dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce: #box(width: 4.5cm, repeat("…"))]
+  [#ui-label([V #meta.mesto dne], [In #meta.mesto on]) #box(width: 4.5cm, repeat("…")) #h(1fr) #ui-label([Podpis autora práce], [Author signature]): #box(width: 4.5cm, repeat("…"))]
 
   pagebreak()
 }
@@ -440,18 +511,26 @@
   pagebreak()
 }
 
-#let anotace-strana(meta) = {
-  nadpis-bez-cisla[#confirmed[Anotace]]
-  meta.anotace
+#let anotace-strana(meta) = context {
+  let profile = profile-state.get()
+
+  if profile in ("school", "cs", "merged") {
+    nadpis-bez-cisla[#confirmed[Anotace]]
+    meta.anotace
+  }
+
+  if profile in ("school", "merged") {
+    pagebreak(weak: true)
+  }
+
+  if profile in ("school", "en", "merged") {
+    nadpis-bez-cisla[#confirmed[Annotation]]
+    meta.abstract
+  }
 
   pagebreak(weak: true)
 
-  nadpis-bez-cisla[#confirmed[Annotation]]
-  meta.abstract
-
-  pagebreak(weak: true)
-
-  nadpis-bez-cisla[#confirmed[Klíčová slova | Keywords]]
+  nadpis-bez-cisla[#confirmed[#keyword-heading()]]
   render-keywords()
 
   pagebreak()
@@ -465,8 +544,10 @@
   koncept: auto,
   // Režim zobrazení recenzních značek a diffu: auto (podle sys.inputs), true (review) nebo false (raw čistá verze)
   review: auto,
-  // Jazykový režim obsahu: "cs", "en" nebo "merged".
-  language: "cs",
+  // Publikační profil: "school", "cs", "en" nebo "merged".
+  profile: "school",
+  // Kompatibilita se starším API; pokud je zadáno, mapuje cs -> school.
+  language: none,
   pismo: PISMO,
   velikost: 12pt,
   radkovani: 1.5,
@@ -490,11 +571,19 @@
     koncept
   }
 
-  assert(language in ("cs", "en", "merged"), message: "language must be cs, en, or merged")
-  review-state.update(is-review)
-  language-state.update(language)
+  let resolved-profile = if language == none {
+    profile
+  } else if language == "cs" {
+    "school"
+  } else {
+    language
+  }
 
-  set document(title: meta.nazev, author: meta.autor)
+  assert(resolved-profile in ("school", "cs", "en", "merged"), message: "profile must be school, cs, en, or merged")
+  review-state.update(is-review)
+  profile-state.update(resolved-profile)
+
+  set document(title: title-for(meta), author: meta.autor)
 
   // Okraje 2,5 cm; u hřbetu (vlevo) navíc 0,5 cm kvůli vazbě.
   set page(
@@ -576,12 +665,12 @@
   podekovani-strana(meta)
   anotace-strana(meta)
 
-  outline(title: "Obsah", depth: 3, indent: auto)
+  outline(title: ui-label([Obsah], [Contents]), depth: 3, indent: auto)
 
   if seznam-soucasti {
     pagebreak(weak: true)
     outline(
-      title: "Seznam obrázků a tabulek",
+      title: ui-label([Seznam obrázků a tabulek], [List of figures and tables]),
       target: figure.where(kind: image).or(figure.where(kind: table)),
     )
   }
@@ -600,7 +689,7 @@
   // ── Zadní část ───────────────────────────────────────────
   if bibliografie != none {
     pagebreak(weak: true)
-    bibliography(bibliografie, style: bib-styl, title: "Seznam zdrojů", full: true)
+    bibliography(bibliografie, style: bib-styl, title: ui-label([Seznam zdrojů], [References]), full: true)
   }
 
   // ── Jednotný výpočet rozsahu pro normal i review ──────────
@@ -711,7 +800,7 @@
   pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]
   // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
-  nadpis-bez-cisla[#confirmed[Seznam příloh]]
+  nadpis-bez-cisla[#confirmed[#ui-label([Seznam příloh], [List of appendices])]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(supplement: [Příloha]))
