@@ -51,20 +51,16 @@ build-merged:
 review: review-school review-cs review-en review-merged
 
 review-school:
-	@mkdir -p $(OUT_DIR)
-	$(TYPST) compile $(FONTS) --input template=$(TEMPLATE) --input review=true --input profile=school $(MAIN) $(OUT_REVIEW_SCHOOL)
+	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --profile school --main "$(MAIN)" --output "$(OUT_REVIEW_SCHOOL)"
 
 review-cs:
-	@mkdir -p $(OUT_DIR)
-	$(TYPST) compile $(FONTS) --input template=$(TEMPLATE) --input review=true --input profile=cs $(MAIN) $(OUT_REVIEW_CS)
+	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --profile cs --main "$(MAIN)" --output "$(OUT_REVIEW_CS)"
 
 review-en:
-	@mkdir -p $(OUT_DIR)
-	$(TYPST) compile $(FONTS) --input template=$(TEMPLATE) --input review=true --input profile=en $(MAIN) $(OUT_REVIEW_EN)
+	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --profile en --main "$(MAIN)" --output "$(OUT_REVIEW_EN)"
 
 review-merged:
-	@mkdir -p $(OUT_DIR)
-	$(TYPST) compile $(FONTS) --input template=$(TEMPLATE) --input review=true --input profile=merged $(MAIN) $(OUT_REVIEW_MERGED)
+	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --profile merged --main "$(MAIN)" --output "$(OUT_REVIEW_MERGED)"
 
 all: build review
 
