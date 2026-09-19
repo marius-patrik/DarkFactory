@@ -84,7 +84,7 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 
 /**
  * Runs a `foreach` node: one child per item of `state.outputs[foreach.items]`, at most `max_parallel` (default 1) at a
- * time. Each child keeps its result in `children/<node>/<index>/result.json`, so a resumed fan-out re-runs only the
+ * time. Each child keeps its result in `children/<node>/<index>/result.df`, so a resumed fan-out re-runs only the
  * children that did not succeed.
  */
 async function runForeach(
