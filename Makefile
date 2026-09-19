@@ -75,8 +75,13 @@ verify:
 
 ci: all verify
 
-site: all verify
-	$(PYTHON) scripts/build_site.py
+site:
+	@if command -v $(TYPST) >/dev/null 2>&1; then \
+		$(MAKE) all verify && $(PYTHON) scripts/build_site.py; \
+	else \
+		echo "Typst unavailable: validating Pages structure without PDF copies"; \
+		$(PYTHON) scripts/build_site.py --allow-missing; \
+	fi
 
 check: ci
 
