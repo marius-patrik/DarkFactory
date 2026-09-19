@@ -102,7 +102,8 @@ def test_df_harness_passes_explicit_task_kind():
 def test_df_build_argv_falls_back_to_the_prompt_text():
     """Without a written file the placeholder degrades to the prompt itself, never emptiness."""
     argv = REGISTRY["df"].build_argv("do the thing", None, "5m0s")
-    assert argv[-1] == "do the thing"
+    prompt_index = argv.index("--prompt-file") + 1
+    assert argv[prompt_index] == "do the thing"
 
 
 def test_every_template_carries_the_prompt():
