@@ -20,9 +20,7 @@ rukopis se nemohou verzově rozcházet.
 
 ## Dokumentové šablony
 
-Výchozí šablona je `gjkt-odborna-prace`. Každá šablona žije v `templates/<name>/`
-a exportuje funkci `template(...)[body]`. Rukopis importuje pouze
-`templates/registry.typ`, takže konkrétní sazbu lze přepnout bez kopírování textu.
+Výchozí šablona je `gjkt-odborna-prace`. Sdílené autorské/review funkce a jazykový stav žijí v `templates/common.typ`; `templates/registry.typ` vybírá konkrétní dokumentovou šablonu. Každá šablona žije v `templates/<name>/` a exportuje funkci `template(...)[body]`, takže konkrétní sazbu lze přepnout bez kopírování textu nebo review logiky.
 
 ```bash
 make all TEMPLATE=gjkt-odborna-prace
@@ -30,8 +28,7 @@ make all-templates
 make template-check
 ```
 
-`make all-templates` kompiluje všech osm profil/review variant pro každou nalezenou
-šablonu do `out/templates/<template>/`.
+`make all-templates` kompiluje všech osm profil/review variant pro každou nalezenou šablonu do `out/templates/<template>/`. `make ci` tuto plnou matici spouští automaticky a ověřuje také oddělení `common`/registry/template vrstev.
 
 ## Publikační profily
 
@@ -57,21 +54,18 @@ make watch      # živý náhled školního final profilu
 make build      # všechny 4 final profily
 make review     # všechny 4 review profily
 make all        # všech 8 PDF
-make ci         # 8 PDF výchozí šablony + smoke test všech šablon + kontrola architektury
+make ci         # 8 PDF výchozí šablony + plná 8×N matice všech šablon + kontrola architektury
 make site       # sestaví PDF a lokální podobu GitHub Pages
 ```
 
-CI používá stejný `make ci` kontrakt. Job `ci / paper` kompiluje všech osm variant,
-ověří jejich PDF hlavičky a release manifest a následně nahraje všechny výsledky jako
-GitHub Actions artifact. Release workflow spouští stejnou validaci před zabalením assetů.
+CI používá stejný `make ci` kontrakt. Job `ci / paper` kompiluje kanonických osm variant výchozí šablony i úplnou matici všech registrovaných šablon, kontroluje PDF artefakty, architekturu šablon a release manifest. Release workflow spouští stejnou validaci před zabalením kanonických osmi assetů.
 
 Písma jsou přibalena v `fonts/`, takže výsledek je reprodukovatelný bez systémové
 závislosti na konkrétní instalaci písem.
 
 ## GitHub Pages
 
-Pages web publikuje výběr všech osmi variant. Odkazy míří přímo na PDF, takže se
-otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace vieweru.
+Pages web publikuje všechny dokumentové šablony a pod každou všech osm profile/review variant. Odkazy míří přímo na PDF, takže se otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace vieweru.
 
 <https://marius-patrik.github.io/DarkFactory-Paper/>
 
@@ -83,7 +77,9 @@ otevírají v nativním PDF vieweru prohlížeče místo vlastní implementace v
 | `thesis.typ` | společné sestavení obsahu práce |
 | `metadata.typ` | název, autor, škola, anotace a jazykové varianty metadata |
 | `kapitoly/*.typ` | text práce |
-| `templates/gjkt-odborna-prace/` | interní Typst šablonu: sazba, review vrstva, profily, termíny a počítání rozsahu |
+| `templates/common.typ` | sdílená autorská/review API, jazykové profily a terminologie |
+| `templates/registry.typ` | registry a výběr dokumentové šablony |
+| `templates/gjkt-odborna-prace/` | GJKT struktura dokumentu, sazba a počítání rozsahu |
 | `scripts/check_build.py` | statická CI kontrola osmi PDF a release assetů |
 | `scripts/build_site.py` | generátor Pages selectoru |
 | `bib/references.bib` | zdroje ve formátu BibTeX |
