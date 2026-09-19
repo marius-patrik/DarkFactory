@@ -5,7 +5,11 @@
 #import "lib/odborna-prace.typ": draft, added, unconfirmed, confirmed
 
 #let meta = (
+  // Oficiální školní varianta zachovává současný název.
   nazev: "Úvod do agentického AI a harness pro automatizovaný softwarový vývoj",
+  // Volitelné projekce používané pouze při alternativní kompilaci.
+  nazev-cs: "Úvod do agentické umělé inteligence a řídicího systému pro automatizovaný softwarový vývoj",
+  nazev-en: "Introduction to Agentic AI and a Harness for Automated Software Development",
   podnazev: none,
 
   autor: "Patrik Marius",
