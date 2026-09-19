@@ -1,11 +1,11 @@
-#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, confirmed, removed, diff, scope-note, blue-note, term, kw
+#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
 
-= #confirmed[Teoretická část – Analýza konceptu]
+= #finalized[Teoretická část – Analýza konceptu]
 
-== #confirmed[Git a GitHub (Správa verzí)]
+== #finalized[Git a GitHub (Správa verzí)]
 
-=== #confirmed[Úvod]
-#confirmed[
+=== #finalized[Úvod]
+#accepted[
 Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. #diff[Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém *Git* v kombinaci s platformou *GitHub*.][Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term("Git", explanation: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.") v kombinaci s platformou #term("GitHub", explanation: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.") .]
 
 Klíčové komponenty infrastruktury zahrnují:
@@ -87,15 +87,15 @@ Klíčové mechanismy ochrany zahrnují:
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
-== #confirmed[LLM, chatboti a agenti]
+== #finalized[LLM, chatboti a agenti]
 
 #blue-note[
   Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentní inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
 
-=== #confirmed[Úvod]
+=== #finalized[Úvod]
 
-#confirmed[
+#accepted[
 V agentním softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
 
 Základní principy fungování modelu zahrnují:
@@ -105,18 +105,18 @@ Základní principy fungování modelu zahrnují:
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
 
-=== #confirmed[Tokeny, tokenizace a embedding]
+=== #finalized[Tokeny, tokenizace a embedding]
 
-#confirmed[
+#accepted[
 Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vstupní text je nejprve deterministickým algoritmem převeden na číselné reprezentace, se kterými následně počítají maticové vrstvy neuronové sítě.
 
 Tento proces zahrnuje následující pojmy:
 ]
-- #confirmed[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).]
-- #confirmed[#diff[*Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů][#term("Embedding", explanation: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy."): Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů] (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
-- #confirmed[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
+- #accepted[*Tokeny a tokenizér*: Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte-Pair Encoding, BPE).]
+- #accepted[#diff[*Embedding*: Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů][#term("Embedding", explanation: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy."): Každý token je promítnut do vícerozměrného vektorového prostoru, kde geometrická vzdálenost a úhel vektorů vyjadřují sémantickou příbuznost pojmů] (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #accepted[*Jazyková asymetrie tokenizace*: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
-#confirmed[
+#accepted[
 Z inženýrského hlediska je proto žádoucí vést systémové prompty, technické plány i komunikaci mezi nástroji v angličtině, aby se šetřila kapacita kontextu a snížila latence inference.
 ]
 
@@ -193,19 +193,19 @@ Příčiny a inženýrská řešení tohoto jevu:
 - *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
-== #confirmed[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]
+== #finalized[Harness a agentní inženýrství (prompt, kontext, smyčka, graf...)]
 
-=== #confirmed[Úvod]
+=== #finalized[Úvod]
 
-#confirmed[
+#accepted[
 #diff[V terminologii agentního inženýrství označuje pojem *harness* (řídicí postroj) aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu.][V terminologii agentního inženýrství označuje pojem #term("Harness", explanation: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.") aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu.] Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
 
 #diff[Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná *agentní smyčka* (_Agent Loop_).][Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná #term("Agent Loop", explanation: "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.") (agentní smyčka).]
 ]
 
-=== #confirmed[Agent vs. Chatbot]
+=== #finalized[Agent vs. Chatbot]
 
-#confirmed[
+#accepted[
 #diff[Rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.][Rozdíl mezi konverzačním #term("Chatbot", explanation: "Systém založený na jazykovém modelu určený k pasivní textové interakci s uživatelem; odpovídá na jednotlivé dotazy v chatu, avšak nedisponuje nástroji pro samostatnou modifikaci okolního prostředí.")em a autonomním #term("Agent", explanation: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného inženýrského cíle.")em nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí. Zatímco chatbot funguje pasivně jako textový rádce, agent vystupuje jako aktivní vykonavatel úkolů.]
 
 Srovnání obou přístupů:
@@ -268,11 +268,11 @@ Mezi typické patologie patří:
 - *Nekontrolovaná spotřeba zdrojů (_Context Runaway_)*: Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
 ]
 
-#confirmed[
+#accepted[
 === Dovednosti (Skills)
 ]
 
-#confirmed[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (#term("Skills", explanation: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.")).]
+#accepted[Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží koncept *dovedností* (#term("Skills", explanation: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.")).]
 
 #unconfirmed[
 Architektura dovedností staví na následujících principech:
