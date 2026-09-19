@@ -64,10 +64,9 @@ types and the area taxonomy are defined by DF-RULE-015; this rule covers granula
 
 ### Rule 6 — CI readiness and verification
 
-Every push MUST leave green status on GitHub Actions across every job in `ci.yml`. A red build is a
-stop-the-line event: no further feature work proceeds until it is green. The set of required status
-checks is declared by repository settings (`.github/scripts/repo_settings.py` against the manifest)
-and enforced by branch protection.
+The canonical/default branch MUST remain green on required checks; a red canonical branch is a repository-wide stop-the-line event.
+
+A failing topic/recovery branch blocks that branch's merge and dependent work, but does not globally halt unrelated isolated branches whose own checks are green. Required checks come from the final normalized package/capability quality contract, and no branch may merge with red, missing or stale required checks.
 
 ### Rule 7 — Branch and pull request workflow
 
