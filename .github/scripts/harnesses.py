@@ -384,7 +384,16 @@ REGISTRY: Dict[str, Harness] = {
         binary="df",
         # The prompt travels by file so long prompts never meet an argument-length limit, and
         # ``--json`` so the runner can parse the event stream into the final answer text.
-        template=["run", "--json", "--prompt-file", PROMPT_FILE, "--kind", KIND],
+        template=[
+            "run",
+            "--json",
+            "--prompt-file",
+            PROMPT_FILE,
+            "--kind",
+            KIND,
+            "--timeout",
+            TIMEOUT,
+        ],
         # No pools: df owns model choice and in-flight failover across its own chain, so there is
         # nothing for the runner to fall back between. No auth declaration either: df reads its own
         # accounts from DF_HOME, configured by the runner's setup step before dispatch.

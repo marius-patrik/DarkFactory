@@ -38,6 +38,7 @@ export type HarnessEvent =
 	| { type: "candidate_unavailable"; candidate: Candidate; message: string }
 	| { type: "limit"; entry: LimitEntry }
 	| { type: "recovered"; entry: LimitEntry }
+	| { type: "timeout"; budgetMs: number; elapsedMs: number; sessionId: string }
 	| {
 			type: "waiting";
 			candidate?: Candidate;
@@ -91,6 +92,25 @@ export class MaxTurnsError extends Error {
 	constructor(limit: number) {
 		super(`Maximum turn count reached (${limit})`);
 		this.name = "MaxTurnsError";
+	}
+}
+
+export interface RunDeadline {
+	startedAt: number;
+	deadlineAt: number;
+	budgetMs: number;
+}
+
+export class RunTimeoutError extends Error {
+	readonly exitCode = 4 as const;
+
+	constructor(
+		readonly budgetMs: number,
+		readonly elapsedMs: number,
+		readonly sessionId?: string,
+	) {
+		super(`Run execution budget expired after ${elapsedMs}ms (budget ${budgetMs}ms)`);
+		this.name = "RunTimeoutError";
 	}
 }
 
@@ -172,6 +192,7 @@ export class FailoverSupervisor {
 	private activeIndex: number;
 	private readonly failures: FailureKind[] = [];
 	private readonly reasons: CandidateFailureReason[] = [];
+	private timeoutEmittedFor?: number;
 
 	constructor(
 		private readonly options: SupervisorOptions,
@@ -191,6 +212,50 @@ export class FailoverSupervisor {
 
 	private emit(event: HarnessEvent): void {
 		this.options.onEvent?.(event);
+	}
+
+	private timeoutError(budget: RunDeadline): RunTimeoutError {
+		const now = (this.options.now ?? Date.now)();
+		const elapsedMs = Math.max(0, now - budget.startedAt);
+		const error = new RunTimeoutError(budget.budgetMs, elapsedMs, this.session.sessionId);
+		if (this.timeoutEmittedFor !== budget.deadlineAt) {
+			this.timeoutEmittedFor = budget.deadlineAt;
+			this.emit({
+				type: "timeout",
+				budgetMs: budget.budgetMs,
+				elapsedMs,
+				sessionId: this.session.sessionId,
+			});
+		}
+		return error;
+	}
+
+	private remainingMs(budget?: RunDeadline): number | undefined {
+		if (!budget) return undefined;
+		return budget.deadlineAt - (this.options.now ?? Date.now)();
+	}
+
+	private assertWithinDeadline(budget?: RunDeadline): void {
+		const remaining = this.remainingMs(budget);
+		if (budget && remaining !== undefined && remaining <= 0) throw this.timeoutError(budget);
+	}
+
+	private async withinDeadline<T>(operation: Promise<T>, budget?: RunDeadline, abortAgent = false): Promise<T> {
+		if (!budget) return operation;
+		this.assertWithinDeadline(budget);
+		const remaining = this.remainingMs(budget)!;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timeout = new Promise<never>((_, reject) => {
+			timer = setTimeout(() => {
+				if (abortAgent) this.session.agent.abort();
+				reject(this.timeoutError(budget));
+			}, remaining);
+		});
+		try {
+			return await Promise.race([operation, timeout]);
+		} finally {
+			if (timer !== undefined) clearTimeout(timer);
+		}
 	}
 	private async recordOutcome(
 		candidate: Candidate,
@@ -287,7 +352,12 @@ export class FailoverSupervisor {
 		};
 	}
 
-	private async nextCandidate(failure: FailureClassification, errorMessage: string): Promise<boolean> {
+	private async nextCandidate(
+		failure: FailureClassification,
+		errorMessage: string,
+		budget?: RunDeadline,
+	): Promise<boolean> {
+		this.assertWithinDeadline(budget);
 		const from = this.activeCandidate;
 		const nowFn = this.options.now ?? Date.now;
 		const sleep = this.options.sleep ?? defaultSleep;
@@ -309,7 +379,7 @@ export class FailoverSupervisor {
 				const status = await this.usable(candidate, nowFn());
 				if (status.usable) {
 					this.activeIndex = index;
-					await this.options.runtime.bindCandidate(candidate);
+					await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
 					this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
 					return true;
 				}
@@ -337,7 +407,7 @@ export class FailoverSupervisor {
 				continue;
 			}
 			this.activeIndex = index;
-			await this.options.runtime.bindCandidate(candidate);
+			await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
 			this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
 			return true;
 		}
@@ -383,17 +453,20 @@ export class FailoverSupervisor {
 			limits: allCooldowns.map((item) => item.cooldown),
 		});
 
-		await sleep(Math.max(0, waitMs));
+		const remaining = this.remainingMs(budget);
+		if (budget && remaining !== undefined && waitMs >= remaining) throw this.timeoutError(budget);
+		await this.withinDeadline(sleep(Math.max(0, waitMs)), budget);
 		await this.recoverNow(nowFn());
 		this.activeIndex = earliest.index;
-		await this.options.runtime.bindCandidate(earliest.candidate);
+		await this.withinDeadline(this.options.runtime.bindCandidate(earliest.candidate), budget);
 		this.emit({ type: "failover", from, to: earliest.candidate, reason: failure.kind, errorMessage });
 		return true;
 	}
 
 	/** Runs one user prompt; failed provider responses are branched away before continuation. */
-	async prompt(prompt: string, maxTurns = 100): Promise<AssistantMessage> {
+	async prompt(prompt: string, maxTurns = 100, budget?: RunDeadline): Promise<AssistantMessage> {
 		if (!prompt.trim()) throw new Error("Prompt cannot be empty");
+		this.assertWithinDeadline(budget);
 		const initialUserCount = this.session.sessionManager
 			.buildSessionContext()
 			.messages.filter((message) => message.role === "user").length;
@@ -401,6 +474,7 @@ export class FailoverSupervisor {
 		let totalTurns = 0;
 
 		while (true) {
+			this.assertWithinDeadline(budget);
 			const attemptStartedAt = (this.options.now ?? Date.now)();
 			const preflight = await this.usable(this.activeCandidate, (this.options.now ?? Date.now)());
 			if (!preflight.usable) {
@@ -417,6 +491,7 @@ export class FailoverSupervisor {
 					!(await this.nextCandidate(
 						{ kind, ...(entry ? { resetAt: entry.resetAt, pool: entry.pool } : {}) },
 						"proactive limit/capacity skip",
+						budget,
 					))
 				)
 					throw new ChainExhaustedError([...this.failures, kind], this.reasons, await this.options.ledger.list());
@@ -425,7 +500,7 @@ export class FailoverSupervisor {
 			const turnMessages: AssistantMessage[] = [];
 			let thrown: unknown;
 			try {
-				await this.options.runtime.validateCandidate(candidate);
+				await this.withinDeadline(this.options.runtime.validateCandidate(candidate), budget);
 			} catch (error) {
 				thrown = error;
 			}
@@ -456,8 +531,13 @@ export class FailoverSupervisor {
 			});
 			try {
 				if (!thrown) {
-					if (promptRecorded) await this.session.agent.continue();
-					else await this.session.prompt(prompt, { source: "rpc", expandPromptTemplates: false });
+					if (promptRecorded) await this.withinDeadline(this.session.agent.continue(), budget, true);
+					else
+						await this.withinDeadline(
+							this.session.prompt(prompt, { source: "rpc", expandPromptTemplates: false }),
+							budget,
+							true,
+						);
 				}
 			} catch (error) {
 				thrown = error;
@@ -465,6 +545,8 @@ export class FailoverSupervisor {
 				unsubscribe();
 			}
 
+			if (thrown instanceof RunTimeoutError) throw thrown;
+			this.assertWithinDeadline(budget);
 			const final = turnMessages.at(-1);
 			for (const message of turnMessages.slice(0, -1)) {
 				this.emit({
@@ -645,7 +727,7 @@ export class FailoverSupervisor {
 			this.session.agent.state.messages = persisted;
 			promptRecorded = persisted.filter((message) => message.role === "user").length > initialUserCount;
 
-			if (!(await this.nextCandidate(failure, errorMessage)))
+			if (!(await this.nextCandidate(failure, errorMessage, budget)))
 				throw new ChainExhaustedError(this.failures, this.reasons, await this.options.ledger.list());
 		}
 	}

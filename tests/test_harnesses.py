@@ -69,7 +69,16 @@ def test_df_harness_runs_one_json_session_by_prompt_file():
     assert harness.auth is None, "df reads its own accounts from DF_HOME"
     assert any(PROMPT_FILE in token for token in harness.template)
     argv = harness.build_argv("do the thing", None, "5m0s", prompt_file="/tmp/p.md")
-    assert argv == ["df", "run", "--json", "--prompt-file", "/tmp/p.md"]
+    assert argv == ["df", "run", "--json", "--prompt-file", "/tmp/p.md", "--timeout", "5m0s"]
+
+
+def test_df_harness_forwards_the_stage_timeout():
+    """The Python bootstrap budget is passed to df instead of only existing in runner prose."""
+    argv = REGISTRY["df"].build_argv(
+        "implement this", None, "15m0s", prompt_file="/tmp/p.md", kind="implement"
+    )
+    assert argv[-2:] == ["--timeout", "15m0s"]
+    assert TIMEOUT not in " ".join(argv)
 
 
 def test_df_harness_passes_explicit_task_kind():
@@ -85,13 +94,16 @@ def test_df_harness_passes_explicit_task_kind():
         "/tmp/p.md",
         "--kind",
         "review",
+        "--timeout",
+        "5m0s",
     ]
 
 
 def test_df_build_argv_falls_back_to_the_prompt_text():
     """Without a written file the placeholder degrades to the prompt itself, never emptiness."""
     argv = REGISTRY["df"].build_argv("do the thing", None, "5m0s")
-    assert argv[-1] == "do the thing"
+    prompt_index = argv.index("--prompt-file") + 1
+    assert argv[prompt_index] == "do the thing"
 
 
 def test_every_template_carries_the_prompt():

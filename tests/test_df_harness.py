@@ -243,7 +243,10 @@ class TestDfPromptFile:
             "Review this implementation plan: create an illustration and generate a video clip."
         )
         assert agent_runner.run_agent_prompt(prompt, kind="review") == "reviewed"
-        assert seen["argv"][-2:] == ["--kind", "review"]
+        kind_index = seen["argv"].index("--kind")
+        assert seen["argv"][kind_index : kind_index + 2] == ["--kind", "review"]
+        timeout_index = seen["argv"].index("--timeout")
+        assert seen["argv"][timeout_index : timeout_index + 2] == ["--timeout", "5m0s"]
 
     def test_a_json_answer_after_tools_is_returned(self, monkeypatch):
         """End to end: event stream in, final text out."""
