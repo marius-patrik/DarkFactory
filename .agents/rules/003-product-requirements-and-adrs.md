@@ -10,21 +10,27 @@ owners: [pr206, merge-gates]
 
 ## Requirement
 
-Product requirements are defined by `PRD.md`, the single normative product document. Executable
-declarations (providers, taxonomy, workflow graph, installed consumers) live in
-`.darkfactory/manifest.json`, and mandatory contribution behavior in `.agents/rules/*.md`. Any
-deviation from `PRD.md` MUST be explicitly approved by the user and recorded as a discrete ADR
-under `.agents/notes/adr/` before it is implemented.
+`PRD.md` is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.
+
+Executable declarations use the final DarkFactory contracts:
+
+- `repo.df` for repository/product declaration;
+- `config.df` for runtime/user/provider configuration;
+- `docs.df` for native documentation configuration;
+- the declarable workflow graph for execution topology;
+- `.agents/rules/*.md` for mandatory contribution/governance behavior.
+
+Legacy manifest/config paths are not normative final contracts.
+
+A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
 ## Rationale
 
-One product contract prevents two documents overriding each other. Decisions justify themselves in
-discrete ADRs; the requirement that changed stays in the PRD.
+Stable requirements, executable declarations and decision history have separate owners so no generated view can silently override product intent.
 
 ## Enforcement
 
-- `tests/test_governance.py::test_prd_is_the_only_normative_product_document`
-- `tests/test_governance.py::test_legacy_knowledge_files_are_absent`
+Governance checks ensure PRD remains the single normative product document and architecture changes are represented by ADRs.
 
 ## Exceptions
 
@@ -32,7 +38,4 @@ None.
 
 ## Change control
 
-Owned jointly with `merge-gates` (interpretation/plan wording) and `workflow-graph` (node
-topology). ADR numbering is per-file under `.agents/notes/adr/`; the deprecated multi-record
-`architecture_decisions.md` ledger was split into one discrete file per decision on 2026-09-13 and
-removed.
+Planning/graph/package/capability changes update the owning Request/ADR/PRD rather than creating parallel specification files.
