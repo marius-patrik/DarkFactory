@@ -28,7 +28,23 @@
       "out/prace-review.pdf",
       "out/prace-cs-review.pdf",
       "out/prace-en-review.pdf",
-      "out/prace-bilingual-review.pdf"
+      "out/prace-bilingual-review.pdf",
+      "out/prace.html",
+      "out/prace.md",
+      "out/prace-cs.html",
+      "out/prace-cs.md",
+      "out/prace-en.html",
+      "out/prace-en.md",
+      "out/prace-bilingual.html",
+      "out/prace-bilingual.md",
+      "out/prace-review.html",
+      "out/prace-review.md",
+      "out/prace-cs-review.html",
+      "out/prace-cs-review.md",
+      "out/prace-en-review.html",
+      "out/prace-en-review.md",
+      "out/prace-bilingual-review.html",
+      "out/prace-bilingual-review.md"
     ]
   },
   "pages": {
@@ -37,7 +53,7 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "The paper is one Typst project with template-neutral manuscript semantics in templates/common.typ, selection in templates/registry.typ, and switchable document templates under templates/<name>/. CI builds the canonical eight PDFs plus a complete eight-output matrix for every discovered template, validates architecture, and Pages exposes every template/profile/review combination. Release assets remain the canonical default-template eight PDFs.",
+    "$comment": "The paper is one Typst project with template-neutral manuscript semantics in templates/common.typ, selection in templates/registry.typ, and switchable document templates under templates/<name>/. CI builds Final/Review × profile publications as canonical PDFs plus semantic Typst HTML and derived Markdown, validates architecture, and Pages exposes every template/profile/review/format combination. Release assets include all three compiled publication formats for the default template.",
     "testing": {
       "typst": {
         "command": "make ci"

@@ -20,14 +20,14 @@ OUT_REVIEW_CS := $(OUT_DIR)/prace-cs-review.pdf
 OUT_REVIEW_EN := $(OUT_DIR)/prace-en-review.pdf
 OUT_REVIEW_MERGED := $(OUT_DIR)/prace-bilingual-review.pdf
 
-.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged all all-templates template-check web-install web-check web-build verify ci site watch png clean check
+.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged exports all all-templates template-check web-install web-check web-build verify ci site watch png clean check
 
 help:
-	@echo "make all             – 8 PDF pro TEMPLATE=$(TEMPLATE)"
-	@echo "make all-templates   – 8 PDF pro každou šablonu pod out/templates/<template>/"
+	@echo "make all             – PDF + HTML + Markdown matice pro TEMPLATE=$(TEMPLATE)"
+	@echo "make all-templates   – PDF + HTML + Markdown pro každou šablonu pod out/templates/<template>/"
 	@echo "make template-check  – rychlý school/final smoke každé objevené šablony"
 	@echo "make web-check       – TypeScript kontrola + produkční Vite build React vieweru"
-	@echo "make ci              – PDF matice + React/TypeScript viewer + kontrola architektury"
+	@echo "make ci              – PDF/HTML/Markdown matice + React/TypeScript viewer + kontrola architektury"
 	@echo "make site            – CI matice + React GitHub Pages pro všechny šablony"
 	@echo "make watch           – živý náhled TEMPLATE=$(TEMPLATE), school/final"
 	@echo "Templates: $(TEMPLATES)"
@@ -64,7 +64,10 @@ review-en:
 review-merged:
 	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --profile merged --main "$(MAIN)" --output "$(OUT_REVIEW_MERGED)"
 
-all: build review
+exports:
+	$(PYTHON) scripts/build_web_exports.py --typst "$(TYPST)" --font-path fonts --template "$(TEMPLATE)" --source web-publication.typ --output-dir "$(OUT_DIR)"
+
+all: build review exports
 
 all-templates:
 	@set -e; for template in $(TEMPLATES); do \
@@ -97,7 +100,7 @@ site:
 	@if command -v $(TYPST) >/dev/null 2>&1; then \
 		$(MAKE) ci && $(PYTHON) scripts/build_site.py; \
 	else \
-		echo "Typst unavailable: building React Pages structure without PDF copies"; \
+		echo "Typst unavailable: building React Pages structure without compiled publication artifacts"; \
 		$(MAKE) web-build && $(PYTHON) scripts/build_site.py --allow-missing; \
 	fi
 

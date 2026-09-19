@@ -9,7 +9,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-EXPECTED = (
+EXPECTED_PDFS = (
     Path("out/prace.pdf"),
     Path("out/prace-cs.pdf"),
     Path("out/prace-en.pdf"),
@@ -19,6 +19,9 @@ EXPECTED = (
     Path("out/prace-en-review.pdf"),
     Path("out/prace-bilingual-review.pdf"),
 )
+EXPECTED_HTML = tuple(path.with_suffix(".html") for path in EXPECTED_PDFS)
+EXPECTED_MARKDOWN = tuple(path.with_suffix(".md") for path in EXPECTED_PDFS)
+EXPECTED = EXPECTED_PDFS + EXPECTED_HTML + EXPECTED_MARKDOWN
 
 
 def fail(message: str) -> None:
@@ -28,11 +31,25 @@ def fail(message: str) -> None:
 for path in EXPECTED:
     if not path.is_file():
         fail(f"missing {path}")
+    if path.stat().st_size < 256:
+        fail(f"{path} is unexpectedly small ({path.stat().st_size} bytes)")
+
+for path in EXPECTED_PDFS:
     if path.stat().st_size < 1024:
         fail(f"{path} is unexpectedly small ({path.stat().st_size} bytes)")
     with path.open("rb") as handle:
         if handle.read(5) != b"%PDF-":
             fail(f"{path} is not a PDF")
+
+for path in EXPECTED_HTML:
+    source = path.read_text(encoding="utf-8").lower()
+    if "<html" not in source or "<body" not in source:
+        fail(f"{path} is not a complete compiled HTML publication")
+
+for path in EXPECTED_MARKDOWN:
+    source = path.read_text(encoding="utf-8")
+    if "#" not in source or len(source.strip()) < 256:
+        fail(f"{path} is not a substantive compiled Markdown publication")
 
 
 TEMPLATE_NAMES = tuple(
@@ -51,22 +68,35 @@ for template_name in TEMPLATE_NAMES:
     for path in matrix:
         if not path.is_file():
             fail(f"missing template matrix artifact: {path}")
-        if path.stat().st_size < 1024:
+        if path.stat().st_size < 256:
             fail(f"{path} is unexpectedly small ({path.stat().st_size} bytes)")
-        with path.open("rb") as handle:
-            if handle.read(5) != b"%PDF-":
-                fail(f"{path} is not a PDF")
+        if path.suffix == ".pdf":
+            with path.open("rb") as handle:
+                if handle.read(5) != b"%PDF-":
+                    fail(f"{path} is not a PDF")
+        elif path.suffix == ".html":
+            source = path.read_text(encoding="utf-8").lower()
+            if "<html" not in source or "<body" not in source:
+                fail(f"{path} is not a complete HTML publication")
+        elif path.suffix == ".md":
+            source = path.read_text(encoding="utf-8")
+            if "#" not in source:
+                fail(f"{path} is not a Markdown publication")
 
-    for final_name, review_name in (
-        ("prace.pdf", "prace-review.pdf"),
-        ("prace-cs.pdf", "prace-cs-review.pdf"),
-        ("prace-en.pdf", "prace-en-review.pdf"),
-        ("prace-bilingual.pdf", "prace-bilingual-review.pdf"),
+    for final_stem, review_stem in (
+        ("prace", "prace-review"),
+        ("prace-cs", "prace-cs-review"),
+        ("prace-en", "prace-en-review"),
+        ("prace-bilingual", "prace-bilingual-review"),
     ):
-        final = template_out / final_name
-        review = template_out / review_name
-        if final.read_bytes() == review.read_bytes():
-            fail(f"template review output is byte-identical to final output: {template_name}/{final_name}")
+        for extension in (".pdf", ".html", ".md"):
+            final = template_out / f"{final_stem}{extension}"
+            review = template_out / f"{review_stem}{extension}"
+            if final.read_bytes() == review.read_bytes():
+                fail(
+                    "template review output is byte-identical to final output: "
+                    f"{template_name}/{final.name}"
+                )
 
 # Repository architecture invariants.
 gitmodules = Path(".gitmodules")
@@ -390,6 +420,7 @@ viewer_required = (
     Path("web/viewer.html"),
     Path("web/src/main.tsx"),
     Path("web/src/app.tsx"),
+    Path("web/src/compiled-artifact.tsx"),
     Path("web/src/pdf-document.tsx"),
     Path("web/src/viewer.css"),
     Path("web/src/components/animated-icon.tsx"),
@@ -440,6 +471,9 @@ for required in (
     "PanelLeftIcon",
     "PanelRightIcon",
     "ModePicker",
+    "FormatPicker",
+    "CompiledArtifactView",
+    "ArtifactFormat",
     "MaximizeIcon",
     "ContextMenu",
     "status-actions",
@@ -448,10 +482,23 @@ for required in (
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 3:
-    fail("toolbar path must separate Home, work title, publication version, and Final/Review mode")
+if app_source.count('className="identity-separator"') < 4:
+    fail("toolbar path must separate Home, work title, publication version, Final/Review/Split mode, and compiled format")
+for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
+    if required not in app_source:
+        fail(f"compiled-format path selector missing contract: {required}")
 if "peerTarget" in app_source:
     fail("Final/Review switching must live in the path bar, not the toolbar action cluster")
+
+compiled_artifact_source = Path("web/src/compiled-artifact.tsx").read_text(encoding="utf-8")
+for required in (
+    'fetch(path, { cache: "no-store" })',
+    'src={path}',
+    'format === "html"',
+    'Loading compiled Markdown',
+):
+    if required not in compiled_artifact_source:
+        fail(f"compiled artifact viewer must render generated files directly: {required}")
 
 icon_source = Path("web/src/components/animated-icon.tsx").read_text(encoding="utf-8")
 for required in ("lucide-animated", "lucide-react", "STATIC_FALLBACKS"):
@@ -500,17 +547,45 @@ for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "in
     if required not in vite_source:
         fail(f"Vite config missing multi-page React contract: {required}")
 
+web_publication = Path("web-publication.typ")
+web_exporter = Path("scripts/build_web_exports.py")
+for required_path in (web_publication, web_exporter):
+    if not required_path.is_file() or required_path.stat().st_size == 0:
+        fail(f"missing compiled web publication source/tool: {required_path}")
+
+web_export_source = web_exporter.read_text(encoding="utf-8")
+for required in (
+    '"--features", "html"',
+    '"--format", "html"',
+    "html_to_markdown",
+    'parser.add_argument("--source", default="web-publication.typ")',
+    'output.with_suffix(".md")',
+):
+    if required not in web_export_source:
+        fail(f"web exporter missing compiled HTML/Markdown contract: {required}")
+
+makefile_source = Path("Makefile").read_text(encoding="utf-8")
+for required in (
+    "exports:",
+    "scripts/build_web_exports.py",
+    "all: build review exports",
+):
+    if required not in makefile_source:
+        fail(f"Makefile missing semantic publication build contract: {required}")
+
 site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
 for required in (
     'WEB_DIST = Path("web/dist")',
     "shutil.copytree(WEB_DIST, SITE)",
-    '"React + PDF.js"',
+    "compiled Typst HTML/Markdown",
+    '"formats": ["pdf", "markdown", "html"]',
+    'variant["artifacts"][mode].items()',
     '"shadcn/ui"',
     '"Motion"',
     '"Dagre"',
 ):
     if required not in site_builder:
-        fail(f"Pages builder missing React viewer publication contract: {required}")
+        fail(f"Pages builder missing multi-format publication contract: {required}")
 
 manifest_path = Path(".github/darkfactory.json")
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -522,13 +597,20 @@ if release_assets != expected_assets:
     fail(f"release asset matrix mismatch; missing={missing}, extra={extra}")
 
 pairs = (
-    (Path("out/prace.pdf"), Path("out/prace-review.pdf")),
-    (Path("out/prace-cs.pdf"), Path("out/prace-cs-review.pdf")),
-    (Path("out/prace-en.pdf"), Path("out/prace-en-review.pdf")),
-    (Path("out/prace-bilingual.pdf"), Path("out/prace-bilingual-review.pdf")),
+    ("prace", "prace-review"),
+    ("prace-cs", "prace-cs-review"),
+    ("prace-en", "prace-en-review"),
+    ("prace-bilingual", "prace-bilingual-review"),
 )
-for final, review in pairs:
-    if final.read_bytes() == review.read_bytes():
-        fail(f"review output is byte-identical to final output: {final}")
+for final_stem, review_stem in pairs:
+    for extension in (".pdf", ".html", ".md"):
+        final = Path("out") / f"{final_stem}{extension}"
+        review = Path("out") / f"{review_stem}{extension}"
+        if final.read_bytes() == review.read_bytes():
+            fail(f"review output is byte-identical to final output: {final}")
 
-print(f"ok: validated {len(EXPECTED)} canonical PDFs + {len(TEMPLATE_NAMES)} complete template matrices, architecture, and release manifest")
+print(
+    f"ok: validated {len(EXPECTED)} canonical publication artifacts "
+    f"(PDF/HTML/Markdown) + {len(TEMPLATE_NAMES)} complete template matrices, "
+    "architecture, and release manifest"
+)

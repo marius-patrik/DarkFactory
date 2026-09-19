@@ -16,6 +16,10 @@ VARIANTS = (
         "subtitle": "Czech body, canonical English technical terms, bilingual annotation and keywords",
         "final": "prace.pdf",
         "review": "prace-review.pdf",
+        "artifacts": {
+            "final": {"pdf": "prace.pdf", "markdown": "prace.md", "html": "prace.html"},
+            "review": {"pdf": "prace-review.pdf", "markdown": "prace-review.md", "html": "prace-review.html"},
+        },
         "recommended": True,
     },
     {
@@ -24,6 +28,10 @@ VARIANTS = (
         "subtitle": "Czech projection with Czech terminology where bilingual helpers are used",
         "final": "prace-cs.pdf",
         "review": "prace-cs-review.pdf",
+        "artifacts": {
+            "final": {"pdf": "prace-cs.pdf", "markdown": "prace-cs.md", "html": "prace-cs.html"},
+            "review": {"pdf": "prace-cs-review.pdf", "markdown": "prace-cs-review.md", "html": "prace-cs-review.html"},
+        },
         "recommended": False,
     },
     {
@@ -32,6 +40,10 @@ VARIANTS = (
         "subtitle": "English projection; source sections not yet bilingual remain in their source language",
         "final": "prace-en.pdf",
         "review": "prace-en-review.pdf",
+        "artifacts": {
+            "final": {"pdf": "prace-en.pdf", "markdown": "prace-en.md", "html": "prace-en.html"},
+            "review": {"pdf": "prace-en-review.pdf", "markdown": "prace-en-review.md", "html": "prace-en-review.html"},
+        },
         "recommended": False,
     },
     {
@@ -40,6 +52,10 @@ VARIANTS = (
         "subtitle": "Merged bilingual projection; bilingual source blocks render both language versions",
         "final": "prace-bilingual.pdf",
         "review": "prace-bilingual-review.pdf",
+        "artifacts": {
+            "final": {"pdf": "prace-bilingual.pdf", "markdown": "prace-bilingual.md", "html": "prace-bilingual.html"},
+            "review": {"pdf": "prace-bilingual-review.pdf", "markdown": "prace-bilingual-review.md", "html": "prace-bilingual-review.html"},
+        },
         "recommended": False,
     },
 )
@@ -55,7 +71,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--allow-missing",
     action="store_true",
-    help="build the React site/manifest even when Typst PDFs are absent",
+    help="build the React site/manifest even when compiled publication artifacts are absent",
 )
 args = parser.parse_args()
 
@@ -90,15 +106,18 @@ def href_for(template_name: str, filename: str) -> str:
 
 for template_name in template_names:
     for variant in VARIANTS:
-        for key in ("final", "review"):
-            source = source_for(template_name, variant[key])
-            target = SITE / href_for(template_name, variant[key])
-            if not source.is_file():
-                if args.allow_missing:
-                    continue
-                raise SystemExit(f"missing generated PDF: {source}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+        for mode in ("final", "review"):
+            for artifact_format, filename in variant["artifacts"][mode].items():
+                source = source_for(template_name, filename)
+                target = SITE / href_for(template_name, filename)
+                if not source.is_file():
+                    if args.allow_missing:
+                        continue
+                    raise SystemExit(
+                        f"missing generated {artifact_format} publication: {source}"
+                    )
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
 
 manifest = {
     "commit": os.environ.get("GITHUB_SHA", ""),
@@ -107,7 +126,8 @@ manifest = {
     "templates": template_names,
     "variants": VARIANTS,
     "viewer": {
-        "engine": "React + PDF.js",
+        "engine": "React + PDF.js + compiled Typst HTML/Markdown",
+        "formats": ["pdf", "markdown", "html"],
         "pdfjs_version": PDFJS_VERSION,
         "entrypoint": "viewer.html",
         "stack": [
@@ -140,5 +160,5 @@ if not assets.is_dir() or not any(assets.iterdir()):
 
 print(
     f"ok: built React Pages app for {len(template_names)} templates x "
-    f"{len(VARIANTS) * 2} PDF variants using PDF.js {PDFJS_VERSION}"
+    f"{len(VARIANTS) * 2 * 3} publication artifacts (PDF/Markdown/HTML) using PDF.js {PDFJS_VERSION}"
 )

@@ -89,9 +89,11 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 ## GitHub Pages Viewer
 - Published Pages are a React + TypeScript multi-page Vite application under `web/`. Use shadcn/ui primitives, Tailwind, Motion, Dagre, `lucide-animated`, and PDF.js; do not restore the legacy handwritten `viewer.js/viewer.css/icons.js` shell.
-- PDF remains the canonical rendered document; PDF.js must retain canvas, selectable text, annotation/link layers, direct PDF download, and a native-PDF fallback.
-- `make web-check` is the viewer type/build gate; `scripts/build_site.py` publishes `web/dist` together with the generated PDF matrix and runtime `variants.json`.
-- Do not replace the production viewer with Typst HTML export while Typst documents that target as experimental/not production-ready.
+- PDF remains the canonical paged/print document; PDF.js must retain canvas, selectable text, annotation/link layers, direct PDF download, and a native-PDF fallback.
+- The publication matrix also contains compiled HTML and Markdown for every Final/Review × profile × template combination. `web-publication.typ` is the semantic Typst HTML entrypoint and must consume the same manuscript files plus shared review/profile/terminology state.
+- HTML must be produced by Typst's HTML target (`--features html --format html`). Markdown must be derived deterministically from that compiled HTML by `scripts/build_web_exports.py`; never maintain an independent Markdown manuscript and never derive Markdown/HTML from the PDF.
+- `make web-check` is the viewer type/build gate; `make all` builds PDF/HTML/Markdown and `scripts/build_site.py` publishes `web/dist` together with the generated multi-format matrix and runtime `variants.json`.
+- Typst HTML remains an experimental semantic artifact and must not replace the React publication shell or the canonical paged PDF.
 - The local live-preview workflow above remains the native Chrome PDF viewer unless the user explicitly asks to change local preview too.
 
 - Keywords remain a compact usage-driven list in front matter. Detailed term names/explanations belong only to the separate `Rejstřík | Index` generated from the full canonical vocabulary in back matter immediately before `Seznam příloh | List of appendices`.
@@ -105,7 +107,8 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Viewer controls prefer the pinned `lucide-animated` React package and use narrow `lucide-react` fallbacks for glyphs the animated set does not provide; do not allow icon buttons to render blank or regress to Unicode/text symbols. Every icon action uses a shadcn tooltip.
 - Zoom-out must have a guaranteed static `Minus` fallback, and the main toolbar must expose a tooltip-backed refresh-page action with a guaranteed `RefreshCw` fallback.
 - Sidebar position (`left`/`right`) and representation (`thumbnails`/`minimap`) are persistent user settings. The toggle sits at the extreme toolbar edge matching the sidebar side, visibly uses the corresponding left/right sidebar icon, and exposes sidebar move/minimap actions through a shadcn context menu.
-- The toolbar path is `Home \\ work title \\ publication version \\ Final/Review/Split`. The mode path-segment selector must expose all three modes: Final, Review, and Split. Publication version and mode are compact path selectors backed by the current viewer URLs.
+- The toolbar path is `Home \\ work title \\ publication version \\ Final/Review/Split \\ PDF/Markdown/HTML`. Mode and format are separate compact path selectors. Switching publication version, mode, or format must preserve the other dimensions and must resolve directly to the generated artifact named by `variants.json`.
 - Split mode uses the dedicated two-column/split-view icon. Page-number and zoom controls belong to the bottom status bar, zoom-out/in use minus/plus icons, theme/fullscreen controls also belong to the status bar, and fullscreen uses the Maximize/Minimize glyph pair. Zoom must support buttons, Ctrl/⌘+wheel/trackpad pinch, and two-touch pinch.
 - Review PDFs must not add an automatic `KONCEPT` watermark/background banner. An explicit template watermark may still be supplied deliberately.
 - Split view provides an explicit persisted scroll-synchronization toggle. Parent toolbar navigation/zoom targets both panes regardless; free scrolling only mirrors continuously when synchronization is enabled.
+- PDF-only controls (page number, zoom, thumbnail/minimap sidebar, synchronized free-scroll) are hidden for Markdown/HTML. Markdown view displays the generated `.md` source verbatim in the viewer; HTML view embeds the generated `.html` document. Download/open actions always target the currently selected compiled format.

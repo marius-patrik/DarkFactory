@@ -34,9 +34,16 @@ import {
   type SidebarMode,
   type SidebarSide,
 } from "./pdf-document";
+import { CompiledArtifactView, type ArtifactFormat } from "./compiled-artifact";
 
 const DEFAULT_WORK_TITLE =
   "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj";
+
+type ArtifactSet = {
+  pdf: string;
+  markdown: string;
+  html: string;
+};
 
 type PublicationVariant = {
   profile: string;
@@ -44,6 +51,10 @@ type PublicationVariant = {
   subtitle: string;
   final: string;
   review: string;
+  artifacts?: {
+    final: ArtifactSet;
+    review: ArtifactSet;
+  };
   recommended: boolean;
 };
 
@@ -56,6 +67,7 @@ type Manifest = {
   viewer?: {
     engine?: string;
     pdfjs_version?: string;
+    formats?: ArtifactFormat[];
     stack?: string[];
   };
 };
@@ -89,12 +101,25 @@ function useManifest() {
   return { manifest, error };
 }
 
-function safePdfPath(value: string | null) {
-  if (!value || !value.toLowerCase().endsWith(".pdf")) return null;
+function safeArtifactPath(value: string | null, format: ArtifactFormat) {
+  const extension = format === "pdf" ? ".pdf" : format === "markdown" ? ".md" : ".html";
+  if (!value || !value.toLowerCase().endsWith(extension)) return null;
   if (value.includes("://") || value.startsWith("//") || value.startsWith("/")) return null;
   const parts = value.split("/").filter(Boolean);
   if (parts.some((part) => part === "..")) return null;
   return parts.join("/");
+}
+
+function artifactFilename(
+  variant: PublicationVariant,
+  mode: ViewerMode,
+  format: ArtifactFormat,
+) {
+  const declared = variant.artifacts?.[mode]?.[format];
+  if (declared) return declared;
+  const pdf = mode === "review" ? variant.review : variant.final;
+  if (format === "pdf") return pdf;
+  return pdf.replace(/\.pdf$/i, format === "markdown" ? ".md" : ".html");
 }
 
 function hrefFor(templateName: string, defaultTemplate: string, filename: string) {
@@ -110,6 +135,7 @@ function viewerHref(args: {
   profile: string;
   title: string;
   mode: ViewerMode;
+  format?: ArtifactFormat;
   view?: ViewMode;
   embedded?: boolean;
 }) {
@@ -120,6 +146,7 @@ function viewerHref(args: {
   query.set("profile", args.profile);
   query.set("title", args.title);
   query.set("mode", args.mode);
+  query.set("format", args.format || "pdf");
   if (args.view === "split") query.set("view", "split");
   if (args.embedded) query.set("embedded", "1");
   return "viewer.html?" + query.toString();
@@ -131,6 +158,7 @@ function childHref(args: {
   profile: string;
   title: string;
   mode: ViewerMode;
+  format?: ArtifactFormat;
 }) {
   return viewerHref({
     ...args,
@@ -258,6 +286,7 @@ function VersionPicker({
   profileName,
   mode,
   viewMode,
+  format,
   versionTitle,
 }: {
   manifest: Manifest;
@@ -265,6 +294,7 @@ function VersionPicker({
   profileName: string;
   mode: ViewerMode;
   viewMode: ViewMode;
+  format: ArtifactFormat;
   versionTitle: string;
 }) {
   return (
@@ -292,12 +322,12 @@ function VersionPicker({
           const file = hrefFor(
             templateName,
             manifest.default_template,
-            mode === "review" ? variant.review : variant.final,
+            artifactFilename(variant, mode, format),
           );
           const peer = hrefFor(
             templateName,
             manifest.default_template,
-            mode === "review" ? variant.final : variant.review,
+            artifactFilename(variant, mode === "review" ? "final" : "review", format),
           );
           const href = viewerHref({
             file,
@@ -306,6 +336,7 @@ function VersionPicker({
             profile: variant.profile,
             title: variant.title,
             mode,
+            format,
             view: viewMode,
           });
           const active = variant.profile === profileName;
@@ -408,6 +439,65 @@ function ModePicker({
   );
 }
 
+function FormatPicker({
+  format,
+  pdfHref,
+  markdownHref,
+  htmlHref,
+}: {
+  format: ArtifactFormat;
+  pdfHref: string;
+  markdownHref: string;
+  htmlHref: string;
+}) {
+  const options: Array<{ format: ArtifactFormat; label: string; href: string }> = [
+    { format: "pdf", label: "PDF", href: pdfHref },
+    { format: "markdown", label: "Markdown", href: markdownHref },
+    { format: "html", label: "HTML", href: htmlHref },
+  ];
+
+  const label = format === "markdown" ? "Markdown" : format.toUpperCase();
+
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="format-trigger-wrap">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="format-select"
+                aria-label="Switch compiled format"
+              >
+                <span>{label}</span>
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Switch compiled format</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="format-menu">
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.format}
+            className={format === option.format ? "format-item active" : "format-item"}
+            onSelect={() => {
+              window.location.href = option.href;
+            }}
+          >
+            <span>{option.label}</span>
+            {format === option.format && (
+              <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function PublicationIndex() {
   const { manifest, error } = useManifest();
 
@@ -434,8 +524,8 @@ export function PublicationIndex() {
         <p className="eyebrow">DarkFactory-Paper</p>
         <h1>Odborná práce / Thesis</h1>
         <p>
-          All variants are generated from one manuscript. Open the exact Typst PDF in the
-          React viewer, compare Raw and Review side by side, or download the canonical PDF.
+          All variants are generated from one manuscript. Open the compiled PDF, Markdown,
+          or HTML publication in the React viewer and compare Final and Review side by side.
         </p>
       </motion.header>
 
@@ -540,8 +630,11 @@ export function PublicationIndex() {
 export function ViewerApp() {
   const { manifest } = useManifest();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const pdfPath = safePdfPath(params.get("file"));
-  const peerPath = safePdfPath(params.get("peer"));
+  const requestedFormat = params.get("format");
+  const format: ArtifactFormat =
+    requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf";
+  const artifactPath = safeArtifactPath(params.get("file"), format);
+  const peerPath = safeArtifactPath(params.get("peer"), format);
   const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final";
   const viewMode: ViewMode = params.get("view") === "split" ? "split" : "single";
   const embedded = params.get("embedded") === "1";
@@ -550,8 +643,8 @@ export function ViewerApp() {
     params.get("template") || manifest?.default_template || "gjkt-odborna-prace";
   const profileName = params.get("profile") || "school";
 
-  const rawPath = mode === "review" ? peerPath : pdfPath;
-  const reviewPath = mode === "review" ? pdfPath : peerPath;
+  const rawPath = mode === "review" ? peerPath : artifactPath;
+  const reviewPath = mode === "review" ? artifactPath : peerPath;
 
   const documentRef = useRef<DocumentControl>(null);
   const splitFrames = useRef<Array<HTMLIFrameElement | null>>([null, null]);
@@ -774,7 +867,7 @@ export function ViewerApp() {
   ]);
 
   useEffect(() => {
-    if (embedded) return;
+    if (embedded || format !== "pdf") return;
     const onKeyDown = (event: KeyboardEvent) => {
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
@@ -798,13 +891,13 @@ export function ViewerApp() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [embedded, goToPage, setZoom, state.page, zoomBy]);
+  }, [embedded, format, goToPage, setZoom, state.page, zoomBy]);
 
-  if (!pdfPath) {
+  if (!artifactPath) {
     return (
       <div className="document-error">
         <strong>Invalid document path.</strong>
-        <span>The requested PDF is not available.</span>
+        <span>The requested compiled artifact is not available.</span>
       </div>
     );
   }
@@ -812,17 +905,21 @@ export function ViewerApp() {
   if (embedded) {
     return (
       <div className="embedded-viewer">
-        <PdfDocumentView
-          ref={documentRef}
-          pdfPath={pdfPath}
-          embedded
-          sidebarSide={sidebarSide}
-          sidebarMode={sidebarMode}
-          sidebarHidden
-          onMoveSidebar={moveSidebar}
-          onToggleSidebarMode={toggleSidebarMode}
-          onStateChange={handleDocumentState}
-        />
+        {format === "pdf" ? (
+          <PdfDocumentView
+            ref={documentRef}
+            pdfPath={artifactPath}
+            embedded
+            sidebarSide={sidebarSide}
+            sidebarMode={sidebarMode}
+            sidebarHidden
+            onMoveSidebar={moveSidebar}
+            onToggleSidebarMode={toggleSidebarMode}
+            onStateChange={handleDocumentState}
+          />
+        ) : (
+          <CompiledArtifactView path={artifactPath} format={format} embedded />
+        )}
       </div>
     );
   }
@@ -837,6 +934,7 @@ export function ViewerApp() {
           profile: profileName,
           title: versionTitle,
           mode: "final",
+          format,
         })
       : "#";
 
@@ -849,6 +947,7 @@ export function ViewerApp() {
           profile: profileName,
           title: versionTitle,
           mode: "review",
+          format,
         })
       : "#";
 
@@ -862,6 +961,7 @@ export function ViewerApp() {
             profile: profileName,
             title: versionTitle,
             mode: "final",
+            format,
           })
         : viewerHref({
             file: rawPath,
@@ -870,14 +970,46 @@ export function ViewerApp() {
             profile: profileName,
             title: versionTitle,
             mode: "final",
+            format,
             view: "split",
           })
       : "#";
 
-  const currentDownload = viewMode === "split" ? rawPath || pdfPath : pdfPath;
+  const currentDownload = viewMode === "split" ? rawPath || artifactPath : artifactPath;
   const canSplit = Boolean(rawPath && reviewPath);
+  const formatLabel = format === "markdown" ? "Markdown" : format.toUpperCase();
 
-  const sidebarToggle = viewMode === "single" ? (
+  const activeVariant = manifest?.variants.find((variant) => variant.profile === profileName);
+  const formatTarget = (nextFormat: ArtifactFormat) => {
+    if (!manifest || !activeVariant) return "#";
+    const targetMode: ViewerMode = viewMode === "split" ? "final" : mode;
+    const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
+    const file = hrefFor(
+      templateName,
+      manifest.default_template,
+      artifactFilename(activeVariant, targetMode, nextFormat),
+    );
+    const peer = hrefFor(
+      templateName,
+      manifest.default_template,
+      artifactFilename(activeVariant, peerMode, nextFormat),
+    );
+    return viewerHref({
+      file,
+      peer,
+      template: templateName,
+      profile: profileName,
+      title: versionTitle,
+      mode: targetMode,
+      format: nextFormat,
+      view: viewMode,
+    });
+  };
+  const pdfTarget = formatTarget("pdf");
+  const markdownTarget = formatTarget("markdown");
+  const htmlTarget = formatTarget("html");
+
+  const sidebarToggle = viewMode === "single" && format === "pdf" ? (
     <SidebarToggle
       side={sidebarSide}
       mode={sidebarMode}
@@ -896,6 +1028,7 @@ export function ViewerApp() {
       profile: profileName,
       title: versionTitle,
       mode: "final",
+      format,
     });
   const reviewChild =
     reviewPath &&
@@ -905,6 +1038,7 @@ export function ViewerApp() {
       profile: profileName,
       title: versionTitle,
       mode: "review",
+      format,
     });
 
   const toggleFullscreen = async () => {
@@ -937,6 +1071,7 @@ export function ViewerApp() {
                 profileName={profileName}
                 mode={mode}
                 viewMode={viewMode}
+                format={format}
                 versionTitle={versionTitle}
               />
             ) : (
@@ -949,6 +1084,13 @@ export function ViewerApp() {
               finalHref={finalTarget}
               reviewHref={reviewTarget}
               splitHref={canSplit ? splitTarget : "#"}
+            />
+            <span className="identity-separator" aria-hidden="true">\</span>
+            <FormatPicker
+              format={format}
+              pdfHref={pdfTarget}
+              markdownHref={markdownTarget}
+              htmlHref={htmlTarget}
             />
           </div>
 
@@ -964,7 +1106,7 @@ export function ViewerApp() {
               href={canSplit ? splitTarget : undefined}
               pressed={viewMode === "split"}
             />
-            {viewMode === "split" && (
+            {viewMode === "split" && format === "pdf" && (
               <TooltipAction
                 label={
                   splitSyncScroll
@@ -982,13 +1124,13 @@ export function ViewerApp() {
               />
             )}
             <TooltipAction
-              label="Download PDF"
+              label={"Download " + formatLabel}
               icon={["DownloadIcon"]}
               href={currentDownload || undefined}
               download
             />
             <TooltipAction
-              label="Open native PDF"
+              label={format === "pdf" ? "Open native PDF" : "Open compiled " + formatLabel}
               icon={["ExternalLinkIcon", "FileTextIcon"]}
               href={currentDownload || undefined}
               target="_blank"
@@ -1046,13 +1188,13 @@ export function ViewerApp() {
           ) : (
             <div className="document-error">
               <strong>Split view unavailable.</strong>
-              <span>Both Raw and Review PDFs are required.</span>
+              <span>Both Final and Review {formatLabel} outputs are required.</span>
             </div>
           )
-        ) : (
+        ) : format === "pdf" ? (
           <PdfDocumentView
             ref={documentRef}
-            pdfPath={pdfPath}
+            pdfPath={artifactPath}
             embedded={false}
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
@@ -1061,6 +1203,8 @@ export function ViewerApp() {
             onToggleSidebarMode={toggleSidebarMode}
             onStateChange={handleDocumentState}
           />
+        ) : (
+          <CompiledArtifactView path={artifactPath} format={format} embedded={false} />
         )}
       </main>
 
@@ -1068,6 +1212,9 @@ export function ViewerApp() {
         <div className="statusbar-spacer" aria-hidden="true" />
 
         <div className="status-center">
+          {format === "pdf" ? (
+            <>
+
           <div className="status-group">
             <TooltipAction
               label="Previous page"
@@ -1139,6 +1286,11 @@ export function ViewerApp() {
               className="status-action"
             />
           </div>
+        
+            </>
+          ) : (
+            <div className="artifact-status">Compiled {formatLabel}</div>
+          )}
         </div>
 
         <div className="status-actions">

@@ -35,3 +35,16 @@ the list of appendices. It contains the complete canonical vocabulary, deduplica
 by stable term id, and is alphabetically grouped as level-2 letter headings with
 level-3 term headings. All levels are outlined so letters and individual terms appear
 in the document contents. The core word-count boundary is placed before this back-matter index.
+
+
+## Semantic web publication
+
+The paged GJKT template remains authoritative for the PDF/print layout. The repository
+also provides `web-publication.typ`, a template-neutral semantic entrypoint for
+Typst's HTML target. It imports the same manuscript chapters and shared review/profile/
+terminology semantics without attempting to reproduce page margins, title-page layout,
+or other print-only GJKT presentation in HTML.
+
+`scripts/build_web_exports.py` compiles that semantic entrypoint to HTML and derives
+Markdown from the compiled HTML. These web formats therefore represent the same
+manuscript state but are intentionally semantic rather than paginated replicas.

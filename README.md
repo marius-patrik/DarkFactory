@@ -141,30 +141,41 @@ existujícího zdroje; vizuální formát termínu již nemění.
 
 GitHub Pages je samostatná React + TypeScript aplikace v `web/`, sestavovaná přes Vite.
 UI používá shadcn/ui (Radix primitives + Tailwind), Motion pro přechody a Dagre pro
-layout minimapy stránek. PDF z Typstu zůstává kanonickým vizuálním výstupem a
+layout minimapy stránek. PDF z Typstu zůstává kanonickým tiskovým a školním výstupem;
 PDF.js nad ním renderuje canvas, textovou vrstvu i annotation vrstvu, takže text
 zůstává označitelný/kopírovatelný a PDF odkazy jsou interaktivní. Interní PDF
 destinace vlastní annotation link service překládá přímo na navigaci mezi stránkami
 custom vieweru. Nad PDF.js callbacky je navíc capture-phase fallback navázaný přímo
 na data jednotlivých anotací, takže interní cíle i externí URL zůstávají klikatelné.
 
-Viewer nabízí Raw, Review a Split režim, výběr publikační verze, persistentní sidebar
-vlevo/vpravo s thumbnail/minimap reprezentací a kontextovou nabídkou, page jump,
-fit-width a `− / +` zoom ve spodním status baru, Ctrl/⌘+scroll a pinch zoom,
-světlý/tmavý režim, fullscreen a přímé stažení PDF. Sidebar toggle používá podle
-strany garantovanou ikonu levého/pravého sidebaru a sedí na krajním okraji toolbaru.
-Identita dokumentu je `Home \\ Název práce \\ Verze \\ Final/Review/Split`; přepínač
-režimu je součástí stejné path lišty a nabízí Final, Review i Split.
+Stejný rukopis se publikuje také jako skutečný kompilovaný HTML a Markdown. HTML vzniká
+z odděleného sémantického vstupu `web-publication.typ` nativním HTML targetem Typstu
+(`typst compile --features html --format html`). Markdown se poté deterministicky
+odvozuje ze vzniklého HTML pomocí `scripts/build_web_exports.py`; nevzniká nezávislým
+paralelním přepisem zdroje ani rekonstrukcí z PDF. Final/Review × profil × šablona tak
+publikuje vždy trojici artefaktů `.pdf`, `.html` a `.md`.
+
+Viewer nabízí Final, Review a Split režim, výběr publikační verze a samostatný přepínač
+formátu PDF / Markdown / HTML. Identita dokumentu je
+`Home \\ Název práce \\ Verze \\ Final/Review/Split \\ PDF/Markdown/HTML`.
+Přepnutí formátu zachovává vybranou verzi i režim a načte přímo příslušný kompilovaný
+artefakt. Markdown view zobrazuje skutečný obsah vygenerovaného `.md`; HTML view
+vkládá skutečný vygenerovaný `.html`. PDF režim navíc nabízí persistentní sidebar
+vlevo/vpravo s thumbnail/minimap reprezentací, page jump, fit-width a `− / +` zoom,
+Ctrl/⌘+scroll a pinch zoom. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
+Markdown režimu skryté. Všechny formáty lze stáhnout nebo otevřít přímo.
+
 Všechny ikonové ovládací prvky mají hover tooltipy. Review PDF nepřidává automatický
 `KONCEPT` vodoznak. Split view může volitelně synchronizovat průběžnou scroll pozici
-obou dokumentů.
+PDF dokumentů.
 
-`make web-check` provede TypeScript kontrolu a produkční Vite build; `make site`
-publikuje bundlované assety společně s PDF maticí a `variants.json`.
+`make web-check` provede TypeScript kontrolu a produkční Vite build. `make all`
+vytvoří PDF + HTML + Markdown publikační matici a `make site` ji společně s
+`variants.json` publikuje na GitHub Pages.
 
-Oficiální UI webové aplikace Typst se zde nevkládá: není distribuováno jako
-self-hostovatelná/embeddable open-source komponenta. Experimentální Typst HTML export
-proto není produkčním viewerem této práce.
+Nativní HTML export Typstu je stále experimentální, proto nenahrazuje React shell ani
+kanonické tiskové PDF. Je použit jako sémantický kompilovaný artefakt uvnitř vlastního
+vieweru, nikoli jako náhrada celé publikační aplikace.
 
 
 ### Klíčová slova a rejstřík
