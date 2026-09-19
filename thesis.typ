@@ -4,10 +4,11 @@
 // Jediný vstupní bod pro obě výstupní varianty práce.
 // Rozdíl mezi normal/review se předává pouze jako režim šabloně;
 // samotný obsah kapitol, sazba i výpočet rozsahu jsou společné.
-#let thesis(review: false) = odborna-prace(
+#let thesis(review: false, language: "cs") = odborna-prace(
   meta: meta,
   logo: "/img/logo.jpeg",
   review: review,
+  language: language,
   koncept: if review { "KONCEPT" } else { none },
 )[
   #include "kapitoly/01-uvod.typ"
