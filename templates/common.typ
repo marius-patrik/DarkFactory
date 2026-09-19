@@ -111,23 +111,31 @@
     body
   }
   assert(order in ("cs-en", "en-cs"), message: "translation order must be cs-en or en-cs")
-  let cs = text(lang: "cs")[#part("CZ", value.cs)]
-  let en = text(lang: "en")[#part("EN", value.en)]
-  let first = if order == "cs-en" { cs } else { en }
-  let second = if order == "cs-en" { en } else { cs }
+  let has-cs = value.cs != none
+  let has-en = value.en != none
+  let cs = if has-cs { text(lang: "cs")[#part("CZ", value.cs)] } else { none }
+  let en = if has-en { text(lang: "en")[#part("EN", value.en)] } else { none }
 
   if lang == "cs" {
-    cs
+    if has-cs { cs } else { en }
   } else if lang == "en" {
+    if has-en { en } else { cs }
+  } else if not has-cs {
     en
-  } else if stacked {
-    block(breakable: true)[
-      #first
-      #v(spacing)
-      #second
-    ]
+  } else if not has-en {
+    cs
   } else {
-    pair-content(cs, en, separator: separator, order: order)
+    let first = if order == "cs-en" { cs } else { en }
+    let second = if order == "cs-en" { en } else { cs }
+    if stacked {
+      block(breakable: true)[
+        #first
+        #v(spacing)
+        #second
+      ]
+    } else {
+      pair-content(cs, en, separator: separator, order: order)
+    }
   }
 }
 
@@ -315,7 +323,7 @@
 
 #let term-name(value, language: "auto", separator: "bar", order: "cs-en") = context {
   let lang = term-language(language)
-  if value.en == value.cs and lang == "both" {
+  if str(value.en) == str(value.cs) and lang == "both" {
     text(lang: "cs")[#value.cs]
   } else {
     render-translation(
@@ -338,15 +346,11 @@
 ) = context {
   assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
   let lang = term-language(language)
-  let details = translation(cs: value.explanation_cs, en: value.explanation_en)
 
-  if lang == "cs" and value.explanation_cs == none {
-    none
-  } else if lang == "en" and value.explanation_en == none {
-    none
-  } else if lang == "both" and value.explanation_cs == none and value.explanation_en == none {
+  if value.explanation_cs == none and value.explanation_en == none {
     none
   } else {
+    let details = translation(cs: value.explanation_cs, en: value.explanation_en)
     render-translation(
       details,
       language: lang,
