@@ -320,6 +320,7 @@ class Harness:
         model: Optional[str],
         timeout: str,
         prompt_file: Optional[str] = None,
+        kind: Optional[str] = None,
     ) -> List[str]:
         """Renders the argv for one invocation.
 
@@ -334,6 +335,7 @@ class Harness:
             model: Model id, or ``None`` to use the harness default.
             timeout: Print-mode timeout as a Go duration string.
             prompt_file: Path of the file holding the prompt, for ``PROMPT_FILE`` templates.
+            kind: Optional task kind ("plan", "implement", "review", "fix", "classify", "chat", etc.).
 
         Returns:
             Full argv including the binary.
@@ -363,6 +365,10 @@ class Harness:
         if pending_flag is not None:
             argv.append(pending_flag)
         argv.extend(self.extra_args)
+
+        if kind and self.name == "df":
+            argv.extend(["--kind", kind])
+
         return argv
 
 
