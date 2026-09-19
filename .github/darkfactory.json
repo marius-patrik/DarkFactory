@@ -2,8 +2,8 @@
   "$comment": "Everything the shared pipeline needs and cannot detect. The pipeline itself is identical across every repository that uses it; this file is the only thing that differs.",
   "identity": {
     "owner": "marius-patrik",
-    "repo": "OdbornaPrace",
-    "display_name": "OdbornaPrace",
+    "repo": "OdbornaPrace-paper",
+    "display_name": "OdbornaPrace-paper",
     "default_branch": "main",
     "description": "Odborná práce: autonomní pipeline pro vývoj softwaru (GJKT)",
     "topics": [
@@ -22,11 +22,13 @@
     "metadata": "ignore",
     "assets": [
       "out/prace.pdf",
+      "out/prace-cs.pdf",
       "out/prace-en.pdf",
-      "out/prace-merged.pdf",
+      "out/prace-bilingual.pdf",
       "out/prace-review.pdf",
+      "out/prace-cs-review.pdf",
       "out/prace-en-review.pdf",
-      "out/prace-merged-review.pdf"
+      "out/prace-bilingual-review.pdf"
     ]
   },
   "pages": {
@@ -35,10 +37,10 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "Detection finds typst.toml on its own. All normal/review and cs/en/merged PDFs use the same thesis() renderer through main.typ. CI and release both run the six-output Makefile matrix so the paper artifact exists for pipeline upload; formatting remains off because typstyle would reflow hand-set Czech typography.",
+    "$comment": "The paper uses one Typst renderer with four publication profiles (school/cs/en/merged) and final/review modes. CI compiles and validates all eight PDFs; release builds the same matrix; Pages uses the repository site builder to expose every PDF as a direct native-viewer link. Formatting remains disabled because typstyle would reflow hand-set Czech typography.",
     "testing": {
       "typst": {
-        "command": "make all"
+        "command": "make ci"
       }
     },
     "release": {
@@ -49,6 +51,12 @@
     "formatting": {
       "typst": {
         "enabled": false
+      }
+    },
+    "documentation": {
+      "typst": {
+        "command": "make site",
+        "source": "Typst publication matrix"
       }
     }
   },
