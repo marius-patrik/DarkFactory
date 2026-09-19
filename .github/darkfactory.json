@@ -34,12 +34,12 @@
     "$comment": "Detection finds typst.toml on its own. Both PDFs use the same thesis() renderer; main.typ and review.typ are thin mode selectors. Commands are declared because this repository vendors its fonts. Formatting is off because typstyle would reflow hand-set Czech typography.",
     "testing": {
       "typst": {
-        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts review.typ out/prace-review.pdf"
+        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts --input review=true main.typ out/prace-review.pdf"
       }
     },
     "release": {
       "typst": {
-        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts review.typ out/prace-review.pdf"
+        "command": "typst compile --font-path fonts main.typ out/prace.pdf && typst compile --font-path fonts --input review=true main.typ out/prace-review.pdf"
       }
     },
     "formatting": {
