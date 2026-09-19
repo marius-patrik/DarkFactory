@@ -1,0 +1,4 @@
+[submodule "darkfactory"]
+	path = darkfactory
+	url = https://github.com/marius-patrik/DarkFactory.git
+	branch = darkfactory
