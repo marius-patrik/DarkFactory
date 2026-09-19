@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import manifest as manifest_module
 
-#: Everything repository-specific comes from `.darkfactory/manifest.json`, so this script is
+#: Everything repository-specific comes from `.darkfactory/repo.df` or root `repo.df`, so this script is
 #: identical in every repository that uses the pipeline.
 #:
 #: Consumers carry no copy of these scripts - they call the pipeline at a pinned commit - so the
