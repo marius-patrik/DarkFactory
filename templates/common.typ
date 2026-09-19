@@ -74,6 +74,12 @@
   }
 }
 
+#let language-badge(code) = text(
+  size: 8.5pt,
+  weight: "bold",
+  fill: rgb("#475569"),
+)[[#code]]
+
 #let pair-content(cs, en, separator: "bar", order: "cs-en") = {
   assert(separator in ("bar", "paren", "dash"), message: "separator must be bar, paren, or dash")
   assert(order in ("cs-en", "en-cs"), message: "order must be cs-en or en-cs")
@@ -414,15 +420,9 @@
 #let kw = term
 #let render-term = term
 
-#let language-badge(code) = text(
-  size: 8.5pt,
-  weight: "bold",
-  fill: rgb("#475569"),
-)[[#code]]
-
-#let used-terms() = context {
+#let collect-used-terms(entries) = {
   let items = ()
-  for entry in query(term-use-label) {
+  for entry in entries {
     let value = entry.value
     if value.keyword and not items.any(item => item.id == value.id) {
       items.push(value)
@@ -434,7 +434,7 @@
 // Dynamický terminologický přehled: pouze termíny skutečně použité v dané
 // kompilaci, deduplikované podle stabilního id.
 #let render-keywords() = context {
-  let items = used-terms()
+  let items = collect-used-terms(query(term-use-label))
 
   if items.len() == 0 {
     [—]
