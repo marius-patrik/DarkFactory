@@ -138,20 +138,20 @@
 }
 
 #let default-terms = (
-  "Agent": "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného cíle.",
-  "Agent Loop": "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.",
-  "Chatbot": "Systém založený na jazykovém modelu určený k pasivní textové interakci s uživatelem; odpovídá na jednotlivé dotazy v chatu, avšak nedisponuje nástroji pro samostatnou modifikaci okolního prostředí.",
-  "Context Rot": "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí.",
-  "Embedding": "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy.",
-  "Git": "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře.",
-  "GitHub": "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů.",
-  "Harness": "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku.",
-  "Human-in-the-loop": "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací.",
-  "MCP": "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC.",
-  "Plugins": "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
-  "Prompt Engineering": "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.",
-  "Pull Request": "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách.",
-  "Skills": "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
+  (en: "Agent", cs: "Agent", explanation: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného cíle."),
+  (en: "Agent Loop", cs: "Agentní smyčka", explanation: "Iterativní prováděcí cyklus autonomního agenta (založený na vzoru ReAct: Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí."),
+  (en: "Chatbot", cs: "Chatbot", explanation: "Systém založený na jazykovém modelu určený k pasivní textové interakci s uživatelem; odpovídá na jednotlivé dotazy v chatu, avšak nedisponuje nástroji pro samostatnou modifikaci okolního prostředí."),
+  (en: "Context Rot", cs: "Degradace kontextu", explanation: "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií a šumem, vedoucí k přehlížení instrukcí a ztrátě souvislostí."),
+  (en: "Embedding", cs: "Vektorová reprezentace", explanation: "Vícerozměrná vektorová reprezentace textu a tokenů, v níž geometrická vzdálenost a úhel vektorů zachycují sémantickou příbuznost a významové vztahy."),
+  (en: "Git", cs: "Git", explanation: "Distribuovaný systém správy verzí umožňující sledování historie změn kódu, větvení a deterministické vracení k předchozím funkčním stavům repozitáře."),
+  (en: "GitHub", cs: "GitHub", explanation: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu (Issues, Pull Requests) a automatizaci CI/CD pracovních postupů."),
+  (en: "Harness", cs: "Řídicí harness", explanation: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely a deterministické řízení životního cyklu požadavku."),
+  (en: "Human-in-the-loop", cs: "Zapojení člověka do smyčky", explanation: "Návrhový vzor vyžadující autorizaci lidského operátora formou schvalovacích bran (Human Gates) v klíčových rozhodovacích bodech před provedením nevratných systémových operací."),
+  (en: "MCP", cs: "MCP", explanation: "Model Context Protocol — otevřený standard navržený společností Anthropic pro standardizovanou komunikaci mezi jazykovými modely a externími nástroji či datovými zdroji přes protokol JSON-RPC."),
+  (en: "Plugins", cs: "Zásuvné moduly", explanation: "Zásuvné moduly běžící přímo v běhovém prostředí harnessu, které rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body."),
+  (en: "Prompt Engineering", cs: "Promptové inženýrství", explanation: "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu."),
+  (en: "Pull Request", cs: "Pull Request", explanation: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako platforma pro automatizované testování (CI), kódovou revizi člověkem a diskusi o navržených úpravách."),
+  (en: "Skills", cs: "Dovednosti", explanation: "Znovupoužitelné modulární balíčky instrukcí (SKILL.md), procedurálních pravidel a pomocných skriptů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu."),
 )
 
 #let term-label = <thesis-term-meta>
@@ -159,65 +159,53 @@
 /// Funkce pro zavedení a odkazování odborného termínu v textu.
 /// V textu termín vysází tučně a kurzívou s klikatelným symbolem šipky (▾),
 /// který odkazuje na jeho definici v sekci Klíčová slova.
-/// Pokud je předán parametr `explanation`, termín se dynamicky zaregistruje
-/// a vykreslí v přehledu klíčových slov.
-#let term(name, explanation: none) = {
+/// Parametry: name (anglický název), cs (český ekvivalent), explanation (definice).
+#let term(name, cs: none, explanation: none) = {
   let id = "kw-" + lower(name).replace(regex("[^a-z0-9]+"), "-").trim("-")
-  let expl = if explanation != none { explanation } else { default-terms.at(name, default: none) }
+  // Lookup from default-terms array if not provided
+  let found = default-terms.find(t => t.en == name)
+  let expl = if explanation != none { explanation } else if found != none { found.explanation } else { none }
+  let cs-name = if cs != none { cs } else if found != none { found.cs } else { none }
   if expl != none {
-    [#metadata((name: name, explanation: expl, id: id)) #term-label]
+    [#metadata((name: name, cs: cs-name, explanation: expl, id: id)) #term-label]
   }
   link(label(id))[_*#name*_#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[▾]]
 }
 
 #let kw = term
 
-/// Vykreslení klíčových slov a odborných termínů
-#let render-keywords() = context {
-  let entries = query(term-label)
-  let seen = (:)
-  let unique = ()
-  for e in entries {
-    let d = e.value
-    let key = lower(d.name)
-    if key not in seen and d.explanation != none and d.explanation != "" {
-      seen.insert(key, true)
-      unique.push(d)
-    }
-  }
-  // Pokud ještě dotaz nevrátil záznamy (v 1. běhu), použij default-terms
-  if unique.len() == 0 {
-    for (k, v) in default-terms {
-      let id = "kw-" + lower(k).replace(regex("[^a-z0-9]+"), "-").trim("-")
-      unique.push((name: k, explanation: v, id: id))
-    }
-  }
-  unique = unique.sorted(key: x => x.name)
-
-  if unique.len() > 0 {
-    block(width: 100%, [
-      #set text(size: 9.5pt)
-      #grid(
-        columns: (1fr),
-        row-gutter: 6pt,
-        ..unique.map(item => block(
-          fill: rgb("#f8fafc"),
-          stroke: (left: 2.5pt + rgb("#2563eb")),
-          inset: (x: 8pt, y: 5pt),
-          radius: (right: 3pt),
-          width: 100%,
-          [
-            #text(weight: "bold", size: 10pt, fill: rgb("#0f172a"))[#item.name] #label(item.id) \
-            #v(-2pt)
-            #text(size: 9pt, fill: rgb("#334155"))[#item.explanation]
-          ]
-        ))
-      )
-    ])
+/// Vykreslení klíčových slov — český seznam s anglickými ekvivalenty v závorkách
+#let render-keywords-cs() = {
+  let items = default-terms.sorted(key: t => t.cs)
+  // Plain comma-separated list: Český název (English)
+  text(size: 11pt)[#items.map(t => [#t.cs (#t.en)]).join([, ])]
+  v(12pt)
+  // Definitions
+  for item in items {
+    let id = "kw-" + lower(item.en).replace(regex("[^a-z0-9]+"), "-").trim("-")
+    block(breakable: false, above: 6pt, below: 6pt, width: 100%)[
+      #text(weight: "bold", size: 11pt)[#item.cs (#item.en)] #label(id) \
+      #text(size: 10pt)[#item.explanation]
+    ]
   }
 }
 
-#let word-stats-state = state("word-stats-state", (total: 5863, core: 3523))
+/// Vykreslení klíčových slov — anglický seznam
+#let render-keywords-en() = {
+  let items = default-terms.sorted(key: t => t.en)
+  // Plain comma-separated list
+  text(size: 11pt)[#items.map(t => t.en).join(", ")]
+  v(12pt)
+  // Definitions
+  for item in items {
+    block(breakable: false, above: 6pt, below: 6pt, width: 100%)[
+      #text(weight: "bold", size: 11pt)[#item.en] \
+      #text(size: 10pt)[#item.explanation]
+    ]
+  }
+}
+
+#let word-stats-state = state("word-stats-state", (total-words: 5863, total-chars: 28966, core-words: 3523, core-chars: 23440))
 
 #let titulni-list(meta, logo: none) = {
   set align(center)
@@ -251,35 +239,27 @@
 
   set align(left)
   set text(size: 12pt)
-  [Autor práce: #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]]
-  linebreak()
-  if meta.at("vedouci", default: none) != none [Vedoucí práce: #meta.vedouci]
-  if meta.at("konzultant", default: none) != none {
-    linebreak()
-    [Konzultant: #meta.konzultant]
+
+  context {
+    let is-rev = review-state.get()
+    let s = word-stats-state.get()
+
+    grid(
+      columns: (1fr, auto),
+      row-gutter: 4pt,
+      [Autor práce: #meta.autor#if meta.at("trida", default: none) != none [, #meta.trida]],
+      if is-rev { text(size: 9pt, fill: rgb("#64748b"))[Celkem: #s.total-words slov / #s.total-chars znaků] },
+      if meta.at("vedouci", default: none) != none [Vedoucí práce: #meta.vedouci],
+      if is-rev { text(size: 9pt, fill: rgb("#64748b"))[Jádro: #s.core-words slov / #s.core-chars znaků] },
+      ..if meta.at("konzultant", default: none) != none {
+        ([Konzultant: #meta.konzultant], none)
+      } else { () },
+    )
   }
 
   v(0.8cm)
   set align(center)
   text(size: 12pt, str(meta.rok))
-
-  context if review-state.get() {
-    v(0.6cm)
-    let s = word-stats-state.get()
-    block(
-      fill: rgb("#f8fafc"),
-      stroke: 0.5pt + rgb("#cbd5e1"),
-      inset: (x: 12pt, y: 7pt),
-      radius: 4pt,
-      [
-        #text(size: 9.5pt, weight: "bold", fill: rgb("#1e293b"))[📊 Rozsah textu práce (pouze v recenzním režimu):] \
-        #v(2pt)
-        #text(size: 9pt, fill: rgb("#334155"))[
-          *Celkový počet slov:* #s.total #h(1.5em) | #h(1.5em) *Jádro práce (bez balastu):* #s.core
-        ]
-      ]
-    )
-  }
 
   pagebreak()
 }
@@ -316,16 +296,20 @@
   nadpis-bez-cisla[#confirmed[Anotace]]
   meta.anotace
 
+  pagebreak(weak: true)
+
   nadpis-bez-cisla[#confirmed[Klíčová slova]]
-  render-keywords()
+  render-keywords-cs()
 
   pagebreak(weak: true)
 
   nadpis-bez-cisla[#confirmed[Annotation]]
   meta.abstract
 
+  pagebreak(weak: true)
+
   nadpis-bez-cisla[#confirmed[Keywords]]
-  confirmed(meta.keywords.join(", "))
+  render-keywords-en()
 
   pagebreak()
 }
@@ -470,52 +454,70 @@
     let diffs_old = query(<removed-diff>)
 
     let callout_words = 0
+    let callout_chars = 0
     for c in callouts {
-      callout_words += string-word-count(extract-text(c)).words
+      let sc = string-word-count(extract-text(c))
+      callout_words += sc.words
+      callout_chars += sc.characters
     }
 
     let diff_old_words = 0
+    let diff_old_chars = 0
     for d in diffs_old {
-      diff_old_words += string-word-count(extract-text(d)).words
+      let sd = string-word-count(extract-text(d))
+      diff_old_words += sd.words
+      diff_old_chars += sd.characters
     }
 
     let total_words = 0
+    let total_chars = 0
     let core_words = 0
+    let core_chars = 0
 
     for p in pars {
       let pg = p.location().page()
-      let w = string-word-count(extract-text(p.body)).words
-      total_words += w
+      let sc = string-word-count(extract-text(p.body))
+      total_words += sc.words
+      total_chars += sc.characters
       if pg >= start_page and pg < end_page {
-        core_words += w
+        core_words += sc.words
+        core_chars += sc.characters
       }
     }
 
     for l in lists {
       let pg = l.location().page()
-      let w = string-word-count(extract-text(l)).words
-      total_words += w
+      let sc = string-word-count(extract-text(l))
+      total_words += sc.words
+      total_chars += sc.characters
       if pg >= start_page and pg < end_page {
-        core_words += w
+        core_words += sc.words
+        core_chars += sc.characters
       }
     }
 
     for e in enums {
       let pg = e.location().page()
-      let w = string-word-count(extract-text(e)).words
-      total_words += w
+      let sc = string-word-count(extract-text(e))
+      total_words += sc.words
+      total_chars += sc.characters
       if pg >= start_page and pg < end_page {
-        core_words += w
+        core_words += sc.words
+        core_chars += sc.characters
       }
     }
 
-    let core_clean = calc.max(0, core_words - callout_words - diff_old_words)
+    let total_clean_words = calc.max(0, total_words - callout_words - diff_old_words)
+    let total_clean_chars = calc.max(0, total_chars - callout_chars - diff_old_chars)
+    let core_clean_words = calc.max(0, core_words - callout_words - diff_old_words)
+    let core_clean_chars = calc.max(0, core_chars - callout_chars - diff_old_chars)
     if pars.len() >= 130 {
       word-stats-state.update(curr => {
-        if curr.total == total_words and curr.core == core_clean {
+        let new = (total-words: total_clean_words, total-chars: total_clean_chars, core-words: core_clean_words, core-chars: core_clean_chars)
+        if curr.total-words == new.total-words and curr.core-words == new.core-words {
           curr
         } else {
-          (total: total_words, core: core_clean)
+          new
         }
       })
     }
