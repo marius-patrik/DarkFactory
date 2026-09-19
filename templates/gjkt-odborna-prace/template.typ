@@ -500,17 +500,62 @@
       chars: calc.max(0, review-chars),
     )
 
-    // Z review rukopisu odvodíme čistý potvrzený rozsah odečtením obsahu,
-    // který unconfirmed() skutečně vysázelo. Pracovní prvky uvnitř
-    // unconfirmed bloků už byly z review-stats odečteny, proto je odečteme
-    // i z hrubého unconfirmed součtu před výpočtem rozdílu.
+    // Z review rukopisu odvodíme potvrzený rozsah stejnou strukturální
+    // metodou jako hlavní počítadlo. Nepoužíváme extract-text nad celým
+    // unconfirmed blokem, protože ten by zahrnul i typy obsahu, které hlavní
+    // algoritmus záměrně nepočítá (např. raw code).
     let unconfirmed-words = 0
     let unconfirmed-chars = 0
-    for item in query(core(<unconfirmed-text>)) {
-      let s = stats-of(item)
+    let unconfirmed = sel => core(selector(sel).within(<unconfirmed-text>))
+
+    for p in query(unconfirmed(par)) {
+      if p.location() not in nested-par-locs {
+        let s = stats-of(p.body)
+        unconfirmed-words += s.words
+        unconfirmed-chars += s.characters
+      }
+    }
+    for item in query(unconfirmed(list)) {
+      if item.location() not in nested-list-locs {
+        let s = stats-of(item)
+        unconfirmed-words += s.words
+        unconfirmed-chars += s.characters
+      }
+    }
+    for item in query(unconfirmed(enum)) {
+      if item.location() not in nested-enum-locs {
+        let s = stats-of(item)
+        unconfirmed-words += s.words
+        unconfirmed-chars += s.characters
+      }
+    }
+    for item in query(unconfirmed(terms)) {
+      if item.location() not in nested-terms-locs {
+        let s = stats-of(item)
+        unconfirmed-words += s.words
+        unconfirmed-chars += s.characters
+      }
+    }
+    for item in query(unconfirmed(table)) {
+      if item.location() not in nested-table-locs {
+        let s = stats-of(item)
+        unconfirmed-words += s.words
+        unconfirmed-chars += s.characters
+      }
+    }
+    for h in query(unconfirmed(heading)) {
+      let s = stats-of(h.body)
       unconfirmed-words += s.words
       unconfirmed-chars += s.characters
     }
+    for caption in query(unconfirmed(figure.caption)) {
+      let s = stats-of(caption)
+      unconfirmed-words += s.words
+      unconfirmed-chars += s.characters
+    }
+
+    // Stejně jako u review-stats z unconfirmed příspěvku odečteme pracovní
+    // vrstvy, které nejsou součástí textového rozsahu.
     for item in query(core(selector(<callout>).within(<unconfirmed-text>))) {
       let s = stats-of(item)
       unconfirmed-words -= s.words
