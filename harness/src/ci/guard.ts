@@ -6,9 +6,7 @@ export function requiredChecksState(
 	checkRuns: CheckRunItem[],
 	repoSlug?: string,
 ): RequiredChecksResult {
-	const resolvedChecks: ResolvedCheck[] = Array.isArray(config)
-		? config
-		: resolveChecksForRepo(config, repoSlug);
+	const resolvedChecks: ResolvedCheck[] = Array.isArray(config) ? config : resolveChecksForRepo(config, repoSlug);
 
 	const requiredChecks = resolvedChecks.filter((c) => c.required);
 

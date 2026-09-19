@@ -2,11 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
-import {
-	computeRequiredChecks,
-	verifyBranchProtection,
-	applyBranchProtection,
-} from "../../src/ci/protection.ts";
+import { computeRequiredChecks, verifyBranchProtection, applyBranchProtection } from "../../src/ci/protection.ts";
 import type { CiConfig } from "../../src/ci/schema.ts";
 
 describe("Branch protection & rulesets synchronizer", () => {

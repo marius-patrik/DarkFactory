@@ -59,8 +59,15 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 async function readJson<T>(path: string): Promise<T | undefined> {
-	if (!existsSync(path)) return undefined;
-	return JSON.parse(await readFile(path, "utf8")) as T;
+	if (!existsSync(path)) {
+		return undefined;
+	}
+	const content = await readFile(path, "utf8");
+	try {
+		return JSON.parse(content) as T;
+	} catch (err) {
+		throw new Error(`Invalid JSON in ${path}: ${err instanceof Error ? err.message : String(err)}`);
+	}
 }
 
 /** A trigger node for a fresh run: the node whose trigger matches the starting event. */
@@ -110,7 +117,7 @@ async function runForeach(
 			const index = next++;
 			const childDir = join(runDir, "children", node.id, String(index));
 			await mkdir(childDir, { recursive: true });
-			const resultPath = join(childDir, "result.json");
+			const resultPath = join(childDir, "result.df");
 			const previous = await readJson<NodeResult>(resultPath);
 			if (previous?.outcome === "success") {
 				results[index] = { ...previous, index };
@@ -178,7 +185,7 @@ export async function runGraph(
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
 	await mkdir(runDir, { recursive: true });
-	const statePath = join(runDir, "state.json");
+	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.jsonl");
 	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
 	const state: RunState = (await readJson<RunState>(statePath)) ?? {

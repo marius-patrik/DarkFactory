@@ -299,7 +299,7 @@ export class ModelCatalog {
 
 	private path(provider: string): string {
 		if (!/^[A-Za-z0-9._-]+$/u.test(provider)) throw new Error(`Invalid provider id: ${provider}`);
-		return join(this.home, "models", `${provider}.json`);
+		return join(this.home, "models", `${provider}.df`);
 	}
 
 	private async cached(provider: string): Promise<CatalogFile | undefined> {

@@ -537,7 +537,7 @@ function validateProvider(value: unknown, index: number): ProviderConfig {
 	return entry as unknown as ProviderConfig;
 }
 
-export function parseProviderConfigFile(value: unknown, source = "providers.json"): ProviderConfigFile {
+export function parseProviderConfigFile(value: unknown, source = "providers.df"): ProviderConfigFile {
 	const root = object(value, source);
 	if (root.version !== 1 || !Array.isArray(root.providers))
 		throw new Error(`${source} must have version 1 and a providers array`);
@@ -564,11 +564,12 @@ export async function loadProviderConfig(
 	try {
 		local = parseProviderConfigFile(
 			JSON.parse(await reader(join(home, "providers.df"))) as unknown,
-			"$DF_HOME/providers.df",
+			join(home, "providers.df"),
 		);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-			if (error instanceof SyntaxError) throw new Error("Invalid $DF_HOME/providers.json JSON");
+			if (error instanceof SyntaxError)
+				throw new Error(`Invalid provider configuration JSON at ${join(home, "providers.df")}`);
 			throw error;
 		}
 	}

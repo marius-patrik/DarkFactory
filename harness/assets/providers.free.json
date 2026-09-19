@@ -11,14 +11,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "MISTRAL_API_KEY"
-          ]
+          "env": ["MISTRAL_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -104,14 +100,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "HF_TOKEN"
-          ]
+          "env": ["HF_TOKEN"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -179,14 +171,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "COHERE_API_KEY"
-          ]
+          "env": ["COHERE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -264,14 +252,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "NVIDIA_API_KEY"
-          ]
+          "env": ["NVIDIA_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -356,14 +340,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "ZAI_API_KEY"
-          ]
+          "env": ["ZAI_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -432,14 +412,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "CLOUDFLARE_API_TOKEN"
-          ]
+          "env": ["CLOUDFLARE_API_TOKEN"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -508,9 +484,7 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "LLM7_API_KEY"
-          ],
+          "env": ["LLM7_API_KEY"],
           "optional": true,
           "anonymousValue": "unused"
         }
@@ -589,9 +563,7 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "OVH_AI_ENDPOINTS_ACCESS_TOKEN"
-          ],
+          "env": ["OVH_AI_ENDPOINTS_ACCESS_TOKEN"],
           "optional": true
         }
       ],
@@ -669,14 +641,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "OLLAMA_API_KEY"
-          ]
+          "env": ["OLLAMA_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -736,14 +704,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "NOUS_API_KEY"
-          ]
+          "env": ["NOUS_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -796,14 +760,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "HETZNER_INFERENCE_API_KEY"
-          ]
+          "env": ["HETZNER_INFERENCE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -875,9 +835,7 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "POLLINATIONS_API_KEY"
-          ],
+          "env": ["POLLINATIONS_API_KEY"],
           "optional": true
         }
       ],
@@ -949,14 +907,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "SILICONFLOW_API_KEY"
-          ]
+          "env": ["SILICONFLOW_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1003,14 +957,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "MODELSCOPE_API_KEY"
-          ]
+          "env": ["MODELSCOPE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1090,14 +1040,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "AION_API_KEY"
-          ]
+          "env": ["AION_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1176,14 +1122,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "INFERENCE_NET_API_KEY"
-          ]
+          "env": ["INFERENCE_NET_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1242,9 +1184,7 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "KILO_API_KEY"
-          ],
+          "env": ["KILO_API_KEY"],
           "optional": true
         }
       ],
@@ -1323,14 +1263,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "CHUTES_API_KEY"
-          ]
+          "env": ["CHUTES_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1383,14 +1319,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "VENICE_API_KEY"
-          ]
+          "env": ["VENICE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1449,14 +1381,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "REQUESTY_API_KEY"
-          ]
+          "env": ["REQUESTY_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1527,14 +1455,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "AI_GATEWAY_API_KEY"
-          ]
+          "env": ["AI_GATEWAY_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1602,14 +1526,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "XAI_API_KEY"
-          ]
+          "env": ["XAI_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1656,14 +1576,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "TOGETHER_API_KEY"
-          ]
+          "env": ["TOGETHER_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1709,14 +1625,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "FIREWORKS_API_KEY"
-          ]
+          "env": ["FIREWORKS_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1762,14 +1674,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "SAMBANOVA_API_KEY"
-          ]
+          "env": ["SAMBANOVA_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1822,14 +1730,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "HYPERBOLIC_API_KEY"
-          ]
+          "env": ["HYPERBOLIC_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1875,14 +1779,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "NEBIUS_API_KEY"
-          ]
+          "env": ["NEBIUS_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1928,14 +1828,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "NOVITA_API_KEY"
-          ]
+          "env": ["NOVITA_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -1988,14 +1884,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "SCALEWAY_API_KEY"
-          ]
+          "env": ["SCALEWAY_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2041,14 +1933,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "DASHSCOPE_API_KEY"
-          ]
+          "env": ["DASHSCOPE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2094,14 +1982,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "AI21_API_KEY"
-          ]
+          "env": ["AI21_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2148,14 +2032,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "UPSTAGE_API_KEY"
-          ]
+          "env": ["UPSTAGE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2201,14 +2081,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "DEEPSEEK_API_KEY"
-          ]
+          "env": ["DEEPSEEK_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2254,14 +2130,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "DEEPINFRA_API_KEY"
-          ]
+          "env": ["DEEPINFRA_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2314,14 +2186,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "NSCALE_API_KEY"
-          ]
+          "env": ["NSCALE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2367,14 +2235,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "FRIENDLI_TOKEN"
-          ]
+          "env": ["FRIENDLI_TOKEN"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2420,14 +2284,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "AIHUBMIX_API_KEY"
-          ]
+          "env": ["AIHUBMIX_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2488,14 +2348,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "ZENMUX_API_KEY"
-          ]
+          "env": ["ZENMUX_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2542,14 +2398,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "CLINE_API_KEY"
-          ]
+          "env": ["CLINE_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2602,14 +2454,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "LONGCAT_API_KEY"
-          ]
+          "env": ["LONGCAT_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2656,14 +2504,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "INCEPTION_API_KEY"
-          ]
+          "env": ["INCEPTION_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2716,14 +2560,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "ARLIAI_API_KEY"
-          ]
+          "env": ["ARLIAI_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2783,14 +2623,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "QIANFAN_API_KEY"
-          ]
+          "env": ["QIANFAN_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2844,14 +2680,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "SPARK_API_PASSWORD"
-          ]
+          "env": ["SPARK_API_PASSWORD"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2911,14 +2743,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "ZHIPU_API_KEY"
-          ]
+          "env": ["ZHIPU_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -2979,14 +2807,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "ARK_API_KEY"
-          ]
+          "env": ["ARK_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -3034,14 +2858,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "MOONSHOT_API_KEY"
-          ]
+          "env": ["MOONSHOT_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -3088,14 +2908,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "MINIMAX_API_KEY"
-          ]
+          "env": ["MINIMAX_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -3142,14 +2958,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "STEPFUN_API_KEY"
-          ]
+          "env": ["STEPFUN_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -3196,14 +3008,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "SARVAM_API_KEY"
-          ]
+          "env": ["SARVAM_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {
@@ -3249,14 +3057,10 @@
           "kind": "api_key",
           "slot": "api_key",
           "placement": "bearer",
-          "env": [
-            "AIMLAPI_API_KEY"
-          ]
+          "env": ["AIMLAPI_API_KEY"]
         }
       ],
-      "requiredCredentialSlots": [
-        "api_key"
-      ],
+      "requiredCredentialSlots": ["api_key"],
       "models": {
         "static": [
           {

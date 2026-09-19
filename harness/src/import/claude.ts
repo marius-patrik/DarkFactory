@@ -25,11 +25,19 @@ function claudeOauthEntry(document: Record<string, unknown>): ImportedClaudeLogi
 	return {
 		accessToken,
 		...(refreshToken ? { refreshToken } : {}),
-		...(epochMsFromMilliseconds(oauth.refreshTokenExpiresAt) !== undefined ? { refreshTokenExpiresAt: epochMsFromMilliseconds(oauth.refreshTokenExpiresAt)! } : {}),
+		...(epochMsFromMilliseconds(oauth.refreshTokenExpiresAt) !== undefined
+			? { refreshTokenExpiresAt: epochMsFromMilliseconds(oauth.refreshTokenExpiresAt)! }
+			: {}),
 		...(stringField(oauth, "subscriptionType") ? { subscriptionType: stringField(oauth, "subscriptionType")! } : {}),
-		scopes: Array.isArray(oauth.scopes) ? oauth.scopes.filter((entry): entry is string => typeof entry === "string") : [],
-		...(epochMsFromMilliseconds(oauth.expiresAt) !== undefined ? { expiresAt: epochMsFromMilliseconds(oauth.expiresAt)! } : {}),
-		...(stringField(document, "organizationUuid") ? { organizationUuid: stringField(document, "organizationUuid")! } : {}),
+		scopes: Array.isArray(oauth.scopes)
+			? oauth.scopes.filter((entry): entry is string => typeof entry === "string")
+			: [],
+		...(epochMsFromMilliseconds(oauth.expiresAt) !== undefined
+			? { expiresAt: epochMsFromMilliseconds(oauth.expiresAt)! }
+			: {}),
+		...(stringField(document, "organizationUuid")
+			? { organizationUuid: stringField(document, "organizationUuid")! }
+			: {}),
 	};
 }
 
@@ -61,7 +69,11 @@ export async function findClaudeLogins(options: ClaudeFindOptions): Promise<Clau
 		const document = parseJson(decodeKeychainPayload(raw), `macOS keychain service ${service}`);
 		if (!document) continue;
 		const login = claudeOauthEntry(document);
-		if (login) logins.push({ ...login, source: `${CLAUDE_CREDENTIALS_SERVICE_PREFIX}${service.slice(CLAUDE_CREDENTIALS_SERVICE_PREFIX.length)}` });
+		if (login)
+			logins.push({
+				...login,
+				source: `${CLAUDE_CREDENTIALS_SERVICE_PREFIX}${service.slice(CLAUDE_CREDENTIALS_SERVICE_PREFIX.length)}`,
+			});
 	}
 	return logins;
 }
@@ -80,10 +92,15 @@ export async function importClaudeAccount(
 	provider: string,
 ): Promise<void> {
 	const logins = await findClaudeLogins(options);
-	if (logins.length === 0) throw new Error("No Claude Code login was found in ~/.claude/.credentials.json or the macOS keychain");
+	if (logins.length === 0)
+		throw new Error("No Claude Code login was found in ~/.claude/.credentials.json or the macOS keychain");
 	const login = logins[0]!;
-	if (!login.refreshToken) throw new Error("Claude Code login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account");
-	if (!login.expiresAt || !Number.isFinite(login.expiresAt)) throw new Error("Claude Code login has no valid access token expiry");
+	if (!login.refreshToken)
+		throw new Error(
+			"Claude Code login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account",
+		);
+	if (!login.expiresAt || !Number.isFinite(login.expiresAt))
+		throw new Error("Claude Code login has no valid access token expiry");
 	const accessToken = login.accessToken;
 	const refreshToken = login.refreshToken;
 	const expiresAt = login.expiresAt;
@@ -94,7 +111,8 @@ export async function importClaudeAccount(
 		label,
 		metadata: {
 			...(current?.metadata ?? {}),
-			ownership: "df-owned", sync: "machine-only",
+			ownership: "df-owned",
+			sync: "machine-only",
 			importedFrom: "claude",
 			...(login.organizationUuid ? { account: login.organizationUuid } : {}),
 			...(login.subscriptionType ? { plan: login.subscriptionType } : {}),

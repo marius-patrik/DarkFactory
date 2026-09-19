@@ -33,7 +33,7 @@ export async function runCiDoctor(
 		const required = computeRequiredChecks(config);
 		configResult = {
 			status: "pass",
-			message: `.darkfactory/ci.json is valid (${config.checks.length} check(s) declared, ${required.length} required)`,
+			message: `ci.df is valid (${config.checks.length} check(s) declared, ${required.length} required)`,
 			details: { checks: config.checks, alert_after: config.alert_after },
 		};
 	} catch (err: unknown) {

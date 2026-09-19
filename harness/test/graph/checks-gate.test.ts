@@ -10,7 +10,12 @@ function graphWithChecks(checks: { name: string; required: boolean }[]): Workflo
 	return {
 		version: 1,
 		checks,
-		nodes: checks.map((check) => ({ id: check.name, kind: "check-reference" as const, check: check.name, required: check.required })),
+		nodes: checks.map((check) => ({
+			id: check.name,
+			kind: "check-reference" as const,
+			check: check.name,
+			required: check.required,
+		})),
 		edges: [],
 	};
 }

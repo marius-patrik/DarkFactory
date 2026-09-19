@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { loadCiConfig, resolveChecksForRepo, getRequiredCheckNames } from "../../src/ci/config.ts";
 
 describe("CI config loader & validator", () => {
-	it("loads valid .darkfactory/ci.json with checks and alert_after", async () => {
+	it("loads valid .darkfactory/ci.df with checks and alert_after", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-test-"));
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
@@ -29,7 +29,7 @@ describe("CI config loader & validator", () => {
 					},
 				],
 			};
-			await writeFile(join(temp, ".darkfactory", "ci.json"), JSON.stringify(configContent, null, 2));
+			await writeFile(join(temp, ".darkfactory", "ci.df"), JSON.stringify(configContent, null, 2));
 
 			const config = await loadCiConfig(temp);
 			expect(config.alert_after).toBe(3);
@@ -53,19 +53,17 @@ describe("CI config loader & validator", () => {
 		}
 	});
 
-	it("loads nested ci object inside .darkfactory/ci.json", async () => {
+	it("loads nested ci object inside .darkfactory/ci.df", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-test-"));
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			const configContent = {
 				ci: {
 					alert_after: 5,
-					checks: [
-						{ name: "test-job", required: true, workflow: "ci.yml", job: "test" },
-					],
+					checks: [{ name: "test-job", required: true, workflow: "ci.yml", job: "test" }],
 				},
 			};
-			await writeFile(join(temp, ".darkfactory", "ci.json"), JSON.stringify(configContent));
+			await writeFile(join(temp, ".darkfactory", "ci.df"), JSON.stringify(configContent));
 
 			const config = await loadCiConfig(temp);
 			expect(config.alert_after).toBe(5);
@@ -76,19 +74,19 @@ describe("CI config loader & validator", () => {
 		}
 	});
 
-	it("throws helpful error when .darkfactory/ci.json has invalid schema", async () => {
+	it("throws helpful error when .darkfactory/ci.df has invalid schema", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-test-"));
 		try {
 			await mkdir(join(temp, ".darkfactory"), { recursive: true });
 			// invalid: checks missing name
-			await writeFile(join(temp, ".darkfactory", "ci.json"), JSON.stringify({ checks: [{ required: true }] }));
+			await writeFile(join(temp, ".darkfactory", "ci.df"), JSON.stringify({ checks: [{ required: true }] }));
 			await expect(loadCiConfig(temp)).rejects.toThrow();
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
 	});
 
-	it("throws helpful error when .darkfactory/ci.json does not exist", async () => {
+	it("throws helpful error when .darkfactory/ci.df does not exist", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-test-"));
 		try {
 			await expect(loadCiConfig(temp)).rejects.toThrow(/not found/i);

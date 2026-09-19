@@ -185,7 +185,8 @@ export async function secretsCommand(args: string[], deps: SecretsCommandDeps): 
 
 		case "push": {
 			const repoSlug = args[1];
-			if (!repoSlug || !repoSlug.includes("/")) throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
+			if (!repoSlug || !repoSlug.includes("/"))
+				throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
 			const key = await requireKey(keychainOpts);
 			const vault = await loadVault(dataRepoPath, key);
 			const pushMap = await loadPushMap(dataRepoPath);
