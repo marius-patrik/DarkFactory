@@ -1,8 +1,10 @@
-#import "../templates/registry.typ": finalized
+#import "../templates/registry.typ": finalized, term, terms
 
 = #finalized[Praktická část – Návrh architektury]
 
-// Záměrně prázdné.
+== #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
+
+// Záměrně bez prose; povoleny jsou pouze explicitně schválené strukturální heading stuby.
 // Tuto kapitolu psát až po dokončení a stabilizaci DarkFactory.
 // Pořadí práce:
 // 1. dokončit DarkFactory,
