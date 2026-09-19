@@ -282,24 +282,35 @@
 // Konstruktor termínu. Výsledkem je plně přenositelná datová hodnota, kterou lze
 // uložit do proměnné a libovolněkrát odkazovat s různým způsobem vykreslení.
 #let define-term(
-  en: none,
-  cs: none,
+  proper,
+  industry: none,
   id: none,
   explanation_en: none,
   explanation_cs: none,
   keyword: true,
+  default-name-type: "proper",
+  keyword-name-type: none,
 ) = {
-  assert(en != none, message: "term requires an English canonical name")
-  let resolved-id = if id == none { keyword-id(en) } else { id }
+  assert(proper.cs != none or proper.en != none, message: "term requires at least one proper/formal name")
+  assert(default-name-type in ("proper", "industry", "both"), message: "default term name type must be proper, industry, or both")
+  if industry == none {
+    assert(default-name-type != "industry", message: "industry default requires an industry name")
+  }
+  let identity = if proper.en != none { proper.en } else { proper.cs }
+  let resolved-id = if id == none { keyword-id(str(identity)) } else { id }
+  let resolved-keyword-type = if keyword-name-type == none { default-name-type } else { keyword-name-type }
   assert(resolved-id != "", message: "term id must not be empty")
+  assert(resolved-keyword-type in ("proper", "industry", "both"), message: "keyword term name type must be proper, industry, or both")
   (
     kind: "term",
     id: resolved-id,
-    en: en,
-    cs: if cs == none { en } else { cs },
+    proper: proper,
+    industry: industry,
     explanation_en: explanation_en,
     explanation_cs: explanation_cs,
     keyword: keyword,
+    default_name_type: default-name-type,
+    keyword_name_type: resolved-keyword-type,
   )
 }
 
@@ -315,20 +326,76 @@
   }
 }
 
-#let term-name(value, language: "auto", separator: "bar", order: "cs-en") = context {
-  let lang = term-language(language, profile-state.get())
-  if str(value.en) == str(value.cs) and lang == "both" {
-    text(lang: "cs")[#value.cs]
+#let term-name-layer(
+  value,
+  layer,
+  language: "auto",
+  separator: "bar",
+  order: "cs-en",
+) = context {
+  let names = if layer == "proper" { value.proper } else { value.industry }
+  if names == none {
+    none
   } else {
-    render-translation(
-      translation(cs: value.cs, en: value.en),
-      language: lang,
-      school-both: true,
-      labels: false,
-      stacked: false,
-      separator: separator,
-      order: order,
-    )
+    let lang = term-language(language, profile-state.get())
+    let same = names.cs != none and names.en != none and str(names.cs) == str(names.en)
+    if same and lang == "both" {
+      text(lang: "en")[#names.en]
+    } else {
+      render-translation(
+        names,
+        language: lang,
+        school-both: true,
+        labels: false,
+        stacked: false,
+        separator: separator,
+        order: order,
+      )
+    }
+  }
+}
+
+#let industry-name-redundant(value, language) = {
+  if value.industry == none {
+    true
+  } else {
+    let p = value.proper
+    let i = value.industry
+    if language == "cs" {
+      i.cs != none and p.cs != none and str(i.cs) == str(p.cs)
+    } else if language == "en" {
+      i.en != none and p.en != none and str(i.en) == str(p.en)
+    } else {
+      let candidates = (p.cs, p.en).filter(x => x != none).map(str)
+      let industry-values = (i.cs, i.en).filter(x => x != none).map(str)
+      industry-values.len() > 0 and industry-values.all(x => x in candidates)
+    }
+  }
+}
+
+#let term-name(
+  value,
+  language: "auto",
+  name-type: "auto",
+  separator: "bar",
+  order: "cs-en",
+  type-separator: "paren",
+) = context {
+  assert(name-type in ("auto", "proper", "industry", "both"), message: "term name type must be auto, proper, industry, or both")
+  assert(type-separator in ("bar", "paren", "dash"), message: "term type separator must be bar, paren, or dash")
+  let lang = term-language(language, profile-state.get())
+  let resolved-type = if name-type == "auto" { value.default_name_type } else { name-type }
+  let proper = term-name-layer(value, "proper", language: lang, separator: separator, order: order)
+  let industry = term-name-layer(value, "industry", language: lang, separator: separator, order: order)
+
+  if resolved-type == "proper" or industry == none {
+    proper
+  } else if resolved-type == "industry" {
+    industry
+  } else if industry-name-redundant(value, lang) {
+    proper
+  } else {
+    pair-content(proper, industry, separator: type-separator, order: "cs-en")
   }
 }
 
@@ -368,7 +435,9 @@
   language: "auto",
   name-language: none,
   detail-language: none,
+  name-type: "auto",
   name-separator: "bar",
+  name-type-separator: "paren",
   name-order: "cs-en",
   detail-order: "cs-en",
   detail-style: "inline",
@@ -381,7 +450,9 @@
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
+  assert(name-type in ("auto", "proper", "industry", "both"), message: "term name type must be auto, proper, industry, or both")
   assert(name-separator in ("bar", "paren", "dash"), message: "term name separator must be bar, paren, or dash")
+  assert(name-type-separator in ("bar", "paren", "dash"), message: "term name type separator must be bar, paren, or dash")
   assert(name-order in ("cs-en", "en-cs"), message: "term name order must be cs-en or en-cs")
   assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
   assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
@@ -392,7 +463,14 @@
 
   let name-lang = if name-language == none { language } else { name-language }
   let detail-lang = if detail-language == none { language } else { detail-language }
-  let name = term-name(value, language: name-lang, separator: name-separator, order: name-order)
+  let name = term-name(
+    value,
+    language: name-lang,
+    name-type: name-type,
+    separator: name-separator,
+    type-separator: name-type-separator,
+    order: name-order,
+  )
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let referenced-name = if linked {
     link(label("kw-" + value.id))[#displayed-name]
@@ -426,7 +504,7 @@
       items.push(value)
     }
   }
-  items.sorted(key: item => lower(item.en))
+  items.sorted(key: item => lower(str(if item.proper.cs != none { item.proper.cs } else { item.proper.en })))
 }
 
 // Dynamický terminologický přehled: pouze termíny skutečně použité v dané
@@ -442,6 +520,7 @@
         item,
         render: "term",
         language: "auto",
+        name-type: item.keyword_name_type,
         name-separator: "bar",
         register: false,
         linked: false,
@@ -464,6 +543,7 @@
             item,
             render: "term",
             language: "auto",
+            name-type: item.keyword_name_type,
             register: false,
             linked: false,
             marker: false,
