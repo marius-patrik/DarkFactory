@@ -74,14 +74,17 @@
   }
 }
 
-#let pair-content(cs, en, separator: "bar") = {
+#let pair-content(cs, en, separator: "bar", order: "cs-en") = {
   assert(separator in ("bar", "paren", "dash"), message: "separator must be bar, paren, or dash")
+  assert(order in ("cs-en", "en-cs"), message: "order must be cs-en or en-cs")
+  let first = if order == "cs-en" { cs } else { en }
+  let second = if order == "cs-en" { en } else { cs }
   if separator == "paren" {
-    [#cs (#en)]
+    [#first (#second)]
   } else if separator == "dash" {
-    [#cs — #en]
+    [#first — #second]
   } else {
-    [#cs | #en]
+    [#first | #second]
   }
 }
 
@@ -93,6 +96,7 @@
   stacked: true,
   spacing: 4pt,
   separator: "bar",
+  order: "cs-en",
 ) = context {
   let lang = resolve-language(language, school-both: school-both)
   let part(code, body) = if labels {
@@ -100,8 +104,11 @@
   } else {
     body
   }
+  assert(order in ("cs-en", "en-cs"), message: "translation order must be cs-en or en-cs")
   let cs = text(lang: "cs")[#part("CZ", value.cs)]
   let en = text(lang: "en")[#part("EN", value.en)]
+  let first = if order == "cs-en" { cs } else { en }
+  let second = if order == "cs-en" { en } else { cs }
 
   if lang == "cs" {
     cs
@@ -109,12 +116,12 @@
     en
   } else if stacked {
     block(breakable: true)[
-      #cs
+      #first
       #v(spacing)
-      #en
+      #second
     ]
   } else {
-    pair-content(cs, en, separator: separator)
+    pair-content(cs, en, separator: separator, order: order)
   }
 }
 
@@ -123,6 +130,7 @@
   language: "auto",
   school-both: true,
   separator: "bar",
+  order: "cs-en",
 ) = render-translation(
   value,
   language: language,
@@ -130,6 +138,7 @@
   labels: false,
   stacked: false,
   separator: separator,
+  order: order,
 )
 
 #let note(body) = context if review-state.get() {
@@ -245,11 +254,14 @@
   none
 }
 
-// Srovnávací diff funkce: v review módu GitHub-style "- old" / "+ new"; v raw módu pouze nový text
+// Srovnávací diff je vždy návrh změny. Nová strana začíná jako unconfirmed:
+// v review se zobrazí jako GitHub-style "+", současně žlutě podtržená;
+// raw/final zachovává dosavadní (old) text. Po accepted/finalized se diff
+// odstraní a ve zdroji zůstane pouze nový text v příslušném stavu.
 #let diff(old, new) = context if review-state.get() {
-  [#removed(old) #added(new)]
+  [#removed(old) #added(unconfirmed(new))]
 } else {
-  new
+  old
 }
 
 #let term-use-label = <thesis-term-use>
@@ -295,7 +307,7 @@
   }
 }
 
-#let term-name(value, language: "auto", separator: "bar") = context {
+#let term-name(value, language: "auto", separator: "bar", order: "cs-en") = context {
   let lang = term-language(language)
   if value.en == value.cs and lang == "both" {
     text(lang: "cs")[#value.cs]
@@ -307,6 +319,7 @@
       labels: false,
       stacked: false,
       separator: separator,
+      order: order,
     )
   }
 }
@@ -315,6 +328,7 @@
   value,
   language: "auto",
   style: "stacked",
+  order: "cs-en",
 ) = context {
   assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
   let lang = term-language(language)
@@ -335,6 +349,7 @@
       stacked: style == "stacked",
       spacing: 2pt,
       separator: "bar",
+      order: order,
     )
   }
 }
@@ -350,6 +365,8 @@
   name-language: none,
   detail-language: none,
   name-separator: "bar",
+  name-order: "cs-en",
+  detail-order: "cs-en",
   detail-style: "inline",
   register: true,
   linked: true,
@@ -361,6 +378,8 @@
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
   assert(name-separator in ("bar", "paren", "dash"), message: "term name separator must be bar, paren, or dash")
+  assert(name-order in ("cs-en", "en-cs"), message: "term name order must be cs-en or en-cs")
+  assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
   assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
 
   if register and value.keyword {
@@ -369,7 +388,7 @@
 
   let name-lang = if name-language == none { language } else { name-language }
   let detail-lang = if detail-language == none { language } else { detail-language }
-  let name = term-name(value, language: name-lang, separator: name-separator)
+  let name = term-name(value, language: name-lang, separator: name-separator, order: name-order)
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let referenced-name = if linked {
     link(label("kw-" + value.id))[#displayed-name]
@@ -381,7 +400,7 @@
   } else {
     referenced-name
   }
-  let explanation = term-explanation(value, language: detail-lang, style: detail-style)
+  let explanation = term-explanation(value, language: detail-lang, style: detail-style, order: detail-order)
 
   if render == "term" {
     with-marker
