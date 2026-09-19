@@ -28,6 +28,9 @@
 #let body-paragraph(body) = block(breakable: true, body)
 #let bullet-list(..items) = list(indent: 0pt, body-indent: 0.75em, spacing: 4pt, ..items)
 #let numbered-list(..items) = enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt, ..items)
+#let paragraph = body-paragraph
+#let bullets = bullet-list
+#let numbered = numbered-list
 
 #let nadpis-bez-cisla(text-nadpisu) = {
   heading(numbering: none, outlined: true, text-nadpisu)
@@ -561,7 +564,7 @@
     text(fill: rgb("#0f172a"), it),
   )
   show link: set text(fill: rgb("#0b4f9e"))
-  set table(stroke: 0.5pt)
+  set table(stroke: 0.5pt, inset: (x: 5pt, y: 4pt))
   set figure(numbering: "1")
 
   // ── Přední část ──────────────────────────────────────────
