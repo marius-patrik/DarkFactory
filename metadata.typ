@@ -23,17 +23,22 @@
   rok: 2026,
 
   annotation: translation(
-    cs: accepted[
-      Tato odborná práce se zabývá principy agentického inženýrství (_agentic engineering_)
-      a architekturou řídicích harnessů pro automatizovaný vývoj softwaru. Praktickým
-      přínosem práce je návrh a implementace systému DarkFactory — agentního harnessu
-      instalovatelného jako aplikace pro platformu GitHub (GitHub App). Systém usiluje
-      o maximální možnou míru automatizace vývojového cyklu od sémantické analýzy požadavků
-      v GitHub Issues, přes technické plánování, až po generování kódu a vystavení
-      pull requestu. Práce reflektuje, že současné agentní systémy nelze vnímat jako
-      plně autonomní: jazykové modely vyžadují deterministické mantinely proti uvíznutí
-      v nekonečných cyklech, správu kontextu bez sémantického posunu a především
-      kontinuální zapojení člověka formou schvalovacích bran (_Human-in-the-loop_).
+    cs: [
+      #finalized[
+        Tato odborná práce se zabývá principy agentického inženýrství (_agentic engineering_):
+        efektivními inženýrskými praktikami pro vývoj pomocí umělé inteligence prostřednictvím
+        agentických systémů a architekturou těchto systémů.
+      ]
+      #accepted[
+        Praktickým přínosem práce je návrh a implementace systému DarkFactory — agentního harnessu
+        instalovatelného jako aplikace pro platformu GitHub (GitHub App). Systém usiluje
+        o maximální možnou míru automatizace vývojového cyklu od sémantické analýzy požadavků
+        v GitHub Issues, přes technické plánování, až po generování kódu a vystavení
+        pull requestu. Práce reflektuje, že současné agentní systémy nelze vnímat jako
+        plně autonomní: jazykové modely vyžadují deterministické mantinely proti uvíznutí
+        v nekonečných cyklech, správu kontextu bez sémantického posunu a především
+        kontinuální zapojení člověka formou schvalovacích bran (_Human-in-the-loop_).
+      ]
     ],
     en: accepted[
       This thesis explores the foundational principles of agentic engineering and harness

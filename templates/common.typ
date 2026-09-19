@@ -578,6 +578,29 @@
   if items.len() == 0 {
     [—]
   } else {
+    // Lokální přehled patří přímo na začátek Rejstříku. Jednotlivá písmena
+    // a termíny zůstávají skutečnými nadpisy, ale nejsou součástí hlavního Obsahu.
+    block(
+      breakable: true,
+      above: 2pt,
+      below: 14pt,
+      width: 100%,
+    )[
+      #items.map(item => link(
+        label("kw-" + item.id),
+        term(
+          item,
+          render: "term",
+          language: "auto",
+          name-type: item.keyword_name_type,
+          register: false,
+          linked: false,
+          marker: false,
+          emphasized: false,
+        ),
+      )).join([#linebreak()])
+    ]
+
     let current-letter = none
 
     for item in items {
@@ -588,7 +611,7 @@
         heading(
           level: 2,
           numbering: none,
-          outlined: true,
+          outlined: false,
         )[#letter]
       }
 
@@ -596,7 +619,7 @@
         #heading(
           level: 3,
           numbering: none,
-          outlined: true,
+          outlined: false,
         )[
           #term(
             item,

@@ -152,21 +152,26 @@ Stejný rukopis se publikuje také jako skutečný kompilovaný HTML a Markdown.
 z odděleného sémantického vstupu `web-publication.typ` nativním HTML targetem Typstu
 (`typst compile --features html --format html`). Markdown se poté deterministicky
 odvozuje ze vzniklého HTML pomocí `scripts/build_web_exports.py`; nevzniká nezávislým
-paralelním přepisem zdroje ani rekonstrukcí z PDF. Final/Review × profil × šablona tak
+paralelním přepisem zdroje ani rekonstrukcí z PDF. Final/Koncept × profil × šablona tak
 publikuje vždy trojici artefaktů `.pdf`, `.html` a `.md`.
 
-Viewer nabízí Final, Review a Split režim, výběr publikační verze a samostatný přepínač
-formátu PDF / Markdown / HTML. Identita dokumentu je
-`Home \\ Název práce \\ Verze \\ Final/Review/Split \\ PDF/Markdown/HTML \\ Stránka` v PDF režimu.
+Viewer se otevírá přímo na školní verzi ve stavu Final + PDF; samostatná landing page
+už není součástí běžného toku. Nabízí režimy Final, Koncept a Review, kde Koncept je
+samostatný revizně označený artefakt a Review je dvousloupcové porovnání Final/Koncept.
+Identita dokumentu je
+`Název práce \\ jazyková verze \\ Final/Koncept/Review \\ PDF/Markdown/HTML \\ kapitola \\ stránka`
+v PDF režimu. Jazyková, režimová a formátová menu zobrazují příslušné ikony.
 Přepnutí formátu zachovává vybranou verzi i režim a načte přímo příslušný kompilovaný
 artefakt. Markdown view zobrazuje skutečný obsah vygenerovaného `.md`; HTML view
 vkládá skutečný vygenerovaný `.html`. PDF režim navíc nabízí persistentní sidebar
-vlevo/vpravo s thumbnail/minimap reprezentací; přepínač stránky je poslední segment horní path lišty, zatímco fit-width a `− / +` zoom zůstávají ve spodním status baru. Zoom podporuje Ctrl/⌘+scroll a pinch. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
+vlevo/vpravo s thumbnail/minimap reprezentací; před přepínačem stránky je dynamická navigace
+kapitol odvozená přímo z PDF outline a přepínač stránky je poslední segment horní path lišty,
+zatímco fit-width a `− / +` zoom zůstávají ve spodním status baru. Zoom podporuje Ctrl/⌘+scroll a pinch. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
 Markdown režimu skryté. Všechny formáty lze stáhnout nebo otevřít přímo.
 
-Všechny ikonové ovládací prvky mají hover tooltipy. Review PDF nepřidává automatický
-`KONCEPT` vodoznak. Split view může volitelně synchronizovat průběžnou scroll pozici
-PDF dokumentů.
+Všechny ikonové ovládací prvky mají hover tooltipy. Koncept PDF nepřidává automatický
+`KONCEPT` vodoznak. Review comparison může volitelně synchronizovat průběžnou scroll
+pozici PDF dokumentů.
 
 `make web-check` provede TypeScript kontrolu a produkční Vite build. `make all`
 vytvoří PDF + HTML + Markdown publikační matici a `make site` ji společně s
@@ -185,8 +190,10 @@ Terminologie používá dvě oddělené reprezentace:
 - **Rejstřík | Index** je v zadní části dokumentu bezprostředně před **Seznamem příloh | List of appendices** a obsahuje celý kanonický katalog termínů deduplikovaný podle stabilního `id`.
 
 Rejstřík je abecedně seskupen podle počátečního písmene kanonického názvu.
-`Rejstřík` je outlined nadpis úrovně 1, jednotlivá písmena úroveň 2 a každý
-kanonický termín vlastní outlined sekce úrovně 3. Obsah podporuje číslovanou hierarchii do hloubky 6; rejstřík si zachovává vlastní outlined hierarchii písmen a termínů.
+`Rejstřík` je jediná položka této terminologické části v hlavním Obsahu. Na začátku
+Rejstříku je úplný klikací seznam termínů; za ním následují abecední skupiny a detailní
+termínové sekce, které jsou z hlavního Obsahu explicitně vynechány. Obsah ostatních kapitol
+podporuje číslovanou hierarchii do hloubky 6.
 
 Inline hvězdičkové odkazy míří na stabilní `kw-<id>` záznam v rejstříku. Rejstřík
 proto obsahuje i kanonické pojmy, které se v aktuálním profilu rukopisu přímo nepoužily.

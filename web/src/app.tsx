@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   PdfDocumentView,
+  type DocumentChapter,
   type DocumentControl,
   type DocumentState,
   type ScaleMode,
@@ -149,7 +150,7 @@ function viewerHref(args: {
   query.set("format", args.format || "pdf");
   if (args.view === "split") query.set("view", "split");
   if (args.embedded) query.set("embedded", "1");
-  return "viewer.html?" + query.toString();
+  return (args.embedded ? "viewer.html?" : "./?") + query.toString();
 }
 
 function childHref(args: {
@@ -307,15 +308,16 @@ function VersionPicker({
                 type="button"
                 variant="ghost"
                 className="version-select"
-                aria-label="Switch publication version"
+                aria-label="Switch language version"
               >
+                <AnimatedIcon names={["LanguagesIcon"]} size={16} />
                 <span className="version-title">{versionTitle}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={16} />
               </Button>
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch publication version</TooltipContent>
+        <TooltipContent>Switch language version</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="version-menu">
         {manifest.variants.map((variant) => {
@@ -349,6 +351,7 @@ function VersionPicker({
                 window.location.href = href;
               }}
             >
+              <AnimatedIcon names={["LanguagesIcon"]} size={16} />
               <span className="version-option">
                 <strong>{variant.title}</strong>
                 <small>{variant.profile}</small>
@@ -375,7 +378,13 @@ function ModePicker({
   reviewHref: string;
   splitHref: string;
 }) {
-  const label = viewMode === "split" ? "Split" : mode === "review" ? "Review" : "Final";
+  const label = viewMode === "split" ? "Review" : mode === "review" ? "Koncept" : "Final";
+  const icon =
+    viewMode === "split"
+      ? ["Columns2Icon"]
+      : mode === "review"
+        ? ["PencilLineIcon"]
+        : ["CheckCircle2Icon"];
 
   return (
     <DropdownMenu>
@@ -387,15 +396,16 @@ function ModePicker({
                 type="button"
                 variant="ghost"
                 className="mode-select"
-                aria-label="Switch Final / Review"
+                aria-label="Switch Final / Koncept / Review"
               >
+                <AnimatedIcon names={icon} size={15} />
                 <span>{label}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
               </Button>
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch Final / Review</TooltipContent>
+        <TooltipContent>Switch Final / Koncept / Review</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="mode-menu">
         <DropdownMenuItem
@@ -404,7 +414,10 @@ function ModePicker({
             window.location.href = finalHref;
           }}
         >
-          <span>Final</span>
+          <span className="mode-option-label">
+            <AnimatedIcon names={["CheckCircle2Icon"]} size={15} />
+            Final
+          </span>
           {viewMode === "single" && mode === "final" && (
             <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
           )}
@@ -415,7 +428,10 @@ function ModePicker({
             window.location.href = reviewHref;
           }}
         >
-          <span>Review</span>
+          <span className="mode-option-label">
+            <AnimatedIcon names={["PencilLineIcon"]} size={15} />
+            Koncept
+          </span>
           {viewMode === "single" && mode === "review" && (
             <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
           )}
@@ -427,8 +443,8 @@ function ModePicker({
           }}
         >
           <span className="mode-option-label">
-            <AnimatedIcon names={["Columns2Icon", "PanelLeftRightIcon"]} size={15} />
-            Split
+            <AnimatedIcon names={["Columns2Icon"]} size={15} />
+            Review
           </span>
           {viewMode === "split" && (
             <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
@@ -450,13 +466,18 @@ function FormatPicker({
   markdownHref: string;
   htmlHref: string;
 }) {
-  const options: Array<{ format: ArtifactFormat; label: string; href: string }> = [
-    { format: "pdf", label: "PDF", href: pdfHref },
-    { format: "markdown", label: "Markdown", href: markdownHref },
-    { format: "html", label: "HTML", href: htmlHref },
+  const options: Array<{
+    format: ArtifactFormat;
+    label: string;
+    href: string;
+    icon: string[];
+  }> = [
+    { format: "pdf", label: "PDF", href: pdfHref, icon: ["FileTextIcon"] },
+    { format: "markdown", label: "Markdown", href: markdownHref, icon: ["FileCode2Icon"] },
+    { format: "html", label: "HTML", href: htmlHref, icon: ["Code2Icon"] },
   ];
 
-  const label = format === "markdown" ? "Markdown" : format.toUpperCase();
+  const active = options.find((option) => option.format === format) || options[0];
 
   return (
     <DropdownMenu>
@@ -470,7 +491,8 @@ function FormatPicker({
                 className="format-select"
                 aria-label="Switch compiled format"
               >
-                <span>{label}</span>
+                <AnimatedIcon names={active.icon} size={15} />
+                <span>{active.label}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
               </Button>
             </DropdownMenuTrigger>
@@ -487,7 +509,10 @@ function FormatPicker({
               window.location.href = option.href;
             }}
           >
-            <span>{option.label}</span>
+            <span className="mode-option-label">
+              <AnimatedIcon names={option.icon} size={15} />
+              {option.label}
+            </span>
             {format === option.format && (
               <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
             )}
@@ -498,132 +523,54 @@ function FormatPicker({
   );
 }
 
-export function PublicationIndex() {
-  const { manifest, error } = useManifest();
-
-  useEffect(() => {
-    document.documentElement.dataset.theme =
-      localStorage.getItem("paper-viewer-theme") ||
-      (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-  }, []);
-
-  if (error) {
-    return <div className="landing-state">Could not load publication manifest: {error}</div>;
-  }
-  if (!manifest) {
-    return <div className="landing-state">Loading publication variants…</div>;
-  }
+function ChapterPicker({
+  chapters,
+  page,
+  onSelect,
+}: {
+  chapters: DocumentChapter[];
+  page: number;
+  onSelect: (page: number) => void;
+}) {
+  const active =
+    [...chapters].reverse().find((chapter) => chapter.page <= page) || chapters[0] || null;
 
   return (
-    <main className="landing">
-      <motion.header
-        className="landing-header"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <p className="eyebrow">DarkFactory-Paper</p>
-        <h1>Odborná práce / Thesis</h1>
-        <p>
-          All variants are generated from one manuscript. Open the compiled PDF, Markdown,
-          or HTML publication in the React viewer and compare Final and Review side by side.
-        </p>
-      </motion.header>
-
-      {manifest.templates.map((templateName) => (
-        <section className="template-section" key={templateName}>
-          <h2>
-            {templateName}
-            {templateName === manifest.default_template && <span>default</span>}
-          </h2>
-          <div className="publication-grid">
-            {manifest.variants.map((variant, index) => {
-              const finalFile = hrefFor(
-                templateName,
-                manifest.default_template,
-                variant.final,
-              );
-              const reviewFile = hrefFor(
-                templateName,
-                manifest.default_template,
-                variant.review,
-              );
-              return (
-                <motion.article
-                  className="publication-card"
-                  key={variant.profile}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.035 }}
-                >
-                  <div className="publication-card-head">
-                    <h3>{variant.title}</h3>
-                    {variant.recommended && templateName === manifest.default_template && (
-                      <span className="badge">recommended</span>
-                    )}
-                  </div>
-                  <p>{variant.subtitle}</p>
-                  <div className="publication-actions">
-                    <Button asChild size="sm">
-                      <a
-                        href={viewerHref({
-                          file: finalFile,
-                          peer: reviewFile,
-                          template: templateName,
-                          profile: variant.profile,
-                          title: variant.title,
-                          mode: "final",
-                        })}
-                      >
-                        Raw
-                      </a>
-                    </Button>
-                    <Button asChild size="sm" variant="outline">
-                      <a
-                        href={viewerHref({
-                          file: reviewFile,
-                          peer: finalFile,
-                          template: templateName,
-                          profile: variant.profile,
-                          title: variant.title,
-                          mode: "review",
-                        })}
-                      >
-                        Review
-                      </a>
-                    </Button>
-                    <Button asChild size="sm" variant="outline">
-                      <a
-                        href={viewerHref({
-                          file: finalFile,
-                          peer: reviewFile,
-                          template: templateName,
-                          profile: variant.profile,
-                          title: variant.title,
-                          mode: "final",
-                          view: "split",
-                        })}
-                      >
-                        Split
-                      </a>
-                    </Button>
-                    <Button asChild size="sm" variant="ghost">
-                      <a href={finalFile} download>
-                        PDF
-                      </a>
-                    </Button>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-
-      <footer className="landing-footer">
-        Build {manifest.commit ? manifest.commit.slice(0, 12) : "local"}
-        {manifest.viewer?.stack?.length ? " · " + manifest.viewer.stack.join(" · ") : ""}
-      </footer>
-    </main>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="chapter-trigger-wrap">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="chapter-select"
+                aria-label="Navigate chapters"
+                disabled={!chapters.length}
+              >
+                <AnimatedIcon names={["BookOpenIcon"]} size={15} />
+                <span className="chapter-title">{active?.title || "Kapitola"}</span>
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Navigate chapters</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="chapter-menu">
+        {chapters.map((chapter) => (
+          <DropdownMenuItem
+            key={chapter.title + "-" + chapter.page}
+            className={active === chapter ? "chapter-item active" : "chapter-item"}
+            onSelect={() => onSelect(chapter.page)}
+          >
+            <AnimatedIcon names={["BookOpenIcon"]} size={15} />
+            <span className="chapter-option-title">{chapter.title}</span>
+            <small>{chapter.page}</small>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -633,15 +580,35 @@ export function ViewerApp() {
   const requestedFormat = params.get("format");
   const format: ArtifactFormat =
     requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf";
-  const artifactPath = safeArtifactPath(params.get("file"), format);
-  const peerPath = safeArtifactPath(params.get("peer"), format);
   const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final";
   const viewMode: ViewMode = params.get("view") === "split" ? "split" : "single";
   const embedded = params.get("embedded") === "1";
-  const versionTitle = params.get("title") || "Školní česká verze";
+  const profileName = params.get("profile") || "school";
   const templateName =
     params.get("template") || manifest?.default_template || "gjkt-odborna-prace";
-  const profileName = params.get("profile") || "school";
+  const activeVariant =
+    manifest?.variants.find((variant) => variant.profile === profileName) ||
+    manifest?.variants.find((variant) => variant.recommended) ||
+    manifest?.variants[0];
+  const versionTitle = params.get("title") || activeVariant?.title || "Školní česká verze";
+  const defaultFile =
+    manifest && activeVariant
+      ? hrefFor(
+          templateName,
+          manifest.default_template,
+          artifactFilename(activeVariant, mode, format),
+        )
+      : null;
+  const defaultPeer =
+    manifest && activeVariant
+      ? hrefFor(
+          templateName,
+          manifest.default_template,
+          artifactFilename(activeVariant, mode === "review" ? "final" : "review", format),
+        )
+      : null;
+  const artifactPath = safeArtifactPath(params.get("file") || defaultFile, format);
+  const peerPath = safeArtifactPath(params.get("peer") || defaultPeer, format);
 
   const rawPath = mode === "review" ? peerPath : artifactPath;
   const reviewPath = mode === "review" ? artifactPath : peerPath;
@@ -674,6 +641,7 @@ export function ViewerApp() {
     scaleMode: "fit",
     manualScale: 1,
     scrollRatio: 0,
+    chapters: [],
   });
   const [pageDraft, setPageDraft] = useState("1");
 
@@ -833,6 +801,7 @@ export function ViewerApp() {
         scaleMode: nextMode,
         manualScale: nextScale,
         scrollRatio: Number(data.scrollRatio) || 0,
+        chapters: Array.isArray(data.chapters) ? data.chapters : current.chapters,
       }));
       setPageDraft(String(nextPage));
 
@@ -892,6 +861,10 @@ export function ViewerApp() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [embedded, format, goToPage, setZoom, state.page, zoomBy]);
+
+  if (!artifactPath && !manifest && !params.get("file")) {
+    return <div className="document-loading">Loading school Final PDF…</div>;
+  }
 
   if (!artifactPath) {
     return (
@@ -1060,8 +1033,6 @@ export function ViewerApp() {
         {sidebarSide === "left" && sidebarToggle}
         <div className="toolbar-main">
           <div className="toolbar-left">
-            <TooltipAction label="Home" icon={["HomeIcon"]} href="./" />
-            <span className="identity-separator" aria-hidden="true">\</span>
             <span className="work-title" title={workTitle}>{workTitle}</span>
             <span className="identity-separator" aria-hidden="true">\</span>
             {manifest ? (
@@ -1094,6 +1065,8 @@ export function ViewerApp() {
             />
             {format === "pdf" && (
               <>
+                <span className="identity-separator" aria-hidden="true">\</span>
+                <ChapterPicker chapters={state.chapters} page={state.page} onSelect={goToPage} />
                 <span className="identity-separator" aria-hidden="true">\</span>
                 <div className="path-page-switcher" aria-label="Page navigation">
                   <TooltipAction
@@ -1138,7 +1111,7 @@ export function ViewerApp() {
               onClick={() => window.location.reload()}
             />
             <TooltipAction
-              label={viewMode === "split" ? "Exit split view" : "Split view"}
+              label={viewMode === "split" ? "Exit Review" : "Review"}
               icon={["Columns2Icon", "PanelLeftRightIcon"]}
               href={canSplit ? splitTarget : undefined}
               pressed={viewMode === "split"}
@@ -1186,7 +1159,7 @@ export function ViewerApp() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <div className="split-label">Raw</div>
+                <div className="split-label">Final</div>
                 <iframe
                   ref={(node) => {
                     splitFrames.current[0] = node;
@@ -1206,7 +1179,7 @@ export function ViewerApp() {
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <div className="split-label">Review</div>
+                <div className="split-label">Koncept</div>
                 <iframe
                   ref={(node) => {
                     splitFrames.current[1] = node;
@@ -1224,8 +1197,8 @@ export function ViewerApp() {
             </div>
           ) : (
             <div className="document-error">
-              <strong>Split view unavailable.</strong>
-              <span>Both Final and Review {formatLabel} outputs are required.</span>
+              <strong>Review comparison unavailable.</strong>
+              <span>Both Final and Koncept {formatLabel} outputs are required.</span>
             </div>
           )
         ) : format === "pdf" ? (

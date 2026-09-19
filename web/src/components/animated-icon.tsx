@@ -1,11 +1,19 @@
 import type { ComponentType, HTMLAttributes, SVGProps } from "react";
 import * as AnimatedIcons from "lucide-animated";
 import {
+  BookOpen,
+  CheckCircle2,
+  Code2,
+  Columns2,
+  FileCode2,
+  FileText,
+  Languages,
   Maximize,
   Minimize,
   Minus,
   PanelLeft,
   PanelRight,
+  PencilLine,
   RefreshCw,
 } from "lucide-react";
 
@@ -28,6 +36,22 @@ type LucideStaticComponent = ComponentType<
 >;
 
 const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
+  BookOpen,
+  BookOpenIcon: BookOpen,
+  CheckCircle2,
+  CheckCircle2Icon: CheckCircle2,
+  Code2,
+  Code2Icon: Code2,
+  Columns2,
+  Columns2Icon: Columns2,
+  FileCode2,
+  FileCode2Icon: FileCode2,
+  FileText,
+  FileTextIcon: FileText,
+  Languages,
+  LanguagesIcon: Languages,
+  PencilLine,
+  PencilLineIcon: PencilLine,
   PanelLeft,
   PanelLeftIcon: PanelLeft,
   PanelRight,

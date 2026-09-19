@@ -173,6 +173,7 @@ a {
   max-width: min(27vw, 350px);
   height: 34px;
   justify-content: flex-start;
+  gap: 6px;
   padding-inline: 8px;
 }
 
@@ -293,6 +294,65 @@ a {
 .format-item.active {
   background: var(--thumb-active);
   color: var(--accent-strong);
+}
+
+.chapter-trigger-wrap {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.chapter-select {
+  min-width: 0;
+  max-width: min(28vw, 360px);
+  height: 30px;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0 5px 0 6px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.chapter-select:hover {
+  color: var(--text);
+}
+
+.chapter-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter-menu {
+  width: min(430px, 88vw);
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+}
+
+.chapter-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.chapter-item.active {
+  background: var(--thumb-active);
+  color: var(--accent-strong);
+}
+
+.chapter-option-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter-item small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .path-page-switcher {
@@ -875,6 +935,14 @@ a {
 
   .version-select {
     max-width: 42vw;
+  }
+
+  .chapter-select {
+    max-width: 30vw;
+  }
+
+  .chapter-title {
+    max-width: 24vw;
   }
 
   .path-page-switcher {

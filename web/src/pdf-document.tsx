@@ -27,12 +27,18 @@ export type ScaleMode = "fit" | "manual";
 export type SidebarSide = "left" | "right";
 export type SidebarMode = "thumbnails" | "minimap";
 
+export type DocumentChapter = {
+  title: string;
+  page: number;
+};
+
 export type DocumentState = {
   page: number;
   total: number;
   scaleMode: ScaleMode;
   manualScale: number;
   scrollRatio: number;
+  chapters: DocumentChapter[];
 };
 
 export type DocumentControl = {
@@ -65,6 +71,37 @@ function clamp(value: number, min: number, max: number) {
 
 
 type PdfDestination = string | any[];
+
+async function destinationPage(pdf: any, dest: PdfDestination | null | undefined) {
+  if (!dest) return null;
+  try {
+    const explicit = typeof dest === "string" ? await pdf.getDestination(dest) : dest;
+    if (!Array.isArray(explicit) || explicit.length === 0) return null;
+    const ref = explicit[0];
+    if (Number.isInteger(ref)) return ref + 1;
+    if (ref && typeof ref === "object") {
+      const cached = pdf.cachedPageNumber?.(ref);
+      return cached || (await pdf.getPageIndex(ref)) + 1;
+    }
+  } catch (error) {
+    console.warn("PDF outline destination resolution failed", dest, error);
+  }
+  return null;
+}
+
+async function loadTopLevelChapters(pdf: any): Promise<DocumentChapter[]> {
+  const outline = (await pdf.getOutline?.()) || [];
+  const chapters: DocumentChapter[] = [];
+  for (const item of outline) {
+    const page = await destinationPage(pdf, item.dest);
+    const title = String(item.title || "").trim();
+    if (!title || !page) continue;
+    if (!chapters.some((chapter) => chapter.title === title && chapter.page === page)) {
+      chapters.push({ title, page });
+    }
+  }
+  return chapters.sort((a, b) => a.page - b.page);
+}
 
 class AnnotationLinkService {
   externalLinkEnabled = true;
@@ -609,6 +646,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
     const [manualScale, setManualScale] = useState(1.15);
     const [stageWidth, setStageWidth] = useState(900);
     const [scrollRatio, setScrollRatio] = useState(0);
+    const [chapters, setChapters] = useState<DocumentChapter[]>([]);
     const [linkService, setLinkService] = useState<any>(null);
     const stageRef = useRef<HTMLElement>(null);
     const pageRefs = useRef(new Map<number, HTMLElement>());
@@ -679,6 +717,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
       setError("");
       setPdf(null);
       setPages([]);
+      setChapters([]);
 
       void task.promise
         .then(async (document) => {
@@ -693,9 +732,11 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
               baseHeight: viewport.height,
             });
           }
+          const nextChapters = await loadTopLevelChapters(document);
           if (disposed) return;
           setPdf(document);
           setPages(nextPages);
+          setChapters(nextChapters);
         })
         .catch((reason) => {
           if (!disposed) setError(String(reason?.message || reason));
@@ -739,8 +780,10 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
         scaleMode,
         manualScale: scaleMode === "fit" ? fitScale : manualScale,
         scrollRatio,
+        chapters,
       });
     }, [
+      chapters,
       currentPage,
       fitScale,
       manualScale,

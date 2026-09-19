@@ -151,7 +151,7 @@ for required in (
     'label("kw-" + item.id)',
 ):
     if required not in common_source:
-        fail(f"Index missing alphabetical outlined hierarchy contract: {required}")
+        fail(f"Index missing alphabetical internal hierarchy contract: {required}")
 if ".slice(0, 1)" in common_source:
     fail("Index grouping must use grapheme-safe first() rather than byte-index slicing")
 if "index-sort-name(item).first()" not in common_source:
@@ -162,6 +162,16 @@ if "collect-canonical-terms(values)" not in common_source:
     fail("Index must deduplicate the complete canonical vocabulary by stable term id")
 if '] #label("kw-" + item.id)' not in common_source:
     fail("Index keyword labels must attach to headings in markup mode")
+
+for required in (
+    "outlined: false",
+    "link(\n        label(\"kw-\" + item.id)",
+    ").join([#linebreak()])",
+):
+    if required not in common_source:
+        fail(f"Index must keep the full term list local while hiding term children from the main contents: {required}")
+if "outlined: true" in common_source[common_source.find("#let render-index(values)") :]:
+    fail("Rejstřík child headings must not expand the main Obsah")
 
 for required in (
     "#let term-proper-name",
@@ -348,6 +358,19 @@ for path in sorted(Path("kapitoly").glob("*.typ")):
 registry_source = Path("templates/registry.typ").read_text(encoding="utf-8")
 if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = vocabulary" not in registry_source:
     fail("template registry must export the shared terminology vocabulary")
+
+metadata_source = Path("metadata.typ").read_text(encoding="utf-8")
+finalized_annotation_opening = (
+    "#finalized[\n"
+    "        Tato odborná práce se zabývá principy agentického inženýrství (_agentic engineering_):\n"
+    "        efektivními inženýrskými praktikami pro vývoj pomocí umělé inteligence prostřednictvím\n"
+    "        agentických systémů a architekturou těchto systémů.\n"
+    "      ]"
+)
+if finalized_annotation_opening not in metadata_source:
+    fail("Czech annotation opening must remain finalized with the approved agentic-engineering definition")
+if "a architekturou řídicích harnessů pro automatizovaný vývoj softwaru" in metadata_source:
+    fail("legacy Czech annotation opening must not return")
 
 terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
 if 'proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering")' not in terms_source:
@@ -536,7 +559,7 @@ for required in (
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
 if app_source.count('className="identity-separator"') < 5:
-    fail("toolbar path must end with PDF page navigation after the compiled-format selector")
+    fail("toolbar path must include language, mode, format, chapter, and page segments")
 for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
     if required not in app_source:
         fail(f"compiled-format path selector missing contract: {required}")
@@ -544,10 +567,27 @@ for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdo
 for required in ('className="path-page-switcher"', 'className="path-page-control"', 'label="Previous page"', 'label="Next page"'):
     if required not in app_source:
         fail(f"page switcher must live at the tail of the path navigation: {required}")
+
+for required in (
+    "ChapterPicker",
+    'className="chapter-select"',
+    'names={["BookOpenIcon"]}',
+    "state.chapters",
+    "LanguagesIcon",
+    "FileTextIcon",
+    "FileCode2Icon",
+    "Code2Icon",
+    "PencilLineIcon",
+    'viewMode === "split" ? "Review" : mode === "review" ? "Koncept" : "Final"',
+):
+    if required not in app_source:
+        fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
+if 'label="Home"' in app_source:
+    fail("viewer toolbar must not restore the Home button")
 if 'className="page-control"' in app_source:
     fail("legacy bottom-status page switcher must not return")
 if "peerTarget" in app_source:
-    fail("Final/Review switching must live in the path bar, not the toolbar action cluster")
+    fail("Final/Koncept/Review switching must live in the path bar, not a legacy peer control")
 
 compiled_artifact_source = Path("web/src/compiled-artifact.tsx").read_text(encoding="utf-8")
 for required in (
@@ -565,7 +605,17 @@ icon_source = Path("web/src/components/animated-icon.tsx").read_text(encoding="u
 for required in ("lucide-animated", "lucide-react", "STATIC_FALLBACKS"):
     if required not in icon_source:
         fail(f"viewer icon adapter missing fallback contract: {required}")
-for required in ("MinusIcon: Minus", "RefreshCwIcon: RefreshCw"):
+for required in (
+    "MinusIcon: Minus",
+    "RefreshCwIcon: RefreshCw",
+    "LanguagesIcon: Languages",
+    "FileTextIcon: FileText",
+    "FileCode2Icon: FileCode2",
+    "Code2Icon: Code2",
+    "PencilLineIcon: PencilLine",
+    "Columns2Icon: Columns2",
+    "BookOpenIcon: BookOpen",
+):
     if required not in icon_source:
         fail(f"viewer icon adapter missing guaranteed static fallback: {required}")
 if 'label="Refresh page"' not in app_source or "window.location.reload()" not in app_source:
@@ -579,7 +629,7 @@ thesis_source = Path("thesis.typ").read_text(encoding="utf-8")
 if '"KONCEPT"' in thesis_source:
     fail("thesis composition must not force the KONCEPT review watermark")
 if 'splitHref={canSplit ? splitTarget : "#"}' not in app_source:
-    fail("Final/Review path selector must also expose Split mode")
+    fail("Final/Koncept/Review path selector must expose the comparison view")
 
 pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
 for required in (
@@ -597,11 +647,26 @@ for required in (
     'closest<HTMLElement>("[data-element-id]")',
     "stopImmediatePropagation",
     "window.open(annotation.url",
+    "loadTopLevelChapters",
+    "pdf.getOutline",
+    "chapters: DocumentChapter[]",
 ):
     if required not in pdf_source:
         fail(f"React PDF viewer missing interaction contract: {required}")
 if "PDFLinkService" in pdf_source or "setViewer({" in pdf_source:
     fail("custom PDF renderer must not depend on a partial PDFViewer/PDFLinkService surrogate")
+
+main_source = Path("web/src/main.tsx").read_text(encoding="utf-8")
+if "<ViewerApp />" not in main_source or "PublicationIndex" in main_source:
+    fail("site root must open directly into the viewer")
+for required in (
+    'const profileName = params.get("profile") || "school"',
+    'const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final"',
+    'requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf"',
+    'Loading school Final PDF…',
+):
+    if required not in app_source:
+        fail(f"viewer root missing school/final/PDF default contract: {required}")
 
 vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
 for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
