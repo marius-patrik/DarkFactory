@@ -21,7 +21,7 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
 
 == #confirmed[Cíl práce a výzkumné otázky]
 
-#unconfirmed[
+#confirmed[
 *Hlavní cíl:*
 Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.
 
@@ -30,7 +30,9 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).
 - Navrhnout architekturu řídicího harnessu zahrnující nástrojové smyčky (ReAct), bezpečnostní pískoviště a hierarchickou orchestraci subagentů.
 - Formalizovat mechanismy zapojení člověka do smyčky (_Human-in-the-loop_), schvalovací brány a protokol revizních značek pro dohled nad textovými výstupy.
+]
 
+#unconfirmed[
 *Výzkumné otázky:*
 - *VO1 (Míra automatizace a role člověka)*: Lze vývojový proces od zadání požadavku (GitHub Issue) po pull request strukturovat tak, aby role vývojáře spočívala výhradně v architektonickém dozoru a schvalování záměru (Human Gate), bez nutnosti ručního psaní rutinního kódu?
 - *VO2 (Řízení divergence a spolehlivost smyčky)*: Jakými architektonickými mechanismy lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?
@@ -44,13 +46,13 @@ Vymezit teoretické principy agentního inženýrství (_agentic engineering_) a
 
 == #confirmed[Metodika práce]
 
-#unconfirmed[
-Práce má teoreticko-architektonický a inženýrský charakter. #diff[Postup sleduje strukturu inženýrského cyklu:][Vzhledem k dynamickému vývoji v oblasti autonomního softwarového vývoje práce důsledně zachovává a integruje zavedené anglické odborné názvy (např. _harness_, _pull request_, _agent loop_, _prompt engineering_, _skills_ či _context rot_). Použití této terminologie je integrální součástí práce, neboť tyto anglické pojmy představují de facto celosvětové průmyslové standardy (_industry standards_), jejichž doslovný český překlad by byl nejednoznačný, zavádějící či v rozporu s běžnou inženýrskou praxí.
+#confirmed[
+Práce má teoreticko-architektonický a inženýrský charakter. Vzhledem k dynamickému vývoji v oblasti autonomního softwarového vývoje práce důsledně zachovává a integruje zavedené anglické odborné názvy (např. _harness_, _pull request_, _agent loop_, _prompt engineering_, _skills_ či _context rot_). Použití této terminologie je integrální součástí práce, neboť tyto anglické pojmy představují de facto celosvětové průmyslové standardy (_industry standards_), jejichž doslovný český překlad by byl nejednoznačný, zavádějící či v rozporu s běžnou inženýrskou praxí.
 
-Postup práce sleduje strukturu inženýrského cyklu:]
+Postup práce sleduje strukturu inženýrského cyklu:
 
-- *1. Koncepční analýza*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
-- *2. Architektonický návrh*: Formulace modulárního modelu řídicího harnessu, správy stavu, exekučního pískoviště, bezpečnostních pojistek a orchestrace subagentů.
+- *1. Analýza konceptu*: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
+- *2. Návrh architektury*: Formulace modulárního modelu řídicího harnessu, správy stavu, exekučního pískoviště, bezpečnostních pojistek a orchestrace subagentů.
 - *3. Kritické zhodnocení*: Porovnání navržených principů s volnými agentními smyčkami a vymezení provozních limitů autonomního inženýrství.
 ]
 

@@ -101,16 +101,16 @@
 
 // Zelené zvýraznění pro nově přidaný text (nahrazuje původní koncept ai)
 #let added(body) = context if review-state.get() {
-  highlight(fill: rgb("bbf7d0"))[#body]
+  highlight(fill: rgb("dcfce7"))[#text(fill: rgb("#15803d"))[#body]]
 } else {
   body
 }
 #let ai = added
 
-// Žluté zvýraznění pro neověřený text konceptu (draft / unconfirmed)
+// Žlutý podtržený text pro neověřený text konceptu (draft / unconfirmed)
 // V ne-revizní (raw) verzi se neověřený text zcela vynechává (none)
 #let draft(body) = context if review-state.get() {
-  highlight(fill: rgb("fef08a"))[#body]
+  underline(stroke: 1.3pt + rgb("#eab308"), offset: 2.5pt)[#body]
 } else {
   none
 }
@@ -125,7 +125,7 @@
 
 // Červené zvýraznění s přeškrtnutím pro odstraněný text (removed)
 #let removed(body) = context if review-state.get() {
-  [#highlight(fill: rgb("fee2e2"))[#strike(stroke: 0.8pt + rgb("ef4444"))[#body]] <removed-diff>]
+  [#highlight(fill: rgb("fee2e2"))[#text(fill: rgb("#991b1b"))[#strike(stroke: 0.9pt + rgb("#dc2626"))[#body]]] <removed-diff>]
 } else {
   none
 }
