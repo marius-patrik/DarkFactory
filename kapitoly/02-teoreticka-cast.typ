@@ -197,15 +197,12 @@ Příčiny a inženýrská řešení tohoto jevu:
 
 === Úvod do řídicích harnessů
 
-#unconfirmed[
+#confirmed[
 V terminologii agentního inženýrství označuje pojem *harness* (řídicí postroj) aplikační vrstvu, která obklopuje samotné inferenční jádro jazykového modelu. Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
+]
 
-Mezi klíčové funkce řídicího harnessu patří:
-- *Inicializace a správa sezení*: Sestavení systémového promptu, dynamická injekce kontextu repozitáře a sledování spotřeby tokenů.
-- *Běhové prostředí nástrojů*: Bezpečné spouštění příkazů v operačním systému a zpětné předávání výstupů modelu.
-- *Řízení stavových přechodů a vynucování mantinelů*: Dohled nad dodržováním procesních pravidel, zastavení zacyklených běhů a vynucování lidských schvalovacích bran.
-
-Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu, nikoliv pouze na samotném jazykovém modelu.
+#unconfirmed[
+Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je takzvaná *agentní smyčka* (_Agent Loop_).
 ]
 
 === Autonomní agent vs. konverzační chatbot
@@ -224,16 +221,23 @@ Srovnání obou přístupů:
   - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
 ]
 
-=== Prováděcí cyklus ReAct
+=== Agentní smyčka a prováděcí cyklus ReAct
 
 #unconfirmed[
-Základním operačním vzorem autonomního agenta je prováděcí smyčka *ReAct* (_Reasoning + Acting_) @yao2022. Tento vzor propojuje uvažování modelu s přímým vykonáváním akcí a interpretací jejich výsledků.
+Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého řídicího harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
-Prováděcí cyklus sestává ze čtyř navazujících fází znázorněných na @fig-react-loop:
+V každé iteraci agentní smyčky harness zajišťuje tyto klíčové funkce:
+- *Inicializace a správa sezení*: Sestavení systémového promptu, dynamická injekce kontextu repozitáře a sledování spotřeby tokenů.
+- *Běhové prostředí nástrojů*: Bezpečné spouštění příkazů v operačním systému a zpětné předávání výstupů modelu.
+- *Řízení stavových přechodů a vynucování mantinelů*: Dohled nad dodržováním procesních pravidel, detekce a zastavení uvíznutých běhů a vynucování lidských schvalovacích bran.
+
+Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem *ReAct* (_Reasoning + Acting_) @yao2022, který propojuje rozvahu s přímým jednáním. Tento prováděcí cyklus sestává ze čtyř navazujících fází znázorněných na @fig-react-loop:
 1. *Rozvaha (_Thought_)*: Model vyhodnotí aktuální stav kontextu a formuluje svůj nejbližší záměr.
 2. *Volání nástroje (_Tool Call_)*: Emitování strukturovaného požadavku na provedení konkrétní akce s určenými parametry.
 3. *Vykonání a pozorování (_Observation_)*: Harness bezpečně provede akci v systému a výstup (výpis souboru či chybovou zprávu) vloží zpět do kontextu.
-4. *Navazující iterace*: Model v dalším tahu analyzuje získanou odezvu a rozhoduje o navazujícím kroku.
+4. *Navazující iterace*: Model v dalším tahu analyzuje získanou odezvu a rozhoduje o dalším kroku.
+
+Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
 ]
 
 #figure(
