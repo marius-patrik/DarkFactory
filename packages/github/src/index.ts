@@ -1,4 +1,6 @@
 /** @packageDocumentation
- * github package boundary. Runtime ownership migrates here during the #420 convergence.
+ * Typed GitHub transport and repository mechanisms.
+ *
+ * During #420 this entrypoint is a compatibility adapter over the pre-workspace source tree.
  */
-export {};
+export * from "../../../harness/src/github/index.ts";
