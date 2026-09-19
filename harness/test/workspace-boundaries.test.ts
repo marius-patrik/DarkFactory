@@ -4,17 +4,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const packageRoot = resolve(root, "packages");
-const required = [
-	"protocol",
-	"core",
-	"capability",
-	"github",
-	"keychain",
-	"auth",
-	"docs",
-	"cli",
-	"web",
-] as const;
+const required = ["protocol", "core", "capability", "github", "keychain", "auth", "docs", "cli", "web"] as const;
 const expectedNames = new Set(required.map((name) => `@darkfactory/${name}`));
 
 async function manifest(name: string): Promise<Record<string, unknown>> {
@@ -92,7 +82,9 @@ describe("publishable workspace boundaries", () => {
 		];
 		for (const relative of safeFiles) {
 			const source = await readFile(resolve(packageRoot, relative), "utf8");
-			expect(source).not.toMatch(/(?:node:|bun:|harness\/src|@darkfactory\/keychain|@darkfactory\/core|@darkfactory\/cli)/u);
+			expect(source).not.toMatch(
+				/(?:node:|bun:|harness\/src|@darkfactory\/keychain|@darkfactory\/core|@darkfactory\/cli)/u,
+			);
 		}
 		const auth = await manifest("auth");
 		const web = await manifest("web");
@@ -101,12 +93,7 @@ describe("publishable workspace boundaries", () => {
 	});
 
 	test("only explicit migration adapters may still reach the monolithic harness", async () => {
-		const allowed = new Set([
-			"core/src/index.ts",
-			"github/src/node.ts",
-			"keychain/src/index.ts",
-			"cli/src/index.ts",
-		]);
+		const allowed = new Set(["core/src/index.ts", "github/src/node.ts", "keychain/src/index.ts", "cli/src/index.ts"]);
 		for (const name of required) {
 			const src = resolve(packageRoot, name, "src");
 			for (const entry of await readdir(src, { withFileTypes: true })) {

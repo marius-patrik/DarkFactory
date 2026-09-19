@@ -8,13 +8,7 @@
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": [
-      "bun"
-    ]
+    "types": ["bun"]
   },
-  "include": [
-    "src",
-    "test",
-    "../packages/*/src"
-  ]
+  "include": ["src", "test", "../packages/*/src"]
 }
