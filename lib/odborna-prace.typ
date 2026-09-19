@@ -99,9 +99,11 @@
 
 #let blue-note = scope-note
 
-// Zelené zvýraznění pro nově přidaný text (nahrazuje původní koncept ai)
+// GitHub-style zelený diff pro nově přidaný text: zelené pozadí, tmavě zelený text a prefix "+"
 #let added(body) = context if review-state.get() {
-  highlight(fill: rgb("dcfce7"))[#text(fill: rgb("#15803d"))[#body]]
+  highlight(fill: rgb("#dafbe1"))[
+    #text(fill: rgb("#116329"))[#text("+ ")#body]
+  ]
 } else {
   body
 }
@@ -123,14 +125,16 @@
   body
 }
 
-// Červené zvýraznění s přeškrtnutím pro odstraněný text (removed)
+// GitHub-style červený diff pro odstraněný text: bez přeškrtnutí, červené pozadí, tmavě červený text a prefix "-"
 #let removed(body) = context if review-state.get() {
-  [#highlight(fill: rgb("fee2e2"))[#text(fill: rgb("#991b1b"))[#strike(stroke: 0.9pt + rgb("#dc2626"))[#body]]] <removed-diff>]
+  [#highlight(fill: rgb("#ffebe9"))[
+    #text(fill: rgb("#82071e"))[#text("- ")#body]
+  ] <removed-diff>]
 } else {
   none
 }
 
-// Srovnávací diff funkce: v review módu (červený původní + zelený nový); v raw módu pouze nový text bez zvýraznění
+// Srovnávací diff funkce: v review módu GitHub-style "- old" / "+ new"; v raw módu pouze nový text
 #let diff(old, new) = context if review-state.get() {
   [#removed(old) #added(new)]
 } else {
