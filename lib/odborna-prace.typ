@@ -135,7 +135,7 @@
 // GitHub-style červený diff pro odstraněný text: bez přeškrtnutí, červené pozadí, tmavě červený text a prefix "-"
 #let removed(body) = context if review-state.get() {
   [#highlight(fill: rgb("#ffebe9"))[
-    #text(fill: rgb("#82071e"))[[#text("- ") <diff-prefix>]#body]
+    #text(fill: rgb("#82071e"))[#text("- ")#body]
   ] <removed-diff>]
 } else {
   none
@@ -256,7 +256,7 @@
     let s = word-stats-state.final()
     let rozsah = [Rozsah práce: #s.words slov / #s.chars znaků]
     let rozsah-vysazeny = if is-rev {
-      text(size: 9pt, fill: rgb("#64748b"), rozsah)
+      text(size: 9pt, fill: rgb("#64748b"))[#rozsah]
     } else {
       rozsah
     }
@@ -394,6 +394,13 @@
   set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
   set terms(indent: 0pt, hanging-indent: 1.6em, spacing: 4pt)
 
+  // Seznamy mají vlastní malý vnější rytmus. Nejsou svázány do jednoho
+  // nerozdělitelného bloku, takže dlouhé seznamy mohou přirozeně pokračovat
+  // na další stránce.
+  show list: it => block(above: 3pt, below: 5pt, breakable: true, it)
+  show enum: it => block(above: 3pt, below: 5pt, breakable: true, it)
+  show terms: it => block(above: 3pt, below: 5pt, breakable: true, it)
+
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
@@ -466,74 +473,95 @@
   }
 
   // ── Jednotný výpočet rozsahu pro normal i review ──────────
-  // Počítá se pouze vlastní text práce (Úvod–Závěr). Rozdíl mezi verzemi
-  // vzniká přirozeně tím, co confirmed/unconfirmed skutečně vysází:
-  // normal skryje unconfirmed, review jej zobrazí. Callouty, odstraněná
-  // strana diffu a vizuální +/- prefixy se do rozsahu nezapočítávají.
+  // Počítá se pouze vlastní text práce (Úvod–Závěr). Normal verze skryje
+  // unconfirmed text, review jej zobrazí; confirmed je v obou. Tím vznikne
+  // správný počet bez druhého paralelního zdroje pravdy.
   context {
-    let start-anchors = query(<body-start-anchor>)
-    let app-anchors = query(<appendix-start-anchor>)
-    let start-page = if start-anchors.len() > 0 { start-anchors.first().location().page() } else { 0 }
-    let end-page = if app-anchors.len() > 0 { app-anchors.first().location().page() } else { 999999 }
+    let core = sel => selector(sel)
+      .after(<body-start-anchor>, inclusive: false)
+      .before(<appendix-start-anchor>, inclusive: false)
+
+    // Blokové struktury mohou obsahovat text, který není samostatným odstavcem.
+    // Počítáme proto jen jejich nejvyšší úroveň a odstavce uvnitř nich vynecháme,
+    // aby žádný text nebyl započítán dvakrát.
+    let containers = selector(list).or(enum).or(terms).or(table)
+    let nested-par-locs = query(core(selector(par).within(containers))).map(it => it.location())
+    let nested-list-locs = query(core(selector(list).within(containers))).map(it => it.location())
+    let nested-enum-locs = query(core(selector(enum).within(containers))).map(it => it.location())
+    let nested-terms-locs = query(core(selector(terms).within(containers))).map(it => it.location())
+    let nested-table-locs = query(core(selector(table).within(containers))).map(it => it.location())
 
     let words = 0
     let chars = 0
 
-    // Odstavce pokrývají běžný text i text uvnitř položek seznamů.
-    for p in query(par) {
-      let pg = p.location().page()
-      if pg >= start-page and pg < end-page {
-        let s = string-word-count(extract-text(p.body))
-        words += s.words
-        chars += s.characters
+    let add-content = item => {
+      let s = string-word-count(extract-text(item))
+      words += s.words
+      chars += s.characters
+    }
+
+    for p in query(core(par)) {
+      if p.location() not in nested-par-locs {
+        add-content(p.body)
       }
     }
 
-    // Nadpisy nejsou odstavce, ale patří do rozsahu práce.
-    for h in query(heading) {
-      let pg = h.location().page()
-      if pg >= start-page and pg < end-page {
-        let s = string-word-count(extract-text(h.body))
-        words += s.words
-        chars += s.characters
+    for item in query(core(list)) {
+      if item.location() not in nested-list-locs {
+        add-content(item)
       }
     }
 
-    // Recenzní panely jsou pracovní metadata, nikoli text práce.
-    for item in query(<callout>) {
-      let pg = item.location().page()
-      if pg >= start-page and pg < end-page {
-        let s = string-word-count(extract-text(item))
-        words -= s.words
-        chars -= s.characters
+    for item in query(core(enum)) {
+      if item.location() not in nested-enum-locs {
+        add-content(item)
       }
     }
 
-    // Ve review módu je stará strana diffu viditelná, ale není součástí
-    // výsledného textu. Normal verze ji vůbec nevysází.
-    for item in query(<removed-diff>) {
-      let pg = item.location().page()
-      if pg >= start-page and pg < end-page {
-        let s = string-word-count(extract-text(item))
-        words -= s.words
-        chars -= s.characters
+    for item in query(core(terms)) {
+      if item.location() not in nested-terms-locs {
+        add-content(item)
       }
     }
 
-    // +/- jsou pouze vizuální diff značky a nesmí měnit počet znaků.
-    for item in query(<diff-prefix>) {
-      let pg = item.location().page()
-      if pg >= start-page and pg < end-page {
-        let s = string-word-count(extract-text(item))
-        words -= s.words
-        chars -= s.characters
+    for item in query(core(table)) {
+      if item.location() not in nested-table-locs {
+        add-content(item)
       }
     }
 
-    word-stats-state.update((
+    for h in query(core(heading)) {
+      add-content(h.body)
+    }
+
+    // Popisky obrázků nejsou odstavce ani tabulky, ale jsou součástí práce.
+    for caption in query(core(figure.caption)) {
+      add-content(caption)
+    }
+
+    let subtract-content = item => {
+      let s = string-word-count(extract-text(item))
+      words -= s.words
+      chars -= s.characters
+    }
+
+    // Pracovní vrstvy review dokumentu nejsou součástí skutečného rozsahu.
+    for item in query(core(<callout>)) {
+      subtract-content(item)
+    }
+    for item in query(core(<removed-diff>)) {
+      subtract-content(item)
+    }
+    for item in query(core(<diff-prefix>)) {
+      subtract-content(item)
+    }
+
+    let stats = (
       words: calc.max(0, words),
       chars: calc.max(0, chars),
-    ))
+    )
+    word-stats-state.update(stats)
+    metadata(stats) <word-stats>
   }
 }
 
