@@ -10,11 +10,17 @@
 #let item = concept(
   key: "conclusion",
   term: terminology,
-  document_enabled: true,
-  document_body: terms => [
+  definition: none,
+  description: terms => [
 #blue-note[
   Poznámka k vypracování závěru:
   Závěr práce bude sepsán jako poslední krok po definitivním ucelení teoretických východisek agentického inženýrství a detailní architektury agent harnessu. Tato závěrečná kapitola syntetizuje zjištění o deterministickém řízení autonomních agentů a zhodnotí formulované principy a výzkumné otázky bez vazby na dřívější ad-hoc testovací repozitáře.
 ]
   ],
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: (),
 )
