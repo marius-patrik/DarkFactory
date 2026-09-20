@@ -228,9 +228,13 @@ for path in concept_files:
     source = path.read_text(encoding="utf-8")
     if "#let terminology = define-term(" not in source:
         fail(f"concept file does not own canonical terminology: {path}")
-    for field in ("definition:", "description:", "summary:"):
-        if field not in source:
-            fail(f"concept file is missing canonical {field[:-1]} field: {path}")
+    for field in ("definition", "description", "summary"):
+        if f"{field}:" not in source:
+            fail(f"concept file is missing canonical {field} field: {path}")
+        if re.search(rf"{field}:\s*none\b", source):
+            fail(f"concept file has empty canonical {field}: {path}")
+    if "explanation_cs:" in source or "explanation_en:" in source:
+        fail(f"concept definition must not be duplicated in term metadata: {path}")
     for field in legacy_concept_fields:
         if field in source:
             fail(f"legacy manuscript field {field[:-1]} is forbidden: {path}")
