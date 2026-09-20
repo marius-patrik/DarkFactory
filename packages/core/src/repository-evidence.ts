@@ -3,7 +3,7 @@
  */
 
 import { access, readFile, readdir } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 
 export type RepositoryEcosystem = "node" | "python" | "rust" | "go";
 export type PackageManager = "bun" | "npm" | "pnpm" | "yarn" | "pip" | "cargo" | "go";
