@@ -97,7 +97,7 @@ export const capability = defineCapability({
 				}
 
 				const ecosystem = pkg.ecosystem || "javascript";
-				const repoConfig = await readRepoConfig(context.repositoryRoot);
+				const repoConfig = await readRepoConfig(context.repositoryRoot, (event) => console.log(event));
 				const registry = JSON.parse(JSON.stringify(DEFAULT_REGISTRY));
 
 				// Override with repo.df environment settings if available
@@ -105,14 +105,18 @@ export const capability = defineCapability({
 				for (const eco of Object.keys(registry)) {
 					const ecoRegistry = registry[eco];
 					if (!ecoRegistry) continue;
-					const testingCmd = env.testing?.[eco]?.command || env.testing?.command;
-					if (testingCmd) ecoRegistry.test = parseShellCommand(testingCmd);
-					const lintingCmd = env.linting?.[eco]?.command || env.linting?.command;
-					if (lintingCmd) ecoRegistry.lint = parseShellCommand(lintingCmd);
-					const formattingCmd = env.formatting?.[eco]?.command || env.formatting?.command;
-					if (formattingCmd) ecoRegistry.format_check = parseShellCommand(formattingCmd);
-					const docsCmd = env.docs?.[eco]?.command || env.docs?.command;
-					if (docsCmd) ecoRegistry.docs_check = parseShellCommand(docsCmd);
+
+					const testingVal = env.testing?.[eco]?.command || env.testing?.[eco] || env.testing?.command || env.testing;
+					if (testingVal) ecoRegistry.test = parseShellCommand(testingVal);
+
+					const lintingVal = env.linting?.[eco]?.command || env.linting?.[eco] || env.linting?.command || env.linting;
+					if (lintingVal) ecoRegistry.lint = parseShellCommand(lintingVal);
+
+					const formattingVal = env.formatting?.[eco]?.command || env.formatting?.[eco] || env.formatting?.command || env.formatting;
+					if (formattingVal) ecoRegistry.format_check = parseShellCommand(formattingVal);
+
+					const docsVal = env.docs?.[eco]?.command || env.docs?.[eco] || env.docs?.command || env.docs;
+					if (docsVal) ecoRegistry.docs_check = parseShellCommand(docsVal);
 				}
 
 				const ecoRegistry = registry[ecosystem] || registry["javascript"];

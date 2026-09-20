@@ -53,12 +53,6 @@ export async function loadCapabilities(root?: string): Promise<CapabilityDefinit
 	return discoverCapabilities(capabilitiesDir);
 }
 
-/** Resolved domains and the capabilities applicable to them. */
-export interface CapabilityResolution {
-	domains: readonly string[];
-	capabilities: readonly CapabilityDefinition[];
-}
-
 /** Filters and deterministically orders capabilities for detected domains. */
 export function resolveCapabilities(
 	definitions: readonly CapabilityDefinition[],

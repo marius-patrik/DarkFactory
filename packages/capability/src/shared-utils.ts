@@ -146,15 +146,14 @@ export function resolveDfFile(root: string, name: string): string {
 	return existsSync(dfPath) ? dfPath : rootPath;
 }
 
-export async function readRepoConfig(root: string) {
-
+export async function readRepoConfig(root: string, auditLog?: (event: any) => void) {
 	try {
 		const repoDfPath = resolveDfFile(root, "repo");
 		const raw = await readFile(repoDfPath, "utf8");
 		return JSON.parse(raw);
 	} catch (e: any) {
 		if (e.code === 'ENOENT') return {};
-		console.warn(`Warning: repo.df found but malformed, ignoring configuration:`, e?.message || e);
+		auditLog?.({ capability: "core", action: "warning", details: { message: `repo.df found but malformed, ignoring configuration: ${e?.message || e}` } });
 		return {};
 	}
 }
@@ -179,7 +178,9 @@ export async function checkToolExists(tool: string): Promise<boolean> {
 }
 
 export function parseShellCommand(cmd: string | string[]): { tool: string; args: string[] } {
-	const parsed = Array.isArray(cmd) ? { tool: cmd[0], args: cmd.slice(1) } : (() => {
+	const parsed = Array.isArray(cmd) 
+        ? { tool: cmd[0] ?? "", args: cmd.slice(1) } 
+        : (() => {
 		const args: string[] = [];
 		let current = "";
 		let inSingleQuote = false;
@@ -212,8 +213,8 @@ export function parseShellCommand(cmd: string | string[]): { tool: string; args:
 
 	// Strict validation: Reject commands with shell metacharacters
 	const metacharacters = [";", "&", "|", "<", ">", "$", "(", ")", "`", "{", "}", "[", "]", "*", "?", "~", "!", "\n"];
-	if (metacharacters.some((m) => parsed.tool.includes(m) || parsed.args.some((a) => a.includes(m)))) {
-		throw new Error(`Security Violation: Command contains prohibited shell metacharacters: ${parsed.tool} ${parsed.args.join(" ")}`);
+	if (parsed.tool === "" || metacharacters.some((m) => parsed.tool.includes(m) || parsed.args.some((a) => a.includes(m)))) {
+		throw new Error(`Security Violation or empty tool: ${parsed.tool} ${parsed.args.join(" ")}`);
 	}
 	return parsed;
 }
