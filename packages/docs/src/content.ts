@@ -4,7 +4,7 @@ import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 
 /** Semantic kind assigned to a documentation page. */
-export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr";
+export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr" | "capability";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -36,6 +36,46 @@ export interface DocsWorkflowSummary {
 	jobs: readonly string[];
 }
 
+/** Browser-safe summary of one detected repository package. */
+export interface DocsRepositoryPackageSummary {
+	id: string;
+	path: string;
+	name: string;
+	ecosystem: string;
+	packageManager: string;
+	domains: readonly string[];
+	apiEntryPoints: readonly string[];
+}
+
+/** Browser-safe repository evidence carried by the documentation graph. */
+export interface DocsRepositorySummary {
+	repoDfPath?: string;
+	defaultBranch?: string;
+	ecosystems: readonly string[];
+	domains: readonly string[];
+	packages: readonly DocsRepositoryPackageSummary[];
+}
+
+/** Graph-node contribution declared by one capability. */
+export interface DocsCapabilityGraphSummary {
+	id: string;
+	nodeKinds: readonly string[];
+}
+
+/** Browser-safe metadata for one applicable DarkFactory capability. */
+export interface DocsCapabilitySummary {
+	id: string;
+	version: string;
+	description: string;
+	domains: readonly string[];
+	detectors: readonly string[];
+	commands: readonly string[];
+	graph: readonly DocsCapabilityGraphSummary[];
+	hooks: readonly string[];
+	verification: readonly string[];
+	docs: readonly string[];
+}
+
 /** Typed headless documentation content graph consumed by @darkfactory/web. */
 export interface DocsContentGraph {
 	version: 1;
@@ -43,6 +83,8 @@ export interface DocsContentGraph {
 	home: string;
 	pages: readonly DocsPage[];
 	workflows: readonly DocsWorkflowSummary[];
+	repository?: DocsRepositorySummary;
+	capabilities?: readonly DocsCapabilitySummary[];
 	api?: DocsApiReference;
 }
 
@@ -100,6 +142,29 @@ function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary 
 		}
 	}
 	return { source: source.replaceAll("\\", "/"), name, jobs };
+}
+
+/** Adds capability-declared Markdown documentation to an existing content graph. */
+export function includeCapabilityDocumentation(
+	repoRoot: string,
+	graph: DocsContentGraph,
+	capabilities: readonly DocsCapabilitySummary[],
+): DocsContentGraph {
+	const pages = [...graph.pages];
+	const sources = new Set(pages.map((page) => page.source));
+	const ids = new Set(pages.map((page) => page.id));
+	for (const capability of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
+		for (const source of [...capability.docs].sort((a, b) => a.localeCompare(b))) {
+			const normalized = source.replaceAll("\\", "/");
+			if (sources.has(normalized)) continue;
+			const id = `capability-${capability.id}-${idFromSource(normalized)}`;
+			if (ids.has(id)) throw new Error(`Duplicate capability documentation page id: ${id}`);
+			pages.push(markdownPage(repoRoot, normalized, "capability", id));
+			sources.add(normalized);
+			ids.add(id);
+		}
+	}
+	return { ...graph, pages };
 }
 
 /** Compiles canonical repository documentation into a deterministic typed content graph. */
