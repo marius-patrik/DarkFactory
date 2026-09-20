@@ -123,6 +123,7 @@ export interface RouteResult {
 	policy?: string;
 	difficulty?: Difficulty;
 	minCapabilityTier?: CapabilityTierId;
+	selectedCapabilityTier?: CapabilityTierId;
 	capabilityTierOrder?: CapabilityTierId[];
 	ranked: RankedCandidate[];
 	rejected?: RankedCandidate[];
