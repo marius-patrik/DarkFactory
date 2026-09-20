@@ -14,7 +14,6 @@ Autoregresivní modelování je sekvenční postup, při němž model odhaduje n
   description: terms => [
 #finalized[
 Autoregresivní generování probíhá iterativně: model zpracuje dosavadní posloupnost tokenů, vypočítá distribuci pravděpodobnosti následujícího tokenu a po jeho výběru celý krok opakuje nad rozšířenou posloupností.
-]
   ],
   summary: terms => [
 Autoregrese vysvětluje, proč generování probíhá po jednotlivých krocích a proč každé nové pokračování závisí na dosavadním kontextu.
