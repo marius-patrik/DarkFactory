@@ -2,7 +2,7 @@
 
 **Autonomous, governed software delivery built around a self-hosting `df` engine, versioned capabilities and GitHub as the durable control plane.**
 
-> **Status:** architecture convergence and completion are in progress. `PRD.md` defines the target product; `PLAN.md` defines the optimized path from the current hybrid system to the final self-hosting release.
+> **Status:** the final DarkFactory architecture is settled and implementation is being completed directly against it. `PRD.md` defines the product; `PLAN.md` defines the shortest safe path to final release and fleet acceptance.
 
 ## Product model
 
@@ -34,7 +34,7 @@ The final production system does not rely on separate interpretation/plan approv
 
 ## Architecture
 
-DarkFactory is converging from the current monolithic private harness into a root Bun workspace:
+The final DarkFactory architecture is a root Bun workspace:
 
 | Package | Responsibility |
 |---|---|
@@ -48,7 +48,7 @@ DarkFactory is converging from the current monolithic private harness into a roo
 | `@darkfactory/cli` | `df` CLI, command composition and TUI |
 | `@darkfactory/web` | Shared React web application for docs and operator UI |
 
-The old `@darkfactory/harness` boundary is transitional and will not be the final public package architecture.
+Any remaining code under `harness/` is deletion-bound implementation source, not a public package or documented architecture boundary.
 
 ## Capabilities
 
@@ -87,7 +87,7 @@ Final configuration is split by concern:
 
 For repo/config, the final #340 contract accepts either `.darkfactory/<name>.df` or root `<name>.df`; both-present is an error. `.df` is a filename extension, never a directory.
 
-`properdocs.yml` and `mkdocs.yml` remain supported as documentation compatibility inputs, not as final runtime dependencies.
+`docs.df` is the only DarkFactory documentation configuration contract.
 
 ## Credentials and GitHub authentication
 
@@ -107,7 +107,7 @@ The Pages application uses user authorization; a minimal confidential broker han
 
 ## Documentation
 
-DarkFactory is replacing ProperDocs/MkDocs execution with its own `@darkfactory/docs` engine.
+`@darkfactory/docs` is the first-party headless documentation compiler; `@darkfactory/web` is the sole renderer.
 
 The final compiler combines:
 
@@ -142,7 +142,7 @@ The web application is intended to replace normal day-to-day use of the GitHub w
 
 ## Self-hosting and completion strategy
 
-The optimized program no longer waits for every product feature before switching engines.
+The completion program builds the final system directly; there is no supported legacy-to-df migration phase.
 
 The critical path is:
 
@@ -157,7 +157,7 @@ routing + natural-stop result capture
       ↓
 production graph handlers + branch repair
       ↓
-#359: df becomes the production engine
+#359: final df production engine complete
       ↓
 remaining features completed through df itself
 ```
@@ -190,7 +190,7 @@ Final acceptance produces `audit.df`, proves source-free install/update and df-o
 ## Normative references
 
 - [PRD.md](PRD.md) — product requirements and architecture
-- [PLAN.md](PLAN.md) — optimized completion/recovery/cutover plan
+- [PLAN.md](PLAN.md) — optimized final-completion and recovery plan
 - [AGENTS.md](AGENTS.md) — projection of canonical contribution/governance rules
 - [ADRs](.agents/notes/adr/) — accepted architecture decisions
 
