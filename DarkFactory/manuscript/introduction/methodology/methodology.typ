@@ -1,23 +1,22 @@
-#import "/DarkFactory/templates/common.typ": translation, term
+#import "/DarkFactory/templates/common.typ": term
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "methodology",
-    czech: "Metodika práce",
+  czech: "Metodika práce",
   english: "Methodology",
-definition: terms => [
-Práce používá konceptově-analytický a inženýrský postup: vymezuje nezbytné části agentního systému, popisuje jejich vztahy a ověřuje je na návrhu a realizaci systému DarkFactory.
+  definition: terms => [
+Práce porovnává veřejně popsané principy současných agentních systémů, rozděluje je do samostatných konceptů a používá je při návrhu DarkFactory.
   ],
   description: terms => [
-Předmětem práce není trénování neuronových sítí, optimalizace vah ani podrobná matematika modelového učení. #term(terms.language_model) je zde chápán jako hotová inferenční komponenta. Modelová vrstva je proto popsána pouze v rozsahu nutném pro pochopení agentního běhu, tokenizace, kontextového okna, paměťového stavu inference a nástrojových rozhraní.
+Předmětem práce není trénování neuronových sítí, optimalizace vah ani podrobná matematika modelového učení. #term(terms.language_model) je chápán jako hotová inferenční komponenta a je popsán pouze v rozsahu potřebném pro další části práce.
 
-Hlavním předmětem zkoumání je #term(terms.agentic_engineering) a konstrukce #term(terms.harness) pro autonomní softwarové inženýrství. Jednotlivé mechanismy jsou rozděleny do samostatných konceptů, aby každý pojem měl jedno místo pro definici, popis a shrnutí a aby se stejné vysvětlení neopakovalo v několika kapitolách.
+Architektura kolem modelu je rozložena do samostatných konceptů, aby měl každý mechanismus vlastní definici, popis a shrnutí a nebylo nutné stejné vysvětlení opakovat v několika kapitolách.
 
-Postup práce má tři kroky: nejprve jsou vymezeny relevantní koncepty a jejich závislosti; následně jsou tyto principy promítnuty do architektury DarkFactory; nakonec jsou vlastnosti výsledného systému posouzeny podle ověřitelných výstupů vývojového procesu. Terminologie zachovává zavedené oborové názvy tam, kde jsou v praxi přesnější než doslovný překlad, přičemž všechny používané termíny jsou vedeny jako kanonické koncepty.
+Navržené principy jsou následně promítnuty do DarkFactory. Vlastnosti systému se mají posuzovat podle ověřitelných výstupů vývojového procesu, nikoli podle předem předpokládaných výsledků.
   ],
   summary: terms => [
-Rozsah práce je záměrně soustředěn na agentní systém kolem modelu: model je vstupní inferenční komponenta, zatímco předmětem návrhu a hodnocení je harness a jeho provozní mechanismy.
+Metodika postupuje od veřejných zdrojů a vymezení konceptů přes návrh konkrétní architektury až k ověření jejích vlastností na skutečných výstupech systému.
   ],
   relations: (
     (type: "dependency", target: "thesis_objectives_research_questions"),

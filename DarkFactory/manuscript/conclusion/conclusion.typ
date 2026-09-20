@@ -1,23 +1,16 @@
-#import "/DarkFactory/templates/common.typ": translation, blue-note
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "conclusion",
-    czech: "Závěr",
+  czech: "Závěr",
   english: "Conclusion",
-definition: terms => [
-#blue-note[Závěr bude definován jako syntéza ověřených výsledků vůči cílům a výzkumným otázkám.]
+  definition: terms => [
+Závěr shrne ověřené výsledky práce ve vztahu k hlavnímu cíli a výzkumným otázkám.
   ],
   description: terms => [
-#blue-note[Závěr bude sepsán až po dokončení výsledků a nebude předjímat neověřená zjištění.]
+Kapitola bude doplněna po dokončení evaluace DarkFactory a nebude obsahovat neověřená měření ani předběžné závěry.
   ],
   summary: terms => [
-#blue-note[Finální shrnutí vznikne až z ověřených výsledků práce.]
+Finální shrnutí bude vycházet pouze z dokončené evaluace a z obsahu doloženého v předchozích kapitolách.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
-  relations: (),
 )

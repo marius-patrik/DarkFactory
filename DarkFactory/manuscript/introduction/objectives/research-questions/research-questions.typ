@@ -1,30 +1,19 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, critique
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "research_questions",
-    czech: "Výzkumné otázky",
+  czech: "Výzkumné otázky",
   english: "Research Questions",
-definition: terms => [
-#unconfirmed[
-- VO1 (Míra automatizace a role člověka): Lze vývojový proces od zadání požadavku (GitHub Issue) po pull request strukturovat tak, aby role vývojáře spočívala výhradně v architektonickém dozoru a schvalování záměru (Human Gate), bez nutnosti ručního psaní rutinního kódu?
-- VO2 (Řízení divergence a spolehlivost smyčky): Jakými architektonickými mechanismy lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?
-- VO3 (Integrita paměti a eliminace sémantického posunu): Jak spravovat kontextové okno agenta při komplexních úlohách, aby nedocházelo k degradaci pozornosti (Context Rot) a ztrátě architektonických invariantů při kompresi?
-]
+  definition: terms => [
+- VO1: Jak lze současný agentní systém zapojit do vývoje softwaru tak, aby samostatně prováděl co největší část běžné práce a člověk se soustředil na zadání, kontrolu a důležitá rozhodnutí?
+- VO2: Jaké mechanismy harnessu pomáhají rozpoznat a zastavit neproduktivní opakování, oscilaci nebo zacyklení během delší úlohy?
+- VO3: Jak spravovat pracovní kontext agenta tak, aby při delších úlohách neztrácel důležité požadavky a stav projektu?
   ],
   description: terms => [
-#critique[
-  Oponentura k výzkumným otázkám:
-  Otázka VO1 je formulována binárně („Lze vývojový proces strukturovat...“), což svádí k tautologické odpovědi. Rigorózní oponent bude žádat empirické vymezení: Jaké procento rutinních úloh (např. oprava chyby se selhávajícím testem vs. komplexní refaktoring) harness reálně odbaví bez ručního zásahu do kódu? Doporučujeme otázku v obhajobě doplnit o kritérium mezní složitosti úkolu a míry redukce kognitivní zátěže člověka.
-]
+Otázky soustřeďují hodnocení na praktickou míru samostatnosti, spolehlivost prováděcí smyčky a zachování potřebného pracovního kontextu.
   ],
   summary: terms => [
-Výzkumné otázky soustřeďují hodnocení na míru samostatnosti agentního procesu, řízení divergence a zachování správného pracovního kontextu během delších úloh.
+Výsledky práce se mají vztahovat k tomu, jak dobře navržená architektura podporuje samostatnou práci agenta, řízení problémového běhu a zachování správného kontextu.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
   relations: ((type: "dependency", target: "subgoals"),),
 )
