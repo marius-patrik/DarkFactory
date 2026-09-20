@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { loadCiConfig } from "./config.ts";
+import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import {
 	renderWorkflowTemplate,
 	STANDARD_WORKFLOW_TEMPLATES,
@@ -82,15 +82,12 @@ function bundledSkillPath(name: string): string {
 }
 
 async function resolveTemplateContext(repoDir: string): Promise<TemplateContext> {
-	try {
-		const config = await loadCiConfig(repoDir);
-		return {
-			pipeline_repo: config.pipeline_repo || config.upstream_repo,
-			pipeline_ref: config.pipeline_ref || config.upstream_ref,
-		};
-	} catch {
-		return {};
-	}
+	const evidence = await detectRepositoryEvidence(repoDir);
+	const upstream = evidence.repoDf.upstream;
+	return {
+		...(upstream?.repo ? { pipeline_repo: upstream.repo } : {}),
+		...(upstream?.ref ? { pipeline_ref: upstream.ref } : {}),
+	};
 }
 
 export async function checkWorkflowsDrift(
