@@ -9,10 +9,10 @@
     "dist"
   ],
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build ./src/bin.ts --outfile ./dist/cli.js --target node --external 'node:*'",
+    "build": "bun build ./src/bin.ts --outfile ./dist/cli.js --target node --external 'node:*' && bun build ./src/index.ts --outfile ./dist/index.js --target node --external 'node:*'",
     "prepublishOnly": "bun run build"
   },
   "license": "GPL-3.0",
