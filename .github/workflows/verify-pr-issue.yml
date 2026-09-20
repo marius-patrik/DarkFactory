@@ -34,13 +34,13 @@ jobs:
               sys.exit(0)
 
           body = os.environ.get("PR_BODY", "")
-          pattern = r"(?i)\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)\b"
+          pattern = r"(?i)\b(?:advance|advances|advanced|close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)\b"
 
           matches = re.findall(pattern, body)
           if not matches:
-              print("❌ ERROR: Every pull request must bind a tracking issue using closing syntax in the description.", file=sys.stderr)
-              print("   Examples: Closes #123, Fixes #123, Resolves #123", file=sys.stderr)
-              print("   This ensures the issue is automatically closed when the PR merges.", file=sys.stderr)
+              print("❌ ERROR: Every pull request must explicitly bind a tracking issue in the description.", file=sys.stderr)
+              print("   Partial delivery: Advances #123", file=sys.stderr)
+              print("   Terminal delivery: Closes #123, Fixes #123, Resolves #123", file=sys.stderr)
               sys.exit(1)
 
           print(f"✅ Bound issue syntax verified: {matches}")
