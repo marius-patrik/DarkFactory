@@ -30,6 +30,7 @@ export type SidebarMode = "thumbnails" | "minimap";
 export type DocumentChapter = {
   title: string;
   page: number;
+  level: number;
 };
 
 export type DocumentState = {
@@ -89,18 +90,25 @@ async function destinationPage(pdf: any, dest: PdfDestination | null | undefined
   return null;
 }
 
-async function loadTopLevelChapters(pdf: any): Promise<DocumentChapter[]> {
+async function loadOutlineChapters(pdf: any): Promise<DocumentChapter[]> {
   const outline = (await pdf.getOutline?.()) || [];
   const chapters: DocumentChapter[] = [];
-  for (const item of outline) {
-    const page = await destinationPage(pdf, item.dest);
-    const title = String(item.title || "").trim();
-    if (!title || !page) continue;
-    if (!chapters.some((chapter) => chapter.title === title && chapter.page === page)) {
-      chapters.push({ title, page });
+
+  const visit = async (items: any[], level: number) => {
+    for (const item of items || []) {
+      const page = await destinationPage(pdf, item.dest);
+      const title = String(item.title || "").trim();
+      if (title && page) {
+        chapters.push({ title, page, level });
+      }
+      if (Array.isArray(item.items) && item.items.length) {
+        await visit(item.items, level + 1);
+      }
     }
-  }
-  return chapters.sort((a, b) => a.page - b.page);
+  };
+
+  await visit(outline, 1);
+  return chapters;
 }
 
 class AnnotationLinkService {
@@ -788,7 +796,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
               baseHeight: viewport.height,
             });
           }
-          const nextChapters = await loadTopLevelChapters(document);
+          const nextChapters = await loadOutlineChapters(document);
           if (disposed) return;
           setPdf(document);
           setPages(nextPages);
