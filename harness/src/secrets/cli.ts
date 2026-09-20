@@ -1,23 +1,23 @@
+import type { GitHubClient } from "../github/client.ts";
+import type { GitHubRepository } from "../github/repository.ts";
 import { generateVaultKey, isValidVaultKey } from "./crypto.ts";
-import { storeVaultKey, loadVaultKey } from "./keychain.ts";
+import { detectDrift } from "./drift.ts";
 import type { KeychainOptions } from "./keychain.ts";
+import { loadVaultKey, storeVaultKey } from "./keychain.ts";
+import { pushSecrets } from "./push.ts";
+import { isGitRepo, syncDataRepo } from "./sync.ts";
+import { emptyVault } from "./vault.ts";
+import type { VaultStoreOptions } from "./vault-store.ts";
 import {
+	loadPushMap,
 	loadVault,
+	resolveDataRepoPath,
 	saveVault,
-	vaultSet,
 	vaultGet,
 	vaultList,
 	vaultRm,
-	resolveDataRepoPath,
-	loadPushMap,
+	vaultSet,
 } from "./vault-store.ts";
-import type { VaultStoreOptions } from "./vault-store.ts";
-import { syncDataRepo, isGitRepo } from "./sync.ts";
-import { pushSecrets } from "./push.ts";
-import { detectDrift } from "./drift.ts";
-import { emptyVault } from "./vault.ts";
-import type { GitHubClient } from "../github/client.ts";
-import type { GitHubRepository } from "../github/repository.ts";
 
 export interface SecretsCommandDeps {
 	dfHome: string;

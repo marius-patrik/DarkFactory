@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { ModelsError, fauxAssistantMessage } from "@earendil-works/pi-ai";
-import { classifyFailure, nextPacificMidnight, proseResetAt } from "../src/quota.ts";
+import { fauxAssistantMessage, ModelsError } from "@earendil-works/pi-ai";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
+import { classifyFailure, nextPacificMidnight, proseResetAt } from "../src/quota.ts";
 
 function providerError(message: string, status?: number, headers?: Record<string, string>): Error {
 	const error = new Error(message) as Error & { status?: number; headers?: Headers };

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { loadCiConfig, resolveChecksForRepo, getRequiredCheckNames } from "../../src/ci/config.ts";
+import { join } from "node:path";
+import { getRequiredCheckNames, loadCiConfig, resolveChecksForRepo } from "../../src/ci/config.ts";
 
 describe("CI config loader & validator", () => {
 	it("loads valid .darkfactory/ci.json with checks and alert_after", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { evaluateChecksGate, type CheckStateSource } from "../../src/graph/index.ts";
+import { type CheckStateSource, evaluateChecksGate } from "../../src/graph/index.ts";
 import type { WorkflowGraph } from "../../src/graph/types.ts";
 
 function fakeSource(states: Map<string, "success" | "pending" | "failure">): CheckStateSource {

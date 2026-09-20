@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
+
 const sodium: typeof import("libsodium-wrappers") = require("libsodium-wrappers");
-import { GitHubRepository } from "../../src/github/repository.ts";
+
 import { GitHubClient } from "../../src/github/client.ts";
+import { GitHubRepository } from "../../src/github/repository.ts";
 import { json, scripted } from "./helpers.ts";
 
 test("repository and environment secrets use sealed boxes and never send plaintext", async () => {

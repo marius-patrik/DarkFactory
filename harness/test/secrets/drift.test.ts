@@ -1,7 +1,7 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { GitHubClient } from "../../src/github/client.ts";
 import { detectDrift } from "../../src/secrets/drift.ts";
-import type { VaultMeta, PushMap } from "../../src/secrets/vault.ts";
+import type { PushMap, VaultMeta } from "../../src/secrets/vault.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("drift detection", () => {

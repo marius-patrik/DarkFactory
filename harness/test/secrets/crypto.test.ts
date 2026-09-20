@@ -1,5 +1,5 @@
-import { expect, test, describe } from "bun:test";
-import { generateVaultKey, encryptVault, decryptVault, isValidVaultKey } from "../../src/secrets/crypto.ts";
+import { describe, expect, test } from "bun:test";
+import { decryptVault, encryptVault, generateVaultKey, isValidVaultKey } from "../../src/secrets/crypto.ts";
 import type { Vault } from "../../src/secrets/vault.ts";
 
 describe("Secrets Crypto", () => {

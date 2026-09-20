@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { translateGitHubEvent, type TranslatedEvent } from "../../src/graph/index.ts";
+import { type TranslatedEvent, translateGitHubEvent } from "../../src/graph/index.ts";
 
 const skip = (reason: string): TranslatedEvent => ({ kind: "skip", reason });
 

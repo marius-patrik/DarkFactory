@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type Context,
 	createModels,
 	fauxAssistantMessage,
 	fauxProvider,
 	fauxThinking,
 	fauxToolCall,
-	type Context,
 	type Models,
 } from "@earendil-works/pi-ai";
 import { CandidateExhaustion, runFailoverTurn } from "../src/failover.ts";

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { runCiCli } from "../../src/ci/cli.ts";
-import { json, scripted } from "../github/helpers.ts";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
+import { json, scripted } from "../github/helpers.ts";
 
 describe("df ci CLI commands", () => {
 	it("executes install and doctor CLI commands", async () => {

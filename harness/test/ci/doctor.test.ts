@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { runCiDoctor } from "../../src/ci/doctor.ts";
+import { installWorkflows } from "../../src/ci/installer.ts";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
-import { installWorkflows } from "../../src/ci/installer.ts";
-import { runCiDoctor } from "../../src/ci/doctor.ts";
 
 describe("df ci doctor", () => {
 	it("passes when config is valid, managed files in sync, and protection matches", async () => {
