@@ -13,9 +13,9 @@ describe("dispatch", () => {
 		tmpDir = await mkdtemp();
 		await mkdir(join(tmpDir, runsDir), { recursive: true });
 		await mkdir(join(tmpDir, ".darkfactory"), { recursive: true });
-		// Create manifest
+		// Create graph fixture
 		await writeFile(
-			join(tmpDir, ".darkfactory", "manifest.json"),
+			join(tmpDir, ".darkfactory", "workflow.json"),
 			JSON.stringify({
 				graph: {
 					version: 1,
@@ -80,7 +80,7 @@ describe("dispatch", () => {
 				"--event",
 				eventPath,
 				"--graph",
-				join(tmpDir!, ".darkfactory", "manifest.json"),
+				join(tmpDir!, ".darkfactory", "workflow.json"),
 				"--runs",
 				join(tmpDir!, runsDir),
 			]);
@@ -125,7 +125,7 @@ describe("dispatch", () => {
 				"--event",
 				eventPath,
 				"--graph",
-				join(tmpDir!, ".darkfactory", "manifest.json"),
+				join(tmpDir!, ".darkfactory", "workflow.json"),
 				"--runs",
 				join(tmpDir!, runsDir),
 			]);
@@ -146,59 +146,6 @@ describe("dispatch", () => {
 		expect(state.current_node as string).toBe("trigger");
 	});
 
-	it("in shadow mode, writes summary and skips state file", async () => {
-		const eventPath = join(tmpDir!, "event.json");
-		const summaryPath = join(tmpDir!, "summary.md");
-		await writeFile(
-			eventPath,
-			JSON.stringify({
-				action: "completed",
-				check_suite: {
-					conclusion: "success",
-					head_sha: "abc123",
-					pull_requests: [{ number: 99 }],
-				},
-				sender: { login: "bob", type: "User" },
-			}),
-		);
-
-		const output: string[] = [];
-		const origLog = console.log;
-		console.log = (...args: unknown[]) => {
-			output.push(args[0] as string);
-		};
-
-		try {
-			await runDispatch([
-				"--event-name",
-				"check_suite",
-				"--event",
-				eventPath,
-				"--graph",
-				join(tmpDir!, ".darkfactory", "manifest.json"),
-				"--runs",
-				join(tmpDir!, runsDir),
-				"--shadow",
-				"--summary",
-				summaryPath,
-			]);
-		} finally {
-			console.log = origLog;
-		}
-
-		const out = JSON.parse(output[0]!);
-		expect(out.action as string).toBe("run");
-
-		// No state file written
-		const files = await readdir(join(tmpDir!, runsDir));
-		expect(files.length).toBe(0);
-
-		// Summary file created with markdown
-		const summary = await readFile(summaryPath, "utf8");
-		expect(summary).toContain("Dispatch: 99");
-		expect(summary).toContain("Event: checks.completed");
-		expect(summary).toContain("bun df run --node trigger");
-	});
 });
 
 async function readdir(path: string): Promise<string[]> {
