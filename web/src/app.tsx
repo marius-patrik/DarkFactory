@@ -673,14 +673,13 @@ function FormatPicker({
   const options: Array<{
     format: ArtifactFormat;
     label: string;
-    short: string;
     href: string;
     icon: string[];
     extension: string;
   }> = [
-    { format: "pdf", label: "PDF", short: "PDF", extension: ".pdf", href: pdfHref, icon: ["FileTextIcon"] },
-    { format: "markdown", label: "Markdown", short: "MD", extension: ".md", href: markdownHref, icon: ["FileCode2Icon"] },
-    { format: "html", label: "HTML", short: "HTML", extension: ".html", href: htmlHref, icon: ["Code2Icon"] },
+    { format: "pdf", label: "PDF", extension: ".pdf", href: pdfHref, icon: ["FileTextIcon"] },
+    { format: "markdown", label: "Markdown", extension: ".md", href: markdownHref, icon: ["FileCode2Icon"] },
+    { format: "html", label: "HTML", extension: ".html", href: htmlHref, icon: ["Code2Icon"] },
   ];
 
   const active = options.find((option) => option.format === format) || options[0];
@@ -693,7 +692,7 @@ function FormatPicker({
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" className="format-select" aria-label="File type">
                 <AnimatedIcon names={active.icon} />
-                <strong className="status-short-id">{active.short}</strong>
+                <strong className="status-short-id">{active.extension}</strong>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} />
               </Button>
             </DropdownMenuTrigger>
@@ -826,18 +825,28 @@ function ViewMenu({
   sidebarOpen,
   workspace,
   theme,
+  showRefresh,
+  showFullscreen,
   onThemeChange,
   onToggleSidebar,
   onOpenSplit,
   onSingle,
+  onOpenSettings,
+  onToggleRefresh,
+  onToggleFullscreen,
 }: {
   sidebarOpen: boolean;
   workspace: boolean;
   theme: AppearanceMode;
+  showRefresh: boolean;
+  showFullscreen: boolean;
   onThemeChange: (theme: AppearanceMode) => void;
   onToggleSidebar: () => void;
   onOpenSplit: (direction: WorkspaceSplitDirection) => void;
   onSingle: () => void;
+  onOpenSettings: () => void;
+  onToggleRefresh: () => void;
+  onToggleFullscreen: () => void;
 }) {
   const appearances: Array<{ theme: AppearanceMode; label: string; icon: string[] }> = [
     { theme: "light", label: "Light", icon: ["SunIcon"] },
@@ -851,6 +860,10 @@ function ViewMenu({
         <Button type="button" variant="ghost" className="menubar-button">View</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
+        <DropdownMenuItem onSelect={onOpenSettings}>
+          <AnimatedIcon names={["SettingsIcon"]} />
+          Settings
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onToggleSidebar}>
           <AnimatedIcon names={["PanelLeftIcon"]} />
           {sidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
@@ -869,6 +882,22 @@ function ViewMenu({
             Single View
           </DropdownMenuItem>
         )}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <AnimatedIcon names={["EyeIcon"]} />
+            Toolbar buttons
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem onSelect={onToggleRefresh}>
+              <AnimatedIcon names={showRefresh ? ["CheckIcon", "CircleCheckIcon"] : ["RefreshCwIcon"]} />
+              Refresh
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onToggleFullscreen}>
+              <AnimatedIcon names={showFullscreen ? ["CheckIcon", "CircleCheckIcon"] : ["MaximizeIcon"]} />
+              Fullscreen
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <AnimatedIcon names={["SunMoonIcon", "MoonIcon"]} />
