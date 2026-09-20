@@ -1,4 +1,5 @@
 import { defaultSensitiveDataHook } from "../harness/routing.ts";
+import { difficultyForSize } from "./tiers.ts";
 import type { RouterConfig, RouterInput, TaskKind, TaskNeed, TaskProfile, TaskSize } from "./types.ts";
 
 export type CheapClassifier = (prompt: string, candidate: string) => Promise<TaskKind>;
@@ -172,16 +173,25 @@ export async function classifyTaskWithDiagnostics(
 		needDetails.push("need 'video_gen' inferred only because this step directly produces a video artifact");
 	}
 
+	const difficulty = input.flags?.difficulty ?? input.node?.difficulty ?? difficultyForSize(size);
+	const minTier = input.flags?.minTier ?? input.node?.minTier;
 	const profile: TaskProfile = {
 		kind,
 		size,
 		needs: uniqueNeeds(needs),
 		sensitivity,
+		difficulty,
+		...(minTier ? { minTier } : {}),
 		contextTokens,
 	};
 	return {
 		profile,
-		details: [kindDetail, ...needDetails.filter((detail, index, all) => all.indexOf(detail) === index)],
+		details: [
+			kindDetail,
+			`difficulty '${difficulty}' ${input.flags?.difficulty || input.node?.difficulty ? "declared" : "inferred from task size"}`,
+			...(minTier ? [`minimum capability tier '${minTier}' explicitly declared`] : []),
+			...needDetails.filter((detail, index, all) => all.indexOf(detail) === index),
+		],
 	};
 }
 
