@@ -1,6 +1,6 @@
 #import "/DarkFactory/metadata.typ": meta
 #import "/DarkFactory/templates/registry.typ": default-template, template-for, appendices-for
-#import "/DarkFactory/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
+#import "/DarkFactory/index.typ": book-title, render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
 
 // Jediný zdroj obsahu práce. Konkrétní dokumentová šablona je zvolena
 // samostatně, takže stejný konceptový rukopis lze kompilovat více šablonami.
@@ -13,6 +13,7 @@
   let appendices = appendices-for(template-name)
 
   render(
+    book-title: book-title,
     meta: meta,
     logo: "/DarkFactory/img/logo.jpeg",
     review: review,
