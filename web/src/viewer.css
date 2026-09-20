@@ -101,16 +101,6 @@ a {
   background: var(--bg);
 }
 
-.menubar {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 0 4px;
-  background: var(--toolbar);
-  border-bottom: 1px solid var(--toolbar-border);
-  z-index: 42;
-}
 
 .menubar-button {
   height: 20px;
@@ -271,22 +261,7 @@ a {
   border-radius: 0;
 }
 
-.identity-separator {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: .9rem;
-  user-select: none;
-}
 
-.work-title {
-  min-width: 0;
-  max-width: min(49vw, 780px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: .8rem;
-  font-weight: 650;
-}
 
 .version-trigger-wrap {
   display: inline-flex;
@@ -1090,30 +1065,8 @@ a {
   background: var(--bg);
 }
 
-.source-editor-header {
-  flex: 0 0 34px;
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 7px 0 10px;
-  border-bottom: 1px solid var(--toolbar-border);
-  background: var(--toolbar);
-  color: var(--muted);
-}
 
-.source-editor-header > span {
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: .75rem;
-}
 
-.source-editor-close {
-  flex: 0 0 auto;
-}
 
 .repo-source-editor {
   flex: 1 1 auto;
@@ -1272,34 +1225,9 @@ a {
   white-space: nowrap;
 }
 
-.status-select-copy {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  line-height: 1;
-  text-align: left;
-  white-space: nowrap;
-}
 
-.status-select-copy strong,
-.status-select-copy small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
-.status-select-copy strong {
-  font-size: .62rem;
-  font-weight: 700;
-}
 
-.status-select-copy small {
-  color: var(--muted);
-  font-size: .58rem;
-  font-weight: 600;
-}
 
 .statusbar .version-select {
   max-width: min(28vw, 260px);
@@ -1314,30 +1242,8 @@ a {
   font-size: .68rem;
 }
 
-.page-control {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 4px;
-  color: var(--muted);
-  font-size: .8rem;
-}
 
-.page-control input {
-  width: 42px;
-  height: 24px;
-  border: 1px solid var(--toolbar-border);
-  border-radius: 5px;
-  outline: none;
-  background: var(--surface);
-  color: var(--text);
-  text-align: center;
-}
 
-.page-control input:focus {
-  border-color: var(--accent);
-}
 
 .zoom-value {
   min-width: 42px;
@@ -1893,9 +1799,7 @@ a {
 .statusbar .version-select,
 .statusbar .format-select,
 .status-short-id,
-.status-select-copy strong,
-.status-select-copy small,
-.statusbar .version-fallback,
+...statusbar .version-fallback,
 .zoom-value,
 .split-label,
 .build-revision {
@@ -1903,8 +1807,7 @@ a {
 }
 
 .version-option small,
-.status-select-copy small,
-.contents-item small,
+..contents-item small,
 .ui-secondary {
   color: var(--muted);
   font-size: var(--ui-font-size);
