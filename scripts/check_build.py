@@ -192,6 +192,8 @@ for required in (
         fail(f"canonical term-name renderer missing global naming contract: {required}")
 
 chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
+if "term, kw, terms" not in chapter1_source.splitlines()[0]:
+    fail("chapter 1 must import canonical terms for the finalized Agent Harness reference")
 for removed_motivation in (
     "Doporučení k motivaci",
     "fyzickou temnou továrnou",
@@ -222,7 +224,8 @@ finalized_agent_harness = (
     "#finalized[\n"
     "Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model "
     "dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — "
-    "značovaná jako *agent harness* — musí model obklopovat, aby bylo možné jeho "
+    "značovaná jako #term(terms.harness, language: \"en\", name-type: \"industry\", "
+    "register: true, linked: true, marker: false) — musí model obklopovat, aby bylo možné jeho "
     "výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry "
     "autonomie se zachováním lidského dohledu.\n]"
 )
@@ -265,6 +268,14 @@ finalized_scaling_title = (
 )
 if finalized_scaling_title not in chapter2_source:
     fail("scaling section must retain the finalized bilingual title")
+accepted_scaling_opening = (
+    "#accepted[\n"
+    "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. "
+    "Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce "
+    "a formalizace procesu do podoby grafu.\n]"
+)
+if accepted_scaling_opening not in chapter2_source:
+    fail("scaling opening paragraph must remain accepted exactly as approved")
 if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
     fail("legacy section 2.3.8 title must not return")
 
@@ -304,13 +315,25 @@ branch_protection_pos = chapter2_source.find("=== Ochrana větví (Branch Protec
 if not (0 <= required_checks_pos < branch_protection_pos):
     fail("Branch Protection must be a separate section after Required Checks")
 for required_heading in (
-    "=== Spouštění nástrojů [Tool Calling]",
+    "=== #finalized[Vyvolávání nástrojů \\[Tool Calling\\]]",
     "=== Sandbox",
 ):
     if required_heading not in chapter2_source:
         fail(f"tool runtime split missing numbered section: {required_heading}")
 if "=== Běhové prostředí nástrojů a pískoviště (Sandbox)" in chapter2_source:
     fail("combined tool-runtime/sandbox section must not return")
+for legacy_tool_heading in (
+    "=== Spouštění nástrojů [Tool Calling]",
+    "=== Spouštění nástrojů \\[Tool Calling\\]",
+):
+    if legacy_tool_heading in chapter2_source:
+        fail(f"legacy Tool Calling Czech title must not return: {legacy_tool_heading}")
+chapter3_source = Path("kapitoly/03-prakticka-cast.typ").read_text(encoding="utf-8")
+if "= #finalized[DarkFactory - Praktická část: Architektura harnessu]" not in chapter3_source:
+    fail("practical chapter title must remain finalized as DarkFactory - Praktická část: Architektura harnessu")
+if "Praktická část – Návrh architektury" in chapter3_source:
+    fail("legacy practical chapter title must not return")
+
 accepted_react_caption = (
     "caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) "
     "a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]]"
@@ -566,6 +589,12 @@ for path in sorted(Path("kapitoly").glob("*.typ")):
         fail(f"chapter contains an ad-hoc term definition instead of terms.<id>: {path}")
     if "#accepted[#diff" in source or "#finalized[#diff" in source:
         fail(f"accepted/finalized content must not retain a diff: {path}")
+    raw_bold = re.search(r"(?<!\\*)\\*[^*\\n]+\\*(?!\\*)", source)
+    if raw_bold:
+        fail(
+            f"chapter contains raw bold emphasis; use a heading or canonical term instead: "
+            f"{path}: {raw_bold.group(0)}"
+        )
 
 # Legacy review marker API must not return.
 for path in (

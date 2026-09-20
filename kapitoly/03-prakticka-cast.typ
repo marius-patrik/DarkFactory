@@ -1,6 +1,6 @@
 #import "../templates/registry.typ": finalized, term, terms
 
-= #finalized[Praktická část – Návrh architektury]
+= #finalized[DarkFactory - Praktická část: Architektura harnessu]
 
 == #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 

@@ -32,7 +32,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 = Schéma konfiguračního manifestu darkfactory.json
 
 #struct-alert[
-  *Příloha v rekonstrukci*: Formální JSON schéma manifestu bude doplněno po stabilizaci nového schématu v přestavěném systému DarkFactory.
+  Příloha v rekonstrukci: Formální JSON schéma manifestu bude doplněno po stabilizaci nového schématu v přestavěném systému DarkFactory.
 ]
 
 #note[Placeholder: Zde bude uvedeno úplné JSON Schema vymezující validní syntaxi nového konfiguračního manifestu.]
@@ -42,7 +42,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 = Sdílené workflow pro GitHub Actions
 
 #struct-alert[
-  *Příloha v rekonstrukci*: Definice sdílených a volajících workflow pro GitHub Actions budou aktualizována po dokončení přestavby orchestrátoru.
+  Příloha v rekonstrukci: Definice sdílených a volajících workflow pro GitHub Actions budou aktualizována po dokončení přestavby orchestrátoru.
 ]
 
 #note[Placeholder: Zde budou uvedeny ukázky znovupoužitelného a volajícího workflow nové verze DarkFactory.]
@@ -52,7 +52,7 @@ Odevzdaný archiv obsahuje kompletní zdrojové soubory práce, sazební šablon
 = Systémové prompty plánovacího a kódovacího agenta
 
 #struct-alert[
-  *Příloha v rekonstrukci*: Systémové prompty pro plánovací a implementační fáze budou aktualizovány podle nových rolí a instrukčních šablon v přestavěném systému.
+  Příloha v rekonstrukci: Systémové prompty pro plánovací a implementační fáze budou aktualizovány podle nových rolí a instrukčních šablon v přestavěném systému.
 ]
 
 #note[Placeholder: Zde budou uvedeny kompletní systémové prompty pro jednotlivé fáze životního cyklu požadavku.]
@@ -104,20 +104,20 @@ Pro přehlednost jsou níže uvedeny reálné ukázky jednotlivých revizních p
 #blue-note[Ukázka modrého panelu metodického vymezení (`#blue-note` / `#scope-note`): Vymezení rozsahu práce, formulace mantinelů a architektonických abstrakcí.]
 
 == Ukázky textových zvýrazňovacích a srovnávacích funkcí v toku odstavce
-- *Neověřený koncept (`#draft` / `#unconfirmed`)*: #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
-- *Nově přidaný text (`#added`)*: #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
-- *Přijatý text (`#accepted`)*: #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]
-- *Finalizovaný text (`#finalized`)*: #finalized[Text nebo struktura je považována za uzavřenou součást práce.]
-- *Navrženo k odstranění (`#removed`)*: #removed[Tato neaktuální věta je navržena k úplnému smazání z rukopisu.]
-- *Srovnávací diff (`#diff`)*: #diff[Původní platné znění pasáže.][Navržené nové znění čekající na posouzení.]
-- *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu; sám o sobě neznamená finalizaci.
+- Neověřený koncept (`#draft` / `#unconfirmed`): #unconfirmed[Tento text představuje koncept čekající na posouzení autorem.]
+- Nově přidaný text (`#added`): #added[Tato pasáž byla nově vygenerována autonomním agentem na základě požadavku.]
+- Přijatý text (`#accepted`): #accepted[Text byl odsouhlasen uživatelem, ale může ještě projít dalším začištěním.]
+- Finalizovaný text (`#finalized`): #finalized[Text nebo struktura je považována za uzavřenou součást práce.]
+- Navrženo k odstranění (`#removed`): #removed[Tato neaktuální věta je navržena k úplnému smazání z rukopisu.]
+- Srovnávací diff (`#diff`): #diff[Původní platné znění pasáže.][Navržené nové znění čekající na posouzení.]
+- Čistý neoznačený text: Běžný text bez explicitního workflow stavu; sám o sobě neznamená finalizaci.
 
 == Role značek v lidském dohledu
-- *Čistý neoznačený text*: Běžný text bez explicitního workflow stavu.
-- *Žluté podbarvení (`#unconfirmed`)*: Neověřený koncept čekající na lidské posouzení.
-- *Zelené podbarvení (`#added`)*: Nově vygenerované návrhy agenta.
-- *Modré podtržení (`#accepted`)*: Uživatelem přijatý text, který zůstává dále editovatelný.
-- *Zelené podtržení (`#finalized`)*: Uzavřený text nebo strukturální prvek.
-- *Srovnávací diff (`#diff`)*: Návrh změny; review zobrazí starou červenou stranu a novou zelenou stranu, jejíž obsah je současně neověřený. Raw/final zachová staré znění až do schválení. Po přijetí nebo finalizaci se diff zcela odstraní.
-- *Postranní panely (Callouty)*: Striktní oddělení námětů, chyb a oponentury od těla textu.
+- Čistý neoznačený text: Běžný text bez explicitního workflow stavu.
+- Žluté podbarvení (`#unconfirmed`): Neověřený koncept čekající na lidské posouzení.
+- Zelené podbarvení (`#added`): Nově vygenerované návrhy agenta.
+- Modré podtržení (`#accepted`): Uživatelem přijatý text, který zůstává dále editovatelný.
+- Zelené podtržení (`#finalized`): Uzavřený text nebo strukturální prvek.
+- Srovnávací diff (`#diff`): Návrh změny; review zobrazí starou červenou stranu a novou zelenou stranu, jejíž obsah je současně neověřený. Raw/final zachová staré znění až do schválení. Po přijetí nebo finalizaci se diff zcela odstraní.
+- Postranní panely (Callouty): Striktní oddělení námětů, chyb a oponentury od těla textu.
 ]

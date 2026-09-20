@@ -61,6 +61,7 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 
 ## Terminology & Translation Model
+- Raw Typst bold emphasis (`*text*`) is forbidden in manuscript chapter files. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)` (or a heading that contains a canonical term). Ordinary list labels, callout captions, and prose emphasis remain unbolded.
 - Canonical terminology lives in `templates/terms.typ` as values created by `define-term(...)`.
 - Manuscript files use shared values exported as `terms.<id>`; do not call `term()` with ad-hoc string names or duplicate explanations.
 - `term(...)` supports name-only, explanation-only, and combined rendering; independent language selection/order for name and detail; automatic keyword registration; and `name-type: "proper" | "industry" | "both" | "auto"` for formal vs common industry naming.
