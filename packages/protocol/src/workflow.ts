@@ -1,5 +1,6 @@
 import type { ReviewNodeConfig, ReviewRuntimeState, ReviewSubject } from "./review.ts";
 
+/** Canonical Request/PR/project states used by reconciliation. */
 export const CANONICAL_STATUSES = [
 	"Backlog",
 	"ToDo",
@@ -10,10 +11,14 @@ export const CANONICAL_STATUSES = [
 	"Dropped",
 ] as const;
 
+/** One canonical Request/PR/project status. */
 export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
+/** Supported workflow graph node categories. */
 export type NodeKind = "agent" | "gate" | "automation" | "check-reference";
+/** GitHub author associations accepted by authorization contracts. */
 export type AuthorAssociation = "OWNER" | "MEMBER" | "COLLABORATOR" | "AUTHOR";
 
+/** Fields shared by all workflow graph nodes. */
 export interface BaseNode {
 	id: string;
 	kind: NodeKind;
@@ -26,6 +31,7 @@ export interface BaseNode {
 	foreach?: { items: string; max_parallel?: number; as?: string };
 }
 
+/** Graph node that dispatches model-backed work. */
 export interface AgentNode extends BaseNode {
 	kind: "agent";
 	identity?: string;
@@ -43,6 +49,7 @@ export interface AgentNode extends BaseNode {
 	requires_review_approval?: ReviewSubject;
 }
 
+/** Graph node that waits for an authorized human transition. */
 export interface GateNode extends BaseNode {
 	kind: "gate";
 	author_associations: AuthorAssociation[];
@@ -54,20 +61,25 @@ export interface GateNode extends BaseNode {
 	approves_review?: ReviewSubject;
 }
 
+/** Graph node that performs deterministic automation. */
 export interface AutomationNode extends BaseNode {
 	kind: "automation";
 	script: string;
 	side_effects?: { close_bound_issues?: boolean; clear_checkpoints?: boolean };
 }
 
+/** Graph node that observes external/static check state. */
 export interface CheckReferenceNode extends BaseNode {
 	kind: "check-reference";
 	check: string;
 	required: boolean;
 }
 
+/** Any supported workflow graph node. */
 export type GraphNode = AgentNode | GateNode | AutomationNode | CheckReferenceNode;
+/** Named loop semantics supported by graph edges. */
 export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision" | "review_fix";
+/** Events/outcomes that may activate a workflow edge. */
 export type EdgeOn =
 	| { event: string; filter: { ignore_bots: true; label?: string }; when?: string }
 	| { schedule: true; when?: string }
@@ -76,6 +88,7 @@ export type EdgeOn =
 	| { checks: "required_green" | "failed"; when?: string }
 	| { children: "all_done" | "any_failed"; when?: string };
 
+/** Directed workflow transition between nodes. */
 export interface GraphEdge {
 	from: string;
 	to: string;
@@ -83,6 +96,7 @@ export interface GraphEdge {
 	loop?: { kind: LoopKind; safety_budget?: number };
 }
 
+/** Declarative DarkFactory workflow graph. */
 export interface WorkflowGraph {
 	version: 1;
 	checks: { name: string; required: boolean }[];
@@ -90,12 +104,14 @@ export interface WorkflowGraph {
 	edges: GraphEdge[];
 }
 
+/** Authenticated event actor used for authorization decisions. */
 export interface Actor {
 	login: string;
 	association: AuthorAssociation | "NONE";
 	is_bot: boolean;
 }
 
+/** Normalized external event consumed by the graph runtime. */
 export type GraphEvent =
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
 	| { type: "review"; state: string; actor: Actor }
@@ -109,6 +125,7 @@ export type GraphEvent =
 	| { type: "schedule"; schedule: string; now?: string }
 	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
 
+/** Persisted resumable workflow-run state. */
 export interface RunState {
 	run_id: string;
 	current_node: string;
@@ -123,6 +140,7 @@ export interface RunState {
 	reviews?: Partial<Record<ReviewSubject, ReviewRuntimeState>>;
 }
 
+/** Deterministic action emitted by graph planning. */
 export type PlanAction =
 	| {
 			type: "run";
