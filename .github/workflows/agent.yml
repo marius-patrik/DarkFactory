@@ -77,7 +77,7 @@ jobs:
     # Comments written by a bot (the agent's own Interpretation, plan and review comments, board
     # automation) are skipped here rather than inside the container: the runner ignores them anyway,
     # and reaching that check cost a container build and two OAuth refreshes per comment.
-    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]')
+    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]') && !contains(github.event.issue.labels.*.name, 'pipeline-failure')
     runs-on: ubuntu-latest
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
