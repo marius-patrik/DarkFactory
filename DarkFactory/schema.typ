@@ -200,7 +200,7 @@
 }
 
 #let render-concept(item, terms, graph, level: 1) = {
-  let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]#label("concept-" + item.key)]
+  let output = context [#heading(level: level)[#finalized[#render-concept-title(item)]]#label("concept-" + item.key)]
 
   output += [
     #set par(first-line-indent: (amount: 1.5em, all: true))
