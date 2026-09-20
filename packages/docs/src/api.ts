@@ -8,6 +8,7 @@ import { join, relative, resolve } from "node:path";
 import { Application, ReflectionKind, type JSONOutput } from "typedoc";
 import {
 	compileDocsContentGraph,
+	includeCapabilityDocumentation,
 	type DocsApiReference,
 	type DocsApiSymbol,
 	type DocsCapabilitySummary,
@@ -146,8 +147,12 @@ export async function compileDocsContentGraphWithDetectedApi(
 	const resolution = resolveRepositoryActions(evidence, applicable);
 	const metadata = documentationMetadata(evidence, applicable);
 	const configured = config.api?.typescript;
+	const finalize = (graph: DocsContentGraph): DocsContentGraph => ({
+		...includeCapabilityDocumentation(repoRoot, graph, metadata.capabilities),
+		...metadata,
+	});
 
-	if (!configured) return { ...compileDocsContentGraph(repoRoot, config), ...metadata };
+	if (!configured) return finalize(compileDocsContentGraph(repoRoot, config));
 
 	const entryPoints = resolution.packages.flatMap(({ actions }) => {
 		const action = actions.docs_extract;
@@ -156,7 +161,7 @@ export async function compileDocsContentGraphWithDetectedApi(
 		return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
 	});
 	const uniqueEntryPoints = [...new Set(entryPoints)].sort();
-	if (uniqueEntryPoints.length === 0) return { ...compileDocsContentGraph(repoRoot, config), ...metadata };
+	if (uniqueEntryPoints.length === 0) return finalize(compileDocsContentGraph(repoRoot, config));
 
 	const detectedConfig: DocsConfig = {
 		...config,
@@ -168,6 +173,6 @@ export async function compileDocsContentGraphWithDetectedApi(
 			},
 		},
 	};
-	return { ...(await compileDocsContentGraphWithApi(repoRoot, detectedConfig)), ...metadata };
+	return finalize(await compileDocsContentGraphWithApi(repoRoot, detectedConfig));
 }
 
