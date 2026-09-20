@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";
 
@@ -7,11 +10,13 @@ export function CompiledArtifactView({
   format,
   embedded,
   theme,
+  raw = false,
 }: {
   path: string;
   format: Exclude<ArtifactFormat, "pdf">;
   embedded: boolean;
   theme: "dark" | "light" | "oled";
+  raw?: boolean;
 }) {
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState("");
@@ -68,23 +73,31 @@ export function CompiledArtifactView({
   if (error) {
     return (
       <div className="document-error">
-        <strong>Compiled Markdown unavailable.</strong>
+        <strong>Markdown unavailable.</strong>
         <span>{error}</span>
       </div>
     );
   }
 
   if (!markdown) {
-    return <div className="document-loading">Loading compiled Markdown…</div>;
+    return <div className="document-loading">Loading Markdown…</div>;
   }
 
   return (
     <div className={embedded ? "compiled-artifact embedded-artifact" : "compiled-artifact"}>
-      <div className="markdown-artifact">
-        <pre>
-          <code>{markdown}</code>
-        </pre>
-      </div>
+      {raw ? (
+        <div className="raw-markdown-artifact">
+          <pre><code>{markdown}</code></pre>
+        </div>
+      ) : (
+        <div className="markdown-artifact">
+          <article className="publication-surface">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {markdown}
+            </ReactMarkdown>
+          </article>
+        </div>
+      )}
     </div>
   );
 }

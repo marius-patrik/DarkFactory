@@ -1,0 +1,173 @@
+:root {
+  --publication-bg: #eef2f7;
+  --publication-surface: #ffffff;
+  --publication-text: #111111;
+  --publication-muted: #555b66;
+  --publication-border: #d8dee9;
+  --publication-link: #175cd3;
+  --publication-code: #f3f4f6;
+  --publication-code-text: #111827;
+}
+
+html[data-theme="dark"] {
+  --publication-bg: #202124;
+  --publication-surface: #ffffff;
+  --publication-text: #111111;
+  --publication-muted: #555b66;
+  --publication-border: #d2d5da;
+  --publication-link: #174ea6;
+  --publication-code: #f1f3f4;
+  --publication-code-text: #111827;
+}
+
+html[data-theme="oled"] {
+  --publication-bg: #000000;
+  --publication-surface: #ffffff;
+  --publication-text: #111111;
+  --publication-muted: #555b66;
+  --publication-border: #d2d5da;
+  --publication-link: #174ea6;
+  --publication-code: #f1f3f4;
+  --publication-code-text: #111827;
+}
+
+.publication-surface {
+  width: min(calc(100% - 32px), 21cm);
+  min-height: 29.7cm;
+  margin: 24px auto 64px;
+  padding: 2.5cm 2.5cm 2.5cm 3cm;
+  background: var(--publication-surface);
+  color: var(--publication-text);
+  font-family: Caladea, Cambria, Georgia, "Times New Roman", serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-align: justify;
+  overflow-wrap: anywhere;
+  box-shadow: 0 10px 35px rgb(0 0 0 / 18%);
+}
+
+.publication-surface > :first-child { margin-top: 0; }
+.publication-surface p {
+  margin: 0 0 8pt;
+}
+.publication-surface h1,
+.publication-surface h2,
+.publication-surface h3,
+.publication-surface h4,
+.publication-surface h5,
+.publication-surface h6 {
+  margin: 18pt 0 8pt;
+  color: var(--publication-text);
+  font-family: Caladea, Cambria, Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+}
+.publication-surface h1 { font-size: 16pt; }
+.publication-surface h2 { font-size: 14pt; }
+.publication-surface h3,
+.publication-surface h4,
+.publication-surface h5,
+.publication-surface h6 { font-size: 12pt; }
+
+.publication-surface a {
+  color: var(--publication-link);
+  text-decoration: underline;
+  text-underline-offset: .14em;
+}
+.publication-surface ul,
+.publication-surface ol {
+  margin: 0 0 8pt;
+  padding-left: 1.55em;
+}
+.publication-surface li { margin: 2pt 0; }
+.publication-surface blockquote {
+  margin: 10pt 0;
+  padding-left: 12pt;
+  border-left: 2pt solid var(--publication-border);
+  color: var(--publication-muted);
+}
+.publication-surface table {
+  width: 100%;
+  margin: 10pt 0 12pt;
+  border-collapse: collapse;
+  font-size: 10.5pt;
+}
+.publication-surface th,
+.publication-surface td {
+  padding: 5pt 6pt;
+  border: .6pt solid var(--publication-border);
+  text-align: left;
+  vertical-align: top;
+}
+.publication-surface figure {
+  margin: 14pt 0;
+  text-align: center;
+}
+.publication-surface figure img,
+.publication-surface figure svg,
+.publication-surface img,
+.publication-surface svg {
+  max-width: 100%;
+  height: auto;
+}
+.publication-surface figcaption {
+  margin-top: 6pt;
+  color: var(--publication-muted);
+  font-size: 10pt;
+  line-height: 1.35;
+  text-align: center;
+}
+.publication-surface pre {
+  max-width: 100%;
+  margin: 10pt 0;
+  padding: 9pt 10pt;
+  overflow: auto;
+  border: .6pt solid var(--publication-border);
+  background: var(--publication-code);
+  color: var(--publication-code-text);
+  font: 9.5pt/1.45 "SFMono-Regular", Consolas, monospace;
+  text-align: left;
+}
+.publication-surface code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: .9em;
+}
+.publication-surface :not(pre) > code {
+  padding: .08em .25em;
+  background: var(--publication-code);
+}
+.publication-surface nav[role="doc-toc"] {
+  margin: 16pt 0 24pt;
+  padding: 10pt 12pt;
+  border: .6pt solid var(--publication-border);
+}
+.publication-surface nav[role="doc-toc"] a {
+  color: var(--publication-text);
+  text-decoration: none;
+}
+.publication-surface math {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 850px) {
+  .publication-surface {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 24px 20px 56px;
+    box-shadow: none;
+    font-size: 11.5pt;
+  }
+}
+
+@media print {
+  .publication-surface {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}

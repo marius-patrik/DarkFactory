@@ -67,7 +67,7 @@ type Manifest = {
   };
 };
 
-type ViewerMode = "final" | "review";
+type ViewerMode = "final" | "review" | "raw";
 type ViewMode = "single" | "split";
 type AppearanceMode = "light" | "dark" | "oled";
 
@@ -117,9 +117,10 @@ function artifactFilename(
   mode: ViewerMode,
   format: ArtifactFormat,
 ) {
-  const declared = variant.artifacts?.[mode]?.[format];
+  const publicationMode = mode === "review" ? "review" : "final";
+  const declared = variant.artifacts?.[publicationMode]?.[format];
   if (declared) return declared;
-  const pdf = mode === "review" ? variant.review : variant.final;
+  const pdf = publicationMode === "review" ? variant.review : variant.final;
   if (format === "pdf") return pdf;
   return pdf.replace(/\.pdf$/i, format === "markdown" ? ".md" : ".html");
 }
@@ -342,15 +343,22 @@ function ModePicker({
   mode,
   compiledHref,
   reviewHref,
+  rawHref,
   onNavigate,
 }: {
   mode: ViewerMode;
   compiledHref: string;
   reviewHref: string;
+  rawHref: string;
   onNavigate: (href: string) => void;
 }) {
-  const label = mode === "review" ? "Koncept" : "Compiled";
-  const icon = mode === "review" ? ["PencilLineIcon"] : ["CheckCircle2Icon"];
+  const label = mode === "review" ? "Koncept" : mode === "raw" ? "Raw" : "Compiled";
+  const icon =
+    mode === "review"
+      ? ["PencilLineIcon"]
+      : mode === "raw"
+        ? ["FileCode2Icon"]
+        : ["CheckCircle2Icon"];
 
   return (
     <DropdownMenu>
@@ -358,7 +366,7 @@ function ModePicker({
         <TooltipTrigger asChild>
           <span className="mode-trigger-wrap">
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" className="mode-select" aria-label="Switch Compiled / Koncept">
+              <Button type="button" variant="ghost" className="mode-select" aria-label="Switch Compiled / Koncept / Raw">
                 <AnimatedIcon names={icon} size={15} />
                 <span>{label}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
@@ -366,7 +374,7 @@ function ModePicker({
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch Compiled / Koncept</TooltipContent>
+        <TooltipContent>Switch Compiled / Koncept / Raw</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="mode-menu">
         <DropdownMenuItem className={mode === "final" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(compiledHref)}>
@@ -376,6 +384,10 @@ function ModePicker({
         <DropdownMenuItem className={mode === "review" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(reviewHref)}>
           <span className="mode-option-label"><AnimatedIcon names={["PencilLineIcon"]} size={15} />Koncept</span>
           {mode === "review" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
+        </DropdownMenuItem>
+        <DropdownMenuItem className={mode === "raw" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(rawHref)}>
+          <span className="mode-option-label"><AnimatedIcon names={["FileCode2Icon"]} size={15} />Raw</span>
+          {mode === "raw" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -563,10 +575,18 @@ export function ViewerApp() {
   const { manifest } = useManifest();
   const [routeRevision, setRouteRevision] = useState(0);
   const params = useMemo(() => new URLSearchParams(window.location.search), [routeRevision]);
+  const requestedMode = params.get("mode");
+  const mode: ViewerMode =
+    requestedMode === "review" ? "review" : requestedMode === "raw" ? "raw" : "final";
   const requestedFormat = params.get("format");
   const format: ArtifactFormat =
-    requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf";
-  const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final";
+    mode === "raw"
+      ? "markdown"
+      : requestedFormat === "markdown"
+        ? "markdown"
+        : requestedFormat === "html"
+          ? "html"
+          : "pdf";
   const viewMode: ViewMode = params.get("view") === "split" ? "split" : "single";
   const embedded = params.get("embedded") === "1";
   const profileName = params.get("profile") || "school";
@@ -903,7 +923,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} raw={mode === "raw"} />
         )}
       </div>
     );
@@ -965,9 +985,29 @@ export function ViewerApp() {
   const formatLabel = format === "markdown" ? "Markdown" : format.toUpperCase();
 
   const selectedVariant = manifest?.variants.find((variant) => variant.profile === profileName);
+  const rawTarget =
+    manifest && selectedVariant
+      ? viewerHref({
+          file: hrefFor(
+            templateName,
+            manifest.default_template,
+            artifactFilename(selectedVariant, "raw", "markdown"),
+          ),
+          peer: hrefFor(
+            templateName,
+            manifest.default_template,
+            artifactFilename(selectedVariant, "review", "markdown"),
+          ),
+          template: templateName,
+          profile: profileName,
+          title: versionTitle,
+          mode: "raw",
+          format: "markdown",
+        })
+      : "#";
   const formatTarget = (nextFormat: ArtifactFormat) => {
     if (!manifest || !selectedVariant) return "#";
-    const targetMode: ViewerMode = viewMode === "split" ? "final" : mode;
+    const targetMode: ViewerMode = viewMode === "split" || mode === "raw" ? "final" : mode;
     const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
     const file = hrefFor(
       templateName,
@@ -1202,7 +1242,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} raw={mode === "raw"} />
         )}
         </main>
         {sidebarSide === "right" && sidebarToggle && (
@@ -1229,7 +1269,13 @@ export function ViewerApp() {
             <span className="version-fallback">{versionTitle}</span>
           )}
           <span className="status-divider" aria-hidden="true" />
-          <ModePicker mode={mode} compiledHref={finalTarget} reviewHref={reviewTarget} onNavigate={navigateViewer} />
+          <ModePicker
+            mode={mode}
+            compiledHref={finalTarget}
+            reviewHref={reviewTarget}
+            rawHref={rawTarget}
+            onNavigate={navigateViewer}
+          />
           <span className="status-divider" aria-hidden="true" />
           <FormatPicker
             format={format}
@@ -1283,11 +1329,16 @@ export function ViewerApp() {
         
             </>
           ) : (
-            <div className="artifact-status">Compiled {formatLabel}</div>
+            <div className="artifact-status">{mode === "raw" ? "Raw Markdown" : "Rendered " + formatLabel}</div>
           )}
         </div>
 
         <div className="status-actions">
+          {manifest?.commit && (
+            <span className="build-revision" title={"Deployed commit " + manifest.commit}>
+              {manifest.commit.slice(0, 7)}
+            </span>
+          )}
           <AppearancePicker theme={theme} onChange={(nextTheme) => setTheme(nextTheme)} />
           <TooltipAction
             label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
