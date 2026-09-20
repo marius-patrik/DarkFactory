@@ -100,14 +100,8 @@ export function rewriteLinks(markdown: string, destPath: string): string {
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
     ".agents/notes/adr/README.md": "architecture/decisions/process.md",
-    ".agents/notes/vision_capture.md": "notes/vision_capture.md",
-    ".agents/notes/bootstrap.md": "notes/bootstrap.md",
     "_notes/adr/README.md": "architecture/decisions/process.md",
-    "_notes/vision_capture.md": "notes/vision_capture.md",
-    "_notes/bootstrap.md": "notes/bootstrap.md",
     "adr/README.md": "architecture/decisions/process.md",
-    "vision_capture.md": "notes/vision_capture.md",
-    "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
     "_notes/adr/": "architecture/decisions/index.md",
@@ -467,8 +461,6 @@ export function stageDocs(repoRoot: string, stagingDir: string): void {
     ["PRD.md", "prd.md"],
     ["PLAN.md", "plan.md"],
     ["AGENTS.md", "agents.md"],
-    [path.join(".agents", "notes", "bootstrap.md"), path.join("notes", "bootstrap.md")],
-    [path.join(".agents", "notes", "vision_capture.md"), path.join("notes", "vision_capture.md")],
     [path.join(".agents", "notes", "adr", "README.md"), path.join("architecture", "decisions", "process.md")],
   ];
 
