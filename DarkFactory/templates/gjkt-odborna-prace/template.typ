@@ -204,8 +204,6 @@
   review: auto,
   // Publikační profil: "school", "cs", "en" nebo "merged".
   profile: "school",
-  // Kompatibilita se starším API; pokud je zadáno, mapuje cs -> school.
-  language: none,
   pismo: PISMO,
   velikost: 12pt,
   radkovani: 1.5,
@@ -223,13 +221,7 @@
   }
   let vodoznak = if koncept == auto { none } else { koncept }
 
-  let resolved-profile = if language == none {
-    profile
-  } else if language == "cs" {
-    "school"
-  } else {
-    language
-  }
+  let resolved-profile = profile
 
   assert(book-title != none, message: "template requires the structural book title")
   assert(resolved-profile in ("school", "cs", "en", "merged"), message: "profile must be school, cs, en, or merged")
