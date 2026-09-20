@@ -33,5 +33,5 @@ Základní vlastnosti protokolu MCP:
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "parent", target: "tool_calling"),)
+  relations: ()
 )
