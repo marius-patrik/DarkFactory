@@ -1,7 +1,7 @@
 // Shared manuscript semantics, independent of any concrete document template.
 // Concrete templates consume this state/API; manuscript files import it through registry.typ.
 
-#import "../bib/references.typ": bib
+#import "/DarkFactory/bib/references.typ": bib
 
 #let body-paragraph(body) = block(breakable: true, body)
 #let bullet-list(..items) = list(..items)

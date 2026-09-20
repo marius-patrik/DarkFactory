@@ -1,6 +1,6 @@
-#import "common.typ" as common
-#import "terms.typ": vocabulary
-#import "gjkt-odborna-prace/template.typ" as gjkt
+#import "/DarkFactory/templates/common.typ" as common
+#import "/DarkFactory/templates/terms.typ": vocabulary
+#import "/DarkFactory/templates/gjkt-odborna-prace/template.typ" as gjkt
 
 // Centrální registry šablon. Manuskript importuje pouze tento soubor;
 // jednotlivé šablony jsou zaměnitelné implementace stejného dokumentového kontraktu.

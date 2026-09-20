@@ -19,8 +19,8 @@
 #let template-id = "gjkt-odborna-prace"
 #let PISMO = ("Caladea", "New Computer Modern")
 
-#import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
+#import "/DarkFactory/templates/gjkt-odborna-prace/wordometer.typ": string-word-count, extract-text
+#import "/DarkFactory/templates/common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -218,7 +218,7 @@
 
 #let template(
   meta: (:),
-  // Cesta k logu školy, např. "/img/logo.jpeg". `none` = bez loga.
+  // Cesta k logu školy, např. "/DarkFactory/img/logo.jpeg". `none` = bez loga.
   logo: none,
   // Volitelný explicitní vodoznak. Review režim žádný automatický vodoznak nepřidává.
   koncept: none,
@@ -232,7 +232,7 @@
   velikost: 12pt,
   radkovani: 1.5,
   mezera-odstavec: 8pt,
-  bibliografie: "/bib/references.bib",
+  bibliografie: "/DarkFactory/bib/references.bib",
   // "iso-690-numeric" = číselné odkazy, "iso-690-author-date" = harvardský
   // systém. Způsob citací určuje vedoucí práce.
   bib-styl: "iso-690-numeric",

@@ -2,7 +2,7 @@
 //  Metadata práce.
 // ─────────────────────────────────────────────────────────────
 
-#import "templates/registry.typ": draft, added, unconfirmed, accepted, finalized, translation
+#import "/DarkFactory/templates/registry.typ": draft, added, unconfirmed, accepted, finalized, translation
 
 #let meta = (
   // Oficiální školní varianta.
