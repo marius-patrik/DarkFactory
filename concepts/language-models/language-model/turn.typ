@@ -37,5 +37,5 @@ Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobí
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "context_window"),)
 )

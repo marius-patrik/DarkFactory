@@ -32,5 +32,5 @@ Příčiny a inženýrská řešení tohoto jevu:
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ()
+  relations: ((type: "dependency", target: "language_model"), (type: "related", target: "system_prompt"),)
 )
