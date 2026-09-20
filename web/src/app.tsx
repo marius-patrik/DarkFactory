@@ -1039,44 +1039,29 @@ export function ViewerApp() {
   const workspaceRef = useRef<ReviewWorkspaceControl>(null);
   const suppressEmbeddedState = useRef(false);
   const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspacePane | null>(null);
-  const [openRepoFile, setOpenRepoFile] = useState<RepoTreeNode | null>(null);
-
-  const [sidebarSide, setSidebarSideState] = useState<SidebarSide>(() =>
-    localStorage.getItem("paper-viewer-sidebar-side") === "right" ? "right" : "left",
-  );
-  const [sidebarWidth, setSidebarWidthState] = useState(() => {
-    const stored = Number(localStorage.getItem("paper-viewer-sidebar-width"));
-    return clampSidebarWidth(Number.isFinite(stored) && stored > 0 ? stored : 300);
-  });
-  const [sidebarMode, setSidebarModeState] = useState<SidebarMode>(() =>
-    localStorage.getItem("paper-viewer-sidebar-mode") === "minimap"
-      ? "minimap"
-      : "thumbnails",
-  );
-  const [activityBarPosition, setActivityBarPositionState] = useState<ActivityBarPosition>(() => {
-    const stored = localStorage.getItem("paper-viewer-activitybar-position");
-    return stored === "right" || stored === "top" || stored === "bottom" ? stored : "left";
-  });
-  const storedActivityPanel = localStorage.getItem("paper-viewer-activity-panel");
-  const [activityPanel, setActivityPanelState] = useState<ActivityPanel>(() => {
-    if (window.innerWidth <= 760 || storedActivityPanel === "closed") return null;
-    if (storedActivityPanel === "explorer" || storedActivityPanel === "structure") {
-      return storedActivityPanel;
-    }
-    return "structure";
-  });
+  const { settings, setSetting, patchSettings } = useViewerSettings();
+  const {
+    theme,
+    sidebarSide,
+    sidebarWidth,
+    sidebarMode,
+    activityBarPosition,
+    activityPanel,
+    splitSyncScroll,
+    showRefresh,
+    showFullscreen,
+  } = settings;
+  const [tabs, setTabs] = useState<AppTab[]>([
+    { id: "document", kind: "document", title: "DarkFactory" },
+  ]);
+  const [activeTabId, setActiveTabId] = useState("document");
+  const activeTab = tabs.find((tab) => tab.id === activeTabId) || tabs[0];
+  const openRepoFile = null as RepoTreeNode | null;
+  const settingsOpen = activeTab?.kind === "settings";
   const lastActivityPanel = useRef<ActiveActivityPanel>(
-    storedActivityPanel === "explorer" ? "explorer" : "structure",
+    activityPanel === "explorer" ? "explorer" : "structure",
   );
-  const [theme, setTheme] = useState<AppearanceMode>(() => {
-    const stored = localStorage.getItem("paper-viewer-theme");
-    if (stored === "light" || stored === "dark" || stored === "oled") return stored;
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-  });
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
-  const [splitSyncScroll, setSplitSyncScroll] = useState(
-    () => localStorage.getItem("paper-viewer-sync-scroll") === "true",
-  );
   const [state, setState] = useState<DocumentState>({
     page: 1,
     total: 0,
@@ -1096,8 +1081,27 @@ export function ViewerApp() {
     mode,
   );
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
+  const findRepoNode = useCallback(
+    (path: string | undefined): RepoTreeNode | null => {
+      if (!path) return null;
+      const walk = (nodes: RepoTreeNode[]): RepoTreeNode | null => {
+        for (const node of nodes) {
+          if (node.path === path) return node;
+          const found = node.children ? walk(node.children) : null;
+          if (found) return found;
+        }
+        return null;
+      };
+      return walk(repoTree);
+    },
+    [repoTree],
+  );
+  const activeRepoFile = activeTab?.kind === "source" ? findRepoNode(activeTab.path) : null;
   const structureAvailable =
-    openRepoFile === null && viewMode === "single" && mode !== "raw" && format === "pdf";
+    activeTab?.kind === "document" &&
+    viewMode === "single" &&
+    mode !== "raw" &&
+    format === "pdf";
   const scopedMode: ViewerMode =
     viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.kind : mode;
   const scopedFormat: ArtifactFormat =
@@ -1108,35 +1112,29 @@ export function ViewerApp() {
     manifest?.variants.find((variant) => variant.profile === scopedProfile) || activeVariant;
   const scopedVersionTitle = scopedVariant?.title || versionTitle;
   const pagesAvailable =
-    openRepoFile === null &&
+    activeTab?.kind === "document" &&
     scopedMode !== "raw" &&
     scopedFormat === "pdf" &&
     (viewMode === "single" || state.total > 0);
 
-  const selectActivityPanel = useCallback((panel: ActivityPanel) => {
-    if (panel) {
-      lastActivityPanel.current = panel;
-      localStorage.setItem("paper-viewer-activity-panel", panel);
-    } else {
-      localStorage.setItem("paper-viewer-activity-panel", "closed");
-    }
-    setActivityPanelState(panel);
-  }, []);
+  const selectActivityPanel = useCallback(
+    (panel: ActivityPanel) => {
+      if (panel) lastActivityPanel.current = panel;
+      setSetting("activityPanel", panel);
+    },
+    [setSetting],
+  );
 
   const toggleSidebar = useCallback(() => {
-    setActivityPanelState((current) => {
-      if (current) {
-        lastActivityPanel.current = current;
-        localStorage.setItem("paper-viewer-activity-panel", "closed");
-        return null;
-      }
-
-      const preferred = lastActivityPanel.current;
-      const next = preferred === "structure" && !structureAvailable ? "explorer" : preferred;
-      localStorage.setItem("paper-viewer-activity-panel", next);
-      return next;
-    });
-  }, [structureAvailable]);
+    if (activityPanel) {
+      lastActivityPanel.current = activityPanel;
+      setSetting("activityPanel", null);
+      return;
+    }
+    const preferred = lastActivityPanel.current;
+    const next = preferred === "structure" && !structureAvailable ? "explorer" : preferred;
+    setSetting("activityPanel", next);
+  }, [activityPanel, setSetting, structureAvailable]);
 
   useCommand({
     id: "toggle-sidebar",
@@ -1153,9 +1151,49 @@ export function ViewerApp() {
   }, [activityPanel, selectActivityPanel, structureAvailable]);
 
   const openRepositoryFile = useCallback((node: RepoTreeNode) => {
+    if (node.type === "submodule") {
+      if (node.url) window.open(node.url, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (!node.source) return;
-    setOpenRepoFile(node);
+    const id = "source:" + node.path;
+    setTabs((current) =>
+      current.some((tab) => tab.id === id)
+        ? current
+        : [...current, { id, kind: "source", title: node.name, path: node.path }],
+    );
+    setActiveTabId(id);
   }, []);
+
+  const openSettings = useCallback(() => {
+    setTabs((current) =>
+      current.some((tab) => tab.id === "settings")
+        ? current
+        : [...current, { id: "settings", kind: "settings", title: "Settings" }],
+    );
+    setActiveTabId("settings");
+  }, []);
+
+  const newDocumentTab = useCallback(() => {
+    const id = "document:" + Date.now();
+    setTabs((current) => [...current, { id, kind: "document", title: "DarkFactory" }]);
+    setActiveTabId(id);
+  }, []);
+
+  const closeTab = useCallback(
+    (id: string) => {
+      if (id === "document") return;
+      setTabs((current) => {
+        const index = current.findIndex((tab) => tab.id === id);
+        const next = current.filter((tab) => tab.id !== id);
+        if (activeTabId === id) {
+          setActiveTabId(next[Math.max(0, index - 1)]?.id || "document");
+        }
+        return next;
+      });
+    },
+    [activeTabId],
+  );
 
   const navigateViewer = useCallback((href: string) => {
     if (!href || href === "#") return;
@@ -1172,43 +1210,44 @@ export function ViewerApp() {
     params.get("refresh") || refreshRevision,
   );
 
-  const setSidebarSide = useCallback((side: SidebarSide) => {
-    setSidebarSideState(side);
-    localStorage.setItem("paper-viewer-sidebar-side", side);
-  }, []);
+  const setSidebarSide = useCallback(
+    (side: SidebarSide) => setSetting("sidebarSide", side),
+    [setSetting],
+  );
 
-  const setSidebarWidth = useCallback((width: number) => {
-    const next = clampSidebarWidth(width);
-    setSidebarWidthState(next);
-    localStorage.setItem("paper-viewer-sidebar-width", String(next));
-  }, []);
+  const setSidebarWidth = useCallback(
+    (width: number) => setSetting("sidebarWidth", clampSidebarWidth(width)),
+    [setSetting],
+  );
 
-  const setSidebarMode = useCallback((next: SidebarMode) => {
-    setSidebarModeState(next);
-    localStorage.setItem("paper-viewer-sidebar-mode", next);
-  }, []);
+  const setSidebarMode = useCallback(
+    (next: SidebarMode) => setSetting("sidebarMode", next),
+    [setSetting],
+  );
 
   const setActivityBarPosition = useCallback(
     (position: ActivityBarPosition) => {
-      setActivityBarPositionState(position);
-      localStorage.setItem("paper-viewer-activitybar-position", position);
-      if (position === "left" || position === "right") setSidebarSide(position);
+      if (position === "left" || position === "right") {
+        patchSettings({ activityBarPosition: position, sidebarSide: position });
+      } else {
+        setSetting("activityBarPosition", position);
+      }
     },
-    [setSidebarSide],
+    [patchSettings, setSetting],
   );
 
   const moveSidebar = useCallback(() => {
     const next = sidebarSide === "left" ? "right" : "left";
-    setSidebarSide(next);
     if (activityBarPosition === "left" || activityBarPosition === "right") {
-      setActivityBarPositionState(next);
-      localStorage.setItem("paper-viewer-activitybar-position", next);
+      patchSettings({ sidebarSide: next, activityBarPosition: next });
+    } else {
+      setSetting("sidebarSide", next);
     }
-  }, [activityBarPosition, setSidebarSide, sidebarSide]);
+  }, [activityBarPosition, patchSettings, setSetting, sidebarSide]);
 
   const toggleSidebarMode = useCallback(() => {
-    setSidebarMode(sidebarMode === "minimap" ? "thumbnails" : "minimap");
-  }, [setSidebarMode, sidebarMode]);
+    setSetting("sidebarMode", sidebarMode === "minimap" ? "thumbnails" : "minimap");
+  }, [setSetting, sidebarMode]);
 
   const sendToSplit = useCallback(
     (
