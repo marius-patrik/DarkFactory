@@ -1,0 +1,34 @@
+name: One-shot concept migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/migrate-concepts.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Rewrite concept model
+        run: python scripts/migrate_concepts.py
+      - name: Validate migration shape
+        run: |
+          ! grep -R "define-term" DarkFactory --include='*.typ'
+          ! grep -R "term: terminology" DarkFactory --include='*.typ'
+          git diff --check
+      - name: Commit migration and remove one-shot machinery
+        run: |
+          rm scripts/migrate_concepts.py .github/workflows/migrate-concepts.yml
+          git config user.name "darkfactory-paper-migration"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(concepts): collapse terminology into concept records"
+          git push
