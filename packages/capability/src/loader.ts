@@ -47,10 +47,24 @@ export interface CapabilityResolution {
 }
 
 /** Filters and deterministically orders capabilities for detected domains. */
+/** Alias for discoverCapabilities to load capabilities from a root directory or default workspace capabilities directory. */
+export async function loadCapabilities(root?: string): Promise<CapabilityDefinition[]> {
+	const capabilitiesDir = root ?? resolve(process.cwd(), "capabilities");
+	return discoverCapabilities(capabilitiesDir);
+}
+
+/** Resolved domains and the capabilities applicable to them. */
+export interface CapabilityResolution {
+	domains: readonly string[];
+	capabilities: readonly CapabilityDefinition[];
+}
+
+/** Filters and deterministically orders capabilities for detected domains. */
 export function resolveCapabilities(
 	definitions: readonly CapabilityDefinition[],
 	domains: readonly string[],
 ): CapabilityResolution {
+
 	const normalizedDomains = [...new Set(domains)].sort();
 	const domainSet = new Set(normalizedDomains);
 	const capabilities = definitions

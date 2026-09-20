@@ -5,7 +5,7 @@ import {
 	checkToolExists,
 	parseShellCommand,
 	createQualityCommand,
-	loadCapabilities,
+	detectRepositoryPackages,
 	CapabilityRuntimeContext,
 } from "@darkfactory/capability";
 
@@ -79,21 +79,9 @@ export const capability = defineCapability({
 				const { action, package: pkgName } = input as { action: string; package: string };
 
 				let detected: { name: string; ecosystem?: string; path?: string }[] = [];
-				const allCapabilities = await loadCapabilities();
-				const detectionCapability = allCapabilities.find((c) => c.id === "detection");
-				const detectTool = detectionCapability?.tools?.find((tool) => tool.name === "detect_packages");
-				if (!detectTool) throw new Error("Detection capability does not provide detect_packages");
 				try {
-					const detectionResult = await detectTool.execute({}, context);
-					if (Array.isArray(detectionResult)) {
-						detected = detectionResult as { name: string; ecosystem?: string; path?: string }[];
-					} else if (
-						detectionResult &&
-						typeof detectionResult === "object" &&
-						Array.isArray((detectionResult as { detected?: unknown }).detected)
-					) {
-						detected = (detectionResult as { detected: { name: string; ecosystem?: string; path?: string }[] }).detected;
-					}
+					const { detected: repoPackages } = await detectRepositoryPackages(context.repositoryRoot || process.cwd());
+					detected = repoPackages;
 				} catch (error) {
 					throw new Error(`Package detection failed while resolving quality action: ${String(error)}`);
 				}
