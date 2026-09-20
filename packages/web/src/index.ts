@@ -1,6 +1,6 @@
 /** @packageDocumentation
- * Shared browser application boundary. #425 owns the prebuilt web application.
+ * Shared browser application boundary for DarkFactory documentation and operator UI.
  *
- * This entrypoint intentionally remains free of Node/Bun and machine-keychain imports.
+ * The application consumes browser-safe protocol/GitHub/auth contracts and never imports machine-secret keychain code.
  */
 export type { RouteResult, TaskProfile } from "@darkfactory/protocol/model";
