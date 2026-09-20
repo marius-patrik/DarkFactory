@@ -10,5 +10,12 @@
 #let item = concept(
   key: "thesis_introduction",
   term: terminology,
-  document_enabled: false,
+  definition: none,
+  description: none,
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: (),
 )
