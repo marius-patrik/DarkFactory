@@ -27,6 +27,7 @@ def run(args: list[str], *, capture: bool = False) -> str:
 parser = argparse.ArgumentParser()
 parser.add_argument("--typst", default="typst")
 parser.add_argument("--font-path", action="append", default=[])
+parser.add_argument("--book", required=True)
 parser.add_argument("--template", required=True)
 parser.add_argument("--profile", required=True)
 parser.add_argument("--main", default="main.typ")
@@ -45,6 +46,8 @@ query_cmd = [
     "--in",
     args.main,
     *common,
+    "--input",
+    f"book={args.book}",
     "--input",
     f"template={args.template}",
     "--input",
@@ -83,6 +86,6 @@ compile_cmd = [
 ]
 run(compile_cmd)
 print(
-    f"ok: review {args.template}/{args.profile}: "
+    f"ok: review {args.book}/{args.template}/{args.profile}: "
     f"raw={words} words/{chars} chars -> {output}"
 )
