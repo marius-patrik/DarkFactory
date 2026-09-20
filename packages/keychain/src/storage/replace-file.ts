@@ -3,6 +3,7 @@ import { rename } from "node:fs/promises";
 /** Error codes Windows reports while another process holds the target open (a reader or antivirus scan). */
 const TRANSIENT_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
 
+/** Options for durable atomic file replacement. */
 export interface ReplaceFileOptions {
 	/** Rename implementation; injectable for tests. */
 	rename?: (from: string, to: string) => Promise<void>;
