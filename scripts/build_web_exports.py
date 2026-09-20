@@ -242,6 +242,7 @@ def compile_html(
     *,
     typst: str,
     font_paths: Iterable[str],
+    book: str,
     template: str,
     profile: str,
     review: bool,
@@ -251,7 +252,11 @@ def compile_html(
     command = [typst, "compile", "--features", "html", "--format", "html"]
     for font_path in font_paths:
         command.extend(["--font-path", font_path])
-    command.extend(["--input", f"template={template}", "--input", f"profile={profile}"])
+    command.extend([
+        "--input", f"book={book}",
+        "--input", f"template={template}",
+        "--input", f"profile={profile}",
+    ])
     if review:
         command.extend(["--input", "review=true"])
     command.extend([str(source), str(output)])
@@ -277,6 +282,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--typst", default="typst")
     parser.add_argument("--font-path", action="append", default=[])
+    parser.add_argument("--book", required=True)
     parser.add_argument("--template", required=True)
     parser.add_argument("--source", default="web-publication.typ")
     parser.add_argument("--output-dir", default="out")
@@ -294,6 +300,7 @@ def main() -> None:
             compile_html(
                 typst=args.typst,
                 font_paths=args.font_path,
+                book=args.book,
                 template=args.template,
                 profile=profile,
                 review=review,
@@ -301,7 +308,7 @@ def main() -> None:
                 output=html_output,
             )
             print(
-                f"ok: semantic web publication {args.template}/{profile}/"
+                f"ok: semantic web publication {args.book}/{args.template}/{profile}/"
                 f"{'review' if review else 'final'} -> {html_output} + {html_output.with_suffix('.md')}"
             )
 
