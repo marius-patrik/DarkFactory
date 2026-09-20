@@ -109,28 +109,20 @@ async function nodePackageManager(directory: string, packageJson: Record<string,
 
 function nodeApiEntryPoints(packagePath: string, parsed: Record<string, unknown>): string[] {
 	const candidates: string[] = [];
-	const add = (value: unknown) => {
-		if (typeof value !== "string") return;
-		if (!/\.(?:ts|tsx)$/u.test(value)) return;
-		const clean = value.replace(/^\.\//u, "");
-		candidates.push(packagePath === "." ? clean : `${packagePath}/${clean}`);
+	const add = (value: unknown): void => {
+		if (typeof value === "string") {
+			if (!/\.(?:ts|tsx)$/u.test(value)) return;
+			const clean = value.replace(/^\.\//u, "");
+			candidates.push(packagePath === "." ? clean : `${packagePath}/${clean}`);
+			return;
+		}
+		if (!value || typeof value !== "object" || Array.isArray(value)) return;
+		for (const nested of Object.values(value as Record<string, unknown>)) add(nested);
 	};
 	add(parsed.types);
 	add(parsed.typings);
-	const exportsValue = parsed.exports;
-	if (typeof exportsValue === "string") add(exportsValue);
-	else if (exportsValue && typeof exportsValue === "object" && !Array.isArray(exportsValue)) {
-		const root = (exportsValue as Record<string, unknown>)["."];
-		if (typeof root === "string") add(root);
-		else if (root && typeof root === "object" && !Array.isArray(root)) {
-			const r = root as Record<string, unknown>;
-			add(r.types);
-			add(r.import);
-			add(r.default);
-		}
-	}
-	if (candidates.length === 0) candidates.push(packagePath === "." ? "src/index.ts" : `${packagePath}/src/index.ts`);
-	return [...new Set(candidates)];
+	add(parsed.exports);
+	return [...new Set(candidates)].sort();
 }
 
 async function discoveredPackage(directory: string, root: string): Promise<RepositoryPackageEvidence[]> {
