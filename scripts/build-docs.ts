@@ -297,13 +297,7 @@ export function generateAdrIndex(adrs: AdrRecord[]): string {
   }
 
   const accepted = adrs.filter((r) => r.status.toLowerCase().startsWith("accepted")).length;
-  const proposed = adrs.filter((r) => r.status.toLowerCase().startsWith("proposed")).length;
-  lines.push(
-    "",
-    `${adrs.length} records — ${accepted} accepted, ${proposed} proposed. Records are ` +
-      "append-only: a decision that turns out wrong is superseded by a new one, never edited away.",
-    ""
-  );
+  lines.push("", `${accepted} current accepted architecture decisions.`, "");
 
   return lines.join("\n");
 }
