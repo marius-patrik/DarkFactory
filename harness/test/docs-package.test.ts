@@ -118,7 +118,9 @@ describe("@darkfactory/docs", () => {
 		const site = join(root, "site");
 		await renderDocsSite(graph, site);
 		expect(await readFile(join(site, "index.html"), "utf8")).toContain("See");
-		expect(await readFile(join(site, "api", "index.html"), "utf8")).toContain("FixtureApi");
+		const apiPage = await readFile(join(site, "api", "index.html"), "utf8");
+		expect(apiPage).toContain("FixtureApi");
+		expect(apiPage).toContain('href="../prd/"');
 		expect(JSON.parse(await readFile(join(site, "content.json"), "utf8")).api.name).toBe("Fixture API");
 	});
 
