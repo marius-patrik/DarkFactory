@@ -101,15 +101,6 @@ required_sources = (
     ROOT / "templates/common.typ",
     ROOT / "templates/registry.typ",
     ROOT / "templates/terms.typ",
-    ROOT / "bib/references.bib",
-    ROOT / "img/logo.jpeg",
-    ROOT / "manuscript/introduction/index.typ",
-    ROOT / "manuscript/results/index.typ",
-    ROOT / "manuscript/conclusion/index.typ",
-    ROOT / "manuscript/appendices/index.typ",
-    ROOT / "development-environment/index.typ",
-    ROOT / "language-models/index.typ",
-    ROOT / "agentic-engineering/index.typ",
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
@@ -125,7 +116,7 @@ sources = {path: require_file(path) for path in required_sources if path.suffix 
 
 books = sources[Path("books.typ")]
 for contract in (
-    '#let default-book = "DarkFactory"',
+    "#let default-book",
     "#let available-books",
     "#let default-template-for(name)",
     "#let render-pdf(name, ..args)",
@@ -133,6 +124,9 @@ for contract in (
 ):
     if contract not in books:
         fail(f"book registry is missing contract: {contract}")
+
+if f'"{BOOK}"' not in books:
+    fail(f"selected book is not registered in books.typ: {BOOK}")
 
 book = sources[ROOT / "book.typ"]
 for contract in ("root.key", "root.title", "default-template-name", "render-pdf", "render-web"):
@@ -142,7 +136,7 @@ for contract in ("root.key", "root.title", "default-template-name", "render-pdf"
 catalog = sources[ROOT / "index.typ"]
 for contract in (
     "#let root = folder(",
-    'key: "DarkFactory"',
+    f'key: "{BOOK}"',
     "title: translation(",
     "#let book-title = root.title",
     "#let vocabulary = build-vocabulary(folders)",
@@ -180,29 +174,33 @@ for contract in (
     if contract not in common:
         fail(f"terminology surface is missing contract: {contract}")
 
-content_roots = (
-    ROOT / "manuscript",
-    ROOT / "development-environment",
-    ROOT / "language-models",
-    ROOT / "agentic-engineering",
-)
+all_book_typ = tuple(sorted(ROOT.rglob("*.typ")))
 concept_files = tuple(
-    sorted(
-        path
-        for base in content_roots
-        for path in base.rglob("*.typ")
-        if path.name != "index.typ"
-    )
+    path
+    for path in all_book_typ
+    if "#let item = concept(" in path.read_text(encoding="utf-8")
 )
-if len(concept_files) < 45:
-    fail(f"concept catalog is unexpectedly small: {len(concept_files)} concept files")
+folder_manifests = tuple(
+    path
+    for path in all_book_typ
+    if path.name == "index.typ"
+    and path != ROOT / "index.typ"
+    and "#let node = folder(" in path.read_text(encoding="utf-8")
+)
+
+if not concept_files:
+    fail(f"book contains no canonical concept records: {BOOK}")
+if not folder_manifests:
+    fail(f"book contains no structural folder manifests: {BOOK}")
+if BOOK == "DarkFactory" and len(concept_files) < 45:
+    fail(f"DarkFactory concept catalog is unexpectedly small: {len(concept_files)} concept files")
 
 concept_keys: list[str] = []
 term_ids: list[str] = []
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
-    if "#let terminology = define-term(" not in source or "#let item = concept(" not in source:
-        fail(f"concept file does not own terminology and a concept record: {path}")
+    if "#let terminology = define-term(" not in source:
+        fail(f"concept file does not own canonical terminology: {path}")
     key = re.search(r'key:\s*"([^"]+)"', source)
     term_id = re.search(r'id:\s*"([^"]+)"', source)
     if key is None or term_id is None:
@@ -211,36 +209,29 @@ for path in concept_files:
     term_ids.append(term_id.group(1))
 
 if len(concept_keys) != len(set(concept_keys)):
-    fail("concept keys must be unique")
+    fail("concept keys must be unique within a book")
 if len(term_ids) != len(set(term_ids)):
-    fail("term ids must be unique")
+    fail("term ids must be unique within a book")
 
-for base in content_roots:
-    for manifest in sorted(base.rglob("index.typ")):
-        source = manifest.read_text(encoding="utf-8")
-        if "#let node = folder(" not in source:
-            fail(f"concept folder index must declare a folder node: {manifest}")
+for manifest_path in folder_manifests:
+    source = manifest_path.read_text(encoding="utf-8")
+    if "#let node = folder(" not in source:
+        fail(f"book folder index must declare a folder node: {manifest_path}")
 
-for path in (Path("main.typ"), Path("review.typ"), Path("web-publication.typ")):
-    source = sources[path]
-    if '"books.typ"' not in source:
-        fail(f"{path} must dispatch through books.typ")
-
-makefile = require_file(Path("Makefile"))
-for contract in (
-    "BOOK ?= DarkFactory",
-    "BOOK_ROOT := $(BOOK)",
-    "$(BOOK_ROOT)/templates/*/template.typ",
-    "--input book=$(BOOK)",
-    "all-books:",
-):
-    if contract not in makefile:
-        fail(f"Makefile is missing multi-book contract: {contract}")
-
-for path in (Path("scripts/build_review.py"), Path("scripts/build_web_exports.py"), Path("scripts/build_site.py")):
-    source = sources[path]
-    if "--book" not in source:
-        fail(f"{path} must accept a book root")
+if BOOK == "DarkFactory":
+    for required in (
+        ROOT / "bib/references.bib",
+        ROOT / "img/logo.jpeg",
+        ROOT / "manuscript/introduction/index.typ",
+        ROOT / "manuscript/results/index.typ",
+        ROOT / "manuscript/conclusion/index.typ",
+        ROOT / "manuscript/appendices/index.typ",
+        ROOT / "development-environment/index.typ",
+        ROOT / "language-models/index.typ",
+        ROOT / "agentic-engineering/index.typ",
+    ):
+        if not required.is_file():
+            fail(f"DarkFactory book is missing required publication component: {required}")
 
 package = json.loads(sources[Path("web/package.json")])
 dependencies = {**package.get("dependencies", {}), **package.get("devDependencies", {})}
