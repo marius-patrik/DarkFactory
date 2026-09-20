@@ -183,13 +183,11 @@ export function validateGraph(value: unknown): WorkflowGraph {
 	}
 	for (const node of graph.nodes) {
 		if (node.kind === "gate" && node.approves_review) {
-			const reviewer = graph.nodes.some(
-				(candidate) => {
-					if (candidate.kind !== "agent") return false;
-					const review = candidate.review;
-					return review?.subject === node.approves_review && review.phase === "review";
-				},
-			);
+			const reviewer = graph.nodes.some((candidate) => {
+				if (candidate.kind !== "agent") return false;
+				const review = candidate.review;
+				return review?.subject === node.approves_review && review.phase === "review";
+			});
 			if (!reviewer) issues.push(`nodes[${node.id}].approves_review: no reviewer exists for ${node.approves_review}`);
 		}
 		if (node.kind === "agent" && node.requires_review_approval) {
