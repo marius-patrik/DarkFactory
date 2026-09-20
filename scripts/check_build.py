@@ -832,8 +832,8 @@ for required in (
     'export function RawArtifactView',
     'Editor, { loader } from "@monaco-editor/react"',
     'import * as monaco from "monaco-editor"',
-    'monaco-editor/editor/editor.worker?worker',
-    'monaco-editor/language/html/html.worker?worker',
+    'new URL("monaco-editor/editor/editor.worker", import.meta.url)',
+    'new URL("monaco-editor/language/html/html.worker", import.meta.url)',
     'response.arrayBuffer()',
     'hexDump(bytes)',
     'language={language}',
@@ -943,6 +943,8 @@ for required in (
     "loadOutlineChapters",
     "resolveSemanticChapters",
     "normalizeHeadingText",
+    "GlobalWorkerOptions.workerPort",
+    'new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url)',
     "pdf.getOutline",
     "item.items",
     "level: number",
@@ -952,6 +954,13 @@ for required in (
         fail(f"React PDF viewer missing interaction contract: {required}")
 if "PDFLinkService" in pdf_source or "setViewer({" in pdf_source:
     fail("custom PDF renderer must not depend on a partial PDFViewer/PDFLinkService surrogate")
+for legacy_worker_query in (
+    "monaco-editor/editor/editor.worker?worker",
+    "monaco-editor/language/html/html.worker?worker",
+    "pdf.worker.mjs?url",
+):
+    if legacy_worker_query in compiled_artifact_source or legacy_worker_query in pdf_source:
+        fail(f"Vite-style worker query must not remain: {legacy_worker_query}")
 
 main_source = Path("web/src/main.tsx").read_text(encoding="utf-8")
 if "<ViewerApp />" not in main_source or "PublicationIndex" in main_source:

@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import editorWorker from "monaco-editor/editor/editor.worker?worker";
-import htmlWorker from "monaco-editor/language/html/html.worker?worker";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -14,10 +12,19 @@ loader.config({ monaco });
     getWorker: (_moduleId: string, label: string) => Worker;
   };
 }).MonacoEnvironment = {
-  getWorker: (_moduleId, label) =>
-    label === "html" || label === "handlebars" || label === "razor"
-      ? new htmlWorker()
-      : new editorWorker(),
+  getWorker: (_moduleId, label) => {
+    if (label === "html" || label === "handlebars" || label === "razor") {
+      return new Worker(
+        new URL("monaco-editor/language/html/html.worker", import.meta.url),
+        { type: "module" },
+      );
+    }
+
+    return new Worker(
+      new URL("monaco-editor/editor/editor.worker", import.meta.url),
+      { type: "module" },
+    );
+  },
 };
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";

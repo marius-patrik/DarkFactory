@@ -10,7 +10,6 @@ import {
   type RefObject,
 } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import * as dagre from "@dagrejs/dagre";
 import { motion } from "motion/react";
 import { AnimatedIcon } from "@/components/animated-icon";
@@ -21,7 +20,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
+  new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url),
+  { type: "module" },
+);
 
 export type ScaleMode = "fit" | "manual";
 export type SidebarSide = "left" | "right";
