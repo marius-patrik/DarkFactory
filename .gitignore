@@ -1,7 +1,7 @@
 out/
 site/
 *.pdf
-!img/*.pdf
+!DarkFactory/img/*.pdf
 
 .DS_Store
 Thumbs.db
