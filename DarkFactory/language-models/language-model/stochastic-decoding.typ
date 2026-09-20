@@ -4,8 +4,6 @@
 #let terminology = define-term(
   id: "stochastic-decoding",
   proper: translation(cs: "Stochastické dekódování", en: "Stochastic Decoding"),
-  explanation_cs: "Výběr výstupních tokenů z pravděpodobnostního rozdělení modelu způsobem, který může při stejném vstupu vést k různým platným pokračováním.",
-  explanation_en: "Selection of output tokens from a model probability distribution in a way that can yield different valid continuations for the same input.",
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
 )
@@ -13,13 +11,17 @@
 #let item = concept(
   key: "stochastic_decoding",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Stochastické dekódování je výběr výstupních tokenů z pravděpodobnostního rozdělení modelu způsobem, který může při stejném vstupu vést k různým platným pokračováním.
+  ],
   description: terms => [
 #unconfirmed[
 Pravděpodobnostní dekódování znamená, že shodný vstup nemusí vždy vytvořit totožný výstup. V agentním systému proto nelze provozní spolehlivost opřít pouze o model; kritická pravidla a stavové přechody musí vynucovat deterministická vrstva harnessu.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Nedeterminismus dekódování je jedním z důvodů, proč kritická provozní pravidla agentního systému musí vynucovat harness mimo model.
+  ],
   visual: none,
   examples: (),
   attachments: (),

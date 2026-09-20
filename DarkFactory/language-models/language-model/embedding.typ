@@ -5,8 +5,6 @@
     id: "embedding",
     proper: translation(cs: "Vektorová reprezentace", en: "Embedding"),
     industry: translation(cs: "Embedding", en: "Embedding"),
-    explanation_cs: "Vícerozměrná vektorová reprezentace tokenů nebo jiných dat, v níž numerické vztahy mezi vektory zachycují užitečné sémantické vztahy mezi reprezentacemi.",
-    explanation_en: "A multidimensional vector representation of tokens or other data in which numerical relationships between vectors capture useful semantic relationships between representations.",
     citation: bib.mikolov2013word2vec,
     source: bib.mikolov2013word2vec,
 )
@@ -14,9 +12,15 @@
 #let item = concept(
   key: "embedding",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Embedding je vícerozměrná vektorová reprezentace tokenů nebo jiných dat, v níž numerické vztahy mezi vektory zachycují užitečné vztahy mezi reprezentovanými objekty.
+  ],
+  description: terms => [
+V jazykovém modelu embedding převádí diskrétní identifikátory tokenů na spojité vektory zpracovatelné neuronovou sítí. Podobné vektorové reprezentace lze použít také mimo samotnou generaci, například pro vyhledávání semanticky podobných položek v systému RAG.
+  ],
+  summary: terms => [
+Embedding propojuje diskrétní vstupy s numerickým prostorem modelu a může současně sloužit jako reprezentace pro sémantické vyhledávání.
+  ],
   visual: none,
   examples: (),
   attachments: (),

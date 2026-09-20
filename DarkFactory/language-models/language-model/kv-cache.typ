@@ -5,8 +5,6 @@
     id: "kv-cache",
     proper: translation(cs: "Mezipaměť klíčů a hodnot", en: "Key–Value Cache"),
     industry: translation(cs: "KV Cache", en: "KV Cache"),
-    explanation_cs: "Mezipaměť dříve vypočtených vektorů klíčů a hodnot v pozornostních vrstvách transformeru, která při autoregresivním generování omezuje nutnost opakovaně přepočítávat předchozí tokeny.",
-    explanation_en: "A cache of previously computed key and value vectors in transformer attention layers that reduces repeated computation of earlier tokens during autoregressive generation.",
     citation: bib.dao2022,
     source: bib.ainslie2023,
 )
@@ -14,9 +12,15 @@
 #let item = concept(
   key: "kv_cache",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+KV Cache je mezipaměť dříve vypočtených vektorů klíčů a hodnot v pozornostních vrstvách transformeru, která při autoregresivním generování omezuje opakovaný výpočet předchozích tokenů.
+  ],
+  description: terms => [
+Při každém novém tokenu lze znovu použít klíče a hodnoty vytvořené pro předchozí část sekvence namísto jejich úplného přepočítání. Mezipaměť tím snižuje výpočetní režii generování, ale její velikost roste s délkou aktivní sekvence a představuje významnou část paměťových nároků inference.
+  ],
+  summary: terms => [
+KV Cache urychluje autoregresivní inferenci výměnou výpočetní práce za paměť, jejíž spotřeba roste s kontextem.
+  ],
   visual: none,
   examples: (),
   attachments: (),

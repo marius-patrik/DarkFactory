@@ -5,8 +5,6 @@
 #let terminology = define-term(
   id: "chatbot",
   proper: translation(cs: "Chatbot", en: "Chatbot"),
-  explanation_cs: "Systém založený na jazykovém modelu určený primárně k interakci s uživatelem prostřednictvím konverzačního rozhraní.",
-  explanation_en: "A language-model-based system designed primarily for interaction with a user through a conversational interface.",
   citation: bib.wooldridge1995,
   source: bib.wooldridge1995,
 )

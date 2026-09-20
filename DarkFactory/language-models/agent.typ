@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "agent",
     proper: translation(cs: "Agent", en: "Agent"),
-    explanation_cs: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného inženýrského cíle.",
-    explanation_en: "A software system driven by a language model and equipped with tools that independently plans, observes its environment, and performs multi-step actions toward a specified engineering goal.",
     citation: bib.wooldridge1995,
     source: bib.wang2024survey,
 )
@@ -13,23 +11,15 @@
 #let item = concept(
   key: "agent",
   term: terminology,
-  definition: none,
-  description: terms => [
-#accepted[
-#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #diff[#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline") @wooldridge1995 @wang2024survey.] Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
-
-Srovnání obou přístupů:
-- Konverzační chatbot:
-  - Reaguje pouze na přímé textové výzvy v uzavřeném okně chatu.
-  - Nemá přímý přístup k souborovému systému ani k nástrojům operačního systému.
-  - Uživatel musí navržený kód ručně zkopírovat, vložit do projektu a otestovat.
-- Autonomní agent:
-  - Je vybaven sadou výkonných nástrojů (_tools_) pro práci s repozitářem.
-  - Aktivně prozkoumává soubory, modifikuje zdrojový kód, spouští testy a interpretuje jejich návratové kódy.
-  - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
-]
+  definition: terms => [
+Agent je softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně vnímá stav prostředí a provádí vícekrokové akce směřující k zadanému cíli.
   ],
-  summary: none,
+  description: terms => [
+Rozdíl mezi #term(terms.chatbot) a agentem nespočívá nutně v použitém jazykovém modelu, ale v architektuře jeho zapojení do prostředí. Agent může číst stav repozitáře, provádět změny, spouštět nástroje a podle jejich výsledků pokračovat v další iteraci. Tuto schopnost zajišťuje nadřazená prováděcí a nástrojová vrstva, nikoli samotný model.
+  ],
+  summary: terms => [
+Agent rozšiřuje model o řízené vícekrokové jednání nad skutečným prostředím; autonomii proto určuje celý agentní systém, ne pouze model.
+  ],
   visual: none,
   examples: (),
   attachments: (),
