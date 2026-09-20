@@ -4,6 +4,6 @@
  * falls back to agent conflict resolution, verifies, pushes, re-enters merge.
  */
 export const branchUpdateStage = {
-  id: "branch-update",
-  description: "Resolve conflicts and update PR branch deterministically.",
+	id: "branch-update",
+	description: "Resolve conflicts and update PR branch deterministically.",
 };
