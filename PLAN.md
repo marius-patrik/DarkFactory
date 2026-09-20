@@ -314,7 +314,7 @@ Run independent stable work concurrently; serialize only on real interfaces.
 6. **Advance #317 in parallel** on deterministic mutation-claim validation and branch-update/conflict behavior using the landed #384 primitives; only graph re-entry waits for #358.
 7. **Advance #339 in parallel.** Recover/import the exact F47 hook behavior now; use #341 for ecosystem quality/docs actions instead of hard-coded detection.
 8. **Continue #360 release engineering for every stable surface** (manifests, versioning, artifact layout, installers/updaters, native builds, web bundle, provenance/checksums, clean-directory verification). Publish only the final supported release once.
-9. **Keep #403/#251/#332/#334/#336/#425/#390 moving when their current interfaces are stable.** Do not let second-order operator/docs/web work block the #341 → #329/#358 → #317 → #359 production-engine spine.
+9. **Keep #403/#251/#332/#334/#424/#335/#336/#337/#425/#390 moving when their current interfaces are stable.** Do not let second-order operator/docs/web work block the #341 → #329/#358 → #317 → #359 production-engine spine.
 10. **Complete #359 immediately when the core lifecycle is real**, then publish #360, run #361 across all six consumers, and close #68 only after installed-release acceptance passes.
 
 No task should wait for a migration, compatibility, shadow, canary or historical-preservation step. The governing optimization target remains the shortest safe path to the final TypeScript df system.
