@@ -725,24 +725,19 @@ def test_no_script_defaults_to_another_repository():
             assert found == slug, f"{name} names {found}, but this repository is {slug}"
 
 
-def test_the_documentation_command_is_the_one_this_repository_uses():
-    """Governance text is read by the agent as instruction, so a stale command misleads it.
-
-    `AGENTS.md` told every contributor - and every agent run - to verify with `mkdocs build
-    --strict` long after the migration to properdocs removed mkdocs entirely. An agent following
-    the rules it was given proposed a verification step nobody could run, which is the rules being
-    wrong rather than the agent.
-    """
+def test_repository_documents_name_only_the_native_docs_path():
+    """Normative repository text must not instruct contributors to use another docs engine."""
     for relative in (
         "AGENTS.md",
         "PRD.md",
         os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
         os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
     ):
-        content = _read(os.path.join(REPO_ROOT, relative))
-        assert (
-            "mkdocs build" not in content
-        ), f"{relative} names mkdocs, but this repository builds with properdocs"
+        content = _read(os.path.join(REPO_ROOT, relative)).lower()
+        assert "properdocs" not in content
+        assert "mkdocs" not in content
+        assert "docs.df" in content or relative not in ("AGENTS.md", "PRD.md")
+
 
 
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
