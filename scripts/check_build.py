@@ -155,18 +155,30 @@ for forbidden in (
         fail(f"standalone terminology index machinery must not return: {forbidden}")
 
 for required in (
-    "#let term-proper-name",
-    "#let term-industry-name",
+    "#let term-name(value)",
+    "#let term-sort-name(value)",
+    "Industry (Czech) [English]",
     'text("[")',
     'text("]")',
     'text("(")',
     'text(")")',
-    "Czech [English] (Industry)",
     "marker: true,",
     '#text("*")',
 ):
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
+
+for forbidden in (
+    "default-name-type:",
+    "keyword-name-type:",
+    "name-language:",
+    "name-type:",
+    "name-separator:",
+    "name-type-separator:",
+    "name-order:",
+):
+    if forbidden in common_source:
+        fail(f"alternate term-name rendering option must not return: {forbidden}")
 
 appendix_source = Path("kapitoly/06-prilohy.typ").read_text(encoding="utf-8")
 for stale_appendix in (
@@ -213,8 +225,8 @@ finalized_agent_harness = (
     "#finalized[\n"
     "Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model "
     "dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — "
-    "značovaná jako #term(terms.harness, language: \"en\", name-type: \"industry\", "
-    "register: true, linked: true, marker: false) — musí model obklopovat, aby bylo možné jeho "
+    "značovaná jako #term(terms.harness, register: true, linked: true, marker: false) — "
+    "musí model obklopovat, aby bylo možné jeho "
     "výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry "
     "autonomie se zachováním lidského dohledu.\n]"
 )
@@ -319,6 +331,9 @@ for path in concept_paths:
     ):
         if required not in source:
             fail(f"concept file does not own its canonical record: {path}: {required}")
+    for forbidden in ("default-name-type:", "keyword-name-type:", "name-type:", "name-language:", "name-separator:", "name-type-separator:", "name-order:"):
+        if forbidden in source:
+            fail(f"concept contains an alternate term-name rendering option: {path}: {forbidden}")
     if "related:" in source:
         fail(f"legacy concept relation field remains: {path}")
     if 'type: "parent"' in source or 'type: "child"' in source:
@@ -416,6 +431,7 @@ for required in (
     "#finalized[Požadované kontroly (Required Checks)]",
     "Ochrana větví (Branch Protection)",
     "#finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]",
+    '#finalized[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") @mikolov2013word2vec',
     "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh.",
     "caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting)",
 ):
@@ -445,6 +461,9 @@ gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for required in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
     "render-keywords()",
+    'separator: "paren"',
+    'order: "en-cs"',
+    'nadpis-bez-cisla[#finalized[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]]',
     'ui-label([Seznam příloh], [List of appendices])',
     '<body-end-anchor>',
 ):
@@ -460,6 +479,11 @@ for forbidden in (
         fail(f"removed GJKT presentation/index machinery must not return: {forbidden}")
 if '.before(<body-end-anchor>, inclusive: false)' not in gjkt_source:
     fail("core-text extent must stop before appendices")
+
+if gjkt_source.count("Seznam obrázků a tabulek") != 1:
+    fail("Seznam obrázků a tabulek must render exactly once")
+if gjkt_source.index("Seznam obrázků a tabulek") < gjkt_source.index("#let prilohy(body)"):
+    fail("Seznam obrázků a tabulek must live in the appendix/back-matter renderer")
 
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
     if forbidden in gjkt_source:
@@ -1128,6 +1152,9 @@ for required in (
 web_publication_source = web_publication.read_text(encoding="utf-8")
 for required in (
     "#outline(title: ui-label([Obsah], [Contents]), depth: 6)",
+    'translation-heading(translation(cs: [Anotace], en: [Annotation]), separator: "paren", order: "en-cs")',
+    'translation-heading(translation(cs: [Klíčová slova], en: [Keywords]), separator: "paren", order: "en-cs")',
+    'ui-label([Seznam obrázků a tabulek], [List of figures and tables])',
     "heading.where(level: 1, supplement: [Příloha])",
 ):
     if required not in web_publication_source:
