@@ -1,5 +1,13 @@
 import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
 import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
+import type { z } from "zod";
+import { captureContext, forceCaptureTool, readCapture } from "../../../packages/core/src/result-capture.ts";
+import {
+	type CaptureAttempt,
+	CaptureError,
+	captureJsonSchema,
+	type ExtractedJudgement,
+} from "../../../packages/protocol/src/result-capture.ts";
 import type { Candidate } from "../failover.ts";
 import { LimitLedger } from "../limits/ledger.ts";
 import { defaultLimit, observeAnswer, observeLimits } from "../limits/observe.ts";
@@ -13,14 +21,6 @@ import type { OutcomeStore } from "../router/outcomes.ts";
 import { type CapabilityEscalationPolicy, candidateTierKey, nextCapabilityTier } from "../router/tiers.ts";
 import type { TaskKind } from "../router/types.ts";
 import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions } from "./runtime.ts";
-import type { z } from "zod";
-import {
-	CaptureError,
-	type CaptureAttempt,
-	type ExtractedJudgement,
-	captureJsonSchema,
-} from "../../../packages/protocol/src/result-capture.ts";
-import { captureContext, forceCaptureTool, readCapture } from "../../../packages/core/src/result-capture.ts";
 
 /**
  * Emitted for each step of a model call within a failover chain.

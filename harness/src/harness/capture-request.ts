@@ -3,11 +3,11 @@
  */
 export {
 	CAPTURE_TOOL_NAME,
+	type CaptureToolDefinition,
 	captureContext,
 	captureJsonSchema,
 	captureTool,
 	forceCaptureTool,
 	readCapture,
 	validateCaptureSchema,
-	type CaptureToolDefinition,
 } from "../../../packages/core/src/result-capture.ts";

@@ -9,6 +9,7 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+import { formatCaptureSchema } from "../../packages/cli/src/capture-schema.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountRecord } from "./credentials.ts";
@@ -17,7 +18,6 @@ import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
 import { bundledGraphPath } from "./graph/assets.ts";
 import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
-import { formatCaptureSchema } from "../../packages/cli/src/capture-schema.ts";
 import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import {

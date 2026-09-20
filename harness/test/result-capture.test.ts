@@ -142,9 +142,7 @@ describe("result-capture: judgement prose extraction and failover", () => {
 
 			const faux = fauxProvider({ provider: "mock-google", models: [{ id: "flash" }] });
 			faux.setResponses([
-				fauxAssistantMessage([
-					fauxToolCall(CAPTURE_TOOL_NAME, { summary: "Supervisor extracted", confidence: 0.99 }),
-				]),
+				fauxAssistantMessage([fauxToolCall(CAPTURE_TOOL_NAME, { summary: "Supervisor extracted", confidence: 0.99 })]),
 			]);
 
 			const supervisor = await createFailoverSupervisor({

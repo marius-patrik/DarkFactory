@@ -1,48 +1,48 @@
 /** @packageDocumentation
  * Compatibility re-exports for result capture mechanisms now owned by `@darkfactory/protocol` and `@darkfactory/core`.
  */
-export {
-	CAPTURE_SCHEMAS,
-	CaptureError,
-	alignmentResultSchema,
-	captureJsonSchema,
-	getCaptureSchema,
-	listCaptureSchemas,
-	planningResultSchema,
-	reviewFindingSchema,
-	reviewResultSchema,
-	validateCaptureSchema,
-	type AlignmentResultData,
-	type CaptureAttempt,
-	type CodeNodeResult,
-	type ExtractedJudgement,
-	type PlanningResultData,
-	type ReviewFindingData,
-	type ReviewResultData,
-} from "../../../packages/protocol/src/result-capture.ts";
 
 export {
 	CAPTURE_TOOL_NAME,
-	captureCodeResult,
-	captureContext,
-	captureTool,
-	extractJudgementResult,
-	forceCaptureTool,
-	readCapture,
-	registerWorkspaceOperations,
 	type CaptureCodeResultOptions,
 	type CaptureToolDefinition,
 	type CodeWorkspaceOperations,
 	type CommitIdentityData,
+	captureCodeResult,
+	captureContext,
+	captureTool,
 	type ExtractJudgementOptions,
+	extractJudgementResult,
+	forceCaptureTool,
 	type JudgementSupervisor,
+	readCapture,
+	registerWorkspaceOperations,
 } from "../../../packages/core/src/result-capture.ts";
+export {
+	type AlignmentResultData,
+	alignmentResultSchema,
+	CAPTURE_SCHEMAS,
+	type CaptureAttempt,
+	CaptureError,
+	type CodeNodeResult,
+	captureJsonSchema,
+	type ExtractedJudgement,
+	getCaptureSchema,
+	listCaptureSchemas,
+	type PlanningResultData,
+	planningResultSchema,
+	type ReviewFindingData,
+	type ReviewResultData,
+	reviewFindingSchema,
+	reviewResultSchema,
+	validateCaptureSchema,
+} from "../../../packages/protocol/src/result-capture.ts";
 
+import { registerWorkspaceOperations } from "../../../packages/core/src/result-capture.ts";
 import { changedFiles } from "../workspace/changedFiles.ts";
 import { commitChunk } from "../workspace/commitChunk.ts";
 import { runDetectedVerification } from "../workspace/runVerify.ts";
 import { scopeCheck } from "../workspace/scopeCheck.ts";
-import { registerWorkspaceOperations } from "../../../packages/core/src/result-capture.ts";
 
 registerWorkspaceOperations({
 	changedFiles,
