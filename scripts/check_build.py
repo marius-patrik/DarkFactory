@@ -138,46 +138,20 @@ for semantic in ("accepted", "finalized", "unconfirmed", "diff", "term", "biling
         fail(f"registry semantic helper is not routed through common.typ: {semantic}")
 
 common_source = Path("templates/common.typ").read_text(encoding="utf-8")
-for renderer in ("render-keywords", "render-index"):
-    if f"#let {renderer}" not in common_source:
-        fail(f"missing shared terminology renderer: {renderer}")
-keyword_renderer = common_source[
-    common_source.find("#let render-keywords()"):
-    common_source.find("#let collect-canonical-terms")
-]
+if "#let render-keywords()" not in common_source:
+    fail("missing shared keyword renderer")
+keyword_renderer = common_source[common_source.find("#let render-keywords()") :]
 if "finalized[" not in keyword_renderer:
     fail("generated keyword list must be wrapped in finalized state")
-
-for required in (
+for forbidden in (
+    "#let render-index",
     "#let collect-canonical-terms",
     "#let index-sort-name",
     "#let index-letter",
-    "heading(\n          level: 2",
-    "#heading(\n          level: 3",
     'label("kw-" + item.id)',
 ):
-    if required not in common_source:
-        fail(f"Index missing alphabetical internal hierarchy contract: {required}")
-if ".slice(0, 1)" in common_source:
-    fail("Index grouping must use grapheme-safe first() rather than byte-index slicing")
-if "index-sort-name(item).first()" not in common_source:
-    fail("Index grouping must derive its letter with grapheme-safe first()")
-if "#let render-index(values)" not in common_source:
-    fail("Index must accept the complete canonical vocabulary")
-if "collect-canonical-terms(values)" not in common_source:
-    fail("Index must deduplicate the complete canonical vocabulary by stable term id")
-if '] #label("kw-" + item.id)' not in common_source:
-    fail("Index keyword labels must attach to headings in markup mode")
-
-for required in (
-    "outlined: false",
-    "link(\n        label(\"kw-\" + item.id)",
-    ").join([#linebreak()])",
-):
-    if required not in common_source:
-        fail(f"Index must keep the full term list local while hiding term children from the main contents: {required}")
-if "outlined: true" in common_source[common_source.find("#let render-index(values)") :]:
-    fail("Rejstřík child headings must not expand the main Obsah")
+    if forbidden in common_source:
+        fail(f"standalone terminology index machinery must not return: {forbidden}")
 
 for required in (
     "#let term-proper-name",
@@ -190,6 +164,18 @@ for required in (
 ):
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
+
+appendix_source = Path("kapitoly/06-prilohy.typ").read_text(encoding="utf-8")
+for stale_appendix in (
+    "Obsah přiloženého média",
+    "Schéma konfiguračního manifestu darkfactory.json",
+    "Sdílené workflow pro GitHub Actions",
+    "Systémové prompty plánovacího a kódovacího agenta",
+    "Protokol revizních značek v sazebním systému Typst",
+    "mono-OdbornaPrace/",
+):
+    if stale_appendix in appendix_source:
+        fail(f"stale appendix content must not return: {stale_appendix}")
 
 chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
 if "term, kw, terms" not in chapter1_source.splitlines()[0]:
@@ -309,6 +295,37 @@ for path in concept_paths:
         if required not in source:
             fail(f"concept file does not own its complete canonical record: {path}: {required}")
 
+# A canonical concept must contribute to the thesis either as a rendered section or
+# as an inline canonical term used by rendered manuscript content. The removed
+# standalone Rejstřík must never be the only place where a concept appears.
+section_index_paths = tuple(section / "index.typ" for section in section_dirs)
+rendered_concept_paths = tuple(
+    path for path in concept_paths
+    if "theory_enabled: true" in path.read_text(encoding="utf-8")
+    or "practical_enabled: true" in path.read_text(encoding="utf-8")
+)
+rendered_manuscript_paths = (
+    *sorted(Path("kapitoly").glob("*.typ")),
+    *section_index_paths,
+    *rendered_concept_paths,
+)
+rendered_manuscript_text = "\n".join(
+    path.read_text(encoding="utf-8") for path in rendered_manuscript_paths
+)
+unused_concepts = []
+for path in concept_paths:
+    source = path.read_text(encoding="utf-8")
+    if "theory_enabled: true" in source or "practical_enabled: true" in source:
+        continue
+    match = re.search(r'key:\s*"([^"]+)"', source)
+    if match is None:
+        fail(f"concept is missing a stable key: {path}")
+    key = match.group(1)
+    if f"terms.{key}" not in rendered_manuscript_text:
+        unused_concepts.append(f"{path}:{key}")
+if unused_concepts:
+    fail("canonical concepts not utilized by the thesis: " + ", ".join(unused_concepts))
+
 section_sources = {
     section.name: (section / "index.typ").read_text(encoding="utf-8")
     for section in section_dirs
@@ -367,30 +384,24 @@ if "Agentické AI: Vymezení konceptů - Teoretická část" in chapter2_source 
     fail("chapter 2/3 content must not be duplicated outside concepts/")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
-for terminology_contract in (
+for required in (
     "translation(cs: [Klíčová slova], en: [Keywords])",
     "render-keywords()",
-    "render-index(vocabulary.values())",
-    '#import "../terms.typ": vocabulary',
-    'ui-label([Rejstřík], [Index])',
     'ui-label([Seznam příloh], [List of appendices])',
     '<body-end-anchor>',
 ):
-    if terminology_contract not in gjkt_source:
-        fail(f"GJKT template missing terminology/back-matter contract: {terminology_contract}")
-
-index_pos = gjkt_source.find('ui-label([Rejstřík], [Index])')
-appendix_list_pos = gjkt_source.find('ui-label([Seznam příloh], [List of appendices])', index_pos)
-if index_pos < 0 or appendix_list_pos < 0 or index_pos >= appendix_list_pos:
-    fail("Index must be emitted immediately before the list of appendices in back matter")
-
-front_matter_start = gjkt_source.find("#let anotace-strana")
-front_matter_end = gjkt_source.find("#let template(", front_matter_start)
-if "render-index(vocabulary.values())" in gjkt_source[front_matter_start:front_matter_end]:
-    fail("Index must not remain in front matter")
-
+    if required not in gjkt_source:
+        fail(f"GJKT template missing terminology/back-matter contract: {required}")
+for forbidden in (
+    "render-index",
+    'ui-label([Rejstřík], [Index])',
+    "chapter-title-page",
+    "appendix-mode-state",
+):
+    if forbidden in gjkt_source:
+        fail(f"removed GJKT presentation/index machinery must not return: {forbidden}")
 if '.before(<body-end-anchor>, inclusive: false)' not in gjkt_source:
-    fail("core-text extent must stop before back-matter Index and appendices")
+    fail("core-text extent must stop before appendices")
 
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
     if forbidden in gjkt_source:
