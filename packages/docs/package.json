@@ -7,13 +7,15 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./content": "./src/content.ts",
-    "./readme": "./src/readme.ts"
+    "./readme": "./src/readme.ts",
+    "./api": "./src/api.ts"
   },
   "files": [
     "src"
   ],
   "license": "GPL-3.0",
   "dependencies": {
-    "@darkfactory/protocol": "workspace:*"
+    "@darkfactory/protocol": "workspace:*",
+    "typedoc": "0.28.20"
   }
 }
