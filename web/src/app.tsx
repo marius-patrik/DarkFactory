@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ReactElement,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { AnimatedIcon } from "@/components/animated-icon";
 import { Button } from "@/components/ui/button";
@@ -492,7 +493,7 @@ function SidebarResizeHandle({
   width: number;
   onWidthChange: (width: number) => void;
 }) {
-  const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const beginResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = width;
