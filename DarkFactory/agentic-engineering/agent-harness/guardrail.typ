@@ -12,11 +12,16 @@
 #let item = concept(
   key: "guardrail",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Pokud samotná instrukce v promptu neposkytuje dostatečnou záruku, harness může pravidlo vynutit deterministicky, například omezením přístupových práv, validací parametrů nástroje nebo odmítnutím nepovoleného stavového přechodu.
 ]
   ],
-  relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "loop_engineering"))
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "loop_engineering")),
 )
