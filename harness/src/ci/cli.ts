@@ -1,8 +1,8 @@
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { loadCiConfig } from "./config.ts";
-import { runCiDoctor } from "./doctor.ts";
 import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
+import { runCiDoctor } from "./doctor.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
@@ -47,13 +47,19 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		case "matrix": {
 			const capabilitiesRoot = getOption(args, "--capabilities-root");
 			const state = await resolveDetectedQuality(repoPath, capabilitiesRoot);
-			log(JSON.stringify({
-				packages: state.evidence.packages,
-				domains: state.evidence.domains,
-				ecosystems: state.evidence.ecosystems,
-				matrix: state.matrix,
-				gaps: state.resolution.gaps,
-			}, null, 2));
+			log(
+				JSON.stringify(
+					{
+						packages: state.evidence.packages,
+						domains: state.evidence.domains,
+						ecosystems: state.evidence.ecosystems,
+						matrix: state.matrix,
+						gaps: state.resolution.gaps,
+					},
+					null,
+					2,
+				),
+			);
 			return 0;
 		}
 
@@ -69,7 +75,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 						continue;
 					}
 					const result = execution.result!;
-					log(`[${result.exitCode === 0 ? "pass" : "fail"}] ${execution.packageId} ${execution.kind}: ${execution.command}`);
+					log(
+						`[${result.exitCode === 0 ? "pass" : "fail"}] ${execution.packageId} ${execution.kind}: ${execution.command}`,
+					);
 					if (result.outputTail) log(result.outputTail);
 				}
 			}
@@ -91,10 +99,14 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				log(`Installed ${report.installed.length} workflow(s): ${report.installed.join(", ")}`);
 			}
 			if (report.skippedModified.length > 0) {
-				log(`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`);
+				log(
+					`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`,
+				);
 			}
 			if (report.skippedUnmanaged.length > 0) {
-				log(`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s) (use --force to overwrite): ${report.skippedUnmanaged.join(", ")}`);
+				log(
+					`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s) (use --force to overwrite): ${report.skippedUnmanaged.join(", ")}`,
+				);
 			}
 			return 0;
 		}
@@ -117,7 +129,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				log(`${report.upToDate.length} workflow(s) already up-to-date: ${report.upToDate.join(", ")}`);
 			}
 			if (report.skippedModified.length > 0) {
-				log(`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`);
+				log(
+					`Skipped ${report.skippedModified.length} user-modified workflow(s) (use --force to overwrite): ${report.skippedModified.join(", ")}`,
+				);
 			}
 			if (report.skippedUnmanaged.length > 0) {
 				log(`Skipped ${report.skippedUnmanaged.length} unmanaged workflow(s): ${report.skippedUnmanaged.join(", ")}`);
@@ -163,7 +177,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			for (const c of status.checks) {
 				const symbol = c.conclusion === "success" ? "✓" : c.conclusion === "failure" ? "✗" : "⟳";
 				const req = c.required ? "[required]" : "[optional]";
-				log(`  ${symbol} ${c.name.padEnd(25)} ${req.padEnd(12)} status=${c.status} conclusion=${c.conclusion ?? "none"}`);
+				log(
+					`  ${symbol} ${c.name.padEnd(25)} ${req.padEnd(12)} status=${c.status} conclusion=${c.conclusion ?? "none"}`,
+				);
 			}
 
 			return status.state === "failed" ? 1 : 0;

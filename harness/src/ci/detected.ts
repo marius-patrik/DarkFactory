@@ -1,8 +1,8 @@
 import { join, resolve } from "node:path";
 import {
 	qualityMatrix,
-	resolveDetectedRepositoryActions,
 	type ResolvedRepositoryActions,
+	resolveDetectedRepositoryActions,
 } from "@darkfactory/capability/actions";
 import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { runVerify, type VerifyResult } from "../workspace/runVerify.ts";
