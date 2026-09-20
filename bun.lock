@@ -12,6 +12,13 @@
         "@darkfactory/capability": "workspace:*",
       },
     },
+    "capabilities/detection": {
+      "name": "@darkfactory/capability-detection",
+      "version": "0.0.0",
+      "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+      },
+    },
     "capabilities/math": {
       "name": "@darkfactory/capability-math",
       "version": "0.0.0",
@@ -21,6 +28,13 @@
     },
     "capabilities/paper": {
       "name": "@darkfactory/capability-paper",
+      "version": "0.0.0",
+      "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+      },
+    },
+    "capabilities/quality": {
+      "name": "@darkfactory/capability-quality",
       "version": "0.0.0",
       "dependencies": {
         "@darkfactory/capability": "workspace:*",
@@ -208,9 +222,13 @@
 
     "@darkfactory/capability-code": ["@darkfactory/capability-code@workspace:capabilities/code"],
 
+    "@darkfactory/capability-detection": ["@darkfactory/capability-detection@workspace:capabilities/detection"],
+
     "@darkfactory/capability-math": ["@darkfactory/capability-math@workspace:capabilities/math"],
 
     "@darkfactory/capability-paper": ["@darkfactory/capability-paper@workspace:capabilities/paper"],
+
+    "@darkfactory/capability-quality": ["@darkfactory/capability-quality@workspace:capabilities/quality"],
 
     "@darkfactory/cli": ["@darkfactory/cli@workspace:packages/cli"],
 
