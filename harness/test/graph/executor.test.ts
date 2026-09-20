@@ -10,6 +10,7 @@ import type {
 	GraphEdge,
 	GraphEvent,
 	GraphNode,
+	RunState,
 	WorkflowGraph,
 } from "../../src/graph/types.ts";
 
