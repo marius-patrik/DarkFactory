@@ -58,10 +58,18 @@ These completed foundations are not repeated in the active Request map below.
 
 - PR #407 is closed and superseded. It remains #340 recovery evidence only together with PR376/F48.
 - The rejected #365 implementation branch / PR #366 is terminal evidence only. #365 itself is complete and no further reconciliation is required from that branch.
+- PR #518 is a stale/dirty pre-#523 keychain implementation branch. #523 already landed the production-critical #359 slice. Inspect #518 only for unique remaining #422 behavior, preserve any unique delta, then supersede/close it; do **not** spend time repairing it merely to make that historical implementation mergeable.
 
 ### Current architectural foundation
 
 ADR-0017 through ADR-0020 and Requests #420–#425 define the final package/capability, docs/web and auth/keychain architecture.
+
+Known documentation divergence is already assigned to #337 and must not block implementation of the settled final architecture:
+
+- ADR-0002 still describes the retired Python harness registry and must be superseded/reconciled;
+- ADR-0003/0004/0005 contain legacy manifest/Python ownership details that are no longer current contracts even where their underlying principles remain valid;
+- recovered F45 ADR work (including the missing 0007–0016 range) is preserved input for #337, not a reason to restore old architecture;
+- until #337 lands, current PRD + current Request bodies + ADR-0017–0020 + canonical rules govern new implementation. Do not make final code compatible with stale ADR implementation details.
 
 Already landed:
 
