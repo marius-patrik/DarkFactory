@@ -37,8 +37,9 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 		} catch {
 			dataRepoPath = join(home, "data-df");
 		}
-		const { loadVault } = await import("../../../harness/src/secrets/vault-store.ts");
-		const vault = await loadVault(dataRepoPath, key);
+		const { decryptVault } = await import("./vault-crypto.ts");
+		const envelope = JSON.parse(await readFile(join(dataRepoPath, "vault.enc.df"), "utf8")) as import("./vault.ts").EncryptedVaultEnvelope;
+		const vault = decryptVault(envelope, key);
 		return vault.entries.find((e) => e.name === vaultName)?.value;
 	} catch {
 		return undefined;
