@@ -1,6 +1,8 @@
 /** @packageDocumentation
- * Headless DarkFactory documentation compiler and typed content-graph package boundary.
+ * Headless DarkFactory documentation compiler and typed content-graph package.
  *
- * `docs.df` is the documentation configuration contract. Rendering belongs to `@darkfactory/web`.
+ * `docs.df` is the only documentation configuration contract. Rendering belongs to `@darkfactory/web`.
  */
-export type { WorkflowGraph } from "@darkfactory/protocol/workflow";
+export * from "./config.ts";
+export * from "./content.ts";
+export * from "./readme.ts";
