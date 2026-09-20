@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: ["{{default_branch}}"]
   pull_request:
   merge_group:
   workflow_dispatch:
