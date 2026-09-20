@@ -280,6 +280,7 @@ function viewerHref(args: {
   mode: ViewerMode;
   format?: ArtifactFormat;
   view?: ViewMode;
+  split?: WorkspaceSplitDirection;
   embedded?: boolean;
 }) {
   const query = new URLSearchParams();
@@ -291,6 +292,7 @@ function viewerHref(args: {
   query.set("mode", args.mode);
   query.set("format", args.format || "pdf");
   if (args.view === "split") query.set("view", "split");
+  if (args.split) query.set("split", args.split);
   if (args.embedded) query.set("embedded", "1");
   return (args.embedded ? "viewer.html?" : "./?") + query.toString();
 }
@@ -885,6 +887,150 @@ function AppearancePicker({
             )}
           </DropdownMenuItem>
         ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+function triggerDownload(path: string | null) {
+  if (!path) return;
+  const anchor = document.createElement("a");
+  anchor.href = path;
+  anchor.download = "";
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+function FileMenu({
+  file,
+  formatLabel,
+}: {
+  file: string | null;
+  formatLabel: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" className="menubar-button">File</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem
+          disabled={!file}
+          onSelect={() => file && window.open(file, "_blank", "noopener,noreferrer")}
+        >
+          <AnimatedIcon names={["ExternalLinkIcon", "FileTextIcon"]} size={15} />
+          Open {formatLabel === "PDF" ? "native PDF" : "rendered " + formatLabel}
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!file} onSelect={() => triggerDownload(file)}>
+          <AnimatedIcon names={["DownloadIcon"]} size={15} />
+          Download {formatLabel}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ViewMenu({
+  sidebarOpen,
+  workspace,
+  onToggleSidebar,
+  onOpenSplit,
+  onSingle,
+}: {
+  sidebarOpen: boolean;
+  workspace: boolean;
+  onToggleSidebar: () => void;
+  onOpenSplit: (direction: WorkspaceSplitDirection) => void;
+  onSingle: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" className="menubar-button">View</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onSelect={onToggleSidebar}>
+          <AnimatedIcon names={["PanelLeftIcon"]} size={15} />
+          {sidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onOpenSplit("right")}>
+          <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
+          {workspace ? "Split Active Right" : "Open Split Right"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onOpenSplit("below")}>
+          <AnimatedIcon names={["PanelTopBottomIcon", "Rows2Icon"]} size={15} />
+          {workspace ? "Split Active Down" : "Open Split Down"}
+        </DropdownMenuItem>
+        {workspace && (
+          <DropdownMenuItem onSelect={onSingle}>
+            <AnimatedIcon names={["SquareIcon"]} size={15} />
+            Single View
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function SplitViewPicker({
+  workspace,
+  onSplit,
+  onSingle,
+  onReset,
+}: {
+  workspace: boolean;
+  onSplit: (direction: WorkspaceSplitDirection) => void;
+  onSingle: () => void;
+  onReset: (direction: WorkspaceSplitDirection) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="icon-action"
+                aria-label="Split view"
+              >
+                <AnimatedIcon names={["PanelLeftRightIcon"]} size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Split view</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onSplit("right")}>
+          <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
+          {workspace ? "Split active right" : "Split view right"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onSplit("below")}>
+          <AnimatedIcon names={["PanelTopBottomIcon", "Rows2Icon"]} size={15} />
+          {workspace ? "Split active down" : "Split view down"}
+        </DropdownMenuItem>
+        {workspace && (
+          <>
+            <DropdownMenuItem onSelect={() => onReset("right")}>
+              <AnimatedIcon names={["Columns2Icon", "PanelLeftRightIcon"]} size={15} />
+              Reset horizontal layout
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onReset("below")}>
+              <AnimatedIcon names={["Rows2Icon"]} size={15} />
+              Reset vertical layout
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onSingle}>
+              <AnimatedIcon names={["SquareIcon"]} size={15} />
+              Single view
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
