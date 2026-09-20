@@ -18,8 +18,7 @@
   term: terminology,
   heading: terms => [#finalized[#term(terms.skills, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline") @anthropic2024tooluse.]
 
 Architektura dovedností staví na následujících principech:
@@ -29,6 +28,7 @@ Architektura dovedností staví na následujících principech:
 
 Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term(terms.plugins, render: "both", detail-language: "cs", detail-style: "inline"). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: finalized,

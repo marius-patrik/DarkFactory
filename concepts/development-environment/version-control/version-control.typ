@@ -15,7 +15,11 @@
   term: terminology,
   heading: terms => [#finalized[Správa verzí \[Version Control\]]],
   theory_enabled: true,
-  theory_intro: none,
+  theory_intro: terms => [
+#accepted[
+#term(terms.version_control, render: "both", detail-language: "cs", detail-style: "inline").
+]
+  ],
   theory_body: none,
   theory_summary: none,
   theory_after: none,

@@ -18,8 +18,7 @@
   term: terminology,
   heading: terms => [#finalized[Kontinuální integrace (CI a GitHub Actions)]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #unconfirmed[
 Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní kontinuální integrace (CI) @humble2010.
 
@@ -34,6 +33,7 @@ V rámci platformy GitHub zajišťuje kontinuální integraci automatizační pl
   Spoléhání se na automatické testy v CI naráží na problém nestálých testů (_flaky tests_), které občas selžou kvůli časování, síťové odezvě či asynchronním stavům, aniž by kód obsahoval chybu. Pokud agent narazí na takto náhodně selhávající test, může začít nesmyslně upravovat správný kód ve snaze chybu odstranit. CI pipeline proto musí nestálé testy minimalizovat nebo umožnit automatické opakování selhaného běhu v čistém prostředí.
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

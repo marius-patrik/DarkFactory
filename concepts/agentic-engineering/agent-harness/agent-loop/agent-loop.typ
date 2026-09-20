@@ -18,8 +18,7 @@
   term: terminology,
   heading: terms => [#finalized[#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
 V každé iteraci agentní smyčky harness zajišťuje tyto klíčové funkce:
@@ -35,6 +34,7 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: terms => [
 #figure(

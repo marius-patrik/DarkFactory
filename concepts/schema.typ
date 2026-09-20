@@ -1,4 +1,4 @@
-#import "../templates/common.typ": finalized
+#import "../templates/common.typ": finalized, accepted, term
 
 // Semantic relations never determine manuscript containment.
 // Folder manifests are the sole source of section hierarchy.
@@ -218,9 +218,40 @@
 
     if node.section != none {
       output += [#heading(level: level)[#(node.section.heading)(terms)]]
-      let section-content = render-concept-content(node.section, terms, mode)
-      if section-content != none { output += section-content }
       child-level = level + 1
+
+      let intro = if mode == "theory" { node.section.theory_intro } else { node.section.practical_intro }
+      let body = if mode == "theory" { node.section.theory_body } else { node.section.practical_body }
+      let summary = if mode == "theory" { node.section.theory_summary } else { node.section.practical_summary }
+      let after = if mode == "theory" { node.section.theory_after } else { node.section.practical_after }
+      let wrapper = if mode == "theory" { node.section.theory_wrapper } else { node.section.practical_wrapper }
+
+      let intro-content = if intro != none {
+        intro(terms)
+      } else if body != none {
+        body(terms)
+      } else {
+        [#accepted[#term(node.section.term, render: "both", detail-language: "cs", detail-style: "inline").]]
+      }
+
+      let uvod-heading = heading(level: child-level)[#finalized[Úvod]]
+      let uvod-body = if wrapper == none { intro-content } else { wrapper(intro-content) }
+      output += uvod-heading
+      output += uvod-body
+
+      if intro != none and body != none {
+        let body-content = if wrapper == none { body(terms) } else { wrapper(body(terms)) }
+        output += body-content
+      }
+
+      if summary != none {
+        let summary-content = if wrapper == none { summary(terms) } else { wrapper(summary(terms)) }
+        output += summary-content
+      }
+
+      if after != none {
+        output += after(terms)
+      }
     }
 
     for item in order-local(node.concepts, graph) {

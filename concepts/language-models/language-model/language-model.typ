@@ -18,7 +18,11 @@
   term: terminology,
   heading: terms => [#term(terms.language_model, marker: false, linked: false, emphasized: false)],
   theory_enabled: false,
-  theory_intro: none,
+  theory_intro: terms => [
+#accepted[
+#term(terms.language_model, render: "both", detail-language: "cs", detail-style: "inline").
+]
+  ],
   theory_body: none,
   theory_summary: none,
   theory_after: none,

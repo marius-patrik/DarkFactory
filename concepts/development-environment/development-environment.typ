@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, finalized, bib
+#import "../../templates/common.typ": define-term, translation, finalized, bib, accepted, term, kw
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -16,6 +16,11 @@
   term: terminology,
   heading: terms => [#finalized[Development Environment and Practices (Vývojové prostředí a praxe)]],
   theory_enabled: true,
+  theory_intro: terms => [
+#accepted[
+#term(terms.development_environment, render: "both", detail-language: "cs", detail-style: "inline").
+]
+  ],
   theory_body: none,
   practical_enabled: false,
 )

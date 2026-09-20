@@ -15,8 +15,7 @@
   term: terminology,
   heading: terms => [#finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #accepted[
 Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github).
 
@@ -30,6 +29,7 @@ Klíčové komponenty infrastruktury zahrnují:
 Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním protokolem, nýbrž jako standardní přispěvatel, který plně respektuje běžné vývojářské zvyklosti a nástroje.
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

@@ -8,14 +8,14 @@
   term: terminology,
   heading: terms => [#finalized[Vyvolávání nástrojů \[Tool Calling\]]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #unconfirmed[
 Aby mohl agent provádět reálné inženýrské operace, musí mu agent harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
 
 #diff[Strukturované volání nástrojů (_Tool / Function Calling_)][Strukturované volání nástrojů (_Tool / Function Calling_ @schick2023toolformer)] používá vstupy a výstupy striktně validované vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

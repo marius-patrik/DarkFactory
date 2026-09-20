@@ -18,14 +18,14 @@
   term: terminology,
   heading: terms => [#term(terms.harness, render: "both", detail-language: "cs", detail-style: "inline", marker: false, linked: false, emphasized: false)],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #accepted[
 #diff[#term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false)][#term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false) @deepseekharness2026 @darkfactory] Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; orchestraci, práci se soubory, správu stavu a bezpečnostní mantinely zajišťuje #term(terms.harness, language: "en", marker: false, linked: false, emphasized: false).
 
 Ústřední prováděcí funkcí, která v architektuře harnessu řídí iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

@@ -15,7 +15,11 @@
   term: terminology,
   heading: terms => [#term(terms.context_engineering, marker: false, linked: false, emphasized: false)],
   theory_enabled: false,
-  theory_intro: none,
+  theory_intro: terms => [
+#accepted[
+#term(terms.context_engineering, render: "both", detail-language: "cs", detail-style: "inline").
+]
+  ],
   theory_body: none,
   theory_summary: none,
   theory_after: none,

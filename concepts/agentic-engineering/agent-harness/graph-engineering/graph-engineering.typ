@@ -18,8 +18,7 @@
   term: terminology,
   heading: terms => [#finalized[Škálování: Multiagentní systémy (Subagenti) a grafy (DAG workflows) \[Scaling: Multiagent Systems (Subagents) and DAG Workflows (Graphs)\]]],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #accepted[
 Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
 ]
@@ -30,6 +29,7 @@ Klíčové přístupy ke škálování zahrnují:
 - Pracovní postupy jako grafy (#term(terms.dag, language: "en", marker: false, linked: false, emphasized: false) / Graph Engineering): Životní cyklus požadavku je modelován jako orientovaný acyklický graf (příjem $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

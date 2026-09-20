@@ -15,12 +15,12 @@
   term: terminology,
   heading: terms => [#term(terms.agentic_engineering, render: "both", detail-language: "cs", detail-style: "inline", marker: false, linked: false, emphasized: false)],
   theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  theory_intro: terms => [
 #accepted[
 #diff[#term(terms.agentic_engineering, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false)][#term(terms.agentic_engineering, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false) @darkfactory @anthropic2024tooluse]
 ]
   ],
+  theory_body: none,
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,

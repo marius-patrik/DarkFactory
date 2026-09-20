@@ -16,7 +16,7 @@
   term: terminology,
   heading: terms => [#finalized[Language Models, Chatbots, and Agents (Jazykové modely, chatboti a agenti)]],
   theory_enabled: true,
-  theory_body: terms => [
+  theory_intro: terms => [
 #blue-note[
 Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je agentické inženýrství (_agentic engineering_) a architektura agent harnessu pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
@@ -30,6 +30,7 @@ Základní principy fungování modelu zahrnují:
 
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
+  theory_body: none,
   ],
   practical_enabled: false,
 )
