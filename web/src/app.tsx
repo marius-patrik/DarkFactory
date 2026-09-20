@@ -1989,5 +1989,5 @@ export function ViewerApp() {
         </div>
       </footer>
     </div>
-  );;
+  );
 }
