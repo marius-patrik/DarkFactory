@@ -21,7 +21,7 @@ export interface DocsNoneAnnotation {
 
 /** One deterministic docs-impact policy violation. */
 export interface DocumentationImpactFinding {
-	code: "diff-unavailable" | "docs-required" | "docs-none-missing" | "docs-none-invalid" | "docs-none-not-permitted";
+	code: "docs-required" | "docs-none-missing" | "docs-none-invalid" | "docs-none-not-permitted";
 	message: string;
 }
 
