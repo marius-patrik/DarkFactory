@@ -50,8 +50,8 @@ DarkFactory is a root Bun workspace.
 The final first-party package boundaries are:
 
 - `@darkfactory/protocol` — browser/runtime-safe schemas, serialized state/event contracts and shared types;
-- `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms, config resolution and capability loader;
-- `@darkfactory/capability` — capability ABI, loader and deterministic adapter/build tooling;
+- `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms and config resolution;
+- `@darkfactory/capability` — capability ABI, discovery/loader/resolution and deterministic adapter/build tooling;
 - `@darkfactory/github` — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;
 - `@darkfactory/keychain` — machine/harness credential custody and authentication;
 - `@darkfactory/auth` — human/browser GitHub App authentication and sessions;
