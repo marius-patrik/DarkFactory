@@ -88,7 +88,7 @@
     let after = if mode == "theory" { item.theory_after } else { item.practical_after }
     let wrapper = if mode == "theory" { item.theory_wrapper } else { item.practical_wrapper }
 
-    let core = [#heading(level: level)[#item.heading(terms)]]
+    let core = [#heading(level: level)[#(item.heading)(terms)]]
     if intro != none { core += intro(terms) }
     if body != none { core += body(terms) }
     if summary != none { core += summary(terms) }
@@ -129,10 +129,10 @@
   ]
 
   for section in sections {
-    output += [#heading(level: 2)[#section.heading(terms)]]
+    output += [#heading(level: 2)[#(section.heading)(terms)]]
     if section.theory_prelude != none { output += section.theory_prelude(terms) }
     if section.theory_intro_heading != none {
-      output += [#heading(level: 3)[#section.theory_intro_heading(terms)]]
+      output += [#heading(level: 3)[#(section.theory_intro_heading)(terms)]]
     }
     if section.theory_intro != none { output += section.theory_intro(terms) }
 
@@ -159,9 +159,9 @@
       if section.practical_prelude != none { output += section.practical_prelude(terms) }
 
       if section.practical_grouped {
-        output += [#heading(level: 2)[#section.heading(terms)]]
+        output += [#heading(level: 2)[#(section.heading)(terms)]]
         if section.practical_intro_heading != none {
-          output += [#heading(level: 3)[#section.practical_intro_heading(terms)]]
+          output += [#heading(level: 3)[#(section.practical_intro_heading)(terms)]]
         }
         if section.practical_intro != none { output += section.practical_intro(terms) }
         for item in active {
