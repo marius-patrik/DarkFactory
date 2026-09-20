@@ -11,11 +11,16 @@
 #let item = concept(
   key: "agent_session",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Správa agentního sezení zahrnuje sestavení systémového promptu, načtení relevantního kontextu repozitáře, průběžné uchování stavu a sledování rozpočtů, například spotřeby tokenů nebo počtu iterací.
 ]
   ],
-  relations: ((type: "dependency", target: "agent_loop"), (type: "related", target: "context_engineering"))
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "agent_loop"), (type: "related", target: "context_engineering")),
 )
