@@ -1,6 +1,8 @@
 // Shared manuscript semantics, independent of any concrete document template.
 // Concrete templates consume this state/API; manuscript files import it through registry.typ.
 
+#import "../bib/references.typ": bib
+
 #let body-paragraph(body) = block(breakable: true, body)
 #let bullet-list(..items) = list(..items)
 #let numbered-list(..items) = enum(..items)
@@ -287,6 +289,8 @@
   id: none,
   explanation_en: none,
   explanation_cs: none,
+  citation: none,
+  source: none,
   keyword: true,
   default-name-type: "proper",
   keyword-name-type: none,
@@ -308,10 +312,31 @@
     industry: industry,
     explanation_en: explanation_en,
     explanation_cs: explanation_cs,
+    citation: citation,
+    source: source,
     keyword: keyword,
     default_name_type: default-name-type,
     keyword_name_type: resolved-keyword-type,
   )
+}
+
+#let resolve-citation-label(c) = {
+  if c == none { none }
+  else if type(c) == label { c }
+  else if type(c) == str { label(c) }
+  else if type(c) == dictionary and "citation" in c { resolve-citation-label(c.citation) }
+  else if type(c) == dictionary and "label" in c { resolve-citation-label(c.label) }
+  else { none }
+}
+
+#let term-source(value) = {
+  assert(value.kind == "term", message: "term-source() expects a value created by define-term()")
+  value.source
+}
+
+#let term-citation(value) = {
+  assert(value.kind == "term", message: "term-citation() expects a value created by define-term()")
+  value.citation
 }
 
 #let term-language(language, profile) = {
@@ -468,6 +493,7 @@
   marker: false,
   emphasized: true,
   separator: [ — ],
+  cite: false,
 ) = context {
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
@@ -494,6 +520,20 @@
     order: name-order,
   )
   let displayed-name = if emphasized { [_*#name*_] } else { name }
+  let displayed-name = if cite and value.citation != none {
+    let render-c(c) = {
+      let lbl = resolve-citation-label(c)
+      if lbl != none { cite(lbl) } else { none }
+    }
+    let cites = if type(value.citation) == array {
+      value.citation.map(render-c).filter(x => x != none).join()
+    } else {
+      render-c(value.citation)
+    }
+    if cites != none { [#displayed-name~#cites] } else { displayed-name }
+  } else {
+    displayed-name
+  }
   // The standalone terminology index was removed. Keep the `linked` argument
   // for source compatibility, but canonical term uses now render in place.
   let referenced-name = displayed-name

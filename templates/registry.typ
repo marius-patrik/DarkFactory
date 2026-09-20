@@ -61,5 +61,8 @@
 #let render-term = common.render-term
 #let kw = common.kw
 #let terms = vocabulary
+#let bib = common.bib
+#let term-source = common.term-source
+#let term-citation = common.term-citation
 
 #let render-keywords = common.render-keywords
