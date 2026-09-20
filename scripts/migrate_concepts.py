@@ -130,8 +130,8 @@ def migrate_concept_file(path: Path) -> bool:
 
     text = text[:start] + text[end:]
     text = clean_imports(text)
-    text = text.replace("  term: terminology,\n", field_text, 1)
-    if "term: terminology" in text:
+    text, replaced = re.subn(r"\\bterm:\\s*terminology,\\s*", field_text, text, count=1)
+    if replaced != 1 or "term: terminology" in text:
         raise ValueError(f"{path}: failed to replace terminology reference")
 
     text = re.sub(r"\s*render:\s*\"term\"\s*,", "", text)
