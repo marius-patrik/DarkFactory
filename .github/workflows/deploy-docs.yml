@@ -21,7 +21,7 @@ on:
 
 # Published to the `gh-pages` branch rather than through the Pages build action, so that per-pull-
 # request previews can live under `pr-<N>/` on the same site. GitHub Pages has one source, so the
-# two cannot use different mechanisms. `.darkfactory/manifest.json` declares the same source, and
+# two cannot use different mechanisms. `.darkfactory/repo.df` declares the same source, and
 # `tests/test_pipeline_config.py` fails if the two disagree - the first deploy 404s otherwise.
 permissions:
   contents: write
@@ -133,7 +133,7 @@ jobs:
       - name: Build documentation
         # The command comes from this repository's declared environment rather than being fixed
         # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
-        # properdocs migration fail with `mkdocs: command not found`.
+        # previous renderer switch fail because the configured executable was unavailable.
         env:
           DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
         run: |
