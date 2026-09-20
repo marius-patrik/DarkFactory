@@ -1,3 +1,6 @@
+/** @packageDocumentation
+ * Browser/runtime-safe serialized contracts shared across DarkFactory packages and capabilities.
+ */
 export * from "./model.ts";
 export * from "./workflow.ts";
 export * from "./planning.ts";
