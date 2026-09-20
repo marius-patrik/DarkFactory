@@ -14,7 +14,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by final `repo.df`, not a legacy manifest path.
+Repository area labels/scopes are declared by `repo.df`.
 
 Project classification separates:
 
