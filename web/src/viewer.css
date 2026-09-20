@@ -83,6 +83,7 @@ body {
 
 button,
 input,
+select,
 a {
   font: inherit;
 }
@@ -105,10 +106,10 @@ a {
 .menubar-button {
   height: 20px;
   min-height: 20px;
-  padding: 0 7px;
+  padding: var(--ui-pad);
   border-radius: 3px;
   color: var(--muted);
-  font-size: .68rem;
+  font-size: var(--ui-font-size);
   font-weight: 500;
 }
 
@@ -206,7 +207,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 7px;
-  padding: 0 6px;
+  padding: var(--ui-pad);
 }
 
 .toolbar-left,
@@ -274,7 +275,7 @@ a {
   height: 34px;
   justify-content: flex-start;
   gap: 6px;
-  padding-inline: 8px;
+  padding-inline: var(--ui-pad);
 }
 
 .version-title {
@@ -309,12 +310,12 @@ a {
 }
 
 .version-option strong {
-  font-size: .84rem;
+  font-size: var(--ui-font-size);
 }
 
 .version-option small {
   color: var(--muted);
-  font-size: .7rem;
+  font-size: var(--ui-font-size);
 }
 
 .version-fallback {
@@ -323,7 +324,7 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: .82rem;
+  font-size: var(--ui-font-size);
 }
 
 .renderer-trigger-wrap {
@@ -334,10 +335,10 @@ a {
   height: 22px;
   min-height: 22px;
   gap: 4px;
-  padding: 0 5px;
+  padding: var(--ui-pad);
   border-radius: 3px;
   color: var(--muted);
-  font-size: .66rem;
+  font-size: var(--ui-font-size);
   font-weight: 650;
 }
 
@@ -373,10 +374,10 @@ a {
 .format-select {
   height: 24px;
   gap: 4px;
-  padding: 0 4px 0 5px;
+  padding: var(--ui-pad);
   border-radius: 4px;
   color: var(--muted);
-  font-size: .7rem;
+  font-size: var(--ui-font-size);
   font-weight: 600;
 }
 
@@ -425,10 +426,10 @@ a {
   height: 26px;
   justify-content: flex-start;
   gap: 4px;
-  padding: 0 4px 0 5px;
+  padding: var(--ui-pad);
   border-radius: 5px;
   color: var(--muted);
-  font-size: .72rem;
+  font-size: var(--ui-font-size);
   font-weight: 600;
 }
 
@@ -490,9 +491,9 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 2px;
+  padding: var(--ui-pad);
   color: var(--muted);
-  font-size: .72rem;
+  font-size: var(--ui-font-size);
   white-space: nowrap;
 }
 
@@ -579,10 +580,10 @@ a {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 10px;
+  padding: var(--ui-pad);
   border-bottom: 1px solid var(--toolbar-border);
   color: var(--muted);
-  font-size: .72rem;
+  font-size: var(--ui-font-size);
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -592,8 +593,8 @@ a {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 7px 5px 24px;
-  font-size: .75rem;
+  padding: var(--ui-pad);
+  font-size: var(--ui-font-size);
   user-select: none;
 }
 
@@ -607,7 +608,7 @@ a {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 7px;
+  padding: var(--ui-pad);
   border-radius: 4px;
   color: var(--muted);
   text-decoration: none;
@@ -629,7 +630,7 @@ a {
 }
 
 .repo-tree-directory > .repo-tree-level {
-  padding-left: 13px;
+  margin-left: calc(var(--ui-pad) * 3);
 }
 
 .repo-tree-file {
@@ -654,7 +655,7 @@ a {
 
 .repo-files-loading,
 .repo-files-error {
-  padding: 10px;
+  padding: var(--ui-pad);
   color: var(--muted);
   line-height: 1.45;
   white-space: normal;
@@ -677,10 +678,10 @@ a {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px;
+  padding: var(--ui-pad);
   border-bottom: 1px solid var(--toolbar-border);
   color: var(--muted);
-  font-size: .68rem;
+  font-size: var(--ui-font-size);
   font-weight: 700;
   letter-spacing: .035em;
   text-transform: uppercase;
@@ -713,14 +714,14 @@ a {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 4px 6px 24px;
+  padding: var(--ui-pad);
 }
 
 .structure-page-group {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 2px 0 6px;
+  padding: var(--ui-pad);
 }
 
 .contents-item {
@@ -730,7 +731,7 @@ a {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding: 3px 7px;
+  padding: var(--ui-pad);
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -760,7 +761,7 @@ a {
 
 .contents-item small {
   color: var(--muted);
-  font-size: .66rem;
+  font-size: var(--ui-font-size);
   font-variant-numeric: tabular-nums;
 }
 
@@ -769,7 +770,7 @@ a {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 3px 8px;
+  padding: var(--ui-pad);
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -808,9 +809,9 @@ a {
 }
 
 .activity-panel-empty {
-  padding: 10px;
+  padding: var(--ui-pad);
   color: var(--muted);
-  font-size: .75rem;
+  font-size: var(--ui-font-size);
 }
 
 .navigation-pages-body {
@@ -820,7 +821,7 @@ a {
 }
 .thumbnail-list {
   width: 100%;
-  padding: 6px 8px 24px;
+  padding: var(--ui-pad);
 }
 
 .thumb {
@@ -829,7 +830,7 @@ a {
   grid-template-columns: 24px 1fr;
   align-items: start;
   gap: 5px;
-  padding: 7px 5px;
+  padding: var(--ui-pad);
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
@@ -848,8 +849,8 @@ a {
 }
 
 .thumb-number {
-  padding-top: 4px;
-  font-size: .72rem;
+  padding-top: var(--ui-pad);
+  font-size: var(--ui-font-size);
   text-align: right;
 }
 
@@ -867,7 +868,7 @@ a {
 }
 
 .sidebar-minimap {
-  padding: 7px 10px 18px;
+  padding: var(--ui-pad);
 }
 
 .minimap-track {
@@ -884,7 +885,7 @@ a {
   border-radius: 3px;
   background: color-mix(in srgb, var(--surface) 88%, white 12%);
   color: var(--muted);
-  font-size: .58rem;
+  font-size: var(--ui-font-size);
   cursor: pointer;
   opacity: .72;
   transition: opacity .12s ease, border-color .12s ease, box-shadow .12s ease;
@@ -918,7 +919,7 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  padding: 26px 30px 60px;
+  padding: var(--ui-pad);
 }
 
 .page-shell {
@@ -1003,7 +1004,7 @@ a {
   display: grid;
   place-items: center;
   color: #888;
-  font-size: .8rem;
+  font-size: var(--ui-font-size);
   pointer-events: none;
 }
 
@@ -1015,7 +1016,7 @@ a {
   place-items: center;
   align-content: center;
   gap: 8px;
-  padding: 28px;
+  padding: var(--ui-pad);
   text-align: center;
   color: var(--muted);
 }
@@ -1039,7 +1040,7 @@ a {
 }
 
 .embedded-viewer .pages {
-  padding-top: 18px;
+  padding-top: var(--ui-pad);
 }
 
 .compiled-artifact,
@@ -1092,7 +1093,7 @@ a {
   min-height: 100%;
   display: flex;
   justify-content: center;
-  padding: 26px 30px 60px;
+  padding: var(--ui-pad);
 }
 
 .markdown-artifact {
@@ -1103,7 +1104,7 @@ a {
   width: min(1100px, 100%);
   min-height: max-content;
   margin: 0;
-  padding: 28px 30px;
+  padding: var(--ui-pad);
   border: 1px solid var(--toolbar-border);
   border-radius: 10px;
   background: var(--surface);
@@ -1117,7 +1118,7 @@ a {
 
 .artifact-status {
   color: var(--muted);
-  font-size: .77rem;
+  font-size: var(--ui-font-size);
   font-weight: 600;
 }
 
@@ -1157,11 +1158,11 @@ a {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 4px;
-  padding: 0 4px;
+  padding: var(--ui-pad);
   background: var(--toolbar);
   border-top: 1px solid var(--toolbar-border);
   z-index: 35;
-  font-size: .7rem;
+  font-size: var(--ui-font-size);
 }
 
 .status-left,
@@ -1212,14 +1213,14 @@ a {
   height: 22px;
   min-height: 22px;
   gap: 3px;
-  padding: 0 4px;
+  padding: var(--ui-pad);
   border-radius: 3px;
-  font-size: .66rem;
+  font-size: var(--ui-font-size);
 }
 
 .status-short-id {
   min-width: 0;
-  font-size: .62rem;
+  font-size: var(--ui-font-size);
   font-weight: 750;
   line-height: 1;
   white-space: nowrap;
@@ -1239,7 +1240,7 @@ a {
 
 .statusbar .version-fallback {
   max-width: min(28vw, 260px);
-  font-size: .68rem;
+  font-size: var(--ui-font-size);
 }
 
 
@@ -1248,16 +1249,16 @@ a {
 .zoom-value {
   min-width: 42px;
   height: 20px;
-  padding-inline: 4px;
+  padding-inline: var(--ui-pad);
   border-radius: 3px;
   color: var(--muted);
-  font-size: .68rem;
+  font-size: var(--ui-font-size);
 }
 
 .landing {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 52px 0 42px;
+  padding: var(--ui-pad);
 }
 
 .landing-header {
@@ -1268,7 +1269,7 @@ a {
 .landing-header .eyebrow {
   margin: 0 0 6px;
   color: var(--accent-strong);
-  font-size: .74rem;
+  font-size: var(--ui-font-size);
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -1276,7 +1277,7 @@ a {
 
 .landing-header h1 {
   margin: 0 0 12px;
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-size: var(--ui-font-size);
   line-height: 1.02;
   letter-spacing: -.035em;
 }
@@ -1296,16 +1297,16 @@ a {
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
-  font-size: 1rem;
+  font-size: var(--ui-font-size);
 }
 
 .template-section > h2 span,
 .badge {
   border: 1px solid var(--toolbar-border);
   border-radius: 999px;
-  padding: 3px 7px;
+  padding: var(--ui-pad);
   color: var(--muted);
-  font-size: .68rem;
+  font-size: var(--ui-font-size);
   font-weight: 600;
 }
 
@@ -1321,7 +1322,7 @@ a {
   flex-direction: column;
   border: 1px solid var(--toolbar-border);
   border-radius: 14px;
-  padding: 18px;
+  padding: var(--ui-pad);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   box-shadow: 0 8px 30px rgba(0, 0, 0, .08);
 }
@@ -1335,14 +1336,14 @@ a {
 
 .publication-card h3 {
   margin: 0;
-  font-size: 1.02rem;
+  font-size: var(--ui-font-size);
 }
 
 .publication-card p {
   flex: 1 1 auto;
   margin: 11px 0 18px;
   color: var(--muted);
-  font-size: .88rem;
+  font-size: var(--ui-font-size);
   line-height: 1.48;
 }
 
@@ -1355,7 +1356,7 @@ a {
 .landing-footer {
   margin-top: 38px;
   color: var(--muted);
-  font-size: .78rem;
+  font-size: var(--ui-font-size);
 }
 
 @media (max-width: 900px) {
@@ -1370,7 +1371,7 @@ a {
 
 @media (max-width: 760px) {
   .toolbar-main {
-    padding-inline: 4px;
+    padding-inline: var(--ui-pad);
   }
 
   .work-title {
@@ -1402,7 +1403,7 @@ a {
   }
 
   .path-page-control {
-    font-size: .72rem;
+    font-size: var(--ui-font-size);
   }
 
   .path-page-control input {
@@ -1464,7 +1465,7 @@ a {
 
   .pages {
     gap: 12px;
-    padding: 16px 10px 42px;
+    padding: var(--ui-pad);
   }
 
   .split-column {
@@ -1472,12 +1473,12 @@ a {
   }
 
   .split-label {
-    font-size: .61rem;
+    font-size: var(--ui-font-size);
   }
 
   .statusbar {
     grid-template-columns: minmax(0, 1fr) auto auto;
-    padding-inline: 2px;
+    padding-inline: var(--ui-pad);
   }
 
   .status-left {
@@ -1504,12 +1505,12 @@ a {
 
   .zoom-value {
     min-width: 38px;
-    padding-inline: 2px;
+    padding-inline: var(--ui-pad);
   }
 
   .landing {
     width: min(100% - 22px, 1120px);
-    padding-top: 32px;
+    padding-top: var(--ui-pad);
   }
 }
 
@@ -1518,7 +1519,7 @@ a {
   overflow: hidden;
   color: var(--muted);
   font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: .62rem;
+  font-size: var(--ui-font-size);
   text-overflow: ellipsis;
   white-space: nowrap;
   user-select: text;
@@ -1554,7 +1555,7 @@ a {
   min-height: 0;
   height: 100%;
   gap: var(--ui-pad);
-  padding: 0 var(--ui-pad);
+  padding: var(--ui-pad);
 }
 
 .app-header,
@@ -1573,7 +1574,7 @@ a {
 .repo-files-panel :where(button, input, select, small, strong),
 .statusbar :where(button, input, select, small, strong),
 .settings-view :where(button, input, select, small, strong) {
-  font-size: inherit;
+  font-size: var(--ui-font-size);
 }
 
 .ui-secondary,
@@ -1584,7 +1585,7 @@ a {
 .statusbar small,
 .settings-view small {
   color: var(--muted);
-  font-size: inherit;
+  font-size: var(--ui-font-size);
   font-weight: 400;
 }
 
@@ -1660,7 +1661,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: var(--ui-pad);
-  padding: 0 var(--ui-pad);
+  padding: var(--ui-pad);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -1708,7 +1709,7 @@ a {
   width: 100%;
   height: 100%;
   overflow: auto;
-  padding: calc(var(--ui-pad) * 4);
+  padding: var(--ui-pad);
   background: var(--bg);
 }
 
@@ -1716,7 +1717,7 @@ a {
   display: flex;
   align-items: center;
   gap: var(--ui-pad);
-  margin-bottom: calc(var(--ui-pad) * 4);
+  margin-bottom: var(--ui-pad);
   font-weight: 650;
 }
 
@@ -1731,8 +1732,8 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, auto);
   align-items: center;
-  gap: calc(var(--ui-pad) * 2);
-  padding: calc(var(--ui-pad) * 2);
+  gap: var(--ui-pad);
+  padding: var(--ui-pad);
   border: 1px solid var(--toolbar-border);
   border-radius: 4px;
   background: var(--surface);
@@ -1740,7 +1741,7 @@ a {
 
 .settings-grid select {
   min-height: 26px;
-  padding: 0 var(--ui-pad);
+  padding: var(--ui-pad);
   border: 1px solid var(--toolbar-border);
   border-radius: 3px;
   background: var(--toolbar);
