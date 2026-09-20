@@ -529,6 +529,9 @@ PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\
 REF_INPUT_PATTERN = re.compile(
     r'(?P<prefix>pipeline-ref:\s*)(?P<quote>"?)(?P<ref>[^"\s]*)(?P=quote)'
 )
+DIRECT_CI_REF_PATTERN = re.compile(
+    r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE
+)
 
 
 def retarget(root: str, ref: str) -> List[str]:
@@ -566,7 +569,12 @@ def retarget(root: str, ref: str) -> List[str]:
         with open(path, encoding="utf-8") as handle:
             content = handle.read()
 
-        updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
+        if name == "ci.yml" and "Check out pinned DarkFactory runtime" in content:
+            updated = DIRECT_CI_REF_PATTERN.sub(
+                lambda m: f'{m.group("prefix")}{ref}{m.group("suffix")}', content
+            )
+        else:
+            updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
         updated = REF_INPUT_PATTERN.sub(
             lambda m: f'{m.group("prefix")}{m.group("quote")}{ref}{m.group("quote")}', updated
         )
