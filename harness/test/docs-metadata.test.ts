@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { CapabilityDefinition } from "@darkfactory/capability";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { documentationMetadata } from "../../packages/docs/src/api.ts";
-import { includeCapabilityDocumentation, type DocsContentGraph } from "../../packages/docs/src/content.ts";
+import { type DocsContentGraph, includeCapabilityDocumentation } from "../../packages/docs/src/content.ts";
 
 describe("detected documentation metadata", () => {
 	test("projects repository and capability evidence without a second detector", () => {
@@ -108,10 +108,7 @@ describe("detected documentation metadata", () => {
 				},
 			];
 			const result = includeCapabilityDocumentation(root, graph, capabilities);
-			expect(result.pages.map((page) => page.id)).toEqual([
-				"home",
-				"capability-code-capabilities-code-readme",
-			]);
+			expect(result.pages.map((page) => page.id)).toEqual(["home", "capability-code-capabilities-code-readme"]);
 			expect(result.pages[1]?.kind).toBe("capability");
 			expect(result.pages[1]?.title).toBe("Code capability");
 		} finally {
