@@ -542,5 +542,9 @@ class TestACallerMustPassItsSecrets:
     def test_every_generated_caller_already_passes(self):
         """The repair exists for callers written before this mattered, not for new ones."""
         for path, content in install.plan("o", "r", "abc", root=".").items():
-            if path.endswith(".yml"):
-                assert "secrets: inherit" in content, path
+            if not path.endswith(".yml"):
+                continue
+            if path.endswith(("ci.yml", "verify-pr-issue.yml")):
+                assert "secrets: inherit" not in content, path
+                continue
+            assert "secrets: inherit" in content, path
