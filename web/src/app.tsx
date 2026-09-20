@@ -63,8 +63,7 @@ import { SettingsView } from "./settings-view";
 import { AppTabBar, type AppTab } from "./viewer-tabs";
 import { TooltipAction } from "./viewer-ui";
 
-const DEFAULT_WORK_TITLE =
-  "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství";
+const DEFAULT_WORK_TITLE = "DarkFactory";
 
 type ArtifactSet = {
   pdf: string;
