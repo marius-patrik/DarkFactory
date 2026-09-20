@@ -78,14 +78,15 @@ Still to converge:
 
 The final product still requires first-party docs, one shared web application, GitHub-backed control-plane behavior, and strict browser-auth versus machine-keychain separation.
 
-### Production state
+### Rebuild state
 
-The system is still pre-cutover:
+The repository still contains legacy Python orchestration, but it is no longer a compatibility target.
 
-- Python remains part of normal production orchestration;
-- production GitHub mutation is not yet fully df-owned;
-- df-dispatch is not yet the sole production mutating path;
-- #359 therefore remains the primary program milestone.
+- final behavior is implemented directly in the TypeScript/package/capability system;
+- legacy Python is behavioral/recovery evidence and deletion-bound code;
+- do not spend work keeping both engines operational;
+- when a final TypeScript owner exists, retire the legacy owner instead of updating both;
+- #359 remains the primary core milestone because it proves the rebuilt production engine is complete enough to own the lifecycle and removes the remaining legacy production path.
 
 ---
 
@@ -121,20 +122,22 @@ For each recovery lane:
 
 Do not regenerate valid recovered work from scratch.
 
-### 3.4 Bootstrap-authoring exception
+### 3.4 Direct rebuild rule
 
-Until #359 closes, direct authoring is permitted only when the current pipeline defect prevents the pipeline from correctly repairing the bootstrap/architecture needed for self-hosting.
+Until the rebuilt df pipeline is complete, implementation may be authored directly when that is the fastest safe path to the final architecture.
 
-It never waives:
+This is not a compatibility exception: there is no requirement to keep the legacy Python engine operational while rebuilding.
+
+Direct authorship never waives:
 
 - Request coverage;
 - finalized Planning;
-- tests;
+- tests of the final implementation;
 - review/alignment;
 - PR/check/merge gates;
 - recovery provenance.
 
-The exception expires permanently at #359.
+Once df can reliably own its own development lifecycle, use it for the remaining work.
 
 ### 3.5 CI concurrency rule
 
@@ -210,7 +213,7 @@ This is a **merge/cutover path**, not a rule that all development must happen se
 
 The following should proceed in parallel where interfaces allow:
 
-- finish #340 hard-transition convergence and merged-tree proof;
+- finish #340 **in the final TypeScript/runtime/docs implementation only**; do not modernize legacy Python readers/writers;
 - #391 lifecycle completion on the settled runtime budget and final persistence naming;
 - #422 keychain recovery/migration;
 - #331 F40 reconciliation;
@@ -219,29 +222,33 @@ The following should proceed in parallel where interfaces allow:
 - all remaining recovery analysis/reconciliation;
 - #423 auth;
 - #424 docs engine;
-- #425 web shell.
+- #425 web shell;
+- direct deletion/replacement of legacy Python responsibilities as soon as their final owners exist.
 
 Merge only when each lane's actual interfaces are stable.
 
 ### Important merge constraints
 
-- #340 must close the hard transition without retaining legacy manifest/config/state aliases or migration readers.
+- #340 must close the hard transition in the final implementation without compatibility readers or migration layers. Legacy Python does not need to understand the new contract if it is being retired.
 - #391 consumes the completed #406 runtime budget and final #340 persistence contracts.
 - #422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth may continue later.
 - #331/#329 recovery work may be prepared before their final merge dependencies land.
 - #341 must consume the landed package/capability model rather than creating a new central hard-coded action table.
 - #358 must use the final #391 lifecycle and the final #329/#331 runtime behavior.
 - #317 completes the truthful branch-repair/mutation-observation path required by #359.
+- At every step, prefer replacing/deleting a Python owner over making it compatible with the rebuilt TypeScript owner.
 
 ---
 
-## 6. #359 cutover boundary
+## 6. #359 rebuilt-engine completion boundary
 
-#359 is intentionally an **early self-hosting cutover**, not the final product-completion gate.
+#359 is intentionally an **early self-hosting/rebuild-completion gate**, not the final product-completion gate.
 
-It does **not** wait for #332, #384, #385, #386, #388 full, TUI, docs/web completion or final release polish unless current implementation proves one of them is actually required for the core Request lifecycle.
+There is no required dual-engine transition period. Legacy Python may be deleted as its final TypeScript replacements land.
 
-Immediately before cutover, derive a fresh mutation ledger covering at least:
+#359 does **not** wait for #332, #384, #385, #386, #388 full, TUI, docs/web completion or final release polish unless current implementation proves one of them is actually required for the core Request lifecycle.
+
+Before #359 closes, use a mutation-responsibility ledger as a completeness checklist covering at least:
 
 - Request intake/comments;
 - Planning/review/gates;
@@ -259,17 +266,15 @@ Immediately before cutover, derive a fresh mutation ledger covering at least:
 Close #359 only when all are true:
 
 1. df is the sole mutating production dispatcher for the core lifecycle.
-2. Production graph handlers are real, not shadow-only.
-3. The live lifecycle uses #391 unified Planning.
+2. Production graph handlers are real.
+3. The lifecycle uses #391 unified Planning.
 4. A real df-only Request lifecycle succeeds end to end.
 5. Persisted interruption/resume succeeds.
-6. Normal production no longer requires Python orchestration.
+6. Legacy Python orchestration is deleted or unreachable from normal production.
 7. Normal production no longer requires shell/subprocess GitHub mutation.
+8. No responsibility exists only in the retired Python engine.
 
-At #359:
-
-- the bootstrap-authoring exception expires;
-- remaining completion work must run through the real df-native system.
+After #359, use the real df-native system for remaining work wherever it is the efficient path.
 
 ---
 
@@ -411,7 +416,7 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 
 | Request | Start now? | Merge / completion gate |
 |---|---|---|
-| #340 | yes | hard-transition search/tests green on merged `darkfactory` |
+| #340 | yes | final TypeScript/runtime/docs implementation obeys hard transition; no requirement to update deletion-bound Python |
 | #391 | yes | #340 final persistence contract; completed #406 runtime budget |
 | #422 | yes | landed package/capability boundaries + F14 reconciliation; production subset before #359 |
 | #331 | yes | F40 reconciled into final router/core owner |
