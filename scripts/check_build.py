@@ -163,7 +163,8 @@ for required in (
     'text("(")',
     'text(")")',
     "marker: true,",
-    '#text("*")',
+    "super[#text(fill:",
+    "[*]]",
 ):
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
@@ -193,50 +194,48 @@ for stale_appendix in (
         fail(f"stale appendix content must not return: {stale_appendix}")
 
 chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
-if "term, kw, terms" not in chapter1_source.splitlines()[0]:
-    fail("chapter 1 must import canonical terms for the finalized Agent Harness reference")
+chapter4_source = Path("kapitoly/04-vysledky.typ").read_text(encoding="utf-8")
+chapter5_source = Path("kapitoly/05-zaver.typ").read_text(encoding="utf-8")
+for chapter_path, source, renderer in (
+    (Path("kapitoly/01-uvod.typ"), chapter1_source, "render-introduction"),
+    (Path("kapitoly/04-vysledky.typ"), chapter4_source, "render-results"),
+    (Path("kapitoly/05-zaver.typ"), chapter5_source, "render-conclusion"),
+):
+    if f'#import "../concepts/index.typ": {renderer}' not in source or f"#{renderer}()" not in source:
+        fail(f"{chapter_path} must be a compatibility projection of concepts/index.typ")
+    for forbidden in ("#finalized[", "#accepted[", "#unconfirmed[", "#blue-note[", "#critique[", "#alert["):
+        if forbidden in source:
+            fail(f"{chapter_path} must not own substantive manuscript content: {forbidden}")
+
+main_goal_source = Path("concepts/manuscript/introduction/objectives/main-goal/main-goal.typ").read_text(encoding="utf-8")
+for required in (
+    'key: "main_goal"',
+    'proper: translation(cs: "Hlavní cíl", en: "Main Goal")',
+    "definition: terms => [",
+    "Vymezit teoretické principy agentického inženýrství (_agentic engineering_)",
+    "softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.",
+):
+    if required not in main_goal_source:
+        fail(f"main goal concept missing approved contract: {required}")
+
+motivation_source = Path("concepts/manuscript/introduction/motivation/motivation.typ").read_text(encoding="utf-8")
 for removed_motivation in (
     "Doporučení k motivaci",
     "fyzickou temnou továrnou",
     "montážní linka",
     "Vizuální metafora výrazně zlepší srozumitelnost pro komisi",
 ):
-    if removed_motivation in chapter1_source:
+    if removed_motivation in motivation_source:
         fail(f"removed motivation-diagram recommendation must not return: {removed_motivation}")
-finalized_main_goal = (
-    "=== #finalized[Hlavní cíl]\n\n"
-    "#finalized[\n"
-    "Vymezit teoretické principy agentického inženýrství (_agentic engineering_) "
-    "a navrhnout modulární architekturu agent harnessu pro automatizovaný vývoj "
-    "softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.\n]"
-)
-if finalized_main_goal not in chapter1_source:
-    fail("main thesis goal must remain finalized exactly as approved")
-
-for required_heading in (
-    "=== #finalized[Hlavní cíl]",
-    "=== #finalized[Dílčí cíle]",
-    "=== #finalized[Výzkumné otázky]",
+for required in (
+    "Ústřední inženýrská otázka této práce proto nespočívá",
+    "#term(terms.harness, register: true, linked: true, marker: false)",
 ):
-    if required_heading not in chapter1_source:
-        fail(f"chapter 1 pseudo-section must remain a real numbered heading: {required_heading}")
+    if required not in motivation_source:
+        fail(f"motivation concept missing approved finalized framing: {required}")
 
-finalized_agent_harness = (
-    "#finalized[\n"
-    "Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model "
-    "dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — "
-    "značovaná jako #term(terms.harness, register: true, linked: true, marker: false) — "
-    "musí model obklopovat, aby bylo možné jeho "
-    "výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry "
-    "autonomie se zachováním lidského dohledu.\n]"
-)
-if finalized_agent_harness not in chapter1_source:
-    fail("agent harness definition sentence must remain finalized with the approved wording")
-if "označovaná jako *řídicí harness*" in chapter1_source:
-    fail("legacy řídicí harness wording must not return")
 for manuscript_path in (
-    Path("kapitoly/01-uvod.typ"),
-    Path("kapitoly/05-zaver.typ"),
+    *sorted(Path("concepts/manuscript").rglob("*.typ")),
     *sorted(Path("concepts").rglob("*.typ")),
 ):
     manuscript_source = manuscript_path.read_text(encoding="utf-8")
@@ -251,6 +250,9 @@ section_dirs = (
     concept_root / "development-environment",
     concept_root / "language-models",
     concept_root / "agentic-engineering",
+    concept_root / "manuscript" / "introduction",
+    concept_root / "manuscript" / "results",
+    concept_root / "manuscript" / "conclusion",
 )
 for required in (concept_schema, concept_catalog, *(section / "index.typ" for section in section_dirs)):
     if not required.is_file() or required.stat().st_size == 0:
@@ -262,11 +264,17 @@ for required in (
     "#let folder(",
     "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
+    "#let render-document-chapter(node, terms)",
     "#let render-theory-chapter(folders, terms)",
     "#let render-practical-chapter(folders, terms)",
     "#let render-section-title(item)",
-    "#let render-section-definition(item)",
+    "#let render-section-definition(item, terms)",
     "render-section-title(node.section)",
+    "definition:",
+    "document_enabled:",
+    "document_intro:",
+    "document_body:",
+    "document_summary:",
     "theory_intro:",
     "theory_body:",
     "theory_summary:",
@@ -287,13 +295,19 @@ for forbidden in (
 
 catalog_source = concept_catalog.read_text(encoding="utf-8")
 for required in (
+    '"manuscript/introduction/index.typ"',
+    '"manuscript/results/index.typ"',
+    '"manuscript/conclusion/index.typ"',
     '"development-environment/index.typ"',
     '"language-models/index.typ"',
     '"agentic-engineering/index.typ"',
     "#let folders = (",
     "#let vocabulary = build-vocabulary(folders)",
+    "#let render-introduction() = render-document-chapter(introduction.node, vocabulary)",
     "#let render-theory() = render-theory-chapter(folders, vocabulary)",
     "#let render-practical() = render-practical-chapter(folders, vocabulary)",
+    "#let render-results() = render-document-chapter(results.node, vocabulary)",
+    "#let render-conclusion() = render-document-chapter(conclusion.node, vocabulary)",
 ):
     if required not in catalog_source:
         fail(f"concept catalog missing folder-driven composition contract: {required}")
@@ -386,7 +400,7 @@ rendered_manuscript_text = "\n".join(
 unused_concepts = []
 for path in concept_paths:
     source = path.read_text(encoding="utf-8")
-    if "theory_enabled: true" in source or "practical_enabled: true" in source:
+    if "theory_enabled: true" in source or "practical_enabled: true" in source or "document_enabled: true" in source:
         continue
     match = re.search(r'key:\s*"([^"]+)"', source)
     if match is None:
@@ -456,6 +470,10 @@ if '#import "../concepts/index.typ": render-practical' not in chapter3_source or
     fail("chapter 3 must be a compatibility projection of the concept catalog")
 if "Agentické AI: Vymezení konceptů - Teoretická část" in chapter2_source or "DarkFactory: Architektura harnessu - Praktická část" in chapter3_source:
     fail("chapter 2/3 content must not be duplicated outside concepts/")
+if "Agentic AI (Agentické AI)" not in schema_source:
+    fail("theory chapter title must be finalized as Agentic AI (Agentické AI)")
+if "Agentické AI: Vymezení konceptů - Teoretická část" in schema_source:
+    fail("legacy theory chapter title must not return")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for required in (
@@ -557,10 +575,23 @@ for path in (
 thesis_source = Path("thesis.typ").read_text(encoding="utf-8")
 web_publication_source_for_concepts = Path("web-publication.typ").read_text(encoding="utf-8")
 for source_name, source in (("thesis.typ", thesis_source), ("web-publication.typ", web_publication_source_for_concepts)):
-    if '"concepts/index.typ"' not in source or "#render-theory()" not in source or "#render-practical()" not in source:
-        fail(f"{source_name} must render theory/practical chapters from concepts/index.typ")
-    if 'include "kapitoly/02-teoreticka-cast.typ"' in source or 'include "kapitoly/03-prakticka-cast.typ"' in source:
-        fail(f"{source_name} must not build chapter 2/3 from monolithic chapter files")
+    if '"concepts/index.typ"' not in source:
+        fail(f"{source_name} must import the canonical concept catalog")
+    for renderer in ("render-introduction", "render-theory", "render-practical", "render-results", "render-conclusion"):
+        if f"#{renderer}()" not in source:
+            fail(f"{source_name} must render {renderer} from concepts/index.typ")
+    for legacy_chapter in (
+        'include "kapitoly/01-uvod.typ"',
+        'include "kapitoly/02-teoreticka-cast.typ"',
+        'include "kapitoly/03-prakticka-cast.typ"',
+        'include "kapitoly/04-vysledky.typ"',
+        'include "kapitoly/05-zaver.typ"',
+    ):
+        if legacy_chapter in source:
+            fail(f"{source_name} must not build substantive chapters from kapitoly/: {legacy_chapter}")
+
+if "#show cite: it => super(it)" not in web_publication_source_for_concepts:
+    fail("web publication citation markers must render as superscripts")
 
 # Shared terminology must remain declarative and centralized.
 registry_source = Path("templates/registry.typ").read_text(encoding="utf-8")
@@ -1001,9 +1032,22 @@ for required in (
         fail(f"viewer OLED appearance contract missing: {required}")
 
 template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(encoding="utf-8")
-for required in ("#let cover-title(meta)", "DarkFactory:#linebreak()", "Umělá inteligence v praxi -#linebreak()", "Agentické a harnessové inženýrství"):
+for required in (
+    "#let cover-title(meta)",
+    "DarkFactory#linebreak()",
+    "Agentické a harnessové inženýrství:#linebreak()",
+    "Umělá inteligence v praxi",
+    "show cite: it => super(it)",
+):
     if required not in template_source:
-        fail(f"title page missing three-line title contract: {required}")
+        fail(f"title page/reference styling missing contract: {required}")
+title_lines = (
+    template_source.index("DarkFactory#linebreak()"),
+    template_source.index("Agentické a harnessové inženýrství:#linebreak()"),
+    template_source.index("Umělá inteligence v praxi"),
+)
+if not title_lines[0] < title_lines[1] < title_lines[2]:
+    fail("title page lines must be DarkFactory, Agentické a harnessové inženýrství:, Umělá inteligence v praxi")
 if '"KONCEPT"' in template_source:
     fail("review template must not add the KONCEPT page-background watermark")
 
