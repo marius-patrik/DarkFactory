@@ -3,6 +3,7 @@ import { loadCiConfig } from "./config.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import type { CiConfig } from "./schema.ts";
+import { resolveDetectedQuality } from "./detected.ts";
 
 export interface DoctorCheckResult {
 	status: "pass" | "warn" | "fail" | "skipped";
@@ -13,6 +14,7 @@ export interface DoctorCheckResult {
 export interface DoctorReport {
 	ok: boolean;
 	checks: {
+		repository: DoctorCheckResult;
 		config: DoctorCheckResult;
 		workflows: DoctorCheckResult;
 		protection: DoctorCheckResult;
@@ -24,6 +26,29 @@ export async function runCiDoctor(
 	repo?: GitHubRepository,
 	branch = "main",
 ): Promise<DoctorReport> {
+	// Repository detection / capability action coverage.
+	let repositoryResult: DoctorCheckResult;
+	try {
+		const detected = await resolveDetectedQuality(repoDir);
+		const gaps = detected.resolution.gaps;
+		repositoryResult = gaps.length === 0
+			? {
+				status: "pass",
+				message: `Detected ${detected.evidence.packages.length} package(s) with complete required quality/docs action coverage`,
+				details: { packages: detected.evidence.packages, matrix: detected.matrix },
+			}
+			: {
+				status: "warn",
+				message: `Detected ${detected.evidence.packages.length} package(s) with ${gaps.length} unsupported/missing required action(s)`,
+				details: { packages: detected.evidence.packages, gaps },
+			};
+	} catch (error) {
+		repositoryResult = {
+			status: "fail",
+			message: `Repository detection/action resolution failed: ${error instanceof Error ? error.message : String(error)}`,
+		};
+	}
+
 	// 1. Check config
 	let config: CiConfig | null = null;
 	let configResult: DoctorCheckResult;
@@ -127,11 +152,12 @@ export async function runCiDoctor(
 		}
 	}
 
-	const ok = configResult.status === "pass" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
+	const ok = repositoryResult.status !== "fail" && configResult.status === "pass" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
 
 	return {
 		ok,
 		checks: {
+			repository: repositoryResult,
 			config: configResult,
 			workflows: workflowsResult,
 			protection: protectionResult,
