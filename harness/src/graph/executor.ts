@@ -322,7 +322,14 @@ export async function runGraph(
 					result.outputs[reviewConfig.findings] = review.findings.length > 0 ? review.findings : null;
 					result.outputs[reviewConfig.clean] = review.clean;
 				} else {
-					state.reviews[reviewConfig.subject] = recordReviewFix(existingReview ?? (() => { throw new Error(`Missing ${reviewConfig.subject} review state`); })(), iteration, options.now?.());
+					state.reviews[reviewConfig.subject] = recordReviewFix(
+						existingReview ??
+							(() => {
+								throw new Error(`Missing ${reviewConfig.subject} review state`);
+							})(),
+						iteration,
+						options.now?.(),
+					);
 				}
 			}
 			state.outputs = { ...state.outputs, ...result.outputs };
