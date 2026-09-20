@@ -4,6 +4,18 @@ import type { RouterConfig, RouterInput, TaskKind, TaskNeed, TaskProfile, TaskSi
 
 export type CheapClassifier = (prompt: string, candidate: string) => Promise<TaskKind>;
 
+export function graphNodeRoutingHints(node: {
+	chain?: string[];
+	reasoning?: "hard";
+	min_tier?: string;
+}): NonNullable<RouterInput["node"]> {
+	return {
+		...(node.chain?.length ? { chain: node.chain.join(",") } : {}),
+		...(node.reasoning ? { reasoning: node.reasoning } : {}),
+		...(node.min_tier ? { minTier: node.min_tier } : {}),
+	};
+}
+
 const DIRECT_ARTIFACT_RULES: Array<[TaskKind, RegExp, string]> = [
 	[
 		"image",
