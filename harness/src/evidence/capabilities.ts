@@ -112,14 +112,13 @@ export async function resolveRepositoryActions(
 					// Check for overlap: warn if multiple capabilities try to override the same action
 					if (supported) {
 						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.name}`);
+					}
+					supported = true;
+					description = capAction.description ?? `Capability-contributed ${actionKey}`;
+					if (typeof capAction.command === "function") {
+						command = (capAction.command as (p: string) => string)(pkg.path);
 					} else {
-						supported = true;
-						description = capAction.description ?? `Capability-contributed ${actionKey}`;
-						if (typeof capAction.command === "function") {
-							command = (capAction.command as (p: string) => string)(pkg.path);
-						} else {
-							command = capAction.command;
-						}
+						command = capAction.command;
 					}
 				}
 			}
