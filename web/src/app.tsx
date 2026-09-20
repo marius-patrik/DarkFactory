@@ -1489,8 +1489,10 @@ export function ViewerApp() {
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
             sidebarHidden
+            sidebarWidth={sidebarWidth}
             onMoveSidebar={moveSidebar}
             onToggleSidebarMode={toggleSidebarMode}
+            onSidebarWidthChange={setSidebarWidth}
             onStateChange={handleDocumentState}
           />
         ) : (
