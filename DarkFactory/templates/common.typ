@@ -17,7 +17,7 @@
 #let profile-mode() = context profile-state.get()
 
 // Publikační profily:
-// - school: český text + hlavní anglické odborné termíny + bilingvní anotace/keywords
+// - school: český text a české section headings + canonical industry/proper terminology + bilingvní anotace/keywords
 // - cs: čistě česká projekce
 // - en: anglická projekce
 // - merged: plně bilingvní projekce
@@ -463,8 +463,8 @@
 
 // Jediný renderer všech použití termínu.
 // render: "term" | "explanation" | "both"
-// language nastavuje společný fallback; name-language/detail-language jej mohou
-// nezávisle přepsat. detail-style="inline" vkládá definici přímo do věty.
+// surface vybírá industry/proper/alias/full; language určuje lokalizaci názvu a
+// detail-language může nezávisle přepsat jazyk vysvětlení. detail-style="inline" vkládá definici přímo do věty.
 #let term(
   value,
   render: "term",
