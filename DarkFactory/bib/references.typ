@@ -30,13 +30,13 @@
 #let dabbish2012github = <dabbish2012github>
 #let microsoft2026aidiffusion = <microsoft2026aidiffusion>
 #let microsoft2025aiadoption = <microsoft2025aiadoption>
-#let openai_chatgpt_macos = <openai_chatgpt_macos>
-#let openai_codex_app = <openai_codex_app>
-#let anthropic_claude_code = <anthropic_claude_code>
-#let anthropic_claude_desktop = <anthropic_claude_desktop>
-#let openai_gpt56 = <openai_gpt56>
-#let anthropic_opus5 = <anthropic_opus5>
-#let deepseek_v41_flash = <deepseek_v41_flash>
+#let openai_chatgpt_macos = <openai-chatgpt-macos>
+#let openai_codex_app = <openai-codex-app>
+#let anthropic_claude_code = <anthropic-claude-code>
+#let anthropic_claude_desktop = <anthropic-claude-desktop>
+#let openai_gpt56 = <openai-gpt56>
+#let anthropic_opus5 = <anthropic-opus5>
+#let deepseek_v41_flash = <deepseek-v41-flash>
 
 #let bib = (
   darkfactory: darkfactory,
