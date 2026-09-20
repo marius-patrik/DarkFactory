@@ -279,13 +279,15 @@ if accepted_scaling_opening not in chapter2_source:
 if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
     fail("legacy section 2.3.8 title must not return")
 
-finalized_version_control_title = (
-    "== #finalized[Správa verzí \\[Version Control\\], Plánování \\[Planning\\], "
-    "Kontinuální integrace \\[Continuous Integration\\] (CI a GitHub Actions) "
-    "a Požadované kontroly \\[Required Checks\\]]"
-)
+finalized_version_control_title = "== #finalized[Vývojové prostředí a praxe]"
 if finalized_version_control_title not in chapter2_source:
-    fail("section 2.1 must retain the finalized expanded engineering title")
+    fail("section 2.1 must remain Vývojové prostředí a praxe")
+for required_stub in (
+    "=== #finalized[Správa verzí \\[Version Control\\]]",
+    "=== #finalized[Plánování \\[Planning\\]]",
+):
+    if required_stub not in chapter2_source:
+        fail(f"section 2.1 missing requested subsection stub: {required_stub}")
 if "=== #finalized[Pull Request]" not in chapter2_source:
     fail("section 2.1.3 title must remain finalized as Pull Request")
 if "=== Model #term(terms.pull_request" in chapter2_source:
@@ -662,7 +664,7 @@ for dependency in (
 app_source = Path("web/src/app.tsx").read_text(encoding="utf-8")
 for required in (
     "TooltipAction",
-    "Columns2Icon",
+    "PanelLeftRightIcon",
     "MinusIcon",
     "PlusIcon",
     "RefreshCwIcon",
@@ -673,15 +675,16 @@ for required in (
     "CompiledArtifactView",
     "ArtifactFormat",
     "MaximizeIcon",
-    "ContextMenu",
+    "activitybar",
+    "status-left",
     "status-actions",
     "identity-separator",
     "motion.section",
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 5:
-    fail("toolbar path must include language, mode, format, chapter, and page segments")
+if app_source.count('className="identity-separator"') < 4:
+    fail("toolbar path must preserve Home/work/mode/chapter/page separators")
 for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
     if required not in app_source:
         fail(f"compiled-format path selector missing contract: {required}")
@@ -714,8 +717,8 @@ for required in (
 ):
     if required not in app_source:
         fail(f"viewer missing three-mode appearance contract: {required}")
-if 'label="Home"' in app_source:
-    fail("viewer toolbar must not restore the Home button")
+if 'label="Home"' not in app_source:
+    fail("viewer toolbar must retain the Home button")
 if 'className="page-control"' in app_source:
     fail("legacy bottom-status page switcher must not return")
 if "peerTarget" in app_source:
@@ -745,14 +748,16 @@ for required in (
     "FileCode2Icon: FileCode2",
     "Code2Icon: Code2",
     "PencilLineIcon: PencilLine",
-    "Columns2Icon: Columns2",
+    "PanelLeftRightIcon: PanelsLeftRight",
     "BookOpenIcon: BookOpen",
     "CircleIcon: Circle",
 ):
     if required not in icon_source:
         fail(f"viewer icon adapter missing guaranteed static fallback: {required}")
-if 'label="Refresh page"' not in app_source or "window.location.reload()" not in app_source:
-    fail("viewer must expose an in-UI refresh page action")
+if 'label="Refresh document"' not in app_source or "refreshRevision" not in app_source:
+    fail("viewer must expose a document-only refresh action")
+if "window.location.reload()" in app_source:
+    fail("document refresh must not reload the shell or exit fullscreen")
 
 viewer_css_source = Path("web/src/viewer.css").read_text(encoding="utf-8")
 for required in (
