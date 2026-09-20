@@ -4,7 +4,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts",
+    "./content": "./src/content.ts",
+    "./readme": "./src/readme.ts"
   },
   "files": [
     "src"
