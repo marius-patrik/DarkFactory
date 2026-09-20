@@ -5,8 +5,6 @@
     id: "kv-cache",
     proper: translation(cs: "Mezipaměť klíčů a hodnot", en: "Key–Value Cache"),
     industry: translation(cs: "KV Cache", en: "KV Cache"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Mezipaměť dříve vypočtených vektorů klíčů a hodnot v pozornostních vrstvách transformeru, která při autoregresivním generování omezuje nutnost opakovaně přepočítávat předchozí tokeny.",
     explanation_en: "A cache of previously computed key and value vectors in transformer attention layers that reduces repeated computation of earlier tokens during autoregressive generation.",
     citation: bib.dao2022,

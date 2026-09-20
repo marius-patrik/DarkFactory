@@ -5,8 +5,6 @@
     id: "branch",
     proper: translation(cs: "Větev repozitáře", en: "Repository Branch"),
     industry: translation(cs: "Branch", en: "Branch"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Pojmenovaná vývojová linie v systému správy verzí, která umožňuje provádět změny odděleně od jiné linie historie a později je porovnat nebo sloučit.",
     explanation_en: "A named line of development in version control that allows changes to proceed separately from another history line and later be compared or merged.",
     citation: bib.chacon2014,

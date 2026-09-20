@@ -5,8 +5,6 @@
     id: "merge",
     proper: translation(cs: "Sloučení větví", en: "Branch Merge"),
     industry: translation(cs: "Merge", en: "Merge"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Operace správy verzí, která kombinuje změny nebo historii dvou vývojových linií do společného výsledného stavu; konflikty vyžadují explicitní vyřešení.",
     explanation_en: "A version-control operation that combines changes or history from two lines of development into a common resulting state; conflicts require explicit resolution.",
     citation: bib.chacon2014,

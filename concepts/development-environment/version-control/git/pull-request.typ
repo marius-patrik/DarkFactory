@@ -5,8 +5,6 @@
     id: "pull-request",
     proper: translation(cs: "Požadavek na sloučení", en: "Pull Request"),
     industry: translation(cs: "Pull Request", en: "Pull Request"),
-    default-name-type: "industry",
-    keyword-name-type: "both",
     explanation_cs: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako místo pro automatizované kontroly, lidskou revizi a diskusi nad navrženými úpravami.",
     explanation_en: "A formal proposal to integrate changes from one repository branch into another, providing a place for automated checks, human review, and discussion of the proposed changes.",
     citation: bib.chacon2014,

@@ -5,8 +5,6 @@
     id: "squash",
     proper: translation(cs: "Sloučení commitů", en: "Commit Squashing"),
     industry: translation(cs: "Squash", en: "Squash"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Operace, při níž se více po sobě jdoucích commitů nahradí jedním souhrnným commitem, obvykle za účelem zjednodušení historie před integrací změn.",
     explanation_en: "An operation that replaces multiple consecutive commits with one aggregate commit, commonly to simplify history before integrating changes.",
     citation: bib.chacon2014,
