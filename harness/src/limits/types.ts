@@ -3,7 +3,7 @@ import type { Candidate } from "../failover.ts";
 export type LimitType = "rate" | "daily" | "window" | "monthly" | "overload" | "auth" | "billing" | "access" | "model";
 export type LimitDimension = "requests" | "tokens" | "usage";
 /** "declared" marks an in-memory admission block from a declared limit; it is never persisted. */
-export type LimitSource = "header" | "body" | "rule" | "default" | "migration" | "manual" | "declared";
+export type LimitSource = "header" | "body" | "rule" | "default" | "manual" | "declared";
 
 export interface LimitEntry extends Candidate {
 	type: LimitType;
