@@ -13,10 +13,8 @@
 #let item = concept(
   key: "agent",
   term: terminology,
-  heading: terms => [#finalized[#term(terms.agent, marker: false, linked: false, emphasized: false) vs. #term(terms.chatbot, marker: false, linked: false, emphasized: false)]],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #accepted[
 #term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #diff[#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline") @wooldridge1995 @wang2024survey.] Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
 
@@ -31,14 +29,10 @@ Srovnání obou přístupů:
   - Funguje v autonomní prováděcí smyčce, v níž iterativně reaguje na reálnou odezvu vývojového prostředí.
 ]
   ],
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "language_model"), (type: "related", target: "chatbot"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "language_model"), (type: "related", target: "chatbot"),),
 )
