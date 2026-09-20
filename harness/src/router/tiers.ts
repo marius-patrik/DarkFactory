@@ -1,5 +1,24 @@
 import type { CapabilityTier, CapabilityTierId, Difficulty, DifficultyTierMapping } from "./types.ts";
 
+export interface CapabilityEscalationPolicy {
+	order: readonly CapabilityTierId[];
+	candidateTiers: Readonly<Record<string, CapabilityTierId>>;
+	baselineTier: CapabilityTierId;
+}
+
+export function candidateTierKey(candidate: { provider: string; model: string; account: string }): string {
+	return `${candidate.provider}/${candidate.model}@${candidate.account}`;
+}
+
+export function nextCapabilityTier(
+	order: readonly CapabilityTierId[],
+	current: CapabilityTierId | undefined,
+): CapabilityTierId | undefined {
+	if (!current) return undefined;
+	const index = order.indexOf(current);
+	return index >= 0 && index + 1 < order.length ? order[index + 1] : undefined;
+}
+
 function globMatch(pattern: string, value: string): boolean {
 	const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
 	return new RegExp("^" + escaped.replace(/\*/g, ".*") + "$", "iu").test(value);
