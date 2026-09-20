@@ -42,11 +42,11 @@ describe("Repository declaration path", () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("rewrites links that use the root rule and note aliases", () => {
+  it("rewrites links that use canonical rule and ADR paths", () => {
     const markdown =
-      "[rule](_rules/001-unit-tests.md) [decision](_notes/adr/0001-domains.md) [plan](PLAN.md)";
+      "[rule](.agents/rules/001-unit-tests.md) [decision](.agents/notes/adr/0006-the-pipeline-runs-only-df.md) [plan](PLAN.md)";
     expect(rewriteLinks(markdown, "architecture/overview.md")).toBe(
-      "[rule](../rules/001-unit-tests.md) [decision](../architecture/decisions/0001-domains.md) [plan](../plan.md)"
+      "[rule](../rules/001-unit-tests.md) [decision](../architecture/decisions/0006-the-pipeline-runs-only-df.md) [plan](../plan.md)"
     );
   });
 });
@@ -104,33 +104,32 @@ describe("ADR index generation", () => {
     const repoRoot = path.resolve(__dirname, "..");
     const adrs = discoverAdrs(repoRoot);
 
-    expect(adrs.length).toBeGreaterThanOrEqual(5);
+    expect(adrs.length).toBeGreaterThanOrEqual(10);
 
-    const adr1 = adrs.find((a) => a.number === "0001");
-    expect(adr1).toBeDefined();
-    expect(adr1?.title).toBe("Domains sit above environments");
-    expect(adr1?.status).toBe("Accepted");
-    expect(adr1?.resolves).toBe("#18");
+    const adr = adrs.find((a) => a.number === "0006");
+    expect(adr).toBeDefined();
+    expect(adr?.title).toBe("The pipeline runs only df");
+    expect(adr?.status).toBe("Accepted");
   });
 
   it("generates markdown index table conforming to architecture decision records", () => {
     const mockAdrs: AdrRecord[] = [
       {
-        number: "0001",
-        title: "Domains sit above environments",
+        number: "0006",
+        title: "The pipeline runs only df",
         status: "Accepted",
-        resolves: "#18",
-        slug: "0001-domains",
-        filename: "0001-domains.md",
+        resolves: "",
+        slug: "0006-the-pipeline-runs-only-df",
+        filename: "0006-the-pipeline-runs-only-df.md",
         content: "",
       },
       {
-        number: "0002",
-        title: "Harness agnostic",
-        status: "Proposed",
+        number: "0008",
+        title: "Providers are configuration-driven",
+        status: "Accepted",
         resolves: "",
-        slug: "0002-harness",
-        filename: "0002-harness.md",
+        slug: "0008-providers-are-config-driven",
+        filename: "0008-providers-are-config-driven.md",
         content: "",
       },
     ];
@@ -138,9 +137,9 @@ describe("ADR index generation", () => {
     const indexMarkdown = generateAdrIndex(mockAdrs);
     expect(indexMarkdown).toContain("# Architecture decisions");
     expect(indexMarkdown).toContain("| # | Decision | Status | Resolves |");
-    expect(indexMarkdown).toContain("| [0001](0001-domains.md) | [Domains sit above environments](0001-domains.md) | Accepted | #18 |");
-    expect(indexMarkdown).toContain("| [0002](0002-harness.md) | [Harness agnostic](0002-harness.md) | Proposed | — |");
-    expect(indexMarkdown).toContain("2 records — 1 accepted, 1 proposed.");
+    expect(indexMarkdown).toContain("| [0006](0006-the-pipeline-runs-only-df.md) | [The pipeline runs only df](0006-the-pipeline-runs-only-df.md) | Accepted | — |");
+    expect(indexMarkdown).toContain("| [0008](0008-providers-are-config-driven.md) | [Providers are configuration-driven](0008-providers-are-config-driven.md) | Accepted | — |");
+    expect(indexMarkdown).toContain("2 current accepted architecture decisions.");
   });
 
   it("throws an error when an ADR has no title heading", () => {
