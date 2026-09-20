@@ -16,7 +16,6 @@ function nodeRun(pkg: CapabilityPackageContext, script: string): string | undefi
 }
 
 function nodeTest(pkg: CapabilityPackageContext): string | undefined {
-	if (pkg.packageManager === "bun") return "bun test";
 	return nodeRun(pkg, "test");
 }
 
