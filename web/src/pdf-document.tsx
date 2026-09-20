@@ -603,7 +603,7 @@ function DocumentNavigationPanel({
           style={{ pointerEvents: hidden ? "none" : "auto" }}
         >
           <div className="navigation-section-header structure-header">
-            <AnimatedIcon names={["FilesIcon"]} size={15} />
+            <AnimatedIcon names={["FilesIcon"]} />
             <span>Structure</span>
             <button
               type="button"
@@ -614,7 +614,6 @@ function DocumentNavigationPanel({
             >
               <AnimatedIcon
                 names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
-                size={14}
               />
             </button>
           </div>
@@ -669,14 +668,12 @@ function DocumentNavigationPanel({
         <ContextMenuItem onSelect={onMove}>
           <AnimatedIcon
             names={side === "left" ? ["PanelRightIcon"] : ["PanelLeftIcon"]}
-            size={16}
           />
           {moveLabel}
         </ContextMenuItem>
         <ContextMenuItem onSelect={onToggleMode}>
           <AnimatedIcon
             names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
-            size={16}
           />
           {modeLabel}
         </ContextMenuItem>
