@@ -100,7 +100,6 @@ required_sources = (
     ROOT / "index.typ",
     ROOT / "templates/common.typ",
     ROOT / "templates/registry.typ",
-    ROOT / "templates/terms.typ",
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
