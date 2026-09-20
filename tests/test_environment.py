@@ -266,7 +266,10 @@ class TestPlans:
         assert "documentation" not in repository.get("environment", {})
         assert docs["version"] == 1
         assert docs["home"] == "docs/home.md"
-        assert "entryPoints" not in docs["api"]["typescript"]\n        assert docs["api"]["typescript"]["tsconfig"], "docs.df owns TypeDoc settings while package entrypoints come from repository detection"
+        assert "entryPoints" not in docs["api"]["typescript"]
+        assert docs["api"]["typescript"]["tsconfig"], (
+            "docs.df owns TypeDoc settings while package entrypoints come from repository detection"
+        )
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
