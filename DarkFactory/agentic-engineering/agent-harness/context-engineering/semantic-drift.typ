@@ -1,7 +1,13 @@
 #import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(id: "semantic-drift", proper: translation(cs: "Sémantický posun", en: "Semantic Drift"), explanation_cs: "Postupné zkreslování významu a faktického stavu při opakovaném ztrátovém shrnování nebo transformaci kontextu.", explanation_en: "The gradual distortion of meaning and factual state through repeated lossy summarization or transformation of context.", keyword: false, citation: bib.liu2024, source: bib.shinn2023reflexion)
+#let terminology = define-term(
+  id: "semantic-drift",
+  proper: translation(cs: "Sémantický posun", en: "Semantic Drift"),
+  keyword: false,
+  citation: bib.liu2024,
+  source: bib.shinn2023reflexion,
+)
 
 #let item = concept(
   key: "semantic_drift",

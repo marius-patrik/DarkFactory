@@ -1,7 +1,13 @@
 #import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(id: "branch-protection", proper: translation(cs: "Ochrana větví", en: "Branch Protection"), explanation_cs: "Pravidla repozitáře, která omezují přímé změny chráněných větví a vynucují schválení, kontroly nebo jiné podmínky před sloučením.", explanation_en: "Repository rules that restrict direct changes to protected branches and enforce approvals, checks, or other conditions before merging.", keyword: false, citation: bib.chacon2014, source: bib.dabbish2012github)
+#let terminology = define-term(
+  id: "branch-protection",
+  proper: translation(cs: "Ochrana větví", en: "Branch Protection"),
+  keyword: false,
+  citation: bib.chacon2014,
+  source: bib.dabbish2012github,
+)
 
 #let item = concept(
   key: "branch_protection",

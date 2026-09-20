@@ -1,7 +1,14 @@
 #import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(id: "tool-calling", proper: translation(cs: "Vyvolávání nástrojů", en: "Tool Calling"), industry: translation(cs: "Tool Calling", en: "Tool Calling"), explanation_cs: "Mechanismus, kterým model strukturovaně žádá harness o provedení externí akce nebo funkce s validovanými parametry.", explanation_en: "A mechanism through which a model structurally asks a harness to execute an external action or function with validated parameters.", keyword: false, citation: bib.schick2023toolformer, source: bib.anthropic2024tooluse)
+#let terminology = define-term(
+  id: "tool-calling",
+  proper: translation(cs: "Vyvolávání nástrojů", en: "Tool Calling"),
+  industry: translation(cs: "Tool Calling", en: "Tool Calling"),
+  keyword: false,
+  citation: bib.schick2023toolformer,
+  source: bib.anthropic2024tooluse,
+)
 
 #let item = concept(
   key: "tool_calling",

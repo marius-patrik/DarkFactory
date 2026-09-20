@@ -1,7 +1,14 @@
 #import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(id: "sandbox", proper: translation(cs: "Izolované běhové prostředí", en: "Sandbox"), industry: translation(cs: "Sandbox", en: "Sandbox"), explanation_cs: "Omezené běhové prostředí určené k oddělení prováděného kódu a jeho oprávnění od hostitelského systému.", explanation_en: "A constrained runtime environment intended to isolate executing code and its permissions from the host system.", keyword: false, citation: bib.agache2020firecracker, source: bib.agache2020firecracker)
+#let terminology = define-term(
+  id: "sandbox",
+  proper: translation(cs: "Izolované běhové prostředí", en: "Sandbox"),
+  industry: translation(cs: "Sandbox", en: "Sandbox"),
+  keyword: false,
+  citation: bib.agache2020firecracker,
+  source: bib.agache2020firecracker,
+)
 
 #let item = concept(
   key: "sandbox",

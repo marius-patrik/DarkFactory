@@ -288,8 +288,6 @@
   industry: none,
   alias: none,
   id: none,
-  explanation_en: none,
-  explanation_cs: none,
   citation: none,
   source: none,
   keyword: true,
@@ -310,8 +308,6 @@
     proper: proper,
     industry: industry,
     alias: alias,
-    explanation_en: explanation_en,
-    explanation_cs: explanation_cs,
     citation: citation,
     source: source,
     keyword: keyword,
@@ -335,18 +331,6 @@
 #let term-citation(value) = {
   assert(value.kind == "term", message: "term-citation() expects a value created by define-term()")
   value.citation
-}
-
-#let term-detail-language(language, profile) = {
-  if language != "auto" {
-    language
-  } else if profile == "cs" {
-    "cs"
-  } else if profile == "en" {
-    "en"
-  } else {
-    "both"
-  }
 }
 
 // Canonical naming roles:
@@ -435,63 +419,29 @@
   }
 }
 
-#let term-explanation(
-  value,
-  language: "auto",
-  style: "stacked",
-  order: "cs-en",
-) = context {
-  assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
-  let lang = term-detail-language(language, profile-state.get())
-
-  if value.explanation_cs == none and value.explanation_en == none {
-    none
-  } else {
-    let details = translation(cs: value.explanation_cs, en: value.explanation_en)
-    render-translation(
-      details,
-      language: lang,
-      school-both: true,
-      labels: true,
-      stacked: style == "stacked",
-      spacing: 2pt,
-      separator: "bar",
-      order: order,
-    )
-  }
-}
-
 // Jediný renderer všech použití termínu.
-// render: "term" | "explanation" | "both"
-// surface vybírá industry/proper/alias/full; language určuje lokalizaci názvu a
-// detail-language může nezávisle přepsat jazyk vysvětlení. detail-style="inline" vkládá definici přímo do věty.
+// Terms render names only. Concept definitions/descriptions own explanatory prose.
+// surface vybírá industry/proper/alias/full; language určuje lokalizaci názvu.
 #let term(
   value,
   render: "term",
   surface: "full",
   language: "auto",
-  detail-language: none,
-  detail-order: "cs-en",
-  detail-style: "inline",
   register: true,
   linked: false,
   marker: true,
   emphasized: true,
-  separator: [ — ],
   cite: false,
 ) = context {
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
-  assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
+  assert(render == "term", message: "term render supports the canonical term surface only")
   assert(surface in ("full", "industry", "proper", "alias"), message: "term surface must be full, industry, proper, or alias")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
-  assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
-  assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
 
   if register and value.keyword {
     [#metadata(value) #term-use-label]
   }
 
-  let detail-lang = if detail-language == none { language } else { detail-language }
   let name = term-name(value, surface: surface, language: language)
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let displayed-name = if cite and value.citation != none {
@@ -518,15 +468,7 @@
   } else {
     referenced-name
   }
-  let explanation = term-explanation(value, language: detail-lang, style: detail-style, order: detail-order)
-
-  if render == "term" {
-    with-marker
-  } else if render == "explanation" {
-    explanation
-  } else {
-    [#with-marker#if explanation != none { [#separator#explanation] }]
-  }
+  with-marker
 }
 
 #let kw = term
