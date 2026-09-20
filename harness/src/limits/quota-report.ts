@@ -1,3 +1,4 @@
+import type { OperatorQuotaSnapshot } from "../../../packages/protocol/src/quota.ts";
 import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, FreeTierConfig, ProviderConfig } from "../providers/schema.ts";
 import type { CandidateQuota, QuotaEngine, QuotaState } from "./quota-engine.ts";
@@ -94,4 +95,64 @@ export async function buildQuotaReport(input: QuotaReportInput): Promise<QuotaRe
 	}
 	if (input.provider && providers.length === 0) throw new Error(`Unknown provider ${input.provider}`);
 	return { version: 2, generatedAt: new Date(now).toISOString(), providers };
+}
+
+function operatorQuotaItem(item: CandidateQuota["items"][number]) {
+	return {
+		provider: item.provider,
+		account: item.account,
+		model: item.model,
+		...(item.pool ? { pool: item.pool } : {}),
+		type: item.type,
+		...(item.dimension ? { dimension: item.dimension } : {}),
+		...(item.limit !== undefined ? { limit: item.limit } : {}),
+		...(item.used !== undefined ? { used: item.used } : {}),
+		...(item.remaining !== undefined ? { remaining: item.remaining } : {}),
+		...(item.windowStart !== undefined ? { windowStart: item.windowStart } : {}),
+		...(item.resetAt !== undefined ? { resetAt: item.resetAt } : {}),
+		state: item.state,
+		source: item.source,
+		...(item.sourceUrl ? { sourceUrl: item.sourceUrl } : {}),
+		...(item.checkedAt ? { checkedAt: item.checkedAt } : {}),
+		...(item.note ? { note: item.note } : {}),
+		enforced: item.enforced,
+		origin: item.origin,
+	};
+}
+
+/**
+ * Projects the canonical quota report into the redacted browser-safe operator contract.
+ *
+ * Provider transport URLs, dialect configuration, free-tier configuration and declared policy objects are deliberately
+ * excluded so future additions to provider configuration cannot leak into static/browser operator surfaces by spread.
+ */
+export function operatorQuotaSnapshot(report: QuotaReport): OperatorQuotaSnapshot {
+	return {
+		version: 1,
+		generatedAt: report.generatedAt,
+		providers: report.providers.map((provider) => ({
+			id: provider.id,
+			name: provider.name,
+			enabled: provider.enabled,
+			credentials: provider.credentials,
+			state: provider.state,
+			accounts: provider.accounts.map((account) => ({
+				label: account.label,
+				models: account.models.map((model) => ({
+					provider: model.provider,
+					account: model.account,
+					model: model.model,
+					state: model.state,
+					...(model.until !== undefined ? { until: model.until } : {}),
+					...(model.reason ? { reason: model.reason } : {}),
+					items: model.items.map(operatorQuotaItem),
+				})),
+			})),
+		})),
+	};
+}
+
+/** Builds the canonical runtime quota report and immediately projects its redacted operator snapshot. */
+export async function buildOperatorQuotaSnapshot(input: QuotaReportInput): Promise<OperatorQuotaSnapshot> {
+	return operatorQuotaSnapshot(await buildQuotaReport(input));
 }
