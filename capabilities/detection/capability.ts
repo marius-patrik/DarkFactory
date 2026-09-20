@@ -3,6 +3,7 @@ import {
 	CAPABILITY_ABI_VERSION,
 	readRepoConfig,
 	DEFAULT_MANIFESTS,
+	CapabilityRuntimeContext,
 } from "@darkfactory/capability";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative as relpath, sep } from "node:path";
@@ -39,7 +40,7 @@ export const capability = defineCapability({
 				properties: {},
 				required: [],
 			},
-			execute: async (_, context) => {
+			execute: async (_, context: CapabilityRuntimeContext) => {
 				const root = context?.repositoryRoot || process.cwd();
 				const repoConfig = await readRepoConfig(root);
 
@@ -122,11 +123,13 @@ export const capability = defineCapability({
 									if (parsed.name && typeof parsed.name === "string") {
 										pkgName = parsed.name;
 									}
-								} catch (err) {
-									if (!(err instanceof SyntaxError)) {
-										throw err;
+								} catch (err: unknown) {
+									if (err instanceof SyntaxError) {
+										console.warn(`Warning: Failed to parse ${manifest} at ${dir}: malformed JSON.`);
+									} else {
+										console.warn(`Warning: Failed to read ${manifest} at ${dir}:`, (err as Error)?.message || err);
 									}
-									// malformed json fallback: ignore
+									// Fallback: ignore
 								}
 							}
 

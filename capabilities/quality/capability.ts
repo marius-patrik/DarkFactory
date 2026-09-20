@@ -5,6 +5,8 @@ import {
 	checkToolExists,
 	parseShellCommand,
 	createQualityCommand,
+	loadCapabilities,
+	CapabilityRuntimeContext,
 } from "@darkfactory/capability";
 
 const DEFAULT_REGISTRY: Record<string, Record<string, { tool: string; args: string[] }>> = {
@@ -73,19 +75,18 @@ export const capability = defineCapability({
 				},
 				required: ["action", "package"],
 			},
-			execute: async (input, context) => {
+			execute: async (input, context: CapabilityRuntimeContext) => {
 				const { action, package: pkgName } = input as { action: string; package: string };
 
 				let detected: { name: string; ecosystem?: string; path?: string }[] = [];
-					// This would be replaced by dynamic capability discovery if needed
-					// For now we assume detection is available on the capability registry
-					const detectionCapability = (globalThis as any).capabilities?.find((c: any) => c.id === "detection");
-					const detectTool = detectionCapability?.tools?.find((tool: any) => tool.name === "detect_packages");
+				const allCapabilities = await loadCapabilities();
+				const detectionCapability = allCapabilities.find((c) => c.id === "detection");
+				const detectTool = detectionCapability?.tools?.find((tool) => tool.name === "detect_packages");
 				if (!detectTool) throw new Error("Detection capability does not provide detect_packages");
 				try {
 					const detectionResult = await detectTool.execute({}, context);
 					if (Array.isArray(detectionResult)) {
-						detected = detectionResult;
+						detected = detectionResult as { name: string; ecosystem?: string; path?: string }[];
 					} else if (
 						detectionResult &&
 						typeof detectionResult === "object" &&

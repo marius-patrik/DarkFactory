@@ -1,5 +1,6 @@
 import { expect, test, describe } from "bun:test";
 import { capability } from "./capability";
+import { CapabilityRuntimeContext } from "@darkfactory/capability";
 
 describe("quality capability", () => {
     test("run_quality_checks should fail when tool is missing", async () => {
@@ -7,7 +8,8 @@ describe("quality capability", () => {
         
         // This tool relies on checkToolExists, we are testing the failure path
         // when a non-existent tool is requested.
-        await expect(tool?.execute({ action: "test", package: "non-existent-pkg" }, { repositoryRoot: "/tmp" } as any))
+        const context = { repositoryRoot: "/tmp" } as CapabilityRuntimeContext;
+        await expect(tool?.execute({ action: "test", package: "non-existent-pkg" }, context))
             .rejects.toThrow(/not found/);
     });
 });
