@@ -12,7 +12,7 @@ definition: terms => [
 Skript je soubor nebo posloupnost příkazů určených k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Skript poskytuje deterministickou exekuci pro úlohy, u nichž není vhodné znovu rozhodovat pomocí jazykového modelu, například pro opakovatelné transformace, validace nebo obslužné kroky dovednosti.
 ]
   ],
