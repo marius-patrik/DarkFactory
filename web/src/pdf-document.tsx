@@ -71,8 +71,10 @@ type ViewerProps = {
   sidebarSide: SidebarSide;
   sidebarMode: SidebarMode;
   sidebarHidden: boolean;
+  sidebarWidth: number;
   onMoveSidebar: () => void;
   onToggleSidebarMode: () => void;
+  onSidebarWidthChange: (width: number) => void;
   onStateChange: (state: DocumentState) => void;
 };
 
@@ -539,9 +541,11 @@ function DocumentNavigationPanel({
   side,
   mode,
   hidden,
+  width,
   onSelect,
   onMove,
   onToggleMode,
+  onWidthChange,
 }: {
   pdf: any;
   pages: PageInfo[];
@@ -550,39 +554,75 @@ function DocumentNavigationPanel({
   side: SidebarSide;
   mode: SidebarMode;
   hidden: boolean;
+  width: number;
   onSelect: (page: number) => void;
   onMove: () => void;
   onToggleMode: () => void;
+  onWidthChange: (width: number) => void;
 }) {
   const moveLabel = side === "left" ? "Move sidebar right" : "Move sidebar left";
   const modeLabel = mode === "minimap" ? "Show page previews" : "Show page minimap";
   const activeChapter =
     [...chapters].reverse().find((chapter) => chapter.page <= activePage) || chapters[0] || null;
+  const chaptersByPage = useMemo(() => {
+    const grouped = new Map<number, DocumentChapter[]>();
+    for (const chapter of chapters) {
+      const entries = grouped.get(chapter.page) || [];
+      entries.push(chapter);
+      grouped.set(chapter.page, entries);
+    }
+    return grouped;
+  }, [chapters]);
+
+  const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = width;
+    const onMovePointer = (move: PointerEvent) => {
+      const delta = side === "left" ? move.clientX - startX : startX - move.clientX;
+      onWidthChange(clamp(startWidth + delta, 190, 640));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", onMovePointer);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", onMovePointer);
+    window.addEventListener("pointerup", stop, { once: true });
+  };
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <motion.aside
           className={"sidebar navigation-sidebar sidebar-" + side + " sidebar-" + mode}
-          aria-label="Contents and page previews"
+          aria-label="Document structure"
           initial={false}
-          animate={{ width: hidden ? 0 : 300, opacity: hidden ? 0 : 1 }}
+          animate={{ width: hidden ? 0 : width, opacity: hidden ? 0 : 1 }}
           transition={{ type: "spring", stiffness: 480, damping: 42 }}
           style={{ pointerEvents: hidden ? "none" : "auto" }}
         >
-          <div className="navigation-section navigation-outline-section">
-            <div className="navigation-section-header">
-              <AnimatedIcon names={["ListTreeIcon", "ListIcon"]} size={15} />
-              <span>Contents</span>
-            </div>
-            <nav className="contents-tree" aria-label="Document outline">
-              {chapters.length ? (
-                chapters.map((chapter) => (
+          <div className="navigation-section-header structure-header">
+            <AnimatedIcon names={["FilesIcon"]} size={15} />
+            <span>Structure</span>
+            <button
+              type="button"
+              className="navigation-mode-toggle"
+              onClick={onToggleMode}
+              aria-label={modeLabel}
+              title={modeLabel}
+            >
+              <AnimatedIcon
+                names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
+                size={14}
+              />
+            </button>
+          </div>
+          <div className="structure-list" aria-label="Document structure">
+            {pages.map((page) => (
+              <div className="structure-page-group" key={page.number}>
+                {(chaptersByPage.get(page.number) || []).map((chapter) => (
                   <button
-                    key={
-                      chapter.anchor ||
-                      `${chapter.title}-${chapter.page}-${chapter.level}`
-                    }
+                    key={chapter.anchor || `${chapter.title}-${chapter.page}-${chapter.level}`}
                     type="button"
                     className={activeChapter === chapter ? "contents-item active" : "contents-item"}
                     style={{ paddingLeft: 10 + Math.max(0, chapter.level - 1) * 13 }}
@@ -592,51 +632,37 @@ function DocumentNavigationPanel({
                     <span>{chapter.title}</span>
                     <small>{chapter.page}</small>
                   </button>
-                ))
-              ) : (
-                <div className="activity-panel-empty">Loading contents…</div>
-              )}
-            </nav>
+                ))}
+                {mode === "minimap" ? (
+                  <button
+                    type="button"
+                    className={"structure-page-marker" + (page.number === activePage ? " active" : "")}
+                    onClick={() => onSelect(page.number)}
+                    aria-label={"Go to page " + page.number}
+                  >
+                    <span className="structure-page-glyph" />
+                    <span>Page {page.number}</span>
+                  </button>
+                ) : (
+                  <Thumbnail
+                    pdf={pdf}
+                    page={page}
+                    active={page.number === activePage}
+                    onSelect={onSelect}
+                  />
+                )}
+              </div>
+            ))}
           </div>
-
-          <div className="navigation-section navigation-pages-section">
-            <div className="navigation-section-header">
-              <AnimatedIcon
-                names={mode === "minimap" ? ["MapIcon", "MapPinnedIcon"] : ["FilesIcon"]}
-                size={15}
-              />
-              <span>Pages</span>
-              <button
-                type="button"
-                className="navigation-mode-toggle"
-                onClick={onToggleMode}
-                aria-label={modeLabel}
-                title={modeLabel}
-              >
-                <AnimatedIcon
-                  names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
-                  size={14}
-                />
-              </button>
-            </div>
-            <div className="navigation-pages-body">
-              {mode === "minimap" ? (
-                <Minimap pages={pages} activePage={activePage} onSelect={onSelect} />
-              ) : (
-                <div className="thumbnail-list">
-                  {pages.map((page) => (
-                    <Thumbnail
-                      key={page.number}
-                      pdf={pdf}
-                      page={page}
-                      active={page.number === activePage}
-                      onSelect={onSelect}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {!hidden && (
+            <div
+              className={"sidebar-resizer sidebar-resizer-" + side}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              onPointerDown={beginResize}
+            />
+          )}
         </motion.aside>
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -658,7 +684,7 @@ function DocumentNavigationPanel({
     </ContextMenu>
   );
 }
-const PdfPage = memo(function PdfPage({
+const PdfPage = memoconst PdfPage = memo(function PdfPage({
   pdf,
   info,
   scale,
@@ -832,8 +858,10 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
       sidebarSide,
       sidebarMode,
       sidebarHidden,
+      sidebarWidth,
       onMoveSidebar,
       onToggleSidebarMode,
+      onSidebarWidthChange,
       onStateChange,
     },
     ref,
@@ -1123,9 +1151,11 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
         side={sidebarSide}
         mode={sidebarMode}
         hidden={sidebarHidden}
+        width={sidebarWidth}
         onSelect={goToPage}
         onMove={onMoveSidebar}
         onToggleMode={onToggleSidebarMode}
+        onWidthChange={onSidebarWidthChange}
       />
     ) : null;
 
