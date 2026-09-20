@@ -145,7 +145,6 @@ describe("dispatch", () => {
 		const state = JSON.parse(await readFile(join(tmpDir!, runsDir, files[0]!), "utf8"));
 		expect(state.current_node as string).toBe("trigger");
 	});
-
 });
 
 async function readdir(path: string): Promise<string[]> {
