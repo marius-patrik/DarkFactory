@@ -67,66 +67,43 @@ def test_script_exists(name: str):
     assert os.path.isfile(os.path.join(SCRIPT_DIR, name)), f"{name} must exist"
 
 
-def test_ci_language_jobs_are_guarded_not_skipped():
-    """Guarded steps keep language jobs green — a skipped job can never satisfy a required check."""
+def test_ci_quality_matrix_is_detector_driven():
+    """Language/package quality comes from repository evidence and capability actions."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    assert "hashFiles('Cargo.toml')" in content
-    assert "hashFiles('package.json')" in content
-    # The guards must sit on steps, not on the jobs themselves.
-    job_headers = re.findall(r"^  (\w[\w-]*):\n(?:    .*\n)*?    runs-on:", content, re.MULTILINE)
-    assert {"pipeline", "rust", "web", "harness", "docs"} <= set(job_headers)
-    for job in ("rust:", "web:", "harness:"):
-        block_start = content.index(f"\n  {job}")
-        block = content[block_start : block_start + 200]
-        assert "\n    if:" not in block, f"job {job} must not be conditionally skipped"
+    assert "Resolve detected quality matrix" in content
+    assert "fromJSON(needs.detect.outputs.matrix)" in content
+    assert "Run detected quality action" in content
+    assert "hashFiles('Cargo.toml')" not in content
+    assert "\n  rust:" not in content
+    assert "\n  harness:" not in content
 
 
-def test_harness_job_runs_all_bun_gates_from_the_harness_directory():
-    """The embedded harness owns its lockfile and must be verified as an isolated Bun package."""
+def test_ci_has_one_aggregate_quality_context():
+    """Branch protection consumes one stable quality result over the detected matrix."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    block = content.split("\n  harness:", 1)[1].split("\n  docs:", 1)[0]
-
-    assert "uses: oven-sh/setup-bun@v2" in block
-    assert block.count("working-directory: harness") == 5
-    assert "biome ci --changed" in block
-    for command in (
-        "bun install --frozen-lockfile",
-        "bun run typecheck",
-        "bun test",
-        "bun run build",
-    ):
-        assert f"run: {command}" in block
+    assert re.search(r"^  quality:$", content, re.MULTILINE)
+    assert re.search(r"^    name: quality$", content, re.MULTILINE)
+    assert "needs: [detect, quality-run, docs-check]" in content
 
 
-def test_python_and_docs_jobs_have_separate_final_owners():
-    """Python tests stay on tests/ while documentation is built from docs.df through Bun."""
+def test_python_actions_and_docs_have_separate_final_owners():
+    """Capability actions execute in the matrix while docs.df uses the native compiler."""
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    pyproject = _read(os.path.join(REPO_ROOT, "pyproject.toml"))
-
-    assert "run: pytest -v tests" in ci
-    assert re.search(r"^\s*\| harness$", pyproject, re.MULTILINE)
+    assert "pytest -v tests" not in ci
+    assert "DF_ACTION_COMMAND" in ci
     assert "docs.df" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
-def test_required_checks_match_ci_job_names():
-    """Branch protection may only require checks that `ci.yml` actually produces."""
+def test_required_checks_match_final_stable_contexts():
+    """Deletion-bound settings metadata mirrors the TypeScript required-check contract."""
     import repo_settings
 
+    assert repo_settings.REQUIRED_CHECKS == ["quality", "verify-bound-issue"]
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    job_names = set(re.findall(r"^    name: ([\w-]+)$", ci, re.MULTILINE))
-    matrix_versions = re.findall(r'"(3\.\d+)"', ci)
-
-    produced = set()
-    for name in job_names:
-        if name == "pipeline":
-            produced.update(f"pipeline ({v})" for v in matrix_versions)
-        else:
-            produced.add(name)
-    produced.add("verify-bound-issue")
-
-    missing = set(repo_settings.REQUIRED_CHECKS) - produced
-    assert not missing, f"required checks with no producing job: {sorted(missing)}"
+    verify = _read(os.path.join(WORKFLOW_DIR, "verify-pr-issue.yml"))
+    assert re.search(r"^    name: quality$", ci, re.MULTILINE)
+    assert re.search(r"^  verify-bound-issue:$", verify, re.MULTILINE)
 
 
 def test_verify_bound_issue_job_name_is_stable():
@@ -444,14 +421,15 @@ def test_every_workflow_is_valid_yaml():
                 yaml.safe_load(handle)
 
 
-def test_ci_is_callable_as_a_reusable_workflow():
-    """Consumers call this file rather than copying it, so the two cannot drift apart."""
+def test_ci_is_a_direct_detector_driven_workflow():
+    """CI is installed directly so its protected quality context is never caller-prefixed."""
     yaml = pytest.importorskip("yaml")
     with open(os.path.join(WORKFLOW_DIR, "ci.yml"), encoding="utf-8") as handle:
         document = yaml.safe_load(handle)
     triggers = document[True] if True in document else document["on"]
-    assert "workflow_call" in triggers
-    assert "pipeline-ref" in triggers["workflow_call"]["inputs"], "the pin must be an input"
+    assert "workflow_call" not in triggers
+    assert "merge_group" in triggers
+    assert document["jobs"]["quality"]["name"] == "quality"
 
 
 def test_ci_still_runs_for_this_repository_itself():
@@ -463,19 +441,18 @@ def test_ci_still_runs_for_this_repository_itself():
     assert "push" in triggers and "pull_request" in triggers
 
 
-def test_a_consumer_needs_no_pipeline_scripts_of_its_own():
-    """The point of the pin is that shared code lives in one repository, not three."""
+def test_consumer_ci_uses_a_pinned_darkfactory_runtime_checkout():
+    """Installed direct CI gets detector/runtime code from the pinned DarkFactory checkout."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    assert (
-        "path: .darkfactory-pipeline" in content
-    ), "the pinned pipeline must be checked out separately"
-    assert "PYTHONPATH" in content, "the pinned scripts must be importable"
+    assert "path: .darkfactory-runtime" in content
+    assert "Check out pinned DarkFactory runtime" in content
+    assert "PYTHONPATH" not in content
 
 
-def test_the_pipeline_checkout_is_skipped_when_running_in_place():
-    """Checking this repository out into .pipeline from itself would be circular."""
+def test_runtime_checkout_is_skipped_when_running_in_place():
+    """DarkFactory uses its checked-out PR branch rather than recursively checking itself out."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    assert "if: inputs.pipeline-ref != ''" in content
+    assert "if: github.repository != 'marius-patrik/DarkFactory'" in content
 
 
 def test_workflows_trigger_on_the_declared_default_branch():
@@ -503,9 +480,11 @@ def test_branch_protection_targets_the_declared_default_branch():
 
 
 def test_the_docs_job_uses_the_native_docs_contract():
-    """The docs job detects docs.df and runs the one first-party compiler."""
+    """The direct docs-check job detects docs.df and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    docs_job = content[content.index("  docs:") :]
+    docs_job = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "docs.df" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
@@ -515,9 +494,11 @@ def test_the_docs_job_uses_the_native_docs_contract():
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
     """A repository without docs.df reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    docs_job = content[content.index("  docs:") :]
+    docs_job = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "No documentation configured" in docs_job
-    assert "steps.detect.outputs.present != 'true'" in docs_job
+    assert "steps.docs.outputs.present != 'true'" in docs_job
 
 
 def test_repo_settings_can_configure_a_consumer_checkout():
@@ -613,7 +594,7 @@ def test_the_agent_image_is_built_from_the_pipeline():
 #:
 #: `install.yml` reaches into a consumer to write its callers, so a consumer calling it would be
 #: asking to be installed into itself. It is the one workflow that is deliberately not shared.
-NOT_CALLABLE = {"install.yml"}
+NOT_CALLABLE = {"install.yml", "ci.yml"}
 
 
 def test_every_shared_workflow_is_callable():
@@ -1202,9 +1183,11 @@ def test_bot_comments_do_not_start_an_agent_container():
 
 
 def test_ci_docs_job_runs_the_native_bun_compiler():
-    """docs.df is compiled by the Bun workspace, not a Python-selected engine."""
+    """docs.df is compiled by the Bun workspace in the direct docs-check job."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    block = content.split("\n  docs:", 1)[1]
+    block = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "uses: oven-sh/setup-bun@v2" in block
     assert "bun install --frozen-lockfile" in block
     assert 'bun "$ROOT/scripts/build-docs.ts"' in block

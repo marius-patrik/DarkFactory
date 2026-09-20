@@ -64,7 +64,7 @@
     },
     "formatting": {
       "python": {
-        "command": "black --line-length 100 ."
+        "command": "black --check --line-length 100 ."
       }
     },
     "release": {
@@ -76,6 +76,11 @@
       "node": {
         "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
         "enabled": false
+      }
+    },
+    "setup": {
+      "python": {
+        "command": "python -m pip install -r requirements-dev.txt"
       }
     }
   },

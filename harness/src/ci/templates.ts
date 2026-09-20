@@ -2,47 +2,13 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-export const DARKFACTORY_WORKFLOW_VERSION = "0.1.0";
+export const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
 
-export const STANDARD_WORKFLOW_TEMPLATES = [
-	"ci.yml",
-	"verify-bound-issue.yml",
-	"df-dispatch.yml",
-] as const;
+export const STANDARD_WORKFLOW_TEMPLATES = ["ci.yml", "verify-bound-issue.yml", "df-dispatch.yml"] as const;
 
-export type StandardWorkflowName = typeof STANDARD_WORKFLOW_TEMPLATES[number];
+export type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
 
-const BUILTIN_TEMPLATES: Record<StandardWorkflowName, string> = {
-	"ci.yml": `name: CI
-
-on:
-  push:
-    branches: ["main", "master", "darkfactory"]
-  pull_request:
-    branches: ["main", "master", "darkfactory"]
-  workflow_dispatch:
-
-jobs:
-  pipeline:
-    uses: {{pipeline_repo}}/.github/workflows/ci.yml@{{pipeline_ref}}
-    with:
-      pipeline-ref: "{{pipeline_ref}}"
-      pipeline-repo: "{{pipeline_repo}}"
-`,
-	"verify-bound-issue.yml": `name: Verify Bound Issue
-
-on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-  workflow_dispatch:
-
-jobs:
-  verify-bound-issue:
-    uses: {{pipeline_repo}}/.github/workflows/verify-pr-issue.yml@{{pipeline_ref}}
-    with:
-      pipeline-ref: "{{pipeline_ref}}"
-      pipeline-repo: "{{pipeline_repo}}"
-`,
+const BUILTIN_TEMPLATES: Partial<Record<StandardWorkflowName, string>> = {
 	"df-dispatch.yml": `name: DarkFactory Dispatch
 
 on:
@@ -80,6 +46,7 @@ jobs:
 export interface TemplateContext {
 	pipeline_repo?: string;
 	pipeline_ref?: string;
+	default_branch?: string;
 	[key: string]: string | undefined;
 }
 
@@ -110,9 +77,8 @@ export function getWorkflowTemplateContent(templateName: string): string {
 		}
 	}
 
-	if (cleanName in BUILTIN_TEMPLATES) {
-		return BUILTIN_TEMPLATES[cleanName];
-	}
+	const builtin = BUILTIN_TEMPLATES[cleanName];
+	if (builtin !== undefined) return builtin;
 
 	throw new Error(`Workflow template not found: ${templateName}`);
 }
@@ -120,10 +86,9 @@ export function getWorkflowTemplateContent(templateName: string): string {
 export function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
-		pipeline_ref: context.pipeline_ref || "main",
-		...Object.fromEntries(
-			Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]
-		),
+		pipeline_ref: context.pipeline_ref || "darkfactory",
+		default_branch: context.default_branch || "main",
+		...Object.fromEntries(Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]),
 	};
 
 	return rawTemplate.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) => fullContext[key] ?? "");

@@ -1,8 +1,8 @@
+import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
 import type { GitHubRepository } from "../github/repository.ts";
-import { loadCiConfig } from "./config.ts";
+import { type DetectedQualityState, resolveDetectedQuality } from "./detected.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
-import type { CiConfig } from "./schema.ts";
 
 export interface DoctorCheckResult {
 	status: "pass" | "warn" | "fail" | "skipped";
@@ -13,7 +13,7 @@ export interface DoctorCheckResult {
 export interface DoctorReport {
 	ok: boolean;
 	checks: {
-		config: DoctorCheckResult;
+		repository: DoctorCheckResult;
 		workflows: DoctorCheckResult;
 		protection: DoctorCheckResult;
 	};
@@ -22,52 +22,55 @@ export interface DoctorReport {
 export async function runCiDoctor(
 	repoDir = process.cwd(),
 	repo?: GitHubRepository,
-	branch = "main",
+	branch?: string,
 ): Promise<DoctorReport> {
-	// 1. Check config
-	let config: CiConfig | null = null;
-	let configResult: DoctorCheckResult;
-
+	let detected: DetectedQualityState | undefined;
+	let repositoryResult: DoctorCheckResult;
 	try {
-		config = await loadCiConfig(repoDir);
-		const required = computeRequiredChecks(config);
-		configResult = {
-			status: "pass",
-			message: `.darkfactory/ci.json is valid (${config.checks.length} check(s) declared, ${required.length} required)`,
-			details: { checks: config.checks, alert_after: config.alert_after },
-		};
-	} catch (err: unknown) {
-		configResult = {
+		detected = await resolveDetectedQuality(repoDir);
+		const gaps = detected.resolution.gaps;
+		repositoryResult =
+			gaps.length === 0
+				? {
+						status: "pass",
+						message: `Detected ${detected.evidence.packages.length} package(s) with complete deterministic action coverage`,
+						details: { packages: detected.evidence.packages, matrix: detected.matrix },
+					}
+				: {
+						status: "warn",
+						message: `Detected ${detected.evidence.packages.length} package(s) with ${gaps.length} explicitly unsupported/missing action(s)`,
+						details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
+					};
+	} catch (error) {
+		repositoryResult = {
 			status: "fail",
-			message: err instanceof Error ? err.message : String(err),
+			message: `Repository detection/action resolution failed: ${error instanceof Error ? error.message : String(error)}`,
 		};
 	}
 
-	// 2. Check workflows
 	let workflowsResult: DoctorCheckResult;
 	try {
 		const drift = await checkWorkflowsDrift(repoDir);
-		const modified = drift.filter((d) => d.status === "modified");
-		const missing = drift.filter((d) => d.status === "missing");
-		const outdated = drift.filter((d) => d.status === "outdated");
-		const inSync = drift.filter((d) => d.status === "in_sync");
-
+		const modified = drift.filter((item) => item.status === "modified");
+		const missing = drift.filter((item) => item.status === "missing");
+		const outdated = drift.filter((item) => item.status === "outdated");
+		const inSync = drift.filter((item) => item.status === "in_sync");
 		if (modified.length > 0) {
 			workflowsResult = {
 				status: "fail",
-				message: `Managed workflows modified by user (hash mismatch): ${modified.map((m) => m.file).join(", ")}`,
+				message: `Managed workflows modified: ${modified.map((item) => item.file).join(", ")}`,
 				details: drift,
 			};
 		} else if (missing.length > 0) {
 			workflowsResult = {
 				status: "fail",
-				message: `Managed workflows missing: ${missing.map((m) => m.file).join(", ")}`,
+				message: `Managed workflows missing: ${missing.map((item) => item.file).join(", ")}`,
 				details: drift,
 			};
 		} else if (outdated.length > 0) {
 			workflowsResult = {
 				status: "warn",
-				message: `Workflows outdated (run 'df ci update'): ${outdated.map((o) => o.file).join(", ")}`,
+				message: `Managed workflows outdated: ${outdated.map((item) => item.file).join(", ")}`,
 				details: drift,
 			};
 		} else {
@@ -77,62 +80,50 @@ export async function runCiDoctor(
 				details: drift,
 			};
 		}
-	} catch (err: unknown) {
+	} catch (error) {
 		workflowsResult = {
 			status: "fail",
-			message: `Failed to inspect workflows: ${err instanceof Error ? err.message : String(err)}`,
+			message: `Failed to inspect workflows: ${error instanceof Error ? error.message : String(error)}`,
 		};
 	}
 
-	// 3. Check protection
 	let protectionResult: DoctorCheckResult;
-	if (!repo || !config) {
+	if (!repo || !detected) {
 		protectionResult = {
 			status: "skipped",
-			message: "Branch protection check skipped (no GitHub repository client or invalid config)",
+			message: "Branch protection check skipped (repository client or detected quality state unavailable)",
 		};
 	} else {
 		try {
-			const expected = computeRequiredChecks(config, repo.slug);
-			const verification = await verifyBranchProtection(repo, expected, branch);
-			if (verification.valid) {
-				protectionResult = {
-					status: "pass",
-					message: `Remote protection matches all ${expected.length} required checks (source: ${verification.source})`,
-					details: verification,
-				};
-			} else {
-				const issues: string[] = [];
-				if (verification.missing.length > 0) {
-					issues.push(`missing remote checks: ${verification.missing.join(", ")}`);
-				}
-				if (verification.extra.length > 0) {
-					issues.push(`unexpected extra remote checks: ${verification.extra.join(", ")}`);
-				}
-				if (!verification.strict) {
-					issues.push("strict branch up-to-date policy disabled");
-				}
-
-				protectionResult = {
-					status: "fail",
-					message: `Branch protection mismatch: ${issues.join("; ")}`,
-					details: verification,
-				};
-			}
-		} catch (err: unknown) {
+			const checks = requiredChecksForDetectedQuality(detected.resolution);
+			const expected = computeRequiredChecks(checks);
+			const defaultBranch = branch ?? detected.evidence.repoDf.identity?.default_branch ?? "main";
+			const verification = await verifyBranchProtection(repo, expected, defaultBranch);
+			protectionResult = verification.valid
+				? {
+						status: "pass",
+						message: `Remote protection matches all ${expected.length} required checks (source: ${verification.source})`,
+						details: verification,
+					}
+				: {
+						status: "fail",
+						message: "Branch protection does not match detector-derived required checks",
+						details: verification,
+					};
+		} catch (error) {
 			protectionResult = {
 				status: "fail",
-				message: `Failed to verify branch protection: ${err instanceof Error ? err.message : String(err)}`,
+				message: `Failed to verify branch protection: ${error instanceof Error ? error.message : String(error)}`,
 			};
 		}
 	}
 
-	const ok = configResult.status === "pass" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
-
+	const ok =
+		repositoryResult.status !== "fail" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
 	return {
 		ok,
 		checks: {
-			config: configResult,
+			repository: repositoryResult,
 			workflows: workflowsResult,
 			protection: protectionResult,
 		},

@@ -5,9 +5,30 @@ on:
     types: [opened, edited, synchronize, reopened]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   verify-bound-issue:
-    uses: {{pipeline_repo}}/.github/workflows/verify-pr-issue.yml@{{pipeline_ref}}
-    with:
-      pipeline-ref: "{{pipeline_ref}}"
-      pipeline-repo: "{{pipeline_repo}}"
+    name: verify-bound-issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR description binds a tracking issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          if os.environ.get("GITHUB_EVENT_NAME", "") != "pull_request":
+              sys.exit(0)
+
+          body = os.environ.get("PR_BODY", "")
+          pattern = r"(?i)\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)\b"
+          if not re.findall(pattern, body):
+              print("Every pull request must bind a tracking issue using closing syntax.", file=sys.stderr)
+              sys.exit(1)
+          PY

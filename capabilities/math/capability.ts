@@ -14,6 +14,14 @@ export const capability = defineCapability({
 			domains: ["math"],
 		},
 	],
+	actions: [
+		{
+			kind: "test",
+			description: "Build Lean targets to check formal proofs.",
+			ecosystems: ["lean"],
+			command: "lake build",
+		},
+	],
 });
 
 export default capability;

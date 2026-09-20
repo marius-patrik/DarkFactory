@@ -1,27 +1,17 @@
-import { resolveChecksForRepo } from "./config.ts";
-import type { CheckRunItem, CiConfig, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
+import type { CheckRunItem, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
 
 export function requiredChecksState(
-	config: CiConfig | ResolvedCheck[],
-	checkRuns: CheckRunItem[],
-	repoSlug?: string,
+	resolvedChecks: readonly ResolvedCheck[],
+	checkRuns: readonly CheckRunItem[],
 ): RequiredChecksResult {
-	const resolvedChecks: ResolvedCheck[] = Array.isArray(config)
-		? config
-		: resolveChecksForRepo(config, repoSlug);
-
-	const requiredChecks = resolvedChecks.filter((c) => c.required);
-
-	const runsByName = new Map<string, CheckRunItem>();
-	for (const run of checkRuns) {
-		runsByName.set(run.name, run);
-	}
+	const requiredChecks = resolvedChecks.filter((check) => check.required);
+	const runsByName = new Map(checkRuns.map((run) => [run.name, run]));
 
 	const failing: string[] = [];
 	const pending: string[] = [];
 	const missing: string[] = [];
 	const passed: string[] = [];
-	const details: Record<string, { required: boolean; status?: string; conclusion?: string | null }> = {};
+	const details: RequiredChecksResult["details"] = {};
 
 	for (const check of resolvedChecks) {
 		const run = runsByName.get(check.name);
@@ -39,31 +29,17 @@ export function requiredChecksState(
 			pending.push(check.name);
 			continue;
 		}
-
 		if (run.status !== "completed") {
 			pending.push(check.name);
 			continue;
 		}
-
 		const conclusion = run.conclusion ?? "";
-		if (conclusion === "success" || conclusion === "neutral" || conclusion === "skipped") {
-			passed.push(check.name);
-		} else {
-			failing.push(check.name);
-		}
-	}
-
-	let state: "green" | "pending" | "failed";
-	if (failing.length > 0) {
-		state = "failed";
-	} else if (pending.length > 0) {
-		state = "pending";
-	} else {
-		state = "green";
+		if (conclusion === "success" || conclusion === "neutral" || conclusion === "skipped") passed.push(check.name);
+		else failing.push(check.name);
 	}
 
 	return {
-		state,
+		state: failing.length > 0 ? "failed" : pending.length > 0 ? "pending" : "green",
 		failing,
 		pending,
 		missing,
@@ -73,8 +49,5 @@ export function requiredChecksState(
 }
 
 export function shouldAlert(repairCount: number, alertAfter?: number): boolean {
-	if (typeof alertAfter !== "number" || alertAfter <= 0) {
-		return false;
-	}
-	return repairCount >= alertAfter;
+	return typeof alertAfter === "number" && alertAfter > 0 && repairCount >= alertAfter;
 }

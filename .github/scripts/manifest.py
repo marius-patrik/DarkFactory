@@ -43,16 +43,7 @@ DEFAULT_AREAS: Dict[str, str] = {
 #: Status checks required when a repository declares none. Only jobs that always report a
 #: conclusion belong here; a job that can be skipped blocks every merge forever.
 DEFAULT_REQUIRED_CHECKS: Tuple[str, ...] = (
-    "pipeline (3.10)",
-    "pipeline (3.11)",
-    "pipeline (3.12)",
-    "pipeline (3.13)",
-    "rust",
-    "paper",
-    "math",
-    "web",
-    "harness",
-    "docs",
+    "quality",
     "verify-bound-issue",
 )
 
@@ -430,13 +421,11 @@ class Manifest:
     def required_checks(self) -> List[str]:
         """Returns the status checks that must pass before a merge.
 
-        Calling a reusable workflow prefixes every check name with the *caller's* job name, so a
-        consumer's checks are `<caller job> / <called job>` rather than the bare names this
-        repository produces. That renaming is invisible until branch protection starts blocking
-        every merge against contexts nothing reports, so the list is declared per repository.
+        The final installed CI and issue-binding workflows report stable direct job contexts, so
+        repository protection no longer depends on caller/reusable-workflow prefixes.
 
         Returns:
-            Declared contexts, or this repository's own defaults.
+            Declared contexts, or the final stable aggregate defaults.
         """
         declared = self.data.get("required_checks")
         if declared:

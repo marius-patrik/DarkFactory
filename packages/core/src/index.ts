@@ -18,3 +18,4 @@ export type {
 	RunDeadline,
 	SupervisorOptions,
 } from "../../../harness/src/harness/supervisor.ts";
+export * from "./repository-evidence.ts";

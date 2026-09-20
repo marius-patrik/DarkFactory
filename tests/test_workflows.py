@@ -2,9 +2,13 @@ import pathlib
 import yaml
 
 
+def _workflow(path):
+    with pathlib.Path(path).open("r", encoding="utf-8") as handle:
+        return yaml.safe_load(handle)
+
+
 def _steps(path, job):
-    with pathlib.Path(path).open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)["jobs"][job]["steps"]
+    return _workflow(path)["jobs"][job]["steps"]
 
 
 def _index(steps, name):
@@ -16,27 +20,49 @@ def test_auto_format_formats_changed_harness_files_before_committing():
     fmt = _index(steps, "Format harness")
     assert fmt < _index(steps, "Commit and push formatting changes")
     step = steps[fmt]
-    # Consumer repositories call this workflow and have no harness.
     assert step["if"] == "hashFiles('harness/biome.json') != ''"
     assert step["working-directory"] == "harness"
     assert "bun install --frozen-lockfile" in step["run"]
     assert "biome check --write --changed" in step["run"]
 
 
-def test_ci_blocks_on_harness_format_and_lint_before_typecheck():
-    steps = _steps(".github/workflows/ci.yml", "harness")
-    check = _index(steps, "Check harness formatting and lint")
-    assert check < _index(steps, "Typecheck harness")
-    step = steps[check]
-    assert "continue-on-error" not in step
-    assert "biome ci --changed" in step["run"]
-    assert steps[0]["with"]["fetch-depth"] == 0
+def test_ci_quality_is_detector_driven_and_aggregated():
+    workflow = _workflow(".github/workflows/ci.yml")
+    jobs = workflow["jobs"]
+    assert set(jobs) == {"detect", "quality-run", "docs-check", "quality"}
+
+    detect = jobs["detect"]
+    assert _index(detect["steps"], "Resolve detected quality matrix") > _index(
+        detect["steps"], "Install DarkFactory runtime"
+    )
+    matrix = jobs["quality-run"]
+    assert matrix["needs"] == "detect"
+    assert "fromJSON(needs.detect.outputs.matrix)" in str(matrix["strategy"]["matrix"]["include"])
+    assert _index(matrix["steps"], "Install package dependencies") < _index(
+        matrix["steps"], "Run detected quality action"
+    )
+
+    docs = jobs["docs-check"]
+    assert _index(docs["steps"], "Detect docs.df") < _index(
+        docs["steps"], "Build native documentation"
+    )
+
+    aggregate = jobs["quality"]
+    assert aggregate["name"] == "quality"
+    assert set(aggregate["needs"]) == {"detect", "quality-run", "docs-check"}
+    assert aggregate["if"] == "always()"
+
+
+def test_ci_has_no_handwritten_language_quality_jobs():
+    workflow = _workflow(".github/workflows/ci.yml")
+    jobs = workflow["jobs"]
+    for legacy in ("pipeline", "rust", "paper", "math", "web", "harness", "docs"):
+        assert legacy not in jobs
 
 
 def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
-    with pathlib.Path(".github/workflows/agent.yml").open("r", encoding="utf-8") as f:
-        wf = yaml.safe_load(f)
-    condition = wf["jobs"]["run-agent"].get("if", "")
+    workflow = _workflow(".github/workflows/agent.yml")
+    condition = workflow["jobs"]["run-agent"].get("if", "")
     assert "!endsWith(github.event.comment.user.login, '[bot]')" in condition
     assert "!contains(github.event.issue.labels.*.name, 'pipeline-failure')" in condition
 

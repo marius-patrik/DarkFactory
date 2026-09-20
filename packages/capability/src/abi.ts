@@ -88,6 +88,42 @@ export interface CapabilityHookDefinition {
 	event: string;
 }
 
+/** Repository/package context supplied while resolving contributed deterministic actions. */
+export interface CapabilityPackageContext {
+	id: string;
+	path: string;
+	name: string;
+	ecosystem: string;
+	packageManager: string;
+	packageManagerRoot: string;
+	manifest: string;
+	domains: readonly string[];
+	scripts: readonly string[];
+	apiEntryPoints: readonly string[];
+}
+
+/** Deterministic repository action kinds shared by doctor, CI, verification and docs. */
+export type CapabilityActionKind =
+	| "test"
+	| "lint"
+	| "format_check"
+	| "docs_check"
+	| "docs_extract"
+	| "setup"
+	| "release";
+
+/** Action contribution supplied by a capability for applicable package evidence. */
+export interface CapabilityActionDefinition {
+	kind: CapabilityActionKind;
+	description: string;
+	ecosystems?: readonly string[];
+	packageManagers?: readonly string[];
+	domains?: readonly string[];
+	requiredScripts?: readonly string[];
+	command?: string | ((pkg: CapabilityPackageContext) => string | undefined);
+	metadata?: Readonly<Record<string, unknown>> | ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
+}
+
 /** Metadata for documentation, web, release, and audit surfaces. */
 export interface CapabilitySurfaceMetadata {
 	docs?: readonly string[];
@@ -110,6 +146,7 @@ export interface CapabilityDefinition {
 	graph?: readonly CapabilityGraphContribution[];
 	verification?: readonly CapabilityVerificationDefinition[];
 	hooks?: readonly CapabilityHookDefinition[];
+	actions?: readonly CapabilityActionDefinition[];
 	surfaces?: CapabilitySurfaceMetadata;
 }
 

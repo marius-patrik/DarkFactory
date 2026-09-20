@@ -15,6 +15,14 @@ from typing import Dict, List, Optional
 import environment
 import manifest
 
+PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DIRECT_WORKFLOW_TEMPLATES = {
+    "ci": os.path.join(PIPELINE_ROOT, "harness", "assets", "workflows", "ci.yml.tmpl"),
+    "verify-pr-issue": os.path.join(
+        PIPELINE_ROOT, "harness", "assets", "workflows", "verify-bound-issue.yml.tmpl"
+    ),
+}
+
 #: Workflow file name -> (display name, `on:` block, `permissions:` block).
 #:
 #: The display name matters beyond cosmetics: `report-failure` watches workflows *by name*, so a
@@ -152,19 +160,12 @@ DEFAULT_CHECK_SOURCE = "ci"
 
 
 def required_contexts(installed: List[str]) -> List[str]:
-    """Returns the status check contexts a protected branch should require.
-
-    Args:
-        installed: Workflow file names being installed.
-
-    Returns:
-        Contexts, prefixed with the caller job that reports each, for the checks installed.
-    """
-    contexts = []
-    for check in manifest.DEFAULT_REQUIRED_CHECKS:
-        caller = CHECK_SOURCES.get(check, DEFAULT_CHECK_SOURCE)
-        if caller in installed:
-            contexts.append(f"{caller} / {check}")
+    """Returns the stable direct status-check contexts installed for branch protection."""
+    contexts: List[str] = []
+    if "ci" in installed:
+        contexts.append("quality")
+    if "verify-pr-issue" in installed:
+        contexts.append("verify-bound-issue")
     return contexts
 
 
@@ -262,6 +263,16 @@ def render_caller(
     Returns:
         The file contents.
     """
+    direct = DIRECT_WORKFLOW_TEMPLATES.get(workflow)
+    if direct:
+        with open(direct, encoding="utf-8") as handle:
+            return (
+                handle.read()
+                .replace("{{pipeline_repo}}", pipeline_repo)
+                .replace("{{pipeline_ref}}", ref)
+                .replace("{{default_branch}}", branch)
+            )
+
     spec = WORKFLOWS[workflow]
     watched = watched_workflows(installed if installed is not None else relevant_workflows())
     trigger = str(spec["on"]).format(branch=branch, watched=", ".join(watched))
@@ -334,9 +345,8 @@ def render_manifest(
             "holder": "",
             "year": "",
         },
-        "$comment_required_checks": "Written rather than defaulted: calling the pipeline as a "
-        "reusable workflow prefixes every check with the caller's job name, so the unprefixed "
-        "defaults would protect the branch against contexts nothing reports.",
+        "$comment_required_checks": "Stable direct contexts produced by the installed quality and "
+        "issue-binding workflows.",
         "upstream": {
             "$comment": "`ref` is the pin: bump it to adopt a pipeline update.",
             "repo": pipeline_repo,
@@ -520,6 +530,7 @@ PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\
 REF_INPUT_PATTERN = re.compile(
     r'(?P<prefix>pipeline-ref:\s*)(?P<quote>"?)(?P<ref>[^"\s]*)(?P=quote)'
 )
+DIRECT_CI_REF_PATTERN = re.compile(r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE)
 
 
 def retarget(root: str, ref: str) -> List[str]:
@@ -557,7 +568,12 @@ def retarget(root: str, ref: str) -> List[str]:
         with open(path, encoding="utf-8") as handle:
             content = handle.read()
 
-        updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
+        if name == "ci.yml" and "Check out pinned DarkFactory runtime" in content:
+            updated = DIRECT_CI_REF_PATTERN.sub(
+                lambda m: f'{m.group("prefix")}{ref}{m.group("suffix")}', content
+            )
+        else:
+            updated = PIN_PATTERN.sub(lambda m: m.group("prefix") + ref, content)
         updated = REF_INPUT_PATTERN.sub(
             lambda m: f'{m.group("prefix")}{m.group("quote")}{ref}{m.group("quote")}', updated
         )

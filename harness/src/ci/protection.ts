@@ -1,6 +1,5 @@
 import type { GitHubRepository } from "../github/repository.ts";
-import { getRequiredCheckNames } from "./config.ts";
-import type { CiConfig } from "./schema.ts";
+import type { ResolvedCheck } from "./schema.ts";
 
 export interface ProtectionVerificationReport {
 	valid: boolean;
@@ -23,8 +22,8 @@ export interface ApplyProtectionResult {
 	contexts: string[];
 }
 
-export function computeRequiredChecks(config: CiConfig, repoSlug?: string): string[] {
-	return getRequiredCheckNames(config, repoSlug);
+export function computeRequiredChecks(checks: readonly ResolvedCheck[]): string[] {
+	return checks.filter((check) => check.required).map((check) => check.name);
 }
 
 interface RulesetRule {

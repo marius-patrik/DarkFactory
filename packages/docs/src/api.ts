@@ -1,3 +1,5 @@
+import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
+import { resolveDetectedRepositoryActions } from "@darkfactory/capability/actions";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -67,7 +69,7 @@ export function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): 
 
 function extractionOptions(repoRoot: string, api: DocsTypeScriptApiConfig): TypeScriptApiExtractionOptions {
 	return {
-		entryPoints: api.entryPoints.map((entry) => resolve(repoRoot, entry)),
+		entryPoints: (api.entryPoints ?? []).map((entry) => resolve(repoRoot, entry)),
 		tsconfig: resolve(repoRoot, api.tsconfig),
 		...(api.name ? { name: api.name } : {}),
 	};
@@ -76,7 +78,46 @@ function extractionOptions(repoRoot: string, api: DocsTypeScriptApiConfig): Type
 /** Compiles the canonical documentation graph including configured TypeScript API metadata. */
 export async function compileDocsContentGraphWithApi(repoRoot: string, config: DocsConfig = loadDocsConfig(repoRoot)): Promise<DocsContentGraph> {
 	const typescript = config.api?.typescript;
-	if (!typescript) return compileDocsContentGraph(repoRoot, config);
+	if (!typescript?.entryPoints?.length) return compileDocsContentGraph(repoRoot, config);
 	const project = await extractTypeScriptApi(extractionOptions(repoRoot, typescript));
 	return compileDocsContentGraph(repoRoot, config, apiReferenceFromTypeDoc(project));
+}
+
+/**
+ * Compiles documentation using TypeScript API entry points from the canonical repository detector/action resolver.
+ * docs.df continues to own TypeDoc settings; detected package evidence owns which exported APIs are present.
+ */
+export async function compileDocsContentGraphWithDetectedApi(
+	repoRoot: string,
+	options: { config?: DocsConfig; capabilitiesRoot?: string } = {},
+): Promise<DocsContentGraph> {
+	const config = options.config ?? loadDocsConfig(repoRoot);
+	const configured = config.api?.typescript;
+	if (!configured) return compileDocsContentGraph(repoRoot, config);
+
+	const evidence = await detectRepositoryEvidence(repoRoot);
+	const resolution = await resolveDetectedRepositoryActions(
+		evidence,
+		options.capabilitiesRoot ?? resolve(repoRoot, "capabilities"),
+	);
+	const entryPoints = resolution.packages.flatMap(({ actions }) => {
+		const action = actions.docs_extract;
+		const metadata = action.metadata;
+		if (!action.supported || metadata?.extractor !== "typedoc" || !Array.isArray(metadata.entryPoints)) return [];
+		return metadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
+	});
+	const uniqueEntryPoints = [...new Set(entryPoints)].sort();
+	if (uniqueEntryPoints.length === 0) return compileDocsContentGraph(repoRoot, config);
+
+	const detectedConfig: DocsConfig = {
+		...config,
+		api: {
+			...config.api,
+			typescript: {
+				...configured,
+				entryPoints: uniqueEntryPoints,
+			},
+		},
+	};
+	return compileDocsContentGraphWithApi(repoRoot, detectedConfig);
 }

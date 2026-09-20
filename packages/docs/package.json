@@ -15,6 +15,8 @@
   ],
   "license": "GPL-3.0",
   "dependencies": {
+    "@darkfactory/capability": "workspace:*",
+    "@darkfactory/core": "workspace:*",
     "@darkfactory/protocol": "workspace:*",
     "typedoc": "0.28.20"
   }

@@ -1,7 +1,6 @@
 import type { GitHubRepository } from "../github/repository.ts";
-import { resolveChecksForRepo } from "./config.ts";
 import { requiredChecksState } from "./guard.ts";
-import type { CheckRunItem, CheckState, CiConfig, RequiredChecksResult } from "./schema.ts";
+import type { CheckRunItem, CheckState, RequiredChecksResult, ResolvedCheck } from "./schema.ts";
 
 export interface StatusCheckItem {
 	name: string;
@@ -23,8 +22,7 @@ export interface CiStatusReport {
 export async function getCheckStatus(
 	repo: GitHubRepository,
 	ref: string,
-	config: CiConfig,
-	repoSlug?: string,
+	resolved: readonly ResolvedCheck[],
 ): Promise<CiStatusReport> {
 	const owner = repo.owner;
 	const repoName = repo.repo;
@@ -78,8 +76,7 @@ export async function getCheckStatus(
 		}
 	}
 
-	const resolved = resolveChecksForRepo(config, repoSlug ?? repo.slug);
-	const requiredSet = new Set(resolved.filter((c) => c.required).map((c) => c.name));
+	const requiredSet = new Set(resolved.filter((check) => check.required).map((check) => check.name));
 
 	const checks: StatusCheckItem[] = checkRuns.map((run) => ({
 		name: run.name,
