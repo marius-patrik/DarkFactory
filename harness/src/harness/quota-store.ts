@@ -12,7 +12,7 @@ export interface CooldownEntry {
 	pool?: string;
 }
 
-/** @deprecated Compatibility adapter; runtime state is stored in limits.json by LimitLedger. */
+/** @deprecated Compatibility adapter; runtime state is stored in limits.df by LimitLedger. */
 export class QuotaStore extends LimitLedger {
 	private readonly compatibilityTtlMs: number;
 
