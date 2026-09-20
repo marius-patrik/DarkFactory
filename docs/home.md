@@ -85,7 +85,7 @@ Final configuration is split by concern:
 - `config.df` — runtime/user/provider configuration;
 - `docs.df` — native documentation configuration.
 
-For repo/config, the final #340 contract accepts either `.darkfactory/<name>.df` or root `<name>.df`; both-present is an error. `.df` is a filename extension, never a directory.
+For repo/config, either `.darkfactory/<name>.df` or root `<name>.df` is accepted; both-present is an error. `.df` is a filename extension, never a directory.
 
 `docs.df` is the only DarkFactory documentation configuration contract.
 
@@ -126,7 +126,7 @@ The docs homepage and this README are rendered from the same semantic content gr
 
 `@darkfactory/web` owns first-party web rendering. The documentation renderer consumes the canonical `@darkfactory/docs` content graph and emits the static GitHub Pages artifact without a second documentation engine or theme runtime.
 
-The broader GitHub-backed operator application shares the same package boundary and browser-safe protocol/GitHub/auth contracts; #425 owns that operator surface. GitHub remains the durable issue/PR/check/project/event/authorization layer rather than a duplicated DarkFactory state database.
+The broader GitHub-backed operator application shares the same package boundary and browser-safe protocol/GitHub/auth contracts. GitHub remains the durable issue/PR/check/project/event/authorization layer rather than a duplicated DarkFactory state database.
 
 ## Self-hosting and completion strategy
 
@@ -145,7 +145,7 @@ routing + natural-stop result capture
       ↓
 production graph handlers + branch repair
       ↓
-#359: final df production engine complete
+final df production engine complete
       ↓
 remaining features completed through df itself
 ```
@@ -171,7 +171,7 @@ The final released system is proved across six repositories:
 5. template-OdbornaPrace
 6. OdbornaPrace-mono
 
-Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and then re-runs the #68 declarable-graph contract.
+Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and then re-runs the declarable-graph product contract.
 
 ## Normative references
 
