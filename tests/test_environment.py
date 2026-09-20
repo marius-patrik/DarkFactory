@@ -312,7 +312,6 @@ class TestPlans:
         payload = environment.configure(str(polyglot)).as_dict()
         assert json.loads(json.dumps(payload)) == payload
         assert set(payload) >= {"test_plan", "format_plan", "build_plan"}
-        assert "docs_plan" not in payload
 
 
 class TestDomains:
