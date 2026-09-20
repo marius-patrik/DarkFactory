@@ -25,7 +25,9 @@
     "lucide-react": "1.47.0",
     "react-markdown": "10.1.0",
     "rehype-raw": "7.0.0",
-    "remark-gfm": "4.0.1"
+    "remark-gfm": "4.0.1",
+    "@monaco-editor/react": "4.7.0",
+    "monaco-editor": "0.56.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
