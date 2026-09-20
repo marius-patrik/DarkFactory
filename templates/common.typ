@@ -473,7 +473,7 @@
   // Term markers are independent from the removed standalone terminology index.
   // Use a literal asterisk rather than the former star glyph.
   let with-marker = if marker and render != "explanation" {
-    [#referenced-name#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[#text("*")]]
+    [#referenced-name#super[#text(fill: rgb("#2563eb"), size: 0.72em)[*]]]
   } else {
     referenced-name
   }

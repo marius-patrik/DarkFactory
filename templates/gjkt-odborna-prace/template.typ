@@ -55,9 +55,9 @@
   let title = title-for(meta)
   if title == "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství" {
     [
-      DarkFactory:#linebreak()
-      Umělá inteligence v praxi -#linebreak()
-      Agentické a harnessové inženýrství
+      DarkFactory#linebreak()
+      Agentické a harnessové inženýrství:#linebreak()
+      Umělá inteligence v praxi
     ]
   } else {
     title
@@ -338,6 +338,7 @@
     text(fill: rgb("#0f172a"), it),
   )
   show link: set text(fill: rgb("#0b4f9e"))
+  show cite: it => super(it)
   set table(stroke: 0.5pt, inset: (x: 5pt, y: 4pt))
   set figure(numbering: "1")
 
