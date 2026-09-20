@@ -24,7 +24,7 @@ Architektura dovedností staví na následujících principech:
 - Dynamické načítání pro úsporu kontextu: Do výchozího promptu se vloží pouze stručný přehled dostupných dovedností. Kompletní instrukce a skripty se do kontextu načtou až v okamžiku, kdy agent danou dovednost explicitně vyvolá.
 - Skripty (#term(terms.script, language: "en", marker: false, linked: false, emphasized: false)) a záchytné body (#term(terms.hook, language: "en", marker: false, linked: false, emphasized: false)): Dovednosti mohou obsahovat deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
 
-Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term(terms.plugins, render: "both", detail-language: "cs", detail-style: "inline"). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.
+Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term(terms.plugins). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.
 ][
 Načítání dovedností popisuje samostatný koncept #term(terms.progressive_disclosure). Deterministické součásti dovedností jsou rozděleny mezi #term(terms.script) a #term(terms.hook); nativní rozšíření harnessu představuje samostatný koncept #term(terms.plugins).
 ]
