@@ -5,8 +5,6 @@
     id: "rag",
     proper: translation(cs: "Generování rozšířené vyhledáváním", en: "Retrieval-Augmented Generation"),
     industry: translation(cs: "RAG", en: "RAG"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Architektura, v níž systém před generováním nebo během něj vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu, aby výstup mohl být založen na načtených datech.",
     explanation_en: "An architecture in which a system retrieves relevant information from an external source before or during generation and places it into model context so the output can be grounded in the retrieved data.",
     citation: bib.lewis2020rag,

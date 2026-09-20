@@ -5,8 +5,6 @@
     id: "context-compaction",
     proper: translation(cs: "Kompakce kontextu", en: "Context Compaction"),
     industry: translation(cs: "Compaction", en: "Compaction"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Proces zmenšení aktivního kontextu, typicky shrnutím, výběrem nebo nahrazením starších částí historie kompaktnější reprezentací tak, aby se běh vešel do kontextového okna.",
     explanation_en: "The process of reducing active context, typically by summarizing, selecting, or replacing older history with a more compact representation so execution remains within the context window.",
     citation: bib.jiang2023llmlingua,

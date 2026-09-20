@@ -5,8 +5,6 @@
     id: "agent-loop",
     proper: translation(cs: "Smyčka ReAct", en: "ReAct Loop"),
     industry: translation(cs: "Agent Loop", en: "Agent Loop"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Iterativní prováděcí cyklus autonomního agenta založený na vzoru ReAct (Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.",
     explanation_en: "An iterative execution cycle of an autonomous agent based on the ReAct pattern (Reasoning + Acting), in which the model alternates between reasoning, tool calls, and evaluation of observations from the runtime environment.",
     citation: bib.yao2022,
