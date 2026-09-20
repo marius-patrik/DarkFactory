@@ -339,7 +339,6 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			return report.ok ? 0 : 1;
 		}
 
-		case "--help":
 		case "help":
 		default:
 			log(`df ci commands:
