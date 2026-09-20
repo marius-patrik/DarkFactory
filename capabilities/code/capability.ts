@@ -14,6 +14,28 @@ export const capability = defineCapability({
 			domains: ["code"],
 		},
 	],
+	actions: {
+		test: {
+			command: (path) => path === "." ? "bun test" : `bun test --cwd ${path}`,
+			description: "Run unit tests for the package",
+		},
+		lint: {
+			command: (path) => path === "." ? "bun run lint" : `bun run --cwd ${path} lint`,
+			description: "Run linter for the package",
+		},
+		format_check: {
+			command: (path) => path === "." ? "bun run format" : `bun run --cwd ${path} format`,
+			description: "Verify code formatting",
+		},
+		docs_check: {
+			command: (path) => "bun scripts/build-docs.ts --check",
+			description: "Verify documentation build",
+		},
+		docs_extract: {
+			command: (path) => "bun scripts/build-docs.ts",
+			description: "Extract API docs",
+		},
+	},
 });
 
 export default capability;

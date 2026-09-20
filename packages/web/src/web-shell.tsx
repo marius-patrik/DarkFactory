@@ -3,12 +3,13 @@ import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch
 
 export interface RouterProps {
   basename?: string;
+  hook?: any;
   children: ReactNode;
 }
 
-export const Router: FC<RouterProps> = ({ basename, children }) => {
+export const Router: FC<RouterProps> = ({ basename, hook, children }) => {
   return (
-    <WouterRouter base={basename}>
+    <WouterRouter base={basename} hook={hook}>
       {children}
     </WouterRouter>
   );

@@ -88,6 +88,32 @@ export interface CapabilityHookDefinition {
 	event: string;
 }
 
+/** Action definition for quality-resolved capability actions. */
+export interface CapabilityActionDefinition {
+	/** Shell command to execute for this action, or a function resolving it. */
+	command: string | ((packagePath: string) => string);
+	/** Human-readable description of what this action does. */
+	description?: string;
+}
+
+/** Predefined capability actions for quality/repository operations. */
+export interface CapabilityActions {
+	/** Action to run tests for a package. */
+	test?: CapabilityActionDefinition;
+	/** Action to run linter for a package. */
+	lint?: CapabilityActionDefinition;
+	/** Action to run formatting check for a package. */
+	format_check?: CapabilityActionDefinition;
+	/** Action to run documentation verification for a package. */
+	docs_check?: CapabilityActionDefinition;
+	/** Action to run API extraction / documentation building. */
+	docs_extract?: CapabilityActionDefinition;
+	/** Action to run workspace / package setup. */
+	setup?: CapabilityActionDefinition;
+	/** Action to release / publish a package. */
+	release?: CapabilityActionDefinition;
+}
+
 /** Metadata for documentation, web, release, and audit surfaces. */
 export interface CapabilitySurfaceMetadata {
 	docs?: readonly string[];
@@ -111,6 +137,8 @@ export interface CapabilityDefinition {
 	verification?: readonly CapabilityVerificationDefinition[];
 	hooks?: readonly CapabilityHookDefinition[];
 	surfaces?: CapabilitySurfaceMetadata;
+	/** Contributed quality actions for packages in the supported domains. */
+	actions?: CapabilityActions;
 }
 
 /** Supported module export shape for a capability package. */
