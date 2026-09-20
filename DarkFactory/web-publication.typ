@@ -1,6 +1,6 @@
-#import "metadata.typ": meta
-#import "templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
-#import "concepts/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
+#import "/DarkFactory/metadata.typ": meta
+#import "/DarkFactory/templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
+#import "/DarkFactory/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
 
 // Semantic publication entrypoint for Typst's HTML target.
 // It consumes the same manuscript/review/profile state as the PDF build while
@@ -63,7 +63,7 @@
 #render-conclusion()
 
 #bibliography(
-  "/bib/references.bib",
+  "/DarkFactory/bib/references.bib",
   style: "iso-690-numeric",
   title: ui-label([Seznam zdrojů], [References]),
   full: true,
