@@ -11,5 +11,3 @@ The manuscript structure is derived from the concept folder tree.
 - Each index.typ is a structural folder manifest: section concept, direct concepts, and child folders.
 - Concept files own terminology and theoretical/practical content.
 - Typst imports remain explicit because source directories cannot be enumerated dynamically at runtime.
-
-During the filesystem migration some manifests may temporarily import concept files from a parent or sibling path. That does not affect section structure; only the folder manifest tree does.
