@@ -14,8 +14,8 @@
 #let item = concept(
   key: "continuous_integration",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní kontinuální integrace (CI) @humble2010.
 
@@ -38,15 +38,10 @@ Konkrétní automatizační platformu popisuje #term(terms.github_actions), izol
 Riziko nestálých testů je vyčleněno do samostatného konceptu #term(terms.flaky_test).
 ]
   ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "version_control"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "version_control"),),
 )
