@@ -14,11 +14,16 @@
 #let item = concept(
   key: "progressive_disclosure",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 U dovedností snižuje postupné zpřístupňování kontextovou režii: základní prompt obsahuje pouze přehled dostupných dovedností a úplný obsah příslušného `SKILL.md` se načte až tehdy, když jej agent pro konkrétní úlohu potřebuje.
 ]
   ],
-  relations: ((type: "dependency", target: "skills"), (type: "related", target: "context_engineering"))
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "skills"), (type: "related", target: "context_engineering")),
 )
