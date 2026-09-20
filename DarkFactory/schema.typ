@@ -17,29 +17,6 @@
   attachments: (),
   citations: (),
   relations: (),
-
-  // Transitional input fields consumed during the source migration. They are
-  // normalized into description/summary and will be removed once every concept
-  // source uses the canonical schema.
-  heading: none,
-  document_enabled: false,
-  document_intro: none,
-  document_body: none,
-  document_summary: none,
-  document_after: none,
-  document_wrapper: none,
-  theory_enabled: false,
-  theory_intro: none,
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(term != none, message: "concept requires canonical terminology")
@@ -55,27 +32,6 @@
     attachments: attachments,
     citations: citations,
     relations: relations,
-    legacy: (
-      heading: heading,
-      document_enabled: document_enabled,
-      document_intro: document_intro,
-      document_body: document_body,
-      document_summary: document_summary,
-      document_after: document_after,
-      document_wrapper: document_wrapper,
-      theory_enabled: theory_enabled,
-      theory_intro: theory_intro,
-      theory_body: theory_body,
-      theory_summary: theory_summary,
-      theory_after: theory_after,
-      theory_wrapper: theory_wrapper,
-      practical_enabled: practical_enabled,
-      practical_intro: practical_intro,
-      practical_body: practical_body,
-      practical_summary: practical_summary,
-      practical_after: practical_after,
-      practical_wrapper: practical_wrapper,
-    ),
   )
 }
 
@@ -263,75 +219,13 @@
   }
 }
 
-#let legacy-blocks(item, terms) = {
-  let legacy = item.legacy
-  let output = []
-  let rendered = false
-
-  let render-mode(intro, body, after, wrapper) = {
-    let chunk = []
-    if intro != none { chunk += intro(terms) }
-    if body != none { chunk += body(terms) }
-    if after != none { chunk += after(terms) }
-    if chunk != [] {
-      rendered = true
-      if wrapper == none { chunk } else { wrapper(chunk) }
-    }
-  }
-
-  if legacy.document_enabled {
-    output += render-mode(legacy.document_intro, legacy.document_body, legacy.document_after, legacy.document_wrapper)
-  }
-  if legacy.theory_enabled {
-    output += render-mode(legacy.theory_intro, legacy.theory_body, legacy.theory_after, legacy.theory_wrapper)
-  }
-  if legacy.practical_enabled {
-    output += render-mode(legacy.practical_intro, legacy.practical_body, legacy.practical_after, legacy.practical_wrapper)
-  }
-
-  // Folder-section concepts historically carried content even when their
-  // enabled flag was false. Preserve that content during migration, preferring
-  // the general/theory surface and never duplicating disabled practical drafts.
-  if not rendered {
-    if legacy.document_intro != none or legacy.document_body != none or legacy.document_after != none {
-      output += render-mode(legacy.document_intro, legacy.document_body, legacy.document_after, legacy.document_wrapper)
-    } else if legacy.theory_intro != none or legacy.theory_body != none or legacy.theory_after != none {
-      output += render-mode(legacy.theory_intro, legacy.theory_body, legacy.theory_after, legacy.theory_wrapper)
-    }
-  }
-
-  output
-}
-
-#let legacy-summary(item, terms) = {
-  let legacy = item.legacy
-  if legacy.document_enabled and legacy.document_summary != none {
-    legacy.document_summary(terms)
-  } else if legacy.theory_enabled and legacy.theory_summary != none {
-    legacy.theory_summary(terms)
-  } else if legacy.practical_enabled and legacy.practical_summary != none {
-    legacy.practical_summary(terms)
-  } else if legacy.document_summary != none {
-    legacy.document_summary(terms)
-  } else if legacy.theory_summary != none {
-    legacy.theory_summary(terms)
-  } else {
-    none
-  }
-}
-
 #let render-concept(item, terms, graph, level: 1) = {
   let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]]
 
   let definition = if item.definition != none { item.definition(terms) } else { render-term-definition(item) }
   if definition != none { output += definition }
 
-  if item.description != none {
-    output += item.description(terms)
-  } else {
-    output += legacy-blocks(item, terms)
-  }
-
+  if item.description != none { output += item.description(terms) }
   if item.visual != none { output += item.visual(terms) }
 
   for example in order-local(item.examples, graph) {
@@ -341,8 +235,7 @@
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
 
-  let summary = if item.summary != none { item.summary(terms) } else { legacy-summary(item, terms) }
-  if summary != none { output += summary }
+  if item.summary != none { output += item.summary(terms) }
 
   let citations = render-citations(item)
   if citations != none { output += [#citations] }
