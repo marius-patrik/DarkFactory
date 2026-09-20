@@ -11,6 +11,15 @@ describe("answer contract", () => {
 		expect(r.valid).toBe(false);
 	});
 
+	test("allows mutation claims on tool/mutation 'run' actions", () => {
+		const r = validateAnswerContract(
+			{ login: "a", association: "OWNER", is_bot: false },
+			"I have successfully resolved these conflicts and pushed the changes.",
+			{ type: "run", node: "resp", status: "Blocked", message: "ok" },
+		);
+		expect(r.valid).toBe(true);
+	});
+
 	test("accepts benign uses of monitored words", () => {
 		const r = validateAnswerContract(
 			{ login: "a", association: "OWNER", is_bot: false },

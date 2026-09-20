@@ -6,10 +6,10 @@ export interface AnswerContractResult {
 }
 
 const MUTATION_CLAIMS = [
-	/\bsuccessfully resolved (?:these )?conflicts\b/iu,
-	/\bpushed (?:the )?changes\b/iu,
-	/\bmerged (?:the )?PR\b/iu,
-	/\bcommitted (?:the|these )?(?:changes|files|code|updates)\b/iu,
+	/\b(?:successfully\s+)?resolved\s+(?:the|these|all|any|some)?\s*conflicts\b/iu,
+	/\bpushed\s+(?:the|these|all|any|some|my)?\s*(?:changes|commits|branch|code|updates)\b/iu,
+	/\bmerged\s+(?:the|this|my)?\s*(?:PR|pull\s+request|branch)\b/iu,
+	/\bcommitted\s+(?:the|these|all|any|some|my)?\s*(?:changes|files|code|updates|commits)\b/iu,
 ];
 
 /**
