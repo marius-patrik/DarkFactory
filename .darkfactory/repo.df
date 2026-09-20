@@ -307,7 +307,7 @@
     }
   },
   "release": {
-    "$comment": "The current source-tag release remains in place only until #360 publishes the final lockstep package/capability distribution directly. There is no canary or pre-release phase.",
+    "$comment": "Final package/capability distribution and publishing behavior is defined by #360.",
     "metadata": "ignore"
   }
 }
