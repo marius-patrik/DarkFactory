@@ -3,12 +3,7 @@
   "$id": "https://darkfactory.dev/schema/workflow-graph-v1.json",
   "title": "DarkFactory workflow graph v1",
   "type": "object",
-  "required": [
-    "version",
-    "checks",
-    "nodes",
-    "edges"
-  ],
+  "required": ["version", "checks", "nodes", "edges"],
   "properties": {
     "$schema": {
       "type": "string"
@@ -42,22 +37,11 @@
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
     "status": {
-      "enum": [
-        "Backlog",
-        "ToDo",
-        "In Progress",
-        "Blocked",
-        "Done",
-        "Superseded",
-        "Dropped"
-      ]
+      "enum": ["Backlog", "ToDo", "In Progress", "Blocked", "Done", "Superseded", "Dropped"]
     },
     "check": {
       "type": "object",
-      "required": [
-        "name",
-        "required"
-      ],
+      "required": ["name", "required"],
       "properties": {
         "name": {
           "type": "string",
@@ -71,21 +55,13 @@
     },
     "baseNode": {
       "type": "object",
-      "required": [
-        "id",
-        "kind"
-      ],
+      "required": ["id", "kind"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
         },
         "kind": {
-          "enum": [
-            "agent",
-            "gate",
-            "automation",
-            "check-reference"
-          ]
+          "enum": ["agent", "gate", "automation", "check-reference"]
         },
         "description": {
           "type": "string"
@@ -166,10 +142,7 @@
               "type": "string"
             },
             "reasoning": {
-              "enum": [
-                "standard",
-                "hard"
-              ]
+              "enum": ["standard", "hard"]
             },
             "chain": {
               "type": "array",
@@ -183,9 +156,7 @@
             },
             "iteration": {
               "type": "object",
-              "required": [
-                "context_file"
-              ],
+              "required": ["context_file"],
               "properties": {
                 "context_file": {
                   "type": "string"
@@ -199,10 +170,7 @@
             },
             "quota_policy": {
               "type": "object",
-              "required": [
-                "on_exhaustion",
-                "resume"
-              ],
+              "required": ["on_exhaustion", "resume"],
               "properties": {
                 "on_exhaustion": {
                   "const": "checkpoint_and_block"
@@ -217,10 +185,7 @@
               "type": "string"
             },
             "mode": {
-              "enum": [
-                "read",
-                "write"
-              ]
+              "enum": ["read", "write"]
             },
             "workdir": {
               "type": "string"
@@ -233,20 +198,10 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "required": [
-                    "subject",
-                    "phase",
-                    "context",
-                    "artifact",
-                    "findings",
-                    "clean"
-                  ],
+                  "required": ["subject", "phase", "context", "artifact", "findings", "clean"],
                   "properties": {
                     "subject": {
-                      "enum": [
-                        "planning",
-                        "implementation"
-                      ]
+                      "enum": ["planning", "implementation"]
                     },
                     "phase": {
                       "const": "review"
@@ -272,19 +227,10 @@
                 },
                 {
                   "type": "object",
-                  "required": [
-                    "subject",
-                    "phase",
-                    "context",
-                    "artifact",
-                    "findings"
-                  ],
+                  "required": ["subject", "phase", "context", "artifact", "findings"],
                   "properties": {
                     "subject": {
-                      "enum": [
-                        "planning",
-                        "implementation"
-                      ]
+                      "enum": ["planning", "implementation"]
                     },
                     "phase": {
                       "const": "fix"
@@ -307,10 +253,7 @@
               ]
             },
             "requires_review_approval": {
-              "enum": [
-                "planning",
-                "implementation"
-              ]
+              "enum": ["planning", "implementation"]
             }
           }
         },
@@ -323,12 +266,7 @@
               "type": "array",
               "minItems": 1,
               "items": {
-                "enum": [
-                  "OWNER",
-                  "MEMBER",
-                  "COLLABORATOR",
-                  "AUTHOR"
-                ]
+                "enum": ["OWNER", "MEMBER", "COLLABORATOR", "AUTHOR"]
               }
             },
             "requester_can_approve": {
@@ -349,16 +287,10 @@
             },
             "on_reject": {
               "type": "object",
-              "required": [
-                "action",
-                "target"
-              ],
+              "required": ["action", "target"],
               "properties": {
                 "action": {
-                  "enum": [
-                    "route_to",
-                    "revert_deviation"
-                  ]
+                  "enum": ["route_to", "revert_deviation"]
                 },
                 "target": {
                   "$ref": "#/$defs/id"
@@ -367,16 +299,10 @@
               "additionalProperties": false
             },
             "approves_review": {
-              "enum": [
-                "planning",
-                "implementation"
-              ]
+              "enum": ["planning", "implementation"]
             }
           },
-          "required": [
-            "author_associations",
-            "command"
-          ]
+          "required": ["author_associations", "command"]
         },
         {
           "properties": {
@@ -399,9 +325,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "script"
-          ]
+          "required": ["script"]
         },
         {
           "properties": {
@@ -415,10 +339,7 @@
               "type": "boolean"
             }
           },
-          "required": [
-            "check",
-            "required"
-          ]
+          "required": ["check", "required"]
         }
       ]
     },
@@ -426,19 +347,14 @@
       "oneOf": [
         {
           "type": "object",
-          "required": [
-            "event",
-            "filter"
-          ],
+          "required": ["event", "filter"],
           "properties": {
             "event": {
               "type": "string"
             },
             "filter": {
               "type": "object",
-              "required": [
-                "ignore_bots"
-              ],
+              "required": ["ignore_bots"],
               "properties": {
                 "ignore_bots": {
                   "const": true
@@ -457,9 +373,7 @@
         },
         {
           "type": "object",
-          "required": [
-            "schedule"
-          ],
+          "required": ["schedule"],
           "properties": {
             "schedule": {
               "const": true
@@ -472,16 +386,10 @@
         },
         {
           "type": "object",
-          "required": [
-            "node_outcome"
-          ],
+          "required": ["node_outcome"],
           "properties": {
             "node_outcome": {
-              "enum": [
-                "success",
-                "failure",
-                "quota_exhausted"
-              ]
+              "enum": ["success", "failure", "quota_exhausted"]
             },
             "when": {
               "type": "string"
@@ -491,15 +399,10 @@
         },
         {
           "type": "object",
-          "required": [
-            "gate_outcome"
-          ],
+          "required": ["gate_outcome"],
           "properties": {
             "gate_outcome": {
-              "enum": [
-                "approved",
-                "rejected"
-              ]
+              "enum": ["approved", "rejected"]
             },
             "when": {
               "type": "string"
@@ -509,15 +412,10 @@
         },
         {
           "type": "object",
-          "required": [
-            "checks"
-          ],
+          "required": ["checks"],
           "properties": {
             "checks": {
-              "enum": [
-                "required_green",
-                "failed"
-              ]
+              "enum": ["required_green", "failed"]
             },
             "when": {
               "type": "string"
@@ -527,15 +425,10 @@
         },
         {
           "type": "object",
-          "required": [
-            "children"
-          ],
+          "required": ["children"],
           "properties": {
             "children": {
-              "enum": [
-                "all_done",
-                "any_failed"
-              ]
+              "enum": ["all_done", "any_failed"]
             },
             "when": {
               "type": "string"
@@ -547,11 +440,7 @@
     },
     "edge": {
       "type": "object",
-      "required": [
-        "from",
-        "to",
-        "on"
-      ],
+      "required": ["from", "to", "on"],
       "properties": {
         "from": {
           "$ref": "#/$defs/id"
@@ -564,9 +453,7 @@
         },
         "loop": {
           "type": "object",
-          "required": [
-            "kind"
-          ],
+          "required": ["kind"],
           "properties": {
             "kind": {
               "enum": [
