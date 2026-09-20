@@ -950,7 +950,7 @@ for required in (
     "resolveSemanticChapters",
     "normalizeHeadingText",
     "GlobalWorkerOptions.workerSrc",
-    'new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url)',
+    '"pdfjs-dist/build/pdf.worker.mjs"',
     "pdf.getOutline",
     "item.items",
     "level: number",
