@@ -68,6 +68,10 @@
       }
     },
     "documentation": {
+      "node": {
+        "command": "bun run scripts/build-docs.ts",
+        "source": "tsdoc"
+      },
       "python": {
         "command": "bun run scripts/build-docs.ts",
         "source": "docstrings"
