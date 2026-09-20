@@ -74,7 +74,11 @@ function translateComment(p: Record<string, unknown>): TranslatedEvent {
 	if (!comment || !issue) return { kind: "skip", reason: "malformed payload" };
 	if (action === "created") {
 		const actor = actorFrom(comment.user, comment.author_association);
-		return { kind: "event", event: { type: "comment", actor, body: String(comment.body ?? "") }, subject: { number: toNumber(issue.number), is_pr: Boolean(issue.pull_request) } };
+		return {
+			kind: "event",
+			event: { type: "comment", actor, body: String(comment.body ?? "") },
+			subject: { number: toNumber(issue.number), is_pr: Boolean(issue.pull_request) },
+		};
 	}
 	return { kind: "skip", reason: `issue_comment.${actionOrUnknown(action)} is not a graph event` };
 }
@@ -87,7 +91,11 @@ function translateReview(p: Record<string, unknown>): TranslatedEvent {
 	if (action === "submitted") {
 		const actor = actorFrom(review.user, review.author_association);
 		const head = asRecord(pr.head);
-		return { kind: "event", event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor }, subject: { number: toNumber(pr.number), is_pr: true, ref: String(head?.sha ?? "") } };
+		return {
+			kind: "event",
+			event: { type: "review", state: String(review.state ?? "").toUpperCase(), actor },
+			subject: { number: toNumber(pr.number), is_pr: true, ref: String(head?.sha ?? "") },
+		};
 	}
 	return { kind: "skip", reason: `pull_request_review.${actionOrUnknown(action)} is not a graph event` };
 }
@@ -102,14 +110,22 @@ function translateCheckSuite(p: Record<string, unknown>): TranslatedEvent {
 		const pr = asRecord(pullRequests[0]);
 		if (!pr) return { kind: "skip", reason: "check_suite has no pull requests" };
 		const conclusion: "required_green" | "failed" = checkSuite.conclusion === "success" ? "required_green" : "failed";
-		return { kind: "event", event: { type: "checks.completed", conclusion }, subject: { number: toNumber(pr.number), is_pr: true, ref: String(checkSuite.head_sha ?? "") } };
+		return {
+			kind: "event",
+			event: { type: "checks.completed", conclusion },
+			subject: { number: toNumber(pr.number), is_pr: true, ref: String(checkSuite.head_sha ?? "") },
+		};
 	}
 	return { kind: "skip", reason: `check_suite.${actionOrUnknown(action)} is not a graph event` };
 }
 
 function translateSchedule(p: Record<string, unknown>, now?: string): TranslatedEvent {
 	const schedule = p.schedule === undefined ? "" : String(p.schedule);
-	return { kind: "event", event: { type: "schedule", schedule, now: now ?? new Date().toISOString() }, subject: { number: 0, is_pr: false } };
+	return {
+		kind: "event",
+		event: { type: "schedule", schedule, now: now ?? new Date().toISOString() },
+		subject: { number: 0, is_pr: false },
+	};
 }
 
 /**
@@ -124,14 +140,21 @@ export function translateGitHubEvent(eventName: string, payload: unknown, now?: 
 	try {
 		if (!payload || typeof payload !== "object") return { kind: "skip", reason: "malformed payload" };
 		const p = payload as Record<string, unknown>;
-		if (USER_INGRESS_EVENTS.has(eventName) && isBotUser(ingressUser(eventName, p))) return { kind: "skip", reason: "bot ingress ignored" };
+		if (USER_INGRESS_EVENTS.has(eventName) && isBotUser(ingressUser(eventName, p)))
+			return { kind: "skip", reason: "bot ingress ignored" };
 		switch (eventName) {
-			case "issues": return translateIssues(p);
-			case "issue_comment": return translateComment(p);
-			case "pull_request_review": return translateReview(p);
-			case "check_suite": return translateCheckSuite(p);
-			case "schedule": return translateSchedule(p, now);
-			default: return { kind: "skip", reason: `${eventName} is not a graph event` };
+			case "issues":
+				return translateIssues(p);
+			case "issue_comment":
+				return translateComment(p);
+			case "pull_request_review":
+				return translateReview(p);
+			case "check_suite":
+				return translateCheckSuite(p);
+			case "schedule":
+				return translateSchedule(p, now);
+			default:
+				return { kind: "skip", reason: `${eventName} is not a graph event` };
 		}
 	} catch {
 		return { kind: "skip", reason: "malformed payload" };
