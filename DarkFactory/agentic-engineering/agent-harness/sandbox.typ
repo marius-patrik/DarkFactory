@@ -16,7 +16,7 @@ Sandbox je omezené běhové prostředí určené k oddělení prováděného k�
 Přímé spouštění kódu (_Code Execution_) umožňuje agentovi generovat skripty (bash, Python), které harness spouští v izolovaném terminálu. Tento model poskytuje maximální flexibilitu pro softwarový vývoj, avšak vyžaduje nekompromisní bezpečnostní izolaci.
 
 #critique[
-  Iluzorní bezpečnost pískoviště: Přímé spouštění netestovaného syntetického kódu v běžném Docker kontejneru nelze považovat za plnohodnotnou bezpečnostní hranici (_security boundary_). Přístup k síti otevírá prostor pro útoky typu Server-Side Request Forgery (SSRF), úniky environmentálních tajností (GitHub tokeny, API klíče k LLM) přes skryté síťové kanály a kompromitaci CI infrastruktury. Pro bezpečný produkční provoz je nezbytná formální izolace na bázi microVM (např. AWS Firecracker @agache2020firecracker, gVisor) a striktní izolace síťových jmenných prostorů.
+  Limity kontejnerového sandboxu: Běžný kontejner sdílí jádro hostitelského systému, a jeho bezpečnost proto závisí na konfiguraci oprávnění, sítě, mountů a přístupu k tajnostem. U nedůvěryhodného generovaného kódu může harness podle rizika použít silnější izolační vrstvu, například microVM typu Firecracker @agache2020firecracker, a současně explicitně omezit síťový přístup a dostupnost tajností.
 ]
   ],
   summary: terms => [
