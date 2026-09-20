@@ -1,11 +1,11 @@
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import {
 	actionsForTouchedFiles,
-	resolveDetectedRepositoryActions,
 	type ResolvedRepositoryAction,
+	resolveDetectedRepositoryActions,
 } from "@darkfactory/capability/actions";
 import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 
 /** Result of a verification command run via {@link runVerify}. */
 export interface VerifyResult {
