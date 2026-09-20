@@ -13,8 +13,8 @@
 #let item = concept(
   key: "prompt_engineering",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 #diff[Základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering) slouží k systematickému návrhu instrukcí, které řídí chování agenta. Základní instrukce jsou obvykle součástí #term(terms.system_prompt, render: "both", detail-language: "cs", detail-style: "inline") @anthropic-prompt, který vymezuje roli agenta, dostupné nástroje a provozní mantinely.]
  Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
 
@@ -23,15 +23,10 @@ Příčiny a inženýrská řešení tohoto jevu:
 - Afirmativní formulace: Pravidla je nutné formulovat pozitivně — namísto výčtu zákazů vymezit přesný postup a povolené mantinely chování.
 - #diff[Deterministická ochrana v harnessu: Kde nestačí prompt, musí zasáhnout kód agent harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.][#term(terms.guardrail) odděluje programově vynucené bezpečnostní a procesní podmínky od instrukcí, jejichž dodržení závisí na chování modelu.]
   ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: unconfirmed,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ()
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: (),
 )
