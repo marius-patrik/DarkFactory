@@ -164,7 +164,7 @@ for required in (
     'text(")")',
     "marker: true,",
     "super[#text(fill:",
-    "[*]]",
+    '#text("*")',
 ):
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
