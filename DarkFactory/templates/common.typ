@@ -345,9 +345,6 @@
     #if value.czech != none and cs-raw != lead-raw {
       [#h(0.25em)#text("(")#text(lang: "cs")[#value.czech]#text(")")]
     }
-    #if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
-      [#h(0.25em)#text("[")#text(lang: "en")[#value.english]#text("]")]
-    }
     #if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
       [#h(0.25em)#text("[")#value.alias#text("]")]
     }
