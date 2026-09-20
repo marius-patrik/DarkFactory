@@ -44,9 +44,17 @@ RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v
 # copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
 # relative to the source tree, which the wrapper below executes in place.
 COPY harness/ /opt/darkfactory/harness/
-RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
+COPY packages/ /opt/darkfactory/packages/
+COPY capabilities/ /opt/darkfactory/capabilities/
+RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness \
+    && ln -s /opt/darkfactory/harness/node_modules /opt/darkfactory/node_modules \
+    && mkdir -p /opt/darkfactory/harness/node_modules/@darkfactory \
+    && for package in /opt/darkfactory/packages/*; do \
+         ln -s "$package" "/opt/darkfactory/harness/node_modules/@darkfactory/$(basename "$package")"; \
+       done
 RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
-    && chmod +x /usr/local/bin/df
+    && chmod +x /usr/local/bin/df \
+    && df --help >/dev/null
 
 # Record which harness is present so the build log answers "what can this image drive?"
 RUN set -eux; \
