@@ -28,8 +28,6 @@ PUBLISHED_PAGES: List[Tuple[str, str]] = [
     ("PRD.md", "prd.md"),
     ("AGENTS.md", "agents.md"),
     (".agents/notes/adr/README.md", "architecture/decisions/process.md"),
-    (".agents/notes/vision_capture.md", "notes/vision_capture.md"),
-    (".agents/notes/bootstrap.md", "notes/bootstrap.md"),
 ]
 
 #: Repository-relative markdown targets rewritten to their published counterparts.
@@ -40,14 +38,8 @@ LINK_REWRITES: Dict[str, str] = {
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
     ".agents/notes/adr/README.md": "architecture/decisions/process.md",
-    ".agents/notes/vision_capture.md": "notes/vision_capture.md",
-    ".agents/notes/bootstrap.md": "notes/bootstrap.md",
     "_notes/adr/README.md": "architecture/decisions/process.md",
-    "_notes/vision_capture.md": "notes/vision_capture.md",
-    "_notes/bootstrap.md": "notes/bootstrap.md",
     "adr/README.md": "architecture/decisions/process.md",
-    "vision_capture.md": "notes/vision_capture.md",
-    "bootstrap.md": "notes/bootstrap.md",
     "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
     "_notes/adr/": "architecture/decisions/index.md",
@@ -360,8 +352,6 @@ def on_config(config: Any) -> Any:
             {"Contributing & Agent Rules": "agents.md"},
             {
                 "Notes": [
-                    {"Bootstrap runbook": "notes/bootstrap.md"},
-                    {"Capture provenance": "notes/vision_capture.md"},
                 ]
             },
         ]
