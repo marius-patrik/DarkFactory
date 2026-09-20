@@ -20,8 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "wordometer.typ": string-word-count, extract-text
-#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords, render-index
-#import "../terms.typ": vocabulary
+#import "../common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -29,43 +28,6 @@
   raw: (words: 0, chars: 0),
   review: (words: 0, chars: 0),
 ))
-
-// Strukturální stav šablony: hlavní číslované kapitoly dostávají samostatnou
-// titulní stranu, přílohy používají vlastní kompaktní režim.
-#let appendix-mode-state = state("gjkt-appendix-mode", false)
-
-#let chapter-title-page(it, logo: none) = context {
-  let chapter-no = counter(heading).display(it.numbering)
-
-  pagebreak(weak: true)
-  [
-    #v(1fr)
-    #align(center)[
-      #if logo != none {
-        block(image(logo, height: 2.2cm))
-        v(14pt)
-      }
-      #text(
-        size: 11pt,
-        weight: "bold",
-        tracking: 1.5pt,
-        fill: rgb("#64748b"),
-      )[
-        #ui-label([KAPITOLA], [CHAPTER]) #chapter-no
-      ]
-      #v(14pt)
-      #text(size: 26pt, weight: "bold", hyphenate: false)[#it.body]
-    ]
-    #v(1fr)
-    <chapter-title-page>
-  ]
-  pagebreak()
-
-  // Titulní strana kapitoly je fyzická strana dokumentu, ale není součástí
-  // logického číslování. Po přechodu na první obsahovou stranu kapitoly proto
-  // logický čítač vrátíme o jednu.
-  counter(page).update(n => n - 1)
-}
 
 #let regular-level-one-heading(it) = block(
   above: 21pt,
@@ -338,18 +300,9 @@
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
-  // Hlavní číslované kapitoly mají vlastní titulní stranu. Manuskript pouze
-  // deklaruje sémantický nadpis úrovně 1; veškeré stránkování a vizuální
-  // zpracování kapitoly vlastní šablona. Nečíslované nadpisy přední části
-  // a nadpisy příloh zůstávají kompaktní.
-  show heading.where(level: 1): it => context {
-    let in-appendix = appendix-mode-state.get()
-    if it.numbering != none and not in-appendix {
-      chapter-title-page(it, logo: logo)
-    } else {
-      regular-level-one-heading(it)
-    }
-  }
+  // Hlavní kapitoly pokračují přímo v toku dokumentu. Speciální titulní
+  // sazbu používá pouze titulní list celé práce.
+  show heading.where(level: 1): it => regular-level-one-heading(it)
   show heading.where(level: 2): it => {
     block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
   }
@@ -410,18 +363,11 @@
   // Čísla stran se uvádí od úvodu; za stranu 1 se považuje titulní strana,
   // proto se čítač nikde nenuluje.
   set page(footer: context {
-    let physical-page = here().page()
-    let is-chapter-title = query(<chapter-title-page>).any(
-      item => item.location().page() == physical-page
-    )
-
-    if not is-chapter-title {
-      align(center, text(
-        font: pismo,
-        size: 11pt,
-        counter(page).display("1"),
-      ))
-    }
+    align(center, text(
+      font: pismo,
+      size: 11pt,
+      counter(page).display("1"),
+    ))
   })
 
   [#metadata("body-start") <body-start-anchor>]
@@ -562,22 +508,13 @@
 #let prilohy(body) = {
   [#metadata("body-end") <body-end-anchor>]
   pagebreak(weak: true)
-
-  // Rejstřík patří do zadní části bezprostředně před Seznam příloh.
-  // Obsahuje všechny kanonické termíny, abecední skupiny i jednotlivé položky v Obsahu.
-  nadpis-bez-cisla[#finalized[#ui-label([Rejstřík], [Index])]]
-  render-index(vocabulary.values())
-
-  pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]
-  appendix-mode-state.update(true)
 
-  // Nadpis seznamu vzniká ještě před `set`, aby sám sebe nezahrnul.
+  // Seznam příloh zůstává součástí práce; jeho položky vznikají pouze ze
+  // skutečně přítomných příloh.
   nadpis-bez-cisla[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
   [#body <appendix>]
-
-  appendix-mode-state.update(false)
 }
