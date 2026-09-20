@@ -14,10 +14,8 @@
 #let item = concept(
   key: "human_in_the_loop",
   term: terminology,
-  heading: terms => [#term(terms.human_in_the_loop, marker: false, linked: false, emphasized: false)],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 Základním principem navrženého řešení není nekritická plná autonomie, nýbrž #diff[efektivní kooperace člověka a stroje][efektivní kooperace člověka a stroje (#term(terms.human_in_the_loop, language: "en", marker: false, linked: false, emphasized: false) @mosqueira2023human)]. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
 Řízení lidského dohledu staví na těchto pilířích:
@@ -27,20 +25,16 @@ Základním principem navrženého řešení není nekritická plná autonomie, 
 - Prevence únavy z revizí (_Review Fatigue_): Vyvážená frekvence kontrol — zamezení mikromanagementu na úrovni jednotlivých souborů při zachování kontroly nad celkovým architektonickým směrem.
 - Dohledatelnost původního zadání: Trvalé uchovávání doslovného znění požadavku (GitHub Issue) bez ztrátových parafrází modelem, což brání vymizení okrajových podmínek v průběhu vývoje.
 - Transparentnost selhání a deterministická eskalace: Zákaz tichého pohlcování chyb či halucinovaných omluv při selhání. Při vyčerpání rozpočtu nebo selhání testů harness vygeneruje strukturovaný diagnostický incident (diff, chybové hlášení, stav kontextu) a předá jej vývojáři k manuálnímu zásahu.
-  ],
-  theory_summary: none,
-  theory_after: terms => [
+
 #critique[
   Kognitivní limity lidské schvalovací brány (Review Fatigue):
   Spoléhání se na finální sémantickou kontrolu diffu v pull requestu naráží na lidské kognitivní limity. Výzkumy prokazují, že u rozsáhlých diffů (nad 300–400 řádků) dramaticky klesá hloubka lidské pozornosti — vývojář kód pouze zběžně prohlédne a spoléhá na zelenou fajfku z CI. Aby byla lidská brána efektivní, harness musí diffy rozkládat do sémanticky sevřených mikrokroků, generovat interaktivní vysvětlení netriviálních rozhodnutí a explicitně zvýrazňovat změny v kritických architektonických komponentách.
 ]
   ],
-  theory_wrapper: unconfirmed,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "related", target: "branch_protection"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "related", target: "branch_protection"),),
 )
