@@ -36,7 +36,7 @@ Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na
   theory_summary: none,
   theory_after: terms => [
 #figure(
-  image("../img/react-loop.svg", width: 100%),
+  image("/img/react-loop.svg", width: 100%),
   caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
 ) <fig-react-loop>
   ],

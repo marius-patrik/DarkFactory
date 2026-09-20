@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation
+#import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
 #import "../schema.typ": section
 #import "agent.typ" as agent
 #import "token.typ" as token
