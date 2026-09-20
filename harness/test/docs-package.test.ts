@@ -3,10 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
-	README_GENERATED_MARKER,
 	compileDocsContentGraph,
 	loadDocsConfig,
 	parseDocsConfig,
+	README_GENERATED_MARKER,
 	renderReadmeMarkdown,
 	resolveDocsConfigPath,
 } from "../../packages/docs/src/index.ts";
@@ -32,7 +32,10 @@ async function fixture(): Promise<string> {
 	await writeFile(join(root, ".agents", "notes", "adr", "0001-test.md"), "# ADR-0001 — Test\n\n**Status**: Accepted\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "README.md"), "# Decisions\n");
 	await writeFile(join(root, ".agents", "notes", "bootstrap.md"), "# Bootstrap provenance\n");
-	await writeFile(join(root, ".github", "workflows", "ci.yml"), "name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n");
+	await writeFile(
+		join(root, ".github", "workflows", "ci.yml"),
+		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
+	);
 	return root;
 }
 
@@ -55,7 +58,10 @@ describe("@darkfactory/docs", () => {
 		const root = await fixture();
 		expect(resolveDocsConfigPath(root)).toBe(join(root, "docs.df"));
 		await mkdir(join(root, ".darkfactory"), { recursive: true });
-		await writeFile(join(root, ".darkfactory", "docs.df"), '{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}');
+		await writeFile(
+			join(root, ".darkfactory", "docs.df"),
+			'{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}',
+		);
 		expect(() => resolveDocsConfigPath(root)).toThrow("only one is allowed");
 	});
 
