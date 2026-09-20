@@ -1,3 +1,5 @@
+import { join } from "node:path";
+import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
 import type {
 	CapabilityActionDefinition,
 	CapabilityActionKind,
@@ -7,6 +9,8 @@ import type {
 
 /** Structural repository evidence consumed by capability action resolution. */
 export interface RepositoryActionEvidence {
+	root: string;
+	domains: readonly string[];
 	packages: readonly CapabilityPackageContext[];
 	repoDf: {
 		environment?: {
@@ -221,4 +225,14 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly {
 			supported: actions[kind].supported,
 		})),
 	);
+}
+
+/** Loads applicable capability definitions and resolves the canonical repository action result. */
+export async function resolveDetectedRepositoryActions(
+	evidence: RepositoryActionEvidence,
+	capabilitiesRoot = join(evidence.root, "capabilities"),
+): Promise<ResolvedRepositoryActions> {
+	const definitions = await discoverCapabilities(capabilitiesRoot);
+	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;
+	return resolveRepositoryActions(evidence, applicable);
 }
