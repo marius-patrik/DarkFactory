@@ -205,7 +205,7 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
           fi
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
 
       - name: No documentation configured
         if: steps.docs.outputs.present != 'true'
