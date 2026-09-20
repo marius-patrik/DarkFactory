@@ -50,6 +50,29 @@ function throwingProvider(id: string, model: string, message: string): Provider 
 	};
 }
 
+function failOnceProvider(id: string, model: string, answer: string): Provider {
+	const faux = fauxProvider({ provider: id, models: [{ id: model }] });
+	faux.setResponses([fauxAssistantMessage(answer)]);
+	const error = Object.assign(new Error("model capability failure"), { status: 400 });
+	let failed = false;
+	const shouldFail = () => {
+		if (failed) return false;
+		failed = true;
+		return true;
+	};
+	return {
+		...faux.provider,
+		stream: (...args) => {
+			if (shouldFail()) throw error;
+			return faux.provider.stream(...args);
+		},
+		streamSimple: (...args) => {
+			if (shouldFail()) throw error;
+			return faux.provider.streamSimple(...args);
+		},
+	};
+}
+
 describe("AgentSession harness", () => {
 	test("failure events carry redacted messages and preserve useful clone errors in human-readable form", async () => {
 		const { home, cwd } = await tempWorkspace();
@@ -77,10 +100,9 @@ describe("AgentSession harness", () => {
 
 	test("failed attempts escalate exactly one capability tier and success resets the next prompt", async () => {
 		const { home, cwd } = await tempWorkspace();
-		const low = fauxProvider({ provider: "tier-low", models: [{ id: "a" }] });
+		const low = failOnceProvider("tier-low", "a", "baseline again");
 		const middle = fauxProvider({ provider: "tier-mid", models: [{ id: "b" }] });
 		const high = fauxProvider({ provider: "tier-high", models: [{ id: "c" }] });
-		low.setResponses([fauxAssistantMessage([]), fauxAssistantMessage("baseline again")]);
 		middle.setResponses([fauxAssistantMessage("recovered one tier up")]);
 		high.setResponses([fauxAssistantMessage("should not be used")]);
 		const events: HarnessEvent[] = [];
@@ -92,7 +114,7 @@ describe("AgentSession harness", () => {
 			],
 			home,
 			cwd,
-			...runtimeProviders(low.provider, middle.provider, high.provider),
+			...runtimeProviders(low, middle.provider, high.provider),
 			capabilityEscalation: {
 				order: ["light", "standard", "heavy"],
 				baselineTier: "light",
