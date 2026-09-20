@@ -69,7 +69,7 @@ export function apiReferenceFromTypeDoc(project: JSONOutput.ProjectReflection): 
 
 function extractionOptions(repoRoot: string, api: DocsTypeScriptApiConfig): TypeScriptApiExtractionOptions {
 	return {
-		entryPoints: api.entryPoints.map((entry) => resolve(repoRoot, entry)),
+		entryPoints: (api.entryPoints ?? []).map((entry) => resolve(repoRoot, entry)),
 		tsconfig: resolve(repoRoot, api.tsconfig),
 		...(api.name ? { name: api.name } : {}),
 	};
@@ -78,7 +78,7 @@ function extractionOptions(repoRoot: string, api: DocsTypeScriptApiConfig): Type
 /** Compiles the canonical documentation graph including configured TypeScript API metadata. */
 export async function compileDocsContentGraphWithApi(repoRoot: string, config: DocsConfig = loadDocsConfig(repoRoot)): Promise<DocsContentGraph> {
 	const typescript = config.api?.typescript;
-	if (!typescript) return compileDocsContentGraph(repoRoot, config);
+	if (!typescript?.entryPoints?.length) return compileDocsContentGraph(repoRoot, config);
 	const project = await extractTypeScriptApi(extractionOptions(repoRoot, typescript));
 	return compileDocsContentGraph(repoRoot, config, apiReferenceFromTypeDoc(project));
 }
