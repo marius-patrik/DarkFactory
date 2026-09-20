@@ -36,5 +36,5 @@ Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí co
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ()
+  relations: ((type: "dependency", target: "branch"),)
 )

@@ -23,5 +23,5 @@ GitHub poskytuje pravidla ochrany větví (_Branch Protection Rules_), která za
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "dependency", target: "required_checks"),)
+  relations: ((type: "dependency", target: "required_checks"), (type: "dependency", target: "branch"),)
 )

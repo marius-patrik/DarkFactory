@@ -29,5 +29,5 @@ K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spou�
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "dependency", target: "continuous_integration"),)
+  relations: ((type: "dependency", target: "pull_request"), (type: "dependency", target: "continuous_integration"),)
 )
