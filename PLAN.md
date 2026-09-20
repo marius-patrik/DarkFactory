@@ -225,41 +225,93 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 ## 10. Current execution checkpoint — 2026-09-20
 
-### Landed
+### Stable / landed
 
-- #733 removed the obsolete shadow/parity `df-dispatch` workflow and its dedicated tests; #358/#359 own the eventual graph-native production dispatcher.
-- #747 landed the shared `@darkfactory/web` operator shell slice on top of the native docs/web architecture. #425 remains open for the broader operator surface.
+- The canonical default branch is `darkfactory`.
+- #733 removed the obsolete shadow/parity dispatcher path.
+- #747 landed the shared `@darkfactory/web` shell on the native docs/web architecture.
+- #741 landed the deterministic git/workspace primitive slice for #384 as `9788f0ad83d83be8da9d647366c4db82edff082f`.
+- Repository docs remain aligned with the final-only architecture: no compatibility release, migration path, shadow engine, pre-release/canary phase, historical README or separate harness documentation is part of the target system.
 
-### Active governed lanes
+### In-flight governed lanes
 
-- #780 → #341: PR #787 is the corrected core-evidence/capability-resolved-actions implementation. Architecture is now directionally correct; review requires wiring the same normalized result into doctor, CI/check sync, verification/protection and docs/API extraction before #341 can close.
-- #781 → #422: clean current-tree rebuild of remaining `@darkfactory/keychain` ownership is actively executing. PRs #518/#740 are closed as stale evidence; do not preserve their branch structure.
-- #783 → #423: PR #791 implements the new auth/broker surface but is under active review. It must remove browser token persistence, add callback state consumption, complete broker refresh/revoke, combine user + App installation authority and strengthen negative/browser-isolation tests before #423 can close. PR #760 is partial evidence only.
-- #786 → #329: clean current-tree integration of F38-compatible schema/extraction behavior into the real graph/workspace/router result path is actively executing. PR #769 is partial evidence only.
-- #741 → #384 deterministic git/workspace primitive slice is landed as `9788f0ad83d83be8da9d647366c4db82edff082f`. #384 stays open only for #358 persisted conflict/run-state integration and #339 hook integration.
+#### #341 / Planning #780 / PR #787
 
-### Dependency holds / next unlocks
+PR #787 is draft and **not merge-ready**.
 
-- #358: continue recovery discovery/handler inventory now; final graph-native integration consumes #329 + #341 and the terminal F30-4 recovery disposition.
-- #317: mutation-claim validation and deterministic branch-update work may consume #384 primitives as soon as they land; graph re-entry waits on the relevant #358 interface.
-- #339: recover/import the exact F47 hook lane, then finish ecosystem-specific quality/docs hooks using #341 rather than hard-coded detection.
-- #385: held on the actual #358 Request/reconciliation owner.
-- #386: held on #384 + #358 + #385 and integrates #317/#339 rather than duplicating them.
-- #360: continue release engineering for every stable package/ABI/install/web surface in parallel; publish only once the final product contract is complete.
+Current blocking findings:
 
-Rejected/stale delivery PRs are issue/PR evidence only and are not compatibility branches to preserve.
+- it recreates a central `DEFAULT_ECOSYSTEM_ACTIONS` table, which violates #780's approved rule that core normalizes evidence while capabilities contribute actions;
+- the durable repository-evidence mechanism is being introduced under deletion-bound `harness/` rather than the final core/config owner;
+- the normalized result is not yet wired into doctor/diagnostics, CI/check generation + required-check synchronization, touched-package verification/protection, and docs/TSDoc/API extraction;
+- `@darkfactory/harness` imports `@darkfactory/capability` without declaring the workspace dependency;
+- unrelated `packages/web` changes introduce a Wouter type not exported by the installed version.
 
-## 10. Current execution priority
+A blocking review is recorded on PR #787. Rebase/update it from current `darkfactory`, remove the duplicate action table/unrelated web scope, move durable ownership to the final package boundary, integrate every required consumer, then run the full current format/type/test/docs checks.
 
-Highest-value concurrent work:
+#341 remains the highest-value unblocker because #329/#358/#339 consume its final detected-action interface.
 
-1. Dispatch #329 and #341 concurrently through the governed pipeline wherever its current stages are reliable, while locating/reconciling the F30-4 recovery delta for #358.
-2. Advance #358 immediately on discovery, handler inventory and stable scaffolding; integrate #329/#341 as soon as they land.
-3. Advance #317 in parallel on mutation-evidence validation and deterministic branch-update primitives; only graph re-entry waits for the relevant #358 interface.
-4. In parallel, dispatch #422/#248/#423, #339/#384/#385/#386/#388, #403/#251/#332/#252 and #334/#336/#425/#390 through separate governed pipeline runs wherever supported, according to their real interface dependencies.
-5. Run #360 release engineering continuously for every stable surface. Final publication happens once; there is no compatibility release, canary, migration release or staged cutover.
-6. Delete obsolete Python/alternate owners incrementally as soon as their final TypeScript/package/capability owner covers the responsibility; #359 verifies completion rather than deferring all deletion until the end.
-7. Complete #359 as soon as #329/#341/#358/#317 satisfy the core lifecycle.
-8. Publish the final #360 release, run #361 fleet acceptance, then close #68.
+#### #423 / Planning #783 / PR #791
 
-No work should wait merely to preserve an implementation sequence when its final interfaces are already stable. Prefer self-hosted governed pipeline execution over manual implementation whenever the current pipeline can perform the work correctly. Recovery branches are deleted immediately after terminal disposition is recorded.
+PR #791 is draft and **not merge-ready**.
+
+Current blocking findings:
+
+- access/refresh tokens are persisted in browser `localStorage`;
+- callback state/verifier validation and one-time consumption are missing;
+- the confidential broker implements exchange only, not refresh/revocation;
+- restoration does not enforce expiry/refresh policy;
+- permission projection ignores GitHub App installation/repository authority;
+- mutation payload typing uses `any`;
+- negative security/import-isolation tests are missing.
+
+A blocking review is recorded on PR #791. Fix these against the existing `@darkfactory/auth` boundary; do not introduce keychain/browser coupling or a second RBAC/state backend.
+
+#### #422 / Planning #781
+
+The current-tree keychain rebuild branch is active and currently carries one unique importer slice while behind the latest default branch.
+
+Continue the clean current-tree rebuild only for missing #422 behavior: provider/account import, borrowed credential refresh, metadata, redaction/secret scanning, diagnostics and browser isolation. Reconcile F14 behavior without copying stale branch structure.
+
+#### #329 / Planning #786
+
+The latest governed implementation attempt produced no file changes. The old F38-derived feature branch remains stale/diverged and is evidence only.
+
+Restart from current `darkfactory`. Proceed now with the #341-independent parts (schema/extraction behavior, natural-stop semantics, explicit offline capture-schema mode, removal of forced normal-task capture paths). Final code/workspace verification integration waits only for the shipped #341 interface.
+
+#### #384
+
+The deterministic git/workspace primitive slice is landed. Keep #384 open only for the remaining #358 persisted conflict/run-state integration and #339 hook integration; do not rebuild already-landed primitives.
+
+### Recovery branch cleanup
+
+There are still 16 `recovery/*` branches. Recovery branches are temporary inputs, not archives.
+
+- Keep only branches with unresolved unique work for an active Request.
+- Record the exact retained/rejected/subsumed disposition on the owning Request as soon as it is known.
+- Delete each recovery branch immediately after its unique work is terminal; do not wait for #361.
+- F14, F38, F47 and F49 remain active evidence inputs for #422, #329, #339 and #341 respectively until their dispositions are recorded.
+- Audit the remaining recovery branches against already-landed Requests and remove terminal branches rather than carrying historical state forward.
+
+### CI / pipeline interpretation
+
+Pipeline failure issues #794 and #795 were opened from PR #787 merge-ref jobs; those jobs checked out `refs/remotes/pull/787/merge`. They are evidence that #787 is currently failing, not evidence that the settled `darkfactory` checkpoint itself regressed.
+
+Do not paper over those failures with compatibility behavior. Fix #787 at its final owners and rerun the governed checks.
+
+## 11. Current execution priority
+
+Run independent stable work concurrently; serialize only on real interfaces.
+
+1. **Finish #341 / PR #787 correctly.** This is the immediate core unblocker. Remove the duplicate ecosystem-action table, land repository evidence in the final owner, connect all required consumers, and get format/type/test/docs checks green.
+2. **Fix #423 / PR #791 in parallel.** Complete the actual browser-auth/confidential-broker security contract and merge only when the negative tests and authority boundary are proven.
+3. **Continue #422 / #781 in parallel.** Rebase the clean keychain rebuild onto current `darkfactory`, integrate the remaining F14-derived behavior, record disposition, and delete terminal recovery input.
+4. **Restart #329 / #786 from current tree.** Implement every #341-independent result-capture piece now; connect final verification as soon as #341 lands.
+5. **Advance #358 now on discovery, handler inventory and stable graph scaffolding.** Resolve the F30-4 recovery disposition. Final production-handler integration consumes #329 + #341 rather than inventing substitute interfaces.
+6. **Advance #317 in parallel** on deterministic mutation-claim validation and branch-update/conflict behavior using the landed #384 primitives; only graph re-entry waits for #358.
+7. **Advance #339 in parallel.** Recover/import the exact F47 hook behavior now; use #341 for ecosystem quality/docs actions instead of hard-coded detection.
+8. **Continue #360 release engineering for every stable surface** (manifests, versioning, artifact layout, installers/updaters, native builds, web bundle, provenance/checksums, clean-directory verification). Publish only the final supported release once.
+9. **Keep #403/#251/#332/#334/#336/#425/#390 moving when their current interfaces are stable.** Do not let second-order operator/docs/web work block the #341 → #329/#358 → #317 → #359 production-engine spine.
+10. **Complete #359 immediately when the core lifecycle is real**, then publish #360, run #361 across all six consumers, and close #68 only after installed-release acceptance passes.
+
+No task should wait for a migration, compatibility, shadow, canary or historical-preservation step. The governing optimization target remains the shortest safe path to the final TypeScript df system.
