@@ -1,5 +1,12 @@
 import type { Actor, AuthorAssociation, GraphEvent } from "./types.ts";
 
+/**
+ * Translated representation of a GitHub event for the graph processing.
+ *
+ * The union consists of:
+ * - An event with a concrete GraphEvent and subject information.
+ * - A skip entry indicating the event should be ignored, with a reason.
+ */
 export type TranslatedEvent =
 	| { kind: "event"; event: GraphEvent; subject: { number: number; is_pr: boolean; ref?: string } }
 	| { kind: "skip"; reason: string };
@@ -105,6 +112,14 @@ function translateSchedule(p: Record<string, unknown>, now?: string): Translated
 	return { kind: "event", event: { type: "schedule", schedule, now: now ?? new Date().toISOString() }, subject: { number: 0, is_pr: false } };
 }
 
+/**
+ * Translate a raw GitHub webhook payload into a TranslatedEvent for the graph engine.
+ *
+ * @param eventName - The name of the GitHub event (e.g., "issues", "push").
+ * @param payload - The parsed JSON payload of the webhook.
+ * @param now - Optional current timestamp override for schedule events.
+ * @returns A TranslatedEvent representing the processed event or a skip with reason.
+ */
 export function translateGitHubEvent(eventName: string, payload: unknown, now?: string): TranslatedEvent {
 	try {
 		if (!payload || typeof payload !== "object") return { kind: "skip", reason: "malformed payload" };
