@@ -346,6 +346,7 @@ The plan is scheduled by **join gates and independent workstreams**, not by a si
 ### 11.1 Scheduling invariants
 
 - Every implementation attempt begins from the current canonical HEAD on a fresh or explicitly verified-current branch; superseded/diverged feature branches are not reusable execution state.
+- The mere existence of a remote branch does not make it reusable; a superseded/closed implementation ref remains evidence only until explicitly selected as a current vehicle.
 - A PR body or agent summary is never completion evidence without a corresponding meaningful diff in the final owner; lockfile-only/no-op PRs are rejected.
 - Keep every independent stable lane moving. A blocked lane must not idle unrelated work.
 - Serialize only at an explicitly named interface/join below.
