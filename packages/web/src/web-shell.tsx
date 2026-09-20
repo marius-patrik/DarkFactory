@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from "react";
 import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch } from "wouter";
+import { QuotaDashboardView, type QuotaDashboardState } from "./quota";
 
 export interface RouterProps {
   basename?: string;
@@ -70,23 +71,34 @@ export interface RouteConfig {
   label: string;
 }
 
-const DefaultRoutes: RouteConfig[] = [
-  { path: "/", component: HomeView, label: "Dashboard" },
-  { path: "/status", component: StatusView, label: "System Status" },
-  { path: "/docs", component: DocsView, label: "Documentation" },
-];
+function defaultRoutes(quota: QuotaDashboardState): RouteConfig[] {
+  const QuotaView: RouteConfig["component"] = () => <QuotaDashboardView state={quota} />;
+  return [
+    { path: "/", component: HomeView, label: "Dashboard" },
+    { path: "/status", component: StatusView, label: "System Status" },
+    { path: "/quota", component: QuotaView, label: "Quota" },
+    { path: "/docs", component: DocsView, label: "Documentation" },
+  ];
+}
 
 const RouteAnnouncer: FC = () => {
   const [location] = useLocation();
-  return <div className="sr-only" aria-live="polite">{`Navigated to ${location}`}</div>;
+  return <div className="sr-only" aria-live="polite">{"Navigated to " + location}</div>;
 };
 
 export interface DarkFactoryShellProps {
   basename?: string;
   routes?: RouteConfig[];
+  /** Browser-safe quota data state. Defaults to disconnected for public/static builds. */
+  quota?: QuotaDashboardState;
 }
 
-export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({ basename, routes = DefaultRoutes }) => {
+export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({
+  basename,
+  routes,
+  quota = { status: "disconnected" },
+}) => {
+  const activeRoutes = routes ?? defaultRoutes(quota);
   return (
     <Router basename={basename}>
       <RouteAnnouncer />
@@ -94,14 +106,14 @@ export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({ basename, routes =
         <header>
           <h1>DarkFactory Web</h1>
           <nav>
-            {routes.map((route) => (
+            {activeRoutes.map((route) => (
               <RouteLink key={route.path} to={route.path}>{route.label}</RouteLink>
             ))}
           </nav>
         </header>
         <main>
           <Switch>
-            {routes.map((route) => (
+            {activeRoutes.map((route) => (
               <Route key={route.path} path={route.path} component={route.component} />
             ))}
             <Route>
