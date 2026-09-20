@@ -1,3 +1,5 @@
+import type { ReviewNodeConfig, ReviewRuntimeState, ReviewSubject } from "./review.ts";
+
 export const CANONICAL_STATUSES = [
 	"Backlog",
 	"ToDo",
@@ -36,6 +38,8 @@ export interface AgentNode extends BaseNode {
 	mode?: "read" | "write";
 	workdir?: string;
 	max_turns?: number;
+	review?: ReviewNodeConfig;
+	requires_review_approval?: ReviewSubject;
 }
 
 export interface GateNode extends BaseNode {
@@ -46,6 +50,7 @@ export interface GateNode extends BaseNode {
 	allow_review_state?: ["APPROVED"];
 	reminder_after_days?: number;
 	on_reject?: { action: "route_to" | "revert_deviation"; target: string };
+	approves_review?: ReviewSubject;
 }
 
 export interface AutomationNode extends BaseNode {
@@ -61,7 +66,7 @@ export interface CheckReferenceNode extends BaseNode {
 }
 
 export type GraphNode = AgentNode | GateNode | AutomationNode | CheckReferenceNode;
-export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision";
+export type LoopKind = "self_review" | "ci_repair" | "gate_revision" | "deviation_rework" | "planning_revision" | "review_fix";
 export type EdgeOn =
 	| { event: string; filter: { ignore_bots: true; label?: string }; when?: string }
 	| { schedule: true; when?: string }
@@ -114,6 +119,7 @@ export interface RunState {
 	iterations?: Record<string, number>;
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
 	children?: { run_id: string; node: string; eligible: boolean }[];
+	reviews?: Partial<Record<ReviewSubject, ReviewRuntimeState>>;
 }
 
 export type PlanAction =
