@@ -159,7 +159,6 @@ DarkFactory is being completed directly in its final architecture.
 - Legacy Python and recovered historical implementations are inspected only to preserve required behavior and provenance; they are not compatibility targets.
 - Implement missing behavior directly in the final TypeScript package/capability owner, then delete or retire the legacy owner as soon as the final owner is sufficient.
 - Do not create adapters, aliases, tests, workflows or operational paths solely to keep obsolete production behavior supported during the rebuild.
-- A canary/pre-release may be produced opportunistically when it accelerates packaging feedback, but it is never a mandatory phase between engine completion and the final release.
 - Fleet work validates clean install/update of the final release; it does not require supported migration from legacy production.
 
 The optimization target is the shortest safe path to the final #360/#361/#68 end state while preserving required behavior, recovery provenance, deterministic verification and governance.
@@ -365,22 +364,6 @@ The intended GitHub Packages namespace is the planned `darkfactory` GitHub organ
 
 The normal df installation is batteries-included with official capabilities while third-party capabilities use the same loader/ABI.
 
-### Optional packaging smoke / pre-release
-
-Use a canary or pre-release only when it accelerates discovery of packaging/consumer/web deployment problems. It is **not** a mandatory phase and must not delay direct work on the final release.
-
-When useful, it may test:
-
-- source-free install;
-- package resolution;
-- official capability loading;
-- update behavior;
-- one real consumer;
-- GitHub Packages mechanics;
-- prebuilt web bundle deployment.
-
-This smoke artifact is disposable feedback, not a supported migration release, not a compatibility promise and not a prerequisite for #360 if equivalent final-release verification is already available.
-
 ### #360 final release
 
 Final distribution must include, where applicable:
@@ -452,8 +435,8 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 | #390 | prepare | #425 shell + shipped quota/provider protocol |
 | #336 | recovery now | #424 README renderer + #339/#341 docs-impact owners |
 | #337 | recovery now | architecture/product materially final |
-| #360 | work in parallel where possible | all required final product Requests terminal; optional packaging smoke is not a gate |
-| #361 | prepare audit schema | six-repo released-df migration green |
+| #360 | work in parallel where possible | all required final product Requests terminal; publish the final release directly |
+| #361 | prepare audit schema | six-repo final-release install/update acceptance green |
 | #68 | final only | #361 + original graph acceptance green |
 
 ---
