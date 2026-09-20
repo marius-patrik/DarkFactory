@@ -73,7 +73,10 @@ function loadSettings(): ViewerSettings {
   };
 }
 
-function persistSetting<K extends keyof ViewerSettings>(key: K, value: ViewerSettings[K]) {
+function persistSetting(
+  key: keyof ViewerSettings,
+  value: ViewerSettings[keyof ViewerSettings],
+) {
   const storageKey = storageKeys[key];
   if (key === "activityPanel") {
     localStorage.setItem(storageKey, value === null ? "closed" : String(value));
@@ -96,7 +99,10 @@ export function useViewerSettings() {
   const patchSettings = useCallback((patch: Partial<ViewerSettings>) => {
     setSettings((current) => ({ ...current, ...patch }));
     for (const [key, value] of Object.entries(patch)) {
-      persistSetting(key as keyof ViewerSettings, value as never);
+      persistSetting(
+        key as keyof ViewerSettings,
+        value as ViewerSettings[keyof ViewerSettings],
+      );
     }
   }, []);
 
