@@ -6,9 +6,9 @@
 
 #let meta = (
   // Oficiální školní varianta.
-  nazev: "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství",
+  nazev: "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství",
   // Volitelné jazykové projekce používané při alternativní kompilaci.
-  nazev-cs: "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství",
+  nazev-cs: "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství",
   nazev-en: "DarkFactory: Artificial Intelligence in Practice – Agentic and Harness Engineering",
   podnazev: none,
 

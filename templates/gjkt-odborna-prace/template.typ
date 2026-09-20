@@ -89,6 +89,19 @@
   }
 }
 
+#let cover-title(meta) = context {
+  let title = title-for(meta)
+  if title == "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství" {
+    [
+      DarkFactory:#linebreak()
+      Umělá inteligence v praxi -#linebreak()
+      Agentické a harnessové inženýrství
+    ]
+  } else {
+    title
+  }
+}
+
 #let titulni-list(meta, logo: none) = {
   set align(center)
   set par(justify: false)
@@ -107,11 +120,11 @@
   context {
     let profile = profile-state.get()
     if profile == "merged" {
-      text(size: 25pt, weight: "bold", hyphenate: false, finalized(meta.nazev))
+      text(size: 25pt, weight: "bold", hyphenate: false, finalized(cover-title(meta)))
       v(0.25cm)
       text(size: 17pt, weight: "bold", hyphenate: false, finalized(meta.at("nazev-en", default: meta.nazev)))
     } else {
-      text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-for(meta)))
+      text(size: 26pt, weight: "bold", hyphenate: false, finalized(cover-title(meta)))
     }
   }
 

@@ -438,6 +438,8 @@ if '#import "terms.typ": vocabulary' not in registry_source or "#let terms = voc
     fail("template registry must export the shared terminology vocabulary")
 
 metadata_source = Path("metadata.typ").read_text(encoding="utf-8")
+if 'DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství' not in metadata_source:
+    fail("canonical Czech work title must use the finalized three-part title")
 finalized_annotation_cs = (
     "cs: finalized[\n"
     "      Tato odborná práce se zabývá principy agentického inženýrství (_agentic engineering_):\n"
@@ -683,8 +685,8 @@ for required in (
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 4:
-    fail("toolbar path must preserve Home/work/mode/chapter/page separators")
+if app_source.count('className="identity-separator"') < 2:
+    fail("toolbar path must preserve work/chapter/page separators")
 for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
     if required not in app_source:
         fail(f"compiled-format path selector missing contract: {required}")
@@ -703,7 +705,7 @@ for required in (
     "FileCode2Icon",
     "Code2Icon",
     "PencilLineIcon",
-    'viewMode === "split" ? "Review" : mode === "review" ? "Koncept" : "Final"',
+    'mode === "review" ? "Koncept" : "Compiled"',
 ):
     if required not in app_source:
         fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
@@ -717,12 +719,19 @@ for required in (
 ):
     if required not in app_source:
         fail(f"viewer missing three-mode appearance contract: {required}")
-if 'label="Home"' not in app_source:
-    fail("viewer toolbar must retain the Home button")
+if 'label="Home"' in app_source:
+    fail("viewer toolbar must not contain a Home button")
 if 'className="page-control"' in app_source:
     fail("legacy bottom-status page switcher must not return")
 if "peerTarget" in app_source:
-    fail("Final/Koncept/Review switching must live in the path bar, not a legacy peer control")
+    fail("Compiled/Koncept switching must not use a legacy peer control")
+if "window.location.href =" in app_source:
+    fail("internal viewer navigation must not reload the fullscreen shell")
+for required in ("window.history.pushState", '"popstate"', "navigateViewer", "onNavigate"):
+    if required not in app_source:
+        fail(f"fullscreen-preserving viewer routing missing contract: {required}")
+if "Switch Final / Koncept / Review" in app_source:
+    fail("Review must remain a separate toolbar action, not a mode-select option")
 
 compiled_artifact_source = Path("web/src/compiled-artifact.tsx").read_text(encoding="utf-8")
 for required in (
@@ -773,14 +782,17 @@ for required in (
         fail(f"viewer OLED appearance contract missing: {required}")
 
 template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(encoding="utf-8")
+for required in ("#let cover-title(meta)", "DarkFactory:#linebreak()", "Umělá inteligence v praxi -#linebreak()", "Agentické a harnessové inženýrství"):
+    if required not in template_source:
+        fail(f"title page missing three-line title contract: {required}")
 if '"KONCEPT"' in template_source:
     fail("review template must not add the KONCEPT page-background watermark")
 
 thesis_source = Path("thesis.typ").read_text(encoding="utf-8")
 if '"KONCEPT"' in thesis_source:
     fail("thesis composition must not force the KONCEPT review watermark")
-if 'splitHref={canSplit ? splitTarget : "#"}' not in app_source:
-    fail("Final/Koncept/Review path selector must expose the comparison view")
+if 'onClick={canSplit ? () => navigateViewer(splitTarget) : undefined}' not in app_source:
+    fail("separate Review action must expose the comparison view without reloading")
 
 pdf_source = Path("web/src/pdf-document.tsx").read_text(encoding="utf-8")
 for required in (
@@ -797,6 +809,9 @@ for required in (
     "installAnnotationInteractions",
     '"[data-annotation-id], [data-element-id], a"',
     "dataset.annotationId",
+    "installLinkOverlays",
+    "convertToViewportRectangle",
+    "pdf-link-overlay",
     "stopImmediatePropagation",
     "window.open(annotation.url",
     "loadTopLevelChapters",
@@ -815,10 +830,10 @@ for required in (
     'const profileName = params.get("profile") || "school"',
     'const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final"',
     'requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf"',
-    'Loading school Final PDF…',
+    'Loading school Compiled PDF…',
 ):
     if required not in app_source:
-        fail(f"viewer root missing school/final/PDF default contract: {required}")
+        fail(f"viewer root missing school/compiled/PDF default contract: {required}")
 
 vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
 for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
