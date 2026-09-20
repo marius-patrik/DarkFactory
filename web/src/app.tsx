@@ -1054,6 +1054,8 @@ export function ViewerApp() {
         ? "html"
         : "pdf";
   const viewMode: ViewMode = params.get("view") === "split" ? "split" : "single";
+  const initialSplitDirection: WorkspaceSplitDirection =
+    params.get("split") === "below" ? "below" : "right";
   const embedded = params.get("embedded") === "1";
   const profileName = params.get("profile") || "school";
   const templateName =
@@ -1290,12 +1292,12 @@ export function ViewerApp() {
         const target = Math.max(1, Math.min(state.total || page, Math.round(page) || 1));
         setState((current) => ({ ...current, page: target }));
         setPageDraft(String(target));
-        sendToSplit("page", { page: target });
+        sendToActiveSplit("page", { page: target });
       } else {
         documentRef.current?.goToPage(page);
       }
     },
-    [embedded, sendToSplit, state.total, viewMode],
+    [embedded, sendToActiveSplit, state.total, viewMode],
   );
 
   const setZoom = useCallback(
@@ -1307,12 +1309,12 @@ export function ViewerApp() {
           scaleMode,
           manualScale: nextScale,
         }));
-        sendToSplit("zoom", { mode: scaleMode, scale: nextScale });
+        sendToActiveSplit("zoom", { mode: scaleMode, scale: nextScale });
       } else {
         documentRef.current?.setZoom(scaleMode, scale);
       }
     },
-    [embedded, sendToSplit, state.manualScale, viewMode],
+    [embedded, sendToActiveSplit, state.manualScale, viewMode],
   );
 
   const zoomBy = useCallback(
@@ -1381,11 +1383,9 @@ export function ViewerApp() {
     if (viewMode !== "split" || embedded) return;
 
     const onMessage = (event: MessageEvent) => {
-      const sourceIsChild = splitFrames.current.some(
-        (frame) => frame?.contentWindow === event.source,
-      );
       const data = event.data;
-      if (!sourceIsChild || !data || data.source !== "paper-viewer" || data.kind !== "state") {
+      const sourceIsActivePane = workspaceRef.current?.isActiveSource(event.source) ?? false;
+      if (!sourceIsActivePane || !data || data.source !== "paper-viewer" || data.kind !== "state") {
         return;
       }
 
