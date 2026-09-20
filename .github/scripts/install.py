@@ -4,8 +4,7 @@ The installer writes the caller workflows and repo.df declaration required by th
 pipeline. Detectable repository facts come from environment detection; repository-specific intent
 such as areas remains declarative. Generated caller workflows pin the selected DarkFactory commit.
 
-The governed knowledge layout uses canonical .agents paths. The installer does not create or preserve
-historical documentation records.
+The governed knowledge layout uses canonical .agents paths and contains only current records.
 """
 
 import json
