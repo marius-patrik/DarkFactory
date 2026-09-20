@@ -12,7 +12,7 @@ owners: [system-audit]
 
 Every delivery PR MUST explicitly bind every Request it satisfies.
 
-A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
+A PR may satisfy one Request or multiple Requests when the shared-plan/multi-Request model proves that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
 
 Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.
 
