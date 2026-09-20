@@ -1,7 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { GitHubClient } from "../../src/github/client.ts";
-import { GitHubRepository } from "../../src/github/repository.ts";
-import { json, scripted } from "../github/helpers.ts";
+import type { ResolvedCheck } from "../../src/ci/schema.ts";
 import {
 	extractFailureExcerpt,
 	getCheckStatus,
@@ -9,7 +7,9 @@ import {
 	getWorkflowRuns,
 	rerunWorkflowRun,
 } from "../../src/ci/status.ts";
-import type { ResolvedCheck } from "../../src/ci/schema.ts";
+import { GitHubClient } from "../../src/github/client.ts";
+import { GitHubRepository } from "../../src/github/repository.ts";
+import { json, scripted } from "../github/helpers.ts";
 
 describe("CI status surface & log extractor", () => {
 	const checks: ResolvedCheck[] = [
@@ -41,17 +41,19 @@ describe("CI status surface & log extractor", () => {
 		const { fetch } = scripted([
 			json({
 				total_count: 1,
-				workflow_runs: [{
-					id: 1234,
-					name: "CI",
-					head_branch: "darkfactory",
-					head_sha: "abcdef123456",
-					event: "push",
-					status: "completed",
-					conclusion: "success",
-					actor: { login: "marius-patrik" },
-					created_at: "2026-09-14T08:00:00Z",
-				}],
+				workflow_runs: [
+					{
+						id: 1234,
+						name: "CI",
+						head_branch: "darkfactory",
+						head_sha: "abcdef123456",
+						event: "push",
+						status: "completed",
+						conclusion: "success",
+						actor: { login: "marius-patrik" },
+						created_at: "2026-09-14T08:00:00Z",
+					},
+				],
 			}),
 		]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
