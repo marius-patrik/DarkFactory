@@ -40,5 +40,5 @@ Základním principem navrženého řešení není nekritická plná autonomie, 
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: (),
 )

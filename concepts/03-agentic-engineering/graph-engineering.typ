@@ -37,5 +37,5 @@ Klíčové přístupy ke škálování zahrnují:
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: (),
 )

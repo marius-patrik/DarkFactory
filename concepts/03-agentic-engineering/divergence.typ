@@ -26,5 +26,5 @@ Mezi typické patologie patří:
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "parent", target: "agent_loop"),)
+  relations: ()
 )
