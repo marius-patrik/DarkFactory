@@ -30,4 +30,4 @@ None.
 
 ## Change control
 
-Required-check ownership follows #341 and final CI/repository settings; no session may invent or silently drop checks.
+Required-check ownership follows the canonical detected package/capability quality contract and repository protection settings; no session may invent or silently drop checks.
