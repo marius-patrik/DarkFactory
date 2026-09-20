@@ -1,11 +1,14 @@
 import { importPKCS8, SignJWT } from "jose";
+/** Fetch-compatible transport used for GitHub App token operations. */
 export type GitHubFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
 import { z } from "zod";
 
+/** Machine GitHub App identity and installation metadata. */
 export interface GitHubAppIdentity { appId: string; privateKey: string; owner: string; repo: string; installationId?: number; permissions?: Record<string, "read" | "write">; botLogin?: string; privateKeySecret?: string; }
 interface ProviderOptions { fetch?: GitHubFetch; now?: () => Date; }
 interface CachedToken { token: string; expiresAt: number; }
 
+/** Mints and refreshes GitHub App installation access tokens. */
 export class AppInstallationTokenProvider {
   readonly #identity: GitHubAppIdentity;
   readonly #fetch: GitHubFetch;
