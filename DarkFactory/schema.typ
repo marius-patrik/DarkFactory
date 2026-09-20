@@ -202,7 +202,10 @@
 #let render-concept(item, terms, graph, level: 1) = {
   let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]#label("concept-" + item.key)]
 
-  output += (item.definition)(terms)
+  output += [
+    #set par(first-line-indent: (amount: 1.5em, all: true))
+    #(item.definition)(terms)
+  ]
   output += (item.description)(terms)
   if item.visual != none { output += (item.visual)(terms) }
 
