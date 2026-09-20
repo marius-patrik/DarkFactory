@@ -33,7 +33,7 @@ describe("forceCaptureTool", () => {
 		expect(result).toEqual({
 			foo: "bar",
 			config: { temperature: 0.5 },
-			tool_choice: { type: "function", name: CAPTURE_TOOL_NAME },
+			tool_choice: { type: "function", function: { name: CAPTURE_TOOL_NAME } },
 		});
 		expect(payload).toEqual(dummyPayload);
 	});
@@ -44,7 +44,7 @@ describe("forceCaptureTool", () => {
 		expect(result).toEqual({
 			foo: "bar",
 			config: { temperature: 0.5 },
-			tool_choice: { type: "function", name: CAPTURE_TOOL_NAME },
+			tool_choice: { type: "function", function: { name: CAPTURE_TOOL_NAME } },
 		});
 		expect(payload).toEqual(dummyPayload);
 	});

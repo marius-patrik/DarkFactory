@@ -71,15 +71,13 @@ export function forceCaptureTool(dialect: ProviderDialect, payload: unknown): un
 	const withKey = (key: string, value: unknown) => ({ ...original, [key]: value });
 	switch (dialect) {
 		case "openai-completions":
-			return withKey("tool_choice", { type: "function", function: { name: CAPTURE_TOOL_NAME } });
 		case "openai-responses":
 		case "openai-codex-responses":
-			return withKey("tool_choice", { type: "function", name: CAPTURE_TOOL_NAME });
+			return withKey("tool_choice", { type: "function", function: { name: CAPTURE_TOOL_NAME } });
 		case "anthropic-messages":
 			return withKey("tool_choice", { type: "tool", name: CAPTURE_TOOL_NAME });
 		case "google-generative-ai": {
-			// The payload shape is { model, contents, config? }
-			const { model, contents, config } = original;
+			const { config } = original;
 			const newConfig = {
 				...((config as Record<string, unknown>) ?? {}),
 				toolConfig: {
@@ -89,7 +87,7 @@ export function forceCaptureTool(dialect: ProviderDialect, payload: unknown): un
 					},
 				},
 			};
-			return { model, contents, config: newConfig };
+			return { ...original, config: newConfig };
 		}
 		default:
 			// For any other dialect we return the payload unchanged.
