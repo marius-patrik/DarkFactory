@@ -6,9 +6,15 @@
 #let item = concept(
   key: "planning",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Plánování je proces převodu požadavku na explicitní posloupnost kroků, závislostí a ověřovacích podmínek před prováděním změn.
+  ],
+  description: terms => [
+V agentním vývoji plán omezuje okamžité přecházení od požadavku k úpravám kódu. Rozděluje práci na kontrolovatelné kroky a předem určuje, jak bude možné ověřit, že jednotlivé části i celek splnily zadání.
+  ],
+  summary: terms => [
+Plánování vytváří kontrolovatelný mezistupeň mezi požadavkem a provedením a snižuje riziko, že agent optimalizuje lokální změny bez ohledu na celek.
+  ],
   visual: none,
   examples: (),
   attachments: (),

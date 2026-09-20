@@ -5,8 +5,6 @@
     id: "continuous-integration",
     proper: translation(cs: "Průběžná integrace", en: "Continuous Integration"),
     industry: translation(cs: "CI", en: "CI"),
-    explanation_cs: "Vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami, aby se integrační chyby odhalily co nejdříve.",
-    explanation_en: "A development practice in which changes are integrated frequently and automatically verified by builds, tests, and other checks so integration failures are detected early.",
     citation: bib.humble2010,
     source: bib.humble2010,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "continuous_integration",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Průběžná integrace (CI) je vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami.
+  ],
   description: terms => [
 #unconfirmed[
 Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní kontinuální integrace (CI) @humble2010.
@@ -38,7 +38,9 @@ Konkrétní automatizační platformu popisuje #term(terms.github_actions), izol
 Riziko nestálých testů je vyčleněno do samostatného konceptu #term(terms.flaky_test).
 ]
   ],
-  summary: none,
+  summary: terms => [
+V agentním vývoji CI poskytuje strojově ověřitelnou zpětnou vazbu, která odděluje generování změny od jejího objektivního ověření.
+  ],
   visual: none,
   examples: (),
   attachments: (),

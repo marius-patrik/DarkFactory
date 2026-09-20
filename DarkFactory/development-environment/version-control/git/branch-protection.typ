@@ -6,13 +6,17 @@
 #let item = concept(
   key: "branch_protection",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Ochrana větví je sada pravidel repozitáře, která omezuje přímé změny chráněných větví a vynucuje schválení, kontroly nebo jiné podmínky před sloučením.
+  ],
   description: terms => [
 GitHub poskytuje pravidla ochrany větví #diff[(_Branch Protection Rules_)][(_Branch Protection Rules_ @chacon2014)], která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
 
 - Povinné schválení člověkem: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
   ],
-  summary: none,
+  summary: terms => [
+Ochrana větví převádí procesní pravidla integrace do technicky vynucované bariéry, kterou agent ani člověk nemůže obejít běžným přímým zápisem.
+  ],
   visual: none,
   examples: (),
   attachments: (),

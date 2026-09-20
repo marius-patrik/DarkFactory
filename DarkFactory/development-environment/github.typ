@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "github",
     proper: translation(cs: "GitHub", en: "GitHub"),
-    explanation_cs: "Cloudová platforma pro hosting gitových repozitářů, správu vývojového cyklu pomocí Issues a Pull Requests a automatizaci CI/CD pracovních postupů.",
-    explanation_en: "A platform for hosting Git repositories and coordinating the software-development lifecycle through features such as Issues, Pull Requests, and CI/CD automation.",
     citation: bib.dabbish2012github,
     source: bib.dabbish2012github,
 )
@@ -13,13 +11,17 @@
 #let item = concept(
   key: "github",
   term: terminology,
-  definition: none,
+  definition: terms => [
+GitHub je cloudová platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí Issues, Pull Requests a automatizačních workflow.
+  ],
   description: terms => [
 #unconfirmed[
 GitHub poskytuje nad gitovým repozitářem koordinační vrstvu pro zadání práce, revizi změn a automatizaci. Tyto odpovědnosti jsou v práci dále rozloženy mezi samostatné koncepty Issue, Pull Request a GitHub Actions.
 ]
   ],
-  summary: none,
+  summary: terms => [
+GitHub zde tvoří koordinační vrstvu nad Gitem, která propojuje zadání, revizi změn a automatizované kontroly.
+  ],
   visual: none,
   examples: (),
   attachments: (),

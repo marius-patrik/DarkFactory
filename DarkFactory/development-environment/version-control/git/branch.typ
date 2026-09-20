@@ -5,8 +5,6 @@
     id: "branch",
     proper: translation(cs: "Větev repozitáře", en: "Repository Branch"),
     industry: translation(cs: "Branch", en: "Branch"),
-    explanation_cs: "Pojmenovaná vývojová linie v systému správy verzí, která umožňuje provádět změny odděleně od jiné linie historie a později je porovnat nebo sloučit.",
-    explanation_en: "A named line of development in version control that allows changes to proceed separately from another history line and later be compared or merged.",
     citation: bib.chacon2014,
     source: bib.chacon2014,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "branch",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Větev je pojmenovaná vývojová linie v systému správy verzí, která umožňuje provádět změny odděleně od jiné linie historie a později je porovnat nebo sloučit.
+  ],
   description: terms => [
 #unconfirmed[
 Základním bezpečnostním pravidlem při zapojení autonomních agentů do vývoje je striktní izolace rozpracovaného kódu. Stabilní kód v hlavní větvi (`main`) nesmí být nikdy přímo vystaven experimentům a chybám modelu. Agent proto veškeré úpravy provádí ve vyhrazených pracovních větvích odbočených ze základní linie projektu.
@@ -28,7 +28,9 @@ Tento princip přináší následující výhody:
 Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné aktivity v repozitáři, pracovní větev agenta se musí před dokončením zaktualizovat (`git rebase` nebo `git merge`), aby byla zajištěna bezkonfliktní integrace.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Samostatná pracovní větev izoluje mezistavy a chyby agentního běhu od stabilní hlavní linie a umožňuje celý neúspěšný pokus bezpečně zahodit.
+  ],
   visual: none,
   examples: (),
   attachments: (),

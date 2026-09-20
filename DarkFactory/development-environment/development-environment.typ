@@ -4,8 +4,6 @@
 #let terminology = define-term(
   id: "development-environment-practices",
   proper: translation(cs: "Vývojové prostředí a praxe", en: "Development Environment and Practices"),
-  explanation_cs: "Soubor verzovacích, plánovacích, integračních a kontrolních postupů tvořících deterministické prostředí pro agentní vývoj softwaru.",
-  explanation_en: "The set of versioning, planning, integration, and verification practices that form a deterministic environment for agentic software development.",
   keyword: false,
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
@@ -14,9 +12,15 @@
 #let item = concept(
   key: "development_environment",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Vývojové prostředí a praxe tvoří soubor verzovacích, plánovacích, integračních a kontrolních postupů, které poskytují deterministický rámec pro agentní vývoj softwaru.
+  ],
+  description: terms => [
+Agentní systém nepracuje pouze s textem, ale se stavem repozitáře a vývojovým procesem. Proto musí být jeho akce ukotveny v explicitních postupech pro verzování, plánování změn, automatické kontroly a revizi výsledků.
+  ],
+  summary: terms => [
+Deterministické vývojové prostředí převádí jednotlivé agentní akce na dohledatelný a ověřitelný softwarově-inženýrský proces.
+  ],
   visual: none,
   examples: (),
   attachments: (),

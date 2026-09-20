@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "software-engineering",
     proper: translation(cs: "Softwarové inženýrství", en: "Software Engineering"),
-    explanation_cs: "Systematické uplatňování inženýrských principů na specifikaci, návrh, implementaci, ověřování, provoz a údržbu softwarových systémů.",
-    explanation_en: "The systematic application of engineering principles to the specification, design, implementation, verification, operation, and maintenance of software systems.",
     citation: bib.sommerville2016,
     source: bib.sommerville2016,
 )
@@ -13,9 +11,15 @@
 #let item = concept(
   key: "software_engineering",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Softwarové inženýrství je systematické uplatňování inženýrských principů na specifikaci, návrh, implementaci, ověřování, provoz a údržbu softwarových systémů.
+  ],
+  description: terms => [
+Pro agentní systémy je tento rámec důležitý proto, že generování kódu představuje pouze jednu část životního cyklu změny. Výsledek musí být zasazen do specifikace požadavku, řízeného procesu změn, automatického ověřování a následné revize.
+  ],
+  summary: terms => [
+Agentní vývoj je podmnožinou softwarového inženýrství: kvalita výsledku se neposuzuje podle množství vygenerovaného kódu, ale podle splnění požadavků a ověřitelnosti změny.
+  ],
   visual: none,
   examples: (),
   attachments: (),
