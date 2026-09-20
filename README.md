@@ -109,8 +109,9 @@ Překládaný obsah používá sdílené datové hodnoty namísto paralelních p
 duplikovaného formátování. Anotace je uložena jako jediná bilingvní hodnota a šablona
 ji vykresluje ve stejné sekční komponentě jako dynamický přehled klíčových slov.
 
-Kanonické odborné pojmy jsou definovány pouze jednou v `templates/terms.typ` pomocí
-`define-term(...)` a v rukopisu se používají přes `terms.<id>`.
+Kanonické odborné pojmy jsou definovány přímo ve svých souborech pod `concepts/**`
+pomocí `define-term(...)`; `templates/terms.typ` je pouze kompatibilní projekce
+společného slovníku pro odkazy `terms.<id>`.
 
 CI kontroluje unikátnost stabilních term `id` a povinné jádro terminologie. Již
 existující termy zůstávají kanonické (např. `language_model` pro LLM,
@@ -192,18 +193,11 @@ kanonické tiskové PDF. Je použit jako sémantický kompilovaný artefakt uvni
 vieweru, nikoli jako náhrada celé publikační aplikace.
 
 
-### Klíčová slova a rejstřík
+### Klíčová slova
 
-Terminologie používá dvě oddělené reprezentace:
+**Klíčová slova | Keywords** zůstávají ve front matteru jako stručný dynamický
+seznam skutečně použitých kanonických termínů. Samostatný terminologický
+**Rejstřík | Index** se již negeneruje; pojmy a jejich vysvětlení musí být skutečně
+použity v textu práce. CI ověřuje, že žádný kanonický koncept nezůstává existovat
+pouze jako nepoužitá katalogová položka.
 
-- **Klíčová slova | Keywords** zůstávají ve front matteru jako stručný dynamický seznam skutečně použitých termínů.
-- **Rejstřík | Index** je v zadní části dokumentu bezprostředně před **Seznamem příloh | List of appendices** a obsahuje celý kanonický katalog termínů deduplikovaný podle stabilního `id`.
-
-Rejstřík je abecedně seskupen podle počátečního písmene kanonického názvu.
-`Rejstřík` je jediná položka této terminologické části v hlavním Obsahu. Na začátku
-Rejstříku je úplný klikací seznam termínů; za ním následují abecední skupiny a detailní
-termínové sekce, které jsou z hlavního Obsahu explicitně vynechány. Obsah ostatních kapitol
-podporuje číslovanou hierarchii do hloubky 6.
-
-Inline hvězdičkové odkazy míří na stabilní `kw-<id>` záznam v rejstříku. Rejstřík
-proto obsahuje i kanonické pojmy, které se v aktuálním profilu rukopisu přímo nepoužily.
