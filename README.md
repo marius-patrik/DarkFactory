@@ -144,7 +144,7 @@ The web application is intended to replace normal day-to-day use of the GitHub w
 
 ## Self-hosting and completion strategy
 
-The completion program builds the final system directly; there is no supported legacy-to-df migration phase.
+The completion program builds the final system directly.
 
 The critical path is:
 
@@ -164,9 +164,7 @@ production graph handlers + branch repair
 remaining features completed through df itself
 ```
 
-Recovered September work is reconciled in parallel into its final package/capability homes rather than regenerated from scratch.
-
-See [PLAN.md](PLAN.md) for the authoritative execution program and recovery map.
+See [PLAN.md](PLAN.md) for the authoritative completion program.
 
 ## Distribution
 
@@ -174,7 +172,7 @@ First-party packages and capabilities are intended to publish under the `darkfac
 
 Initial first-party releases use one lockstep DarkFactory SemVer plus a separately versioned capability ABI.
 
-Final releases include the CLI/runtime, official capabilities and generated adapters, checksums/provenance, and the prebuilt web bundle.
+Final releases include the CLI/runtime, official capabilities and generated adapters, checksums, source/version metadata, and the prebuilt web bundle.
 
 ## Fleet acceptance
 
@@ -187,12 +185,12 @@ The final released system is proved across six repositories:
 5. template-OdbornaPrace
 6. OdbornaPrace-mono
 
-Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, accounts for every recovery source, validates docs/web/auth/capabilities, and then re-runs the original #68 declarable-graph contract.
+Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and then re-runs the #68 declarable-graph contract.
 
 ## Normative references
 
 - [PRD.md](PRD.md) — product requirements and architecture
-- [PLAN.md](PLAN.md) — optimized final-completion and recovery plan
+- [PLAN.md](PLAN.md) — optimized final-completion plan
 - [AGENTS.md](AGENTS.md) — projection of canonical contribution/governance rules
 - [ADRs](.agents/notes/adr/) — accepted architecture decisions
 
