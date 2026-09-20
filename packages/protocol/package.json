@@ -8,7 +8,8 @@
     "./model": "./src/model.ts",
     "./workflow": "./src/workflow.ts",
     "./planning": "./src/planning.ts",
-    "./review": "./src/review.ts"
+    "./review": "./src/review.ts",
+    "./quota": "./src/quota.ts"
   },
   "files": [
     "src"
