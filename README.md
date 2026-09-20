@@ -41,8 +41,8 @@ The final DarkFactory architecture is a root Bun workspace:
 | Package | Responsibility |
 |---|---|
 | `@darkfactory/protocol` | Browser/runtime-safe schemas, serialized state and shared contracts |
-| `@darkfactory/core` | Execution kernel, graph/run state, routing/provider mechanisms and capability loading |
-| `@darkfactory/capability` | Capability ABI, loader and generated adapter/build tooling |
+| `@darkfactory/core` | Execution kernel, graph/run state, routing/provider mechanisms and configuration resolution |
+| `@darkfactory/capability` | Capability ABI, discovery/loader/resolution and generated adapter/build tooling |
 | `@darkfactory/github` | Typed GitHub REST/GraphQL substrate |
 | `@darkfactory/keychain` | Machine/harness credentials, OAuth, tokens, refresh, secure storage and GitHub App credentials |
 | `@darkfactory/auth` | Human/browser GitHub App authentication and web sessions |
