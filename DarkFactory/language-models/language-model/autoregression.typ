@@ -13,11 +13,16 @@
 #let item = concept(
   key: "autoregression",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Autoregresivní generování probíhá iterativně: model zpracuje dosavadní posloupnost tokenů, vypočítá distribuci pravděpodobnosti následujícího tokenu a po jeho výběru celý krok opakuje nad rozšířenou posloupností.
 ]
   ],
-  relations: ((type: "dependency", target: "language_model"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "language_model"),),
 )
