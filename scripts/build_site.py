@@ -179,7 +179,7 @@ manifest = {
     "templates": template_names,
     "variants": VARIANTS,
     "viewer": {
-        "engine": "React + PDF.js + rendered Markdown + compiled Typst HTML",
+        "engine": "React + PDF.js + Monaco Raw + rendered Markdown + compiled Typst HTML",
         "formats": ["pdf", "markdown", "html"],
         "modes": ["viewer", "edit", "raw"],
         "repo_tree": "repo-tree.json",
@@ -193,6 +193,7 @@ manifest = {
             "Motion",
             "Dagre",
             "PDF.js",
+            "Monaco Editor",
         ],
     },
 }
