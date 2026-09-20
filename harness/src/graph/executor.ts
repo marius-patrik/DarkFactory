@@ -1,7 +1,17 @@
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { ReviewRuntimeState, ReviewSubject } from "@darkfactory/protocol/review";
+import { planningReviewAdapter } from "./planning.ts";
 import { plan } from "./planner.ts";
+import {
+	approveReview,
+	evaluateReview,
+	prepareReviewState,
+	recordReviewFix,
+	reviewApprovalFresh,
+	type ReviewSubjectAdapter,
+} from "./review-loop.ts";
 import type { AgentNode, AutomationNode, GraphEvent, GraphNode, PlanAction, RunState, WorkflowGraph } from "./types.ts";
 
 /** Outcome of one node run, as the planner's `node_outcome` edges expect. */
@@ -29,6 +39,8 @@ export interface NodeContext {
 	iteration: number;
 	/** Safety-budget alerts the planner raised for this run. */
 	alerts?: string[];
+	/** Durable generic review state for reviewer/fixer nodes. */
+	review?: ReviewRuntimeState;
 }
 
 /** Executes agent and automation nodes; everything else (gates, comments, board moves) is the caller's side effect. */
@@ -50,6 +62,8 @@ export interface RunGraphOptions {
 	now?: () => Date;
 	/** Upper bound on node runs per call, guarding against an undeclared infinite loop; default 1000. */
 	maxSteps?: number;
+	/** Subject-specific deterministic validation layered onto model findings. */
+	reviewAdapters?: Partial<Record<ReviewSubject, ReviewSubjectAdapter>>;
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
@@ -69,6 +83,28 @@ function startNode(graph: WorkflowGraph, event: GraphEvent): string {
 	const bySchedule =
 		event.type === "schedule" ? graph.nodes.find((node) => node.trigger?.schedule === event.schedule) : undefined;
 	return (byEvent ?? bySchedule ?? graph.nodes[0])?.id ?? "";
+}
+
+function reviewContextKey(graph: WorkflowGraph, subject: ReviewSubject): string | undefined {
+	for (const node of graph.nodes) {
+		if (node.kind === "agent" && node.review?.subject === subject) return node.review.context;
+	}
+	return undefined;
+}
+
+function refreshReviewContexts(graph: WorkflowGraph, state: RunState): void {
+	state.reviews ??= {};
+	for (const subject of ["planning", "implementation"] as const) {
+		const key = reviewContextKey(graph, subject);
+		if (!key || state.outputs[key] === undefined) continue;
+		state.reviews[subject] = prepareReviewState(subject, state.outputs[key], state.reviews[subject]);
+	}
+}
+
+function isApprovalEvent(event: GraphEvent): boolean {
+	if (event.type === "review") return event.state === "APPROVED";
+	if (event.type !== "comment") return false;
+	return /^\s*(?:\/df\s+|\/)approve\s*$/u.test(event.body ?? "");
 }
 
 async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext): Promise<NodeResult> {
@@ -191,6 +227,7 @@ export async function runGraph(
 	state.outputs ??= {};
 	state.hints ??= [];
 	state.iterations ??= {};
+	state.reviews ??= {};
 	const save = () => writeJson(statePath, state);
 	await save();
 	await record({ type: "event", event });
@@ -199,7 +236,19 @@ export async function runGraph(
 	let steps = 0;
 	let current: GraphEvent = event;
 	for (;;) {
+		refreshReviewContexts(graph, state);
+		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
 		const action = plan(graph, current, state);
+		if (
+			currentNode?.kind === "gate" &&
+			currentNode.approves_review &&
+			action.type === "run" &&
+			isApprovalEvent(current)
+		) {
+			const review = state.reviews[currentNode.approves_review];
+			if (!review) throw new Error(`Missing ${currentNode.approves_review} review state for approval gate`);
+			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
+		}
 		await record({ type: "action", action });
 		if (action.type === "none") {
 			await save();
@@ -230,17 +279,52 @@ export async function runGraph(
 			// Nothing to execute: the run waits for the checks (or gate) event.
 			return state;
 		}
+		if (node.kind === "agent" && node.requires_review_approval) {
+			const review = state.reviews[node.requires_review_approval];
+			if (!reviewApprovalFresh(review))
+				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
+		}
 		if (node.foreach) {
 			current = await runForeach(node, action, state, runDir, handlers, iteration);
 		} else {
+			const reviewConfig = node.kind === "agent" ? node.review : undefined;
+			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
+			if (reviewConfig && !existingReview)
+				throw new Error(`Node ${node.id} requires review context ${reviewConfig.context}`);
+			if (reviewConfig?.phase === "fix" && existingReview?.findings.length === 0)
+				throw new Error(`Review fix node ${node.id} has no findings to fix`);
 			const result = await invoke(handlers, node, {
 				runDir,
 				outputs: state.outputs,
 				iteration,
+				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
+			if (reviewConfig && result.outcome === "success") {
+				if (reviewConfig.phase === "review") {
+					const adapter =
+						options.reviewAdapters?.[reviewConfig.subject] ??
+						(reviewConfig.subject === "planning" ? planningReviewAdapter : undefined);
+					const review = evaluateReview({
+						subject: reviewConfig.subject,
+						context: state.outputs[reviewConfig.context],
+						artifact: state.outputs[reviewConfig.artifact],
+						modelFindings: result.outputs[reviewConfig.findings],
+						previous: existingReview,
+						adapter,
+						iteration,
+						now: options.now?.(),
+					});
+					state.reviews[reviewConfig.subject] = review;
+					result.outputs[reviewConfig.findings] = review.findings.length > 0 ? review.findings : null;
+					result.outputs[reviewConfig.clean] = review.clean;
+				} else {
+					state.reviews[reviewConfig.subject] = recordReviewFix(existingReview!, iteration, options.now?.());
+				}
+			}
 			state.outputs = { ...state.outputs, ...result.outputs };
+			refreshReviewContexts(graph, state);
 			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
 		}
 		await save();
