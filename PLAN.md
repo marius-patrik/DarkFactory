@@ -244,11 +244,11 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 #### #329 / F38
 
-#329 remains open. `recovery/f38-result-capture` has a terminal integrated/rejected disposition recorded on #329 and has been deleted. PR #891 is the active draft implementation vehicle and aggregate CI is green, but semantic blockers remain: its supervisor extraction path still does not install/force the capture context/tool, the direct extraction path still has a hard-coded Gemini fallback, the exact F38 `safeParse` function guard is not preserved, and new durable behavior remains in deletion-bound `harness/` ownership.
+#329 remains open. `recovery/f38-result-capture` has a terminal integrated/rejected disposition recorded on #329 and has been deleted. PR #891 is the active draft implementation vehicle and aggregate CI is green. Its current head now routes judgement extraction through `FailoverSupervisor.extractJudgement` with the real capture context and forced provider payload, removes the fixed-model fallback, preserves the exact `safeParse` function guard, and introduces final core/protocol/CLI owners. Remaining blockers are package/final-owner cleanup: final packages still use sibling `../../.../src` imports, and deletion-bound `harness` compatibility re-export/bridge files remain instead of current callers using package exports directly.
 
 Prior PRs #811 and #860 are closed evidence only. #860 reused a stale branch and carried scratch/debug files, so it is not an implementation vehicle.
 
-Repair PR #891 in place from its current fresh branch: use natural model stop, derive code-node truth from observed workspace/diff/verification/commit/effect evidence, route judgement extraction through the normal supervisor while actually supplying provider-enforced structured output, remove fixed provider/model fallbacks, preserve the exact F38 schema guard, and move new durable mechanisms/CLI surfaces into final package owners. F38 disposition/cleanup is already terminal.
+Finish PR #891 in place by replacing cross-package source-relative imports with `@darkfactory/*` package exports, updating current harness callers to those package boundaries, and deleting compatibility-only result-capture/capture-request bridges rather than retaining a transition layer. Keep its now-correct natural-stop, routed forced structured extraction, code-node truth and offline capture-schema behavior. F38 disposition/cleanup is terminal.
 
 #### #358
 
@@ -300,7 +300,7 @@ The final implementation must start fresh from current `darkfactory`: hook invoc
 
 PRs #816 and #862 are closed evidence only; #862 reused the stale release branch and did not satisfy the full release contract.
 
-PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` now owns deterministic SHA-256 artifact integrity/source provenance primitives in final capability ownership.
+PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` owns deterministic SHA-256 artifact integrity/source provenance generation. PR #912 landed as `c3660a00adecb2591b79d97e917ccb1387864f52`, adding independent fail-closed verification of installed/downloaded artifact bytes and expected release/source/ABI provenance.
 
 Continue stable release engineering in parallel for lockstep version/package metadata, Node-compatible CLI/library boundaries, runtime assets, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Reuse the landed release manifest/checksum contract; publish exactly once after the final release join.
 
@@ -376,8 +376,8 @@ Run these **concurrently now**:
 **A2 — #329 natural-stop result capture**
 - PR #891 is the active draft vehicle; PRs #811/#860 are retired evidence.
 - F38 disposition and recovery-ref deletion are terminal.
-- Repair #891 so the ordinary routed supervisor actually receives/enforces the capture tool/schema, remove fixed candidate fallbacks, preserve the exact schema guard, and place new durable logic/CLI surfaces in final owners.
-- Keep natural-stop runtime completion, offline `df run --capture-schema`, and code-node truth from observed effects + shipped #341 verification.
+- Routed forced structured extraction, fixed-candidate removal, the exact schema guard and final core/protocol/CLI ownership are present on the current head.
+- Finish package-boundary cleanup: use `@darkfactory/*` exports instead of sibling source imports and delete compatibility-only harness bridges while keeping natural-stop completion, offline `df run --capture-schema`, and code-node truth from observed effects + #341 verification.
 
 **A3 — #358 graph-native orchestration**
 - PR #894 is the active draft vehicle; PR #859 is rejected evidence.
@@ -439,7 +439,7 @@ D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their disp
 
 ### 11.6 Workstream E — release engineering
 
-#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed the official release capability plus deterministic artifact checksum/source-provenance contract; continue from current `darkfactory` with additional narrow final-owner release slices.
+#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed deterministic release artifact checksum/source-provenance generation and PR #912 landed independent fail-closed verification; continue from current `darkfactory` with additional narrow final-owner release slices.
 
 - package/publish metadata;
 - lockstep versioning + capability ABI version;
