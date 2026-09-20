@@ -365,23 +365,23 @@ Run these **concurrently now**:
 - Merged through PR #828 as `83e227cd229033a2067fc8d245e5540a77853e49`.
 - Core owns normalized repository evidence; capabilities contribute applicable actions.
 - Doctor, CI/check synchronization, touched-package verification/protection and docs/API extraction consume the shared result.
-- F49 disposition is recorded; its recovery branch is terminal and deletion-only.
+- F49 disposition is recorded and its terminal recovery branch has been deleted.
 
 **A2 — #329 natural-stop result capture**
-- PR #811 is retired; create one fresh current-tree implementation.
+- PRs #811 and #860 are retired evidence; create one fresh current-tree implementation from the exact canonical HEAD.
 - Reuse only compatible F38 forced-tool/schema mechanics.
 - Use the ordinary routed supervisor path for judgement extraction; do not create a second routing/failover abstraction.
 - Implement natural-stop runtime completion, offline `df run --capture-schema`, and code-node truth from observed effects + shipped #341 verification.
 - Record F38 disposition and delete its recovery branch when terminal.
 
 **A3 — #358 graph-native orchestration**
-- Start a fresh current-tree implementation; the previous governed attempt produced no file changes.
+- Start a fresh current-tree implementation; PR #859 is rejected evidence because it used scripted success instead of real production handlers.
 - Wire shipped #341 verification/actions immediately.
 - Implement the real production handler inventory, durable run/state owner, graph execution/resume and lifecycle effects now.
 - Do not invent a substitute result interface; join only the final #329 result contract when A2 lands.
 
 **A4 — #317 truthful mutation/branch repair**
-- Start fresh from current `darkfactory`; PR #809 remains rejected evidence.
+- Start fresh from current `darkfactory`; PRs #809 and #870 remain rejected evidence.
 - Implement structured mutation-claim validation against observed workspace/git/effect evidence using shipped #341 + landed #384.
 - Finish deterministic branch update/conflict behavior and tests now.
 - Join #329 for final result-contract truth and #358 only for graph re-entry/resume.
@@ -411,7 +411,7 @@ Do not hold #359 for #385/#386/#388/#332; they are final-release requirements, n
 
 Run independently of the engine spine:
 
-- #422: consolidate useful #792/#813/F14 work into one fresh current-tree vehicle, then retire the stale overlapping PRs; finish only missing keychain ownership.
+- #422: #792/#813/#868 are closed evidence; reconcile only the still-missing F14/keychain behavior in one fresh current-tree vehicle and finish final `@darkfactory/keychain` ownership.
 - #248: finish df-managed provider login/multi-account behavior against `@darkfactory/keychain` as soon as the required keychain interfaces are stable.
 - #423 is complete and merged; consume its shipped `@darkfactory/auth` boundary rather than adding another browser/session owner.
 - #252: proceed once its actual provider/login dependencies are satisfied; do not block unrelated auth/keychain completion.
@@ -422,19 +422,19 @@ These lanes should not touch the engine spine except through already-defined cre
 
 Run stable pieces in parallel, with only these waits:
 
-- #334: reconcile F42 TSDoc coverage and integrate against the shipped #341 detected API action contract now.
+- #334: F42 recovery refs are already reconciled/deleted; finish strict TSDoc coverage against the shipped #341 detected API action contract on the current tree.
 - #424: finish native docs compiler metadata/recovery dispositions now; no ProperDocs/MkDocs compatibility work.
 - #335: #341 is available; final integration waits only for #334's strict public-surface coverage.
-- #336: reconcile F44 behavior now; final shared docs-impact enforcement consumes the shipped #341 contract plus #339 rather than adding another detector/hook engine.
-- #337: keep current-only enforcement active now, but perform the final repository-wide truth pass only after the product surface has stopped changing.
+- #336: F44 recovery is already reconciled/deleted; finish shared docs-impact enforcement using the shipped #341 contract plus #339 rather than adding another detector/hook engine.
+- #337: F45 recovery is already integrated/deleted; keep current-only enforcement active now, and perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403 and #251: finish CLI/TUI surfaces against stable protocol/core APIs; do not wait for #359 where not required.
 - #425 and #390: continue the shared `@darkfactory/web` application and integrate the already-shipped #423 authentication contract now.
 
-D4/F42/F44/F45 recovery branches are reconciled as part of these Requests. Once their unique behavior is represented, record disposition and delete the branches immediately.
+D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their dispositions remain in the owning GitHub issues; do not recreate those branches.
 
 ### 11.6 Workstream E — release engineering
 
-#360 engineering is continuous. PR #816 is only a stale partial slice; port its valid packaging work to a current-tree vehicle before continuing.
+#360 engineering is continuous. PRs #816 and #862 are closed evidence only; continue from a fresh current-tree vehicle with only valid final packaging semantics.
 
 - package/publish metadata;
 - lockstep versioning + capability ABI version;
