@@ -107,3 +107,13 @@ def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
     condition = wf["jobs"]["run-agent"].get("if", "")
     assert "!endsWith(github.event.comment.user.login, '[bot]')" in condition
     assert "!contains(github.event.issue.labels.*.name, 'pipeline-failure')" in condition
+
+
+def test_agent_image_installs_the_root_bun_workspace():
+    dockerfile = pathlib.Path("docker/Dockerfile.agent").read_text(encoding="utf-8")
+    assert "COPY package.json bun.lock /opt/darkfactory/" in dockerfile
+    assert "COPY harness/ /opt/darkfactory/harness/" in dockerfile
+    assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
+    assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
+    assert "bun install --frozen-lockfile --cwd /opt/darkfactory" in dockerfile
+    assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" not in dockerfile
