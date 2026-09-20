@@ -1,3 +1,11 @@
+export type {
+	AccountRecord,
+	AccountSummary,
+	CredentialFallback,
+	CredentialSlot,
+	OAuthCredentialSlot,
+	WritableSlotType,
+} from "@darkfactory/keychain";
 export {
 	AccountCredentialStore,
 	accountId,
@@ -8,13 +16,4 @@ export {
 	isSlot,
 	parseAccountId,
 	validateAccountRecord,
-} from "@darkfactory/keychain";
-
-export type {
-	AccountRecord,
-	AccountSummary,
-	CredentialFallback,
-	CredentialSlot,
-	OAuthCredentialSlot,
-	WritableSlotType,
 } from "@darkfactory/keychain";
