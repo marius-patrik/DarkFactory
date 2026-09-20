@@ -15,7 +15,7 @@ VARIANTS = (
     {
         "profile": "school",
         "title": "Školní česká verze",
-        "subtitle": "Czech body, canonical English technical terms, bilingual annotation and keywords",
+        "subtitle": "Czech manuscript and section headings with canonical industry/proper terminology; bilingual annotation and keywords",
         "final": "prace.pdf",
         "review": "prace-review.pdf",
         "artifacts": {
@@ -250,7 +250,7 @@ manifest = {
     "viewer": {
         "engine": "React + PDF.js + Monaco Raw + rendered Markdown + compiled Typst HTML",
         "formats": ["pdf", "markdown", "html"],
-        "modes": ["viewer", "edit", "raw"],
+        "modes": ["viewer", "review", "raw"],
         "repo_tree": "repo-tree.json",
         "content_index": "content-index.json",
         "repository_url": "https://github.com/marius-patrik/DarkFactory-Paper",
