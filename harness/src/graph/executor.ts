@@ -291,8 +291,8 @@ export async function runGraph(
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
 			if (reviewConfig && !existingReview)
 				throw new Error(`Node ${node.id} requires review context ${reviewConfig.context}`);
-			if (reviewConfig?.phase === "fix" && existingReview?.findings.length === 0)
-				throw new Error(`Review fix node ${node.id} has no findings to fix`);
+			if (reviewConfig?.phase === "fix" && existingReview?.findings.length === 0 && !action.feedback)
+				throw new Error(`Review fix node ${node.id} has no findings or owner feedback to fix`);
 			const result = await invoke(handlers, node, {
 				runDir,
 				outputs: state.outputs,
