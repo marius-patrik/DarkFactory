@@ -1513,7 +1513,7 @@ export function ViewerApp() {
             onClick={() => void toggleFullscreen()}
             className="status-action"
           />
-        </div>>
+        </div>
       </footer>
     </div>
   );
