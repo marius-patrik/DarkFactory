@@ -111,6 +111,7 @@
         dependencies.at(item.key).push(edge.target)
       } else {
         related.at(item.key).push(edge.target)
+        related.at(edge.target).push(item.key)
       }
     }
   }
