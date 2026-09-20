@@ -13,3 +13,6 @@ Thumbs.db
 web/node_modules/
 web/dist/
 web/package-lock.json
+
+# Authoritative external figures are fetched from their cited primary sources.
+DarkFactory/img/external/
