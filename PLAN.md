@@ -232,11 +232,11 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 ### Active governed lanes
 
-- #780 → #341: corrected current-tree implementation of **core repository/package/domain evidence with capability-resolved actions**. The rejected #736 detector/quality-capability architecture is closed and must not return.
-- #781 → #422: clean current-tree rebuild of remaining `@darkfactory/keychain` ownership. PRs #518/#740 are closed as stale evidence; do not preserve their branch structure.
-- #783 → #423: complete browser authentication plus the minimal confidential broker/session/permission boundary from the current tree. PR #760 is partial evidence only.
-- #786 → #329: integrate F38-compatible schema/extraction behavior into the real graph/workspace/router result path. PR #769 is partial evidence only.
-- #741 → #384 deterministic git/workspace primitive slice is landed. #384 stays open only for #358 persisted conflict/run-state integration and #339 hook integration.
+- #780 → #341: PR #787 is the corrected core-evidence/capability-resolved-actions implementation. Architecture is now directionally correct; review requires wiring the same normalized result into doctor, CI/check sync, verification/protection and docs/API extraction before #341 can close.
+- #781 → #422: clean current-tree rebuild of remaining `@darkfactory/keychain` ownership is actively executing. PRs #518/#740 are closed as stale evidence; do not preserve their branch structure.
+- #783 → #423: PR #791 implements the new auth/broker surface but is under active review. It must remove browser token persistence, add callback state consumption, complete broker refresh/revoke, combine user + App installation authority and strengthen negative/browser-isolation tests before #423 can close. PR #760 is partial evidence only.
+- #786 → #329: clean current-tree integration of F38-compatible schema/extraction behavior into the real graph/workspace/router result path is actively executing. PR #769 is partial evidence only.
+- #741 → #384 deterministic git/workspace primitive slice is landed as `9788f0ad83d83be8da9d647366c4db82edff082f`. #384 stays open only for #358 persisted conflict/run-state integration and #339 hook integration.
 
 ### Dependency holds / next unlocks
 
