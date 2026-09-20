@@ -25,5 +25,5 @@ Strukturované volání nástrojů (_Tool / Function Calling_) používá vstupy
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: ((type: "parent", target: "harness"), (type: "dependency", target: "agent_loop"),)
 )
