@@ -56,7 +56,7 @@ df ask --chain <provider/model@account,...> <prompt>
 
 `df graph validate` checks that a workflow graph file is well-formed and prints a summary of nodes and edges. `df graph plan` produces a planned run from an event and a state file.
 
-`df graph validate [path]` reads a workflow graph file (default `.darkfactory/manifest.json`, whose `graph` key holds the graph) and prints:
+`df graph validate [path]` reads a workflow graph file (default bundled `assets/graph.darkfactory.json`) and prints:
 ```
 <path>: valid workflow graph v<version> (<nodes> nodes, <edges> edges)
 ```
