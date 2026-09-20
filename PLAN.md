@@ -435,7 +435,7 @@ Run stable pieces in parallel, with only these waits:
 - #336: F44 recovery is reconciled/deleted and the pure #341-backed impact classifier is landed through #889. Wire PR-base diff and shared local/CI enforcement through #339 once its final hook surface lands, then perform the late PRD truth pass.
 - #337: README projection/retired-surface enforcement is active; perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403: the command-registry/metadata slice is landed; continue the remaining final operator commands and later engine/release joins. #251 consumes the same registry/metadata source for TUI work.
-- #425 and #390: continue the shared `@darkfactory/web` application and integrate the already-shipped #423 authentication contract now.
+- #425 and #390: continue the shared `@darkfactory/web` application. PR #898 (`0cc4f61d5c9488f6d981daa1ea34bcba851ef53f`) landed the shared redacted `@darkfactory/protocol/quota` snapshot for CLI/TUI/web; live authenticated GitHub data remains held on an explicit browser-transport/auth contract rather than leaking broker/keychain credentials or inventing a backend state store.
 
 D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their dispositions remain in the owning GitHub issues; do not recreate those branches.
 
