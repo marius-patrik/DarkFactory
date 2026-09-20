@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import {
 	actionsForTouchedFiles,
 	type ResolvedRepositoryAction,
@@ -120,7 +120,7 @@ export async function runDetectedVerification(
 	const evidence = await detectRepositoryEvidence(repoDir);
 	const resolution = await resolveDetectedRepositoryActions(
 		evidence,
-		options.capabilitiesRoot ?? join(repoDir, "capabilities"),
+		options.capabilitiesRoot ?? resolve(import.meta.dir, "..", "..", "..", "capabilities"),
 	);
 	const actions = actionsForTouchedFiles(resolution, options.changedFiles);
 	const results: DetectedVerificationResult[] = [];
