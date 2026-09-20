@@ -10,7 +10,14 @@
 #let item = concept(
   key: "results_discussion",
   term: terminology,
-  document_enabled: true,
+  definition: none,
+  description: none,
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: (),
 )
 
 // Záměrně bez definice a obsahu.
