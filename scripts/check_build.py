@@ -960,6 +960,9 @@ for required in (
         fail(f"React PDF viewer missing interaction contract: {required}")
 if "PDFLinkService" in pdf_source or "setViewer({" in pdf_source:
     fail("custom PDF renderer must not depend on a partial PDFViewer/PDFLinkService surrogate")
+if "GlobalWorkerOptions.workerPort" in pdf_source:
+    fail("PDF.js must not reuse a shared workerPort across document loading tasks")
+
 for legacy_worker_query in (
     "monaco-editor/editor/editor.worker?worker",
     "monaco-editor/language/html/html.worker?worker",
