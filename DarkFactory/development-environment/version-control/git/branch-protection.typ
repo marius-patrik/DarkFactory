@@ -12,7 +12,7 @@ definition: terms => [
 Ochrana větví je sada pravidel repozitáře, která omezuje přímé změny chráněných větví a vynucuje schválení, kontroly nebo jiné podmínky před sloučením.
   ],
   description: terms => [
-GitHub poskytuje pravidla ochrany větví #diff[(_Branch Protection Rules_)][(_Branch Protection Rules_ @chacon2014)], která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
+GitHub poskytuje pravidla ochrany větví _Branch Protection Rules_ @chacon2014, která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
 
 - Povinné schválení člověkem: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
   ],
