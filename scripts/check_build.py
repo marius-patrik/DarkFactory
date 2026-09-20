@@ -864,7 +864,7 @@ for required in (
     'align-items: center',
     '.navigation-sidebar',
     '.navigation-outline-section',
-    '.navigation-pages-section',
+    '.navigation-pages-body',
     '.contents-tree',
     '.renderer-picker',
     '.renderer-option.active',
