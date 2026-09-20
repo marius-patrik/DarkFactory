@@ -137,6 +137,8 @@ export interface CapabilityDefinition {
 	verification?: readonly CapabilityVerificationDefinition[];
 	hooks?: readonly CapabilityHookDefinition[];
 	surfaces?: CapabilitySurfaceMetadata;
+	/** Priority of the capability, used to resolve overrides. */
+	priority?: number;
 	/** Contributed quality actions for packages in the supported domains. */
 	actions?: CapabilityActions;
 }

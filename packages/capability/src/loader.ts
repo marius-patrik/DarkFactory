@@ -15,15 +15,24 @@ export async function loadCapability(path: string): Promise<CapabilityDefinition
 /** Discovers and validates capability modules under a capability root. */
 export async function discoverCapabilities(root: string): Promise<CapabilityDefinition[]> {
 	const entries = (await readdir(root, { withFileTypes: true }))
-		.filter((entry) => entry.isDirectory())
 		.sort((a, b) => a.name.localeCompare(b.name));
 	const definitions: CapabilityDefinition[] = [];
 	for (const entry of entries) {
 		let loaded: CapabilityDefinition | undefined;
-		for (const filename of ENTRYPOINTS) {
+		if (entry.isDirectory()) {
+			for (const filename of ENTRYPOINTS) {
+				try {
+					loaded = await loadCapability(join(root, entry.name, filename));
+					break;
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException).code === "ENOENT" || /Cannot find module|ModuleNotFound/u.test(String(error)))
+						continue;
+					throw error;
+				}
+			}
+		} else if (entry.isFile() && (entry.name.endsWith(".json") || entry.name.endsWith(".ts") || entry.name.endsWith(".js") || entry.name.endsWith(".mjs"))) {
 			try {
-				loaded = await loadCapability(join(root, entry.name, filename));
-				break;
+				loaded = await loadCapability(join(root, entry.name));
 			} catch (error) {
 				if ((error as NodeJS.ErrnoException).code === "ENOENT" || /Cannot find module|ModuleNotFound/u.test(String(error)))
 					continue;

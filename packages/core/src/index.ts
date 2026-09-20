@@ -4,7 +4,7 @@
 export * from "../../../harness/src/config.ts";
 export * from "../../../harness/src/graph/index.ts";
 export * from "../../../harness/src/evidence/detector.ts";
-export * from "../../../harness/src/evidence/capabilities.ts";
+// export * from "../../../harness/src/evidence/capabilities.ts";
 export {
 	ChainExhaustedError,
 	FailoverSupervisor,

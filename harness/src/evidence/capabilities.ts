@@ -137,10 +137,7 @@ export async function resolveRepositoryActions(
 			})) {
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
-					// Check for overlap: warn if multiple capabilities try to override the same action
-					if (supported) {
-						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.id}`);
-					}
+					// Remove warning: sorting ensures higher priority overrides, so warnings are misleading.
 					supported = true;
 					description = capAction.description ?? `Capability-contributed ${actionKey}`;
 					if (typeof capAction.command === "function") {
@@ -148,7 +145,8 @@ export async function resolveRepositoryActions(
 							command = (capAction.command as (p: string) => string)(pkg.path);
 						} catch (error: any) {
 							console.error(`Failed to resolve command from capability action: ${error.message}`);
-							command = "echo 'Failed to resolve capability command'";
+							command = "";
+							supported = false;
 						}
 					} else {
 						command = capAction.command;
