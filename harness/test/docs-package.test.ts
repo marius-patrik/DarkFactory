@@ -89,7 +89,6 @@ describe("@darkfactory/docs", () => {
 		expect(markdown).toBe(`${README_GENERATED_MARKER}\n\n# Home\n\nSee [the PRD](PRD.md).\n`);
 	});
 
-
 	test("extracts documented TypeScript APIs as strict JSON", async () => {
 		const root = await mkdtemp(join(tmpdir(), "darkfactory-typedoc-test-"));
 		roots.push(root);
