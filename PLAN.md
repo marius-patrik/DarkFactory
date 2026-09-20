@@ -321,9 +321,11 @@ Remote recovery cleanup has advanced from 16 refs to exactly three:
 
 All other previously retained remote `recovery/*` refs have been deleted after reconciliation. GitHub issues remain the durable provenance record.
 
-The local cleanup agent still owns the local-only verification step: worktrees, stashes, detached/reflog-only state and stale feature branches must be proven safe before deletion. In particular, stale feature branches must not remain available for the pipeline to reuse once their PR/Request implementation has been superseded.
+The local recovery-cleanup pass is complete for the previously preserved September recovery set: terminal recovery refs were dispositioned in their owning GitHub Requests and removed, leaving only the three active recovery inputs above.
 
-The three remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique local state remains.
+Remote branch hygiene is now a separate execution-safety task. Numerous superseded `feature/*` refs from closed/invalid pipeline attempts still exist remotely even though they are not valid implementation vehicles. They must never be selected as continuation state. Delete each terminal stale feature ref once its owning Request/PR evidence proves no unique required work remains; retain only branches that are explicitly current execution vehicles.
+
+The three remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique required state remains.
 
 ### Pipeline hygiene
 
