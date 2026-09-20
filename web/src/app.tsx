@@ -1086,21 +1086,37 @@ export function ViewerApp() {
   const reviewPath = mode === "review" ? artifactPath : peerPath;
 
   const documentRef = useRef<DocumentControl>(null);
-  const splitFrames = useRef<Array<HTMLIFrameElement | null>>([null, null]);
+  const workspaceRef = useRef<ReviewWorkspaceControl>(null);
   const suppressEmbeddedState = useRef(false);
+  const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspacePane | null>(null);
 
   const [sidebarSide, setSidebarSideState] = useState<SidebarSide>(() =>
     localStorage.getItem("paper-viewer-sidebar-side") === "right" ? "right" : "left",
   );
+  const [sidebarWidth, setSidebarWidthState] = useState(() => {
+    const stored = Number(localStorage.getItem("paper-viewer-sidebar-width"));
+    return clampSidebarWidth(Number.isFinite(stored) && stored > 0 ? stored : 300);
+  });
   const [sidebarMode, setSidebarModeState] = useState<SidebarMode>(() =>
     localStorage.getItem("paper-viewer-sidebar-mode") === "minimap"
       ? "minimap"
       : "thumbnails",
   );
-  const [activityPanel, setActivityPanel] = useState<ActivityPanel>(
-    () => (window.innerWidth <= 760 ? null : "contents"),
+  const [activityBarPosition, setActivityBarPositionState] = useState<ActivityBarPosition>(() => {
+    const stored = localStorage.getItem("paper-viewer-activitybar-position");
+    return stored === "right" || stored === "top" || stored === "bottom" ? stored : "left";
+  });
+  const storedActivityPanel = localStorage.getItem("paper-viewer-activity-panel");
+  const [activityPanel, setActivityPanelState] = useState<ActivityPanel>(() => {
+    if (window.innerWidth <= 760 || storedActivityPanel === "closed") return null;
+    if (storedActivityPanel === "explorer" || storedActivityPanel === "structure") {
+      return storedActivityPanel;
+    }
+    return "structure";
+  });
+  const lastActivityPanel = useRef<ActiveActivityPanel>(
+    storedActivityPanel === "explorer" ? "explorer" : "structure",
   );
-  const lastActivityPanel = useRef<ActiveActivityPanel>("contents");
   const [theme, setTheme] = useState<AppearanceMode>(() => {
     const stored = localStorage.getItem("paper-viewer-theme");
     if (stored === "light" || stored === "dark" || stored === "oled") return stored;
@@ -1131,42 +1147,57 @@ export function ViewerApp() {
   const repositoryUrl =
     manifest?.viewer?.repository_url || "https://github.com/marius-patrik/DarkFactory-Paper";
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
-  const contentsAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
-  const pagesAvailable = contentsAvailable;
+  const structureAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
+  const scopedMode: ViewerMode =
+    viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.kind : mode;
+  const scopedFormat: ArtifactFormat =
+    viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.format : format;
+  const scopedProfile =
+    viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.profile : profileName;
+  const scopedVariant =
+    manifest?.variants.find((variant) => variant.profile === scopedProfile) || activeVariant;
+  const scopedVersionTitle = scopedVariant?.title || versionTitle;
+  const pagesAvailable =
+    scopedMode !== "raw" && scopedFormat === "pdf" && (viewMode === "single" || state.total > 0);
 
   const selectActivityPanel = useCallback((panel: ActivityPanel) => {
-    if (panel) lastActivityPanel.current = panel;
-    setActivityPanel(panel);
+    if (panel) {
+      lastActivityPanel.current = panel;
+      localStorage.setItem("paper-viewer-activity-panel", panel);
+    } else {
+      localStorage.setItem("paper-viewer-activity-panel", "closed");
+    }
+    setActivityPanelState(panel);
   }, []);
 
   const toggleSidebar = useCallback(() => {
-    setActivityPanel((current) => {
+    setActivityPanelState((current) => {
       if (current) {
         lastActivityPanel.current = current;
+        localStorage.setItem("paper-viewer-activity-panel", "closed");
         return null;
       }
 
       const preferred = lastActivityPanel.current;
-      if (preferred === "files") return "files";
-      if (preferred === "contents" && contentsAvailable) return "contents";
-      if (contentsAvailable) return "contents";
-      return "files";
+      const next = preferred === "structure" && !structureAvailable ? "explorer" : preferred;
+      localStorage.setItem("paper-viewer-activity-panel", next);
+      return next;
     });
-  }, [contentsAvailable]);
+  }, [structureAvailable]);
 
   useCommand({
     id: "toggle-sidebar",
     key: "b",
     primaryModifier: true,
-    enabled: viewMode === "single" && !embedded,
+    enabled: !embedded,
     run: toggleSidebar,
   });
 
   useEffect(() => {
-    if (activityPanel === "contents" && !contentsAvailable) {
-      setActivityPanel(null);
+    if (activityPanel === "structure" && !structureAvailable) {
+      selectActivityPanel(null);
     }
-  }, [activityPanel, contentsAvailable]);
+  }, [activityPanel, selectActivityPanel, structureAvailable]);
 
   const navigateViewer = useCallback((href: string) => {
     if (!href || href === "#") return;
@@ -1188,14 +1219,34 @@ export function ViewerApp() {
     localStorage.setItem("paper-viewer-sidebar-side", side);
   }, []);
 
+  const setSidebarWidth = useCallback((width: number) => {
+    const next = clampSidebarWidth(width);
+    setSidebarWidthState(next);
+    localStorage.setItem("paper-viewer-sidebar-width", String(next));
+  }, []);
+
   const setSidebarMode = useCallback((next: SidebarMode) => {
     setSidebarModeState(next);
     localStorage.setItem("paper-viewer-sidebar-mode", next);
   }, []);
 
+  const setActivityBarPosition = useCallback(
+    (position: ActivityBarPosition) => {
+      setActivityBarPositionState(position);
+      localStorage.setItem("paper-viewer-activitybar-position", position);
+      if (position === "left" || position === "right") setSidebarSide(position);
+    },
+    [setSidebarSide],
+  );
+
   const moveSidebar = useCallback(() => {
-    setSidebarSide(sidebarSide === "left" ? "right" : "left");
-  }, [setSidebarSide, sidebarSide]);
+    const next = sidebarSide === "left" ? "right" : "left";
+    setSidebarSide(next);
+    if (activityBarPosition === "left" || activityBarPosition === "right") {
+      setActivityBarPositionState(next);
+      localStorage.setItem("paper-viewer-activitybar-position", next);
+    }
+  }, [activityBarPosition, setSidebarSide, sidebarSide]);
 
   const toggleSidebarMode = useCallback(() => {
     setSidebarMode(sidebarMode === "minimap" ? "thumbnails" : "minimap");
@@ -1207,13 +1258,14 @@ export function ViewerApp() {
       payload: Record<string, unknown> = {},
       except: MessageEventSource | null = null,
     ) => {
-      for (const frame of splitFrames.current) {
-        if (!frame?.contentWindow || frame.contentWindow === except) continue;
-        frame.contentWindow.postMessage(
-          { source: "paper-split", command, ...payload },
-          "*",
-        );
-      }
+      workspaceRef.current?.sendAll(command, payload, except);
+    },
+    [],
+  );
+
+  const sendToActiveSplit = useCallback(
+    (command: string, payload: Record<string, unknown> = {}) => {
+      workspaceRef.current?.sendActive(command, payload);
     },
     [],
   );
