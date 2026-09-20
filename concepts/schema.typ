@@ -130,18 +130,18 @@
 
   for section in sections {
     output += [#heading(level: 2)[#(section.heading)(terms)]]
-    if section.theory_prelude != none { output += section.theory_prelude(terms) }
+    if section.theory_prelude != none { output += (section.theory_prelude)(terms) }
     if section.theory_intro_heading != none {
       output += [#heading(level: 3)[#(section.theory_intro_heading)(terms)]]
     }
-    if section.theory_intro != none { output += section.theory_intro(terms) }
+    if section.theory_intro != none { output += (section.theory_intro)(terms) }
 
     for item in section.concepts {
       let rendered = render-concept(item, terms, mode: "theory", level: 3)
       if rendered != none { output += rendered }
     }
 
-    if section.theory_summary != none { output += section.theory_summary(terms) }
+    if section.theory_summary != none { output += (section.theory_summary)(terms) }
   }
 
   output
@@ -156,27 +156,27 @@
   for section in sections {
     let active = section.concepts.filter(item => item.practical_enabled)
     if active.len() > 0 {
-      if section.practical_prelude != none { output += section.practical_prelude(terms) }
+      if section.practical_prelude != none { output += (section.practical_prelude)(terms) }
 
       if section.practical_grouped {
         output += [#heading(level: 2)[#(section.heading)(terms)]]
         if section.practical_intro_heading != none {
           output += [#heading(level: 3)[#(section.practical_intro_heading)(terms)]]
         }
-        if section.practical_intro != none { output += section.practical_intro(terms) }
+        if section.practical_intro != none { output += (section.practical_intro)(terms) }
         for item in active {
           let rendered = render-concept(item, terms, mode: "practical", level: 3)
           if rendered != none { output += rendered }
         }
       } else {
-        if section.practical_intro != none { output += section.practical_intro(terms) }
+        if section.practical_intro != none { output += (section.practical_intro)(terms) }
         for item in active {
           let rendered = render-concept(item, terms, mode: "practical", level: 2)
           if rendered != none { output += rendered }
         }
       }
 
-      if section.practical_summary != none { output += section.practical_summary(terms) }
+      if section.practical_summary != none { output += (section.practical_summary)(terms) }
     }
   }
 
