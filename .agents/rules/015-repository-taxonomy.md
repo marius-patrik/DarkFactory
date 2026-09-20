@@ -33,7 +33,7 @@ Separating domain from capability preserves multi-domain repositories while keep
 
 ## Enforcement
 
-Final repo.df resolver, #341 detection/capability resolution and hooks validate the taxonomy.
+The repo.df resolver, canonical detection/capability resolution and hooks validate the taxonomy.
 
 ## Exceptions
 
