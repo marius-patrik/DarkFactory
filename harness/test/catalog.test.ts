@@ -62,6 +62,8 @@ describe("ModelCatalog integration boundary", () => {
 		const cached = await catalog.get("sample-openai", { account: "test" });
 		expect(live).toMatchObject({ source: "live", models: [{ id: "gpt-live", name: "GPT Live" }] });
 		expect(cached.source).toBe("cache");
+		expect(await Bun.file(join(root, "models", "sample-openai.df")).exists()).toBe(true);
+		expect(await Bun.file(join(root, "models", "sample-openai.json")).exists()).toBe(false);
 		expect(calls).toBe(1);
 	});
 

@@ -92,7 +92,7 @@ describe("df models", () => {
 		);
 		await mkdir(join(home, "models"));
 		await writeFile(
-			join(home, "models", `${provider.id}.json`),
+			join(home, "models", `${provider.id}.df`),
 			JSON.stringify({
 				version: 1,
 				provider: provider.id,

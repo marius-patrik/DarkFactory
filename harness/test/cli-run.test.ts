@@ -242,18 +242,21 @@ describe("df run", () => {
 		const result = await run("hello", {
 			config: { maxWaitMs: 1 },
 			setup: async (home) => {
+				const observedAt = Date.now();
 				await writeFile(
-					join(home, "quota.df"),
+					join(home, "limits.df"),
 					JSON.stringify({
 						version: 1,
 						entries: {
-							"faux/echo@test": {
+							"faux/test/echo/daily/usage": {
 								provider: "faux",
 								model: "echo",
 								account: "test",
-								kind: "quota_exhausted",
-								markedAt: Date.now(),
-								resetAt: Date.now() + 60_000,
+								type: "daily",
+								observedAt,
+								resetAt: observedAt + 60_000,
+								source: "rule",
+								remaining: 0,
 							},
 						},
 					}),

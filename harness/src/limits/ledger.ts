@@ -24,7 +24,7 @@ function valid(value: unknown): value is LimitEntry {
 		typeof item.observedAt === "number" &&
 		typeof item.resetAt === "number" &&
 		Number.isFinite(item.resetAt) &&
-		["header", "body", "rule", "default", "migration", "manual"].includes(String(item.source))
+		["header", "body", "rule", "default", "manual"].includes(String(item.source))
 	);
 }
 
@@ -32,15 +32,13 @@ export class LimitLedger {
 	readonly path: string;
 	readonly lockPath: string;
 	readonly auditPath: string;
-	private readonly quotaPath: string;
 	private readonly fallbackTtlMs: number;
 	private readonly persist: (candidate: Candidate) => boolean;
 
 	constructor(home: string, options: { fallbackTtlMs?: number; persist?: (candidate: Candidate) => boolean } = {}) {
 		this.path = join(home, "limits.df");
-		this.lockPath = `${this.path}.lock`;
+		this.lockPath = `${this.path}.lock.df`;
 		this.auditPath = join(home, "limits-audit.df");
-		this.quotaPath = join(home, "quota.df");
 		this.fallbackTtlMs = options.fallbackTtlMs ?? 15 * 60_000;
 		this.persist = options.persist ?? (() => true);
 	}
@@ -68,50 +66,12 @@ export class LimitLedger {
 	private async readRaw(): Promise<LedgerFile> {
 		const existing = await this.readExisting();
 		if (existing) return existing;
-		return withFileLock(this.lockPath, async () => {
-			const afterLock = await this.readExisting();
-			if (afterLock) return afterLock;
-			const migrated = await this.migrateQuota();
-			if (Object.keys(migrated.entries).length > 0) await this.write(migrated);
-			return migrated;
-		});
-	}
-
-	private async migrateQuota(): Promise<LedgerFile> {
-		let quota: { entries?: Record<string, Record<string, unknown>> };
-		try {
-			quota = JSON.parse(await readFile(this.quotaPath, "utf8")) as typeof quota;
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") return empty();
-			throw error;
-		}
-		const file = empty();
-		for (const old of Object.values(quota.entries ?? {})) {
-			if (typeof old.provider !== "string" || typeof old.account !== "string" || typeof old.model !== "string")
-				continue;
-			const observedAt = typeof old.markedAt === "number" ? old.markedAt : Date.now();
-			const kind = String(old.kind);
-			const type: LimitEntry["type"] =
-				kind === "rate_limited" ? "rate" : kind === "auth" ? "auth" : kind === "transient" ? "overload" : "daily";
-			const entry: LimitEntry = {
-				provider: old.provider,
-				account: old.account,
-				model: old.model,
-				type,
-				observedAt,
-				resetAt: typeof old.resetAt === "number" ? old.resetAt : observedAt + this.fallbackTtlMs,
-				source: "migration",
-				remaining: 0,
-				...(typeof old.pool === "string" ? { pool: old.pool } : {}),
-			};
-			file.entries[limitKey(entry)] = entry;
-		}
-		return file;
+		return empty();
 	}
 
 	private async write(file: LedgerFile): Promise<void> {
 		await mkdir(dirname(this.path), { recursive: true });
-		const temporary = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+		const temporary = `${this.path}.${process.pid}.${crypto.randomUUID()}.tmp.df`;
 		try {
 			await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 			await replaceFile(temporary, this.path);
@@ -125,7 +85,7 @@ export class LimitLedger {
 
 	private modify(fn: (file: LedgerFile) => void): Promise<void> {
 		return withFileLock(this.lockPath, async () => {
-			const file = (await this.readExisting()) ?? (await this.migrateQuota());
+			const file = (await this.readExisting()) ?? empty();
 			fn(file);
 			await this.write(file);
 		});
@@ -202,7 +162,7 @@ export class LimitLedger {
 	async recover(now = Date.now(), confirm?: (entry: LimitEntry) => Promise<boolean>): Promise<LimitEntry[]> {
 		const recovered: LimitEntry[] = [];
 		await withFileLock(this.lockPath, async () => {
-			const file = (await this.readExisting()) ?? (await this.migrateQuota());
+			const file = (await this.readExisting()) ?? empty();
 			for (const [key, entry] of Object.entries(file.entries)) {
 				if (entry.resetAt > now) continue;
 				if (entry.source === "default" && confirm && !(await confirm(entry))) {

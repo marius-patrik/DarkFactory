@@ -15,6 +15,7 @@ import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountReco
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
+import { bundledGraphPath } from "./graph/assets.ts";
 import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
 import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
@@ -1299,11 +1300,8 @@ async function chatCommand(
 
 async function graphCommand(args: string[]): Promise<void> {
 	const subcommand = args[0];
-	// Repository-specific data lives in .darkfactory/: the graph is the `graph` section of the manifest.
 	const graphPath =
-		subcommand === "validate"
-			? (args[1] ?? ".darkfactory/manifest.json")
-			: (option(args, "--graph") ?? ".darkfactory/manifest.json");
+		subcommand === "validate" ? (args[1] ?? bundledGraphPath()) : (option(args, "--graph") ?? bundledGraphPath());
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const graph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,

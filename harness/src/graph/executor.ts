@@ -53,7 +53,7 @@ export interface RunGraphOptions {
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
-	const temp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+	const temp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp.df`;
 	await writeFile(temp, `${JSON.stringify(value)}\n`, "utf8");
 	await rename(temp, path);
 }
@@ -84,7 +84,7 @@ async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext)
 
 /**
  * Runs a `foreach` node: one child per item of `state.outputs[foreach.items]`, at most `max_parallel` (default 1) at a
- * time. Each child keeps its result in `children/<node>/<index>/result.json`, so a resumed fan-out re-runs only the
+ * time. Each child keeps its result in `children/<node>/<index>/result.df`, so a resumed fan-out re-runs only the
  * children that did not succeed.
  */
 async function runForeach(
@@ -110,7 +110,7 @@ async function runForeach(
 			const index = next++;
 			const childDir = join(runDir, "children", node.id, String(index));
 			await mkdir(childDir, { recursive: true });
-			const resultPath = join(childDir, "result.json");
+			const resultPath = join(childDir, "result.df");
 			const previous = await readJson<NodeResult>(resultPath);
 			if (previous?.outcome === "success") {
 				results[index] = { ...previous, index };
@@ -127,7 +127,7 @@ async function runForeach(
 			});
 			await writeJson(resultPath, result);
 			await appendFile(
-				join(childDir, "events.jsonl"),
+				join(childDir, "events.df"),
 				`${JSON.stringify({ type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs })}\n`,
 			);
 			results[index] = { ...result, index };
@@ -156,7 +156,7 @@ async function runForeach(
 /**
  * Drives a run of a workflow graph from one incoming event until the run completes or waits for the outside world.
  *
- * State and events live in `runDir` (`state.json`, `events.jsonl`), written after every step, so a crashed or
+ * State and events live in `runDir` (`state.df`, `events.df`), written after every step, so a crashed or
  * interrupted run resumes from the last completed node. The planner decides every step: `run` executes nodes through
  * `handlers` (a node may run again when a loop routes back to it; its iteration count grows), `gate` / `hint` /
  * `comment` are handed to `options.onAction` and stop the run until an external event (approval comment, review,
@@ -178,8 +178,8 @@ export async function runGraph(
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
 	await mkdir(runDir, { recursive: true });
-	const statePath = join(runDir, "state.json");
-	const eventsPath = join(runDir, "events.jsonl");
+	const statePath = join(runDir, "state.df");
+	const eventsPath = join(runDir, "events.df");
 	const record = (entry: unknown) => appendFile(eventsPath, `${JSON.stringify(entry)}\n`);
 	const state: RunState = (await readJson<RunState>(statePath)) ?? {
 		run_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

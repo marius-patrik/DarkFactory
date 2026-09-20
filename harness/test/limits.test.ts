@@ -84,7 +84,7 @@ describe("limit observation", () => {
 });
 
 describe("persisted limit ledger", () => {
-	test("migrates quota.json and returns entries automatically after reset", async () => {
+	test("does not import the superseded quota store", async () => {
 		const root = await home();
 		await writeFile(
 			join(root, "quota.df"),
@@ -96,9 +96,8 @@ describe("persisted limit ledger", () => {
 			}),
 		);
 		const ledger = new LimitLedger(root);
-		expect((await ledger.blocking(candidate, 1_500))[0]?.type).toBe("rate");
-		expect(await ledger.blocking(candidate, 2_000)).toEqual([]);
-		expect(await Bun.file(join(root, "limits.df")).exists()).toBe(true);
+		expect(await ledger.list()).toEqual([]);
+		expect(await Bun.file(join(root, "limits.df")).exists()).toBe(false);
 	});
 
 	test("stores simultaneous request and token limits without overwriting", async () => {
@@ -276,9 +275,13 @@ describe("limits reset when the provider says, not on a short timer", () => {
 		]);
 		expect(await ledger.recover(1_000, async () => false)).toEqual([]);
 		const [first] = await ledger.list();
-		expect(first!.resetAt - 1_000).toBeGreaterThanOrEqual(2_000);
-		expect(await ledger.recover(first!.resetAt, async () => false)).toEqual([]);
+		expect(first).toBeDefined();
+		if (!first) throw new Error("expected first recovered limit");
+		expect(first.resetAt - 1_000).toBeGreaterThanOrEqual(2_000);
+		expect(await ledger.recover(first.resetAt, async () => false)).toEqual([]);
 		const [second] = await ledger.list();
-		expect(second!.resetAt - first!.resetAt).toBeGreaterThanOrEqual(2 * (first!.resetAt - 1_000));
+		expect(second).toBeDefined();
+		if (!second) throw new Error("expected second recovered limit");
+		expect(second.resetAt - first.resetAt).toBeGreaterThanOrEqual(2 * (first.resetAt - 1_000));
 	});
 });

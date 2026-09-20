@@ -31,12 +31,12 @@ function pushMapPath(dataRepoPath: string): string {
 	return join(dataRepoPath, "push-map.df");
 }
 function lockPath(dfHome: string): string {
-	return join(dfHome, ".secrets.lock");
+	return join(dfHome, ".secrets-lock.df");
 }
 
 async function atomicWrite(path: string, content: string): Promise<void> {
 	await mkdir(dirname(path), { recursive: true });
-	const tmp = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+	const tmp = `${path}.${process.pid}.${crypto.randomUUID()}.tmp.df`;
 	try {
 		await writeFile(tmp, content, { encoding: "utf8", mode: 0o600, flag: "wx" });
 		await replaceFile(tmp, path);

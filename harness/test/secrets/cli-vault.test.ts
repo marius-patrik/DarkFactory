@@ -39,7 +39,7 @@ afterEach(async () => {
 describe("secrets CLI values never printed without --reveal, push/doctor mocked", () => {
 	test("get without --reveal prints *** and with --reveal prints value", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
@@ -75,7 +75,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 
 	test("list does not print values", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
@@ -109,7 +109,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		const keypair = sodium.crypto_box_keypair();
 		const publicKey = sodium.to_base64(keypair.publicKey, sodium.base64_variants.ORIGINAL);
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
@@ -189,7 +189,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 
 	test("doctor reports drift vs GitHub and sealed-box not leaking values", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
@@ -244,7 +244,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 
 	test("set with --from-stdin stores without printing value", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(dataRepo, emptyVault(), key);
 		const logs: string[] = [];
 		const origLog = console.log;
