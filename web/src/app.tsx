@@ -359,7 +359,7 @@ function TooltipAction({
         rel={target === "_blank" ? "noopener noreferrer" : undefined}
         aria-label={label}
       >
-        <AnimatedIcon names={icon} size={18} />
+        <AnimatedIcon names={icon} />
       </a>
     </Button>
   ) : (
@@ -373,7 +373,7 @@ function TooltipAction({
       aria-label={label}
       aria-pressed={pressed}
     >
-      <AnimatedIcon names={icon} size={18} />
+      <AnimatedIcon names={icon} />
     </Button>
   );
 
@@ -433,7 +433,7 @@ function ActivityBar({
             disabled={position === option.position}
             onSelect={() => onMovePosition(option.position)}
           >
-            <AnimatedIcon names={option.icon} size={16} />
+            <AnimatedIcon names={option.icon} />
             Activity Bar {option.label}
           </ContextMenuItem>
         ))}
@@ -586,9 +586,9 @@ function LanguagePicker({
           <span className="version-trigger-wrap">
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" className="version-select" aria-label="Language">
-                <AnimatedIcon names={["LanguagesIcon"]} size={15} />
+                <AnimatedIcon names={["LanguagesIcon"]} />
                 <strong className="status-short-id">{languageShortId(profileName)}</strong>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -628,12 +628,12 @@ function LanguagePicker({
                 else onNavigate(href);
               }}
             >
-              <AnimatedIcon names={["LanguagesIcon"]} size={16} />
+              <AnimatedIcon names={["LanguagesIcon"]} />
               <span className="version-option">
                 <strong>{languageDisplayName(variant.title)}</strong>
                 <small>{languageShortId(variant.profile)}</small>
               </span>
-              {active && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={16} />}
+              {active && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} />}
             </DropdownMenuItem>
           );
         })}
@@ -671,9 +671,9 @@ function RendererPicker({
           <span className="renderer-trigger-wrap">
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" className="renderer-select" aria-label="Renderer">
-                <AnimatedIcon names={active.icon} size={14} />
+                <AnimatedIcon names={active.icon} />
                 <span>{active.label}</span>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -690,9 +690,9 @@ function RendererPicker({
               else onNavigate(option.href);
             }}
           >
-            <AnimatedIcon names={option.icon} size={15} />
+            <AnimatedIcon names={option.icon} />
             <span>{option.label}</span>
-            {mode === option.mode && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
+            {mode === option.mode && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -736,9 +736,9 @@ function FormatPicker({
           <span className="format-trigger-wrap">
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" className="format-select" aria-label="File type">
-                <AnimatedIcon names={active.icon} size={14} />
+                <AnimatedIcon names={active.icon} />
                 <strong className="status-short-id">{active.short}</strong>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -755,13 +755,13 @@ function FormatPicker({
               else onNavigate(option.href);
             }}
           >
-            <AnimatedIcon names={option.icon} size={15} />
+            <AnimatedIcon names={option.icon} />
             <span className="version-option">
               <strong>{option.label}</strong>
               <small>{option.extension}</small>
             </span>
             {format === option.format && (
-              <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+              <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} />
             )}
           </DropdownMenuItem>
         ))}
@@ -795,9 +795,9 @@ function ChapterPicker({
                 aria-label="Navigate chapters"
                 disabled={!chapters.length}
               >
-                <AnimatedIcon names={["BookOpenIcon"]} size={15} />
+                <AnimatedIcon names={["BookOpenIcon"]} />
                 <span className="chapter-title">{active?.title || "Kapitola"}</span>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -811,7 +811,7 @@ function ChapterPicker({
             className={active === chapter ? "chapter-item active" : "chapter-item"}
             onSelect={() => onSelect(chapter.page)}
           >
-            <AnimatedIcon names={["BookOpenIcon"]} size={15} />
+            <AnimatedIcon names={["BookOpenIcon"]} />
             <span
               className="chapter-option-title"
               style={{ paddingLeft: Math.max(0, chapter.level - 1) * 14 }}
@@ -854,11 +854,11 @@ function FileMenu({
           disabled={!file}
           onSelect={() => file && window.open(file, "_blank", "noopener,noreferrer")}
         >
-          <AnimatedIcon names={["ExternalLinkIcon", "FileTextIcon"]} size={15} />
+          <AnimatedIcon names={["ExternalLinkIcon", "FileTextIcon"]} />
           Open {formatLabel === "PDF" ? "native PDF" : "rendered " + formatLabel}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!file} onSelect={() => triggerDownload(file)}>
-          <AnimatedIcon names={["DownloadIcon"]} size={15} />
+          <AnimatedIcon names={["DownloadIcon"]} />
           Download {formatLabel}
         </DropdownMenuItem>
       </DropdownMenuContent>
