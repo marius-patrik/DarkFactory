@@ -229,9 +229,7 @@ def _rewrite_links(markdown: str, dest_path: str) -> str:
 
         replacement = LINK_REWRITES.get(normalized)
         if replacement is None:
-            adr_match = re.fullmatch(
-                r"\.agents/notes/adr/(?P<slug>[^/]+\.md)", normalized
-            )
+            adr_match = re.fullmatch(r"\.agents/notes/adr/(?P<slug>[^/]+\.md)", normalized)
             if adr_match:
                 replacement = f"{ADR_DEST_PREFIX}/{adr_match.group('slug')}"
 
