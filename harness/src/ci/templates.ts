@@ -2,29 +2,13 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-export const DARKFACTORY_WORKFLOW_VERSION = "0.1.0";
+export const DARKFACTORY_WORKFLOW_VERSION = "0.2.0";
 
 export const STANDARD_WORKFLOW_TEMPLATES = ["ci.yml", "verify-bound-issue.yml", "df-dispatch.yml"] as const;
 
 export type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
 
-const BUILTIN_TEMPLATES: Record<StandardWorkflowName, string> = {
-	"ci.yml": `name: CI
-
-on:
-  push:
-    branches: ["main", "master", "darkfactory"]
-  pull_request:
-    branches: ["main", "master", "darkfactory"]
-  workflow_dispatch:
-
-jobs:
-  pipeline:
-    uses: {{pipeline_repo}}/.github/workflows/ci.yml@{{pipeline_ref}}
-    with:
-      pipeline-ref: "{{pipeline_ref}}"
-      pipeline-repo: "{{pipeline_repo}}"
-`,
+const BUILTIN_TEMPLATES: Partial<Record<StandardWorkflowName, string>> = {
 	"verify-bound-issue.yml": `name: Verify Bound Issue
 
 on:
