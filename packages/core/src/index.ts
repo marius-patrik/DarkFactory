@@ -1,6 +1,7 @@
 /** @packageDocumentation
  * Runtime-neutral orchestration mechanisms. Implementation is migrated out of the temporary harness incrementally.
  */
+export * from "./environment.ts";
 export * from "../../../harness/src/config.ts";
 export * from "../../../harness/src/graph/index.ts";
 export {
