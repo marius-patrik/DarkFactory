@@ -5,6 +5,12 @@
   "bin": {
     "df": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "build": "bun build ./src/bin.ts --outfile ./dist/cli.js --target node --external 'node:*'",
     "prepublishOnly": "bun run build"
