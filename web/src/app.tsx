@@ -1685,20 +1685,25 @@ export function ViewerApp() {
 
   return (
     <div className={"viewer-shell activity-position-" + activityBarPosition}>
-      <nav className="menubar" aria-label="Application menu">
-        <FileMenu file={currentDownload} formatLabel={formatLabel} />
-        <ViewMenu
-          sidebarOpen={activityPanel !== null}
-          workspace={viewMode === "split"}
-          theme={theme}
-          onThemeChange={setTheme}
-          onToggleSidebar={toggleSidebar}
-          onOpenSplit={openSplit}
-          onSingle={() => navigateViewer(exitSplitTarget)}
-        />
-      </nav>
+      <header className="toolbar app-header">
+        <nav className="menubar-inline" aria-label="Application menu">
+          <FileMenu file={currentDownload} formatLabel={formatLabel} />
+          <ViewMenu
+            sidebarOpen={activityPanel !== null}
+            workspace={viewMode === "split"}
+            theme={theme}
+            showRefresh={showRefresh}
+            showFullscreen={showFullscreen}
+            onThemeChange={(nextTheme) => setSetting("theme", nextTheme)}
+            onToggleSidebar={toggleSidebar}
+            onOpenSplit={openSplit}
+            onSingle={() => navigateViewer(exitSplitTarget)}
+            onOpenSettings={openSettings}
+            onToggleRefresh={() => setSetting("showRefresh", !showRefresh)}
+            onToggleFullscreen={() => setSetting("showFullscreen", !showFullscreen)}
+          />
+        </nav>
 
-      <header className="toolbar">
         <div className="toolbar-main">
           <div className="toolbar-left">
             {pagesAvailable && (
@@ -1735,17 +1740,8 @@ export function ViewerApp() {
                 />
               </nav>
             )}
-            <TooltipAction
-              label="Refresh document"
-              icon={["RefreshCwIcon", "RotateCwIcon"]}
-              onClick={refreshDocument}
-            />
-            <span className="work-title" title={workTitle}>{workTitle}</span>
             {pagesAvailable && (
-              <>
-                <span className="identity-separator" aria-hidden="true">\</span>
-                <ChapterPicker chapters={state.chapters} page={state.page} onSelect={goToPage} />
-              </>
+              <ChapterPicker chapters={state.chapters} page={state.page} onSelect={goToPage} />
             )}
           </div>
 
@@ -1767,16 +1763,36 @@ export function ViewerApp() {
                 pressed={splitSyncScroll}
                 onClick={() => {
                   const next = !splitSyncScroll;
-                  setSplitSyncScroll(next);
-                  localStorage.setItem("paper-viewer-sync-scroll", String(next));
+                  setSetting("splitSyncScroll", next);
                   if (next) sendToSplit("page", { page: state.page });
                 }}
               />
             )}
-
+            {showRefresh && (
+              <TooltipAction
+                label="Refresh document"
+                icon={["RefreshCwIcon", "RotateCwIcon"]}
+                onClick={refreshDocument}
+              />
+            )}
+            {showFullscreen && (
+              <TooltipAction
+                label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+                icon={fullscreen ? ["MinimizeIcon", "Minimize2Icon"] : ["MaximizeIcon", "Maximize2Icon"]}
+                onClick={() => void toggleFullscreen()}
+              />
+            )}
           </div>
         </div>
       </header>
+
+      <AppTabBar
+        tabs={tabs.map((tab) => (tab.kind === "document" ? { ...tab, title: workTitle } : tab))}
+        activeId={activeTabId}
+        onSelect={setActiveTabId}
+        onClose={closeTab}
+        onNew={newDocumentTab}
+      />
 
       <div className="viewer-body">
         {activityBarPosition === "top" && (
@@ -1786,6 +1802,7 @@ export function ViewerApp() {
             structureAvailable={structureAvailable}
             onSelect={selectActivityPanel}
             onMovePosition={setActivityBarPosition}
+            onOpenSettings={openSettings}
           />
         )}
 
@@ -1797,6 +1814,7 @@ export function ViewerApp() {
               structureAvailable={structureAvailable}
               onSelect={selectActivityPanel}
               onMovePosition={setActivityBarPosition}
+            onOpenSettings={openSettings}
             />
           )}
 
@@ -1812,24 +1830,16 @@ export function ViewerApp() {
           )}
 
           <main className="viewer-main">
-            {openRepoFile?.source ? (
+            {activeRepoFile?.source ? (
               <div className="source-editor-shell">
-                <div className="source-editor-header">
-                  <AnimatedIcon names={["FileCode2Icon", "FileIcon"]} />
-                  <span title={openRepoFile.path}>{openRepoFile.path}</span>
-                  <TooltipAction
-                    label="Close editor"
-                    icon={["XIcon"]}
-                    onClick={() => setOpenRepoFile(null)}
-                    className="source-editor-close"
-                  />
-                </div>
                 <SourceFileView
-                  path={openRepoFile.source}
-                  displayPath={openRepoFile.path}
+                  path={activeRepoFile.source}
+                  displayPath={activeRepoFile.path}
                   theme={theme}
                 />
               </div>
+            ) : settingsOpen ? (
+              <SettingsView settings={settings} onChange={setSetting} />
             ) : viewMode === "split" ? (
               workspacePanes.length >= 2 ? (
                 <ReviewWorkspace
@@ -1886,6 +1896,7 @@ export function ViewerApp() {
               structureAvailable={structureAvailable}
               onSelect={selectActivityPanel}
               onMovePosition={setActivityBarPosition}
+            onOpenSettings={openSettings}
             />
           )}
         </div>
@@ -1897,6 +1908,7 @@ export function ViewerApp() {
             structureAvailable={structureAvailable}
             onSelect={selectActivityPanel}
             onMovePosition={setActivityBarPosition}
+            onOpenSettings={openSettings}
           />
         )}
       </div>
@@ -1992,12 +2004,6 @@ export function ViewerApp() {
               <span className="status-divider" aria-hidden="true" />
             </div>
           )}
-          <TooltipAction
-            label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-            icon={fullscreen ? ["MinimizeIcon", "Minimize2Icon"] : ["MaximizeIcon", "Maximize2Icon"]}
-            onClick={() => void toggleFullscreen()}
-            className="status-action"
-          />
         </div>
       </footer>
     </div>
