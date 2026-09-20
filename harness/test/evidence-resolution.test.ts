@@ -66,3 +66,4 @@ describe("evidence resolution", () => {
 			await rm(temp, { recursive: true, force: true });
 		}
 	});
+});

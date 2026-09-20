@@ -110,21 +110,17 @@ export async function resolveRepositoryActions(
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
 					// Check for overlap: warn if multiple capabilities try to override the same action
-					// For now, we keep the first one but maybe add a warning if it's already set
 					if (supported) {
 						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.name}`);
-					}
-					supported = true;
-					description = capAction.description ?? `Capability-contributed ${actionKey}`;
-					if (typeof capAction.command === "function") {
-						command = (capAction.command as (p: string) => string)(pkg.path);
 					} else {
-						command = capAction.command;
+						supported = true;
+						description = capAction.description ?? `Capability-contributed ${actionKey}`;
+						if (typeof capAction.command === "function") {
+							command = (capAction.command as (p: string) => string)(pkg.path);
+						} else {
+							command = capAction.command;
+						}
 					}
-					// Not breaking allows us to see all, but the loop logic might need change if we want just first
-					// With the current structure, we need to decide if we want precedence or merge
-					// Precedence by sorting is one way to achieve deterministic results.
-					break; 
 				}
 			}
 
