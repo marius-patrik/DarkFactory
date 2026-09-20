@@ -26,7 +26,7 @@ A material deviation from PRD MUST be owner-approved and recorded as an accepted
 
 ## Rationale
 
-Stable requirements, executable declarations and decision history have separate owners so no generated view can silently override product intent.
+Stable requirements, executable declarations and current architecture decisions have separate owners so no generated view can silently override product intent.
 
 ## Enforcement
 
