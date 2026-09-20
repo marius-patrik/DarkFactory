@@ -1,4 +1,5 @@
 out/
+site/
 *.pdf
 !img/*.pdf
 
@@ -11,3 +12,4 @@ Thumbs.db
 .darkfactory/
 web/node_modules/
 web/dist/
+web/package-lock.json
