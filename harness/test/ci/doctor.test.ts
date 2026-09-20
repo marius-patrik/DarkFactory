@@ -44,12 +44,12 @@ describe("df ci doctor", () => {
 		}
 	});
 
-	it("detects errors when config is missing or invalid", async () => {
+	it("does not require the retired ci.json contract", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-doctor-"));
 		try {
 			const result = await runCiDoctor(temp);
 			expect(result.ok).toBe(false);
-			expect(result.checks.config.status).toBe("fail");
+			expect(result.checks.config.status).toBe("skipped");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
