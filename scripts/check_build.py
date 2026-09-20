@@ -354,7 +354,13 @@ for contract in ('role="tablist"', 'role="tab"', 'label="New tab"', "app-tab-clo
         fail(f"persistent tab bar is missing contract: {contract}")
 
 site_builder = sources[Path("scripts/build_site.py")]
-for contract in ("publish_tracked_sources", '"source": f"repository/{tracked_path}"', '"repository_source_root": "repository/"'):
+for contract in (
+    "publish_tracked_sources",
+    '"source": (',
+    'f"repository/{tracked_path}"',
+    '"repository_source_root": "repository/"',
+    '"type": "submodule"',
+):
     if contract not in site_builder:
         fail(f"site builder is missing internal Explorer source contract: {contract}")
 
