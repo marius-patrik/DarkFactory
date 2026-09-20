@@ -302,19 +302,159 @@ Pipeline failure issues #794 and #795 were opened from PR #787 merge-ref jobs; t
 
 Do not paper over those failures with compatibility behavior. Fix #787 at its final owners and rerun the governed checks.
 
-## 11. Current execution priority
+## 11. Optimized execution schedule
 
-Run independent stable work concurrently; serialize only on real interfaces.
+The plan is scheduled by **join gates and independent workstreams**, not by a single numbered queue. The objective is minimum wall-clock time to the final installed-system acceptance while avoiding speculative work against unstable interfaces.
 
-1. **Finish #341 / PR #787 correctly.** This is the immediate core unblocker. Remove the duplicate ecosystem-action table, land repository evidence in the final owner, connect all required consumers, and get format/type/test/docs checks green.
-2. **Fix #423 / PR #791 in parallel.** Complete the actual browser-auth/confidential-broker security contract and merge only when the negative tests and authority boundary are proven.
-3. **Continue #422 / #781 in parallel.** Rebase the clean keychain rebuild onto current `darkfactory`, integrate the remaining F14-derived behavior, record disposition, and delete terminal recovery input.
-4. **Restart #329 / #786 from current tree.** Implement every #341-independent result-capture piece now; connect final verification as soon as #341 lands.
-5. **Advance #358 now on discovery, handler inventory and stable graph scaffolding.** Resolve the F30-4 recovery disposition. Final production-handler integration consumes #329 + #341 rather than inventing substitute interfaces.
-6. **Advance #317 in parallel** on deterministic mutation-claim validation and branch-update/conflict behavior using the landed #384 primitives; only graph re-entry waits for #358.
-7. **Advance #339 in parallel.** Recover/import the exact F47 hook behavior now; use #341 for ecosystem quality/docs actions instead of hard-coded detection.
-8. **Continue #360 release engineering for every stable surface** (manifests, versioning, artifact layout, installers/updaters, native builds, web bundle, provenance/checksums, clean-directory verification). Publish only the final supported release once.
-9. **Keep #403/#251/#332/#334/#424/#335/#336/#337/#425/#390 moving when their current interfaces are stable.** Do not let second-order operator/docs/web work block the #341 → #329/#358 → #317 → #359 production-engine spine.
-10. **Complete #359 immediately when the core lifecycle is real**, then publish #360, run #361 across all six consumers, and close #68 only after installed-release acceptance passes.
+### 11.1 Scheduling invariants
 
-No task should wait for a migration, compatibility, shadow, canary or historical-preservation step. The governing optimization target remains the shortest safe path to the final TypeScript df system.
+- Keep every independent stable lane moving. A blocked lane must not idle unrelated work.
+- Serialize only at an explicitly named interface/join below.
+- Prioritize work that removes a downstream join dependency over polish that has no downstream fan-out.
+- Build against final package/capability owners only. Do not spend time keeping deletion-bound owners operational.
+- Keep branches/PRs narrow enough to minimize merge conflicts. When two tasks edit the same unstable owner, land the interface-defining slice first and immediately rebase the dependent slice rather than allowing long-lived divergence.
+- Recovery reconciliation is performed inside the owning Request. It is never a separate recovery phase.
+- Branch cleanup is immediate after terminal disposition but is not allowed to delay functional integration.
+- Release engineering runs continuously for stable contracts, but release publication happens exactly once after the release-freeze join.
+- #361 is validation, not a place to finish known implementation.
+
+### 11.2 Join A — production-engine cutover
+
+This is the shortest path to #359 and gets df capable of owning the remaining development as early as possible.
+
+Run these **concurrently now**:
+
+**A1 — #341 detected evidence/actions**
+- Correct PR #787 to the final architecture.
+- Core owns normalized repository evidence.
+- Capabilities contribute applicable actions.
+- One resolved result feeds doctor, CI/check synchronization, touched-package verification/protection and docs/API extraction.
+- Reconcile F49 semantics and terminate/delete its recovery branch once disposition is recorded.
+
+**A2 — #329 natural-stop result capture**
+- Restart from current `darkfactory`, not the stale F38 branch.
+- Implement natural-stop/result-schema/extraction/offline-capture work that does not depend on #341 immediately.
+- Reconcile only compatible F38 behavior.
+- The sole wait is final code-node verification/result integration on the shipped #341 contract.
+- Record F38 disposition and delete its recovery branch when terminal.
+
+**A3 — #358 graph-native orchestration preparation**
+- Continue recovery discovery, production-handler inventory, durable-run/state inspection and non-conflicting scaffolding immediately.
+- Do not invent substitutes for #329 or #341.
+- As soon as A1+A2 interfaces land, wire them directly and finish production handlers/resume.
+
+**A4 — #317 truthful mutation/branch repair**
+- Continue mutation-claim validation, deterministic branch update/conflict behavior and tests now using landed #384 primitives.
+- Only graph re-entry/resume integration waits for the relevant #358 interface.
+
+**Join A condition:** #329 + #341 are merged, #358 consumes them and is merged, and #317 is merged/green. Immediately execute #359's final responsibility/deletion pass. Do not wait for auth, docs, web, TUI, stacked PRs, generalized recovery intake or other final-product surfaces unless live implementation proves they are required by the core lifecycle.
+
+### 11.3 Workstream B — governance, git, hooks and recovery productization
+
+This stream runs beside Join A and becomes release-critical later.
+
+**Run now**
+- #339: reconcile F47 and implement hook behavior independent of #341; plug in #341 actions once available.
+- #384: keep only remaining persisted-conflict/run-state and hook integration; do not rebuild landed primitives.
+- #388: implement/verify minimal provenance/intake surfaces that use already-stable workspace/git contracts; existing recovery refs may continue to be reconciled manually/governedly without waiting for full #388.
+
+**After #358's persisted Request/run-state interface is stable**
+- #385: implement the Request/Epic relationship model against the real shipped state owner.
+- #332: implement graph-native fine-grained parallel chunk/worktree execution.
+- Finish #388 deep resume/reconciliation integration against #358/#384.
+
+**After #384 + #358 + #385 are stable**
+- #386: implement stacked PR topology/restack/merge order, reusing #317 conflict repair and #339 hooks.
+
+Do not hold #359 for #385/#386/#388/#332; they are final-release requirements, not production-engine-cutover prerequisites.
+
+### 11.4 Workstream C — credentials and authentication
+
+Run independently of the engine spine:
+
+- #422 / PR #792: finish only missing keychain ownership; reconcile F14; remove duplicate credential custody.
+- #248: finish df-managed provider login/multi-account behavior against `@darkfactory/keychain` as soon as the required keychain interfaces are stable.
+- #423 / PR #791: finish browser GitHub authentication, broker refresh/revoke, expiry/session restoration, authority intersection and isolation tests.
+- #252: proceed once its actual provider/login dependencies are satisfied; do not block unrelated auth/keychain completion.
+
+These lanes should not touch the engine spine except through already-defined credential/auth interfaces.
+
+### 11.5 Workstream D — docs, web and operator surfaces
+
+Run stable pieces in parallel, with only these waits:
+
+- #334: reconcile F42 TSDoc coverage now; final detected API action integration waits only for #341.
+- #424: finish native docs compiler metadata/recovery dispositions now; no ProperDocs/MkDocs compatibility work.
+- #335: starts final integration immediately when #334 + #341 interfaces are available.
+- #336: reconcile F44 behavior now; final shared docs-impact enforcement consumes #339/#341 rather than adding another detector/hook engine.
+- #337: keep current-only enforcement active now, but perform the final repository-wide truth pass only after the product surface has stopped changing.
+- #403 and #251: finish CLI/TUI surfaces against stable protocol/core APIs; do not wait for #359 where not required.
+- #425 and #390: continue the shared `@darkfactory/web` application on stable models; integrate #423 authentication when that contract lands.
+
+D4/F42/F44/F45 recovery branches are reconciled as part of these Requests. Once their unique behavior is represented, record disposition and delete the branches immediately.
+
+### 11.6 Workstream E — release engineering
+
+#360 engineering is continuous:
+
+- package/publish metadata;
+- lockstep versioning + capability ABI version;
+- source-free npm/native artifact layout;
+- installers/updaters;
+- native smoke-test matrix;
+- packaged runtime/data/capability assets;
+- prebuilt web bundle;
+- checksums and source provenance;
+- clean-directory packaged-command verification.
+
+Do not publish while final product surfaces are still changing. Keep the release implementation rebased on stable interfaces so publication becomes a short final operation rather than a new project.
+
+### 11.7 Join B — final release freeze and publication
+
+After #359, continue all remaining final-product lanes in parallel. The release-freeze join is reached when every #68 Request intended for the final product is **terminal** (merged, explicitly superseded/duplicate, or intentionally rejected with rationale) and all accepted release-affecting behavior is in the final packages/capabilities.
+
+In particular, do not declare #360 complete while accepted remaining work in credentials/auth, hooks/git/governance/recovery, CLI/TUI/execution, docs/web/operator surfaces, or release packaging would change the shipped artifact.
+
+At this join:
+
+1. complete the final #337 current-truth/documentation audit;
+2. remove any alternate/deletion-bound owners whose final responsibility has landed;
+3. record disposition for every remaining recovery branch and delete every terminal recovery branch;
+4. run the final package/API/docs/security/governance checks;
+5. freeze the exact product surface;
+6. publish the **single final supported #360 release**.
+
+There is no migration, parity, canary, shadow or pre-release gate.
+
+### 11.8 Join C — installed fleet acceptance
+
+Immediately consume the published #360 artifact in #361 across all six consumers.
+
+#361 verifies rather than invents/fixes known architecture:
+- source-free install/update;
+- doctor/detection/capabilities;
+- full governed Request lifecycle + resume;
+- Request/Epic/stack/recovery semantics;
+- hooks/git/protection/checks;
+- credential/auth boundaries;
+- docs/API/web/operator surfaces;
+- release provenance and `audit.df`;
+- zero unexplained open implementation work or terminal recovery branches.
+
+If acceptance reveals a defect, fix it in the owning final package/Request, republish the corrected final release, and rerun the affected fleet evidence. Do not add compatibility layers to make acceptance pass.
+
+When #361 is green, perform the final #68 declarable-graph contract check and close #68.
+
+### 11.9 Immediate allocation from the current checkpoint
+
+The highest-downstream-value work is therefore **not a serial 1→10 queue**:
+
+- keep #341, #329, #358-prep and #317 moving simultaneously toward Join A;
+- keep #422/#423, #339, docs recovery/reconciliation, operator surfaces and #360 engineering moving in parallel;
+- begin #385/#332 the moment #358's owning state interfaces stabilize;
+- begin #386 as soon as #384+#358+#385 are stable;
+- finish #388 against those same shipped primitives rather than creating a side recovery engine;
+- converge all remaining accepted product work only at Join B;
+- publish once, validate through #361, then close #68.
+
+This schedule minimizes idle time, avoids speculative duplicate implementations, and places every unavoidable serialization point at a real interface dependency rather than at an arbitrary Request order.
