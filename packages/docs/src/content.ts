@@ -4,7 +4,7 @@ import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 
 /** Semantic kind assigned to a documentation page. */
-export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr";
+export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr" | "capability";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -142,6 +142,29 @@ function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary 
 		}
 	}
 	return { source: source.replaceAll("\\", "/"), name, jobs };
+}
+
+/** Adds capability-declared Markdown documentation to an existing content graph. */
+export function includeCapabilityDocumentation(
+	repoRoot: string,
+	graph: DocsContentGraph,
+	capabilities: readonly DocsCapabilitySummary[],
+): DocsContentGraph {
+	const pages = [...graph.pages];
+	const sources = new Set(pages.map((page) => page.source));
+	const ids = new Set(pages.map((page) => page.id));
+	for (const capability of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
+		for (const source of [...capability.docs].sort((a, b) => a.localeCompare(b))) {
+			const normalized = source.replaceAll("\\", "/");
+			if (sources.has(normalized)) continue;
+			const id = `capability-${capability.id}-${idFromSource(normalized)}`;
+			if (ids.has(id)) throw new Error(`Duplicate capability documentation page id: ${id}`);
+			pages.push(markdownPage(repoRoot, normalized, "capability", id));
+			sources.add(normalized);
+			ids.add(id);
+		}
+	}
+	return { ...graph, pages };
 }
 
 /** Compiles canonical repository documentation into a deterministic typed content graph. */
