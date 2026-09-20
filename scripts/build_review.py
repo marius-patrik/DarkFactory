@@ -72,6 +72,8 @@ compile_cmd = [
     "compile",
     *common,
     "--input",
+    f"book={args.book}",
+    "--input",
     f"template={args.template}",
     "--input",
     "review=true",
