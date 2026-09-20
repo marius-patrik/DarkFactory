@@ -363,7 +363,7 @@ if '#import "../concepts/index.typ": render-theory' not in chapter2_source or "#
     fail("chapter 2 must be a compatibility projection of the concept catalog")
 if '#import "../concepts/index.typ": render-practical' not in chapter3_source or "#render-practical()" not in chapter3_source:
     fail("chapter 3 must be a compatibility projection of the concept catalog")
-if "Teoretická část: Vymezení konceptu" in chapter2_source or "DarkFactory - Praktická část" in chapter3_source:
+if "Agentické AI: Vymezení konceptů - Teoretická část" in chapter2_source or "DarkFactory: Architektura harnessu - Praktická část" in chapter3_source:
     fail("chapter 2/3 content must not be duplicated outside concepts/")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
