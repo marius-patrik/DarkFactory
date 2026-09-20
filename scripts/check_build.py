@@ -608,7 +608,8 @@ for path in (
 viewer_required = (
     Path("web/package.json"),
     Path("web/components.json"),
-    Path("web/rsbuild.config.ts"),\n    Path("web/biome.json"),
+    Path("web/rsbuild.config.ts"),
+    Path("web/biome.json"),
     Path("web/index.html"),
     Path("web/viewer.html"),
     Path("web/src/main.tsx"),
