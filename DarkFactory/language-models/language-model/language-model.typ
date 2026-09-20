@@ -8,8 +8,6 @@
   id: "language-model",
   proper: translation(cs: "Velký jazykový model", en: "Large Language Model"),
   industry: translation(cs: "LLM", en: "LLM"),
-  explanation_cs: "Neuronový model pro zpracování a generování sekvencí tokenů, v současných systémech typicky založený na transformerové architektuře.",
-  explanation_en: "A neural model for processing and generating token sequences, typically based on the Transformer architecture in contemporary systems.",
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
 )
