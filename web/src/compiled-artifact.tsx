@@ -29,6 +29,111 @@ loader.config({ monaco });
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";
 
+
+function editorLanguageForPath(path: string) {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".tsx") || lower.endsWith(".ts")) return "typescript";
+  if (lower.endsWith(".jsx") || lower.endsWith(".js")) return "javascript";
+  if (lower.endsWith(".json")) return "json";
+  if (lower.endsWith(".css")) return "css";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "html";
+  if (lower.endsWith(".md") || lower.endsWith(".markdown")) return "markdown";
+  if (lower.endsWith(".py")) return "python";
+  if (lower.endsWith(".rs")) return "rust";
+  if (lower.endsWith(".toml")) return "toml";
+  if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "yaml";
+  if (lower.endsWith(".xml") || lower.endsWith(".svg")) return "xml";
+  if (lower.endsWith(".sh") || lower.endsWith(".bash") || lower.endsWith(".zsh")) return "shell";
+  if (lower.endsWith(".typ")) return "plaintext";
+  return "plaintext";
+}
+
+const BINARY_EXTENSIONS = new Set([
+  ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".ttf", ".otf", ".woff", ".woff2", ".zip",
+]);
+
+function fileExtension(path: string) {
+  const name = path.split("/").pop() || path;
+  const index = name.lastIndexOf(".");
+  return index >= 0 ? name.slice(index).toLowerCase() : "";
+}
+
+export function SourceFileView({
+  path,
+  displayPath,
+  theme,
+}: {
+  path: string;
+  displayPath: string;
+  theme: "dark" | "light" | "oled";
+}) {
+  const [source, setSource] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let disposed = false;
+    setSource("");
+    setError("");
+    void fetch(path, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(displayPath + ": " + response.status);
+        if (BINARY_EXTENSIONS.has(fileExtension(displayPath))) {
+          return hexDump(new Uint8Array(await response.arrayBuffer()));
+        }
+        return response.text();
+      })
+      .then((value) => {
+        if (!disposed) setSource(value);
+      })
+      .catch((reason) => {
+        if (!disposed) setError(String(reason?.message || reason));
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [displayPath, path]);
+
+  if (error) {
+    return (
+      <div className="document-error">
+        <strong>Repository file unavailable.</strong>
+        <span>{error}</span>
+      </div>
+    );
+  }
+
+  if (!source) {
+    return <div className="document-loading">Loading {displayPath}…</div>;
+  }
+
+  const editorTheme = theme === "light" ? "vs" : theme === "oled" ? "darkfactory-oled" : "vs-dark";
+  return (
+    <div className="repo-source-editor">
+      <Editor
+        path={displayPath}
+        value={source}
+        language={BINARY_EXTENSIONS.has(fileExtension(displayPath)) ? "plaintext" : editorLanguageForPath(displayPath)}
+        theme={editorTheme}
+        beforeMount={configureMonaco}
+        options={{
+          readOnly: true,
+          domReadOnly: true,
+          automaticLayout: true,
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          smoothScrolling: true,
+          wordWrap: "off",
+          fontSize: 13,
+          lineNumbersMinChars: 4,
+          renderWhitespace: "selection",
+          bracketPairColorization: { enabled: true },
+          padding: { top: 12, bottom: 12 },
+        }}
+      />
+    </div>
+  );
+}
+
 const configureMonaco = (instance: typeof monaco) => {
   instance.editor.defineTheme("darkfactory-oled", {
     base: "vs-dark",
