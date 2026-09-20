@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -13,7 +13,7 @@ definition: terms => [
 Nestálý test je test, který může nad stejným kódem střídavě projít a selhat kvůli nedeterminismu, časování, prostředí nebo externím službám.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Nestálé testy oslabují roli CI jako deterministické zpětné vazby. Agent může náhodné selhání mylně interpretovat jako regresi a začít měnit správný kód; proto je vhodné zdroje nedeterminismu omezovat a podezřelé běhy ověřovat opakováním v čistém prostředí.
 ]
   ],
