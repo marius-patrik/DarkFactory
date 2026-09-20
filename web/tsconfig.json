@@ -20,7 +20,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "types": [
-      "vite/client"
+      "@rsbuild/core/types"
     ],
     "paths": {
       "@/*": [
@@ -30,6 +30,6 @@
   },
   "include": [
     "src",
-    "vite.config.ts"
+    "rsbuild.config.ts"
   ]
 }

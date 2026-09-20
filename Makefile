@@ -20,13 +20,13 @@ OUT_REVIEW_CS := $(OUT_DIR)/prace-cs-review.pdf
 OUT_REVIEW_EN := $(OUT_DIR)/prace-en-review.pdf
 OUT_REVIEW_MERGED := $(OUT_DIR)/prace-bilingual-review.pdf
 
-.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged exports all all-templates template-check web-install web-check web-build verify ci site watch png clean check
+.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged exports all all-templates template-check web-install web-lint web-format web-check web-build verify ci site watch png clean check
 
 help:
 	@echo "make all             – PDF + HTML + Markdown matice pro TEMPLATE=$(TEMPLATE)"
 	@echo "make all-templates   – PDF + HTML + Markdown pro každou šablonu pod out/templates/<template>/"
 	@echo "make template-check  – rychlý school/final smoke každé objevené šablony"
-	@echo "make web-check       – TypeScript kontrola + produkční Vite build React vieweru"
+	@echo "make web-lint        – Biome lint webového vieweru"\n\t@echo "make web-format      – Biome formátování webového vieweru"\n\t@echo "make web-check       – Biome lint + TypeScript + produkční Rsbuild React vieweru"
 	@echo "make ci              – PDF/HTML/Markdown matice + React/TypeScript viewer + kontrola architektury"
 	@echo "make site            – CI matice + React GitHub Pages pro všechny šablony"
 	@echo "make watch           – živý náhled TEMPLATE=$(TEMPLATE), school/final"
@@ -84,6 +84,12 @@ template-check:
 
 web-install:
 	$(NPM) --prefix web install --no-audit --no-fund
+
+web-lint: web-install
+	$(NPM) --prefix web run lint
+
+web-format: web-install
+	$(NPM) --prefix web run format
 
 web-check: web-install
 	$(NPM) --prefix web run check

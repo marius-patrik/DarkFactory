@@ -608,7 +608,7 @@ for path in (
 viewer_required = (
     Path("web/package.json"),
     Path("web/components.json"),
-    Path("web/vite.config.ts"),
+    Path("web/rsbuild.config.ts"),\n    Path("web/biome.json"),
     Path("web/index.html"),
     Path("web/viewer.html"),
     Path("web/src/main.tsx"),
@@ -630,6 +630,7 @@ for legacy in (
     Path("web/viewer.js"),
     Path("web/viewer.css"),
     Path("web/icons.js"),
+    Path("web/vite.config.ts"),
 ):
     if legacy.exists():
         fail(f"legacy static viewer asset must not remain: {legacy}")
@@ -640,7 +641,10 @@ for dependency in (
     "react",
     "react-dom",
     "typescript",
-    "vite",
+    "@rsbuild/core",
+    "@rsbuild/plugin-react",
+    "@rsbuild/plugin-tailwindcss",
+    "@biomejs/biome",
     "motion",
     "@dagrejs/dagre",
     "lucide-animated",
@@ -658,6 +662,21 @@ for dependency in (
 ):
     if dependency not in dependencies:
         fail(f"React viewer missing required dependency: {dependency}")
+
+for legacy_dependency in ("vite", "@vitejs/plugin-react", "@tailwindcss/vite"):
+    if legacy_dependency in dependencies:
+        fail(f"legacy Vite dependency must not remain: {legacy_dependency}")
+
+scripts = package.get("scripts", {})
+for script_name, required in (
+    ("dev", "rsbuild dev"),
+    ("build", "rsbuild build"),
+    ("lint", "biome lint"),
+    ("format", "biome format --write"),
+    ("check", "biome lint"),
+):
+    if required not in scripts.get(script_name, ""):
+        fail(f"web package script {script_name!r} missing Rsbuild/Biome contract: {required}")
 
 app_source = Path("web/src/app.tsx").read_text(encoding="utf-8")
 for required in (
@@ -948,10 +967,40 @@ for required in (
     if required not in app_source:
         fail(f"viewer root missing school/viewer/edit/raw/PDF default contract: {required}")
 
-vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
-for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
-    if required not in vite_source:
-        fail(f"Vite config missing multi-page React contract: {required}")
+rsbuild_source = Path("web/rsbuild.config.ts").read_text(encoding="utf-8")
+for required in (
+    '@rsbuild/core',
+    '@rsbuild/plugin-react',
+    '@rsbuild/plugin-tailwindcss',
+    'index: "./src/main.tsx"',
+    'viewer: "./src/main.tsx"',
+    'assetPrefix: "./"',
+    'entryName === "viewer"',
+    '"./viewer.html"',
+    '"./index.html"',
+):
+    if required not in rsbuild_source:
+        fail(f"Rsbuild config missing multi-page React contract: {required}")
+
+biome_source = Path("web/biome.json").read_text(encoding="utf-8")
+for required in (
+    '"https://biomejs.dev/schemas/2.5.14/schema.json"',
+    '"formatter"',
+    '"linter"',
+    '"recommended": true',
+    '"assist"',
+    '"organizeImports": "on"',
+):
+    if required not in biome_source:
+        fail(f"Biome config missing formatter/linter/import contract: {required}")
+
+tsconfig_source = Path("web/tsconfig.json").read_text(encoding="utf-8")
+if '"@rsbuild/core/types"' not in tsconfig_source or '"vite/client"' in tsconfig_source:
+    fail("TypeScript environment types must target Rsbuild, not Vite")
+for html_path in (Path("web/index.html"), Path("web/viewer.html")):
+    html_source = html_path.read_text(encoding="utf-8")
+    if 'src="./src/main.tsx"' in html_source:
+        fail(f"Rsbuild must inject the entry script into {html_path}; Vite-style script tag remains")
 
 web_publication = Path("web-publication.typ")
 web_exporter = Path("scripts/build_web_exports.py")

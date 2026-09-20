@@ -146,7 +146,7 @@ existujícího zdroje; vizuální formát termínu již nemění.
 
 ## Webový viewer
 
-GitHub Pages je samostatná React + TypeScript aplikace v `web/`, sestavovaná přes Vite.
+GitHub Pages je samostatná React + TypeScript aplikace v `web/`, sestavovaná přes Rsbuild/Rspack. Biome zajišťuje lintování, formátování a organizaci importů webového zdroje.
 UI používá shadcn/ui (Radix primitives + Tailwind), Motion pro přechody a Dagre pro
 layout minimapy stránek. PDF z Typstu zůstává kanonickým tiskovým a školním výstupem;
 PDF.js nad ním renderuje canvas, textovou vrstvu i annotation vrstvu, takže text
@@ -183,7 +183,7 @@ kanonickým výstupem dokumentu. Zvolený vzhled se propaguje také do HTML arte
 panelů Review comparison. Koncept PDF nepřidává automatický `KONCEPT` vodoznak.
 Review comparison může volitelně synchronizovat průběžnou scroll pozici PDF dokumentů.
 
-`make web-check` provede TypeScript kontrolu a produkční Vite build. `make all`
+`make web-check` provede Biome lint, TypeScript kontrolu a produkční Rsbuild build. `make web-format` používá Biome jako kanonický formatter webové aplikace. `make all`
 vytvoří PDF + HTML + Markdown publikační matici a `make site` ji společně s
 `variants.json` publikuje na GitHub Pages.
 
