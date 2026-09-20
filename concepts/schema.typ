@@ -1,7 +1,9 @@
 #import "../templates/common.typ": finalized
 
+// Semantic relations never determine manuscript containment.
+// Folder manifests are the sole source of section hierarchy.
 #let relation(type, target) = {
-  assert(type in ("parent", "child", "dependency", "related"), message: "unsupported concept relation: " + type)
+  assert(type in ("dependency", "related"), message: "unsupported semantic relation: " + type)
   assert(target != none, message: "concept relation requires a target")
   (type: type, target: target)
 }
@@ -48,58 +50,82 @@
   )
 }
 
-#let build-vocabulary(concepts) = {
+#let folder(
+  key: none,
+  section: none,
+  concepts: (),
+  children: (),
+) = {
+  assert(key != none, message: "folder requires a stable key")
+  (
+    kind: "folder",
+    key: key,
+    section: section,
+    concepts: concepts,
+    children: children,
+  )
+}
+
+#let collect-folder-concepts(node) = {
+  let result = ()
+  if node.section != none { result.push(node.section) }
+  for item in node.concepts { result.push(item) }
+  for child in node.children {
+    for item in collect-folder-concepts(child) { result.push(item) }
+  }
+  result
+}
+
+#let collect-concepts(folders) = {
+  let result = ()
+  for node in folders {
+    for item in collect-folder-concepts(node) { result.push(item) }
+  }
+  result
+}
+
+#let build-vocabulary(folders) = {
   let result = (:)
-  for item in concepts {
+  for item in collect-concepts(folders) {
     assert(not item.key in result, message: "duplicate concept key: " + item.key)
     result.insert(item.key, item.term)
   }
   result
 }
 
-#let normalize-relations(concepts) = {
+#let semantic-graph(folders) = {
+  let concepts = collect-concepts(folders)
   let keys = concepts.map(item => item.key)
-  let parents = (:)
   let dependencies = (:)
   let related = (:)
   for item in concepts {
-    parents.insert(item.key, ())
     dependencies.insert(item.key, ())
     related.insert(item.key, ())
   }
 
   for item in concepts {
     for edge in item.relations {
-      assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
-      if edge.type == "parent" {
-        parents.at(item.key).push(edge.target)
-      } else if edge.type == "child" {
-        parents.at(edge.target).push(item.key)
-      } else if edge.type == "dependency" {
-        dependencies.at(item.key).push(edge.target)
-      } else if edge.type == "related" {
-        related.at(item.key).push(edge.target)
+      // parent/child literals from the previous architecture are ignored while
+      // files are mechanically migrated; they never affect rendering.
+      if edge.type in ("dependency", "related") {
+        assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
+        if edge.type == "dependency" {
+          dependencies.at(item.key).push(edge.target)
+        } else {
+          related.at(item.key).push(edge.target)
+        }
       }
     }
   }
 
-  for item in concepts {
-    assert(parents.at(item.key).len() <= 1, message: "concept has multiple structural parents: " + item.key)
-  }
-
-  (parents: parents, dependencies: dependencies, related: related)
-}
-
-#let ordered-keys(concepts, graph) = {
-  let keys = concepts.map(item => item.key)
-  let result = ()
+  // Validate dependency acyclicity globally.
+  let done = ()
   let remaining = keys
   while remaining.len() > 0 {
     let progressed = false
     for key in remaining {
-      let deps = graph.dependencies.at(key)
-      if deps.all(dep => dep in result or not dep in remaining) {
-        result.push(key)
+      if dependencies.at(key).all(dep => dep in done or not dep in remaining) {
+        done.push(key)
         remaining = remaining.filter(candidate => candidate != key)
         progressed = true
         break
@@ -107,58 +133,100 @@
     }
     assert(progressed, message: "dependency cycle in concept graph")
   }
-  result
+
+  (dependencies: dependencies, related: related)
 }
 
-#let render-concept(item, terms, mode: "theory", level: 2) = {
-  let enabled = if mode == "theory" { item.theory_enabled } else { item.practical_enabled }
-  if enabled {
+#let concept-enabled(item, mode) = if mode == "theory" { item.theory_enabled } else { item.practical_enabled }
+
+#let render-concept-content(item, terms, mode) = {
+  if concept-enabled(item, mode) {
     let intro = if mode == "theory" { item.theory_intro } else { item.practical_intro }
     let body = if mode == "theory" { item.theory_body } else { item.practical_body }
     let summary = if mode == "theory" { item.theory_summary } else { item.practical_summary }
     let after = if mode == "theory" { item.theory_after } else { item.practical_after }
     let wrapper = if mode == "theory" { item.theory_wrapper } else { item.practical_wrapper }
-    let core = [#heading(level: level)[#(item.heading)(terms)]]
+
+    let core = []
     if intro != none { core += intro(terms) }
     if body != none { core += body(terms) }
     if summary != none { core += summary(terms) }
+
     let output = if wrapper == none { core } else { wrapper(core) }
     if after != none { output += after(terms) }
     output
   }
 }
 
-#let render-graph(concepts, terms, mode: "theory") = {
-  let graph = normalize-relations(concepts)
-  let order = ordered-keys(concepts, graph)
-  let by-key = (:)
-  for item in concepts { by-key.insert(item.key, item) }
+#let order-local(items, graph) = {
+  let keys = items.map(item => item.key)
+  let result = ()
+  let remaining = keys
+  while remaining.len() > 0 {
+    let progressed = false
+    for key in remaining {
+      let deps = graph.dependencies.at(key)
+      if deps.filter(dep => dep in keys).all(dep => dep in result) {
+        result.push(key)
+        remaining = remaining.filter(candidate => candidate != key)
+        progressed = true
+        break
+      }
+    }
+    assert(progressed, message: "local dependency cycle")
+  }
+  result.map(key => items.find(item => item.key == key))
+}
 
-  let render-node(key, level) = {
-    let output = render-concept(by-key.at(key), terms, mode: mode, level: level)
-    for child in order.filter(candidate => graph.parents.at(candidate).len() == 1 and graph.parents.at(candidate).first() == key) {
-      let child-output = render-node(child, level + 1)
-      if child-output != none { output += child-output }
+#let folder-has-content(node, mode) = {
+  (node.section != none and concept-enabled(node.section, mode))
+  or node.concepts.any(item => concept-enabled(item, mode))
+  or node.children.any(child => folder-has-content(child, mode))
+}
+
+#let render-folder(node, terms, graph, mode, level: 2) = {
+  if folder-has-content(node, mode) {
+    let output = []
+    let child-level = level
+
+    if node.section != none {
+      output += [#heading(level: level)[#(node.section.heading)(terms)]]
+      let section-content = render-concept-content(node.section, terms, mode)
+      if section-content != none { output += section-content }
+      child-level = level + 1
+    }
+
+    for item in order-local(node.concepts, graph) {
+      let rendered = render-concept-content(item, terms, mode)
+      if rendered != none { output += rendered }
+    }
+
+    for child in node.children {
+      let rendered = render-folder(child, terms, graph, mode, level: child-level)
+      if rendered != none { output += rendered }
     }
     output
   }
+}
 
+#let render-folders(folders, terms, mode) = {
+  let graph = semantic-graph(folders)
   let output = []
-  for key in order.filter(candidate => graph.parents.at(candidate).len() == 0) {
-    let rendered = render-node(key, 2)
+  for node in folders {
+    let rendered = render-folder(node, terms, graph, mode)
     if rendered != none { output += rendered }
   }
   output
 }
 
-#let render-theory-chapter(concepts, terms) = [
+#let render-theory-chapter(folders, terms) = [
   #heading(level: 1)[#finalized[Agentické AI: Vymezení konceptů - Teoretická část]]
   #finalized[Úvod]
-  #render-graph(concepts, terms, mode: "theory")
+  #render-folders(folders, terms, "theory")
 ]
 
-#let render-practical-chapter(concepts, terms) = [
+#let render-practical-chapter(folders, terms) = [
   #heading(level: 1)[#finalized[DarkFactory: Architektura harnessu - Praktická část]]
   #finalized[Úvod]
-  #render-graph(concepts, terms, mode: "practical")
+  #render-folders(folders, terms, "practical")
 ]

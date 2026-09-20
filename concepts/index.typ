@@ -3,13 +3,13 @@
 #import "02-language-models/index.typ" as language_models
 #import "03-agentic-engineering/index.typ" as agentic_engineering
 
-#let concepts = (
-  ..development_environment.concepts,
-  ..language_models.concepts,
-  ..agentic_engineering.concepts,
+#let folders = (
+  development_environment.node,
+  language_models.node,
+  agentic_engineering.node,
 )
 
-#let vocabulary = build-vocabulary(concepts)
+#let vocabulary = build-vocabulary(folders)
 
-#let render-theory() = render-theory-chapter(concepts, vocabulary)
-#let render-practical() = render-practical-chapter(concepts, vocabulary)
+#let render-theory() = render-theory-chapter(folders, vocabulary)
+#let render-practical() = render-practical-chapter(folders, vocabulary)

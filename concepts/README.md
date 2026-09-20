@@ -1,12 +1,15 @@
 # Concept-driven manuscript
 
-The thesis is composed from canonical concept files.
+The manuscript structure is derived from the concept folder tree.
 
-- Every level-2 section is a folder with an `index.typ`.
-- Every canonical term or renderable subsection is one `.typ` concept file.
-- A concept owns its terminology and explicit theoretical/practical intro, body, summary, and post-content slots.
-- Section indexes define section metadata and deterministic concept ordering.
-- `concepts/index.typ` builds the vocabulary and renders chapters from these records.
-- `templates/terms.typ` is a compatibility projection; terminology is edited in concept files only.
+- A folder is the only source of section hierarchy.
+- A folder may designate one canonical concept as its section concept. Its heading becomes the folder section heading.
+- Concepts stored in the same folder render as continuous content without automatic subsection headings.
+- Nested folders create nested sections to arbitrary depth.
+- Semantic relations never create sections. They are limited to dependency and related relationships.
+- Dependency relationships may order concepts within the same folder and are validated globally for cycles.
+- Each index.typ is a structural folder manifest: section concept, direct concepts, and child folders.
+- Concept files own terminology and theoretical/practical content.
+- Typst imports remain explicit because source directories cannot be enumerated dynamically at runtime.
 
-Typst imports are explicit because Typst does not enumerate source directories at runtime. Composition after import is data-driven and duplicate keys are rejected.
+During the filesystem migration some manifests may temporarily import concept files from a parent or sibling path. That does not affect section structure; only the folder manifest tree does.
