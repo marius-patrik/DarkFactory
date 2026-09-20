@@ -692,6 +692,7 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     print(f"  reconciled {os.path.relpath(path, root)}")
     return True
 
+
 def write(files: Dict[str, str], root: str = ".") -> List[str]:
     """Writes the planned files, creating directories as needed.
 
