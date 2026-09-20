@@ -340,14 +340,14 @@ if unused_concepts:
 
 required_folder_manifests = {
     "development": concept_root / "development-environment/index.typ",
-    "git": concept_root / "01-development-environment/version-control/git/index.typ",
-    "language_model": concept_root / "02-language-models/language-model/index.typ",
+    "git": concept_root / "development-environment/version-control/git/index.typ",
+    "language_model": concept_root / "language-models/language-model/index.typ",
     "agentic": concept_root / "agentic-engineering/index.typ",
-    "harness": concept_root / "03-agentic-engineering/agent-harness/index.typ",
-    "prompt_engineering": concept_root / "03-agentic-engineering/prompt-engineering/index.typ",
-    "agent_loop": concept_root / "03-agentic-engineering/agent-harness/agent-loop/index.typ",
-    "tool_calling": concept_root / "03-agentic-engineering/agent-harness/tool-calling/index.typ",
-    "context_engineering": concept_root / "03-agentic-engineering/agent-harness/context-engineering/index.typ",
+    "harness": concept_root / "agentic-engineering/agent-harness/index.typ",
+    "prompt_engineering": concept_root / "agentic-engineering/prompt-engineering/index.typ",
+    "agent_loop": concept_root / "agentic-engineering/agent-harness/agent-loop/index.typ",
+    "tool_calling": concept_root / "agentic-engineering/agent-harness/tool-calling/index.typ",
+    "context_engineering": concept_root / "agentic-engineering/agent-harness/context-engineering/index.typ",
 }
 for name, manifest in required_folder_manifests.items():
     if not manifest.is_file():
