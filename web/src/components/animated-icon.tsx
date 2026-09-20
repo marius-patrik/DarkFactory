@@ -15,6 +15,7 @@ import {
   Folder,
   FolderTree,
   Home,
+  GitBranch,
   Languages,
   List,
   ListTree,
@@ -22,6 +23,8 @@ import {
   Minimize,
   Minus,
   Moon,
+  Plus,
+  Settings,
   PanelBottomOpen,
   PanelLeft,
   PanelsLeftRight,
@@ -82,6 +85,8 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   FolderTreeIcon: FolderTree,
   Home,
   HomeIcon: Home,
+  GitBranch,
+  GitBranchIcon: GitBranch,
   Languages,
   LanguagesIcon: Languages,
   List,
@@ -114,6 +119,10 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   MinusIcon: Minus,
   Moon,
   MoonIcon: Moon,
+  Plus,
+  PlusIcon: Plus,
+  Settings,
+  SettingsIcon: Settings,
   Sun,
   SunIcon: Sun,
   SunMoon,
@@ -130,7 +139,7 @@ export function AnimatedIcon({
   ...props
 }: AnimatedIconProps) {
   const candidates = Array.isArray(names) ? names : [names];
-  const glyphSize = 16;
+  const glyphSize = 13;
   const animatedRegistry = AnimatedIcons as unknown as Record<string, LucideAnimatedComponent>;
 
   const Animated = candidates.map((name) => animatedRegistry[name]).find(Boolean);
