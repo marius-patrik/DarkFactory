@@ -223,6 +223,32 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 #68 closes only when the final system satisfies the current PRD and all required Requests are terminal.
 
+## 10. Current execution checkpoint — 2026-09-20
+
+### Landed
+
+- #733 removed the obsolete shadow/parity `df-dispatch` workflow and its dedicated tests; #358/#359 own the eventual graph-native production dispatcher.
+- #747 landed the shared `@darkfactory/web` operator shell slice on top of the native docs/web architecture. #425 remains open for the broader operator surface.
+
+### Active governed lanes
+
+- #780 → #341: corrected current-tree implementation of **core repository/package/domain evidence with capability-resolved actions**. The rejected #736 detector/quality-capability architecture is closed and must not return.
+- #781 → #422: clean current-tree rebuild of remaining `@darkfactory/keychain` ownership. PRs #518/#740 are closed as stale evidence; do not preserve their branch structure.
+- #783 → #423: complete browser authentication plus the minimal confidential broker/session/permission boundary from the current tree. PR #760 is partial evidence only.
+- #786 → #329: integrate F38-compatible schema/extraction behavior into the real graph/workspace/router result path. PR #769 is partial evidence only.
+- #741 → #384: deterministic git/workspace primitive slice is in final CI repair. Merging this slice advances #384; #384 stays open until #358 persisted conflict/run-state and #339 hook integration are proven.
+
+### Dependency holds / next unlocks
+
+- #358: continue recovery discovery/handler inventory now; final graph-native integration consumes #329 + #341 and the terminal F30-4 recovery disposition.
+- #317: mutation-claim validation and deterministic branch-update work may consume #384 primitives as soon as they land; graph re-entry waits on the relevant #358 interface.
+- #339: recover/import the exact F47 hook lane, then finish ecosystem-specific quality/docs hooks using #341 rather than hard-coded detection.
+- #385: held on the actual #358 Request/reconciliation owner.
+- #386: held on #384 + #358 + #385 and integrates #317/#339 rather than duplicating them.
+- #360: continue release engineering for every stable package/ABI/install/web surface in parallel; publish only once the final product contract is complete.
+
+Rejected/stale delivery PRs are issue/PR evidence only and are not compatibility branches to preserve.
+
 ## 10. Current execution priority
 
 Highest-value concurrent work:
