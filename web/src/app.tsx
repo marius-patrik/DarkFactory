@@ -1054,6 +1054,7 @@ export function ViewerApp() {
   const workspaceRef = useRef<ReviewWorkspaceControl>(null);
   const suppressEmbeddedState = useRef(false);
   const [activeWorkspacePane, setActiveWorkspacePane] = useState<WorkspacePane | null>(null);
+  const [openRepoFile, setOpenRepoFile] = useState<RepoTreeNode | null>(null);
 
   const [sidebarSide, setSidebarSideState] = useState<SidebarSide>(() =>
     localStorage.getItem("paper-viewer-sidebar-side") === "right" ? "right" : "left",
@@ -1109,10 +1110,9 @@ export function ViewerApp() {
     profileName,
     mode,
   );
-  const repositoryUrl =
-    manifest?.viewer?.repository_url || "https://github.com/marius-patrik/DarkFactory-Paper";
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
-  const structureAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
+  const structureAvailable =
+    openRepoFile === null && viewMode === "single" && mode !== "raw" && format === "pdf";
   const scopedMode: ViewerMode =
     viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.kind : mode;
   const scopedFormat: ArtifactFormat =
@@ -1123,7 +1123,10 @@ export function ViewerApp() {
     manifest?.variants.find((variant) => variant.profile === scopedProfile) || activeVariant;
   const scopedVersionTitle = scopedVariant?.title || versionTitle;
   const pagesAvailable =
-    scopedMode !== "raw" && scopedFormat === "pdf" && (viewMode === "single" || state.total > 0);
+    openRepoFile === null &&
+    scopedMode !== "raw" &&
+    scopedFormat === "pdf" &&
+    (viewMode === "single" || state.total > 0);
 
   const selectActivityPanel = useCallback((panel: ActivityPanel) => {
     if (panel) {
@@ -1163,6 +1166,11 @@ export function ViewerApp() {
       selectActivityPanel(null);
     }
   }, [activityPanel, selectActivityPanel, structureAvailable]);
+
+  const openRepositoryFile = useCallback((node: RepoTreeNode) => {
+    if (!node.source) return;
+    setOpenRepoFile(node);
+  }, []);
 
   const navigateViewer = useCallback((href: string) => {
     if (!href || href === "#") return;
@@ -1661,6 +1669,8 @@ export function ViewerApp() {
         <ViewMenu
           sidebarOpen={activityPanel !== null}
           workspace={viewMode === "split"}
+          theme={theme}
+          onThemeChange={setTheme}
           onToggleSidebar={toggleSidebar}
           onOpenSplit={openSplit}
           onSingle={() => navigateViewer(exitSplitTarget)}
@@ -1742,7 +1752,7 @@ export function ViewerApp() {
                 }}
               />
             )}
-            <AppearancePicker theme={theme} onChange={setTheme} />
+
           </div>
         </div>
       </header>
@@ -1776,13 +1786,30 @@ export function ViewerApp() {
               side="left"
               width={sidebarWidth}
               onWidthChange={setSidebarWidth}
-              repositoryUrl={repositoryUrl}
-              commit={manifest?.commit || ""}
+              onOpenFile={openRepositoryFile}
             />
           )}
 
           <main className="viewer-main">
-            {viewMode === "split" ? (
+            {openRepoFile?.source ? (
+              <div className="source-editor-shell">
+                <div className="source-editor-header">
+                  <AnimatedIcon names={["FileCode2Icon", "FileIcon"]} />
+                  <span title={openRepoFile.path}>{openRepoFile.path}</span>
+                  <TooltipAction
+                    label="Close editor"
+                    icon={["XIcon"]}
+                    onClick={() => setOpenRepoFile(null)}
+                    className="source-editor-close"
+                  />
+                </div>
+                <SourceFileView
+                  path={openRepoFile.source}
+                  displayPath={openRepoFile.path}
+                  theme={theme}
+                />
+              </div>
+            ) : viewMode === "split" ? (
               workspacePanes.length >= 2 ? (
                 <ReviewWorkspace
                   ref={workspaceRef}
@@ -1827,8 +1854,7 @@ export function ViewerApp() {
               side="right"
               width={sidebarWidth}
               onWidthChange={setSidebarWidth}
-              repositoryUrl={repositoryUrl}
-              commit={manifest?.commit || ""}
+              onOpenFile={openRepositoryFile}
             />
           )}
 
