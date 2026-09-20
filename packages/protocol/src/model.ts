@@ -11,12 +11,25 @@ export type TaskNeed = "tools" | "reasoning" | "vision" | "long_context" | "imag
 export type Sensitivity = "normal" | "sensitive";
 export type LimitTier = "tight" | "standard" | "bulk";
 export type ModelModality = "text" | "image" | "video" | "image_gen" | "video_gen";
+export type CapabilityTierId = string;
+export interface CapabilityTier {
+	id: CapabilityTierId;
+	match: string[];
+}
+export type Difficulty = "easy" | "medium" | "hard";
+export interface DifficultyTierMapping {
+	easy: CapabilityTierId;
+	medium: CapabilityTierId;
+	hard: CapabilityTierId;
+}
 
 export interface TaskProfile {
 	kind: TaskKind;
 	size: TaskSize;
 	needs: TaskNeed[];
 	sensitivity: Sensitivity;
+	difficulty?: Difficulty;
+	minTier?: CapabilityTierId;
 	contextTokens: number;
 }
 
@@ -32,6 +45,8 @@ export interface TaskHints {
 	size?: TaskSize;
 	needs?: TaskNeed[];
 	sensitivity?: Sensitivity;
+	difficulty?: Difficulty;
+	minTier?: CapabilityTierId;
 }
 
 export interface RouterInput {
@@ -53,6 +68,7 @@ export interface ModelCapability {
 	modalities: ModelModality[];
 	quality: Partial<Record<TaskKind, number>>;
 	limitTier: LimitTier;
+	capabilityTier?: CapabilityTierId;
 	reserve?: { requests?: number; tokens?: number };
 	source?: "live" | "cache" | "builtin" | "config";
 	collection?: "none" | "logging" | "training" | "unknown";
@@ -85,6 +101,9 @@ export interface RouterConfig {
 	models?: Record<string, ModelCapabilityOverride>;
 	policies: RouterPolicy[];
 	learning?: { enabled?: boolean; windowMs?: number; maxPenalty?: number; maxRecords?: number };
+	capabilityTiers?: CapabilityTier[];
+	defaultTier?: CapabilityTierId;
+	difficultyTiers?: DifficultyTierMapping;
 	dataCollection?: { normal?: string[]; sensitive?: string[] };
 }
 
@@ -95,12 +114,16 @@ export interface RankedCandidate {
 	reason: string;
 	score: number;
 	details: string[];
+	capabilityTier?: CapabilityTierId;
 }
 
 export interface RouteResult {
 	profile: TaskProfile;
 	source: "explicit" | "graph" | "sensitive" | "hard" | "policy" | "default";
 	policy?: string;
+	difficulty?: Difficulty;
+	minCapabilityTier?: CapabilityTierId;
+	capabilityTierOrder?: CapabilityTierId[];
 	ranked: RankedCandidate[];
 	rejected?: RankedCandidate[];
 	chain: Candidate[];
