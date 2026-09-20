@@ -1,5 +1,5 @@
-#import "../../../../templates/common.typ": define-term, translation, accepted, alert
-#import "../../../schema.typ": concept
+#import "/DarkFactory/templates/common.typ": define-term, translation, accepted, alert
+#import "/DarkFactory/schema.typ": concept
 
 #let terminology = define-term(
   id: "methodology",
