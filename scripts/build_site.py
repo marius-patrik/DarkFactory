@@ -146,7 +146,13 @@ def tracked_repo_tree() -> list[dict[str, object]]:
                 continue
             path = f"{prefix}/{name}".lstrip("/")
             if "__file__" in value:
-                rows.append({"name": name, "path": str(value["__file__"]), "type": "file"})
+                tracked_path = str(value["__file__"])
+                rows.append({
+                    "name": name,
+                    "path": tracked_path,
+                    "type": "file",
+                    "source": f"repository/{tracked_path}" if Path(tracked_path).is_file() else None,
+                })
             else:
                 rows.append(
                     {
@@ -159,6 +165,25 @@ def tracked_repo_tree() -> list[dict[str, object]]:
         return rows
 
     return materialize(root)
+
+
+def publish_tracked_sources() -> int:
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    )
+    paths = [entry.decode("utf-8") for entry in result.stdout.split(b"\0") if entry]
+    published = 0
+    for value in paths:
+        source = Path(value)
+        if not source.is_file():
+            continue
+        target = SITE / "repository" / source
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        published += 1
+    return published
 
 
 class HeadingIndexParser(HTMLParser):
@@ -223,6 +248,8 @@ for template_name in template_names:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
 
+published_sources = publish_tracked_sources()
+
 content_index: dict[str, dict[str, dict[str, list[dict[str, object]]]]] = {}
 for template_name in template_names:
     template_index: dict[str, dict[str, list[dict[str, object]]]] = {}
@@ -252,6 +279,7 @@ manifest = {
         "formats": ["pdf", "markdown", "html"],
         "modes": ["viewer", "review", "raw"],
         "repo_tree": "repo-tree.json",
+        "repository_source_root": "repository/",
         "content_index": "content-index.json",
         "repository_url": "https://github.com/marius-patrik/DarkFactory-Paper",
         "pdfjs_version": PDFJS_VERSION,
@@ -300,5 +328,6 @@ if not static_assets.is_dir() or not any(path.is_file() for path in static_asset
 
 print(
     f"ok: built React Pages app for {args.book}: {len(template_names)} templates x "
-    f"{len(VARIANTS) * 2 * 3} publication artifacts (PDF/Markdown/HTML) using PDF.js {PDFJS_VERSION}"
+    f"{len(VARIANTS) * 2 * 3} publication artifacts (PDF/Markdown/HTML), "
+    f"{published_sources} repository source files, using PDF.js {PDFJS_VERSION}"
 )
