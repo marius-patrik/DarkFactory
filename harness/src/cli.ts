@@ -1300,10 +1300,8 @@ async function chatCommand(
 
 async function graphCommand(args: string[]): Promise<void> {
 	const subcommand = args[0];
-		const graphPath =
-		subcommand === "validate"
-			? (args[1] ?? bundledGraphPath())
-			: (option(args, "--graph") ?? bundledGraphPath());
+	const graphPath =
+		subcommand === "validate" ? (args[1] ?? bundledGraphPath()) : (option(args, "--graph") ?? bundledGraphPath());
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const graph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,

@@ -196,7 +196,7 @@ export async function dispatch(
 	}
 
 	// Load the graph
-		const graphPath = opts.graphPath ?? bundledGraphPath();
+	const graphPath = opts.graphPath ?? bundledGraphPath();
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
 	const workflowGraph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,
