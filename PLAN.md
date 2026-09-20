@@ -167,7 +167,7 @@ Continue in parallel:
 - #334 — complete. Strict detected TypeScript/TSDoc API coverage is enforced by the native docs path and CI.
 - #335 — complete. Detected first-party API + architecture content is published through the canonical content graph and rendered by `@darkfactory/web`.
 - #424 — complete. Commit `1340019ee75cd9100f79cc032b484a65c62a762f` added detected repository/package/capability/graph metadata and capability-contributed pages to the canonical content graph; D4/F42/F44 dispositions are terminal.
-- #336 — the pure deterministic docs-impact classifier/`Docs: none` policy may land independently in `@darkfactory/docs`; PR-base diff and shared local/CI enforcement join the final #339 hook owner rather than creating another hook engine.
+- #336 — the pure #341-backed docs-impact classifier/`Docs: none` policy is landed through PR #889 (`a5d65f59c814eb7c66afcf921a1238573a28a49a`); remaining PR-base diff and shared local/CI enforcement join the final #339 hook owner, followed by the late PRD truth pass.
 - #337 — current-only README/retired-surface drift enforcement is landed; keep it active and finish the final repository-wide contradiction pass after the product surface stabilizes.
 - #425 — finish the broader GitHub-backed operator application on the existing `@darkfactory/web` package.
 - #390 — integrate remaining operator/dashboard surfaces into that shared application.
@@ -432,7 +432,7 @@ Run stable pieces in parallel, with only these waits:
 - #334: COMPLETE. Strict TSDoc coverage now runs through the shipped #341 detected API action contract.
 - #335: COMPLETE. API + architecture content is published through the canonical docs graph and shared web renderer.
 - #424: COMPLETE. Repository/capability/graph metadata integration is landed in the native content graph and recovery dispositions are terminal.
-- #336: F44 recovery is reconciled/deleted. Land the pure #341-backed impact classifier independently, then wire PR-base diff and shared local/CI enforcement through #339 once its final hook surface lands.
+- #336: F44 recovery is reconciled/deleted and the pure #341-backed impact classifier is landed through #889. Wire PR-base diff and shared local/CI enforcement through #339 once its final hook surface lands, then perform the late PRD truth pass.
 - #337: README projection/retired-surface enforcement is active; perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403: the command-registry/metadata slice is landed; continue the remaining final operator commands and later engine/release joins. #251 consumes the same registry/metadata source for TUI work.
 - #425 and #390: continue the shared `@darkfactory/web` application and integrate the already-shipped #423 authentication contract now.
