@@ -284,9 +284,9 @@ Continue from current `packages/keychain` ownership only. Reconcile remaining im
 
 #339 remains open. `recovery/f47-hooks` remains an active recovery input.
 
-PRs #808 and #866 are closed evidence only. #866 reused the rejected stale `harness/src/hooks/*` branch ownership.
+PR #917 landed as `97ccd60f9cf8e064b8e88229f15c767b616b7422`: the official universal `@darkfactory/capability-hooks` now owns executable F47 `tests-touched`, `conventional-commit`, and `branch-name` behavior through additive ABI-v1 hook metadata. PRs #808/#866 remain closed evidence and rejected `harness/src/hooks/*` ownership must not return.
 
-The final implementation must start fresh from current `darkfactory`: hook invocation mechanisms belong in final core/mutation owners; product/rule definitions and registry contributions belong to the official `hooks` capability; tests are TypeScript/df-owned.
+Remaining work is deterministic invocation in final core/mutation owners, canonical rule `enforced_by` validation, operator diagnostics, PR/Request binding, secret/format/English/TSDoc/docs rules as applicable, shared local/CI execution, and F47 terminal disposition/cleanup. Tests remain TypeScript/df-owned.
 
 #### #384 / #385 / #388
 
@@ -398,7 +398,7 @@ Run these **concurrently now**:
 This stream runs beside Join A and becomes release-critical later.
 
 **Run now**
-- #339: start the final-owner hook implementation now; #341 actions are already shipped. Reconcile F47 without restoring durable `harness/src/hooks/*`.
+- #339: capability-owned F47 rule behavior is landed through #917. Continue deterministic hook invocation/rule-binding/diagnostics/CI integration in final owners; reconcile the remaining F47 delta without restoring `harness/src/hooks/*`.
 - #384: keep only remaining persisted-conflict/run-state and hook integration; do not rebuild landed primitives.
 - #388: implement/verify minimal provenance/intake surfaces that use already-stable workspace/git contracts; existing recovery refs may continue to be reconciled manually/governedly without waiting for full #388.
 
