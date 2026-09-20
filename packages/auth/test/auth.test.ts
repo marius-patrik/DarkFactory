@@ -5,6 +5,7 @@ import {
 	initiateAuth,
 	persistSession,
 	restoreSession,
+	restoreSessionWithRefresh,
 } from "../src/client.ts";
 
 class MemoryStorage implements Storage {
@@ -53,6 +54,22 @@ describe("@darkfactory/auth browser client", () => {
 		expect(raw).not.toContain("refresh_token");
 		expect(restoreSession(1_000)?.id).toBe("opaque-session");
 		expect(restoreSession(2_000)).toBeNull();
+		expect(localStorage.getItem("df-auth-session")).toBeNull();
+	});
+
+	test("expired session can be restored through broker refresh without browser token custody", async () => {
+		persistSession({ id: "opaque-session", expiresAt: 2_000 });
+		const restored = await restoreSessionWithRefresh(
+			async (sessionId) => ({ id: sessionId, expiresAt: 5_000, userId: "octocat" }),
+			3_000,
+		);
+		expect(restored).toEqual({ id: "opaque-session", expiresAt: 5_000, userId: "octocat" });
+		expect(localStorage.getItem("df-auth-session")).not.toContain("token");
+	});
+
+	test("failed broker refresh clears expired browser state", async () => {
+		persistSession({ id: "opaque-session", expiresAt: 2_000 });
+		expect(await restoreSessionWithRefresh(async () => { throw new Error("refresh failed"); }, 3_000)).toBeNull();
 		expect(localStorage.getItem("df-auth-session")).toBeNull();
 	});
 
