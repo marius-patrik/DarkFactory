@@ -24,5 +24,5 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "dependency", target: "skills"),)
+  relations: ()
 )

@@ -27,5 +27,5 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "dependency", target: "continuous_integration"), (type: "related", target: "github"),)
+  relations: ((type: "related", target: "github"),)
 )

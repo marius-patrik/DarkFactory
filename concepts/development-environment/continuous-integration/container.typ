@@ -27,5 +27,5 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "related", target: "continuous_integration"),)
+  relations: ()
 )

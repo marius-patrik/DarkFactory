@@ -108,10 +108,16 @@
       assert(edge.type in ("dependency", "related"), message: "unsupported semantic relation " + edge.type + " on " + item.key)
       assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
       if edge.type == "dependency" {
-        dependencies.at(item.key).push(edge.target)
+        if not edge.target in dependencies.at(item.key) {
+          dependencies.at(item.key).push(edge.target)
+        }
       } else {
-        related.at(item.key).push(edge.target)
-        related.at(edge.target).push(item.key)
+        if not edge.target in related.at(item.key) {
+          related.at(item.key).push(edge.target)
+        }
+        if not item.key in related.at(edge.target) {
+          related.at(edge.target).push(item.key)
+        }
       }
     }
   }
