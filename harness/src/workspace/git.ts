@@ -17,6 +17,40 @@ export class GitError extends Error {
 	}
 }
 
+export class GitAuthError extends GitError {
+	constructor(stderr: string) {
+		super([], null, stderr);
+		this.name = "GitAuthError";
+	}
+}
+
+export class GitNetworkError extends GitError {
+	constructor(stderr: string) {
+		super([], null, stderr);
+		this.name = "GitNetworkError";
+	}
+}
+
+export class GitConflictError extends GitError {
+	constructor(stderr: string) {
+		super([], null, stderr);
+		this.name = "GitConflictError";
+	}
+}
+
+export function parseGitError(stderr: string, args: readonly string[] = [], exitCode: number | null = 1): GitError {
+	if (stderr.includes("Authentication failed") || stderr.includes("could not read Username")) {
+		return new GitAuthError(stderr);
+	}
+	if (stderr.includes("fatal: unable to access") || stderr.includes("Could not resolve host")) {
+		return new GitNetworkError(stderr);
+	}
+	if (stderr.includes("conflict") || stderr.includes("fix conflicts")) {
+		return new GitConflictError(stderr);
+	}
+	return new GitError(args, exitCode, stderr);
+}
+
 /** Options for {@link runGit}. */
 export interface RunGitOptions {
 	/** Extra environment variables for this git call (e.g. `GIT_AUTHOR_NAME`). */
@@ -41,8 +75,17 @@ export interface RunGitOptions {
  * @throws {GitError} When git exits non-zero or cannot be started.
  */
 export function runGit(repoDir: string, args: readonly string[], options: RunGitOptions = {}): string {
-	if (!repoDir) throw new GitError(args, null, "runGit requires an explicit repository directory");
-	const result = spawnSync("git", [...args], {
+	if (!repoDir) throw new Error("runGit requires an explicit repository directory");
+	if (repoDir.startsWith("-")) throw new Error("Repository directory cannot start with a hyphen");
+
+	// Pre-flight check: ensure git is installed
+	try {
+		spawnSync("git", ["--version"]);
+	} catch {
+		throw new Error("Git is not installed or not accessible in $PATH.");
+	}
+
+	const result = spawnSync("git", ["-c", "core.askpass=true", ...args], {
 		cwd: repoDir,
 		encoding: "utf8",
 		input: options.input,
@@ -51,6 +94,6 @@ export function runGit(repoDir: string, args: readonly string[], options: RunGit
 		windowsHide: true,
 	});
 	if (result.error) throw new GitError(args, null, result.error.message);
-	if (result.status !== 0) throw new GitError(args, result.status, result.stderr ?? "");
+	if (result.status !== 0) throw parseGitError(result.stderr ?? "", args, result.status);
 	return (result.stdout ?? "").trimEnd();
 }

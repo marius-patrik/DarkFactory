@@ -36,6 +36,8 @@ export function createTempRepo(): TempRepo {
 	runGit(root, ["init", "--bare", "--initial-branch=main", remote]);
 	runGit(root, ["clone", remote, repo]);
 	runGit(repo, ["checkout", "-B", "main"]);
+	runGit(repo, ["config", "user.name", IDENTITY.GIT_COMMITTER_NAME]);
+	runGit(repo, ["config", "user.email", IDENTITY.GIT_COMMITTER_EMAIL]);
 	writeFileSync(join(repo, "README.md"), "# temp\n");
 	runGit(repo, ["add", "README.md"]);
 	runGit(repo, ["commit", "-m", "init"], { env: IDENTITY });
