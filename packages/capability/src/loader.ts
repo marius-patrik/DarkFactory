@@ -34,8 +34,13 @@ export async function discoverCapabilities(root: string): Promise<CapabilityDefi
 			try {
 				loaded = await loadCapability(join(root, entry.name));
 			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code === "ENOENT" || /Cannot find module|ModuleNotFound/u.test(String(error)))
+				if (
+					(error as NodeJS.ErrnoException).code === "ENOENT" ||
+					/Cannot find module|ModuleNotFound/u.test(String(error)) ||
+					error?.message?.includes("must export capability or default")
+				) {
 					continue;
+				}
 				throw error;
 			}
 		}

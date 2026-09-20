@@ -167,7 +167,7 @@ export async function resolveRepositoryActions(
 				(actionKey === "setup" && env?.setup?.[pkg.ecosystem]) ||
 				(actionKey === "release" && env?.release?.[pkg.ecosystem]);
 			
-			if (override) {
+			if (override && typeof override.command === "string") {
 				command = override.command.replace(/\{path\}/g, pkg.path);
 				description = `Declared in repo.df environment.${actionKey}`;
 				supported = true;
@@ -193,7 +193,8 @@ export async function resolveRepositoryActions(
 			actionSet[actionKey] = { command, description, supported };
 		}
 
-		packages[pkg.name] = actionSet as PackageActionSet;
+		const packageKey = `${pkg.ecosystem}:${pkg.name}`;
+		packages[packageKey] = actionSet as PackageActionSet;
 	}
 
 	return {
