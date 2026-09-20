@@ -37,5 +37,5 @@ Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním prot
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "parent", target: "version_control"),)
+  relations: ()
 )

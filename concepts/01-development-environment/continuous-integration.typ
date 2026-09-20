@@ -41,5 +41,5 @@ V rámci platformy GitHub zajišťuje kontinuální integraci automatizační pl
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: (),
 )
