@@ -158,6 +158,7 @@ async function deleteFile(home: string): Promise<void> {
 	}
 }
 
+/** Stores the DarkFactory vault key in the platform-native secure store. */
 export async function storeVaultKey(keyBase64: string, options: KeychainOptions): Promise<void> {
 	const platform = getPlatform(options);
 	const runner = getRunner(options);
@@ -184,6 +185,7 @@ export async function storeVaultKey(keyBase64: string, options: KeychainOptions)
 	throw new Error("OS keychain unavailable and file-based key storage not allowed. Use --insecure-file-key.");
 }
 
+/** Loads the DarkFactory vault key from the platform-native secure store. */
 export async function loadVaultKey(options: KeychainOptions): Promise<string | undefined> {
 	const platform = getPlatform(options);
 	const runner = getRunner(options);
@@ -200,6 +202,7 @@ export async function loadVaultKey(options: KeychainOptions): Promise<string | u
 	return undefined;
 }
 
+/** Deletes the DarkFactory vault key from the platform-native secure store. */
 export async function deleteVaultKey(options: KeychainOptions): Promise<void> {
 	const runner = getRunner(options);
 	const platform = getPlatform(options);
