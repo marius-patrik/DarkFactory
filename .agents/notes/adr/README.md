@@ -2,7 +2,7 @@
 
 This directory contains only architecture decisions that are currently in force.
 
-Every record has `Status: Accepted`. Repository files do not preserve superseded or historical architecture; GitHub issues are the sole record for previous decisions and superseded work.
+Every record has `Status: Accepted`.
 
 Current records:
 
@@ -21,4 +21,4 @@ Current records:
 - ADR-0022 — complete the final system directly;
 - ADR-0023 — first-party docs use docs.df and one renderer.
 
-When a current architecture decision changes, update the active architecture set and keep the previous decision only in its GitHub issue.
+Architecture changes update the current accepted set and the owning GitHub Request.
