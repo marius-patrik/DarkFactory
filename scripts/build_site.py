@@ -11,20 +11,15 @@ import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 
-VARIANTS = (
-    {
-        "profile": "school",
-        "title": "DarkFactory",
-        "subtitle": "Canonical publication",
-        "final": "prace.pdf",
-        "review": "prace-review.pdf",
-        "artifacts": {
-            "final": {"pdf": "prace.pdf", "markdown": "prace.md", "html": "prace.html"},
-            "review": {"pdf": "prace-review.pdf", "markdown": "prace-review.md", "html": "prace-review.html"},
-        },
-        "recommended": True,
+PUBLICATION = {
+    "title": "DarkFactory",
+    "final": "prace.pdf",
+    "review": "prace-review.pdf",
+    "artifacts": {
+        "final": {"pdf": "prace.pdf", "markdown": "prace.md", "html": "prace.html"},
+        "review": {"pdf": "prace-review.pdf", "markdown": "prace-review.md", "html": "prace-review.html"},
     },
-)
+}
 
 PDFJS_VERSION = "6.3.289"
 OUT = Path("out")
@@ -199,6 +194,15 @@ def tracked_repo_tree() -> list[dict[str, object]]:
     return materialize(root)
 
 
+def publish_compiled_assets(template_name: str) -> int:
+    source_dir = source_for(template_name, "assets")
+    if not source_dir.is_dir():
+        return 0
+    target_dir = SITE / href_for(template_name, "assets")
+    shutil.copytree(source_dir, target_dir, dirs_exist_ok=True)
+    return sum(1 for path in source_dir.rglob("*") if path.is_file())
+
+
 def publish_tracked_sources() -> int:
     result = subprocess.run(
         ["git", "ls-files", "-z"],
@@ -265,38 +269,36 @@ def semantic_content_index(html_path: Path) -> list[dict[str, object]]:
     return entries
 
 
+published_assets = 0
 for template_name in template_names:
-    for variant in VARIANTS:
-        for mode in ("final", "review"):
-            for artifact_format, filename in variant["artifacts"][mode].items():
-                source = source_for(template_name, filename)
-                target = SITE / href_for(template_name, filename)
-                if not source.is_file():
-                    if args.allow_missing:
-                        continue
-                    raise SystemExit(
-                        f"missing generated {artifact_format} publication: {source}"
-                    )
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
+    for mode in ("final", "review"):
+        for artifact_format, filename in PUBLICATION["artifacts"][mode].items():
+            source = source_for(template_name, filename)
+            target = SITE / href_for(template_name, filename)
+            if not source.is_file():
+                if args.allow_missing:
+                    continue
+                raise SystemExit(
+                    f"missing generated {artifact_format} publication: {source}"
+                )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+    published_assets += publish_compiled_assets(template_name)
 
 published_sources = publish_tracked_sources()
 
-content_index: dict[str, dict[str, dict[str, list[dict[str, object]]]]] = {}
+content_index: dict[str, dict[str, list[dict[str, object]]]] = {}
 for template_name in template_names:
-    template_index: dict[str, dict[str, list[dict[str, object]]]] = {}
-    for variant in VARIANTS:
-        profile_index: dict[str, list[dict[str, object]]] = {}
-        for mode in ("final", "review"):
-            html_name = variant["artifacts"][mode]["html"]
-            html_path = source_for(template_name, html_name)
-            if not html_path.is_file():
-                if args.allow_missing:
-                    profile_index[mode] = []
-                    continue
-                raise SystemExit(f"missing semantic HTML for content index: {html_path}")
-            profile_index[mode] = semantic_content_index(html_path)
-        template_index[variant["profile"]] = profile_index
+    template_index: dict[str, list[dict[str, object]]] = {}
+    for mode in ("final", "review"):
+        html_name = PUBLICATION["artifacts"][mode]["html"]
+        html_path = source_for(template_name, html_name)
+        if not html_path.is_file():
+            if args.allow_missing:
+                template_index[mode] = []
+                continue
+            raise SystemExit(f"missing semantic HTML for content index: {html_path}")
+        template_index[mode] = semantic_content_index(html_path)
     content_index[template_name] = template_index
 
 manifest = {
@@ -305,7 +307,7 @@ manifest = {
     "work_title": WORK_TITLE,
     "default_template": DEFAULT_TEMPLATE,
     "templates": template_names,
-    "variants": VARIANTS,
+    "publication": PUBLICATION,
     "viewer": {
         "engine": "React + PDF.js + Monaco Raw + rendered Markdown + compiled Typst HTML",
         "formats": ["pdf", "markdown", "html"],
@@ -330,7 +332,7 @@ manifest = {
         ],
     },
 }
-(SITE / "variants.json").write_text(
+(SITE / "publication.json").write_text(
     json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
@@ -347,7 +349,7 @@ manifest = {
 for required in (
     SITE / "index.html",
     SITE / "viewer.html",
-    SITE / "variants.json",
+    SITE / "publication.json",
     SITE / "repo-tree.json",
     SITE / "content-index.json",
 ):
@@ -360,6 +362,7 @@ if not static_assets.is_dir() or not any(path.is_file() for path in static_asset
 
 print(
     f"ok: built React Pages app for {args.book}: {len(template_names)} templates x "
-    f"{len(VARIANTS) * 2 * 3} publication artifacts (PDF/Markdown/HTML), "
-    f"{published_sources} repository source files, using PDF.js {PDFJS_VERSION}"
+    f"{2 * 3} publication artifacts (PDF/Markdown/HTML), "
+    f"{published_assets} compiled image assets, {published_sources} repository source files, "
+    f"using PDF.js {PDFJS_VERSION}"
 )

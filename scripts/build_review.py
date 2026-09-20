@@ -2,7 +2,7 @@
 """Compile a review PDF with the canonical raw/final word/character count.
 
 The final count is obtained from the same Typst document, template and publication
-profile with review mode disabled. The review build then receives those values as
+with review mode disabled. The review build then receives those values as
 sys.inputs while computing its own review count normally inside the template.
 Review PDFs disable accessibility tags because Typst 0.15.x can hit a Krilla
 tag-tree serializer panic on the review-only markup path. Final PDFs retain the
@@ -32,7 +32,6 @@ parser.add_argument("--typst", default="typst")
 parser.add_argument("--font-path", action="append", default=[])
 parser.add_argument("--book", required=True)
 parser.add_argument("--template", required=True)
-parser.add_argument("--profile", required=True)
 parser.add_argument("--main", default="main.typ")
 parser.add_argument("--output", required=True)
 args = parser.parse_args()
@@ -53,8 +52,6 @@ query_cmd = [
     f"book={args.book}",
     "--input",
     f"template={args.template}",
-    "--input",
-    f"profile={args.profile}",
     "--format",
     "json",
 ]
@@ -81,8 +78,6 @@ compile_cmd = [
     f"template={args.template}",
     "--input",
     "review=true",
-    "--input",
-    f"profile={args.profile}",
     "--input",
     f"raw-words={words}",
     "--input",
