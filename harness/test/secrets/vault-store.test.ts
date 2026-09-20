@@ -36,7 +36,7 @@ afterEach(async () => {
 });
 
 describe("vault file format and atomic writes", () => {
-	test("saves vault.enc.json encrypted and vault.meta.json without values", async () => {
+	test("saves vault.enc.df encrypted and vault.meta.df without values", async () => {
 		const key = generateVaultKey();
 		const vault = {
 			version: 1 as const,
@@ -98,7 +98,7 @@ describe("vault file format and atomic writes", () => {
 		const vault = await loadVault(dataRepo, key);
 		expect(vault.entries.map((e) => e.name).sort()).toEqual(["SECRET_A", "SECRET_B", "SECRET_C"]);
 		// Check lock file is cleaned up
-		const lockExists = await Bun.file(join(dfHome, ".secrets.lock")).exists();
+		const lockExists = await Bun.file(join(dfHome, ".secrets-lock.df")).exists();
 		expect(lockExists).toBe(false);
 		// Verify 0600 on vault file (stat mode)
 		const st = await stat(join(dataRepo, "vault.enc.df"));
