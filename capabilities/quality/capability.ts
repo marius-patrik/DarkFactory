@@ -130,7 +130,9 @@ export const capability = defineCapability({
 
 				const toolExists = await checkToolExists(actionSpec.tool);
 				if (!toolExists) {
-					console.warn(`Warning: Quality check tool '${actionSpec.tool}' was not found in PATH for action '${action}' in ecosystem '${ecosystem}'.`);
+					throw new Error(
+						`Quality check tool '${actionSpec.tool}' is not found in PATH for action '${action}' in ecosystem '${ecosystem}'.`
+					);
 				}
 
 				const command = createQualityCommand(actionSpec.tool, actionSpec.args);

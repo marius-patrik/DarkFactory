@@ -10,6 +10,12 @@ import { readRepoConfig, DEFAULT_MANIFESTS } from "../quality/utils";
  * Repository detection capability.
  * Identifies ecosystems and packages and resolves their respective capabilities.
  */
+interface PackageEntry {
+	name?: string;
+	path?: string;
+	ecosystem?: string;
+}
+
 export const capability = defineCapability({
 	abiVersion: CAPABILITY_ABI_VERSION,
 	id: "detection",
@@ -39,7 +45,7 @@ export const capability = defineCapability({
 				const environment = repoConfig.environment || {};
 				if (environment.packages && Array.isArray(environment.packages)) {
 					return {
-						detected: environment.packages.map((p: any) => ({
+						detected: environment.packages.map((p: PackageEntry) => ({
 							name: p.name || p.path,
 							ecosystem: p.ecosystem,
 							path: p.path,
@@ -115,8 +121,11 @@ export const capability = defineCapability({
 									if (parsed.name && typeof parsed.name === "string") {
 										pkgName = parsed.name;
 									}
-								} catch {
-									// fallback to relative path based name
+								} catch (err) {
+									if (!(err instanceof SyntaxError)) {
+										throw err;
+									}
+									// malformed json fallback: ignore
 								}
 							}
 

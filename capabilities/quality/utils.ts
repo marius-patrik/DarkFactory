@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { readFile, access, constants } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { resolveDfFile } from "../../../harness/src/utils/resolver";
+import { resolveDfFile } from "../../harness/src/utils/resolver";
 
 export const DEFAULT_MANIFESTS = {
 	"package.json": "javascript",
