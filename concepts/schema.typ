@@ -1,5 +1,11 @@
 #import "../templates/common.typ": finalized
 
+#let relation(type, target) = {
+  assert(type in ("parent", "child", "dependency", "related"), message: "unsupported concept relation: " + type)
+  assert(target != none, message: "concept relation requires a target")
+  (type: type, target: target)
+}
+
 #let concept(
   key: none,
   term: none,
@@ -16,7 +22,7 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: (),
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(term != none, message: "concept requires canonical terminology")
@@ -38,147 +44,121 @@
     practical_summary: practical_summary,
     practical_after: practical_after,
     practical_wrapper: practical_wrapper,
-    related: related,
+    relations: relations,
   )
 }
 
-#let section(
-  key: none,
-  term: none,
-  heading: none,
-  theory_prelude: none,
-  theory_intro_heading: none,
-  theory_intro: none,
-  theory_summary: none,
-  practical_prelude: none,
-  practical_intro_heading: none,
-  practical_intro: none,
-  practical_summary: none,
-  practical_grouped: false,
-  concepts: (),
-) = {
-  assert(key != none, message: "section requires a stable key")
-  assert(term != none, message: "section requires canonical terminology")
-  assert(heading != none, message: "section requires a heading renderer")
-  (
-    kind: "section",
-    key: key,
-    term: term,
-    heading: heading,
-    theory_prelude: theory_prelude,
-    theory_intro_heading: theory_intro_heading,
-    theory_intro: theory_intro,
-    theory_summary: theory_summary,
-    practical_prelude: practical_prelude,
-    practical_intro_heading: practical_intro_heading,
-    practical_intro: practical_intro,
-    practical_summary: practical_summary,
-    practical_grouped: practical_grouped,
-    concepts: concepts,
-  )
+#let build-vocabulary(concepts) = {
+  let result = (:)
+  for item in concepts {
+    assert(not item.key in result, message: "duplicate concept key: " + item.key)
+    result.insert(item.key, item.term)
+  }
+  result
 }
 
-#let render-concept(item, terms, mode: "theory", level: 3) = {
+#let normalize-relations(concepts) = {
+  let keys = concepts.map(item => item.key)
+  let parents = (:)
+  let dependencies = (:)
+  let related = (:)
+  for item in concepts {
+    parents.insert(item.key, ())
+    dependencies.insert(item.key, ())
+    related.insert(item.key, ())
+  }
+
+  for item in concepts {
+    for edge in item.relations {
+      assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
+      if edge.type == "parent" {
+        parents.at(item.key).push(edge.target)
+      } else if edge.type == "child" {
+        parents.at(edge.target).push(item.key)
+      } else if edge.type == "dependency" {
+        dependencies.at(item.key).push(edge.target)
+      } else if edge.type == "related" {
+        related.at(item.key).push(edge.target)
+      }
+    }
+  }
+
+  for item in concepts {
+    assert(parents.at(item.key).len() <= 1, message: "concept has multiple structural parents: " + item.key)
+  }
+
+  (parents: parents, dependencies: dependencies, related: related)
+}
+
+#let ordered-keys(concepts, graph) = {
+  let keys = concepts.map(item => item.key)
+  let result = ()
+  let remaining = keys
+  while remaining.len() > 0 {
+    let progressed = false
+    for key in remaining {
+      let deps = graph.dependencies.at(key)
+      if deps.all(dep => dep in result or not dep in remaining) {
+        result.push(key)
+        remaining = remaining.filter(candidate => candidate != key)
+        progressed = true
+        break
+      }
+    }
+    assert(progressed, message: "dependency cycle in concept graph")
+  }
+  result
+}
+
+#let render-concept(item, terms, mode: "theory", level: 2) = {
   let enabled = if mode == "theory" { item.theory_enabled } else { item.practical_enabled }
-
   if enabled {
     let intro = if mode == "theory" { item.theory_intro } else { item.practical_intro }
     let body = if mode == "theory" { item.theory_body } else { item.practical_body }
     let summary = if mode == "theory" { item.theory_summary } else { item.practical_summary }
     let after = if mode == "theory" { item.theory_after } else { item.practical_after }
     let wrapper = if mode == "theory" { item.theory_wrapper } else { item.practical_wrapper }
-
     let core = [#heading(level: level)[#(item.heading)(terms)]]
     if intro != none { core += intro(terms) }
     if body != none { core += body(terms) }
     if summary != none { core += summary(terms) }
-
     let output = if wrapper == none { core } else { wrapper(core) }
     if after != none { output += after(terms) }
     output
   }
 }
 
-#let all-concepts(sections) = {
-  let result = ()
-  for section in sections {
-    for item in section.concepts {
-      result.push(item)
+#let render-graph(concepts, terms, mode: "theory") = {
+  let graph = normalize-relations(concepts)
+  let order = ordered-keys(concepts, graph)
+  let by-key = (:)
+  for item in concepts { by-key.insert(item.key, item) }
+
+  let render-node(key, level) = {
+    let output = render-concept(by-key.at(key), terms, mode: mode, level: level)
+    for child in order.filter(candidate => graph.parents.at(candidate).len() == 1 and graph.parents.at(candidate).first() == key) {
+      let child-output = render-node(child, level + 1)
+      if child-output != none { output += child-output }
     }
-  }
-  result
-}
-
-#let build-vocabulary(sections) = {
-  let result = (:)
-  for section in sections {
-    assert(not section.key in result, message: "duplicate section key: " + section.key)
-    result.insert(section.key, section.term)
-    for item in section.concepts {
-      assert(not item.key in result, message: "duplicate concept key: " + item.key)
-      result.insert(item.key, item.term)
-    }
-  }
-  result
-}
-
-#let render-theory-chapter(sections, terms) = {
-  let output = [
-    #heading(level: 1)[#finalized[Agentické AI: Vymezení konceptů - Teoretická část]]
-    #finalized[Úvod]
-  ]
-
-  for section in sections {
-    output += [#heading(level: 2)[#(section.heading)(terms)]]
-    if section.theory_prelude != none { output += (section.theory_prelude)(terms) }
-    if section.theory_intro_heading != none {
-      output += [#heading(level: 3)[#(section.theory_intro_heading)(terms)]]
-    }
-    if section.theory_intro != none { output += (section.theory_intro)(terms) }
-
-    for item in section.concepts {
-      let rendered = render-concept(item, terms, mode: "theory", level: 3)
-      if rendered != none { output += rendered }
-    }
-
-    if section.theory_summary != none { output += (section.theory_summary)(terms) }
+    output
   }
 
+  let output = []
+  for key in order.filter(candidate => graph.parents.at(candidate).len() == 0) {
+    let rendered = render-node(key, 2)
+    if rendered != none { output += rendered }
+  }
   output
 }
 
-#let render-practical-chapter(sections, terms) = {
-  let output = [
-    #heading(level: 1)[#finalized[DarkFactory: Architektura harnessu - Praktická část]]
-    #finalized[Úvod]
-  ]
+#let render-theory-chapter(concepts, terms) = [
+  #heading(level: 1)[#finalized[Agentické AI: Vymezení konceptů - Teoretická část]]
+  #finalized[Úvod]
+  #render-graph(concepts, terms, mode: "theory")
+]
 
-  for section in sections {
-    let active = section.concepts.filter(item => item.practical_enabled)
-    if active.len() > 0 {
-      if section.practical_prelude != none { output += (section.practical_prelude)(terms) }
-
-      if section.practical_grouped {
-        output += [#heading(level: 2)[#(section.heading)(terms)]]
-        if section.practical_intro_heading != none {
-          output += [#heading(level: 3)[#(section.practical_intro_heading)(terms)]]
-        }
-        if section.practical_intro != none { output += (section.practical_intro)(terms) }
-        for item in active {
-          let rendered = render-concept(item, terms, mode: "practical", level: 3)
-          if rendered != none { output += rendered }
-        }
-      } else {
-        if section.practical_intro != none { output += (section.practical_intro)(terms) }
-        for item in active {
-          let rendered = render-concept(item, terms, mode: "practical", level: 2)
-          if rendered != none { output += rendered }
-        }
-      }
-
-      if section.practical_summary != none { output += (section.practical_summary)(terms) }
-    }
-  }
-
-  output
-}
+#let render-practical-chapter(concepts, terms) = [
+  #heading(level: 1)[#finalized[DarkFactory: Architektura harnessu - Praktická část]]
+  #finalized[Úvod]
+  #render-graph(concepts, terms, mode: "practical")
+]
