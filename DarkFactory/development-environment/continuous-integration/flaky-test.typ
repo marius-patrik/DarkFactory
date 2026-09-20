@@ -14,11 +14,16 @@
 #let item = concept(
   key: "flaky_test",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Nestálé testy oslabují roli CI jako deterministické zpětné vazby. Agent může náhodné selhání mylně interpretovat jako regresi a začít měnit správný kód; proto je vhodné zdroje nedeterminismu omezovat a podezřelé běhy ověřovat opakováním v čistém prostředí.
 ]
   ],
-  relations: ((type: "dependency", target: "continuous_integration"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "continuous_integration"),),
 )
