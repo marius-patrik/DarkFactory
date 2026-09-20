@@ -655,6 +655,8 @@ for dependency in (
     "lucide-animated",
     "lucide-react",
     "pdfjs-dist",
+    "@monaco-editor/react",
+    "monaco-editor",
     "react-markdown",
     "rehype-raw",
     "remark-gfm",
@@ -673,8 +675,8 @@ for required in (
     "MinusIcon",
     "PlusIcon",
     "RefreshCwIcon",
-    "PanelLeftIcon",
-    "PanelRightIcon",
+    "FilesIcon",
+    "FolderTreeIcon",
     "ModePicker",
     "FormatPicker",
     "CompiledArtifactView",
@@ -688,15 +690,17 @@ for required in (
 ):
     if required not in app_source:
         fail(f"React viewer missing UI contract: {required}")
-if app_source.count('className="identity-separator"') < 2:
-    fail("toolbar path must preserve work/chapter/page separators")
+if app_source.count('className="identity-separator"') < 1:
+    fail("toolbar path must preserve work/chapter separation")
 for required in ('format={format}', 'pdfHref={pdfTarget}', 'markdownHref={markdownTarget}', 'htmlHref={htmlTarget}'):
     if required not in app_source:
         fail(f"compiled-format path selector missing contract: {required}")
 
 for required in ('className="path-page-switcher"', 'className="path-page-control"', 'label="Previous page"', 'label="Next page"'):
     if required not in app_source:
-        fail(f"page switcher must live at the tail of the path navigation: {required}")
+        fail(f"page navigation missing contract: {required}")
+if app_source.index('className="path-page-switcher"') > app_source.index('label="Refresh document"'):
+    fail("page navigation must be left of the refresh button")
 
 for required in (
     "ChapterPicker",
@@ -708,7 +712,9 @@ for required in (
     "FileCode2Icon",
     "Code2Icon",
     "PencilLineIcon",
-    'mode === "review" ? "Koncept" : mode === "raw" ? "Raw" : "Compiled"',
+    "EyeIcon",
+    "BracesIcon",
+    'mode === "review" ? "Edit" : mode === "raw" ? "Raw" : "Viewer"',
 ):
     if required not in app_source:
         fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
@@ -727,17 +733,41 @@ if 'label="Home"' in app_source:
 if 'className="page-control"' in app_source:
     fail("legacy bottom-status page switcher must not return")
 if "peerTarget" in app_source:
-    fail("Compiled/Koncept switching must not use a legacy peer control")
+    fail("Viewer/Edit switching must not use a legacy peer control")
 if "window.location.href =" in app_source:
     fail("internal viewer navigation must not reload the fullscreen shell")
 for required in ("window.history.pushState", '"popstate"', "navigateViewer", "onNavigate"):
     if required not in app_source:
         fail(f"fullscreen-preserving viewer routing missing contract: {required}")
-if "Switch Final / Koncept / Review" in app_source:
-    fail("Review must remain a separate toolbar action, not a mode-select option")
-for required in ('requestedMode === "raw"', 'mode: "raw"', "rawHref={rawTarget}", 'mode === "raw" ? "Raw Markdown"'):
+if "Switch Final / Koncept / Review" in app_source or "Switch Compiled / Koncept / Raw" in app_source:
+    fail("legacy mode labels must not remain")
+for required in (
+    'Switch Viewer / Edit / Raw',
+    'requestedMode === "raw"',
+    'mode: "raw"',
+    "rawHref={rawTarget}",
+    'artifactFilename(selectedVariant, "raw", format)',
+    'const targetMode: ViewerMode = viewMode === "split" ? "final" : mode',
+    '<RawArtifactView path={renderArtifactPath} format={format}',
+):
     if required not in app_source:
-        fail(f"viewer missing Raw publication mode contract: {required}")
+        fail(f"viewer missing Viewer/Edit/Raw mode contract: {required}")
+if 'mode === "raw"\n      ? "markdown"' in app_source:
+    fail("Raw mode must preserve the selected document type")
+for required in (
+    "ActivityBar",
+    'label="Pages"',
+    'label="Files"',
+    "RepoFilesPanel",
+    'activityPanel === "files"',
+    'activityPanel !== "pages"',
+):
+    if required not in app_source:
+        fail(f"viewer missing Pages/Files activity contract: {required}")
+if '<div className="status-center">\n          {manifest?.commit' not in app_source:
+    fail("commit SHA must be centered in the status bar")
+if '<div className="status-actions">\n          {pagesAvailable && (' not in app_source:
+    fail("PDF zoom controls must live in the right status actions")
 
 compiled_artifact_source = Path("web/src/compiled-artifact.tsx").read_text(encoding="utf-8")
 for required in (
@@ -747,12 +777,20 @@ for required in (
     '<ReactMarkdown',
     'remarkPlugins={[remarkGfm]}',
     'rehypePlugins={[rehypeRaw]}',
-    'raw-markdown-artifact',
-    'data-theme',
+    'export function RawArtifactView',
+    'Editor, { loader } from "@monaco-editor/react"',
+    'import * as monaco from "monaco-editor"',
+    'editor.worker?worker',
+    'html.worker?worker',
+    'response.arrayBuffer()',
+    'hexDump(bytes)',
+    'language={language}',
+    'readOnly: true',
+    'theme={editorTheme}',
     'theme: "dark" | "light" | "oled"',
 ):
     if required not in compiled_artifact_source:
-        fail(f"compiled artifact viewer must render generated files directly: {required}")
+        fail(f"artifact viewer missing rendered/Monaco contract: {required}")
 
 icon_source = Path("web/src/components/animated-icon.tsx").read_text(encoding="utf-8")
 for required in ("lucide-animated", "lucide-react", "STATIC_FALLBACKS"):
@@ -766,6 +804,11 @@ for required in (
     "FileCode2Icon: FileCode2",
     "Code2Icon: Code2",
     "PencilLineIcon: PencilLine",
+    "EyeIcon: Eye",
+    "BracesIcon: Braces",
+    "FilesIcon: Files",
+    "FolderIcon: Folder",
+    "FolderTreeIcon: FolderTree",
     "PanelLeftRightIcon: PanelsLeftRight",
     "BookOpenIcon: BookOpen",
     "CircleIcon: Circle",
@@ -824,8 +867,10 @@ for required in (
     "pdf-link-overlay",
     "stopImmediatePropagation",
     "window.open(annotation.url",
-    "loadTopLevelChapters",
+    "loadOutlineChapters",
     "pdf.getOutline",
+    "item.items",
+    "level: number",
     "chapters: DocumentChapter[]",
 ):
     if required not in pdf_source:
@@ -843,10 +888,10 @@ for required in (
     'requestedFormat === "markdown"',
     'requestedFormat === "html"',
     'requestedMode === "raw"',
-    'Loading school Compiled PDF…',
+    'Loading school Viewer PDF…',
 ):
     if required not in app_source:
-        fail(f"viewer root missing school/compiled/raw/PDF default contract: {required}")
+        fail(f"viewer root missing school/viewer/edit/raw/PDF default contract: {required}")
 
 vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
 for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
@@ -911,9 +956,15 @@ site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
 for required in (
     'WEB_DIST = Path("web/dist")',
     "shutil.copytree(WEB_DIST, SITE)",
-    "rendered Markdown + compiled Typst HTML",
+    "Monaco Raw + rendered Markdown + compiled Typst HTML",
     '"formats": ["pdf", "markdown", "html"]',
-    '"modes": ["compiled", "concept", "raw"]',
+    '"modes": ["viewer", "edit", "raw"]',
+    '"repo_tree": "repo-tree.json"',
+    '"repository_url": "https://github.com/marius-patrik/DarkFactory-Paper"',
+    '"Monaco Editor"',
+    "tracked_repo_tree",
+    '["git", "ls-files", "-z"]',
+    'SITE / "repo-tree.json"',
     'variant["artifacts"][mode].items()',
     '"shadcn/ui"',
     '"Motion"',
