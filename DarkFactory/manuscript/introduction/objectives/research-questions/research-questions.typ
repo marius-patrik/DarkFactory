@@ -23,7 +23,9 @@
   Otázka VO1 je formulována binárně („Lze vývojový proces strukturovat...“), což svádí k tautologické odpovědi. Rigorózní oponent bude žádat empirické vymezení: Jaké procento rutinních úloh (např. oprava chyby se selhávajícím testem vs. komplexní refaktoring) harness reálně odbaví bez ručního zásahu do kódu? Doporučujeme otázku v obhajobě doplnit o kritérium mezní složitosti úkolu a míry redukce kognitivní zátěže člověka.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Výzkumné otázky soustřeďují hodnocení na míru samostatnosti agentního procesu, řízení divergence a zachování správného pracovního kontextu během delších úloh.
+  ],
   visual: none,
   examples: (),
   attachments: (),
