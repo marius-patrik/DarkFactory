@@ -38,7 +38,6 @@ import {
 
 type AnimatedIconProps = HTMLAttributes<HTMLDivElement> & {
   names: string | string[];
-  size?: number;
 };
 
 type LucideAnimatedComponent = ComponentType<
@@ -127,12 +126,11 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
 
 export function AnimatedIcon({
   names,
-  size = 18,
   className,
   ...props
 }: AnimatedIconProps) {
   const candidates = Array.isArray(names) ? names : [names];
-  const glyphSize = size === 16 ? size : 16;
+  const glyphSize = 16;
   const animatedRegistry = AnimatedIcons as unknown as Record<string, LucideAnimatedComponent>;
 
   const Animated = candidates.map((name) => animatedRegistry[name]).find(Boolean);
