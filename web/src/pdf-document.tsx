@@ -767,6 +767,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
   function PdfDocumentView(
     {
       pdfPath,
+      contentIndex = [],
       embedded,
       sidebarSide,
       sidebarMode,
