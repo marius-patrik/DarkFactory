@@ -175,6 +175,28 @@
   result.map(key => items.find(item => item.key == key))
 }
 
+#let order-folders(nodes, graph) = {
+  let keyed = nodes.filter(node => node.section != none)
+  let unkeyed = nodes.filter(node => node.section == none)
+  let keys = keyed.map(node => node.section.key)
+  let result = ()
+  let remaining = keys
+  while remaining.len() > 0 {
+    let progressed = false
+    for key in remaining {
+      let deps = graph.dependencies.at(key)
+      if deps.filter(dep => dep in keys).all(dep => dep in result) {
+        result.push(key)
+        remaining = remaining.filter(candidate => candidate != key)
+        progressed = true
+        break
+      }
+    }
+    assert(progressed, message: "sibling section dependency cycle")
+  }
+  result.map(key => keyed.find(node => node.section.key == key)) + unkeyed
+}
+
 #let folder-has-content(node, mode) = {
   let section-content = node.section != none and concept-enabled(node.section, mode)
   let direct-content = node.concepts.any(item => concept-enabled(item, mode))
@@ -199,7 +221,7 @@
       if rendered != none { output += rendered }
     }
 
-    for child in node.children {
+    for child in order-folders(node.children, graph) {
       let rendered = render-folder(child, terms, graph, mode, level: child-level)
       if rendered != none { output += rendered }
     }
