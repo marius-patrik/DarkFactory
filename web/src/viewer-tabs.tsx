@@ -25,47 +25,40 @@ export function AppTabBar({
     <div className="app-tabbar" role="tablist" aria-label="Open tabs">
       <div className="app-tabs">
         {tabs.map((tab) => (
-          <button
+          <div
             key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={tab.id === activeId}
             className={tab.id === activeId ? "app-tab active" : "app-tab"}
-            onClick={() => onSelect(tab.id)}
             title={tab.path || tab.title}
           >
-            <AnimatedIcon
-              names={
-                tab.kind === "settings"
-                  ? ["SettingsIcon"]
-                  : tab.kind === "source"
-                    ? ["FileCode2Icon", "FileIcon"]
-                    : ["FileTextIcon"]
-              }
-            />
-            <span className="app-tab-title">{tab.title}</span>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab.id === activeId}
+              className="app-tab-main"
+              onClick={() => onSelect(tab.id)}
+            >
+              <AnimatedIcon
+                names={
+                  tab.kind === "settings"
+                    ? ["SettingsIcon"]
+                    : tab.kind === "source"
+                      ? ["FileCode2Icon", "FileIcon"]
+                      : ["FileTextIcon"]
+                }
+              />
+              <span className="app-tab-title">{tab.title}</span>
+            </button>
             {tab.id !== "document" && (
-              <span
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 className="app-tab-close"
                 aria-label={"Close " + tab.title}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClose(tab.id);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onClose(tab.id);
-                  }
-                }}
+                onClick={() => onClose(tab.id)}
               >
                 <AnimatedIcon names={["XIcon"]} />
-              </span>
+              </button>
             )}
-          </button>
+          </div>
         ))}
       </div>
       <TooltipAction
