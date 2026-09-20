@@ -1296,8 +1296,9 @@ a {
   .work-title {
     max-width: 37vw;
   }
+}
 
-  @media (max-width: 760px) {
+@media (max-width: 760px) {
   .toolbar-main {
     padding-inline: var(--ui-pad);
   }
@@ -1409,7 +1410,7 @@ a {
     gap: 0;
   }
 
-  .statusbar   .statusbar   .status-center,
+  .statusbar .status-center,
   .status-actions {
     gap: 0;
   }
