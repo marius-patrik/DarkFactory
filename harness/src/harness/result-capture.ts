@@ -1,5 +1,5 @@
 import type { AssistantMessageEventStream, Context, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
-import { z } from "zod";
+import type { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { captureContext, forceCaptureTool, readCapture } from "./capture-request.ts";
 
