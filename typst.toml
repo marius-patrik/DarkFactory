@@ -1,4 +1,4 @@
 [package]
-name = "odborna-prace"
+name = "darkfactory-books"
 version = "0.5.0"
 entrypoint = "main.typ"
