@@ -14,8 +14,12 @@
 #let item = concept(
   key: "development_environment",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: none,
-  practical_enabled: false,
+  definition: none,
+  description: none,
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: (),
 )
