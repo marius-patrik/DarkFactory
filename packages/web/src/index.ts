@@ -9,7 +9,10 @@ export { DarkFactoryShell, Router, Route, useRouter, RouteLink, type RouteConfig
 export {
 	QuotaDashboardView,
 	quotaDashboardModels,
+	quotaDashboardProviders,
+	type QuotaAccountView,
 	type QuotaDashboardState,
 	type QuotaLimitView,
 	type QuotaModelView,
+	type QuotaProviderView,
 } from "./quota";
