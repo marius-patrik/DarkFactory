@@ -869,6 +869,7 @@ for required in (
     "font-size: 12pt",
     "line-height: 1.5",
     "padding: 2.5cm 2.5cm 2.5cm 3cm",
+    'nav[role="doc-toc"]',
 ):
     if required not in publication_css_source:
         fail(f"shared publication stylesheet missing PDF-aligned contract: {required}")
@@ -884,7 +885,6 @@ for required in (
     'PUBLICATION_CSS = Path("web/src/publication.css")',
     'class="publication-surface"',
     'style_compiled_html',
-    'nav[role="doc-toc"]',
     'html_to_markdown',
 ):
     if required not in web_export_source:
