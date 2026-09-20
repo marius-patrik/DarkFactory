@@ -10,11 +10,7 @@ import type { ProviderConfig } from "../providers/schema.ts";
 import { classifyFailure, type FailureClassification, type FailureKind } from "../quota.ts";
 import { redactErrorMessage } from "../redaction.ts";
 import type { OutcomeStore } from "../router/outcomes.ts";
-import {
-	candidateTierKey,
-	nextCapabilityTier,
-	type CapabilityEscalationPolicy,
-} from "../router/tiers.ts";
+import { type CapabilityEscalationPolicy, candidateTierKey, nextCapabilityTier } from "../router/tiers.ts";
 import type { TaskKind } from "../router/types.ts";
 import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions } from "./runtime.ts";
 
@@ -394,10 +390,7 @@ export class FailoverSupervisor {
 		if (targetTier && candidateIndices.length === 0) return false;
 		const orderedIndices = targetTier
 			? candidateIndices
-			: [
-					...candidateIndices.slice(this.activeIndex + 1),
-					...candidateIndices.slice(0, this.activeIndex),
-				];
+			: [...candidateIndices.slice(this.activeIndex + 1), ...candidateIndices.slice(0, this.activeIndex)];
 
 		const activate = async (index: number): Promise<boolean> => {
 			const candidate = this.options.chain[index]!;
