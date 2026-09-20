@@ -2,6 +2,7 @@ import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { loadCiConfig } from "./config.ts";
 import { runCiDoctor } from "./doctor.ts";
+import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
 import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 import { getCheckStatus, getRunLogs, getWorkflowRuns, rerunWorkflowRun } from "./status.ts";
@@ -43,6 +44,38 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 	const isJson = hasFlag(args, "--json");
 
 	switch (subcommand) {
+		case "matrix": {
+			const capabilitiesRoot = getOption(args, "--capabilities-root");
+			const state = await resolveDetectedQuality(repoPath, capabilitiesRoot);
+			log(JSON.stringify({
+				packages: state.evidence.packages,
+				domains: state.evidence.domains,
+				ecosystems: state.evidence.ecosystems,
+				matrix: state.matrix,
+				gaps: state.resolution.gaps,
+			}, null, 2));
+			return 0;
+		}
+
+		case "quality": {
+			const capabilitiesRoot = getOption(args, "--capabilities-root");
+			const executions = await runDetectedQuality(repoPath, { capabilitiesRoot });
+			if (isJson) {
+				log(JSON.stringify(executions, null, 2));
+			} else {
+				for (const execution of executions) {
+					if (!execution.supported) {
+						log(`[unsupported] ${execution.packageId} ${execution.kind}: ${execution.reason ?? "missing action"}`);
+						continue;
+					}
+					const result = execution.result!;
+					log(`[${result.exitCode === 0 ? "pass" : "fail"}] ${execution.packageId} ${execution.kind}: ${execution.command}`);
+					if (result.outputTail) log(result.outputTail);
+				}
+			}
+			return executions.some((execution) => execution.result && execution.result.exitCode !== 0) ? 1 : 0;
+		}
+
 		case "install": {
 			const dryRun = hasFlag(args, "--dry-run");
 			const force = hasFlag(args, "--force");
@@ -278,6 +311,8 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			}
 
 			log("CI Doctor Report:");
+			const detected = report.checks.repository;
+			log(`  Repository: [${detected.status.toUpperCase()}] ${detected.message}`);
 			const cf = report.checks.config;
 			log(`  Config:     [${cf.status.toUpperCase()}] ${cf.message}`);
 			const wf = report.checks.workflows;
@@ -292,7 +327,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		case "help":
 		default:
 			log(`df ci commands:
-  df ci install [--repo <path>] [--dry-run] [--force]
+  df ci matrix  [--repo <path>] [--capabilities-root <path>]\n  df ci quality [--repo <path>] [--capabilities-root <path>] [--json]\n  df ci install [--repo <path>] [--dry-run] [--force]
   df ci update  [--repo <path>] [--dry-run] [--force]
   df ci status  [--repo <path>] [--pr <n> | --ref <r>] [--json]
   df ci runs    [--repo <path>] [--workflow <w>] [--limit <n>] [--json]
