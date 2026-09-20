@@ -1,7 +1,7 @@
 #import "schema.typ": build-vocabulary, render-theory-chapter, render-practical-chapter
-#import "01-development-environment/index.typ" as development_environment
-#import "02-language-models/index.typ" as language_models
-#import "03-agentic-engineering/index.typ" as agentic_engineering
+#import "development-environment/index.typ" as development_environment
+#import "language-models/index.typ" as language_models
+#import "agentic-engineering/index.typ" as agentic_engineering
 
 #let folders = (
   development_environment.node,

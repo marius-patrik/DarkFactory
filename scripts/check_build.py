@@ -233,9 +233,9 @@ concept_root = Path("concepts")
 concept_schema = concept_root / "schema.typ"
 concept_catalog = concept_root / "index.typ"
 section_dirs = (
-    concept_root / "01-development-environment",
-    concept_root / "02-language-models",
-    concept_root / "03-agentic-engineering",
+    concept_root / "development-environment",
+    concept_root / "language-models",
+    concept_root / "agentic-engineering",
 )
 for required in (concept_schema, concept_catalog, *(section / "index.typ" for section in section_dirs)):
     if not required.is_file() or required.stat().st_size == 0:
@@ -264,9 +264,9 @@ for forbidden in ('type in ("parent", "child"', 'edge.type == "parent"', 'edge.t
 
 catalog_source = concept_catalog.read_text(encoding="utf-8")
 for required in (
-    '"01-development-environment/index.typ"',
-    '"02-language-models/index.typ"',
-    '"03-agentic-engineering/index.typ"',
+    '"development-environment/index.typ"',
+    '"language-models/index.typ"',
+    '"agentic-engineering/index.typ"',
     "#let folders = (",
     "#let vocabulary = build-vocabulary(folders)",
     "#let render-theory() = render-theory-chapter(folders, vocabulary)",
@@ -339,10 +339,10 @@ if unused_concepts:
     fail("canonical concepts not utilized by the thesis: " + ", ".join(unused_concepts))
 
 required_folder_manifests = {
-    "development": concept_root / "01-development-environment/index.typ",
+    "development": concept_root / "development-environment/index.typ",
     "git": concept_root / "01-development-environment/version-control/git/index.typ",
     "language_model": concept_root / "02-language-models/language-model/index.typ",
-    "agentic": concept_root / "03-agentic-engineering/index.typ",
+    "agentic": concept_root / "agentic-engineering/index.typ",
     "harness": concept_root / "03-agentic-engineering/agent-harness/index.typ",
     "prompt_engineering": concept_root / "03-agentic-engineering/prompt-engineering/index.typ",
     "agent_loop": concept_root / "03-agentic-engineering/agent-harness/agent-loop/index.typ",
