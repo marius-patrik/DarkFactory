@@ -179,9 +179,10 @@
 }
 
 #let folder-has-content(node, mode) = {
-  (node.section != none and concept-enabled(node.section, mode))
-  or node.concepts.any(item => concept-enabled(item, mode))
-  or node.children.any(child => folder-has-content(child, mode))
+  let section-content = node.section != none and concept-enabled(node.section, mode)
+  let direct-content = node.concepts.any(item => concept-enabled(item, mode))
+  let child-content = node.children.any(child => folder-has-content(child, mode))
+  section-content or direct-content or child-content
 }
 
 #let render-folder(node, terms, graph, mode, level: 2) = {
