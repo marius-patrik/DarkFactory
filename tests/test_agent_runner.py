@@ -233,6 +233,55 @@ def test_verification_helpers_skip_absent_toolchains(tmp_path):
     assert agent_runner.format_repository(str(tmp_path)) == []
 
 
+def test_node_helpers_use_bun_when_npm_is_absent(monkeypatch, tmp_path):
+    """A Bun-only agent image must run declared package scripts without reaching for npm.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        tmp_path: Pytest-provided temporary repository.
+    """
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"format": "echo format", "test": "echo test"}}),
+        encoding="utf-8",
+    )
+    seen = []
+
+    def which(name):
+        return "/usr/local/bin/bun" if name == "bun" else None
+
+    def run(cmd, **kwargs):
+        seen.append(cmd)
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(agent_runner.shutil, "which", which)
+    monkeypatch.setattr(agent_runner.subprocess, "run", run)
+
+    assert agent_runner.format_repository(str(tmp_path)) == ["web formatter"]
+    assert agent_runner.verify_repository(str(tmp_path)).returncode == 0
+    assert ["bun", "run", "format"] in seen
+    assert ["bun", "run", "test"] in seen
+    assert not any(cmd[0] == "npm" for cmd in seen)
+
+
+def test_node_verification_fails_cleanly_without_a_package_runner(monkeypatch, tmp_path):
+    """A declared test with no runner reports a verification failure instead of raising.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+        tmp_path: Pytest-provided temporary repository.
+    """
+    (tmp_path / "package.json").write_text(
+        json.dumps({"scripts": {"test": "echo test"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(agent_runner.shutil, "which", lambda _name: None)
+
+    result = agent_runner.verify_repository(str(tmp_path))
+
+    assert result.returncode == 127
+    assert "no Bun/npm/pnpm/yarn runner" in result.stderr
+
+
 def test_runner_defaults_to_this_repository():
     """The runner points at DarkFactory by default."""
     with open(
