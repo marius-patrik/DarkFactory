@@ -15,9 +15,13 @@
   key: "transformer",
   term: terminology,
   heading: terms => [#term(terms.transformer, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#unconfirmed[
+Současné velké jazykové modely jsou typicky realizovány transformerovou architekturou. Pro generování textu se často používá dekodérové uspořádání, které nad dosavadní sekvencí vytváří reprezentace potřebné k odhadu následujícího tokenu.
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
