@@ -1,10 +1,19 @@
-import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import { resolveDetectedRepositoryActions } from "@darkfactory/capability/actions";
+import type { CapabilityDefinition } from "@darkfactory/capability";
+import { resolveRepositoryActions } from "@darkfactory/capability/actions";
+import { discoverCapabilities, resolveCapabilities } from "@darkfactory/capability/loader";
+import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { Application, ReflectionKind, type JSONOutput } from "typedoc";
-import { compileDocsContentGraph, type DocsApiReference, type DocsApiSymbol, type DocsContentGraph } from "./content.ts";
+import {
+	compileDocsContentGraph,
+	type DocsApiReference,
+	type DocsApiSymbol,
+	type DocsCapabilitySummary,
+	type DocsContentGraph,
+	type DocsRepositorySummary,
+} from "./content.ts";
 import { loadDocsConfig, type DocsConfig, type DocsTypeScriptApiConfig } from "./config.ts";
 
 /** Inputs required to extract a TypeScript API model. */
@@ -83,6 +92,44 @@ export async function compileDocsContentGraphWithApi(repoRoot: string, config: D
 	return compileDocsContentGraph(repoRoot, config, apiReferenceFromTypeDoc(project));
 }
 
+/** Projects canonical repository evidence and applicable capability definitions into browser-safe docs metadata. */
+export function documentationMetadata(
+	evidence: RepositoryEvidence,
+	definitions: readonly CapabilityDefinition[],
+): { repository: DocsRepositorySummary; capabilities: readonly DocsCapabilitySummary[] } {
+	const defaultBranch = evidence.repoDf.identity?.default_branch;
+	const repository: DocsRepositorySummary = {
+		...(evidence.repoDfPath
+			? { repoDfPath: (relative(evidence.root, evidence.repoDfPath) || ".").replaceAll("\\", "/") }
+			: {}),
+		...(typeof defaultBranch === "string" ? { defaultBranch } : {}),
+		ecosystems: evidence.ecosystems,
+		domains: evidence.domains,
+		packages: evidence.packages.map((pkg) => ({
+			id: pkg.id,
+			path: pkg.path,
+			name: pkg.name,
+			ecosystem: pkg.ecosystem,
+			packageManager: pkg.packageManager,
+			domains: pkg.domains,
+			apiEntryPoints: pkg.apiEntryPoints,
+		})),
+	};
+	const capabilities = definitions.map((definition) => ({
+		id: definition.id,
+		version: definition.version,
+		description: definition.description,
+		domains: definition.domains ?? [],
+		detectors: (definition.detectors ?? []).map((entry) => entry.id),
+		commands: (definition.commands ?? []).map((entry) => entry.name),
+		graph: (definition.graph ?? []).map((entry) => ({ id: entry.id, nodeKinds: entry.nodeKinds })),
+		hooks: (definition.hooks ?? []).map((entry) => `${entry.id}:${entry.event}`),
+		verification: (definition.verification ?? []).map((entry) => entry.id),
+		docs: definition.surfaces?.docs ?? [],
+	}));
+	return { repository, capabilities };
+}
+
 /**
  * Compiles documentation using TypeScript API entry points from the canonical repository detector/action resolver.
  * docs.df continues to own TypeDoc settings; detected package evidence owns which exported APIs are present.
@@ -92,22 +139,24 @@ export async function compileDocsContentGraphWithDetectedApi(
 	options: { config?: DocsConfig; capabilitiesRoot?: string } = {},
 ): Promise<DocsContentGraph> {
 	const config = options.config ?? loadDocsConfig(repoRoot);
-	const configured = config.api?.typescript;
-	if (!configured) return compileDocsContentGraph(repoRoot, config);
-
 	const evidence = await detectRepositoryEvidence(repoRoot);
-	const resolution = await resolveDetectedRepositoryActions(
-		evidence,
-		options.capabilitiesRoot ?? resolve(repoRoot, "capabilities"),
-	);
+	const capabilitiesRoot = options.capabilitiesRoot ?? resolve(repoRoot, "capabilities");
+	const definitions = await discoverCapabilities(capabilitiesRoot);
+	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;
+	const resolution = resolveRepositoryActions(evidence, applicable);
+	const metadata = documentationMetadata(evidence, applicable);
+	const configured = config.api?.typescript;
+
+	if (!configured) return { ...compileDocsContentGraph(repoRoot, config), ...metadata };
+
 	const entryPoints = resolution.packages.flatMap(({ actions }) => {
 		const action = actions.docs_extract;
-		const metadata = action.metadata;
-		if (!action.supported || metadata?.extractor !== "typedoc" || !Array.isArray(metadata.entryPoints)) return [];
-		return metadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
+		const actionMetadata = action.metadata;
+		if (!action.supported || actionMetadata?.extractor !== "typedoc" || !Array.isArray(actionMetadata.entryPoints)) return [];
+		return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
 	});
 	const uniqueEntryPoints = [...new Set(entryPoints)].sort();
-	if (uniqueEntryPoints.length === 0) return compileDocsContentGraph(repoRoot, config);
+	if (uniqueEntryPoints.length === 0) return { ...compileDocsContentGraph(repoRoot, config), ...metadata };
 
 	const detectedConfig: DocsConfig = {
 		...config,
@@ -119,5 +168,6 @@ export async function compileDocsContentGraphWithDetectedApi(
 			},
 		},
 	};
-	return compileDocsContentGraphWithApi(repoRoot, detectedConfig);
+	return { ...(await compileDocsContentGraphWithApi(repoRoot, detectedConfig)), ...metadata };
 }
+
