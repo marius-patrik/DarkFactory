@@ -5,6 +5,7 @@ import type { QuotaEngine } from "../limits/quota-engine.ts";
 import { assessCandidate, estimateTask } from "../limits/routing.ts";
 import type { OutcomeStore } from "./outcomes.ts";
 import { type CheapClassifier, classifyTaskWithDiagnostics } from "./profile.ts";
+import { minimumTierFor, tierRank } from "./tiers.ts";
 import type {
 	ModelCapability,
 	RankedCandidate,
@@ -151,6 +152,23 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 		throw dataCollectionError(profile, allowedCollections, universe);
 	}
 
+	const capabilityTiers = dependencies.config.capabilityTiers ?? [];
+	const defaultCapabilityTier = dependencies.config.defaultTier ?? capabilityTiers[0]?.id ?? "standard";
+	const minCapabilityTier = minimumTierFor(
+		profile.difficulty,
+		profile.minTier,
+		dependencies.config.difficultyTiers,
+		defaultCapabilityTier,
+	);
+	const configuredMinRank = tierRank(minCapabilityTier, capabilityTiers);
+	if (capabilityTiers.length > 0 && configuredMinRank < 0)
+		throw new Error(`Unknown minimum capability tier: ${minCapabilityTier}`);
+	const capabilityRank = (model: ModelCapability): number => {
+		if (capabilityTiers.length === 0) return 0;
+		const rank = tierRank(model.capabilityTier ?? defaultCapabilityTier, capabilityTiers);
+		return rank < 0 ? Number.MAX_SAFE_INTEGER : rank;
+	};
+
 	const penalties =
 		dependencies.outcomes && dependencies.config.learning?.enabled !== false
 			? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.())
@@ -165,7 +183,14 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			const qualityKind = policy?.prefer.quality ?? profile.kind;
 			const quality = model.quality[qualityKind] ?? 0;
 			const learning = penalties.get(candidateKey(model.candidate)) ?? 0;
-			const capabilityPenalty = profile.needs.some((need) => missingNeed(model, need, profile)) ? 10_000 : 0;
+			const missing = profile.needs.find((need) => missingNeed(model, need, profile));
+			const modelCapabilityRank = capabilityRank(model);
+			const belowMinimum =
+				configuredMinRank >= 0 &&
+				modelCapabilityRank !== Number.MAX_SAFE_INTEGER &&
+				modelCapabilityRank < configuredMinRank;
+			const unknownCapabilityTier = capabilityTiers.length > 0 && modelCapabilityRank === Number.MAX_SAFE_INTEGER;
+			const capabilityPenalty = missing || belowMinimum || unknownCapabilityTier ? 10_000 : 0;
 			const orderScore =
 				preferredIndex === undefined ? 1_000 : forcedOrder ? preferredIndex * 100 : preferredIndex / 10_000;
 			const score =
@@ -175,18 +200,35 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 				learning +
 				(forced ? 0 : capabilityPenalty) +
 				index / 100_000;
-			return { model, score, quality, learning };
+			return {
+				model,
+				score,
+				quality,
+				learning,
+				missing,
+				modelCapabilityRank,
+				belowMinimum,
+				unknownCapabilityTier,
+			};
 		})
-		.sort((a, b) => a.score - b.score);
+		.sort((a, b) => {
+			const aEligible = !a.missing && !a.belowMinimum && !a.unknownCapabilityTier;
+			const bEligible = !b.missing && !b.belowMinimum && !b.unknownCapabilityTier;
+			if (aEligible !== bEligible) return aEligible ? -1 : 1;
+			if (aEligible && bEligible && a.modelCapabilityRank !== b.modelCapabilityRank)
+				return a.modelCapabilityRank - b.modelCapabilityRank;
+			return a.score - b.score;
+		});
 	const now = dependencies.now?.() ?? Date.now();
 	const isForced = !!forced;
 	const adjusted = await Promise.all(
 		scored.map(async (item) => {
-			const missing =
-				forced && (source === "explicit" || source === "graph")
-					? undefined
-					: profile.needs.find((need) => missingNeed(item.model, need, profile));
+			const missing = forced && (source === "explicit" || source === "graph") ? undefined : item.missing;
 			let skip: string | undefined = missing ? `missing ${missing}` : undefined;
+			if (!skip && item.unknownCapabilityTier)
+				skip = `unknown capability tier ${item.model.capabilityTier ?? defaultCapabilityTier}`;
+			if (!skip && item.belowMinimum)
+				skip = `capability tier ${item.model.capabilityTier ?? defaultCapabilityTier} is below required ${minCapabilityTier}`;
 			if (!skip && dependencies.ledger) {
 				const entries = await dependencies.ledger.forCandidate(item.model.candidate, now);
 				const estimate = estimateTask(input.prompt, profile.size, profile.contextTokens);
@@ -214,13 +256,22 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			return { item, skip, quotaStatus };
 		}),
 	);
-	adjusted.sort((a, b) => a.item.score - b.item.score);
+	adjusted.sort((a, b) => {
+		const aEligible = !a.skip;
+		const bEligible = !b.skip;
+		if (aEligible !== bEligible) return aEligible ? -1 : 1;
+		if (aEligible && bEligible && a.item.modelCapabilityRank !== b.item.modelCapabilityRank)
+			return a.item.modelCapabilityRank - b.item.modelCapabilityRank;
+		return a.item.score - b.item.score;
+	});
 	const ranked: RankedCandidate[] = [];
 	for (const entry of adjusted) {
 		const { item, skip, quotaStatus } = entry;
 		const details: string[] = [
 			...classified.details.map((detail) => `profile: ${detail}`),
-			`tier ${item.model.limitTier}`,
+			`capacity tier ${item.model.limitTier}`,
+			`capability tier ${item.model.capabilityTier ?? defaultCapabilityTier}; required >= ${minCapabilityTier}`,
+			`difficulty ${profile.difficulty ?? "unspecified"}`,
 			`quality ${item.quality}`,
 			`data collection ${item.model.collection ?? "unknown"} allowed`,
 		];
@@ -247,6 +298,7 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			reason: skip ?? (source === "policy" ? `policy ${policy?.id ?? "default"}` : `${source} selection`),
 			score: item.score,
 			details,
+			capabilityTier: item.model.capabilityTier ?? defaultCapabilityTier,
 		});
 	}
 	const rejected: RankedCandidate[] = collectionRejected.map((model, index) => {
@@ -257,19 +309,26 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			status: "skipped",
 			reason: `data collection ${JSON.stringify(collection)} is not allowed for ${profile.sensitivity} work`,
 			score: Number.POSITIVE_INFINITY,
+			capabilityTier: model.capabilityTier ?? defaultCapabilityTier,
 			details: [
 				...classified.details.map((detail) => `profile: ${detail}`),
-				`tier ${model.limitTier}`,
+				`capacity tier ${model.limitTier}`,
+				`capability tier ${model.capabilityTier ?? defaultCapabilityTier}; required >= ${minCapabilityTier}`,
 				`data collection ${JSON.stringify(collection)} rejected; allowed: ${allowedCollections
 					.map((allowed) => JSON.stringify(allowed))
 					.join(", ")}`,
 			],
 		};
 	});
+	const selectedCapabilityTier = ranked.find((item) => item.status === "chosen")?.capabilityTier;
 	return {
 		profile,
 		source: source === "policy" && !policy ? "default" : source,
 		...(policy ? { policy: policy.id } : {}),
+		...(profile.difficulty ? { difficulty: profile.difficulty } : {}),
+		minCapabilityTier,
+		...(selectedCapabilityTier ? { selectedCapabilityTier } : {}),
+		capabilityTierOrder: capabilityTiers.map((tier) => tier.id),
 		ranked,
 		rejected,
 		chain: ranked.filter((item) => item.status === "chosen").map((item) => item.candidate),

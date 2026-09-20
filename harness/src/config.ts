@@ -2,7 +2,10 @@ import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import type { CredentialFallback } from "./credentials.ts";
 import type { ProviderConfigFile } from "./providers/schema.ts";
+import { assertTierConfiguration } from "./router/tiers.ts";
 import type {
+	CapabilityTier,
+	DifficultyTierMapping,
 	LimitTier,
 	ModelCapabilityOverride,
 	ModelModality,
@@ -161,6 +164,9 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 				...(modalities ? { modalities } : {}),
 				...(quality ? { quality } : {}),
 				...(model.limitTier ? { limitTier: model.limitTier as LimitTier } : {}),
+				...(typeof model.capabilityTier === "string" && model.capabilityTier.trim()
+					? { capabilityTier: model.capabilityTier.trim() }
+					: {}),
 			};
 		}
 	}
@@ -180,6 +186,40 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 				throw new Error(`config.df router.learning.${field} must be positive`);
 		learning = value as RouterConfig["learning"];
 	}
+	let capabilityTiers: CapabilityTier[] | undefined;
+	if (record.capabilityTiers !== undefined) {
+		if (!Array.isArray(record.capabilityTiers)) throw new Error("config.df router.capabilityTiers must be an array");
+		capabilityTiers = record.capabilityTiers.map((raw, index) => {
+			if (!raw || typeof raw !== "object" || Array.isArray(raw))
+				throw new Error(`config.df router.capabilityTiers[${index}] must be an object`);
+			const tier = raw as Record<string, unknown>;
+			const id = typeof tier.id === "string" && tier.id.trim() ? tier.id.trim() : undefined;
+			if (!id) throw new Error(`config.df router.capabilityTiers[${index}].id must be a non-empty string`);
+			const match = stringArray(tier.match, `router.capabilityTiers[${index}].match`);
+			if (!match) throw new Error(`config.df router.capabilityTiers[${index}].match must be an array of valid strings`);
+			return { id, match };
+		});
+	}
+	const defaultTier =
+		record.defaultTier === undefined ? "standard" : (optionalString(record, "defaultTier") ?? "standard");
+	let difficultyTiers: DifficultyTierMapping | undefined;
+	if (record.difficultyTiers !== undefined) {
+		if (!record.difficultyTiers || typeof record.difficultyTiers !== "object" || Array.isArray(record.difficultyTiers))
+			throw new Error("config.df router.difficultyTiers must be an object");
+		const raw = record.difficultyTiers as Record<string, unknown>;
+		const difficultyTier = (name: "easy" | "medium" | "hard"): string => {
+			const value = raw[name];
+			if (typeof value !== "string" || !value.trim())
+				throw new Error(`config.df router.difficultyTiers.${name} must be a non-empty string`);
+			return value.trim();
+		};
+		difficultyTiers = {
+			easy: difficultyTier("easy"),
+			medium: difficultyTier("medium"),
+			hard: difficultyTier("hard"),
+		};
+	}
+	assertTierConfiguration(capabilityTiers, defaultTier, difficultyTiers);
 	let dataCollection: RouterConfig["dataCollection"];
 	if (record.dataCollection !== undefined) {
 		if (!record.dataCollection || typeof record.dataCollection !== "object" || Array.isArray(record.dataCollection))
@@ -199,6 +239,9 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 		...(candidates ? { candidates } : {}),
 		...(models ? { models } : {}),
 		...(learning ? { learning } : {}),
+		...(capabilityTiers ? { capabilityTiers } : {}),
+		defaultTier,
+		...(difficultyTiers ? { difficultyTiers } : {}),
 		...(dataCollection ? { dataCollection } : {}),
 	};
 }

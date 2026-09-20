@@ -49,7 +49,12 @@ describe("df run", () => {
 			join(home, "config.df"),
 			JSON.stringify({
 				defaultChain: "faux/echo@test",
-				router: { policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }] },
+				router: {
+					policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }],
+					capabilityTiers: [{ id: "light", match: ["faux/*"] }],
+					defaultTier: "light",
+					difficultyTiers: { easy: "light", medium: "light", hard: "light" },
+				},
 			}),
 			"utf8",
 		);
@@ -68,20 +73,45 @@ describe("df run", () => {
 			const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
 			return { stdout, exitCode };
 		};
-		const explained = await invoke("route", "hello", "--json", "--faux");
+		const explained = await invoke("route", "hello", "--json", "--faux", "--difficulty", "easy", "--min-tier", "light");
 		expect(explained.exitCode).toBe(0);
 		expect(JSON.parse(explained.stdout)).toMatchObject({
-			profile: { kind: "chat", size: "small" },
-			ranked: [{ status: "chosen" }],
+			profile: { kind: "chat", size: "small", difficulty: "easy", minTier: "light" },
+			difficulty: "easy",
+			minCapabilityTier: "light",
+			selectedCapabilityTier: "light",
+			ranked: [{ status: "chosen", capabilityTier: "light" }],
 		});
-		const runResult = await invoke("run", "hello", "--json", "--faux");
+		const runResult = await invoke("run", "hello", "--json", "--faux", "--difficulty", "easy", "--min-tier", "light");
 		expect(runResult.exitCode).toBe(0);
 		const events = runResult.stdout
 			.trim()
 			.split(/\r?\n/u)
 			.map((line) => JSON.parse(line) as { type: string });
 		expect(events.slice(0, 2).map((event) => event.type)).toEqual(["route", "session"]);
+		expect(events[0]).toMatchObject({
+			type: "route",
+			difficulty: "easy",
+			minCapabilityTier: "light",
+			selectedCapabilityTier: "light",
+		});
 	});
+	test("df route rejects an unknown --min-tier against configured tiers", async () => {
+		const result = await run("hello", {
+			args: ["--difficulty", "easy", "--min-tier", "missing"],
+			config: {
+				router: {
+					policies: [],
+					capabilityTiers: [{ id: "light", match: ["faux/*"] }],
+					defaultTier: "light",
+					difficultyTiers: { easy: "light", medium: "light", hard: "light" },
+				},
+			},
+		});
+		expect(result.exitCode).not.toBe(0);
+		expect(result.stderr).toContain("--min-tier must be one of: light");
+	});
+
 	test("df run records per-kind outcomes for the learning hook", async () => {
 		const result = await run("hello");
 		expect(result.exitCode).toBe(0);

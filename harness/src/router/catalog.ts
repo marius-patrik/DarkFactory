@@ -1,6 +1,7 @@
 import type { CatalogResult } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";
-import type { ModelCapability, ModelCapabilityOverride, ModelModality, RouterConfig } from "./types.ts";
+import { capabilityTierFor } from "./tiers.ts";
+import type { CapabilityTier, ModelCapability, ModelCapabilityOverride, ModelModality, RouterConfig } from "./types.ts";
 
 function key(provider: string, model: string, account?: string): string {
 	return `${provider}/${model}${account ? `@${account}` : ""}`;
@@ -18,6 +19,8 @@ export function buildRouterCatalog(options: {
 	catalogs?: ReadonlyMap<string, CatalogResult>;
 	accounts?: ReadonlyMap<string, readonly string[]>;
 	overrides?: RouterConfig["models"];
+	capabilityTiers?: readonly CapabilityTier[];
+	defaultTier?: string;
 }): ModelCapability[] {
 	const result: ModelCapability[] = [];
 	for (const provider of options.providers) {
@@ -51,6 +54,11 @@ export function buildRouterCatalog(options: {
 					modalities,
 					quality: {},
 					limitTier: declared?.tier ?? "standard",
+					capabilityTier: capabilityTierFor(
+						{ provider: provider.id, model: catalog.id },
+						options.capabilityTiers,
+						options.defaultTier ?? "standard",
+					),
 					reserve: provider.limits?.reserve,
 					collection: provider.free?.data?.collection ?? provider.data?.collection ?? "unknown",
 					source: live?.source ?? "builtin",

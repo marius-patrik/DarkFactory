@@ -49,7 +49,9 @@ import { redactErrorMessage } from "./redaction.ts";
 import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
+import { type CapabilityEscalationPolicy, candidateTierKey } from "./router/tiers.ts";
 import type {
+	Difficulty,
 	ModelCapability,
 	RouteResult,
 	RouterInput,
@@ -63,8 +65,8 @@ function usage(): string {
 	return [
 		"Usage:",
 		"  df | df chat [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard]",
-		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--timeout 15m0s] [--json] <prompt>",
-		"  df route [--kind kind] [--size size] [--need capability] [--json] <prompt>",
+		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--difficulty easy|medium|hard] [--min-tier id] [--timeout 15m0s] [--json] <prompt>",
+		"  df route [--kind kind] [--size size] [--difficulty easy|medium|hard] [--min-tier id] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
 		"  df providers",
@@ -104,6 +106,16 @@ function routerInput(args: string[], prompt: string, config: DfConfig): RouterIn
 	if (kind && !TASK_KINDS.includes(kind)) throw new Error(`--kind must be one of: ${TASK_KINDS.join(", ")}`);
 	const size = option(args, "--size") as RouterTaskSize | undefined;
 	if (size && !["small", "medium", "large"].includes(size)) throw new Error("--size must be small, medium, or large");
+	const difficulty = option(args, "--difficulty") as Difficulty | undefined;
+	if (difficulty && !["easy", "medium", "hard"].includes(difficulty))
+		throw new Error("--difficulty must be easy, medium, or hard");
+	const minTier = option(args, "--min-tier");
+	if (
+		minTier &&
+		config.router?.capabilityTiers?.length &&
+		!config.router.capabilityTiers.some((tier) => tier.id === minTier)
+	)
+		throw new Error(`--min-tier must be one of: ${config.router.capabilityTiers.map((tier) => tier.id).join(", ")}`);
 	const needs = options(args, "--need") as TaskNeed[];
 	if (needs.some((need) => !TASK_NEEDS.includes(need)))
 		throw new Error(`--need must be one of: ${TASK_NEEDS.join(", ")}`);
@@ -120,6 +132,8 @@ function routerInput(args: string[], prompt: string, config: DfConfig): RouterIn
 		flags: {
 			...(kind ? { kind } : {}),
 			...(size ? { size } : {}),
+			...(difficulty ? { difficulty } : {}),
+			...(minTier ? { minTier } : {}),
 			...(needs.length ? { needs } : {}),
 			...(args.includes("--sensitive") ? { sensitivity: "sensitive" as const } : {}),
 		},
@@ -850,6 +864,9 @@ function printRoute(route: RouteResult, write: (line: string) => void = console.
 		`profile: ${route.profile.kind}/${route.profile.size}; needs=${route.profile.needs.join(",") || "none"}; sensitivity=${route.profile.sensitivity}; context=${route.profile.contextTokens}`,
 	);
 	write(`source: ${route.source}${route.policy ? ` (${route.policy})` : ""}`);
+	write(
+		`capability: difficulty=${route.difficulty ?? route.profile.difficulty ?? "unspecified"}; minimum=${route.minCapabilityTier ?? "unspecified"}; selected=${route.selectedCapabilityTier ?? "none"}`,
+	);
 	for (const item of route.ranked)
 		write(
 			`${item.rank}. ${item.candidate.provider}/${item.candidate.model}@${item.candidate.account}\t${item.status}\t${item.reason}\t${item.details.join("; ")}`,
@@ -868,6 +885,8 @@ async function routeCommand(
 		"--reasoning",
 		"--kind",
 		"--size",
+		"--difficulty",
+		"--min-tier",
 		"--need",
 		"--context-tokens",
 	])
@@ -922,6 +941,10 @@ function renderEvent(event: HarnessEvent, json: boolean): void {
 	if (event.type === "text_delta") process.stdout.write(event.delta);
 	else if (event.type === "tool_start") console.error(`[tool] ${event.toolName}`);
 	else if (event.type === "tool_end") console.error(`[tool] ${event.toolName}: ${event.isError ? "error" : "ok"}`);
+	else if (event.type === "tier_escalation")
+		console.error(
+			`\n[tier] ${event.fromTier} -> ${event.toTier} after ${event.reason}: ${event.from.provider}/${event.from.model} -> ${event.to.provider}/${event.to.model}`,
+		);
 	else if (event.type === "failover")
 		console.error(
 			`\n[failover] ${event.from.provider}/${event.from.account}/${event.from.model} -> ${event.to.provider}/${event.to.account}/${event.to.model} (${event.reason}: ${event.errorMessage})`,
@@ -1001,6 +1024,20 @@ async function packagingSmoke(): Promise<void> {
 	console.log("packaging smoke ok");
 }
 
+function capabilityEscalationFor(route: RouteResult): CapabilityEscalationPolicy | undefined {
+	const order = route.capabilityTierOrder ?? [];
+	const baselineTier = route.selectedCapabilityTier;
+	if (!baselineTier || order.length === 0) return undefined;
+	const candidateTiers = Object.fromEntries(
+		route.ranked.flatMap((item) =>
+			item.status === "chosen" && item.capabilityTier
+				? [[candidateTierKey(item.candidate), item.capabilityTier] as const]
+				: [],
+		),
+	);
+	return { order, baselineTier, candidateTiers };
+}
+
 async function createCliSupervisor(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1011,6 +1048,7 @@ async function createCliSupervisor(
 	taskEstimate?: ReturnType<typeof estimateTask>,
 	taskKind?: TaskKind,
 	eventHandler?: (event: HarnessEvent) => void,
+	capabilityEscalation?: CapabilityEscalationPolicy,
 ) {
 	const faux = fauxProviders(args.includes("--faux") || process.env.DF_FAUX === "1");
 	const providers = providerList(registry, faux.providers);
@@ -1083,6 +1121,7 @@ async function createCliSupervisor(
 		monitorRecovery: args[0] === "chat",
 		outcomeStore: new OutcomeStore(defaultDfHome(), config.router?.learning),
 		taskKind,
+		...(capabilityEscalation ? { capabilityEscalation } : {}),
 		// Admission control for every model call; DF_QUOTA=off falls back to learned limits only.
 		...(process.env.DF_QUOTA === "off"
 			? {}
@@ -1126,6 +1165,8 @@ async function runCommand(
 				"--reasoning",
 				"--kind",
 				"--size",
+				"--difficulty",
+				"--min-tier",
 				"--need",
 				"--context-tokens",
 				"--max-turns",
@@ -1146,7 +1187,18 @@ async function runCommand(
 		throw new ChainExhaustedError([], [], await new LimitLedger(defaultDfHome()).list());
 	const task = estimateTask(prompt, route.profile.size, route.profile.contextTokens);
 	const supervisor = await withinRunDeadline(
-		createCliSupervisor(registry, store, config, ["run", ...args], executableChain, json, task, route.profile.kind),
+		createCliSupervisor(
+			registry,
+			store,
+			config,
+			["run", ...args],
+			executableChain,
+			json,
+			task,
+			route.profile.kind,
+			undefined,
+			capabilityEscalationFor(route),
+		),
 		budget,
 	);
 	if (json)

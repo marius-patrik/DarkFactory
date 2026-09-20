@@ -50,6 +50,29 @@ function throwingProvider(id: string, model: string, message: string): Provider 
 	};
 }
 
+function failOnceProvider(id: string, model: string, answer: string): Provider {
+	const faux = fauxProvider({ provider: id, models: [{ id: model }] });
+	faux.setResponses([fauxAssistantMessage(answer)]);
+	const error = Object.assign(new Error("model capability failure"), { status: 400 });
+	let failed = false;
+	const shouldFail = () => {
+		if (failed) return false;
+		failed = true;
+		return true;
+	};
+	return {
+		...faux.provider,
+		stream: (...args) => {
+			if (shouldFail()) throw error;
+			return faux.provider.stream(...args);
+		},
+		streamSimple: (...args) => {
+			if (shouldFail()) throw error;
+			return faux.provider.streamSimple(...args);
+		},
+	};
+}
+
 describe("AgentSession harness", () => {
 	test("failure events carry redacted messages and preserve useful clone errors in human-readable form", async () => {
 		const { home, cwd } = await tempWorkspace();
@@ -73,6 +96,56 @@ describe("AgentSession harness", () => {
 		expect(step).toMatchObject({ errorMessage: "The object can not be cloned. authorization=[REDACTED]" });
 		expect(failover).toMatchObject({ errorMessage: "The object can not be cloned. authorization=[REDACTED]" });
 		supervisor.session.dispose();
+	});
+
+	test("failed attempts escalate exactly one capability tier and success resets the next prompt", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const low = failOnceProvider("tier-low", "a", "baseline again");
+		const middle = fauxProvider({ provider: "tier-mid", models: [{ id: "b" }] });
+		const high = fauxProvider({ provider: "tier-high", models: [{ id: "c" }] });
+		middle.setResponses([fauxAssistantMessage("recovered one tier up")]);
+		high.setResponses([fauxAssistantMessage("should not be used")]);
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({
+			chain: [
+				{ provider: "tier-low", model: "a", account: "one" },
+				{ provider: "tier-mid", model: "b", account: "two" },
+				{ provider: "tier-high", model: "c", account: "three" },
+			],
+			home,
+			cwd,
+			...runtimeProviders(low, middle.provider, high.provider),
+			capabilityEscalation: {
+				order: ["light", "standard", "heavy"],
+				baselineTier: "light",
+				candidateTiers: {
+					"tier-low/a@one": "light",
+					"tier-mid/b@two": "standard",
+					"tier-high/c@three": "heavy",
+				},
+			},
+			onEvent: (event) => events.push(event),
+		});
+		try {
+			const first = await supervisor.prompt("first task");
+			expect(first.content.some((block) => block.type === "text" && block.text === "recovered one tier up")).toBe(true);
+			expect(supervisor.activeCandidate).toEqual({ provider: "tier-mid", model: "b", account: "two" });
+			expect(events.filter((event) => event.type === "tier_escalation")).toEqual([
+				expect.objectContaining({
+					type: "tier_escalation",
+					fromTier: "light",
+					toTier: "standard",
+					to: { provider: "tier-mid", model: "b", account: "two" },
+				}),
+			]);
+			expect(events.some((event) => event.type === "tier_escalation" && event.toTier === "heavy")).toBe(false);
+
+			const second = await supervisor.prompt("independent second task");
+			expect(second.content.some((block) => block.type === "text" && block.text === "baseline again")).toBe(true);
+			expect(supervisor.activeCandidate).toEqual({ provider: "tier-low", model: "a", account: "one" });
+		} finally {
+			supervisor.session.dispose();
+		}
 	});
 
 	test("model thinking never becomes answer text", async () => {
