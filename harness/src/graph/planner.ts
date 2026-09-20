@@ -117,6 +117,8 @@ export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): 
 				? none("gate command not recognized")
 				: { type: "hint", node: current.id, message: "Use /df approve, /df reject, or /df revise." };
 		const outcome = command === "approve" ? "approved" : "rejected";
+		if (outcome === "approved" && current.approves_review && !state.reviews?.[current.approves_review]?.clean)
+			return none(`${current.approves_review} review is not clean`);
 		const edge = matchingEdge(
 			graph,
 			current.id,
@@ -131,6 +133,8 @@ export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): 
 		if (current.kind !== "gate" || !authorized(current, event, state)) return none("actor is not authorized");
 		if (event.state !== "APPROVED" || !current.allow_review_state?.includes("APPROVED"))
 			return none("review is not an approval");
+		if (current.approves_review && !state.reviews?.[current.approves_review]?.clean)
+			return none(`${current.approves_review} review is not clean`);
 		const edge = matchingEdge(
 			graph,
 			current.id,

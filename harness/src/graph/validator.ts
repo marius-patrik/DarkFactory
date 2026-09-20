@@ -30,6 +30,26 @@ const nodeSchema = z.discriminatedUnion("kind", [
 		mode: z.enum(["read", "write"]).optional(),
 		workdir: z.string().optional(),
 		max_turns: z.number().int().positive().optional(),
+		review: z
+			.union([
+				z.object({
+					subject: z.enum(["planning", "implementation"]),
+					phase: z.literal("review"),
+					context: z.string().min(1),
+					artifact: z.string().min(1),
+					findings: z.string().min(1),
+					clean: z.string().min(1),
+				}),
+				z.object({
+					subject: z.enum(["planning", "implementation"]),
+					phase: z.literal("fix"),
+					context: z.string().min(1),
+					artifact: z.string().min(1),
+					findings: z.string().min(1),
+				}),
+			])
+			.optional(),
+		requires_review_approval: z.enum(["planning", "implementation"]).optional(),
 	}),
 	base.extend({
 		kind: z.literal("gate"),
@@ -38,6 +58,7 @@ const nodeSchema = z.discriminatedUnion("kind", [
 		command: z.string(),
 		allow_review_state: z.tuple([z.literal("APPROVED")]).optional(),
 		reminder_after_days: z.number().int().positive().optional(),
+		approves_review: z.enum(["planning", "implementation"]).optional(),
 		on_reject: z.object({ action: z.enum(["route_to", "revert_deviation"]), target: id }).optional(),
 	}),
 	base.extend({
@@ -74,7 +95,14 @@ const rawSchema = z.object({
 			on: onSchema,
 			loop: z
 				.object({
-					kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework", "planning_revision"]),
+					kind: z.enum([
+						"self_review",
+						"ci_repair",
+						"gate_revision",
+						"deviation_rework",
+						"planning_revision",
+						"review_fix",
+					]),
 					safety_budget: z.number().int().positive().optional(),
 				})
 				.optional(),
@@ -130,10 +158,47 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			!graph.nodes.some((candidate) => candidate.id === node.on_reject!.target)
 		)
 			issues.push(`nodes[${node.id}].on_reject.target: unknown node "${node.on_reject.target}"`);
-		if (node.kind === "agent")
+		if (node.kind === "agent") {
 			for (const [index, candidate] of (node.chain ?? []).entries())
 				if (!/^[^/@]+\/[^@]+@[^@]+$/.test(candidate))
 					issues.push(`nodes[${node.id}].chain[${index}]: expected provider/model@account`);
+			const review = node.review;
+			if (review) {
+				for (const key of [review.context, review.artifact])
+					if (!node.inputs?.includes(key))
+						issues.push(`nodes[${node.id}].review: "${key}" must be declared as an input`);
+				if (review.phase === "review") {
+					if (!node.outputs?.includes(review.findings))
+						issues.push(`nodes[${node.id}].review.findings: must be a declared output`);
+					if (!node.outputs?.includes(review.clean))
+						issues.push(`nodes[${node.id}].review.clean: must be a declared output`);
+				} else {
+					if (!node.inputs?.includes(review.findings))
+						issues.push(`nodes[${node.id}].review.findings: fix nodes must consume findings`);
+					if (!node.outputs?.includes(review.artifact))
+						issues.push(`nodes[${node.id}].review.artifact: fix nodes must output the revised artifact`);
+				}
+			}
+		}
+	}
+	for (const node of graph.nodes) {
+		if (node.kind === "gate" && node.approves_review) {
+			const reviewer = graph.nodes.some((candidate) => {
+				if (candidate.kind !== "agent") return false;
+				const review = candidate.review;
+				return review !== undefined && review.subject === node.approves_review && review.phase === "review";
+			});
+			if (!reviewer) issues.push(`nodes[${node.id}].approves_review: no reviewer exists for ${node.approves_review}`);
+		}
+		if (node.kind === "agent" && node.requires_review_approval) {
+			const gate = graph.nodes.some(
+				(candidate) => candidate.kind === "gate" && candidate.approves_review === node.requires_review_approval,
+			);
+			if (!gate)
+				issues.push(
+					`nodes[${node.id}].requires_review_approval: no approval gate exists for ${node.requires_review_approval}`,
+				);
+		}
 	}
 	graph.edges.forEach((edge, index) => {
 		if (!ids.has(edge.from)) issues.push(`edges[${index}].from: unknown node "${edge.from}"`);

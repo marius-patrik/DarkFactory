@@ -48,12 +48,35 @@ describe("workflow graph validation", () => {
 				g.nodes.find((n: any) => n.id === "implement").inputs.push("ghost");
 			}),
 		).toContain('nodes[implement].inputs[2]: "ghost" is not produced by an upstream node'));
-	test("validates guard outputs", () =>
-		expect(
-			invalid((g) => {
-				g.edges[6].on.when = "unknown == true";
-			}),
-		).toContain('edges[6].on.when: "unknown" is not a declared output of planning-gate'));
+	test("validates guard outputs", () => {
+		const issues = invalid((g) => {
+			const edge = g.edges.find((item: any) => item.from === "planning-review" && item.to === "planning-gate");
+			edge.on.when = "unknown == true";
+		});
+		expect(issues.some((issue) => issue.includes('"unknown" is not a declared output of planning-review'))).toBe(true);
+	});
+	test("validates review-node artifact/findings/clean wiring", () => {
+		const issues = invalid((g) => {
+			const review = g.nodes.find((node: any) => node.id === "planning-review");
+			review.outputs = ["planning_findings"];
+		});
+		expect(issues).toContain("nodes[planning-review].review.clean: must be a declared output");
+	});
+
+	test("validates review approval relationships", () => {
+		const issues = invalid((g) => {
+			for (const node of g.nodes) if (node.review?.subject === "planning") delete node.review;
+		});
+		expect(issues).toContain("nodes[planning-gate].approves_review: no reviewer exists for planning");
+	});
+
+	test("validates implementation nodes require a matching approval gate", () => {
+		const issues = invalid((g) => {
+			delete g.nodes.find((node: any) => node.id === "planning-gate").approves_review;
+		});
+		expect(issues).toContain("nodes[implement].requires_review_approval: no approval gate exists for planning");
+	});
+
 	test("rejects loose gate grammar", () =>
 		expect(
 			invalid((g) => {
