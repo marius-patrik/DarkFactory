@@ -12,6 +12,13 @@
   key: none,
   term: none,
   heading: none,
+  definition: none,
+  document_enabled: false,
+  document_intro: none,
+  document_body: none,
+  document_summary: none,
+  document_after: none,
+  document_wrapper: none,
   theory_enabled: false,
   theory_intro: none,
   theory_body: none,
@@ -33,6 +40,13 @@
     key: key,
     term: term,
     heading: heading,
+    definition: definition,
+    document_enabled: document_enabled,
+    document_intro: document_intro,
+    document_body: document_body,
+    document_summary: document_summary,
+    document_after: document_after,
+    document_wrapper: document_wrapper,
     theory_enabled: theory_enabled,
     theory_intro: theory_intro,
     theory_body: theory_body,
@@ -140,15 +154,23 @@
   (dependencies: dependencies, related: related)
 }
 
-#let concept-enabled(item, mode) = if mode == "theory" { item.theory_enabled } else { item.practical_enabled }
+#let concept-enabled(item, mode) = if mode == "theory" {
+  item.theory_enabled
+} else if mode == "practical" {
+  item.practical_enabled
+} else if mode == "document" {
+  item.document_enabled
+} else {
+  false
+}
 
 #let render-concept-content(item, terms, mode) = {
   if concept-enabled(item, mode) {
-    let intro = if mode == "theory" { item.theory_intro } else { item.practical_intro }
-    let body = if mode == "theory" { item.theory_body } else { item.practical_body }
-    let summary = if mode == "theory" { item.theory_summary } else { item.practical_summary }
-    let after = if mode == "theory" { item.theory_after } else { item.practical_after }
-    let wrapper = if mode == "theory" { item.theory_wrapper } else { item.practical_wrapper }
+    let intro = if mode == "theory" { item.theory_intro } else if mode == "practical" { item.practical_intro } else { item.document_intro }
+    let body = if mode == "theory" { item.theory_body } else if mode == "practical" { item.practical_body } else { item.document_body }
+    let summary = if mode == "theory" { item.theory_summary } else if mode == "practical" { item.practical_summary } else { item.document_summary }
+    let after = if mode == "theory" { item.theory_after } else if mode == "practical" { item.practical_after } else { item.document_after }
+    let wrapper = if mode == "theory" { item.theory_wrapper } else if mode == "practical" { item.practical_wrapper } else { item.document_wrapper }
 
     let core = []
     if intro != none { core += intro(terms) }
@@ -219,32 +241,36 @@
   emphasized: false,
 )
 
-#let render-section-definition(item) = {
-  let value = item.term
-  if value.explanation_cs == none and value.explanation_en == none {
-    none
+#let render-section-definition(item, terms) = {
+  if item.definition != none {
+    item.definition(terms)
   } else {
-    let definition = render-translation(
-      translation(cs: value.explanation_cs, en: value.explanation_en),
-      language: "auto",
-      school-both: false,
-      labels: false,
-      stacked: false,
-      separator: "bar",
-      order: "cs-en",
-    )
-    let render-citation(c) = {
-      let lbl = resolve-citation-label(c)
-      if lbl != none { cite(lbl) } else { none }
-    }
-    let citations = if value.citation == none {
+    let value = item.term
+    if value.explanation_cs == none and value.explanation_en == none {
       none
-    } else if type(value.citation) == array {
-      value.citation.map(render-citation).filter(x => x != none).join()
     } else {
-      render-citation(value.citation)
+      let definition = render-translation(
+        translation(cs: value.explanation_cs, en: value.explanation_en),
+        language: "auto",
+        school-both: false,
+        labels: false,
+        stacked: false,
+        separator: "bar",
+        order: "cs-en",
+      )
+      let render-citation(c) = {
+        let lbl = resolve-citation-label(c)
+        if lbl != none { cite(lbl) } else { none }
+      }
+      let citations = if value.citation == none {
+        none
+      } else if type(value.citation) == array {
+        value.citation.map(render-citation).filter(x => x != none).join()
+      } else {
+        render-citation(value.citation)
+      }
+      if citations == none { definition } else { [#definition~#citations] }
     }
-    if citations == none { definition } else { [#definition~#citations] }
   }
 }
 
@@ -260,14 +286,14 @@
       output += [#heading(level: level)[#finalized[#render-section-title(node.section)]]]
       child-level = level + 1
 
-      let intro = if mode == "theory" { node.section.theory_intro } else { node.section.practical_intro }
-      let body = if mode == "theory" { node.section.theory_body } else { node.section.practical_body }
-      let summary = if mode == "theory" { node.section.theory_summary } else { node.section.practical_summary }
-      let after = if mode == "theory" { node.section.theory_after } else { node.section.practical_after }
-      let wrapper = if mode == "theory" { node.section.theory_wrapper } else { node.section.practical_wrapper }
+      let intro = if mode == "theory" { node.section.theory_intro } else if mode == "practical" { node.section.practical_intro } else { node.section.document_intro }
+      let body = if mode == "theory" { node.section.theory_body } else if mode == "practical" { node.section.practical_body } else { node.section.document_body }
+      let summary = if mode == "theory" { node.section.theory_summary } else if mode == "practical" { node.section.practical_summary } else { node.section.document_summary }
+      let after = if mode == "theory" { node.section.theory_after } else if mode == "practical" { node.section.practical_after } else { node.section.document_after }
+      let wrapper = if mode == "theory" { node.section.theory_wrapper } else if mode == "practical" { node.section.practical_wrapper } else { node.section.document_wrapper }
 
       // The section's root content is its canonical definition.
-      let definition = render-section-definition(node.section)
+      let definition = render-section-definition(node.section, terms)
       if definition != none {
         output += definition
       }
@@ -319,8 +345,49 @@
   output
 }
 
+#let render-document-chapter(node, terms) = {
+  let graph = semantic-graph((node,))
+  let output = [#heading(level: 1)[#finalized[#render-section-title(node.section)]]]
+
+  let definition = render-section-definition(node.section, terms)
+  if definition != none { output += definition }
+
+  if node.section.document_enabled {
+    let intro = node.section.document_intro
+    let body = node.section.document_body
+    let summary = node.section.document_summary
+    let after = node.section.document_after
+    let wrapper = node.section.document_wrapper
+
+    if intro != none {
+      output += heading(level: 2)[#finalized[Úvod]]
+      let intro-content = intro(terms)
+      output += if wrapper == none { intro-content } else { wrapper(intro-content) }
+    }
+    if body != none {
+      let body-content = body(terms)
+      output += if wrapper == none { body-content } else { wrapper(body-content) }
+    }
+    if summary != none {
+      let summary-content = summary(terms)
+      output += if wrapper == none { summary-content } else { wrapper(summary-content) }
+    }
+    if after != none { output += after(terms) }
+  }
+
+  for item in order-local(node.concepts, graph) {
+    let rendered = render-concept-content(item, terms, "document")
+    if rendered != none { output += rendered }
+  }
+  for child in order-folders(node.children, graph) {
+    let rendered = render-folder(child, terms, graph, "document", level: 2)
+    if rendered != none { output += rendered }
+  }
+  output
+}
+
 #let render-theory-chapter(folders, terms) = [
-  #heading(level: 1)[#finalized[Agentické AI: Vymezení konceptů - Teoretická část]]
+  #heading(level: 1)[#finalized[Agentic AI (Agentické AI)]]
   #finalized[Úvod]
   #render-folders(folders, terms, "theory")
 ]
