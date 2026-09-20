@@ -2046,6 +2046,32 @@ class TestDeterministicScopeCheck:
         assert in_scope == [".github/scripts/commands.py"]
         assert out_of_scope == [".github/scripts/project_automation.py"]
 
+    def test_behavioral_plan_references_do_not_create_a_file_allowlist(self):
+        module = agent_runner_module()
+        plan_text = (
+            "## Scope\n"
+            "Build the shared `@darkfactory/web` shell using current `repo.df` state.\n"
+            "Inspect `packages/web` and choose the concrete files from the current tree.\n"
+        )
+        assert module.parse_plan_files(plan_text)
+        assert module.parse_explicit_plan_files(plan_text) == set()
+
+    def test_explicit_file_scope_creates_the_only_deterministic_allowlist(self):
+        module = agent_runner_module()
+        plan_text = (
+            "## Scope\n"
+            "Implement the approved behavior using current owners.\n\n"
+            "## File Scope\n"
+            "- `.github/scripts/agent_runner.py`\n"
+            "- `tests/test_agent_runner.py`\n\n"
+            "## Verification\n"
+            "Run the pipeline tests.\n"
+        )
+        assert module.parse_explicit_plan_files(plan_text) == {
+            ".github/scripts/agent_runner.py",
+            "tests/test_agent_runner.py",
+        }
+
 
 class TestDeterministicPrBody:
     """Build PR body deterministically from plan, diff --stat, and test result."""
