@@ -376,9 +376,12 @@ export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise
 			unique.set(pkg.id, pkg);
 			continue;
 		}
+		// repo.df packages are inserted before filesystem evidence: declarations own identity/manifest
+		// while detection fills scripts, API exports and concrete toolchain roots.
 		unique.set(pkg.id, {
-			...existing,
 			...pkg,
+			...existing,
+			packageManagerRoot: pkg.packageManagerRoot,
 			scripts: pkg.scripts.length > 0 ? pkg.scripts : existing.scripts,
 			apiEntryPoints: pkg.apiEntryPoints.length > 0 ? pkg.apiEntryPoints : existing.apiEntryPoints,
 		});
