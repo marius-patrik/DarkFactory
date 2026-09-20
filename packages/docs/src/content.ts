@@ -36,6 +36,46 @@ export interface DocsWorkflowSummary {
 	jobs: readonly string[];
 }
 
+/** Browser-safe summary of one detected repository package. */
+export interface DocsRepositoryPackageSummary {
+	id: string;
+	path: string;
+	name: string;
+	ecosystem: string;
+	packageManager: string;
+	domains: readonly string[];
+	apiEntryPoints: readonly string[];
+}
+
+/** Browser-safe repository evidence carried by the documentation graph. */
+export interface DocsRepositorySummary {
+	repoDfPath?: string;
+	defaultBranch?: string;
+	ecosystems: readonly string[];
+	domains: readonly string[];
+	packages: readonly DocsRepositoryPackageSummary[];
+}
+
+/** Graph-node contribution declared by one capability. */
+export interface DocsCapabilityGraphSummary {
+	id: string;
+	nodeKinds: readonly string[];
+}
+
+/** Browser-safe metadata for one applicable DarkFactory capability. */
+export interface DocsCapabilitySummary {
+	id: string;
+	version: string;
+	description: string;
+	domains: readonly string[];
+	detectors: readonly string[];
+	commands: readonly string[];
+	graph: readonly DocsCapabilityGraphSummary[];
+	hooks: readonly string[];
+	verification: readonly string[];
+	docs: readonly string[];
+}
+
 /** Typed headless documentation content graph consumed by @darkfactory/web. */
 export interface DocsContentGraph {
 	version: 1;
@@ -43,6 +83,8 @@ export interface DocsContentGraph {
 	home: string;
 	pages: readonly DocsPage[];
 	workflows: readonly DocsWorkflowSummary[];
+	repository?: DocsRepositorySummary;
+	capabilities?: readonly DocsCapabilitySummary[];
 	api?: DocsApiReference;
 }
 
