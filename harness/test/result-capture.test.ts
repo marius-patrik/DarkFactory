@@ -2,7 +2,12 @@ import { describe, expect, test } from "bun:test";
 import type { AssistantMessage, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
 import { z } from "zod";
-import { CaptureError, captureJsonSchema, captureResult, validateCaptureSchema } from "../src/harness/result-capture.ts";
+import {
+	CaptureError,
+	captureJsonSchema,
+	captureResult,
+	validateCaptureSchema,
+} from "../src/harness/result-capture.ts";
 
 /** Simple mock model */
 function mockModel(id: string): Model<any> {
@@ -74,9 +79,8 @@ describe("captureJsonSchema", () => {
 		const jsonSchema = captureJsonSchema(schema);
 		expect(jsonSchema).toBeDefined();
 		// If it's a ref-based schema, definitions might be under a different name
-		const schemaToTest = "$ref" in jsonSchema && jsonSchema.definitions 
-			? Object.values(jsonSchema.definitions as any)[0] 
-			: jsonSchema;
+		const schemaToTest =
+			"$ref" in jsonSchema && jsonSchema.definitions ? Object.values(jsonSchema.definitions as any)[0] : jsonSchema;
 		expect(schemaToTest).toBeDefined();
 		expect((schemaToTest as any)["type"]).toBe("object");
 		const properties = (schemaToTest as any)["properties"] as Record<string, any>;
