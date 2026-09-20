@@ -1,4 +1,4 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
@@ -9,7 +9,9 @@
     keyword-name-type: "both",
     explanation_cs: "Definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.",
     explanation_en: "A defined lifecycle or event point to which custom deterministic logic can be attached before, after, or in place of standard system behavior.",
-  )
+    citation: bib.deepseekharness2026,
+    source: bib.deepseekharness2026,
+)
 
 #let item = concept(
   key: "hook",

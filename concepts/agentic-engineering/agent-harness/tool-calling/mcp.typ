@@ -1,4 +1,4 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
@@ -9,7 +9,9 @@
     keyword-name-type: "both",
     explanation_cs: "Model Context Protocol — otevřený standard původně navržený společností Anthropic pro standardizovanou komunikaci AI aplikací s externími nástroji, zdroji a daty prostřednictvím zpráv JSON-RPC.",
     explanation_en: "Model Context Protocol — an open standard originally introduced by Anthropic for standardized communication between AI applications and external tools, resources, and data through JSON-RPC messages.",
-  )
+    citation: bib.anthropic_mcp,
+    source: bib.anthropic_mcp,
+)
 
 #let item = concept(
   key: "mcp",

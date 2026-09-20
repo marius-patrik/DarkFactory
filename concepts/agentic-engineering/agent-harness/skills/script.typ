@@ -1,4 +1,4 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Skript", en: "Script"),
     explanation_cs: "Soubor nebo posloupnost příkazů určených k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.",
     explanation_en: "A file or sequence of commands intended for automated execution by an interpreter, shell, or another runtime.",
-  )
+    citation: bib.anthropic2024tooluse,
+    source: bib.anthropic2024tooluse,
+)
 
 #let item = concept(
   key: "script",

@@ -1,4 +1,4 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
@@ -9,7 +9,9 @@
     keyword-name-type: "both",
     explanation_cs: "Návrh agentních nebo automatizačních pracovních postupů jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.",
     explanation_en: "The design of agentic or automation workflows as explicit graphs of nodes, dependencies, and transitions rather than as one unconstrained loop.",
-  )
+    citation: bib.wu2023autogen,
+    source: bib.wu2023autogen,
+)
 
 #let item = concept(
   key: "graph_engineering",
@@ -24,7 +26,7 @@ Monolitická agentní smyčka selhává při řešení komplexních, vícefázov
 
 #unconfirmed[
 Klíčové přístupy ke škálování zahrnují:
-- Subagenti (_Subagents_): Hlavní orchestrátor dekomponuje rozsáhlou úlohu a deleguje dílčí kroky na specializované agenty (např. průzkumník repozitáře, plánovač, kódovací dělník). Po dokončení je kontext subagenta zahozen a orchestrátor obdrží pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
+- #diff[Subagenti (_Subagents_)][Subagenti (_Subagents_ @wu2023autogen)]: Hlavní orchestrátor dekomponuje rozsáhlou úlohu a deleguje dílčí kroky na specializované agenty (např. průzkumník repozitáře, plánovač, kódovací dělník). Po dokončení je kontext subagenta zahozen a orchestrátor obdrží pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
 - Pracovní postupy jako grafy (#term(terms.dag, language: "en", marker: false, linked: false, emphasized: false) / Graph Engineering): Životní cyklus požadavku je modelován jako orientovaný acyklický graf (příjem $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
 ]
   ],

@@ -1,4 +1,4 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
@@ -9,7 +9,9 @@
     keyword-name-type: "both",
     explanation_cs: "Operace, při níž se více po sobě jdoucích commitů nahradí jedním souhrnným commitem, obvykle za účelem zjednodušení historie před integrací změn.",
     explanation_en: "An operation that replaces multiple consecutive commits with one aggregate commit, commonly to simplify history before integrating changes.",
-  )
+    citation: bib.chacon2014,
+    source: bib.chacon2014,
+)
 
 #let item = concept(
   key: "squash",

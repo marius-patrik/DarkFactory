@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -7,7 +7,9 @@
     industry: translation(cs: "HITL", en: "HITL"),
     explanation_cs: "Návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu systému prostřednictvím schvalovacích bran (Human Gates), zejména před významnými nebo nevratnými systémovými operacemi.",
     explanation_en: "A design pattern in which a human operator remains part of the system's decision process through approval gates (Human Gates), especially before consequential or irreversible system operations.",
-  )
+    citation: bib.mosqueira2023human,
+    source: bib.mosqueira2023human,
+)
 
 #let item = concept(
   key: "human_in_the_loop",
@@ -16,7 +18,7 @@
   theory_enabled: true,
   theory_intro: none,
   theory_body: terms => [
-Základním principem navrženého řešení není nekritická plná autonomie, nýbrž efektivní kooperace člověka a stroje. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
+Základním principem navrženého řešení není nekritická plná autonomie, nýbrž #diff[efektivní kooperace člověka a stroje][efektivní kooperace člověka a stroje (#term(terms.human_in_the_loop, language: "en", marker: false, linked: false, emphasized: false) @mosqueira2023human)]. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
 Řízení lidského dohledu staví na těchto pilířích:
 - Lidské schvalovací brány (_Human Gates_): Formální procesní uzly, v nichž se automatický běh pozastaví a vyčká na autorizaci operátora:

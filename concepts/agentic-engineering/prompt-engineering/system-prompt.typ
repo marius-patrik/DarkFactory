@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, term
+#import "../../../templates/common.typ": define-term, translation, term, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,6 +6,8 @@
   proper: translation(cs: "Systémový prompt", en: "System Prompt"),
   explanation_cs: "Instrukční vrstva s vysokou prioritou, která vymezuje roli, chování, dostupné prostředky a provozní mantinely jazykového modelu nebo agenta.",
   explanation_en: "A high-priority instruction layer that defines the role, behavior, available capabilities, and operating constraints of a language model or agent.",
+  citation: bib.anthropic_prompt,
+  source: bib.anthropic_prompt,
 )
 
 #let item = concept(

@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -7,7 +7,9 @@
     industry: translation(cs: "Plugins", en: "Plugins"),
     explanation_cs: "Rozšíření běžící přímo v prostředí harnessu, která rozšiřují jeho exekuční jádro o specializované systémové adaptéry, ovladače nástrojů a deterministické záchytné body.",
     explanation_en: "Programmatic extension modules running directly in the harness environment that extend its execution core with specialized system adapters, tool drivers, and deterministic hooks.",
-  )
+    citation: bib.deepseekharness2026,
+    source: bib.deepseekharness2026,
+)
 
 #let item = concept(
   key: "plugins",

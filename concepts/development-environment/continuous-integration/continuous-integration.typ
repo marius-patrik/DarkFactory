@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -9,7 +9,9 @@
     keyword-name-type: "both",
     explanation_cs: "Vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami, aby se integrační chyby odhalily co nejdříve.",
     explanation_en: "A development practice in which changes are integrated frequently and automatically verified by builds, tests, and other checks so integration failures are detected early.",
-  )
+    citation: bib.humble2010,
+    source: bib.humble2010,
+)
 
 #let item = concept(
   key: "continuous_integration",

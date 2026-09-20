@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Softwarové inženýrství", en: "Software Engineering"),
     explanation_cs: "Systematické uplatňování inženýrských principů na specifikaci, návrh, implementaci, ověřování, provoz a údržbu softwarových systémů.",
     explanation_en: "The systematic application of engineering principles to the specification, design, implementation, verification, operation, and maintenance of software systems.",
-  )
+    citation: bib.sommerville2016,
+    source: bib.sommerville2016,
+)
 
 #let item = concept(
   key: "software_engineering",

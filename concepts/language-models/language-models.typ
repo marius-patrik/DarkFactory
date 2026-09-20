@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, blue-note, accepted, finalized, term
+#import "../../templates/common.typ": define-term, translation, blue-note, accepted, finalized, term, bib
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -7,6 +7,8 @@
   explanation_cs: "Konceptuální minimum o jazykových modelech a jejich kontextu potřebné pro pochopení agentních systémů.",
   explanation_en: "The conceptual minimum about language models and their context needed to understand agentic systems.",
   keyword: false,
+  citation: bib.vaswani2017,
+  source: bib.vaswani2017,
 )
 
 #let item = concept(

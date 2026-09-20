@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Promptové inženýrství", en: "Prompt Engineering"),
     explanation_cs: "Inženýrská metodika systematického návrhu, strukturování a optimalizace instrukcí a systémových promptů pro řízení chování a mantinelů jazykového modelu.",
     explanation_en: "An engineering discipline for systematically designing, structuring, and optimizing instructions and system prompts to guide and constrain language-model behavior.",
-  )
+    citation: bib.anthropic_prompt,
+    source: bib.anthropic_prompt,
+)
 
 #let item = concept(
   key: "prompt_engineering",

@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, finalized
+#import "../../templates/common.typ": define-term, translation, finalized, bib
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -7,6 +7,8 @@
   explanation_cs: "Soubor verzovacích, plánovacích, integračních a kontrolních postupů tvořících deterministické prostředí pro agentní vývoj softwaru.",
   explanation_en: "The set of versioning, planning, integration, and verification practices that form a deterministic environment for agentic software development.",
   keyword: false,
+  citation: bib.sommerville2016,
+  source: bib.sommerville2016,
 )
 
 #let item = concept(

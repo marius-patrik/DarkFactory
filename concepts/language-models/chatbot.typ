@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Chatbot", en: "Chatbot"),
     explanation_cs: "Systém založený na jazykovém modelu určený primárně k textové interakci s uživatelem; odpovídá na jednotlivé požadavky, ale sám o sobě nedisponuje autonomní prováděcí smyčkou ani nástroji pro samostatnou modifikaci okolního prostředí.",
     explanation_en: "A language-model-based system designed primarily for text interaction with a user; it responds to individual requests but does not by itself provide an autonomous execution loop or tools for independently modifying the surrounding environment.",
-  )
+    citation: bib.wooldridge1995,
+    source: bib.wooldridge1995,
+)
 
 #let item = concept(
   key: "chatbot",

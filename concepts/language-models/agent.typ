@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Agent", en: "Agent"),
     explanation_cs: "Softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně plánuje, vnímá stav prostředí a provádí vícekrokové akce směřující k dosažení zadaného inženýrského cíle.",
     explanation_en: "A software system driven by a language model and equipped with tools that independently plans, observes its environment, and performs multi-step actions toward a specified engineering goal.",
-  )
+    citation: bib.wooldridge1995,
+    source: bib.wang2024survey,
+)
 
 #let item = concept(
   key: "agent",
@@ -16,7 +18,7 @@
   theory_intro: none,
   theory_body: terms => [
 #accepted[
-#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline"). Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
+#term(terms.chatbot, render: "both", detail-language: "cs", detail-style: "inline"). #diff[#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.agent, render: "both", detail-language: "cs", detail-style: "inline") @wooldridge1995 @wang2024survey.] Rozdíl mezi nimi nespočívá v odlišném jazykovém modelu, ale v architektuře jeho zapojení do pracovního prostředí.
 
 Srovnání obou přístupů:
 - Konverzační chatbot:

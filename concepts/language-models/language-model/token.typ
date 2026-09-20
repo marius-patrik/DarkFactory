@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
+#import "../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "../../schema.typ": concept
 
 #let terminology = define-term(
@@ -6,7 +6,9 @@
     proper: translation(cs: "Token", en: "Token"),
     explanation_cs: "Diskrétní jednotka zpracovávaná jazykovým modelem. Token odpovídá položce slovníku tokenizéru a je reprezentován číselným identifikátorem; nemusí odpovídat celému slovu.",
     explanation_en: "A discrete unit processed by a language model. A token corresponds to an entry in the tokenizer vocabulary and is represented by a numeric identifier; it need not correspond to a whole word.",
-  )
+    citation: bib.sennrich2016bpe,
+    source: bib.sennrich2016bpe,
+)
 
 #let item = concept(
   key: "token",
@@ -20,8 +22,8 @@ Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vs
 
 Tento proces zahrnuje následující pojmy:
 ]
-- #finalized[Tokeny a tokenizér (#term(terms.tokenizer, language: "en", marker: false, linked: false, emphasized: false)): Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér (nejčastěji na bázi algoritmu Byte Pair Encoding, BPE).]
-- #finalized[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #finalized[Tokeny a tokenizér (#term(terms.tokenizer, language: "en", marker: false, linked: false, emphasized: false)): Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér #diff[(nejčastěji na bázi algoritmu Byte Pair Encoding, BPE)][(nejčastěji na bázi algoritmu Byte Pair Encoding, BPE @sennrich2016bpe)].]
+- #finalized[#diff[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline")][#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") @mikolov2013word2vec] (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
 - #finalized[Jazyková asymetrie tokenizace: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
 #finalized[
