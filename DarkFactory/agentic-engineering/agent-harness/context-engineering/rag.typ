@@ -14,10 +14,8 @@
 #let item = concept(
   key: "rag",
   term: terminology,
-  heading: terms => [Alternativní paměťové architektury (RAG a stavový graf)],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 Aby se předešlo ztrátě informací způsobené kompakcí, moderní agentní architektury přesouvají část paměti mimo samotné kontextové okno. Namísto spoléhání se na jediný lineární textový kontext se uplatňují strukturovaná externí úložiště.
 
 K hlavním přístupům patří:
@@ -26,14 +24,10 @@ K hlavním přístupům patří:
 
 Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti na ztrátovém rekurzivním shrnování.
   ],
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: unconfirmed,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "embedding"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "embedding"),),
 )
