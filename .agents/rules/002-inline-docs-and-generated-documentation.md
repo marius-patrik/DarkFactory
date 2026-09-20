@@ -14,9 +14,9 @@ Public source APIs MUST be documented inline.
 
 - **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
 - **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
-- **Python**: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.
+- **Python**: any retained Python tooling exposes typed Google-style docstrings on public helpers.
 
-Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is `docs.df`, with `properdocs.yml` and `mkdocs.yml` accepted only as compatibility inputs.
+Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
 The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
 
