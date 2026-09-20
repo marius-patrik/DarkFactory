@@ -36,5 +36,5 @@ Kromě kontextových dovedností využívají pokročilé řídicí architektury
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  related: (),
+  relations: ((type: "parent", target: "harness"), (type: "dependency", target: "tool_calling"),)
 )
