@@ -12,11 +12,10 @@ definition: terms => [
 Git je distribuovaný systém správy verzí, který uchovává historii projektu, podporuje větvení a slučování změn a umožňuje deterministický návrat k předchozím stavům repozitáře.
   ],
   description: terms => [
-#accepted[
-Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github).
+#finalized[
+Při agentním vývoji poskytuje správa verzí auditovatelnou historii změn a možnost bezpečně oddělit pracovní stav od stabilní linie projektu. Chybnou nebo neúspěšnou změnu lze porovnat, vrátit nebo zahodit bez závislosti na paměti modelu. Tato práce používá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github).
 
 Samotný #term(terms.git) zde zůstává vymezen jako distribuovaný systém správy verzí. Hosting a koordinaci repozitáře popisuje #term(terms.github), zadání práce #term(terms.github_issue), revizní integraci #term(terms.pull_request) a automatizaci #term(terms.github_actions).
-
 ]
   ],
   summary: terms => [
