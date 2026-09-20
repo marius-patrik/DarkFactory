@@ -13,6 +13,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -36,7 +39,12 @@ import {
   type SidebarMode,
   type SidebarSide,
 } from "./pdf-document";
-import { CompiledArtifactView, RawArtifactView, type ArtifactFormat } from "./compiled-artifact";
+import {
+  CompiledArtifactView,
+  RawArtifactView,
+  SourceFileView,
+  type ArtifactFormat,
+} from "./compiled-artifact";
 import {
   ReviewWorkspace,
   type ReviewWorkspaceControl,
@@ -96,6 +104,7 @@ type RepoTreeNode = {
   name: string;
   path: string;
   type: "file" | "directory";
+  source?: string | null;
   children?: RepoTreeNode[];
 };
 
@@ -436,13 +445,11 @@ function ActivityBar({
 function RepoTreeBranch({
   nodes,
   depth,
-  repositoryUrl,
-  commit,
+  onOpenFile,
 }: {
   nodes: RepoTreeNode[];
   depth: number;
-  repositoryUrl: string;
-  commit: string;
+  onOpenFile: (node: RepoTreeNode) => void;
 }) {
   return (
     <div className="repo-tree-level" data-depth={depth}>
@@ -450,34 +457,27 @@ function RepoTreeBranch({
         node.type === "directory" ? (
           <details key={node.path} className="repo-tree-directory" open={depth === 0}>
             <summary>
-              <AnimatedIcon names={["FolderIcon"]} size={15} />
+              <AnimatedIcon names={["FolderIcon"]} />
               <span>{node.name}</span>
             </summary>
             <RepoTreeBranch
               nodes={node.children || []}
               depth={depth + 1}
-              repositoryUrl={repositoryUrl}
-              commit={commit}
+              onOpenFile={onOpenFile}
             />
           </details>
         ) : (
-          <a
+          <button
             key={node.path}
+            type="button"
             className="repo-tree-file"
-            href={
-              repositoryUrl.replace(/\/$/, "") +
-              "/blob/" +
-              (commit || "main") +
-              "/" +
-              node.path.split("/").map(encodeURIComponent).join("/")
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            title={node.path}
+            onClick={() => onOpenFile(node)}
+            disabled={!node.source}
+            title={node.source ? node.path : node.path + " is not a regular tracked file"}
           >
-            <AnimatedIcon names={["FileIcon", "FileTextIcon"]} size={14} />
+            <AnimatedIcon names={["FileIcon", "FileTextIcon"]} />
             <span>{node.name}</span>
-          </a>
+          </button>
         ),
       )}
     </div>
@@ -525,16 +525,14 @@ function RepoFilesPanel({
   side,
   width,
   onWidthChange,
-  repositoryUrl,
-  commit,
+  onOpenFile,
 }: {
   nodes: RepoTreeNode[];
   error: string;
   side: SidebarSide;
   width: number;
   onWidthChange: (width: number) => void;
-  repositoryUrl: string;
-  commit: string;
+  onOpenFile: (node: RepoTreeNode) => void;
 }) {
   return (
     <aside
@@ -543,19 +541,14 @@ function RepoFilesPanel({
       style={{ width, flexBasis: width }}
     >
       <div className="activity-panel-header">
-        <AnimatedIcon names={["FolderIcon"]} size={16} />
+        <AnimatedIcon names={["FolderIcon"]} />
         <span>Explorer</span>
       </div>
       <div className="repo-files-tree">
         {error ? (
           <div className="repo-files-error">{error}</div>
         ) : nodes.length ? (
-          <RepoTreeBranch
-            nodes={nodes}
-            depth={0}
-            repositoryUrl={repositoryUrl}
-            commit={commit}
-          />
+          <RepoTreeBranch nodes={nodes} depth={0} onOpenFile={onOpenFile} />
         ) : (
           <div className="repo-files-loading">Loading repository tree…</div>
         )}
