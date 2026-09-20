@@ -7,7 +7,7 @@ import { QuotaEngine } from "../src/limits/quota-engine.ts";
 import type { DeclaredLimitConfig, ProviderConfig } from "../src/providers/schema.ts";
 import { buildRouterCatalog } from "../src/router/catalog.ts";
 import { OutcomeStore } from "../src/router/outcomes.ts";
-import { classifyTask } from "../src/router/profile.ts";
+import { classifyTask, graphNodeRoutingHints } from "../src/router/profile.ts";
 import { routeTask } from "../src/router/router.ts";
 import type { ModelCapability, RouterConfig } from "../src/router/types.ts";
 
@@ -48,6 +48,7 @@ describe("task profiles", () => {
 			size: "large",
 			needs: ["tools", "vision", "long_context", "reasoning"],
 			sensitivity: "sensitive",
+			difficulty: "hard",
 			contextTokens: 70_010,
 		});
 	});
@@ -128,6 +129,57 @@ describe("task profiles", () => {
 			expect(profile.kind).toBe("implement");
 			expect(profile.needs).toEqual(["tools", "reasoning"]);
 		}
+	});
+});
+
+describe("capability-tier routing", () => {
+	const config: RouterConfig = {
+		policies: [],
+		capabilityTiers: [
+			{ id: "light", match: ["light/*"] },
+			{ id: "standard", match: ["standard/*"] },
+			{ id: "heavy", match: ["heavy/*"] },
+		],
+		defaultTier: "standard",
+		difficultyTiers: { easy: "light", medium: "standard", hard: "heavy" },
+		dataCollection: { normal: ["none"], sensitive: ["none"] },
+	};
+
+	const models = [
+		candidate("light", "fast", "tight", { capabilityTier: "light", collection: "none" }),
+		candidate("standard", "balanced", "standard", { capabilityTier: "standard", collection: "none" }),
+		candidate("heavy", "deep", "bulk", { capabilityTier: "heavy", collection: "none" }),
+	];
+
+	test("selects the lowest sufficient configured tier", async () => {
+		const route = await routeTask({ prompt: "handle this", flags: { difficulty: "medium" } }, { config, models });
+		expect(route.minCapabilityTier).toBe("standard");
+		expect(route.selectedCapabilityTier).toBe("standard");
+		expect(route.chain[0]).toEqual({ provider: "standard", model: "balanced", account: "default" });
+		expect(route.ranked.find((item) => item.candidate.provider === "light")?.reason).toContain("below required standard");
+	});
+
+	test("eligibility filtering wins before tier preference", async () => {
+		const ineligibleLight = candidate("light", "fast", "tight", {
+			capabilityTier: "light",
+			collection: "training",
+		});
+		const route = await routeTask(
+			{ prompt: "easy task", flags: { difficulty: "easy" } },
+			{ config, models: [ineligibleLight, models[1]!, models[2]!] },
+		);
+		expect(route.selectedCapabilityTier).toBe("standard");
+		expect(route.chain[0]?.provider).toBe("standard");
+		expect(route.rejected?.[0]?.reason).toContain("data collection");
+	});
+
+	test("graph min_tier translates into the same router minimum-tier contract", async () => {
+		const hints = graphNodeRoutingHints({ min_tier: "heavy" });
+		expect(hints).toEqual({ minTier: "heavy" });
+		const route = await routeTask({ prompt: "graph task", node: hints }, { config, models });
+		expect(route.minCapabilityTier).toBe("heavy");
+		expect(route.selectedCapabilityTier).toBe("heavy");
+		expect(route.chain[0]?.provider).toBe("heavy");
 	});
 });
 
