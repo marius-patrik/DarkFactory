@@ -15,7 +15,7 @@
   --accent-strong: #74a7ff;
   --page-shadow: 0 10px 35px rgba(0, 0, 0, .35);
   --thumb-active: rgba(75, 139, 245, .18);
-  --status-height: 40px;
+  --status-height: 24px;
 }
 
 html[data-theme="light"] {
@@ -95,6 +95,32 @@ a {
   background: var(--bg);
 }
 
+.viewer-workbench {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.activitybar {
+  flex: 0 0 42px;
+  width: 42px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--toolbar);
+  z-index: 36;
+}
+
+.activitybar-left {
+  border-right: 1px solid var(--toolbar-border);
+}
+
+.activitybar-right {
+  border-left: 1px solid var(--toolbar-border);
+}
+
 .toolbar {
   min-width: 0;
   display: flex;
@@ -148,25 +174,22 @@ a {
 }
 
 .edge-toggle {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 51px;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  background: var(--toolbar);
+  background: transparent;
 }
 
-.edge-left {
-  border-right: 1px solid var(--toolbar-border);
-}
-
+.edge-left,
 .edge-right {
-  border-left: 1px solid var(--toolbar-border);
+  border: 0;
 }
 
 .edge-toggle-button {
-  width: 43px;
-  height: 51px;
+  width: 41px;
+  height: 42px;
   border-radius: 0;
 }
 
@@ -445,6 +468,9 @@ a {
 
 .viewer-main {
   position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
@@ -632,6 +658,7 @@ a {
 
 .page-shell .annotationLayer a {
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .page-shell .annotationLayer .linkAnnotation > a {
@@ -776,42 +803,80 @@ a {
 .statusbar {
   min-width: 0;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  padding: 0 6px 0 10px;
+  gap: 4px;
+  padding: 0 4px;
   background: var(--toolbar);
   border-top: 1px solid var(--toolbar-border);
   z-index: 35;
+  font-size: .7rem;
 }
 
-.statusbar-spacer {
+.status-left,
+.status-center,
+.status-actions {
+  display: flex;
+  align-items: center;
   min-width: 0;
+}
+
+.status-left {
+  justify-self: start;
+  gap: 2px;
+  overflow: hidden;
 }
 
 .status-center {
   justify-self: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .status-actions {
   justify-self: end;
-  gap: 2px;
+  gap: 1px;
 }
 
 .status-group {
-  gap: 3px;
+  gap: 1px;
 }
 
-.status-action {
-  width: 30px;
-  height: 28px;
+.status-action,
+.statusbar .icon-action {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
 }
 
 .status-divider {
+  flex: 0 0 1px;
   width: 1px;
-  height: 18px;
+  height: 14px;
+  margin-inline: 2px;
   background: var(--toolbar-border);
+}
+
+.statusbar .version-select,
+.statusbar .format-select {
+  height: 20px;
+  min-height: 20px;
+  gap: 3px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: .68rem;
+}
+
+.statusbar .version-select {
+  max-width: min(28vw, 260px);
+}
+
+.statusbar .version-title {
+  max-width: min(22vw, 210px);
+}
+
+.statusbar .version-fallback {
+  max-width: min(28vw, 260px);
+  font-size: .68rem;
 }
 
 .page-control {
@@ -840,11 +905,12 @@ a {
 }
 
 .zoom-value {
-  min-width: 52px;
-  height: 26px;
-  padding-inline: 7px;
+  min-width: 42px;
+  height: 20px;
+  padding-inline: 4px;
+  border-radius: 3px;
   color: var(--muted);
-  font-size: .77rem;
+  font-size: .68rem;
 }
 
 .landing {
@@ -1010,13 +1076,20 @@ a {
     width: 31px;
   }
 
+  .activitybar {
+    flex-basis: 38px;
+    width: 38px;
+  }
+
   .edge-toggle {
-    flex-basis: 40px;
-    width: 40px;
+    flex-basis: 38px;
+    width: 38px;
+    height: 40px;
   }
 
   .edge-toggle-button {
-    width: 39px;
+    width: 37px;
+    height: 40px;
   }
 
   .sidebar {
@@ -1050,25 +1123,35 @@ a {
   }
 
   .statusbar {
-    grid-template-columns: 0 minmax(0, 1fr) auto;
-    padding-left: 4px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding-inline: 2px;
   }
 
-  .status-center {
-    gap: 4px;
+  .status-left {
+    gap: 0;
   }
 
+  .statusbar .version-select {
+    max-width: 28vw;
+  }
+
+  .statusbar .version-title {
+    max-width: 20vw;
+  }
+
+  .status-center,
   .status-actions {
     gap: 0;
   }
 
-  .status-action {
-    width: 28px;
+  .status-action,
+  .statusbar .icon-action {
+    width: 21px;
   }
 
   .zoom-value {
-    min-width: 44px;
-    padding-inline: 4px;
+    min-width: 38px;
+    padding-inline: 2px;
   }
 
   .landing {

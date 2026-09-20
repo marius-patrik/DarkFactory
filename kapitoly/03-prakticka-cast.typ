@@ -2,7 +2,7 @@
 
 = #finalized[DarkFactory - Praktická část: Architektura harnessu]
 
-== #finalized[Úvod]
+#unconfirmed[Úvod kapitoly bude doplněn.]
 
 == #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 

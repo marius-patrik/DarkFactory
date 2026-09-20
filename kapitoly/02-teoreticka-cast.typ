@@ -2,7 +2,7 @@
 
 = #finalized[Teoretická část: Vymezení konceptu]
 
-== #finalized[Úvod]
+#unconfirmed[Úvod kapitoly bude doplněn.]
 
 == #finalized[Vývojové prostředí a praxe]
 

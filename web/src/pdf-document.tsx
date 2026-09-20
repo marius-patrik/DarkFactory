@@ -226,32 +226,47 @@ function installAnnotationInteractions(
 
   const onClick = (event: MouseEvent) => {
     if (!(event.target instanceof Element)) return;
-    const target = event.target.closest<HTMLElement>("[data-element-id]");
+    const target = event.target.closest<HTMLElement>(
+      "[data-annotation-id], [data-element-id], a",
+    );
     if (!target || !node.contains(target)) return;
 
-    const id = target.dataset.elementId;
+    const annotationNode = target.closest<HTMLElement>(
+      "[data-annotation-id], [data-element-id]",
+    );
+    const id = annotationNode?.dataset.annotationId || annotationNode?.dataset.elementId;
     const annotation = id ? byId.get(id) : undefined;
-    if (!annotation) return;
 
-    if (annotation.dest) {
+    if (annotation?.dest) {
       event.preventDefault();
       event.stopImmediatePropagation();
       void linkService.goToDestination(annotation.dest);
       return;
     }
 
-    if (annotation.action) {
+    if (annotation?.action) {
       event.preventDefault();
       event.stopImmediatePropagation();
       linkService.executeNamedAction(annotation.action);
       return;
     }
 
-    if (annotation.url) {
+    if (annotation?.url) {
       event.preventDefault();
       event.stopImmediatePropagation();
       const opened = window.open(annotation.url, "_blank", "noopener,noreferrer");
       if (opened) opened.opener = null;
+      return;
+    }
+
+    const anchor = target.closest<HTMLAnchorElement>("a[href]");
+    if (!anchor) return;
+    const href = anchor.getAttribute("href");
+    if (!href || href === "#") return;
+    if (href.startsWith("#page=")) {
+      event.preventDefault();
+      const page = Number(href.slice("#page=".length));
+      if (Number.isInteger(page)) linkService.goToPage(page);
     }
   };
 

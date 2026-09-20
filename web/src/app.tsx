@@ -106,6 +106,12 @@ function safeArtifactPath(value: string | null, format: ArtifactFormat) {
   return parts.join("/");
 }
 
+function withRefreshToken(path: string, token: string | number) {
+  if (!token) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return path + separator + "refresh=" + encodeURIComponent(String(token));
+}
+
 function artifactFilename(
   variant: PublicationVariant,
   mode: ViewerMode,
@@ -670,6 +676,11 @@ export function ViewerApp() {
     chapters: [],
   });
   const [pageDraft, setPageDraft] = useState("1");
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const renderArtifactPath = withRefreshToken(
+    artifactPath || "",
+    params.get("refresh") || refreshRevision,
+  );
 
   const setSidebarSide = useCallback((side: SidebarSide) => {
     setSidebarSideState(side);
@@ -911,7 +922,7 @@ export function ViewerApp() {
         {format === "pdf" ? (
           <PdfDocumentView
             ref={documentRef}
-            pdfPath={artifactPath}
+            pdfPath={renderArtifactPath}
             embedded
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
@@ -921,7 +932,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={artifactPath} format={format} embedded theme={theme} />
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
         )}
       </div>
     );
@@ -1040,6 +1051,12 @@ export function ViewerApp() {
       mode: "review",
       format,
     });
+  const refreshedRawChild = rawChild ? withRefreshToken(rawChild, refreshRevision) : null;
+  const refreshedReviewChild = reviewChild ? withRefreshToken(reviewChild, refreshRevision) : null;
+
+  const refreshDocument = () => {
+    setRefreshRevision((revision) => revision + 1);
+  };
 
   const toggleFullscreen = async () => {
     if (document.fullscreenElement) await document.exitFullscreen?.();
@@ -1055,9 +1072,13 @@ export function ViewerApp() {
   return (
     <div className="viewer-shell">
       <header className="toolbar">
-        {sidebarSide === "left" && sidebarToggle}
         <div className="toolbar-main">
           <div className="toolbar-left">
+            <TooltipAction
+              label="Refresh document"
+              icon={["RefreshCwIcon", "RotateCwIcon"]}
+              onClick={refreshDocument}
+            />
             <TooltipAction
               label="Home"
               icon={["HomeIcon"]}
@@ -1066,33 +1087,12 @@ export function ViewerApp() {
             <span className="identity-separator" aria-hidden="true">\</span>
             <span className="work-title" title={workTitle}>{workTitle}</span>
             <span className="identity-separator" aria-hidden="true">\</span>
-            {manifest ? (
-              <VersionPicker
-                manifest={manifest}
-                templateName={templateName}
-                profileName={profileName}
-                mode={mode}
-                viewMode={viewMode}
-                format={format}
-                versionTitle={versionTitle}
-              />
-            ) : (
-              <span className="version-fallback">{versionTitle}</span>
-            )}
-            <span className="identity-separator" aria-hidden="true">\</span>
             <ModePicker
               mode={mode}
               viewMode={viewMode}
               finalHref={finalTarget}
               reviewHref={reviewTarget}
               splitHref={canSplit ? splitTarget : "#"}
-            />
-            <span className="identity-separator" aria-hidden="true">\</span>
-            <FormatPicker
-              format={format}
-              pdfHref={pdfTarget}
-              markdownHref={markdownTarget}
-              htmlHref={htmlTarget}
             />
             {format === "pdf" && (
               <>
@@ -1137,11 +1137,6 @@ export function ViewerApp() {
 
           <div className="toolbar-right">
             <TooltipAction
-              label="Refresh page"
-              icon={["RefreshCwIcon", "RotateCwIcon"]}
-              onClick={() => window.location.reload()}
-            />
-            <TooltipAction
               label={viewMode === "split" ? "Exit Review" : "Review"}
               icon={["PanelLeftRightIcon"]}
               href={canSplit ? splitTarget : undefined}
@@ -1178,10 +1173,15 @@ export function ViewerApp() {
             />
           </div>
         </div>
-        {sidebarSide === "right" && sidebarToggle}
       </header>
 
-      <main className="viewer-main">
+      <div className={"viewer-workbench activity-" + sidebarSide}>
+        {sidebarSide === "left" && sidebarToggle && (
+          <aside className="activitybar activitybar-left" aria-label="Viewer activity bar">
+            {sidebarToggle}
+          </aside>
+        )}
+        <main className="viewer-main">
         {viewMode === "split" ? (
           rawChild && reviewChild ? (
             <div className="split-view">
@@ -1196,7 +1196,7 @@ export function ViewerApp() {
                     splitFrames.current[0] = node;
                   }}
                   title="Raw document"
-                  src={rawChild}
+                  src={refreshedRawChild || rawChild}
                   onLoad={(event) => {
                     event.currentTarget.contentWindow?.postMessage(
                       { source: "paper-split", command: "theme", theme },
@@ -1216,7 +1216,7 @@ export function ViewerApp() {
                     splitFrames.current[1] = node;
                   }}
                   title="Review document"
-                  src={reviewChild}
+                  src={refreshedReviewChild || reviewChild}
                   onLoad={(event) => {
                     event.currentTarget.contentWindow?.postMessage(
                       { source: "paper-split", command: "theme", theme },
@@ -1235,7 +1235,7 @@ export function ViewerApp() {
         ) : format === "pdf" ? (
           <PdfDocumentView
             ref={documentRef}
-            pdfPath={artifactPath}
+            pdfPath={renderArtifactPath}
             embedded={false}
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
@@ -1245,12 +1245,39 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={artifactPath} format={format} embedded={false} theme={theme} />
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
         )}
-      </main>
+        </main>
+        {sidebarSide === "right" && sidebarToggle && (
+          <aside className="activitybar activitybar-right" aria-label="Viewer activity bar">
+            {sidebarToggle}
+          </aside>
+        )}
+      </div>
 
       <footer className="statusbar">
-        <div className="statusbar-spacer" aria-hidden="true" />
+        <div className="status-left">
+          {manifest ? (
+            <VersionPicker
+              manifest={manifest}
+              templateName={templateName}
+              profileName={profileName}
+              mode={mode}
+              viewMode={viewMode}
+              format={format}
+              versionTitle={versionTitle}
+            />
+          ) : (
+            <span className="version-fallback">{versionTitle}</span>
+          )}
+          <span className="status-divider" aria-hidden="true" />
+          <FormatPicker
+            format={format}
+            pdfHref={pdfTarget}
+            markdownHref={markdownTarget}
+            htmlHref={htmlTarget}
+          />
+        </div>
 
         <div className="status-center">
           {format === "pdf" ? (
