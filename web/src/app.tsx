@@ -1019,7 +1019,7 @@ export function ViewerApp() {
   ]);
 
   useEffect(() => {
-    if (embedded || format !== "pdf") return;
+    if (embedded || mode === "raw" || format !== "pdf") return;
     const onKeyDown = (event: KeyboardEvent) => {
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
@@ -1043,17 +1043,17 @@ export function ViewerApp() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [embedded, format, goToPage, setZoom, state.page, zoomBy]);
+  }, [embedded, format, goToPage, mode, setZoom, state.page, zoomBy]);
 
   if (!artifactPath && !manifest && !params.get("file")) {
-    return <div className="document-loading">Loading school Compiled PDF…</div>;
+    return <div className="document-loading">Loading school Viewer PDF…</div>;
   }
 
   if (!artifactPath) {
     return (
       <div className="document-error">
         <strong>Invalid document path.</strong>
-        <span>The requested compiled artifact is not available.</span>
+        <span>The requested artifact is not available.</span>
       </div>
     );
   }
@@ -1061,7 +1061,9 @@ export function ViewerApp() {
   if (embedded) {
     return (
       <div className="embedded-viewer">
-        {format === "pdf" ? (
+        {mode === "raw" ? (
+          <RawArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
+        ) : format === "pdf" ? (
           <PdfDocumentView
             ref={documentRef}
             pdfPath={renderArtifactPath}
@@ -1074,11 +1076,7 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          mode === "raw" ? (
-            <RawArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
-          ) : (
-            <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
-          )
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
         )}
       </div>
     );
@@ -1311,7 +1309,7 @@ export function ViewerApp() {
               download
             />
             <TooltipAction
-              label={format === "pdf" ? "Open native PDF" : "Open compiled " + formatLabel}
+              label={format === "pdf" ? "Open native PDF" : "Open rendered " + formatLabel}
               icon={["ExternalLinkIcon", "FileTextIcon"]}
               href={currentDownload || undefined}
               target="_blank"
@@ -1352,7 +1350,7 @@ export function ViewerApp() {
                   ref={(node) => {
                     splitFrames.current[0] = node;
                   }}
-                  title="Raw document"
+                  title="Viewer document"
                   src={refreshedRawChild || rawChild}
                   onLoad={(event) => {
                     event.currentTarget.contentWindow?.postMessage(
@@ -1372,7 +1370,7 @@ export function ViewerApp() {
                   ref={(node) => {
                     splitFrames.current[1] = node;
                   }}
-                  title="Review document"
+                  title="Edit document"
                   src={refreshedReviewChild || reviewChild}
                   onLoad={(event) => {
                     event.currentTarget.contentWindow?.postMessage(
