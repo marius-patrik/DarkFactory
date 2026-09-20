@@ -542,7 +542,7 @@ def rewrite_common() -> None:
     marker = "#let term-use-label"
     if marker not in text:
         raise ValueError("common.typ terminology marker missing")
-    text = text[:text.index(marker)] + COMMON_SUFFIX + "\n"
+    text = text[:text.index(marker)] + COMMON_SUFFIX.rstrip() + "\n"
     path.write_text(text, encoding="utf-8")
 
 def rewrite_schema() -> None:
