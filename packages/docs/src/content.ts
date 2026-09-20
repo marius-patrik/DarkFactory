@@ -50,6 +50,9 @@ function markdownPage(repoRoot: string, source: string, kind: DocsPageKind, id?:
 	const absolute = join(repoRoot, source);
 	if (!existsSync(absolute)) throw new Error(`Documentation source does not exist: ${source}`);
 	const markdown = readFileSync(absolute, "utf8").replaceAll("\r\n", "\n");
+	if (kind === "adr" && !/^\*\*Status\*\*:\s*Accepted\s*$/mu.test(markdown)) {
+		throw new Error(`ADR must have Status: Accepted: ${source}`);
+	}
 	return {
 		id: id ?? idFromSource(source),
 		kind,
