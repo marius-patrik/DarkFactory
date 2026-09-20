@@ -69,8 +69,8 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Reuse canonical `terms.<key>` values whenever one concept refers to another. Do not create ad-hoc term strings or duplicate a term record merely to introduce a synonym.
 - Stable term `id` values are unique within a book.
 
-## Deferred Practical and Results Content
-- There are no chapter files. Practical manuscript projections live on canonical concepts through their `practical_*` fields; evaluation/results content lives under `concepts/manuscript/results/`.
+## Practical and Results Content
+- There are no chapter files. Practical manuscript projections live on canonical concepts through their `practical_*` fields; evaluation/results content lives under `DarkFactory/manuscript/results/`.
 - Do **not** draft, restore, infer, or pre-fill practical implementation claims or results while DarkFactory is still under development.
 - Required order:
   1. Finish and stabilize the practical DarkFactory system.
@@ -79,7 +79,6 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
   4. Perform the evaluation/measurements against the completed system described by those projections.
   5. Write the results concepts from those observed results only.
 - Results must never contain hypothetical, provisional, or architecture-derived measurements.
-- Do not restore removed practical/results prose from Git history unless the user explicitly requests it; old text described provisional architectures and measurements.
 
 ## GitHub Pages Viewer
 - Pages is a React + TypeScript Rsbuild application under `web/`, formatted/linted with Biome. Use shadcn/ui/Radix primitives, Tailwind, Dockview, Motion, Dagre, `lucide-animated`, and PDF.js.
