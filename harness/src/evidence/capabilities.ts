@@ -3,6 +3,7 @@
  * Combines repository evidence and loaded capabilities to build a deterministic action map.
  */
 
+import { stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { type CapabilityDefinition, discoverCapabilities, resolveCapabilities } from "@darkfactory/capability";
 import { detectRepositoryEvidence, type DiscoveredPackage, type RepositoryEvidence } from "./detector.ts";
@@ -70,7 +71,7 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		format_check: (path) => path === "." ? "gofmt -l ." : `gofmt -l ${path}`,
 		docs_check: (path) => path === "." ? "go doc" : `go doc ${path}`,
 		docs_extract: (path) => path === "." ? "go doc" : `go doc ${path}`,
-		setup: (path) => path === "." ? "go mod download" : `go mod download`,
+		setup: (path) => path === "." ? "go mod download" : `go mod download -C ${path}`,
 	},
 };
 
@@ -89,16 +90,19 @@ export async function resolveRepositoryActions(
 	const resolvedCapDir = capabilitiesDir ? resolve(capabilitiesDir) : join(evidence.root, "capabilities");
 
 	let capabilities: CapabilityDefinition[] = [];
+	let dirExists = false;
 	try {
-		const definitions = await discoverCapabilities(resolvedCapDir);
-		const resolution = resolveCapabilities(definitions, evidence.domains);
-		capabilities = [...resolution.capabilities];
-	} catch (error: any) {
-		// If the capabilities directory does not exist, it's not an error.
-		if (error?.code !== "ENOENT") {
-			console.warn(`Failed to load capabilities from ${resolvedCapDir}: ${error.message}`);
-			// Rethrow or handle as a fatal error if required by the plan
-			throw error;
+		const s = await stat(resolvedCapDir);
+		dirExists = s.isDirectory();
+	} catch {}
+
+	if (dirExists) {
+		try {
+			const definitions = await discoverCapabilities(resolvedCapDir);
+			const resolution = resolveCapabilities(definitions, evidence.domains);
+			capabilities = [...resolution.capabilities];
+		} catch (error: any) {
+			console.warn(`Failed to load capabilities from ${resolvedCapDir}: ${error?.message || error}`);
 		}
 	}
 
@@ -122,8 +126,15 @@ export async function resolveRepositoryActions(
 			let supported = false;
 
 			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
-			// Sort capabilities to ensure deterministic resolution, e.g., by id
-			for (const cap of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
+			// Sort capabilities by priority (descending) so higher priority overrides, and then alphabetically by id for determinism
+			for (const cap of [...capabilities].sort((a, b) => {
+				const prioA = (a as any).priority ?? 0;
+				const prioB = (b as any).priority ?? 0;
+				if (prioB !== prioA) {
+					return prioA - prioB;
+				}
+				return a.id.localeCompare(b.id);
+			})) {
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
 					// Check for overlap: warn if multiple capabilities try to override the same action
@@ -157,7 +168,7 @@ export async function resolveRepositoryActions(
 				(actionKey === "release" && env?.release?.[pkg.ecosystem]);
 			
 			if (override) {
-				command = override.command;
+				command = override.command.replace(/\{path\}/g, pkg.path);
 				description = `Declared in repo.df environment.${actionKey}`;
 				supported = true;
 			}

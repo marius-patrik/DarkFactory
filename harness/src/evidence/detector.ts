@@ -212,10 +212,10 @@ export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise
 	// Always run auto-discovery to find other packages in the repo
 	await scanDirectory(root, root, ignoreList, packages);
 
-	// Ensure unique packages (by path)
+	// Ensure unique packages (by path and ecosystem)
 	const uniquePackages = new Map<string, DiscoveredPackage>();
 	for (const pkg of packages) {
-		uniquePackages.set(pkg.path, pkg);
+		uniquePackages.set(`${pkg.path}:${pkg.ecosystem}`, pkg);
 	}
 	packages.length = 0;
 	packages.push(...uniquePackages.values());
