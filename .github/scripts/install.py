@@ -270,6 +270,7 @@ def render_caller(
                 handle.read()
                 .replace("{{pipeline_repo}}", pipeline_repo)
                 .replace("{{pipeline_ref}}", ref)
+                .replace("{{default_branch}}", branch)
             )
 
     spec = WORKFLOWS[workflow]
