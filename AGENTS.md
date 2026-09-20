@@ -2,7 +2,7 @@
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The sixteen
 rules below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
-They are enforced by CI, by branch protection, and by the tests in `tests/`. This file is a
+They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated; #339 completes the shared df hook enforcement surface. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Edit `.agents/rules/*.md`; do not
 edit this projection.
@@ -45,9 +45,9 @@ Public source APIs MUST be documented inline.
 
 - **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
 - **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
-- **Python**: while migration/reference Python remains, public automation helpers use typed Google-style docstrings.
+- **Python**: any retained Python tooling exposes typed Google-style docstrings on public helpers.
 
-Documentation MUST be generated from canonical source and architecture records. DarkFactory's final documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. Native docs configuration is `docs.df`, with `properdocs.yml` and `mkdocs.yml` accepted only as compatibility inputs.
+Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
 The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
 
@@ -65,7 +65,7 @@ Executable declarations use the final DarkFactory contracts:
 - the declarable workflow graph for execution topology;
 - `.agents/rules/*.md` for mandatory contribution/governance behavior.
 
-Legacy manifest/config paths are not normative final contracts.
+Only the current `repo.df`, `config.df`, and `docs.df` contracts are normative.
 
 A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
@@ -225,7 +225,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by final `repo.df`, not a legacy manifest path.
+Repository area labels/scopes are declared by `repo.df`.
 
 Project classification separates:
 

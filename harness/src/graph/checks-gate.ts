@@ -1,18 +1,40 @@
 import type { WorkflowGraph } from "./types.ts";
 
-export interface CheckStateSource { checkStates(ref: string): Promise<Map<string, "success" | "pending" | "failure">> }
+/**
+ * Source for retrieving current check states for a given ref.
+ * Implementations should provide a method to fetch check statuses from a CI system.
+ */
+export interface CheckStateSource {
+	checkStates(ref: string): Promise<Map<string, "success" | "pending" | "failure">>;
+}
+/**
+ * Result of the checks gate evaluation.
+ */
 export type ChecksGateResult =
 	| { conclusion: "required_green" | "failed"; failing: string[]; missing: string[] }
 	| { conclusion: "pending"; failing: string[]; missing: string[]; pending: string[] };
 
-export async function evaluateChecksGate(graph: WorkflowGraph, source: CheckStateSource, ref: string): Promise<ChecksGateResult> {
+/**
+ * Evaluate the checks gate for a given workflow graph and ref.
+ * @param graph - The workflow graph containing checks definitions.
+ * @param source - Source to retrieve current check states.
+ * @param ref - The ref (e.g., commit SHA) to evaluate checks for.
+ * @returns The result of the checks gate evaluation.
+ */
+export async function evaluateChecksGate(
+	graph: WorkflowGraph,
+	source: CheckStateSource,
+	ref: string,
+): Promise<ChecksGateResult> {
 	const states = await source.checkStates(ref);
 	const required = graph.checks.filter((check) => check.required);
 	const failing: string[] = [];
 	const missing: string[] = [];
 	const pending: string[] = [];
 	for (const check of required) {
-		const matches = [...states.entries()].filter(([reported]) => reported === check.name || reported.startsWith(`${check.name} (`));
+		const matches = [...states.entries()].filter(
+			([reported]) => reported === check.name || reported.startsWith(`${check.name} (`),
+		);
 		if (matches.length === 0) {
 			missing.push(check.name);
 		} else if (matches.some(([, status]) => status === "failure")) {

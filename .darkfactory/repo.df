@@ -1,5 +1,5 @@
 {
-  "$comment": "Everything about this repository that the shared pipeline needs and cannot detect. The pipeline itself is identical across every repository that uses it; this file is the only thing that differs, so the workflows and scripts can be distributed byte-for-byte.",
+  "$comment": "Repository-specific declarations that DarkFactory cannot infer reliably.",
   "identity": {
     "owner": "marius-patrik",
     "repo": "DarkFactory",
@@ -7,7 +7,7 @@
     "project_title": "DarkFactory",
     "agent_slug": "darkfactory-agent",
     "default_branch": "darkfactory",
-    "description": "Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, and project board delivery.",
+    "description": "Self-hosting autonomous software delivery built around a declarable workflow graph, versioned capabilities and GitHub as the durable control plane.",
     "topics": [
       "agentic-coding",
       "agentic-development",
@@ -29,7 +29,7 @@
     "year": "2026"
   },
   "upstream": {
-    "$comment": "DarkFactory is its own upstream. Consumer repositories set repo to marius-patrik/DarkFactory and pin ref to a commit SHA.",
+    "$comment": "DarkFactory is its own upstream; consumer installation/update uses released DarkFactory artifacts.",
     "repo": null,
     "ref": null
   },
@@ -67,19 +67,14 @@
         "command": "black --line-length 100 ."
       }
     },
-    "documentation": {
-      "python": {
-        "command": "bun run scripts/build-docs.ts",
-        "source": "docstrings"
-      }
-    },
     "release": {
-      "$comment": "This repository is a pipeline, not a distributable package: pyproject.toml carries only tooling configuration, so there is nothing for `python -m build` to produce and setuptools sees theme/, docker/ and the _notes alias (a symlink to .agents/notes/) as rival top-level packages. A release here is a tag and its notes, with no assets.",
+      "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
       "python": {
-        "enabled": false
+        "enabled": false,
+        "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
       },
       "node": {
-        "$comment": "The root Bun workspace is implementation source during the rebuild, not the supported distribution artifact. #360 owns enabling package/native/web release builds.",
+        "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
         "enabled": false
       }
     }
@@ -88,7 +83,7 @@
     "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
     "$default": "ci",
     "agents": {
-      "description": "Harness orchestration, provider adapters, personas, approvals",
+      "description": "Agent runtime, routing, providers, planning/review orchestration and model execution",
       "keywords": [
         "agent",
         "harness",
@@ -128,16 +123,16 @@
       ]
     },
     "docs": {
-      "description": "Documentation site, theme, architecture notes",
+      "description": "Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces",
       "keywords": [
         "doc",
         "docs",
         "documentation",
-        "mkdocs",
-        "properdocs",
-        "theme",
-        "site",
-        "readme"
+        "tsdoc",
+        "typedoc",
+        "content",
+        "readme",
+        "site"
       ]
     },
     "ci": {
@@ -170,23 +165,6 @@
     "branch": "gh-pages",
     "path": "/"
   },
-  "documentation": {
-    "$comment": "Sites offered by the documentation switcher's Project axis, so the shared pipeline docs are one hop from any consumer.",
-    "projects": [
-      {
-        "name": "DarkFactory",
-        "url": "https://marius-patrik.github.io/DarkFactory/"
-      },
-      {
-        "name": "Omnis",
-        "url": "https://marius-patrik.github.io/omnis/"
-      },
-      {
-        "name": "ChessWithQuests",
-        "url": "https://marius-patrik.github.io/ChessWithQuests/"
-      }
-    ]
-  },
   "app": {
     "$comment": "The pipeline's own GitHub App. The id and client id are public identifiers, not secrets; the private key lives in the DARKFACTORY_APP_PRIVATE_KEY repository secret. Note that a GitHub App cannot write user-owned Projects v2 - GitHub scopes project permissions to organizations - so board work still uses GH_PROJECT_TOKEN until these repositories move under an organization.",
     "slug": "darkfactory-pipeline",
@@ -218,7 +196,7 @@
     ]
   },
   "identities": {
-    "$comment": "Manifest-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
+    "$comment": "repo.df-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
     "app": {
       "slug": "darkfactory-pipeline",
       "login": "darkfactory-pipeline[bot]",
@@ -307,7 +285,7 @@
     }
   },
   "release": {
-    "$comment": "During the direct TypeScript rebuild, DarkFactory's legacy release workflow remains source-tag-only. The first-party workspace packages/capabilities are not release artifacts until #359 reaches the canary gate and #360 establishes their real lockstep version/publish contract.",
+    "$comment": "Final package/capability distribution and publishing behavior is defined by #360.",
     "metadata": "ignore"
   }
 }

@@ -22,7 +22,7 @@ All normal product changes MUST use dedicated delivery branches and GitHub pull 
 
 ## Rationale
 
-Topic branches preserve review/provenance while dynamic base resolution and lease safety prevent automation from overwriting repository history.
+Topic branches preserve review traceability while dynamic base resolution and lease safety prevent automation from overwriting repository history.
 
 ## Enforcement
 
@@ -34,4 +34,4 @@ The temporary bootstrap-authoring exception in `PLAN.md` changes who may author 
 
 ## Change control
 
-Concrete workflow/script owners may change during #359 cutover; this rule names behavior, not legacy file paths.
+Concrete workflow/script owners may change while #359 finalizes production ownership; this rule names behavior, not implementation file paths.

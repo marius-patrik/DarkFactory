@@ -59,7 +59,7 @@ The final first-party package boundaries are:
 - `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
 - `@darkfactory/web` — the sole first-party web application/renderer.
 
-The existing `@darkfactory/harness` package is migration-only and does not survive as a final public architecture boundary.
+Any remaining implementation under `harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
 
 Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
 
@@ -132,26 +132,26 @@ The final system must not rely on one ever-growing repository-specific language/
 
 ### 7.1 Repository/runtime configuration
 
-The final #340 hard-transition rules apply:
+The final #340 declaration rules apply:
 
 - repository declaration is `repo.df`;
 - runtime/user/provider configuration is `config.df`;
 - accepted location is `.darkfactory/<name>.df` or root `<name>.df`;
 - both locations for the same logical file is an error;
-- legacy manifest/config paths are not read;
+- only the current `repo.df` / `config.df` contracts are read;
 - `.df` is a filename extension, never a directory.
 
 ### 7.2 Documentation configuration
 
 Documentation uses `docs.df` as the native DarkFactory configuration.
 
-`properdocs.yml` and `mkdocs.yml` are accepted compatibility inputs to `@darkfactory/docs`, but ProperDocs/MkDocs are not final runtime dependencies.
+`docs.df` is the only DarkFactory documentation configuration contract.
 
 Documentation configuration does not move into `repo.df` or `config.df`.
 
 ### 7.3 State
 
-Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations. Final production does not maintain JSON/JSONL aliases merely for legacy compatibility.
+Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations.
 
 ## 8. Governed Request lifecycle
 
@@ -171,7 +171,7 @@ The final Request lifecycle is:
 12. final review/merge authorization;
 13. merge and deterministic reconciliation.
 
-Separate interpretation and plan approval gates are retired.
+The lifecycle has one reviewed Planning artifact and one Planning Approval gate.
 
 Planning/review/fix state is durable and resumable. Planning becomes stale when material Request, dependency, recovery or base context changes; stale approval is never silently reused.
 
@@ -357,11 +357,9 @@ Initial installation must not require Python, a source checkout or a pre-existin
 
 The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
 
-A canary/pre-release after the core #359 self-hosting cutover is used to discover packaging/consumer/web deployment problems early. Final acceptance remains #360.
-
 ## 17. Consumer/fleet model
 
-The intended fleet contains six repositories identified by stable GitHub repository identity rather than historical names:
+The intended fleet contains six repositories identified by stable GitHub repository identity:
 
 1. DarkFactory;
 2. omnis;
@@ -391,7 +389,7 @@ Install/update is idempotent and drift-aware.
 DarkFactory is final only when:
 
 - df is the only normal production orchestration/mutation engine;
-- no required legacy Python production path remains;
+- production orchestration and mutation are owned by the final TypeScript df system;
 - package/capability architecture is shipped;
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
@@ -400,7 +398,6 @@ DarkFactory is final only when:
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - released df installs/updates source-free;
 - all six repositories pass governance, detection, capability, docs/web, release and drift checks;
-- every preserved recovery source has an explicit terminal disposition;
 - `audit.df` is internally consistent;
 - #361 is green;
 - the original #68 declarable-graph contract passes against the installed final release.

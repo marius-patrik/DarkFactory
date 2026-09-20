@@ -1,2 +1,4 @@
-/** Temporary Node/Bun transport adapter; #359/#360 remove the harness dependency. */
+/** @packageDocumentation
+ * Node/Bun GitHub transport entrypoint for machine/runtime use.
+ */
 export * from "../../../harness/src/github/index.ts";

@@ -6,12 +6,14 @@ import type {
 } from "./abi.ts";
 import { assertCapabilityCompatible } from "./compatibility.ts";
 
+/** Serializable tool metadata exposed by generated adapters. */
 export interface CapabilityToolManifest {
 	name: string;
 	description: string;
 	inputSchema: JsonSchema;
 }
 
+/** Serializable metadata shared by all adapter forms. */
 export interface CapabilityAdapterManifest {
 	abiVersion: string;
 	id: string;
@@ -22,6 +24,7 @@ export interface CapabilityAdapterManifest {
 	tools: readonly CapabilityToolManifest[];
 }
 
+/** Builds deterministic adapter metadata from a capability definition. */
 export function capabilityAdapterManifest(definition: CapabilityDefinition): CapabilityAdapterManifest {
 	assertCapabilityCompatible(definition);
 	return {
@@ -43,11 +46,13 @@ function tool(definition: CapabilityDefinition, name: string): CapabilityToolDef
 	return item;
 }
 
+/** In-process adapter for invoking capability tools. */
 export interface NativeCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	invokeTool(name: string, input: unknown): Promise<unknown>;
 }
 
+/** Creates an in-process capability adapter. */
 export function createNativeAdapter(
 	definition: CapabilityDefinition,
 	context: CapabilityRuntimeContext,
@@ -59,6 +64,7 @@ export function createNativeAdapter(
 	};
 }
 
+/** Tool registration shape consumed by the Pi extension API. */
 export interface PiToolRegistration {
 	name: string;
 	description: string;
@@ -66,15 +72,18 @@ export interface PiToolRegistration {
 	execute(input: unknown): Promise<unknown>;
 }
 
+/** Minimal Pi extension API required by generated capability adapters. */
 export interface PiExtensionApi {
 	registerTool(tool: PiToolRegistration): void;
 }
 
+/** Adapter that installs capability tools into Pi. */
 export interface PiCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	install(api: PiExtensionApi): void;
 }
 
+/** Creates a Pi adapter from the canonical capability definition. */
 export function createPiAdapter(
 	definition: CapabilityDefinition,
 	context: CapabilityRuntimeContext,
@@ -95,18 +104,21 @@ export function createPiAdapter(
 	};
 }
 
+/** MCP-visible tool metadata. */
 export interface McpToolDescriptor {
 	name: string;
 	description: string;
 	inputSchema: JsonSchema;
 }
 
+/** MCP adapter surface for listing and invoking capability tools. */
 export interface McpCapabilityAdapter {
 	manifest: CapabilityAdapterManifest;
 	listTools(): readonly McpToolDescriptor[];
 	callTool(name: string, input: unknown): Promise<unknown>;
 }
 
+/** Creates an MCP adapter from the canonical capability definition. */
 export function createMcpAdapter(
 	definition: CapabilityDefinition,
 	context: CapabilityRuntimeContext,

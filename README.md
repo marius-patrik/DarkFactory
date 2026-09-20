@@ -1,8 +1,10 @@
+<!-- Generated from docs/home.md by @darkfactory/docs. Do not edit README.md directly. -->
+
 # DarkFactory
 
 **Autonomous, governed software delivery built around a self-hosting `df` engine, versioned capabilities and GitHub as the durable control plane.**
 
-> **Status:** architecture convergence and completion are in progress. `PRD.md` defines the target product; `PLAN.md` defines the optimized path from the current hybrid system to the final self-hosting release.
+> **Status:** the final DarkFactory architecture is settled and implementation is being completed directly against it. `PRD.md` defines the product; `PLAN.md` defines the shortest safe path to final release and fleet acceptance.
 
 ## Product model
 
@@ -34,7 +36,7 @@ The final production system does not rely on separate interpretation/plan approv
 
 ## Architecture
 
-DarkFactory is converging from the current monolithic private harness into a root Bun workspace:
+The final DarkFactory architecture is a root Bun workspace:
 
 | Package | Responsibility |
 |---|---|
@@ -46,9 +48,9 @@ DarkFactory is converging from the current monolithic private harness into a roo
 | `@darkfactory/auth` | Human/browser GitHub App authentication and web sessions |
 | `@darkfactory/docs` | Headless documentation compiler and content graph |
 | `@darkfactory/cli` | `df` CLI, command composition and TUI |
-| `@darkfactory/web` | Shared React web application for docs and operator UI |
+| `@darkfactory/web` | Shared web renderer and operator UI package |
 
-The old `@darkfactory/harness` boundary is transitional and will not be the final public package architecture.
+Any remaining code under `harness/` is deletion-bound implementation source, not a public package or documented architecture boundary.
 
 ## Capabilities
 
@@ -87,7 +89,7 @@ Final configuration is split by concern:
 
 For repo/config, the final #340 contract accepts either `.darkfactory/<name>.df` or root `<name>.df`; both-present is an error. `.df` is a filename extension, never a directory.
 
-`properdocs.yml` and `mkdocs.yml` remain supported as documentation compatibility inputs, not as final runtime dependencies.
+`docs.df` is the only DarkFactory documentation configuration contract.
 
 ## Credentials and GitHub authentication
 
@@ -107,7 +109,7 @@ The Pages application uses user authorization; a minimal confidential broker han
 
 ## Documentation
 
-DarkFactory is replacing ProperDocs/MkDocs execution with its own `@darkfactory/docs` engine.
+`@darkfactory/docs` is the first-party headless documentation compiler; `@darkfactory/web` is the sole renderer.
 
 The final compiler combines:
 
@@ -120,29 +122,17 @@ The final compiler combines:
 
 TypeDoc may be used internally for TypeScript extraction.
 
-The docs homepage and this README will be rendered from the same semantic content graph so they cannot drift independently.
+The docs homepage and this README are rendered from the same semantic content graph so they cannot drift independently.
 
 ## DarkFactory Web
 
-Every consumer uses the same prebuilt `@darkfactory/web` release artifact. Consumer repositories compile their own content/data but do **not** rebuild the React application.
+`@darkfactory/web` owns first-party web rendering. The documentation renderer consumes the canonical `@darkfactory/docs` content graph and emits the static GitHub Pages artifact without a second documentation engine or theme runtime.
 
-The application is hosted on GitHub Pages and reads live GitHub state directly through browser-safe GitHub/auth interfaces.
-
-Target UI stack:
-
-- React + TypeScript;
-- shadcn/ui;
-- lucide-animated;
-- Motion;
-- Dagre;
-- Wouter;
-- Dockview where useful.
-
-The web application is intended to replace normal day-to-day use of the GitHub website for DarkFactory operations while keeping GitHub itself as the durable issue/PR/check/project/event/authorization layer.
+The broader GitHub-backed operator application shares the same package boundary and browser-safe protocol/GitHub/auth contracts; #425 owns that operator surface. GitHub remains the durable issue/PR/check/project/event/authorization layer rather than a duplicated DarkFactory state database.
 
 ## Self-hosting and completion strategy
 
-The optimized program no longer waits for every product feature before switching engines.
+The completion program builds the final system directly.
 
 The critical path is:
 
@@ -157,14 +147,12 @@ routing + natural-stop result capture
       ↓
 production graph handlers + branch repair
       ↓
-#359: df becomes the production engine
+#359: final df production engine complete
       ↓
 remaining features completed through df itself
 ```
 
-Recovered September work is reconciled in parallel into its final package/capability homes rather than regenerated from scratch.
-
-See [PLAN.md](PLAN.md) for the authoritative execution program and recovery map.
+See [PLAN.md](PLAN.md) for the authoritative completion program.
 
 ## Distribution
 
@@ -172,7 +160,7 @@ First-party packages and capabilities are intended to publish under the `darkfac
 
 Initial first-party releases use one lockstep DarkFactory SemVer plus a separately versioned capability ABI.
 
-Final releases include the CLI/runtime, official capabilities and generated adapters, checksums/provenance, and the prebuilt web bundle.
+Final releases include the CLI/runtime, official capabilities and generated adapters, checksums, source/version metadata, and the prebuilt web bundle.
 
 ## Fleet acceptance
 
@@ -185,12 +173,12 @@ The final released system is proved across six repositories:
 5. template-OdbornaPrace
 6. OdbornaPrace-mono
 
-Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, accounts for every recovery source, validates docs/web/auth/capabilities, and then re-runs the original #68 declarable-graph contract.
+Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and then re-runs the #68 declarable-graph contract.
 
 ## Normative references
 
 - [PRD.md](PRD.md) — product requirements and architecture
-- [PLAN.md](PLAN.md) — optimized completion/recovery/cutover plan
+- [PLAN.md](PLAN.md) — optimized final-completion plan
 - [AGENTS.md](AGENTS.md) — projection of canonical contribution/governance rules
 - [ADRs](.agents/notes/adr/) — accepted architecture decisions
 

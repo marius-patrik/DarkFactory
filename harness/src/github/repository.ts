@@ -16,25 +16,30 @@ import {
 } from "./types.ts";
 
 const AUTHORIZED = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+/** Checks whether a GitHub association value is one of the authorized types (OWNER, MEMBER, COLLABORATOR). */
 export function isAuthorizedAssociation(value: AuthorAssociation): boolean {
 	return AUTHORIZED.has(value);
 }
+/** Tests whether a login string ends with "[bot]", identifying a GitHub bot account. */
 export function isBotLogin(login: string): boolean {
 	return /\[bot\]$/i.test(login);
 }
 
+/** Options for creating a new GitHub issue. */
 export interface CreateIssueInput {
 	title: string;
 	body?: string;
 	labels?: string[];
 	assignees?: string[];
 }
+/** Options for updating an existing GitHub issue. */
 export interface UpdateIssueInput {
 	title?: string;
 	body?: string;
 	state?: "open" | "closed";
 	state_reason?: "completed" | "not_planned" | "reopened";
 }
+/** Options for creating a new GitHub pull request. */
 export interface CreatePullRequestInput {
 	title: string;
 	head: string;
@@ -42,6 +47,7 @@ export interface CreatePullRequestInput {
 	body?: string;
 	draft?: boolean;
 }
+/** Options for updating an existing GitHub pull request. */
 export interface UpdatePullRequestInput {
 	title?: string;
 	body?: string;
@@ -58,6 +64,7 @@ export interface CreateCheckRunInput {
 	completed_at?: string;
 }
 
+/** Provides access to GitHub repository operations such as issues, pull requests, comments, and secrets. */
 export class GitHubRepository {
 	readonly #client: GitHubClient;
 	readonly #owner: string;

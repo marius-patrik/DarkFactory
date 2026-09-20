@@ -9,8 +9,7 @@ answered once, here, instead of being re-guessed with `hashFiles` in each workfl
 Detection is the default because it cannot drift: a repository that grows a `Cargo.toml` starts
 building Rust without anyone remembering to declare it. Declaration is available for the cases
 detection cannot see - a package deliberately excluded, a build command that is not the ecosystem's
-default, an artifact produced by something bespoke. The two compose: `.darkfactory/manifest.json`
-overrides and extends what detection found, and never has to restate it.
+default, an artifact produced by something bespoke. The two compose: `repo.df` overrides and extends what detection found without restating detected facts.
 
 Workspaces are first-class. npm, Bun, pnpm, Yarn and Cargo all express monorepos as a root manifest
 listing member globs, so a repository is walked as a tree of packages rather than a single one, and
@@ -177,38 +176,6 @@ FORMAT_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
     "go": {None: "gofmt -w ."},
     "typst": {None: "typstyle --inplace ."},
     "latex": {None: "latexindent --overwrite --silent main.tex"},
-}
-
-#: Where each ecosystem's API documentation is extracted from, and the tool that extracts it.
-#:
-#: `.agents/rules/002-inline-docs-and-generated-documentation.md` requires documentation to be
-#: generated from source rather than mirrored by hand, so each ecosystem contributes its own inline
-#: convention to one site: rustdoc comments,
-#: TSDoc, and Google-style docstrings are three inputs to the same build.
-DOC_SOURCES: Dict[str, str] = {
-    "python": "docstrings",
-    "node": "tsdoc",
-    "deno": "jsdoc",
-    "rust": "rustdoc",
-    "go": "godoc",
-}
-
-#: Default API-documentation command per ecosystem, keyed by package manager where it decides.
-DOC_COMMANDS: Dict[str, Dict[Optional[str], str]] = {
-    "python": {
-        "uv": "uv run properdocs build --strict",
-        None: "properdocs build --strict",
-    },
-    "node": {
-        "bun": "bun run docs",
-        "pnpm": "pnpm run docs",
-        "yarn": "yarn docs",
-        "npm": "npm run docs",
-        None: "npx typedoc",
-    },
-    "deno": {None: "deno doc --html"},
-    "rust": {None: "cargo doc --no-deps --all-features"},
-    "go": {None: "go doc ./..."},
 }
 
 #: Default release-build command per ecosystem, keyed by package manager where it decides.
@@ -536,23 +503,9 @@ class Environment:
 
         Returns:
             Mapping of ecosystem to `command`, `versions` and `manager`. Formatting has no matrix,
-            so `versions` is empty unless the manifest declares one.
+            so `versions` is empty unless repo.df declares one.
         """
         return self._plan("formatting", FORMAT_COMMANDS)
-
-    def docs_plan(self) -> Dict[str, Dict[str, Any]]:
-        """Works out how each ecosystem's API documentation is produced.
-
-        Returns:
-            Mapping of ecosystem to `command`, `versions`, `manager` and `source`, where `source`
-            names the inline convention the documentation is extracted from.
-        """
-        plan = self._plan("documentation", DOC_COMMANDS)
-        declared = self.declared.get("documentation", {}) or {}
-        for ecosystem, entry in plan.items():
-            settings = declared.get(ecosystem, {}) or {}
-            entry["source"] = settings.get("source") or DOC_SOURCES.get(ecosystem)
-        return plan
 
     def build_plan(self) -> Dict[str, Dict[str, Any]]:
         """Works out how to build each ecosystem's release artifacts.
@@ -588,7 +541,6 @@ class Environment:
             },
             "test_plan": self.test_plan(),
             "format_plan": self.format_plan(),
-            "docs_plan": self.docs_plan(),
             "build_plan": self.build_plan(),
         }
 
@@ -720,7 +672,7 @@ def _read_package(root: str, directory: str, filename: str) -> Optional[Package]
             members = [str(entry) for entry in workspace]
 
     elif filename in ("setup.py", "setup.cfg"):
-        # Both are legacy shims; presence is the signal, contents are not worth parsing.
+        # Both files are marker formats; presence is the signal, contents are not parsed.
         pass
 
     return Package(

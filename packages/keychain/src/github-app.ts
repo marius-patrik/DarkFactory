@@ -1,11 +1,14 @@
 import { importPKCS8, SignJWT } from "jose";
+/** Fetch-compatible transport used for GitHub App token operations. */
 export type GitHubFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
 import { z } from "zod";
 
+/** Machine GitHub App identity and installation metadata. */
 export interface GitHubAppIdentity { appId: string; privateKey: string; owner: string; repo: string; installationId?: number; permissions?: Record<string, "read" | "write">; botLogin?: string; privateKeySecret?: string; }
 interface ProviderOptions { fetch?: GitHubFetch; now?: () => Date; }
 interface CachedToken { token: string; expiresAt: number; }
 
+/** Mints and refreshes GitHub App installation access tokens. */
 export class AppInstallationTokenProvider {
   readonly #identity: GitHubAppIdentity;
   readonly #fetch: GitHubFetch;
@@ -39,6 +42,7 @@ export class AppInstallationTokenProvider {
 
 const manifestAppSchema = z.object({ app_id: z.union([z.string(), z.number()]), slug: z.string().optional(), bot_login: z.string().optional(), private_key_secret: z.string(), installation_id: z.number().optional(), permissions: z.record(z.string(), z.enum(["read", "write"])).optional() }).passthrough();
 
+/** Resolves a GitHub App machine identity from repository declaration plus secret storage. */
 export async function appIdentityFromManifest(manifest: unknown, repository: string, readSecret: (name: string) => string | Promise<string>): Promise<GitHubAppIdentity> {
   const root = z.object({ app: manifestAppSchema }).passthrough().parse(manifest);
   const slash = repository.indexOf("/");
@@ -46,6 +50,7 @@ export async function appIdentityFromManifest(manifest: unknown, repository: str
   return { appId: String(root.app.app_id), privateKey: await readSecret(root.app.private_key_secret), privateKeySecret: root.app.private_key_secret, owner: repository.slice(0, slash), repo: repository.slice(slash + 1), installationId: root.app.installation_id, permissions: root.app.permissions, botLogin: root.app.bot_login ?? (root.app.slug ? `${root.app.slug}[bot]` : undefined) };
 }
 
+/** Resolves the GitHub credential source used by machine/runtime API clients. */
 export async function resolveGitHubCredential(input: { token?: string; app?: GitHubAppIdentity }, env: Record<string, string | undefined> = process.env): Promise<{ token: string | (() => Promise<string>); provider?: AppInstallationTokenProvider; onAuthenticationFailure?: () => void }> {
   if (input.token) return { token: input.token };
   if (input.app) { const provider = new AppInstallationTokenProvider(input.app); return { token: () => provider.getToken(), provider, onAuthenticationFailure: () => provider.evict() }; }

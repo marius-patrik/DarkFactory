@@ -1,7 +1,7 @@
-"""Tests for the per-repository manifest.
+"""Tests for the per-repository repo.df declaration.
 
 The pipeline is distributed byte-for-byte, so anything repository-specific has to come from
-`.darkfactory/repo.df`. These tests cover the two ways that goes wrong: a manifest that is
+`.darkfactory/repo.df`. These tests cover the two ways that goes wrong: a declaration that is
 missing or malformed and takes the pipeline down with it, and repository-specific values leaking
 back into the shared code.
 """
@@ -27,18 +27,6 @@ def _write_manifest(root, data):
     """
     os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
     with open(os.path.join(str(root), ".darkfactory", "repo.df"), "w", encoding="utf-8") as fh:
-        json.dump(data, fh)
-
-
-def _write_legacy_manifest(root, data):
-    """Writes a legacy-path manifest for migration and fallback coverage.
-
-    Args:
-        root: Directory to treat as the repository root.
-        data: Document to serialise.
-    """
-    os.makedirs(os.path.join(str(root), ".github"), exist_ok=True)
-    with open(os.path.join(str(root), ".github", "darkfactory.json"), "w", encoding="utf-8") as fh:
         json.dump(data, fh)
 
 
@@ -77,18 +65,6 @@ class TestIdentity:
             handle.write("{ this is not json")
         monkeypatch.setenv("GITHUB_REPOSITORY", "acme/broken")
         assert manifest_module.load(str(tmp_path)).slug == "acme/broken"
-
-    def test_a_legacy_manifest_is_ignored(self, tmp_path):
-        """Legacy manifests are ignored per the hard transition plan."""
-        _write_legacy_manifest(tmp_path, {"identity": {"owner": "legacy", "repo": "widget"}})
-        # Note: legacy manifest support has been removed, so this will load the default
-        # because the manifest is missing.
-        loaded = manifest_module.load(str(tmp_path))
-        assert loaded.slug != "legacy/widget"
-
-
-class TestAreas:
-    """One declaration feeds labels, commit scopes and the classifier."""
 
     def test_areas_may_be_plain_descriptions(self, tmp_path):
         _write_manifest(tmp_path, {"areas": {"core": "The core", "ui": "The surface"}})

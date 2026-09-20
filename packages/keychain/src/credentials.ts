@@ -58,6 +58,7 @@ async function resolveSlotValue(home: string, raw: string): Promise<string> {
 const FILE_VERSION = 2;
 const ACCOUNT_SEPARATOR = ":";
 
+/** OAuth access/refresh credential slot managed by the keychain. */
 export type OAuthCredentialSlot = {
 	type: "oauth";
 	access: string;
@@ -66,6 +67,7 @@ export type OAuthCredentialSlot = {
 	accountId?: string;
 };
 
+/** Supported typed credential slot stored for an account. */
 export type CredentialSlot =
 	| OAuthCredentialSlot
 	| { type: "api_key"; value: string }
@@ -73,8 +75,10 @@ export type CredentialSlot =
 	| { type: "cookie"; value: string }
 	| { type: "other"; value: string };
 
+/** Credential slot types that can be written directly. */
 export type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
 
+/** Persisted credential account and its typed slots. */
 export interface AccountRecord {
 	id: string;
 	provider: string;
@@ -88,6 +92,7 @@ interface CredentialFile {
 	accounts: Record<string, AccountRecord>;
 }
 
+/** Redacted account metadata safe for diagnostics/UI surfaces. */
 export interface AccountSummary {
 	id: string;
 	provider: string;
@@ -96,6 +101,7 @@ export interface AccountSummary {
 	slots: Array<{ name: string; type: CredentialSlot["type"] }>;
 }
 
+/** Fallback resolver for credentials not present in primary storage. */
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
 
 function throwIfAborted(options?: AuthOperationOptions): void {
@@ -110,6 +116,7 @@ function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0;
 }
 
+/** Checks whether an unknown value is a valid credential slot. */
 export function isSlot(value: unknown): value is CredentialSlot {
 	if (!value || typeof value !== "object") return false;
 	const slot = value as Record<string, unknown>;
@@ -126,6 +133,7 @@ export function isSlot(value: unknown): value is CredentialSlot {
 	);
 }
 
+/** Checks whether an unknown value is valid credential metadata. */
 export function isMetadata(value: unknown): value is Record<string, string> | undefined {
 	return (
 		value === undefined ||
@@ -133,6 +141,7 @@ export function isMetadata(value: unknown): value is Record<string, string> | un
 	);
 }
 
+/** Checks whether an unknown value is a credential account record. */
 export function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
 	const account = value as Record<string, unknown>;
@@ -147,6 +156,7 @@ export function isAccount(value: unknown, id: string): value is AccountRecord {
 	);
 }
 
+/** Validates and normalizes a persisted account record. */
 export function validateAccountRecord(value: unknown, expectedId?: string): AccountRecord {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Account record must be an object");
 	const record = value as Record<string, unknown>;
@@ -193,6 +203,7 @@ function parseFile(value: unknown): CredentialFile {
 	return { version: FILE_VERSION, accounts: file.accounts as Record<string, AccountRecord> };
 }
 
+/** Builds the canonical provider/account identifier. */
 export function accountId(provider: string, label: string): string {
 	if (
 		!isNonEmptyString(provider) ||
@@ -205,12 +216,14 @@ export function accountId(provider: string, label: string): string {
 	return `${provider}${ACCOUNT_SEPARATOR}${label}`;
 }
 
+/** Parses a canonical provider/account identifier. */
 export function parseAccountId(id: string): { provider: string; label: string } | undefined {
 	const index = id.indexOf(ACCOUNT_SEPARATOR);
 	if (index <= 0 || index === id.length - 1 || id.indexOf(ACCOUNT_SEPARATOR, index + 1) !== -1) return undefined;
 	return { provider: id.slice(0, index), label: id.slice(index + 1) };
 }
 
+/** Returns the default machine-local DarkFactory home directory. */
 export function defaultDfHome(): string {
 	return process.env.DF_HOME || join(homedir(), ".df");
 }

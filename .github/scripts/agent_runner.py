@@ -130,7 +130,7 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
 
 TYPE_LABELS = ["feat", "bug", "chore", "refactor", "test", "ci", "docs"]
 # The area taxonomy is a property of the repository, not of the pipeline, so it comes from
-# `.darkfactory/manifest.json`. `repo_settings` creates the labels from the same source, which is
+# `repo.df`. `repo_settings` creates the labels from the same source, which is
 # what keeps the labels the agent applies and the labels that exist from drifting apart.
 AREA_LABELS = [name for name, _colour, _description in _MANIFEST.area_labels]
 
@@ -614,7 +614,7 @@ def classify_type_and_area(text: str) -> Tuple[str, str]:
         if re.search(r"\b(bug|regression|crash|broken)\b", lower):
             t_label = "bug"
         elif re.search(
-            r"\b(docs?|document|documents|documenting|documentation|docstrings?|mkdocs|readme)\b",
+            r"\b(docs?|document|documents|documenting|documentation|docstrings?|tsdoc|typedoc|readme)\b",
             lower,
         ):
             t_label = "docs"

@@ -1,18 +1,24 @@
 # Architecture Decision Records
 
-Numbered, append-only. Add an ADR whenever an owner-approved architectural/product decision materially changes or narrows the PRD, or when a significant design choice needs durable rationale.
+This directory contains only architecture decisions that are currently in force.
 
-Each record states the decision, rejected alternatives and consequences. ADRs explain **why**; current requirements stay in `PRD.md`.
+Every record has `Status: Accepted`.
 
-**Status values:** `Proposed` · `Accepted` · `Superseded by ADR-NNNN`.
+Current records:
 
-The deprecated multi-record `architecture_decisions.md` ledger was split into one file per decision on 2026-09-13 and removed.
+- ADR-0006 — pipeline execution goes through df;
+- ADR-0008 — provider behavior is configuration-driven;
+- ADR-0009 — providers support named multi-account credential slots;
+- ADR-0011 — quota state is the availability authority;
+- ADR-0012 — routing is limit-aware and capability-tiered;
+- ADR-0013 — df executes the workflow graph;
+- ADR-0015 — deterministic steps belong to the engine;
+- ADR-0016 — model resolution is live;
+- ADR-0017 — root workspace packages and first-class capabilities;
+- ADR-0019 — GitHub backs the web control plane;
+- ADR-0020 — machine keychain and browser auth are separate trust boundaries;
+- ADR-0021 — repository declarations and capability-driven detection;
+- ADR-0022 — complete the final system directly;
+- ADR-0023 — first-party docs use docs.df and one renderer.
 
-The current sequence reaches **ADR-0020**; the next new decision is **ADR-0021**.
-
-Recent convergence decisions:
-
-- ADR-0017 — modular packages and first-class capabilities;
-- ADR-0018 — first-party documentation engine and one shared web renderer;
-- ADR-0019 — GitHub-backed web control plane with GitHub App user authentication;
-- ADR-0020 — separate human web authentication from machine credential custody.
+Architecture changes update the current accepted set and the owning GitHub Request.

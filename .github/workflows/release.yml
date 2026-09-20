@@ -27,7 +27,7 @@ on:
         type: string
 
 # The version, the notes, the assets and the metadata check are all decided by
-# `.github/scripts/release.py`, which reads the mode from `.darkfactory/manifest.json`. This workflow
+# `.github/scripts/release.py`, which reads the mode from `.darkfactory/repo.df`. This workflow
 # only sequences them, so changing versioning scheme never means editing a workflow.
 permissions:
   contents: write

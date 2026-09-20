@@ -328,67 +328,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check out the pinned pipeline
+      - name: Check out pinned DarkFactory
         if: inputs.pipeline-ref != ''
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
+          path: .darkfactory-runtime
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        # A repository with no Python has no requirements file and nothing for pip to cache, which
-        # is every paper. The pipeline scripts themselves need only the standard library, so the
-        # documentation plan can still be read and a paper still typesets.
+      - name: Detect docs.df
+        id: detect
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
+          if [ -f docs.df ] || [ -f .darkfactory/docs.df ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No requirements-dev.txt; this repository declares no Python documentation engine."
+            echo "present=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Resolve the documentation command
-        # The command comes from the *caller's* environment, not from this file. Consumers do not
-        # share a documentation engine - this repository generates its site with Bun
-        # (`bun run scripts/build-docs.ts`), while other consumers may choose another engine - so
-        # hardcoding one here fails in every repository that chose a different one.
-        id: documentation
-        run: |
-          SCRIPTS=".github/scripts"
-          [ -d .darkfactory-pipeline/.github/scripts ] && SCRIPTS=".darkfactory-pipeline/.github/scripts"
-          PYTHONPATH="$SCRIPTS" python - <<'PY' >> "$GITHUB_OUTPUT"
-          import shlex
-          import environment
-
-          plan = environment.configure(".").docs_plan()
-          # One repository, one documentation site: the first ecosystem that declares a build owns
-          # it. A polyglot repository publishes one site from several inline sources.
-          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
-          executable = shlex.split(command)[0] if command else ""
-          print("command<<DARKFACTORY_DOCS_COMMAND")
-          print(command)
-          print("DARKFACTORY_DOCS_COMMAND")
-          print(f"needs_bun={str(executable == 'bun').lower()}")
-          PY
 
       - name: Set up Bun
-        if: steps.documentation.outputs.needs_bun == 'true'
+        if: steps.detect.outputs.present == 'true'
         uses: oven-sh/setup-bun@v2
 
-      - name: Build documentation
-        env:
-          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
+      - name: Install DarkFactory workspace
+        if: steps.detect.outputs.present == 'true'
         run: |
-          COMMAND="$DOCUMENTATION_COMMAND"
-          if [ -z "$COMMAND" ]; then
-            echo "No documentation build is configured for this repository."
-            exit 0
-          fi
-          echo "Documentation build: $COMMAND"
-          eval "$COMMAND"
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          cd "$ROOT"
+          bun install --frozen-lockfile
+
+      - name: Build documentation
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
+
+      - name: No documentation configured
+        if: steps.detect.outputs.present != 'true'
+        run: echo "No docs.df; nothing to build."

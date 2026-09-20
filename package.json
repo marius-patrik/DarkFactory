@@ -10,6 +10,7 @@
   "scripts": {
     "test": "bun run --cwd harness test",
     "typecheck": "bun run --cwd harness typecheck",
-    "check": "bun run --cwd harness check"
+    "check": "bun run --cwd harness check",
+    "docs": "bun scripts/build-docs.ts"
   }
 }

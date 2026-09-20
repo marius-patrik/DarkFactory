@@ -6,11 +6,13 @@ import { definitionFromModule } from "./compatibility.ts";
 
 const ENTRYPOINTS = ["capability.ts", "capability.js", "capability.mjs"] as const;
 
+/** Loads and validates one capability module from disk. */
 export async function loadCapability(path: string): Promise<CapabilityDefinition> {
 	const module = (await import(pathToFileURL(resolve(path)).href)) as CapabilityModule;
 	return definitionFromModule(module);
 }
 
+/** Discovers and validates capability modules under a capability root. */
 export async function discoverCapabilities(root: string): Promise<CapabilityDefinition[]> {
 	const entries = (await readdir(root, { withFileTypes: true }))
 		.filter((entry) => entry.isDirectory())
@@ -38,11 +40,13 @@ export async function discoverCapabilities(root: string): Promise<CapabilityDefi
 	return definitions;
 }
 
+/** Resolved domains and the capabilities applicable to them. */
 export interface CapabilityResolution {
 	domains: readonly string[];
 	capabilities: readonly CapabilityDefinition[];
 }
 
+/** Filters and deterministically orders capabilities for detected domains. */
 export function resolveCapabilities(
 	definitions: readonly CapabilityDefinition[],
 	domains: readonly string[],

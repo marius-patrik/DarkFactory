@@ -19,6 +19,9 @@ import { resolveDfFile } from "./utils/resolver";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
 
+/**
+ * The DarkFactory configuration loaded from config.json.
+ */
 export interface DfConfig {
 	defaultChain?: string;
 	cooldownTtlMs?: number;
@@ -29,6 +32,10 @@ export interface DfConfig {
 	router?: RouterConfig;
 }
 
+/**
+ * The default router configuration with built-in routing policies for
+ * sensitive, image-generation, video-generation, review, and implementation tasks.
+ */
 export const DEFAULT_ROUTER_CONFIG: RouterConfig = {
 	policies: [
 		{ id: "sensitive", match: { sensitivity: ["sensitive"] }, prefer: {} },
@@ -55,6 +62,9 @@ export const DEFAULT_ROUTER_CONFIG: RouterConfig = {
 	],
 };
 
+/**
+ * A function that reads a file at the given path and returns its contents as a string.
+ */
 export type ConfigReader = (path: string) => Promise<string>;
 
 function optionalString(record: Record<string, unknown>, name: string): string | undefined {
@@ -246,6 +256,13 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	};
 }
 
+/**
+ * Loads the DarkFactory configuration from config.df in the given root directory.
+ * Falls back to the default chain if config.df is missing.
+ * @param root - The directory containing config.df (or .darkfactory/config.df)
+ * @param reader - Optional custom file reader (defaults to reading files with UTF-8 encoding)
+ * @returns A promise resolving to the loaded DfConfig
+ */
 export async function loadDfConfig(
 	root: string,
 	reader: ConfigReader = (path) => readFile(path, "utf8"),
@@ -309,6 +326,16 @@ export async function loadDfConfig(
 	};
 }
 
+/**
+ * Creates a credential fallback that resolves API keys from provider config files,
+ * environment variables, or the vault. Used when no credentials are found in the
+ * credential store.
+ * @param home - The $DF_HOME directory
+ * @param config - The loaded DfConfig
+ * @param providers - The provider configuration file
+ * @param options - Optional env and reader overrides
+ * @returns A credential fallback function that resolves provider credentials
+ */
 export function localCredentialFallback(
 	home: string,
 	config: DfConfig,

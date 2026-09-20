@@ -28,7 +28,6 @@ EXPECTED_WORKFLOWS = [
 EXPECTED_SCRIPTS = [
     "agent_runner.py",
     "handle_pr_approval.py",
-    "docs_hooks.py",
     "open_pr.py",
     "project_automation.py",
     "repo_settings.py",
@@ -99,16 +98,15 @@ def test_harness_job_runs_all_bun_gates_from_the_harness_directory():
         assert f"run: {command}" in block
 
 
-def test_python_and_docs_jobs_do_not_scan_the_harness_package():
-    """The dedicated Bun job owns harness checks; legacy scanners stay on their native roots."""
+def test_python_and_docs_jobs_have_separate_final_owners():
+    """Python tests stay on tests/ while documentation is built from docs.df through Bun."""
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     pyproject = _read(os.path.join(REPO_ROOT, "pyproject.toml"))
-    properdocs = _read(os.path.join(REPO_ROOT, "properdocs.yml"))
 
     assert "run: pytest -v tests" in ci
     assert re.search(r"^\s*\| harness$", pyproject, re.MULTILINE)
-    # The site is generated into a transient staging directory; the harness is never a docs root.
-    assert re.search(r"^docs_dir: \.properdocs-source$", properdocs, re.MULTILINE)
+    assert "docs.df" in ci
+    assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
 def test_required_checks_match_ci_job_names():
@@ -504,22 +502,22 @@ def test_branch_protection_targets_the_declared_default_branch():
     assert "MANIFEST.default_branch" in content
 
 
-def test_the_docs_job_does_not_hardcode_a_documentation_engine():
-    """Consumers do not share one. This repository builds with mkdocs and omnis with properdocs,
-    so a hardcoded command fails in whichever repository chose the other - which is exactly how
-    the first pinned run failed, with `mkdocs: command not found`.
-    """
+def test_the_docs_job_uses_the_native_docs_contract():
+    """The docs job detects docs.df and runs the one first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[content.index("  docs:") :]
-    assert "docs_plan" in docs_job, "the docs command must come from the caller's environment"
-    assert "run: mkdocs build" not in docs_job
+    assert "docs.df" in docs_job
+    assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
+    assert "packages/docs" not in docs_job
+    assert "packages/web" not in docs_job
 
 
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
-    """A repository that publishes no site must not fail the check that builds one."""
+    """A repository without docs.df reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[content.index("  docs:") :]
-    assert "exit 0" in docs_job
+    assert "No documentation configured" in docs_job
+    assert "steps.detect.outputs.present != 'true'" in docs_job
 
 
 def test_repo_settings_can_configure_a_consumer_checkout():
@@ -533,30 +531,24 @@ def test_repo_settings_can_configure_a_consumer_checkout():
     assert "manifest_module.load(REPO_ROOT)" in content
 
 
-def test_the_deploy_workflow_does_not_hardcode_a_documentation_engine():
-    """Consumers retain the documentation command declared by their own environment."""
+def test_the_deploy_workflow_uses_the_native_docs_compiler():
+    """Deploy consumes docs.df through the shared DarkFactory compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert "docs_plan" in content
-    assert "steps.documentation.outputs.command" in content
-    assert "if: steps.documentation.outputs.needs_bun == 'true'" in content
-    assert "run: bun run scripts/build-docs.ts" not in content
-    assert "run: mkdocs build" not in content
-    assert "run: properdocs build" not in content
+    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
+    assert "pipeline-ref" in content
+    assert "folder: site" in content
 
 
-def test_the_deploy_workflow_keeps_the_paper_site_path():
-    """A Typst or LaTeX consumer publishes its PDFs through the shared workflow."""
+def test_the_deploy_workflow_has_no_second_paper_renderer():
+    """Documentation deployment has one renderer; domain-specific artifacts belong to capabilities."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert 'environment.configure(".")' in content
-    assert "env.has_domain('paper')" in content
-    assert "typst-community/setup-typst@v5" in content
-    assert "texlive-latex-recommended" in content
-    assert "find . -path ./site -prune -o -name '*.pdf'" in content
-    assert "> site/index.html" in content
+    assert "environment.configure" not in content
+    assert "typst-community/setup-typst" not in content
+    assert "texlive-latex" not in content
 
 
 def test_the_deploy_workflow_is_callable():
-    """Consumers share the theme and the hooks rather than each carrying a copy."""
+    """Consumers call the shared native documentation workflow."""
     yaml = pytest.importorskip("yaml")
     with open(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"), encoding="utf-8") as handle:
         document = yaml.safe_load(handle)
@@ -565,13 +557,11 @@ def test_the_deploy_workflow_is_callable():
     assert "pipeline-ref" in triggers["workflow_call"]["inputs"]
 
 
-def test_shared_documentation_assets_never_overwrite_a_consumers_own():
-    """A repository that has its own theme keeps it; the copy only ever fills a gap."""
-    content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert "[ -d theme ] || cp -r .darkfactory-pipeline/theme theme" in content
-    assert "cp -r .darkfactory-pipeline/theme theme\n" not in content.replace(
-        "[ -d theme ] || cp -r .darkfactory-pipeline/theme theme\n", ""
-    ), "the copy must always be guarded"
+def test_native_docs_owners_are_present():
+    """The current compiler, renderer and native configuration all exist."""
+    assert os.path.isfile(os.path.join(REPO_ROOT, "docs.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
 
 def test_the_app_installation_is_recorded():
@@ -681,15 +671,12 @@ def test_preview_deploys_and_tears_down_in_one_workflow():
     assert "branch: gh-pages" in content, "preview and deploy must share one Pages source"
 
 
-def test_preview_takes_the_build_command_from_the_caller():
-    """A preview uses the consumer's environment and installs Bun only when requested."""
+def test_preview_uses_the_same_native_docs_compiler():
+    """Preview and deploy render the same docs.df content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert "docs_plan" in content
-    assert "steps.documentation.outputs.command" in content
-    assert "if: steps.documentation.outputs.needs_bun == 'true'" in content
-    assert "run: bun run scripts/build-docs.ts" not in content
-    assert "run: properdocs build" not in content
-    assert "run: mkdocs build" not in content
+    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
+    assert "target-folder: pr-" in content
+    assert "pipeline-ref" in content
 
 
 def test_a_failed_project_lookup_never_creates_a_board():
@@ -734,24 +721,14 @@ def test_no_script_defaults_to_another_repository():
             assert found == slug, f"{name} names {found}, but this repository is {slug}"
 
 
-def test_the_documentation_command_is_the_one_this_repository_uses():
-    """Governance text is read by the agent as instruction, so a stale command misleads it.
-
-    `AGENTS.md` told every contributor - and every agent run - to verify with `mkdocs build
-    --strict` long after the migration to properdocs removed mkdocs entirely. An agent following
-    the rules it was given proposed a verification step nobody could run, which is the rules being
-    wrong rather than the agent.
-    """
-    for relative in (
-        "AGENTS.md",
-        "PRD.md",
-        os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
-        os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
-    ):
-        content = _read(os.path.join(REPO_ROOT, relative))
-        assert (
-            "mkdocs build" not in content
-        ), f"{relative} names mkdocs, but this repository builds with properdocs"
+def test_repository_documents_name_the_native_docs_contract():
+    """Normative repository text points at the current documentation owners."""
+    agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
+    prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
+    assert "docs.df" in agents
+    assert "docs.df" in prd
+    assert "@darkfactory/docs" in prd
+    assert "@darkfactory/web" in prd
 
 
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
@@ -1224,13 +1201,10 @@ def test_bot_comments_do_not_start_an_agent_container():
     assert condition.count("!endsWith") == 1
 
 
-def test_ci_docs_job_sets_up_bun_only_when_the_command_needs_it():
-    """DarkFactory's docs command is `bun run scripts/build-docs.ts`; the docs job had no Bun.
-
-    The #260 checks failed with "bun: command not found" once the command came from Bun.
-    """
+def test_ci_docs_job_runs_the_native_bun_compiler():
+    """docs.df is compiled by the Bun workspace, not a Python-selected engine."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     block = content.split("\n  docs:", 1)[1]
-    assert "needs_bun=" in block
-    assert "if: steps.documentation.outputs.needs_bun == 'true'" in block
     assert "uses: oven-sh/setup-bun@v2" in block
+    assert "bun install --frozen-lockfile" in block
+    assert 'bun "$ROOT/scripts/build-docs.ts"' in block

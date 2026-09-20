@@ -1,6 +1,9 @@
+/** Artifact subject handled by the shared review/fix engine. */
 export type ReviewSubject = "planning" | "implementation";
+/** Normalized severity of a review finding. */
 export type ReviewSeverity = "info" | "warning" | "error";
 
+/** Structured finding emitted by the shared review engine. */
 export interface ReviewFinding {
 	id: string;
 	category: string;
@@ -11,6 +14,7 @@ export interface ReviewFinding {
 	remediation?: string;
 }
 
+/** Persisted record of one review or fix iteration. */
 export interface ReviewIterationRecord {
 	iteration: number;
 	phase: "review" | "fix";
@@ -20,6 +24,7 @@ export interface ReviewIterationRecord {
 	observedAt: string;
 }
 
+/** Durable resumable state of a review/fix loop. */
 export interface ReviewRuntimeState {
 	subject: ReviewSubject;
 	contextFingerprint: string;
@@ -31,6 +36,7 @@ export interface ReviewRuntimeState {
 	approvedAt?: string;
 }
 
+/** Graph configuration for review and fix nodes. */
 export type ReviewNodeConfig =
 	| {
 			subject: ReviewSubject;

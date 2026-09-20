@@ -1,6 +1,6 @@
 /** @packageDocumentation
- * Browser-safe human authentication boundary.
+ * Browser-safe human GitHub authentication and session boundary for DarkFactory Web.
  *
- * #423 owns the concrete GitHub OAuth implementation. This package intentionally has no machine-keychain imports.
+ * Machine credentials and GitHub App private-key operations belong to keychain custody and are never exposed here.
  */
 export type { AuthorAssociation } from "@darkfactory/protocol/workflow";

@@ -5,10 +5,12 @@ const ALGORITHM = "aes-256-gcm";
 const KEY_BYTE_LENGTH = 32;
 const IV_BYTE_LENGTH = 12;
 
+/** Generates a new encoded vault encryption key. */
 export function generateVaultKey(): string {
   return randomBytes(KEY_BYTE_LENGTH).toString("base64");
 }
 
+/** Checks whether a value is a valid encoded vault key. */
 export function isValidVaultKey(keyBase64: string): boolean {
   if (!keyBase64 || typeof keyBase64 !== "string") return false;
   try {
@@ -19,6 +21,7 @@ export function isValidVaultKey(keyBase64: string): boolean {
   }
 }
 
+/** Encrypts a vault into a versioned authenticated envelope. */
 export function encryptVault(vault: Vault, keyBase64: string): EncryptedVaultEnvelope {
   if (!isValidVaultKey(keyBase64)) throw new Error("Invalid vault key format");
   const key = Buffer.from(keyBase64, "base64");
@@ -38,6 +41,7 @@ export function encryptVault(vault: Vault, keyBase64: string): EncryptedVaultEnv
   };
 }
 
+/** Decrypts and validates a vault envelope. */
 export function decryptVault(envelope: EncryptedVaultEnvelope, keyBase64: string): Vault {
   if (!isValidVaultKey(keyBase64)) throw new Error("Invalid vault key format");
   if (!envelope || envelope.version !== 1 || envelope.algorithm !== ALGORITHM) {

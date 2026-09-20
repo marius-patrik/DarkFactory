@@ -3,28 +3,21 @@ name: Preview Documentation
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-
-# Previews publish to the `gh-pages` branch under `pr-<N>/`, and register a GitHub deployment so the
-# link appears in the pull request itself rather than only in a comment.
-  # Consumers call this rather than copying it, so previews and the version switcher they feed
-  # come from one place.
   workflow_call:
     inputs:
       pipeline-ref:
-        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        description: "Commit SHA of DarkFactory to use. Empty means this repository."
         required: false
         type: string
         default: ""
       pipeline-repo:
-        description: "Repository holding the shared scripts and theme."
+        description: "Repository containing the shared DarkFactory docs compiler."
         required: false
         type: string
         default: "marius-patrik/DarkFactory"
 
 permissions:
   contents: write
-  deployments: write
-  pull-requests: write
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
@@ -33,9 +26,6 @@ concurrency:
 jobs:
   deploy:
     name: preview
-    # A fork's token cannot write to this repository, so a preview would fail rather than be
-    # unavailable. Skip it and say nothing rather than reporting a red check for something the
-    # contributor cannot fix.
     if: >-
       github.event.action != 'closed' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -43,89 +33,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Check out the pinned pipeline
+
+      - name: Check out pinned DarkFactory
         if: inputs.pipeline-ref != ''
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        # A repository with no Python has no requirements file, which is every paper. The pipeline
-        # scripts need only the standard library, so the plan is still readable.
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          else
-            echo "No requirements-dev.txt; nothing to install."
-          fi
-
-      # The theme addresses every asset through the `url` filter, which emits page-relative paths,
-      # so a preview served from a subdirectory needs no site-url override.
-      - name: Materialise the shared documentation assets
-        run: |
-          if [ -d .darkfactory-pipeline ]; then
-            [ -d theme ] || cp -r .darkfactory-pipeline/theme theme
-            for f in docs_hooks environment manifest docs_versions; do
-              [ -f .github/scripts/$f.py ] || cp .darkfactory-pipeline/.github/scripts/$f.py .github/scripts/$f.py
-            done
-          fi
-
-      - name: Resolve the documentation command
-        id: documentation
-        run: |
-          PYTHONPATH=.github/scripts python - <<'PY' >> "$GITHUB_OUTPUT"
-          import shlex
-          import environment
-
-          plan = environment.configure(".").docs_plan()
-          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
-          executable = shlex.split(command)[0] if command else ""
-          print("command<<DARKFACTORY_DOCS_COMMAND")
-          print(command)
-          print("DARKFACTORY_DOCS_COMMAND")
-          print(f"needs_bun={str(executable == 'bun').lower()}")
-          PY
+          path: .darkfactory-runtime
 
       - name: Set up Bun
-        if: steps.documentation.outputs.needs_bun == 'true'
         uses: oven-sh/setup-bun@v2
 
+      - name: Install DarkFactory workspace
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          cd "$ROOT"
+          bun install --frozen-lockfile
+
       - name: Build documentation
-        # The engine is the caller's choice, exactly as in deploy-docs.yml.
-        env:
-          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
         run: |
-          COMMAND="$DOCUMENTATION_COMMAND"
-          [ -n "$COMMAND" ] || { echo "No documentation build configured."; exit 1; }
-          echo "Preview build: $COMMAND"
-          eval "$COMMAND"
-
-      - name: Disable Jekyll processing
-        run: touch site/.nojekyll
-
-      - name: Start deployment
-        id: start
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          id=$(gh api "repos/${{ github.repository }}/deployments" \
-            -f ref='${{ github.event.pull_request.head.sha }}' \
-            -f environment='pr-${{ github.event.pull_request.number }}' \
-            -f description='Documentation preview' \
-            -F auto_merge=false \
-            -F transient_environment=true \
-            -f 'required_contexts[]' \
-            --jq '.id')
-          echo "id=$id" >> "$GITHUB_OUTPUT"
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
 
       - name: Publish preview
         uses: JamesIves/github-pages-deploy-action@v4
@@ -135,52 +66,25 @@ jobs:
           target-folder: pr-${{ github.event.pull_request.number }}
           commit-message: "docs(preview): publish preview for #${{ github.event.pull_request.number }}"
 
-      - name: Finish deployment
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
-        run: |
-          state=${{ job.status == 'success' && 'success' || 'failure' }}
-          gh api "repos/${{ github.repository }}/deployments/${{ steps.start.outputs.id }}/statuses" \
-            -f state="$state" \
-            -f environment_url="$URL" \
-            -f description='Documentation preview'
-
   teardown:
     name: preview-teardown
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
-      - name: Remove the preview directory
+      - name: Remove preview
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          # No checkout in this job, so there is no `origin` to query with git. Ask the API.
-          if ! gh api "repos/${{ github.repository }}/branches/gh-pages" >/dev/null 2>&1; then
-            echo "No gh-pages branch; nothing to clean up."
+          if ! git ls-remote --exit-code "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" refs/heads/gh-pages >/dev/null 2>&1; then
+            echo "No gh-pages branch; nothing to remove."
             exit 0
           fi
-          git clone --depth 1 --branch gh-pages \
-            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" pages
+          git clone --depth 1 --branch gh-pages "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" pages
           cd pages
-          if [ ! -d "pr-${PR}" ]; then
-            echo "No preview published for #${PR}; nothing to remove."
-            exit 0
-          fi
+          [ -d "pr-${PR}" ] || exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm -rq "pr-${PR}"
           git commit -m "docs(preview): remove preview for #${PR}"
           git push origin gh-pages
-
-      - name: Deactivate the environment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api "repos/${{ github.repository }}/deployments?environment=pr-${{ github.event.pull_request.number }}" \
-            --jq '.[].id' | while read -r id; do
-              gh api "repos/${{ github.repository }}/deployments/$id/statuses" \
-                -f state='inactive' -f description='Preview removed' || true
-            done

@@ -33,7 +33,7 @@ Core/router/runtime tests plus capability adapter tests and live df-only accepta
 
 ## Exceptions
 
-Legacy Python invocation exists only during the controlled pre-#359 migration and is not an extension target.
+Retained Python orchestration is deletion/reference-only until its final TypeScript owner lands and is never an extension or compatibility target.
 
 ## Change control
 
