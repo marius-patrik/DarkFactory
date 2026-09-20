@@ -1,4 +1,4 @@
-#import "../templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label
+#import "/DarkFactory/templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label
 
 // Semantic relations never determine manuscript containment.
 // Folder manifests are the sole source of section hierarchy.
