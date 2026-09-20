@@ -1,5 +1,5 @@
 #import "/DarkFactory/templates/common.typ" as common
-#import "/DarkFactory/templates/terms.typ": vocabulary
+#import "/DarkFactory/index.typ": vocabulary
 #import "/DarkFactory/templates/gjkt-odborna-prace/template.typ" as gjkt
 
 // Centrální registry šablon. Manuskript importuje pouze tento soubor;
