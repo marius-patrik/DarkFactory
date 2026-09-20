@@ -38,11 +38,7 @@ LINK_REWRITES: Dict[str, str] = {
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
     ".agents/notes/adr/README.md": "architecture/decisions/process.md",
-    "_notes/adr/README.md": "architecture/decisions/process.md",
-    "adr/README.md": "architecture/decisions/process.md",
-    "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
-    "_notes/adr/": "architecture/decisions/index.md",
 }
 
 #: A repository may publish one reference file verbatim, wrapped in a code fence so the
@@ -127,13 +123,16 @@ def discover_adrs(root: str) -> List[Dict[str, str]]:
                 f"the generated index cannot be built from it."
             )
         status_match = _STATUS_PATTERN.search(content)
+        status = status_match.group("status").strip() if status_match else "Unknown"
+        if status != "Accepted":
+            raise ValueError(f"{ADR_SOURCE_DIR}/{name} must have Status: Accepted")
         resolves_match = _RESOLVES_PATTERN.search(content)
 
         records.append(
             {
                 "number": title_match.group("number"),
                 "title": title_match.group("title"),
-                "status": status_match.group("status").strip() if status_match else "Unknown",
+                "status": status,
                 "resolves": resolves_match.group("resolves").strip() if resolves_match else "",
                 "source": f"{ADR_SOURCE_DIR}/{name}".replace(os.sep, "/"),
                 "dest": f"{ADR_DEST_PREFIX}/{name[:-3]}.md",
@@ -230,11 +229,8 @@ def _rewrite_links(markdown: str, dest_path: str) -> str:
 
         replacement = LINK_REWRITES.get(normalized)
         if replacement is None:
-            # Records are addressed as `.agents/notes/adr/NNNN-slug.md` from the repository root;
-            # links from other repositories resolved through the root `_notes` alias and from within
-            # .agents/notes/ use the same pattern and publish under the decisions section.
             adr_match = re.fullmatch(
-                r"(?:(?:\.agents/notes|_notes)/)?adr/(?P<slug>[^/]+\.md)", normalized
+                r"\.agents/notes/adr/(?P<slug>[^/]+\.md)", normalized
             )
             if adr_match:
                 replacement = f"{ADR_DEST_PREFIX}/{adr_match.group('slug')}"
