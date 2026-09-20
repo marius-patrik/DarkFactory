@@ -136,15 +136,15 @@ The following work should proceed before #359 whenever its interfaces are stable
 
 ### Documentation and web
 
-- #424 — finish `@darkfactory/docs`, native `docs.df`, typed content graph and README projection.
-- #334 — complete TSDoc coverage and strict API-doc enforcement for all final public exports.
-- #335 — publish the DarkFactory API and architecture from the docs content graph.
-- #336 — keep README/PRD current through deterministic docs-impact enforcement.
-- #337 — ensure every repository documentation surface contains only current architecture and decisions.
-- #425 — finish the prebuilt GitHub-backed `@darkfactory/web` application.
-- #390 — integrate the dashboard/operator surfaces into the shared web application where still applicable.
+PR #577 is the active documentation convergence gate. It must land the native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path, deterministic README projection and current-only documentation with no alternate documentation runtime.
 
-Documentation work must not create a second renderer or compatibility documentation stack.
+After that gate:
+- #334 — keep strict TSDoc/API coverage complete as final public exports are added.
+- #336 — enforce deterministic docs-impact updates for PRD and other normative surfaces.
+- #425 — finish the broader GitHub-backed operator application on the same `@darkfactory/web` package.
+- #390 — integrate remaining operator/dashboard surfaces into that shared application.
+
+Documentation work has one compiler, one semantic graph and one renderer.
 
 ## 7. Final release
 
@@ -201,7 +201,7 @@ Highest-value concurrent work:
 1. #329 and #341 in parallel;
 2. #358 as soon as their required interfaces are available;
 3. #317 then #359 on the core-engine spine;
-4. #422/#248/#423, #339/#384/#385/#386/#388, #403/#251/#332/#252, and #424/#334/#335/#336/#337/#425/#390 in parallel according to their actual dependencies;
+4. land PR #577; continue #334/#336/#425/#390 alongside #422/#248/#423, #339/#384/#385/#386/#388 and #403/#251/#332/#252 according to their actual dependencies;
 5. #360 final release;
 6. #361 fleet acceptance;
 7. #68 final product acceptance.

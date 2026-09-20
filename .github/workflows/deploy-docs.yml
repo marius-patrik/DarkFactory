@@ -4,28 +4,21 @@ on:
   push:
     branches: ["darkfactory"]
   workflow_dispatch:
-  # Consumers call this rather than copying it, so the theme, the hooks and the version manifest
-  # are shared rather than duplicated per repository.
   workflow_call:
     inputs:
       pipeline-ref:
-        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        description: "Commit SHA of DarkFactory to use. Empty means this repository."
         required: false
         type: string
         default: ""
       pipeline-repo:
-        description: "Repository holding the shared scripts and theme."
+        description: "Repository containing the shared DarkFactory docs compiler."
         required: false
         type: string
         default: "marius-patrik/DarkFactory"
 
-# Published to the `gh-pages` branch rather than through the Pages build action, so that per-pull-
-# request previews can live under `pr-<N>/` on the same site. GitHub Pages has one source, so the
-# two cannot use different mechanisms. `.darkfactory/repo.df` declares the same source, and
-# `tests/test_pipeline_config.py` fails if the two disagree - the first deploy 404s otherwise.
 permissions:
   contents: write
-  deployments: write
 
 concurrency:
   group: pages
@@ -42,162 +35,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check out the pinned pipeline
+      - name: Check out pinned DarkFactory
         if: inputs.pipeline-ref != ''
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.pipeline-repo }}
           ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
-
-      - name: Materialise the shared documentation assets
-        # The theme and the hooks are part of the pipeline, not of each repository, so a consumer
-        # that carries neither gets the shared ones. A consumer that has its own keeps it: this
-        # only ever fills a gap, it never overwrites.
-        run: |
-          if [ -d .darkfactory-pipeline ]; then
-            # A consumer carries none of the pipeline, so the destination may not exist yet.
-            mkdir -p .github/scripts
-            [ -d theme ] || cp -r .darkfactory-pipeline/theme theme
-            [ -f .github/scripts/docs_hooks.py ] || cp .darkfactory-pipeline/.github/scripts/docs_hooks.py .github/scripts/docs_hooks.py
-            [ -f .github/scripts/environment.py ] || cp .darkfactory-pipeline/.github/scripts/environment.py .github/scripts/environment.py
-            [ -f .github/scripts/manifest.py ] || cp .darkfactory-pipeline/.github/scripts/manifest.py .github/scripts/manifest.py
-            [ -f .github/scripts/docs_versions.py ] || cp .darkfactory-pipeline/.github/scripts/docs_versions.py .github/scripts/docs_versions.py
-          fi
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        # A repository with no Python has no requirements file, which is every paper. The pipeline
-        # scripts need only the standard library, so the documentation plan is still readable.
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          else
-            echo "No requirements-dev.txt; this repository declares no documentation engine."
-          fi
-
-      - name: Resolve the documentation command
-        id: documentation
-        run: |
-          PYTHONPATH=.github/scripts python - <<'PY' >> "$GITHUB_OUTPUT"
-          import shlex
-          import environment
-
-          plan = environment.configure(".").docs_plan()
-          command = next((entry["command"] for entry in plan.values() if entry.get("command")), "")
-          executable = shlex.split(command)[0] if command else ""
-          print("command<<DARKFACTORY_DOCS_COMMAND")
-          print(command)
-          print("DARKFACTORY_DOCS_COMMAND")
-          print(f"needs_bun={str(executable == 'bun').lower()}")
-          PY
+          path: .darkfactory-runtime
 
       - name: Set up Bun
-        if: steps.documentation.outputs.needs_bun == 'true'
         uses: oven-sh/setup-bun@v2
 
-      - name: Detect the paper domain
-        id: paper
+      - name: Install DarkFactory workspace
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, sys
-          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
-          import environment
-
-          env = environment.configure(".")
-          plan = env.test_plan()
-          print(f"present={str(env.has_domain('paper')).lower()}")
-          print(f"typst={str(env.has('typst')).lower()}")
-          print(f"latex={str(env.has('latex')).lower()}")
-          for engine in ("typst", "latex"):
-              if engine in plan:
-                  print(f"{engine}_command={plan[engine]['command']}")
-          PY
-
-      - name: Set up Typst
-        if: steps.paper.outputs.typst == 'true'
-        uses: typst-community/setup-typst@v5
-
-      - name: Set up TeX Live
-        if: steps.paper.outputs.latex == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          cd "$ROOT"
+          bun install --frozen-lockfile
 
       - name: Build documentation
-        # The command comes from this repository's declared environment rather than being fixed
-        # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
-        # The documentation command is resolved from the repository's active documentation contract.
-        env:
-          DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
         run: |
-          COMMAND="$DOCUMENTATION_COMMAND"
-          if [ -z "$COMMAND" ]; then
-            # A paper has no API to extract a reference from, so it declares no documentation
-            # command - but it is still worth publishing. Its site is the document itself.
-            if [ "${{ steps.paper.outputs.present }}" = "true" ]; then
-              echo "No documentation engine; publishing the typeset document instead."
-              mkdir -p out
-              for engine_command in "${{ steps.paper.outputs.typst_command }}" \
-                                    "${{ steps.paper.outputs.latex_command }}"; do
-                [ -n "$engine_command" ] && eval "$engine_command"
-              done
-              mkdir -p site
-              find . -path ./site -prune -o -name '*.pdf' -exec cp {} site/ \; 2>/dev/null || true
-              {
-                echo "<!doctype html>"
-                echo "<meta charset=utf-8>"
-                echo "<title>$GITHUB_REPOSITORY</title>"
-                echo "<h1>$GITHUB_REPOSITORY</h1>"
-                echo "<ul>"
-                for pdf in site/*.pdf; do
-                  [ -e "$pdf" ] || continue
-                  name=$(basename "$pdf")
-                  echo "<li><a href=\"$name\">$name</a></li>"
-                done
-                echo "</ul>"
-              } > site/index.html
-              exit 0
-            fi
-            echo "No documentation build is configured for this repository."
-            exit 1
-          fi
-          echo "Documentation build: $COMMAND"
-          eval "$COMMAND"
-
-      - name: Disable Jekyll processing
-        run: touch site/.nojekyll
-
-      - name: Fetch the published site to see which builds exist
-        # The switcher lists what is really on `gh-pages`, not what this run believes it
-        # published, so a preview torn down by hand disappears on the next deploy.
-        run: |
-          git fetch origin gh-pages --depth=1 || true
-          rm -rf .published && mkdir -p .published
-          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
-            git --work-tree=.published checkout origin/gh-pages -- . 2>/dev/null || true
-          fi
-
-      - name: Write the version manifest
-        run: |
-          python "${PIPELINE_SCRIPTS:-.github/scripts}/docs_versions.py" \
-            --site-root .published \
-            --repo-root . \
-            --current "${{ github.ref_name }}" \
-            --out site/versions.json
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
 
       - name: Publish to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: site
-          # Replace the site, but never a live pull request preview.
           clean: true
           clean-exclude: |
             pr-*

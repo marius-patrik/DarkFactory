@@ -48,7 +48,7 @@ The final DarkFactory architecture is a root Bun workspace:
 | `@darkfactory/auth` | Human/browser GitHub App authentication and web sessions |
 | `@darkfactory/docs` | Headless documentation compiler and content graph |
 | `@darkfactory/cli` | `df` CLI, command composition and TUI |
-| `@darkfactory/web` | Shared React web application for docs and operator UI |
+| `@darkfactory/web` | Shared web renderer and operator UI package |
 
 Any remaining code under `harness/` is deletion-bound implementation source, not a public package or documented architecture boundary.
 
@@ -122,25 +122,13 @@ The final compiler combines:
 
 TypeDoc may be used internally for TypeScript extraction.
 
-The docs homepage and this README will be rendered from the same semantic content graph so they cannot drift independently.
+The docs homepage and this README are rendered from the same semantic content graph so they cannot drift independently.
 
 ## DarkFactory Web
 
-Every consumer uses the same prebuilt `@darkfactory/web` release artifact. Consumer repositories compile their own content/data but do **not** rebuild the React application.
+`@darkfactory/web` owns first-party web rendering. The documentation renderer consumes the canonical `@darkfactory/docs` content graph and emits the static GitHub Pages artifact without a second documentation engine or theme runtime.
 
-The application is hosted on GitHub Pages and reads live GitHub state directly through browser-safe GitHub/auth interfaces.
-
-Target UI stack:
-
-- React + TypeScript;
-- shadcn/ui;
-- lucide-animated;
-- Motion;
-- Dagre;
-- Wouter;
-- Dockview where useful.
-
-The web application is intended to replace normal day-to-day use of the GitHub website for DarkFactory operations while keeping GitHub itself as the durable issue/PR/check/project/event/authorization layer.
+The broader GitHub-backed operator application shares the same package boundary and browser-safe protocol/GitHub/auth contracts; #425 owns that operator surface. GitHub remains the durable issue/PR/check/project/event/authorization layer rather than a duplicated DarkFactory state database.
 
 ## Self-hosting and completion strategy
 
