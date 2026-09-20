@@ -13,22 +13,16 @@
 #let item = concept(
   key: "github",
   term: terminology,
-  heading: terms => [#term(terms.github, marker: false, linked: false, emphasized: false)],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 GitHub poskytuje nad gitovým repozitářem koordinační vrstvu pro zadání práce, revizi změn a automatizaci. Tyto odpovědnosti jsou v práci dále rozloženy mezi samostatné koncepty Issue, Pull Request a GitHub Actions.
 ]
   ],
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "related", target: "git"), (type: "related", target: "pull_request"), (type: "related", target: "github_actions"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "related", target: "git"), (type: "related", target: "pull_request"), (type: "related", target: "github_actions"),),
 )
