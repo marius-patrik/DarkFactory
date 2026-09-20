@@ -178,14 +178,14 @@ class TestNoForeignIdentityLeaks:
 
 
 class TestRequiredChecks:
-    """Calling a reusable workflow renames every check, and protection must follow."""
+    """Final direct workflows expose stable aggregate protection contexts."""
 
     def test_this_repository_uses_the_bare_names(self):
         checks = manifest_module.load(REPO_ROOT).required_checks
-        assert "pipeline (3.12)" in checks
+        assert "quality" in checks
         assert "verify-bound-issue" in checks
 
-    def test_a_consumer_declares_the_prefixed_names(self, tmp_path):
+    def test_a_consumer_can_still_override_required_checks(self, tmp_path):
         _write_manifest(
             tmp_path, {"required_checks": ["pipeline / pipeline (3.12)", "pipeline / docs"]}
         )
