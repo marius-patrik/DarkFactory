@@ -618,7 +618,7 @@ function DocumentNavigationPanel({
               />
             </button>
           </div>
-          <div className="structure-list" aria-label="Document structure">
+          <nav className="structure-list" aria-label="Document structure">
             {pages.map((page) => (
               <div className="structure-page-group" key={page.number}>
                 {(chaptersByPage.get(page.number) || []).map((chapter) => (
@@ -654,11 +654,10 @@ function DocumentNavigationPanel({
                 )}
               </div>
             ))}
-          </div>
+          </nav>
           {!hidden && (
-            <div
+            <hr
               className={"sidebar-resizer sidebar-resizer-" + side}
-              role="separator"
               aria-orientation="vertical"
               aria-label="Resize sidebar"
               onPointerDown={beginResize}
@@ -685,7 +684,7 @@ function DocumentNavigationPanel({
     </ContextMenu>
   );
 }
-const PdfPage = memoconst PdfPage = memo(function PdfPage({
+const PdfPage = memo(function PdfPage({
   pdf,
   info,
   scale,
