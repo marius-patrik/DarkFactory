@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker.js?worker";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
