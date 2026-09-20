@@ -1,5 +1,4 @@
 export * from "./schema.ts";
-export * from "./config.ts";
 export * from "./guard.ts";
 export * from "./templates.ts";
 export * from "./installer.ts";
