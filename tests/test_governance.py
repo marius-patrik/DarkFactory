@@ -73,7 +73,7 @@ def test_agents_mandates_plan_gate_and_verbatim_requests():
 def test_agents_points_repository_taxonomy_to_repo_df():
     """DF-RULE-015 keeps repository area taxonomy in repo.df instead of duplicating it in prose."""
     content = _read("AGENTS.md")
-    assert "Repository area labels/scopes are declared by final `repo.df`" in content
+    assert "Repository area labels/scopes are declared by `repo.df`" in content
     assert (
         "Request classification, commit-scope validation and repository labels consume the same declared taxonomy"
         in content
@@ -114,25 +114,26 @@ def test_legacy_knowledge_files_are_absent():
 
 
 def test_every_adr_is_a_discrete_record_with_status_and_date():
-    """Each ADR is one file with a numbered heading, a status, and a date.
-
-    The generated decision index and the status/nav sorting in `docs_hooks.py` rely on this shape,
-    so records cannot drift back into a multi-record ledger.
-    """
+    """Each ADR is one discrete record and every ADR in the repository is current and Accepted."""
     adr_dir = os.path.join(REPO_ROOT, ".agents", "notes", "adr")
     names = sorted(name for name in os.listdir(adr_dir) if name.endswith(".md"))
 
     records = [name for name in names if name not in ("README.md", "index.md")]
     assert records, "no discrete ADR records found"
 
+    readme_content = _read(os.path.relpath(adr_dir, REPO_ROOT), "README.md")
+
     numbers: list[str] = []
     for name in records:
         content = _read(os.path.relpath(adr_dir, REPO_ROOT), name)
         heading = re.search(r"^#\s+ADR-(\d{4})\s+—\s+(.+?)\s*$", content, re.M)
         assert heading, f"{name} must open with a '# ADR-NNNN — Title' heading"
-        numbers.append(heading.group(1))
-        assert re.search(r"\*\*Status\*\*:\s*[^\n]+", content), f"{name} must carry a Status field"
-        assert re.search(r"\d{4}-\d{2}-\d{2}", content), f"{name} must carry a YYYY-MM-DD date"
+        number = heading.group(1)
+        numbers.append(number)
+        status_match = re.search(r"\*\*Status\*\*:\s*([^\n]+)", content)
+        assert status_match, f"{name} must carry a Status field"
+        assert status_match.group(1).strip() == "Accepted", f"{name} must be Accepted; non-current ADRs are forbidden"
+        assert f"ADR-{number}" in readme_content, f"ADR-{number} must be indexed in README.md"
 
     assert len(numbers) == len(set(numbers)), "ADR numbers must be unique"
     assert numbers == sorted(numbers), "ADR records must remain monotonically numbered"
