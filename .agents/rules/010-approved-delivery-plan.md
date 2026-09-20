@@ -34,7 +34,7 @@ One independently-reviewed Planning artifact preserves human intent while elimin
 
 ## Enforcement
 
-#391 provides the durable Planning/review/fix lifecycle and shared review machinery.
+The governed Planning/review/fix lifecycle provides the durable Planning artifact and shared review machinery.
 
 ## Exceptions
 
