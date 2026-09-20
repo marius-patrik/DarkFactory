@@ -207,11 +207,17 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 		if (!record.difficultyTiers || typeof record.difficultyTiers !== "object" || Array.isArray(record.difficultyTiers))
 			throw new Error("config.df router.difficultyTiers must be an object");
 		const raw = record.difficultyTiers as Record<string, unknown>;
-		const easy = optionalString({ easy: raw.easy }, "router.difficultyTiers.easy");
-		const medium = optionalString({ medium: raw.medium }, "router.difficultyTiers.medium");
-		const hard = optionalString({ hard: raw.hard }, "router.difficultyTiers.hard");
-		if (!easy || !medium || !hard) throw new Error("config.df router.difficultyTiers must have easy, medium, and hard");
-		difficultyTiers = { easy, medium, hard };
+		const difficultyTier = (name: "easy" | "medium" | "hard"): string => {
+			const value = raw[name];
+			if (typeof value !== "string" || !value.trim())
+				throw new Error(`config.df router.difficultyTiers.${name} must be a non-empty string`);
+			return value.trim();
+		};
+		difficultyTiers = {
+			easy: difficultyTier("easy"),
+			medium: difficultyTier("medium"),
+			hard: difficultyTier("hard"),
+		};
 	}
 	assertTierConfiguration(capabilityTiers, defaultTier, difficultyTiers);
 	let dataCollection: RouterConfig["dataCollection"];
