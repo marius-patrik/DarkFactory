@@ -8,3 +8,4 @@ export * from "./content.ts";
 export * from "./readme.ts";
 export * from "./api.ts";
 export * from "./current.ts";
+export * from "./impact.ts";
