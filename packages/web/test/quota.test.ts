@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { OperatorQuotaSnapshot } from "@darkfactory/protocol/quota";
-import { quotaDashboardModels } from "../src/quota.tsx";
+import { quotaDashboardModels, quotaDashboardProviders } from "../src/quota.tsx";
 
 function snapshot(): OperatorQuotaSnapshot {
 	return {
@@ -102,6 +102,34 @@ describe("quota dashboard mapping", () => {
 			state: "unknown",
 			limits: [],
 		});
+	});
+
+	test("preserves provider identity and no-account state when no model rows exist", () => {
+		const value: OperatorQuotaSnapshot = {
+			version: 1,
+			generatedAt: "2026-09-20T20:00:00.000Z",
+			providers: [
+				{
+					id: "disabled-provider",
+					name: "Disabled Provider",
+					enabled: false,
+					credentials: "missing",
+					state: "no-account",
+					accounts: [],
+				},
+			],
+		};
+		expect(quotaDashboardProviders(value)).toEqual([
+			{
+				id: "disabled-provider",
+				name: "Disabled Provider",
+				enabled: false,
+				credentials: "missing",
+				state: "no-account",
+				accounts: [],
+			},
+		]);
+		expect(quotaDashboardModels(value)).toEqual([]);
 	});
 
 	test("allow-list projection cannot leak unexpected runtime secret fields", () => {
