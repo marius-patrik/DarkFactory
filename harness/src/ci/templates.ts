@@ -4,13 +4,9 @@ import { dirname, join } from "node:path";
 
 export const DARKFACTORY_WORKFLOW_VERSION = "0.1.0";
 
-export const STANDARD_WORKFLOW_TEMPLATES = [
-	"ci.yml",
-	"verify-bound-issue.yml",
-	"df-dispatch.yml",
-] as const;
+export const STANDARD_WORKFLOW_TEMPLATES = ["ci.yml", "verify-bound-issue.yml", "df-dispatch.yml"] as const;
 
-export type StandardWorkflowName = typeof STANDARD_WORKFLOW_TEMPLATES[number];
+export type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
 
 const BUILTIN_TEMPLATES: Record<StandardWorkflowName, string> = {
 	"ci.yml": `name: CI
@@ -121,9 +117,7 @@ export function interpolateTemplate(rawTemplate: string, context: TemplateContex
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
 		pipeline_ref: context.pipeline_ref || "darkfactory",
-		...Object.fromEntries(
-			Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]
-		),
+		...Object.fromEntries(Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]),
 	};
 
 	return rawTemplate.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) => fullContext[key] ?? "");

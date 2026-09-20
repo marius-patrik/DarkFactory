@@ -1,6 +1,6 @@
 import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
 import type { GitHubRepository } from "../github/repository.ts";
-import { resolveDetectedQuality, type DetectedQualityState } from "./detected.ts";
+import { type DetectedQualityState, resolveDetectedQuality } from "./detected.ts";
 import { checkWorkflowsDrift } from "./installer.ts";
 import { computeRequiredChecks, verifyBranchProtection } from "./protection.ts";
 
@@ -29,17 +29,18 @@ export async function runCiDoctor(
 	try {
 		detected = await resolveDetectedQuality(repoDir);
 		const gaps = detected.resolution.gaps;
-		repositoryResult = gaps.length === 0
-			? {
-					status: "pass",
-					message: `Detected ${detected.evidence.packages.length} package(s) with complete deterministic action coverage`,
-					details: { packages: detected.evidence.packages, matrix: detected.matrix },
-				}
-			: {
-					status: "warn",
-					message: `Detected ${detected.evidence.packages.length} package(s) with ${gaps.length} explicitly unsupported/missing action(s)`,
-					details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
-				};
+		repositoryResult =
+			gaps.length === 0
+				? {
+						status: "pass",
+						message: `Detected ${detected.evidence.packages.length} package(s) with complete deterministic action coverage`,
+						details: { packages: detected.evidence.packages, matrix: detected.matrix },
+					}
+				: {
+						status: "warn",
+						message: `Detected ${detected.evidence.packages.length} package(s) with ${gaps.length} explicitly unsupported/missing action(s)`,
+						details: { packages: detected.evidence.packages, gaps, matrix: detected.matrix },
+					};
 	} catch (error) {
 		repositoryResult = {
 			status: "fail",
@@ -117,9 +118,8 @@ export async function runCiDoctor(
 		}
 	}
 
-	const ok = repositoryResult.status !== "fail"
-		&& workflowsResult.status !== "fail"
-		&& protectionResult.status !== "fail";
+	const ok =
+		repositoryResult.status !== "fail" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
 	return {
 		ok,
 		checks: {
