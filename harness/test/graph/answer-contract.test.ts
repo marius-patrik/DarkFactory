@@ -31,8 +31,12 @@ describe("answer contract", () => {
 
 	test("defensive runtime type and presence checks", () => {
 		const action = { type: "comment", node: "resp", status: "Blocked" as const, message: "ok" };
-		expect(validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, null as any, action).valid).toBe(true);
-		expect(validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, undefined as any, action).valid).toBe(true);
+		expect(validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, null as any, action).valid).toBe(
+			true,
+		);
+		expect(
+			validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, undefined as any, action).valid,
+		).toBe(true);
 		expect(validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, "", action).valid).toBe(true);
 		expect(validateAnswerContract({ login: "a", association: "OWNER", is_bot: false }, "   ", action).valid).toBe(true);
 	});

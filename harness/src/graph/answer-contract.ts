@@ -27,7 +27,7 @@ export function validateAnswerContract(_actor: Actor, body: string, action: Plan
 	if (action.type !== "run") {
 		const sanitizedBody = body
 			.replace(/```[\s\S]*?```/g, "") // Strip code blocks
-			.replace(/^>.*$/gm, "");        // Strip blockquotes
+			.replace(/^>.*$/gm, ""); // Strip blockquotes
 
 		for (const pattern of MUTATION_CLAIMS) {
 			if (pattern.test(sanitizedBody)) {
