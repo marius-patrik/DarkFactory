@@ -350,10 +350,7 @@ def on_config(config: Any) -> Any:
             },
             {"The declaration": DECLARATION_DEST},
             {"Contributing & Agent Rules": "agents.md"},
-            {
-                "Notes": [
-                ]
-            },
+            {"Notes": []},
         ]
     )
     return config
