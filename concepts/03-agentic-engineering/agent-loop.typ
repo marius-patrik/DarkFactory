@@ -23,7 +23,7 @@ Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harn
 V každé iteraci agentní smyčky harness zajišťuje tyto klíčové funkce:
 - Inicializace a správa sezení: Sestavení systémového promptu, dynamická injekce kontextu repozitáře a sledování spotřeby tokenů.
 - Běhové prostředí nástrojů: Bezpečné spouštění příkazů v operačním systému a zpětné předávání výstupů modelu.
-- Řízení stavových přechodů a vynucování mantinelů: Dohled nad dodržováním procesních pravidel, detekce a zastavení uvíznutých běhů a vynucování lidských schvalovacích bran.
+- Řízení stavových přechodů a vynucování mantinelů (#term(terms.loop_engineering, language: "en", marker: false, linked: false, emphasized: false)): Dohled nad dodržováním procesních pravidel, detekce a zastavení uvíznutých běhů a vynucování lidských schvalovacích bran.
 
 Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem ReAct (_Reasoning + Acting_) @yao2022, který propojuje rozvahu s přímým jednáním. Tento prováděcí cyklus sestává ze čtyř navazujících fází znázorněných na @fig-react-loop:
 1. Rozvaha (_Thought_): Model vyhodnotí aktuální stav kontextu a formuluje svůj nejbližší záměr.
