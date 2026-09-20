@@ -1,6 +1,6 @@
 # ADR-0002 — The agent pipeline is harness-agnostic
 
-**Status**: Accepted · 2026-09-06
+**Status**: Superseded by ADR-0006 · 2026-09-15
 
 ## Context
 
