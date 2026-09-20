@@ -5,11 +5,15 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./docs": "./src/docs.ts"
+    "./docs": "./src/docs.ts",
+    "./quota": "./src/quota.tsx"
   },
   "files": [
     "src"
   ],
+  "scripts": {
+    "test": "bun test test/quota.test.ts"
+  },
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
