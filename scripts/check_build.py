@@ -949,7 +949,7 @@ for required in (
     "loadOutlineChapters",
     "resolveSemanticChapters",
     "normalizeHeadingText",
-    "GlobalWorkerOptions.workerPort",
+    "GlobalWorkerOptions.workerSrc",
     'new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url)',
     "pdf.getOutline",
     "item.items",
