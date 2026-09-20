@@ -1,5 +1,6 @@
 #import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
+#import "react-loop-diagram.typ" as react_loop_diagram
 
 #let terminology = define-term(
     id: "agent-loop",
@@ -35,17 +36,13 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
 
-#figure(
-  image("/DarkFactory/img/react-loop.svg", width: 100%),
-  caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
-) <fig-react-loop>
   ],
   summary: terms => [
 Agentní smyčka koordinuje opakované rozhodování modelu s vykonáváním akcí; její provozní spolehlivost proto závisí na řízení stavu, nástrojů, rozpočtů a podmínek ukončení.
   ],
   visual: none,
   examples: (),
-  attachments: (),
+  attachments: (react_loop_diagram.item,),
   citations: (),
   relations: ((type: "dependency", target: "agent"),),
 )
