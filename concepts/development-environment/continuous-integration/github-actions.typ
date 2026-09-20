@@ -15,9 +15,13 @@
   key: "github_actions",
   term: terminology,
   heading: terms => [#term(terms.github_actions, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#unconfirmed[
+GitHub Actions spouští deklarovaná workflow v reakci na události repozitáře. V této práci představuje konkrétní automatizační prostředí, které realizuje CI kontroly a další repozitářové procesy.
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
