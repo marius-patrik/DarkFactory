@@ -1,5 +1,5 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
-#import "../../../schema.typ": concept
+#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/schema.typ": concept
 
 #let terminology = define-term(id: "agent-divergence", proper: translation(cs: "Patologie divergence", en: "Agent Divergence Pathologies"), explanation_cs: "Třída selhání agentní smyčky, při níž se iterativní běh vzdaluje cíli například perseverací, oscilací nebo nekontrolovanou spotřebou zdrojů.", explanation_en: "A class of agent-loop failures in which iterative execution moves away from the goal through perseveration, oscillation, or uncontrolled resource consumption.", keyword: false, citation: bib.shinn2023reflexion, source: bib.shinn2023reflexion)
 
