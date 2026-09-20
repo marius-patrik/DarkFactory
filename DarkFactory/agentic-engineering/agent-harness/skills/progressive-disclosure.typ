@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -13,7 +13,7 @@ definition: terms => [
 Postupné zpřístupňování je strategie, při níž se do aktivního kontextu nejprve vkládají pouze stručné popisy schopností a podrobné instrukce se načtou až při jejich použití.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 U dovedností snižuje postupné zpřístupňování kontextovou režii: základní prompt obsahuje pouze přehled dostupných dovedností a úplný obsah příslušného `SKILL.md` se načte až tehdy, když jej agent pro konkrétní úlohu potřebuje.
 ]
   ],
