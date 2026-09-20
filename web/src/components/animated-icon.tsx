@@ -21,9 +21,13 @@ import {
   Maximize,
   Minimize,
   Minus,
+  PanelBottomOpen,
   PanelLeft,
   PanelsLeftRight,
   PanelRight,
+  PanelRightOpen,
+  Rows2,
+  Square,
   PencilLine,
   RefreshCw,
 } from "lucide-react";
@@ -91,6 +95,14 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   PanelsLeftRightIcon: PanelsLeftRight,
   PanelRight,
   PanelRightIcon: PanelRight,
+  PanelRightOpen,
+  PanelRightOpenIcon: PanelRightOpen,
+  PanelBottomOpen,
+  PanelBottomOpenIcon: PanelBottomOpen,
+  Rows2,
+  Rows2Icon: Rows2,
+  Square,
+  SquareIcon: Square,
   Maximize,
   MaximizeIcon: Maximize,
   Minimize,
@@ -108,13 +120,14 @@ export function AnimatedIcon({
   ...props
 }: AnimatedIconProps) {
   const candidates = Array.isArray(names) ? names : [names];
+  const glyphSize = size === 16 ? size : 16;
   const animatedRegistry = AnimatedIcons as unknown as Record<string, LucideAnimatedComponent>;
 
   const Animated = candidates.map((name) => animatedRegistry[name]).find(Boolean);
   if (Animated) {
     return (
       <Animated
-        size={size}
+        size={glyphSize}
         animateOnHover
         className={className}
         aria-hidden="true"
@@ -132,7 +145,7 @@ export function AnimatedIcon({
 
   return (
     <Static
-      size={size}
+      size={glyphSize}
       className={className}
       aria-hidden="true"
       focusable="false"
