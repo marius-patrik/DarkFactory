@@ -4,20 +4,22 @@
 #let terminology = define-term(
   id: "agent-session",
   proper: translation(cs: "Agentní sezení", en: "Agent Session"),
-  explanation_cs: "Ohraničený běh agenta se sdíleným stavem, systémovými instrukcemi, pracovním kontextem, historií tahů a provozními rozpočty.",
-  explanation_en: "A bounded agent run with shared state, system instructions, working context, turn history, and operating budgets.",
 )
 
 #let item = concept(
   key: "agent_session",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Agentní sezení je ohraničený běh agenta se sdíleným stavem, systémovými instrukcemi, pracovním kontextem, historií tahů a provozními rozpočty.
+  ],
   description: terms => [
 #unconfirmed[
 Správa agentního sezení zahrnuje sestavení systémového promptu, načtení relevantního kontextu repozitáře, průběžné uchování stavu a sledování rozpočtů, například spotřeby tokenů nebo počtu iterací.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Sezení poskytuje jednotku životního cyklu, ve které lze konzistentně spravovat stav, kontext a zdrojové limity jednoho agentního běhu.
+  ],
   visual: none,
   examples: (),
   attachments: (),
