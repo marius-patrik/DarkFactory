@@ -15,9 +15,13 @@
   key: "container",
   term: terminology,
   heading: terms => [#term(terms.container, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#unconfirmed[
+Kontejner může CI běhu poskytnout opakovatelné uživatelské prostředí s deklarovanými nástroji a závislostmi. Tím omezuje vliv lokální konfigurace vývojářského počítače, aniž by sám o sobě zaručoval úplnou bezpečnostní izolaci.
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
