@@ -67,6 +67,16 @@ Repository documentation, ADRs, rules, README, PRD, PLAN, package docs, workflow
 
 Repository documentation contains only current contracts.
 
+### 4.5 Recovery branch lifecycle
+
+Recovery branches are temporary implementation inputs, not archives.
+
+- Keep a recovery branch only while it contains unresolved unique work for an active Request.
+- Before cleanup, record the branch/ref identity and final disposition in the owning GitHub issue.
+- Once all unique work from a recovery branch is integrated, explicitly rejected, or fully subsumed, delete the recovery branch.
+- Do not retain terminal recovery branches merely for provenance; GitHub issues are the durable record.
+- #361 must finish with no terminal recovery branches remaining.
+
 ## 5. Core production-engine path
 
 The hard dependency spine to #359 is:
