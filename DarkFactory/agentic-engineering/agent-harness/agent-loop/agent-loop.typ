@@ -14,8 +14,8 @@
 #let item = concept(
   key: "agent_loop",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
 #diff[
@@ -34,21 +34,16 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 4. Navazující iterace: Model v dalším tahu analyzuje získanou odezvu a rozhoduje o dalším kroku.
 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
-  ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: terms => [
+
 #figure(
   image("/DarkFactory/img/react-loop.svg", width: 100%),
   caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
 ) <fig-react-loop>
   ],
-  theory_wrapper: finalized,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "agent"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "agent"),),
 )
