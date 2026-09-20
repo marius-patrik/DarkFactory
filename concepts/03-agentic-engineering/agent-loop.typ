@@ -14,7 +14,7 @@
 #let item = concept(
   key: "agent_loop",
   term: terminology,
-  heading: terms => [#diff[Agentní smyčka a prováděcí cyklus ReAct][#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]],
+  heading: terms => [#finalized[#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
   theory_intro: none,
   theory_body: terms => [
@@ -37,10 +37,10 @@ Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na
   theory_after: terms => [
 #figure(
   image("/img/react-loop.svg", width: 100%),
-  caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
+  caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
 ) <fig-react-loop>
   ],
-  theory_wrapper: unconfirmed,
+  theory_wrapper: finalized,
   practical_enabled: false,
   practical_intro: none,
   practical_body: none,
