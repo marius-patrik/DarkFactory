@@ -51,6 +51,21 @@ html[data-theme="dark"] {
   --paper-code-text: #f3f4f6;
   --paper-accent: #9bb7ff;
 }
+html[data-theme="oled"] {
+  color-scheme: dark;
+  --paper-bg: #000000;
+  --paper-surface: #000000;
+  --paper-text: #f5f5f5;
+  --paper-muted: #a3a3a3;
+  --paper-border: #1a1a1a;
+  --paper-link: #8ab4ff;
+  --paper-code: #000000;
+  --paper-code-text: #f5f5f5;
+  --paper-accent: #8ab4ff;
+}
+html[data-theme="oled"] body {
+  box-shadow: 0 0 0 1px var(--paper-border);
+}
 * { box-sizing: border-box; }
 html {
   scroll-behavior: smooth;

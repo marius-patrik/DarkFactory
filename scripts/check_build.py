@@ -704,6 +704,16 @@ for required in (
 ):
     if required not in app_source:
         fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
+for required in (
+    'type AppearanceMode = "light" | "dark" | "oled"',
+    "AppearancePicker",
+    'stored === "light" || stored === "dark" || stored === "oled"',
+    'data.theme === "light" || data.theme === "oled"',
+    'label: "OLED"',
+    'names={active.icon}',
+):
+    if required not in app_source:
+        fail(f"viewer missing three-mode appearance contract: {required}")
 if 'label="Home"' in app_source:
     fail("viewer toolbar must not restore the Home button")
 if 'className="page-control"' in app_source:
@@ -718,7 +728,7 @@ for required in (
     'format === "html"',
     'Loading compiled Markdown',
     'data-theme',
-    'theme: "dark" | "light"',
+    'theme: "dark" | "light" | "oled"',
 ):
     if required not in compiled_artifact_source:
         fail(f"compiled artifact viewer must render generated files directly: {required}")
@@ -737,11 +747,25 @@ for required in (
     "PencilLineIcon: PencilLine",
     "Columns2Icon: Columns2",
     "BookOpenIcon: BookOpen",
+    "CircleIcon: Circle",
 ):
     if required not in icon_source:
         fail(f"viewer icon adapter missing guaranteed static fallback: {required}")
 if 'label="Refresh page"' not in app_source or "window.location.reload()" not in app_source:
     fail("viewer must expose an in-UI refresh page action")
+
+viewer_css_source = Path("web/src/viewer.css").read_text(encoding="utf-8")
+for required in (
+    'html[data-theme="oled"]',
+    '--bg: #000000',
+    '--toolbar: #000000',
+    '--sidebar: #000000',
+    '--surface: #000000',
+    '--page-shadow: none',
+    '.appearance-menu',
+):
+    if required not in viewer_css_source:
+        fail(f"viewer OLED appearance contract missing: {required}")
 
 template_source = Path("templates/gjkt-odborna-prace/template.typ").read_text(encoding="utf-8")
 if '"KONCEPT"' in template_source:
@@ -811,6 +835,9 @@ for required in (
     'darkfactory-publication-style',
     'style_compiled_html',
     'nav[role="doc-toc"]',
+    'html[data-theme="oled"]',
+    '--paper-bg: #000000',
+    '--paper-surface: #000000',
 ):
     if required not in web_export_source:
         fail(f"web exporter missing compiled HTML/Markdown contract: {required}")

@@ -11,7 +11,7 @@ export function CompiledArtifactView({
   path: string;
   format: Exclude<ArtifactFormat, "pdf">;
   embedded: boolean;
-  theme: "dark" | "light";
+  theme: "dark" | "light" | "oled";
 }) {
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState("");

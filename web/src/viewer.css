@@ -34,6 +34,30 @@ html[data-theme="light"] {
   --thumb-active: rgba(50, 110, 219, .13);
 }
 
+html[data-theme="oled"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --toolbar: #000000;
+  --toolbar-border: #171717;
+  --sidebar: #000000;
+  --surface: #000000;
+  --surface-2: #0a0a0a;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --accent: #5b94f7;
+  --accent-strong: #8ab4ff;
+  --page-shadow: none;
+  --thumb-active: rgba(91, 148, 247, .2);
+}
+
+html[data-theme="oled"] .toolbar {
+  box-shadow: none;
+}
+
+html[data-theme="oled"] .appearance-select {
+  color: #f5f5f5;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -292,6 +316,23 @@ a {
 }
 
 .format-item.active {
+  background: var(--thumb-active);
+  color: var(--accent-strong);
+}
+
+.appearance-trigger-wrap {
+  display: inline-flex;
+}
+
+.appearance-menu {
+  min-width: 142px;
+}
+
+.appearance-item {
+  justify-content: space-between;
+}
+
+.appearance-item.active {
   background: var(--thumb-active);
   color: var(--accent-strong);
 }

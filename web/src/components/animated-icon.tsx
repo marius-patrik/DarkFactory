@@ -3,6 +3,7 @@ import * as AnimatedIcons from "lucide-animated";
 import {
   BookOpen,
   CheckCircle2,
+  Circle,
   Code2,
   Columns2,
   FileCode2,
@@ -40,6 +41,8 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   BookOpenIcon: BookOpen,
   CheckCircle2,
   CheckCircle2Icon: CheckCircle2,
+  Circle,
+  CircleIcon: Circle,
   Code2,
   Code2Icon: Code2,
   Columns2,

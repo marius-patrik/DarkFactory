@@ -75,6 +75,7 @@ type Manifest = {
 
 type ViewerMode = "final" | "review";
 type ViewMode = "single" | "split";
+type AppearanceMode = "light" | "dark" | "oled";
 
 function useManifest() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
@@ -574,6 +575,65 @@ function ChapterPicker({
   );
 }
 
+function AppearancePicker({
+  theme,
+  onChange,
+}: {
+  theme: AppearanceMode;
+  onChange: (theme: AppearanceMode) => void;
+}) {
+  const options: Array<{
+    theme: AppearanceMode;
+    label: string;
+    icon: string[];
+  }> = [
+    { theme: "light", label: "Light", icon: ["SunIcon"] },
+    { theme: "dark", label: "Dark", icon: ["MoonIcon"] },
+    { theme: "oled", label: "OLED", icon: ["CircleIcon"] },
+  ];
+  const active = options.find((option) => option.theme === theme) || options[1];
+
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="appearance-trigger-wrap">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="icon-action status-action appearance-select"
+                aria-label={"Appearance: " + active.label}
+              >
+                <AnimatedIcon names={active.icon} size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Appearance: {active.label}</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end" className="appearance-menu">
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.theme}
+            className={theme === option.theme ? "appearance-item active" : "appearance-item"}
+            onSelect={() => onChange(option.theme)}
+          >
+            <span className="mode-option-label">
+              <AnimatedIcon names={option.icon} size={16} />
+              {option.label}
+            </span>
+            {theme === option.theme && (
+              <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ViewerApp() {
   const { manifest } = useManifest();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -626,9 +686,9 @@ export function ViewerApp() {
       : "thumbnails",
   );
   const [sidebarHidden, setSidebarHidden] = useState(() => window.innerWidth <= 760);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
+  const [theme, setTheme] = useState<AppearanceMode>(() => {
     const stored = localStorage.getItem("paper-viewer-theme");
-    if (stored === "dark" || stored === "light") return stored;
+    if (stored === "light" || stored === "dark" || stored === "oled") return stored;
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
@@ -767,7 +827,11 @@ export function ViewerApp() {
           Number(data.scale) || 1,
         );
       } else if (data.command === "theme") {
-        setTheme(data.theme === "light" ? "light" : "dark");
+        setTheme(
+          data.theme === "light" || data.theme === "oled"
+            ? data.theme
+            : "dark",
+        );
       }
       requestAnimationFrame(() => {
         suppressEmbeddedState.current = false;
@@ -1019,8 +1083,6 @@ export function ViewerApp() {
     else await document.documentElement.requestFullscreen?.();
   };
 
-  const toggleTheme = () => setTheme((value) => (value === "dark" ? "light" : "dark"));
-
   const submitPage = () => {
     const page = Number(pageDraft);
     if (Number.isFinite(page)) goToPage(page);
@@ -1269,12 +1331,7 @@ export function ViewerApp() {
         </div>
 
         <div className="status-actions">
-          <TooltipAction
-            label={theme === "dark" ? "Use light theme" : "Use dark theme"}
-            icon={theme === "dark" ? ["SunIcon"] : ["MoonIcon"]}
-            onClick={toggleTheme}
-            className="status-action"
-          />
+          <AppearancePicker theme={theme} onChange={(nextTheme) => setTheme(nextTheme)} />
           <TooltipAction
             label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
             icon={fullscreen ? ["MinimizeIcon", "Minimize2Icon"] : ["MaximizeIcon", "Maximize2Icon"]}

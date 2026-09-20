@@ -169,9 +169,12 @@ kapitol odvozená přímo z PDF outline a přepínač stránky je poslední segm
 zatímco fit-width a `− / +` zoom zůstávají ve spodním status baru. Zoom podporuje Ctrl/⌘+scroll a pinch. Ovládací prvky specifické pro stránky/zoom jsou v HTML a
 Markdown režimu skryté. Všechny formáty lze stáhnout nebo otevřít přímo.
 
-Všechny ikonové ovládací prvky mají hover tooltipy. Koncept PDF nepřidává automatický
-`KONCEPT` vodoznak. Review comparison může volitelně synchronizovat průběžnou scroll
-pozici PDF dokumentů.
+Všechny ikonové ovládací prvky mají hover tooltipy. Viewer nabízí tři persistentní
+režimy vzhledu: **Light**, **Dark** a **OLED**. OLED používá skutečnou černou (`#000000`)
+pro shell, toolbar, sidebar a webové publikační plochy; PDF stránky zůstávají věrným
+kanonickým výstupem dokumentu. Zvolený vzhled se propaguje také do HTML artefaktů a obou
+panelů Review comparison. Koncept PDF nepřidává automatický `KONCEPT` vodoznak.
+Review comparison může volitelně synchronizovat průběžnou scroll pozici PDF dokumentů.
 
 `make web-check` provede TypeScript kontrolu a produkční Vite build. `make all`
 vytvoří PDF + HTML + Markdown publikační matici a `make site` ji společně s
