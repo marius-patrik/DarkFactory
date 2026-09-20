@@ -97,7 +97,6 @@ export async function buildQuotaReport(input: QuotaReportInput): Promise<QuotaRe
 	return { version: 2, generatedAt: new Date(now).toISOString(), providers };
 }
 
-
 function operatorQuotaItem(item: CandidateQuota["items"][number]) {
 	return {
 		provider: item.provider,
