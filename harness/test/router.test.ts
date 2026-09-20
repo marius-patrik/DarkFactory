@@ -220,8 +220,8 @@ describe("policy routing", () => {
 			{ config, models, ledger, now: () => 1_000 },
 		);
 		expect(result.ranked.map((item) => [item.candidate.provider, item.status, item.reason])).toEqual([
-			["tight", "skipped", "limited"],
 			["bulk", "chosen", "policy small-review"],
+			["tight", "skipped", "limited"],
 			["text", "skipped", "missing tools"],
 		]);
 		expect(result.chain).toEqual([{ provider: "bulk", model: "coder", account: "default" }]);
@@ -314,6 +314,7 @@ describe("policy routing", () => {
 				modalities: ["text", "image_gen"] as ModelCapability["modalities"],
 				quality: { image: 5 },
 				limitTier: "bulk" as ModelCapability["limitTier"],
+				capabilityTier: "standard",
 				reserve: undefined,
 				collection: "unknown" as ModelCapability["collection"],
 				source: "live",
