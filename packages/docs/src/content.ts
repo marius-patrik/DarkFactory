@@ -4,7 +4,7 @@ import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 
 /** Semantic kind assigned to a documentation page. */
-export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr" | "note";
+export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -106,11 +106,6 @@ export function compileDocsContentGraph(repoRoot: string, config: DocsConfig = l
 	for (const name of markdownFiles(adrRoot)) {
 		const kind: DocsPageKind = name === "README.md" ? "decisions" : "adr";
 		pages.push(markdownPage(repoRoot, join(".agents", "notes", "adr", name), kind));
-	}
-
-	const notesRoot = join(repoRoot, ".agents", "notes");
-	for (const name of markdownFiles(notesRoot)) {
-		pages.push(markdownPage(repoRoot, join(".agents", "notes", name), "note"));
 	}
 
 	const workflowRoot = join(repoRoot, ".github", "workflows");
