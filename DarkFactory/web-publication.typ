@@ -43,7 +43,7 @@
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
-  render-manuscript()
+  render-manuscript(profile: profile)
 
   bibliography(
     "/DarkFactory/bib/references.bib",
@@ -59,5 +59,5 @@
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
-  render-appendices()
+  render-appendices(profile: profile)
 }

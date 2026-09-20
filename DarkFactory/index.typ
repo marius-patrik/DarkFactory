@@ -30,5 +30,5 @@
 #let vocabulary = build-vocabulary(folders)
 #let concepts = collect-concepts(folders)
 
-#let render-manuscript() = render-folders(manuscript-folders, vocabulary, level: 1)
-#let render-appendices() = render-folders(appendix-folders, vocabulary, level: 1)
+#let render-manuscript(profile: "school") = render-folders(manuscript-folders, vocabulary, level: 1, profile: profile)
+#let render-appendices(profile: "school") = render-folders(appendix-folders, vocabulary, level: 1, profile: profile)

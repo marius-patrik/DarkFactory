@@ -21,10 +21,10 @@
     profile: profile,
     koncept: none,
   )[
-    #render-manuscript()
+    #render-manuscript(profile: profile)
 
     #appendices[
-      #render-appendices()
+      #render-appendices(profile: profile)
     ]
   ]
 }
