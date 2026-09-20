@@ -1041,10 +1041,13 @@ for required in (
 ):
     if required not in template_source:
         fail(f"title page/reference styling missing contract: {required}")
+cover_title_source = template_source[
+    template_source.index("#let cover-title(meta)") : template_source.index("#let titulni-list(meta")
+]
 title_lines = (
-    template_source.index("DarkFactory#linebreak()"),
-    template_source.index("Agentické a harnessové inženýrství:#linebreak()"),
-    template_source.index("Umělá inteligence v praxi"),
+    cover_title_source.index("DarkFactory#linebreak()"),
+    cover_title_source.index("Agentické a harnessové inženýrství:#linebreak()"),
+    cover_title_source.index("Umělá inteligence v praxi"),
 )
 if not title_lines[0] < title_lines[1] < title_lines[2]:
     fail("title page lines must be DarkFactory, Agentické a harnessové inženýrství:, Umělá inteligence v praxi")
