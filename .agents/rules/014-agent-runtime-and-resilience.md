@@ -12,7 +12,7 @@ owners: [rotation]
 
 DarkFactory runs agentic work through the TypeScript df runtime, not a final Python harness registry.
 
-- Core owns execution, routing primitives, persistence/resume and capability loading.
+- Core owns execution, routing primitives and persistence/resume; `@darkfactory/capability` owns capability discovery/loading/resolution.
 - Agentic/product behaviors are versioned capabilities.
 - One canonical capability implementation may generate native Pi, MCP and supported agent skill/plugin adapters.
 - Pipeline stages pass explicit task kind where known; undeclared inference separates subject from required capability.
