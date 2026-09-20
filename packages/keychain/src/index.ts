@@ -1,16 +1,7 @@
 /** @packageDocumentation
- * Machine credential custody boundary. Browser packages must never import this package.
- *
- * The FileCredentialStore adapter is temporary until #422 moves the implementation here.
+ * Machine credential custody and authentication boundary.
+ * Browser packages must never import this package.
  */
-export {
-	FileCredentialStore,
-	defaultDfHome,
-	parseAccountId,
-	validateAccountRecord,
-} from "../../../harness/src/credentials.ts";
-export type {
-	AccountRecord,
-	CredentialFallback,
-	CredentialSlot,
-} from "../../../harness/src/credentials.ts";
+export * from "./credentials.ts";
+export * from "./os-keychain.ts";
+export * from "./github-app.ts";
