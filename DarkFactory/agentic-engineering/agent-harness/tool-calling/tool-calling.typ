@@ -6,23 +6,18 @@
 #let item = concept(
   key: "tool_calling",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Aby mohl agent provádět reálné inženýrské operace, musí mu agent harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
 
 #diff[Strukturované volání nástrojů (_Tool / Function Calling_)][Strukturované volání nástrojů (_Tool / Function Calling_ @schick2023toolformer)] používá vstupy a výstupy striktně validované vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
 ]
   ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "agent_loop"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "agent_loop"),),
 )
