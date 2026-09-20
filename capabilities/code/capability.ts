@@ -20,7 +20,7 @@ function nodeTest(pkg: CapabilityPackageContext): string | undefined {
 }
 
 function nodeFormatCheck(pkg: CapabilityPackageContext): string | undefined {
-	return nodeRun(pkg, "format:check") ?? nodeRun(pkg, "check");
+	return nodeRun(pkg, "format:check");
 }
 
 function nodeSetup(pkg: CapabilityPackageContext): string | undefined {
