@@ -20,10 +20,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
-  new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url),
-  { type: "module" },
-);
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.mjs",
+  import.meta.url,
+).toString();
 
 export type ScaleMode = "fit" | "manual";
 export type SidebarSide = "left" | "right";
