@@ -1,20 +1,13 @@
-# ADR-0008 — Providers fully config‑driven
+# ADR-0008 — Providers are configuration-driven
 
-**Status**: Accepted · 2026-09-15
-
-## Context
-
-From the decision record of 2026-09-13 (prompts/_decisions.md, orchestrator workspace):
-
-> "Provider layer must be fully abstracted: NO per-provider code; every provider (endpoints, API dialect, auth method and credential slots, headers, model-list endpoint, quota/error mapping) is defined in config, driven by generic dialect adapters." — 2026-09-13
+**Status**: Accepted
 
 ## Decision
-Make the provider layer entirely driven by configuration files; no provider‑specific code exists in the codebase.
 
-## Alternatives rejected
-- Implement per‑provider adapters hard‑coded in the harness.
-- Allow provider‑specific logic in the runtime.
+Provider behavior is declared through configuration and generic dialect/runtime mechanisms.
+
+Provider declarations cover endpoints, API dialect, authentication, credential slots, headers, model discovery and quota/error mapping. Provider-specific behavior does not get its own independent orchestration subsystem.
 
 ## Consequences
-- No per‑provider code; all provider endpoints, dialects, authentication, credential slots, headers, model‑list endpoints, and quota/error mappings are defined in configuration.
-- The system can add new providers simply by adding a config entry.
+
+Adding or changing a provider is primarily a configuration/data change. Shared runtime mechanisms own transport, routing, authentication integration and failure handling.
