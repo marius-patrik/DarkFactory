@@ -921,6 +921,13 @@ export function executableChainFor(route: Pick<RouteResult, "chain" | "ranked">)
 	return [...route.chain, ...tail];
 }
 
+/**
+ * Redacts sensitive information from tool input values. Masks strings matching secret patterns
+ * and bearer token values to prevent credential leakage in logs and error reports.
+ * @param value - The input value to redact
+ * @param key - Optional field name; if it matches a secret pattern, the value is redacted
+ * @returns The redacted value, or the original if no sensitive data is found
+ */
 export function redactToolInput(value: unknown, key?: string): unknown {
 	if (key && SECRET_KEY.test(key)) return "[REDACTED]";
 	if (typeof value === "string") return BEARER_VALUE.test(value) ? "[REDACTED]" : value;
@@ -1412,6 +1419,14 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
 	);
 }
 
+/**
+ * The main CLI entry point. Parses command-line arguments and dispatches to the appropriate
+ * command handler. Supports chat, run, route, account, login, limits, quota, providers, models,
+ * and other subcommands.
+ * @param args - Command-line arguments (defaults to process.argv.slice(2))
+ * @throws {ChainExhaustedError} If all candidates in the chain are unavailable during a run
+ * @throws {Error} If an unknown command is provided or a command handler fails
+ */
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph") return graphCommand(args.slice(1));
 	const home = defaultDfHome();
@@ -1480,6 +1495,11 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	}
 }
 
+/**
+ * Returns the exit code for an error: 2 for chain-exhausted errors, 1 for all other errors.
+ * @param error - The error to classify
+ * @returns The process exit code
+ */
 export function exitCodeFor(error: unknown): number {
 	if (error instanceof ChainExhaustedError) return error.exitCode;
 	if (error instanceof RunTimeoutError) return error.exitCode;
