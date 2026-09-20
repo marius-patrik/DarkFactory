@@ -10,14 +10,15 @@
 #let item = concept(
   key: "conclusion",
   term: terminology,
-  definition: none,
-  description: terms => [
-#blue-note[
-  Poznámka k vypracování závěru:
-  Závěr práce bude sepsán jako poslední krok po definitivním ucelení teoretických východisek agentického inženýrství a detailní architektury agent harnessu. Tato závěrečná kapitola syntetizuje zjištění o deterministickém řízení autonomních agentů a zhodnotí formulované principy a výzkumné otázky bez vazby na dřívější ad-hoc testovací repozitáře.
-]
+  definition: terms => [
+#blue-note[Závěr bude definován jako syntéza ověřených výsledků vůči cílům a výzkumným otázkám.]
   ],
-  summary: none,
+  description: terms => [
+#blue-note[Závěr bude sepsán až po dokončení výsledků a nebude předjímat neověřená zjištění.]
+  ],
+  summary: terms => [
+#blue-note[Finální shrnutí vznikne až z ověřených výsledků práce.]
+  ],
   visual: none,
   examples: (),
   attachments: (),
