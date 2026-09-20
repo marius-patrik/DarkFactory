@@ -1,6 +1,5 @@
 #import "metadata.typ": meta
-#import "templates/common.typ": review-state, profile-state, finalized, ui-label, render-translation, render-keywords, render-index
-#import "templates/terms.typ": vocabulary
+#import "templates/common.typ": review-state, profile-state, finalized, ui-label, render-translation, render-keywords
 #import "concepts/index.typ": render-theory, render-practical
 
 // Semantic publication entrypoint for Typst's HTML target.
@@ -69,8 +68,6 @@
   full: true,
 )
 
-#heading(level: 1, numbering: none)[#finalized[#ui-label([Rejstřík], [Index])]]
-#render-index(vocabulary.values())
 
 #heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
 #counter(heading).update(0)
