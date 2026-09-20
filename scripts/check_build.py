@@ -311,10 +311,18 @@ for path in section_index_paths:
     if "#let item = section(" in source:
         fail(f"legacy section record remains in folder manifest: {path}")
 
+section_concept_paths = set()
+for manifest in section_index_paths:
+    source = manifest.read_text(encoding="utf-8")
+    match = re.search(r'#import\s+"([^"]+)"\s+as\s+section', source)
+    if match is not None:
+        section_concept_paths.add((manifest.parent / match.group(1)).resolve())
+
 rendered_concept_paths = tuple(
     path for path in concept_paths
     if "theory_enabled: true" in path.read_text(encoding="utf-8")
     or "practical_enabled: true" in path.read_text(encoding="utf-8")
+    or path.resolve() in section_concept_paths
 )
 rendered_manuscript_paths = (
     *sorted(Path("kapitoly").glob("*.typ")),
@@ -333,8 +341,9 @@ for path in concept_paths:
     if match is None:
         fail(f"concept is missing a stable key: {path}")
     key = match.group(1)
-    section_usage = f"section: {key}.item" in rendered_manuscript_text or f"section.item" in rendered_manuscript_text and path.name == f"{key.replace('_', '-')}.typ"
-    if f"terms.{key}" not in rendered_manuscript_text and f"{key}.item" not in rendered_manuscript_text and not section_usage:
+    if path.resolve() in section_concept_paths:
+        continue
+    if f"terms.{key}" not in rendered_manuscript_text and f"{key}.item" not in rendered_manuscript_text:
         unused_concepts.append(f"{path}:{key}")
 if unused_concepts:
     fail("canonical concepts not utilized by the thesis: " + ", ".join(unused_concepts))
