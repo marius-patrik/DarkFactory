@@ -14,8 +14,8 @@
 #let item = concept(
   key: "graph_engineering",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 #accepted[
 Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
 ]
@@ -30,15 +30,10 @@ Klíčové přístupy ke škálování zahrnují:
 ]
 ]
   ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: none,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "agent_loop"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "agent_loop"),),
 )
