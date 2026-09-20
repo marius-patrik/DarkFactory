@@ -21,6 +21,7 @@
 
 #import "/DarkFactory/templates/gjkt-odborna-prace/wordometer.typ": string-word-count, extract-text
 #import "/DarkFactory/templates/common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
+#import "/DarkFactory/metadata.typ": title-value, title-display
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
 // mezi začátkem vlastního textu a přílohami; normal/review tedy sdílejí stejný algoritmus.
@@ -40,31 +41,7 @@
   heading(numbering: none, outlined: true, text-nadpisu)
 }
 
-#let title-for(meta) = context {
-  let profile = profile-state.get()
-  if profile == "cs" {
-    meta.at("nazev-cs", default: meta.nazev)
-  } else if profile == "en" {
-    meta.at("nazev-en", default: meta.nazev)
-  } else {
-    meta.nazev
-  }
-}
-
-#let cover-title(meta) = context {
-  let title = title-for(meta)
-  if title == "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství" {
-    [
-      DarkFactory#linebreak()
-      Agentické a harnessové inženýrství:#linebreak()
-      Umělá inteligence v praxi
-    ]
-  } else {
-    title
-  }
-}
-
-#let titulni-list(meta, logo: none) = {
+#let titulni-list(book-title, meta, logo: none) = {
   set align(center)
   set par(justify: false)
 
@@ -82,9 +59,9 @@
   context {
     let profile = profile-state.get()
     if profile == "merged" {
-      text(size: 25pt, weight: "bold", hyphenate: false, finalized(cover-title(meta)))
+      text(size: 25pt, weight: "bold", hyphenate: false, finalized(title-display(book-title, profile: profile)))
       v(0.25cm)
-      text(size: 17pt, weight: "bold", hyphenate: false, finalized(meta.at("nazev-en", default: meta.nazev)))
+      text(size: 17pt, weight: "bold", hyphenate: false, finalized(title-value(book-title, profile: "en")))
     } else {
       text(size: 26pt, weight: "bold", hyphenate: false, finalized(cover-title(meta)))
     }
@@ -217,6 +194,7 @@
 }
 
 #let template(
+  book-title: none,
   meta: (:),
   // Cesta k logu školy, např. "/DarkFactory/img/logo.jpeg". `none` = bez loga.
   logo: none,
@@ -253,11 +231,12 @@
     language
   }
 
+  assert(book-title != none, message: "template requires the structural book title")
   assert(resolved-profile in ("school", "cs", "en", "merged"), message: "profile must be school, cs, en, or merged")
   review-state.update(is-review)
   profile-state.update(resolved-profile)
 
-  set document(title: title-for(meta), author: meta.autor)
+  set document(title: title-value(book-title, profile: resolved-profile), author: meta.autor)
 
   // Okraje 2,5 cm; u hřbetu (vlevo) navíc 0,5 cm kvůli vazbě.
   set page(
@@ -343,7 +322,7 @@
   set figure(numbering: "1")
 
   // ── Přední část ──────────────────────────────────────────
-  titulni-list(meta, logo: logo)
+  titulni-list(book-title, meta, logo: logo)
   prohlaseni(meta)
   podekovani-strana(meta)
   anotace-strana(meta)
