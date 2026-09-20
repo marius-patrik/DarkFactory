@@ -6,11 +6,13 @@ describe("Workflow templates & managed headers", () => {
 		const rendered = renderWorkflowTemplate("ci.yml", {
 			pipeline_repo: "marius-patrik/DarkFactory",
 			pipeline_ref: "abc1234def5678",
+			default_branch: "trunk",
 		});
 
 		expect(rendered).toContain("# managed-by: darkfactory ci.yml@");
 		expect(rendered).toContain('repository: "marius-patrik/DarkFactory"');
 		expect(rendered).toContain('ref: "abc1234def5678"');
+		expect(rendered).toContain('branches: ["trunk"]');
 		expect(rendered).toContain("Resolve detected quality matrix");
 		expect(rendered).toContain("fromJSON(needs.detect.outputs.matrix)");
 		expect(rendered).toContain("Build native documentation");
