@@ -60,12 +60,11 @@ def test_the_reporter_watches_every_workflow_it_installs():
     assert watched == expected
 
 
-def test_the_pin_reaches_both_places_it_is_needed():
-    """The `uses:` ref and the `pipeline-ref` input must not drift apart."""
+def test_the_pin_reaches_both_direct_runtime_checkouts():
+    """The direct CI workflow pins both DarkFactory runtime checkouts to the requested ref."""
     rendered = install.render_caller("ci", "o/p", "deadbeef")
-    assert "ci.yml@deadbeef" in rendered
-    assert 'pipeline-ref: "deadbeef"' in rendered
-
+    assert rendered.count('ref: "deadbeef"') == 2
+    assert rendered.count('repository: "o/p"') == 2
 
 def test_submodule_updating_is_offered_only_where_there_are_submodules(tmp_path):
     """Installing a submodule updater in a repository with none is noise."""
@@ -185,7 +184,7 @@ def test_open_pr_declares_and_forwards_every_input():
         assert caller["jobs"]["open-pr"]["with"][name] == f"${{{{ inputs.{name} }}}}"
 
 
-@pytest.mark.parametrize("name", sorted(install.WORKFLOWS))
+@pytest.mark.parametrize("name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"}))
 def test_every_caller_targets_a_callable_pipeline_workflow(name: str):
     """A caller pointing at a workflow that does not accept calls fails only at run time.
 
@@ -200,7 +199,7 @@ def test_every_caller_targets_a_callable_pipeline_workflow(name: str):
     assert job["uses"].endswith(f".github/workflows/{name}.yml@abc")
 
 
-@pytest.mark.parametrize("name", sorted(install.WORKFLOWS))
+@pytest.mark.parametrize("name", sorted(set(install.WORKFLOWS) - {"ci", "verify-pr-issue"}))
 def test_every_forwarded_value_is_an_input_the_workflow_declares(name: str):
     """Passing an undeclared input is an error; omitting a required one is a failure at run time.
 
@@ -235,39 +234,22 @@ def test_every_watched_name_is_a_workflow_that_exists():
         assert unknown == [], f"{path} watches workflows that do not exist: {unknown}"
 
 
-def test_the_generated_manifest_requires_contexts_that_will_actually_report():
-    """Branch protection matches contexts by string, and a mismatch blocks every merge silently.
-
-    A repository calling the pipeline as a reusable workflow sees every check prefixed with the
-    caller's job name, so the unprefixed defaults would protect a branch against names nothing
-    reports.
-    """
+def test_the_generated_manifest_requires_stable_direct_contexts():
+    """Generated branch protection targets the exact direct job contexts consumers report."""
     manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
-    contexts = manifest["required_checks"]
-    assert contexts, "a generated manifest must declare its own contexts"
+    assert manifest["required_checks"] == ["quality", "verify-bound-issue"]
 
-    installed = install.relevant_workflows(".")
-    for context in contexts:
-        caller, _, check = context.partition(" / ")
-        assert caller in installed, f"{context} names a caller this install does not write"
-        assert check, f"{context} is not a prefixed context"
+def test_required_contexts_follow_installed_direct_checks():
+    """Protection never requires a direct context whose workflow is not installed."""
+    assert install.required_contexts(["ci"]) == ["quality"]
+    assert install.required_contexts(["verify-pr-issue"]) == ["verify-bound-issue"]
 
-
-def test_no_required_context_comes_from_a_workflow_that_is_not_installed():
-    """Requiring a check nothing runs is the same failure in a different shape."""
-    contexts = install.required_contexts(["ci"])
-    assert all(c.startswith("ci / ") for c in contexts)
-    assert not any("verify-bound-issue" in c for c in contexts)
-
-
-def test_every_default_check_has_a_caller_that_reports_it():
-    """A check with no source would be dropped from protection without anyone noticing."""
+def test_every_default_check_is_emitted_by_the_full_install():
+    """The full installation emits every final stable required check."""
     import manifest as manifest_module
 
     installed = install.relevant_workflows(".")
-    covered = {c.partition(" / ")[2] for c in install.required_contexts(installed)}
-    assert covered == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
-
+    assert set(install.required_contexts(installed)) == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
 
 class TestReinstallingAdoptsTheUpdate:
     """Never overwriting a file meant a reinstall could not update anything either."""
