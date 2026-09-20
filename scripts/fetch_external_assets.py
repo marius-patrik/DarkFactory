@@ -52,7 +52,7 @@ def get(url: str) -> tuple[bytes, str]:
         url,
         headers={
             "User-Agent": UA,
-            "Accept": "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.5",
+            "Accept": "*/*",
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
@@ -60,14 +60,14 @@ def get(url: str) -> tuple[bytes, str]:
         return response.read(), response.headers.get_content_type()
 
 
-def looks_like_image(payload: bytes, content_type: str) -> bool:
-    if content_type.startswith("image/"):
-        return True
-    return (
-        payload.startswith(b"\x89PNG\r\n\x1a\n")
-        or payload.startswith(b"\xff\xd8\xff")
-        or payload.startswith(b"RIFF") and payload[8:12] == b"WEBP"
-    )
+def detected_format(payload: bytes) -> str | None:
+    if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if payload.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if payload.startswith(b"RIFF") and payload[8:12] == b"WEBP":
+        return "webp"
+    return None
 
 
 def fetch(path: str, url: str) -> None:
@@ -75,8 +75,16 @@ def fetch(path: str, url: str) -> None:
     if target.is_file() and target.stat().st_size > 1024:
         return
     payload, content_type = get(url)
-    if not looks_like_image(payload, content_type):
-        raise RuntimeError(f"not an image: {url} ({content_type})")
+    actual = detected_format(payload)
+    expected = target.suffix.lower().lstrip(".")
+    if expected == "jpg":
+        expected = "jpeg"
+    if actual is None:
+        raise RuntimeError(f"not a supported image: {url} ({content_type})")
+    if actual != expected:
+        raise RuntimeError(
+            f"image format mismatch for {path}: expected {expected}, got {actual} ({content_type})"
+        )
     target.write_bytes(payload)
     print(f"fetched {path}: {len(payload)} bytes")
 
