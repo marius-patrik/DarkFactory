@@ -170,10 +170,10 @@ export async function renderDocsSite(graph: DocsContentGraph, outputDir: string)
 		await writeFile(output, shell(page.title, navigation(page, graph), renderMarkdown(page.markdown, page, graph), graph.site.description));
 	}
 	if (graph.api) {
-		const home = graph.pages.find((page) => page.id === graph.home)!;
+		const apiPage: DocsPage = { id: "api", kind: "home", title: graph.api.name, source: "api", markdown: "" };
 		const body = `<h1>${escapeHtml(graph.api.name)}</h1>${graph.api.symbols.map((symbol) => renderApiSymbol(symbol)).join("")}`;
 		await mkdir(join(outputDir, "api"), { recursive: true });
-		await writeFile(join(outputDir, "api", "index.html"), shell(graph.api.name, navigation(home, graph).replaceAll('href="api/"', 'href="./"'), body, graph.site.description));
+		await writeFile(join(outputDir, "api", "index.html"), shell(graph.api.name, navigation(apiPage, graph), body, graph.site.description));
 	}
 	await writeFile(join(outputDir, "content.json"), JSON.stringify(graph, null, 2) + "\n");
 	await writeFile(join(outputDir, ".nojekyll"), "");
