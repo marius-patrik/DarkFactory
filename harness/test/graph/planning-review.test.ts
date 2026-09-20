@@ -101,7 +101,9 @@ describe("Planning artifact validation", () => {
 			...held,
 			hold: { kind: "dependency" as const, refs: ["#999"], reason: "wait" },
 		};
-		expect(validatePlanningArtifact(packet, invalid).map((finding) => finding.id)).toContain("planning-dependency-#999");
+		expect(validatePlanningArtifact(packet, invalid).map((finding) => finding.id)).toContain(
+			"planning-dependency-#999",
+		);
 	});
 
 	test("detects stale df-directory/config assumptions and hard-coded main", () => {
