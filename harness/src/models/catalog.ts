@@ -299,7 +299,7 @@ export class ModelCatalog {
 
 	private path(provider: string): string {
 		if (!/^[A-Za-z0-9._-]+$/u.test(provider)) throw new Error(`Invalid provider id: ${provider}`);
-		return join(this.home, "models", `${provider}.json`);
+		return join(this.home, "models", `${provider}.df`);
 	}
 
 	private async cached(provider: string): Promise<CatalogFile | undefined> {
@@ -315,7 +315,7 @@ export class ModelCatalog {
 	private async save(file: CatalogFile): Promise<void> {
 		const path = this.path(file.provider);
 		await mkdir(dirname(path), { recursive: true });
-		const temporary = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+		const temporary = `${path}.${process.pid}.${crypto.randomUUID()}.tmp.df`;
 		await writeFile(temporary, `${JSON.stringify(file, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
 		await replaceFile(temporary, path);
 	}
