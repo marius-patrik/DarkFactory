@@ -245,7 +245,7 @@ export const ReviewWorkspace = forwardRef<ReviewWorkspaceControl, ReviewWorkspac
     return (
       <div className="review-workspace">
         <DockviewReact
-          className="review-dockview"
+          className={"review-dockview " + (theme === "light" ? "dockview-theme-light" : "dockview-theme-abyss")}
           components={components}
           defaultRenderer="always"
           tabAnimation="smooth"
