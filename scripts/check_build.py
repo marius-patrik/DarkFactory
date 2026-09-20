@@ -106,6 +106,10 @@ required_sources = (
     Path("web/src/app.tsx"),
     Path("web/src/pdf-document.tsx"),
     Path("web/src/workspace.tsx"),
+    Path("web/src/settings.ts"),
+    Path("web/src/settings-view.tsx"),
+    Path("web/src/viewer-tabs.tsx"),
+    Path("web/src/viewer-ui.tsx"),
     Path("web/src/main.tsx"),
     Path("web/src/viewer.css"),
     Path("scripts/build_review.py"),
@@ -152,32 +156,37 @@ for contract in (
 schema = sources[ROOT / "schema.typ"]
 for contract in (
     "#let concept(",
+    "industry: none",
+    "czech: none",
+    "english: none",
+    "alias: none",
+    "title: none",
     "definition: none",
     "description: none",
     "summary: none",
     "examples: ()",
     "attachments: ()",
     "#let folder(",
-    "title: none",
     "#let relation(",
+    "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
     "#let render-concept-title(item) = context",
     "#let render-concept(item, terms, graph, level: 1)",
-    'surface: "proper"',
-    'profile in ("school", "cs")',
 ):
     if contract not in schema:
         fail(f"concept schema is missing contract: {contract}")
 
 common = sources[ROOT / "templates/common.typ"]
 for contract in (
-    "alias: none",
-    'surface: "full"',
     '#let term-name(value, surface: "full", language: "auto")',
     'surface in ("full", "industry", "proper", "alias")',
+    'assert(value.kind == "concept", message: "term() expects a concept")',
+    '#let render-keywords(items) = context',
 ):
     if contract not in common:
-        fail(f"terminology surface is missing contract: {contract}")
+        fail(f"concept-owned terminology surface is missing contract: {contract}")
+if "define-term" in common:
+    fail("obsolete define-term abstraction remains in common terminology renderer")
 
 all_book_typ = tuple(sorted(ROOT.rglob("*.typ")))
 concept_files = tuple(
@@ -201,7 +210,6 @@ if BOOK == "DarkFactory" and len(concept_files) < 45:
     fail(f"DarkFactory concept catalog is unexpectedly small: {len(concept_files)} concept files")
 
 concept_keys: list[str] = []
-term_ids: list[str] = []
 legacy_concept_fields = (
     "heading:",
     "document_enabled:",
@@ -226,36 +234,33 @@ legacy_concept_fields = (
 
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
-    if "#let terminology = define-term(" not in source:
-        fail(f"concept file does not own canonical terminology: {path}")
+    if "define-term" in source or "#let terminology =" in source or "term: terminology" in source:
+        fail(f"obsolete separate terminology abstraction remains in concept: {path}")
     for field in ("definition", "description", "summary"):
         if f"{field}:" not in source:
             fail(f"concept file is missing canonical {field} field: {path}")
         if re.search(rf"{field}:\s*none\b", source):
             fail(f"concept file has empty canonical {field}: {path}")
+    if not any(re.search(rf"{field}:\s*(?!none\b)", source) for field in ("industry", "czech", "english")):
+        fail(f"concept file is missing concept-owned terminology slots: {path}")
     if "explanation_cs:" in source or "explanation_en:" in source:
-        fail(f"concept definition must not be duplicated in term metadata: {path}")
+        fail(f"concept definition must not be duplicated in terminology metadata: {path}")
     for field in legacy_concept_fields:
         if field in source:
             fail(f"legacy manuscript field {field[:-1]} is forbidden: {path}")
     key = re.search(r'key:\s*"([^"]+)"', source)
-    term_id = re.search(r'id:\s*"([^"]+)"', source)
-    if key is None or term_id is None:
-        fail(f"concept file is missing stable key or term id: {path}")
+    if key is None:
+        fail(f"concept file is missing stable key: {path}")
     concept_keys.append(key.group(1))
-    term_ids.append(term_id.group(1))
 
 if len(concept_keys) != len(set(concept_keys)):
     fail("concept keys must be unique within a book")
-if len(term_ids) != len(set(term_ids)):
-    fail("term ids must be unique within a book")
 
 for path in all_book_typ:
-    if path == ROOT / "templates/common.typ":
-        continue
     source = path.read_text(encoding="utf-8")
-    if "#let terminology = define-term(" in source and "#let item = concept(" not in source:
-        fail(f"canonical term must be owned by a concept: {path}")
+    for token in ("define-term", "#let terminology =", "term: terminology"):
+        if token in source:
+            fail(f"obsolete terminology abstraction remains in {path}: {token}")
 
 for legacy_token in ("theory_enabled", "practical_enabled", "document_enabled", "render-theory", "render-practical"):
     if legacy_token in schema or legacy_token in catalog:
@@ -308,9 +313,11 @@ for dependency in (
 
 app = sources[Path("web/src/app.tsx")]
 workspace = sources[Path("web/src/workspace.tsx")]
+settings = sources[Path("web/src/settings.ts")]
+settings_view = sources[Path("web/src/settings-view.tsx")]
+viewer_tabs = sources[Path("web/src/viewer-tabs.tsx")]
 pdf_viewer = sources[Path("web/src/pdf-document.tsx")]
 for contract in (
-    'type ActivityBarPosition = "left" | "right" | "top" | "bottom"',
     'label="Structure"',
     'label="Explorer"',
     "<ReviewWorkspace",
@@ -321,9 +328,30 @@ for contract in (
     "SourceFileView",
     "onOpenFile={openRepositoryFile}",
     'className="zoom-value"',
+    "<AppTabBar",
+    "<SettingsView",
+    'active.extension',
 ):
     if contract not in app:
         fail(f"viewer shell is missing UI contract: {contract}")
+
+for contract in (
+    'export type ActivityBarPosition = "left" | "right" | "top" | "bottom"',
+    'export type AppearanceMode = "light" | "dark" | "oled"',
+    "showRefresh: boolean",
+    "showFullscreen: boolean",
+    "export function useViewerSettings()",
+):
+    if contract not in settings:
+        fail(f"settings abstraction is missing contract: {contract}")
+
+for contract in ("Refresh button", "Fullscreen button", "Synchronize split scrolling"):
+    if contract not in settings_view:
+        fail(f"settings tab is missing contract: {contract}")
+
+for contract in ('role="tablist"', 'role="tab"', 'label="New tab"', "app-tab-close"):
+    if contract not in viewer_tabs:
+        fail(f"persistent tab bar is missing contract: {contract}")
 
 site_builder = sources[Path("scripts/build_site.py")]
 for contract in ("publish_tracked_sources", '"source": f"repository/{tracked_path}"', '"repository_source_root": "repository/"'):
@@ -345,5 +373,5 @@ if release_assets != set(EXPECTED):
 
 print(
     f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, {len(template_names)} template matrix/matrices, "
-    f"{len(concept_files)} concepts, terminology surfaces, and web workbench validated"
+    f"{len(concept_files)} concepts, concept-owned terminology, and web workbench validated"
 )
