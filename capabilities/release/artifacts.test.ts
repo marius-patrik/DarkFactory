@@ -6,6 +6,7 @@ import {
 	buildReleaseArtifactManifest,
 	renderSha256Sums,
 	serializeReleaseArtifactManifest,
+	verifyReleaseArtifactManifest,
 } from "./artifacts.ts";
 
 const roots: string[] = [];
@@ -67,6 +68,61 @@ describe("release artifact manifest", () => {
 		await writeFile(join(outside, "secret"), "outside\n");
 		await symlink(join(outside, "secret"), join(root, "escape"));
 		await expect(buildReleaseArtifactManifest(root, ["escape"], options)).rejects.toThrow("escapes the release root");
+	});
+
+	test("verifies installed bytes and expected provenance", async () => {
+		const root = await fixture();
+		const sourceCommit = "0123456789abcdef0123456789abcdef01234567";
+		const manifest = await buildReleaseArtifactManifest(root, ["df", "nested/web.tar"], {
+			releaseVersion: "1.2.3",
+			sourceCommit,
+		});
+		const result = await verifyReleaseArtifactManifest(root, manifest, {
+			releaseVersion: "1.2.3",
+			sourceCommit,
+			capabilityAbi: "1",
+		});
+		expect(result).toEqual({ valid: true, findings: [] });
+	});
+
+	test("detects tampered artifact bytes", async () => {
+		const root = await fixture();
+		const manifest = await buildReleaseArtifactManifest(root, ["df"], {
+			releaseVersion: "1.0.0",
+			sourceCommit: "0123456789abcdef0123456789abcdef01234567",
+		});
+		await writeFile(join(root, "df"), "tampered artifact bytes\n");
+		const result = await verifyReleaseArtifactManifest(root, manifest);
+		expect(result.valid).toBe(false);
+		expect(result.findings.map((finding) => finding.code)).toEqual(["size-mismatch", "sha256-mismatch"]);
+	});
+
+	test("fails closed on expected provenance mismatch and escaping manifest paths", async () => {
+		const root = await fixture();
+		const manifest = await buildReleaseArtifactManifest(root, ["df"], {
+			releaseVersion: "1.0.0",
+			sourceCommit: "0123456789abcdef0123456789abcdef01234567",
+		});
+		const outside = await mkdtemp(join(tmpdir(), "darkfactory-release-verify-outside-"));
+		roots.push(outside);
+		await writeFile(join(outside, "secret"), "outside\n");
+		await symlink(join(outside, "secret"), join(root, "escape"));
+
+		const bad = {
+			...manifest,
+			artifacts: [
+				...manifest.artifacts,
+				{ path: "escape", bytes: 8, sha256: "0".repeat(64) },
+			],
+		};
+		const result = await verifyReleaseArtifactManifest(root, bad, {
+			releaseVersion: "2.0.0",
+			sourceCommit: "fedcba9876543210fedcba9876543210fedcba98",
+		});
+		expect(result.valid).toBe(false);
+		expect(result.findings.map((finding) => finding.code)).toContain("release-version");
+		expect(result.findings.map((finding) => finding.code)).toContain("source-commit");
+		expect(result.findings.map((finding) => finding.code)).toContain("artifact-unavailable");
 	});
 
 	test("rejects invalid version and abbreviated source provenance", async () => {

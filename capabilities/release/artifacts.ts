@@ -25,6 +25,35 @@ export interface ReleaseArtifactManifestOptions {
 	sourceCommit: string;
 }
 
+/** Optional expected provenance supplied by an installer or fleet-acceptance caller. */
+export interface ReleaseArtifactVerificationOptions {
+	releaseVersion?: string;
+	sourceCommit?: string;
+	capabilityAbi?: string;
+}
+
+/** One fail-closed release artifact verification finding. */
+export interface ReleaseArtifactVerificationFinding {
+	code:
+		| "manifest-version"
+		| "release-version"
+		| "source-commit"
+		| "capability-abi"
+		| "duplicate-path"
+		| "invalid-record"
+		| "artifact-unavailable"
+		| "size-mismatch"
+		| "sha256-mismatch";
+	path?: string;
+	message: string;
+}
+
+/** Result of validating one release manifest against the bytes on disk. */
+export interface ReleaseArtifactVerificationResult {
+	valid: boolean;
+	findings: readonly ReleaseArtifactVerificationFinding[];
+}
+
 function assertReleaseVersion(version: string): void {
 	if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(version)) {
 		throw new Error(`Release version must be SemVer: ${version}`);
@@ -96,6 +125,120 @@ export async function buildReleaseArtifactManifest(
 		capabilityAbi: CAPABILITY_ABI_VERSION,
 		artifacts: records,
 	};
+}
+
+/**
+ * Verifies a release manifest against installed/downloaded bytes and expected provenance.
+ *
+ * Verification never trusts paths or record metadata from the manifest. Every artifact path is
+ * resolved through the same containment guard used at manifest generation time and every file is
+ * rehashed from disk.
+ */
+export async function verifyReleaseArtifactManifest(
+	rootDir: string,
+	manifest: ReleaseArtifactManifest,
+	expected: ReleaseArtifactVerificationOptions = {},
+): Promise<ReleaseArtifactVerificationResult> {
+	const findings: ReleaseArtifactVerificationFinding[] = [];
+	const root = await realpath(resolve(rootDir));
+
+	if (manifest.version !== 1) {
+		findings.push({ code: "manifest-version", message: `Unsupported release manifest version: ${String(manifest.version)}` });
+	}
+	try {
+		assertReleaseVersion(manifest.releaseVersion);
+	} catch (error) {
+		findings.push({ code: "release-version", message: error instanceof Error ? error.message : String(error) });
+	}
+	try {
+		assertSourceCommit(manifest.sourceCommit);
+	} catch (error) {
+		findings.push({ code: "source-commit", message: error instanceof Error ? error.message : String(error) });
+	}
+
+	if (manifest.capabilityAbi !== CAPABILITY_ABI_VERSION) {
+		findings.push({
+			code: "capability-abi",
+			message: `Manifest capability ABI ${manifest.capabilityAbi} does not match runtime ABI ${CAPABILITY_ABI_VERSION}.`,
+		});
+	}
+	if (expected.releaseVersion !== undefined && manifest.releaseVersion !== expected.releaseVersion) {
+		findings.push({
+			code: "release-version",
+			message: `Manifest release version ${manifest.releaseVersion} does not match expected ${expected.releaseVersion}.`,
+		});
+	}
+	if (expected.sourceCommit !== undefined && manifest.sourceCommit !== expected.sourceCommit) {
+		findings.push({
+			code: "source-commit",
+			message: `Manifest source commit ${manifest.sourceCommit} does not match expected ${expected.sourceCommit}.`,
+		});
+	}
+	if (expected.capabilityAbi !== undefined && manifest.capabilityAbi !== expected.capabilityAbi) {
+		findings.push({
+			code: "capability-abi",
+			message: `Manifest capability ABI ${manifest.capabilityAbi} does not match expected ${expected.capabilityAbi}.`,
+		});
+	}
+
+	const seen = new Set<string>();
+	for (const record of manifest.artifacts) {
+		if (
+			!record ||
+			typeof record.path !== "string" ||
+			!Number.isSafeInteger(record.bytes) ||
+			record.bytes < 0 ||
+			!/^[0-9a-f]{64}$/u.test(record.sha256)
+		) {
+			findings.push({
+				code: "invalid-record",
+				...(typeof record?.path === "string" ? { path: record.path } : {}),
+				message: "Release artifact record has invalid path, byte count, or SHA-256 digest.",
+			});
+			continue;
+		}
+
+		let artifact: { absolute: string; path: string };
+		try {
+			artifact = await resolveArtifact(root, record.path);
+		} catch (error) {
+			findings.push({
+				code: "artifact-unavailable",
+				path: record.path,
+				message: error instanceof Error ? error.message : String(error),
+			});
+			continue;
+		}
+
+		if (seen.has(artifact.path)) {
+			findings.push({
+				code: "duplicate-path",
+				path: artifact.path,
+				message: `Duplicate release artifact path: ${artifact.path}`,
+			});
+			continue;
+		}
+		seen.add(artifact.path);
+
+		const content = await readFile(artifact.absolute);
+		if (content.byteLength !== record.bytes) {
+			findings.push({
+				code: "size-mismatch",
+				path: artifact.path,
+				message: `Artifact byte count mismatch: expected ${record.bytes}, got ${content.byteLength}.`,
+			});
+		}
+		const sha256 = createHash("sha256").update(content).digest("hex");
+		if (sha256 !== record.sha256) {
+			findings.push({
+				code: "sha256-mismatch",
+				path: artifact.path,
+				message: `Artifact SHA-256 mismatch for ${artifact.path}.`,
+			});
+		}
+	}
+
+	return { valid: findings.length === 0, findings };
 }
 
 /** Renders portable sha256sum-compatible lines from a deterministic release manifest. */
