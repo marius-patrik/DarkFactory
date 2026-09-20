@@ -108,6 +108,16 @@ export async function resolveRepositoryActions(
 
 	const packages: Record<string, PackageActionSet> = {};
 
+	// Sort capabilities once (ascending by priority, then id) so that sequentially higher priority actions override lower ones.
+	const sortedCapabilities = [...capabilities].sort((a, b) => {
+		const prioA = (a as any).priority ?? 0;
+		const prioB = (b as any).priority ?? 0;
+		if (prioB !== prioA) {
+			return prioA - prioB;
+		}
+		return a.id.localeCompare(b.id);
+	});
+
 	for (const pkg of evidence.packages) {
 		const actionSet = {} as PackageActionSet;
 		const actionKeys: (keyof PackageActionSet)[] = [
@@ -126,15 +136,7 @@ export async function resolveRepositoryActions(
 			let supported = false;
 
 			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
-			// Sort capabilities by priority (descending) so higher priority overrides, and then alphabetically by id for determinism
-			for (const cap of [...capabilities].sort((a, b) => {
-				const prioA = (a as any).priority ?? 0;
-				const prioB = (b as any).priority ?? 0;
-				if (prioB !== prioA) {
-					return prioA - prioB;
-				}
-				return a.id.localeCompare(b.id);
-			})) {
+			for (const cap of sortedCapabilities) {
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
 					// Remove warning: sorting ensures higher priority overrides, so warnings are misleading.
