@@ -7,7 +7,7 @@ import {
   useRef,
   type MutableRefObject,
 } from "react";
-import { DockviewReact } from "dockview-react";
+import { DockviewReact, themeAbyss, themeLight } from "dockview-react";
 
 export type WorkspacePaneKind = "final" | "review" | "raw";
 export type WorkspaceSplitDirection = "right" | "below";
@@ -166,6 +166,14 @@ export const ReviewWorkspace = forwardRef<ReviewWorkspaceControl, ReviewWorkspac
       [refreshRevision, theme],
     );
 
+    const dockTheme = useMemo(
+      () => ({
+        ...(theme === "light" ? themeLight : themeAbyss),
+        tabAnimation: "smooth" as const,
+      }),
+      [theme],
+    );
+
     useEffect(() => {
       const api = apiRef.current;
       if (!api) return;
@@ -245,10 +253,10 @@ export const ReviewWorkspace = forwardRef<ReviewWorkspaceControl, ReviewWorkspac
     return (
       <div className="review-workspace">
         <DockviewReact
-          className={"review-dockview " + (theme === "light" ? "dockview-theme-light" : "dockview-theme-abyss")}
+          className="review-dockview"
+          theme={dockTheme}
           components={components}
           defaultRenderer="always"
-          tabAnimation="smooth"
           onReady={(event: any) => {
             const api = event.api;
             apiRef.current = api;
