@@ -138,7 +138,7 @@
             "windowMs": 86400000,
             "reset": "fixed",
             "source": "observed",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "quotaValue of GenerateRequestsPerDayPerProjectPerModel-FreeTier 429s, per key per model"
           },
           {
@@ -149,7 +149,7 @@
             "windowMs": 86400000,
             "reset": "fixed",
             "source": "observed",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "quotaValue of GenerateRequestsPerDayPerProjectPerModel-FreeTier 429s, per key"
           },
           {
@@ -160,7 +160,7 @@
             "windowMs": 60000,
             "reset": "rolling",
             "source": "observed",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "quotaValue of GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
           },
           {
@@ -171,7 +171,7 @@
             "windowMs": 60000,
             "reset": "rolling",
             "source": "observed",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "quotaValue of GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
           },
           {
@@ -182,7 +182,7 @@
             "windowMs": 60000,
             "reset": "rolling",
             "source": "observed",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "input tokens per model per minute (GenerateContentInputTokensPerModelPerMinute-FreeTier)"
           }
         ],
@@ -220,7 +220,7 @@
         "card": false,
         "notes": "Free-tier prompts may be used to improve Google products. Each API key is a separate project quota.",
         "sourceUrl": "https://ai.google.dev/gemini-api/docs/rate-limits",
-        "checkedAt": "2026-09-15"
+        "checkedAt": "2026-09-20"
       },
       "capabilities": { "tools": true, "reasoning": true, "images": true }
     },
@@ -574,7 +574,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://openrouter.ai/docs/api-reference/limits",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "pool": "openrouter-free-minute",
             "note": "free models"
           },
@@ -587,7 +587,7 @@
             "reset": "fixed",
             "source": "docs",
             "sourceUrl": "https://openrouter.ai/docs/api-reference/limits",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "pool": "openrouter-free-daily",
             "note": "all free models of the account; 1000 after a $10 purchase"
           }
@@ -600,7 +600,7 @@
         "card": false,
         "notes": "Models with the :free suffix; usage via GET /api/v1/key.",
         "sourceUrl": "https://openrouter.ai/docs/api-reference/limits",
-        "checkedAt": "2026-09-15"
+        "checkedAt": "2026-09-20"
       },
       "capabilities": { "tools": true, "reasoning": true, "images": true }
     },
@@ -653,7 +653,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "openai/gpt-oss-*",
@@ -664,7 +664,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "openai/gpt-oss-*",
@@ -675,7 +675,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "openai/gpt-oss-*",
@@ -686,7 +686,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "qwen/qwen3.8-27b",
@@ -697,7 +697,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "qwen/qwen3.8-27b",
@@ -708,7 +708,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "qwen/qwen3.8-27b",
@@ -719,7 +719,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "groq/compound*",
@@ -730,7 +730,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "groq/compound*",
@@ -741,7 +741,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://console.groq.com/docs/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           }
         ]
       },
@@ -750,7 +750,7 @@
         "keyUrl": "https://console.groq.com/keys",
         "card": false,
         "sourceUrl": "https://console.groq.com/docs/rate-limits",
-        "checkedAt": "2026-09-15"
+        "checkedAt": "2026-09-20"
       },
       "capabilities": { "tools": true, "reasoning": false, "images": false }
     },
@@ -789,7 +789,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "*",
@@ -800,7 +800,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits",
-            "checkedAt": "2026-09-15",
+            "checkedAt": "2026-09-20",
             "note": "token bucket; 30K of it uncached"
           },
           {
@@ -812,7 +812,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           },
           {
             "model": "*",
@@ -823,7 +823,7 @@
             "reset": "rolling",
             "source": "docs",
             "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits",
-            "checkedAt": "2026-09-15"
+            "checkedAt": "2026-09-20"
           }
         ]
       },
@@ -833,7 +833,7 @@
         "card": false,
         "notes": "Docs call it the free trial tier: 1M tokens per day.",
         "sourceUrl": "https://inference-docs.cerebras.ai/support/rate-limits",
-        "checkedAt": "2026-09-15"
+        "checkedAt": "2026-09-20"
       },
       "capabilities": { "tools": true, "reasoning": false, "images": false }
     },
@@ -877,7 +877,7 @@
         "keyUrl": "https://opencode.ai/auth",
         "card": false,
         "notes": "Zen free models work without a key; limits are not published.",
-        "checkedAt": "2026-09-15"
+        "checkedAt": "2026-09-20"
       },
       "capabilities": { "tools": true, "reasoning": true, "images": false }
     },
