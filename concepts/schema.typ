@@ -105,15 +105,12 @@
 
   for item in concepts {
     for edge in item.relations {
-      // parent/child literals from the previous architecture are ignored while
-      // files are mechanically migrated; they never affect rendering.
-      if edge.type in ("dependency", "related") {
-        assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
-        if edge.type == "dependency" {
-          dependencies.at(item.key).push(edge.target)
-        } else {
-          related.at(item.key).push(edge.target)
-        }
+      assert(edge.type in ("dependency", "related"), message: "unsupported semantic relation " + edge.type + " on " + item.key)
+      assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
+      if edge.type == "dependency" {
+        dependencies.at(item.key).push(edge.target)
+      } else {
+        related.at(item.key).push(edge.target)
       }
     }
   }
