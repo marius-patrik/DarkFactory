@@ -100,7 +100,7 @@ export const capability = defineCapability({
 					detected = [{ name: pkgName, ecosystem: detectedEcosystem, path: "." }];
 				}
 
-				const pkg = detected.find((p) => p.name === pkgName || p.path === pkgName || (pkgName === "root" && (p.path === "." || p.path === ""))) || (detected.length === 1 ? detected[0] : undefined);
+				const pkg = detected.find((p) => p.name === pkgName || p.path === pkgName || (pkgName === "root" && (p.path === "." || p.path === "")));
 				if (!pkg) {
 					throw new Error(`Package ${pkgName} not found in detected packages. Available packages: ${detected.map(p => p.name).join(", ")}`);
 				}
@@ -111,24 +111,49 @@ export const capability = defineCapability({
 
 				// Override with repo.df environment settings if available
 				const env = repoConfig.environment || repoConfig.quality || {};
-				for (const eco of Object.keys(registry)) {
-					const ecoRegistry = registry[eco];
-					if (!ecoRegistry) continue;
-
-					const testingVal = env.testing?.[eco]?.command || env.testing?.[eco] || env.testing?.command || env.testing;
-					if (testingVal) ecoRegistry.test = parseShellCommand(testingVal);
-
-					const lintingVal = env.linting?.[eco]?.command || env.linting?.[eco] || env.linting?.command || env.linting;
-					if (lintingVal) ecoRegistry.lint = parseShellCommand(lintingVal);
-
-					const formattingVal = env.formatting?.[eco]?.command || env.formatting?.[eco] || env.formatting?.command || env.formatting;
-					if (formattingVal) ecoRegistry.format_check = parseShellCommand(formattingVal);
-
-					const docsVal = env.docs?.[eco]?.command || env.docs?.[eco] || env.docs?.command || env.docs;
-					if (docsVal) ecoRegistry.docs_check = parseShellCommand(docsVal);
-				}
 
 				const ecoRegistry = registry[ecosystem] || registry["javascript"];
+
+				const testOverride = env.testing;
+				if (testOverride) {
+					if (typeof testOverride === 'string') {
+						ecoRegistry.test = parseShellCommand(testOverride);
+					} else if (testOverride[ecosystem]) {
+						const val = testOverride[ecosystem].command || testOverride[ecosystem];
+						ecoRegistry.test = parseShellCommand(val);
+					}
+				}
+
+				const lintOverride = env.linting;
+				if (lintOverride) {
+					if (typeof lintOverride === 'string') {
+						ecoRegistry.lint = parseShellCommand(lintOverride);
+					} else if (lintOverride[ecosystem]) {
+						const val = lintOverride[ecosystem].command || lintOverride[ecosystem];
+						ecoRegistry.lint = parseShellCommand(val);
+					}
+				}
+				
+				const formatOverride = env.formatting;
+				if (formatOverride) {
+					if (typeof formatOverride === 'string') {
+						ecoRegistry.format_check = parseShellCommand(formatOverride);
+					} else if (formatOverride[ecosystem]) {
+						const val = formatOverride[ecosystem].command || formatOverride[ecosystem];
+						ecoRegistry.format_check = parseShellCommand(val);
+					}
+				}
+				
+				const docsOverride = env.docs;
+				if (docsOverride) {
+					if (typeof docsOverride === 'string') {
+						ecoRegistry.docs_check = parseShellCommand(docsOverride);
+					} else if (docsOverride[ecosystem]) {
+						const val = docsOverride[ecosystem].command || docsOverride[ecosystem];
+						ecoRegistry.docs_check = parseShellCommand(val);
+					}
+				}
+
 				const actionSpec = ecoRegistry?.[action];
 
 				if (!actionSpec) {
@@ -143,11 +168,13 @@ export const capability = defineCapability({
 				}
 
 				const command = createQualityCommand(actionSpec.tool, actionSpec.args);
+				const useShell = repoConfig.environment?.useShell ?? false;
 
 				return {
 					tool: actionSpec.tool,
 					args: actionSpec.args,
 					command,
+					useShell,
 				};
 			},
 		},

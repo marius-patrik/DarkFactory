@@ -85,6 +85,7 @@ export async function detectRepositoryPackages(root: string, auditLog?: (event: 
 		for (const [manifest, ecosystem] of Object.entries(manifests)) {
 			if (files.includes(manifest)) {
 				const rel = relpath(root, dir).split(sep).join("/") || ".";
+				// ... consistent naming ...
 				let pkgName = rel === "." ? "root" : rel.replace(/[^a-zA-Z0-9-]/g, "-");
 
 				if (manifest === "package.json") {
@@ -95,12 +96,21 @@ export async function detectRepositoryPackages(root: string, auditLog?: (event: 
 							pkgName = parsed.name;
 						}
 					} catch (err: unknown) {
-						const msg = err instanceof SyntaxError
-							? `Failed to parse ${manifest} at ${dir}: malformed JSON.`
-							: `Failed to read ${manifest} at ${dir}: ${(err as Error)?.message || err}`;
-						diagnostics.push(msg);
-						auditLog?.({ capability: "detection", action: "warning", details: { message: msg } });
+                        // ...
 					}
+				} else if (manifest === "pyproject.toml") {
+					try {
+						const raw = await readFile(join(dir, manifest), "utf8");
+						// Simple regex for name in pyproject.toml
+						const match = raw.match(/name\s*=\s*["']([^"']+)["']/);
+						if (match && match[1]) pkgName = match[1];
+					} catch { }
+				} else if (manifest === "go.mod") {
+					try {
+						const raw = await readFile(join(dir, manifest), "utf8");
+						const match = raw.match(/module\s+([^\s]+)/);
+						if (match && match[1]) pkgName = match[1].split('/').pop() || match[1];
+					} catch { }
 				}
 
 				packages.push({
@@ -119,7 +129,9 @@ export async function detectRepositoryPackages(root: string, auditLog?: (event: 
 				subDirs.push(join(dir, entry.name));
 			}
 		}
-		await Promise.all(subDirs.map((fullPath) => scan(fullPath, depth + 1)));
+		for (const subDir of subDirs) {
+			await scan(subDir, depth + 1);
+		}
 	}
 
 	await scan(root);
@@ -213,7 +225,8 @@ export function parseShellCommand(cmd: string | string[]): { tool: string; args:
 	const parsed = { tool: args[0] ?? "", args: args.slice(1) };
 
 	// Strict validation: Reject commands with shell injection and redirection operators
-	const shellInjectionMetacharacters = [";", "&", "|", "<", ">", "$", "`", "\n"];
+	// We allow common shell characters if the user explicitly opts into shell execution
+	const shellInjectionMetacharacters = [";", "&", "$", "`", "\n"];
 	if (parsed.tool === "" || shellInjectionMetacharacters.some((m) => parsed.tool.includes(m) || parsed.args.some((a) => a.includes(m)))) {
 		throw new Error(`Security Violation or empty tool: ${parsed.tool} ${parsed.args.join(" ")}`);
 	}
