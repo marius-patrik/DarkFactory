@@ -3,10 +3,10 @@
 Typst document template for the GJKT odborná práce format.
 
 This directory is **not** a standalone Typst package. It is one template
-implementation inside DarkFactory-Paper and exports a `template(...)[body]`
+implementation inside the `DarkFactory/` book root and exports a `template(...)[body]`
 function from `template.typ`.
 
-The project selects templates through `templates/registry.typ`. Shared manuscript semantics (review markers, publication-profile state, bilingual helpers and terminology) live in `templates/common.typ`. This implementation owns only GJKT document structure/layout plus its word-count integration. A future template can therefore provide another document layout while reusing the same manuscript semantics and build pipeline.
+The book selects templates through `DarkFactory/templates/registry.typ`. Shared manuscript semantics (review markers, publication-profile state, bilingual helpers and terminology) live in `DarkFactory/templates/common.typ`. This implementation owns only GJKT document structure/layout plus its word-count integration. A future template can therefore provide another document layout while reusing the same manuscript semantics and build pipeline.
 
 Files:
 - `template.typ` — GJKT document structure and layout implementation.
@@ -33,7 +33,7 @@ usage-driven keyword list remains in front matter.
 ## Semantic web publication
 
 The paged GJKT template remains authoritative for the PDF/print layout. The repository
-also provides `web-publication.typ`, a template-neutral semantic entrypoint for
+also provides `DarkFactory/web-publication.typ`, a template-neutral semantic entrypoint for
 Typst's HTML target. It imports the same concept-driven manuscript renderers and shared review/profile/
 terminology semantics without attempting to reproduce page margins, title-page layout,
 or other print-only GJKT presentation in HTML.
