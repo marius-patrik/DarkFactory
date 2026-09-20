@@ -5,7 +5,7 @@ import { captureContext, forceCaptureTool, readCapture } from "./capture-request
 
 /** Validate a value against a Zod schema. */
 export function validateCaptureSchema(schema: unknown, value: unknown): boolean {
-	if (!schema || typeof schema !== "object" || !("safeParse" in schema)) {
+	if (!schema || typeof schema !== "object" || typeof (schema as any).safeParse !== "function") {
 		throw new Error("Provided schema is not a Zod schema");
 	}
 	const anySchema = schema as { safeParse: (v: unknown) => { success: boolean } };
