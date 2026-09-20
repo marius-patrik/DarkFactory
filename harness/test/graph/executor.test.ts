@@ -257,7 +257,6 @@ describe("runGraph fan-out", () => {
 	});
 });
 
-
 describe("generic durable review lifecycle", () => {
 	const reviewAdapter = { subject: "planning" as const, validate: () => [] };
 
@@ -342,12 +341,7 @@ describe("generic durable review lifecycle", () => {
 		const waiting = await runGraph(planningGraph(), dir, handlers, opened, {
 			reviewAdapters: { planning: reviewAdapter },
 		});
-		expect(calls.map((call) => call.node)).toEqual([
-			"planning",
-			"planning-review",
-			"planning-fix",
-			"planning-review",
-		]);
+		expect(calls.map((call) => call.node)).toEqual(["planning", "planning-review", "planning-fix", "planning-review"]);
 		expect(waiting.current_node).toBe("planning-gate");
 		expect(waiting.reviews?.planning).toMatchObject({ clean: true, iteration: 2 });
 		expect(waiting.reviews?.planning?.history.map((entry) => entry.phase)).toEqual(["review", "fix", "review"]);
