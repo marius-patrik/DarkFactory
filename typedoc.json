@@ -16,8 +16,33 @@
     "capabilities/paper/capability.ts",
     "capabilities/math/capability.ts"
   ],
-  "out": ".darkfactory/generated/typedoc",
   "tsconfig": "harness/tsconfig.json",
   "readme": "none",
-  "skipErrorChecking": false
+  "skipErrorChecking": false,
+  "outputs": [
+    {
+      "name": "json",
+      "path": ".darkfactory/generated/typedoc.json"
+    }
+  ],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "invalidPath": true,
+    "rewrittenLink": false,
+    "notDocumented": true,
+    "unusedMergeModuleWith": false
+  },
+  "requiredToBeDocumented": [
+    "Class",
+    "Interface",
+    "Function",
+    "TypeAlias",
+    "Variable",
+    "Enum",
+    "EnumMember",
+    "Accessor"
+  ],
+  "treatWarningsAsErrors": true,
+  "treatValidationWarningsAsErrors": true
 }
