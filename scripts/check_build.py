@@ -60,6 +60,10 @@ for artifact in EXPECTED:
 if not ROOT.is_dir():
     fail(f"selected book root does not exist: {ROOT}")
 
+for stale_root in ("concepts", "templates", "fonts", "bib", "img"):
+    if Path(stale_root).exists():
+        fail(f"book-owned root must not exist at repository level: {stale_root}/")
+
 template_names = tuple(
     sorted(path.parent.name for path in (ROOT / "templates").glob("*/template.typ"))
 )
