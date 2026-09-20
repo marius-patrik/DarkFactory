@@ -75,6 +75,60 @@ describe("AgentSession harness", () => {
 		supervisor.session.dispose();
 	});
 
+	test("failed attempts escalate exactly one capability tier and success resets the next prompt", async () => {
+		const { home, cwd } = await tempWorkspace();
+		const low = fauxProvider({ provider: "tier-low", models: [{ id: "a" }] });
+		const middle = fauxProvider({ provider: "tier-mid", models: [{ id: "b" }] });
+		const high = fauxProvider({ provider: "tier-high", models: [{ id: "c" }] });
+		low.setResponses([
+			fauxAssistantMessage([], { stopReason: "error", errorMessage: "model capability failure" }),
+			fauxAssistantMessage("baseline again"),
+		]);
+		middle.setResponses([fauxAssistantMessage("recovered one tier up")]);
+		high.setResponses([fauxAssistantMessage("should not be used")]);
+		const events: HarnessEvent[] = [];
+		const supervisor = await createFailoverSupervisor({
+			chain: [
+				{ provider: "tier-low", model: "a", account: "one" },
+				{ provider: "tier-mid", model: "b", account: "two" },
+				{ provider: "tier-high", model: "c", account: "three" },
+			],
+			home,
+			cwd,
+			...runtimeProviders(low.provider, middle.provider, high.provider),
+			capabilityEscalation: {
+				order: ["light", "standard", "heavy"],
+				baselineTier: "light",
+				candidateTiers: {
+					"tier-low/a@one": "light",
+					"tier-mid/b@two": "standard",
+					"tier-high/c@three": "heavy",
+				},
+			},
+			onEvent: (event) => events.push(event),
+		});
+		try {
+			const first = await supervisor.prompt("first task");
+			expect(first.content.some((block) => block.type === "text" && block.text === "recovered one tier up")).toBe(true);
+			expect(supervisor.activeCandidate).toEqual({ provider: "tier-mid", model: "b", account: "two" });
+			expect(events.filter((event) => event.type === "tier_escalation")).toEqual([
+				expect.objectContaining({
+					type: "tier_escalation",
+					fromTier: "light",
+					toTier: "standard",
+					to: { provider: "tier-mid", model: "b", account: "two" },
+				}),
+			]);
+			expect(events.some((event) => event.type === "tier_escalation" && event.toTier === "heavy")).toBe(false);
+
+			const second = await supervisor.prompt("independent second task");
+			expect(second.content.some((block) => block.type === "text" && block.text === "baseline again")).toBe(true);
+			expect(supervisor.activeCandidate).toEqual({ provider: "tier-low", model: "a", account: "one" });
+		} finally {
+			supervisor.session.dispose();
+		}
+	});
+
 	test("model thinking never becomes answer text", async () => {
 		// E2E #267: the posted plan started with Gemini's thought summary before the real plan.
 		// A thought part must stream as a thinking event, never as answer text.
