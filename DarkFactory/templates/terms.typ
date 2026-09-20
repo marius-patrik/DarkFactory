@@ -1,5 +1,5 @@
-// Compatibility projection for existing manuscript/template imports.
-// Canonical terminology now lives with each concept under concepts/**.
+// Vocabulary projection for book-local manuscript/template imports.
+// Canonical terminology lives with each concept under this DarkFactory book root.
 #import "/DarkFactory/index.typ" as catalog
 
 #let vocabulary = catalog.vocabulary
