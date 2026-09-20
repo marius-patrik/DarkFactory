@@ -705,7 +705,10 @@ for required in (
     "PencilLineIcon",
     "EyeIcon",
     "BracesIcon",
-    'mode === "review" ? "Edit" : mode === "raw" ? "Raw" : "Viewer"',
+    "ListTreeIcon",
+    'label: "View"',
+    'label: "Edit"',
+    'label: "Raw"',
 ):
     if required not in app_source:
         fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
@@ -733,7 +736,11 @@ for required in ("window.history.pushState", '"popstate"', "navigateViewer", "on
 if "Switch Final / Koncept / Review" in app_source or "Switch Compiled / Koncept / Raw" in app_source:
     fail("legacy mode labels must not remain")
 for required in (
-    'Switch Viewer / Edit / Raw',
+    'role="group" aria-label="Renderer"',
+    '<TooltipContent>Renderer</TooltipContent>',
+    'label: "View"',
+    'label: "Edit"',
+    'label: "Raw"',
     'requestedMode === "raw"',
     'mode: "raw"',
     "rawHref={rawTarget}",
@@ -742,19 +749,50 @@ for required in (
     '<RawArtifactView path={renderArtifactPath} format={format}',
 ):
     if required not in app_source:
-        fail(f"viewer missing Viewer/Edit/Raw mode contract: {required}")
+        fail(f"viewer missing View/Edit/Raw renderer contract: {required}")
+if "function ModePicker(" in app_source or 'className="mode-select"' in app_source:
+    fail("Renderer must be a direct multi-button control, not the legacy dropdown")
 if 'mode === "raw"\n      ? "markdown"' in app_source:
     fail("Raw mode must preserve the selected document type")
 for required in (
     "ActivityBar",
+    'label="Contents"',
     'label="Pages"',
     'label="Files"',
+    "ContentsPanel",
     "RepoFilesPanel",
+    'activityPanel === "contents"',
     'activityPanel === "files"',
     'activityPanel !== "pages"',
+    "ContextMenu",
+    "ContextMenuTrigger",
+    "ContextMenuContent",
+    "ContextMenuItem",
+    "Move Activity Bar",
+    "useCommand",
+    'id: "toggle-sidebar"',
+    'key: "b"',
+    "primaryModifier: true",
+    "lastActivityPanel",
 ):
     if required not in app_source:
-        fail(f"viewer missing Pages/Files activity contract: {required}")
+        fail(f"viewer missing Contents/Pages/Files activity-command contract: {required}")
+for required in (
+    '<TooltipContent>Language</TooltipContent>',
+    'aria-label="Language"',
+    "languageDisplayName",
+    '<TooltipContent>File type</TooltipContent>',
+    'aria-label="File type"',
+    'extension: ".pdf"',
+    'extension: ".md"',
+    'extension: ".html"',
+    'className="status-select-copy"',
+):
+    if required not in app_source:
+        fail(f"status selector contract missing: {required}")
+if "Switch language version" in app_source or "Switch document type" in app_source:
+    fail("status selectors must use the concise Language and File type labels")
+
 if '<div className="status-center">\n          {manifest?.commit' not in app_source:
     fail("commit SHA must be centered in the status bar")
 if '<div className="status-actions">\n          {pagesAvailable && (' not in app_source:
@@ -800,6 +838,8 @@ for required in (
     "FilesIcon: Files",
     "FolderIcon: Folder",
     "FolderTreeIcon: FolderTree",
+    "ListTreeIcon: ListTree",
+    "ListIcon: List",
     "PanelLeftRightIcon: PanelsLeftRight",
     "BookOpenIcon: BookOpen",
     "CircleIcon: Circle",
@@ -814,6 +854,16 @@ if "window.location.reload()" in app_source:
 viewer_css_source = Path("web/src/viewer.css").read_text(encoding="utf-8")
 for required in (
     '@import "./publication.css"',
+    '--header-height: 40px',
+    'grid-template-rows: var(--header-height) minmax(0, 1fr) var(--status-height)',
+    'flex: 0 0 36px',
+    '.activity-action',
+    'align-items: center',
+    '.contents-panel',
+    '.contents-tree',
+    '.renderer-picker',
+    '.renderer-option.active',
+    '.status-select-copy',
     'html[data-theme="oled"]',
     '--bg: #000000',
     '--toolbar: #000000',
