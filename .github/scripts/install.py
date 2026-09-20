@@ -1,23 +1,11 @@
-"""Generates everything a repository needs to join the pipeline.
+"""Generates the current DarkFactory consumer installation.
 
-Installing used to mean installing the GitHub App and then writing six caller workflows and a
-manifest by hand, in the right shape, pinned to the right commit. Every one of those is derivable:
-the callers differ only in name and trigger, and the manifest's interesting parts - what the
-repository is made of, and therefore which jobs are worth running - are exactly what
-`environment.configure` already answers.
+The installer writes the caller workflows and repo.df declaration required by the shared DarkFactory
+pipeline. Detectable repository facts come from environment detection; repository-specific intent
+such as areas remains declarative. Generated caller workflows pin the selected DarkFactory commit.
 
-So this writes them. What cannot be derived is intent: a repository's areas describe its own
-domains, so a starter set is offered and expected to be edited.
-
-The caller files have to exist in the target repository because GitHub only runs workflow files
-present on the branch an event fires on; there is no way to drive a repository's pipeline entirely
-from elsewhere. Generating them is the closest thing to installing nothing.
-
-The governed knowledge layout is part of the convention this pipeline installs: a consumer
-repository that keeps notes at all adopts `.agents/notes` - runbooks and captures under
-`.agents/notes/`, and one ADR per decision under `.agents/notes/adr/`. Notes content is never
-written or overwritten by this installer; the layout convention is what is shared, mirroring
-DarkFactory's own canonical paths.
+The governed knowledge layout uses canonical .agents paths. The installer does not create or preserve
+historical documentation records.
 """
 
 import json
@@ -668,7 +656,7 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     Returns:
         True when repo.df changed.
     """
-    path = resolve_df_file(root, "repo")
+    path = manifest.resolve_manifest_path(root)
     if not os.path.isfile(path):
         return False
 
