@@ -44,8 +44,8 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		test: (path) => path === "." ? "bun test" : `bun test --cwd ${path}`,
 		lint: (path) => path === "." ? "bun run lint" : `bun run --cwd ${path} lint`,
 		format_check: (path) => path === "." ? "bun run format" : `bun run --cwd ${path} format`,
-		docs_check: (path) => path === "." ? "bun run docs-check" : `bun run --cwd ${path} docs-check`,
-		docs_extract: (path) => path === "." ? "bun run docs-extract" : `bun run --cwd ${path} docs-extract`,
+		docs_check: (path) => path === "." ? "bun scripts/build-docs.ts --check" : `bun scripts/build-docs.ts --check --path ${path}`,
+		docs_extract: (path) => path === "." ? "bun scripts/build-docs.ts" : `bun scripts/build-docs.ts --path ${path}`,
 		setup: (path) => path === "." ? "bun install" : `bun install --cwd ${path}`,
 	},
 	python: {
@@ -129,16 +129,49 @@ export async function resolveRepositoryActions(
 				}
 			}
 
+		for (const actionKey of actionKeys) {
+			let command = "";
+			let description = "";
+			let supported = false;
+
+			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
+			// Sort capabilities to ensure deterministic resolution, e.g., by id
+			for (const cap of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
+				const capAction = cap.actions?.[actionKey];
+				if (capAction) {
+					// Check for overlap: warn if multiple capabilities try to override the same action
+					if (supported) {
+						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.id}`);
+					}
+					supported = true;
+					description = capAction.description ?? `Capability-contributed ${actionKey}`;
+					if (typeof capAction.command === "function") {
+						try {
+							command = (capAction.command as (p: string) => string)(pkg.path);
+						} catch (error: any) {
+							console.error(`Failed to resolve command from capability action: ${error.message}`);
+							command = "echo 'Failed to resolve capability command'";
+						}
+					} else {
+						command = capAction.command;
+					}
+				}
+			}
+
 			// 2. Try repo.df / override configuration
-			if (actionKey === "test" && evidence.repoDf.environment?.testing?.[pkg.ecosystem]) {
-				const override = evidence.repoDf.environment.testing[pkg.ecosystem];
+			const env = evidence.repoDf.environment;
+			const override = 
+				(actionKey === "test" && env?.testing?.[pkg.ecosystem]) ||
+				(actionKey === "lint" && env?.linting?.[pkg.ecosystem]) ||
+				(actionKey === "format_check" && env?.formatting?.[pkg.ecosystem]) ||
+				(actionKey === "docs_check" && env?.docs_check?.[pkg.ecosystem]) ||
+				(actionKey === "docs_extract" && env?.docs_extract?.[pkg.ecosystem]) ||
+				(actionKey === "setup" && env?.setup?.[pkg.ecosystem]) ||
+				(actionKey === "release" && env?.release?.[pkg.ecosystem]);
+			
+			if (override) {
 				command = override.command;
-				description = `Declared in repo.df environment.testing`;
-				supported = true;
-			} else if (actionKey === "format_check" && evidence.repoDf.environment?.formatting?.[pkg.ecosystem]) {
-				const override = evidence.repoDf.environment.formatting[pkg.ecosystem];
-				command = override.command;
-				description = `Declared in repo.df environment.formatting`;
+				description = `Declared in repo.df environment.${actionKey}`;
 				supported = true;
 			}
 
@@ -162,7 +195,7 @@ export async function resolveRepositoryActions(
 			actionSet[actionKey] = { command, description, supported };
 		}
 
-		packages[pkg.name] = actionSet;
+		packages[pkg.name] = actionSet as PackageActionSet;
 	}
 
 	return {

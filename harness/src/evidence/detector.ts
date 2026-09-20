@@ -43,7 +43,12 @@ export interface RepoDf {
 			name: string;
 		}>;
 		testing?: Record<string, { command: string }>;
+		linting?: Record<string, { command: string }>;
 		formatting?: Record<string, { command: string }>;
+		docs_check?: Record<string, { command: string }>;
+		docs_extract?: Record<string, { command: string }>;
+		setup?: Record<string, { command: string }>;
+		release?: Record<string, { command: string }>;
 	};
 	[key: string]: unknown;
 }
@@ -107,7 +112,8 @@ async function scanDirectory(
 			name,
 			manifest: "package.json",
 		});
-	} else if (hasPyprojectToml || hasRequirementsTxt) {
+	}
+	if (hasPyprojectToml || hasRequirementsTxt) {
 		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
 		if (hasPyprojectToml) {
 			try {
@@ -122,7 +128,8 @@ async function scanDirectory(
 			name,
 			manifest: hasPyprojectToml ? "pyproject.toml" : "requirements.txt",
 		});
-	} else if (hasCargoToml) {
+	}
+	if (hasCargoToml) {
 		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
 		try {
 			const content = await readFile(join(currentDir, "Cargo.toml"), "utf8");
@@ -135,7 +142,8 @@ async function scanDirectory(
 			name,
 			manifest: "Cargo.toml",
 		});
-	} else if (hasGoMod) {
+	}
+	if (hasGoMod) {
 		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
 		try {
 			const content = await readFile(join(currentDir, "go.mod"), "utf8");
@@ -193,10 +201,18 @@ export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise
 				manifest: pkg.manifest,
 			});
 		}
-	} else {
-		// Auto-discover packages
-		await scanDirectory(root, root, ignoreList, packages);
 	}
+
+	// Always run auto-discovery to find other packages in the repo
+	await scanDirectory(root, root, ignoreList, packages);
+
+	// Ensure unique packages (by path)
+	const uniquePackages = new Map<string, DiscoveredPackage>();
+	for (const pkg of packages) {
+		uniquePackages.set(pkg.path, pkg);
+	}
+	packages.length = 0;
+	packages.push(...uniquePackages.values());
 
 	// Unique ecosystems
 	const ecosystems = [...new Set(packages.map((p) => p.ecosystem))].sort();
