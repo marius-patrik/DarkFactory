@@ -231,7 +231,7 @@ After #361 is green, re-run the original declarable-graph product contract again
 ### Stable / landed
 
 - The canonical/default branch is `darkfactory`.
-- Current canonical HEAD after the latest merge is `a3b085627b2088cd203fea3346e39dac5fea969c`.
+- The latest implementation integration point is PR #887 (`a3b085627b2088cd203fea3346e39dac5fea969c`); always resolve the live `darkfactory` HEAD at execution time rather than hard-coding a self-referential PLAN SHA.
 - #858 repaired the packaged df runtime boundary by resolving workflow contracts through `@darkfactory/protocol/workflow` instead of a source-tree-relative import.
 - #341 is landed with the final repository evidence + capability-resolved deterministic action contract.
 - #880 landed deterministic current-documentation truth checks: README projection drift and retired docs surfaces now fail native docs CI.
