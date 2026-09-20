@@ -181,6 +181,9 @@ for forbidden in (
     if forbidden in common_source:
         fail(f"alternate term-name rendering option must not return: {forbidden}")
 
+if Path("kapitoly/outline.typ").exists():
+    fail("stale parallel manuscript outline must not return")
+
 appendix_source = Path("kapitoly/06-prilohy.typ").read_text(encoding="utf-8")
 for stale_appendix in (
     "Obsah přiloženého média",

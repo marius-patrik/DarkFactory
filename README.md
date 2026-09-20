@@ -10,9 +10,9 @@ který práci zároveň sází, testuje a publikuje.
 
 ## Konceptově řízený rukopis
 
-Teoretická a praktická část se skládají z kanonických konceptů pod `concepts/`, nikoli z jednoho monolitického souboru kapitoly. Každá hlavní sekce je adresář s `index.typ`; každý termín nebo samostatná podsekce má vlastní `.typ` soubor. Koncept vlastní český a anglický formální název, volitelný průmyslový název, definici a explicitní sloty `theory_intro`, `theory_body`, `theory_summary`, `practical_intro`, `practical_body` a `practical_summary`.
+Celý vlastní text práce je složen z kanonických konceptů pod `concepts/`; soubory `kapitoly/01-05` jsou pouze kompatibilní projekce a neobsahují paralelní rukopis. Dokumentové koncepty úvodu, cílů, výzkumných otázek, metodiky, výsledků a závěru jsou pod `concepts/manuscript/`, zatímco teoretická a praktická doména používají stejné koncepty pod ostatními větvemi katalogu. Každá sekce je adresář s `index.typ`; každý samostatný koncept má vlastní `.typ` soubor. Koncept vlastní termín, volitelnou bohatou `definition`, dokumentové sloty `document_*` a podle potřeby také projekce `theory_*` a `practical_*`.
 
-`concepts/index.typ` z indexů sekcí sestaví společný slovník termínů a dynamicky vykreslí teoretickou i praktickou kapitolu. `templates/terms.typ` zůstává pouze kompatibilní projekcí pro existující `terms.<key>` odkazy. Nový obsah ani terminologie se do něj již nepřidávají.
+`concepts/index.typ` z folder manifestů sestaví společný slovník termínů a dynamicky vykreslí úvod, teoretickou část, praktickou část, výsledky i závěr. `templates/terms.typ` zůstává pouze kompatibilní projekcí pro existující `terms.<key>` odkazy. Nový obsah ani terminologie se do něj již nepřidávají.
 
 ## Repozitářová architektura
 
@@ -83,7 +83,9 @@ Pages web publikuje všechny dokumentové šablony a pod každou všech osm prof
 | `main.typ` | jediný kanonický compiler entrypoint |
 | `thesis.typ` | společné sestavení obsahu práce |
 | `metadata.typ` | název, autor, škola, anotace a jazykové varianty metadata |
-| `kapitoly/*.typ` | text práce |
+| `concepts/**` | jediný kanonický zdroj struktury a vlastního textu práce |
+| `kapitoly/01-05*.typ` | pouze kompatibilní projekce konceptových rendererů; bez vlastního rukopisu |
+| `kapitoly/06-prilohy.typ` | aktuální přílohový obsah |
 | `templates/common.typ` | sdílená autorská/review API, jazykové profily a terminologie |
 | `templates/registry.typ` | registry a výběr dokumentové šablony |
 | `templates/gjkt-odborna-prace/` | GJKT struktura dokumentu, sazba a počítání rozsahu |
@@ -128,21 +130,14 @@ Každý termín může mít dvě pojmenovací vrstvy:
 - `proper` — formální/úplný název, samostatně pro češtinu a angličtinu,
 - `industry` — běžná průmyslová zkratka nebo zažitý anglický název.
 
-Všechny termíny používají jediný kanonický formát názvu **Čeština [English] (Industry)**.
-Anglický proper název je v bilingvním zobrazení vždy v hranatých závorkách a industry
-název či zkratka vždy v kulatých závorkách. Duplicitní vrstvy se automaticky potlačí:
-například `language_model` se vykreslí jako `Jazykový model [Large Language Model] (LLM)`,
-zatímco termín se shodným českým a anglickým názvem neopakuje stejný text dvakrát.
+Všechny termíny používají jediný kanonický formát názvu **Industry (Čeština) [English]**. Průmyslový alias vede, pokud existuje; český proper název následuje v kulatých závorkách a odlišný anglický proper název v hranatých. Pokud industry alias neexistuje, vede anglický proper název. Duplicitní vrstvy se automaticky potlačí: například `language_model` se vykreslí jako `LLM (Jazykový model) [Large Language Model]`, zatímco `Embedding` jako `Embedding (Vektorová reprezentace)`.
 
-Renderer podporuje:
+Renderer podporuje jedinou jmennou prezentaci a pouze obsahové volby:
 - `render: "term" | "explanation" | "both"`,
-- nezávislé `name-language` a `detail-language`,
-- `detail-order` a inline nebo skládaný detail,
+- `detail-language`, `detail-order` a inline nebo skládaný detail,
 - automatickou registraci skutečně použitých termínů do sekce klíčových slov.
 
-Historické parametry pro změnu formátu názvu (`name-type`, `name-order`,
-`name-separator`, `name-type-separator`) zůstávají pouze kvůli kompatibilitě
-existujícího zdroje; vizuální formát termínu již nemění.
+Alternativní jmenné parametry (`name-type`, `name-order`, `name-language`, `name-separator`, `name-type-separator`) byly odstraněny; název termínu nelze lokálně přepsat do jiného formátu.
 
 
 ## Webový viewer
