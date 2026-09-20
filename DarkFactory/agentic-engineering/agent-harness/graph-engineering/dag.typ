@@ -15,7 +15,6 @@ Orientovaný acyklický graf (DAG) je orientovaný graf bez orientovaného cyklu
   description: terms => [
 #finalized[
 V agentním workflow může DAG modelovat kroky jako uzly a jejich povinné závislosti jako hrany. Tím lze explicitně vyjádřit například posloupnost příjem požadavku → plán → implementace → testy → schválení a zabránit spuštění navazujícího kroku před splněním jeho předpokladů.
-]
   ],
   summary: terms => [
 DAG převádí implicitní pořadí vícefázové úlohy na kontrolovatelnou strukturu závislostí, v níž lze navazující krok spustit až po splnění jeho předpokladů.
