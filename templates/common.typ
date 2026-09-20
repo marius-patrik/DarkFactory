@@ -292,19 +292,11 @@
   citation: none,
   source: none,
   keyword: true,
-  default-name-type: "proper",
-  keyword-name-type: none,
 ) = {
   assert(proper.cs != none or proper.en != none, message: "term requires at least one proper/formal name")
-  assert(default-name-type in ("proper", "industry", "both"), message: "default term name type must be proper, industry, or both")
-  if industry == none {
-    assert(default-name-type != "industry", message: "industry default requires an industry name")
-  }
   let identity = if proper.en != none { proper.en } else { proper.cs }
   let resolved-id = if id == none { keyword-id(str(identity)) } else { id }
-  let resolved-keyword-type = if keyword-name-type == none { default-name-type } else { keyword-name-type }
   assert(resolved-id != "", message: "term id must not be empty")
-  assert(resolved-keyword-type in ("proper", "industry", "both"), message: "keyword term name type must be proper, industry, or both")
   (
     kind: "term",
     id: resolved-id,
@@ -315,8 +307,6 @@
     citation: citation,
     source: source,
     keyword: keyword,
-    default_name_type: default-name-type,
-    keyword_name_type: resolved-keyword-type,
   )
 }
 
@@ -339,7 +329,7 @@
   value.citation
 }
 
-#let term-language(language, profile) = {
+#let term-detail-language(language, profile) = {
   if language != "auto" {
     language
   } else if profile == "cs" {
@@ -351,98 +341,58 @@
   }
 }
 
-#let term-proper-name(value, language: "auto") = context {
-  let lang = term-language(language, profile-state.get())
+// Canonical term-name presentation used everywhere:
+//   Industry (Czech) [English]
+// If no industry alias exists, English leads: English (Czech).
+// Duplicate names collapse, so English is omitted when it equals the industry alias.
+#let term-name(value) = {
   let cs = value.proper.cs
   let en = value.proper.en
-
-  if lang == "cs" {
-    if cs != none { text(lang: "cs")[#cs] } else { text(lang: "en")[#en] }
-  } else if lang == "en" {
-    if en != none { text(lang: "en")[#en] } else { text(lang: "cs")[#cs] }
-  } else if cs == none {
-    text(lang: "en")[#en]
-  } else if en == none {
-    text(lang: "cs")[#cs]
-  } else if str(cs) == str(en) {
-    text(lang: "en")[#en]
-  } else {
-    [
-      #text(lang: "cs")[#cs]
-      #h(0.25em)
-      #text("[")
-      #text(lang: "en")[#en]
-      #text("]")
-    ]
-  }
-}
-
-#let term-industry-name(value, language: "auto") = context {
-  if value.industry == none {
+  let industry = if value.industry == none {
     none
+  } else if value.industry.en != none {
+    value.industry.en
   } else {
-    let lang = term-language(language, profile-state.get())
-    let cs = value.industry.cs
-    let en = value.industry.en
+    value.industry.cs
+  }
 
-    if lang == "cs" {
-      if cs != none { text(lang: "cs")[#cs] } else { text(lang: "en")[#en] }
-    } else if lang == "en" {
-      if en != none { text(lang: "en")[#en] } else { text(lang: "cs")[#cs] }
-    } else if en != none {
-      text(lang: "en")[#en]
-    } else {
-      text(lang: "cs")[#cs]
+  let lead-value = if industry != none {
+    industry
+  } else if en != none {
+    en
+  } else {
+    cs
+  }
+  let lead-language = if industry != none and value.industry != none and value.industry.en == none {
+    "cs"
+  } else if en != none {
+    "en"
+  } else {
+    "cs"
+  }
+  let lead = text(lang: lead-language)[#lead-value]
+  let lead-text = str(lead-value)
+
+  [
+    #lead
+    #if cs != none and str(cs) != lead-text {
+      [#h(0.25em)#text("(")#text(lang: "cs")[#cs]#text(")")]
     }
-  }
+    #if en != none and str(en) != lead-text {
+      [#h(0.25em)#text("[")#text(lang: "en")[#en]#text("]")]
+    }
+  ]
 }
 
-#let industry-name-redundant(value) = {
-  if value.industry == none {
-    true
+#let term-sort-name(value) = {
+  if value.industry != none and value.industry.en != none {
+    str(value.industry.en)
+  } else if value.industry != none and value.industry.cs != none {
+    str(value.industry.cs)
+  } else if value.proper.en != none {
+    str(value.proper.en)
   } else {
-    let proper-values = (value.proper.cs, value.proper.en)
-      .filter(x => x != none)
-      .map(str)
-    let industry-values = (value.industry.cs, value.industry.en)
-      .filter(x => x != none)
-      .map(str)
-
-    industry-values.len() > 0 and industry-values.all(x => x in proper-values)
-  }
-}
-
-// Canonical term-name presentation:
-//   Czech [English] (Industry)
-// English is always square-bracketed in bilingual rendering; the industry/common
-// name is always parenthesized. Duplicate Czech/English or industry labels collapse.
-// The historical formatting arguments remain accepted only for source compatibility.
-#let term-name(
-  value,
-  language: "auto",
-  name-type: "auto",
-  separator: "bar",
-  order: "cs-en",
-  type-separator: "paren",
-) = context {
-  assert(name-type in ("auto", "proper", "industry", "both"), message: "term name type must be auto, proper, industry, or both")
-  assert(separator in ("bar", "paren", "dash"), message: "separator must be bar, paren, or dash")
-  assert(order in ("cs-en", "en-cs"), message: "term name order must be cs-en or en-cs")
-  assert(type-separator in ("bar", "paren", "dash"), message: "term type separator must be bar, paren, or dash")
-
-  let proper = term-proper-name(value, language: language)
-  let industry = term-industry-name(value, language: language)
-
-  if industry == none or industry-name-redundant(value) {
-    proper
-  } else {
-    [
-      #proper
-      #h(0.25em)
-      #text("(")
-      #industry
-      #text(")")
-    ]
+    str(value.proper.cs)
   }
 }
 
@@ -453,7 +403,7 @@
   order: "cs-en",
 ) = context {
   assert(style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
-  let lang = term-language(language, profile-state.get())
+  let lang = term-detail-language(language, profile-state.get())
 
   if value.explanation_cs == none and value.explanation_en == none {
     none
@@ -480,12 +430,7 @@
   value,
   render: "term",
   language: "auto",
-  name-language: none,
   detail-language: none,
-  name-type: "auto",
-  name-separator: "bar",
-  name-type-separator: "paren",
-  name-order: "cs-en",
   detail-order: "cs-en",
   detail-style: "inline",
   register: true,
@@ -498,10 +443,7 @@
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
-  assert(name-type in ("auto", "proper", "industry", "both"), message: "term name type must be auto, proper, industry, or both")
-  assert(name-separator in ("bar", "paren", "dash"), message: "term name separator must be bar, paren, or dash")
   assert(name-type-separator in ("bar", "paren", "dash"), message: "term name type separator must be bar, paren, or dash")
-  assert(name-order in ("cs-en", "en-cs"), message: "term name order must be cs-en or en-cs")
   assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
   assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
 
@@ -509,16 +451,8 @@
     [#metadata(value) #term-use-label]
   }
 
-  let name-lang = if name-language == none { language } else { name-language }
   let detail-lang = if detail-language == none { language } else { detail-language }
-  let name = term-name(
-    value,
-    language: name-lang,
-    name-type: name-type,
-    separator: name-separator,
-    type-separator: name-type-separator,
-    order: name-order,
-  )
+  let name = term-name(value)
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let displayed-name = if cite and value.citation != none {
     let render-c(c) = {
@@ -566,7 +500,7 @@
       items.push(value)
     }
   }
-  items.sorted(key: item => lower(str(if item.proper.cs != none { item.proper.cs } else { item.proper.en })))
+  items.sorted(key: item => lower(term-sort-name(item)))
 }
 
 // Krátký dynamický seznam klíčových slov: pouze termíny skutečně použité
@@ -583,8 +517,6 @@
           item,
           render: "term",
           language: "auto",
-          name-type: item.keyword_name_type,
-          name-separator: "bar",
           register: false,
           linked: false,
           marker: false,
