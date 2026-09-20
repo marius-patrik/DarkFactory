@@ -1,5 +1,5 @@
 #import "metadata.typ": meta
-#import "templates/common.typ": review-state, profile-state, finalized, ui-label, render-translation, render-keywords
+#import "templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
 #import "concepts/index.typ": render-theory, render-practical
 
 // Semantic publication entrypoint for Typst's HTML target.
@@ -39,7 +39,7 @@
   #meta.autor · #meta.skola · #meta.rok
 ]
 
-#heading(level: 1, numbering: none)[#finalized[#ui-label([Anotace], [Annotation])]]
+#heading(level: 1, numbering: none)[#finalized[#translation-heading(translation(cs: [Anotace], en: [Annotation]), separator: "paren", order: "en-cs")]]
 #render-translation(
   meta.annotation,
   language: "auto",
@@ -50,7 +50,7 @@
   order: "cs-en",
 )
 
-#heading(level: 1, numbering: none)[#finalized[#ui-label([Klíčová slova], [Keywords])]]
+#heading(level: 1, numbering: none)[#finalized[#translation-heading(translation(cs: [Klíčová slova], en: [Keywords]), separator: "paren", order: "en-cs")]]
 #render-keywords()
 
 #outline(title: ui-label([Obsah], [Contents]), depth: 6)
@@ -68,6 +68,9 @@
   full: true,
 )
 
+
+#heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]]
+#outline(title: none, target: figure.where(kind: image).or(figure.where(kind: table)))
 
 #heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
 #counter(heading).update(0)

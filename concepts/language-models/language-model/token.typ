@@ -23,7 +23,7 @@ Jazykový model nepracuje přímo se znaky ani slovy v lidském slova smyslu. Vs
 Tento proces zahrnuje následující pojmy:
 ]
 - #finalized[Tokeny a tokenizér (#term(terms.tokenizer, language: "en", marker: false, linked: false, emphasized: false)): Token představuje základní diskrétní jednotku (celé slovo, slabiku či fragment znaků). Převod mezi textem a posloupností číselných tokenů zajišťuje tokenizér #diff[(nejčastěji na bázi algoritmu Byte Pair Encoding, BPE)][(nejčastěji na bázi algoritmu Byte Pair Encoding, BPE @sennrich2016bpe)].]
-- #finalized[#diff[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline")][#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") @mikolov2013word2vec] (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
+- #finalized[#term(terms.embedding, render: "both", detail-language: "cs", detail-style: "inline") @mikolov2013word2vec (např. vektorová analogie $"král" - "muž" + "žena" approx "královna"$).]
 - #finalized[Jazyková asymetrie tokenizace: Vzhledem k trénovacím datům optimalizovaným primárně pro angličtinu spotřebovávají flektivní jazyky s bohatou diakritikou (včetně češtiny) 2× až 3× více tokenů pro vyjádření téhož významu.]
 
 #finalized[

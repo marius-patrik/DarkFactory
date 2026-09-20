@@ -185,8 +185,8 @@
         title,
         language: "auto",
         school-both: true,
-        separator: "bar",
-        order: "cs-en",
+        separator: "paren",
+        order: "en-cs",
       )
     ]
   ]
@@ -232,8 +232,6 @@
   velikost: 12pt,
   radkovani: 1.5,
   mezera-odstavec: 8pt,
-  // Seznam obrázků a tabulek — vyžadován, obsahuje-li práce součásti textu.
-  seznam-soucasti: true,
   bibliografie: "/bib/references.bib",
   // "iso-690-numeric" = číselné odkazy, "iso-690-author-date" = harvardský
   // systém. Způsob citací určuje vedoucí práce.
@@ -350,14 +348,6 @@
   anotace-strana(meta)
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6, indent: auto)
-
-  if seznam-soucasti {
-    pagebreak(weak: true)
-    outline(
-      title: ui-label([Seznam obrázků a tabulek], [List of figures and tables]),
-      target: figure.where(kind: image).or(figure.where(kind: table)),
-    )
-  }
 
   // ── Vlastní text ─────────────────────────────────────────
   // Čísla stran se uvádí od úvodu; za stranu 1 se považuje titulní strana,
@@ -509,6 +499,15 @@
   [#metadata("body-end") <body-end-anchor>]
   pagebreak(weak: true)
   [#metadata("appendix-start") <appendix-start-anchor>]
+
+  // Seznam obrázků a tabulek je součást zadní/přílohové části a díky
+  // skutečnému outlined nadpisu se zároveň objeví v hlavním Obsahu.
+  nadpis-bez-cisla[#finalized[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]]
+  outline(
+    title: none,
+    target: figure.where(kind: image).or(figure.where(kind: table)),
+  )
+  pagebreak(weak: true)
 
   // Seznam příloh zůstává součástí práce; jeho položky vznikají pouze ze
   // skutečně přítomných příloh.

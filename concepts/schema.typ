@@ -213,7 +213,6 @@
 #let render-section-title(item) = term(
   item.term,
   render: "term",
-  language: "auto",
   register: false,
   linked: false,
   marker: false,
