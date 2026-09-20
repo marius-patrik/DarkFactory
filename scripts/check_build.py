@@ -757,13 +757,11 @@ if 'mode === "raw"\n      ? "markdown"' in app_source:
 for required in (
     "ActivityBar",
     'label="Contents"',
-    'label="Pages"',
     'label="Files"',
-    "ContentsPanel",
     "RepoFilesPanel",
     'activityPanel === "contents"',
     'activityPanel === "files"',
-    'activityPanel !== "pages"',
+    'sidebarHidden={activityPanel !== "contents"}',
     "ContextMenu",
     "ContextMenuTrigger",
     "ContextMenuContent",
@@ -779,7 +777,9 @@ for required in (
     'contentIndex={contentIndex}',
 ):
     if required not in app_source:
-        fail(f"viewer missing Contents/Pages/Files activity-command contract: {required}")
+        fail(f"viewer missing merged Contents/Files activity-command contract: {required}")
+if 'label="Pages"' in app_source or 'active === "pages"' in app_source:
+    fail("page previews must be merged into Contents, not exposed as a separate activity item")
 for required in (
     '<TooltipContent>Language</TooltipContent>',
     'aria-label="Language"',
@@ -791,6 +791,7 @@ for required in (
     'extension: ".html"',
     'className="status-select-copy"',
 ):
+
     if required not in app_source:
         fail(f"status selector contract missing: {required}")
 if "Switch language version" in app_source or "Switch document type" in app_source:
@@ -862,11 +863,15 @@ for required in (
     'flex: 0 0 36px',
     '.activity-action',
     'align-items: center',
-    '.contents-panel',
+    '.navigation-sidebar',
+    '.navigation-outline-section',
+    '.navigation-pages-section',
     '.contents-tree',
     '.renderer-picker',
     '.renderer-option.active',
     '.status-select-copy',
+    'display: inline-flex',
+    'align-items: center',
     'html[data-theme="oled"]',
     '--bg: #000000',
     '--toolbar: #000000',
@@ -898,6 +903,10 @@ for required in (
     "AnnotationLayer",
     "ContextMenu",
     "Minimap",
+    "DocumentNavigationPanel",
+    'aria-label="Contents and page previews"',
+    "navigation-outline-section",
+    "navigation-pages-section",
     "class AnnotationLinkService",
     "goToDestination",
     "getDestinationHash",

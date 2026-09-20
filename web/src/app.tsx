@@ -81,7 +81,7 @@ type Manifest = {
 type ViewerMode = "final" | "review" | "raw";
 type ViewMode = "single" | "split";
 type AppearanceMode = "light" | "dark" | "oled";
-type ActivityPanel = "contents" | "pages" | "files" | null;
+type ActivityPanel = "contents" | "files" | null;
 type ActiveActivityPanel = Exclude<ActivityPanel, null>;
 
 type RepoTreeNode = {
@@ -360,14 +360,12 @@ function ActivityBar({
   side,
   active,
   contentsAvailable,
-  pagesAvailable,
   onSelect,
   onMoveSide,
 }: {
   side: SidebarSide;
   active: ActivityPanel;
   contentsAvailable: boolean;
-  pagesAvailable: boolean;
   onSelect: (panel: ActivityPanel) => void;
   onMoveSide: () => void;
 }) {
@@ -383,14 +381,6 @@ function ActivityBar({
             pressed={active === "contents"}
             disabled={!contentsAvailable}
             onClick={() => onSelect(active === "contents" ? null : "contents")}
-            className="activity-action"
-          />
-          <TooltipAction
-            label="Pages"
-            icon={["FilesIcon"]}
-            pressed={active === "pages"}
-            disabled={!pagesAvailable}
-            onClick={() => onSelect(active === "pages" ? null : "pages")}
             className="activity-action"
           />
           <TooltipAction
@@ -415,48 +405,6 @@ function ActivityBar({
   );
 }
 
-function ContentsPanel({
-  chapters,
-  page,
-  side,
-  onSelect,
-}: {
-  chapters: DocumentChapter[];
-  page: number;
-  side: SidebarSide;
-  onSelect: (page: number) => void;
-}) {
-  const active =
-    [...chapters].reverse().find((chapter) => chapter.page <= page) || chapters[0] || null;
-
-  return (
-    <aside className={"contents-panel contents-" + side} aria-label="Document contents">
-      <div className="activity-panel-header">
-        <AnimatedIcon names={["ListTreeIcon", "ListIcon"]} size={15} />
-        <span>Contents</span>
-      </div>
-      <nav className="contents-tree" aria-label="Document outline">
-        {chapters.length ? (
-          chapters.map((chapter, index) => (
-            <button
-              key={chapter.title + "-" + chapter.page + "-" + index}
-              type="button"
-              className={active === chapter ? "contents-item active" : "contents-item"}
-              style={{ paddingLeft: 10 + Math.max(0, chapter.level - 1) * 13 }}
-              onClick={() => onSelect(chapter.page)}
-              title={chapter.title}
-            >
-              <span>{chapter.title}</span>
-              <small>{chapter.page}</small>
-            </button>
-          ))
-        ) : (
-          <div className="activity-panel-empty">Loading contents…</div>
-        )}
-      </nav>
-    </aside>
-  );
-}
 function RepoTreeBranch({
   nodes,
   depth,
@@ -576,7 +524,10 @@ function LanguagePicker({
                 aria-label="Language"
               >
                 <AnimatedIcon names={["LanguagesIcon"]} size={16} />
-                <span className="status-select-copy">\n                  <strong>{languageDisplayName(versionTitle)}</strong>\n                  <small>{profileName}</small>\n                </span>
+                <span className="status-select-copy">
+                  <strong>{languageDisplayName(versionTitle)}</strong>
+                  <small>{profileName}</small>
+                </span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={16} />
               </Button>
             </DropdownMenuTrigger>
@@ -955,8 +906,8 @@ export function ViewerApp() {
   const repositoryUrl =
     manifest?.viewer?.repository_url || "https://github.com/marius-patrik/DarkFactory-Paper";
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
-  const pagesAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
-  const contentsAvailable = pagesAvailable;
+  const contentsAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
+  const pagesAvailable = contentsAvailable;
 
   const selectActivityPanel = useCallback((panel: ActivityPanel) => {
     if (panel) lastActivityPanel.current = panel;
@@ -973,12 +924,10 @@ export function ViewerApp() {
       const preferred = lastActivityPanel.current;
       if (preferred === "files") return "files";
       if (preferred === "contents" && contentsAvailable) return "contents";
-      if (preferred === "pages" && pagesAvailable) return "pages";
       if (contentsAvailable) return "contents";
-      if (pagesAvailable) return "pages";
       return "files";
     });
-  }, [contentsAvailable, pagesAvailable]);
+  }, [contentsAvailable]);
 
   useCommand({
     id: "toggle-sidebar",
@@ -989,13 +938,10 @@ export function ViewerApp() {
   });
 
   useEffect(() => {
-    if (
-      (activityPanel === "pages" && !pagesAvailable) ||
-      (activityPanel === "contents" && !contentsAvailable)
-    ) {
+    if (activityPanel === "contents" && !contentsAvailable) {
       setActivityPanel(null);
     }
-  }, [activityPanel, contentsAvailable, pagesAvailable]);
+  }, [activityPanel, contentsAvailable]);
 
   const navigateViewer = useCallback((href: string) => {
     if (!href || href === "#") return;
@@ -1519,17 +1465,8 @@ export function ViewerApp() {
             side="left"
             active={activityPanel}
             contentsAvailable={contentsAvailable}
-            pagesAvailable={pagesAvailable}
             onSelect={selectActivityPanel}
             onMoveSide={moveSidebar}
-          />
-        )}
-        {viewMode === "single" && sidebarSide === "left" && activityPanel === "contents" && (
-          <ContentsPanel
-            chapters={state.chapters}
-            page={state.page}
-            side="left"
-            onSelect={goToPage}
           />
         )}
         {viewMode === "single" && sidebarSide === "left" && activityPanel === "files" && (
@@ -1602,7 +1539,7 @@ export function ViewerApp() {
             embedded={false}
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
-            sidebarHidden={activityPanel !== "pages"}
+            sidebarHidden={activityPanel !== "contents"}
             onMoveSidebar={moveSidebar}
             onToggleSidebarMode={toggleSidebarMode}
             onStateChange={handleDocumentState}
@@ -1611,14 +1548,6 @@ export function ViewerApp() {
           <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
         )}
         </main>
-        {viewMode === "single" && sidebarSide === "right" && activityPanel === "contents" && (
-          <ContentsPanel
-            chapters={state.chapters}
-            page={state.page}
-            side="right"
-            onSelect={goToPage}
-          />
-        )}
         {viewMode === "single" && sidebarSide === "right" && activityPanel === "files" && (
           <RepoFilesPanel
             nodes={repoTree}
@@ -1633,7 +1562,6 @@ export function ViewerApp() {
             side="right"
             active={activityPanel}
             contentsAvailable={contentsAvailable}
-            pagesAvailable={pagesAvailable}
             onSelect={selectActivityPanel}
             onMoveSide={moveSidebar}
           />

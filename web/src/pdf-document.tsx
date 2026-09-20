@@ -525,9 +525,10 @@ const Thumbnail = memo(function Thumbnail({
   );
 });
 
-function SidebarPanel({
+function DocumentNavigationPanel({
   pdf,
   pages,
+  chapters,
   activePage,
   side,
   mode,
@@ -538,6 +539,7 @@ function SidebarPanel({
 }: {
   pdf: any;
   pages: PageInfo[];
+  chapters: DocumentChapter[];
   activePage: number;
   side: SidebarSide;
   mode: SidebarMode;
@@ -547,35 +549,85 @@ function SidebarPanel({
   onToggleMode: () => void;
 }) {
   const moveLabel = side === "left" ? "Move sidebar right" : "Move sidebar left";
-  const modeLabel = mode === "minimap" ? "Convert to thumbnails" : "Convert to minimap";
-  const width = hidden ? 0 : mode === "minimap" ? 78 : 190;
+  const modeLabel = mode === "minimap" ? "Show page previews" : "Show page minimap";
+  const activeChapter =
+    [...chapters].reverse().find((chapter) => chapter.page <= activePage) || chapters[0] || null;
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <motion.aside
-          className={"sidebar sidebar-" + side + " sidebar-" + mode}
-          aria-label="Page navigation"
+          className={"sidebar navigation-sidebar sidebar-" + side + " sidebar-" + mode}
+          aria-label="Contents and page previews"
           initial={false}
-          animate={{ width, opacity: hidden ? 0 : 1 }}
+          animate={{ width: hidden ? 0 : 300, opacity: hidden ? 0 : 1 }}
           transition={{ type: "spring", stiffness: 480, damping: 42 }}
           style={{ pointerEvents: hidden ? "none" : "auto" }}
         >
-          {mode === "minimap" ? (
-            <Minimap pages={pages} activePage={activePage} onSelect={onSelect} />
-          ) : (
-            <div className="thumbnail-list">
-              {pages.map((page) => (
-                <Thumbnail
-                  key={page.number}
-                  pdf={pdf}
-                  page={page}
-                  active={page.number === activePage}
-                  onSelect={onSelect}
-                />
-              ))}
+          <div className="navigation-section navigation-outline-section">
+            <div className="navigation-section-header">
+              <AnimatedIcon names={["ListTreeIcon", "ListIcon"]} size={15} />
+              <span>Contents</span>
             </div>
-          )}
+            <nav className="contents-tree" aria-label="Document outline">
+              {chapters.length ? (
+                chapters.map((chapter, index) => (
+                  <button
+                    key={chapter.title + "-" + chapter.page + "-" + index}
+                    type="button"
+                    className={activeChapter === chapter ? "contents-item active" : "contents-item"}
+                    style={{ paddingLeft: 10 + Math.max(0, chapter.level - 1) * 13 }}
+                    onClick={() => onSelect(chapter.page)}
+                    title={chapter.title}
+                  >
+                    <span>{chapter.title}</span>
+                    <small>{chapter.page}</small>
+                  </button>
+                ))
+              ) : (
+                <div className="activity-panel-empty">Loading contents…</div>
+              )}
+            </nav>
+          </div>
+
+          <div className="navigation-section navigation-pages-section">
+            <div className="navigation-section-header">
+              <AnimatedIcon
+                names={mode === "minimap" ? ["MapIcon", "MapPinnedIcon"] : ["FilesIcon"]}
+                size={15}
+              />
+              <span>Pages</span>
+              <button
+                type="button"
+                className="navigation-mode-toggle"
+                onClick={onToggleMode}
+                aria-label={modeLabel}
+                title={modeLabel}
+              >
+                <AnimatedIcon
+                  names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
+                  size={14}
+                />
+              </button>
+            </div>
+            <div className="navigation-pages-body">
+              {mode === "minimap" ? (
+                <Minimap pages={pages} activePage={activePage} onSelect={onSelect} />
+              ) : (
+                <div className="thumbnail-list">
+                  {pages.map((page) => (
+                    <Thumbnail
+                      key={page.number}
+                      pdf={pdf}
+                      page={page}
+                      active={page.number === activePage}
+                      onSelect={onSelect}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </motion.aside>
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -588,7 +640,7 @@ function SidebarPanel({
         </ContextMenuItem>
         <ContextMenuItem onSelect={onToggleMode}>
           <AnimatedIcon
-            names={mode === "minimap" ? ["ListIcon"] : ["MapIcon", "MapPinnedIcon"]}
+            names={mode === "minimap" ? ["FilesIcon"] : ["MapIcon", "MapPinnedIcon"]}
             size={16}
           />
           {modeLabel}
@@ -597,7 +649,6 @@ function SidebarPanel({
     </ContextMenu>
   );
 }
-
 const PdfPage = memo(function PdfPage({
   pdf,
   info,
@@ -1042,9 +1093,10 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
     }
 
     const sidebar = !embedded ? (
-      <SidebarPanel
+      <DocumentNavigationPanel
         pdf={pdf}
         pages={pages}
+        chapters={chapters}
         activePage={currentPage}
         side={sidebarSide}
         mode={sidebarMode}
