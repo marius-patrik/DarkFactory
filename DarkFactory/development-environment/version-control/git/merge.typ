@@ -13,13 +13,10 @@ definition: terms => [
 Merge je operace správy verzí, která kombinuje změny nebo historii dvou vývojových linií do společného výsledného stavu; případné konflikty vyžadují explicitní vyřešení.
   ],
   description: terms => [
-#unconfirmed[
-Způsob, jakým se změny z pracovní větve začlení do větve hlavní, má zásadní dopad na dlouhodobou udržitelnost a čitelnost repozitáře. Autonomní agent při řešení úlohy obvykle postupuje iterativní metodou pokus-omyl: upraví soubor, spustí testy, odhalí překlep a provede další drobný commit. V pracovní větvi tak vzniká dlouhá sekvence pomocných a experimentálních záznamů.
+#finalized[
+Agent může během jednoho úkolu vytvářet více pracovních commitů při iterativním vývoji a opravách. V navrženém procesu DarkFactory se tato pracovní historie před začleněním do hlavní větve zjednoduší pomocí #term(terms.squash, language: "en", marker: false, linked: false, emphasized: false) @chacon2014.
 
-Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí commity a rebase je lineárně přeskládá, v agentním vývoji se jako optimální strategie uplatňuje Commit and Merge @chacon2014:
-- Sloučení mezikroků (#term(terms.squash, language: "en", marker: false, linked: false, emphasized: false)): Všechny commity z pracovní větve jsou spojeny do jediného nového commitu, který je vložen do `main`.
-- Eliminace interního šumu: Pomocné commity vzniklé při ladění testů se do hlavní větve vůbec nedostanou; historie projektu zůstává čistá a přehledná podle pravidla: jeden úkol = jeden commit.
-- Atomický návrat změn (`git revert`): Pokud se v budoucnu ukáže, že začleněná úprava zanesla do produkce nečekanou vadu, lze celý úkol vrátit jediným atomickým příkazem bez nutnosti rozplétat desítky dílčích mezikroků.
+Výsledkem je jeden integrační commit odpovídající jednomu dokončenému úkolu. Pomocné mezikroky zůstávají v pracovní větvi, zatímco hlavní historie zachovává výslednou změnu jako jeden celek, který lze samostatně auditovat nebo případně vrátit.
 ]
   ],
   summary: terms => [
