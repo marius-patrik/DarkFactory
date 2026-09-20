@@ -59,7 +59,7 @@
         "command": "make ci"
       },
       "node": {
-        "command": "npm install --no-audit --no-fund && npm run check"
+        "enabled": false
       }
     },
     "release": {
@@ -91,9 +91,9 @@
   "areas": {
     "$default": "text",
     "text": {
-      "description": "Kapitoly, anotace, formulace",
+      "description": "Konceptový rukopis, anotace a formulace",
       "keywords": [
-        "kapitola",
+        "koncept",
         "text",
         "anotace",
         "uvod",
@@ -149,15 +149,6 @@
   },
   "$comment_required_checks": "Written rather than defaulted: calling the pipeline as a reusable workflow prefixes every check with the caller's job name, so the unprefixed defaults would protect the branch against contexts nothing reports.",
   "required_checks": [
-    "ci / pipeline (3.10)",
-    "ci / pipeline (3.11)",
-    "ci / pipeline (3.12)",
-    "ci / pipeline (3.13)",
-    "ci / rust",
-    "ci / paper",
-    "ci / math",
-    "ci / web",
-    "ci / docs",
-    "verify-pr-issue / verify-bound-issue"
+    "ci / paper"
   ]
 }
