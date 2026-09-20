@@ -13,15 +13,16 @@ import {
 
 const bundledSkillPath = (name: string) => join(import.meta.dir, "../../assets/skills", name, "SKILL.md");
 
+async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
+	await mkdir(join(temp, ".darkfactory"), { recursive: true });
+	await writeFile(join(temp, ".darkfactory", "repo.df"), JSON.stringify({ upstream: { repo, ref } }));
+}
+
 describe("Workflow installer & updater", () => {
 	it("installs templates into .github/workflows with managed headers", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-install-"));
 		try {
-			await mkdir(join(temp, ".darkfactory"), { recursive: true });
-			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "sha-999", checks: [] }),
-			);
+			await writeUpstream(temp, "my-org/my-df", "sha-999");
 
 			const report = await installWorkflows(temp);
 			expect(report.installed.length).toBeGreaterThanOrEqual(3);
@@ -106,23 +107,16 @@ describe("Workflow installer & updater", () => {
 	it("updates managed files and reports drift", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-install-"));
 		try {
-			// Install with old ref
-			await mkdir(join(temp, ".darkfactory"), { recursive: true });
-			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "old-ref", checks: [] }),
-			);
+			// Install with old ref from repo.df upstream.
+			await writeUpstream(temp, "my-org/my-df", "old-ref");
 			await installWorkflows(temp);
 
 			// Check drift - should be in sync with old-ref
 			let drift = await checkWorkflowsDrift(temp);
 			expect(drift.every((d) => d.status === "in_sync")).toBe(true);
 
-			// Now change config ref
-			await writeFile(
-				join(temp, ".darkfactory", "ci.json"),
-				JSON.stringify({ pipeline_repo: "my-org/my-df", pipeline_ref: "new-ref", checks: [] }),
-			);
+			// Change only the final repo.df upstream ref.
+			await writeUpstream(temp, "my-org/my-df", "new-ref");
 
 			// Check drift - should detect outdated
 			drift = await checkWorkflowsDrift(temp);
