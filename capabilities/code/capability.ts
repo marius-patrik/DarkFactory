@@ -28,11 +28,11 @@ export const capability = defineCapability({
 			description: "Verify code formatting",
 		},
 		docs_check: {
-			command: (path) => "bun scripts/build-docs.ts --check",
+			command: (path) => path === "." ? "bun scripts/build-docs.ts --check" : `bun scripts/build-docs.ts --check --path ${path}`,
 			description: "Verify documentation build",
 		},
 		docs_extract: {
-			command: (path) => "bun scripts/build-docs.ts",
+			command: (path) => path === "." ? "bun scripts/build-docs.ts" : `bun scripts/build-docs.ts --path ${path}`,
 			description: "Extract API docs",
 		},
 	},

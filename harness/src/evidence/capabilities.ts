@@ -44,16 +44,16 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		test: (path) => path === "." ? "bun test" : `bun test --cwd ${path}`,
 		lint: (path) => path === "." ? "bun run lint" : `bun run --cwd ${path} lint`,
 		format_check: (path) => path === "." ? "bun run format" : `bun run --cwd ${path} format`,
-		docs_check: (path) => "bun scripts/build-docs.ts --check",
-		docs_extract: (path) => "bun scripts/build-docs.ts",
-		setup: (path) => "bun install",
+		docs_check: (path) => path === "." ? "bun run docs-check" : `bun run --cwd ${path} docs-check`,
+		docs_extract: (path) => path === "." ? "bun run docs-extract" : `bun run --cwd ${path} docs-extract`,
+		setup: (path) => path === "." ? "bun install" : `bun install --cwd ${path}`,
 	},
 	python: {
-		test: (path) => "pytest",
-		lint: (path) => "flake8 .",
-		format_check: (path) => "black --check .",
-		docs_check: (path) => "sphinx-build -M html docs/source docs/build",
-		docs_extract: (path) => "sphinx-build -M html docs/source docs/build",
+		test: (path) => path === "." ? "pytest" : `pytest ${path}`,
+		lint: (path) => path === "." ? "flake8 ." : `flake8 ${path}`,
+		format_check: (path) => path === "." ? "black --check ." : `black --check ${path}`,
+		docs_check: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
+		docs_extract: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
 	},
 };
 
@@ -76,8 +76,13 @@ export async function resolveRepositoryActions(
 		const definitions = await discoverCapabilities(resolvedCapDir);
 		const resolution = resolveCapabilities(definitions, evidence.domains);
 		capabilities = [...resolution.capabilities];
-	} catch {
-		// Fallback if capabilities are missing or can't be loaded (e.g. standalone test runs)
+	} catch (error: any) {
+		// If the capabilities directory does not exist, it's not an error.
+		if (error?.code !== "ENOENT") {
+			console.warn(`Failed to load capabilities from ${resolvedCapDir}: ${error.message}`);
+			// Rethrow or handle as a fatal error if required by the plan
+			throw error;
+		}
 	}
 
 	const packages: Record<string, PackageActionSet> = {};
@@ -99,10 +104,16 @@ export async function resolveRepositoryActions(
 			let description = "";
 			let supported = false;
 
-			// 1. Try retrieving command from capabilities
-			for (const cap of capabilities) {
+			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
+			// Sort capabilities to ensure deterministic resolution, e.g., by name
+			for (const cap of [...capabilities].sort((a, b) => a.name.localeCompare(b.name))) {
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
+					// Check for overlap: warn if multiple capabilities try to override the same action
+					// For now, we keep the first one but maybe add a warning if it's already set
+					if (supported) {
+						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.name}`);
+					}
 					supported = true;
 					description = capAction.description ?? `Capability-contributed ${actionKey}`;
 					if (typeof capAction.command === "function") {
@@ -110,7 +121,10 @@ export async function resolveRepositoryActions(
 					} else {
 						command = capAction.command;
 					}
-					break;
+					// Not breaking allows us to see all, but the loop logic might need change if we want just first
+					// With the current structure, we need to decide if we want precedence or merge
+					// Precedence by sorting is one way to achieve deterministic results.
+					break; 
 				}
 			}
 

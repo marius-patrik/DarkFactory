@@ -1,9 +1,9 @@
 import type { FC, ReactNode } from "react";
-import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch } from "wouter";
+import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch, type RouterHook } from "wouter";
 
 export interface RouterProps {
   basename?: string;
-  hook?: any;
+  hook?: RouterHook;
   children: ReactNode;
 }
 
