@@ -2,7 +2,7 @@
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The sixteen
 rules below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
-They are enforced by CI, by branch protection, and by the tests in `tests/`. This file is a
+They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated; #339 completes the shared df hook enforcement surface. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Edit `.agents/rules/*.md`; do not
 edit this projection.
