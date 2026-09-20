@@ -15,7 +15,7 @@
   theory_enabled: true,
   theory_intro: none,
   theory_body: terms => [
-#diff[Základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") představuje klíčový předpoklad deterministického chování: základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.]
+#diff[Základní chování agenta vymezuje systémový prompt @anthropic-prompt, který definuje jeho identitu, sadu dostupných nástrojů a provozní mantinely.][#term(terms.prompt_engineering, render: "both", detail-language: "cs", detail-style: "inline") slouží k systematickému návrhu instrukcí, které řídí chování agenta. Základní instrukce jsou obvykle součástí systémového promptu @anthropic-prompt, který vymezuje roli agenta, dostupné nástroje a provozní mantinely.]
  Při formulaci těchto pravidel však vývojáři narážejí na specifickou vlastnost autoregresivních modelů — problematické zpracování zákazů a negativních instrukcí.
 
 Příčiny a inženýrská řešení tohoto jevu:
