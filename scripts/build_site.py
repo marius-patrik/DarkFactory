@@ -109,22 +109,71 @@ def href_for(template_name: str, filename: str) -> str:
     return f"templates/{template_name}/{filename}"
 
 
-def tracked_repo_tree() -> list[dict[str, object]]:
+def tracked_entries() -> list[tuple[str, str]]:
     result = subprocess.run(
-        ["git", "ls-files", "-z"],
+        ["git", "ls-files", "--stage", "-z"],
         check=True,
         capture_output=True,
     )
-    paths = [entry.decode("utf-8") for entry in result.stdout.split(b"\0") if entry]
+    entries: list[tuple[str, str]] = []
+    for raw in result.stdout.split(b"\0"):
+        if not raw:
+            continue
+        metadata, path = raw.split(b"\t", 1)
+        mode = metadata.decode("utf-8").split()[0]
+        entries.append((mode, path.decode("utf-8")))
+    return entries
+
+
+def submodule_urls() -> dict[str, str]:
+    gitmodules = Path(".gitmodules")
+    if not gitmodules.is_file():
+        return {}
+    result = subprocess.run(
+        ["git", "config", "--file", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    urls: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        key, path = line.split(maxsplit=1)
+        url_key = key.removesuffix(".path") + ".url"
+        url_result = subprocess.run(
+            ["git", "config", "--file", ".gitmodules", "--get", url_key],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        url = url_result.stdout.strip()
+        if url:
+            urls[path.strip()] = url
+    return urls
+
+
+def tracked_repo_tree() -> list[dict[str, object]]:
+    entries = tracked_entries()
+    urls = submodule_urls()
     root: dict[str, object] = {}
 
-    for path in paths:
+    for mode, path in entries:
         parts = path.split("/")
         cursor = root
         for index, part in enumerate(parts):
             last = index == len(parts) - 1
             if last:
-                cursor.setdefault(part, {"__file__": path})
+                if mode == "160000":
+                    cursor.setdefault(
+                        part,
+                        {
+                            "__submodule__": path,
+                            "__url__": urls.get(path),
+                        },
+                    )
+                else:
+                    cursor.setdefault(part, {"__file__": path})
             else:
                 value = cursor.setdefault(part, {})
                 if not isinstance(value, dict):
@@ -136,7 +185,9 @@ def tracked_repo_tree() -> list[dict[str, object]]:
         names = sorted(
             node,
             key=lambda name: (
-                "__file__" in node[name] if isinstance(node[name], dict) else True,
+                "__file__" in node[name] or "__submodule__" in node[name]
+                if isinstance(node[name], dict)
+                else True,
                 name.lower(),
             ),
         )
@@ -145,14 +196,31 @@ def tracked_repo_tree() -> list[dict[str, object]]:
             if not isinstance(value, dict):
                 continue
             path = f"{prefix}/{name}".lstrip("/")
-            if "__file__" in value:
+            if "__submodule__" in value:
+                tracked_path = str(value["__submodule__"])
+                rows.append(
+                    {
+                        "name": name,
+                        "path": tracked_path,
+                        "type": "submodule",
+                        "source": None,
+                        "url": value.get("__url__"),
+                    }
+                )
+            elif "__file__" in value:
                 tracked_path = str(value["__file__"])
-                rows.append({
-                    "name": name,
-                    "path": tracked_path,
-                    "type": "file",
-                    "source": f"repository/{tracked_path}" if Path(tracked_path).is_file() else None,
-                })
+                rows.append(
+                    {
+                        "name": name,
+                        "path": tracked_path,
+                        "type": "file",
+                        "source": (
+                            f"repository/{tracked_path}"
+                            if Path(tracked_path).is_file()
+                            else None
+                        ),
+                    }
+                )
             else:
                 rows.append(
                     {
