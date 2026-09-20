@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveRepositoryActions } from "@darkfactory/capability/actions";
@@ -12,23 +12,29 @@ async function fixture(): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "df-evidence-"));
 	roots.push(root);
 	await mkdir(join(root, "src"), { recursive: true });
-	await writeFile(join(root, "package.json"), JSON.stringify({
-		name: "workspace",
-		packageManager: "bun@1.3.0",
-		exports: { ".": "./src/index.ts", "./extra": "./src/extra.ts" },
-		scripts: { lint: "biome lint .", check: "biome check ." },
-	}));
+	await writeFile(
+		join(root, "package.json"),
+		JSON.stringify({
+			name: "workspace",
+			packageManager: "bun@1.3.0",
+			exports: { ".": "./src/index.ts", "./extra": "./src/extra.ts" },
+			scripts: { lint: "biome lint .", check: "biome check ." },
+		}),
+	);
 	await writeFile(join(root, "bun.lock"), "");
 	await writeFile(join(root, "src", "index.ts"), "export const value = 1;\n");
 	await writeFile(join(root, "src", "extra.ts"), "export const extra = 2;\n");
 
 	await mkdir(join(root, "python"), { recursive: true });
 	await writeFile(join(root, "python", "pyproject.toml"), '[project]\nname = "python-part"\n');
-	await writeFile(join(root, "repo.df"), JSON.stringify({
-		environment: {
-			linting: { python: { command: "ruff check ." } },
-		},
-	}));
+	await writeFile(
+		join(root, "repo.df"),
+		JSON.stringify({
+			environment: {
+				linting: { python: { command: "ruff check ." } },
+			},
+		}),
+	);
 	return root;
 }
 
