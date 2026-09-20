@@ -35,5 +35,5 @@ Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti 
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "embedding"),)
 )

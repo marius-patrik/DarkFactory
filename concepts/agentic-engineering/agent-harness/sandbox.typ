@@ -25,5 +25,5 @@ Přímé spouštění kódu (_Code Execution_) umožňuje agentovi generovat skr
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "tool_calling"),)
 )
