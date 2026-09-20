@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 VARIANTS = (
@@ -104,6 +105,58 @@ def href_for(template_name: str, filename: str) -> str:
     return f"templates/{template_name}/{filename}"
 
 
+def tracked_repo_tree() -> list[dict[str, object]]:
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    )
+    paths = [entry.decode("utf-8") for entry in result.stdout.split(b"\0") if entry]
+    root: dict[str, object] = {}
+
+    for path in paths:
+        parts = path.split("/")
+        cursor = root
+        for index, part in enumerate(parts):
+            last = index == len(parts) - 1
+            if last:
+                cursor.setdefault(part, {"__file__": path})
+            else:
+                value = cursor.setdefault(part, {})
+                if not isinstance(value, dict):
+                    break
+                cursor = value
+
+    def materialize(node: dict[str, object], prefix: str = "") -> list[dict[str, object]]:
+        rows: list[dict[str, object]] = []
+        names = sorted(
+            node,
+            key=lambda name: (
+                "__file__" in node[name] if isinstance(node[name], dict) else True,
+                name.lower(),
+            ),
+        )
+        for name in names:
+            value = node[name]
+            if not isinstance(value, dict):
+                continue
+            path = f"{prefix}/{name}".lstrip("/")
+            if "__file__" in value:
+                rows.append({"name": name, "path": str(value["__file__"]), "type": "file"})
+            else:
+                rows.append(
+                    {
+                        "name": name,
+                        "path": path,
+                        "type": "directory",
+                        "children": materialize(value, path),
+                    }
+                )
+        return rows
+
+    return materialize(root)
+
+
 for template_name in template_names:
     for variant in VARIANTS:
         for mode in ("final", "review"):
@@ -128,7 +181,9 @@ manifest = {
     "viewer": {
         "engine": "React + PDF.js + rendered Markdown + compiled Typst HTML",
         "formats": ["pdf", "markdown", "html"],
-        "modes": ["compiled", "concept", "raw"],
+        "modes": ["viewer", "edit", "raw"],
+        "repo_tree": "repo-tree.json",
+        "repository_url": "https://github.com/marius-patrik/DarkFactory-Paper",
         "pdfjs_version": PDFJS_VERSION,
         "entrypoint": "viewer.html",
         "stack": [
@@ -145,12 +200,17 @@ manifest = {
     json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
+(SITE / "repo-tree.json").write_text(
+    json.dumps({"tree": tracked_repo_tree()}, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
 (SITE / ".nojekyll").touch()
 
 for required in (
     SITE / "index.html",
     SITE / "viewer.html",
     SITE / "variants.json",
+    SITE / "repo-tree.json",
 ):
     if not required.is_file() or required.stat().st_size == 0:
         raise SystemExit(f"missing generated Pages asset: {required}")
