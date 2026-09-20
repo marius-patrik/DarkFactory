@@ -18,7 +18,7 @@
   term: terminology,
   theory_enabled: true,
   theory_intro: terms => [
-Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline") @anthropic2024tooluse.]
+Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills).][#term(terms.skills) @anthropic2024tooluse.]
 
 Architektura dovedností staví na následujících principech:
 - Definiční soubor `SKILL.md`: Dovednost tvoří adresář obsahující definiční soubor se strukturovanou hlavičkou (YAML frontmatter vymezující název a popis role) a detailním návodem k použití.
