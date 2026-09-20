@@ -1,3 +1,10 @@
+import { join, resolve } from "node:path";
+import {
+	actionsForTouchedFiles,
+	resolveDetectedRepositoryActions,
+	type ResolvedRepositoryAction,
+} from "@darkfactory/capability/actions";
+import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 
 /** Result of a verification command run via {@link runVerify}. */
@@ -86,4 +93,50 @@ export function runVerify({ worktree, command, timeoutMs, tailBytes = 4096 }: Ru
 			finish({ exitCode: timedOut ? 124 : (code ?? (signal ? 1 : 0)), timedOut, outputTail: output }),
 		);
 	});
+}
+
+/** Options for canonical touched-package verification. */
+export interface RunDetectedVerificationOptions {
+	repoDir: string;
+	changedFiles: readonly string[];
+	capabilitiesRoot?: string;
+	timeoutMs?: number;
+}
+
+/** Result for one touched-package verification action, including explicit unsupported gaps. */
+export interface DetectedVerificationResult {
+	action: ResolvedRepositoryAction;
+	result?: VerifyResult;
+}
+
+/**
+ * Runs the canonical detected test/lint/format actions for packages touched by a chunk.
+ * No command table or fallback inference exists here; unsupported actions remain explicit results.
+ */
+export async function runDetectedVerification(
+	options: RunDetectedVerificationOptions,
+): Promise<DetectedVerificationResult[]> {
+	const repoDir = resolve(options.repoDir);
+	const evidence = await detectRepositoryEvidence(repoDir);
+	const resolution = await resolveDetectedRepositoryActions(
+		evidence,
+		options.capabilitiesRoot ?? join(repoDir, "capabilities"),
+	);
+	const actions = actionsForTouchedFiles(resolution, options.changedFiles);
+	const results: DetectedVerificationResult[] = [];
+	for (const action of actions) {
+		if (!action.supported || !action.command) {
+			results.push({ action });
+			continue;
+		}
+		results.push({
+			action,
+			result: await runVerify({
+				worktree: resolve(repoDir, action.cwd),
+				command: action.command,
+				timeoutMs: options.timeoutMs ?? 15 * 60_000,
+			}),
+		});
+	}
+	return results;
 }
