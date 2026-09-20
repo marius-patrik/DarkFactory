@@ -1,19 +1,19 @@
-#import "/DarkFactory/templates/common.typ": translation, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 
 #let item = concept(
   key: "chatgpt_interface_image",
-    czech: "Rozhraní aplikace ChatGPT",
-  english: "ChatGPT App Interface",
-definition: terms => [Oficiální snímek rozhraní aplikace ChatGPT pro macOS.],
-  description: terms => [Snímek ukazuje vstupní rozhraní a nabídku práce se soubory, obrazem a webem.],
+    czech: "Webové rozhraní ChatGPT",
+  english: "ChatGPT Web Interface",
+definition: terms => [Snímek úplného webového rozhraní ChatGPT v prohlížeči.],
+  description: terms => [Snímek ukazuje celé rozhraní chatgpt.com včetně postranního panelu, aktivní konverzace a vstupního pole.],
   visual: terms => [
 #figure(
-  image("/DarkFactory/img/external/chatgpt-macos.webp", width: 72%),
-  caption: [Rozhraní ChatGPT pro macOS. Zdroj: OpenAI Help Center.],
+  image("/DarkFactory/img/external/chatgpt-web.png", width: 100%),
+  caption: [Webové rozhraní ChatGPT. Zdroj: OpenAI Developer Community.],
 )
   ],
   summary: terms => [Příklad uživatelského povrchu nad jazykovým modelem.],
-  citations: (bib.openai_chatgpt_macos,),
+  citations: (bib.openai_chatgpt_web,),
 )

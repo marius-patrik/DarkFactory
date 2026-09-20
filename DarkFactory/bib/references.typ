@@ -30,13 +30,11 @@
 #let dabbish2012github = <dabbish2012github>
 #let microsoft2026aidiffusion = <microsoft2026aidiffusion>
 #let microsoft2025aiadoption = <microsoft2025aiadoption>
-#let openai_chatgpt_macos = <openai-chatgpt-macos>
+#let openai_chatgpt_home = <openai-chatgpt-home>
+#let openai_chatgpt_web = <openai-community-chatgpt-web>
 #let openai_codex_app = <openai-codex-app>
 #let anthropic_claude_code = <anthropic-claude-code>
 #let anthropic_claude_desktop = <anthropic-claude-desktop>
-#let openai_gpt56 = <openai-gpt56>
-#let anthropic_opus5 = <anthropic-opus5>
-#let deepseek_v41_flash = <deepseek-v41-flash>
 
 #let karpathy2025vibecoding = <karpathy2025vibecoding>
 #let willison2025vibecoding = <willison2025vibecoding>
@@ -77,13 +75,11 @@
   dabbish2012github: dabbish2012github,
   microsoft2026aidiffusion: microsoft2026aidiffusion,
   microsoft2025aiadoption: microsoft2025aiadoption,
-  openai_chatgpt_macos: openai_chatgpt_macos,
+  openai_chatgpt_home: openai_chatgpt_home,
+  openai_chatgpt_web: openai_chatgpt_web,
   openai_codex_app: openai_codex_app,
   anthropic_claude_code: anthropic_claude_code,
   anthropic_claude_desktop: anthropic_claude_desktop,
-  openai_gpt56: openai_gpt56,
-  anthropic_opus5: anthropic_opus5,
-  deepseek_v41_flash: deepseek_v41_flash,
   karpathy2025vibecoding: karpathy2025vibecoding,
   willison2025vibecoding: willison2025vibecoding,
   fowler2026vibecoding: fowler2026vibecoding,

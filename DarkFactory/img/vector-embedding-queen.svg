@@ -16,9 +16,9 @@
   <line x1="210" y1="430" x2="760" y2="430" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
   <line x1="210" y1="430" x2="210" y2="125" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
   <line x1="210" y1="430" x2="520" y2="245" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="770" y="435" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₁</text>
-  <text x="198" y="112" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₂</text>
-  <text x="532" y="239" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₃</text>
+  <text x="770" y="435" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">gender</text>
+  <text x="198" y="112" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">royalty status</text>
+  <text x="532" y="239" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">other semantic dimension</text>
 
   <!-- guide plane -->
   <polygon points="300,390 555,330 650,205 395,265" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>

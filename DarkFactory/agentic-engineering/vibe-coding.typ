@@ -4,7 +4,7 @@
 #let item = concept(
   key: "vibe_coding",
   industry: "Vibe Coding",
-  czech: "Vibe coding",
+  czech: "Vibe Coding",
   english: "Vibe Coding",
   citation: (bib.karpathy2025vibecoding, bib.willison2025vibecoding),
   source: bib.karpathy2025vibecoding,

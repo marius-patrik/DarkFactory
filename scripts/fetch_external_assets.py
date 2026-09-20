@@ -17,8 +17,8 @@ ASSETS = (
         "url": "https://www.microsoft.com/en-us/corporate-responsibility//wp-content/uploads/2026/01/table1-1-1-1024x213.png",
     },
     {
-        "path": "chatgpt-macos.webp",
-        "url": "https://images.ctfassets.net/j22is2dtoxu1/intercom-img-e1314aa390884a7e44dec5a6/ac351fade56b7018d314107dc0811615/image.png?fm=webp&q=80&w=1100",
+        "path": "chatgpt-web.png",
+        "url": "https://us1.discourse-cdn.com/openai1/original/4X/e/0/1/e01cea10cd73de5710e6f980c3ffcff611824edf.png",
     },
     {
         "path": "codex-app.webp",
@@ -31,18 +31,6 @@ ASSETS = (
     {
         "path": "claude-desktop.png",
         "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/c5823949d9350145ce2fda51acbc7076f2139cd0-1920x1080.png",
-    },
-    {
-        "path": "gpt-5-6.png",
-        "url": "https://images.ctfassets.net/kftzwdyauwt9/2Og4MpejHbFrNOgRBVvhTh/589eff3fad85c1992c0973594e76a949/How_GPT-5.6_fuses_frontier_intelligence_with_frontier_efficiency_SEO_CARD__1_.png?w=1600&h=900&fit=fill",
-    },
-    {
-        "path": "claude-opus-5.png",
-        "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/54b7ab1d2c2521f83ae5d2da5f9d99321c370d24-2880x1620.png",
-    },
-    {
-        "path": "deepseek-v4-1-flash.png",
-        "url": "https://www.deepseek.com/images/blog/deepseek-v4-1-flash/agentic-benchmark.png",
     },
 )
 
