@@ -16,5 +16,5 @@ export type {
 	PlanAction,
 	RunState,
 	WorkflowGraph,
-} from "../../../packages/protocol/src/workflow.ts";
-export { CANONICAL_STATUSES } from "../../../packages/protocol/src/workflow.ts";
+} from "@darkfactory/protocol/workflow";
+export { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";
