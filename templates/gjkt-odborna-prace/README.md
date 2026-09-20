@@ -15,26 +15,19 @@ Files:
 
 ## Chapter presentation
 
-Numbered level-1 headings in the main body are rendered as dedicated chapter title
-pages by `template.typ`. The manuscript only declares semantic headings with Typst
-heading syntax; it must not insert chapter page breaks, vertical spacing, or heading
-layout itself.
+Numbered level-1 headings in the main body are rendered directly in the normal
+document flow. Only the overall thesis title page receives dedicated title-page
+treatment; main chapters do not receive separate title pages or synthetic page breaks.
 
 The GJKT template owns:
-- chapter title pages and chapter page breaks,
 - heading hierarchy and spacing,
 - page margins, footer/page numbers and front matter,
 - paragraph/list/table/figure typography,
-- appendix heading behavior.
+- appendix heading behavior and the retained `Seznam příloh | List of appendices`.
 
-Appendices intentionally use the compact appendix heading mode rather than the main
-chapter title-page treatment.
-
-The terminology index is emitted by the appendix wrapper immediately before
-the list of appendices. It contains the complete canonical vocabulary, deduplicated
-by stable term id, and is alphabetically grouped as level-2 letter headings with
-level-3 term headings. All levels are outlined so letters and individual terms appear
-in the document contents. The core word-count boundary is placed before this back-matter index.
+The standalone terminology `Rejstřík | Index` is not part of the document. Canonical
+terms are expected to be used directly by manuscript content, while the compact
+usage-driven keyword list remains in front matter.
 
 
 ## Semantic web publication
