@@ -668,7 +668,7 @@ for required in (
     "RefreshCwIcon",
     "FilesIcon",
     "FolderTreeIcon",
-    "ModePicker",
+    "RendererPicker",
     "FormatPicker",
     "CompiledArtifactView",
     "ArtifactFormat",
@@ -750,7 +750,7 @@ for required in (
 ):
     if required not in app_source:
         fail(f"viewer missing View/Edit/Raw renderer contract: {required}")
-if "function ModePicker(" in app_source or 'className="mode-select"' in app_source:
+if "function RendererPicker(" in app_source or 'className="mode-select"' in app_source:
     fail("Renderer must be a direct multi-button control, not the legacy dropdown")
 if 'mode === "raw"\n      ? "markdown"' in app_source:
     fail("Raw mode must preserve the selected document type")
