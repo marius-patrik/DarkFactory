@@ -1,6 +1,7 @@
 import pathlib
 import yaml
 
+
 def _steps(path, job):
     with pathlib.Path(path).open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)["jobs"][job]["steps"]
