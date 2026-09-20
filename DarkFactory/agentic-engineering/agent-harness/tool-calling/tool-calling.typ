@@ -6,7 +6,9 @@
 #let item = concept(
   key: "tool_calling",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Vyvolávání nástrojů je mechanismus, kterým model strukturovaně žádá harness o provedení externí akce nebo funkce s validovanými parametry.
+  ],
   description: terms => [
 #unconfirmed[
 Aby mohl agent provádět reálné inženýrské operace, musí mu agent harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
@@ -14,7 +16,9 @@ Aby mohl agent provádět reálné inženýrské operace, musí mu agent harness
 #diff[Strukturované volání nástrojů (_Tool / Function Calling_)][Strukturované volání nástrojů (_Tool / Function Calling_ @schick2023toolformer)] používá vstupy a výstupy striktně validované vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Tool calling tvoří typované rozhraní mezi pravděpodobnostním rozhodnutím modelu a deterministickým vykonáním akce; formální schémata zvyšují validovatelnost za cenu kontextové režie.
+  ],
   visual: none,
   examples: (),
   attachments: (),

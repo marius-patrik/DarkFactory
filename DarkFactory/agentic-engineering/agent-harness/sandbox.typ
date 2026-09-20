@@ -6,7 +6,9 @@
 #let item = concept(
   key: "sandbox",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Sandbox je omezené běhové prostředí určené k oddělení prováděného kódu a jeho oprávnění od hostitelského systému.
+  ],
   description: terms => [
 Přímé spouštění kódu (_Code Execution_) umožňuje agentovi generovat skripty (bash, Python), které harness spouští v izolovaném terminálu. Tento model poskytuje maximální flexibilitu pro softwarový vývoj, avšak vyžaduje nekompromisní bezpečnostní izolaci.
 
@@ -14,7 +16,9 @@ Přímé spouštění kódu (_Code Execution_) umožňuje agentovi generovat skr
   Iluzorní bezpečnost pískoviště: Přímé spouštění netestovaného syntetického kódu v běžném Docker kontejneru nelze považovat za plnohodnotnou bezpečnostní hranici (_security boundary_). Přístup k síti otevírá prostor pro útoky typu Server-Side Request Forgery (SSRF), úniky environmentálních tajností (GitHub tokeny, API klíče k LLM) přes skryté síťové kanály a kompromitaci CI infrastruktury. Pro bezpečný produkční provoz je nezbytná formální izolace na bázi microVM #diff[(např. AWS Firecracker, gVisor)][(např. AWS Firecracker @agache2020firecracker, gVisor)] a striktní izolace síťových jmenných prostorů.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Bezpečné spouštění modelově generovaného kódu vyžaduje vynutitelnou izolaci procesů, souborů, oprávnění, tajností a sítě; běžný kontejner sám o sobě nemusí tvořit dostatečnou bezpečnostní hranici.
+  ],
   visual: none,
   examples: (),
   attachments: (),

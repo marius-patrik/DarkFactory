@@ -5,8 +5,6 @@
     id: "human-in-the-loop",
     proper: translation(cs: "Zapojení člověka do smyčky", en: "Human-in-the-loop"),
     industry: translation(cs: "HITL", en: "HITL"),
-    explanation_cs: "Návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu systému prostřednictvím schvalovacích bran (Human Gates), zejména před významnými nebo nevratnými systémovými operacemi.",
-    explanation_en: "A design pattern in which a human operator remains part of the system's decision process through approval gates (Human Gates), especially before consequential or irreversible system operations.",
     citation: bib.mosqueira2023human,
     source: bib.mosqueira2023human,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "human_in_the_loop",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Zapojení člověka do smyčky (HITL) je návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu prostřednictvím explicitních schvalovacích bran, zejména před významnými nebo nevratnými operacemi.
+  ],
   description: terms => [
 Základním principem navrženého řešení není nekritická plná autonomie, nýbrž #diff[efektivní kooperace člověka a stroje][efektivní kooperace člověka a stroje (#term(terms.human_in_the_loop, language: "en", marker: false, linked: false, emphasized: false) @mosqueira2023human)]. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
@@ -31,7 +31,9 @@ Základním principem navrženého řešení není nekritická plná autonomie, 
   Spoléhání se na finální sémantickou kontrolu diffu v pull requestu naráží na lidské kognitivní limity. Výzkumy prokazují, že u rozsáhlých diffů (nad 300–400 řádků) dramaticky klesá hloubka lidské pozornosti — vývojář kód pouze zběžně prohlédne a spoléhá na zelenou fajfku z CI. Aby byla lidská brána efektivní, harness musí diffy rozkládat do sémanticky sevřených mikrokroků, generovat interaktivní vysvětlení netriviálních rozhodnutí a explicitně zvýrazňovat změny v kritických architektonických komponentách.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Lidský dohled je nejúčinnější v několika explicitních branách před zásadními kroky, nikoli v mikromanagementu každé agentní iterace.
+  ],
   visual: none,
   examples: (),
   attachments: (),

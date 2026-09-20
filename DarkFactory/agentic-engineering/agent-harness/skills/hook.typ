@@ -5,8 +5,6 @@
     id: "hook",
     proper: translation(cs: "Událostní záchytný bod", en: "Event Hook"),
     industry: translation(cs: "Hook", en: "Hook"),
-    explanation_cs: "Definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.",
-    explanation_en: "A defined lifecycle or event point to which custom deterministic logic can be attached before, after, or in place of standard system behavior.",
     citation: bib.deepseekharness2026,
     source: bib.deepseekharness2026,
 )
@@ -14,13 +12,17 @@
 #let item = concept(
   key: "hook",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Hook je definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
+  ],
   description: terms => [
 #unconfirmed[
 Hook váže deterministickou logiku na konkrétní událost životního cyklu harnessu, například před spuštěním nástroje, po dokončení kroku nebo při změně stavu běhu.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Hook umožňuje vynutit opakovatelné chování v přesně určeném okamžiku bez toho, aby model musel stejné pravidlo znovu odvozovat.
+  ],
   visual: none,
   examples: (),
   attachments: (),

@@ -5,8 +5,6 @@
     id: "skills",
     proper: translation(cs: "Dovednosti", en: "Skills"),
     industry: translation(cs: "Skills", en: "Skills"),
-    explanation_cs: "Znovupoužitelné modulární balíčky instrukcí (typicky definovaných v souboru SKILL.md), procedurálních pravidel a volitelných pomocných skriptů či zdrojů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
-    explanation_en: "Reusable modular packages of instructions (typically defined in a SKILL.md file), procedural rules, and optional helper scripts or resources that a harness dynamically loads into an agent's context for a particular class of task.",
     citation: bib.anthropic2024tooluse,
     source: bib.anthropic2024tooluse,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "skills",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Dovednost je znovupoužitelný modulární balíček instrukcí, procedurálních pravidel a volitelných skriptů či zdrojů, který harness načítá podle povahy řešeného úkolu.
+  ],
   description: terms => [
 Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills).][#term(terms.skills) @anthropic2024tooluse.]
 
@@ -29,7 +29,9 @@ Kromě kontextových dovedností využívají pokročilé řídicí architektury
 Načítání dovedností popisuje samostatný koncept #term(terms.progressive_disclosure). Deterministické součásti dovedností jsou rozděleny mezi #term(terms.script) a #term(terms.hook); nativní rozšíření harnessu představuje samostatný koncept #term(terms.plugins).
 ]
   ],
-  summary: none,
+  summary: terms => [
+Dovednosti modularizují doménové postupy a načítají je pouze tehdy, když jsou relevantní, čímž snižují velikost základního promptu a omezují duplicitu instrukcí.
+  ],
   visual: none,
   examples: (),
   attachments: (),
