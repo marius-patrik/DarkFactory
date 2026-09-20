@@ -149,6 +149,7 @@ for forbidden in (
     "#let index-sort-name",
     "#let index-letter",
     'label("kw-" + item.id)',
+    "★",
 ):
     if forbidden in common_source:
         fail(f"standalone terminology index machinery must not return: {forbidden}")
@@ -161,6 +162,8 @@ for required in (
     'text("(")',
     'text(")")',
     "Czech [English] (Industry)",
+    "marker: true,",
+    '#text("*")',
 ):
     if required not in common_source:
         fail(f"canonical term-name renderer missing global naming contract: {required}")
@@ -249,6 +252,9 @@ for required in (
     "#let build-vocabulary(folders)",
     "#let render-theory-chapter(folders, terms)",
     "#let render-practical-chapter(folders, terms)",
+    "#let render-section-title(item)",
+    "#let render-section-definition(item)",
+    "render-section-title(node.section)",
     "theory_intro:",
     "theory_body:",
     "theory_summary:",
@@ -258,9 +264,14 @@ for required in (
 ):
     if required not in schema_source:
         fail(f"concept schema missing canonical field/renderer: {required}")
-for forbidden in ('type in ("parent", "child"', 'edge.type == "parent"', 'edge.type == "child"'):
+for forbidden in (
+    'type in ("parent", "child"',
+    'edge.type == "parent"',
+    'edge.type == "child"',
+    "node.section.heading",
+):
     if forbidden in schema_source:
-        fail(f"structural concept relations must not drive section hierarchy: {forbidden}")
+        fail(f"structural concept relations/manual headings must not drive section hierarchy: {forbidden}")
 
 catalog_source = concept_catalog.read_text(encoding="utf-8")
 for required in (
@@ -338,6 +349,11 @@ for manifest in section_index_paths:
     if match is not None:
         section_concept_paths.add((manifest.parent / match.group(1)).resolve())
 
+for path in section_concept_paths:
+    source = path.read_text(encoding="utf-8")
+    if re.search(r"^\s*heading\s*:", source, re.MULTILINE):
+        fail(f"folder section concept must not define a manual heading renderer: {path}")
+
 rendered_concept_paths = tuple(
     path for path in concept_paths
     if "theory_enabled: true" in path.read_text(encoding="utf-8")
@@ -393,17 +409,13 @@ if agentic_source.find("prompt_engineering.node") >= agentic_source.find("agent_
 
 concept_text = "\n".join(path.read_text(encoding="utf-8") for path in concept_paths)
 for required in (
-    "#finalized[Správa verzí \\[Version Control\\]]",
     "#finalized[Plánování \\[Planning\\]]",
     "#finalized[Pull Request]",
     "#finalized[Větve (Branches)]",
     "#finalized[Slučování změn (Commit and Merge)]",
-    "#finalized[Kontinuální integrace (CI a GitHub Actions)]",
     "#finalized[Požadované kontroly (Required Checks)]",
     "Ochrana větví (Branch Protection)",
     "#finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]",
-    "#finalized[Vyvolávání nástrojů \\[Tool Calling\\]]",
-    "Škálování: Multiagentní systémy (Subagenti) a grafy",
     "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh.",
     "caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting)",
 ):
@@ -415,6 +427,7 @@ for forbidden in (
     "Slučování změn (Squash and Merge)",
     "=== Spouštění nástrojů",
     "Běhové prostředí nástrojů a pískoviště (Sandbox)",
+    "Agent v tomto pojetí nevystupuje jako černá skříňka s proprietárním protokolem",
 ):
     if forbidden in concept_text:
         fail(f"legacy theoretical concept wording returned: {forbidden}")
