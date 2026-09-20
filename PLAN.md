@@ -73,7 +73,7 @@ Already landed:
 
 Still to converge:
 
-- #422 moves machine credential custody fully into `@darkfactory/keychain`;
+- #422 completes broader machine-keychain consolidation and removes remaining migration facades; its production-critical credential ownership slice is already landed through #523 and is no longer a #359 blocker;
 - #423 implements browser/human GitHub auth in `@darkfactory/auth`;
 - #424 replaces ProperDocs/MkDocs with the first-party docs engine;
 - #425 provides the shared prebuilt GitHub-backed web application;
@@ -158,7 +158,7 @@ A failing topic/recovery branch blocks that branch and dependent work, but does 
 | `recovery/f48-layout` | #340 / #420 evidence/input |
 | PR #407 | Closed/superseded; #340 evidence only |
 | `recovery/f28-dispatch` | Historical #242 provenance; no unique valid implementation |
-| `recovery/f14-borrowed-refresh` | #248 -> #422 keychain |
+| `recovery/f14-borrowed-refresh` | Production-critical semantics integrated through #422/#523; retain provenance until final recovery audit |
 | `recovery/f40-capability-tiers` | Integrated through #331; retain provenance until final recovery audit |
 | `recovery/f38-result-capture` | #329 |
 | `recovery/f42-tsdoc` | #334 -> #424 |
@@ -197,11 +197,9 @@ The remaining hard dependency spine to the earliest safe #359 cutover is:
                                             #317  truthful branch-repair / mutation evidence
                                               ↓
                                             #359  df-only production cutover
-
-#422  production-critical keychain subset ───────────────────────────────> #359
 ```
 
-This graph is a **merge/cutover dependency graph**, not a serial development schedule. #329, #341 and the production-critical #422 slice should progress concurrently. #358 recovery analysis may also proceed while #329/#341 finish, but its final implementation/merge must consume their landed contracts.
+This graph is a **merge/cutover dependency graph**, not a serial development schedule. #329 and #341 should progress concurrently. #358 recovery analysis may also proceed while they finish, but its final implementation/merge must consume their landed contracts. The production-critical #422 credential slice is already satisfied by #523 and is no longer part of this spine.
 
 ### Immediate development concurrency
 
@@ -209,7 +207,7 @@ The following should proceed in parallel where interfaces allow:
 
 - #329 F38 recovery reconciliation and natural-stop result capture, now unblocked by landed #331;
 - #341 F49 reconciliation and capability-driven package/domain quality actions;
-- #422 F14/keychain reconciliation, prioritizing the production-critical subset required by #359 while leaving non-critical breadth independent;
+- remaining #422 keychain breadth independently of the cutover path; the #359-critical ownership slice is already landed through #523;
 - #358 F30-4 discovery/recovery analysis against the landed #391/#331 contracts, without inventing a substitute result or verification protocol before #329/#341 land;
 - all remaining recovery analysis/reconciliation;
 - #423 auth;
@@ -225,7 +223,7 @@ Merge only when each lane's actual interfaces are stable.
 - #341 consumes the landed #340 naming contract and #420/#421 package/capability model rather than creating a new central hard-coded action table.
 - #358 consumes the landed #391 lifecycle, #331 routing, final #329 result-capture behavior and final #341 verification/action contract; F30-4 receives an explicit disposition before replacement work.
 - #317 consumes the production graph/verification path from #358/#341 and completes the truthful branch-repair/mutation-observation path required by #359.
-- #422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth is not a serial blocker for #329/#341/#358.
+- #422's production-engine credential prerequisite is satisfied by #523; remaining keychain breadth is independent of #329/#341/#358/#359.
 - At every step, prefer replacing/deleting a Python owner over making it compatible with the rebuilt TypeScript owner.
 
 ---
@@ -406,12 +404,12 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 
 | Request | Start now? | Merge / completion gate |
 |---|---|---|
-| #422 | yes | landed package/capability boundaries + F14 reconciliation; production-critical subset before #359 |
+| #422 | yes | broader importer/login/redaction/diagnostics convergence + final facade removal; production-critical #359 subset already satisfied by #523 |
 | #329 | yes | landed #331 behavior + F38 reconciliation |
 | #341 | yes | landed #340/#420/#421 contracts; capability-driven quality/action model |
 | #358 | recovery now | F30-4 disposition + final #329/#341 + landed #331/#391 |
 | #317 | prepare | #358 + #341 truthful observed-effect path |
-| #359 | prepare ledger | #329/#341/#358/#317 + production-critical #422 subset |
+| #359 | prepare ledger | #329/#341/#358/#317 |
 | #248 | yes | #422 + terminal F14 disposition |
 | #252 | prepare | #365/#421 usable interfaces |
 | #332 | prepare | #358/#329/#331; preferably self-hosted |
