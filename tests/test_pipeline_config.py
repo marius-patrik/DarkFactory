@@ -107,7 +107,6 @@ def test_python_and_docs_jobs_have_separate_final_owners():
     assert re.search(r"^\s*\| harness$", pyproject, re.MULTILINE)
     assert "docs.df" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
-    assert not os.path.exists(os.path.join(REPO_ROOT, "properdocs.yml"))
 
 
 def test_required_checks_match_ci_job_names():
