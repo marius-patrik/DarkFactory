@@ -10,5 +10,5 @@ Písma jsou přibalena záměrně: práce se pak vysází naprosto stejně na
 nainstalován MS Office. Rozměry znaků jsou shodné s Calibri a Cambria,
 takže rozvržení odpovídá wordové předloze.
 
-Sazba je proto potřeba spouštět s `--font-path fonts` — což dělá `make`
+Sazba je proto potřeba spouštět s `--font-path DarkFactory/fonts` — což dělá `make BOOK=DarkFactory`
 za vás.
