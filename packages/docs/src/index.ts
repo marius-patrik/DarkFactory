@@ -6,3 +6,4 @@
 export * from "./config.ts";
 export * from "./content.ts";
 export * from "./readme.ts";
+export * from "./api.ts";
