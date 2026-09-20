@@ -5,13 +5,13 @@ import * as os from "node:os";
 
 import {
   parseFrontmatter,
-  resolveManifestPath,
+  resolveRepoDfPath,
   rewriteLinks,
   discoverRules,
   generateRuleIndex,
   discoverAdrs,
   generateAdrIndex,
-  generateManifestReference,
+  generateRepositoryReference,
   discoverWorkflows,
   generateWorkflowTable,
   stageDocs,
@@ -20,30 +20,24 @@ import {
   type AdrRecord,
 } from "./build-docs";
 
-describe("Repository path compatibility", () => {
-  it("prefers the current manifest path and falls back to the legacy path", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-path-test-"));
+describe("Repository declaration path", () => {
+  it("resolves .darkfactory/repo.df or root repo.df and rejects duplicates", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "repo-df-path-test-"));
     const dfRepo = path.join(tempDir, ".darkfactory", "repo.df");
     const rootRepo = path.join(tempDir, "repo.df");
-    const legacy = path.join(tempDir, ".darkfactory", "manifest.json");
-    const oldLegacy = path.join(tempDir, ".github", "darkfactory.json");
-    fs.mkdirSync(path.dirname(oldLegacy), { recursive: true });
-    fs.writeFileSync(oldLegacy, "{}");
 
-    expect(resolveManifestPath(tempDir)).toBe(oldLegacy);
-    fs.mkdirSync(path.dirname(legacy), { recursive: true });
-    fs.writeFileSync(legacy, "{}");
-    expect(resolveManifestPath(tempDir)).toBe(legacy);
+    expect(resolveRepoDfPath(tempDir)).toBe(dfRepo);
 
+    fs.mkdirSync(path.dirname(dfRepo), { recursive: true });
     fs.writeFileSync(dfRepo, "{}");
-    expect(resolveManifestPath(tempDir)).toBe(dfRepo);
+    expect(resolveRepoDfPath(tempDir)).toBe(dfRepo);
 
     fs.unlinkSync(dfRepo);
     fs.writeFileSync(rootRepo, "{}");
-    expect(resolveManifestPath(tempDir)).toBe(rootRepo);
+    expect(resolveRepoDfPath(tempDir)).toBe(rootRepo);
 
     fs.writeFileSync(dfRepo, "{}");
-    expect(() => resolveManifestPath(tempDir)).toThrow("only one is allowed");
+    expect(() => resolveRepoDfPath(tempDir)).toThrow("only one is allowed");
 
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
@@ -160,9 +154,9 @@ describe("ADR index generation", () => {
   });
 });
 
-describe("Manifest tables", () => {
+describe("Repository declaration tables", () => {
   it("generates taxonomy, project switcher, and installed consumers tables", () => {
-    const mockManifest = {
+    const mockRepository = {
       identity: {
         owner: "test-owner",
         repo: "test-repo",
@@ -189,8 +183,8 @@ describe("Manifest tables", () => {
       },
     };
 
-    const output = generateManifestReference(mockManifest);
-    expect(output).toContain("# Repository manifest reference");
+    const output = generateRepositoryReference(mockRepository);
+    expect(output).toContain("# Repository declaration reference");
     expect(output).toContain("## Area taxonomy and labels");
     expect(output).toContain("| agents | `area:agents` | Harness orchestration | agent, harness |");
     expect(output).toContain("| governance | `area:governance` | Agent rules | rule, policy |");
@@ -240,7 +234,7 @@ describe("Staging and cleanup lifecycle", () => {
     expect(fs.existsSync(path.join(tempDir, "rules", "001-unit-tests.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "architecture", "decisions", "index.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "architecture", "decisions", "process.md"))).toBe(true);
-    expect(fs.existsSync(path.join(tempDir, "reference", "manifest.md"))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, "reference", "repository.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, "reference", "workflows.md"))).toBe(true);
   });
 
