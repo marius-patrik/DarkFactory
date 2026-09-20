@@ -81,10 +81,7 @@ describe("documentation impact policy", () => {
 			evidence,
 			"Docs: none (internal only)",
 		);
-		expect(result.findings.map((finding) => finding.code)).toEqual([
-			"docs-none-not-permitted",
-			"docs-required",
-		]);
+		expect(result.findings.map((finding) => finding.code)).toEqual(["docs-none-not-permitted", "docs-required"]);
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
@@ -96,11 +93,7 @@ describe("documentation impact policy", () => {
 		const missing = evaluateDocumentationImpact(["packages/example/src/internal.ts"], evidence);
 		expect(missing.findings.map((finding) => finding.code)).toEqual(["docs-none-missing"]);
 
-		const empty = evaluateDocumentationImpact(
-			["packages/example/src/internal.ts"],
-			evidence,
-			"Docs: none ()",
-		);
+		const empty = evaluateDocumentationImpact(["packages/example/src/internal.ts"], evidence, "Docs: none ()");
 		expect(empty.findings.map((finding) => finding.code)).toEqual(["docs-none-invalid"]);
 
 		const valid = evaluateDocumentationImpact(
