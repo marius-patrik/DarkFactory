@@ -80,10 +80,7 @@ describe("AgentSession harness", () => {
 		const low = fauxProvider({ provider: "tier-low", models: [{ id: "a" }] });
 		const middle = fauxProvider({ provider: "tier-mid", models: [{ id: "b" }] });
 		const high = fauxProvider({ provider: "tier-high", models: [{ id: "c" }] });
-		low.setResponses([
-			fauxAssistantMessage([], { stopReason: "error", errorMessage: "model capability failure" }),
-			fauxAssistantMessage("baseline again"),
-		]);
+		low.setResponses([fauxAssistantMessage([]), fauxAssistantMessage("baseline again")]);
 		middle.setResponses([fauxAssistantMessage("recovered one tier up")]);
 		high.setResponses([fauxAssistantMessage("should not be used")]);
 		const events: HarnessEvent[] = [];
