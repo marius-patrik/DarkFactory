@@ -27,8 +27,11 @@ Kanonický katalog aktuální knihy začíná v `DarkFactory/index.typ`. Koncept
 - stabilní `key`,
 - kanonickou terminologii,
 - definici,
-- dokumentové / teoretické / praktické obsahové sloty,
+- `definition`, `description` a `summary`,
+- nested `examples` a `attachments`,
 - semantic relations `dependency` a `related`.
+
+Každý koncept se vykresluje jako vlastní číslovaná sekce. Foldery určují pouze strukturální vnoření; neexistuje samostatná teoretická/praktická projekce ani automaticky generované podsekce `Úvod`. Příklady a přílohové/obrazové podklady jsou také koncepty, takže mají vlastní terminologii, citace a případně reálný obrazový zdroj.
 
 ## Terminologie
 
@@ -127,7 +130,7 @@ Aktuální shell používá:
 | `scripts/` | build/export/site validace |
 | `darkfactory/` | jediný git submodule, praktický agentní harness |
 
-## Praktická část
+## Implementační repozitář
 
 `darkfactory/` je jediný submodule a ukazuje na repozitář [marius-patrik/DarkFactory](https://github.com/marius-patrik/DarkFactory).
 
