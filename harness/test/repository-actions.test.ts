@@ -66,7 +66,7 @@ describe("repository evidence and capability actions", () => {
 		const evidence = await detectRepositoryEvidence(root);
 		const resolution = resolveRepositoryActions(evidence, [codeCapability, paperCapability, mathCapability]);
 		const node = resolution.packages.find((entry) => entry.package.id === "node:.")!;
-		expect(node.actions.test.command).toBe("bun test");
+		expect(node.actions.test.command).toBe("bun run test");
 		expect(node.actions.lint.command).toBe("bun run lint");
 		expect(node.actions.format_check.command).toBe("bun run format:check");
 		expect(node.actions.docs_extract.metadata).toEqual({
