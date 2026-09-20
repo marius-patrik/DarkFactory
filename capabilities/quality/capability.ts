@@ -1,3 +1,4 @@
+import { readdir } from "node:fs/promises";
 import {
 	defineCapability,
 	CAPABILITY_ABI_VERSION,
@@ -88,7 +89,15 @@ export const capability = defineCapability({
 
 				if (detected.length === 0) {
 					// Fallback package if detection is unavailable or returned nothing
-					detected = [{ name: pkgName, ecosystem: "javascript", path: "." }];
+					// Inspect root for manifest files to determine ecosystem
+					const rootFiles = await readdir(context.repositoryRoot || process.cwd());
+					let detectedEcosystem = "javascript";
+					if (rootFiles.includes("pyproject.toml") || rootFiles.includes("setup.py") || rootFiles.includes("requirements.txt")) detectedEcosystem = "python";
+					else if (rootFiles.includes("go.mod")) detectedEcosystem = "go";
+					else if (rootFiles.includes("Cargo.toml")) detectedEcosystem = "rust";
+					else if (rootFiles.includes("pom.xml") || rootFiles.includes("build.gradle")) detectedEcosystem = "java";
+					
+					detected = [{ name: pkgName, ecosystem: detectedEcosystem, path: "." }];
 				}
 
 				const pkg = detected.find((p) => p.name === pkgName || p.path === pkgName || (pkgName === "root" && (p.path === "." || p.path === ""))) || (detected.length === 1 ? detected[0] : undefined);
@@ -97,7 +106,7 @@ export const capability = defineCapability({
 				}
 
 				const ecosystem = pkg.ecosystem || "javascript";
-				const repoConfig = await readRepoConfig(context.repositoryRoot, (event) => console.log(event));
+				const repoConfig = await readRepoConfig(context.repositoryRoot, (event) => context.audit?.(event));
 				const registry = JSON.parse(JSON.stringify(DEFAULT_REGISTRY));
 
 				// Override with repo.df environment settings if available

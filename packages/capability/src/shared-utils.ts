@@ -178,42 +178,43 @@ export async function checkToolExists(tool: string): Promise<boolean> {
 }
 
 export function parseShellCommand(cmd: string | string[]): { tool: string; args: string[] } {
-	const parsed = Array.isArray(cmd) 
-        ? { tool: cmd[0] ?? "", args: cmd.slice(1) } 
-        : (() => {
-		const args: string[] = [];
-		let current = "";
-		let inSingleQuote = false;
-		let inDoubleQuote = false;
-		let escaped = false;
+	if (Array.isArray(cmd)) {
+		return { tool: cmd[0] ?? "", args: cmd.slice(1) };
+	}
 
-		for (let i = 0; i < cmd.length; i++) {
-			const char = cmd[i];
-			if (escaped) {
-				current += char;
-				escaped = false;
-			} else if (char === "\\") {
-				escaped = true;
-			} else if (char === "'" && !inDoubleQuote) {
-				inSingleQuote = !inSingleQuote;
-			} else if (char === '"' && !inSingleQuote) {
-				inDoubleQuote = !inDoubleQuote;
-			} else if (char === " " && !inSingleQuote && !inDoubleQuote) {
-				if (current.length > 0) {
-					args.push(current);
-					current = "";
-				}
-			} else {
-				current += char;
+	const args: string[] = [];
+	let current = "";
+	let inSingleQuote = false;
+	let inDoubleQuote = false;
+	let escaped = false;
+
+	for (let i = 0; i < cmd.length; i++) {
+		const char = cmd[i];
+		if (escaped) {
+			current += char;
+			escaped = false;
+		} else if (char === "\\") {
+			escaped = true;
+		} else if (char === "'" && !inDoubleQuote) {
+			inSingleQuote = !inSingleQuote;
+		} else if (char === '"' && !inSingleQuote) {
+			inDoubleQuote = !inDoubleQuote;
+		} else if (char === " " && !inSingleQuote && !inDoubleQuote) {
+			if (current.length > 0) {
+				args.push(current);
+				current = "";
 			}
+		} else {
+			current += char;
 		}
-		if (current.length > 0) args.push(current);
-		return { tool: args[0] ?? "", args: args.slice(1) };
-	})();
+	}
+	if (current.length > 0) args.push(current);
 
-	// Strict validation: Reject commands with shell metacharacters
-	const metacharacters = [";", "&", "|", "<", ">", "$", "(", ")", "`", "{", "}", "[", "]", "*", "?", "~", "!", "\n"];
-	if (parsed.tool === "" || metacharacters.some((m) => parsed.tool.includes(m) || parsed.args.some((a) => a.includes(m)))) {
+	const parsed = { tool: args[0] ?? "", args: args.slice(1) };
+
+	// Strict validation: Reject commands with shell injection and redirection operators
+	const shellInjectionMetacharacters = [";", "&", "|", "<", ">", "$", "`", "\n"];
+	if (parsed.tool === "" || shellInjectionMetacharacters.some((m) => parsed.tool.includes(m) || parsed.args.some((a) => a.includes(m)))) {
 		throw new Error(`Security Violation or empty tool: ${parsed.tool} ${parsed.args.join(" ")}`);
 	}
 	return parsed;
