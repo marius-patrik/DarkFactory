@@ -8,7 +8,15 @@
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["bun"]
+    "types": [
+      "bun"
+    ],
+    "jsx": "react-jsx"
   },
-  "include": ["src", "test", "../packages/*/src", "../capabilities/*/*.ts"]
+  "include": [
+    "src",
+    "test",
+    "../packages/*/src",
+    "../capabilities/*/*.ts"
+  ]
 }
