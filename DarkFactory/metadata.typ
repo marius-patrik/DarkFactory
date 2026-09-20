@@ -5,11 +5,15 @@
 #import "/DarkFactory/templates/registry.typ": draft, added, unconfirmed, accepted, finalized, translation
 
 #let meta = (
-  // Oficiální školní varianta.
-  nazev: "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství",
-  // Volitelné jazykové projekce používané při alternativní kompilaci.
-  nazev-cs: "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství",
-  nazev-en: "DarkFactory: Artificial Intelligence in Practice – Agentic and Harness Engineering",
+  // The main title is structural and comes from DarkFactory/index.typ.
+  title-suffix: translation(
+    cs: "Agentické a harnessové inženýrství: Umělá inteligence v praxi",
+    en: "Agentic and Harness Engineering: Artificial Intelligence in Practice",
+  ),
+  title-lines: (
+    cs: ("Agentické a harnessové inženýrství:", "Umělá inteligence v praxi"),
+    en: ("Agentic and Harness Engineering:", "Artificial Intelligence in Practice"),
+  ),
   podnazev: none,
 
   autor: "Patrik Marius",
@@ -49,3 +53,22 @@
 
   podekovani: none,
 )
+
+
+#let title-value(book-title, profile: "school") = {
+  let language = if profile == "en" { "en" } else { "cs" }
+  let main = if language == "en" and book-title.en != none { str(book-title.en) } else { str(book-title.cs) }
+  let suffix = if language == "en" and meta.title-suffix.en != none { str(meta.title-suffix.en) } else { str(meta.title-suffix.cs) }
+  main + ": " + suffix
+}
+
+#let title-display(book-title, profile: "school") = {
+  let language = if profile == "en" { "en" } else { "cs" }
+  let main = if language == "en" and book-title.en != none { book-title.en } else { book-title.cs }
+  let lines = if language == "en" { meta.title-lines.en } else { meta.title-lines.cs }
+  [
+    #main#linebreak()
+    #lines.at(0)#linebreak()
+    #lines.at(1)
+  ]
+}
