@@ -31,7 +31,6 @@ async function fixture(): Promise<string> {
 	await writeFile(join(root, ".agents", "rules", "001-test.md"), "# Rule\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "0001-test.md"), "# ADR-0001 — Test\n\n**Status**: Accepted\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "README.md"), "# Decisions\n");
-	await writeFile(join(root, ".agents", "notes", "bootstrap.md"), "# Bootstrap provenance\n");
 	await writeFile(
 		join(root, ".github", "workflows", "ci.yml"),
 		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
@@ -78,7 +77,6 @@ describe("@darkfactory/docs", () => {
 			"agents-rules-001-test",
 			"agents-notes-adr-0001-test",
 			"agents-notes-adr-readme",
-			"agents-notes-bootstrap",
 		]);
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
