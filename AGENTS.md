@@ -55,43 +55,38 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 ## Repository Architecture
 - The thesis repository is `DarkFactory-Paper`.
-- `templates/gjkt-odborna-prace/` is the current document-template implementation. Manuscript files import `templates/registry.typ`, never a concrete template directly.
+- `concepts/**` is the sole canonical source for manuscript structure, prose, terminology, and appendices. Folder `index.typ` manifests determine hierarchy; a separate `kapitoly/` compatibility layer must not exist.
+- `thesis.typ` composes renderers exported by `concepts/index.typ` and passes them through `templates/registry.typ`; concept files may consume shared semantics from `templates/common.typ` but must never import a concrete document template.
+- `templates/gjkt-odborna-prace/` is the current document-template implementation.
 - `darkfactory/` is the only git submodule and points to the practical DarkFactory repository.
-- Do not recreate a wrapper monorepo, nested Typst package, or separate template repository. New layouts belong under `templates/<name>/` and must be registered in `templates/registry.typ`.
-
+- Do not recreate a wrapper monorepo, nested Typst package, separate chapter tree, or separate template repository. New layouts belong under `templates/<name>/` and must be registered in `templates/registry.typ`.
 
 ## Terminology & Translation Model
-- Raw Typst bold emphasis (`*text*`) is forbidden in manuscript chapter files. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)` (or a heading that contains a canonical term). Ordinary list labels, callout captions, and prose emphasis remain unbolded.
-- Canonical terminology lives in `templates/terms.typ` as values created by `define-term(...)`.
-- Manuscript files use shared values exported as `terms.<id>`; do not call `term()` with ad-hoc string names or duplicate explanations.
-- `term(...)` supports name-only, explanation-only, and combined rendering; independent language selection/order for name and detail; automatic keyword registration; and `name-type: "proper" | "industry" | "both" | "auto"` for formal vs common industry naming.
-- If prose defines a canonical term, render that definition from the shared term value (for example `render: "both"` or `render: "explanation"`) instead of copying the definition into chapter text.
-- Bilingual thesis rendering defaults to Czech first, English second; the shared renderer supports reversing the order when required.
+- Raw Typst bold emphasis (`*text*`) is forbidden in concept manuscript prose. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)` (or a heading that contains a canonical term). Ordinary list labels, callout captions, and prose emphasis remain unbolded.
+- Canonical terminology lives with its owning concept under `concepts/**` as a `define-term(...)` value. `concepts/index.typ` builds the shared vocabulary; `templates/terms.typ` is compatibility projection only and must never become a second terminology database.
+- Reuse canonical `terms.<key>` values when one concept refers to another. Do not call `term()` with ad-hoc string names or duplicate canonical explanations in prose.
+- `term(...)` has one global name presentation and supports only content-oriented rendering choices such as term/explanation/both and detail language/order/style. Per-call name type, name language, name separator, or name ordering options must not return.
+- The global term-name format is `Industry (Čeština) [English]`. The industry/common alias leads when present; otherwise English proper leads. Czech proper follows in parentheses and a distinct English proper form follows in square brackets; duplicate layers are suppressed.
+- Proper vs industry names are canonical data. Example: a concept may define proper `Smyčka ReAct / ReAct Loop` and industry `Agent Loop`, or proper `Jazykový model / Large Language Model` and industry `LLM`.
+- Canonical terminology is deduplicated by stable term `id`. Reuse an existing concept record when a requested concept already maps to it; do not add a second `define-term` merely to introduce a synonym or singular/plural key.
+- The required core vocabulary includes MCP, Skill, Script, Plugin, Hook, Chatbot, Agent, Token, Tokenizer, LLM, Transformer, Context Window, Compaction, Context Rot, Human-in-the-loop, Agentic Engineering, Software Engineering, Pull Request, CI, GitHub Actions, DAG, Container, KV Cache, Turn, Context Engineering, Prompt Engineering, Loop Engineering, Graph Engineering, RAG, Merge, Squash, and Branch.
 
-
-## Deferred Practical Chapters
-- `kapitoly/03-prakticka-cast.typ` and `kapitoly/04-vysledky.typ` intentionally contain no prose before DarkFactory is finished. Explicitly user-approved finalized heading stubs are allowed; they must remain title-only.
-- Do **not** draft, restore, infer, or pre-fill prose, claims, architecture descriptions, or results in either chapter while DarkFactory is still under development.
+## Deferred Practical and Results Content
+- There are no chapter files. Practical manuscript projections live on canonical concepts through their `practical_*` fields; evaluation/results content lives under `concepts/manuscript/results/`.
+- Do **not** draft, restore, infer, or pre-fill practical implementation claims or results while DarkFactory is still under development.
 - Required order:
   1. Finish and stabilize the practical DarkFactory system.
   2. Inspect and verify the actual production implementation, workflows, configuration, interfaces, tests, and behavior.
-  3. Write Chapter 3 from that verified implementation only.
-  4. Perform the evaluation/measurements against the completed system described in Chapter 3.
-  5. Write Chapter 4 from those observed results only.
-- Chapter 4 must never be written before Chapter 3 and must not contain hypothetical, provisional, or architecture-derived “results”.
-- Do not restore text removed from Chapters 3 or 4 from Git history unless the user explicitly requests it; the old text described provisional architectures and measurements.
-
-- Proper vs industry names are data, not ad-hoc prose. Example: a term may define proper `Smyčka ReAct / ReAct Loop` and industry `Agent Loop`, or proper `Jazykový model / Large Language Model` and industry `LLM`.
-- Term-name rendering is globally canonical: `Čeština [English] (Industry)`. In bilingual rendering, English proper names always use square brackets and industry/common names or acronyms always use normal parentheses; identical layers are deduplicated. Do not introduce per-call alternative separators or ordering.
-- Canonical terminology is deduplicated by stable term `id`. Reuse an existing term record when a requested concept already maps to it; do not add a second `define-term` merely to introduce a synonym or singular/plural key.
-- The required core vocabulary includes MCP, Skill, Script, Plugin, Hook, Chatbot, Agent, Token, Tokenizer, LLM, Transformer, Context Window, Compaction, Context Rot, Human-in-the-loop, Agentic Engineering, Software Engineering, Pull Request, CI, GitHub Actions, DAG, Container, KV Cache, Turn, Context Engineering, Prompt Engineering, Loop Engineering, Graph Engineering, RAG, Merge, Squash, and Branch.
-- For Czech concepts whose English industry name is important (for example `Dovednosti / Skills`), store the English industry form in the term variable and let the renderer decide whether to show the proper name, industry name, or both.
-
+  3. Write the practical concept projections from that verified implementation only.
+  4. Perform the evaluation/measurements against the completed system described by those projections.
+  5. Write the results concepts from those observed results only.
+- Results must never contain hypothetical, provisional, or architecture-derived measurements.
+- Do not restore removed practical/results prose from Git history unless the user explicitly requests it; old text described provisional architectures and measurements.
 
 ## GitHub Pages Viewer
-- Published Pages are a React + TypeScript multi-page Vite application under `web/`. Use shadcn/ui primitives, Tailwind, Motion, Dagre, `lucide-animated`, and PDF.js; do not restore the legacy handwritten `viewer.js/viewer.css/icons.js` shell.
+- Published Pages are a React + TypeScript Rsbuild application under `web/`, formatted/linted with Biome. Use shadcn/ui primitives, Tailwind, Motion, Dagre, `lucide-animated`, and PDF.js; do not restore Vite or the legacy handwritten `viewer.js/viewer.css/icons.js` shell.
 - PDF remains the canonical paged/print document; PDF.js must retain canvas, selectable text, annotation/link layers, direct PDF download, and a native-PDF fallback.
-- The publication matrix also contains compiled HTML and Markdown for every Final/Review × profile × template combination. `web-publication.typ` is the semantic Typst HTML entrypoint and must consume the same manuscript files plus shared review/profile/terminology state.
+- The publication matrix also contains compiled HTML and Markdown for every Final/Review × profile × template combination. `web-publication.typ` is the semantic Typst HTML entrypoint and must consume the same concept catalog/renderers plus shared review/profile/terminology state.
 - HTML must be produced by Typst's HTML target (`--features html --format html`). Markdown must be derived deterministically from that compiled HTML by `scripts/build_web_exports.py`; never maintain an independent Markdown manuscript and never derive Markdown/HTML from the PDF.
 - `make web-check` is the viewer type/build gate; `make all` builds PDF/HTML/Markdown and `scripts/build_site.py` publishes `web/dist` together with the generated multi-format matrix and runtime `variants.json`.
 - Typst HTML remains an experimental semantic artifact and must not replace the React publication shell or the canonical paged PDF.

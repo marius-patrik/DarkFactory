@@ -335,11 +335,11 @@
   }
 }
 
-#let render-folders(folders, terms, mode) = {
+#let render-folders(folders, terms, mode, level: 2) = {
   let graph = semantic-graph(folders)
   let output = []
   for node in folders {
-    let rendered = render-folder(node, terms, graph, mode)
+    let rendered = render-folder(node, terms, graph, mode, level: level)
     if rendered != none { output += rendered }
   }
   output

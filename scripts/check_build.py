@@ -181,10 +181,13 @@ for forbidden in (
     if forbidden in common_source:
         fail(f"alternate term-name rendering option must not return: {forbidden}")
 
-if Path("kapitoly/outline.typ").exists():
-    fail("stale parallel manuscript outline must not return")
+if Path("kapitoly").exists():
+    fail("legacy kapitoly/ compatibility layer must not return; concepts/ is the sole manuscript source")
 
-appendix_source = Path("kapitoly/06-prilohy.typ").read_text(encoding="utf-8")
+appendix_root = Path("concepts/manuscript/appendices")
+appendix_source = "\n".join(
+    path.read_text(encoding="utf-8") for path in sorted(appendix_root.rglob("*.typ"))
+)
 for stale_appendix in (
     "Obsah přiloženého média",
     "Schéma konfiguračního manifestu darkfactory.json",
@@ -195,20 +198,6 @@ for stale_appendix in (
 ):
     if stale_appendix in appendix_source:
         fail(f"stale appendix content must not return: {stale_appendix}")
-
-chapter1_source = Path("kapitoly/01-uvod.typ").read_text(encoding="utf-8")
-chapter4_source = Path("kapitoly/04-vysledky.typ").read_text(encoding="utf-8")
-chapter5_source = Path("kapitoly/05-zaver.typ").read_text(encoding="utf-8")
-for chapter_path, source, renderer in (
-    (Path("kapitoly/01-uvod.typ"), chapter1_source, "render-introduction"),
-    (Path("kapitoly/04-vysledky.typ"), chapter4_source, "render-results"),
-    (Path("kapitoly/05-zaver.typ"), chapter5_source, "render-conclusion"),
-):
-    if f'#import "../concepts/index.typ": {renderer}' not in source or f"#{renderer}()" not in source:
-        fail(f"{chapter_path} must be a compatibility projection of concepts/index.typ")
-    for forbidden in ("#finalized[", "#accepted[", "#unconfirmed[", "#blue-note[", "#critique[", "#alert["):
-        if forbidden in source:
-            fail(f"{chapter_path} must not own substantive manuscript content: {forbidden}")
 
 main_goal_source = Path("concepts/manuscript/introduction/objectives/main-goal/main-goal.typ").read_text(encoding="utf-8")
 for required in (
@@ -256,6 +245,7 @@ section_dirs = (
     concept_root / "manuscript" / "introduction",
     concept_root / "manuscript" / "results",
     concept_root / "manuscript" / "conclusion",
+    concept_root / "manuscript" / "appendices",
 )
 for required in (concept_schema, concept_catalog, *(section / "index.typ" for section in section_dirs)):
     if not required.is_file() or required.stat().st_size == 0:
@@ -268,6 +258,7 @@ for required in (
     "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
     "#let render-document-chapter(node, terms)",
+    "#let render-folders(folders, terms, mode, level: 2)",
     "#let render-theory-chapter(folders, terms)",
     "#let render-practical-chapter(folders, terms)",
     "#let render-section-title(item)",
@@ -301,6 +292,7 @@ for required in (
     '"manuscript/introduction/index.typ"',
     '"manuscript/results/index.typ"',
     '"manuscript/conclusion/index.typ"',
+    '"manuscript/appendices/index.typ"',
     '"development-environment/index.typ"',
     '"language-models/index.typ"',
     '"agentic-engineering/index.typ"',
@@ -311,6 +303,7 @@ for required in (
     "#let render-practical() = render-practical-chapter(folders, vocabulary)",
     "#let render-results() = render-document-chapter(results.node, vocabulary)",
     "#let render-conclusion() = render-document-chapter(conclusion.node, vocabulary)",
+    '#let render-appendices() = render-folders((appendices.node,), vocabulary, "document", level: 1)',
 ):
     if required not in catalog_source:
         fail(f"concept catalog missing folder-driven composition contract: {required}")
@@ -393,7 +386,6 @@ rendered_concept_paths = tuple(
     or path.resolve() in section_concept_paths
 )
 rendered_manuscript_paths = (
-    *sorted(Path("kapitoly").glob("*.typ")),
     *section_index_paths,
     *rendered_concept_paths,
 )
@@ -465,14 +457,6 @@ for forbidden in (
     if forbidden in concept_text:
         fail(f"legacy theoretical concept wording returned: {forbidden}")
 
-chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
-chapter3_source = Path("kapitoly/03-prakticka-cast.typ").read_text(encoding="utf-8")
-if '#import "../concepts/index.typ": render-theory' not in chapter2_source or "#render-theory()" not in chapter2_source:
-    fail("chapter 2 must be a compatibility projection of the concept catalog")
-if '#import "../concepts/index.typ": render-practical' not in chapter3_source or "#render-practical()" not in chapter3_source:
-    fail("chapter 3 must be a compatibility projection of the concept catalog")
-if "Agentické AI: Vymezení konceptů - Teoretická část" in chapter2_source or "DarkFactory: Architektura harnessu - Praktická část" in chapter3_source:
-    fail("chapter 2/3 content must not be duplicated outside concepts/")
 if "Agentic AI (Agentické AI)" not in schema_source:
     fail("theory chapter title must be finalized as Agentic AI (Agentické AI)")
 if "Agentické AI: Vymezení konceptů - Teoretická část" in schema_source:
@@ -536,7 +520,6 @@ def active_typst_imports(source: str) -> list[str]:
 for path in (
     Path("metadata.typ"),
     Path("thesis.typ"),
-    *sorted(Path("kapitoly").glob("*.typ")),
     *sorted(Path("concepts").glob("*.typ")),
     *sorted(Path("concepts").rglob("*.typ")),
 ):
@@ -547,13 +530,10 @@ for path in (
     if path.name != "thesis.typ" and any("templates/gjkt-odborna-prace" in line for line in imports):
         fail(f"manuscript bypasses template registry in {path}")
 
-# Chapter files contain semantic content only. Structural page/layout directives
+# Concept files contain semantic content only. Structural page/layout directives
 # belong to the selected document template so the same manuscript can be rendered
-# by another template without editing chapter sources.
-for path in (
-    *sorted(Path("kapitoly").glob("*.typ")),
-    *sorted(Path("concepts").rglob("*.typ")),
-):
+# by another template without editing concept sources.
+for path in sorted(Path("concepts").rglob("*.typ")):
     in_fence = False
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         stripped = line.strip()
@@ -580,18 +560,11 @@ web_publication_source_for_concepts = Path("web-publication.typ").read_text(enco
 for source_name, source in (("thesis.typ", thesis_source), ("web-publication.typ", web_publication_source_for_concepts)):
     if '"concepts/index.typ"' not in source:
         fail(f"{source_name} must import the canonical concept catalog")
-    for renderer in ("render-introduction", "render-theory", "render-practical", "render-results", "render-conclusion"):
+    for renderer in ("render-introduction", "render-theory", "render-practical", "render-results", "render-conclusion", "render-appendices"):
         if f"#{renderer}()" not in source:
             fail(f"{source_name} must render {renderer} from concepts/index.typ")
-    for legacy_chapter in (
-        'include "kapitoly/01-uvod.typ"',
-        'include "kapitoly/02-teoreticka-cast.typ"',
-        'include "kapitoly/03-prakticka-cast.typ"',
-        'include "kapitoly/04-vysledky.typ"',
-        'include "kapitoly/05-zaver.typ"',
-    ):
-        if legacy_chapter in source:
-            fail(f"{source_name} must not build substantive chapters from kapitoly/: {legacy_chapter}")
+    if "kapitoly/" in source:
+        fail(f"{source_name} must not reference the removed kapitoly/ compatibility layer")
 
 if "#show cite: it => super(it)" not in web_publication_source_for_concepts:
     fail("web publication citation markers must render as superscripts")
@@ -703,16 +676,16 @@ for term_key in required_term_keys:
     if f'key: "{term_key}"' not in concept_source_text:
         fail(f"canonical terminology missing public concept key: {term_key}")
 
-for path in sorted(Path("kapitoly").glob("*.typ")):
+for path in concept_paths:
     source = path.read_text(encoding="utf-8")
     if '#term("' in source or "explanation:" in source:
-        fail(f"chapter contains an ad-hoc term definition instead of terms.<id>: {path}")
+        fail(f"concept contains an ad-hoc term definition instead of canonical terms.<id>: {path}")
     if "#accepted[#diff" in source or "#finalized[#diff" in source:
         fail(f"accepted/finalized content must not retain a diff: {path}")
-    raw_bold = re.search(r"(?<!\*)\*[^*\n]+\*(?!\*)", source)
+    raw_bold = re.search(r"(?<!\\*)\\*[^*\\n]+\\*(?!\\*)", source)
     if raw_bold:
         fail(
-            f"chapter contains raw bold emphasis; use a heading or canonical term instead: "
+            f"concept contains raw bold emphasis; use a heading or canonical term instead: "
             f"{path}: {raw_bold.group(0)}"
         )
 
@@ -723,7 +696,6 @@ for path in (
     Path("templates/gjkt-odborna-prace/template.typ"),
     Path("metadata.typ"),
     Path("AGENTS.md"),
-    *sorted(Path("kapitoly").glob("*.typ")),
     *sorted(Path("concepts").rglob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
@@ -1207,6 +1179,7 @@ for required in (
     'translation-heading(translation(cs: [Klíčová slova], en: [Keywords]), separator: "paren", order: "en-cs")',
     'ui-label([Seznam obrázků a tabulek], [List of figures and tables])',
     "heading.where(level: 1, supplement: [Příloha])",
+    "#render-appendices()",
 ):
     if required not in web_publication_source:
         fail(f"semantic web publication missing section/appendix hierarchy contract: {required}")

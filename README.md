@@ -10,9 +10,9 @@ který práci zároveň sází, testuje a publikuje.
 
 ## Konceptově řízený rukopis
 
-Celý vlastní text práce je složen z kanonických konceptů pod `concepts/`; soubory `kapitoly/01-05` jsou pouze kompatibilní projekce a neobsahují paralelní rukopis. Dokumentové koncepty úvodu, cílů, výzkumných otázek, metodiky, výsledků a závěru jsou pod `concepts/manuscript/`, zatímco teoretická a praktická doména používají stejné koncepty pod ostatními větvemi katalogu. Každá sekce je adresář s `index.typ`; každý samostatný koncept má vlastní `.typ` soubor. Koncept vlastní termín, volitelnou bohatou `definition`, dokumentové sloty `document_*` a podle potřeby také projekce `theory_*` a `practical_*`.
+Celý vlastní text i strukturální členění práce vzniká výhradně z kanonických konceptů a folder manifestů pod `concepts/`; samostatná vrstva kapitol neexistuje. Dokumentové koncepty úvodu, cílů, výzkumných otázek, metodiky, výsledků, závěru a příloh jsou pod `concepts/manuscript/`, zatímco teoretická a praktická doména používají stejné koncepty pod ostatními větvemi katalogu. Každá sekce nebo přílohová skupina je adresář s `index.typ`; každý samostatný koncept má vlastní `.typ` soubor. Koncept vlastní termín, volitelnou bohatou `definition`, dokumentové sloty `document_*` a podle potřeby také projekce `theory_*` a `practical_*`.
 
-`concepts/index.typ` z folder manifestů sestaví společný slovník termínů a dynamicky vykreslí úvod, teoretickou část, praktickou část, výsledky i závěr. `templates/terms.typ` zůstává pouze kompatibilní projekcí pro existující `terms.<key>` odkazy. Nový obsah ani terminologie se do něj již nepřidávají.
+`concepts/index.typ` z folder manifestů sestaví společný slovník termínů a dynamicky vykreslí úvod, teoretickou část, praktickou část, výsledky, závěr i přílohy. `templates/terms.typ` zůstává pouze kompatibilní projekcí pro existující `terms.<key>` odkazy. Nový obsah ani terminologie se do něj již nepřidávají.
 
 ## Repozitářová architektura
 
@@ -81,16 +81,14 @@ Pages web publikuje všechny dokumentové šablony a pod každou všech osm prof
 | Cesta | Účel |
 | :--- | :--- |
 | `main.typ` | jediný kanonický compiler entrypoint |
-| `thesis.typ` | společné sestavení obsahu práce |
+| `thesis.typ` | společné sestavení rendererů konceptového rukopisu |
 | `metadata.typ` | název, autor, škola, anotace a jazykové varianty metadata |
-| `concepts/**` | jediný kanonický zdroj struktury a vlastního textu práce |
-| `kapitoly/01-05*.typ` | pouze kompatibilní projekce konceptových rendererů; bez vlastního rukopisu |
-| `kapitoly/06-prilohy.typ` | aktuální přílohový obsah |
+| `concepts/**` | jediný kanonický zdroj struktury, vlastního textu práce i příloh |
 | `templates/common.typ` | sdílená autorská/review API, jazykové profily a terminologie |
 | `templates/registry.typ` | registry a výběr dokumentové šablony |
 | `templates/gjkt-odborna-prace/` | GJKT struktura dokumentu, sazba a počítání rozsahu |
 | `scripts/check_build.py` | statická CI kontrola osmi PDF a release assetů |
-| `scripts/build_site.py` | generátor Pages selectoru |
+| `scripts/build_site.py` | sestavení Pages artefaktů, variant a publikačního indexu |
 | `bib/references.bib` | zdroje ve formátu BibTeX |
 | `img/` | obrázky včetně loga školy |
 | `darkfactory/` | jediný git submodule; praktická část DarkFactory |

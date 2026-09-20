@@ -1,6 +1,6 @@
 #import "metadata.typ": meta
 #import "templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
-#import "concepts/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion
+#import "concepts/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
 
 // Semantic publication entrypoint for Typst's HTML target.
 // It consumes the same manuscript/review/profile state as the PDF build while
@@ -77,4 +77,4 @@
 #counter(heading).update(0)
 #set heading(numbering: "A.1", supplement: [Příloha])
 #outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
-#include "kapitoly/06-prilohy.typ"
+#render-appendices()

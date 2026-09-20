@@ -34,7 +34,7 @@ usage-driven keyword list remains in front matter.
 
 The paged GJKT template remains authoritative for the PDF/print layout. The repository
 also provides `web-publication.typ`, a template-neutral semantic entrypoint for
-Typst's HTML target. It imports the same manuscript chapters and shared review/profile/
+Typst's HTML target. It imports the same concept-driven manuscript renderers and shared review/profile/
 terminology semantics without attempting to reproduce page margins, title-page layout,
 or other print-only GJKT presentation in HTML.
 
