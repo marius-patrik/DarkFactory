@@ -289,7 +289,6 @@ function viewerHref(args: {
 function childHref(args: {
   file: string;
   template: string;
-  profile: string;
   title: string;
   mode: ViewerMode;
   format?: ArtifactFormat;

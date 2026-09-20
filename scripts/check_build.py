@@ -360,6 +360,7 @@ for forbidden in (
     "manifest.variants",
     'params.get("profile")',
     'query.set("profile"',
+    "profile: string",
 ):
     if forbidden in app:
         fail(f"obsolete language/profile UI remains: {forbidden}")
