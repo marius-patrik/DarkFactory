@@ -1,6 +1,6 @@
 #import "../../schema.typ": folder
-#import "../software-engineering.typ" as section
-#import "../planning.typ" as planning
+#import "software-engineering.typ" as section
+#import "planning.typ" as planning
 
 #let node = folder(
   key: "software_engineering",
