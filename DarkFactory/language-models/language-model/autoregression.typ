@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -12,7 +12,7 @@ definition: terms => [
 Autoregresivní modelování je sekvenční postup, při němž model odhaduje následující token podmíněně na předchozí tokeny v aktuální posloupnosti.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Autoregresivní generování probíhá iterativně: model zpracuje dosavadní posloupnost tokenů, vypočítá distribuci pravděpodobnosti následujícího tokenu a po jeho výběru celý krok opakuje nad rozšířenou posloupností.
 ]
   ],
