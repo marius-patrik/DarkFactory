@@ -320,12 +320,14 @@ export async function routeTask(input: RouterInput, dependencies: RouteDependenc
 			],
 		};
 	});
+	const selectedCapabilityTier = ranked.find((item) => item.status === "chosen")?.capabilityTier;
 	return {
 		profile,
 		source: source === "policy" && !policy ? "default" : source,
 		...(policy ? { policy: policy.id } : {}),
 		...(profile.difficulty ? { difficulty: profile.difficulty } : {}),
 		minCapabilityTier,
+		...(selectedCapabilityTier ? { selectedCapabilityTier } : {}),
 		capabilityTierOrder: capabilityTiers.map((tier) => tier.id),
 		ranked,
 		rejected,
