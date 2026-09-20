@@ -656,33 +656,20 @@ def ensure_secrets_pass(root: str) -> List[str]:
 
 
 def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
-    """Fills in manifest keys an older installation never wrote, without touching its choices.
+    """Fills in missing repo.df keys without overwriting repository choices.
 
-    A manifest is a repository's own declaration, so this adds and never replaces - except the
-    upstream pin, which is what a reinstall exists to move. `required_checks` is the key that
-    matters: an installation written before the pipeline generated it protects the branch against
-    contexts nothing reports.
-
-    If the manifest still lives at the legacy `.github/darkfactory.json`, it is migrated to
-    `.darkfactory/repo.df`.
+    The upstream pin is updated because moving that pin is the purpose of reinstall/update.
 
     Args:
         root: Repository root.
         ref: Pipeline commit to pin.
-        planned: The manifest this installation would have generated.
+        planned: The repo.df this installation would generate.
 
     Returns:
-        True when the manifest on disk changed.
+        True when repo.df changed.
     """
-    new_path = os.path.join(root, ".darkfactory", "repo.df")
-    legacy_path = os.path.join(root, ".github", "darkfactory.json")
-
-    # Find existing manifest, preferring new location.
-    if os.path.isfile(new_path):
-        path = new_path
-    elif os.path.isfile(legacy_path):
-        path = legacy_path
-    else:
+    path = resolve_df_file(root, "repo")
+    if not os.path.isfile(path):
         return False
 
     with open(path, encoding="utf-8") as handle:
@@ -696,24 +683,14 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
     if ref:
         current.setdefault("upstream", {})["ref"] = ref
 
-    changed = json.dumps(current, sort_keys=True) != before
-
-    # Migrate legacy location to the new path.
-    if path == legacy_path:
-        os.makedirs(os.path.dirname(new_path), exist_ok=True)
-        with open(new_path, "w", encoding="utf-8") as handle:
-            handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-        os.remove(legacy_path)
-        print("  migrated .github/darkfactory.json -> .darkfactory/repo.df")
-        return True
-
-    if not changed:
+    if json.dumps(current, sort_keys=True) == before:
         return False
-    with open(new_path, "w", encoding="utf-8") as handle:
-        handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
-    print("  reconciled .darkfactory/repo.df")
-    return True
 
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps(current, indent=2, ensure_ascii=False) + "\n")
+    print(f"  reconciled {os.path.relpath(path, root)}")
+    return True
 
 def write(files: Dict[str, str], root: str = ".") -> List[str]:
     """Writes the planned files, creating directories as needed.
