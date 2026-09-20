@@ -89,6 +89,24 @@ describe("@darkfactory/docs", () => {
 		expect(markdown).toBe(`${README_GENERATED_MARKER}\n\n# Home\n\nSee [the PRD](PRD.md).\n`);
 	});
 
+
+	test("extracts documented TypeScript APIs as strict JSON", async () => {
+		const root = await mkdtemp(join(tmpdir(), "darkfactory-typedoc-test-"));
+		roots.push(root);
+		const entry = join(root, "index.ts");
+		const tsconfig = join(root, "tsconfig.json");
+		await writeFile(entry, "/** Public fixture API. */\nexport interface FixtureApi { value: string }\n");
+		await writeFile(
+			tsconfig,
+			JSON.stringify({
+				compilerOptions: { target: "ES2022", module: "ESNext", moduleResolution: "Bundler", strict: true },
+				include: ["index.ts"],
+			}),
+		);
+		const model = await extractTypeScriptApi({ entryPoints: [entry], tsconfig, name: "fixture" });
+		expect(JSON.stringify(model)).toContain("FixtureApi");
+	});
+
 	test("the repository README is the exact generated homepage projection", async () => {
 		const root = resolve(import.meta.dir, "..", "..");
 		const expected = renderReadmeMarkdown(compileDocsContentGraph(root));
