@@ -43,7 +43,9 @@ function normalizeFinding(subject: ReviewSubject, value: unknown): ReviewFinding
 		message,
 		...(typeof item.evidence === "string" && item.evidence.trim() ? { evidence: item.evidence.trim() } : {}),
 		...(typeof item.location === "string" && item.location.trim() ? { location: item.location.trim() } : {}),
-		...(typeof item.remediation === "string" && item.remediation.trim() ? { remediation: item.remediation.trim() } : {}),
+		...(typeof item.remediation === "string" && item.remediation.trim()
+			? { remediation: item.remediation.trim() }
+			: {}),
 	};
 	return {
 		id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : findingId(subject, base),
@@ -52,8 +54,9 @@ function normalizeFinding(subject: ReviewSubject, value: unknown): ReviewFinding
 }
 
 export function normalizeReviewFindings(subject: ReviewSubject, value: unknown): ReviewFinding[] {
-	const raw =
-		Array.isArray(value) ? value : value && typeof value === "object" && Array.isArray((value as { findings?: unknown }).findings)
+	const raw = Array.isArray(value)
+		? value
+		: value && typeof value === "object" && Array.isArray((value as { findings?: unknown }).findings)
 			? ((value as { findings: unknown[] }).findings ?? [])
 			: value == null || value === false
 				? []
@@ -123,11 +126,7 @@ export function evaluateReview(input: {
 	};
 }
 
-export function recordReviewFix(
-	state: ReviewRuntimeState,
-	iteration: number,
-	now = new Date(),
-): ReviewRuntimeState {
+export function recordReviewFix(state: ReviewRuntimeState, iteration: number, now = new Date()): ReviewRuntimeState {
 	const record: ReviewIterationRecord = {
 		iteration,
 		phase: "fix",

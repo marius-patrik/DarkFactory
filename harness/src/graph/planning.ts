@@ -2,12 +2,7 @@ import type { PlanningArtifact, PlanningContextPacket } from "@darkfactory/proto
 import type { ReviewFinding } from "@darkfactory/protocol/review";
 import { contextFingerprint, type ReviewSubjectAdapter } from "./review-loop.ts";
 
-function finding(
-	id: string,
-	category: string,
-	message: string,
-	extra: Partial<ReviewFinding> = {},
-): ReviewFinding {
+function finding(id: string, category: string, message: string, extra: Partial<ReviewFinding> = {}): ReviewFinding {
 	return { id, category, severity: "error", message, ...extra };
 }
 
@@ -29,24 +24,54 @@ function isContext(value: unknown): value is PlanningContextPacket {
 }
 
 function isArtifact(value: unknown): value is PlanningArtifact {
-	return !!value && typeof value === "object" && typeof (value as Partial<PlanningArtifact>).verbatimRequest === "string";
+	return (
+		!!value && typeof value === "object" && typeof (value as Partial<PlanningArtifact>).verbatimRequest === "string"
+	);
 }
 
 export function validatePlanningArtifact(context: unknown, artifact: unknown): ReviewFinding[] {
-	if (!isContext(context)) return [finding("planning-context-invalid", "context", "Planning context packet is missing required authoritative fields.")];
-	if (!isArtifact(artifact)) return [finding("planning-artifact-invalid", "artifact", "Planning artifact must use the structured PlanningArtifact contract.")];
+	if (!isContext(context))
+		return [
+			finding(
+				"planning-context-invalid",
+				"context",
+				"Planning context packet is missing required authoritative fields.",
+			),
+		];
+	if (!isArtifact(artifact))
+		return [
+			finding(
+				"planning-artifact-invalid",
+				"artifact",
+				"Planning artifact must use the structured PlanningArtifact contract.",
+			),
+		];
 
 	const findings: ReviewFinding[] = [];
 	const fingerprint = contextFingerprint(context);
 	if (artifact.contextFingerprint !== fingerprint)
-		findings.push(finding("planning-context-stale", "staleness", "Planning artifact was produced from a different authoritative context fingerprint."));
+		findings.push(
+			finding(
+				"planning-context-stale",
+				"staleness",
+				"Planning artifact was produced from a different authoritative context fingerprint.",
+			),
+		);
 	if (artifact.verbatimRequest !== context.request.body)
-		findings.push(finding("planning-request-not-verbatim", "request", "Planning artifact does not preserve the Request body verbatim."));
+		findings.push(
+			finding(
+				"planning-request-not-verbatim",
+				"request",
+				"Planning artifact does not preserve the Request body verbatim.",
+			),
+		);
 	if (
 		artifact.acceptanceCriteria.length !== context.request.acceptanceCriteria.length ||
 		artifact.acceptanceCriteria.some((criterion, index) => criterion !== context.request.acceptanceCriteria[index])
 	)
-		findings.push(finding("planning-criteria-drift", "request", "Planning artifact changed or dropped acceptance criteria."));
+		findings.push(
+			finding("planning-criteria-drift", "request", "Planning artifact changed or dropped acceptance criteria."),
+		);
 
 	const known = new Set(context.shippedInterfaces);
 	for (const owner of artifact.implementation.knownOwners)
@@ -64,18 +89,34 @@ export function validatePlanningArtifact(context: unknown, artifact: unknown): R
 		const dependencies = new Set(context.dependencies.map((dependency) => dependency.id));
 		for (const ref of artifact.hold.refs)
 			if (!dependencies.has(ref))
-				findings.push(finding(`planning-dependency-${ref}`, "dependency", `Ready-but-held Planning references unknown dependency "${ref}".`));
+				findings.push(
+					finding(
+						`planning-dependency-${ref}`,
+						"dependency",
+						`Ready-but-held Planning references unknown dependency "${ref}".`,
+					),
+				);
 	}
 	if (artifact.hold?.kind === "recovery") {
 		const recovery = new Set(context.recovery);
 		for (const ref of artifact.hold.refs)
 			if (!recovery.has(ref))
-				findings.push(finding(`planning-recovery-${ref}`, "recovery", `Ready-but-held Planning references unknown recovery source "${ref}".`));
+				findings.push(
+					finding(
+						`planning-recovery-${ref}`,
+						"recovery",
+						`Ready-but-held Planning references unknown recovery source "${ref}".`,
+					),
+				);
 	}
 
 	const serialized = JSON.stringify(artifact);
 	for (const [id, pattern, message] of [
-		["planning-legacy-manifest", /\.darkfactory\/manifest\.json|\.github\/darkfactory\.json/u, "Planning references a retired manifest path."],
+		[
+			"planning-legacy-manifest",
+			/\.darkfactory\/manifest\.json|\.github\/darkfactory\.json/u,
+			"Planning references a retired manifest path.",
+		],
 		["planning-df-directory", /(?:^|[/"'])\.df\//u, "Planning treats .df as a directory instead of a file extension."],
 		["planning-legacy-config", /\.darkfactory\/df\/config\.json/u, "Planning references the retired config path."],
 	] as const)
