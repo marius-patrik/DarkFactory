@@ -230,6 +230,7 @@ def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
     """
     return _extract_issue_numbers(BINDING_PATTERN, pr_body)
 
+
 def determine_status_from_labels(labels: Sequence[Any], *, closed: bool = False) -> str:
     """Determines the board status implied by a set of labels.
 

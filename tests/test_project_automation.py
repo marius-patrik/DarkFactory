@@ -104,6 +104,7 @@ def test_extract_closing_issues_excludes_nonterminal_bindings():
     """Only GitHub closing syntax carries terminal completion intent."""
     assert extract_closing_issues("Advances #7, fixes #3, closes #9") == [3, 9]
 
+
 def test_determine_status_from_labels_precedence():
     """Terminal statuses outrank active ones so stale labels cannot win on closed items."""
     assert determine_status_from_labels(["bug", "Blocked"]) == "Blocked"
@@ -339,6 +340,7 @@ def test_push_with_nonterminal_binding_does_not_close_issue():
     process_event("push", payload, client=client)
     assert client.status_labels == []
     assert client.closed_issues == []
+
 
 def test_push_to_other_branches_is_ignored():
     """Only the default branch reconciles the board."""
@@ -1548,6 +1550,7 @@ def test_event_handler_merged_partial_pr_does_not_close_advanced_request():
     assert (REPO, 100, "Done") in client.status_labels
     assert all(issue_number != 42 for _, issue_number, _ in client.status_labels)
     assert (REPO, 42) not in client.closed_issues
+
 
 def test_event_handler_issue_closed_not_planned():
     """Event handler: issue closed as not_planned is Dropped on board and label."""
