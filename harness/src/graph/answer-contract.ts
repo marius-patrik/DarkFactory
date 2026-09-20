@@ -6,10 +6,10 @@ export interface AnswerContractResult {
 }
 
 const MUTATION_CLAIMS = [
-	/\b(?:successfully\s+)?resolved\s+(?:the|these|all|any|some|my)?\s*conflicts\b/iu,
-	/\bpushed\s+(?:the|these|all|any|some|my)?\s*(?:changes|commits|branch|code|updates)\b/iu,
-	/\bmerged\s+(?:the|this|my)?\s*(?:PR|pull\s+request|branch)\b/iu,
-	/\bcommitted\s+(?:the|these|all|any|some|my)?\s*(?:changes|files|code|updates|commits)\b/iu,
+	/\b(?:i|we)(?:\s+(?:have|had)|'ve)?\s+(?:successfully\s+)?resolved\s+(?:the|these|all|any|some|my)?\s*conflicts\b/iu,
+	/\b(?:i|we)(?:\s+(?:have|had)|'ve)?\s+pushed\s+(?:the|these|all|any|some|my)?\s*(?:changes|commits|branch|code|updates)\b/iu,
+	/\b(?:i|we)(?:\s+(?:have|had)|'ve)?\s+merged\s+(?:the|this|my)?\s*(?:PR|pull\s+request|branch)\b/iu,
+	/\b(?:i|we)(?:\s+(?:have|had)|'ve)?\s+committed\s+(?:the|these|all|any|some|my)?\s*(?:changes|files|code|updates|commits)\b/iu,
 ];
 
 /**
@@ -20,9 +20,17 @@ const MUTATION_CLAIMS = [
  * @param action - The planned action (run vs comment/gate/hint).
  */
 export function validateAnswerContract(_actor: Actor, body: string, action: PlanAction): AnswerContractResult {
+	if (typeof body !== "string" || !body.trim()) {
+		return { valid: true };
+	}
+
 	if (action.type !== "run") {
+		const sanitizedBody = body
+			.replace(/```[\s\S]*?```/g, "") // Strip code blocks
+			.replace(/^>.*$/gm, "");        // Strip blockquotes
+
 		for (const pattern of MUTATION_CLAIMS) {
-			if (pattern.test(body)) {
+			if (pattern.test(sanitizedBody)) {
 				return {
 					valid: false,
 					message: "Answer contract violation: text-only response contains unsupported mutation claim.",
