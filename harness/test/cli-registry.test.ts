@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { defineCapability, type CapabilityRuntimeContext } from "@darkfactory/capability";
+import { type CapabilityRuntimeContext, defineCapability } from "@darkfactory/capability";
 import {
 	CommandRegistry,
-	createCommandRegistry,
 	type CoreCliCommandDefinition,
+	createCommandRegistry,
 } from "../../packages/cli/src/registry.ts";
 
 const context: CapabilityRuntimeContext = {
