@@ -1,3 +1,4 @@
+/** Versioned Request snapshot captured for Planning. */
 export interface PlanningRequestSnapshot {
 	issue: number;
 	body: string;
@@ -6,17 +7,20 @@ export interface PlanningRequestSnapshot {
 	parent?: number;
 }
 
+/** Dependency state captured into Planning context. */
 export interface PlanningDependencySnapshot {
 	id: string;
 	state: string;
 	version?: string;
 }
 
+/** Repository base revision used to validate Planning freshness. */
 export interface PlanningBaseSnapshot {
 	sha: string;
 	defaultBranch: string;
 }
 
+/** Durable authoritative context supplied to planner/reviewer/fixer stages. */
 export interface PlanningContextPacket {
 	request: PlanningRequestSnapshot;
 	relationships: Readonly<Record<string, unknown>>;
@@ -27,6 +31,7 @@ export interface PlanningContextPacket {
 	recovery: readonly string[];
 }
 
+/** Reviewed unified Planning artifact governing implementation. */
 export interface PlanningArtifact {
 	contextFingerprint: string;
 	verbatimRequest: string;
