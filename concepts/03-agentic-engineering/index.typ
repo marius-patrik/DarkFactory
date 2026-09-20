@@ -1,6 +1,7 @@
 #import "../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw
 #import "../schema.typ": section
 #import "prompt-engineering.typ" as prompt_engineering
+#import "system-prompt.typ" as system_prompt
 #import "agent-loop.typ" as agent_loop
 #import "tool-calling.typ" as tool_calling
 #import "sandbox.typ" as sandbox
@@ -41,6 +42,7 @@ V terminologii agentického inženýrství používá tato práce pojem #term(te
   practical_grouped: false,
   concepts: (
     prompt_engineering.item,
+    system_prompt.item,
     agent_loop.item,
     tool_calling.item,
     sandbox.item,
