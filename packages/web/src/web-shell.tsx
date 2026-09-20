@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, type FC, type ReactNode } from "react";
+import type { FC, ReactNode } from "react";
 import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch } from "wouter";
 
 export interface RouterProps {
@@ -24,7 +24,7 @@ export const useRouter = () => {
 
 export interface RouteProps {
   path?: string;
-  component?: FC<{ params: Record<string, string> }>;
+  component?: FC<{ params: Record<string, string | undefined> }>;
   children?: ReactNode;
 }
 
@@ -66,7 +66,7 @@ const NotFoundView: FC = () => (
 
 export interface RouteConfig {
   path: string;
-  component: FC<{ params: Record<string, string> }>;
+  component: FC<{ params: Record<string, string | undefined> }>;
   label: string;
 }
 
