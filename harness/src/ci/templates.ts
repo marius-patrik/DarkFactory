@@ -90,9 +90,8 @@ export function getWorkflowTemplateContent(templateName: string): string {
 		}
 	}
 
-	if (cleanName in BUILTIN_TEMPLATES) {
-		return BUILTIN_TEMPLATES[cleanName];
-	}
+	const builtin = BUILTIN_TEMPLATES[cleanName];
+	if (builtin !== undefined) return builtin;
 
 	throw new Error(`Workflow template not found: ${templateName}`);
 }
