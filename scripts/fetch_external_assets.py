@@ -30,13 +30,13 @@ ASSETS = (
         "path": "claude-code.webp",
         "url": "https://assets.claude.com/454390de9d9ccefb6082b7c2440c7547c1ec3964.webp",
     },
-    {
-        "path": "claude-desktop.webp",
-        "url": "https://www.anthropic.com/_next/image?q=90&url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2Fc5823949d9350145ce2fda51acbc7076f2139cd0-1920x1080.png&w=1920",
-    },
 )
 
 OG_ASSETS = (
+    (
+        "claude-desktop.webp",
+        "https://claude.com/resources/tutorials/navigating-the-claude-desktop-app",
+    ),
     ("gpt-5-6.webp", "https://openai.com/index/gpt-5-6/"),
     ("claude-opus-5.webp", "https://www.anthropic.com/news/claude-opus-5"),
     ("deepseek-v4-1-flash.webp", "https://www.deepseek.com/en/news/deepseek-v4-1-flash/"),
