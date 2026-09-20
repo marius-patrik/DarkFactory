@@ -14,9 +14,13 @@
   key: "github",
   term: terminology,
   heading: terms => [#term(terms.github, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#unconfirmed[
+GitHub poskytuje nad gitovým repozitářem koordinační vrstvu pro zadání práce, revizi změn a automatizaci. Tyto odpovědnosti jsou v práci dále rozloženy mezi samostatné koncepty Issue, Pull Request a GitHub Actions.
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
