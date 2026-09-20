@@ -12,6 +12,7 @@ from project_automation import (
     GitHubProjectClient,
     determine_status_from_labels,
     extract_bound_issues,
+    extract_closing_issues,
     process_event,
 )
 
@@ -82,11 +83,13 @@ class FakeProjectClient:
 
 
 def test_extract_bound_issues_various_formats():
-    """Closing keywords are recognised in every documented form."""
+    """Terminal and nonterminal Request bindings are recognised in documented forms."""
     assert extract_bound_issues("Closes #123") == [123]
     assert extract_bound_issues("Fixes #45 and resolves #67") == [45, 67]
     assert extract_bound_issues("CLOSED #10") == [10]
+    assert extract_bound_issues("Advances #11") == [11]
     assert extract_bound_issues(f"Resolves https://github.com/{REPO}/issues/89") == [89]
+    assert extract_bound_issues(f"Advances https://github.com/{REPO}/issues/90") == [90]
     assert extract_bound_issues("Just discussing issue #123 without keyword") == []
     assert extract_bound_issues("") == []
     assert extract_bound_issues(None) == []
@@ -94,7 +97,12 @@ def test_extract_bound_issues_various_formats():
 
 def test_extract_bound_issues_deduplicates_and_sorts():
     """Repeated references collapse to one sorted list."""
-    assert extract_bound_issues("Closes #7, fixes #3, resolves #7") == [3, 7]
+    assert extract_bound_issues("Advances #7, fixes #3, resolves #7") == [3, 7]
+
+
+def test_extract_closing_issues_excludes_nonterminal_bindings():
+    """Only GitHub closing syntax carries terminal completion intent."""
+    assert extract_closing_issues("Advances #7, fixes #3, closes #9") == [3, 9]
 
 
 def test_determine_status_from_labels_precedence():
@@ -319,6 +327,19 @@ def test_push_to_main_closes_issues_referenced_in_commit_messages():
     process_event("push", payload, client=client)
     assert client.status_labels == [(REPO, 12, "Done")]
     assert client.closed_issues == [(REPO, 12)]
+
+
+def test_push_with_nonterminal_binding_does_not_close_issue():
+    """A commit saying Advances must not turn a partial Request terminal."""
+    client = FakeProjectClient()
+    payload = {
+        "ref": "refs/heads/main",
+        "repository": {"full_name": REPO},
+        "commits": [{"message": "feat(core): partial slice\n\nAdvances #12"}],
+    }
+    process_event("push", payload, client=client)
+    assert client.status_labels == []
+    assert client.closed_issues == []
 
 
 def test_push_to_other_branches_is_ignored():
@@ -1509,6 +1530,26 @@ def test_event_handler_merged_pr_closes_bound_issue():
     assert (REPO, 42, "Done") in client.status_labels
     assert (REPO, 42) in client.closed_issues
     assert ("item-1", "Done") in client.edited_statuses
+
+
+def test_event_handler_merged_partial_pr_does_not_close_advanced_request():
+    """A merged partial PR stays terminal itself without completing an advanced Request."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 100,
+            "html_url": f"https://github.com/{REPO}/pull/100",
+            "body": "Advances #42",
+            "merged": True,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert (REPO, 100, "Done") in client.status_labels
+    assert all(issue_number != 42 for _, issue_number, _ in client.status_labels)
+    assert (REPO, 42) not in client.closed_issues
 
 
 def test_event_handler_issue_closed_not_planned():

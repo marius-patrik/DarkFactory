@@ -25,6 +25,13 @@ describe("Workflow templates & managed headers", () => {
 		expect(verifyWorkflowHash(rendered)).toMatchObject({ status: "valid", hashMatches: true });
 	});
 
+	it("generated bound-issue workflow accepts nonterminal Request bindings", () => {
+		const rendered = renderWorkflowTemplate("verify-bound-issue.yml");
+		expect(rendered).toContain("advance|advances|advanced");
+		expect(rendered).toContain("Advances for partial delivery");
+		expect(rendered).toContain("closing syntax for terminal delivery");
+	});
+
 	it("detects user-edited file with hash mismatch", () => {
 		const rendered = renderWorkflowTemplate("verify-bound-issue.yml", {
 			pipeline_repo: "marius-patrik/DarkFactory",

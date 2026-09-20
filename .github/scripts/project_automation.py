@@ -127,6 +127,10 @@ CLOSING_PATTERN = re.compile(
     r"(?:#(\d+)|https://github\.com/[^/\s]+/[^/\s]+/issues/(\d+))\b"
 )
 
+BINDING_PATTERN = re.compile(
+    r"(?i)\b(?:advance|advances|advanced|close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+"
+    r"(?:#(\d+)|https://github\.com/[^/\s]+/[^/\s]+/issues/(\d+))\b"
+)
 URL_PATTERN = re.compile(r"^https://github\.com/([^/]+)/([^/]+)/(?:issues|pull)/(\d+)")
 
 #: Board writes that failed during this run.
@@ -202,23 +206,29 @@ def can_reconcile() -> bool:
     return can_mutate()
 
 
-def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
-    """Extracts issue numbers bound to a pull request through closing keywords.
-
-    Args:
-        pr_body: Pull request description, possibly ``None``.
-
-    Returns:
-        Sorted list of unique bound issue numbers.
-    """
-    if not pr_body:
+def _extract_issue_numbers(pattern: re.Pattern[str], text: Optional[str]) -> List[int]:
+    """Extracts unique issue numbers matched by a binding pattern."""
+    if not text:
         return []
     issues = set()
-    for short_ref, url_ref in CLOSING_PATTERN.findall(pr_body):
+    for short_ref, url_ref in pattern.findall(text):
         num_str = short_ref or url_ref
         if num_str:
             issues.add(int(num_str))
     return sorted(issues)
+
+
+def extract_closing_issues(text: Optional[str]) -> List[int]:
+    """Extracts issue numbers carrying terminal GitHub closing intent."""
+    return _extract_issue_numbers(CLOSING_PATTERN, text)
+
+
+def extract_bound_issues(pr_body: Optional[str]) -> List[int]:
+    """Extracts all Requests explicitly bound to a pull request.
+
+    ``Advances`` is a nonterminal binding. GitHub closing keywords remain terminal bindings.
+    """
+    return _extract_issue_numbers(BINDING_PATTERN, pr_body)
 
 
 def determine_status_from_labels(labels: Sequence[Any], *, closed: bool = False) -> str:
@@ -1813,8 +1823,10 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
     repo = payload.get("repository", {}).get("full_name", DEFAULT_REPO)
     merged = bool(pr.get("merged", False))
     labels = _labels_of(pr)
-    bound_issues = extract_bound_issues(pr.get("body", ""))
-    print(f"PR event {action}: bound issues {bound_issues}")
+    body = pr.get("body", "")
+    bound_issues = extract_bound_issues(body)
+    closing_issues = extract_closing_issues(body)
+    print(f"PR event {action}: bound issues {bound_issues}; closing issues {closing_issues}")
 
     closed = str(pr.get("state", "")).lower() == "closed" or action == "closed" or merged
 
@@ -1842,7 +1854,7 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
             )
 
     elif action == "closed" and merged:
-        for issue_num in bound_issues:
+        for issue_num in closing_issues:
             _safe_set_status_label(client, repo, issue_num, "Done")
             _safe_track(
                 client,
@@ -1864,7 +1876,7 @@ def _handle_push_event(payload: Dict[str, Any], client: Any) -> None:
         return
     repo = repo_data.get("full_name", DEFAULT_REPO)
     for commit in payload.get("commits", []):
-        for issue_num in extract_bound_issues(commit.get("message", "")):
+        for issue_num in extract_closing_issues(commit.get("message", "")):
             _safe_set_status_label(client, repo, issue_num, "Done")
             _safe_track(
                 client,
