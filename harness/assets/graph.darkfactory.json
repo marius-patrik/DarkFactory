@@ -27,7 +27,10 @@
       "filter": {
         "ignore_bots": true
       },
-      "outputs": ["request_issue", "planning_context"],
+      "outputs": [
+        "request_issue",
+        "planning_context"
+      ],
       "board_status": {
         "done": "Backlog"
       }
@@ -36,8 +39,13 @@
       "id": "planning",
       "kind": "agent",
       "identity": "pipeline",
-      "inputs": ["request_issue", "planning_context", "planning_feedback"],
-      "outputs": ["plan_artifact"],
+      "inputs": [
+        "request_issue",
+        "planning_context"
+      ],
+      "outputs": [
+        "plan_artifact"
+      ],
       "timeout": "10m",
       "quota_policy": {
         "on_exhaustion": "checkpoint_and_block",
@@ -53,8 +61,14 @@
       "id": "planning-review",
       "kind": "agent",
       "identity": "pipeline",
-      "inputs": ["planning_context", "plan_artifact"],
-      "outputs": ["planning_findings", "planning_review_clean"],
+      "inputs": [
+        "planning_context",
+        "plan_artifact"
+      ],
+      "outputs": [
+        "planning_findings",
+        "planning_review_clean"
+      ],
       "quota_policy": {
         "on_exhaustion": "checkpoint_and_block",
         "resume": "sweep_or_command"
@@ -77,8 +91,14 @@
       "id": "planning-fix",
       "kind": "agent",
       "identity": "pipeline",
-      "inputs": ["planning_context", "plan_artifact", "planning_findings"],
-      "outputs": ["plan_artifact"],
+      "inputs": [
+        "planning_context",
+        "plan_artifact",
+        "planning_findings"
+      ],
+      "outputs": [
+        "plan_artifact"
+      ],
       "timeout": "10m",
       "review": {
         "subject": "planning",
@@ -100,9 +120,15 @@
     {
       "id": "planning-gate",
       "kind": "gate",
-      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "author_associations": [
+        "OWNER",
+        "MEMBER",
+        "COLLABORATOR"
+      ],
       "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
-      "outputs": ["planning_feedback"],
+      "outputs": [
+        "planning_feedback"
+      ],
       "on_reject": {
         "action": "route_to",
         "target": "planning-fix"
@@ -118,9 +144,20 @@
       "kind": "agent",
       "identity": "pipeline",
       "reasoning": "hard",
-      "chain": ["google/gemini-3.8-flash@default", "openai-codex/gpt-5.6-sol@default"],
-      "inputs": ["plan_artifact", "review_feedback"],
-      "outputs": ["pr_number", "branch", "implementation_context", "implementation_artifact"],
+      "chain": [
+        "google/gemini-3.8-flash@default",
+        "openai-codex/gpt-5.6-sol@default"
+      ],
+      "inputs": [
+        "plan_artifact",
+        "review_feedback"
+      ],
+      "outputs": [
+        "pr_number",
+        "branch",
+        "implementation_context",
+        "implementation_artifact"
+      ],
       "timeout": "20m",
       "quota_policy": {
         "on_exhaustion": "checkpoint_and_block",
@@ -137,8 +174,17 @@
       "id": "self-review",
       "kind": "agent",
       "identity": "pipeline",
-      "inputs": ["implementation_context", "implementation_artifact", "pr_number", "branch"],
-      "outputs": ["review_findings", "review_clean", "deviation_detected"],
+      "inputs": [
+        "implementation_context",
+        "implementation_artifact",
+        "pr_number",
+        "branch"
+      ],
+      "outputs": [
+        "review_findings",
+        "review_clean",
+        "deviation_detected"
+      ],
       "quota_policy": {
         "on_exhaustion": "checkpoint_and_block",
         "resume": "sweep_or_command"
@@ -162,8 +208,18 @@
       "kind": "agent",
       "identity": "pipeline",
       "reasoning": "hard",
-      "inputs": ["implementation_context", "implementation_artifact", "review_findings", "pr_number", "branch"],
-      "outputs": ["implementation_artifact", "pr_number", "branch"],
+      "inputs": [
+        "implementation_context",
+        "implementation_artifact",
+        "review_findings",
+        "pr_number",
+        "branch"
+      ],
+      "outputs": [
+        "implementation_artifact",
+        "pr_number",
+        "branch"
+      ],
       "timeout": "20m",
       "review": {
         "subject": "implementation",
@@ -185,11 +241,17 @@
     {
       "id": "deviation-gate",
       "kind": "gate",
-      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "author_associations": [
+        "OWNER",
+        "MEMBER",
+        "COLLABORATOR"
+      ],
       "requester_can_approve": true,
       "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
       "reminder_after_days": 7,
-      "outputs": ["review_feedback"],
+      "outputs": [
+        "review_feedback"
+      ],
       "on_reject": {
         "action": "revert_deviation",
         "target": "implement"
@@ -203,8 +265,13 @@
       "id": "plan-alignment",
       "kind": "agent",
       "identity": "pipeline",
-      "inputs": ["pr_number", "plan_artifact"],
-      "outputs": ["aligned"],
+      "inputs": [
+        "pr_number",
+        "plan_artifact"
+      ],
+      "outputs": [
+        "aligned"
+      ],
       "quota_policy": {
         "on_exhaustion": "checkpoint_and_block",
         "resume": "sweep_or_command"
@@ -218,10 +285,18 @@
     {
       "id": "merge-gate",
       "kind": "gate",
-      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
-      "allow_review_state": ["APPROVED"],
+      "author_associations": [
+        "OWNER",
+        "MEMBER",
+        "COLLABORATOR"
+      ],
+      "allow_review_state": [
+        "APPROVED"
+      ],
       "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
-      "outputs": ["review_feedback"],
+      "outputs": [
+        "review_feedback"
+      ],
       "on_reject": {
         "action": "route_to",
         "target": "implement"
@@ -234,7 +309,9 @@
       "id": "merge",
       "kind": "automation",
       "script": "pr-merge",
-      "inputs": ["pr_number"],
+      "inputs": [
+        "pr_number"
+      ],
       "side_effects": {
         "close_bound_issues": true,
         "clear_checkpoints": true
