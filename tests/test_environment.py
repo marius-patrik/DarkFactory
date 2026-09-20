@@ -266,9 +266,16 @@ class TestPlans:
         _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
         assert environment.configure(str(tmp_path)).docs_plan()["python"]["source"] == "docstrings"
 
-    def test_darkfactory_documentation_uses_the_repository_generator(self):
-        plan = environment.configure(REPO_ROOT).docs_plan()
-        assert plan["python"]["command"] == "bun run scripts/build-docs.ts"
+    def test_darkfactory_documentation_is_owned_by_docs_df(self):
+        with open(os.path.join(REPO_ROOT, ".darkfactory", "repo.df"), encoding="utf-8") as handle:
+            repository = json.load(handle)
+        with open(os.path.join(REPO_ROOT, "docs.df"), encoding="utf-8") as handle:
+            docs = json.load(handle)
+
+        assert "documentation" not in repository.get("environment", {})
+        assert docs["version"] == 1
+        assert docs["home"] == "docs/home.md"
+        assert docs["api"]["typescript"]["entryPoints"]
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
