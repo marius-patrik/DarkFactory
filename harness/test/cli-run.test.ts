@@ -73,16 +73,7 @@ describe("df run", () => {
 			const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
 			return { stdout, exitCode };
 		};
-		const explained = await invoke(
-			"route",
-			"hello",
-			"--json",
-			"--faux",
-			"--difficulty",
-			"easy",
-			"--min-tier",
-			"light",
-		);
+		const explained = await invoke("route", "hello", "--json", "--faux", "--difficulty", "easy", "--min-tier", "light");
 		expect(explained.exitCode).toBe(0);
 		expect(JSON.parse(explained.stdout)).toMatchObject({
 			profile: { kind: "chat", size: "small", difficulty: "easy", minTier: "light" },
@@ -91,16 +82,7 @@ describe("df run", () => {
 			selectedCapabilityTier: "light",
 			ranked: [{ status: "chosen", capabilityTier: "light" }],
 		});
-		const runResult = await invoke(
-			"run",
-			"hello",
-			"--json",
-			"--faux",
-			"--difficulty",
-			"easy",
-			"--min-tier",
-			"light",
-		);
+		const runResult = await invoke("run", "hello", "--json", "--faux", "--difficulty", "easy", "--min-tier", "light");
 		expect(runResult.exitCode).toBe(0);
 		const events = runResult.stdout
 			.trim()

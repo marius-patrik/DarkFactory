@@ -156,7 +156,9 @@ describe("capability-tier routing", () => {
 		expect(route.minCapabilityTier).toBe("standard");
 		expect(route.selectedCapabilityTier).toBe("standard");
 		expect(route.chain[0]).toEqual({ provider: "standard", model: "balanced", account: "default" });
-		expect(route.ranked.find((item) => item.candidate.provider === "light")?.reason).toContain("below required standard");
+		expect(route.ranked.find((item) => item.candidate.provider === "light")?.reason).toContain(
+			"below required standard",
+		);
 	});
 
 	test("eligibility filtering wins before tier preference", async () => {
