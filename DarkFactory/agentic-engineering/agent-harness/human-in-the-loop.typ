@@ -24,8 +24,8 @@ Základním principem navrženého řešení není nekritická plná autonomie, 
 - Transparentnost selhání a deterministická eskalace: Zákaz tichého pohlcování chyb či halucinovaných omluv při selhání. Při vyčerpání rozpočtu nebo selhání testů harness vygeneruje strukturovaný diagnostický incident (diff, chybové hlášení, stav kontextu) a předá jej vývojáři k manuálnímu zásahu.
 
 #critique[
-  Kognitivní limity lidské schvalovací brány (Review Fatigue):
-  Spoléhání se na finální sémantickou kontrolu diffu v pull requestu naráží na lidské kognitivní limity. Výzkumy prokazují, že u rozsáhlých diffů (nad 300–400 řádků) dramaticky klesá hloubka lidské pozornosti — vývojář kód pouze zběžně prohlédne a spoléhá na zelenou fajfku z CI. Aby byla lidská brána efektivní, harness musí diffy rozkládat do sémanticky sevřených mikrokroků, generovat interaktivní vysvětlení netriviálních rozhodnutí a explicitně zvýrazňovat změny v kritických architektonických komponentách.
+  Omezení lidské schvalovací brány (Review Fatigue):
+  Lidská revize ztrácí hodnotu, pokud je změna příliš rozsáhlá nebo nesourodá na to, aby ji bylo možné efektivně posoudit jako jeden celek. Harness proto má změny seskupovat do sémanticky souvisejících kroků, vysvětlovat netriviální rozhodnutí a zvýrazňovat zásahy do kritických částí systému, aby lidská brána nebyla pouze formálním potvrzením výsledku CI.
 ]
   ],
   summary: terms => [
