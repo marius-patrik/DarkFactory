@@ -64,27 +64,46 @@ const NotFoundView: FC = () => (
   </div>
 );
 
-export interface DarkFactoryShellProps {
-  basename?: string;
+export interface RouteConfig {
+  path: string;
+  component: FC<{ params: Record<string, string> }>;
+  label: string;
 }
 
-export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({ basename }) => {
+const DefaultRoutes: RouteConfig[] = [
+  { path: "/", component: HomeView, label: "Dashboard" },
+  { path: "/status", component: StatusView, label: "System Status" },
+  { path: "/docs", component: DocsView, label: "Documentation" },
+];
+
+const RouteAnnouncer: FC = () => {
+  const [location] = useLocation();
+  return <div className="sr-only" aria-live="polite">{`Navigated to ${location}`}</div>;
+};
+
+export interface DarkFactoryShellProps {
+  basename?: string;
+  routes?: RouteConfig[];
+}
+
+export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({ basename, routes = DefaultRoutes }) => {
   return (
     <Router basename={basename}>
-      <div className="darkfactory-shell" aria-live="polite">
+      <RouteAnnouncer />
+      <div className="darkfactory-shell">
         <header>
           <h1>DarkFactory Web</h1>
           <nav>
-            <RouteLink to="/">Dashboard</RouteLink>
-            <RouteLink to="/status">Status</RouteLink>
-            <RouteLink to="/docs">Docs</RouteLink>
+            {routes.map((route) => (
+              <RouteLink key={route.path} to={route.path}>{route.label}</RouteLink>
+            ))}
           </nav>
         </header>
         <main>
           <Switch>
-            <Route path="/" component={HomeView} />
-            <Route path="/status" component={StatusView} />
-            <Route path="/docs" component={DocsView} />
+            {routes.map((route) => (
+              <Route key={route.path} path={route.path} component={route.component} />
+            ))}
             <Route>
               <NotFoundView />
             </Route>
