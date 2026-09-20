@@ -12,7 +12,7 @@ definition: terms => [
 Divergence je třída selhání agentní smyčky, při níž se iterativní běh vzdaluje cíli například perseverací, oscilací nebo nekontrolovanou spotřebou zdrojů.
   ],
   description: terms => [
-#diff[Ponechání jazykového modelu v neomezené prováděcí smyčce vede k předvídatelným selháním.][Ponechání jazykového modelu v neomezené prováděcí smyčce vede k předvídatelným selháním @shinn2023reflexion.] V důsledku autoregresivní povahy se v kontextu snadno vytvoří pravděpodobnostní atraktor, který model uvězní v neproduktivním cyklu.
+Ponechání jazykového modelu v neomezené prováděcí smyčce vede k předvídatelným selháním @shinn2023reflexion. V důsledku autoregresivní povahy se v kontextu snadno vytvoří pravděpodobnostní atraktor, který model uvězní v neproduktivním cyklu.
 
 Mezi typické patologie patří:
 - Perseverace a zacyklení: Opakované volání identického nástroje se stejnými neplatnými argumenty (např. čtení neexistujícího souboru) i po obdržení chybové zprávy.
