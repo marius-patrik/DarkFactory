@@ -350,7 +350,7 @@ def test_rule_enforcement_pointers_resolve_or_say_unenforced():
 
 
 def test_runtime_references_use_canonical_agent_paths():
-    """Automation never traverses the root `_notes` / `_rules` aliases."""
+    """Documentation generation reads canonical .agents paths and has no Python docs hook."""
     scripts_dir = os.path.join(REPO_ROOT, ".github", "scripts")
     for name in sorted(os.listdir(scripts_dir)):
         if not name.endswith(".py"):
@@ -360,6 +360,8 @@ def test_runtime_references_use_canonical_agent_paths():
             assert (
                 re.search(rf'os\.path\.join\(\s*"{alias}"', source) is None
             ), f"{name} must use the canonical .agents path, not the root {alias} alias"
-    assert 'ADR_SOURCE_DIR = os.path.join(".agents", "notes", "adr")' in _read(
-        ".github", "scripts", "docs_hooks.py"
-    ), "docs_hooks must discover ADRs under the canonical directory"
+
+    assert not os.path.exists(os.path.join(scripts_dir, "docs_hooks.py"))
+    build_docs = _read("scripts", "build-docs.ts")
+    assert "_notes" not in build_docs
+    assert "_rules" not in build_docs
