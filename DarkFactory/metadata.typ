@@ -2,7 +2,7 @@
 //  Metadata práce.
 // ─────────────────────────────────────────────────────────────
 
-#import "/DarkFactory/templates/registry.typ": draft, added, unconfirmed, accepted, finalized, translation
+#import "/DarkFactory/templates/common.typ": draft, added, unconfirmed, accepted, finalized, translation
 
 #let meta = (
   // The main title is structural and comes from DarkFactory/index.typ.
