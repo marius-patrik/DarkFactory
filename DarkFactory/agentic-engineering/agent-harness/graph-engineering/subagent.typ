@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -13,7 +13,7 @@ definition: terms => [
 Subagent je dočasná nebo specializovaná agentní instance, které nadřazený orchestrátor deleguje vymezenou dílčí úlohu a následně převezme její výsledek.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Při hierarchické dělbě práce hlavní orchestrátor rozděluje rozsáhlou úlohu a jednotlivé části deleguje specializovaným subagentům, například pro průzkum repozitáře, plánování nebo implementaci. Po dokončení dílčího běhu může nadřazený agent převzít pouze jeho výsledek namísto celé pracovní historie subagenta.
 ]
   ],
