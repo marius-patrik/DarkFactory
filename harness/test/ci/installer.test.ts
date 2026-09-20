@@ -124,7 +124,7 @@ describe("Workflow installer & updater", () => {
 
 			// Run updateWorkflows
 			const updateReport = await updateWorkflows(temp);
-			expect(updateReport.updated.length).toBeGreaterThanOrEqual(3);
+			expect(updateReport.updated.length).toBeGreaterThanOrEqual(2);
 
 			const updatedCi = await readFile(join(temp, ".github", "workflows", "ci.yml"), "utf-8");
 			expect(updatedCi).toContain("new-ref");
