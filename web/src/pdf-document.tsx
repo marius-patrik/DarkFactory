@@ -31,6 +31,7 @@ export type DocumentChapter = {
   title: string;
   page: number;
   level: number;
+  anchor?: string;
 };
 
 export type DocumentState = {
@@ -55,8 +56,15 @@ type PageInfo = {
   baseHeight: number;
 };
 
+export type SemanticHeading = {
+  title: string;
+  level: number;
+  anchor?: string;
+};
+
 type ViewerProps = {
   pdfPath: string;
+  contentIndex?: SemanticHeading[];
   embedded: boolean;
   sidebarSide: SidebarSide;
   sidebarMode: SidebarMode;
@@ -90,6 +98,17 @@ async function destinationPage(pdf: any, dest: PdfDestination | null | undefined
   return null;
 }
 
+function normalizeHeadingText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/^\s*[a-z]?\d+(?:\.\d+)*\s*[.:)-]?\s*/i, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function loadOutlineChapters(pdf: any): Promise<DocumentChapter[]> {
   const outline = (await pdf.getOutline?.()) || [];
   const chapters: DocumentChapter[] = [];
@@ -109,6 +128,62 @@ async function loadOutlineChapters(pdf: any): Promise<DocumentChapter[]> {
 
   await visit(outline, 1);
   return chapters;
+}
+
+async function resolveSemanticChapters(
+  pdf: any,
+  entries: SemanticHeading[],
+): Promise<DocumentChapter[]> {
+  if (!entries.length) return loadOutlineChapters(pdf);
+
+  const pageTexts: string[] = [];
+  for (let number = 1; number <= pdf.numPages; number += 1) {
+    const page = await pdf.getPage(number);
+    const content = await page.getTextContent();
+    const text = content.items
+      .map((item: any) => ("str" in item ? String(item.str) : ""))
+      .join(" ");
+    pageTexts.push(normalizeHeadingText(text));
+  }
+
+  const outline = await loadOutlineChapters(pdf);
+  let cursor = 1;
+
+  return entries.map((entry) => {
+    const normalized = normalizeHeadingText(entry.title);
+    const significant =
+      normalized.length > 72
+        ? normalized.slice(0, 72).trim()
+        : normalized;
+    let page = 0;
+
+    if (significant.length >= 2) {
+      for (let index = Math.max(0, cursor - 1); index < pageTexts.length; index += 1) {
+        if (pageTexts[index].includes(significant)) {
+          page = index + 1;
+          break;
+        }
+      }
+    }
+
+    if (!page) {
+      const match = outline.find(
+        (chapter) =>
+          normalizeHeadingText(chapter.title) === normalized ||
+          normalizeHeadingText(chapter.title).includes(significant) ||
+          significant.includes(normalizeHeadingText(chapter.title)),
+      );
+      page = match?.page || cursor;
+    }
+
+    cursor = Math.max(cursor, page);
+    return {
+      title: entry.title,
+      page,
+      level: entry.level,
+      anchor: entry.anchor,
+    };
+  });
 }
 
 class AnnotationLinkService {
@@ -796,7 +871,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
               baseHeight: viewport.height,
             });
           }
-          const nextChapters = await loadOutlineChapters(document);
+          const nextChapters = await resolveSemanticChapters(document, contentIndex || []);
           if (disposed) return;
           setPdf(document);
           setPages(nextPages);
@@ -810,7 +885,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
         disposed = true;
         void task.destroy();
       };
-    }, [pdfPath]);
+    }, [contentIndex, pdfPath]);
 
     useEffect(() => {
       const stage = stageRef.current;

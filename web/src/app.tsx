@@ -31,6 +31,7 @@ import {
   type DocumentChapter,
   type DocumentControl,
   type DocumentState,
+  type SemanticHeading,
   type ScaleMode,
   type SidebarMode,
   type SidebarSide,
@@ -71,6 +72,7 @@ type Manifest = {
     formats?: ArtifactFormat[];
     modes?: string[];
     repo_tree?: string;
+    content_index?: string;
     repository_url?: string;
     stack?: string[];
   };
@@ -193,6 +195,43 @@ function useRepoTree(path: string) {
   }, [path]);
 
   return { nodes, error };
+}
+
+function useContentIndex(
+  path: string,
+  template: string,
+  profile: string,
+  mode: ViewerMode,
+) {
+  const [entries, setEntries] = useState<SemanticHeading[]>([]);
+
+  useEffect(() => {
+    let disposed = false;
+    void fetch(path + "?cache=" + Date.now(), { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(path + ": " + response.status);
+        return response.json() as Promise<{
+          templates?: Record<
+            string,
+            Record<string, Record<"final" | "review", SemanticHeading[]>>
+          >;
+        }>;
+      })
+      .then((data) => {
+        if (disposed) return;
+        const publicationMode = mode === "review" ? "review" : "final";
+        setEntries(data.templates?.[template]?.[profile]?.[publicationMode] || []);
+      })
+      .catch(() => {
+        if (!disposed) setEntries([]);
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [mode, path, profile, template]);
+
+  return entries;
 }
 
 function artifactFilename(
@@ -906,6 +945,13 @@ export function ViewerApp() {
   const [pageDraft, setPageDraft] = useState("1");
   const [refreshRevision, setRefreshRevision] = useState(0);
   const repoTreePath = manifest?.viewer?.repo_tree || "repo-tree.json";
+  const contentIndexPath = manifest?.viewer?.content_index || "content-index.json";
+  const contentIndex = useContentIndex(
+    contentIndexPath,
+    templateName,
+    profileName,
+    mode,
+  );
   const repositoryUrl =
     manifest?.viewer?.repository_url || "https://github.com/marius-patrik/DarkFactory-Paper";
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
@@ -1215,6 +1261,7 @@ export function ViewerApp() {
           <PdfDocumentView
             ref={documentRef}
             pdfPath={renderArtifactPath}
+            contentIndex={contentIndex}
             embedded
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
@@ -1551,6 +1598,7 @@ export function ViewerApp() {
           <PdfDocumentView
             ref={documentRef}
             pdfPath={renderArtifactPath}
+            contentIndex={contentIndex}
             embedded={false}
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}

@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+from html.parser import HTMLParser
 from pathlib import Path
 
 VARIANTS = (
@@ -157,6 +158,53 @@ def tracked_repo_tree() -> list[dict[str, object]]:
     return materialize(root)
 
 
+class HeadingIndexParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.entries: list[dict[str, object]] = []
+        self._level: int | None = None
+        self._parts: list[str] = []
+        self._attrs: dict[str, str] = {}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if len(tag) == 2 and tag[0] == "h" and tag[1].isdigit():
+            self._level = int(tag[1])
+            self._parts = []
+            self._attrs = {key: value or "" for key, value in attrs}
+
+    def handle_data(self, data: str) -> None:
+        if self._level is not None:
+            self._parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._level is None or tag != f"h{self._level}":
+            return
+        title = " ".join("".join(self._parts).split())
+        if title:
+            self.entries.append(
+                {
+                    "title": title,
+                    "level": self._level,
+                    "anchor": self._attrs.get("id", ""),
+                }
+            )
+        self._level = None
+        self._parts = []
+        self._attrs = {}
+
+
+def semantic_content_index(html_path: Path) -> list[dict[str, object]]:
+    parser = HeadingIndexParser()
+    parser.feed(html_path.read_text(encoding="utf-8"))
+    entries: list[dict[str, object]] = []
+    for entry in parser.entries:
+        title = str(entry["title"])
+        if entries and entries[-1]["title"] == title and entries[-1]["level"] == entry["level"]:
+            continue
+        entries.append(entry)
+    return entries
+
+
 for template_name in template_names:
     for variant in VARIANTS:
         for mode in ("final", "review"):
@@ -172,6 +220,23 @@ for template_name in template_names:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
 
+content_index: dict[str, dict[str, dict[str, list[dict[str, object]]]]] = {}
+for template_name in template_names:
+    template_index: dict[str, dict[str, list[dict[str, object]]]] = {}
+    for variant in VARIANTS:
+        profile_index: dict[str, list[dict[str, object]]] = {}
+        for mode in ("final", "review"):
+            html_name = variant["artifacts"][mode]["html"]
+            html_path = source_for(template_name, html_name)
+            if not html_path.is_file():
+                if args.allow_missing:
+                    profile_index[mode] = []
+                    continue
+                raise SystemExit(f"missing semantic HTML for content index: {html_path}")
+            profile_index[mode] = semantic_content_index(html_path)
+        template_index[variant["profile"]] = profile_index
+    content_index[template_name] = template_index
+
 manifest = {
     "commit": os.environ.get("GITHUB_SHA", ""),
     "work_title": WORK_TITLE,
@@ -183,6 +248,7 @@ manifest = {
         "formats": ["pdf", "markdown", "html"],
         "modes": ["viewer", "edit", "raw"],
         "repo_tree": "repo-tree.json",
+        "content_index": "content-index.json",
         "repository_url": "https://github.com/marius-patrik/DarkFactory-Paper",
         "pdfjs_version": PDFJS_VERSION,
         "entrypoint": "viewer.html",
@@ -205,6 +271,10 @@ manifest = {
     json.dumps({"tree": tracked_repo_tree()}, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
+(SITE / "content-index.json").write_text(
+    json.dumps({"templates": content_index}, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
 (SITE / ".nojekyll").touch()
 
 for required in (
@@ -212,6 +282,7 @@ for required in (
     SITE / "viewer.html",
     SITE / "variants.json",
     SITE / "repo-tree.json",
+    SITE / "content-index.json",
 ):
     if not required.is_file() or required.stat().st_size == 0:
         raise SystemExit(f"missing generated Pages asset: {required}")
