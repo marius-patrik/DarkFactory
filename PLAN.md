@@ -304,7 +304,9 @@ The final implementation must start fresh from current `darkfactory`: hook invoc
 
 PRs #816 and #862 are closed evidence only; #862 reused the stale release branch and did not satisfy the full release contract.
 
-Continue stable release engineering in parallel for final package metadata, Node-compatible CLI/library boundaries, runtime assets, checksums/provenance, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Publish exactly once after the final release join.
+PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` now owns deterministic SHA-256 artifact integrity/source provenance primitives in final capability ownership.
+
+Continue stable release engineering in parallel for lockstep version/package metadata, Node-compatible CLI/library boundaries, runtime assets, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Reuse the landed release manifest/checksum contract; publish exactly once after the final release join.
 
 #### Documentation and operator lanes
 
