@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NodeContext, type NodeHandlers, type NodeResult, runGraph } from "../../src/graph/executor.ts";
@@ -254,5 +254,205 @@ describe("runGraph fan-out", () => {
 		).toEqual(["a#1", "b#1", "b#2", "c#1"]);
 		expect(calls.at(-1)?.node).toBe("open-pr");
 		expect(state.iterations?.chunk).toBe(2);
+	});
+});
+
+
+describe("generic durable review lifecycle", () => {
+	const reviewAdapter = { subject: "planning" as const, validate: () => [] };
+
+	const planningGraph = (): WorkflowGraph =>
+		graphOf(
+			[
+				agent("planning", {
+					trigger: { event: "issues.opened" },
+					outputs: ["planning_context", "plan_artifact"],
+				}),
+				agent("planning-review", {
+					inputs: ["planning_context", "plan_artifact"],
+					outputs: ["planning_findings", "planning_review_clean"],
+					review: {
+						subject: "planning",
+						phase: "review",
+						context: "planning_context",
+						artifact: "plan_artifact",
+						findings: "planning_findings",
+						clean: "planning_review_clean",
+					},
+				}),
+				agent("planning-fix", {
+					inputs: ["planning_context", "plan_artifact", "planning_findings"],
+					outputs: ["plan_artifact"],
+					review: {
+						subject: "planning",
+						phase: "fix",
+						context: "planning_context",
+						artifact: "plan_artifact",
+						findings: "planning_findings",
+					},
+				}),
+				{
+					id: "planning-gate",
+					kind: "gate",
+					author_associations: ["OWNER"],
+					command: "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+					approves_review: "planning",
+				},
+				agent("implement", { requires_review_approval: "planning" }),
+			],
+			[
+				{ from: "planning", to: "planning-review", on: { node_outcome: "success" } },
+				{
+					from: "planning-review",
+					to: "planning-fix",
+					on: { node_outcome: "success", when: "planning_review_clean == false" },
+					loop: { kind: "planning_revision", safety_budget: 5 },
+				},
+				{
+					from: "planning-fix",
+					to: "planning-review",
+					on: { node_outcome: "success" },
+					loop: { kind: "review_fix", safety_budget: 5 },
+				},
+				{
+					from: "planning-review",
+					to: "planning-gate",
+					on: { node_outcome: "success", when: "planning_review_clean == true" },
+				},
+				{ from: "planning-gate", to: "implement", on: { gate_outcome: "approved" } },
+			],
+		);
+
+	test("Planning review, fix and re-review share one persisted state and approval gate", async () => {
+		const dir = runDir();
+		const { handlers, calls } = scripted({
+			planning: () => ({
+				outcome: "success",
+				outputs: { planning_context: { request: 391, version: 1 }, plan_artifact: { text: "draft" } },
+			}),
+			"planning-review": (_ctx, call) => ({
+				outcome: "success",
+				outputs: { planning_findings: call === 1 ? ["invented owner"] : [] },
+			}),
+			"planning-fix": (ctx) => {
+				expect(ctx.review?.findings.map((finding) => finding.message)).toEqual(["invented owner"]);
+				return { outcome: "success", outputs: { plan_artifact: { text: "fixed" } } };
+			},
+		});
+		const waiting = await runGraph(planningGraph(), dir, handlers, opened, {
+			reviewAdapters: { planning: reviewAdapter },
+		});
+		expect(calls.map((call) => call.node)).toEqual([
+			"planning",
+			"planning-review",
+			"planning-fix",
+			"planning-review",
+		]);
+		expect(waiting.current_node).toBe("planning-gate");
+		expect(waiting.reviews?.planning).toMatchObject({ clean: true, iteration: 2 });
+		expect(waiting.reviews?.planning?.history.map((entry) => entry.phase)).toEqual(["review", "fix", "review"]);
+
+		const approved = await runGraph(
+			planningGraph(),
+			dir,
+			handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{ reviewAdapters: { planning: reviewAdapter } },
+		);
+		expect(approved.reviews?.planning?.approvedFingerprint).toBe(approved.reviews?.planning?.contextFingerprint);
+		expect(calls.at(-1)?.node).toBe("implement");
+	});
+
+	test("material context change invalidates clean review and stale approval cannot advance", async () => {
+		const dir = runDir();
+		const { handlers } = scripted({
+			planning: () => ({
+				outcome: "success",
+				outputs: { planning_context: { request: 391, version: 1 }, plan_artifact: { text: "draft" } },
+			}),
+			"planning-review": () => ({ outcome: "success", outputs: { planning_findings: [] } }),
+		});
+		await runGraph(planningGraph(), dir, handlers, opened, { reviewAdapters: { planning: reviewAdapter } });
+		const path = join(dir, "state.df");
+		const persisted = JSON.parse(readFileSync(path, "utf8")) as RunState;
+		persisted.outputs.planning_context = { request: 391, version: 2 };
+		writeFileSync(path, JSON.stringify(persisted));
+
+		const stale = await runGraph(
+			planningGraph(),
+			dir,
+			handlers,
+			{ type: "comment", body: "/df approve", actor: owner },
+			{ reviewAdapters: { planning: reviewAdapter } },
+		);
+		expect(stale.current_node).toBe("planning-gate");
+		expect(stale.reviews?.planning?.clean).toBe(false);
+		expect(stale.reviews?.planning?.approvedFingerprint).toBeUndefined();
+	});
+
+	test("implementation review uses the same review/fix engine", async () => {
+		const graph = graphOf(
+			[
+				agent("implement", {
+					trigger: { event: "issues.opened" },
+					outputs: ["implementation_context", "implementation_artifact"],
+				}),
+				agent("self-review", {
+					inputs: ["implementation_context", "implementation_artifact"],
+					outputs: ["review_findings", "review_clean"],
+					review: {
+						subject: "implementation",
+						phase: "review",
+						context: "implementation_context",
+						artifact: "implementation_artifact",
+						findings: "review_findings",
+						clean: "review_clean",
+					},
+				}),
+				agent("review-fix", {
+					inputs: ["implementation_context", "implementation_artifact", "review_findings"],
+					outputs: ["implementation_artifact"],
+					review: {
+						subject: "implementation",
+						phase: "fix",
+						context: "implementation_context",
+						artifact: "implementation_artifact",
+						findings: "review_findings",
+					},
+				}),
+				automation("done"),
+			],
+			[
+				{ from: "implement", to: "self-review", on: { node_outcome: "success" } },
+				{
+					from: "self-review",
+					to: "review-fix",
+					on: { node_outcome: "success", when: "review_clean == false" },
+					loop: { kind: "self_review", safety_budget: 5 },
+				},
+				{
+					from: "review-fix",
+					to: "self-review",
+					on: { node_outcome: "success" },
+					loop: { kind: "review_fix", safety_budget: 5 },
+				},
+				{ from: "self-review", to: "done", on: { node_outcome: "success", when: "review_clean == true" } },
+			],
+		);
+		const { handlers, calls } = scripted({
+			implement: () => ({
+				outcome: "success",
+				outputs: { implementation_context: { base: "a" }, implementation_artifact: { diff: "x" } },
+			}),
+			"self-review": (_ctx, call) => ({
+				outcome: "success",
+				outputs: { review_findings: call === 1 ? ["bug"] : [] },
+			}),
+			"review-fix": () => ({ outcome: "success", outputs: { implementation_artifact: { diff: "fixed" } } }),
+		});
+		const state = await runGraph(graph, runDir(), handlers, opened);
+		expect(calls.map((call) => call.node)).toEqual(["implement", "self-review", "review-fix", "self-review", "done"]);
+		expect(state.reviews?.implementation?.history.map((entry) => entry.phase)).toEqual(["review", "fix", "review"]);
+		expect(state.reviews?.implementation?.clean).toBe(true);
 	});
 });
