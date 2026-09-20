@@ -166,8 +166,8 @@ The native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory
 Continue in parallel:
 - #334 — complete. Strict detected TypeScript/TSDoc API coverage is enforced by the native docs path and CI.
 - #335 — complete. Detected first-party API + architecture content is published through the canonical content graph and rendered by `@darkfactory/web`.
-- #424 — finish only the remaining native docs-compiler delta: final repository/capability/graph metadata integration. D4/F42/F44 dispositions are terminal; do not reintroduce ProperDocs/MkDocs compatibility.
-- #336 — finish deterministic docs-impact enforcement using the shipped detection/diff contract plus #339 hooks rather than another detector.
+- #424 — complete. Commit `1340019ee75cd9100f79cc032b484a65c62a762f` added detected repository/package/capability/graph metadata and capability-contributed pages to the canonical content graph; D4/F42/F44 dispositions are terminal.
+- #336 — the pure deterministic docs-impact classifier/`Docs: none` policy may land independently in `@darkfactory/docs`; PR-base diff and shared local/CI enforcement join the final #339 hook owner rather than creating another hook engine.
 - #337 — current-only README/retired-surface drift enforcement is landed; keep it active and finish the final repository-wide contradiction pass after the product surface stabilizes.
 - #425 — finish the broader GitHub-backed operator application on the existing `@darkfactory/web` package.
 - #390 — integrate remaining operator/dashboard surfaces into that shared application.
@@ -310,8 +310,8 @@ Continue stable release engineering in parallel for final package metadata, Node
 
 - #334 is complete: F42 recovery is terminal and strict TypeDoc/TSDoc extraction is enforced through the detected native docs path.
 - #335 is complete: detected API + architecture content is carried in the canonical content graph and rendered/tested through `@darkfactory/web`.
-- #424 remains open only for the real missing repository/capability/graph metadata portion of the native content graph. PR #867 remains closed because it changed only `bun.lock`.
-- #337 remains open for the final repository-wide contradiction audit; its deterministic README/retired-surface enforcement slice landed through PR #880.
+- #424 is complete through `1340019ee75cd9100f79cc032b484a65c62a762f`; detected repository/package/capability metadata and capability-declared docs are part of the native graph with no duplicate detector.
+- #337 remains open only for the late final repository-wide contradiction audit; deterministic README/retired-surface enforcement already landed through PR #880.
 - #403 remains open, but the stable command-registry/metadata slice landed through PR #887. Finish only the remaining real operator commands and later engine/release joins against final owners.
 - #336 joins the final #339 hook enforcement; #425/#390 may consume the already-shipped auth/browser boundaries.
 
@@ -431,8 +431,8 @@ Run stable pieces in parallel, with only these waits:
 
 - #334: COMPLETE. Strict TSDoc coverage now runs through the shipped #341 detected API action contract.
 - #335: COMPLETE. API + architecture content is published through the canonical docs graph and shared web renderer.
-- #424: finish only repository/capability/graph metadata integration in the native content graph; recovery dispositions are already terminal.
-- #336: F44 recovery is already reconciled/deleted; finish shared docs-impact enforcement using the shipped #341 contract plus #339 rather than adding another detector/hook engine.
+- #424: COMPLETE. Repository/capability/graph metadata integration is landed in the native content graph and recovery dispositions are terminal.
+- #336: F44 recovery is reconciled/deleted. Land the pure #341-backed impact classifier independently, then wire PR-base diff and shared local/CI enforcement through #339 once its final hook surface lands.
 - #337: README projection/retired-surface enforcement is active; perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403: the command-registry/metadata slice is landed; continue the remaining final operator commands and later engine/release joins. #251 consumes the same registry/metadata source for TUI work.
 - #425 and #390: continue the shared `@darkfactory/web` application and integrate the already-shipped #423 authentication contract now.
