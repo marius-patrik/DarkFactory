@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -13,7 +13,7 @@ definition: terms => [
 GitHub Issue je strukturovaný záznam požadavku, úkolu nebo chyby v repozitáři, který může nést popis, diskusi, štítky, přiřazení a vazby na změny kódu.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 V agentním vývojovém procesu může Issue fungovat jako explicitní vstupní specifikace úlohy. Odděluje zadání od samotné implementace a poskytuje stabilní referenční bod pro plán, pull request i následnou revizi.
 ]
   ],
