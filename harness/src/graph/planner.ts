@@ -54,6 +54,13 @@ function authorized(gate: GateNode, event: Extract<GraphEvent, { actor: unknown 
 	);
 }
 
+/**
+ * Determine the next action for the workflow based on the current graph, event, and run state.
+ * @param graph - The workflow graph definition.
+ * @param event - The incoming graph event to process.
+ * @param state - The current run state of the workflow.
+ * @returns A PlanAction describing what to do next (run nodes, gate, comment, hint, or none).
+ */
 export function plan(graph: WorkflowGraph, event: GraphEvent, state: RunState): PlanAction {
 	const current = graph.nodes.find((node) => node.id === state.current_node);
 	if (!current) return none(`unknown current node ${state.current_node}`);
