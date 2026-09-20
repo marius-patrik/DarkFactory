@@ -28,7 +28,7 @@ afterEach(async () => {
 describe("vault: credential source for df account set --from-vault", () => {
 	test("api_key resolved from vault at runtime, value never stored plaintext in credentials file", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
@@ -74,7 +74,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 
 	test("vault secret not found throws without leaking value", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(dataRepo, { version: 1, entries: [] }, key);
 		const store = new FileCredentialStore(dfHome);
 		await store.setSlot(accountId("google", "default"), "api_key", { type: "api_key", value: "vault:MISSING" });
@@ -83,7 +83,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 
 	test("account set --from-vault via CLI stores vault: reference (integration)", async () => {
 		const key = generateVaultKey();
-		await writeFile(join(dfHome, "vault.key"), key, { mode: 0o600 } as never);
+		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(
 			dataRepo,
 			{
