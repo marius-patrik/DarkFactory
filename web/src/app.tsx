@@ -1056,7 +1056,6 @@ export function ViewerApp() {
   ]);
   const [activeTabId, setActiveTabId] = useState("document");
   const activeTab = tabs.find((tab) => tab.id === activeTabId) || tabs[0];
-  const openRepoFile = null as RepoTreeNode | null;
   const settingsOpen = activeTab?.kind === "settings";
   const lastActivityPanel = useRef<ActiveActivityPanel>(
     activityPanel === "explorer" ? "explorer" : "structure",
@@ -1327,7 +1326,6 @@ export function ViewerApp() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("paper-viewer-theme", theme);
     if (viewMode === "split" && !embedded) sendToSplit("theme", { theme });
   }, [embedded, sendToSplit, theme, viewMode]);
 
@@ -1360,10 +1358,9 @@ export function ViewerApp() {
           Number(data.scale) || 1,
         );
       } else if (data.command === "theme") {
-        setTheme(
-          data.theme === "light" || data.theme === "oled"
-            ? data.theme
-            : "dark",
+        setSetting(
+          "theme",
+          data.theme === "light" || data.theme === "oled" ? data.theme : "dark",
         );
       }
       requestAnimationFrame(() => {
@@ -1372,7 +1369,7 @@ export function ViewerApp() {
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [embedded]);
+  }, [embedded, setSetting]);
 
   useEffect(() => {
     if (viewMode !== "split" || embedded) return;
