@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label, profile-state
+#import "/DarkFactory/templates/common.typ": finalized, term, resolve-citation-label, profile-state
 
 #let relation(type, target) = {
   assert(type in ("dependency", "related"), message: "unsupported semantic relation: " + type)
@@ -20,6 +20,9 @@
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(term != none, message: "concept requires canonical terminology")
+  assert(definition != none, message: "concept requires a definition")
+  assert(description != none, message: "concept requires a description")
+  assert(summary != none, message: "concept requires a summary")
   (
     kind: "concept",
     key: key,
@@ -180,35 +183,6 @@
   )
 }
 
-#let render-term-definition(item) = {
-  let value = item.term
-  if value.explanation_cs == none and value.explanation_en == none {
-    none
-  } else {
-    let definition = render-translation(
-      translation(cs: value.explanation_cs, en: value.explanation_en),
-      language: "auto",
-      school-both: false,
-      labels: false,
-      stacked: false,
-      separator: "bar",
-      order: "cs-en",
-    )
-    let render-citation(c) = {
-      let lbl = resolve-citation-label(c)
-      if lbl != none { cite(lbl) } else { none }
-    }
-    let sources = if value.citation == none {
-      none
-    } else if type(value.citation) == array {
-      value.citation.map(render-citation).filter(x => x != none).join()
-    } else {
-      render-citation(value.citation)
-    }
-    if sources == none { definition } else { [#definition~#sources] }
-  }
-}
-
 #let render-citations(item) = {
   if item.citations.len() > 0 {
     let render-one(c) = {
@@ -222,10 +196,8 @@
 #let render-concept(item, terms, graph, level: 1) = {
   let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]]
 
-  let definition = if item.definition != none { (item.definition)(terms) } else { render-term-definition(item) }
-  if definition != none { output += definition }
-
-  if item.description != none { output += (item.description)(terms) }
+  output += (item.definition)(terms)
+  output += (item.description)(terms)
   if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
@@ -235,7 +207,7 @@
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
 
-  if item.summary != none { output += (item.summary)(terms) }
+  output += (item.summary)(terms)
 
   let citations = render-citations(item)
   if citations != none { output += [#citations] }
