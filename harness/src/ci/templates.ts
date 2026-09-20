@@ -9,20 +9,6 @@ export const STANDARD_WORKFLOW_TEMPLATES = ["ci.yml", "verify-bound-issue.yml", 
 export type StandardWorkflowName = (typeof STANDARD_WORKFLOW_TEMPLATES)[number];
 
 const BUILTIN_TEMPLATES: Partial<Record<StandardWorkflowName, string>> = {
-	"verify-bound-issue.yml": `name: Verify Bound Issue
-
-on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-  workflow_dispatch:
-
-jobs:
-  verify-bound-issue:
-    uses: {{pipeline_repo}}/.github/workflows/verify-pr-issue.yml@{{pipeline_ref}}
-    with:
-      pipeline-ref: "{{pipeline_ref}}"
-      pipeline-repo: "{{pipeline_repo}}"
-`,
 	"df-dispatch.yml": `name: DarkFactory Dispatch
 
 on:
