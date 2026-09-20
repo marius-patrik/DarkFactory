@@ -17,10 +17,10 @@
 
 ## Area Affected
 <!-- Check all that apply using [x]. Must match the commit scope. -->
-- [ ] `area:agents`: Harness orchestration, provider adapters, personas, approvals
+- [ ] `area:agents`: Agent runtime, routing, providers, planning/review orchestration and model execution
 - [ ] `area:governance`: Agent rules, branch protection, required checks, project board taxonomy
 - [ ] `area:release`: Versioning modes, tagging, asset packaging, release notes
-- [ ] `area:docs`: Documentation site, theme, architecture notes
+- [ ] `area:docs`: Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces
 - [ ] `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation
 
 ## Verification Checklist
@@ -31,6 +31,6 @@
 - [ ] Implementation matches the approved child Plan issue, or a `Plan Alignment:` comment records
       every deviation and has been approved
 - [ ] No feature branches on a preset *name* — only on capability-matrix axis values
-      (taxonomy in `.darkfactory/manifest.json`)
+      (taxonomy in `.darkfactory/repo.df`)
 - [ ] `PRD.md` updated if this changes product requirements; decisions recorded as ADRs
 - [ ] No secrets, tokens, or credentials added to the tree or to workflow logs
