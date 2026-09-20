@@ -20,7 +20,7 @@ async function fixture(): Promise<string> {
 			name: "workspace",
 			packageManager: "bun@1.3.0",
 			exports: { ".": "./src/index.ts", "./extra": "./src/extra.ts" },
-			scripts: { lint: "biome lint .", check: "biome check ." },
+			scripts: { test: "bun test", lint: "biome lint .", "format:check": "biome check ." },
 		}),
 	);
 	await writeFile(join(root, "bun.lock"), "");
@@ -68,7 +68,7 @@ describe("repository evidence and capability actions", () => {
 		const node = resolution.packages.find((entry) => entry.package.id === "node:.")!;
 		expect(node.actions.test.command).toBe("bun test");
 		expect(node.actions.lint.command).toBe("bun run lint");
-		expect(node.actions.format_check.command).toBe("bun run check");
+		expect(node.actions.format_check.command).toBe("bun run format:check");
 		expect(node.actions.docs_extract.metadata).toEqual({
 			extractor: "typedoc",
 			entryPoints: ["src/extra.ts", "src/index.ts"],
