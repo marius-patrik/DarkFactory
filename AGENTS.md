@@ -2,7 +2,7 @@
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The sixteen
 rules below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
-They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated; #339 completes the shared df hook enforcement surface. This file is a
+They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Edit `.agents/rules/*.md`; do not
 edit this projection.
@@ -105,7 +105,7 @@ All normal product changes MUST use dedicated delivery branches and GitHub pull 
 
 Formatting is deterministic automation, not a review topic.
 
-The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
+The canonical detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
 
 Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
 
@@ -115,7 +115,7 @@ Lints are blocking where supported. Generated artifacts are excluded only by exp
 
 Every delivery PR MUST explicitly bind every Request it satisfies.
 
-A PR may satisfy one Request or multiple Requests when #385 shared-plan/multi-Request rules prove that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
+A PR may satisfy one Request or multiple Requests when the shared-plan/multi-Request model proves that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
 
 Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.
 
