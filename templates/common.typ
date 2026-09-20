@@ -535,20 +535,22 @@
   let items = collect-used-terms(query(term-use-label))
 
   if items.len() == 0 {
-    [—]
+    finalized[—]
   } else {
-    text(size: 11pt)[
-      #items.map(item => term(
-        item,
-        render: "term",
-        language: "auto",
-        name-type: item.keyword_name_type,
-        name-separator: "bar",
-        register: false,
-        linked: false,
-        marker: false,
-        emphasized: false,
-      )).join([, ])
+    finalized[
+      #text(size: 11pt)[
+        #items.map(item => term(
+          item,
+          render: "term",
+          language: "auto",
+          name-type: item.keyword_name_type,
+          name-separator: "bar",
+          register: false,
+          linked: false,
+          marker: false,
+          emphasized: false,
+        )).join([, ])
+      ]
     ]
   }
 }

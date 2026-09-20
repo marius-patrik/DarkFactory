@@ -141,6 +141,12 @@ common_source = Path("templates/common.typ").read_text(encoding="utf-8")
 for renderer in ("render-keywords", "render-index"):
     if f"#let {renderer}" not in common_source:
         fail(f"missing shared terminology renderer: {renderer}")
+keyword_renderer = common_source[
+    common_source.find("#let render-keywords()"):
+    common_source.find("#let collect-canonical-terms")
+]
+if "finalized[" not in keyword_renderer:
+    fail("generated keyword list must be wrapped in finalized state")
 
 for required in (
     "#let collect-canonical-terms",
@@ -198,7 +204,7 @@ finalized_main_goal = (
     "=== #finalized[Hlavní cíl]\n\n"
     "#finalized[\n"
     "Vymezit teoretické principy agentického inženýrství (_agentic engineering_) "
-    "a navrhnout modulární architekturu řídicího harnessu pro automatizovaný vývoj "
+    "a navrhnout modulární architekturu agent harnessu pro automatizovaný vývoj "
     "softwaru se zachováním lidského dohledu v klíčových rozhodovacích bodech.\n]"
 )
 if finalized_main_goal not in chapter1_source:
@@ -206,8 +212,8 @@ if finalized_main_goal not in chapter1_source:
 
 for required_heading in (
     "=== #finalized[Hlavní cíl]",
-    "=== #accepted[Dílčí cíle]",
-    "=== Výzkumné otázky",
+    "=== #finalized[Dílčí cíle]",
+    "=== #finalized[Výzkumné otázky]",
 ):
     if required_heading not in chapter1_source:
         fail(f"chapter 1 pseudo-section must remain a real numbered heading: {required_heading}")
@@ -224,6 +230,15 @@ if finalized_agent_harness not in chapter1_source:
     fail("agent harness definition sentence must remain finalized with the approved wording")
 if "označovaná jako *řídicí harness*" in chapter1_source:
     fail("legacy řídicí harness wording must not return")
+for manuscript_path in (
+    Path("kapitoly/01-uvod.typ"),
+    Path("kapitoly/02-teoreticka-cast.typ"),
+    Path("kapitoly/05-zaver.typ"),
+):
+    manuscript_source = manuscript_path.read_text(encoding="utf-8")
+    for legacy_harness in ("řídicí harness", "řídicího harnessu", "řídicím harnessu"):
+        if legacy_harness in manuscript_source:
+            fail(f"legacy Czech harness wording remains in {manuscript_path}: {legacy_harness}")
 
 chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
 llm_section_pos = chapter2_source.find('== #finalized[#term(terms.language_model')
@@ -269,6 +284,25 @@ if "=== #finalized[Větve (Branches)]" not in chapter2_source:
     fail("section 2.1.2 must remain finalized as Větve (Branches)")
 if "Větve (Branches) a izolace kódu" in chapter2_source:
     fail("legacy section 2.1.2 title must not return")
+
+for required_heading in (
+    "=== #finalized[Slučování změn (Commit and Merge)]",
+    "=== #finalized[Kontinuální integrace (CI a GitHub Actions)]",
+    "=== #finalized[Požadované kontroly (Required Checks)]",
+    "=== Ochrana větví (Branch Protection)",
+):
+    if required_heading not in chapter2_source:
+        fail(f"version-control subsection structure missing requested heading: {required_heading}")
+for legacy_heading in (
+    "Slučování změn (Squash and Merge)",
+    "=== Požadované kontroly (Required Checks) a ochrana větví",
+):
+    if legacy_heading in chapter2_source:
+        fail(f"legacy version-control subsection title must not return: {legacy_heading}")
+required_checks_pos = chapter2_source.find("=== #finalized[Požadované kontroly (Required Checks)]")
+branch_protection_pos = chapter2_source.find("=== Ochrana větví (Branch Protection)")
+if not (0 <= required_checks_pos < branch_protection_pos):
+    fail("Branch Protection must be a separate section after Required Checks")
 for required_heading in (
     "=== Spouštění nástrojů [Tool Calling]",
     "=== Sandbox",
@@ -427,6 +461,13 @@ for legacy in (
 terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
 if 'proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering")' not in terms_source:
     fail("Agentic Engineering Czech canonical term must be Agentické inženýrství")
+if 'proper: translation(cs: "Agentní harness", en: "Agent Harness")' not in terms_source:
+    fail("canonical harness proper term must be Agentní harness [Agent Harness]")
+if 'industry: translation(cs: "Agent Harness", en: "Agent Harness")' not in terms_source:
+    fail("canonical harness industry term must be Agent Harness")
+for legacy_harness in ("Řídicí systém", "Control Harness", "Řídicí postroj", "The control harness"):
+    if legacy_harness in terms_source:
+        fail(f"legacy harness terminology must not return: {legacy_harness}")
 if 'proper: translation(cs: "Agentní inženýrství", en: "Agentic Engineering")' in terms_source:
     fail("legacy Agentní inženýrství canonical term must not return")
 if 'proper: translation(cs: "Rozšíření", en: "Plugins")' not in terms_source:

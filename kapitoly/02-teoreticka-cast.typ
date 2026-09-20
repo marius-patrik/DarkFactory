@@ -46,20 +46,20 @@ Rozhraní pull requestu integruje všechny podstatné informace na jednom míst�
 Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický záměr a rozhoduje o schválení, vrácení k dopracování, či zamítnutí pull requestu.
 ]
 
-#unconfirmed[
-=== Slučování změn (Squash and Merge)
+=== #finalized[Slučování změn (Commit and Merge)]
 
+#unconfirmed[
 Způsob, jakým se změny z pracovní větve začlení do větve hlavní, má zásadní dopad na dlouhodobou udržitelnost a čitelnost repozitáře. Autonomní agent při řešení úlohy obvykle postupuje iterativní metodou pokus-omyl: upraví soubor, spustí testy, odhalí překlep a provede další drobný commit. V pracovní větvi tak vzniká dlouhá sekvence pomocných a experimentálních záznamů.
 
-Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí commity a rebase je lineárně přeskládá, v agentním vývoji se jako optimální strategie uplatňuje *Squash and Merge*:
+Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí commity a rebase je lineárně přeskládá, v agentním vývoji se jako optimální strategie uplatňuje *Commit and Merge*:
 - *Sloučení mezikroků*: Všechny commity z pracovní větve jsou spojeny do jediného nového commitu, který je vložen do `main`.
 - *Eliminace interního šumu*: Pomocné commity vzniklé při ladění testů se do hlavní větve vůbec nedostanou; historie projektu zůstává čistá a přehledná podle pravidla: jeden úkol = jeden commit.
 - *Atomický návrat změn (`git revert`)*: Pokud se v budoucnu ukáže, že začleněná úprava zanesla do produkce nečekanou vadu, lze celý úkol vrátit jediným atomickým příkazem bez nutnosti rozplétat desítky dílčích mezikroků.
 ]
 
-#unconfirmed[
-=== Kontinuální integrace (CI a GitHub Actions)
+=== #finalized[Kontinuální integrace (CI a GitHub Actions)]
 
+#unconfirmed[
 Samotný jazykový model kód pouze generuje na základě statistických závislostí v trénovacích datech; nemá schopnost vnitřně ověřit, zda je vytvořený program syntakticky bezchybný a funkčně správný. Nezastupitelnou roli objektivního arbitra správnosti proto plní *kontinuální integrace* (CI) @humble2010.
 
 V rámci platformy GitHub zajišťuje kontinuální integraci vestavěný nástroj *GitHub Actions*:
@@ -73,24 +73,30 @@ V rámci platformy GitHub zajišťuje kontinuální integraci vestavěný nástr
   Spoléhání se na automatické testy v CI naráží na problém nestálých testů (_flaky tests_), které občas selžou kvůli časování, síťové odezvě či asynchronním stavům, aniž by kód obsahoval chybu. Pokud agent narazí na takto náhodně selhávající test, může začít nesmyslně upravovat správný kód ve snaze chybu odstranit. CI pipeline proto musí nestálé testy minimalizovat nebo umožnit automatické opakování selhaného běhu v čistém prostředí.
 ]
 
+=== #finalized[Požadované kontroly (Required Checks)]
+
 #unconfirmed[
-=== Požadované kontroly (Required Checks) a ochrana větví
+K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno.
 
-K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno. GitHub za tímto účelem poskytuje pravidla ochrany větví (_Branch Protection Rules_), která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
-
-Klíčové mechanismy ochrany zahrnují:
 - *Požadované kontroly (_Required Checks_)*: Seznam úloh v GitHub Actions, které musí skončit explicitním úspěchem (zelený stav), aby bylo technicky možné pull request sloučit:
   - *Statická analýza a linter*: Kontrola dodržení kódového stylu, odhalování mrtvého kódu a základních syntaktických prohřešků.
   - *Typová kontrola a build*: Jistota, že kód lze bez chyb zkompilovat a že typový systém nezaznamenal nekonzistence.
   - *Automatizované testy*: Úspěšný průchod jednotkových i integračních testů ověřujících požadované chování.
 - *Pravidlo deterministického výsledku*: Každá kontrola musí skončit jednoznačným výsledkem; tiché přeskočení testu nebo nejednoznačný stav sloučení zablokuje.
+]
+
+#unconfirmed[
+=== Ochrana větví (Branch Protection)
+
+GitHub poskytuje pravidla ochrany větví (_Branch Protection Rules_), která zabraňují začlenění neověřeného kódu do stabilní větve `main`.
+
 - *Povinné schválení člověkem*: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
 ]
 
 == #finalized[#term(terms.language_model, name-type: "industry", language: "en", marker: false, linked: false, emphasized: false), chatboti a agenti]
 
 #blue-note[
-  Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentické inženýrství* (_agentic engineering_) a *architektura řídicího harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
+  Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je *agentické inženýrství* (_agentic engineering_) a *architektura agent harnessu* pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
 ]
 
 === #finalized[Úvod]
@@ -100,7 +106,7 @@ V agentickém softwarovém inženýrství vystupuje velký jazykový model (LLM)
 
 Základní principy fungování modelu zahrnují:
 - *Autoregresivní predikce*: Model zpracovává zadanou sekvenci textu a na jejím základě iterativně předpovídá nejpravděpodobnější následující symboly (tokeny).
-- *Stochastická povaha*: Vzhledem k pravděpodobnostnímu vzorkování může model na totožný vstup reagovat mírně odlišně, což vyžaduje deterministické mantinely v nadřazeném řídicím harnessu.
+- *Stochastická povaha*: Vzhledem k pravděpodobnostnímu vzorkování může model na totožný vstup reagovat mírně odlišně, což vyžaduje deterministické mantinely v nadřazeném agent harnessu.
 
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
@@ -153,7 +159,7 @@ Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobí
 #unconfirmed[
 === Kompakce kontextu a ztrátová komprese
 
-Při rozsáhlejších úlohách se kontextové okno nevyhnutelně zaplní. V okamžiku, kdy objem historie dosáhne kritické hranice, musí řídicí harness přistoupit ke *kompakci kontextu* (_compaction_) — model je vyzván, aby dosavadní průběh sezení zkrátil do syntetického souhrnu, který nahradí starší část historie.
+Při rozsáhlejších úlohách se kontextové okno nevyhnutelně zaplní. V okamžiku, kdy objem historie dosáhne kritické hranice, musí agent harness přistoupit ke *kompakci kontextu* (_compaction_) — model je vyzván, aby dosavadní průběh sezení zkrátil do syntetického souhrnu, který nahradí starší část historie.
 
 Tento proces však představuje destruktivní ztrátovou kompresi:
 - *Ztráta deterministických detailů*: Model při rekurzivním zkracování vynechává přesná čísla řádků, signatury privátních funkcí, přesné cesty k souborům a doslovná chybová hlášení kompilátoru.
@@ -216,13 +222,13 @@ V terminologii agentického inženýrství používá tato práce pojem #term(te
 Příčiny a inženýrská řešení tohoto jevu:
 - *Úskalí negativních instrukcí*: Zákazy formulované negací (např. „nemazat existující testy“) modely často porušují, protože matice pozornosti ($Q K^T$) asociativně aktivuje zakázaný pojem dříve, než autoregresní proces uplatní logický operátor negace.
 - *Afirmativní formulace*: Pravidla je nutné formulovat pozitivně — namísto výčtu zákazů vymezit přesný postup a povolené mantinely chování.
-- *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód řídicího harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
+- *Deterministická ochrana v harnessu*: Kde nestačí prompt, musí zasáhnout kód agent harnessu — například zpřístupněním testovacích souborů pouze pro čtení nebo zablokováním destruktivních operací na úrovni systémového volání.
 ]
 
 #unconfirmed[
 === #diff[Agentní smyčka a prováděcí cyklus ReAct][#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]
 
-Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého řídicího harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
+Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
 V každé iteraci agentní smyčky harness zajišťuje tyto klíčové funkce:
 - *Inicializace a správa sezení*: Sestavení systémového promptu, dynamická injekce kontextu repozitáře a sledování spotřeby tokenů.
@@ -247,7 +253,7 @@ Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na
 #unconfirmed[
 === Spouštění nástrojů [Tool Calling]
 
-Aby mohl agent provádět reálné inženýrské operace, musí mu řídicí harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
+Aby mohl agent provádět reálné inženýrské operace, musí mu agent harness zpřístupnit systémové nástroje. Způsob, jakým jsou nástroje modelům předkládány, zásadně ovlivňuje ergonomii vývoje i bezpečnost celého systému.
 
 *Strukturované volání nástrojů (_Tool / Function Calling_)* používá vstupy a výstupy striktně validované vůči formálním JSON schématům. Zajišťuje vysokou typovou bezpečnost, avšak přináší režii tokenů spotřebovaných na definice schémat.
 ]

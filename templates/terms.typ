@@ -83,12 +83,12 @@
 
   harness: define-term(
     id: "harness",
-    proper: translation(cs: "Řídicí systém", en: "Control Harness"),
-    industry: translation(cs: "Harness", en: "Harness"),
+    proper: translation(cs: "Agentní harness", en: "Agent Harness"),
+    industry: translation(cs: "Agent Harness", en: "Agent Harness"),
     default-name-type: "industry",
     keyword-name-type: "both",
-    explanation_cs: "Řídicí postroj — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely, práci se stavem a deterministické řízení životního cyklu požadavku.",
-    explanation_en: "The control harness — an application and orchestration layer surrounding a model's inference core that provides the tool runtime, dynamic context-window management, guardrails, state handling, and deterministic control over the request lifecycle.",
+    explanation_cs: "Agentní harness — aplikační a orchestrační vrstva obklopující inferenční jádro modelu, která zajišťuje běhové prostředí nástrojů, dynamickou správu kontextového okna, bezpečnostní mantinely, práci se stavem a deterministické řízení životního cyklu požadavku.",
+    explanation_en: "Agent harness — an application and orchestration layer surrounding a model's inference core that provides the tool runtime, dynamic context-window management, guardrails, state handling, and deterministic control over the request lifecycle.",
   ),
 
   human_in_the_loop: define-term(
