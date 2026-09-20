@@ -120,7 +120,7 @@ export function getWorkflowTemplateContent(templateName: string): string {
 export function interpolateTemplate(rawTemplate: string, context: TemplateContext = {}): string {
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
-		pipeline_ref: context.pipeline_ref || "main",
+		pipeline_ref: context.pipeline_ref || "darkfactory",
 		...Object.fromEntries(
 			Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]
 		),
