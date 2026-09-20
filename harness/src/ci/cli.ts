@@ -342,7 +342,9 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 		case "help":
 		default:
 			log(`df ci commands:
-  df ci matrix  [--repo <path>] [--capabilities-root <path>]\n  df ci quality [--repo <path>] [--capabilities-root <path>] [--json]\n  df ci install [--repo <path>] [--dry-run] [--force]
+  df ci matrix  [--repo <path>] [--capabilities-root <path>]
+  df ci quality [--repo <path>] [--capabilities-root <path>] [--json]
+  df ci install [--repo <path>] [--dry-run] [--force]
   df ci update  [--repo <path>] [--dry-run] [--force]
   df ci status  [--repo <path>] [--pr <n> | --ref <r>] [--json]
   df ci runs    [--repo <path>] [--workflow <w>] [--limit <n>] [--json]
