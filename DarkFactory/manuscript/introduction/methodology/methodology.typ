@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, accepted, alert
+#import "/DarkFactory/templates/common.typ": define-term, translation, term
 #import "/DarkFactory/schema.typ": concept
 
 #let terminology = define-term(
@@ -11,22 +11,22 @@
   key: "methodology",
   term: terminology,
   definition: terms => [
-#accepted[
-Práce má teoreticko-architektonický a inženýrský charakter. Vzhledem k dynamickému vývoji v oblasti autonomního softwarového vývoje práce důsledně zachovává a integruje zavedené anglické odborné názvy (např. _harness_, _pull request_, _agent loop_, _prompt engineering_, _skills_ či _context rot_). Použití této terminologie je integrální součástí práce, neboť tyto anglické pojmy představují de facto celosvětové průmyslové standardy (_industry standards_), jejichž doslovný český překlad by byl nejednoznačný, zavádějící či v rozporu s běžnou inženýrskou praxí.
-
-Postup práce sleduje strukturu inženýrského cyklu:
-
-- 1. Analýza konceptu: Systematické zmapování limitů autoregresivních modelů, dynamiky kontextového okna, jevu Context Rot a rozhraní nástrojů.
-- 2. Návrh architektury: Formulace modulárního modelu agent harnessu, správy stavu, exekučního pískoviště, bezpečnostních pojistek a orchestrace subagentů.
-- 3. Kritické zhodnocení: Porovnání navržených principů s volnými agentními smyčkami a vymezení provozních limitů autonomního inženýrství.
-]
+Práce používá konceptově-analytický a inženýrský postup: vymezuje nezbytné části agentního systému, popisuje jejich vztahy a ověřuje je na návrhu a realizaci systému DarkFactory.
   ],
-  document_enabled: true,
-  document_after: terms => [
-#alert[
-  Chybějící evaluační rámec v metodice:
-  Metodika práce v současné podobě popisuje inženýrský postup, ale postrádá formální specifikaci evaluačního rámce: definici vzorku úloh pro ověření spolehlivosti (syntetické úlohy vs. reálné bugfixy), stanovení kontrolních metrik (úspěšnost na první pokus, spotřeba tokenů na úspěšný PR) a srovnávací baseline.
-]
+  description: terms => [
+Předmětem práce není trénování neuronových sítí, optimalizace vah ani podrobná matematika modelového učení. #term(terms.language_model) je zde chápán jako hotová inferenční komponenta. Modelová vrstva je proto popsána pouze v rozsahu nutném pro pochopení agentního běhu, tokenizace, kontextového okna, paměťového stavu inference a nástrojových rozhraní.
+
+Hlavním předmětem zkoumání je #term(terms.agentic_engineering) a konstrukce #term(terms.harness) pro autonomní softwarové inženýrství. Jednotlivé mechanismy jsou rozděleny do samostatných konceptů, aby každý pojem měl jedno místo pro definici, popis a shrnutí a aby se stejné vysvětlení neopakovalo v několika kapitolách.
+
+Postup práce má tři kroky: nejprve jsou vymezeny relevantní koncepty a jejich závislosti; následně jsou tyto principy promítnuty do architektury DarkFactory; nakonec jsou vlastnosti výsledného systému posouzeny podle ověřitelných výstupů vývojového procesu. Terminologie zachovává zavedené oborové názvy tam, kde jsou v praxi přesnější než doslovný překlad, přičemž všechny používané termíny jsou vedeny jako kanonické koncepty.
   ],
-  relations: ((type: "dependency", target: "thesis_objectives_research_questions"),),
+  summary: terms => [
+Rozsah práce je záměrně soustředěn na agentní systém kolem modelu: model je vstupní inferenční komponenta, zatímco předmětem návrhu a hodnocení je harness a jeho provozní mechanismy.
+  ],
+  relations: (
+    (type: "dependency", target: "thesis_objectives_research_questions"),
+    (type: "related", target: "language_model"),
+    (type: "related", target: "agentic_engineering"),
+    (type: "related", target: "harness"),
+  ),
 )
