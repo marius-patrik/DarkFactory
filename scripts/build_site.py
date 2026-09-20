@@ -255,6 +255,9 @@ manifest = {
         "stack": [
             "React",
             "TypeScript",
+            "Rsbuild",
+            "Rspack",
+            "Biome",
             "shadcn/ui",
             "Motion",
             "Dagre",
@@ -287,9 +290,9 @@ for required in (
     if not required.is_file() or required.stat().st_size == 0:
         raise SystemExit(f"missing generated Pages asset: {required}")
 
-assets = SITE / "assets"
-if not assets.is_dir() or not any(assets.iterdir()):
-    raise SystemExit("React build contains no bundled assets")
+static_assets = SITE / "static"
+if not static_assets.is_dir() or not any(path.is_file() for path in static_assets.rglob("*")):
+    raise SystemExit("Rsbuild output contains no bundled static assets")
 
 print(
     f"ok: built React Pages app for {len(template_names)} templates x "
