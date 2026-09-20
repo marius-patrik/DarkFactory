@@ -1,4 +1,4 @@
-#import "../../../templates/common.typ": define-term, translation
+#import "../../../../templates/common.typ": define-term, translation
 #import "../../../schema.typ": concept
 
 #let terminology = define-term(
