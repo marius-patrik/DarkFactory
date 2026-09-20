@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, type FC, type ReactNode } from "react";
-import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, useRouter as useWouter } from "wouter";
+import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch } from "wouter";
 
 export interface RouterProps {
   basename?: string;
@@ -24,19 +24,16 @@ export const useRouter = () => {
 
 export interface RouteProps {
   path?: string;
-  component?: FC;
+  component?: FC<{ params: Record<string, string> }>;
   children?: ReactNode;
 }
 
 export const Route: FC<RouteProps> = ({ path, component: Component, children }) => {
-  if (path) {
-    return (
-      <WouterRoute path={path}>
-        {(params) => (Component ? <Component /> : <>{children}</>)}
-      </WouterRoute>
-    );
-  }
-  return <WouterRoute>{(params) => (Component ? <Component /> : <>{children}</>)}</WouterRoute>;
+  return (
+    <WouterRoute path={path}>
+      {(params) => (Component ? <Component params={params} /> : <>{children}</>)}
+    </WouterRoute>
+  );
 };
 
 const HomeView: FC = () => (
@@ -67,9 +64,13 @@ const NotFoundView: FC = () => (
   </div>
 );
 
-export const DarkFactoryShell: FC = () => {
+export interface DarkFactoryShellProps {
+  basename?: string;
+}
+
+export const DarkFactoryShell: FC<DarkFactoryShellProps> = ({ basename }) => {
   return (
-    <Router basename={typeof window !== "undefined" ? window.location.pathname.split("/").slice(0, -1).join("/") : ""}>
+    <Router basename={basename}>
       <div className="darkfactory-shell" aria-live="polite">
         <header>
           <h1>DarkFactory Web</h1>
@@ -80,12 +81,14 @@ export const DarkFactoryShell: FC = () => {
           </nav>
         </header>
         <main>
-          <Route path="/" component={HomeView} />
-          <Route path="/status" component={StatusView} />
-          <Route path="/docs" component={DocsView} />
-          <WouterRoute>
-            <NotFoundView />
-          </WouterRoute>
+          <Switch>
+            <Route path="/" component={HomeView} />
+            <Route path="/status" component={StatusView} />
+            <Route path="/docs" component={DocsView} />
+            <Route>
+              <NotFoundView />
+            </Route>
+          </Switch>
         </main>
       </div>
     </Router>
