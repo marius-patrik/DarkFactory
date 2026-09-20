@@ -1,5 +1,8 @@
 #import "/DarkFactory/schema.typ": folder
 #import "/DarkFactory/agentic-engineering/agent-harness/agent-harness.typ" as section
+#import "/DarkFactory/agentic-engineering/agent-harness/examples/codex.typ" as codex
+#import "/DarkFactory/agentic-engineering/agent-harness/examples/claude-code.typ" as claude_code
+#import "/DarkFactory/agentic-engineering/agent-harness/examples/claude-desktop.typ" as claude_desktop
 #import "/DarkFactory/agentic-engineering/agent-harness/sandbox.typ" as sandbox
 #import "/DarkFactory/agentic-engineering/agent-harness/human-in-the-loop.typ" as human_in_the_loop
 #import "/DarkFactory/agentic-engineering/agent-harness/plugins.typ" as plugins
@@ -13,7 +16,15 @@
 #let node = folder(
   key: "harness",
   section: section.item,
-  concepts: (sandbox.item, guardrail.item, human_in_the_loop.item, plugins.item),
+  concepts: (
+    codex.item,
+    claude_code.item,
+    claude_desktop.item,
+    sandbox.item,
+    guardrail.item,
+    human_in_the_loop.item,
+    plugins.item,
+  ),
   children: (
     agent_loop.node,
     tool_calling.node,
