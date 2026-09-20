@@ -1,37 +1,25 @@
-#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
+#import "skill-md-format.typ" as skill_md_format
 
 #let item = concept(
   key: "skills",
-    industry: "Skills",
+  industry: "Skills",
   czech: "Dovednosti",
   english: "Skills",
-  citation: bib.anthropic2024tooluse,
-  source: bib.anthropic2024tooluse,
-definition: terms => [
-Dovednost je znovupoužitelný modulární balíček instrukcí, procedurálních pravidel a volitelných skriptů či zdrojů, který harness načítá podle povahy řešeného úkolu.
+  citation: bib.agent_skills_spec,
+  source: bib.agent_skills_spec,
+  definition: terms => [
+Skill je znovupoužitelný balíček instrukcí a volitelných zdrojů, který agent načte tehdy, když je relevantní pro řešený úkol.
   ],
   description: terms => [
-Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills).][#term(terms.skills) @anthropic2024tooluse.]
+Otevřený formát Agent Skills používá adresář se souborem `SKILL.md`. Tento soubor obsahuje metadata a vlastní instrukce; adresář může navíc obsahovat skripty, reference nebo další zdroje. #cite(bib.agent_skills_spec)
 
-Architektura dovedností staví na následujících principech:
-- Definiční soubor `SKILL.md`: Dovednost tvoří adresář obsahující definiční soubor se strukturovanou hlavičkou (YAML frontmatter vymezující název a popis role) a detailním návodem k použití.
-#diff[
-- Dynamické načítání pro úsporu kontextu: Do výchozího promptu se vloží pouze stručný přehled dostupných dovedností. Kompletní instrukce a skripty se do kontextu načtou až v okamžiku, kdy agent danou dovednost explicitně vyvolá.
-- Skripty (#term(terms.script, language: "en", marker: false, linked: false, emphasized: false)) a záchytné body (#term(terms.hook, language: "en", marker: false, linked: false, emphasized: false)): Dovednosti mohou obsahovat deterministické skripty pro rutinní transformace kódu a událostní háčky vyvolávané při stavových přechodech harnessu.
-
-Kromě kontextových dovedností využívají pokročilé řídicí architektury také programové #term(terms.plugins). Zatímco _Skills_ fungují jako kontextové procedury a instrukce interpretované modelem, pluginy rozšiřují samotný harness na nativní systémové úrovni.
-][
-Načítání dovedností popisuje samostatný koncept #term(terms.progressive_disclosure). Deterministické součásti dovedností jsou rozděleny mezi #term(terms.script) a #term(terms.hook); nativní rozšíření harnessu představuje samostatný koncept #term(terms.plugins).
-]
+Smyslem je přesunout specializované postupy mimo základní systémový prompt. Agent tak může mít k dispozici větší množství schopností, aniž by musel jejich úplné instrukce držet v kontextu po celou dobu práce.
   ],
   summary: terms => [
-Dovednosti modularizují doménové postupy a načítají je pouze tehdy, když jsou relevantní, čímž snižují velikost základního promptu a omezují duplicitu instrukcí.
+Skills modularizují opakovatelné postupy a umožňují načítat specializované instrukce až ve chvíli, kdy jsou potřeba.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
+  examples: (skill_md_format.item,),
   relations: ((type: "dependency", target: "tool_calling"),),
 )

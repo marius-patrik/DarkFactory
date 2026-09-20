@@ -1,180 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="880" height="440">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560">
   <defs>
-    <!-- Arrowhead markers -->
-    <marker id="arr-indigo" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#4f46e5" />
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
     </marker>
-    <marker id="arr-rose" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#e11d48" />
+    <marker id="relation" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
     </marker>
-    <marker id="arr-violet" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#7c3aed" />
-    </marker>
-    <marker id="arr-teal" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#0d9488" />
-    </marker>
-
-    <!-- Subtle Drop Shadow -->
-    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.06" />
-    </filter>
   </defs>
+  <rect x="18" y="18" width="864" height="524" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="44" y="58" font-family="Carlito,Arial,sans-serif" font-size="20" font-weight="700" fill="#0f172a">3D projekce embeddingového vztahu král − muž + žena ≈ královna</text>
+  <text x="44" y="84" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">Ilustrativní projekce vysokodimenzionálního prostoru do tří rozměrů</text>
 
-  <style>
-    .panel-title { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 13.5px; fill: #0f172a; }
-    .panel-subtitle { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
-    .node-label { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 13px; fill: #0f172a; }
-    .node-code { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.5px; font-weight: 600; fill: #334155; }
-    .vec-label { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 11.5px; font-weight: 600; }
-    .math-text { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; }
-    .axis-label { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 10px; font-style: italic; fill: #94a3b8; }
-  </style>
+  <!-- origin and perspective axes -->
+  <circle cx="210" cy="430" r="4" fill="#334155"/>
+  <line x1="210" y1="430" x2="760" y2="430" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="210" y1="430" x2="210" y2="125" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="210" y1="430" x2="520" y2="245" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="770" y="435" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₁</text>
+  <text x="198" y="112" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₂</text>
+  <text x="532" y="239" font-family="Carlito,Arial,sans-serif" font-size="13" fill="#64748b">d₃</text>
 
-  <!-- Canvas container background -->
-  <rect x="10" y="10" width="860" height="420" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+  <!-- guide plane -->
+  <polygon points="300,390 555,330 650,205 395,265" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>
 
-  <!-- ========================================================================= -->
-  <!-- PANEL A: Sémantická aritmetika přirozeného jazyka                          -->
-  <!-- ========================================================================= -->
-  <g filter="url(#card-shadow)">
-    <rect x="25" y="25" width="400" height="390" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+  <!-- four semantic points -->
+  <circle cx="300" cy="390" r="10" fill="#2563eb"/>
+  <circle cx="555" cy="330" r="10" fill="#db2777"/>
+  <circle cx="395" cy="265" r="10" fill="#2563eb"/>
+  <circle cx="650" cy="205" r="12" fill="#db2777" stroke="#9d174d" stroke-width="2"/>
+
+  <g font-family="Carlito,Arial,sans-serif" font-size="16" font-weight="700" fill="#0f172a">
+    <text x="270" y="420">muž</text>
+    <text x="555" y="360">žena</text>
+    <text x="355" y="246">král</text>
+    <text x="662" y="196">královna</text>
   </g>
-  <rect x="25" y="25" width="400" height="46" rx="10" fill="#f1f5f9" />
-  <text x="40" y="46" class="panel-title">A) Vektorová aritmetika pojmů v jazyce</text>
-  <text x="40" y="62" class="panel-subtitle">Projekce embeddingového prostoru tokenů ($d_1$ a $d_2$)</text>
 
-  <!-- Grid lines A -->
-  <line x1="55" y1="90" x2="400" y2="90" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="55" y1="160" x2="400" y2="160" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="55" y1="230" x2="400" y2="230" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="55" y1="300" x2="400" y2="300" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="120" y1="75" x2="120" y2="330" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="220" y1="75" x2="220" y2="330" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="320" y1="75" x2="320" y2="330" stroke="#f1f5f9" stroke-width="1" />
+  <!-- gender vector -->
+  <line x1="315" y1="386" x2="540" y2="333" stroke="#e11d48" stroke-width="4" marker-end="url(#relation)"/>
+  <line x1="410" y1="261" x2="635" y2="208" stroke="#e11d48" stroke-width="4" marker-end="url(#relation)"/>
+  <text x="420" y="345" font-family="Carlito,Arial,sans-serif" font-size="14" font-weight="700" fill="#be123c">stejný relační posun</text>
 
-  <!-- Axis indicators -->
-  <path d="M 50 330 L 390 330" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" />
-  <path d="M 50 330 L 50 85" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" />
-  <text x="390" y="342" text-anchor="end" class="axis-label">latentní dimenze 1 →</text>
-  <text x="45" y="85" text-anchor="start" class="axis-label">↑ dimenze 2</text>
+  <!-- royalty vector -->
+  <line x1="306" y1="378" x2="389" y2="278" stroke="#4f46e5" stroke-width="3" marker-end="url(#relation)"/>
+  <line x1="561" y1="318" x2="644" y2="218" stroke="#4f46e5" stroke-width="3" marker-end="url(#relation)"/>
 
-  <!-- Vectors: Gender (Horizontální posun muže na ženu a krále na královnu) -->
-  <path d="M 128 275 L 292 275" fill="none" stroke="#e11d48" stroke-width="2.2" stroke-dasharray="5,4" marker-end="url(#arr-rose)" />
-  <rect x="180" y="280" width="76" height="18" rx="4" fill="#ffe4e6" />
-  <text x="218" y="293" text-anchor="middle" class="vec-label" fill="#be123c">+ v("pohlaví")</text>
-
-  <path d="M 128 135 L 292 135" fill="none" stroke="#e11d48" stroke-width="2.2" stroke-dasharray="5,4" marker-end="url(#arr-rose)" />
-  <rect x="180" y="112" width="76" height="18" rx="4" fill="#ffe4e6" />
-  <text x="218" y="125" text-anchor="middle" class="vec-label" fill="#be123c">+ v("pohlaví")</text>
-
-  <!-- Vectors: Royalty (Vertikální posun od běžného člověka k panovníkovi) -->
-  <path d="M 115 260 L 115 150" fill="none" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arr-indigo)" />
-  <rect x="42" y="196" width="94" height="20" rx="4" fill="#e0e7ff" />
-  <text x="89" y="210" text-anchor="middle" class="vec-label" fill="#3730a3">+ v("panovník")</text>
-
-  <path d="M 305 260 L 305 150" fill="none" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arr-indigo)" />
-  <rect x="312" y="196" width="94" height="20" rx="4" fill="#e0e7ff" />
-  <text x="359" y="210" text-anchor="middle" class="vec-label" fill="#3730a3">+ v("panovník")</text>
-
-  <!-- Nearest Neighbor Tolerance Circle around Královna -->
-  <circle cx="305" cy="135" r="28" fill="#fdf2f8" stroke="#ec4899" stroke-width="1.2" stroke-dasharray="4,3" />
-
-  <!-- Nodes A -->
-  <!-- Bod: Muž -->
-  <circle cx="115" cy="275" r="7" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" />
-  <rect x="80" y="295" width="70" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe" />
-  <text x="115" y="310" text-anchor="middle" class="node-label" fill="#1e40af">„muž“</text>
-
-  <!-- Bod: Žena -->
-  <circle cx="305" cy="275" r="7" fill="#ec4899" stroke="#be185d" stroke-width="2" />
-  <rect x="270" y="295" width="70" height="22" rx="4" fill="#fdf2f8" stroke="#fbcfe8" />
-  <text x="305" y="310" text-anchor="middle" class="node-label" fill="#9d174d">„žena“</text>
-
-  <!-- Bod: Král -->
-  <circle cx="115" cy="135" r="7" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" />
-  <rect x="80" y="100" width="70" height="22" rx="4" fill="#eff6ff" stroke="#bfdbfe" />
-  <text x="115" y="115" text-anchor="middle" class="node-label" fill="#1e40af">„král“</text>
-
-  <!-- Bod: Královna -->
-  <circle cx="305" cy="135" r="7" fill="#ec4899" stroke="#be185d" stroke-width="2" />
-  <rect x="265" y="76" width="80" height="22" rx="4" fill="#fdf2f8" stroke="#f472b6" stroke-width="1.5" />
-  <text x="305" y="91" text-anchor="middle" class="node-label" fill="#9d174d">„královna“</text>
-
-  <!-- Equation Summary A -->
-  <rect x="40" y="355" width="370" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1" />
-  <text x="225" y="373" text-anchor="middle" class="math-text" fill="#0f172a">v(„král“) − v(„muž“) + v(„žena“) ≈ v(„královna“)</text>
-  <text x="225" y="388" text-anchor="middle" class="panel-subtitle" fill="#64748b">Vektorový posun panovnického statusu je rovnoběžný</text>
-
-
-  <!-- ========================================================================= -->
-  <!-- PANEL B: Izomorfní algebraické relace v softwarovém inženýrství             -->
-  <!-- ========================================================================= -->
-  <g filter="url(#card-shadow)">
-    <rect x="455" y="25" width="400" height="390" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
-  </g>
-  <rect x="455" y="25" width="400" height="46" rx="10" fill="#f1f5f9" />
-  <text x="470" y="46" class="panel-title">B) Analogie v programování a kódu</text>
-  <text x="470" y="62" class="panel-subtitle">Sémantické relace zachycené modelem (kontext a zapouzdření)</text>
-
-  <!-- Grid lines B -->
-  <line x1="485" y1="90" x2="830" y2="90" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="485" y1="160" x2="830" y2="160" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="485" y1="230" x2="830" y2="230" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="485" y1="300" x2="830" y2="300" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="550" y1="75" x2="550" y2="330" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="650" y1="75" x2="650" y2="330" stroke="#f1f5f9" stroke-width="1" />
-  <line x1="750" y1="75" x2="750" y2="330" stroke="#f1f5f9" stroke-width="1" />
-
-  <!-- Axis indicators B -->
-  <path d="M 480 330 L 820 330" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" />
-  <path d="M 480 330 L 480 85" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" />
-  <text x="820" y="342" text-anchor="end" class="axis-label">reprezentační dimenze i →</text>
-  <text x="475" y="85" text-anchor="start" class="axis-label">↑ dimenze j</text>
-
-  <!-- Vectors B: Datový typ / Role (Horizontální posun: od funkce k datové proměnné) -->
-  <path d="M 568 275 L 722 275" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-dasharray="5,4" marker-end="url(#arr-teal)" />
-  <rect x="608" y="280" width="84" height="18" rx="4" fill="#ccfbf1" />
-  <text x="650" y="293" text-anchor="middle" class="vec-label" fill="#0f766e">+ v("proměnná")</text>
-
-  <path d="M 568 135 L 722 135" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-dasharray="5,4" marker-end="url(#arr-teal)" />
-  <rect x="608" y="112" width="84" height="18" rx="4" fill="#ccfbf1" />
-  <text x="650" y="125" text-anchor="middle" class="vec-label" fill="#0f766e">+ v("proměnná")</text>
-
-  <!-- Vectors B: Zapouzdření do třídy / objektu (Vertikální posun k metodě / atributu) -->
-  <path d="M 555 260 L 555 150" fill="none" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arr-violet)" />
-  <rect x="470" y="196" width="108" height="20" rx="4" fill="#ede9fe" />
-  <text x="524" y="210" text-anchor="middle" class="vec-label" fill="#5b21b6">+ v("zapouzdření")</text>
-
-  <path d="M 735 260 L 735 150" fill="none" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arr-violet)" />
-  <rect x="742" y="196" width="108" height="20" rx="4" fill="#ede9fe" />
-  <text x="796" y="210" text-anchor="middle" class="vec-label" fill="#5b21b6">+ v("zapouzdření")</text>
-
-  <!-- Nearest Neighbor Tolerance Circle around Atribut -->
-  <circle cx="735" cy="135" r="28" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="4,3" />
-
-  <!-- Nodes B -->
-  <!-- Bod: Globální funkce -->
-  <circle cx="555" cy="275" r="7" fill="#0ea5e9" stroke="#0284c7" stroke-width="2" />
-  <rect x="505" y="295" width="100" height="22" rx="4" fill="#f0f9ff" stroke="#bae6fd" />
-  <text x="555" y="310" text-anchor="middle" class="node-code" fill="#0369a1">def calc():</text>
-
-  <!-- Bod: Globální proměnná -->
-  <circle cx="735" cy="275" r="7" fill="#10b981" stroke="#059669" stroke-width="2" />
-  <rect x="690" y="295" width="90" height="22" rx="4" fill="#f0fdf4" stroke="#bbf7d0" />
-  <text x="735" y="310" text-anchor="middle" class="node-code" fill="#15803d">x: int = 1</text>
-
-  <!-- Bod: Metoda třídy -->
-  <circle cx="555" cy="135" r="7" fill="#0ea5e9" stroke="#0284c7" stroke-width="2" />
-  <rect x="495" y="100" width="120" height="22" rx="4" fill="#f0f9ff" stroke="#bae6fd" />
-  <text x="555" y="115" text-anchor="middle" class="node-code" fill="#0369a1">def calc(self):</text>
-
-  <!-- Bod: Atribut / Field -->
-  <circle cx="735" cy="135" r="7" fill="#10b981" stroke="#059669" stroke-width="2" />
-  <rect x="680" y="76" width="110" height="22" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" />
-  <text x="735" y="91" text-anchor="middle" class="node-code" fill="#15803d">self.x: int = 1</text>
-
-  <!-- Equation Summary B -->
-  <rect x="470" y="355" width="370" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1" />
-  <text x="655" y="373" text-anchor="middle" class="math-text" fill="#0f172a">v(metoda) − v(funkce) + v(proměnná) ≈ v(atribut)</text>
-  <text x="655" y="388" text-anchor="middle" class="panel-subtitle" fill="#64748b">Stejný princip umožňuje modelům spolehlivě doplňovat a refaktorovat kód</text>
+  <!-- equation -->
+  <rect x="168" y="470" width="565" height="48" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="450" y="501" text-anchor="middle" font-family="Carlito,Arial,sans-serif" font-size="18" font-weight="700" fill="#0f172a">v(král) − v(muž) + v(žena) ≈ v(královna)</text>
 </svg>
