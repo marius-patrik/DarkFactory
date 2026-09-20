@@ -5,14 +5,16 @@
   "sideEffects": false,
   "exports": {
     ".": "./capability.ts",
-    "./artifacts": "./artifacts.ts"
+    "./artifacts": "./artifacts.ts",
+    "./versioning": "./versioning.ts"
   },
   "files": [
     "capability.ts",
-    "artifacts.ts"
+    "artifacts.ts",
+    "versioning.ts"
   ],
   "scripts": {
-    "test": "bun test artifacts.test.ts"
+    "test": "bun test *.test.ts"
   },
   "license": "GPL-3.0",
   "dependencies": {
