@@ -133,7 +133,7 @@ jobs:
       - name: Build documentation
         # The command comes from this repository's declared environment rather than being fixed
         # here, exactly as in ci.yml. Hardcoding one engine is what made the first deploy after the
-        # previous renderer switch fail because the configured executable was unavailable.
+        # The documentation command is resolved from the repository's active documentation contract.
         env:
           DOCUMENTATION_COMMAND: ${{ steps.documentation.outputs.command }}
         run: |
