@@ -286,6 +286,7 @@
 #let define-term(
   proper: none,
   industry: none,
+  alias: none,
   id: none,
   explanation_en: none,
   explanation_cs: none,
@@ -294,7 +295,13 @@
   keyword: true,
 ) = {
   assert(proper.cs != none or proper.en != none, message: "term requires at least one proper/formal name")
-  let identity = if proper.en != none { proper.en } else { proper.cs }
+  let identity = if industry != none and industry.en != none {
+    industry.en
+  } else if proper.en != none {
+    proper.en
+  } else {
+    proper.cs
+  }
   let resolved-id = if id == none { keyword-id(str(identity)) } else { id }
   assert(resolved-id != "", message: "term id must not be empty")
   (
@@ -302,6 +309,7 @@
     id: resolved-id,
     proper: proper,
     industry: industry,
+    alias: alias,
     explanation_en: explanation_en,
     explanation_cs: explanation_cs,
     citation: citation,
@@ -341,47 +349,78 @@
   }
 }
 
-// Canonical term-name presentation used everywhere:
-//   Industry (Czech) [English]
-// If no industry alias exists, English leads: English (Czech).
-// Duplicate names collapse, so English is omitted when it equals the industry alias.
-#let term-name(value) = {
-  let cs = value.proper.cs
-  let en = value.proper.en
-  let industry = if value.industry == none {
-    none
-  } else if value.industry.en != none {
-    value.industry.en
-  } else {
-    value.industry.cs
-  }
-
-  let lead-value = if industry != none {
-    industry
-  } else if en != none {
-    en
-  } else {
-    cs
-  }
-  let lead-language = if industry != none and value.industry != none and value.industry.en == none {
+// Canonical naming roles:
+//   industry — established industry-facing term or abbreviation,
+//   proper   — formal localized name,
+//   alias    — optional alternate name.
+// The full surface is Industry (Proper) [Alias]. It never adds an English
+// proper name merely because it differs from Czech; localization is controlled
+// by the publication profile or the explicit language argument.
+#let localized-name(value, language: "auto") = context {
+  if value == none { return none }
+  let profile = profile-state.get()
+  let lang = if language != "auto" {
+    language
+  } else if profile in ("school", "cs") {
     "cs"
-  } else if en != none {
+  } else if profile == "en" {
     "en"
   } else {
-    "cs"
+    "both"
   }
-  let lead = text(lang: lead-language)[#lead-value]
-  let lead-text = str(lead-value)
 
-  [
-    #lead
-    #if cs != none and str(cs) != lead-text {
-      [#h(0.25em)#text("(")#text(lang: "cs")[#cs]#text(")")]
-    }
-    #if en != none and str(en) != lead-text {
-      [#h(0.25em)#text("[")#text(lang: "en")[#en]#text("]")]
-    }
-  ]
+  if lang == "cs" {
+    if value.cs != none { text(lang: "cs")[#value.cs] } else { text(lang: "en")[#value.en] }
+  } else if lang == "en" {
+    if value.en != none { text(lang: "en")[#value.en] } else { text(lang: "cs")[#value.cs] }
+  } else if value.cs == none {
+    text(lang: "en")[#value.en]
+  } else if value.en == none or str(value.cs) == str(value.en) {
+    text(lang: "cs")[#value.cs]
+  } else {
+    [#text(lang: "en")[#value.en] (#text(lang: "cs")[#value.cs])]
+  }
+}
+
+#let raw-name(value, language: "auto") = context {
+  if value == none { return none }
+  let profile = profile-state.get()
+  let lang = if language != "auto" { language } else if profile in ("school", "cs") { "cs" } else { "en" }
+  if lang == "cs" {
+    if value.cs != none { str(value.cs) } else { str(value.en) }
+  } else {
+    if value.en != none { str(value.en) } else { str(value.cs) }
+  }
+}
+
+#let term-name(value, surface: "full", language: "auto") = context {
+  assert(surface in ("full", "industry", "proper", "alias"), message: "term surface must be full, industry, proper, or alias")
+  let industry = localized-name(value.industry, language: language)
+  let proper = localized-name(value.proper, language: language)
+  let alias = localized-name(value.alias, language: language)
+  let industry-raw = raw-name(value.industry, language: language)
+  let proper-raw = raw-name(value.proper, language: language)
+  let alias-raw = raw-name(value.alias, language: language)
+
+  if surface == "industry" {
+    if industry != none { industry } else { proper }
+  } else if surface == "proper" {
+    proper
+  } else if surface == "alias" {
+    if alias != none { alias } else if industry != none { industry } else { proper }
+  } else {
+    let lead = if industry != none { industry } else { proper }
+    let lead-raw = if industry != none { industry-raw } else { proper-raw }
+    [
+      #lead
+      #if proper != none and proper-raw != lead-raw {
+        [#h(0.25em)#text("(")#proper#text(")")]
+      }
+      #if alias != none and alias-raw != lead-raw and alias-raw != proper-raw {
+        [#h(0.25em)#text("[")#alias#text("]")]
+      }
+    ]
+  }
 }
 
 #let term-sort-name(value) = {
@@ -429,6 +468,7 @@
 #let term(
   value,
   render: "term",
+  surface: "full",
   language: "auto",
   detail-language: none,
   detail-order: "cs-en",
@@ -442,6 +482,7 @@
 ) = context {
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
+  assert(surface in ("full", "industry", "proper", "alias"), message: "term surface must be full, industry, proper, or alias")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
   assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
   assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
@@ -451,7 +492,7 @@
   }
 
   let detail-lang = if detail-language == none { language } else { detail-language }
-  let name = term-name(value)
+  let name = term-name(value, surface: surface, language: language)
   let displayed-name = if emphasized { [_*#name*_] } else { name }
   let displayed-name = if cite and value.citation != none {
     let render-c(c) = {
