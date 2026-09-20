@@ -243,7 +243,7 @@
 
 #let render-section-definition(item, terms) = {
   if item.definition != none {
-    item.definition(terms)
+    (item.definition)(terms)
   } else {
     let value = item.term
     if value.explanation_cs == none and value.explanation_en == none {
