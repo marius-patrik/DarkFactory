@@ -256,7 +256,7 @@
     justify: true,
     leading: radkovani * 0.65em,
     spacing: mezera-odstavec,
-    first-line-indent: (amount: 1.5em, all: true),
+    first-line-indent: 0pt,
   )
   // Odstavec se nerozděluje mezi dvě strany.
   show par: it => block(breakable: false, it)
