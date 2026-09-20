@@ -2,6 +2,8 @@
 
 = #finalized[DarkFactory - Praktická část: Architektura harnessu]
 
+== #finalized[Úvod]
+
 == #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 
 // Záměrně bez prose; povoleny jsou pouze explicitně schválené strukturální heading stuby.
