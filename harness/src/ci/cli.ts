@@ -1,6 +1,6 @@
+import { requiredChecksForDetectedQuality } from "@darkfactory/capability/actions";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
-import { loadCiConfig } from "./config.ts";
 import { resolveDetectedQuality, runDetectedQuality } from "./detected.ts";
 import { runCiDoctor } from "./doctor.ts";
 import { installWorkflows, updateWorkflows } from "./installer.ts";
@@ -146,7 +146,8 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				return 1;
 			}
 
-			const config = await loadCiConfig(repoPath);
+			const detected = await resolveDetectedQuality(repoPath);
+			const checks = requiredChecksForDetectedQuality(detected.resolution);
 			const prNumber = getOption(args, "--pr");
 			let ref = getOption(args, "--ref");
 
@@ -164,7 +165,7 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				ref = "HEAD";
 			}
 
-			const status = await getCheckStatus(repo, ref, config);
+			const status = await getCheckStatus(repo, ref, checks);
 
 			if (isJson) {
 				log(JSON.stringify(status, null, 2));
@@ -271,11 +272,12 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 				return 1;
 			}
 
-			const config = await loadCiConfig(repoPath);
-			const branch = getOption(args, "--branch") ?? "main";
+			const detected = await resolveDetectedQuality(repoPath);
+			const checks = requiredChecksForDetectedQuality(detected.resolution);
+			const branch = getOption(args, "--branch") ?? detected.evidence.repoDf.identity?.default_branch ?? "main";
 			const dryRun = hasFlag(args, "--dry-run");
 			const verify = hasFlag(args, "--verify");
-			const required = computeRequiredChecks(config, repo.slug);
+			const required = computeRequiredChecks(checks);
 
 			if (verify) {
 				const verification = await verifyBranchProtection(repo, required, branch);
@@ -329,8 +331,6 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 			log("CI Doctor Report:");
 			const detected = report.checks.repository;
 			log(`  Repository: [${detected.status.toUpperCase()}] ${detected.message}`);
-			const cf = report.checks.config;
-			log(`  Config:     [${cf.status.toUpperCase()}] ${cf.message}`);
 			const wf = report.checks.workflows;
 			log(`  Workflows:  [${wf.status.toUpperCase()}] ${wf.message}`);
 			const pr = report.checks.protection;
