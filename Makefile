@@ -120,10 +120,10 @@ ci: all all-templates web-check verify
 
 site:
 	@if command -v $(TYPST) >/dev/null 2>&1; then \
-		$(MAKE) ci BOOK=$(BOOK) && $(PYTHON) scripts/build_site.py --book "$(BOOK)"; \
+		$(MAKE) ci BOOK=$(BOOK) && $(PYTHON) scripts/build_site.py --book "$(BOOK)" --default-template "$(DEFAULT_TEMPLATE)"; \
 	else \
 		echo "Typst unavailable: building React Pages structure without compiled publication artifacts"; \
-		$(MAKE) web-build && $(PYTHON) scripts/build_site.py --book "$(BOOK)" --allow-missing; \
+		$(MAKE) web-build && $(PYTHON) scripts/build_site.py --book "$(BOOK)" --default-template "$(DEFAULT_TEMPLATE)" --allow-missing; \
 	fi
 
 check: ci
