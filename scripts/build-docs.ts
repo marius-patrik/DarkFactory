@@ -100,14 +100,8 @@ export function rewriteLinks(markdown: string, destPath: string): string {
     "CONTRIBUTING.md": "agents.md",
     "CLAUDE.md": "agents.md",
     ".agents/notes/adr/README.md": "architecture/decisions/process.md",
-    "_notes/adr/README.md": "architecture/decisions/process.md",
-    "adr/README.md": "architecture/decisions/process.md",
-    "adr/": "architecture/decisions/index.md",
     ".agents/notes/adr/": "architecture/decisions/index.md",
-    "_notes/adr/": "architecture/decisions/index.md",
     ".agents/rules/": "rules/index.md",
-    "_rules/": "rules/index.md",
-    "rules/": "rules/index.md",
   };
 
   return markdown.replace(
@@ -118,7 +112,7 @@ export function rewriteLinks(markdown: string, destPath: string): string {
 
       if (!replacement) {
         const adrMatch = normalized.match(
-          /^(?:(?:\.agents\/notes|_notes)\/)?adr\/(?<slug>[^/]+\.md)$/
+          /^\.agents\/notes\/adr\/(?<slug>[^/]+\.md)$/
         );
         if (adrMatch && adrMatch.groups?.slug) {
           replacement = `architecture/decisions/${adrMatch.groups.slug}`;
@@ -127,7 +121,7 @@ export function rewriteLinks(markdown: string, destPath: string): string {
 
       if (!replacement) {
         const ruleMatch = normalized.match(
-          /^(?:(?:\.agents\/rules|_rules)\/|rules\/)(?<slug>[^/]+\.md)$/
+          /^\.agents\/rules\/(?<slug>[^/]+\.md)$/
         );
         if (ruleMatch && ruleMatch.groups?.slug) {
           replacement = `rules/${ruleMatch.groups.slug}`;
@@ -250,13 +244,17 @@ export function discoverAdrs(repoRoot: string): AdrRecord[] {
     }
 
     const statusMatch = content.match(STATUS_PATTERN);
+    const status = statusMatch ? statusMatch.groups?.status?.trim() || "Unknown" : "Unknown";
+    if (status !== "Accepted") {
+      throw new Error(`.agents/notes/adr/${filename} must have Status: Accepted`);
+    }
     const resolvesMatch = content.match(RESOLVES_PATTERN);
     const slug = filename.replace(/\.md$/, "");
 
     records.push({
       number: titleMatch.groups.number,
       title: titleMatch.groups.title,
-      status: statusMatch ? statusMatch.groups?.status?.trim() || "Unknown" : "Unknown",
+      status,
       resolves: resolvesMatch ? resolvesMatch.groups?.resolves?.trim() || "" : "",
       slug,
       filename,
