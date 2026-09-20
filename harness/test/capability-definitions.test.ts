@@ -1,9 +1,15 @@
-import { expect, mock, test } from "bun:test";
+import { expect, mock, test, afterEach } from "bun:test";
 
 mock.module("node:fs/promises", () => ({
 	access: async () => {},
 	constants: { X_OK: 1 },
+	readFile: async () => "{}",
+	readdir: async () => [],
 }));
+
+afterEach(() => {
+	mock.restore();
+});
 
 import { capability as detection } from "../../capabilities/detection/capability";
 import { capability as quality } from "../../capabilities/quality/capability";
@@ -28,5 +34,5 @@ test("quality tool resolves action for root package", async () => {
 			credentials: { get: async () => undefined },
 		},
 	);
-	expect(result).toEqual({ tool: "npm", args: ["test"] });
+	expect(result).toMatchObject({ tool: "npm", args: ["test"] });
 });

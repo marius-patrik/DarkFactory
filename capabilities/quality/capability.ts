@@ -1,9 +1,11 @@
 import {
 	defineCapability,
 	CAPABILITY_ABI_VERSION,
+	readRepoConfig,
+	checkToolExists,
+	parseShellCommand,
+	createQualityCommand,
 } from "@darkfactory/capability";
-import { capability as detectionCapability } from "../detection/capability.ts";
-import { readRepoConfig, checkToolExists, parseShellCommand, createQualityCommand } from "./utils";
 
 const DEFAULT_REGISTRY: Record<string, Record<string, { tool: string; args: string[] }>> = {
 	javascript: {
@@ -75,7 +77,10 @@ export const capability = defineCapability({
 				const { action, package: pkgName } = input as { action: string; package: string };
 
 				let detected: { name: string; ecosystem?: string; path?: string }[] = [];
-				const detectTool = detectionCapability.tools?.find((tool) => tool.name === "detect_packages");
+					// This would be replaced by dynamic capability discovery if needed
+					// For now we assume detection is available on the capability registry
+					const detectionCapability = (globalThis as any).capabilities?.find((c: any) => c.id === "detection");
+					const detectTool = detectionCapability?.tools?.find((tool: any) => tool.name === "detect_packages");
 				if (!detectTool) throw new Error("Detection capability does not provide detect_packages");
 				try {
 					const detectionResult = await detectTool.execute({}, context);

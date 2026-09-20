@@ -1,10 +1,11 @@
 import {
 	defineCapability,
 	CAPABILITY_ABI_VERSION,
+	readRepoConfig,
+	DEFAULT_MANIFESTS,
 } from "@darkfactory/capability";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative as relpath, sep } from "node:path";
-import { readRepoConfig, DEFAULT_MANIFESTS } from "../quality/utils";
 
 /**
  * Repository detection capability.
@@ -39,7 +40,7 @@ export const capability = defineCapability({
 				required: [],
 			},
 			execute: async (_, context) => {
-				const root = context.repositoryRoot;
+				const root = context?.repositoryRoot || process.cwd();
 				const repoConfig = await readRepoConfig(root);
 
 				const environment = repoConfig.environment || {};

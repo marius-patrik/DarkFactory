@@ -5,3 +5,4 @@
 export * from "./abi.ts";
 export * from "./compatibility.ts";
 export * from "./adapters.ts";
+export * from "./shared-utils.ts";
