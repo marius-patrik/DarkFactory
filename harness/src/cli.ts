@@ -17,6 +17,7 @@ import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
 import { bundledGraphPath } from "./graph/assets.ts";
 import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
+import { formatCaptureSchema } from "../../packages/cli/src/capture-schema.ts";
 import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import {
@@ -66,7 +67,7 @@ function usage(): string {
 	return [
 		"Usage:",
 		"  df | df chat [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard]",
-		"  df run [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--difficulty easy|medium|hard] [--min-tier id] [--timeout 15m0s] [--json] <prompt>",
+		"  df run [--capture-schema [name]] [--chain provider/model@account,... | --model provider/model@account] [--reasoning hard] [--size small|medium|large] [--difficulty easy|medium|hard] [--min-tier id] [--timeout 15m0s] [--json] <prompt>",
 		"  df route [--kind kind] [--size size] [--difficulty easy|medium|hard] [--min-tier id] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
@@ -1157,6 +1158,13 @@ async function runCommand(
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	if (args.includes("--capture-schema")) {
+		const rawName = option(args, "--capture-schema");
+		const name = rawName && !rawName.startsWith("--") ? rawName : undefined;
+		console.log(formatCaptureSchema(name));
+		return;
+	}
+
 	const startedAt = Date.now();
 	const budget = makeRunDeadline(option(args, "--timeout"), startedAt);
 	const chainValue = option(args, "--chain");
