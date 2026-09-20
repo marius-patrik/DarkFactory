@@ -14,7 +14,7 @@ Nástup velkých jazykových modelů (LLM) otevřel cestu k automatizaci syntéz
 ]
 
 #finalized[
-Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — značovaná jako #term(terms.harness, language: "en", name-type: "industry", register: true, linked: true, marker: false) — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
+Ústřední inženýrská otázka této práce proto nespočívá v tom, zda jazykový model dokáže napsat fragment kódu. Zkoumáme, jaká kontrolní a dozorčí architektura — značovaná jako #term(terms.harness, register: true, linked: true, marker: false) — musí model obklopovat, aby bylo možné jeho výstupům v produkčním repozitáři spolehlivě důvěřovat a dosáhnout vysoké míry autonomie se zachováním lidského dohledu.
 ]
 
 == #finalized[Cíl práce a výzkumné otázky]

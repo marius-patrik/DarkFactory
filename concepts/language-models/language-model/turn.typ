@@ -5,8 +5,6 @@
     id: "turn",
     proper: translation(cs: "Tah interakce", en: "Interaction Turn"),
     industry: translation(cs: "Turn", en: "Turn"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Jedna diskrétní jednotka interakce v konverzačním nebo agentním protokolu, například zpráva uživatele, odpověď modelu nebo samostatně evidovaný výsledek nástroje.",
     explanation_en: "One discrete unit of interaction in a conversational or agentic protocol, such as a user message, model response, or separately recorded tool result.",
     citation: bib.yao2022,
