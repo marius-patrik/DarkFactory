@@ -10,6 +10,11 @@ import type { ProviderConfig } from "../providers/schema.ts";
 import { classifyFailure, type FailureClassification, type FailureKind } from "../quota.ts";
 import { redactErrorMessage } from "../redaction.ts";
 import type { OutcomeStore } from "../router/outcomes.ts";
+import {
+	candidateTierKey,
+	nextCapabilityTier,
+	type CapabilityEscalationPolicy,
+} from "../router/tiers.ts";
 import type { TaskKind } from "../router/types.ts";
 import { createHarnessRuntime, type HarnessRuntime, type HarnessRuntimeOptions } from "./runtime.ts";
 
@@ -34,6 +39,14 @@ export type HarnessEvent =
 	| { type: "tool_start"; toolCallId: string; toolName: string; input: unknown }
 	| { type: "tool_end"; toolCallId: string; toolName: string; isError: boolean }
 	| { type: "failover"; from: Candidate; to: Candidate; reason: string; errorMessage: string }
+	| {
+			type: "tier_escalation";
+			from: Candidate;
+			to: Candidate;
+			fromTier: string;
+			toTier: string;
+			reason: FailureKind;
+	  }
 	| { type: "candidate_skipped"; candidate: Candidate; reason: FailureKind; resetAt?: number }
 	| { type: "candidate_unavailable"; candidate: Candidate; message: string }
 	| { type: "limit"; entry: LimitEntry }
@@ -126,6 +139,7 @@ export interface SupervisorOptions {
 	taskEstimate?: TaskEstimate;
 	outcomeStore?: OutcomeStore;
 	taskKind?: TaskKind;
+	capabilityEscalation?: CapabilityEscalationPolicy;
 	/** Admission control: asked before every model call; every call is recorded as usage. */
 	quota?: QuotaEngine;
 }
@@ -142,6 +156,7 @@ export interface CreateSupervisorOptions extends Omit<HarnessRuntimeOptions, "ca
 	monitorRecovery?: boolean;
 	outcomeStore?: OutcomeStore;
 	taskKind?: TaskKind;
+	capabilityEscalation?: CapabilityEscalationPolicy;
 	quota?: QuotaEngine;
 }
 
@@ -193,6 +208,7 @@ export class FailoverSupervisor {
 	private readonly failures: FailureKind[] = [];
 	private readonly reasons: CandidateFailureReason[] = [];
 	private timeoutEmittedFor?: number;
+	private resetEscalationOnNextPrompt = false;
 
 	constructor(
 		private readonly options: SupervisorOptions,
@@ -356,6 +372,7 @@ export class FailoverSupervisor {
 		failure: FailureClassification,
 		errorMessage: string,
 		budget?: RunDeadline,
+		escalateCapability = true,
 	): Promise<boolean> {
 		this.assertWithinDeadline(budget);
 		const from = this.activeCandidate;
@@ -364,11 +381,41 @@ export class FailoverSupervisor {
 		const maxWaitMs = this.options.maxWaitMs ?? 5 * 60_000;
 		const tokenLimit = isInputTokenLimit(failure, errorMessage);
 
-		const candidateIndices = [...Array(this.options.chain.length).keys()];
-		const orderedIndices = [
-			...candidateIndices.slice(this.activeIndex + 1),
-			...candidateIndices.slice(0, this.activeIndex),
-		];
+		const allIndices = [...Array(this.options.chain.length).keys()];
+		const escalation = this.options.capabilityEscalation;
+		const fromTier = escalation?.candidateTiers[candidateTierKey(from)] ?? escalation?.baselineTier;
+		const targetTier = escalation && escalateCapability ? nextCapabilityTier(escalation.order, fromTier) : undefined;
+		if (escalation && escalateCapability && !targetTier) return false;
+		const candidateIndices = targetTier
+			? allIndices.filter(
+					(index) => escalation?.candidateTiers[candidateTierKey(this.options.chain[index]!)] === targetTier,
+				)
+			: allIndices;
+		if (targetTier && candidateIndices.length === 0) return false;
+		const orderedIndices = targetTier
+			? candidateIndices
+			: [
+					...candidateIndices.slice(this.activeIndex + 1),
+					...candidateIndices.slice(0, this.activeIndex),
+				];
+
+		const activate = async (index: number): Promise<boolean> => {
+			const candidate = this.options.chain[index]!;
+			this.activeIndex = index;
+			await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
+			if (targetTier && fromTier) {
+				this.emit({
+					type: "tier_escalation",
+					from,
+					to: candidate,
+					fromTier,
+					toTier: targetTier,
+					reason: failure.kind,
+				});
+			}
+			this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
+			return true;
+		};
 
 		// First pass: try to find an active candidate (not cooling down).
 		// If tokenLimit, prefer candidates with other model/account immediately.
@@ -378,10 +425,7 @@ export class FailoverSupervisor {
 				if (candidate.model === from.model && candidate.account === from.account) continue;
 				const status = await this.usable(candidate, nowFn());
 				if (status.usable) {
-					this.activeIndex = index;
-					await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
-					this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
-					return true;
+					return activate(index);
 				}
 			}
 		}
@@ -406,15 +450,12 @@ export class FailoverSupervisor {
 				});
 				continue;
 			}
-			this.activeIndex = index;
-			await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
-			this.emit({ type: "failover", from, to: candidate, reason: failure.kind, errorMessage });
-			return true;
+			return activate(index);
 		}
 
 		// When every candidate is cooling down, check if earliest reset is within maxWaitMs
 		const allCooldowns: Array<{ index: number; candidate: Candidate; cooldown: LimitEntry }> = [];
-		for (let index = 0; index < this.options.chain.length; index++) {
+		for (const index of candidateIndices) {
 			const candidate = this.options.chain[index]!;
 			const status = await this.usable(candidate, nowFn());
 			for (const cooldown of status.entries) allCooldowns.push({ index, candidate, cooldown });
@@ -457,16 +498,24 @@ export class FailoverSupervisor {
 		if (budget && remaining !== undefined && waitMs >= remaining) throw this.timeoutError(budget);
 		await this.withinDeadline(sleep(Math.max(0, waitMs)), budget);
 		await this.recoverNow(nowFn());
-		this.activeIndex = earliest.index;
-		await this.withinDeadline(this.options.runtime.bindCandidate(earliest.candidate), budget);
-		this.emit({ type: "failover", from, to: earliest.candidate, reason: failure.kind, errorMessage });
-		return true;
+		return activate(earliest.index);
 	}
 
 	/** Runs one user prompt; failed provider responses are branched away before continuation. */
 	async prompt(prompt: string, maxTurns = 100, budget?: RunDeadline): Promise<AssistantMessage> {
 		if (!prompt.trim()) throw new Error("Prompt cannot be empty");
 		this.assertWithinDeadline(budget);
+		if (this.resetEscalationOnNextPrompt && this.options.capabilityEscalation) {
+			const baselineTier = this.options.capabilityEscalation.baselineTier;
+			const baselineIndex = this.options.chain.findIndex(
+				(candidate) => this.options.capabilityEscalation?.candidateTiers[candidateTierKey(candidate)] === baselineTier,
+			);
+			if (baselineIndex >= 0 && baselineIndex !== this.activeIndex) {
+				this.activeIndex = baselineIndex;
+				await this.withinDeadline(this.options.runtime.bindCandidate(this.activeCandidate), budget);
+			}
+			this.resetEscalationOnNextPrompt = false;
+		}
 		const initialUserCount = this.session.sessionManager
 			.buildSessionContext()
 			.messages.filter((message) => message.role === "user").length;
@@ -492,6 +541,7 @@ export class FailoverSupervisor {
 						{ kind, ...(entry ? { resetAt: entry.resetAt, pool: entry.pool } : {}) },
 						"proactive limit/capacity skip",
 						budget,
+						false,
 					))
 				)
 					throw new ChainExhaustedError([...this.failures, kind], this.reasons, await this.options.ledger.list());
@@ -603,6 +653,7 @@ export class FailoverSupervisor {
 				});
 				await this.recordOutcome(candidate, true, final.usage, (this.options.now ?? Date.now)() - attemptStartedAt);
 				await this.recordUsage(candidate, final.usage, true);
+				this.resetEscalationOnNextPrompt = !!this.options.capabilityEscalation;
 				return final;
 			}
 
