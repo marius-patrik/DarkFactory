@@ -1,8 +1,6 @@
 # ADR-0018 — First-party documentation engine and one shared web renderer
 
-**Status**: Accepted  
-**Date**: 2026-09-19  
-**Resolves**: ProperDocs/MkDocs dependency, generated API docs, README projection and consumer web deployment
+**Status**: Superseded by ADR-0023 · 2026-09-20
 
 ## Context
 
