@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Editor, { loader, type BeforeMount } from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
@@ -22,7 +22,7 @@ loader.config({ monaco });
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";
 
-const configureMonaco: BeforeMount = (instance) => {
+const configureMonaco = (instance: typeof monaco) => {
   instance.editor.defineTheme("darkfactory-oled", {
     base: "vs-dark",
     inherit: true,
