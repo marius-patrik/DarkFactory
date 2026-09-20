@@ -1,4 +1,4 @@
-#import "../../templates/common.typ": define-term, translation, blue-note, accepted, finalized, term, bib
+#import "../../templates/common.typ": define-term, translation, blue-note, accepted, diff, term, bib
 #import "../schema.typ": concept
 
 #let terminology = define-term(
@@ -17,9 +17,14 @@
   theory_enabled: true,
   theory_intro: terms => [
 #blue-note[
+#diff[
 Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model vnímáme jako hotovou inferenční komponentu vystupující v roli stochastického kognitivního jádra. Ústředním předmětem zkoumání je agentické inženýrství (_agentic engineering_) a architektura agent harnessu pro autonomní vývoj softwaru. Následující text je proto záměrně zredukován na nezbytné konceptuální minimum potřebné pro pochopení kontextového okna, spotřeby tokenů, degradace pozornosti a rozhraní nástrojů.
+][
+Těžištěm této práce není strojové učení, matematická optimalizace vah ani trénování neuronových sítí. Jazykový model je zde uvažován jako hotová inferenční komponenta. Ústředním předmětem zkoumání je agentické inženýrství (_agentic engineering_) a architektura agent harnessu pro autonomní vývoj softwaru. Teoretická část proto zachycuje pouze koncepty jazykových modelů, které jsou nutné pro popis agentního běhu, kontextu a nástrojových rozhraní.
+]
 ]
 
+#diff[
 #accepted[
 V agentickém softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_; #term(terms.transformer, language: "en", marker: false, linked: false, emphasized: false)), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
 
@@ -29,7 +34,10 @@ Základní principy fungování modelu zahrnují:
 
 Pro efektivní nasazení modelu do vývojového cyklu je nezbytné porozumět způsobu, jakým reprezentuje informace a jaké fyzické limity vymezují jeho operační paměť.
 ]
-  theory_body: none,
+][
+Základ modelové vrstvy je rozložen do samostatných konceptů: #term(terms.language_model), #term(terms.transformer), #term(terms.autoregression) a #term(terms.stochastic_decoding). Následující koncepty dále oddělují tokenizaci, reprezentaci dat, kontextové omezení a stav inferenčního běhu.
+]
   ],
+  theory_body: none,
   practical_enabled: false,
 )
