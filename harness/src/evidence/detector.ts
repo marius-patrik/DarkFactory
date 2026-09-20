@@ -74,7 +74,13 @@ async function scanDirectory(
 	ignoredDirs: Set<string>,
 	packages: DiscoveredPackage[],
 ): Promise<void> {
-	const entries = await readdir(currentDir, { withFileTypes: true });
+	let entries;
+	try {
+		entries = await readdir(currentDir, { withFileTypes: true });
+	} catch (error: any) {
+		console.warn(`Failed to scan directory ${currentDir}: ${error.message}`);
+		return;
+	}
 	const relPath = relative(rootDir, currentDir) || ".";
 	const normalizedRelPath = relPath.replace(/\\/g, "/");
 

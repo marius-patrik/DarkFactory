@@ -56,6 +56,22 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		docs_extract: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${path}/docs/source ${path}/docs/build`,
 		setup: (path) => path === "." ? "pip install -r requirements.txt" : `pip install -r ${path}/requirements.txt`,
 	},
+	rust: {
+		test: (path) => path === "." ? "cargo test" : `cargo test --manifest-path ${path}/Cargo.toml`,
+		lint: (path) => path === "." ? "cargo clippy" : `cargo clippy --manifest-path ${path}/Cargo.toml`,
+		format_check: (path) => path === "." ? "cargo fmt -- --check" : `cargo fmt --manifest-path ${path}/Cargo.toml -- --check`,
+		docs_check: (path) => path === "." ? "cargo doc" : `cargo doc --manifest-path ${path}/Cargo.toml`,
+		docs_extract: (path) => path === "." ? "cargo doc" : `cargo doc --manifest-path ${path}/Cargo.toml`,
+		setup: (path) => path === "." ? "cargo fetch" : `cargo fetch --manifest-path ${path}/Cargo.toml`,
+	},
+	go: {
+		test: (path) => path === "." ? "go test ./..." : `go test ${path}/...`,
+		lint: (path) => path === "." ? "go vet ./..." : `go vet ${path}/...`,
+		format_check: (path) => path === "." ? "gofmt -l ." : `gofmt -l ${path}`,
+		docs_check: (path) => path === "." ? "go doc" : `go doc ${path}`,
+		docs_extract: (path) => path === "." ? "go doc" : `go doc ${path}`,
+		setup: (path) => path === "." ? "go mod download" : `go mod download`,
+	},
 };
 
 /**
@@ -99,35 +115,6 @@ export async function resolveRepositoryActions(
 			"setup",
 			"release",
 		];
-
-		for (const actionKey of actionKeys) {
-			let command = "";
-			let description = "";
-			let supported = false;
-
-			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
-			// Sort capabilities to ensure deterministic resolution, e.g., by id
-			for (const cap of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
-				const capAction = cap.actions?.[actionKey];
-				if (capAction) {
-					// Check for overlap: warn if multiple capabilities try to override the same action
-					if (supported) {
-						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.id}`);
-					}
-					supported = true;
-					description = capAction.description ?? `Capability-contributed ${actionKey}`;
-					if (typeof capAction.command === "function") {
-						try {
-							command = (capAction.command as (p: string) => string)(pkg.path);
-						} catch (error: any) {
-							console.error(`Failed to resolve command from capability action: ${error.message}`);
-							command = "echo 'Failed to resolve capability command'";
-						}
-					} else {
-						command = capAction.command;
-					}
-				}
-			}
 
 		for (const actionKey of actionKeys) {
 			let command = "";
