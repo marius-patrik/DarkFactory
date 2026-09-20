@@ -826,66 +826,6 @@ function ChapterPicker({
   );
 }
 
-function AppearancePicker({
-  theme,
-  onChange,
-}: {
-  theme: AppearanceMode;
-  onChange: (theme: AppearanceMode) => void;
-}) {
-  const options: Array<{
-    theme: AppearanceMode;
-    label: string;
-    icon: string[];
-  }> = [
-    { theme: "light", label: "Light", icon: ["SunIcon"] },
-    { theme: "dark", label: "Dark", icon: ["MoonIcon"] },
-    { theme: "oled", label: "OLED", icon: ["CircleIcon"] },
-  ];
-  const active = options.find((option) => option.theme === theme) || options[1];
-
-  return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="appearance-trigger-wrap">
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="icon-action appearance-select"
-                aria-label={"Appearance: " + active.label}
-              >
-                <AnimatedIcon names={active.icon} size={18} />
-              </Button>
-            </DropdownMenuTrigger>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>Appearance: {active.label}</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="end" className="appearance-menu">
-        {options.map((option) => (
-          <DropdownMenuItem
-            key={option.theme}
-            className={theme === option.theme ? "appearance-item active" : "appearance-item"}
-            onSelect={() => onChange(option.theme)}
-          >
-            <span className="mode-option-label">
-              <AnimatedIcon names={option.icon} size={16} />
-              {option.label}
-            </span>
-            {theme === option.theme && (
-              <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
-            )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-
 function triggerDownload(path: string | null) {
   if (!path) return;
   const anchor = document.createElement("a");
@@ -929,16 +869,26 @@ function FileMenu({
 function ViewMenu({
   sidebarOpen,
   workspace,
+  theme,
+  onThemeChange,
   onToggleSidebar,
   onOpenSplit,
   onSingle,
 }: {
   sidebarOpen: boolean;
   workspace: boolean;
+  theme: AppearanceMode;
+  onThemeChange: (theme: AppearanceMode) => void;
   onToggleSidebar: () => void;
   onOpenSplit: (direction: WorkspaceSplitDirection) => void;
   onSingle: () => void;
 }) {
+  const appearances: Array<{ theme: AppearanceMode; label: string; icon: string[] }> = [
+    { theme: "light", label: "Light", icon: ["SunIcon"] },
+    { theme: "dark", label: "Dark", icon: ["MoonIcon"] },
+    { theme: "oled", label: "OLED", icon: ["CircleIcon"] },
+  ];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -946,23 +896,43 @@ function ViewMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem onSelect={onToggleSidebar}>
-          <AnimatedIcon names={["PanelLeftIcon"]} size={15} />
+          <AnimatedIcon names={["PanelLeftIcon"]} />
           {sidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onOpenSplit("right")}>
-          <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
+          <AnimatedIcon names={["PanelRightOpenIcon"]} />
           {workspace ? "Split Active Right" : "Open Split Right"}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onOpenSplit("below")}>
-          <AnimatedIcon names={["PanelTopBottomIcon", "Rows2Icon"]} size={15} />
+          <AnimatedIcon names={["PanelBottomOpenIcon"]} />
           {workspace ? "Split Active Down" : "Open Split Down"}
         </DropdownMenuItem>
         {workspace && (
           <DropdownMenuItem onSelect={onSingle}>
-            <AnimatedIcon names={["SquareIcon"]} size={15} />
+            <AnimatedIcon names={["SquareIcon"]} />
             Single View
           </DropdownMenuItem>
         )}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <AnimatedIcon names={["SunMoonIcon", "MoonIcon"]} />
+            Appearance
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {appearances.map((option) => (
+              <DropdownMenuItem
+                key={option.theme}
+                onSelect={() => onThemeChange(option.theme)}
+              >
+                <AnimatedIcon names={option.icon} />
+                <span>{option.label}</span>
+                {theme === option.theme && (
+                  <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -992,7 +962,7 @@ function SplitViewPicker({
                 className="icon-action"
                 aria-label="Split view"
               >
-                <AnimatedIcon names={["PanelLeftRightIcon"]} size={18} />
+                <AnimatedIcon names={["PanelRightOpenIcon"]} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -1001,25 +971,25 @@ function SplitViewPicker({
       </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={() => onSplit("right")}>
-          <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
+          <AnimatedIcon names={["PanelRightOpenIcon"]} />
           {workspace ? "Split active right" : "Split view right"}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onSplit("below")}>
-          <AnimatedIcon names={["PanelTopBottomIcon", "Rows2Icon"]} size={15} />
+          <AnimatedIcon names={["PanelBottomOpenIcon"]} />
           {workspace ? "Split active down" : "Split view down"}
         </DropdownMenuItem>
         {workspace && (
           <>
             <DropdownMenuItem onSelect={() => onReset("right")}>
-              <AnimatedIcon names={["Columns2Icon", "PanelLeftRightIcon"]} size={15} />
+              <AnimatedIcon names={["Columns2Icon"]} />
               Reset horizontal layout
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onReset("below")}>
-              <AnimatedIcon names={["Rows2Icon"]} size={15} />
+              <AnimatedIcon names={["Rows2Icon"]} />
               Reset vertical layout
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onSingle}>
-              <AnimatedIcon names={["SquareIcon"]} size={15} />
+              <AnimatedIcon names={["SquareIcon"]} />
               Single view
             </DropdownMenuItem>
           </>
