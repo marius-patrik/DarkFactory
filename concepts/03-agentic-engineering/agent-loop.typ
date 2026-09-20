@@ -47,5 +47,5 @@ Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "parent", target: "harness"),),
+  relations: ((type: "parent", target: "harness"), (type: "dependency", target: "agent"),)
 )
