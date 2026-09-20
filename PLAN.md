@@ -77,6 +77,18 @@ Recovery branches are temporary implementation inputs, not archives.
 - Do not retain terminal recovery branches merely for provenance; GitHub issues are the durable record.
 - #361 must finish with no terminal recovery branches remaining.
 
+### 4.6 Pipeline-first execution
+
+Use the governed DarkFactory Request pipeline for every work item that the currently shipped pipeline can execute correctly.
+
+- Open/bind work to the existing Request and let the pipeline perform Planning, implementation, deterministic verification, review/fix, alignment, checks and merge whenever those stages are already functional.
+- Run independent Requests concurrently through separate governed branches/runs when their interfaces are stable.
+- Do not serialize work merely because one pipeline run is active; repository/Request isolation is the concurrency boundary.
+- Manual/local work is allowed only for bootstrap gaps the current pipeline cannot yet execute safely, such as recovering exact local bytes, repairing the pipeline itself, or implementing a missing pipeline capability.
+- Bootstrap/manual work must still use normal GitHub Requests/PRs/checks and must be handed back to the governed pipeline at the earliest stage it can reliably resume.
+- Never build a compatibility/migration path merely so old orchestration can process new work.
+- As #329/#341/#358/#317/#359 land, progressively reduce the bootstrap exception until normal DarkFactory development is entirely self-hosted.
+
 ## 5. Core production-engine path
 
 The hard integration spine to #359 is:
@@ -215,13 +227,13 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 Highest-value concurrent work:
 
-1. Run #329 and #341 in parallel while locating/reconciling the F30-4 recovery delta for #358.
+1. Dispatch #329 and #341 concurrently through the governed pipeline wherever its current stages are reliable, while locating/reconciling the F30-4 recovery delta for #358.
 2. Advance #358 immediately on discovery, handler inventory and stable scaffolding; integrate #329/#341 as soon as they land.
 3. Advance #317 in parallel on mutation-evidence validation and deterministic branch-update primitives; only graph re-entry waits for the relevant #358 interface.
-4. In parallel, continue #422/#248/#423, #339/#384/#385/#386/#388, #403/#251/#332/#252 and #334/#336/#425/#390 according to their real interface dependencies.
+4. In parallel, dispatch #422/#248/#423, #339/#384/#385/#386/#388, #403/#251/#332/#252 and #334/#336/#425/#390 through separate governed pipeline runs wherever supported, according to their real interface dependencies.
 5. Run #360 release engineering continuously for every stable surface. Final publication happens once; there is no compatibility release, canary, migration release or staged cutover.
 6. Delete obsolete Python/alternate owners incrementally as soon as their final TypeScript/package/capability owner covers the responsibility; #359 verifies completion rather than deferring all deletion until the end.
 7. Complete #359 as soon as #329/#341/#358/#317 satisfy the core lifecycle.
 8. Publish the final #360 release, run #361 fleet acceptance, then close #68.
 
-No work should wait merely to preserve an implementation sequence when its final interfaces are already stable. Recovery branches are deleted immediately after terminal disposition is recorded.
+No work should wait merely to preserve an implementation sequence when its final interfaces are already stable. Prefer self-hosted governed pipeline execution over manual implementation whenever the current pipeline can perform the work correctly. Recovery branches are deleted immediately after terminal disposition is recorded.
