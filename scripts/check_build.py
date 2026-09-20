@@ -1047,12 +1047,12 @@ for required in (
 cover_title_source = template_source[
     template_source.index("#let cover-title(meta)") : template_source.index("#let titulni-list(meta")
 ]
-title_lines = (
-    cover_title_source.index("DarkFactory#linebreak()"),
-    cover_title_source.index("Agentické a harnessové inženýrství:#linebreak()"),
-    cover_title_source.index("Umělá inteligence v praxi"),
+title_layout = (
+    "      DarkFactory#linebreak()\n"
+    "      Agentické a harnessové inženýrství:#linebreak()\n"
+    "      Umělá inteligence v praxi\n"
 )
-if not title_lines[0] < title_lines[1] < title_lines[2]:
+if title_layout not in cover_title_source:
     fail("title page lines must be DarkFactory, Agentické a harnessové inženýrství:, Umělá inteligence v praxi")
 if '"KONCEPT"' in template_source:
     fail("review template must not add the KONCEPT page-background watermark")
