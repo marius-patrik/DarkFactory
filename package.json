@@ -11,6 +11,7 @@
     "test": "bun run --cwd harness test",
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
-    "docs": "bun scripts/build-docs.ts"
+    "docs": "bun scripts/build-docs.ts",
+    "format:check": "cd harness && bun x biome ci --changed --since=\"${DF_BASE_SHA:-origin/darkfactory}\" ."
   }
 }
