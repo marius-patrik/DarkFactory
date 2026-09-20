@@ -33,7 +33,7 @@
       "identity": "pipeline",
       "inputs": ["plan_artifact"],
       "outputs": ["planning_findings"],
-      "iteration": { "context_file": ".df/planning-review.md", "safety_budget": 5 },
+      "iteration": { "context_file": ".darkfactory/planning-review.df", "safety_budget": 5 },
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "Backlog" }
     },
@@ -64,7 +64,7 @@
       "identity": "pipeline",
       "inputs": ["pr_number", "branch"],
       "outputs": ["review_clean", "deviation_detected"],
-      "iteration": { "context_file": ".df/review-summary.md", "safety_budget": 5 },
+      "iteration": { "context_file": ".darkfactory/review-summary.df", "safety_budget": 5 },
       "quota_policy": { "on_exhaustion": "checkpoint_and_block", "resume": "sweep_or_command" },
       "board_status": { "running": "In Progress", "quota_blocked": "Blocked", "done": "In Progress" }
     },
