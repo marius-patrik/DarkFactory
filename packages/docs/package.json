@@ -9,7 +9,8 @@
     "./content": "./src/content.ts",
     "./readme": "./src/readme.ts",
     "./api": "./src/api.ts",
-    "./current": "./src/current.ts",\n    "./impact": "./src/impact.ts"
+    "./current": "./src/current.ts",
+    "./impact": "./src/impact.ts"
   },
   "files": [
     "src"
