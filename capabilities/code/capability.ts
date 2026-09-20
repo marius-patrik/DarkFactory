@@ -1,5 +1,6 @@
 import { CAPABILITY_ABI_VERSION, defineCapability } from "@darkfactory/capability";
 
+/** Official code-domain capability definition. */
 export const capability = defineCapability({
 	abiVersion: CAPABILITY_ABI_VERSION,
 	id: "code",
