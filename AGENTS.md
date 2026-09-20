@@ -40,36 +40,34 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - **Mandatory Diff Markers for ANY Text Modification**:
   Whenever modifying, replacing, editing, rewording, or updating ANY existing manuscript text, agents MUST initially use `#diff[original][proposal]`. The proposal is therefore unconfirmed by construction and must not enter raw/final output until the user accepts or finalizes it. After acceptance/finalization, collapse the diff to the accepted/finalized new side; never leave `#diff` nested inside `#accepted[...]` or `#finalized[...]`.
 - **Typst Formatting & Stability**:
-  - Avoid fragile external diagramming packages that trigger runtime panics (e.g., incompatible Fletcher/CeTZ versions). Prefer clean vector SVGs in `img/`.
+  - Avoid fragile external diagramming packages that trigger runtime panics (e.g., incompatible Fletcher/CeTZ versions). Prefer clean vector SVGs in the active book's `img/` directory.
   - Watch out for escape sequences in Typst (e.g., do not use `\r` in math/text; use unicode `→` or `$arrow$`).
 
 ## Typst Live Preview Workflow
-- **Preferred Preview Mode**: Standard native browser PDF view inside Google Chrome with automatic live reload.
-- **Never Use Custom Canvas/Web Viewers**: Do NOT use `tinymist preview` or web-canvas / SVG previewers with custom control toolbars. The user strictly prefers the normal, native Google Chrome PDF viewer interface.
-- **Preview Architecture & Commands**:
-  1. Background compiler: `make watch` from the repository root (or `typst watch --font-path fonts --input template=gjkt-odborna-prace --input profile=school main.typ out/prace.pdf`).
-  2. Background live reload server: `python3 scripts/preview_server.py` from the repository root (serves the native Chrome PDF viewer via an auto-reloading iframe at `http://127.0.0.1:3333`).
-  3. Browser launch: `open -a "Google Chrome" "http://127.0.0.1:3333"`.
-
-
+- Use the canonical selected-book build from the repository root: `make watch BOOK=DarkFactory`.
+- Equivalent direct command: `typst watch --font-path DarkFactory/fonts --input book=DarkFactory --input template=gjkt-odborna-prace --input profile=school main.typ out/prace.pdf`.
+- The local preview may use the repository's React/PDF.js viewer or a native browser PDF view as appropriate; it must consume the same generated PDF rather than a parallel manuscript renderer.
 
 ## Repository Architecture
-- The thesis repository is `DarkFactory-Paper`.
-- `concepts/**` is the sole canonical source for manuscript structure, prose, terminology, and appendices. Folder `index.typ` manifests determine hierarchy; a separate `kapitoly/` compatibility layer must not exist.
-- `thesis.typ` composes renderers exported by `concepts/index.typ` and passes them through `templates/registry.typ`; concept files may consume shared semantics from `templates/common.typ` but must never import a concrete document template.
-- `templates/gjkt-odborna-prace/` is the current document-template implementation.
-- `darkfactory/` is the only git submodule and points to the practical DarkFactory repository.
-- Do not recreate a wrapper monorepo, nested Typst package, separate chapter tree, or separate template repository. New layouts belong under `templates/<name>/` and must be registered in `templates/registry.typ`.
+- `DarkFactory-Paper` is a multi-book Typst project. Each book is a self-contained top-level directory with a `book.typ` interface; the current book root is `DarkFactory/`.
+- A book root owns its complete publication state: structural concept tree, manuscript prose, terminology, metadata, document templates, fonts, bibliography, and images. For DarkFactory these live under `DarkFactory/**`, including `DarkFactory/templates/`, `DarkFactory/fonts/`, `DarkFactory/bib/`, and `DarkFactory/img/`.
+- The book directory name and its structural root key/title are one identity. `DarkFactory/index.typ` declares the top structural folder and exports its title; the cover/document title is derived from that structure rather than duplicated in repository-global metadata.
+- Folder `index.typ` manifests are the sole source of section hierarchy. A separate chapter tree or compatibility hierarchy must not exist. Nested folders support arbitrary section depth.
+- Root `books.typ` is the static registry for books. Root `main.typ`, `review.typ`, and `web-publication.typ` are generic dispatchers and must not contain DarkFactory manuscript structure.
+- `DarkFactory/book.typ` exports the book contract: structural identity/title, default template, PDF renderer, and semantic web renderer. A second book is added as a sibling top-level book root and registered in `books.typ`.
+- Concepts may import shared semantics from their own book's `templates/common.typ` but must never import a concrete document template.
+- `darkfactory/` remains the only git submodule and points to the practical DarkFactory repository.
+- Do not recreate repository-global `concepts/`, `templates/`, `fonts/`, `bib/`, or `img/` roots; those assets belong to their book.
 
 ## Terminology & Translation Model
-- Raw Typst bold emphasis (`*text*`) is forbidden in concept manuscript prose. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)` (or a heading that contains a canonical term). Ordinary list labels, callout captions, and prose emphasis remain unbolded.
-- Canonical terminology lives with its owning concept under `concepts/**` as a `define-term(...)` value. `concepts/index.typ` builds the shared vocabulary; `templates/terms.typ` is compatibility projection only and must never become a second terminology database.
-- Reuse canonical `terms.<key>` values when one concept refers to another. Do not call `term()` with ad-hoc string names or duplicate canonical explanations in prose.
-- `term(...)` has one global name presentation and supports only content-oriented rendering choices such as term/explanation/both and detail language/order/style. Per-call name type, name language, name separator, or name ordering options must not return.
-- The global term-name format is `Industry (Čeština) [English]`. The industry/common alias leads when present; otherwise English proper leads. Czech proper follows in parentheses and a distinct English proper form follows in square brackets; duplicate layers are suppressed.
-- Proper vs industry names are canonical data. Example: a concept may define proper `Smyčka ReAct / ReAct Loop` and industry `Agent Loop`, or proper `Jazykový model / Large Language Model` and industry `LLM`.
-- Canonical terminology is deduplicated by stable term `id`. Reuse an existing concept record when a requested concept already maps to it; do not add a second `define-term` merely to introduce a synonym or singular/plural key.
-- The required core vocabulary includes MCP, Skill, Script, Plugin, Hook, Chatbot, Agent, Token, Tokenizer, LLM, Transformer, Context Window, Compaction, Context Rot, Human-in-the-loop, Agentic Engineering, Software Engineering, Pull Request, CI, GitHub Actions, DAG, Container, KV Cache, Turn, Context Engineering, Prompt Engineering, Loop Engineering, Graph Engineering, RAG, Merge, Squash, and Branch.
+- Raw Typst bold emphasis (`*text*`) is forbidden in concept manuscript prose. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)`.
+- Canonical terminology lives with its owning concept under the selected book root and is defined with `define-term(...)`. `DarkFactory/index.typ` builds the vocabulary; `DarkFactory/templates/terms.typ` is a projection only.
+- Naming has exactly three semantic roles: `industry`, `proper`, and optional `alias`. `industry` is the established field-facing term/abbreviation, `proper` is the formal localized name, and `alias` is a genuinely alternate name rather than a second language slot.
+- The canonical full surface is `Industry (Proper) [Alias]`, with duplicate layers suppressed. Language selection localizes each role; English is not appended merely because the English proper translation differs from Czech.
+- `term(..., surface: "full" | "industry" | "proper" | "alias")` is the only name-surface selector. Content rendering remains `render: "term" | "explanation" | "both"`.
+- Section headings are structural and render the `proper` surface. In the `school` and `cs` profiles section headings are Czech-only; `en` uses English and `merged` may render both.
+- Reuse canonical `terms.<key>` values whenever one concept refers to another. Do not create ad-hoc term strings or duplicate a term record merely to introduce a synonym.
+- Stable term `id` values are unique within a book.
 
 ## Deferred Practical and Results Content
 - There are no chapter files. Practical manuscript projections live on canonical concepts through their `practical_*` fields; evaluation/results content lives under `concepts/manuscript/results/`.
@@ -84,29 +82,16 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Do not restore removed practical/results prose from Git history unless the user explicitly requests it; old text described provisional architectures and measurements.
 
 ## GitHub Pages Viewer
-- Published Pages are a React + TypeScript Rsbuild application under `web/`, formatted/linted with Biome. Use shadcn/ui primitives, Tailwind, Motion, Dagre, `lucide-animated`, and PDF.js; do not restore Vite or the legacy handwritten `viewer.js/viewer.css/icons.js` shell.
-- PDF remains the canonical paged/print document; PDF.js must retain canvas, selectable text, annotation/link layers, direct PDF download, and a native-PDF fallback.
-- The publication matrix also contains compiled HTML and Markdown for every Final/Review × profile × template combination. `web-publication.typ` is the semantic Typst HTML entrypoint and must consume the same concept catalog/renderers plus shared review/profile/terminology state.
-- HTML must be produced by Typst's HTML target (`--features html --format html`). Markdown must be derived deterministically from that compiled HTML by `scripts/build_web_exports.py`; never maintain an independent Markdown manuscript and never derive Markdown/HTML from the PDF.
-- `make web-check` is the viewer type/build gate; `make all` builds PDF/HTML/Markdown and `scripts/build_site.py` publishes `web/dist` together with the generated multi-format matrix and runtime `variants.json`.
-- Typst HTML remains an experimental semantic artifact and must not replace the React publication shell or the canonical paged PDF.
-- The local live-preview workflow above remains the native Chrome PDF viewer unless the user explicitly asks to change local preview too.
+- Pages is a React + TypeScript Rsbuild application under `web/`, formatted/linted with Biome. Use shadcn/ui/Radix primitives, Tailwind, Dockview, Motion, Dagre, `lucide-animated`, and PDF.js.
+- PDF remains the canonical paged/print document. Compiled HTML and Markdown are also produced for every Final/Review × profile × template combination; Markdown is derived from compiled Typst HTML by `scripts/build_web_exports.py`.
+- The application opens directly into the viewer. Renderer states are `View`, `Review`, and `Raw`; do not reintroduce `Edit` or `Koncept` naming.
+- Review uses Dockview as a real workspace: pane-local tabs, draggable groups, arbitrary nested horizontal/vertical splits, resize handles, persisted layout, and pane-scoped renderer/language/file-type state.
+- The activity bar supports left, right, top, and bottom placement. The sidebar side, width, open/closed state, representation, and activity-bar placement persist independently.
+- The document navigation pane is `Structure` and uses the files icon. It is one ordered stream that interleaves semantic headings with page previews/minimap entries according to page sequence; separate Contents and Pages panes must not return.
+- Repository file browsing is `Explorer` and uses the folder icon.
+- The status bar language and file-type selectors display short identifiers only (`CZ`, `EN`, `CZ+EN`; `PDF`, `MD`, `HTML`). Renderer is a select. The zoom number itself performs fit-to-width; no separate Fit button exists.
+- A thin text menubar sits above the main toolbar. Open-native/open-rendered and Download live under File. Appearance lives in the main toolbar menu, with persistent Light, Dark, and true-black OLED modes.
+- PDF.js must preserve selectable text, annotation/link layers, direct artifact download, and native-PDF fallback. The custom renderer owns internal destination navigation.
+- PDF-only page/zoom controls are hidden for Markdown/HTML. Appearance propagates into embedded compiled HTML and all Dockview panes.
+- `make web-check` is the viewer gate; `make all BOOK=<book>` builds PDF/HTML/Markdown; `make site BOOK=<book>` publishes the matrix and runtime manifests.
 
-- Keywords remain a compact usage-driven list in front matter.
-- Do not generate a separate terminology `Rejstřík | Index`. Canonical concepts and terms must be used by the thesis itself rather than published only through a catalog page.
-- CI must reject canonical concept records that are neither rendered as thesis content nor referenced as canonical terms by rendered manuscript content.
-- Index and appendices are outside the core-text word-count boundary.
-- `Seznam příloh | List of appendices` contains top-level appendix headings only. Nested appendix sections remain numbered/outlined but must never leak into the appendix list.
-
-- The viewer must preserve PDF.js text and annotation layers above each page canvas so rendered text stays selectable/copyable and PDF links remain clickable.
-- The custom renderer owns PDF navigation. Annotation links must use a purpose-built link service that resolves named/explicit destinations to the viewer's `goToPage`; do not bind `PDFLinkService` to a partial fake `PDFViewer`.
-- PDF link annotations also use a capture-phase interaction dispatcher keyed by PDF annotation `data-element-id`, providing a direct fallback for named destinations, explicit destinations, named actions, and external URLs if PDF.js's bound click callback is ineffective.
-- Viewer controls prefer the pinned `lucide-animated` React package and use narrow `lucide-react` fallbacks for glyphs the animated set does not provide; do not allow icon buttons to render blank or regress to Unicode/text symbols. Every icon action uses a shadcn tooltip.
-- Zoom-out must have a guaranteed static `Minus` fallback, and the main toolbar must expose a tooltip-backed refresh-page action with a guaranteed `RefreshCw` fallback.
-- Sidebar position (`left`/`right`) and representation (`thumbnails`/`minimap`) are persistent user settings. The toggle sits at the extreme toolbar edge matching the sidebar side, visibly uses the corresponding left/right sidebar icon, and exposes sidebar move/minimap actions through a shadcn context menu.
-- The root site opens directly into the viewer, defaulting to the school profile, Final mode, and PDF; there is no Home button or landing-page navigation. The PDF toolbar path is `work title \\ language version \\ Final/Koncept/Review \\ PDF/Markdown/HTML \\ chapter \\ page switcher`. The language selector uses a Languages icon; mode and format options use semantically relevant icons. Koncept maps to the marked-up review artifact; Review maps to the side-by-side Final/Koncept comparison. Switching language version, mode, or format must preserve the other dimensions and resolve directly to the artifact named by `variants.json`.
-- Review comparison uses the dedicated two-column icon. PDF chapter navigation is derived dynamically from the document's top-level PDF outline and sits immediately before the page switcher at the tail of the path; zoom controls remain in the bottom status bar. Zoom-out/in use minus/plus icons, theme/fullscreen controls also belong to the status bar, and fullscreen uses the Maximize/Minimize glyph pair. Zoom must support buttons, Ctrl/⌘+wheel/trackpad pinch, and two-touch pinch.
-- Appearance is a persistent three-mode setting: `light`, `dark`, and `oled`. The status-bar appearance control must expose all three explicitly. OLED is a true-black theme: viewer shell, toolbar, sidebar, primary surfaces, and compiled HTML publication background/surface use `#000000`; do not implement OLED as an alias of ordinary dark mode. Preserve canonical PDF page rendering rather than inverting PDF content. Propagate the selected appearance into split panes and embedded compiled HTML.
-- Koncept PDFs must not add an automatic `KONCEPT` watermark/background banner. An explicit template watermark may still be supplied deliberately.
-- Review comparison provides an explicit persisted scroll-synchronization toggle. Parent toolbar navigation/zoom targets both panes regardless; free scrolling only mirrors continuously when synchronization is enabled.
-- PDF-only controls (dynamic chapter selector, path-tail page switcher, zoom, thumbnail/minimap sidebar, synchronized free-scroll) are hidden for Markdown/HTML. Markdown view displays the generated `.md` source verbatim in the viewer; HTML view embeds the generated `.html` document. Download/open actions always target the currently selected compiled format.
