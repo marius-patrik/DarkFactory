@@ -10,12 +10,6 @@ import { motion } from "motion/react";
 import { AnimatedIcon } from "@/components/animated-icon";
 import { Button } from "@/components/ui/button";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -232,53 +226,25 @@ function TooltipAction({
 
 function SidebarToggle({
   side,
-  mode,
   hidden,
   onToggle,
-  onMove,
-  onToggleMode,
 }: {
   side: SidebarSide;
-  mode: SidebarMode;
   hidden: boolean;
   onToggle: () => void;
-  onMove: () => void;
-  onToggleMode: () => void;
 }) {
   const toggleLabel = hidden ? "Show sidebar" : "Hide sidebar";
-  const moveLabel = side === "left" ? "Move sidebar right" : "Move sidebar left";
-  const modeLabel = mode === "minimap" ? "Convert to thumbnails" : "Convert to minimap";
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <span className={"edge-toggle edge-" + side}>
-          <TooltipAction
-            label={toggleLabel}
-            icon={side === "left" ? ["PanelLeftIcon"] : ["PanelRightIcon"]}
-            onClick={onToggle}
-            pressed={!hidden}
-            className="edge-toggle-button"
-          />
-        </span>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={onMove}>
-          <AnimatedIcon
-            names={side === "left" ? ["PanelRightIcon"] : ["PanelLeftIcon"]}
-            size={16}
-          />
-          {moveLabel}
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={onToggleMode}>
-          <AnimatedIcon
-            names={mode === "minimap" ? ["ListIcon"] : ["MapIcon", "MapPinnedIcon"]}
-            size={16}
-          />
-          {modeLabel}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+    <span className={"edge-toggle edge-" + side}>
+      <TooltipAction
+        label={toggleLabel}
+        icon={side === "left" ? ["PanelLeftIcon"] : ["PanelRightIcon"]}
+        onClick={onToggle}
+        pressed={!hidden}
+        className="edge-toggle-button"
+      />
+    </span>
   );
 }
 
@@ -382,7 +348,7 @@ function ModePicker({
   const label = viewMode === "split" ? "Review" : mode === "review" ? "Koncept" : "Final";
   const icon =
     viewMode === "split"
-      ? ["Columns2Icon"]
+      ? ["PanelLeftRightIcon"]
       : mode === "review"
         ? ["PencilLineIcon"]
         : ["CheckCircle2Icon"];
@@ -444,7 +410,7 @@ function ModePicker({
           }}
         >
           <span className="mode-option-label">
-            <AnimatedIcon names={["Columns2Icon"]} size={15} />
+            <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
             Review
           </span>
           {viewMode === "split" && (
@@ -1049,11 +1015,8 @@ export function ViewerApp() {
   const sidebarToggle = viewMode === "single" && format === "pdf" ? (
     <SidebarToggle
       side={sidebarSide}
-      mode={sidebarMode}
       hidden={sidebarHidden}
       onToggle={() => setSidebarHidden((value) => !value)}
-      onMove={moveSidebar}
-      onToggleMode={toggleSidebarMode}
     />
   ) : null;
 
@@ -1095,6 +1058,12 @@ export function ViewerApp() {
         {sidebarSide === "left" && sidebarToggle}
         <div className="toolbar-main">
           <div className="toolbar-left">
+            <TooltipAction
+              label="Home"
+              icon={["HomeIcon"]}
+              href="./"
+            />
+            <span className="identity-separator" aria-hidden="true">\</span>
             <span className="work-title" title={workTitle}>{workTitle}</span>
             <span className="identity-separator" aria-hidden="true">\</span>
             {manifest ? (
@@ -1174,7 +1143,7 @@ export function ViewerApp() {
             />
             <TooltipAction
               label={viewMode === "split" ? "Exit Review" : "Review"}
-              icon={["Columns2Icon", "PanelLeftRightIcon"]}
+              icon={["PanelLeftRightIcon"]}
               href={canSplit ? splitTarget : undefined}
               pressed={viewMode === "split"}
             />
