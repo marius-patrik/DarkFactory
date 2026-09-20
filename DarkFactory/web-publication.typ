@@ -1,6 +1,6 @@
 #import "/DarkFactory/metadata.typ": meta, title-value, title-display
-#import "/DarkFactory/templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
-#import "/DarkFactory/index.typ": book-title, render-manuscript, render-appendices
+#import "/DarkFactory/templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-keywords
+#import "/DarkFactory/index.typ": book-title, concepts, render-manuscript, render-appendices
 
 #let publication(
   review: false,
@@ -24,27 +24,22 @@
   }
   par[#meta.autor · #meta.skola · #meta.rok]
 
-  heading(level: 1, numbering: none)[#finalized[#translation-heading(
-    translation(cs: [Anotace], en: [Annotation]),
-    separator: "paren",
-    order: "en-cs",
-  )]]
-  render-translation(
-    meta.annotation,
-    language: "auto",
-    school-both: true,
-    labels: true,
-    stacked: true,
-    spacing: 8pt,
-    order: "cs-en",
-  )
+  if profile in ("school", "cs", "merged") {
+    heading(level: 1, numbering: none)[#finalized[Anotace]]
+    meta.at("annotation-cs")
+  }
+
+  if profile in ("school", "en", "merged") {
+    heading(level: 1, numbering: none)[#finalized[Abstract]]
+    meta.at("abstract-en")
+  }
 
   heading(level: 1, numbering: none)[#finalized[#translation-heading(
     translation(cs: [Klíčová slova], en: [Keywords]),
     separator: "paren",
     order: "en-cs",
   )]]
-  render-keywords()
+  render-keywords(concepts)
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
