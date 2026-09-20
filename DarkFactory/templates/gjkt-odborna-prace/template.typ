@@ -63,7 +63,7 @@
       v(0.25cm)
       text(size: 17pt, weight: "bold", hyphenate: false, finalized(title-value(book-title, profile: "en")))
     } else {
-      text(size: 26pt, weight: "bold", hyphenate: false, finalized(cover-title(meta)))
+      text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-display(book-title, profile: profile)))
     }
   }
 
@@ -300,7 +300,7 @@
 
   // Popisky součástí textu: stejné písmo jako text, velikost 10 b.
   show figure.caption: set text(size: 10pt)
-  show raw: set text(font: ("DejaVu Sans Mono", "Courier New"), size: 9.5pt)
+  show raw: set text(font: ("DejaVu Sans Mono",), size: 9.5pt)
   show raw.where(block: true): it => block(
     fill: rgb("#1e293b"),
     stroke: 0.5pt + rgb("#334155"),
