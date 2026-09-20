@@ -275,6 +275,14 @@ for required in (
     if required not in catalog_source:
         fail(f"concept catalog missing folder-driven composition contract: {required}")
 
+for forbidden_dir in (
+    concept_root / "01-development-environment",
+    concept_root / "02-language-models",
+    concept_root / "03-agentic-engineering",
+):
+    if forbidden_dir.exists():
+        fail(f"legacy numbered concept directory must not reappear: {forbidden_dir}")
+
 concept_paths = tuple(
     sorted(
         path for path in concept_root.rglob("*.typ")
@@ -283,6 +291,15 @@ concept_paths = tuple(
 )
 if len(concept_paths) < 38:
     fail(f"concept catalog unexpectedly small: {len(concept_paths)} files")
+
+all_concept_keys = []
+for path in concept_paths:
+    match = re.search(r'key:\s*"([^"]+)"', path.read_text(encoding="utf-8"))
+    if match:
+        all_concept_keys.append(match.group(1))
+duplicate_concept_keys = sorted({k for k in all_concept_keys if all_concept_keys.count(k) > 1})
+if duplicate_concept_keys:
+    fail(f"canonical concepts contain duplicate stable keys: {duplicate_concept_keys}")
 for path in concept_paths:
     source = path.read_text(encoding="utf-8")
     for required in (
@@ -295,6 +312,9 @@ for path in concept_paths:
         fail(f"legacy concept relation field remains: {path}")
     if 'type: "parent"' in source or 'type: "child"' in source:
         fail(f"structural relation remains in concept file: {path}")
+    for rel_target in re.findall(r'target:\s*"([^"]+)"', source):
+        if rel_target not in all_concept_keys:
+            fail(f"unknown relation target {rel_target!r} in {path}")
 
 # Folder indexes are the sole source of section hierarchy. Concepts inside a folder
 # render continuously; only a child folder can introduce another section heading.
@@ -473,8 +493,7 @@ for path in (
 # by another template without editing chapter sources.
 for path in (
     *sorted(Path("kapitoly").glob("*.typ")),
-    *sorted(Path("concepts").glob("*.typ")),
-    *sorted(Path("concepts").glob("*/*.typ")),
+    *sorted(Path("concepts").rglob("*.typ")),
 ):
     in_fence = False
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -633,8 +652,7 @@ for path in (
     Path("metadata.typ"),
     Path("AGENTS.md"),
     *sorted(Path("kapitoly").glob("*.typ")),
-    *sorted(Path("concepts").glob("*.typ")),
-    *sorted(Path("concepts").glob("*/*.typ")),
+    *sorted(Path("concepts").rglob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
     for legacy in ("#confirmed[", "#let confirmed", "common.confirmed"):
