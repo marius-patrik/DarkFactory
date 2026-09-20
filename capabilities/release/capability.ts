@@ -7,7 +7,7 @@ export const capability = defineCapability({
 	version: "0.0.0",
 	description: "Release artifact integrity, provenance and distribution capability boundary.",
 	surfaces: {
-		release: ["artifact-manifest", "sha256sums", "source-provenance"],
+		release: ["artifact-manifest", "sha256sums", "source-provenance", "lockstep-versioning"],
 	},
 });
 
