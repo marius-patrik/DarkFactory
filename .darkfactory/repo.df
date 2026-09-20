@@ -7,7 +7,7 @@
     "project_title": "DarkFactory",
     "agent_slug": "darkfactory-agent",
     "default_branch": "darkfactory",
-    "description": "Turn-key template repository for autonomous, governed software engineering pipelines ('Dark Factory'). Multi-harness agent runner, branch protection, strict verification, and project board delivery.",
+    "description": "Self-hosting autonomous software delivery built around a declarable workflow graph, versioned capabilities and GitHub as the durable control plane.",
     "topics": [
       "agentic-coding",
       "agentic-development",
@@ -88,7 +88,7 @@
     "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
     "$default": "ci",
     "agents": {
-      "description": "Harness orchestration, provider adapters, personas, approvals",
+      "description": "Agent runtime, routing, providers, planning/review orchestration and model execution",
       "keywords": [
         "agent",
         "harness",
@@ -128,16 +128,16 @@
       ]
     },
     "docs": {
-      "description": "Documentation site, theme, architecture notes",
+      "description": "Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces",
       "keywords": [
         "doc",
         "docs",
         "documentation",
-        "mkdocs",
-        "properdocs",
-        "theme",
-        "site",
-        "readme"
+        "tsdoc",
+        "typedoc",
+        "content",
+        "readme",
+        "site"
       ]
     },
     "ci": {
@@ -307,7 +307,7 @@
     }
   },
   "release": {
-    "$comment": "During the direct TypeScript rebuild, DarkFactory's legacy release workflow remains source-tag-only. The first-party workspace packages/capabilities are not release artifacts until #359 reaches the canary gate and #360 establishes their real lockstep version/publish contract.",
+    "$comment": "The current source-tag release remains in place only until #360 publishes the final lockstep package/capability distribution directly. There is no canary or pre-release phase.",
     "metadata": "ignore"
   }
 }
