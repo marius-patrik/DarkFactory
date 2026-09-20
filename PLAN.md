@@ -236,7 +236,7 @@ After #361 is green, re-run the original declarable-graph product contract again
 - #781 → #422: clean current-tree rebuild of remaining `@darkfactory/keychain` ownership. PRs #518/#740 are closed as stale evidence; do not preserve their branch structure.
 - #783 → #423: complete browser authentication plus the minimal confidential broker/session/permission boundary from the current tree. PR #760 is partial evidence only.
 - #786 → #329: integrate F38-compatible schema/extraction behavior into the real graph/workspace/router result path. PR #769 is partial evidence only.
-- #741 → #384: deterministic git/workspace primitive slice is in final CI repair. Merging this slice advances #384; #384 stays open until #358 persisted conflict/run-state and #339 hook integration are proven.
+- #741 → #384 deterministic git/workspace primitive slice is landed. #384 stays open only for #358 persisted conflict/run-state integration and #339 hook integration.
 
 ### Dependency holds / next unlocks
 
