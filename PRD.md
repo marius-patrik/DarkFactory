@@ -86,7 +86,7 @@ The initial first-party capability set includes at least:
 
 A capability may contribute:
 
-- repository/package detection and setup;
+- setup and ecosystem/package-specific deterministic actions;
 - tools and commands;
 - graph-node behavior;
 - deterministic actions;
@@ -132,7 +132,7 @@ The final system must not rely on one ever-growing repository-specific language/
 
 ### 7.1 Repository/runtime configuration
 
-The final #340 declaration rules apply:
+The repository declaration rules are:
 
 - repository declaration is `repo.df`;
 - runtime/user/provider configuration is `config.df`;
@@ -399,5 +399,5 @@ DarkFactory is final only when:
 - released df installs/updates source-free;
 - all six repositories pass governance, detection, capability, docs/web, release and drift checks;
 - `audit.df` is internally consistent;
-- #361 is green;
-- the original #68 declarable-graph contract passes against the installed final release.
+- installed fleet acceptance is green across the supported consumer set;
+- the declarable-graph product contract passes against the installed final release.
