@@ -1,6 +1,8 @@
 #import "../../schema.typ": folder
 #import "language-model.typ" as section
 #import "transformer.typ" as transformer
+#import "autoregression.typ" as autoregression
+#import "stochastic-decoding.typ" as stochastic_decoding
 #import "tokenizer.typ" as tokenizer
 #import "token.typ" as token
 #import "embedding.typ" as embedding
@@ -13,6 +15,8 @@
   section: section.item,
   concepts: (
     transformer.item,
+    autoregression.item,
+    stochastic_decoding.item,
     tokenizer.item,
     token.item,
     embedding.item,
