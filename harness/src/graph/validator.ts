@@ -162,19 +162,20 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			for (const [index, candidate] of (node.chain ?? []).entries())
 				if (!/^[^/@]+\/[^@]+@[^@]+$/.test(candidate))
 					issues.push(`nodes[${node.id}].chain[${index}]: expected provider/model@account`);
-			if (node.review) {
-				for (const key of [node.review.context, node.review.artifact])
+			const review = node.review;
+			if (review) {
+				for (const key of [review.context, review.artifact])
 					if (!node.inputs?.includes(key))
 						issues.push(`nodes[${node.id}].review: "${key}" must be declared as an input`);
-				if (node.review.phase === "review") {
-					if (!node.outputs?.includes(node.review.findings))
+				if (review.phase === "review") {
+					if (!node.outputs?.includes(review.findings))
 						issues.push(`nodes[${node.id}].review.findings: must be a declared output`);
-					if (!node.outputs?.includes(node.review.clean))
+					if (!node.outputs?.includes(review.clean))
 						issues.push(`nodes[${node.id}].review.clean: must be a declared output`);
 				} else {
-					if (!node.inputs?.includes(node.review.findings))
+					if (!node.inputs?.includes(review.findings))
 						issues.push(`nodes[${node.id}].review.findings: fix nodes must consume findings`);
-					if (!node.outputs?.includes(node.review.artifact))
+					if (!node.outputs?.includes(review.artifact))
 						issues.push(`nodes[${node.id}].review.artifact: fix nodes must output the revised artifact`);
 				}
 			}
@@ -183,10 +184,11 @@ export function validateGraph(value: unknown): WorkflowGraph {
 	for (const node of graph.nodes) {
 		if (node.kind === "gate" && node.approves_review) {
 			const reviewer = graph.nodes.some(
-				(candidate) =>
-					candidate.kind === "agent" &&
-					candidate.review?.subject === node.approves_review &&
-					candidate.review.phase === "review",
+				(candidate) => {
+					if (candidate.kind !== "agent") return false;
+					const review = candidate.review;
+					return review?.subject === node.approves_review && review.phase === "review";
+				},
 			);
 			if (!reviewer) issues.push(`nodes[${node.id}].approves_review: no reviewer exists for ${node.approves_review}`);
 		}
