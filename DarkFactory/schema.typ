@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label
+#import "/DarkFactory/templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label, profile-state
 
 // Semantic relations never determine manuscript containment.
 // Folder manifests are the sole source of section hierarchy.
@@ -65,6 +65,7 @@
 
 #let folder(
   key: none,
+  title: none,
   section: none,
   concepts: (),
   children: (),
@@ -73,6 +74,7 @@
   (
     kind: "folder",
     key: key,
+    title: title,
     section: section,
     concepts: concepts,
     children: children,
@@ -232,14 +234,19 @@
   section-content or direct-content or child-content
 }
 
-#let render-section-title(item) = term(
-  item.term,
-  render: "term",
-  register: false,
-  linked: false,
-  marker: false,
-  emphasized: false,
-)
+#let render-section-title(item) = context {
+  let profile = profile-state.get()
+  term(
+    item.term,
+    render: "term",
+    surface: "proper",
+    language: if profile in ("school", "cs") { "cs" } else if profile == "en" { "en" } else { "both" },
+    register: false,
+    linked: false,
+    marker: false,
+    emphasized: false,
+  )
+}
 
 #let render-section-definition(item, terms) = {
   if item.definition != none {
