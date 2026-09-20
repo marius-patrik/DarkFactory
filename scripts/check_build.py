@@ -222,7 +222,7 @@ if "označovaná jako *řídicí harness*" in chapter1_source:
 for manuscript_path in (
     Path("kapitoly/01-uvod.typ"),
     Path("kapitoly/05-zaver.typ"),
-    *sorted(Path("concepts").glob("*/*.typ")),
+    *sorted(Path("concepts").rglob("*.typ")),
 ):
     manuscript_source = manuscript_path.read_text(encoding="utf-8")
     for legacy_harness in ("řídicí harness", "řídicího harnessu", "řídicím harnessu"):
@@ -244,10 +244,11 @@ for required in (concept_schema, concept_catalog, *(section / "index.typ" for se
 schema_source = concept_schema.read_text(encoding="utf-8")
 for required in (
     "#let concept(",
-    "#let section(",
-    "#let build-vocabulary(sections)",
-    "#let render-theory-chapter(sections, terms)",
-    "#let render-practical-chapter(sections, terms)",
+    "#let folder(",
+    "#let collect-concepts(folders)",
+    "#let build-vocabulary(folders)",
+    "#let render-theory-chapter(folders, terms)",
+    "#let render-practical-chapter(folders, terms)",
     "theory_intro:",
     "theory_body:",
     "theory_summary:",
@@ -257,25 +258,27 @@ for required in (
 ):
     if required not in schema_source:
         fail(f"concept schema missing canonical field/renderer: {required}")
+for forbidden in ('type in ("parent", "child"', 'edge.type == "parent"', 'edge.type == "child"'):
+    if forbidden in schema_source:
+        fail(f"structural concept relations must not drive section hierarchy: {forbidden}")
 
 catalog_source = concept_catalog.read_text(encoding="utf-8")
 for required in (
     '"01-development-environment/index.typ"',
     '"02-language-models/index.typ"',
     '"03-agentic-engineering/index.typ"',
-    "#let vocabulary = build-vocabulary(sections)",
-    "#let render-theory() = render-theory-chapter(sections, vocabulary)",
-    "#let render-practical() = render-practical-chapter(sections, vocabulary)",
+    "#let folders = (",
+    "#let vocabulary = build-vocabulary(folders)",
+    "#let render-theory() = render-theory-chapter(folders, vocabulary)",
+    "#let render-practical() = render-practical-chapter(folders, vocabulary)",
 ):
     if required not in catalog_source:
-        fail(f"concept catalog missing dynamic composition contract: {required}")
+        fail(f"concept catalog missing folder-driven composition contract: {required}")
 
 concept_paths = tuple(
     sorted(
-        path
-        for section in section_dirs
-        for path in section.glob("*.typ")
-        if path.name != "index.typ"
+        path for path in concept_root.rglob("*.typ")
+        if path.name != "index.typ" and path != concept_schema and path != concept_catalog
     )
 )
 if len(concept_paths) < 38:
@@ -285,20 +288,29 @@ for path in concept_paths:
     for required in (
         "#let terminology = define-term(",
         "#let item = concept(",
-        "theory_intro:",
-        "theory_body:",
-        "theory_summary:",
-        "practical_intro:",
-        "practical_body:",
-        "practical_summary:",
     ):
         if required not in source:
-            fail(f"concept file does not own its complete canonical record: {path}: {required}")
+            fail(f"concept file does not own its canonical record: {path}: {required}")
+    if "related:" in source:
+        fail(f"legacy concept relation field remains: {path}")
+    if 'type: "parent"' in source or 'type: "child"' in source:
+        fail(f"structural relation remains in concept file: {path}")
 
-# A canonical concept must contribute to the thesis either as a rendered section or
-# as an inline canonical term used by rendered manuscript content. The removed
-# standalone Rejstřík must never be the only place where a concept appears.
-section_index_paths = tuple(section / "index.typ" for section in section_dirs)
+# Folder indexes are the sole source of section hierarchy. Concepts inside a folder
+# render continuously; only a child folder can introduce another section heading.
+section_index_paths = tuple(
+    sorted(
+        path for section in section_dirs
+        for path in section.rglob("index.typ")
+    )
+)
+for path in section_index_paths:
+    source = path.read_text(encoding="utf-8")
+    if "#let node = folder(" not in source:
+        fail(f"folder index is not a structural folder manifest: {path}")
+    if "#let item = section(" in source:
+        fail(f"legacy section record remains in folder manifest: {path}")
+
 rendered_concept_paths = tuple(
     path for path in concept_paths
     if "theory_enabled: true" in path.read_text(encoding="utf-8")
@@ -321,30 +333,33 @@ for path in concept_paths:
     if match is None:
         fail(f"concept is missing a stable key: {path}")
     key = match.group(1)
-    if f"terms.{key}" not in rendered_manuscript_text:
+    if f"terms.{key}" not in rendered_manuscript_text and f"{key}.item" not in rendered_manuscript_text:
         unused_concepts.append(f"{path}:{key}")
 if unused_concepts:
     fail("canonical concepts not utilized by the thesis: " + ", ".join(unused_concepts))
 
-section_sources = {
-    section.name: (section / "index.typ").read_text(encoding="utf-8")
-    for section in section_dirs
+required_folder_manifests = {
+    "development": concept_root / "01-development-environment/index.typ",
+    "git": concept_root / "01-development-environment/version-control/git/index.typ",
+    "language_model": concept_root / "02-language-models/language-model/index.typ",
+    "agentic": concept_root / "03-agentic-engineering/index.typ",
+    "harness": concept_root / "03-agentic-engineering/agent-harness/index.typ",
+    "prompt_engineering": concept_root / "03-agentic-engineering/prompt-engineering/index.typ",
+    "agent_loop": concept_root / "03-agentic-engineering/agent-harness/agent-loop/index.typ",
+    "tool_calling": concept_root / "03-agentic-engineering/agent-harness/tool-calling/index.typ",
+    "context_engineering": concept_root / "03-agentic-engineering/agent-harness/context-engineering/index.typ",
 }
-for name, source in section_sources.items():
-    if "#let item = section(" not in source or "concepts: (" not in source:
-        fail(f"section index is not a canonical ordered section record: {name}")
+for name, manifest in required_folder_manifests.items():
+    if not manifest.is_file():
+        fail(f"required structural concept folder missing: {name}: {manifest}")
 
-development_source = section_sources["01-development-environment"]
-language_source = section_sources["02-language-models"]
-agentic_source = section_sources["03-agentic-engineering"]
-if "#finalized[Vývojové prostředí a praxe]" not in development_source:
-    fail("section 2.1 must remain Vývojové prostředí a praxe")
-if development_source.find("required_checks.item") >= development_source.find("branch_protection.item"):
-    fail("Branch Protection must remain after Required Checks")
-if language_source.find("agent.item") >= language_source.find("context_rot.item"):
-    fail("language-model concept ordering changed unexpectedly")
-if agentic_source.find("prompt_engineering.item") >= agentic_source.find("agent_loop.item"):
-    fail("Prompt Engineering must remain before the agent-loop concept")
+git_source = required_folder_manifests["git"].read_text(encoding="utf-8")
+if git_source.find("required_checks.item") >= git_source.find("branch_protection.item"):
+    fail("Branch Protection must remain after Required Checks within the Git folder")
+
+agentic_source = required_folder_manifests["agentic"].read_text(encoding="utf-8")
+if agentic_source.find("prompt_engineering.node") >= agentic_source.find("agent_harness.node"):
+    fail("Prompt Engineering folder must remain before Agent Harness")
 
 concept_text = "\n".join(path.read_text(encoding="utf-8") for path in concept_paths)
 for required in (
@@ -434,7 +449,7 @@ for path in (
     Path("thesis.typ"),
     *sorted(Path("kapitoly").glob("*.typ")),
     *sorted(Path("concepts").glob("*.typ")),
-    *sorted(Path("concepts").glob("*/*.typ")),
+    *sorted(Path("concepts").rglob("*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
     imports = active_typst_imports(source)
