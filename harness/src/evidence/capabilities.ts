@@ -52,9 +52,9 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		test: (path) => path === "." ? "pytest" : `pytest ${path}`,
 		lint: (path) => path === "." ? "flake8 ." : `flake8 ${path}`,
 		format_check: (path) => path === "." ? "black --check ." : `black --check ${path}`,
-		docs_check: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
-		docs_extract: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
-		setup: (path) => path === "." ? "pip install -r requirements.txt" : `pip install -r ${join(path, "requirements.txt")}`,
+		docs_check: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${path}/docs/source ${path}/docs/build`,
+		docs_extract: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${path}/docs/source ${path}/docs/build`,
+		setup: (path) => path === "." ? "pip install -r requirements.txt" : `pip install -r ${path}/requirements.txt`,
 	},
 };
 
@@ -106,13 +106,13 @@ export async function resolveRepositoryActions(
 			let supported = false;
 
 			// 1. Try retrieving command from capabilities (ordered by capability priority/definition)
-			// Sort capabilities to ensure deterministic resolution, e.g., by name
-			for (const cap of [...capabilities].sort((a, b) => a.name.localeCompare(b.name))) {
+			// Sort capabilities to ensure deterministic resolution, e.g., by id
+			for (const cap of [...capabilities].sort((a, b) => a.id.localeCompare(b.id))) {
 				const capAction = cap.actions?.[actionKey];
 				if (capAction) {
 					// Check for overlap: warn if multiple capabilities try to override the same action
 					if (supported) {
-						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.name}`);
+						console.warn(`Multiple capabilities defining action ${actionKey}. Overriding with ${cap.id}`);
 					}
 					supported = true;
 					description = capAction.description ?? `Capability-contributed ${actionKey}`;

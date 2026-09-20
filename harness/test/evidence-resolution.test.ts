@@ -66,4 +66,39 @@ describe("evidence resolution", () => {
 			await rm(temp, { recursive: true, force: true });
 		}
 	});
+
+	test("resolves capability-contributed actions", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "evidence-test-"));
+		try {
+			// Mock capability directory
+			const capsDir = resolve(temp, "capabilities");
+			await mkdir(capsDir, { recursive: true });
+			await writeFile(
+				resolve(capsDir, "my-cap.json"),
+				JSON.stringify({
+					id: "my-cap",
+					abiVersion: "1",
+					actions: {
+						test: { command: "custom-cap-test", description: "Cap test" }
+					}
+				})
+			);
+
+			// Mock package
+			await mkdir(resolve(temp, "packages/pkg-a"), { recursive: true });
+			await writeFile(
+				resolve(temp, "packages/pkg-a/package.json"),
+				JSON.stringify({ name: "pkg-a" })
+			);
+
+			const result = await resolveRepositoryActions(temp, capsDir);
+			const actions = result.packages["pkg-a"];
+			expect(actions).toBeDefined();
+			expect(actions.test.supported).toBe(true);
+			expect(actions.test.command).toBe("custom-cap-test");
+			expect(actions.test.description).toBe("Cap test");
+		} finally {
+			await rm(temp, { recursive: true, force: true });
+		}
+	});
 });
