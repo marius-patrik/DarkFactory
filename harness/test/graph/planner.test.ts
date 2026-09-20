@@ -33,13 +33,23 @@ describe("pure DarkFactory planner", () => {
 		],
 		[
 			"planning review success",
-			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: null, planning_review_clean: true } },
+			{
+				type: "node.completed",
+				node: "planning-review",
+				outcome: "success",
+				outputs: { planning_findings: null, planning_review_clean: true },
+			},
 			state("planning-review"),
 			{ type: "gate", node: "planning-gate", status: "Blocked" },
 		],
 		[
 			"planning review fails",
-			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: [{ id: "x" }], planning_review_clean: false } },
+			{
+				type: "node.completed",
+				node: "planning-review",
+				outcome: "success",
+				outputs: { planning_findings: [{ id: "x" }], planning_review_clean: false },
+			},
 			state("planning-review"),
 			{ type: "run", nodes: ["planning-fix"] },
 		],
