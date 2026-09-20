@@ -11,6 +11,10 @@ import { loadRunState, saveRunState } from "./run-state.ts";
 import type { PlanAction } from "./types.ts";
 import { validateGraph } from "./validator.ts";
 
+/**
+ * Options for the dispatch command.
+ * Controls input paths, output behavior, and overrides.
+ */
 export interface DispatchOptions {
 	eventName: string;
 	eventPath: string;
@@ -163,6 +167,12 @@ export async function resolveCommitSha(
 	return "HEAD";
 }
 
+/**
+ * Dispatch a workflow based on a GitHub event.
+ * @param argv - Command line arguments passed to the dispatch command.
+ * @param options - Optional overrides, such as a custom check state source.
+ * @returns A promise that resolves when dispatch processing is complete.
+ */
 export async function dispatch(
 	argv: string[],
 	options?: {
