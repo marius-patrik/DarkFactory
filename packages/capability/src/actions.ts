@@ -157,10 +157,15 @@ function resolveOne(
 	}
 	const match = matches[0];
 	if (match) {
+		const metadata = {
+			...(match.result.metadata ?? {}),
+			...(override?.versions ? { versions: override.versions } : {}),
+		};
 		return {
 			kind, packageId: pkg.id, cwd: pkg.path, supported: true,
 			description: match.action.description, source: "capability", capabilityId: match.capability.id,
-			...match.result,
+			...(match.result.command ? { command: match.result.command } : {}),
+			...(Object.keys(metadata).length > 0 ? { metadata } : {}),
 		};
 	}
 	return {
@@ -261,4 +266,25 @@ export async function resolveDetectedRepositoryActions(
 	const definitions = await discoverCapabilities(capabilitiesRoot);
 	const applicable = resolveCapabilities(definitions, evidence.domains).capabilities;
 	return resolveRepositoryActions(evidence, applicable);
+}
+
+/** Stable aggregate GitHub status-check contract for detector-driven quality execution. */
+export const QUALITY_REQUIRED_CHECK = "quality" as const;
+
+/** Governance check that remains independent from language/package quality detection. */
+export const REQUEST_BINDING_REQUIRED_CHECK = "verify-bound-issue" as const;
+
+/** Required GitHub checks for one detected repository. */
+export function requiredChecksForDetectedQuality(
+	_resolution: ResolvedRepositoryActions,
+): readonly { name: string; required: true; workflow: string; job: string }[] {
+	return [
+		{ name: QUALITY_REQUIRED_CHECK, required: true, workflow: "ci.yml", job: QUALITY_REQUIRED_CHECK },
+		{
+			name: REQUEST_BINDING_REQUIRED_CHECK,
+			required: true,
+			workflow: "verify-bound-issue.yml",
+			job: REQUEST_BINDING_REQUIRED_CHECK,
+		},
+	];
 }
