@@ -257,9 +257,9 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 }
 
 /**
- * Loads the DarkFactory configuration from config.json in the given home directory.
- * Falls back to the default chain if config.json is missing.
- * @param home - The $DF_HOME directory containing config.json
+ * Loads the DarkFactory configuration from config.df in the given root directory.
+ * Falls back to the default chain if config.df is missing.
+ * @param root - The directory containing config.df (or .darkfactory/config.df)
  * @param reader - Optional custom file reader (defaults to reading files with UTF-8 encoding)
  * @returns A promise resolving to the loaded DfConfig
  */
