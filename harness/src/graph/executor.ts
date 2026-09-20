@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ReviewRuntimeState, ReviewSubject } from "@darkfactory/protocol/review";
+import type { ReviewRuntimeState, ReviewSubject } from "../../../packages/protocol/src/review.ts";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
@@ -87,7 +87,9 @@ function startNode(graph: WorkflowGraph, event: GraphEvent): string {
 
 function reviewContextKey(graph: WorkflowGraph, subject: ReviewSubject): string | undefined {
 	for (const node of graph.nodes) {
-		if (node.kind === "agent" && node.review?.subject === subject) return node.review.context;
+		if (node.kind !== "agent") continue;
+		const review = node.review;
+		if (review?.subject === subject) return review.context;
 	}
 	return undefined;
 }
@@ -320,7 +322,7 @@ export async function runGraph(
 					result.outputs[reviewConfig.findings] = review.findings.length > 0 ? review.findings : null;
 					result.outputs[reviewConfig.clean] = review.clean;
 				} else {
-					state.reviews[reviewConfig.subject] = recordReviewFix(existingReview!, iteration, options.now?.());
+					state.reviews[reviewConfig.subject] = recordReviewFix(existingReview ?? (() => { throw new Error(`Missing ${reviewConfig.subject} review state`); })(), iteration, options.now?.());
 				}
 			}
 			state.outputs = { ...state.outputs, ...result.outputs };
