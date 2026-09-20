@@ -5,8 +5,6 @@
     id: "agent-loop",
     proper: translation(cs: "Smyčka ReAct", en: "ReAct Loop"),
     industry: translation(cs: "Agent Loop", en: "Agent Loop"),
-    explanation_cs: "Iterativní prováděcí cyklus autonomního agenta založený na vzoru ReAct (Reasoning + Acting), v němž model střídavě uvažuje, volá nástroje a vyhodnocuje pozorování z běhového prostředí.",
-    explanation_en: "An iterative execution cycle of an autonomous agent based on the ReAct pattern (Reasoning + Acting), in which the model alternates between reasoning, tool calls, and evaluation of observations from the runtime environment.",
     citation: bib.yao2022,
     source: bib.yao2022,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "agent_loop",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Iterativní prováděcí cyklus autonomního agenta založený na vzoru ReAct (_Reasoning + Acting_), v němž model střídá rozhodování, volání nástrojů a vyhodnocování výsledků z běhového prostředí.
+  ],
   description: terms => [
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.
 
@@ -40,7 +40,9 @@ Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na
   caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting) a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]],
 ) <fig-react-loop>
   ],
-  summary: none,
+  summary: terms => [
+Agentní smyčka koordinuje opakované rozhodování modelu s vykonáváním akcí; její provozní spolehlivost proto závisí na řízení stavu, nástrojů, rozpočtů a podmínek ukončení.
+  ],
   visual: none,
   examples: (),
   attachments: (),
