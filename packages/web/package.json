@@ -15,7 +15,8 @@
     "@darkfactory/protocol": "workspace:*",
     "@darkfactory/auth": "workspace:*",
     "@darkfactory/github": "workspace:*",
-    "@darkfactory/docs": "workspace:*"
+    "@darkfactory/docs": "workspace:*",
+    "wouter": "^3.3.5"
   },
   "peerDependencies": {
     "react": "^18.2.0",

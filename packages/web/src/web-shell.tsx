@@ -1,65 +1,42 @@
-import React, { createContext, useContext, useState, useEffect, type FC, type ReactNode } from "react";
-
-interface RouterContextType {
-  path: string;
-  navigate: (to: string) => void;
-}
-
-const RouterContext = createContext<RouterContextType>({
-  path: "/",
-  navigate: () => {},
-});
-
-export const useRouter = () => useContext(RouterContext);
+import React, { createContext, useContext, useEffect, type FC, type ReactNode } from "react";
+import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, useRouter as useWouter } from "wouter";
 
 export interface RouterProps {
-  initialPath?: string;
+  basename?: string;
   children: ReactNode;
 }
 
-export const Router: FC<RouterProps> = ({ initialPath, children }) => {
-  const [path, setPath] = useState<string>(
-    initialPath ?? (typeof window !== "undefined" ? window.location.pathname : "/")
-  );
-
-  const navigate = (to: string) => {
-    setPath(to);
-    if (typeof window !== "undefined") {
-      window.history.pushState({}, "", to);
-    }
-  };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handlePopState = () => {
-      setPath(window.location.pathname);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
+export const Router: FC<RouterProps> = ({ basename, children }) => {
   return (
-    <RouterContext.Provider value={{ path, navigate }}>
+    <WouterRouter base={basename}>
       {children}
-    </RouterContext.Provider>
+    </WouterRouter>
   );
 };
 
+export const useRouter = () => {
+  const [location, setLocation] = useLocation();
+  return {
+    path: location,
+    navigate: (to: string) => setLocation(to)
+  };
+};
+
 export interface RouteProps {
-  path: string;
+  path?: string;
   component?: FC;
   children?: ReactNode;
 }
 
 export const Route: FC<RouteProps> = ({ path, component: Component, children }) => {
-  const router = useRouter();
-  if (router.path !== path) {
-    return null;
+  if (path) {
+    return (
+      <WouterRoute path={path}>
+        {(params) => (Component ? <Component /> : <>{children}</>)}
+      </WouterRoute>
+    );
   }
-  if (Component) {
-    return <Component />;
-  }
-  return <>{children}</>;
+  return <WouterRoute>{(params) => (Component ? <Component /> : <>{children}</>)}</WouterRoute>;
 };
 
 const HomeView: FC = () => (
@@ -83,10 +60,17 @@ const DocsView: FC = () => (
   </div>
 );
 
+const NotFoundView: FC = () => (
+  <div>
+    <h2>404 Not Found</h2>
+    <p>The requested page does not exist.</p>
+  </div>
+);
+
 export const DarkFactoryShell: FC = () => {
   return (
-    <Router>
-      <div className="darkfactory-shell">
+    <Router basename={typeof window !== "undefined" ? window.location.pathname.split("/").slice(0, -1).join("/") : ""}>
+      <div className="darkfactory-shell" aria-live="polite">
         <header>
           <h1>DarkFactory Web</h1>
           <nav>
@@ -99,6 +83,9 @@ export const DarkFactoryShell: FC = () => {
           <Route path="/" component={HomeView} />
           <Route path="/status" component={StatusView} />
           <Route path="/docs" component={DocsView} />
+          <WouterRoute>
+            <NotFoundView />
+          </WouterRoute>
         </main>
       </div>
     </Router>
@@ -111,16 +98,9 @@ interface RouteLinkProps {
 }
 
 export const RouteLink: FC<RouteLinkProps> = ({ to, children }) => {
-  const router = useRouter();
   return (
-    <a
-      href={to}
-      onClick={(e) => {
-        e.preventDefault();
-        router.navigate(to);
-      }}
-    >
+    <Link href={to} className="route-link">
       {children}
-    </a>
+    </Link>
   );
 };
