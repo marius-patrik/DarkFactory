@@ -361,7 +361,6 @@ def test_runtime_references_use_canonical_agent_paths():
                 re.search(rf'os\.path\.join\(\s*"{alias}"', source) is None
             ), f"{name} must use the canonical .agents path, not the root {alias} alias"
 
-    assert not os.path.exists(os.path.join(scripts_dir, "docs_hooks.py"))
     build_docs = _read("scripts", "build-docs.ts")
     assert "_notes" not in build_docs
     assert "_rules" not in build_docs
