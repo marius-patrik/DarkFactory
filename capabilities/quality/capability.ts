@@ -107,7 +107,7 @@ export const capability = defineCapability({
 
 				const ecosystem = pkg.ecosystem || "javascript";
 				const repoConfig = await readRepoConfig(context.repositoryRoot, (event) => context.audit?.(event));
-				const registry = JSON.parse(JSON.stringify(DEFAULT_REGISTRY));
+				const registry = structuredClone(DEFAULT_REGISTRY);
 
 				// Override with repo.df environment settings if available
 				const env = repoConfig.environment || repoConfig.quality || {};

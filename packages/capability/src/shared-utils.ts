@@ -96,7 +96,9 @@ export async function detectRepositoryPackages(root: string, auditLog?: (event: 
 							pkgName = parsed.name;
 						}
 					} catch (err: unknown) {
-                        // ...
+						const msg = `Failed to parse package.json at ${dir}: ${err}`;
+						diagnostics.push(msg);
+						auditLog?.({ capability: "detection", action: "warning", details: { message: msg } });
 					}
 				} else if (manifest === "pyproject.toml") {
 					try {
@@ -104,14 +106,21 @@ export async function detectRepositoryPackages(root: string, auditLog?: (event: 
 						// Simple regex for name in pyproject.toml
 						const match = raw.match(/name\s*=\s*["']([^"']+)["']/);
 						if (match && match[1]) pkgName = match[1];
-					} catch { }
+					} catch (err: unknown) {
+						const msg = `Failed to parse pyproject.toml at ${dir}: ${err}`;
+						diagnostics.push(msg);
+						auditLog?.({ capability: "detection", action: "warning", details: { message: msg } });
+					}
 				} else if (manifest === "go.mod") {
 					try {
 						const raw = await readFile(join(dir, manifest), "utf8");
 						const match = raw.match(/module\s+([^\s]+)/);
 						if (match && match[1]) pkgName = match[1].split('/').pop() || match[1];
-					} catch { }
-				}
+					} catch (err: unknown) {
+						const msg = `Failed to parse go.mod at ${dir}: ${err}`;
+						diagnostics.push(msg);
+						auditLog?.({ capability: "detection", action: "warning", details: { message: msg } });
+					}
 
 				packages.push({
 					name: pkgName,
@@ -251,17 +260,21 @@ export function createQualityCommand(tool: string, args: string[]): QualityComma
  */
 export async function runQualityCommand(cmd: QualityCommand, cwd?: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
 	return new Promise((resolve) => {
-		const child = spawn(cmd.executable, cmd.args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
-		let stdout = "";
-		let stderr = "";
-		child.stdout?.on("data", (data) => { stdout += data.toString(); });
-		child.stderr?.on("data", (data) => { stderr += data.toString(); });
-		child.on("close", (code) => {
-			resolve({ exitCode: code ?? 1, stdout, stderr });
-		});
-		child.on("error", (err) => {
-			stderr += err.message;
-			resolve({ exitCode: 1, stdout, stderr });
-		});
+		try {
+			const child = spawn(cmd.executable, cmd.args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+			let stdout = "";
+			let stderr = "";
+			child.stdout?.on("data", (data) => { stdout += data.toString(); });
+			child.stderr?.on("data", (data) => { stderr += data.toString(); });
+			child.on("close", (code) => {
+				resolve({ exitCode: code ?? 1, stdout, stderr });
+			});
+			child.on("error", (err) => {
+				stderr += err.message;
+				resolve({ exitCode: 1, stdout, stderr });
+			});
+		} catch (err: any) {
+			resolve({ exitCode: 1, stdout: "", stderr: err?.message || String(err) });
+		}
 	});
 }
