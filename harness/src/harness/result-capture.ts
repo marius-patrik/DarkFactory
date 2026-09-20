@@ -46,15 +46,18 @@ export class CaptureError extends Error {
 
 /** Convert a Zod schema to a JSON schema without the top‑level `$schema` key. */
 export function captureJsonSchema(schema: z.ZodType): Record<string, unknown> {
-	const json = zodToJsonSchema(schema) as Record<string, unknown>;
+	let json = zodToJsonSchema(schema) as Record<string, unknown>;
 	if (json && typeof json === "object") {
 		if ("$schema" in json) {
 			delete json["$schema"];
 		}
 		// If it's empty, try to ensure we have a valid object schema if it's an object
 		if (Object.keys(json).length === 0 && (schema as any)._def?.typeName === "ZodObject") {
-			return { type: "object", properties: {}, required: [] };
+			json = { type: "object", properties: {}, required: [] };
 		}
+	}
+	if (json.type !== "object") {
+		throw new Error("captureResult requires a Zod object schema for tool parameters.");
 	}
 	return json;
 }
