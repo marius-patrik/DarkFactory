@@ -28,7 +28,7 @@ Verbatim capture protects intent; reviewed Planning protects interpretation and 
 
 ## Enforcement
 
-Request intake and #391 Planning lifecycle validate the contract.
+Request intake and the governed Planning lifecycle validate the contract.
 
 ## Exceptions
 
@@ -36,4 +36,4 @@ None.
 
 ## Change control
 
-Multi-Request/shared-plan behavior follows #385 and never waives explicit Request coverage.
+Multi-Request/shared-plan behavior follows the first-class Request relationship model and never waives explicit Request coverage.
