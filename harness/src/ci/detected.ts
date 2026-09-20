@@ -1,4 +1,4 @@
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import {
 	qualityMatrix,
 	type ResolvedRepositoryActions,
@@ -20,7 +20,7 @@ export async function resolveDetectedQuality(
 	capabilitiesRoot?: string,
 ): Promise<DetectedQualityState> {
 	const evidence = await detectRepositoryEvidence(repoDir);
-	const root = capabilitiesRoot ? resolve(capabilitiesRoot) : join(evidence.root, "capabilities");
+	const root = capabilitiesRoot ? resolve(capabilitiesRoot) : resolve(import.meta.dir, "..", "..", "..", "capabilities");
 	const resolution = await resolveDetectedRepositoryActions(evidence, root);
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }
