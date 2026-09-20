@@ -1,4 +1,5 @@
-import type { OperatorQuotaSnapshot } from "../../../packages/protocol/src/quota.ts";\nimport type { Candidate } from "../failover.ts";
+import type { OperatorQuotaSnapshot } from "../../../packages/protocol/src/quota.ts";
+import type { Candidate } from "../failover.ts";
 import type { DeclaredLimitConfig, FreeTierConfig, ProviderConfig } from "../providers/schema.ts";
 import type { CandidateQuota, QuotaEngine, QuotaState } from "./quota-engine.ts";
 
