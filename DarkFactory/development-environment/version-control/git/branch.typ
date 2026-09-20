@@ -13,16 +13,16 @@ definition: terms => [
 Větev je pojmenovaná vývojová linie v systému správy verzí, která umožňuje provádět změny odděleně od jiné linie historie a později je porovnat nebo sloučit.
   ],
   description: terms => [
-#unconfirmed[
-Základním bezpečnostním pravidlem při zapojení autonomních agentů do vývoje je striktní izolace rozpracovaného kódu. Stabilní kód v hlavní větvi (`main`) nesmí být nikdy přímo vystaven experimentům a chybám modelu. Agent proto veškeré úpravy provádí ve vyhrazených pracovních větvích odbočených ze základní linie projektu.
+#finalized[
+V navrženém procesu DarkFactory agent nepracuje přímo v hlavní větvi. Každý úkol provádí v samostatné pracovní větvi odvozené ze základní linie projektu @chacon2014.
 
-Tento princip přináší následující výhody:
-- Ochrana produkční větve @chacon2014: Hlavní větev (`main`) reprezentuje stabilní, otestovaný stav připravený k nasazení. Přímé zapisování do této větve je zakázáno jak lidským vývojářům, tak autonomním agentům.
-- Dedikovaná větev pro každý úkol: Agent pro každé zadání dynamicky vytvoří novou samostatnou větev (např. `task/123-oprava-parseru` či `agent/feature-auth`).
-- Izolace chyb a mezistavů: Případné syntaktické chyby, dočasné nefunkční stavy ani neúspěšné hypotézy neovlivňují stabilitu hlavní větve ani práci ostatních vývojářů v týmu.
-- Bezpečné zahození nezdařených běhů: Pokud se agent dostane do slepé uličky nebo vyčerpá přidělený rozpočet kroků, celou větev lze smazat jedním příkazem bez jakýchkoliv následků pro zbytek repozitáře.
+Tento postup přináší několik praktických vlastností:
+- Ochrana hlavní větve: změny se do `main` začleňují až přes definovaný integrační proces.
+- Samostatná větev pro každý úkol: pracovní historie jednoho zadání je oddělena od ostatních běhů.
+- Izolace mezistavů: dočasně nefunkční nebo experimentální změny zůstávají mimo hlavní větev.
+- Snadné zahození neúspěšného běhu: pracovní větev lze odstranit bez změny stabilní historie projektu.
 
-Pokud se hlavní větev během práce agenta posune dopředu v důsledku jiné aktivity v repozitáři, pracovní větev agenta se musí před dokončením zaktualizovat (`git rebase` nebo `git merge`), aby byla zajištěna bezkonfliktní integrace.
+Pokud se hlavní větev během práce posune, pracovní větev se před integrací zaktualizuje pomocí běžných mechanismů Gitu, například rebase nebo merge.
 ]
   ],
   summary: terms => [
