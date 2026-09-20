@@ -233,7 +233,7 @@ class TestSerialisation:
 
 
 class TestPlans:
-    """Testing, formatting and documentation are planned the same way, per ecosystem."""
+    """Testing and formatting are planned per detected ecosystem."""
 
     def test_each_ecosystem_gets_its_own_command(self, polyglot):
         env = environment.configure(str(polyglot))
@@ -242,7 +242,7 @@ class TestPlans:
 
     def test_polyglot_plans_cover_every_ecosystem(self, polyglot):
         env = environment.configure(str(polyglot))
-        for plan in (env.test_plan(), env.format_plan(), env.docs_plan()):
+        for plan in (env.test_plan(), env.format_plan()):
             assert set(plan) == {"node", "rust"}
 
     def test_the_package_manager_picks_the_command(self, tmp_path):
@@ -256,15 +256,6 @@ class TestPlans:
         plan = environment.configure(str(tmp_path)).test_plan()
         assert plan["python"]["versions"] == ["3.10", "3.11", "3.12", "3.13"]
         assert plan["rust"]["versions"] == []
-
-    def test_documentation_names_the_inline_source_per_ecosystem(self, polyglot):
-        plan = environment.configure(str(polyglot)).docs_plan()
-        assert plan["node"]["source"] == "tsdoc"
-        assert plan["rust"]["source"] == "rustdoc"
-
-    def test_python_documentation_comes_from_docstrings(self, tmp_path):
-        _write(tmp_path, "pyproject.toml", '[project]\nname = "x"\nversion = "1.0.0"\n')
-        assert environment.configure(str(tmp_path)).docs_plan()["python"]["source"] == "docstrings"
 
     def test_darkfactory_documentation_is_owned_by_docs_df(self):
         with open(os.path.join(REPO_ROOT, ".darkfactory", "repo.df"), encoding="utf-8") as handle:
@@ -320,7 +311,8 @@ class TestPlans:
     def test_plans_survive_json_serialisation(self, polyglot):
         payload = environment.configure(str(polyglot)).as_dict()
         assert json.loads(json.dumps(payload)) == payload
-        assert set(payload) >= {"test_plan", "format_plan", "docs_plan"}
+        assert set(payload) >= {"test_plan", "format_plan", "build_plan"}
+        assert "docs_plan" not in payload
 
 
 class TestDomains:
@@ -394,11 +386,6 @@ class TestPaperDomain:
         assert env.test_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
         assert env.build_plan()["typst"]["command"] == "typst compile main.typ out/paper.pdf"
         assert env.build_plan()["typst"]["artifacts"] == ["out/*.pdf", "*.pdf"]
-
-    def test_a_paper_needs_no_api_documentation(self, tmp_path):
-        """A document has no inline source to extract a reference from."""
-        _write(tmp_path, "typst.toml", '[package]\nname = "thesis"\nversion = "1.0.0"\n')
-        assert environment.configure(str(tmp_path)).docs_plan()["typst"]["command"] is None
 
     def test_a_thesis_beside_its_software_plans_both(self, tmp_path):
         """The motivating case: detection alone, with no declaration, finds both domains."""
