@@ -65,7 +65,7 @@ Executable declarations use the final DarkFactory contracts:
 - the declarable workflow graph for execution topology;
 - `.agents/rules/*.md` for mandatory contribution/governance behavior.
 
-Legacy manifest/config paths are not normative final contracts.
+Only the current `repo.df`, `config.df`, and `docs.df` contracts are normative.
 
 A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
@@ -225,7 +225,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by final `repo.df`, not a legacy manifest path.
+Repository area labels/scopes are declared by `repo.df`.
 
 Project classification separates:
 
