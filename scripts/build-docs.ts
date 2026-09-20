@@ -49,7 +49,7 @@ const ROOT_REPO_PATH = "repo.df";
 /**
  * Resolves repo.df using the hard-transition contract: .darkfactory/repo.df or root repo.df, never both.
  */
-export function resolveManifestPath(repoRoot: string): string {
+export function resolveRepoDfPath(repoRoot: string): string {
   const dfPath = path.join(repoRoot, DF_REPO_PATH);
   const rootPath = path.join(repoRoot, ROOT_REPO_PATH);
 
@@ -305,12 +305,12 @@ export function generateAdrIndex(adrs: AdrRecord[]): string {
 /**
  * Generates tables for taxonomy, labels, projects, and installed repositories from repo.df.
  */
-export function generateManifestReference(manifest: any): string {
+export function generateRepositoryReference(repository: any): string {
   const lines: string[] = [
-    "# Repository manifest reference",
+    "# Repository declaration reference",
     "",
     "Declarative configuration for DarkFactory pipelines, taxonomy, labels, and installed projects.",
-    "Generated from repository manifest (`repo.df`) at build time.",
+    "Generated from `repo.df` at build time.",
     "",
     "## Area taxonomy and labels",
     "",
@@ -320,7 +320,7 @@ export function generateManifestReference(manifest: any): string {
     "|---|---|---|---|",
   ];
 
-  const areas = manifest.areas || {};
+  const areas = repository.areas || {};
   for (const [areaName, areaData] of Object.entries<any>(areas)) {
     if (areaName.startsWith("$")) continue;
     const desc = areaData.description || "";
@@ -331,7 +331,7 @@ export function generateManifestReference(manifest: any): string {
   lines.push("", "## Projects", "", "Documentation sites offered in the switcher:", "");
   lines.push("| Project | URL |");
   lines.push("|---|---|");
-  const docProjects = (manifest.documentation && manifest.documentation.projects) || [];
+  const docProjects = (repository.documentation && repository.documentation.projects) || [];
   for (const proj of docProjects) {
     lines.push(`| [${proj.name}](${proj.url}) | ${proj.url} |`);
   }
@@ -339,14 +339,14 @@ export function generateManifestReference(manifest: any): string {
   lines.push("", "## Installed fleet", "", "Repositories with DarkFactory automation installed:", "");
   lines.push("| Repository | GitHub |");
   lines.push("|---|---|");
-  const installed = (manifest.app && manifest.app.installed_on) || [];
+  const installed = (repository.app && repository.app.installed_on) || [];
   for (const repo of installed) {
     lines.push(`| ${repo} | [${repo}](https://github.com/${repo}) |`);
   }
 
-  if (manifest.identity) {
+  if (repository.identity) {
     lines.push("", "## Identity", "", "| Property | Value |", "|---|---|");
-    for (const [key, val] of Object.entries(manifest.identity)) {
+    for (const [key, val] of Object.entries(repository.identity)) {
       if (Array.isArray(val)) {
         lines.push(`| ${key} | ${val.join(", ")} |`);
       } else if (typeof val === "string" || typeof val === "number") {
@@ -493,13 +493,13 @@ export function stageDocs(repoRoot: string, stagingDir: string): void {
     fs.writeFileSync(destPath, rewriteLinks(adr.content, normalizedDest), "utf-8");
   }
 
-  // 4. Manifest reference
-  const manifestPath = resolveManifestPath(repoRoot);
-  if (fs.existsSync(manifestPath)) {
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  // 4. Repository declaration reference
+  const repoPath = resolveRepoDfPath(repoRoot);
+  if (fs.existsSync(repoPath)) {
+    const repository = JSON.parse(fs.readFileSync(repoPath, "utf-8"));
     const refTargetDir = path.join(stagingDir, "reference");
     fs.mkdirSync(refTargetDir, { recursive: true });
-    fs.writeFileSync(path.join(refTargetDir, "manifest.md"), generateManifestReference(manifest), "utf-8");
+    fs.writeFileSync(path.join(refTargetDir, "repository.md"), generateRepositoryReference(repository), "utf-8");
   }
 
   // 5. Workflows reference
