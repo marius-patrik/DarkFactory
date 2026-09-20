@@ -6,3 +6,10 @@
  */
 export type { RouteResult, TaskProfile } from "@darkfactory/protocol/model";
 export { DarkFactoryShell, Router, Route, useRouter, RouteLink, type RouteConfig } from "./web-shell";
+export {
+	QuotaDashboardView,
+	quotaDashboardModels,
+	type QuotaDashboardState,
+	type QuotaLimitView,
+	type QuotaModelView,
+} from "./quota";
