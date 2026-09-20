@@ -48,6 +48,9 @@ The bootstrap baseline has advanced since the previous plan revision.
 - #406 is terminal: one bounded elapsed-time budget is enforced across a df run/stage.
 - #420 is terminal: the root Bun workspace and first-party package boundaries are established.
 - #421 is terminal: the minimum versioned capability ABI/loader exists, including official code/paper/math capability packages and generated adapter contracts.
+- #340 is terminal: the final `repo.df`/`config.df`/df-managed `.df` naming and persistence contract is in force.
+- #391 is terminal: the unified reviewed Planning lifecycle and review/fix semantics are landed.
+- #331 is terminal: capability-tier routing, exact one-tier escalation and final router behavior are landed.
 
 These completed foundations are not repeated in the active Request map below.
 
@@ -156,7 +159,7 @@ A failing topic/recovery branch blocks that branch and dependent work, but does 
 | PR #407 | Closed/superseded; #340 evidence only |
 | `recovery/f28-dispatch` | Historical #242 provenance; no unique valid implementation |
 | `recovery/f14-borrowed-refresh` | #248 -> #422 keychain |
-| `recovery/f40-capability-tiers` | #331 |
+| `recovery/f40-capability-tiers` | Integrated through #331; retain provenance until final recovery audit |
 | `recovery/f38-result-capture` | #329 |
 | `recovery/f42-tsdoc` | #334 -> #424 |
 | `recovery/f42-tsdoc-w2` | #334 -> #424 |
@@ -183,42 +186,31 @@ Every recovery source must have an explicit terminal disposition before #361.
 
 ## 5. Active critical path to self-hosting
 
-The bootstrap/package/runtime foundations (#413, #365, #406, #420, #421) are complete.
+The bootstrap/package/runtime foundations (#413, #365, #406, #420, #421), final hard transition (#340), unified Planning lifecycle (#391), and capability-tier routing (#331) are complete.
 
-The remaining merge path to the earliest safe #359 cutover is:
+The remaining hard dependency spine to the earliest safe #359 cutover is:
 
 ```text
-#340  final repo.df/config.df/.df hard transition
-  ↓
-#391  durable unified Planning/review lifecycle
-  ↓
-#422  production-critical keychain migration
-  ↓
-#331  capability-tier routing
-  ↓
-#329  natural-stop result capture
-  ↓
-#341  package/domain detection + capability quality actions
-  ↓
-#358  production graph handlers / durable resume
-  ↓
-#317  truthful branch-repair / mutation evidence
-  ↓
-#359  df-only production cutover
+#329  natural-stop result capture ───┐
+                                    ├─> #358  production graph handlers / durable resume
+#341  capability-driven quality ────┘       ↓
+                                            #317  truthful branch-repair / mutation evidence
+                                              ↓
+                                            #359  df-only production cutover
+
+#422  production-critical keychain subset ───────────────────────────────> #359
 ```
 
-This is a **merge/cutover path**, not a rule that all development must happen serially.
+This graph is a **merge/cutover dependency graph**, not a serial development schedule. #329, #341 and the production-critical #422 slice should progress concurrently. #358 recovery analysis may also proceed while #329/#341 finish, but its final implementation/merge must consume their landed contracts.
 
 ### Immediate development concurrency
 
 The following should proceed in parallel where interfaces allow:
 
-- finish #340 **in the final TypeScript/runtime/docs implementation only**; do not modernize legacy Python readers/writers;
-- #391 lifecycle completion on the settled runtime budget and final persistence naming;
-- #422 keychain recovery/migration;
-- #331 F40 reconciliation;
-- #329 F38 reconciliation behind the final #331 behavior;
-- #341 F49 reconciliation and capability-driven quality/action design;
+- #329 F38 recovery reconciliation and natural-stop result capture, now unblocked by landed #331;
+- #341 F49 reconciliation and capability-driven package/domain quality actions;
+- #422 F14/keychain reconciliation, prioritizing the production-critical subset required by #359 while leaving non-critical breadth independent;
+- #358 F30-4 discovery/recovery analysis against the landed #391/#331 contracts, without inventing a substitute result or verification protocol before #329/#341 land;
 - all remaining recovery analysis/reconciliation;
 - #423 auth;
 - #424 docs engine;
@@ -229,13 +221,11 @@ Merge only when each lane's actual interfaces are stable.
 
 ### Important merge constraints
 
-- #340 must close the hard transition in the final implementation without compatibility readers or migration layers. Legacy Python does not need to understand the new contract if it is being retired.
-- #391 consumes the completed #406 runtime budget and final #340 persistence contracts.
-- #422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth may continue later.
-- #331/#329 recovery work may be prepared before their final merge dependencies land.
-- #341 must consume the landed package/capability model rather than creating a new central hard-coded action table.
-- #358 must use the final #391 lifecycle and the final #329/#331 runtime behavior.
-- #317 completes the truthful branch-repair/mutation-observation path required by #359.
+- #329 consumes the landed #331 router/escalation behavior and reconciles F38 into the final natural-stop contract.
+- #341 consumes the landed #340 naming contract and #420/#421 package/capability model rather than creating a new central hard-coded action table.
+- #358 consumes the landed #391 lifecycle, #331 routing, final #329 result-capture behavior and final #341 verification/action contract; F30-4 receives an explicit disposition before replacement work.
+- #317 consumes the production graph/verification path from #358/#341 and completes the truthful branch-repair/mutation-observation path required by #359.
+- #422 must provide the credential subset needed by the production engine before #359; non-critical keychain breadth is not a serial blocker for #329/#341/#358.
 - At every step, prefer replacing/deleting a Python owner over making it compatible with the rebuilt TypeScript owner.
 
 ---
@@ -412,19 +402,16 @@ After #360:
 
 ## 11. Active Request map
 
-Only still-open completion Requests are listed here. Completed foundations #413/#414/#365/#406/#420/#421 and baseline repair #431 are intentionally omitted.
+Only still-open completion Requests are listed here. Completed foundations #413/#414/#365/#406/#420/#421, baseline repair #431, hard transition #340, unified Planning #391 and capability-tier routing #331 are intentionally omitted.
 
 | Request | Start now? | Merge / completion gate |
 |---|---|---|
-| #340 | yes | final TypeScript/runtime/docs implementation obeys hard transition; no requirement to update deletion-bound Python |
-| #391 | yes | #340 final persistence contract; completed #406 runtime budget |
-| #422 | yes | landed package/capability boundaries + F14 reconciliation; production subset before #359 |
-| #331 | yes | F40 reconciled into final router/core owner |
-| #329 | yes | #331 final behavior + F38 reconciliation |
-| #341 | yes | #340 + landed capability ABI; capability-driven quality/action model |
-| #358 | yes | F30-4 disposition + #329/#331/#391 |
+| #422 | yes | landed package/capability boundaries + F14 reconciliation; production-critical subset before #359 |
+| #329 | yes | landed #331 behavior + F38 reconciliation |
+| #341 | yes | landed #340/#420/#421 contracts; capability-driven quality/action model |
+| #358 | recovery now | F30-4 disposition + final #329/#341 + landed #331/#391 |
 | #317 | prepare | #358 + #341 truthful observed-effect path |
-| #359 | prepare ledger | core critical path above |
+| #359 | prepare ledger | #329/#341/#358/#317 + production-critical #422 subset |
 | #248 | yes | #422 + terminal F14 disposition |
 | #252 | prepare | #365/#421 usable interfaces |
 | #332 | prepare | #358/#329/#331; preferably self-hosted |
