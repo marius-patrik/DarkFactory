@@ -71,7 +71,7 @@ describe("hook engine", () => {
 		expect(fails).toEqual([{ id: "f", status: "fail", message: "bad" } as HookResult]);
 	});
 
-	test("hookById returns undefined for empty registry", () => {
+	test("hookById returns undefined for unknown hook ID", () => {
 		expect(hookById("any")).toBeUndefined();
 	});
 });
