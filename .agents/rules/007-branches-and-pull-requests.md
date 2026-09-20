@@ -34,4 +34,4 @@ The temporary bootstrap-authoring exception in `PLAN.md` changes who may author 
 
 ## Change control
 
-Concrete workflow/script owners may change while #359 finalizes production ownership; this rule names behavior, not implementation file paths.
+Concrete workflow/script owners may change while production ownership converges; this rule names behavior, not implementation file paths.
