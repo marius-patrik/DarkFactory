@@ -5,8 +5,6 @@
     id: "squash",
     proper: translation(cs: "Sloučení commitů", en: "Commit Squashing"),
     industry: translation(cs: "Squash", en: "Squash"),
-    explanation_cs: "Operace, při níž se více po sobě jdoucích commitů nahradí jedním souhrnným commitem, obvykle za účelem zjednodušení historie před integrací změn.",
-    explanation_en: "An operation that replaces multiple consecutive commits with one aggregate commit, commonly to simplify history before integrating changes.",
     citation: bib.chacon2014,
     source: bib.chacon2014,
 )
@@ -14,9 +12,15 @@
 #let item = concept(
   key: "squash",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Squash je operace, při níž se více po sobě jdoucích commitů nahradí jedním souhrnným commitem, obvykle za účelem zjednodušení historie před integrací změn.
+  ],
+  description: terms => [
+V agentním běhu často vzniká více pomocných commitů během iterativního ladění. Před začleněním výsledné změny lze tyto mezikroky sloučit do jednoho logického záznamu odpovídajícího dokončenému úkolu.
+  ],
+  summary: terms => [
+Squash odděluje experimentální průběh práce od dlouhodobé historie projektu a umožňuje uchovat jednu logickou změnu jako jeden auditovatelný commit.
+  ],
   visual: none,
   examples: (),
   attachments: (),

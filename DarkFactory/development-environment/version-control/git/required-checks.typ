@@ -6,7 +6,9 @@
 #let item = concept(
   key: "required_checks",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Požadované kontroly jsou automatizované kontroly, jejichž úspěšné dokončení je povinnou podmínkou pro přijetí nebo sloučení změny.
+  ],
   description: terms => [
 #unconfirmed[
 K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno.
@@ -18,7 +20,9 @@ K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spou�
 - Pravidlo deterministického výsledku: Každá kontrola musí skončit jednoznačným výsledkem; tiché přeskočení testu nebo nejednoznačný stav sloučení zablokuje.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Required checks mění CI z informativní zpětné vazby na technicky vynucovanou podmínku integrace.
+  ],
   visual: none,
   examples: (),
   attachments: (),

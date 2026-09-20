@@ -5,8 +5,6 @@
     id: "pull-request",
     proper: translation(cs: "Požadavek na sloučení", en: "Pull Request"),
     industry: translation(cs: "Pull Request", en: "Pull Request"),
-    explanation_cs: "Formální návrh na začlenění změn z jedné větve repozitáře do druhé, který slouží jako místo pro automatizované kontroly, lidskou revizi a diskusi nad navrženými úpravami.",
-    explanation_en: "A formal proposal to integrate changes from one repository branch into another, providing a place for automated checks, human review, and discussion of the proposed changes.",
     citation: bib.chacon2014,
     source: bib.dabbish2012github,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "pull_request",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Pull Request je formální návrh na začlenění změn z jedné větve repozitáře do druhé a společné místo pro automatizované kontroly, lidskou revizi a diskusi nad navrženými úpravami.
+  ],
   description: terms => [
 #unconfirmed[
 #diff[Pull request (PR) představuje stěžejní komunikační uzel mezi autonomním agentem a lidským inženýrem. Jedná se o formální žádost o začlenění navržených změn z pracovní větve do větve hlavní. V tomto bodě se plně uplatňuje princip zapojení člověka do smyčky (Human-in-the-loop):][#term(terms.pull_request, render: "both", detail-language: "cs", detail-style: "inline") @chacon2014. V tomto bodě se plně uplatňuje princip #term(terms.human_in_the_loop):] agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
@@ -28,7 +28,9 @@ Rozhraní pull requestu integruje všechny podstatné informace na jednom míst�
 Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický záměr a rozhoduje o schválení, vrácení k dopracování, či zamítnutí pull requestu.
 ]
   ],
-  summary: none,
+  summary: terms => [
+Pull Request vytváří kontrolní hranici mezi samostatně připravenou změnou a jejím přijetím do hlavní historie projektu.
+  ],
   visual: none,
   examples: (),
   attachments: (),

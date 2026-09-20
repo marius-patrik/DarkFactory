@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "git",
     proper: translation(cs: "Git", en: "Git"),
-    explanation_cs: "Distribuovaný systém správy verzí, který uchovává historii projektu, podporuje větvení a slučování změn a umožňuje deterministický návrat k předchozím stavům repozitáře.",
-    explanation_en: "A distributed version-control system that records project history, supports branching and merging, and enables deterministic return to earlier repository states.",
     citation: bib.chacon2014,
     source: bib.chacon2014,
 )
@@ -13,7 +11,9 @@
 #let item = concept(
   key: "git",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Git je distribuovaný systém správy verzí, který uchovává historii projektu, podporuje větvení a slučování změn a umožňuje deterministický návrat k předchozím stavům repozitáře.
+  ],
   description: terms => [
 #accepted[
 Pro autonomní vývoj softwaru je spolehlivá správa verzí naprosto nezbytným základem. Jazykové modely generují kód na základě statistické pravděpodobnosti, a proto se nevyhnutelně dopouštějí chyb, logických přehmatů či regresí. Verzovací systém vytváří bezpečné a deterministické prostředí, v němž lze každou úpravu zaznamenat, otestovat a v případě selhání kdykoliv vrátit zpět k funkčnímu stavu. Namísto teoretických abstrakcí práce přímo využívá distribuovaný systém #term(terms.git) v kombinaci s platformou #term(terms.github).
@@ -31,7 +31,9 @@ Samotný #term(terms.git) zde zůstává vymezen jako distribuovaný systém spr
 
 ]
   ],
-  summary: none,
+  summary: terms => [
+Git poskytuje agentnímu vývoji auditovatelnou historii a možnost bezpečně izolovat, porovnávat, slučovat nebo vracet změny bez závislosti na paměti modelu.
+  ],
   visual: none,
   examples: (),
   attachments: (),

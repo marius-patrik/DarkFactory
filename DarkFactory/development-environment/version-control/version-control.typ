@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "version-control",
     proper: translation(cs: "Správa verzí", en: "Version control"),
-    explanation_cs: "Správa a sledování změn zdrojových souborů a dalších verzovaných artefaktů tak, aby bylo možné změny bezpečně větvit, slučovat, auditovat a v případě potřeby vracet.",
-    explanation_en: "The management and tracking of changes to source files and other versioned artifacts so changes can be safely branched, merged, audited, and reverted when necessary.",
     citation: bib.chacon2014,
     source: bib.chacon2014,
 )
@@ -13,9 +11,15 @@
 #let item = concept(
   key: "version_control",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Správa verzí je řízení a sledování změn zdrojových souborů a dalších verzovaných artefaktů tak, aby bylo možné změny bezpečně větvit, slučovat, auditovat a vracet.
+  ],
+  description: terms => [
+Pro autonomní vývoj poskytuje verzovací vrstva deterministický záznam reality, který je nezávislý na interním kontextu modelu. Agent může pracovat nad izolovanou změnou, její stav porovnat s výchozí verzí a v případě neúspěchu se vrátit k známému bodu historie.
+  ],
+  summary: terms => [
+Správa verzí je základní stavová a návratová vrstva agentního vývoje; model navrhuje změny, ale repozitář uchovává jejich skutečnou historii.
+  ],
   visual: none,
   examples: (),
   attachments: (),
