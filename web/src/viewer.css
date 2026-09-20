@@ -16,10 +16,12 @@
   --accent-strong: #74a7ff;
   --page-shadow: 0 10px 35px rgba(0, 0, 0, .35);
   --thumb-active: rgba(75, 139, 245, .18);
-  --menubar-height: 22px;
-  --header-height: 40px;
+  --ui-font-size: 13px;
+  --ui-pad: 4px;
+  --header-height: 32px;
+  --tabbar-height: 28px;
   --status-height: 24px;
-  --activity-size: 36px;
+  --activity-size: 30px;
 }
 
 html[data-theme="light"] {
@@ -92,7 +94,7 @@ a {
 
 .viewer-shell {
   display: grid;
-  grid-template-rows: var(--menubar-height) var(--header-height) minmax(0, 1fr) var(--status-height);
+  grid-template-rows: var(--header-height) var(--tabbar-height) minmax(0, 1fr) var(--status-height);
   width: 100%;
   height: 100dvh;
   overflow: hidden;
@@ -1521,7 +1523,7 @@ a {
 
   .sidebar {
     position: fixed;
-    top: calc(var(--menubar-height) + var(--header-height));
+    top: calc(var(--header-height) + var(--tabbar-height));
     bottom: var(--status-height);
     z-index: 45;
     box-shadow: 4px 0 20px rgba(0, 0, 0, .28);
@@ -1538,7 +1540,7 @@ a {
 
   .repo-files-panel {
     position: fixed;
-    top: calc(var(--menubar-height) + var(--header-height));
+    top: calc(var(--header-height) + var(--tabbar-height));
     bottom: var(--status-height);
     z-index: 45;
     width: min(82vw, 320px);
@@ -1626,3 +1628,241 @@ a {
   display: inline-flex;
   align-items: center;
 }
+
+/* Unified application chrome */
+.app-header {
+  height: var(--header-height);
+  min-height: var(--header-height);
+  align-items: center;
+}
+
+.menubar-inline {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding-left: var(--ui-pad);
+}
+
+.app-header .toolbar-main {
+  min-height: 0;
+  height: 100%;
+  gap: var(--ui-pad);
+  padding: 0 var(--ui-pad);
+}
+
+.app-header,
+.app-tabbar,
+.activitybar,
+.repo-files-panel,
+.statusbar,
+.settings-view {
+  font-size: var(--ui-font-size);
+  color: var(--text);
+}
+
+.app-header :where(button, input, select, small, strong),
+.app-tabbar :where(button, input, select, small, strong),
+.activitybar :where(button, input, select, small, strong),
+.repo-files-panel :where(button, input, select, small, strong),
+.statusbar :where(button, input, select, small, strong),
+.settings-view :where(button, input, select, small, strong) {
+  font-size: inherit;
+}
+
+.ui-secondary,
+.app-header small,
+.app-tabbar small,
+.activitybar small,
+.repo-files-panel small,
+.statusbar small,
+.settings-view small {
+  color: var(--muted);
+  font-size: inherit;
+  font-weight: 400;
+}
+
+.menubar-button,
+.renderer-select,
+.format-select,
+.version-select,
+.chapter-select,
+.page-control,
+.path-page-control,
+.zoom-value,
+.status-short-id,
+.version-fallback,
+.build-revision {
+  font-size: var(--ui-font-size);
+}
+
+.menubar-button,
+.renderer-select,
+.format-select,
+.version-select,
+.chapter-select {
+  padding-inline: var(--ui-pad);
+}
+
+.app-tabbar {
+  min-width: 0;
+  height: var(--tabbar-height);
+  min-height: var(--tabbar-height);
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: var(--toolbar);
+  border-bottom: 1px solid var(--toolbar-border);
+  z-index: 39;
+}
+
+.app-tabs {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.app-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.app-tab {
+  min-width: 110px;
+  max-width: 260px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-pad);
+  padding: 0 var(--ui-pad);
+  border: 0;
+  border-right: 1px solid var(--toolbar-border);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}
+
+.app-tab.active {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app-tab-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.app-tab-close {
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
+
+.app-tab-close:hover {
+  background: var(--surface-2);
+}
+
+.new-tab-action {
+  flex: 0 0 var(--tabbar-height);
+  width: var(--tabbar-height);
+  height: var(--tabbar-height);
+  border-radius: 0;
+}
+
+.settings-view {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: calc(var(--ui-pad) * 4);
+  background: var(--bg);
+}
+
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-pad);
+  margin-bottom: calc(var(--ui-pad) * 4);
+  font-weight: 650;
+}
+
+.settings-grid {
+  width: min(620px, 100%);
+  display: grid;
+  gap: var(--ui-pad);
+}
+
+.settings-grid label {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: calc(var(--ui-pad) * 2);
+  padding: calc(var(--ui-pad) * 2);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.settings-grid select {
+  min-height: 26px;
+  padding: 0 var(--ui-pad);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 3px;
+  background: var(--toolbar);
+  color: var(--text);
+}
+
+.settings-toggle input {
+  justify-self: end;
+}
+
+.repo-tree-submodule {
+  color: var(--text);
+}
+
+.repo-tree-submodule .ui-secondary {
+  margin-left: auto;
+}
+
+.activity-action {
+  width: var(--activity-size);
+  height: var(--activity-size);
+}
+
+.activitybar-top,
+.activitybar-bottom {
+  height: var(--activity-size);
+  flex-basis: var(--activity-size);
+}
+
+.activitybar-top .activity-action,
+.activitybar-bottom .activity-action {
+  width: var(--activity-size);
+  height: var(--activity-size);
+}
+
+.statusbar {
+  padding-inline: var(--ui-pad);
+}
+
+.status-left,
+.status-center,
+.status-actions,
+.status-group,
+.toolbar-left,
+.toolbar-right {
+  gap: var(--ui-pad);
+}
+
