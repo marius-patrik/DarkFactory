@@ -12,6 +12,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
-    "@darkfactory/github": "workspace:*"
+    "@darkfactory/github": "workspace:*",
+    "zod": "4.1.5"
   }
 }
