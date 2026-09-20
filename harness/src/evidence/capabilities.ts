@@ -193,7 +193,7 @@ export async function resolveRepositoryActions(
 			actionSet[actionKey] = { command, description, supported };
 		}
 
-		const packageKey = `${pkg.ecosystem}:${pkg.name}`;
+		const packageKey = `${pkg.ecosystem}:${pkg.path}`;
 		packages[packageKey] = actionSet as PackageActionSet;
 	}
 

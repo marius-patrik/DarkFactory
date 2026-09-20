@@ -15,9 +15,9 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["@scope/my-lib"]).toBeDefined();
-			expect(result.packages["@scope/my-lib"].test.supported).toBe(true);
-			expect(result.packages["@scope/my-lib"].test.command).toContain("bun test");
+			expect(result.packages["bun:packages/my-lib"]).toBeDefined();
+			expect(result.packages["bun:packages/my-lib"].test.supported).toBe(true);
+			expect(result.packages["bun:packages/my-lib"].test.command).toContain("bun test");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -33,8 +33,8 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["my-py-pkg"]).toBeDefined();
-			expect(result.packages["my-py-pkg"].test.command).toBe("pytest packages/my-py");
+			expect(result.packages["python:packages/my-py"]).toBeDefined();
+			expect(result.packages["python:packages/my-py"].test.command).toBe("pytest packages/my-py");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -60,8 +60,8 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["@scope/my-lib"].test.command).toBe("custom-test");
-			expect(result.packages["@scope/my-lib"].test.description).toBe("Declared in repo.df environment.testing");
+			expect(result.packages["bun:packages/my-bun"].test.command).toBe("custom-test");
+			expect(result.packages["bun:packages/my-bun"].test.description).toBe("Declared in repo.df environment.test");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -77,7 +77,9 @@ describe("evidence resolution", () => {
 				resolve(capsDir, "my-cap.json"),
 				JSON.stringify({
 					id: "my-cap",
+					version: "1.0.0",
 					abiVersion: "1",
+					description: "test cap description",
 					actions: {
 						test: { command: "custom-cap-test", description: "Cap test" }
 					}
@@ -92,7 +94,7 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp, capsDir);
-			const actions = result.packages["pkg-a"];
+			const actions = result.packages["bun:packages/pkg-a"];
 			expect(actions).toBeDefined();
 			expect(actions.test.supported).toBe(true);
 			expect(actions.test.command).toBe("custom-cap-test");
@@ -116,8 +118,8 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["hybrid-bun"]).toBeDefined();
-			expect(result.packages["hybrid-python"]).toBeDefined();
+			expect(result.packages["bun:packages/hybrid"]).toBeDefined();
+			expect(result.packages["python:packages/hybrid"]).toBeDefined();
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -133,8 +135,8 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["my-go-module"]).toBeDefined();
-			expect(result.packages["my-go-module"].setup.command).toBe("go mod download -C packages/my-go");
+			expect(result.packages["go:packages/my-go"]).toBeDefined();
+			expect(result.packages["go:packages/my-go"].setup.command).toBe("go mod download -C packages/my-go");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -160,7 +162,7 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp);
-			expect(result.packages["@scope/my-lib"].test.command).toBe("custom-test --cwd packages/my-bun");
+			expect(result.packages["bun:packages/my-bun"].test.command).toBe("custom-test --cwd packages/my-bun");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
 		}
@@ -175,8 +177,10 @@ describe("evidence resolution", () => {
 				resolve(capsDir, "b-cap.json"),
 				JSON.stringify({
 					id: "b-cap",
+					version: "1.0.0",
 					abiVersion: "1",
 					priority: 10,
+					description: "high priority",
 					actions: {
 						test: { command: "priority-cap-test", description: "Priority high" }
 					}
@@ -186,8 +190,10 @@ describe("evidence resolution", () => {
 				resolve(capsDir, "a-cap.json"),
 				JSON.stringify({
 					id: "a-cap",
+					version: "1.0.0",
 					abiVersion: "1",
 					priority: 5,
+					description: "low priority",
 					actions: {
 						test: { command: "normal-cap-test", description: "Priority low" }
 					}
@@ -201,7 +207,7 @@ describe("evidence resolution", () => {
 			);
 
 			const result = await resolveRepositoryActions(temp, capsDir);
-			const actions = result.packages["pkg-a"];
+			const actions = result.packages["bun:packages/pkg-a"];
 			expect(actions.test.command).toBe("priority-cap-test");
 		} finally {
 			await rm(temp, { recursive: true, force: true });
