@@ -11,10 +11,10 @@ describe("answer contract", () => {
 		expect(r.valid).toBe(false);
 	});
 
-	test("accepts clean text response", () => {
+	test("accepts benign uses of monitored words", () => {
 		const r = validateAnswerContract(
 			{ login: "a", association: "OWNER", is_bot: false },
-			"The PR needs a branch update first.",
+			"I am committed to helping you resolve this issue once the branch is updated.",
 			{ type: "comment", node: "resp", status: "Blocked", message: "ok" },
 		);
 		expect(r.valid).toBe(true);
