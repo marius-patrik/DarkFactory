@@ -12,11 +12,7 @@ export interface AnswerContractResult {
  * @param body - The answer text body.
  * @param action - The planned action (run vs comment/gate).
  */
-export function validateAnswerContract(
-	actor: Actor,
-	body: string,
-	action: PlanAction,
-): AnswerContractResult {
+export function validateAnswerContract(actor: Actor, body: string, action: PlanAction): AnswerContractResult {
 	const mutationClaims = [
 		/successfully resolved (?:these )?conflicts/iu,
 		/pushed (?:the )?changes/iu,
@@ -29,8 +25,7 @@ export function validateAnswerContract(
 			if (pattern.test(body)) {
 				return {
 					valid: false,
-					message:
-						"Answer contract violation: text-only response contains unsupported mutation claim.",
+					message: "Answer contract violation: text-only response contains unsupported mutation claim.",
 				};
 			}
 		}
