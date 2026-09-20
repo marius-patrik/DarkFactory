@@ -1,16 +1,13 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "guardrail",
-  proper: translation(cs: "Deterministický mantinel", en: "Deterministic Guardrail"),
-  industry: translation(cs: "Guardrail", en: "Guardrail"),
-)
 
 #let item = concept(
   key: "guardrail",
-  term: terminology,
-  definition: terms => [
+    industry: "Guardrail",
+  czech: "Deterministický mantinel",
+  english: "Deterministic Guardrail",
+definition: terms => [
 Guardrail je programově vynucené omezení nebo kontrola, která neponechává kritické provozní pravidlo pouze na pravděpodobnostním rozhodnutí modelu.
   ],
   description: terms => [

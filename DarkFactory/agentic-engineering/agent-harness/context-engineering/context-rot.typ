@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "context-rot",
-    proper: translation(cs: "Degradace kontextu", en: "Context Rot"),
-    citation: bib.liu2024,
-    source: bib.liu2024,
-)
 
 #let item = concept(
   key: "context_rot",
-  term: terminology,
-  definition: terms => [
+    czech: "Degradace kontextu",
+  english: "Context Rot",
+  citation: bib.liu2024,
+  source: bib.liu2024,
+definition: terms => [
 Degradace kontextu je pokles schopnosti modelu spolehlivě využívat informace v dlouhém, hlučném nebo vzájemně si konkurujícím kontextu.
   ],
   description: terms => [

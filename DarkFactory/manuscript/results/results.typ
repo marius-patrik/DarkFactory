@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, blue-note
+#import "/DarkFactory/templates/common.typ": translation, blue-note
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "results-discussion",
-  proper: translation(cs: "Výsledky a diskuse", en: "Results and Discussion"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "results_discussion",
-  term: terminology,
-  definition: terms => [
+    czech: "Výsledky a diskuse",
+  english: "Results and Discussion",
+definition: terms => [
 #blue-note[Definice výsledků bude doplněna pouze z reálné evaluace dokončeného systému.]
   ],
   description: terms => [

@@ -1,19 +1,16 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 #import "react-loop-diagram.typ" as react_loop_diagram
 
-#let terminology = define-term(
-    id: "agent-loop",
-    proper: translation(cs: "Smyčka ReAct", en: "ReAct Loop"),
-    industry: translation(cs: "Agent Loop", en: "Agent Loop"),
-    citation: bib.yao2022,
-    source: bib.yao2022,
-)
 
 #let item = concept(
   key: "agent_loop",
-  term: terminology,
-  definition: terms => [
+    industry: "Agent Loop",
+  czech: "Smyčka ReAct",
+  english: "ReAct Loop",
+  citation: bib.yao2022,
+  source: bib.yao2022,
+definition: terms => [
 Iterativní prováděcí cyklus autonomního agenta založený na vzoru ReAct (_Reasoning + Acting_), v němž model střídá rozhodování, volání nástrojů a vyhodnocování výsledků z běhového prostředí.
   ],
   description: terms => [

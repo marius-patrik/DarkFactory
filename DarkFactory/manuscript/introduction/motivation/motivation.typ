@@ -1,17 +1,13 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term, bib
+#import "/DarkFactory/templates/common.typ": translation, term, bib
 #import "/DarkFactory/schema.typ": concept
 #import "ai-diffusion-figure.typ" as ai_diffusion
 
-#let terminology = define-term(
-  id: "motivation-problem-definition",
-  proper: translation(cs: "Motivace a vymezení problému", en: "Motivation and Problem Definition"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "motivation_problem_definition",
-  term: terminology,
-  definition: terms => [
+    czech: "Motivace a vymezení problému",
+  english: "Motivation and Problem Definition",
+definition: terms => [
 Motivací práce je ukázat, jaké úlohy dokážou současné agentní systémy samostatně provádět a jaká technická vrstva umožňuje převést schopnost jazykového modelu do spolehlivého jednání nad skutečným softwarovým projektem.
   ],
   description: terms => [

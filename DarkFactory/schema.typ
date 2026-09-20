@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, term, resolve-citation-label, profile-state
+#import "/DarkFactory/templates/common.typ": finalized, term, render-translation, resolve-citation-label, profile-state
 
 #let relation(type, target) = {
   assert(type in ("dependency", "related"), message: "unsupported semantic relation: " + type)
@@ -8,7 +8,13 @@
 
 #let concept(
   key: none,
-  term: none,
+  industry: none,
+  czech: none,
+  english: none,
+  alias: none,
+  title: none,
+  citation: none,
+  source: none,
   definition: none,
   description: none,
   summary: none,
@@ -19,14 +25,20 @@
   relations: (),
 ) = {
   assert(key != none, message: "concept requires a stable key")
-  assert(term != none, message: "concept requires canonical terminology")
+  assert(czech != none or english != none or industry != none, message: "concept requires canonical terminology")
   assert(definition != none, message: "concept requires a definition")
   assert(description != none, message: "concept requires a description")
   assert(summary != none, message: "concept requires a summary")
   (
     kind: "concept",
     key: key,
-    term: term,
+    industry: industry,
+    czech: czech,
+    english: english,
+    alias: alias,
+    title: title,
+    citation: citation,
+    source: source,
     definition: definition,
     description: description,
     summary: summary,
@@ -81,7 +93,7 @@
   let result = (:)
   for item in collect-concepts(folders) {
     assert(not item.key in result, message: "duplicate concept key: " + item.key)
-    result.insert(item.key, item.term)
+    result.insert(item.key, item)
   }
   result
 }
@@ -170,17 +182,11 @@
 }
 
 #let render-concept-title(item) = context {
-  let profile = profile-state.get()
-  term(
-    item.term,
-    render: "term",
-    surface: "proper",
-    language: if profile in ("school", "cs") { "cs" } else if profile == "en" { "en" } else { "both" },
-    register: false,
-    linked: false,
-    marker: false,
-    emphasized: false,
-  )
+  if item.title != none {
+    render-translation(item.title, language: "auto", school-both: false)
+  } else {
+    term(item, surface: "full", linked: false, marker: false, emphasized: false)
+  }
 }
 
 #let render-citations(item) = {
@@ -194,7 +200,7 @@
 }
 
 #let render-concept(item, terms, graph, level: 1) = {
-  let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]]
+  let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]#label("concept-" + item.key)]
 
   output += (item.definition)(terms)
   output += (item.description)(terms)

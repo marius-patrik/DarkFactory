@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, accepted
+#import "/DarkFactory/templates/common.typ": translation, accepted
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "subgoals",
-  proper: translation(cs: "Dílčí cíle", en: "Sub-goals"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "subgoals",
-  term: terminology,
-  definition: terms => [
+    czech: "Dílčí cíle",
+  english: "Sub-goals",
+definition: terms => [
 #accepted[
 - Vymezit infrastrukturu pro správu verzí (Git, GitHub a kontinuální integraci).
 - Analyzovat limity velkých jazykových modelů (dynamiku kontextového okna, jev Context Rot, ztrátovou kompresi a sémantický posun).

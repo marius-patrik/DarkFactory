@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term, bib
+#import "/DarkFactory/templates/common.typ": translation, term, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "system-prompt",
-  proper: translation(cs: "Systémový prompt", en: "System Prompt"),
-  citation: bib.anthropic_prompt,
-  source: bib.anthropic_prompt,
-)
 
 #let item = concept(
   key: "system_prompt",
-  term: terminology,
-  definition: terms => [
+    czech: "Systémový prompt",
+  english: "System Prompt",
+  citation: bib.anthropic_prompt,
+  source: bib.anthropic_prompt,
+definition: terms => [
 Systémový prompt je instrukční vrstva s vysokou prioritou, která vymezuje roli, chování, dostupné prostředky a provozní očekávání jazykového modelu nebo agenta.
   ],
   description: terms => [

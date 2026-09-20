@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "progressive-disclosure",
-  proper: translation(cs: "Postupné zpřístupňování kontextu", en: "Progressive Disclosure"),
-  industry: translation(cs: "Progressive Disclosure", en: "Progressive Disclosure"),
-  citation: bib.anthropic2024tooluse,
-  source: bib.anthropic2024tooluse,
-)
 
 #let item = concept(
   key: "progressive_disclosure",
-  term: terminology,
-  definition: terms => [
+    industry: "Progressive Disclosure",
+  czech: "Postupné zpřístupňování kontextu",
+  english: "Progressive Disclosure",
+  citation: bib.anthropic2024tooluse,
+  source: bib.anthropic2024tooluse,
+definition: terms => [
 Postupné zpřístupňování je strategie, při níž se do aktivního kontextu nejprve vkládají pouze stručné popisy schopností a podrobné instrukce se načtou až při jejich použití.
   ],
   description: terms => [

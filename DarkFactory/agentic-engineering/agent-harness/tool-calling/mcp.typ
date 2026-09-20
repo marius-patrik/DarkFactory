@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "mcp",
-    proper: translation(cs: "Model Context Protocol", en: "Model Context Protocol"),
-    industry: translation(cs: "MCP", en: "MCP"),
-    citation: bib.anthropic_mcp,
-    source: bib.anthropic_mcp,
-)
 
 #let item = concept(
   key: "mcp",
-  term: terminology,
-  definition: terms => [
+    industry: "MCP",
+  czech: "Model Context Protocol",
+  english: "Model Context Protocol",
+  citation: bib.anthropic_mcp,
+  source: bib.anthropic_mcp,
+definition: terms => [
 Model Context Protocol (MCP) je otevřený standard původně navržený společností Anthropic pro standardizovanou komunikaci AI aplikací s externími nástroji, zdroji a daty prostřednictvím zpráv JSON-RPC.
   ],
   description: terms => [

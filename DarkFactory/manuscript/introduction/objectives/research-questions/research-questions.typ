@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, critique
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, critique
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "research-questions",
-  proper: translation(cs: "Výzkumné otázky", en: "Research Questions"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "research_questions",
-  term: terminology,
-  definition: terms => [
+    czech: "Výzkumné otázky",
+  english: "Research Questions",
+definition: terms => [
 #unconfirmed[
 - VO1 (Míra automatizace a role člověka): Lze vývojový proces od zadání požadavku (GitHub Issue) po pull request strukturovat tak, aby role vývojáře spočívala výhradně v architektonickém dozoru a schvalování záměru (Human Gate), bez nutnosti ručního psaní rutinního kódu?
 - VO2 (Řízení divergence a spolehlivost smyčky): Jakými architektonickými mechanismy lze v harnessu spolehlivě zabránit patologiím modelu (perseveraci, oscilaci a zacyklení v ReAct smyčce)?

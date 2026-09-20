@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "continuous-integration",
-    proper: translation(cs: "Průběžná integrace", en: "Continuous Integration"),
-    industry: translation(cs: "CI", en: "CI"),
-    citation: bib.humble2010,
-    source: bib.humble2010,
-)
 
 #let item = concept(
   key: "continuous_integration",
-  term: terminology,
-  definition: terms => [
+    industry: "CI",
+  czech: "Průběžná integrace",
+  english: "Continuous Integration",
+  citation: bib.humble2010,
+  source: bib.humble2010,
+definition: terms => [
 Průběžná integrace (CI) je vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami.
   ],
   description: terms => [

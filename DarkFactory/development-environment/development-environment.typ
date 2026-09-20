@@ -1,18 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, finalized, bib, accepted, term, kw
+#import "/DarkFactory/templates/common.typ": translation, finalized, bib, accepted, term, kw
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "development-environment-practices",
-  proper: translation(cs: "Vývojové prostředí a praxe", en: "Development Environment and Practices"),
-  keyword: false,
-  citation: bib.sommerville2016,
-  source: bib.sommerville2016,
-)
 
 #let item = concept(
   key: "development_environment",
-  term: terminology,
-  definition: terms => [
+    czech: "Vývojové prostředí a praxe",
+  english: "Development Environment and Practices",
+  citation: bib.sommerville2016,
+  source: bib.sommerville2016,
+definition: terms => [
 Vývojové prostředí a praxe tvoří soubor verzovacích, plánovacích, integračních a kontrolních postupů, které poskytují deterministický rámec pro agentní vývoj softwaru.
   ],
   description: terms => [

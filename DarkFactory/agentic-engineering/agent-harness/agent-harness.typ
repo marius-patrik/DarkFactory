@@ -1,21 +1,18 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term, bib
+#import "/DarkFactory/templates/common.typ": translation, term, bib
 #import "/DarkFactory/schema.typ": concept
 #import "examples/codex.typ" as codex
 #import "examples/claude-code.typ" as claude_code
 #import "examples/claude-desktop.typ" as claude_desktop
 
-#let terminology = define-term(
-  id: "harness",
-  proper: translation(cs: "Agentní harness", en: "Agent Harness"),
-  industry: translation(cs: "Agent Harness", en: "Agent Harness"),
-  citation: bib.deepseekharness2026,
-  source: bib.darkfactory,
-)
 
 #let item = concept(
   key: "harness",
-  term: terminology,
-  definition: terms => [
+    industry: "Agent Harness",
+  czech: "Agentní harness",
+  english: "Agent Harness",
+  citation: bib.deepseekharness2026,
+  source: bib.darkfactory,
+definition: terms => [
 Agentní harness je aplikační a orchestrační vrstva, která propojuje model s prostředím a řídí jeho opakované jednání nad stavem a nástroji.
   ],
   description: terms => [

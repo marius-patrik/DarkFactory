@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "tokenizer",
-    proper: translation(cs: "Tokenizér", en: "Tokenizer"),
-    citation: bib.sennrich2016bpe,
-    source: bib.sennrich2016bpe,
-)
 
 #let item = concept(
   key: "tokenizer",
-  term: terminology,
-  definition: terms => [
+    czech: "Tokenizér",
+  english: "Tokenizer",
+  citation: bib.sennrich2016bpe,
+  source: bib.sennrich2016bpe,
+definition: terms => [
 Tokenizér je komponenta, která převádí text nebo jiný podporovaný vstup na posloupnost tokenů a jejich identifikátorů a provádí odpovídající zpětné dekódování.
   ],
   description: terms => [

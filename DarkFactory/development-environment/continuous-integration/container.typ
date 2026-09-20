@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "container",
-    proper: translation(cs: "Softwarový kontejner", en: "Software Container"),
-    industry: translation(cs: "Container", en: "Container"),
-    citation: bib.merkel2014docker,
-    source: bib.merkel2014docker,
-)
 
 #let item = concept(
   key: "container",
-  term: terminology,
-  definition: terms => [
+    industry: "Container",
+  czech: "Softwarový kontejner",
+  english: "Software Container",
+  citation: bib.merkel2014docker,
+  source: bib.merkel2014docker,
+definition: terms => [
 Softwarový kontejner je izolované uživatelské běhové prostředí, které balí aplikaci a její závislosti při sdílení jádra hostitelského operačního systému.
   ],
   description: terms => [

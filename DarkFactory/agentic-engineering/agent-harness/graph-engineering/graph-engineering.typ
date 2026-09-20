@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "graph-engineering",
-    proper: translation(cs: "Inženýrství pracovních grafů", en: "Workflow-graph Engineering"),
-    industry: translation(cs: "Graph Engineering", en: "Graph Engineering"),
-    citation: bib.wu2023autogen,
-    source: bib.wu2023autogen,
-)
 
 #let item = concept(
   key: "graph_engineering",
-  term: terminology,
-  definition: terms => [
+    industry: "Graph Engineering",
+  czech: "Inženýrství pracovních grafů",
+  english: "Workflow-graph Engineering",
+  citation: bib.wu2023autogen,
+  source: bib.wu2023autogen,
+definition: terms => [
 Inženýrství pracovních grafů je návrh agentních nebo automatizačních workflow jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.
   ],
   description: terms => [

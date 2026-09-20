@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "autoregression",
-  proper: translation(cs: "Autoregresivní modelování", en: "Autoregressive Modeling"),
-  citation: bib.vaswani2017,
-  source: bib.vaswani2017,
-)
 
 #let item = concept(
   key: "autoregression",
-  term: terminology,
-  definition: terms => [
+    czech: "Autoregresivní modelování",
+  english: "Autoregressive Modeling",
+  citation: bib.vaswani2017,
+  source: bib.vaswani2017,
+definition: terms => [
 Autoregresivní modelování je sekvenční postup, při němž model odhaduje následující token podmíněně na předchozí tokeny v aktuální posloupnosti.
   ],
   description: terms => [

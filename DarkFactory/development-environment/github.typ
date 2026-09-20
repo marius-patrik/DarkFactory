@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "github",
-    proper: translation(cs: "GitHub", en: "GitHub"),
-    citation: bib.dabbish2012github,
-    source: bib.dabbish2012github,
-)
 
 #let item = concept(
   key: "github",
-  term: terminology,
-  definition: terms => [
+    czech: "GitHub",
+  english: "GitHub",
+  citation: bib.dabbish2012github,
+  source: bib.dabbish2012github,
+definition: terms => [
 GitHub je cloudová platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí Issues, Pull Requests a automatizačních workflow.
   ],
   description: terms => [

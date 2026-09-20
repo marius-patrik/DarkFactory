@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "context-engineering",
-    proper: translation(cs: "Kontextové inženýrství", en: "Context Engineering"),
-    citation: bib.liu2024,
-    source: bib.jiang2023llmlingua,
-)
 
 #let item = concept(
   key: "context_engineering",
-  term: terminology,
-  definition: terms => [
+    czech: "Kontextové inženýrství",
+  english: "Context Engineering",
+  citation: bib.liu2024,
+  source: bib.jiang2023llmlingua,
+definition: terms => [
 Kontextové inženýrství je systematický návrh, výběr, pořadí a životní cyklus informací zpřístupňovaných modelu v aktivním kontextu.
   ],
   description: terms => [

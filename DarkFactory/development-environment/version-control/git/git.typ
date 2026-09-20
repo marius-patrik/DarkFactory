@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "git",
-    proper: translation(cs: "Git", en: "Git"),
-    citation: bib.chacon2014,
-    source: bib.chacon2014,
-)
 
 #let item = concept(
   key: "git",
-  term: terminology,
-  definition: terms => [
+    czech: "Git",
+  english: "Git",
+  citation: bib.chacon2014,
+  source: bib.chacon2014,
+definition: terms => [
 Git je distribuovaný systém správy verzí, který uchovává historii projektu, podporuje větvení a slučování změn a umožňuje deterministický návrat k předchozím stavům repozitáře.
   ],
   description: terms => [

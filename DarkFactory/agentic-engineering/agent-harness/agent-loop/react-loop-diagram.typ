@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, bib
+#import "/DarkFactory/templates/common.typ": translation, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "react-loop-diagram",
-  proper: translation(cs: "Schéma agentní smyčky ReAct", en: "ReAct Agent-loop Diagram"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "react_loop_diagram",
-  term: terminology,
-  definition: terms => [
+    czech: "Schéma agentní smyčky ReAct",
+  english: "ReAct Agent-loop Diagram",
+definition: terms => [
 Schéma znázorňuje iterativní tok mezi uživatelem, aktivním kontextem, jazykovým modelem, voláním nástrojů a pozorováním výsledků v agentní smyčce ReAct.
   ],
   description: terms => [

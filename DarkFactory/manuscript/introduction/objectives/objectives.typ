@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation
+#import "/DarkFactory/templates/common.typ": translation
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "thesis-objectives-research-questions",
-  proper: translation(cs: "Cíl práce a výzkumné otázky", en: "Thesis Objective and Research Questions"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "thesis_objectives_research_questions",
-  term: terminology,
-  definition: terms => [
+    czech: "Cíl práce a výzkumné otázky",
+  english: "Thesis Objective and Research Questions",
+definition: terms => [
 Cíl práce a výzkumné otázky převádějí motivaci do konkrétního návrhového cíle, dílčích úkolů a otázek, podle nichž lze výsledný systém posoudit.
   ],
   description: terms => [

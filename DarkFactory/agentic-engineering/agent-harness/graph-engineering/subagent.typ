@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "subagent",
-  proper: translation(cs: "Podřízený agent", en: "Subagent"),
-  industry: translation(cs: "Subagent", en: "Subagent"),
-  citation: bib.wu2023autogen,
-  source: bib.wu2023autogen,
-)
 
 #let item = concept(
   key: "subagent",
-  term: terminology,
-  definition: terms => [
+    industry: "Subagent",
+  czech: "Podřízený agent",
+  english: "Subagent",
+  citation: bib.wu2023autogen,
+  source: bib.wu2023autogen,
+definition: terms => [
 Subagent je dočasná nebo specializovaná agentní instance, které nadřazený orchestrátor deleguje vymezenou dílčí úlohu a následně převezme její výsledek.
   ],
   description: terms => [

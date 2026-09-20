@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "merge",
-    proper: translation(cs: "Sloučení větví", en: "Branch Merge"),
-    industry: translation(cs: "Merge", en: "Merge"),
-    citation: bib.chacon2014,
-    source: bib.chacon2014,
-)
 
 #let item = concept(
   key: "merge",
-  term: terminology,
-  definition: terms => [
+    industry: "Merge",
+  czech: "Sloučení větví",
+  english: "Branch Merge",
+  citation: bib.chacon2014,
+  source: bib.chacon2014,
+definition: terms => [
 Merge je operace správy verzí, která kombinuje změny nebo historii dvou vývojových linií do společného výsledného stavu; případné konflikty vyžadují explicitní vyřešení.
   ],
   description: terms => [

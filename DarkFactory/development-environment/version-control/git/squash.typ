@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "squash",
-    proper: translation(cs: "Sloučení commitů", en: "Commit Squashing"),
-    industry: translation(cs: "Squash", en: "Squash"),
-    citation: bib.chacon2014,
-    source: bib.chacon2014,
-)
 
 #let item = concept(
   key: "squash",
-  term: terminology,
-  definition: terms => [
+    industry: "Squash",
+  czech: "Sloučení commitů",
+  english: "Commit Squashing",
+  citation: bib.chacon2014,
+  source: bib.chacon2014,
+definition: terms => [
 Squash je operace, při níž se více po sobě jdoucích commitů nahradí jedním souhrnným commitem, obvykle za účelem zjednodušení historie před integrací změn.
   ],
   description: terms => [

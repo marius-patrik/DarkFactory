@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "hook",
-    proper: translation(cs: "Událostní záchytný bod", en: "Event Hook"),
-    industry: translation(cs: "Hook", en: "Hook"),
-    citation: bib.deepseekharness2026,
-    source: bib.deepseekharness2026,
-)
 
 #let item = concept(
   key: "hook",
-  term: terminology,
-  definition: terms => [
+    industry: "Hook",
+  czech: "Událostní záchytný bod",
+  english: "Event Hook",
+  citation: bib.deepseekharness2026,
+  source: bib.deepseekharness2026,
+definition: terms => [
 Hook je definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
   ],
   description: terms => [

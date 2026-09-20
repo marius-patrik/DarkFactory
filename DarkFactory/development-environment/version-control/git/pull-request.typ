@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "pull-request",
-    proper: translation(cs: "Požadavek na sloučení", en: "Pull Request"),
-    industry: translation(cs: "Pull Request", en: "Pull Request"),
-    citation: bib.chacon2014,
-    source: bib.dabbish2012github,
-)
 
 #let item = concept(
   key: "pull_request",
-  term: terminology,
-  definition: terms => [
+    industry: "Pull Request",
+  czech: "Požadavek na sloučení",
+  english: "Pull Request",
+  citation: bib.chacon2014,
+  source: bib.dabbish2012github,
+definition: terms => [
 Pull Request je formální návrh na začlenění změn z jedné větve repozitáře do druhé a společné místo pro automatizované kontroly, lidskou revizi a diskusi nad navrženými úpravami.
   ],
   description: terms => [

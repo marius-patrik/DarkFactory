@@ -1,18 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "branch-protection",
-  proper: translation(cs: "Ochrana větví", en: "Branch Protection"),
-  keyword: false,
-  citation: bib.chacon2014,
-  source: bib.dabbish2012github,
-)
 
 #let item = concept(
   key: "branch_protection",
-  term: terminology,
-  definition: terms => [
+    czech: "Ochrana větví",
+  english: "Branch Protection",
+  citation: bib.chacon2014,
+  source: bib.dabbish2012github,
+definition: terms => [
 Ochrana větví je sada pravidel repozitáře, která omezuje přímé změny chráněných větví a vynucuje schválení, kontroly nebo jiné podmínky před sloučením.
   ],
   description: terms => [

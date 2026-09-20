@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term
+#import "/DarkFactory/templates/common.typ": translation, term
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "language-models-chatbots-agents",
-  proper: translation(cs: "Jazykové modely, chatboti a agenti", en: "Language Models, Chatbots, and Agents"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "language_models",
-  term: terminology,
-  definition: terms => [
+    czech: "Jazykové modely, chatboti a agenti",
+  english: "Language Models, Chatbots, and Agents",
+definition: terms => [
 Tato skupina konceptů rozlišuje samotný jazykový model od produktových rozhraní a agentních systémů, které model používají.
   ],
   description: terms => [

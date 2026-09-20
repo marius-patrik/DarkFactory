@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "loop-engineering",
-    proper: translation(cs: "Inženýrství prováděcí smyčky", en: "Execution-loop Engineering"),
-    industry: translation(cs: "Loop Engineering", en: "Loop Engineering"),
-    citation: bib.yao2022,
-    source: bib.deepseekharness2026,
-)
 
 #let item = concept(
   key: "loop_engineering",
-  term: terminology,
-  definition: terms => [
+    industry: "Loop Engineering",
+  czech: "Inženýrství prováděcí smyčky",
+  english: "Execution-loop Engineering",
+  citation: bib.yao2022,
+  source: bib.deepseekharness2026,
+definition: terms => [
 Inženýrství prováděcí smyčky je návrh a řízení stavových přechodů, podmínek ukončení, rozpočtů, opakování, eskalací a vazby mezi rozhodováním modelu a nástroji.
   ],
   description: terms => [

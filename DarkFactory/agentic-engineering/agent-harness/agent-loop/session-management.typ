@@ -1,15 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "agent-session",
-  proper: translation(cs: "Agentní sezení", en: "Agent Session"),
-)
 
 #let item = concept(
   key: "agent_session",
-  term: terminology,
-  definition: terms => [
+    czech: "Agentní sezení",
+  english: "Agent Session",
+definition: terms => [
 Agentní sezení je ohraničený běh agenta se sdíleným stavem, systémovými instrukcemi, pracovním kontextem, historií tahů a provozními rozpočty.
   ],
   description: terms => [

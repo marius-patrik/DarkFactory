@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "flaky-test",
-  proper: translation(cs: "Nestálý test", en: "Flaky Test"),
-  industry: translation(cs: "Flaky Test", en: "Flaky Test"),
-  citation: bib.humble2010,
-  source: bib.humble2010,
-)
 
 #let item = concept(
   key: "flaky_test",
-  term: terminology,
-  definition: terms => [
+    industry: "Flaky Test",
+  czech: "Nestálý test",
+  english: "Flaky Test",
+  citation: bib.humble2010,
+  source: bib.humble2010,
+definition: terms => [
 Nestálý test je test, který může nad stejným kódem střídavě projít a selhat kvůli nedeterminismu, časování, prostředí nebo externím službám.
   ],
   description: terms => [

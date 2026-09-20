@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "software-engineering",
-    proper: translation(cs: "Softwarové inženýrství", en: "Software Engineering"),
-    citation: bib.sommerville2016,
-    source: bib.sommerville2016,
-)
 
 #let item = concept(
   key: "software_engineering",
-  term: terminology,
-  definition: terms => [
+    czech: "Softwarové inženýrství",
+  english: "Software Engineering",
+  citation: bib.sommerville2016,
+  source: bib.sommerville2016,
+definition: terms => [
 Softwarové inženýrství je systematické uplatňování inženýrských principů na specifikaci, návrh, implementaci, ověřování, provoz a údržbu softwarových systémů.
   ],
   description: terms => [

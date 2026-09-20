@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "context-compaction",
-    proper: translation(cs: "Kompakce kontextu", en: "Context Compaction"),
-    industry: translation(cs: "Compaction", en: "Compaction"),
-    citation: bib.jiang2023llmlingua,
-    source: bib.jiang2023llmlingua,
-)
 
 #let item = concept(
   key: "compaction",
-  term: terminology,
-  definition: terms => [
+    industry: "Compaction",
+  czech: "Kompakce kontextu",
+  english: "Context Compaction",
+  citation: bib.jiang2023llmlingua,
+  source: bib.jiang2023llmlingua,
+definition: terms => [
 Kompakce kontextu je zmenšení aktivního kontextu výběrem, shrnutím nebo nahrazením starší historie kompaktnější reprezentací tak, aby se běh vešel do kontextového okna.
   ],
   description: terms => [

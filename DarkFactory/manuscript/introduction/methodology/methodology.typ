@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term
+#import "/DarkFactory/templates/common.typ": translation, term
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "methodology",
-  proper: translation(cs: "Metodika práce", en: "Methodology"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "methodology",
-  term: terminology,
-  definition: terms => [
+    czech: "Metodika práce",
+  english: "Methodology",
+definition: terms => [
 Práce používá konceptově-analytický a inženýrský postup: vymezuje nezbytné části agentního systému, popisuje jejich vztahy a ověřuje je na návrhu a realizaci systému DarkFactory.
   ],
   description: terms => [

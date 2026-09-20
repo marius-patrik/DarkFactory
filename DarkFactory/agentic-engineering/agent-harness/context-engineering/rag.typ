@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "rag",
-    proper: translation(cs: "Generování rozšířené vyhledáváním", en: "Retrieval-Augmented Generation"),
-    industry: translation(cs: "RAG", en: "RAG"),
-    citation: bib.lewis2020rag,
-    source: bib.lewis2020rag,
-)
 
 #let item = concept(
   key: "rag",
-  term: terminology,
-  definition: terms => [
+    industry: "RAG",
+  czech: "Generování rozšířené vyhledáváním",
+  english: "Retrieval-Augmented Generation",
+  citation: bib.lewis2020rag,
+  source: bib.lewis2020rag,
+definition: terms => [
 Retrieval-Augmented Generation (RAG) je architektura, v níž systém před generováním nebo během něj vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu.
   ],
   description: terms => [

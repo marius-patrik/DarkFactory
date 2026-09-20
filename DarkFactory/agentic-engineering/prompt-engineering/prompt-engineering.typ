@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "prompt-engineering",
-    proper: translation(cs: "Promptové inženýrství", en: "Prompt Engineering"),
-    citation: bib.anthropic_prompt,
-    source: bib.anthropic_prompt,
-)
 
 #let item = concept(
   key: "prompt_engineering",
-  term: terminology,
-  definition: terms => [
+    czech: "Promptové inženýrství",
+  english: "Prompt Engineering",
+  citation: bib.anthropic_prompt,
+  source: bib.anthropic_prompt,
+definition: terms => [
 Promptové inženýrství je systematický návrh a strukturování instrukcí, které vymezují požadované chování, kontext a provozní očekávání jazykového modelu nebo agenta.
   ],
   description: terms => [

@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "stochastic-decoding",
-  proper: translation(cs: "Stochastické dekódování", en: "Stochastic Decoding"),
-  citation: bib.vaswani2017,
-  source: bib.vaswani2017,
-)
 
 #let item = concept(
   key: "stochastic_decoding",
-  term: terminology,
-  definition: terms => [
+    czech: "Stochastické dekódování",
+  english: "Stochastic Decoding",
+  citation: bib.vaswani2017,
+  source: bib.vaswani2017,
+definition: terms => [
 Stochastické dekódování je výběr výstupních tokenů z pravděpodobnostního rozdělení modelu způsobem, který může při stejném vstupu vést k různým platným pokračováním.
   ],
   description: terms => [

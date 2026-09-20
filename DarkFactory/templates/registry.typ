@@ -56,7 +56,6 @@
 #let finalized = common.finalized
 #let removed = common.removed
 #let diff = common.diff
-#let define-term = common.define-term
 #let term = common.term
 #let render-term = common.render-term
 #let kw = common.kw

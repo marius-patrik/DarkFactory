@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "branch",
-    proper: translation(cs: "Větev repozitáře", en: "Repository Branch"),
-    industry: translation(cs: "Branch", en: "Branch"),
-    citation: bib.chacon2014,
-    source: bib.chacon2014,
-)
 
 #let item = concept(
   key: "branch",
-  term: terminology,
-  definition: terms => [
+    industry: "Branch",
+  czech: "Větev repozitáře",
+  english: "Repository Branch",
+  citation: bib.chacon2014,
+  source: bib.chacon2014,
+definition: terms => [
 Větev je pojmenovaná vývojová linie v systému správy verzí, která umožňuje provádět změny odděleně od jiné linie historie a později je porovnat nebo sloučit.
   ],
   description: terms => [

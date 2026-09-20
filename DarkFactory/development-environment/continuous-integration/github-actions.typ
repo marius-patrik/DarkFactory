@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "github-actions",
-    proper: translation(cs: "GitHub Actions", en: "GitHub Actions"),
-    industry: translation(cs: "Actions", en: "Actions"),
-    citation: bib.kinsman2021actions,
-    source: bib.kinsman2021actions,
-)
 
 #let item = concept(
   key: "github_actions",
-  term: terminology,
-  definition: terms => [
+    industry: "Actions",
+  czech: "GitHub Actions",
+  english: "GitHub Actions",
+  citation: bib.kinsman2021actions,
+  source: bib.kinsman2021actions,
+definition: terms => [
 GitHub Actions je automatizační platforma GitHubu pro spouštění deklarovaných workflow a jejich jobů v reakci na události repozitáře nebo ruční spuštění.
   ],
   description: terms => [

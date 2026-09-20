@@ -1,21 +1,18 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, term, bib
+#import "/DarkFactory/templates/common.typ": translation, term, bib
 #import "/DarkFactory/schema.typ": concept
 #import "examples/gpt-5-6.typ" as gpt_5_6
 #import "examples/claude-opus-5.typ" as claude_opus_5
 #import "examples/deepseek-v4-1-flash.typ" as deepseek_v4_1_flash
 
-#let terminology = define-term(
-  id: "language-model",
-  proper: translation(cs: "Velký jazykový model", en: "Large Language Model"),
-  industry: translation(cs: "LLM", en: "LLM"),
-  citation: bib.vaswani2017,
-  source: bib.vaswani2017,
-)
 
 #let item = concept(
   key: "language_model",
-  term: terminology,
-  definition: terms => [
+    industry: "LLM",
+  czech: "Velký jazykový model",
+  english: "Large Language Model",
+  citation: bib.vaswani2017,
+  source: bib.vaswani2017,
+definition: terms => [
 Velký jazykový model je neuronový model pro zpracování a generování posloupností tokenů; současné modely tohoto typu typicky používají #term(terms.transformer).
   ],
   description: terms => [

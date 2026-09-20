@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "script",
-    proper: translation(cs: "Skript", en: "Script"),
-    citation: bib.anthropic2024tooluse,
-    source: bib.anthropic2024tooluse,
-)
 
 #let item = concept(
   key: "script",
-  term: terminology,
-  definition: terms => [
+    czech: "Skript",
+  english: "Script",
+  citation: bib.anthropic2024tooluse,
+  source: bib.anthropic2024tooluse,
+definition: terms => [
 Skript je soubor nebo posloupnost příkazů určených k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.
   ],
   description: terms => [

@@ -277,43 +277,6 @@
   old
 }
 
-#let term-use-label = <thesis-term-use>
-
-#let keyword-id(name) = "kw-" + lower(name).replace(regex("[^a-z0-9]+"), "-").trim("-")
-
-// Konstruktor termínu. Výsledkem je plně přenositelná datová hodnota, kterou lze
-// uložit do proměnné a libovolněkrát odkazovat s různým způsobem vykreslení.
-#let define-term(
-  proper: none,
-  industry: none,
-  alias: none,
-  id: none,
-  citation: none,
-  source: none,
-  keyword: true,
-) = {
-  assert(proper.cs != none or proper.en != none, message: "term requires at least one proper/formal name")
-  let identity = if industry != none and industry.en != none {
-    industry.en
-  } else if proper.en != none {
-    proper.en
-  } else {
-    proper.cs
-  }
-  let resolved-id = if id == none { keyword-id(str(identity)) } else { id }
-  assert(resolved-id != "", message: "term id must not be empty")
-  (
-    kind: "term",
-    id: resolved-id,
-    proper: proper,
-    industry: industry,
-    alias: alias,
-    citation: citation,
-    source: source,
-    keyword: keyword,
-  )
-}
-
 #let resolve-citation-label(c) = {
   if c == none { none }
   else if type(c) == label { c }
@@ -324,127 +287,95 @@
 }
 
 #let term-source(value) = {
-  assert(value.kind == "term", message: "term-source() expects a value created by define-term()")
+  assert(value.kind == "concept", message: "term-source() expects a concept")
   value.source
 }
 
 #let term-citation(value) = {
-  assert(value.kind == "term", message: "term-citation() expects a value created by define-term()")
+  assert(value.kind == "concept", message: "term-citation() expects a concept")
   value.citation
 }
 
-// Canonical naming roles:
-//   industry — established industry-facing term or abbreviation,
-//   proper   — formal localized name,
-//   alias    — optional alternate name.
-// The full surface is Industry (Proper) [Alias]. It never adds an English
-// proper name merely because it differs from Czech; localization is controlled
-// by the publication profile or the explicit language argument.
-#let localized-name(value, language: "auto") = context {
-  if value == none { return none }
+#let concept-proper(value, language: "auto") = context {
   let profile = profile-state.get()
-  let lang = if language != "auto" {
-    language
-  } else if profile in ("school", "cs") {
-    "cs"
-  } else if profile == "en" {
-    "en"
-  } else {
-    "both"
-  }
-
+  let lang = if language != "auto" { language } else if profile in ("school", "cs") { "cs" } else if profile == "en" { "en" } else { "both" }
   if lang == "cs" {
-    if value.cs != none { text(lang: "cs")[#value.cs] } else { text(lang: "en")[#value.en] }
+    if value.czech != none { text(lang: "cs")[#value.czech] } else if value.english != none { text(lang: "en")[#value.english] } else { value.industry }
   } else if lang == "en" {
-    if value.en != none { text(lang: "en")[#value.en] } else { text(lang: "cs")[#value.cs] }
-  } else if value.cs == none {
-    text(lang: "en")[#value.en]
-  } else if value.en == none or str(value.cs) == str(value.en) {
-    text(lang: "cs")[#value.cs]
+    if value.english != none { text(lang: "en")[#value.english] } else if value.czech != none { text(lang: "cs")[#value.czech] } else { value.industry }
+  } else if value.czech != none and value.english != none and str(value.czech) != str(value.english) {
+    [#text(lang: "en")[#value.english] (#text(lang: "cs")[#value.czech])]
+  } else if value.english != none {
+    text(lang: "en")[#value.english]
+  } else if value.czech != none {
+    text(lang: "cs")[#value.czech]
   } else {
-    [#text(lang: "en")[#value.en] (#text(lang: "cs")[#value.cs])]
+    value.industry
   }
 }
 
-#let raw-name(value, language: "auto") = context {
-  if value == none { return none }
+#let raw-proper(value, language: "auto") = context {
   let profile = profile-state.get()
   let lang = if language != "auto" { language } else if profile in ("school", "cs") { "cs" } else { "en" }
   if lang == "cs" {
-    if value.cs != none { str(value.cs) } else { str(value.en) }
+    if value.czech != none { str(value.czech) } else if value.english != none { str(value.english) } else { str(value.industry) }
   } else {
-    if value.en != none { str(value.en) } else { str(value.cs) }
+    if value.english != none { str(value.english) } else if value.czech != none { str(value.czech) } else { str(value.industry) }
   }
 }
 
 #let term-name(value, surface: "full", language: "auto") = context {
-  assert(surface in ("full", "industry", "proper", "alias"), message: "term surface must be full, industry, proper, or alias")
-  let industry = localized-name(value.industry, language: language)
-  let proper = localized-name(value.proper, language: language)
-  let alias = localized-name(value.alias, language: language)
-  let industry-raw = raw-name(value.industry, language: language)
-  let proper-raw = raw-name(value.proper, language: language)
-  let alias-raw = raw-name(value.alias, language: language)
-
+  assert(value.kind == "concept", message: "term-name() expects a concept")
+  assert(surface in ("full", "industry", "proper", "alias"), message: "unsupported term surface")
+  let proper = concept-proper(value, language: language)
+  if surface == "proper" { return proper }
   if surface == "industry" {
-    if industry != none { industry } else { proper }
-  } else if surface == "proper" {
-    proper
-  } else if surface == "alias" {
-    if alias != none { alias } else if industry != none { industry } else { proper }
-  } else {
-    let lead = if industry != none { industry } else { proper }
-    let lead-raw = if industry != none { industry-raw } else { proper-raw }
-    [
-      #lead
-      #if proper != none and proper-raw != lead-raw {
-        [#h(0.25em)#text("(")#proper#text(")")]
-      }
-      #if alias != none and alias-raw != lead-raw and alias-raw != proper-raw {
-        [#h(0.25em)#text("[")#alias#text("]")]
-      }
-    ]
+    return if value.industry != none { value.industry } else { proper }
   }
+  if surface == "alias" {
+    return if value.alias != none { value.alias } else if value.industry != none { value.industry } else { proper }
+  }
+
+  let lead = if value.industry != none { value.industry } else if value.english != none { value.english } else { value.czech }
+  let lead-raw = str(lead)
+  let cs-raw = if value.czech != none { str(value.czech) } else { none }
+  let en-raw = if value.english != none { str(value.english) } else { none }
+  [
+    #lead
+    #if value.czech != none and cs-raw != lead-raw {
+      [#h(0.25em)#text("(")#text(lang: "cs")[#value.czech]#text(")")]
+    }
+    #if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
+      [#h(0.25em)#text("[")#text(lang: "en")[#value.english]#text("]")]
+    }
+    #if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
+      [#h(0.25em)#text("[")#value.alias#text("]")]
+    }
+  ]
 }
 
 #let term-sort-name(value) = {
-  if value.industry != none and value.industry.en != none {
-    str(value.industry.en)
-  } else if value.industry != none and value.industry.cs != none {
-    str(value.industry.cs)
-  } else if value.proper.en != none {
-    str(value.proper.en)
-  } else {
-    str(value.proper.cs)
-  }
+  if value.industry != none { str(value.industry) }
+  else if value.english != none { str(value.english) }
+  else { str(value.czech) }
 }
 
-// Jediný renderer všech použití termínu.
-// Terms render names only. Concept definitions/descriptions own explanatory prose.
-// surface vybírá industry/proper/alias/full; language určuje lokalizaci názvu.
 #let term(
   value,
-  render: "term",
   surface: "full",
   language: "auto",
-  register: true,
-  linked: false,
+  linked: true,
   marker: true,
   emphasized: true,
   cite: false,
 ) = context {
-  assert(value.kind == "term", message: "term() expects a value created by define-term()")
-  assert(render == "term", message: "term render supports the canonical term surface only")
-  assert(surface in ("full", "industry", "proper", "alias"), message: "term surface must be full, industry, proper, or alias")
-  assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
-
-  if register and value.keyword {
-    [#metadata(value) #term-use-label]
-  }
-
+  assert(value.kind == "concept", message: "term() expects a concept")
   let name = term-name(value, surface: surface, language: language)
-  let displayed-name = if emphasized { [_*#name*_] } else { name }
-  let displayed-name = if cite and value.citation != none {
+  let displayed = if emphasized { [_*#name*_] } else { name }
+  if linked {
+    displayed = link(label("concept-" + value.key), displayed)
+  }
+  if cite and value.citation != none {
     let render-c(c) = {
       let lbl = resolve-citation-label(c)
       if lbl != none { cite(lbl) } else { none }
@@ -454,53 +385,35 @@
     } else {
       render-c(value.citation)
     }
-    if cites != none { [#displayed-name~#cites] } else { displayed-name }
-  } else {
-    displayed-name
+    if cites != none { displayed = [#displayed~#cites] }
   }
-  // The standalone terminology index was removed. Keep the `linked` argument
-  // for source compatibility, but canonical term uses now render in place.
-  let referenced-name = displayed-name
-  // Term markers are independent from the removed standalone terminology index.
-  // Use a literal asterisk rather than the former star glyph.
-  let with-marker = if marker and render != "explanation" {
-    [#referenced-name#super[#text(fill: rgb("#2563eb"), size: 0.72em)[#text("*")]]]
+  if marker {
+    [#displayed#super[#text(fill: rgb("#2563eb"), size: 0.72em)[#text("*")]]]
   } else {
-    referenced-name
+    displayed
   }
-  with-marker
 }
 
 #let kw = term
 #let render-term = term
 
-#let collect-used-terms(entries) = {
-  let items = ()
-  for entry in entries {
-    let value = entry.value
-    if value.keyword and not items.any(item => item.id == value.id) {
-      items.push(value)
+#let render-keywords(items) = context {
+  let unique = ()
+  for item in items {
+    if not unique.any(existing => existing.key == item.key) {
+      unique.push(item)
     }
   }
-  items.sorted(key: item => lower(term-sort-name(item)))
-}
-
-// Krátký dynamický seznam klíčových slov: pouze termíny skutečně použité
-// v dané kompilaci, deduplikované podle stabilního id.
-#let render-keywords() = context {
-  let items = collect-used-terms(query(term-use-label))
-
-  if items.len() == 0 {
+  let ordered = unique.sorted(key: item => lower(term-sort-name(item)))
+  if ordered.len() == 0 {
     finalized[—]
   } else {
     finalized[
       #text(size: 11pt)[
-        #items.map(item => term(
+        #ordered.map(item => term(
           item,
-          render: "term",
-          language: "auto",
-          register: false,
-          linked: false,
+          surface: "full",
+          linked: true,
           marker: false,
           emphasized: false,
         )).join([, ])

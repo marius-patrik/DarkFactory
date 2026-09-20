@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "agent",
-    proper: translation(cs: "Agent", en: "Agent"),
-    citation: bib.wooldridge1995,
-    source: bib.wang2024survey,
-)
 
 #let item = concept(
   key: "agent",
-  term: terminology,
-  definition: terms => [
+    czech: "Agent",
+  english: "Agent",
+  citation: bib.wooldridge1995,
+  source: bib.wang2024survey,
+definition: terms => [
 Agent je softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně vnímá stav prostředí a provádí vícekrokové akce směřující k zadanému cíli.
   ],
   description: terms => [

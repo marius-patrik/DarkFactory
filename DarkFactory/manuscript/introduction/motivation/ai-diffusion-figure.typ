@@ -1,16 +1,12 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, bib
+#import "/DarkFactory/templates/common.typ": translation, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "global-ai-diffusion-figure",
-  proper: translation(cs: "Globální adopce generativní AI", en: "Global Generative AI Adoption"),
-  keyword: false,
-)
 
 #let item = concept(
   key: "global_ai_diffusion_figure",
-  term: terminology,
-  definition: terms => [
+    czech: "Globální adopce generativní AI",
+  english: "Global Generative AI Adoption",
+definition: terms => [
 Grafický podklad dokumentuje rychlost, s níž se generativní AI rozšířila z experimentální technologie do běžného používání.
   ],
   description: terms => [

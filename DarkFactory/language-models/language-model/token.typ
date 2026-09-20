@@ -1,17 +1,14 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "token",
-    proper: translation(cs: "Token", en: "Token"),
-    citation: bib.sennrich2016bpe,
-    source: bib.sennrich2016bpe,
-)
 
 #let item = concept(
   key: "token",
-  term: terminology,
-  definition: terms => [
+    czech: "Token",
+  english: "Token",
+  citation: bib.sennrich2016bpe,
+  source: bib.sennrich2016bpe,
+definition: terms => [
 Token je diskrétní jednotka zpracovávaná jazykovým modelem, odpovídající položce slovníku tokenizéru a reprezentovaná číselným identifikátorem.
   ],
   description: terms => [

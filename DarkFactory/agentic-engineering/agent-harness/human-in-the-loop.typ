@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "human-in-the-loop",
-    proper: translation(cs: "Zapojení člověka do smyčky", en: "Human-in-the-loop"),
-    industry: translation(cs: "HITL", en: "HITL"),
-    citation: bib.mosqueira2023human,
-    source: bib.mosqueira2023human,
-)
 
 #let item = concept(
   key: "human_in_the_loop",
-  term: terminology,
-  definition: terms => [
+    industry: "HITL",
+  czech: "Zapojení člověka do smyčky",
+  english: "Human-in-the-loop",
+  citation: bib.mosqueira2023human,
+  source: bib.mosqueira2023human,
+definition: terms => [
 Zapojení člověka do smyčky (HITL) je návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu prostřednictvím explicitních schvalovacích bran, zejména před významnými nebo nevratnými operacemi.
   ],
   description: terms => [

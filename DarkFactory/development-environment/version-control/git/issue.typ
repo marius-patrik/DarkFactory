@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": translation, unconfirmed, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-  id: "github-issue",
-  proper: translation(cs: "Úloha GitHubu", en: "GitHub Issue"),
-  industry: translation(cs: "Issue", en: "Issue"),
-  citation: bib.dabbish2012github,
-  source: bib.dabbish2012github,
-)
 
 #let item = concept(
   key: "github_issue",
-  term: terminology,
-  definition: terms => [
+    industry: "Issue",
+  czech: "Úloha GitHubu",
+  english: "GitHub Issue",
+  citation: bib.dabbish2012github,
+  source: bib.dabbish2012github,
+definition: terms => [
 GitHub Issue je strukturovaný záznam požadavku, úkolu nebo chyby v repozitáři, který může nést popis, diskusi, štítky, přiřazení a vazby na změny kódu.
   ],
   description: terms => [

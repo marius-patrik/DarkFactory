@@ -1,18 +1,15 @@
-#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
 #import "/DarkFactory/schema.typ": concept
 
-#let terminology = define-term(
-    id: "skills",
-    proper: translation(cs: "Dovednosti", en: "Skills"),
-    industry: translation(cs: "Skills", en: "Skills"),
-    citation: bib.anthropic2024tooluse,
-    source: bib.anthropic2024tooluse,
-)
 
 #let item = concept(
   key: "skills",
-  term: terminology,
-  definition: terms => [
+    industry: "Skills",
+  czech: "Dovednosti",
+  english: "Skills",
+  citation: bib.anthropic2024tooluse,
+  source: bib.anthropic2024tooluse,
+definition: terms => [
 Dovednost je znovupoužitelný modulární balíček instrukcí, procedurálních pravidel a volitelných skriptů či zdrojů, který harness načítá podle povahy řešeného úkolu.
   ],
   description: terms => [
