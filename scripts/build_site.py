@@ -14,8 +14,8 @@ from pathlib import Path
 VARIANTS = (
     {
         "profile": "school",
-        "title": "Školní česká verze",
-        "subtitle": "Czech manuscript and section headings with canonical industry/proper terminology; bilingual annotation and keywords",
+        "title": "DarkFactory",
+        "subtitle": "Canonical publication",
         "final": "prace.pdf",
         "review": "prace-review.pdf",
         "artifacts": {
@@ -23,42 +23,6 @@ VARIANTS = (
             "review": {"pdf": "prace-review.pdf", "markdown": "prace-review.md", "html": "prace-review.html"},
         },
         "recommended": True,
-    },
-    {
-        "profile": "cs",
-        "title": "Čistě česká verze",
-        "subtitle": "Czech projection with Czech terminology where bilingual helpers are used",
-        "final": "prace-cs.pdf",
-        "review": "prace-cs-review.pdf",
-        "artifacts": {
-            "final": {"pdf": "prace-cs.pdf", "markdown": "prace-cs.md", "html": "prace-cs.html"},
-            "review": {"pdf": "prace-cs-review.pdf", "markdown": "prace-cs-review.md", "html": "prace-cs-review.html"},
-        },
-        "recommended": False,
-    },
-    {
-        "profile": "en",
-        "title": "English version",
-        "subtitle": "English projection; source sections not yet bilingual remain in their source language",
-        "final": "prace-en.pdf",
-        "review": "prace-en-review.pdf",
-        "artifacts": {
-            "final": {"pdf": "prace-en.pdf", "markdown": "prace-en.md", "html": "prace-en.html"},
-            "review": {"pdf": "prace-en-review.pdf", "markdown": "prace-en-review.md", "html": "prace-en-review.html"},
-        },
-        "recommended": False,
-    },
-    {
-        "profile": "merged",
-        "title": "Česky + English",
-        "subtitle": "Merged bilingual projection; bilingual source blocks render both language versions",
-        "final": "prace-bilingual.pdf",
-        "review": "prace-bilingual-review.pdf",
-        "artifacts": {
-            "final": {"pdf": "prace-bilingual.pdf", "markdown": "prace-bilingual.md", "html": "prace-bilingual.html"},
-            "review": {"pdf": "prace-bilingual-review.pdf", "markdown": "prace-bilingual-review.md", "html": "prace-bilingual-review.html"},
-        },
-        "recommended": False,
     },
 )
 

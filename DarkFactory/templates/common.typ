@@ -11,45 +11,16 @@
 #let numbered = numbered-list
 
 #let review-state = state("review-mode", sys.inputs.at("review", default: "false") in ("true", "1", "yes"))
-#let profile-state = state("publication-profile", "school")
 
 #let is-review() = context review-state.get()
-#let profile-mode() = context profile-state.get()
 
-// Publikační profily:
-// - school: český text a české section headings + canonical industry/proper terminology + bilingvní anotace/keywords
-// - cs: čistě česká projekce
-// - en: anglická projekce
-// - merged: plně bilingvní projekce
-#let bilingual(cs, en, stacked: true) = context {
-  let profile = profile-state.get()
-  if profile in ("school", "cs") {
-    text(lang: "cs")[#cs]
-  } else if profile == "en" {
-    text(lang: "en")[#en]
-  } else if stacked {
-    block(breakable: true)[
-      #text(lang: "cs")[#cs]
-      #v(4pt)
-      #text(lang: "en")[#en]
-    ]
-  } else {
-    [#text(lang: "en")[#en] (#text(lang: "cs")[#cs])]
-  }
-}
+// Jediný publikační režim: český rukopis, samostatná Anotace a Abstract,
+ // canonical industry/proper terminology.
+#let bilingual(cs, en, stacked: true) = text(lang: "cs")[#cs]
 
 #let localized = bilingual
 
-#let ui-label(cs, en) = context {
-  let profile = profile-state.get()
-  if profile in ("school", "cs") {
-    text(lang: "cs")[#cs]
-  } else if profile == "en" {
-    text(lang: "en")[#en]
-  } else {
-    [#text(lang: "cs")[#cs] | #text(lang: "en")[#en]]
-  }
-}
+#let ui-label(cs, en) = text(lang: "cs")[#cs]
 
 
 // Bilingvní hodnota je datový objekt, ne předem vysázený obsah. Stejná data lze
@@ -59,17 +30,13 @@
   (cs: cs, en: en)
 }
 
-#let resolve-language(language, profile, school-both: false) = {
+#let resolve-language(language, school-both: false) = {
   if language != "auto" {
     language
-  } else if profile == "cs" {
-    "cs"
-  } else if profile == "en" {
-    "en"
-  } else if profile == "school" and not school-both {
-    "cs"
-  } else {
+  } else if school-both {
     "both"
+  } else {
+    "cs"
   }
 }
 
@@ -103,7 +70,7 @@
   separator: "bar",
   order: "cs-en",
 ) = context {
-  let lang = resolve-language(language, profile-state.get(), school-both: school-both)
+  let lang = resolve-language(language, school-both: school-both)
   let part(code, body) = if labels {
     [#language-badge(code) #h(0.35em) #body]
   } else {
@@ -296,31 +263,21 @@
   value.citation
 }
 
-#let concept-proper(value, language: "auto") = context {
-  let profile = profile-state.get()
-  let lang = if language != "auto" { language } else if profile in ("school", "cs") { "cs" } else if profile == "en" { "en" } else { "both" }
-  if lang == "cs" {
-    if value.czech != none { text(lang: "cs")[#value.czech] } else if value.english != none { text(lang: "en")[#value.english] } else { value.industry }
-  } else if lang == "en" {
+#let concept-proper(value, language: "auto") = {
+  let lang = if language == "auto" { "cs" } else { language }
+  if lang == "en" {
     if value.english != none { text(lang: "en")[#value.english] } else if value.czech != none { text(lang: "cs")[#value.czech] } else { value.industry }
-  } else if value.czech != none and value.english != none and str(value.czech) != str(value.english) {
-    [#text(lang: "en")[#value.english] (#text(lang: "cs")[#value.czech])]
-  } else if value.english != none {
-    text(lang: "en")[#value.english]
-  } else if value.czech != none {
-    text(lang: "cs")[#value.czech]
   } else {
-    value.industry
+    if value.czech != none { text(lang: "cs")[#value.czech] } else if value.english != none { text(lang: "en")[#value.english] } else { value.industry }
   }
 }
 
-#let raw-proper(value, language: "auto") = context {
-  let profile = profile-state.get()
-  let lang = if language != "auto" { language } else if profile in ("school", "cs") { "cs" } else { "en" }
-  if lang == "cs" {
-    if value.czech != none { str(value.czech) } else if value.english != none { str(value.english) } else { str(value.industry) }
-  } else {
+#let raw-proper(value, language: "auto") = {
+  let lang = if language == "auto" { "cs" } else { language }
+  if lang == "en" {
     if value.english != none { str(value.english) } else if value.czech != none { str(value.czech) } else { str(value.industry) }
+  } else {
+    if value.czech != none { str(value.czech) } else if value.english != none { str(value.english) } else { str(value.industry) }
   }
 }
 

@@ -45,20 +45,14 @@
 )
 
 
-#let title-value(book-title, profile: "school") = {
-  let language = if profile == "en" { "en" } else { "cs" }
-  let main = if language == "en" and book-title.en != none { str(book-title.en) } else { str(book-title.cs) }
-  let suffix = if language == "en" and meta.title-suffix.en != none { str(meta.title-suffix.en) } else { str(meta.title-suffix.cs) }
-  main + ": " + suffix
+#let title-value(book-title) = {
+  str(book-title.cs) + ": " + str(meta.title-suffix.cs)
 }
 
-#let title-display(book-title, profile: "school") = {
-  let language = if profile == "en" { "en" } else { "cs" }
-  let main = if language == "en" and book-title.en != none { book-title.en } else { book-title.cs }
-  let lines = if language == "en" { meta.title-lines.en } else { meta.title-lines.cs }
+#let title-display(book-title) = {
   [
-    #main#linebreak()
-    #lines.at(0)#linebreak()
-    #lines.at(1)
+    #book-title.cs#linebreak()
+    #meta.title-lines.cs.at(0)#linebreak()
+    #meta.title-lines.cs.at(1)
   ]
 }

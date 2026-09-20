@@ -20,7 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "/DarkFactory/templates/gjkt-odborna-prace/wordometer.typ": string-word-count, extract-text
-#import "/DarkFactory/templates/common.typ": review-state, profile-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
+#import "/DarkFactory/templates/common.typ": review-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
 #import "/DarkFactory/metadata.typ": title-value, title-display
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
@@ -56,16 +56,7 @@
 
   v(1fr)
 
-  context {
-    let profile = profile-state.get()
-    if profile == "merged" {
-      text(size: 25pt, weight: "bold", hyphenate: false, finalized(title-display(book-title, profile: profile)))
-      v(0.25cm)
-      text(size: 17pt, weight: "bold", hyphenate: false, finalized(title-value(book-title, profile: "en")))
-    } else {
-      text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-display(book-title, profile: profile)))
-    }
-  }
+  text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-display(book-title)))
 
   if meta.at("podnazev", default: none) != none {
     v(0.4cm)
@@ -171,18 +162,12 @@
   if break-after { pagebreak(weak: true) }
 }
 
-#let anotace-strana(meta, concepts) = context {
-  let profile = profile-state.get()
+#let anotace-strana(meta, concepts) = {
+  nadpis-bez-cisla[#finalized[Anotace]]
+  meta.at("annotation-cs")
 
-  if profile in ("school", "cs", "merged") {
-    nadpis-bez-cisla[#finalized[Anotace]]
-    meta.at("annotation-cs")
-  }
-
-  if profile in ("school", "en", "merged") {
-    nadpis-bez-cisla[#finalized[Abstract]]
-    meta.at("abstract-en")
-  }
+  nadpis-bez-cisla[#finalized[Abstract]]
+  meta.at("abstract-en")
 
   front-matter-section(
     translation(cs: [Klíčová slova], en: [Keywords]),
@@ -203,8 +188,6 @@
   koncept: none,
   // Režim zobrazení recenzních značek a diffu: auto (podle sys.inputs), true (review) nebo false (raw čistá verze)
   review: auto,
-  // Publikační profil: "school", "cs", "en" nebo "merged".
-  profile: "school",
   pismo: PISMO,
   velikost: 12pt,
   radkovani: 1.5,
@@ -222,14 +205,10 @@
   }
   let vodoznak = if koncept == auto { none } else { koncept }
 
-  let resolved-profile = profile
-
   assert(book-title != none, message: "template requires the structural book title")
-  assert(resolved-profile in ("school", "cs", "en", "merged"), message: "profile must be school, cs, en, or merged")
   review-state.update(is-review)
-  profile-state.update(resolved-profile)
 
-  set document(title: title-value(book-title, profile: resolved-profile), author: meta.autor)
+  set document(title: title-value(book-title), author: meta.autor)
 
   // Okraje 2,5 cm; u hřbetu (vlevo) navíc 0,5 cm kvůli vazbě.
   set page(

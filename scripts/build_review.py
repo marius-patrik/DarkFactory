@@ -92,6 +92,6 @@ compile_cmd = [
 ]
 run(compile_cmd)
 print(
-    f"ok: review {args.book}/{args.template}/{args.profile}: "
+    f"ok: review {args.book}/{args.template}: "
     f"raw={words} words/{chars} chars -> {output}"
 )

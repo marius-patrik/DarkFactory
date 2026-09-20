@@ -181,45 +181,17 @@
   result.map(key => keyed.find(node => node.section.key == key)) + unkeyed
 }
 
-#let localized-concept-title(item, profile: "school") = {
-  let cs = item.czech
-  let en = item.english
-  if profile in ("school", "cs") {
-    if cs != none { cs } else if en != none { en } else { item.industry }
-  } else if profile == "en" {
-    if en != none { en } else if cs != none { cs } else { item.industry }
-  } else if en != none and cs != none and str(en) != str(cs) {
-    [#en (#cs)]
-  } else if en != none {
-    en
-  } else if cs != none {
-    cs
-  } else {
-    item.industry
-  }
-}
-
-#let localized-translation-title(value, profile: "school") = {
-  if profile in ("school", "cs") {
-    if value.cs != none { value.cs } else { value.en }
-  } else if profile == "en" {
-    if value.en != none { value.en } else { value.cs }
-  } else if value.en != none and value.cs != none and str(value.en) != str(value.cs) {
-    [#value.en (#value.cs)]
-  } else if value.en != none {
-    value.en
-  } else {
-    value.cs
-  }
-}
-
-#let render-concept-title(item, profile: "school") = {
+#let render-concept-title(item) = {
   if item.title != none {
-    localized-translation-title(item.title, profile: profile)
+    if item.title.cs != none { item.title.cs } else { item.title.en }
   } else if item.industry != none {
     term-full-name(item)
+  } else if item.czech != none {
+    item.czech
+  } else if item.english != none {
+    item.english
   } else {
-    localized-concept-title(item, profile: profile)
+    item.industry
   }
 }
 
@@ -233,8 +205,8 @@
   }
 }
 
-#let render-concept(item, terms, graph, level: 1, profile: "school") = {
-  let output = [#heading(level: level)[#render-concept-title(item, profile: profile)]#label("concept-" + item.key)]
+#let render-concept(item, terms, graph, level: 1) = {
+  let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
 
   output += [
     #set par(first-line-indent: (amount: 1.5em, all: true))
@@ -244,10 +216,10 @@
   if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
-    output += render-concept(example, terms, graph, level: level + 1, profile: profile)
+    output += render-concept(example, terms, graph, level: level + 1)
   }
   for attachment in order-local(item.attachments, graph) {
-    output += render-concept(attachment, terms, graph, level: level + 1, profile: profile)
+    output += render-concept(attachment, terms, graph, level: level + 1)
   }
 
   output += (item.summary)(terms)
@@ -258,29 +230,29 @@
   output
 }
 
-#let render-folder(node, terms, graph, level: 1, profile: "school") = {
+#let render-folder(node, terms, graph, level: 1) = {
   let output = []
   let child-level = level
 
   if node.section != none {
-    output += render-concept(node.section, terms, graph, level: level, profile: profile)
+    output += render-concept(node.section, terms, graph, level: level)
     child-level = level + 1
   }
 
   for item in order-local(node.concepts, graph) {
-    output += render-concept(item, terms, graph, level: child-level, profile: profile)
+    output += render-concept(item, terms, graph, level: child-level)
   }
   for child in order-folders(node.children, graph) {
-    output += render-folder(child, terms, graph, level: child-level, profile: profile)
+    output += render-folder(child, terms, graph, level: child-level)
   }
   output
 }
 
-#let render-folders(folders, terms, level: 1, profile: "school") = {
+#let render-folders(folders, terms, level: 1) = {
   let graph = semantic-graph(folders)
   let output = []
   for node in order-folders(folders, graph) {
-    output += render-folder(node, terms, graph, level: level, profile: profile)
+    output += render-folder(node, terms, graph, level: level)
   }
   output
 }

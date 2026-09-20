@@ -3,11 +3,9 @@
 #let book-mode = sys.inputs.at("book", default: default-book)
 #let review-mode = sys.inputs.at("review", default: "false") in ("true", "1", "yes")
 #let template-mode = sys.inputs.at("template", default: default-template-for(book-mode))
-#let profile-mode = sys.inputs.at("profile", default: "school")
 
 #render-pdf(
   book-mode,
   review: review-mode,
-  profile: profile-mode,
   template-name: template-mode,
 )

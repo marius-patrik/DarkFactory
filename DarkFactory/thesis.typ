@@ -6,7 +6,6 @@
 // samostatně, takže stejný konceptový rukopis lze kompilovat více šablonami.
 #let thesis(
   review: false,
-  profile: "school",
   template-name: default-template,
 ) = {
   let render = template-for(template-name)
@@ -18,13 +17,12 @@
     concepts: concepts,
     logo: "/DarkFactory/img/logo.jpeg",
     review: review,
-    profile: profile,
     koncept: none,
   )[
-    #render-manuscript(profile: profile)
+    #render-manuscript()
 
     #appendices[
-      #render-appendices(profile: profile)
+      #render-appendices()
     ]
   ]
 }

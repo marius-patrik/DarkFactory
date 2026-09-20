@@ -22,29 +22,11 @@
     "metadata": "ignore",
     "assets": [
       "out/prace.pdf",
-      "out/prace-cs.pdf",
-      "out/prace-en.pdf",
-      "out/prace-bilingual.pdf",
       "out/prace-review.pdf",
-      "out/prace-cs-review.pdf",
-      "out/prace-en-review.pdf",
-      "out/prace-bilingual-review.pdf",
       "out/prace.html",
       "out/prace.md",
-      "out/prace-cs.html",
-      "out/prace-cs.md",
-      "out/prace-en.html",
-      "out/prace-en.md",
-      "out/prace-bilingual.html",
-      "out/prace-bilingual.md",
       "out/prace-review.html",
-      "out/prace-review.md",
-      "out/prace-cs-review.html",
-      "out/prace-cs-review.md",
-      "out/prace-en-review.html",
-      "out/prace-en-review.md",
-      "out/prace-bilingual-review.html",
-      "out/prace-bilingual-review.md"
+      "out/prace-review.md"
     ]
   },
   "pages": {
@@ -53,7 +35,7 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "DarkFactory-Paper is a multi-book Typst project. Each registered book is a self-contained root (currently DarkFactory/) owning its structural concept tree, metadata, templates, fonts, bibliography, and images. Root entrypoints dispatch through books.typ. CI builds the selected book's Final/Review × profile matrix as PDF plus semantic Typst HTML and derived Markdown, validates the book contract and web workbench, and Pages publishes every template/profile/review/format combination.",
+    "$comment": "DarkFactory-Paper is a Typst thesis project with one canonical publication. CI builds Final/Review as PDF plus semantic Typst HTML and derived Markdown, validates the book contract and web workbench, and Pages publishes both modes in all three formats.",
     "testing": {
       "typst": {
         "command": "make ci BOOK=DarkFactory"

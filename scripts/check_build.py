@@ -10,11 +10,9 @@ from pathlib import Path
 
 BOOK = os.environ.get("BOOK", "DarkFactory")
 ROOT = Path(BOOK)
-PROFILES = ("", "-cs", "-en", "-bilingual")
-EXPECTED_PDFS = tuple(
-    Path("out") / f"prace{profile}{review}.pdf"
-    for review in ("", "-review")
-    for profile in PROFILES
+EXPECTED_PDFS = (
+    Path("out/prace.pdf"),
+    Path("out/prace-review.pdf"),
 )
 EXPECTED_HTML = tuple(path.with_suffix(".html") for path in EXPECTED_PDFS)
 EXPECTED_MARKDOWN = tuple(path.with_suffix(".md") for path in EXPECTED_PDFS)
@@ -74,12 +72,11 @@ for template_name in template_names:
     template_out = Path("out/templates") / template_name
     for artifact in EXPECTED:
         validate_publication(template_out / artifact.name)
-    for profile in PROFILES:
-        for extension in (".pdf", ".html", ".md"):
-            final = template_out / f"prace{profile}{extension}"
-            review = template_out / f"prace{profile}-review{extension}"
-            if final.read_bytes() == review.read_bytes():
-                fail(f"Final and Review outputs are identical: {template_name}/{final.name}")
+    for extension in (".pdf", ".html", ".md"):
+        final = template_out / f"prace{extension}"
+        review = template_out / f"prace-review{extension}"
+        if final.read_bytes() == review.read_bytes():
+            fail(f"Final and Review outputs are identical: {template_name}/{final.name}")
 
 gitmodules = require_file(Path(".gitmodules"))
 if gitmodules.count("[submodule ") != 1:
@@ -155,8 +152,8 @@ for contract in (
     "#let appendix-folders",
     "#let book-title = root.title",
     "#let vocabulary = build-vocabulary(folders)",
-    '#let render-manuscript(profile: "school")',
-    '#let render-appendices(profile: "school")',
+    "#let render-manuscript()",
+    "#let render-appendices()",
 ):
     if contract not in catalog:
         fail(f"book structure is missing contract: {contract}")
@@ -178,8 +175,8 @@ for contract in (
     "#let relation(",
     "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
-    '#let render-concept-title(item, profile: "school") = {',
-    '#let render-concept(item, terms, graph, level: 1, profile: "school")',
+    "#let render-concept-title(item) = {",
+    "#let render-concept(item, terms, graph, level: 1)",
 ):
     if contract not in schema:
         fail(f"concept schema is missing contract: {contract}")
@@ -191,16 +188,8 @@ for forbidden in (
 ):
     if forbidden in schema:
         fail(f"concept heading metadata remains contextual: {forbidden}")
-if 'let output = [#heading(level: level)[#render-concept-title(item, profile: profile)]#label("concept-" + item.key)]' not in schema:
+if 'let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]' not in schema:
     fail("concept heading construction is not bookmark-safe")
-for contract in (
-    '#let localized-concept-title(item, profile: "school") = {',
-    '#let localized-translation-title(value, profile: "school") = {',
-    'else if item.industry != none {',
-    'localized-concept-title(item, profile: profile)',
-):
-    if contract not in schema:
-        fail(f"profile-aware concept-heading contract missing: {contract}")
 
 common = sources[ROOT / "templates/common.typ"]
 for contract in (

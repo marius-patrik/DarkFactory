@@ -17,14 +17,6 @@ from pathlib import Path
 from typing import Iterable
 
 
-PROFILES = (
-    ("school", "prace"),
-    ("cs", "prace-cs"),
-    ("en", "prace-en"),
-    ("merged", "prace-bilingual"),
-)
-
-
 PUBLICATION_CSS = Path("web/src/publication.css")
 @dataclass
 class Node:
@@ -244,7 +236,6 @@ def compile_html(
     font_paths: Iterable[str],
     book: str,
     template: str,
-    profile: str,
     review: bool,
     source: Path,
     output: Path,
@@ -255,7 +246,6 @@ def compile_html(
     command.extend([
         "--input", f"book={book}",
         "--input", f"template={template}",
-        "--input", f"profile={profile}",
     ])
     if review:
         command.extend(["--input", "review=true"])
@@ -293,24 +283,22 @@ def main() -> None:
         raise SystemExit(f"missing semantic web publication source: {source}")
 
     output_dir = Path(args.output_dir)
-    for profile, stem in PROFILES:
-        for review in (False, True):
-            suffix = "-review" if review else ""
-            html_output = output_dir / f"{stem}{suffix}.html"
-            compile_html(
-                typst=args.typst,
-                font_paths=args.font_path,
-                book=args.book,
-                template=args.template,
-                profile=profile,
-                review=review,
-                source=source,
-                output=html_output,
-            )
-            print(
-                f"ok: semantic web publication {args.book}/{args.template}/{profile}/"
-                f"{'review' if review else 'final'} -> {html_output} + {html_output.with_suffix('.md')}"
-            )
+    for review in (False, True):
+        suffix = "-review" if review else ""
+        html_output = output_dir / f"prace{suffix}.html"
+        compile_html(
+            typst=args.typst,
+            font_paths=args.font_path,
+            book=args.book,
+            template=args.template,
+            review=review,
+            source=source,
+            output=html_output,
+        )
+        print(
+            f"ok: semantic web publication {args.book}/{args.template}/"
+            f"{'review' if review else 'final'} -> {html_output} + {html_output.with_suffix('.md')}"
+        )
 
 
 if __name__ == "__main__":
