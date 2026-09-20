@@ -39,5 +39,5 @@ Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: ((type: "parent", target: "git"), (type: "dependency", target: "branch"),)
+  relations: ((type: "dependency", target: "branch"),)
 )
