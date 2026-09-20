@@ -1,9 +1,10 @@
 import { test, expect } from "bun:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { App } from "../src/app";
+import { DarkFactoryShell } from "../src/index";
 
-test("App renders shell", () => {
-  const output = renderToString(createElement(App));
+test("DarkFactoryShell renders shell and routing", () => {
+  const output = renderToString(createElement(DarkFactoryShell));
   expect(output).toContain("DarkFactory Web");
+  expect(output).toContain("Dashboard");
 });
