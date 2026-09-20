@@ -145,7 +145,7 @@ The final #340 declaration rules apply:
 
 Documentation uses `docs.df` as the native DarkFactory configuration.
 
-`docs.df` is the only DarkFactory documentation configuration contract. ProperDocs/MkDocs configuration is not part of the final system and is not a compatibility target.
+`docs.df` is the only DarkFactory documentation configuration contract.
 
 Documentation configuration does not move into `repo.df` or `config.df`.
 
