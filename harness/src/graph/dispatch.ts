@@ -71,41 +71,7 @@ function githubCheckSource(token: string, repository: string): CheckStateSource 
 	return { checkStates: (ref) => repoInstance.checkStates(ref) };
 }
 
-export async function resolveCommitSha(
-	eventName: string,
-	eventPayload: any,
-	repoInstance?: GitHubRepository,
-): Promise<string> {
-	if (eventPayload && typeof eventPayload === "object") {
-		if (eventName === "pull_request" || eventName === "pull_request_review") {
-			const sha = eventPayload.pull_request?.head?.sha;
-			if (sha) return sha;
-		}
-		if (eventName === "check_suite") {
-			const sha = eventPayload.check_suite?.head_sha;
-			if (sha) return sha;
-		}
-		if (eventName === "check_run") {
-			const sha = eventPayload.check_run?.head_sha;
-			if (sha) return sha;
-		}
-		if (eventName === "push") {
-			const sha = eventPayload.after || eventPayload.head_commit?.id;
-			if (sha) return sha;
-		}
-	}
-
-	if (repoInstance) {
-		try {
-			return await repoInstance.getDefaultBranchHeadSha();
-		} catch {
-			// fallback
-		}
-	}
-
-	if (eventPayload && typeof eventPayload === "object") {
-		if (eventPayload.head_sha) return eventPayload.head_sha;
-		if (eventPayload.pull_request?./**
+/**
  * Dispatch a workflow based on a GitHub event.
  * @param argv - Command line arguments passed to the dispatch command.
  * @param options - Optional overrides, such as a custom check state source.
@@ -210,5 +176,6 @@ export async function dispatch(
 	console.log(JSON.stringify(output));
 
 	await saveRunState(runsDir, subject, runState);
+}
 
 export type { TranslatedEvent } from "./events.ts";
