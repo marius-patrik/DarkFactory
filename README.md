@@ -1,3 +1,5 @@
+<!-- Generated from docs/home.md by @darkfactory/docs. Do not edit README.md directly. -->
+
 # DarkFactory
 
 **Autonomous, governed software delivery built around a self-hosting `df` engine, versioned capabilities and GitHub as the durable control plane.**
