@@ -739,7 +739,6 @@ def test_repository_documents_name_only_the_native_docs_path():
         assert "docs.df" in content or relative not in ("AGENTS.md", "PRD.md")
 
 
-
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
 #: App. `ci`, `auto-format`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
 #: only within their own repository with `GITHUB_TOKEN`, which has its own quota and needs no App.
