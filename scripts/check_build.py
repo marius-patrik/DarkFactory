@@ -839,7 +839,9 @@ if "<ViewerApp />" not in main_source or "PublicationIndex" in main_source:
 for required in (
     'const profileName = params.get("profile") || "school"',
     'const mode: ViewerMode =',
-    'requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf"',
+    'mode === "raw"',
+    'requestedFormat === "markdown"',
+    'requestedFormat === "html"',
     'requestedMode === "raw"',
     'Loading school Compiled PDF…',
 ):
@@ -909,8 +911,9 @@ site_builder = Path("scripts/build_site.py").read_text(encoding="utf-8")
 for required in (
     'WEB_DIST = Path("web/dist")',
     "shutil.copytree(WEB_DIST, SITE)",
-    "compiled Typst HTML/Markdown",
+    "rendered Markdown + compiled Typst HTML",
     '"formats": ["pdf", "markdown", "html"]',
+    '"modes": ["compiled", "concept", "raw"]',
     'variant["artifacts"][mode].items()',
     '"shadcn/ui"',
     '"Motion"',
