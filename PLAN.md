@@ -4,7 +4,7 @@
 
 This file contains only the current forward execution plan for finishing DarkFactory.
 
-Product requirements live in `PRD.md`. Feature-specific behavior and implementation evidence live in current GitHub Requests. Accepted ADRs define current architecture. GitHub issues are the only place that retains previous decisions or superseded work.
+Product requirements live in `PRD.md`. Feature-specific behavior and implementation evidence live in current GitHub Requests. Accepted ADRs define current architecture. GitHub issues are the authoritative work record.
 
 The optimization target is the shortest safe path to the final #360 → #361 → #68 end state.
 
@@ -65,7 +65,7 @@ No code path may treat model prose as proof of commit, push, merge, branch updat
 
 Repository documentation, ADRs, rules, README, PRD, PLAN, package docs, workflow comments, and generated docs describe only current contracts.
 
-Previous decisions and superseded work belong only in GitHub issues.
+Repository documentation contains only current contracts.
 
 ## 5. Core production-engine path
 
@@ -159,7 +159,7 @@ Acceptance includes:
 - source-free installation;
 - official capabilities included by default;
 - generated adapter/plugin/skill/MCP outputs required by the product contract;
-- provenance and checksums;
+- source/version metadata and checksums;
 - prebuilt `@darkfactory/web` bundle;
 - install/update tooling using the released artifacts.
 
