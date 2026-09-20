@@ -182,15 +182,15 @@ A failing topic/recovery branch blocks that branch and dependent work, but does 
 | `recovery/f14-borrowed-refresh` | Production-critical semantics integrated through #422/#523; retain provenance until final recovery audit |
 | `recovery/f40-capability-tiers` | Integrated through #331; retain provenance until final recovery audit |
 | `recovery/f38-result-capture` | #329 |
-| `recovery/f42-tsdoc` | #334 -> #424 |
-| `recovery/f42-tsdoc-w2` | #334 -> #424 |
-| `recovery/f42-tsdoc-w3` | #334 -> #424 |
-| `recovery/f42-tsdoc-w4` | #334 -> #424 |
+| `recovery/f42-tsdoc` | Reconciled TSDoc onto matching current final-package/re-export surfaces in #577; #334 owns future/new export delta |
+| `recovery/f42-tsdoc-w2` | Reconciled matching GitHub/runtime TSDoc in #577; #334 owns future/new export delta |
+| `recovery/f42-tsdoc-w3` | Reconciled matching graph/supervisor TSDoc in #577; #334 owns future/new export delta |
+| `recovery/f42-tsdoc-w4` | Reconciled matching CLI/config TSDoc in #577; #334 owns future/new export delta |
 | `recovery/f44-readme-prd` | #336 |
-| `recovery/f45-adrs` | #337 |
+| `recovery/f45-adrs` | Reconciled in #577: ADR-0006–0016 restored, superseded records marked, final ADR-0021–0023 added |
 | `recovery/f47-hooks` | #339 hooks capability |
 | `recovery/f49-detected-quality` | #341 migration seed |
-| `recovery/d4-docs-generator` | #424 / #335 |
+| `recovery/d4-docs-generator` | Reconciled into native `@darkfactory/docs` config/content-graph/README compiler in #577; #335/#425 own API/rendering completion |
 | `recovery/fix-empty-agent-output` | Provenance only; fully subsumed |
 | rejected #365 branch / PR #366 | Terminal rejected evidence; #365 completed |
 
@@ -228,7 +228,7 @@ The following should proceed in parallel where interfaces allow:
 
 - #329 F38 recovery reconciliation and natural-stop result capture, now unblocked by landed #331;
 - #341 F49 reconciliation and capability-driven package/domain quality actions;
-- remaining #422 keychain breadth independently of the cutover path; the #359-critical ownership slice is already landed through #523;
+- remaining #422 keychain breadth independently of the core-engine path; the #359-critical ownership slice is already landed through #523;
 - #358 F30-4 discovery/recovery analysis against the landed #391/#331 contracts, without inventing a substitute result or verification protocol before #329/#341 land;
 - all remaining recovery analysis/reconciliation;
 - #423 auth;
@@ -429,12 +429,12 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 | #251 | recovery now | #403 + recovered TUI reconciliation |
 | #423 | yes | landed protocol/github boundary; auth tests |
 | #424 | yes | landed package/capability foundation + D4/F42/F44 reconciliation |
-| #334 | recovery now | final exports + #424 extraction |
+| #334 | active | current final-package exports documented in #577; complete remaining/new exports with #424/#341 |
 | #335 | recovery now | #424/#334/#341 |
 | #425 | yes | #423 auth + #424 content boundary |
 | #390 | prepare | #425 shell + shipped quota/provider protocol |
 | #336 | recovery now | #424 README renderer + #339/#341 docs-impact owners |
-| #337 | recovery now | architecture/product materially final |
+| #337 | active | #577 removes current stale docs and reconciles F45; final shipped-interface audit remains |
 | #360 | work in parallel where possible | all required final product Requests terminal; publish the final release directly |
 | #361 | prepare audit schema | six-repo final-release install/update acceptance green |
 | #68 | final only | #361 + original graph acceptance green |
