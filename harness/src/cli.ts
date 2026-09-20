@@ -60,6 +60,7 @@ import type {
 	TaskNeed,
 } from "./router/types.ts";
 import { secretsCommand } from "./secrets/cli.ts";
+import { runWorkspaceCli } from "./workspace/cli.ts";
 
 function usage(): string {
 	return [
@@ -85,6 +86,7 @@ function usage(): string {
 		"  df graph plan --event <file> --state <file> [--graph <path>]",
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
+		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
 	].join("\n");
 }
 
@@ -147,7 +149,10 @@ function option(args: string[], name: string): string | undefined {
 }
 
 function options(args: string[], name: string): string[] {
-	return args.flatMap((value, index) => (value === name && args[index + 1] ? [args[index + 1]!] : []));
+	return args.flatMap((value, index) => {
+		const next = args[index + 1];
+		return value === name && next ? [next] : [];
+	});
 }
 
 export function parseDurationMs(value: string): number {
@@ -198,12 +203,14 @@ async function withinRunDeadline<T>(operation: Promise<T>, budget?: RunDeadline)
 function removeOptions(args: string[], names: readonly string[]): string[] {
 	const result: string[] = [];
 	for (let index = 0; index < args.length; index++) {
-		if (names.includes(args[index]!)) {
+		const value = args[index];
+		if (value === undefined) continue;
+		if (names.includes(value)) {
 			index++;
 			continue;
 		}
-		if (args[index] === "--json" || args[index] === "--faux" || args[index] === "--sensitive") continue;
-		result.push(args[index]!);
+		if (value === "--json" || value === "--faux" || value === "--sensitive") continue;
+		result.push(value);
 	}
 	return result;
 }
@@ -219,7 +226,7 @@ async function providersCommand(registry: ProviderRegistry): Promise<void> {
 	for (const entry of sorted) {
 		const collection = entry.free?.data?.collection ?? entry.data?.collection ?? "unknown";
 		const hasOauth = entry.auth.some((a) => a.kind === "oauth");
-		const isSubscription = entry.auth.some((a) => a.kind === "oauth" && (a as any).isSubscription === true);
+		const isSubscription = entry.auth.some((a) => a.kind === "oauth" && a.isSubscription === true);
 		console.log(`${entry.id}\t${hasOauth ? "yes" : "no"}\t${isSubscription ? "yes" : "no"}\t${collection}`);
 	}
 }
@@ -460,7 +467,7 @@ async function accountLoadCommand(store: FileCredentialStore, args: string[]): P
 	const parsedId = parseAccountId(id);
 	if (!parsedId) throw new Error("Invalid account id; expected <provider:label>");
 	const raw = process.env[fromEnv];
-	if (!raw || !raw.trim()) throw new Error(`Environment variable ${fromEnv} is empty or not set`);
+	if (!raw?.trim()) throw new Error(`Environment variable ${fromEnv} is empty or not set`);
 	let parsedJson: unknown;
 	try {
 		parsedJson = JSON.parse(raw);
@@ -1483,6 +1490,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return doctorCommand(args.slice(1));
 		case "secrets":
 			return secretsCli(home, args.slice(1));
+		case "workspace":
+			return runWorkspaceCli(args.slice(1));
 		case "help":
 		case "--help":
 		case "-h":
