@@ -852,6 +852,7 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
     const pageRefs = useRef(new Map<number, HTMLElement>());
     const scrollFrame = useRef(0);
     const pinch = useRef({ distance: 0, scale: 1 });
+    const destroyChain = useRef<Promise<void>>(Promise.resolve());
 
     const registerPage = useCallback((page: number, node: HTMLElement | null) => {
       if (node) pageRefs.current.set(page, node);
@@ -913,14 +914,20 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
 
     useEffect(() => {
       let disposed = false;
-      const task = pdfjsLib.getDocument({ url: pdfPath });
+      let task: ReturnType<typeof pdfjsLib.getDocument> | null = null;
       setError("");
       setPdf(null);
       setPages([]);
       setChapters([]);
 
-      void task.promise
-        .then(async (document) => {
+      void (async () => {
+        await destroyChain.current.catch(() => undefined);
+        if (disposed) return;
+
+        task = pdfjsLib.getDocument({ url: pdfPath });
+
+        try {
+          const document = await task.promise;
           if (disposed) return;
           const nextPages: PageInfo[] = [];
           for (let number = 1; number <= document.numPages; number += 1) {
@@ -937,14 +944,20 @@ export const PdfDocumentView = forwardRef<DocumentControl, ViewerProps>(
           setPdf(document);
           setPages(nextPages);
           setChapters(nextChapters);
-        })
-        .catch((reason) => {
-          if (!disposed) setError(String(reason?.message || reason));
-        });
+        } catch (reason) {
+          if (!disposed) setError(String((reason as Error)?.message || reason));
+        }
+      })();
 
       return () => {
         disposed = true;
-        void task.destroy();
+        if (!task) return;
+        const pendingTask = task;
+        destroyChain.current = destroyChain.current
+          .catch(() => undefined)
+          .then(async () => {
+            await pendingTask.destroy();
+          });
       };
     }, [contentIndex, pdfPath]);
 
