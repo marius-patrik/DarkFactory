@@ -175,19 +175,13 @@
   let profile = profile-state.get()
 
   if profile in ("school", "cs", "merged") {
-    front-matter-section(
-      translation(cs: [Anotace], en: [Annotation]),
-      meta.at("annotation-cs"),
-      break-after: false,
-    )
+    nadpis-bez-cisla[#finalized[Anotace]]
+    meta.at("annotation-cs")
   }
 
   if profile in ("school", "en", "merged") {
-    front-matter-section(
-      translation(cs: [Abstrakt], en: [Abstract]),
-      meta.at("abstract-en"),
-      break-after: false,
-    )
+    nadpis-bez-cisla[#finalized[Abstract]]
+    meta.at("abstract-en")
   }
 
   front-matter-section(
