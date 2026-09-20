@@ -522,3 +522,17 @@ export class AccountCredentialStore implements CredentialStore {
 			.then(() => undefined);
 	}
 }
+
+export * from "./github-auth.js";
+export * from "./github-transport.js";
+export * from "./github-secrets.js";
+
+export async function resolveGitHubCredential(input: { token?: string; app?: GitHubAppIdentity }, env: Record<string, string | undefined> = process.env): Promise<{ token: string | (() => Promise<string>); provider?: AppInstallationTokenProvider; onAuthenticationFailure?: () => void }> {
+  if (input.token) return { token: input.token };
+  if (input.app) { const provider = new AppInstallationTokenProvider(input.app); return { token: () => provider.getToken(), provider, onAuthenticationFailure: () => provider.evict() }; }
+  const token = env.GH_TOKEN ?? env.GITHUB_TOKEN;
+  if (!token) throw new Error("GitHub credentials are not configured");
+  return { token };
+}
+
+
