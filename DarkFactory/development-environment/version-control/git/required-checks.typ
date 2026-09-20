@@ -1,5 +1,5 @@
-#import "../../../../templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
-#import "../../../schema.typ": concept
+#import "/DarkFactory/templates/common.typ": define-term, translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/schema.typ": concept
 
 #let terminology = define-term(id: "required-checks", proper: translation(cs: "Požadované kontroly", en: "Required Checks"), explanation_cs: "Automatizované kontroly, jejichž úspěšné dokončení je povinnou podmínkou pro přijetí nebo sloučení změny.", explanation_en: "Automated checks whose successful completion is a mandatory condition for accepting or merging a change.", keyword: false, citation: bib.humble2010, source: bib.dabbish2012github)
 

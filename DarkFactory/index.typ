@@ -1,11 +1,11 @@
-#import "schema.typ": build-vocabulary, render-document-chapter, render-folders, render-theory-chapter, render-practical-chapter
-#import "manuscript/introduction/index.typ" as introduction
-#import "manuscript/results/index.typ" as results
-#import "manuscript/conclusion/index.typ" as conclusion
-#import "manuscript/appendices/index.typ" as appendices
-#import "development-environment/index.typ" as development_environment
-#import "language-models/index.typ" as language_models
-#import "agentic-engineering/index.typ" as agentic_engineering
+#import "/DarkFactory/schema.typ": build-vocabulary, render-document-chapter, render-folders, render-theory-chapter, render-practical-chapter
+#import "/DarkFactory/manuscript/introduction/index.typ" as introduction
+#import "/DarkFactory/manuscript/results/index.typ" as results
+#import "/DarkFactory/manuscript/conclusion/index.typ" as conclusion
+#import "/DarkFactory/manuscript/appendices/index.typ" as appendices
+#import "/DarkFactory/development-environment/index.typ" as development_environment
+#import "/DarkFactory/language-models/index.typ" as language_models
+#import "/DarkFactory/agentic-engineering/index.typ" as agentic_engineering
 
 #let folders = (
   introduction.node,
