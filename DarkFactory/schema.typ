@@ -393,14 +393,34 @@
   output
 }
 
-#let render-theory-chapter(folders, terms) = [
-  #heading(level: 1)[#finalized[Agentic AI (Agentické AI)]]
-  #finalized[Úvod]
-  #render-folders(folders, terms, "theory")
-]
+#let render-theory-chapter(folders, terms) = context {
+  let profile = profile-state.get()
+  let title = if profile in ("school", "cs") {
+    [Agentické AI]
+  } else if profile == "en" {
+    [Agentic AI]
+  } else {
+    [Agentic AI (Agentické AI)]
+  }
+  [
+    #heading(level: 1)[#finalized[#title]]
+    #finalized[Úvod]
+    #render-folders(folders, terms, "theory")
+  ]
+}
 
-#let render-practical-chapter(folders, terms) = [
-  #heading(level: 1)[#finalized[DarkFactory: Architektura harnessu - Praktická část]]
-  #finalized[Úvod]
-  #render-folders(folders, terms, "practical")
-]
+#let render-practical-chapter(folders, terms) = context {
+  let profile = profile-state.get()
+  let title = if profile == "en" {
+    [DarkFactory: Harness Architecture - Practical Part]
+  } else if profile == "merged" {
+    [DarkFactory: Harness Architecture (Architektura harnessu) - Practical Part (Praktická část)]
+  } else {
+    [DarkFactory: Architektura harnessu - Praktická část]
+  }
+  [
+    #heading(level: 1)[#finalized[#title]]
+    #finalized[Úvod]
+    #render-folders(folders, terms, "practical")
+  ]
+}
