@@ -18,7 +18,7 @@ export const conventionalCommit: Hook = {
 			return { id: "conventional-commit", status: "fail", message: "commit message is missing" };
 		}
 
-		const firstLine = message.split("\n")[0] ?? "";
+		const firstLine = message.split("\n")[0];
 
 		// Allow Merge and Revert messages
 		if (firstLine.startsWith("Merge ") || firstLine.startsWith("Revert ")) {
@@ -27,7 +27,7 @@ export const conventionalCommit: Hook = {
 
 		// Validate conventional commit format
 		const convention =
-			/^(feat|fix|chore|docs|refactor|test|ci|style|perf|build|revert)(\([a-z0-9][a-z0-9-]*\))?!?: \S.*$/;
+			/^(feat|fix|chore|docs|refactor|test|ci|style|perf|build|revert)(\([a-z0-9][a-z0-9-]*\))?!?: \s*\S.*$/;
 		if (!convention.test(firstLine)) {
 			return {
 				id: "conventional-commit",

@@ -15,6 +15,7 @@ describe("conventional-commit hook", () => {
 	test.each([
 		"feat(harness): add x",
 		"fix: y",
+		"feat:  message",
 		"docs(governance)!: breaking rule change",
 		"Merge remote-tracking branch 'origin/darkfactory'",
 		'Revert "feat: x"',

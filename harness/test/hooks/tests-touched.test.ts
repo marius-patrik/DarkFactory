@@ -32,6 +32,11 @@ describe("testsTouched hook", () => {
 		expect(result.status).toBe("pass");
 	});
 
+	test("source file in test directory is not a test", async () => {
+		const result = await testsTouched.run(createContext(["harness/test/README.md"]));
+		expect(result.status).toBe("pass");
+	});
+
 	test("hook is registered", () => {
 		const hook = hookById("tests-touched");
 		expect(hook).toBeDefined();

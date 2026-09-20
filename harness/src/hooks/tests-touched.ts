@@ -32,7 +32,10 @@ function getSourceFiles(changedFiles: string[]): string[] {
 
 function getTestFiles(changedFiles: string[]): string[] {
 	const testDirs = ["harness/test/", "tests/"];
+	const testExts = [".ts", ".py", ".js"];
 	return changedFiles.filter((path) => {
-		return testDirs.some((dir) => path.startsWith(dir));
+		const isTestDir = testDirs.some((dir) => path.startsWith(dir));
+		const isTestExt = testExts.some((ext) => path.endsWith(ext));
+		return isTestDir && isTestExt;
 	});
 }
