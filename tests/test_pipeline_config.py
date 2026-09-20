@@ -509,9 +509,8 @@ def test_the_docs_job_uses_the_native_docs_contract():
     docs_job = content[content.index("  docs:") :]
     assert "docs.df" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
-    assert "docs_plan" not in docs_job
-    assert "properdocs" not in docs_job.lower()
-    assert "mkdocs" not in docs_job.lower()
+    assert "packages/docs" not in docs_job
+    assert "packages/web" not in docs_job
 
 
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
@@ -537,9 +536,8 @@ def test_the_deploy_workflow_uses_the_native_docs_compiler():
     """Deploy consumes docs.df through the shared DarkFactory compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
     assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "properdocs" not in content.lower()
-    assert "mkdocs" not in content.lower()
-    assert "docs_plan" not in content
+    assert "pipeline-ref" in content
+    assert "folder: site" in content
 
 
 def test_the_deploy_workflow_has_no_second_paper_renderer():
@@ -560,11 +558,11 @@ def test_the_deploy_workflow_is_callable():
     assert "pipeline-ref" in triggers["workflow_call"]["inputs"]
 
 
-def test_no_properdocs_theme_or_hooks_remain():
-    """The final docs path has no alternate ProperDocs/theme runtime."""
-    assert not os.path.exists(os.path.join(REPO_ROOT, "properdocs.yml"))
-    assert not os.path.exists(os.path.join(REPO_ROOT, "theme"))
-    assert not os.path.exists(os.path.join(SCRIPT_DIR, "docs_hooks.py"))
+def test_native_docs_owners_are_present():
+    """The current compiler, renderer and native configuration all exist."""
+    assert os.path.isfile(os.path.join(REPO_ROOT, "docs.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
 
 def test_the_app_installation_is_recorded():
@@ -678,9 +676,8 @@ def test_preview_uses_the_same_native_docs_compiler():
     """Preview and deploy render the same docs.df content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
     assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "properdocs" not in content.lower()
-    assert "mkdocs" not in content.lower()
-    assert "docs_plan" not in content
+    assert "target-folder: pr-" in content
+    assert "pipeline-ref" in content
 
 
 def test_a_failed_project_lookup_never_creates_a_board():
@@ -725,18 +722,15 @@ def test_no_script_defaults_to_another_repository():
             assert found == slug, f"{name} names {found}, but this repository is {slug}"
 
 
-def test_repository_documents_name_only_the_native_docs_path():
-    """Normative repository text must not instruct contributors to use another docs engine."""
-    for relative in (
-        "AGENTS.md",
-        "PRD.md",
-        os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
-        os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
-    ):
-        content = _read(os.path.join(REPO_ROOT, relative)).lower()
-        assert "properdocs" not in content
-        assert "mkdocs" not in content
-        assert "docs.df" in content or relative not in ("AGENTS.md", "PRD.md")
+def test_repository_documents_name_the_native_docs_contract():
+    """Normative repository text points at the current documentation owners."""
+    agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
+    prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
+    assert "docs.df" in agents
+    assert "docs.df" in prd
+    assert "@darkfactory/docs" in prd
+    assert "@darkfactory/web" in prd
+
 
 
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
