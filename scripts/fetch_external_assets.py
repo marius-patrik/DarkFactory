@@ -3,10 +3,7 @@
 
 from __future__ import annotations
 
-import html.parser
-import mimetypes
 import sys
-import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -31,31 +28,23 @@ ASSETS = (
         "path": "claude-code.webp",
         "url": "https://assets.claude.com/454390de9d9ccefb6082b7c2440c7547c1ec3964.webp",
     },
+    {
+        "path": "claude-desktop.png",
+        "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/c5823949d9350145ce2fda51acbc7076f2139cd0-1920x1080.png",
+    },
+    {
+        "path": "gpt-5-6.png",
+        "url": "https://images.ctfassets.net/kftzwdyauwt9/2Og4MpejHbFrNOgRBVvhTh/589eff3fad85c1992c0973594e76a949/How_GPT-5.6_fuses_frontier_intelligence_with_frontier_efficiency_SEO_CARD__1_.png?w=1600&h=900&fit=fill",
+    },
+    {
+        "path": "claude-opus-5.png",
+        "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/54b7ab1d2c2521f83ae5d2da5f9d99321c370d24-2880x1620.png",
+    },
+    {
+        "path": "deepseek-v4-1-flash.png",
+        "url": "https://www.deepseek.com/images/blog/deepseek-v4-1-flash/agentic-benchmark.png",
+    },
 )
-
-OG_ASSETS = (
-    (
-        "claude-desktop.webp",
-        "https://claude.com/resources/tutorials/navigating-the-claude-desktop-app",
-    ),
-    ("gpt-5-6.webp", "https://openai.com/index/gpt-5-6/"),
-    ("claude-opus-5.webp", "https://www.anthropic.com/news/claude-opus-5"),
-    ("deepseek-v4-1-flash.webp", "https://www.deepseek.com/en/news/deepseek-v4-1-flash/"),
-)
-
-
-class OgImageParser(html.parser.HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.image: str | None = None
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() != "meta" or self.image:
-            return
-        data = {key.lower(): value for key, value in attrs if value is not None}
-        if data.get("property") in ("og:image", "og:image:url") or data.get("name") in ("og:image", "twitter:image"):
-            if data.get("content"):
-                self.image = data["content"]
 
 
 def get(url: str) -> tuple[bytes, str]:
@@ -63,23 +52,12 @@ def get(url: str) -> tuple[bytes, str]:
         url,
         headers={
             "User-Agent": UA,
-            "Accept": "image/avif,image/webp,image/png,image/jpeg,text/html;q=0.8,*/*;q=0.5",
+            "Accept": "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.5",
             "Accept-Language": "en-US,en;q=0.9",
         },
     )
     with urllib.request.urlopen(request, timeout=45) as response:
         return response.read(), response.headers.get_content_type()
-
-
-def resolve_og(page_url: str) -> str:
-    payload, content_type = get(page_url)
-    if "html" not in content_type:
-        raise RuntimeError(f"expected HTML at {page_url}, got {content_type}")
-    parser = OgImageParser()
-    parser.feed(payload.decode("utf-8", errors="replace"))
-    if not parser.image:
-        raise RuntimeError(f"no og:image found at {page_url}")
-    return urllib.parse.urljoin(page_url, parser.image)
 
 
 def looks_like_image(payload: bytes, content_type: str) -> bool:
@@ -107,8 +85,6 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for asset in ASSETS:
         fetch(asset["path"], asset["url"])
-    for path, page_url in OG_ASSETS:
-        fetch(path, resolve_og(page_url))
 
 
 if __name__ == "__main__":
