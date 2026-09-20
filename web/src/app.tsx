@@ -29,7 +29,7 @@ import {
   type SidebarMode,
   type SidebarSide,
 } from "./pdf-document";
-import { CompiledArtifactView, type ArtifactFormat } from "./compiled-artifact";
+import { CompiledArtifactView, RawArtifactView, type ArtifactFormat } from "./compiled-artifact";
 
 const DEFAULT_WORK_TITLE =
   "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství";
@@ -63,6 +63,9 @@ type Manifest = {
     engine?: string;
     pdfjs_version?: string;
     formats?: ArtifactFormat[];
+    modes?: string[];
+    repo_tree?: string;
+    repository_url?: string;
     stack?: string[];
   };
 };
@@ -70,6 +73,14 @@ type Manifest = {
 type ViewerMode = "final" | "review" | "raw";
 type ViewMode = "single" | "split";
 type AppearanceMode = "light" | "dark" | "oled";
+type ActivityPanel = "pages" | "files" | null;
+
+type RepoTreeNode = {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  children?: RepoTreeNode[];
+};
 
 function useManifest() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
@@ -110,6 +121,34 @@ function withRefreshToken(path: string, token: string | number) {
   if (!token) return path;
   const separator = path.includes("?") ? "&" : "?";
   return path + separator + "refresh=" + encodeURIComponent(String(token));
+}
+
+function useRepoTree(path: string) {
+  const [nodes, setNodes] = useState<RepoTreeNode[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let disposed = false;
+    setError("");
+    void fetch(path + "?cache=" + Date.now(), { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(path + ": " + response.status);
+        return response.json() as Promise<{ tree?: RepoTreeNode[] } | RepoTreeNode[]>;
+      })
+      .then((data) => {
+        if (disposed) return;
+        setNodes(Array.isArray(data) ? data : Array.isArray(data.tree) ? data.tree : []);
+      })
+      .catch((reason) => {
+        if (!disposed) setError(String(reason?.message || reason));
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [path]);
+
+  return { nodes, error };
 }
 
 function artifactFilename(
@@ -179,6 +218,7 @@ function TooltipAction({
   download,
   target,
   pressed,
+  disabled = false,
   className = "",
 }: {
   label: string;
@@ -188,9 +228,10 @@ function TooltipAction({
   download?: boolean;
   target?: string;
   pressed?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
-  const content = href ? (
+  const content = href && !disabled ? (
     <Button
       asChild
       type="button"
@@ -216,6 +257,7 @@ function TooltipAction({
       size="icon"
       className={"icon-action " + className}
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       aria-pressed={pressed}
     >
@@ -231,30 +273,125 @@ function TooltipAction({
   );
 }
 
-function SidebarToggle({
+function ActivityBar({
   side,
-  hidden,
-  onToggle,
+  active,
+  pagesAvailable,
+  onSelect,
 }: {
   side: SidebarSide;
-  hidden: boolean;
-  onToggle: () => void;
+  active: ActivityPanel;
+  pagesAvailable: boolean;
+  onSelect: (panel: ActivityPanel) => void;
 }) {
-  const toggleLabel = hidden ? "Show sidebar" : "Hide sidebar";
-
   return (
-    <span className={"edge-toggle edge-" + side}>
+    <aside className={"activitybar activitybar-" + side} aria-label="Viewer activity bar">
       <TooltipAction
-        label={toggleLabel}
-        icon={side === "left" ? ["PanelLeftIcon"] : ["PanelRightIcon"]}
-        onClick={onToggle}
-        pressed={!hidden}
-        className="edge-toggle-button"
+        label="Pages"
+        icon={["FilesIcon"]}
+        pressed={active === "pages"}
+        disabled={!pagesAvailable}
+        onClick={() => onSelect(active === "pages" ? null : "pages")}
+        className="activity-action"
       />
-    </span>
+      <TooltipAction
+        label="Files"
+        icon={["FolderTreeIcon", "FolderIcon"]}
+        pressed={active === "files"}
+        onClick={() => onSelect(active === "files" ? null : "files")}
+        className="activity-action"
+      />
+    </aside>
   );
 }
 
+function RepoTreeBranch({
+  nodes,
+  depth,
+  repositoryUrl,
+  commit,
+}: {
+  nodes: RepoTreeNode[];
+  depth: number;
+  repositoryUrl: string;
+  commit: string;
+}) {
+  return (
+    <div className="repo-tree-level" data-depth={depth}>
+      {nodes.map((node) =>
+        node.type === "directory" ? (
+          <details key={node.path} className="repo-tree-directory" open={depth === 0}>
+            <summary>
+              <AnimatedIcon names={["FolderIcon"]} size={15} />
+              <span>{node.name}</span>
+            </summary>
+            <RepoTreeBranch
+              nodes={node.children || []}
+              depth={depth + 1}
+              repositoryUrl={repositoryUrl}
+              commit={commit}
+            />
+          </details>
+        ) : (
+          <a
+            key={node.path}
+            className="repo-tree-file"
+            href={
+              repositoryUrl.replace(/\/$/, "") +
+              "/blob/" +
+              (commit || "main") +
+              "/" +
+              node.path.split("/").map(encodeURIComponent).join("/")
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            title={node.path}
+          >
+            <AnimatedIcon names={["FileIcon", "FileTextIcon"]} size={14} />
+            <span>{node.name}</span>
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
+
+function RepoFilesPanel({
+  nodes,
+  error,
+  side,
+  repositoryUrl,
+  commit,
+}: {
+  nodes: RepoTreeNode[];
+  error: string;
+  side: SidebarSide;
+  repositoryUrl: string;
+  commit: string;
+}) {
+  return (
+    <aside className={"repo-files-panel repo-files-" + side} aria-label="Repository files">
+      <div className="repo-files-header">
+        <AnimatedIcon names={["FolderTreeIcon", "FolderIcon"]} size={16} />
+        <span>Files</span>
+      </div>
+      <div className="repo-files-tree">
+        {error ? (
+          <div className="repo-files-error">{error}</div>
+        ) : nodes.length ? (
+          <RepoTreeBranch
+            nodes={nodes}
+            depth={0}
+            repositoryUrl={repositoryUrl}
+            commit={commit}
+          />
+        ) : (
+          <div className="repo-files-loading">Loading repository tree…</div>
+        )}
+      </div>
+    </aside>
+  );
+}
 function VersionPicker({
   manifest,
   templateName,
@@ -341,24 +478,24 @@ function VersionPicker({
 
 function ModePicker({
   mode,
-  compiledHref,
-  reviewHref,
+  viewerHref,
+  editHref,
   rawHref,
   onNavigate,
 }: {
   mode: ViewerMode;
-  compiledHref: string;
-  reviewHref: string;
+  viewerHref: string;
+  editHref: string;
   rawHref: string;
   onNavigate: (href: string) => void;
 }) {
-  const label = mode === "review" ? "Koncept" : mode === "raw" ? "Raw" : "Compiled";
+  const label = mode === "review" ? "Edit" : mode === "raw" ? "Raw" : "Viewer";
   const icon =
     mode === "review"
       ? ["PencilLineIcon"]
       : mode === "raw"
-        ? ["FileCode2Icon"]
-        : ["CheckCircle2Icon"];
+        ? ["BracesIcon", "FileCode2Icon"]
+        : ["EyeIcon"];
 
   return (
     <DropdownMenu>
@@ -366,7 +503,7 @@ function ModePicker({
         <TooltipTrigger asChild>
           <span className="mode-trigger-wrap">
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" className="mode-select" aria-label="Switch Compiled / Koncept / Raw">
+              <Button type="button" variant="ghost" className="mode-select" aria-label="Switch Viewer / Edit / Raw">
                 <AnimatedIcon names={icon} size={15} />
                 <span>{label}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
@@ -374,19 +511,19 @@ function ModePicker({
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch Compiled / Koncept / Raw</TooltipContent>
+        <TooltipContent>Switch Viewer / Edit / Raw</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="mode-menu">
-        <DropdownMenuItem className={mode === "final" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(compiledHref)}>
-          <span className="mode-option-label"><AnimatedIcon names={["CheckCircle2Icon"]} size={15} />Compiled</span>
+        <DropdownMenuItem className={mode === "final" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(viewerHref)}>
+          <span className="mode-option-label"><AnimatedIcon names={["EyeIcon"]} size={15} />Viewer</span>
           {mode === "final" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
-        <DropdownMenuItem className={mode === "review" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(reviewHref)}>
-          <span className="mode-option-label"><AnimatedIcon names={["PencilLineIcon"]} size={15} />Koncept</span>
+        <DropdownMenuItem className={mode === "review" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(editHref)}>
+          <span className="mode-option-label"><AnimatedIcon names={["PencilLineIcon"]} size={15} />Edit</span>
           {mode === "review" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
         <DropdownMenuItem className={mode === "raw" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(rawHref)}>
-          <span className="mode-option-label"><AnimatedIcon names={["FileCode2Icon"]} size={15} />Raw</span>
+          <span className="mode-option-label"><AnimatedIcon names={["BracesIcon", "FileCode2Icon"]} size={15} />Raw</span>
           {mode === "raw" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -429,7 +566,7 @@ function FormatPicker({
                 type="button"
                 variant="ghost"
                 className="format-select"
-                aria-label="Switch compiled format"
+                aria-label="Switch document type"
               >
                 <AnimatedIcon names={active.icon} size={15} />
                 <span>{active.label}</span>
@@ -438,7 +575,7 @@ function FormatPicker({
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch compiled format</TooltipContent>
+        <TooltipContent>Switch document type</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="format-menu">
         {options.map((option) => (
@@ -503,7 +640,12 @@ function ChapterPicker({
             onSelect={() => onSelect(chapter.page)}
           >
             <AnimatedIcon names={["BookOpenIcon"]} size={15} />
-            <span className="chapter-option-title">{chapter.title}</span>
+            <span
+              className="chapter-option-title"
+              style={{ paddingLeft: Math.max(0, chapter.level - 1) * 14 }}
+            >
+              {chapter.title}
+            </span>
             <small>{chapter.page}</small>
           </DropdownMenuItem>
         ))}
@@ -580,13 +722,11 @@ export function ViewerApp() {
     requestedMode === "review" ? "review" : requestedMode === "raw" ? "raw" : "final";
   const requestedFormat = params.get("format");
   const format: ArtifactFormat =
-    mode === "raw"
+    requestedFormat === "markdown"
       ? "markdown"
-      : requestedFormat === "markdown"
-        ? "markdown"
-        : requestedFormat === "html"
-          ? "html"
-          : "pdf";
+      : requestedFormat === "html"
+        ? "html"
+        : "pdf";
   const viewMode: ViewMode = params.get("view") === "split" ? "split" : "single";
   const embedded = params.get("embedded") === "1";
   const profileName = params.get("profile") || "school";
@@ -631,7 +771,9 @@ export function ViewerApp() {
       ? "minimap"
       : "thumbnails",
   );
-  const [sidebarHidden, setSidebarHidden] = useState(() => window.innerWidth <= 760);
+  const [activityPanel, setActivityPanel] = useState<ActivityPanel>(
+    () => (window.innerWidth <= 760 ? null : "pages"),
+  );
   const [theme, setTheme] = useState<AppearanceMode>(() => {
     const stored = localStorage.getItem("paper-viewer-theme");
     if (stored === "light" || stored === "dark" || stored === "oled") return stored;
@@ -651,6 +793,15 @@ export function ViewerApp() {
   });
   const [pageDraft, setPageDraft] = useState("1");
   const [refreshRevision, setRefreshRevision] = useState(0);
+  const repoTreePath = manifest?.viewer?.repo_tree || "repo-tree.json";
+  const repositoryUrl =
+    manifest?.viewer?.repository_url || "https://github.com/marius-patrik/DarkFactory-Paper";
+  const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
+  const pagesAvailable = viewMode === "single" && mode !== "raw" && format === "pdf";
+
+  useEffect(() => {
+    if (activityPanel === "pages" && !pagesAvailable) setActivityPanel(null);
+  }, [activityPanel, pagesAvailable]);
 
   const navigateViewer = useCallback((href: string) => {
     if (!href || href === "#") return;
@@ -923,7 +1074,11 @@ export function ViewerApp() {
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} raw={mode === "raw"} />
+          mode === "raw" ? (
+            <RawArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
+          ) : (
+            <CompiledArtifactView path={renderArtifactPath} format={format} embedded theme={theme} />
+          )
         )}
       </div>
     );
@@ -991,23 +1146,23 @@ export function ViewerApp() {
           file: hrefFor(
             templateName,
             manifest.default_template,
-            artifactFilename(selectedVariant, "raw", "markdown"),
+            artifactFilename(selectedVariant, "raw", format),
           ),
           peer: hrefFor(
             templateName,
             manifest.default_template,
-            artifactFilename(selectedVariant, "review", "markdown"),
+            artifactFilename(selectedVariant, "review", format),
           ),
           template: templateName,
           profile: profileName,
           title: versionTitle,
           mode: "raw",
-          format: "markdown",
+          format,
         })
       : "#";
   const formatTarget = (nextFormat: ArtifactFormat) => {
     if (!manifest || !selectedVariant) return "#";
-    const targetMode: ViewerMode = viewMode === "split" || mode === "raw" ? "final" : mode;
+    const targetMode: ViewerMode = viewMode === "split" ? "final" : mode;
     const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
     const file = hrefFor(
       templateName,
@@ -1033,14 +1188,6 @@ export function ViewerApp() {
   const pdfTarget = formatTarget("pdf");
   const markdownTarget = formatTarget("markdown");
   const htmlTarget = formatTarget("html");
-
-  const sidebarToggle = viewMode === "single" && format === "pdf" ? (
-    <SidebarToggle
-      side={sidebarSide}
-      hidden={sidebarHidden}
-      onToggle={() => setSidebarHidden((value) => !value)}
-    />
-  ) : null;
 
   const rawChild =
     rawPath &&
@@ -1085,49 +1232,50 @@ export function ViewerApp() {
       <header className="toolbar">
         <div className="toolbar-main">
           <div className="toolbar-left">
+            {pagesAvailable && (
+              <div className="path-page-switcher" aria-label="Page navigation">
+                <TooltipAction
+                  label="Previous page"
+                  icon={["ChevronLeftIcon"]}
+                  onClick={() => goToPage(state.page - 1)}
+                  className="path-page-action"
+                />
+                <label className="path-page-control">
+                  <input
+                    value={pageDraft}
+                    type="number"
+                    min={1}
+                    max={state.total || undefined}
+                    aria-label="Page number"
+                    onChange={(event) => setPageDraft(event.target.value)}
+                    onBlur={submitPage}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        submitPage();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                  />
+                  <span>/ {state.total || "–"}</span>
+                </label>
+                <TooltipAction
+                  label="Next page"
+                  icon={["ChevronRightIcon"]}
+                  onClick={() => goToPage(state.page + 1)}
+                  className="path-page-action"
+                />
+              </div>
+            )}
             <TooltipAction
               label="Refresh document"
               icon={["RefreshCwIcon", "RotateCwIcon"]}
               onClick={refreshDocument}
             />
             <span className="work-title" title={workTitle}>{workTitle}</span>
-            {format === "pdf" && (
+            {pagesAvailable && (
               <>
                 <span className="identity-separator" aria-hidden="true">\</span>
                 <ChapterPicker chapters={state.chapters} page={state.page} onSelect={goToPage} />
-                <span className="identity-separator" aria-hidden="true">\</span>
-                <div className="path-page-switcher" aria-label="Page navigation">
-                  <TooltipAction
-                    label="Previous page"
-                    icon={["ChevronLeftIcon"]}
-                    onClick={() => goToPage(state.page - 1)}
-                    className="path-page-action"
-                  />
-                  <label className="path-page-control">
-                    <input
-                      value={pageDraft}
-                      type="number"
-                      min={1}
-                      max={state.total || undefined}
-                      aria-label="Page number"
-                      onChange={(event) => setPageDraft(event.target.value)}
-                      onBlur={submitPage}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          submitPage();
-                          event.currentTarget.blur();
-                        }
-                      }}
-                    />
-                    <span>/ {state.total || "–"}</span>
-                  </label>
-                  <TooltipAction
-                    label="Next page"
-                    icon={["ChevronRightIcon"]}
-                    onClick={() => goToPage(state.page + 1)}
-                    className="path-page-action"
-                  />
-                </div>
               </>
             )}
           </div>
@@ -1173,10 +1321,22 @@ export function ViewerApp() {
       </header>
 
       <div className={"viewer-workbench activity-" + sidebarSide}>
-        {sidebarSide === "left" && sidebarToggle && (
-          <aside className="activitybar activitybar-left" aria-label="Viewer activity bar">
-            {sidebarToggle}
-          </aside>
+        {viewMode === "single" && sidebarSide === "left" && (
+          <ActivityBar
+            side="left"
+            active={activityPanel}
+            pagesAvailable={pagesAvailable}
+            onSelect={setActivityPanel}
+          />
+        )}
+        {viewMode === "single" && sidebarSide === "left" && activityPanel === "files" && (
+          <RepoFilesPanel
+            nodes={repoTree}
+            error={repoTreeError}
+            side="left"
+            repositoryUrl={repositoryUrl}
+            commit={manifest?.commit || ""}
+          />
         )}
         <main className="viewer-main">
         {viewMode === "split" ? (
@@ -1187,7 +1347,7 @@ export function ViewerApp() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <div className="split-label">Compiled</div>
+                <div className="split-label">Viewer</div>
                 <iframe
                   ref={(node) => {
                     splitFrames.current[0] = node;
@@ -1207,7 +1367,7 @@ export function ViewerApp() {
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <div className="split-label">Koncept</div>
+                <div className="split-label">Edit</div>
                 <iframe
                   ref={(node) => {
                     splitFrames.current[1] = node;
@@ -1226,9 +1386,11 @@ export function ViewerApp() {
           ) : (
             <div className="document-error">
               <strong>Review comparison unavailable.</strong>
-              <span>Both Compiled and Koncept {formatLabel} outputs are required.</span>
+              <span>Both Viewer and Edit {formatLabel} outputs are required.</span>
             </div>
           )
+        ) : mode === "raw" ? (
+          <RawArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
         ) : format === "pdf" ? (
           <PdfDocumentView
             ref={documentRef}
@@ -1236,19 +1398,31 @@ export function ViewerApp() {
             embedded={false}
             sidebarSide={sidebarSide}
             sidebarMode={sidebarMode}
-            sidebarHidden={sidebarHidden}
+            sidebarHidden={activityPanel !== "pages"}
             onMoveSidebar={moveSidebar}
             onToggleSidebarMode={toggleSidebarMode}
             onStateChange={handleDocumentState}
           />
         ) : (
-          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} raw={mode === "raw"} />
+          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
         )}
         </main>
-        {sidebarSide === "right" && sidebarToggle && (
-          <aside className="activitybar activitybar-right" aria-label="Viewer activity bar">
-            {sidebarToggle}
-          </aside>
+        {viewMode === "single" && sidebarSide === "right" && activityPanel === "files" && (
+          <RepoFilesPanel
+            nodes={repoTree}
+            error={repoTreeError}
+            side="right"
+            repositoryUrl={repositoryUrl}
+            commit={manifest?.commit || ""}
+          />
+        )}
+        {viewMode === "single" && sidebarSide === "right" && (
+          <ActivityBar
+            side="right"
+            active={activityPanel}
+            pagesAvailable={pagesAvailable}
+            onSelect={setActivityPanel}
+          />
         )}
       </div>
 
@@ -1271,8 +1445,8 @@ export function ViewerApp() {
           <span className="status-divider" aria-hidden="true" />
           <ModePicker
             mode={mode}
-            compiledHref={finalTarget}
-            reviewHref={reviewTarget}
+            viewerHref={finalTarget}
+            editHref={reviewTarget}
             rawHref={rawTarget}
             onNavigate={navigateViewer}
           />
@@ -1287,57 +1461,52 @@ export function ViewerApp() {
         </div>
 
         <div className="status-center">
-          {format === "pdf" ? (
-            <>
-
-          <div className="status-group">
-            <TooltipAction
-              label="Zoom out"
-              icon={["MinusIcon"]}
-              onClick={() => zoomBy(-0.1)}
-              className="status-action"
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="zoom-value"
-                  onClick={() => setZoom("fit")}
-                >
-                  {state.scaleMode === "fit"
-                    ? "Fit"
-                    : Math.round(state.manualScale * 100) + "%"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Fit width</TooltipContent>
-            </Tooltip>
-            <TooltipAction
-              label="Zoom in"
-              icon={["PlusIcon"]}
-              onClick={() => zoomBy(0.1)}
-              className="status-action"
-            />
-            <TooltipAction
-              label="Fit width"
-              icon={["ScanIcon", "Maximize2Icon"]}
-              onClick={() => setZoom("fit")}
-              className="status-action"
-            />
-          </div>
-        
-            </>
-          ) : (
-            <div className="artifact-status">{mode === "raw" ? "Raw Markdown" : "Rendered " + formatLabel}</div>
-          )}
-        </div>
-
-        <div className="status-actions">
           {manifest?.commit && (
             <span className="build-revision" title={"Deployed commit " + manifest.commit}>
               {manifest.commit.slice(0, 7)}
             </span>
+          )}
+        </div>
+
+        <div className="status-actions">
+          {pagesAvailable && (
+            <div className="status-group">
+              <TooltipAction
+                label="Zoom out"
+                icon={["MinusIcon"]}
+                onClick={() => zoomBy(-0.1)}
+                className="status-action"
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="zoom-value"
+                    onClick={() => setZoom("fit")}
+                  >
+                    {state.scaleMode === "fit"
+                      ? "Fit"
+                      : Math.round(state.manualScale * 100) + "%"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fit width</TooltipContent>
+              </Tooltip>
+              <TooltipAction
+                label="Zoom in"
+                icon={["PlusIcon"]}
+                onClick={() => zoomBy(0.1)}
+                className="status-action"
+              />
+              <TooltipAction
+                label="Fit width"
+                icon={["ScanIcon", "Maximize2Icon"]}
+                onClick={() => setZoom("fit")}
+                className="status-action"
+              />
+              <span className="status-divider" aria-hidden="true" />
+            </div>
           )}
           <AppearancePicker theme={theme} onChange={(nextTheme) => setTheme(nextTheme)} />
           <TooltipAction
@@ -1346,7 +1515,7 @@ export function ViewerApp() {
             onClick={() => void toggleFullscreen()}
             className="status-action"
           />
-        </div>
+        </div>>
       </footer>
     </div>
   );
