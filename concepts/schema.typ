@@ -124,7 +124,7 @@
 
 #let render-theory-chapter(sections, terms) = {
   let output = [
-    #heading(level: 1)[#finalized[Teoretická část: Vymezení konceptu]]
+    #heading(level: 1)[#finalized[Agentické AI: Vymezení konceptů - Teoretická část]]
     #finalized[Úvod]
   ]
 
@@ -149,7 +149,7 @@
 
 #let render-practical-chapter(sections, terms) = {
   let output = [
-    #heading(level: 1)[#finalized[DarkFactory - Praktická část: Architektura harnessu]]
+    #heading(level: 1)[#finalized[DarkFactory: Architektura harnessu - Praktická část]]
     #finalized[Úvod]
   ]
 
