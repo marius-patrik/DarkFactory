@@ -4,12 +4,14 @@ import { join } from "node:path";
 const SERVICE = "df-vault";
 const ACCOUNT = "vault-key";
 
+/** Command execution abstraction used by OS-native keychain adapters. */
 export type CommandRunner = (
 	cmd: string,
 	args: string[],
 	stdin?: string,
 ) => Promise<{ stdout: string; exitCode: number }>;
 
+/** Options for resolving and storing the machine vault key. */
 export interface KeychainOptions {
 	dfHome: string;
 	allowFileKey?: boolean;
