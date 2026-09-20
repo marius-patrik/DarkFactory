@@ -304,6 +304,18 @@ type PdfLinkAnnotation = {
   title?: string;
 };
 
+function safeAnnotationUrl(annotation: PdfLinkAnnotation) {
+  const candidate = annotation.url || annotation.unsafeUrl;
+  if (!candidate) return null;
+  try {
+    const resolved = new URL(candidate, window.location.href);
+    if (!["http:", "https:", "mailto:"].includes(resolved.protocol)) return null;
+    return resolved.href;
+  } catch {
+    return null;
+  }
+}
+
 function installAnnotationInteractions(
   node: HTMLElement,
   annotations: PdfLinkAnnotation[],
@@ -342,12 +354,15 @@ function installAnnotationInteractions(
       return;
     }
 
-    if (annotation?.url) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      const opened = window.open(annotation.url, "_blank", "noopener,noreferrer");
-      if (opened) opened.opener = null;
-      return;
+    if (annotation) {
+      const externalUrl = safeAnnotationUrl(annotation);
+      if (externalUrl) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const opened = window.open(externalUrl, "_blank", "noopener,noreferrer");
+        if (opened) opened.opener = null;
+        return;
+      }
     }
 
     const anchor = target.closest<HTMLAnchorElement>("a[href]");
@@ -374,7 +389,8 @@ function installLinkOverlays(
   const overlays: HTMLAnchorElement[] = [];
   for (const annotation of annotations) {
     if (!annotation.rect || annotation.rect.length !== 4) continue;
-    if (!annotation.url && !annotation.dest && !annotation.action) continue;
+    const externalUrl = safeAnnotationUrl(annotation);
+    if (!externalUrl && !annotation.dest && !annotation.action) continue;
     const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(annotation.rect);
     const overlay = document.createElement("a");
     overlay.className = "pdf-link-overlay";
@@ -382,9 +398,9 @@ function installLinkOverlays(
     overlay.style.top = Math.min(y1, y2) + "px";
     overlay.style.width = Math.abs(x2 - x1) + "px";
     overlay.style.height = Math.abs(y2 - y1) + "px";
-    overlay.setAttribute("aria-label", annotation.title || annotation.url || "PDF link");
-    if (annotation.url) {
-      linkService.addLinkAttributes(overlay, annotation.url, annotation.newWindow);
+    overlay.setAttribute("aria-label", annotation.title || externalUrl || "PDF link");
+    if (externalUrl) {
+      linkService.addLinkAttributes(overlay, externalUrl, annotation.newWindow);
     } else {
       overlay.href = "#";
       overlay.addEventListener("click", (event) => {
