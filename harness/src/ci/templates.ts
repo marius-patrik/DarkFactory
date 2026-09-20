@@ -46,6 +46,7 @@ jobs:
 export interface TemplateContext {
 	pipeline_repo?: string;
 	pipeline_ref?: string;
+	default_branch?: string;
 	[key: string]: string | undefined;
 }
 
@@ -86,6 +87,7 @@ export function interpolateTemplate(rawTemplate: string, context: TemplateContex
 	const fullContext: Record<string, string> = {
 		pipeline_repo: context.pipeline_repo || "marius-patrik/DarkFactory",
 		pipeline_ref: context.pipeline_ref || "darkfactory",
+		default_branch: context.default_branch || "main",
 		...Object.fromEntries(Object.entries(context).filter(([_, v]) => typeof v === "string") as [string, string][]),
 	};
 
