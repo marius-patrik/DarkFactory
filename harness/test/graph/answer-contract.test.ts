@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateAnswerContract } from "../src/graph/answer-contract.ts";
+import { validateAnswerContract } from "../../src/graph/answer-contract.ts";
 
 describe("answer contract", () => {
 	test("rejects false write claims on text-only action", () => {

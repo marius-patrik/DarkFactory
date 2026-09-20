@@ -5,6 +5,13 @@ export interface AnswerContractResult {
 	message?: string;
 }
 
+const MUTATION_CLAIMS = [
+	/successfully resolved (?:these )?conflicts/iu,
+	/pushed (?:the )?changes/iu,
+	/merged (?:the )?PR/iu,
+	/committed/iu,
+];
+
 /**
  * Checks text-only agent responses for unsupported mutation claims.
  * Must never allow a respond run to claim it merged, pushed, resolved, or committed.
@@ -12,16 +19,9 @@ export interface AnswerContractResult {
  * @param body - The answer text body.
  * @param action - The planned action (run vs comment/gate).
  */
-export function validateAnswerContract(actor: Actor, body: string, action: PlanAction): AnswerContractResult {
-	const mutationClaims = [
-		/successfully resolved (?:these )?conflicts/iu,
-		/pushed (?:the )?changes/iu,
-		/merged (?:the )?PR/iu,
-		/committed/iu,
-	];
-
+export function validateAnswerContract(_actor: Actor, body: string, action: PlanAction): AnswerContractResult {
 	if (action.type !== "run") {
-		for (const pattern of mutationClaims) {
+		for (const pattern of MUTATION_CLAIMS) {
 			if (pattern.test(body)) {
 				return {
 					valid: false,
