@@ -15,7 +15,7 @@ Požadované kontroly jsou automatizované kontroly, jejichž úspěšné dokon�
 #unconfirmed[
 K tomu, aby byla kontinuální integrace efektivní, nestačí testy pouze spouštět — jejich úspěšné dokončení musí být systémově vynuceno.
 
-- #diff[Požadované kontroly (_Required Checks_):][Požadované kontroly (_Required Checks_ @humble2010):] Seznam úloh v GitHub Actions, které musí skončit explicitním úspěchem (zelený stav), aby bylo technicky možné pull request sloučit:
+- Požadované kontroly (_Required Checks_ @humble2010): Seznam úloh v GitHub Actions, které musí skončit explicitním úspěchem (zelený stav), aby bylo technicky možné pull request sloučit:
   - Statická analýza a linter: Kontrola dodržení kódového stylu, odhalování mrtvého kódu a základních syntaktických prohřešků.
   - Typová kontrola a build: Jistota, že kód lze bez chyb zkompilovat a že typový systém nezaznamenal nekonzistence.
   - Automatizované testy: Úspěšný průchod jednotkových i integračních testů ověřujících požadované chování.
