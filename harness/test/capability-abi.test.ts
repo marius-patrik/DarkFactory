@@ -95,14 +95,14 @@ describe("capability ABI", () => {
 	test("official capabilities are discovered without a core registry", async () => {
 		const root = resolve(import.meta.dir, "../../capabilities");
 		const definitions = await discoverCapabilities(root);
-		expect(definitions.map((item) => item.id)).toEqual(["code", "math", "paper", "release"]);
+		expect(definitions.map((item) => item.id)).toEqual(["code", "hooks", "math", "paper", "release"]);
 
 		const multiDomain = resolveCapabilities(definitions, ["paper", "code"]);
 		expect(multiDomain.domains).toEqual(["code", "paper"]);
-		expect(multiDomain.capabilities.map((item) => item.id)).toEqual(["code", "paper", "release"]);
+		expect(multiDomain.capabilities.map((item) => item.id)).toEqual(["code", "hooks", "paper", "release"]);
 
 		const mathOnly = resolveCapabilities(definitions, ["math"]);
-		expect(mathOnly.capabilities.map((item) => item.id)).toEqual(["math", "release"]);
+		expect(mathOnly.capabilities.map((item) => item.id)).toEqual(["hooks", "math", "release"]);
 	});
 
 	test("a project capability loads from disk without modifying core tables", async () => {
