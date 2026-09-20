@@ -1,12 +1,12 @@
 #import "../../schema.typ": folder
-#import "../language-model.typ" as section
-#import "../transformer.typ" as transformer
-#import "../tokenizer.typ" as tokenizer
-#import "../token.typ" as token
-#import "../embedding.typ" as embedding
-#import "../context-window.typ" as context_window
-#import "../kv-cache.typ" as kv_cache
-#import "../turn.typ" as turn
+#import "language-model.typ" as section
+#import "transformer.typ" as transformer
+#import "tokenizer.typ" as tokenizer
+#import "token.typ" as token
+#import "embedding.typ" as embedding
+#import "context-window.typ" as context_window
+#import "kv-cache.typ" as kv_cache
+#import "turn.typ" as turn
 
 #let node = folder(
   key: "language_model",
