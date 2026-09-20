@@ -14,7 +14,7 @@
   description: terms => [Snímek ukazuje, že aplikační vrstva může vedle konverzace zpřístupnit soubory, nástroje a samostatný pracovní povrch.],
   visual: terms => [
 #figure(
-  image("/DarkFactory/img/external/claude-desktop.webp", width: 86%),
+  image("/DarkFactory/img/external/claude-desktop.png", width: 86%),
   caption: [Aplikační rozhraní Claude. Zdroj: Anthropic.],
 )
   ],
