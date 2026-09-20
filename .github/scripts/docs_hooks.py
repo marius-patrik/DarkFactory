@@ -16,6 +16,7 @@ These hooks therefore:
   ``properdocs build --strict`` reports no broken links.
 """
 
+import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
@@ -42,25 +43,34 @@ LINK_REWRITES: Dict[str, str] = {
 }
 
 #: A repository may publish one reference file verbatim, wrapped in a code fence so the
-#: documentation and the file can never disagree. Declared in the manifest under
+#: documentation and the file can never disagree. It is declared by repo.df under
 #: `documentation.declaration`; repositories that have none simply do not get the page.
 DECLARATION_DEST = "declaration.md"
 
 
+def _repo_df_path(root: str) -> Optional[str]:
+    """Returns the active repo.df path, rejecting duplicate declarations."""
+    under_darkfactory = os.path.join(root, ".darkfactory", "repo.df")
+    at_root = os.path.join(root, "repo.df")
+    present = [path for path in (under_darkfactory, at_root) if os.path.isfile(path)]
+    if len(present) > 1:
+        raise ValueError("Both .darkfactory/repo.df and repo.df exist; only one is allowed.")
+    return present[0] if present else None
+
+
+def _repository_declaration(root: str) -> Dict[str, Any]:
+    """Loads the current repo.df declaration."""
+    source = _repo_df_path(root)
+    if source is None:
+        return {}
+    with open(source, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    return data if isinstance(data, dict) else {}
+
+
 def _declaration_source(root: str) -> Optional[str]:
-    """Returns the repository-relative reference file to publish verbatim, if any.
-
-    Args:
-        root: Repository root.
-
-    Returns:
-        The declared path, or `None`.
-    """
-    try:
-        import manifest as manifest_module
-    except ImportError:  # pragma: no cover - the pipeline scripts are always importable in CI
-        return None
-    declared = (manifest_module.load(root).data.get("documentation", {}) or {}).get("declaration")
+    """Returns the repository-relative reference file to publish verbatim, if any."""
+    declared = (_repository_declaration(root).get("documentation", {}) or {}).get("declaration")
     return str(declared) if declared else None
 
 
@@ -177,7 +187,7 @@ def render_adr_index(records: List[Dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-def _render_declaration_page(body: str) -> str:
+def _render_declaration_page(body: str, source: str) -> str:
     """Wraps the reference declaration in a page.
 
     Rendered from the file at build time rather than transcribed, so the documentation and the
@@ -185,6 +195,7 @@ def _render_declaration_page(body: str) -> str:
 
     Args:
         body: Contents of the reference declaration.
+        source: Repository-relative declaration path.
 
     Returns:
         Markdown for the declaration page.
@@ -195,7 +206,7 @@ def _render_declaration_page(body: str) -> str:
             "# The declaration",
             "",
             "The reference declaration, rendered from "
-            f"[`{DECLARATION_SOURCE}`]({source_url}) at build time — this page and the file cannot",
+            f"[`{source}`]({source_url}) at build time — this page and the file cannot",
             "disagree.",
             "",
             "See [PRD §9](prd.md) for identity and security declarations, and why runtime changes",
@@ -292,7 +303,7 @@ def on_config(config: Any) -> Any:
     published.add(f"{ADR_DEST_PREFIX}/index.md")
     published.update(r["dest"] for r in rules_records)
     published.add("rules/index.md")
-    published.add("reference/manifest.md")
+    published.add("reference/repository.md")
     published.add("reference/workflows.md")
     if _declaration_source(root):
         published.add(DECLARATION_DEST)
@@ -332,7 +343,7 @@ def on_config(config: Any) -> Any:
             {"Rules": rules_nav},
             {
                 "Reference": [
-                    {"Manifest": "reference/manifest.md"},
+                    {"Repository": "reference/repository.md"},
                     {"Workflows": "reference/workflows.md"},
                 ]
             },
@@ -392,7 +403,7 @@ def on_files(files: Files, config: Any) -> Files:
             File.generated(
                 config,
                 DECLARATION_DEST,
-                content=_render_declaration_page(body),
+                content=_render_declaration_page(body, source),
             )
         )
 
