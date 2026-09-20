@@ -4,6 +4,9 @@
 The final count is obtained from the same Typst document, template and publication
 profile with review mode disabled. The review build then receives those values as
 sys.inputs while computing its own review count normally inside the template.
+Review PDFs disable accessibility tags because Typst 0.15.x can hit a Krilla
+tag-tree serializer panic on the review-only markup path. Final PDFs retain the
+default tagged-PDF export.
 """
 
 from __future__ import annotations
@@ -70,6 +73,7 @@ output.parent.mkdir(parents=True, exist_ok=True)
 compile_cmd = [
     args.typst,
     "compile",
+    "--no-pdf-tags",
     *common,
     "--input",
     f"book={args.book}",
