@@ -119,7 +119,7 @@ export interface CapabilityActionDefinition {
 	domains?: readonly string[];
 	requiredScripts?: readonly string[];
 	command?: string | ((pkg: CapabilityPackageContext) => string | undefined);
-	metadata?: Readonly<Record<string, unknown>> | ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>>);
+	metadata?: Readonly<Record<string, unknown>> | ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
 }
 
 /** Metadata for documentation, web, release, and audit surfaces. */
