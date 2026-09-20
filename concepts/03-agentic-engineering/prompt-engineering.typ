@@ -11,7 +11,7 @@
 #let item = concept(
   key: "prompt_engineering",
   term: terminology,
-  heading: terms => [#term(terms.prompt_engineering, name-separator: "paren", name-order: "en-cs", marker: false, linked: false, emphasized: false) a negativní instrukce],
+  heading: terms => [#finalized[Prompt Engineering (Promptové inženýrství)]],
   theory_enabled: true,
   theory_intro: none,
   theory_body: terms => [
