@@ -17,7 +17,7 @@ export interface KeychainOptions {
 	runner?: CommandRunner;
 }
 
-const fileKeyPath = (home: string) => join(home, "vault.key");
+const fileKeyPath = (home: string) => join(home, "vault-key.df");
 
 async function defaultRunner(
 	cmd: string,
