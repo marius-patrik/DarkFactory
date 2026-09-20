@@ -465,7 +465,7 @@
   detail-style: "inline",
   register: true,
   linked: false,
-  marker: true,
+  marker: false,
   emphasized: true,
   separator: [ — ],
 ) = context {
@@ -497,11 +497,9 @@
   // The standalone terminology index was removed. Keep the `linked` argument
   // for source compatibility, but canonical term uses now render in place.
   let referenced-name = displayed-name
-  let with-marker = if marker and render != "explanation" {
-    [#referenced-name#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[★]]
-  } else {
-    referenced-name
-  }
+  // Index markers were tied to the removed standalone terminology index.
+  // Keep the argument for source compatibility, but render terms without ★ markers.
+  let with-marker = referenced-name
   let explanation = term-explanation(value, language: detail-lang, style: detail-style, order: detail-order)
 
   if render == "term" {
