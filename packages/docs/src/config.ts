@@ -9,7 +9,7 @@ export interface DocsSiteConfig {
 
 /** TypeScript API extraction settings owned by docs.df. */
 export interface DocsTypeScriptApiConfig {
-	entryPoints: string[];
+	entryPoints?: string[];
 	tsconfig: string;
 	name?: string;
 }
@@ -41,13 +41,13 @@ function parseTypeScriptApiConfig(value: unknown): DocsTypeScriptApiConfig | und
 	if (value === undefined) return undefined;
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("docs.df api.typescript must be an object.");
 	const record = value as Record<string, unknown>;
-	if (!Array.isArray(record.entryPoints) || record.entryPoints.length === 0 || record.entryPoints.some((entry) => typeof entry !== "string" || !entry.trim())) {
-		throw new Error("docs.df api.typescript.entryPoints must be a non-empty string array.");
+	if (record.entryPoints !== undefined && (!Array.isArray(record.entryPoints) || record.entryPoints.some((entry) => typeof entry !== "string" || !entry.trim()))) {
+		throw new Error("docs.df api.typescript.entryPoints must be a string array when supplied.");
 	}
 	if (typeof record.tsconfig !== "string" || !record.tsconfig.trim()) throw new Error("docs.df api.typescript.tsconfig must be a non-empty string.");
 	if (record.name !== undefined && (typeof record.name !== "string" || !record.name.trim())) throw new Error("docs.df api.typescript.name must be a non-empty string.");
 	return {
-		entryPoints: record.entryPoints.map((entry) => String(entry).trim().replaceAll("\\", "/")),
+		...(Array.isArray(record.entryPoints) && record.entryPoints.length > 0 ? { entryPoints: record.entryPoints.map((entry) => String(entry).trim().replaceAll("\\", "/")) } : {}),
 		tsconfig: record.tsconfig.trim().replaceAll("\\", "/"),
 		...(typeof record.name === "string" ? { name: record.name.trim() } : {}),
 	};
