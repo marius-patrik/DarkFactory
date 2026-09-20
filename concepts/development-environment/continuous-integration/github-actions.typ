@@ -5,8 +5,6 @@
     id: "github-actions",
     proper: translation(cs: "GitHub Actions", en: "GitHub Actions"),
     industry: translation(cs: "Actions", en: "Actions"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Automatizační platforma GitHubu, která spouští deklarované workflow a jejich joby v reakci na události repozitáře nebo ruční spuštění.",
     explanation_en: "GitHub's automation platform for running declared workflows and their jobs in response to repository events or manual dispatch.",
     citation: bib.kinsman2021actions,

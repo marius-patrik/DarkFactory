@@ -5,8 +5,6 @@
     id: "continuous-integration",
     proper: translation(cs: "Průběžná integrace", en: "Continuous Integration"),
     industry: translation(cs: "CI", en: "CI"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami, aby se integrační chyby odhalily co nejdříve.",
     explanation_en: "A development practice in which changes are integrated frequently and automatically verified by builds, tests, and other checks so integration failures are detected early.",
     citation: bib.humble2010,
