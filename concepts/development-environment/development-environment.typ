@@ -15,11 +15,7 @@
   key: "development_environment",
   term: terminology,
   theory_enabled: true,
-  theory_intro: terms => [
-#accepted[
-#term(terms.development_environment, render: "both", detail-language: "cs", detail-style: "inline").
-]
-  ],
+  theory_intro: none,
   theory_body: none,
   practical_enabled: false,
 )

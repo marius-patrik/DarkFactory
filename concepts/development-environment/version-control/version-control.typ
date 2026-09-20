@@ -14,11 +14,7 @@
   key: "version_control",
   term: terminology,
   theory_enabled: true,
-  theory_intro: terms => [
-#accepted[
-#term(terms.version_control, render: "both", detail-language: "cs", detail-style: "inline").
-]
-  ],
+  theory_intro: none,
   theory_body: none,
   theory_summary: none,
   theory_after: none,

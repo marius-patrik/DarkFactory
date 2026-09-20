@@ -1,4 +1,4 @@
-#import "../templates/common.typ": finalized, term, translation, render-translation
+#import "../templates/common.typ": finalized, term, translation, render-translation, resolve-citation-label
 
 // Semantic relations never determine manuscript containment.
 // Folder manifests are the sole source of section hierarchy.
@@ -225,7 +225,7 @@
   if value.explanation_cs == none and value.explanation_en == none {
     none
   } else {
-    render-translation(
+    let definition = render-translation(
       translation(cs: value.explanation_cs, en: value.explanation_en),
       language: "auto",
       school-both: false,
@@ -234,6 +234,18 @@
       separator: "bar",
       order: "cs-en",
     )
+    let render-citation(c) = {
+      let lbl = resolve-citation-label(c)
+      if lbl != none { cite(lbl) } else { none }
+    }
+    let citations = if value.citation == none {
+      none
+    } else if type(value.citation) == array {
+      value.citation.map(render-citation).filter(x => x != none).join()
+    } else {
+      render-citation(value.citation)
+    }
+    if citations == none { definition } else { [#definition~#citations] }
   }
 }
 

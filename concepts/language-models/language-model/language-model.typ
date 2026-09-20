@@ -17,11 +17,7 @@
   key: "language_model",
   term: terminology,
   theory_enabled: false,
-  theory_intro: terms => [
-#accepted[
-#term(terms.language_model, render: "both", detail-language: "cs", detail-style: "inline").
-]
-  ],
+  theory_intro: none,
   theory_body: none,
   theory_summary: none,
   theory_after: none,

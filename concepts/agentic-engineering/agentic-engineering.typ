@@ -14,11 +14,7 @@
   key: "agentic_engineering",
   term: terminology,
   theory_enabled: true,
-  theory_intro: terms => [
-#accepted[
-#diff[#term(terms.agentic_engineering, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false)][#term(terms.agentic_engineering, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false) @darkfactory @anthropic2024tooluse]
-]
-  ],
+  theory_intro: none,
   theory_body: none,
   theory_summary: none,
   theory_after: none,
