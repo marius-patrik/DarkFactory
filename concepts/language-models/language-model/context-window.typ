@@ -24,5 +24,5 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "transformer"), (type: "dependency", target: "token"),)
 )

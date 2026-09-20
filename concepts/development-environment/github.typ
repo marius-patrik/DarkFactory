@@ -24,5 +24,5 @@
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "related", target: "git"), (type: "related", target: "pull_request"), (type: "related", target: "github_actions"),)
 )

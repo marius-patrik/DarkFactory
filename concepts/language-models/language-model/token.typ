@@ -37,5 +37,5 @@ Z inženýrského hlediska je proto žádoucí vést systémové prompty, techni
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "tokenizer"),)
 )
