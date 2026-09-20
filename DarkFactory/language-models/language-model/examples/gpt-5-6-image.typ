@@ -5,7 +5,7 @@
   key: "gpt_5_6_image", term: terminology,
   definition: terms => [Oficiální produktový vizuál modelové řady GPT-5.6.],
   description: terms => [Obrazový podklad je převzat z oficiálního vydání modelu OpenAI.],
-  visual: terms => [#figure(image("/DarkFactory/img/external/gpt-5-6.webp", width: 82%), caption: [GPT-5.6. Zdroj: OpenAI.])],
+  visual: terms => [#figure(image("/DarkFactory/img/external/gpt-5-6.png", width: 82%), caption: [GPT-5.6. Zdroj: OpenAI.])],
   summary: terms => [Vizuální identifikace příkladu jazykového modelu.],
   citations: (bib.openai_gpt56,),
 )
