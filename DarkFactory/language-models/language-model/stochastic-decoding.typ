@@ -13,11 +13,16 @@
 #let item = concept(
   key: "stochastic_decoding",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 Pravděpodobnostní dekódování znamená, že shodný vstup nemusí vždy vytvořit totožný výstup. V agentním systému proto nelze provozní spolehlivost opřít pouze o model; kritická pravidla a stavové přechody musí vynucovat deterministická vrstva harnessu.
 ]
   ],
-  relations: ((type: "dependency", target: "autoregression"), (type: "related", target: "harness"))
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "autoregression"), (type: "related", target: "harness")),
 )
