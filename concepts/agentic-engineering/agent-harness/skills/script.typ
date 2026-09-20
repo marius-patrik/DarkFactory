@@ -14,9 +14,13 @@
   key: "script",
   term: terminology,
   heading: terms => [#term(terms.script, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#unconfirmed[
+Skript poskytuje deterministickou exekuci pro úlohy, u nichž není vhodné znovu rozhodovat pomocí jazykového modelu, například pro opakovatelné transformace, validace nebo obslužné kroky dovednosti.
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
