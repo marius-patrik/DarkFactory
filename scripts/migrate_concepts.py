@@ -558,6 +558,9 @@ def main() -> None:
 
     rewrite_schema()
     rewrite_common()
+    registry = ROOT / "templates/registry.typ"
+    registry_text = registry.read_text(encoding="utf-8").replace("#let define-term = common.define-term\\n", "")
+    registry.write_text(registry_text, encoding="utf-8")
 
     stale = []
     for path in ROOT.rglob("*.typ"):
