@@ -1,6 +1,6 @@
 #import "/DarkFactory/metadata.typ": meta
 #import "/DarkFactory/templates/registry.typ": default-template, template-for, appendices-for
-#import "/DarkFactory/index.typ": book-title, render-manuscript, render-appendices
+#import "/DarkFactory/index.typ": book-title, concepts, render-manuscript, render-appendices
 
 // Jediný zdroj obsahu práce. Konkrétní dokumentová šablona je zvolena
 // samostatně, takže stejný konceptový rukopis lze kompilovat více šablonami.
@@ -15,6 +15,7 @@
   render(
     book-title: book-title,
     meta: meta,
+    concepts: concepts,
     logo: "/DarkFactory/img/logo.jpeg",
     review: review,
     profile: profile,

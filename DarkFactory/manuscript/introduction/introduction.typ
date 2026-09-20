@@ -1,23 +1,18 @@
-#import "/DarkFactory/templates/common.typ": translation
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "thesis_introduction",
-    czech: "Úvod",
+  czech: "Úvod",
   english: "Introduction",
-definition: terms => [
-Úvod vymezuje důvod, cíl a metodický rozsah práce zaměřené na současné agentní systémy a agentní harness.
+  definition: terms => [
+Tato práce zkoumá, jak dnes účinně využívat agentní umělou inteligenci při vývoji softwaru.
   ],
   description: terms => [
-Následující koncepty postupně formulují motivaci práce, hlavní a dílčí cíle, výzkumné otázky a metodiku. Tím stanovují problém, který má návrh DarkFactory řešit, i hranice témat, která práce záměrně nepokrývá.
+Zaměřuje se na to, co současní agenti dokážou samostatně provést a jaké prostředí, nástroje a pravidla potřebují, aby jejich práce byla opakovatelná a kontrolovatelná.
+
+Praktickým příkladem je DarkFactory, na kterém jsou popsané principy převedeny do konkrétní architektury a vývojového procesu.
   ],
   summary: terms => [
-Úvod vytváří rámec pro posouzení, zda navržená architektura odpovídá deklarovanému cíli a výzkumným otázkám.
+Cílem úvodu je stručně vymezit, co práce zkoumá, proč je téma aktuální a podle čeho bude navržené řešení posuzováno.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
-  relations: (),
 )

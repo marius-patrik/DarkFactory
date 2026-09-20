@@ -171,23 +171,29 @@
   if break-after { pagebreak(weak: true) }
 }
 
-#let anotace-strana(meta) = {
-  front-matter-section(
-    translation(cs: [Anotace], en: [Annotation]),
-    render-translation(
-      meta.annotation,
-      language: "auto",
-      school-both: true,
-      labels: true,
-      stacked: true,
-      spacing: 8pt,
-      order: "cs-en",
-    ),
-  )
+#let anotace-strana(meta, concepts) = context {
+  let profile = profile-state.get()
+
+  if profile in ("school", "cs", "merged") {
+    front-matter-section(
+      translation(cs: [Anotace], en: [Annotation]),
+      meta.at("annotation-cs"),
+      break-after: false,
+    )
+  }
+
+  if profile in ("school", "en", "merged") {
+    front-matter-section(
+      translation(cs: [Abstrakt], en: [Abstract]),
+      meta.at("abstract-en"),
+      break-after: false,
+    )
+  }
 
   front-matter-section(
     translation(cs: [Klíčová slova], en: [Keywords]),
-    render-keywords(),
+    render-keywords(concepts),
+    break-after: false,
   )
 
   pagebreak()
@@ -196,6 +202,7 @@
 #let template(
   book-title: none,
   meta: (:),
+  concepts: (),
   // Cesta k logu školy, např. "/DarkFactory/img/logo.jpeg". `none` = bez loga.
   logo: none,
   // Volitelný explicitní vodoznak. Review režim žádný automatický vodoznak nepřidává.
@@ -249,9 +256,10 @@
     justify: true,
     leading: radkovani * 0.65em,
     spacing: mezera-odstavec,
-    // První řádek odstavce se zleva zvlášť neodsazuje.
-    first-line-indent: 0pt,
+    first-line-indent: (amount: 1.5em, all: true),
   )
+  // Odstavec se nerozděluje mezi dvě strany.
+  show par: it => block(breakable: false, it)
 
   // Jednotná kostra seznamů: dostatek prostoru pro čitelnost, ale bez
   // vertikálního "nafukování" práce. Delší seznamy se smějí přirozeně dělit.
@@ -269,26 +277,27 @@
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
-  // Hlavní kapitoly pokračují přímo v toku dokumentu. Speciální titulní
-  // sazbu používá pouze titulní list celé práce.
-  show heading.where(level: 1): it => regular-level-one-heading(it)
-  show heading.where(level: 2): it => {
-    block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
+  // Každá hlavní kapitola začíná na nové straně; hlubší úrovně jsou
+  // odsazené podle hierarchie, ale zůstávají skutečnými číslovanými nadpisy.
+  show heading.where(level: 1): it => {
+    pagebreak(weak: true)
+    regular-level-one-heading(it)
   }
-  show heading.where(level: 3): it => {
-    block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
-  }
-  // Všechny hlubší sémantické sekce zůstávají skutečnými číslovanými nadpisy.
-  // Nesnižujeme je na ručně tučný text jen proto, že jsou zanořené.
-  show heading.where(level: 4): it => {
-    block(above: 14pt, below: 6pt, sticky: true, text(size: 11pt, weight: "bold", it))
-  }
-  show heading.where(level: 5): it => {
-    block(above: 12pt, below: 5pt, sticky: true, text(size: 10.5pt, weight: "bold", it))
-  }
-  show heading.where(level: 6): it => {
-    block(above: 10pt, below: 4pt, sticky: true, text(size: 10pt, weight: "bold", it))
-  }
+  show heading.where(level: 2): it => pad(left: 0.75em)[
+    #block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
+  ]
+  show heading.where(level: 3): it => pad(left: 1.5em)[
+    #block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
+  ]
+  show heading.where(level: 4): it => pad(left: 2.25em)[
+    #block(above: 14pt, below: 6pt, sticky: true, text(size: 11pt, weight: "bold", it))
+  ]
+  show heading.where(level: 5): it => pad(left: 3em)[
+    #block(above: 12pt, below: 5pt, sticky: true, text(size: 10.5pt, weight: "bold", it))
+  ]
+  show heading.where(level: 6): it => pad(left: 3.75em)[
+    #block(above: 10pt, below: 4pt, sticky: true, text(size: 10pt, weight: "bold", it))
+  ]
 
   // Popisky součástí textu: stejné písmo jako text, velikost 10 b.
   show figure.caption: set text(size: 10pt)
@@ -317,7 +326,7 @@
   titulni-list(book-title, meta, logo: logo)
   prohlaseni(meta)
   podekovani-strana(meta)
-  anotace-strana(meta)
+  anotace-strana(meta, concepts)
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6, indent: auto)
 

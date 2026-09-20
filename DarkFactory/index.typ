@@ -1,4 +1,4 @@
-#import "/DarkFactory/schema.typ": folder, build-vocabulary, render-folders
+#import "/DarkFactory/schema.typ": folder, build-vocabulary, collect-concepts, render-folders
 #import "/DarkFactory/templates/common.typ": translation
 #import "/DarkFactory/manuscript/introduction/index.typ" as introduction
 #import "/DarkFactory/manuscript/results/index.typ" as results
@@ -28,6 +28,7 @@
 #let folders = root.children
 #let book-title = root.title
 #let vocabulary = build-vocabulary(folders)
+#let concepts = collect-concepts(folders)
 
 #let render-manuscript() = render-folders(manuscript-folders, vocabulary, level: 1)
 #let render-appendices() = render-folders(appendix-folders, vocabulary, level: 1)
