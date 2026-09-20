@@ -14,6 +14,34 @@ export const capability = defineCapability({
 			domains: ["paper"],
 		},
 	],
+	actions: [
+		{
+			kind: "test",
+			description: "Typeset a Typst paper as its deterministic verification.",
+			ecosystems: ["typst"],
+			command: "mkdir -p out && typst compile main.typ out/paper.pdf",
+		},
+		{
+			kind: "test",
+			description: "Typeset a LaTeX paper as its deterministic verification.",
+			ecosystems: ["latex"],
+			command: "mkdir -p out && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=out main.tex",
+		},
+		{
+			kind: "release",
+			description: "Build the Typst release document.",
+			ecosystems: ["typst"],
+			command: "mkdir -p out && typst compile main.typ out/paper.pdf",
+			metadata: { artifacts: ["out/*.pdf", "*.pdf"] },
+		},
+		{
+			kind: "release",
+			description: "Build the LaTeX release document.",
+			ecosystems: ["latex"],
+			command: "mkdir -p out && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=out main.tex",
+			metadata: { artifacts: ["out/*.pdf", "*.pdf"] },
+		},
+	],
 });
 
 export default capability;
