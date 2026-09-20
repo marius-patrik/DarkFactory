@@ -29,7 +29,7 @@
   theory_intro_heading: terms => [#finalized[Úvod]],
   theory_intro: terms => [
 #accepted[
-V agentickém softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
+V agentickém softwarovém inženýrství vystupuje velký jazykový model (LLM) jako stochastické kognitivní jádro celého systému. Z hlediska vnitřní architektury se jedná o dekodérový transformer (_Decoder-only_; #term(terms.transformer, language: "en", marker: false, linked: false, emphasized: false)), jehož typickými představiteli jsou moderní modely řad Claude, GPT či DeepSeek @vaswani2017. Role modelu nespočívá ve vystupování jako vševědoucí orákulum se spolehlivou znalostí okolního světa, nýbrž jako pokročilý generátor hypotéz, kódu a strukturovaných volání nástrojů řízený obdrženým kontextem.
 
 Základní principy fungování modelu zahrnují:
 - Autoregresivní predikce: Model zpracovává zadanou sekvenci textu a na jejím základě iterativně předpovídá nejpravděpodobnější následující symboly (tokeny).
