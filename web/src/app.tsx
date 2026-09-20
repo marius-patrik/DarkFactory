@@ -71,17 +71,14 @@ type ArtifactSet = {
   html: string;
 };
 
-type PublicationVariant = {
-  profile: string;
+type Publication = {
   title: string;
-  subtitle: string;
   final: string;
   review: string;
   artifacts?: {
     final: ArtifactSet;
     review: ArtifactSet;
   };
-  recommended: boolean;
 };
 
 type Manifest = {
@@ -89,7 +86,7 @@ type Manifest = {
   work_title: string;
   default_template: string;
   templates: string[];
-  variants: PublicationVariant[];
+  publication: Publication;
   viewer?: {
     engine?: string;
     pdfjs_version?: string;
@@ -120,9 +117,9 @@ function useManifest() {
 
   useEffect(() => {
     let disposed = false;
-    void fetch("variants.json?cache=" + Date.now(), { cache: "no-store" })
+    void fetch("publication.json?cache=" + Date.now(), { cache: "no-store" })
       .then((response) => {
-        if (!response.ok) throw new Error("variants.json: " + response.status);
+        if (!response.ok) throw new Error("publication.json: " + response.status);
         return response.json() as Promise<Manifest>;
       })
       .then((data) => {
@@ -153,20 +150,6 @@ function withRefreshToken(path: string, token: string | number) {
   if (!token) return path;
   const separator = path.includes("?") ? "&" : "?";
   return path + separator + "refresh=" + encodeURIComponent(String(token));
-}
-
-function languageDisplayName(value: string) {
-  return value
-    .replace(/\b(verze|version)\b/giu, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-function languageShortId(profile: string) {
-  if (profile === "school" || profile === "cs") return "CZ";
-  if (profile === "en") return "EN";
-  if (profile === "merged") return "CZ+EN";
-  return profile.toUpperCase();
 }
 
 type CommandBinding = {
@@ -230,7 +213,6 @@ function useRepoTree(path: string) {
 function useContentIndex(
   path: string,
   template: string,
-  profile: string,
   mode: ViewerMode,
 ) {
   const [entries, setEntries] = useState<SemanticHeading[]>([]);
@@ -241,16 +223,13 @@ function useContentIndex(
       .then((response) => {
         if (!response.ok) throw new Error(path + ": " + response.status);
         return response.json() as Promise<{
-          templates?: Record<
-            string,
-            Record<string, Record<"final" | "review", SemanticHeading[]>>
-          >;
+          templates?: Record<string, Record<"final" | "review", SemanticHeading[]>>;
         }>;
       })
       .then((data) => {
         if (disposed) return;
         const publicationMode = mode === "review" ? "review" : "final";
-        setEntries(data.templates?.[template]?.[profile]?.[publicationMode] || []);
+        setEntries(data.templates?.[template]?.[publicationMode] || []);
       })
       .catch(() => {
         if (!disposed) setEntries([]);
@@ -259,20 +238,20 @@ function useContentIndex(
     return () => {
       disposed = true;
     };
-  }, [mode, path, profile, template]);
+  }, [mode, path, template]);
 
   return entries;
 }
 
 function artifactFilename(
-  variant: PublicationVariant,
+  publication: Publication,
   mode: ViewerMode,
   format: ArtifactFormat,
 ) {
   const publicationMode = mode === "review" ? "review" : "final";
-  const declared = variant.artifacts?.[publicationMode]?.[format];
+  const declared = publication.artifacts?.[publicationMode]?.[format];
   if (declared) return declared;
-  const pdf = publicationMode === "review" ? variant.review : variant.final;
+  const pdf = publicationMode === "review" ? publication.review : publication.final;
   if (format === "pdf") return pdf;
   return pdf.replace(/\.pdf$/i, format === "markdown" ? ".md" : ".html");
 }
@@ -287,7 +266,6 @@ function viewerHref(args: {
   file: string;
   peer: string;
   template: string;
-  profile: string;
   title: string;
   mode: ViewerMode;
   format?: ArtifactFormat;
@@ -299,7 +277,6 @@ function viewerHref(args: {
   query.set("file", args.file);
   query.set("peer", args.peer);
   query.set("template", args.template);
-  query.set("profile", args.profile);
   query.set("title", args.title);
   query.set("mode", args.mode);
   query.set("format", args.format || "pdf");
@@ -510,90 +487,6 @@ function RepoFilesPanel({
       </div>
       <SidebarResizeHandle side={side} width={width} onWidthChange={onWidthChange} />
     </aside>
-  );
-}
-
-function LanguagePicker({
-  manifest,
-  templateName,
-  profileName,
-  mode,
-  viewMode,
-  format,
-  versionTitle,
-  onNavigate,
-  onSelectProfile,
-}: {
-  manifest: Manifest;
-  templateName: string;
-  profileName: string;
-  mode: ViewerMode;
-  viewMode: ViewMode;
-  format: ArtifactFormat;
-  versionTitle: string;
-  onNavigate: (href: string) => void;
-  onSelectProfile?: (variant: PublicationVariant) => void;
-}) {
-  return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="version-trigger-wrap">
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" className="version-select" aria-label="Language">
-                <AnimatedIcon names={["LanguagesIcon"]} />
-                <strong className="status-short-id">{languageShortId(profileName)}</strong>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} />
-              </Button>
-            </DropdownMenuTrigger>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>Language</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="start" className="version-menu">
-        {manifest.variants.map((variant) => {
-          const file = hrefFor(
-            templateName,
-            manifest.default_template,
-            artifactFilename(variant, mode, format),
-          );
-          const peer = hrefFor(
-            templateName,
-            manifest.default_template,
-            artifactFilename(variant, mode === "review" ? "final" : "review", format),
-          );
-          const href = viewerHref({
-            file,
-            peer,
-            template: templateName,
-            profile: variant.profile,
-            title: variant.title,
-            mode,
-            format,
-            view: viewMode,
-          });
-          const active = variant.profile === profileName;
-
-          return (
-            <DropdownMenuItem
-              key={variant.profile}
-              className={active ? "version-item active" : "version-item"}
-              onSelect={() => {
-                if (onSelectProfile) onSelectProfile(variant);
-                else onNavigate(href);
-              }}
-            >
-              <AnimatedIcon names={["LanguagesIcon"]} />
-              <span className="version-option">
-                <strong>{languageDisplayName(variant.title)}</strong>
-                <small>{languageShortId(variant.profile)}</small>
-              </span>
-              {active && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} />}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
@@ -1004,28 +897,24 @@ export function ViewerApp() {
   const initialSplitDirection: WorkspaceSplitDirection =
     params.get("split") === "below" ? "below" : "right";
   const embedded = params.get("embedded") === "1";
-  const profileName = params.get("profile") || "school";
   const templateName =
     params.get("template") || manifest?.default_template || "gjkt-odborna-prace";
-  const activeVariant =
-    manifest?.variants.find((variant) => variant.profile === profileName) ||
-    manifest?.variants.find((variant) => variant.recommended) ||
-    manifest?.variants[0];
-  const versionTitle = params.get("title") || activeVariant?.title || "Školní česká verze";
+  const publication = manifest?.publication;
+  const versionTitle = params.get("title") || publication?.title || DEFAULT_WORK_TITLE;
   const defaultFile =
-    manifest && activeVariant
+    manifest && publication
       ? hrefFor(
           templateName,
           manifest.default_template,
-          artifactFilename(activeVariant, mode, format),
+          artifactFilename(publication, mode, format),
         )
       : null;
   const defaultPeer =
-    manifest && activeVariant
+    manifest && publication
       ? hrefFor(
           templateName,
           manifest.default_template,
-          artifactFilename(activeVariant, mode === "review" ? "final" : "review", format),
+          artifactFilename(publication, mode === "review" ? "final" : "review", format),
         )
       : null;
   const artifactPath = safeArtifactPath(params.get("file") || defaultFile, format);
@@ -1072,12 +961,7 @@ export function ViewerApp() {
   const [refreshRevision, setRefreshRevision] = useState(0);
   const repoTreePath = manifest?.viewer?.repo_tree || "repo-tree.json";
   const contentIndexPath = manifest?.viewer?.content_index || "content-index.json";
-  const contentIndex = useContentIndex(
-    contentIndexPath,
-    templateName,
-    profileName,
-    mode,
-  );
+  const contentIndex = useContentIndex(contentIndexPath, templateName, mode);
   const { nodes: repoTree, error: repoTreeError } = useRepoTree(repoTreePath);
   const findRepoNode = useCallback(
     (path: string | undefined): RepoTreeNode | null => {
@@ -1104,11 +988,6 @@ export function ViewerApp() {
     viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.kind : mode;
   const scopedFormat: ArtifactFormat =
     viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.format : format;
-  const scopedProfile =
-    viewMode === "split" && activeWorkspacePane ? activeWorkspacePane.profile : profileName;
-  const scopedVariant =
-    manifest?.variants.find((variant) => variant.profile === scopedProfile) || activeVariant;
-  const scopedVersionTitle = scopedVariant?.title || versionTitle;
   const pagesAvailable =
     activeTab?.kind === "document" &&
     scopedMode !== "raw" &&
@@ -1500,7 +1379,6 @@ export function ViewerApp() {
           file: rawPath,
           peer: reviewPath,
           template: templateName,
-          profile: profileName,
           title: versionTitle,
           mode: "final",
           format,
@@ -1513,39 +1391,33 @@ export function ViewerApp() {
           file: reviewPath,
           peer: rawPath,
           template: templateName,
-          profile: profileName,
           title: versionTitle,
           mode: "review",
           format,
         })
       : "#";
 
-  const selectedVariant = manifest?.variants.find((variant) => variant.profile === profileName);
-
   const paneFor = (
     kind: WorkspacePaneKind,
     paneFormat: ArtifactFormat,
-    variant: PublicationVariant | undefined,
   ): WorkspacePane | null => {
-    if (!manifest || !variant) return null;
+    if (!manifest || !publication) return null;
     const artifactMode: ViewerMode = kind === "review" ? "review" : "final";
     const file = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(variant, artifactMode, paneFormat),
+      artifactFilename(publication, artifactMode, paneFormat),
     );
     return {
       id: kind,
       title: kind === "final" ? "View" : kind === "review" ? "Review" : "Raw",
       kind,
       file,
-      profile: variant.profile,
       format: paneFormat,
       src: childHref({
         file,
         template: templateName,
-        profile: variant.profile,
-        title: variant.title,
+        title: publication.title,
         mode: kind,
         format: paneFormat,
       }),
@@ -1553,8 +1425,8 @@ export function ViewerApp() {
   };
 
   const workspacePanes = [
-    paneFor("final", format, selectedVariant),
-    paneFor("review", format, selectedVariant),
+    paneFor("final", format),
+    paneFor("review", format),
   ].filter((pane): pane is WorkspacePane => Boolean(pane));
 
   const splitTargetFor = (direction: WorkspaceSplitDirection) =>
@@ -1563,7 +1435,6 @@ export function ViewerApp() {
           file: rawPath,
           peer: reviewPath,
           template: templateName,
-          profile: profileName,
           title: versionTitle,
           mode: "final",
           format,
@@ -1573,23 +1444,18 @@ export function ViewerApp() {
       : "#";
 
   const exitSplitTarget = (() => {
-    if (viewMode !== "split" || !activeWorkspacePane || !manifest) return finalTarget;
-    const variant =
-      manifest.variants.find((candidate) => candidate.profile === activeWorkspacePane.profile) ||
-      selectedVariant;
-    if (!variant) return finalTarget;
+    if (viewMode !== "split" || !activeWorkspacePane || !manifest || !publication) return finalTarget;
     const peerMode: ViewerMode = activeWorkspacePane.kind === "review" ? "final" : "review";
     const peer = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(variant, peerMode, activeWorkspacePane.format),
+      artifactFilename(publication, peerMode, activeWorkspacePane.format),
     );
     return viewerHref({
       file: activeWorkspacePane.file,
       peer,
       template: templateName,
-      profile: variant.profile,
-      title: variant.title,
+      title: publication.title,
       mode: activeWorkspacePane.kind,
       format: activeWorkspacePane.format,
     });
@@ -1602,45 +1468,43 @@ export function ViewerApp() {
     scopedFormat === "markdown" ? "Markdown" : scopedFormat.toUpperCase();
 
   const rawTarget =
-    manifest && selectedVariant
+    manifest && publication
       ? viewerHref({
           file: hrefFor(
             templateName,
             manifest.default_template,
-            artifactFilename(selectedVariant, "raw", format),
+            artifactFilename(publication, "raw", format),
           ),
           peer: hrefFor(
             templateName,
             manifest.default_template,
-            artifactFilename(selectedVariant, "review", format),
+            artifactFilename(publication, "review", format),
           ),
           template: templateName,
-          profile: profileName,
-          title: versionTitle,
+          title: publication.title,
           mode: "raw",
           format,
         })
       : "#";
   const formatTarget = (nextFormat: ArtifactFormat) => {
-    if (!manifest || !selectedVariant) return "#";
+    if (!manifest || !publication) return "#";
     const targetMode: ViewerMode = mode;
     const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
     const file = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(selectedVariant, targetMode, nextFormat),
+      artifactFilename(publication, targetMode, nextFormat),
     );
     const peer = hrefFor(
       templateName,
       manifest.default_template,
-      artifactFilename(selectedVariant, peerMode, nextFormat),
+      artifactFilename(publication, peerMode, nextFormat),
     );
     return viewerHref({
       file,
       peer,
       template: templateName,
-      profile: profileName,
-      title: versionTitle,
+      title: publication.title,
       mode: targetMode,
       format: nextFormat,
     });
@@ -1652,9 +1516,8 @@ export function ViewerApp() {
   const updateActiveWorkspacePane = (
     nextKind: WorkspacePaneKind = scopedMode,
     nextFormat: ArtifactFormat = scopedFormat,
-    variant: PublicationVariant | undefined = scopedVariant,
   ) => {
-    const pane = paneFor(nextKind, nextFormat, variant);
+    const pane = paneFor(nextKind, nextFormat);
     if (pane) workspaceRef.current?.updateActive(pane);
   };
 
@@ -1914,26 +1777,6 @@ export function ViewerApp() {
 
       <footer className="statusbar">
         <div className="status-left">
-          {manifest ? (
-            <LanguagePicker
-              manifest={manifest}
-              templateName={templateName}
-              profileName={scopedProfile}
-              mode={scopedMode}
-              viewMode={viewMode}
-              format={scopedFormat}
-              versionTitle={scopedVersionTitle}
-              onNavigate={navigateViewer}
-              onSelectProfile={
-                viewMode === "split"
-                  ? (variant) => updateActiveWorkspacePane(scopedMode, scopedFormat, variant)
-                  : undefined
-              }
-            />
-          ) : (
-            <span className="version-fallback">{languageShortId(scopedProfile)}</span>
-          )}
-          <span className="status-divider" aria-hidden="true" />
           <RendererPicker
             mode={scopedMode}
             viewerTarget={finalTarget}
@@ -1942,7 +1785,7 @@ export function ViewerApp() {
             onNavigate={navigateViewer}
             onSelectMode={
               viewMode === "split"
-                ? (nextMode) => updateActiveWorkspacePane(nextMode, scopedFormat, scopedVariant)
+                ? (nextMode) => updateActiveWorkspacePane(nextMode, scopedFormat)
                 : undefined
             }
           />
@@ -1955,7 +1798,7 @@ export function ViewerApp() {
             onNavigate={navigateViewer}
             onSelectFormat={
               viewMode === "split"
-                ? (nextFormat) => updateActiveWorkspacePane(scopedMode, nextFormat, scopedVariant)
+                ? (nextFormat) => updateActiveWorkspacePane(scopedMode, nextFormat)
                 : undefined
             }
           />

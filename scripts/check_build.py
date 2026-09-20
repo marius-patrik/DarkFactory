@@ -352,6 +352,20 @@ settings = sources[Path("web/src/settings.ts")]
 settings_view = sources[Path("web/src/settings-view.tsx")]
 viewer_tabs = sources[Path("web/src/viewer-tabs.tsx")]
 pdf_viewer = sources[Path("web/src/pdf-document.tsx")]
+for forbidden in (
+    "LanguagePicker",
+    "languageShortId",
+    "languageDisplayName",
+    "PublicationVariant",
+    "manifest.variants",
+    'params.get("profile")',
+    'query.set("profile"',
+):
+    if forbidden in app:
+        fail(f"obsolete language/profile UI remains: {forbidden}")
+if "publication.json" not in app or "manifest?.publication" not in app:
+    fail("viewer is not using the canonical single-publication manifest")
+
 for contract in (
     'label="Structure"',
     'label="Explorer"',
@@ -406,6 +420,8 @@ for contract in (
     if contract not in site_builder:
         fail(f"site builder is missing internal Explorer source contract: {contract}")
 
+if "profile: string" in workspace:
+    fail("workspace pane retains obsolete publication profile state")
 for contract in ("DockviewReact", "paper-viewer-workspace-layout", "splitActive", "updateActive", "onDidLayoutChange"):
     if contract not in workspace:
         fail(f"review workspace is missing contract: {contract}")

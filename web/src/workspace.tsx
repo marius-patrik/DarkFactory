@@ -18,7 +18,6 @@ export type WorkspacePane = {
   kind: WorkspacePaneKind;
   src: string;
   file: string;
-  profile: string;
   format: "pdf" | "markdown" | "html";
 };
 
