@@ -1,6 +1,6 @@
 #import "../../../schema.typ": folder
-#import "../../graph-engineering.typ" as section
-#import "../../dag.typ" as dag
+#import "graph-engineering.typ" as section
+#import "dag.typ" as dag
 
 #let node = folder(
   key: "graph_engineering",
