@@ -1527,35 +1527,87 @@ export function ViewerApp() {
         })
       : "#";
 
-  const splitTarget =
+  const selectedVariant = manifest?.variants.find((variant) => variant.profile === profileName);
+
+  const paneFor = (
+    kind: WorkspacePaneKind,
+    paneFormat: ArtifactFormat,
+    variant: PublicationVariant | undefined,
+  ): WorkspacePane | null => {
+    if (!manifest || !variant) return null;
+    const artifactMode: ViewerMode = kind === "review" ? "review" : "final";
+    const file = hrefFor(
+      templateName,
+      manifest.default_template,
+      artifactFilename(variant, artifactMode, paneFormat),
+    );
+    return {
+      id: kind,
+      title: kind === "final" ? "View" : kind === "review" ? "Review" : "Raw",
+      kind,
+      file,
+      profile: variant.profile,
+      format: paneFormat,
+      src: childHref({
+        file,
+        template: templateName,
+        profile: variant.profile,
+        title: variant.title,
+        mode: kind,
+        format: paneFormat,
+      }),
+    };
+  };
+
+  const workspacePanes = [
+    paneFor("final", format, selectedVariant),
+    paneFor("review", format, selectedVariant),
+  ].filter((pane): pane is WorkspacePane => Boolean(pane));
+
+  const splitTargetFor = (direction: WorkspaceSplitDirection) =>
     rawPath && reviewPath
-      ? viewMode === "split"
-        ? viewerHref({
-            file: rawPath,
-            peer: reviewPath,
-            template: templateName,
-            profile: profileName,
-            title: versionTitle,
-            mode: "final",
-            format,
-          })
-        : viewerHref({
-            file: rawPath,
-            peer: reviewPath,
-            template: templateName,
-            profile: profileName,
-            title: versionTitle,
-            mode: "final",
-            format,
-            view: "split",
-          })
+      ? viewerHref({
+          file: rawPath,
+          peer: reviewPath,
+          template: templateName,
+          profile: profileName,
+          title: versionTitle,
+          mode: "final",
+          format,
+          view: "split",
+          split: direction,
+        })
       : "#";
 
-  const currentDownload = viewMode === "split" ? rawPath || artifactPath : artifactPath;
-  const canSplit = Boolean(rawPath && reviewPath);
-  const formatLabel = format === "markdown" ? "Markdown" : format.toUpperCase();
+  const exitSplitTarget = (() => {
+    if (viewMode !== "split" || !activeWorkspacePane || !manifest) return finalTarget;
+    const variant =
+      manifest.variants.find((candidate) => candidate.profile === activeWorkspacePane.profile) ||
+      selectedVariant;
+    if (!variant) return finalTarget;
+    const peerMode: ViewerMode = activeWorkspacePane.kind === "review" ? "final" : "review";
+    const peer = hrefFor(
+      templateName,
+      manifest.default_template,
+      artifactFilename(variant, peerMode, activeWorkspacePane.format),
+    );
+    return viewerHref({
+      file: activeWorkspacePane.file,
+      peer,
+      template: templateName,
+      profile: variant.profile,
+      title: variant.title,
+      mode: activeWorkspacePane.kind,
+      format: activeWorkspacePane.format,
+    });
+  })();
 
-  const selectedVariant = manifest?.variants.find((variant) => variant.profile === profileName);
+  const currentDownload =
+    viewMode === "split" ? activeWorkspacePane?.file || rawPath || artifactPath : artifactPath;
+  const canSplit = Boolean(rawPath && reviewPath);
+  const formatLabel =
+    scopedFormat === "markdown" ? "Markdown" : scopedFormat.toUpperCase();
+
   const rawTarget =
     manifest && selectedVariant
       ? viewerHref({
@@ -1578,7 +1630,7 @@ export function ViewerApp() {
       : "#";
   const formatTarget = (nextFormat: ArtifactFormat) => {
     if (!manifest || !selectedVariant) return "#";
-    const targetMode: ViewerMode = viewMode === "split" ? "final" : mode;
+    const targetMode: ViewerMode = mode;
     const peerMode: ViewerMode = targetMode === "review" ? "final" : "review";
     const file = hrefFor(
       templateName,
@@ -1598,35 +1650,29 @@ export function ViewerApp() {
       title: versionTitle,
       mode: targetMode,
       format: nextFormat,
-      view: viewMode,
     });
   };
   const pdfTarget = formatTarget("pdf");
   const markdownTarget = formatTarget("markdown");
   const htmlTarget = formatTarget("html");
 
-  const rawChild =
-    rawPath &&
-    childHref({
-      file: rawPath,
-      template: templateName,
-      profile: profileName,
-      title: versionTitle,
-      mode: "final",
-      format,
-    });
-  const reviewChild =
-    reviewPath &&
-    childHref({
-      file: reviewPath,
-      template: templateName,
-      profile: profileName,
-      title: versionTitle,
-      mode: "review",
-      format,
-    });
-  const refreshedRawChild = rawChild ? withRefreshToken(rawChild, refreshRevision) : null;
-  const refreshedReviewChild = reviewChild ? withRefreshToken(reviewChild, refreshRevision) : null;
+  const updateActiveWorkspacePane = (
+    nextKind: WorkspacePaneKind = scopedMode,
+    nextFormat: ArtifactFormat = scopedFormat,
+    variant: PublicationVariant | undefined = scopedVariant,
+  ) => {
+    const pane = paneFor(nextKind, nextFormat, variant);
+    if (pane) workspaceRef.current?.updateActive(pane);
+  };
+
+  const openSplit = (direction: WorkspaceSplitDirection) => {
+    if (!canSplit) return;
+    if (viewMode === "split") {
+      workspaceRef.current?.splitActive(direction);
+    } else {
+      navigateViewer(splitTargetFor(direction));
+    }
+  };
 
   const refreshDocument = () => {
     setRefreshRevision((revision) => revision + 1);
