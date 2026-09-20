@@ -1,4 +1,4 @@
-# ADR-0021 — Repository declarations and capability-driven detection
+# ADR-0021 — Repository declarations, runtime detection and capability-resolved actions
 
 **Status**: Accepted
 
