@@ -6,7 +6,6 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { motion } from "motion/react";
 import { AnimatedIcon } from "@/components/animated-icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +36,13 @@ import {
   type SidebarSide,
 } from "./pdf-document";
 import { CompiledArtifactView, RawArtifactView, type ArtifactFormat } from "./compiled-artifact";
+import {
+  ReviewWorkspace,
+  type ReviewWorkspaceControl,
+  type WorkspacePane,
+  type WorkspacePaneKind,
+  type WorkspaceSplitDirection,
+} from "./workspace";
 
 const DEFAULT_WORK_TITLE =
   "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství";
@@ -81,8 +87,9 @@ type Manifest = {
 type ViewerMode = "final" | "review" | "raw";
 type ViewMode = "single" | "split";
 type AppearanceMode = "light" | "dark" | "oled";
-type ActivityPanel = "contents" | "files" | null;
+type ActivityPanel = "structure" | "explorer" | null;
 type ActiveActivityPanel = Exclude<ActivityPanel, null>;
+type ActivityBarPosition = "left" | "right" | "top" | "bottom";
 
 type RepoTreeNode = {
   name: string;
@@ -137,6 +144,17 @@ function languageDisplayName(value: string) {
     .replace(/\b(verze|version)\b/giu, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function languageShortId(profile: string) {
+  if (profile === "school" || profile === "cs") return "CZ";
+  if (profile === "en") return "EN";
+  if (profile === "merged") return "CZ+EN";
+  return profile.toUpperCase();
+}
+
+function clampSidebarWidth(value: number) {
+  return Math.max(190, Math.min(640, Math.round(value)));
 }
 
 type CommandBinding = {
@@ -356,55 +374,63 @@ function TooltipAction({
 }
 
 function ActivityBar({
-  side,
+  position,
   active,
-  contentsAvailable,
+  structureAvailable,
   onSelect,
-  onMoveSide,
+  onMovePosition,
 }: {
-  side: SidebarSide;
+  position: ActivityBarPosition;
   active: ActivityPanel;
-  contentsAvailable: boolean;
+  structureAvailable: boolean;
   onSelect: (panel: ActivityPanel) => void;
-  onMoveSide: () => void;
+  onMovePosition: (position: ActivityBarPosition) => void;
 }) {
-  const targetSide = side === "left" ? "right" : "left";
+  const positions: Array<{ position: ActivityBarPosition; label: string; icon: string[] }> = [
+    { position: "left", label: "Left", icon: ["PanelLeftIcon"] },
+    { position: "right", label: "Right", icon: ["PanelRightIcon"] },
+    { position: "top", label: "Top", icon: ["PanelTopIcon", "PanelTopOpenIcon"] },
+    { position: "bottom", label: "Bottom", icon: ["PanelBottomIcon", "PanelBottomOpenIcon"] },
+  ];
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <aside className={"activitybar activitybar-" + side} aria-label="Viewer activity bar">
+        <aside className={"activitybar activitybar-" + position} aria-label="Viewer activity bar">
           <TooltipAction
-            label="Contents"
-            icon={["ListTreeIcon", "ListIcon"]}
-            pressed={active === "contents"}
-            disabled={!contentsAvailable}
-            onClick={() => onSelect(active === "contents" ? null : "contents")}
+            label="Structure"
+            icon={["FilesIcon"]}
+            pressed={active === "structure"}
+            disabled={!structureAvailable}
+            onClick={() => onSelect(active === "structure" ? null : "structure")}
             className="activity-action"
           />
           <TooltipAction
-            label="Files"
-            icon={["FolderTreeIcon", "FolderIcon"]}
-            pressed={active === "files"}
-            onClick={() => onSelect(active === "files" ? null : "files")}
+            label="Explorer"
+            icon={["FolderIcon"]}
+            pressed={active === "explorer"}
+            onClick={() => onSelect(active === "explorer" ? null : "explorer")}
             className="activity-action"
           />
         </aside>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={onMoveSide}>
-          <AnimatedIcon
-            names={targetSide === "left" ? ["PanelLeftIcon"] : ["PanelRightIcon"]}
-            size={16}
-          />
-          Move Activity Bar {targetSide === "left" ? "Left" : "Right"}
-        </ContextMenuItem>
+        {positions.map((option) => (
+          <ContextMenuItem
+            key={option.position}
+            disabled={position === option.position}
+            onSelect={() => onMovePosition(option.position)}
+          >
+            <AnimatedIcon names={option.icon} size={16} />
+            Activity Bar {option.label}
+          </ContextMenuItem>
+        ))}
       </ContextMenuContent>
     </ContextMenu>
   );
 }
 
-function RepoTreeBranch({
+function RepoTreeBranchfunction RepoTreeBranch({
   nodes,
   depth,
   repositoryUrl,
@@ -455,24 +481,68 @@ function RepoTreeBranch({
   );
 }
 
+function SidebarResizeHandle({
+  side,
+  width,
+  onWidthChange,
+}: {
+  side: SidebarSide;
+  width: number;
+  onWidthChange: (width: number) => void;
+}) {
+  const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = width;
+    const onMove = (move: PointerEvent) => {
+      const delta = side === "left" ? move.clientX - startX : startX - move.clientX;
+      onWidthChange(clampSidebarWidth(startWidth + delta));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", stop, { once: true });
+  };
+
+  return (
+    <div
+      className={"sidebar-resizer sidebar-resizer-" + side}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize sidebar"
+      onPointerDown={beginResize}
+    />
+  );
+}
+
 function RepoFilesPanel({
   nodes,
   error,
   side,
+  width,
+  onWidthChange,
   repositoryUrl,
   commit,
 }: {
   nodes: RepoTreeNode[];
   error: string;
   side: SidebarSide;
+  width: number;
+  onWidthChange: (width: number) => void;
   repositoryUrl: string;
   commit: string;
 }) {
   return (
-    <aside className={"repo-files-panel repo-files-" + side} aria-label="Repository files">
+    <aside
+      className={"repo-files-panel repo-files-" + side}
+      aria-label="Explorer"
+      style={{ width, flexBasis: width }}
+    >
       <div className="activity-panel-header">
-        <AnimatedIcon names={["FolderTreeIcon", "FolderIcon"]} size={16} />
-        <span>Files</span>
+        <AnimatedIcon names={["FolderIcon"]} size={16} />
+        <span>Explorer</span>
       </div>
       <div className="repo-files-tree">
         {error ? (
@@ -488,10 +558,12 @@ function RepoFilesPanel({
           <div className="repo-files-loading">Loading repository tree…</div>
         )}
       </div>
+      <SidebarResizeHandle side={side} width={width} onWidthChange={onWidthChange} />
     </aside>
   );
 }
-function LanguagePicker({
+
+function LanguagePickerfunction LanguagePicker({
   manifest,
   templateName,
   profileName,
@@ -500,6 +572,7 @@ function LanguagePicker({
   format,
   versionTitle,
   onNavigate,
+  onSelectProfile,
 }: {
   manifest: Manifest;
   templateName: string;
@@ -509,6 +582,7 @@ function LanguagePicker({
   format: ArtifactFormat;
   versionTitle: string;
   onNavigate: (href: string) => void;
+  onSelectProfile?: (variant: PublicationVariant) => void;
 }) {
   return (
     <DropdownMenu>
@@ -516,18 +590,10 @@ function LanguagePicker({
         <TooltipTrigger asChild>
           <span className="version-trigger-wrap">
             <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="version-select"
-                aria-label="Language"
-              >
-                <AnimatedIcon names={["LanguagesIcon"]} size={16} />
-                <span className="status-select-copy">
-                  <strong>{languageDisplayName(versionTitle)}</strong>
-                  <small>{profileName}</small>
-                </span>
-                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={16} />
+              <Button type="button" variant="ghost" className="version-select" aria-label="Language">
+                <AnimatedIcon names={["LanguagesIcon"]} size={15} />
+                <strong className="status-short-id">{languageShortId(profileName)}</strong>
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
               </Button>
             </DropdownMenuTrigger>
           </span>
@@ -562,12 +628,15 @@ function LanguagePicker({
             <DropdownMenuItem
               key={variant.profile}
               className={active ? "version-item active" : "version-item"}
-              onSelect={() => onNavigate(href)}
+              onSelect={() => {
+                if (onSelectProfile) onSelectProfile(variant);
+                else onNavigate(href);
+              }}
             >
               <AnimatedIcon names={["LanguagesIcon"]} size={16} />
               <span className="version-option">
                 <strong>{languageDisplayName(variant.title)}</strong>
-                <small>{variant.profile}</small>
+                <small>{languageShortId(variant.profile)}</small>
               </span>
               {active && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={16} />}
             </DropdownMenuItem>
@@ -578,76 +647,89 @@ function LanguagePicker({
   );
 }
 
-function RendererPicker({
+function RendererPickerfunction RendererPicker({
   mode,
   viewerHref,
-  editHref,
+  reviewHref,
   rawHref,
   onNavigate,
+  onSelectMode,
 }: {
   mode: ViewerMode;
   viewerHref: string;
-  editHref: string;
+  reviewHref: string;
   rawHref: string;
   onNavigate: (href: string) => void;
+  onSelectMode?: (mode: ViewerMode) => void;
 }) {
-  const options: Array<{
-    mode: ViewerMode;
-    label: string;
-    href: string;
-    icon: string[];
-  }> = [
+  const options: Array<{ mode: ViewerMode; label: string; href: string; icon: string[] }> = [
     { mode: "final", label: "View", href: viewerHref, icon: ["EyeIcon"] },
-    { mode: "review", label: "Edit", href: editHref, icon: ["PencilLineIcon"] },
+    { mode: "review", label: "Review", href: reviewHref, icon: ["PencilLineIcon"] },
     { mode: "raw", label: "Raw", href: rawHref, icon: ["BracesIcon", "FileCode2Icon"] },
   ];
+  const active = options.find((option) => option.mode === mode) || options[0];
 
   return (
-    <fieldset className="renderer-picker" aria-label="Renderer">
-      {options.map((option) => (
-        <Tooltip key={option.mode}>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className={mode === option.mode ? "renderer-option active" : "renderer-option"}
-              aria-label={"Renderer: " + option.label}
-              aria-pressed={mode === option.mode}
-              onClick={() => onNavigate(option.href)}
-            >
-              <AnimatedIcon names={option.icon} size={13} />
-              <span>{option.label}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Renderer</TooltipContent>
-        </Tooltip>
-      ))}
-    </fieldset>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="renderer-trigger-wrap">
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" className="renderer-select" aria-label="Renderer">
+                <AnimatedIcon names={active.icon} size={14} />
+                <span>{active.label}</span>
+                <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Renderer</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="renderer-menu">
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.mode}
+            className={mode === option.mode ? "renderer-item active" : "renderer-item"}
+            onSelect={() => {
+              if (onSelectMode) onSelectMode(option.mode);
+              else onNavigate(option.href);
+            }}
+          >
+            <AnimatedIcon names={option.icon} size={15} />
+            <span>{option.label}</span>
+            {mode === option.mode && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
-function FormatPicker({
+function FormatPickerfunction FormatPicker({
   format,
   pdfHref,
   markdownHref,
   htmlHref,
   onNavigate,
+  onSelectFormat,
 }: {
   format: ArtifactFormat;
   pdfHref: string;
   markdownHref: string;
   htmlHref: string;
   onNavigate: (href: string) => void;
+  onSelectFormat?: (format: ArtifactFormat) => void;
 }) {
   const options: Array<{
     format: ArtifactFormat;
     label: string;
+    short: string;
     href: string;
     icon: string[];
     extension: string;
   }> = [
-    { format: "pdf", label: "PDF", extension: ".pdf", href: pdfHref, icon: ["FileTextIcon"] },
-    { format: "markdown", label: "Markdown", extension: ".md", href: markdownHref, icon: ["FileCode2Icon"] },
-    { format: "html", label: "HTML", extension: ".html", href: htmlHref, icon: ["Code2Icon"] },
+    { format: "pdf", label: "PDF", short: "PDF", extension: ".pdf", href: pdfHref, icon: ["FileTextIcon"] },
+    { format: "markdown", label: "Markdown", short: "MD", extension: ".md", href: markdownHref, icon: ["FileCode2Icon"] },
+    { format: "html", label: "HTML", short: "HTML", extension: ".html", href: htmlHref, icon: ["Code2Icon"] },
   ];
 
   const active = options.find((option) => option.format === format) || options[0];
@@ -658,17 +740,9 @@ function FormatPicker({
         <TooltipTrigger asChild>
           <span className="format-trigger-wrap">
             <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="format-select"
-                aria-label="File type"
-              >
+              <Button type="button" variant="ghost" className="format-select" aria-label="File type">
                 <AnimatedIcon names={active.icon} size={14} />
-                <span className="status-select-copy">
-                  <strong>{active.label}</strong>
-                  <small>{active.extension}</small>
-                </span>
+                <strong className="status-short-id">{active.short}</strong>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={13} />
               </Button>
             </DropdownMenuTrigger>
@@ -681,7 +755,10 @@ function FormatPicker({
           <DropdownMenuItem
             key={option.format}
             className={format === option.format ? "format-item active" : "format-item"}
-            onSelect={() => onNavigate(option.href)}
+            onSelect={() => {
+              if (onSelectFormat) onSelectFormat(option.format);
+              else onNavigate(option.href);
+            }}
           >
             <AnimatedIcon names={option.icon} size={15} />
             <span className="version-option">
@@ -698,7 +775,7 @@ function FormatPicker({
   );
 }
 
-function ChapterPicker({
+function ChapterPickerfunction ChapterPicker({
   chapters,
   page,
   onSelect,
