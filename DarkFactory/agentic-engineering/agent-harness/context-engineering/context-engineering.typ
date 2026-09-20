@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "context-engineering",
     proper: translation(cs: "Kontextové inženýrství", en: "Context Engineering"),
-    explanation_cs: "Systematický návrh, výběr, pořadí a životní cyklus informací zpřístupňovaných modelu v aktivním kontextu, včetně instrukcí, paměti, nástrojových výsledků a externě načtených dat.",
-    explanation_en: "The systematic design, selection, ordering, and lifecycle management of information made available to a model in active context, including instructions, memory, tool results, and externally retrieved data.",
     citation: bib.liu2024,
     source: bib.jiang2023llmlingua,
 )
@@ -13,9 +11,15 @@
 #let item = concept(
   key: "context_engineering",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Kontextové inženýrství je systematický návrh, výběr, pořadí a životní cyklus informací zpřístupňovaných modelu v aktivním kontextu.
+  ],
+  description: terms => [
+Kontext zahrnuje systémové instrukce, pracovní historii, výsledky nástrojů, externě načtená data a další informace, které model používá při rozhodování. Návrh této vrstvy určuje, které informace jsou modelu dostupné, kdy se načítají, jak dlouho zůstávají aktivní a jak se nahrazují při omezené kapacitě kontextového okna.
+  ],
+  summary: terms => [
+Kontextové inženýrství řídí informační prostředí modelu; cílem není maximalizovat objem kontextu, ale udržet relevantní, přesný a provozně použitelný stav.
+  ],
   visual: none,
   examples: (),
   attachments: (),

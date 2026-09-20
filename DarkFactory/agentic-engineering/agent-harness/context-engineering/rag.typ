@@ -5,8 +5,6 @@
     id: "rag",
     proper: translation(cs: "Generování rozšířené vyhledáváním", en: "Retrieval-Augmented Generation"),
     industry: translation(cs: "RAG", en: "RAG"),
-    explanation_cs: "Architektura, v níž systém před generováním nebo během něj vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu, aby výstup mohl být založen na načtených datech.",
-    explanation_en: "An architecture in which a system retrieves relevant information from an external source before or during generation and places it into model context so the output can be grounded in the retrieved data.",
     citation: bib.lewis2020rag,
     source: bib.lewis2020rag,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "rag",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Retrieval-Augmented Generation (RAG) je architektura, v níž systém před generováním nebo během něj vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu.
+  ],
   description: terms => [
 Aby se předešlo ztrátě informací způsobené kompakcí, moderní agentní architektury přesouvají část paměti mimo samotné kontextové okno. Namísto spoléhání se na jediný lineární textový kontext se uplatňují strukturovaná externí úložiště.
 
@@ -24,7 +24,9 @@ K hlavním přístupům patří:
 
 Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti na ztrátovém rekurzivním shrnování.
   ],
-  summary: none,
+  summary: terms => [
+RAG odděluje dlouhodobé uchování informací od omezeného aktivního kontextu a umožňuje načítat pouze data relevantní pro aktuální krok.
+  ],
   visual: none,
   examples: (),
   attachments: (),

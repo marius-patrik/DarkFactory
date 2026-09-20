@@ -5,8 +5,6 @@
     id: "graph-engineering",
     proper: translation(cs: "Inženýrství pracovních grafů", en: "Workflow-graph Engineering"),
     industry: translation(cs: "Graph Engineering", en: "Graph Engineering"),
-    explanation_cs: "Návrh agentních nebo automatizačních pracovních postupů jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.",
-    explanation_en: "The design of agentic or automation workflows as explicit graphs of nodes, dependencies, and transitions rather than as one unconstrained loop.",
     citation: bib.wu2023autogen,
     source: bib.wu2023autogen,
 )
@@ -14,7 +12,9 @@
 #let item = concept(
   key: "graph_engineering",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Inženýrství pracovních grafů je návrh agentních nebo automatizačních workflow jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.
+  ],
   description: terms => [
 #accepted[
 Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
@@ -30,7 +30,9 @@ Klíčové přístupy ke škálování zahrnují:
 ]
 ]
   ],
-  summary: none,
+  summary: terms => [
+Grafová struktura umožňuje rozdělit složitou úlohu na kontrolovatelné kroky, oddělit jejich odpovědnosti a explicitně řídit závislosti mezi nimi.
+  ],
   visual: none,
   examples: (),
   attachments: (),

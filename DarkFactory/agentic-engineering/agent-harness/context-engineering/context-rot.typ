@@ -4,8 +4,6 @@
 #let terminology = define-term(
     id: "context-rot",
     proper: translation(cs: "Degradace kontextu", en: "Context Rot"),
-    explanation_cs: "Degradace pozornosti a kvality logického uvažování modelu způsobená zaplněním kontextového okna dlouhou historií, šumem nebo vzájemně si konkurujícími informacemi, která vede k přehlížení instrukcí a ztrátě souvislostí.",
-    explanation_en: "Degradation in a model's attention and reasoning quality caused by long, noisy, or internally competing context, leading to missed instructions and loss of relationships between facts.",
     citation: bib.liu2024,
     source: bib.liu2024,
 )
@@ -13,7 +11,9 @@
 #let item = concept(
   key: "context_rot",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Degradace kontextu je pokles schopnosti modelu spolehlivě využívat informace v dlouhém, hlučném nebo vzájemně si konkurujícím kontextu.
+  ],
   description: terms => [
 Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #accepted[Tento jev se označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
 
@@ -23,7 +23,9 @@ V praxi se projevuje dvěma hlavními mechanismy:
 
 Při komplexním křížovém refaktoringu ve velkém kontextu proto model často přehlédne klíčové souvislosti, které by v menším a čistším okně zpracoval bez potíží.
   ],
-  summary: none,
+  summary: terms => [
+Nominálně větší kontextové okno samo o sobě nezaručuje lepší výkon; kvalita závisí na tom, zda model dokáže relevantní informace v kontextu skutečně najít a propojit.
+  ],
   visual: none,
   examples: (),
   attachments: (),

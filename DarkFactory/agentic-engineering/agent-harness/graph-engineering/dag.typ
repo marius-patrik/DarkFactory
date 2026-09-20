@@ -5,8 +5,6 @@
     id: "dag",
     proper: translation(cs: "Orientovaný acyklický graf", en: "Directed Acyclic Graph"),
     industry: translation(cs: "DAG", en: "DAG"),
-    explanation_cs: "Orientovaný graf bez orientovaného cyklu. V pracovních postupech umožňuje explicitně vyjádřit závislosti mezi kroky a pořadí, které z nich vyplývá.",
-    explanation_en: "A directed graph containing no directed cycle. In workflows it can explicitly represent dependencies among steps and the ordering implied by those dependencies.",
     citation: bib.wu2023autogen,
     source: bib.wu2023autogen,
 )
@@ -14,13 +12,17 @@
 #let item = concept(
   key: "dag",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Orientovaný acyklický graf (DAG) je orientovaný graf bez orientovaného cyklu, který umožňuje explicitně vyjádřit závislosti a pořadí kroků pracovního postupu.
+  ],
   description: terms => [
 #unconfirmed[
 V agentním workflow může DAG modelovat kroky jako uzly a jejich povinné závislosti jako hrany. Tím lze explicitně vyjádřit například posloupnost příjem požadavku → plán → implementace → testy → schválení a zabránit spuštění navazujícího kroku před splněním jeho předpokladů.
 ]
   ],
-  summary: none,
+  summary: terms => [
+DAG převádí implicitní pořadí vícefázové úlohy na kontrolovatelnou strukturu závislostí, v níž lze navazující krok spustit až po splnění jeho předpokladů.
+  ],
   visual: none,
   examples: (),
   attachments: (),

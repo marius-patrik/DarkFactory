@@ -6,9 +6,11 @@
 #let item = concept(
   key: "semantic_drift",
   term: terminology,
-  definition: none,
+  definition: terms => [
+Sémantický posun je postupné zkreslování významu a faktického stavu při opakovaném ztrátovém shrnování nebo transformaci kontextu.
+  ],
   description: terms => [
-Opakovaná ztrátová komprese vede k závažné patologii známé jako sémantický posun (_Semantic Drift_). Pokud je historie sezení v dlouhém vývojovém běhu shrnována vícekrát po sobě, vzniká řetězec ztrátových transformací ($S_(k+1) = f(S_k, Delta_k)$).
+Pokud je historie sezení v dlouhém vývojovém běhu shrnována vícekrát po sobě, vzniká řetězec ztrátových transformací ($S_(k+1) = f(S_k, Delta_k)$).
 
 Rizika sémantického posunu spočívají v těchto jevech:
 - Efekt tiché pošty: Drobné zkreslení či halucinace vzniklá v kole $k$ je v kole $k+1$ přijata jako nezpochybnitelný historický fakt.
@@ -16,7 +18,9 @@ Rizika sémantického posunu spočívají v těchto jevech:
 
 Výsledkem je stav, kdy agent sebevědomě reportuje vyřešení úkolu, ačkoliv reálný kód zůstává v nefunkčním či neúplném stavu.
   ],
-  summary: none,
+  summary: terms => [
+Opakovaná komprese může změnit pracovní reprezentaci reality natolik, že další rozhodování vychází z chybných historických předpokladů.
+  ],
   visual: none,
   examples: (),
   attachments: (),
