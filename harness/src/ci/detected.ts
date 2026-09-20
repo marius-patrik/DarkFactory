@@ -20,7 +20,9 @@ export async function resolveDetectedQuality(
 	capabilitiesRoot?: string,
 ): Promise<DetectedQualityState> {
 	const evidence = await detectRepositoryEvidence(repoDir);
-	const root = capabilitiesRoot ? resolve(capabilitiesRoot) : resolve(import.meta.dir, "..", "..", "..", "capabilities");
+	const root = capabilitiesRoot
+		? resolve(capabilitiesRoot)
+		: resolve(import.meta.dir, "..", "..", "..", "capabilities");
 	const resolution = await resolveDetectedRepositoryActions(evidence, root);
 	return { evidence, resolution, matrix: qualityMatrix(resolution) };
 }
