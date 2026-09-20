@@ -66,6 +66,7 @@ def test_the_pin_reaches_both_direct_runtime_checkouts():
     assert rendered.count('ref: "deadbeef"') == 2
     assert rendered.count('repository: "o/p"') == 2
 
+
 def test_submodule_updating_is_offered_only_where_there_are_submodules(tmp_path):
     """Installing a submodule updater in a repository with none is noise."""
     assert "update-submodules" not in install.relevant_workflows(str(tmp_path))
@@ -239,10 +240,12 @@ def test_the_generated_manifest_requires_stable_direct_contexts():
     manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
     assert manifest["required_checks"] == ["quality", "verify-bound-issue"]
 
+
 def test_required_contexts_follow_installed_direct_checks():
     """Protection never requires a direct context whose workflow is not installed."""
     assert install.required_contexts(["ci"]) == ["quality"]
     assert install.required_contexts(["verify-pr-issue"]) == ["verify-bound-issue"]
+
 
 def test_every_default_check_is_emitted_by_the_full_install():
     """The full installation emits every final stable required check."""
@@ -250,6 +253,7 @@ def test_every_default_check_is_emitted_by_the_full_install():
 
     installed = install.relevant_workflows(".")
     assert set(install.required_contexts(installed)) == set(manifest_module.DEFAULT_REQUIRED_CHECKS)
+
 
 class TestReinstallingAdoptsTheUpdate:
     """Never overwriting a file meant a reinstall could not update anything either."""
