@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { PlanningArtifact, PlanningContextPacket } from "@darkfactory/protocol/planning";
+import type { PlanningArtifact, PlanningContextPacket } from "../../../packages/protocol/src/planning.ts";
 import { planningReviewAdapter, validatePlanningArtifact } from "../../src/graph/planning.ts";
 import { contextFingerprint, evaluateReview } from "../../src/graph/review-loop.ts";
 
