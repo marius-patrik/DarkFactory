@@ -464,7 +464,7 @@
   detail-order: "cs-en",
   detail-style: "inline",
   register: true,
-  linked: true,
+  linked: false,
   marker: true,
   emphasized: true,
   separator: [ — ],
@@ -494,11 +494,9 @@
     order: name-order,
   )
   let displayed-name = if emphasized { [_*#name*_] } else { name }
-  let referenced-name = if linked {
-    link(label("kw-" + value.id))[#displayed-name]
-  } else {
-    displayed-name
-  }
+  // The standalone terminology index was removed. Keep the `linked` argument
+  // for source compatibility, but canonical term uses now render in place.
+  let referenced-name = displayed-name
   let with-marker = if marker and render != "explanation" {
     [#referenced-name#text(fill: rgb("#2563eb"), size: 0.75em, baseline: -0.1em)[★]]
   } else {
@@ -552,107 +550,5 @@
         )).join([, ])
       ]
     ]
-  }
-}
-
-// Detailní terminologický Rejstřík je úplný katalog kanonických termínů.
-// Na rozdíl od krátkého seznamu klíčových slov není omezen jen na pojmy použité
-// v aktuálním rukopisu; aliasy se deduplikují podle stabilního term id.
-#let collect-canonical-terms(values) = {
-  let items = ()
-  for value in values {
-    if value.keyword and not items.any(item => item.id == value.id) {
-      items.push(value)
-    }
-  }
-  items.sorted(key: item => lower(str(if item.proper.cs != none { item.proper.cs } else { item.proper.en })))
-}
-
-#let index-sort-name(item) = {
-  if item.proper.cs != none { str(item.proper.cs) } else { str(item.proper.en) }
-}
-
-#let index-letter(item) = upper(index-sort-name(item).first())
-
-#let render-index(values) = {
-  let items = collect-canonical-terms(values)
-
-  if items.len() == 0 {
-    [—]
-  } else {
-    // Lokální přehled patří přímo na začátek Rejstříku. Jednotlivá písmena
-    // a termíny zůstávají skutečnými nadpisy, ale nejsou součástí hlavního Obsahu.
-    block(
-      breakable: true,
-      above: 2pt,
-      below: 14pt,
-      width: 100%,
-    )[
-      #items.map(item => link(
-        label("kw-" + item.id),
-        term(
-          item,
-          render: "term",
-          language: "auto",
-          name-type: item.keyword_name_type,
-          register: false,
-          linked: false,
-          marker: false,
-          emphasized: false,
-        ),
-      )).join([#linebreak()])
-    ]
-
-    let current-letter = none
-
-    for item in items {
-      let letter = index-letter(item)
-
-      if letter != current-letter {
-        current-letter = letter
-        heading(
-          level: 2,
-          numbering: none,
-          outlined: false,
-        )[#letter]
-      }
-
-      [
-        #heading(
-          level: 3,
-          numbering: none,
-          outlined: false,
-        )[
-          #term(
-            item,
-            render: "term",
-            language: "auto",
-            name-type: item.keyword_name_type,
-            register: false,
-            linked: false,
-            marker: false,
-            emphasized: false,
-          )
-        ] #label("kw-" + item.id)
-      ]
-
-      block(
-        breakable: false,
-        above: 2pt,
-        below: 7pt,
-        width: 100%,
-      )[
-        #term(
-          item,
-          render: "explanation",
-          language: "auto",
-          register: false,
-          linked: false,
-          marker: false,
-          emphasized: false,
-          detail-style: "stacked",
-        )
-      ]
-    }
   }
 }
