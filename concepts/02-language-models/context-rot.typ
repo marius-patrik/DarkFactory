@@ -15,7 +15,7 @@
   theory_enabled: true,
   theory_intro: none,
   theory_body: terms => [
-Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #diff[Tento jev se označuje jako degradace pozornosti (_Context Rot_).][Tento jev se označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
+Schopnost jazykového modelu pracovat s dlouhým kontextem nelze posuzovat pouze podle nominální velikosti okna. Ačkoliv moderní modely deklarují kapacitu statisíců tokenů, jejich schopnost efektivně vyhledávat a logicky propojovat fakta s rostoucí délkou kontextu výrazně klesá. #accepted[Tento jev se označuje jako #term(terms.context_rot, render: "both", detail-language: "cs", detail-style: "inline").]
 
 V praxi se projevuje dvěma hlavními mechanismy:
 - Lost in the Middle @liu2024: Pozornostní vrstvy transformeru spolehlivě vnímají informace na samém začátku a konci okna, zatímco fakta umístěná uprostřed dlouhého textu jsou často přehlížena.
