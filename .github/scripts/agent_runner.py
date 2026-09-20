@@ -2787,10 +2787,11 @@ def parse_explicit_plan_files(plan_text: str) -> Set[str]:
     match = heading.search(plan_text)
     if not match:
         return set()
-    tail = plan_text[match.end():]
+    tail = plan_text[match.end() :]
     next_heading = re.search(r"(?:^|\n)#{1,6}\s+", tail)
     section = tail[: next_heading.start()] if next_heading else tail
     return parse_plan_files(section)
+
 
 def is_file_in_plan(file_path: str, plan_files: Set[str]) -> bool:
     """Reports whether a changed file matches any path cited in the approved plan.
