@@ -14,8 +14,8 @@
 #let item = concept(
   key: "skills",
   term: terminology,
-  theory_enabled: true,
-  theory_intro: terms => [
+  definition: none,
+  description: terms => [
 Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills).][#term(terms.skills) @anthropic2024tooluse.]
 
 Architektura dovedností staví na následujících principech:
@@ -29,15 +29,10 @@ Kromě kontextových dovedností využívají pokročilé řídicí architektury
 Načítání dovedností popisuje samostatný koncept #term(terms.progressive_disclosure). Deterministické součásti dovedností jsou rozděleny mezi #term(terms.script) a #term(terms.hook); nativní rozšíření harnessu představuje samostatný koncept #term(terms.plugins).
 ]
   ],
-  theory_body: none,
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: finalized,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "tool_calling"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "tool_calling"),),
 )
