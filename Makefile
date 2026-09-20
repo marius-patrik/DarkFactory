@@ -26,7 +26,7 @@ OUT_REVIEW_CS := $(OUT_DIR)/prace-cs-review.pdf
 OUT_REVIEW_EN := $(OUT_DIR)/prace-en-review.pdf
 OUT_REVIEW_MERGED := $(OUT_DIR)/prace-bilingual-review.pdf
 
-.PHONY: help build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged exports all all-templates all-books template-check web-install web-lint web-format web-check web-build verify ci site watch png clean check
+.PHONY: help external-assets build build-school build-cs build-en build-merged review review-school review-cs review-en review-merged exports all all-templates all-books template-check web-install web-lint web-format web-check web-build verify ci site watch png clean check
 
 help:
 	@echo "make all BOOK=$(BOOK) TEMPLATE=$(TEMPLATE)   – complete PDF/HTML/Markdown matrix"
@@ -42,7 +42,10 @@ help:
 	@echo "Books: $(BOOKS)"
 	@echo "Templates for $(BOOK): $(TEMPLATES)"
 
-build: build-school build-cs build-en build-merged
+external-assets:
+	$(PYTHON) scripts/fetch_external_assets.py
+
+build: external-assets build-school build-cs build-en build-merged
 
 build-school:
 	@mkdir -p $(OUT_DIR)
@@ -60,7 +63,7 @@ build-merged:
 	@mkdir -p $(OUT_DIR)
 	$(TYPST) compile $(FONTS) --input book=$(BOOK) --input template=$(TEMPLATE) --input profile=merged $(MAIN) $(OUT_MERGED)
 
-review: review-school review-cs review-en review-merged
+review: external-assets review-school review-cs review-en review-merged
 
 review-school:
 	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --book "$(BOOK)" --font-path "$(BOOK_ROOT)/fonts" --template "$(TEMPLATE)" --profile school --main "$(MAIN)" --output "$(OUT_REVIEW_SCHOOL)"
@@ -74,7 +77,7 @@ review-en:
 review-merged:
 	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --book "$(BOOK)" --font-path "$(BOOK_ROOT)/fonts" --template "$(TEMPLATE)" --profile merged --main "$(MAIN)" --output "$(OUT_REVIEW_MERGED)"
 
-exports:
+exports: external-assets
 	$(PYTHON) scripts/build_web_exports.py --typst "$(TYPST)" --book "$(BOOK)" --font-path "$(BOOK_ROOT)/fonts" --template "$(TEMPLATE)" --source "$(WEB_SOURCE)" --output-dir "$(OUT_DIR)"
 
 all: build review exports
@@ -91,7 +94,7 @@ all-books:
 		$(MAKE) all-templates BOOK=$$book OUT_DIR=out/books/$$book; \
 	done
 
-template-check:
+template-check: external-assets
 	@mkdir -p $(OUT_DIR)/template-check
 	@set -e; for template in $(TEMPLATES); do \
 		echo "==> checking $(BOOK) template $$template"; \
@@ -128,11 +131,11 @@ site:
 
 check: ci
 
-watch:
+watch: external-assets
 	@mkdir -p $(OUT_DIR)
 	$(TYPST) watch $(FONTS) --input book=$(BOOK) --input template=$(TEMPLATE) --input profile=school $(MAIN) $(OUT_SCHOOL)
 
-png:
+png: external-assets
 	@mkdir -p $(OUT_DIR)/pages
 	$(TYPST) compile $(FONTS) --input book=$(BOOK) --input template=$(TEMPLATE) --input profile=school $(MAIN) "$(OUT_DIR)/pages/strana-{0p}.png" --ppi 150
 
