@@ -32,5 +32,5 @@ Při komplexním křížovém refaktoringu ve velkém kontextu proto model čast
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "context_window"),)
 )

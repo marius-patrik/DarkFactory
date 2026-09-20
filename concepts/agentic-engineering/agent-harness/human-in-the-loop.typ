@@ -40,5 +40,5 @@ Základním principem navrženého řešení není nekritická plná autonomie, 
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "agent_loop"), (type: "related", target: "branch_protection"),)
 )

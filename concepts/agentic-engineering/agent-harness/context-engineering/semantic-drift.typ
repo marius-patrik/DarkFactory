@@ -27,5 +27,5 @@ Výsledkem je stav, kdy agent sebevědomě reportuje vyřešení úkolu, ačkoli
   practical_summary: none,
   practical_after: none,
   practical_wrapper: none,
-  relations: (),
+  relations: ((type: "dependency", target: "context_engineering"), (type: "related", target: "context_rot"),)
 )
