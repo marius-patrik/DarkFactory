@@ -15,7 +15,6 @@ Inženýrství prováděcí smyčky je návrh a řízení stavových přechodů,
   description: terms => [
 #finalized[
 Inženýrství prováděcí smyčky odděluje provozní řízení od samotného modelového rozhodování. Patří sem stavové přechody, podmínky ukončení, rozpočty běhu, opakování po selhání, detekce uvíznutí a pravidla pro eskalaci nebo lidské schválení.
-]
   ],
   summary: terms => [
 Loop engineering převádí otevřenou agentní iteraci na provozně ohraničený proces s explicitními pravidly pokračování, selhání a ukončení.
