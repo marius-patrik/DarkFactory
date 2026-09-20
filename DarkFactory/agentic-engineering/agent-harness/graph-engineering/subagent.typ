@@ -1,5 +1,5 @@
-#import "../../../../templates/common.typ": define-term, translation, unconfirmed, bib
-#import "../../../schema.typ": concept
+#import "/DarkFactory/templates/common.typ": define-term, translation, unconfirmed, bib
+#import "/DarkFactory/schema.typ": concept
 
 #let terminology = define-term(
   id: "subagent",
