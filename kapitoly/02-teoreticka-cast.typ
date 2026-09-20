@@ -2,7 +2,9 @@
 
 = #finalized[Teoretická část: Vymezení konceptu]
 
-== #finalized[Správa verzí \[Version Control\], Plánování \[Planning\], Kontinuální integrace \[Continuous Integration\] (CI a GitHub Actions) a Požadované kontroly \[Required Checks\]]
+== #finalized[Vývojové prostředí a praxe]
+
+=== #finalized[Správa verzí \[Version Control\]]
 
 === #finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]
 #accepted[
@@ -56,6 +58,8 @@ Zatímco klasický merge commit přenese do hlavní větve veškeré dílčí co
 - Eliminace interního šumu: Pomocné commity vzniklé při ladění testů se do hlavní větve vůbec nedostanou; historie projektu zůstává čistá a přehledná podle pravidla: jeden úkol = jeden commit.
 - Atomický návrat změn (`git revert`): Pokud se v budoucnu ukáže, že začleněná úprava zanesla do produkce nečekanou vadu, lze celý úkol vrátit jediným atomickým příkazem bez nutnosti rozplétat desítky dílčích mezikroků.
 ]
+
+=== #finalized[Plánování \[Planning\]]
 
 === #finalized[Kontinuální integrace (CI a GitHub Actions)]
 
