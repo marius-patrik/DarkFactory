@@ -1,5 +1,5 @@
 import type { AssistantMessageEventStream, Context, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
-import type { z } from "zod";
+import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { captureContext, forceCaptureTool, readCapture } from "./capture-request.ts";
 
@@ -56,7 +56,7 @@ export function captureJsonSchema(schema: z.ZodType): Record<string, unknown> {
 			json = { type: "object", properties: {}, required: [] };
 		}
 	}
-	if (json.type !== "object") {
+	if (!json || typeof json !== "object" || json.type !== "object") {
 		throw new Error("captureResult requires a Zod object schema for tool parameters.");
 	}
 	return json;

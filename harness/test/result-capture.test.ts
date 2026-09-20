@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import type { AssistantMessage, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
-import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
 import { z } from "zod";
 import {
 	CaptureError,
@@ -8,6 +7,30 @@ import {
 	captureResult,
 	validateCaptureSchema,
 } from "../src/harness/result-capture.ts";
+
+/** Local mock for helper stream creators */
+function createAssistantMessageEventStream() {
+	let resolve: (value: any) => void;
+	let reject: (reason?: any) => void;
+	const promise = new Promise<any>((res, rej) => {
+		resolve = res;
+		reject = rej;
+	});
+
+	return {
+		push(event: any) {
+			if (event.type === "done") {
+				resolve(event.message);
+			} else if (event.type === "error") {
+				reject(new Error("error"));
+			}
+		},
+		end() {},
+		result() {
+			return promise;
+		},
+	};
+}
 
 /** Simple mock model */
 function mockModel(id: string): Model<any> {
