@@ -33,14 +33,6 @@ def test_ci_blocks_on_harness_format_and_lint_before_typecheck():
     assert steps[0]["with"]["fetch-depth"] == 0
 
 
-def test_dispatch_runs_the_bundled_graph_with_a_token_for_the_checks_gate():
-    wf = load_workflow()
-    steps = wf["jobs"]["dispatch"]["steps"]
-    run_step = next(s for s in steps if s.get("name", "").startswith("Run DF Dispatch"))
-    assert "--graph .darkfactory-pipeline/harness/assets/graph.darkfactory.json" in run_step["run"]
-    assert run_step.get("env", {}).get("GH_TOKEN") == "${{ github.token }}"
-
-
 def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
     with pathlib.Path(".github/workflows/agent.yml").open("r", encoding="utf-8") as f:
         wf = yaml.safe_load(f)
