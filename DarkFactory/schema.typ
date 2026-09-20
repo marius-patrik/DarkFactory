@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, term, render-translation, resolve-citation-label, profile-state
+#import "/DarkFactory/templates/common.typ": term-full-name, resolve-citation-label
 
 #let relation(type, target) = {
   assert(type in ("dependency", "related"), message: "unsupported semantic relation: " + type)
@@ -181,11 +181,17 @@
   result.map(key => keyed.find(node => node.section.key == key)) + unkeyed
 }
 
-#let render-concept-title(item) = context {
+#let render-concept-title(item) = {
   if item.title != none {
-    render-translation(item.title, language: "auto", school-both: false)
+    if item.title.en != none and item.title.cs != none {
+      [#item.title.en (#item.title.cs)]
+    } else if item.title.en != none {
+      item.title.en
+    } else {
+      item.title.cs
+    }
   } else {
-    term(item, surface: "full", linked: false, marker: false, emphasized: false)
+    term-full-name(item)
   }
 }
 
@@ -200,7 +206,7 @@
 }
 
 #let render-concept(item, terms, graph, level: 1) = {
-  let output = context [#heading(level: level)[#finalized[#render-concept-title(item)]]#label("concept-" + item.key)]
+  let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
 
   output += [
     #set par(first-line-indent: (amount: 1.5em, all: true))

@@ -324,18 +324,8 @@
   }
 }
 
-#let term-name(value, surface: "full", language: "auto") = context {
-  assert(value.kind == "concept", message: "term-name() expects a concept")
-  assert(surface in ("full", "industry", "proper", "alias"), message: "unsupported term surface")
-  let proper = concept-proper(value, language: language)
-  if surface == "proper" { return proper }
-  if surface == "industry" {
-    return if value.industry != none { value.industry } else { proper }
-  }
-  if surface == "alias" {
-    return if value.alias != none { value.alias } else if value.industry != none { value.industry } else { proper }
-  }
-
+#let term-full-name(value) = {
+  assert(value.kind == "concept", message: "term-full-name() expects a concept")
   let lead = if value.industry != none { value.industry } else if value.english != none { value.english } else { value.czech }
   let lead-raw = str(lead)
   let cs-raw = if value.czech != none { str(value.czech) } else { none }
@@ -345,10 +335,28 @@
     #if value.czech != none and cs-raw != lead-raw {
       [#text(" (")#text(lang: "cs")[#value.czech]#text(")")]
     }
+    #if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
+      [#text(" [")#text(lang: "en")[#value.english]#text("]")]
+    }
     #if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
       [#text(" [")#value.alias#text("]")]
     }
   ]
+}
+
+#let term-name(value, surface: "full", language: "auto") = {
+  assert(value.kind == "concept", message: "term-name() expects a concept")
+  assert(surface in ("full", "industry", "proper", "alias"), message: "unsupported term surface")
+  if surface == "full" { return term-full-name(value) }
+
+  let proper = concept-proper(value, language: language)
+  if surface == "proper" { return proper }
+  if surface == "industry" {
+    return if value.industry != none { value.industry } else { proper }
+  }
+  if surface == "alias" {
+    return if value.alias != none { value.alias } else if value.industry != none { value.industry } else { proper }
+  }
 }
 
 #let term-sort-name(value) = {

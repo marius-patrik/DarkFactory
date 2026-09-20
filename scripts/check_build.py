@@ -169,15 +169,26 @@ for contract in (
     "#let relation(",
     "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
-    "#let render-concept-title(item) = context",
+    "#let render-concept-title(item) = {",
     "#let render-concept(item, terms, graph, level: 1)",
 ):
     if contract not in schema:
         fail(f"concept schema is missing contract: {contract}")
 
+for forbidden in (
+    "#let render-concept-title(item) = context",
+    "#heading(level: level)[#finalized[",
+    "let output = context [#heading(",
+):
+    if forbidden in schema:
+        fail(f"concept heading metadata remains contextual: {forbidden}")
+if 'let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]' not in schema:
+    fail("concept heading construction is not bookmark-safe")
+
 common = sources[ROOT / "templates/common.typ"]
 for contract in (
-    '#let term-name(value, surface: "full", language: "auto")',
+    '#let term-full-name(value) = {',
+    '#let term-name(value, surface: "full", language: "auto") = {',
     'surface in ("full", "industry", "proper", "alias")',
     'assert(value.kind == "concept", message: "term() expects a concept")',
     '#let render-keywords(items) = context',
