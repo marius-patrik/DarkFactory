@@ -1,6 +1,7 @@
 /** @packageDocumentation
- * Shared browser application boundary for DarkFactory documentation and operator UI.
+ * Shared DarkFactory web rendering and operator-UI package boundary.
  *
- * The application consumes browser-safe protocol/GitHub/auth contracts and never imports machine-secret keychain code.
+ * Build-time documentation rendering is exposed from `@darkfactory/web/docs`. Browser code consumes only browser-safe
+ * protocol/GitHub/auth contracts and never imports machine-secret keychain implementations.
  */
 export type { RouteResult, TaskProfile } from "@darkfactory/protocol/model";
