@@ -6,10 +6,10 @@ This is the durable cross-Request execution plan for completing DarkFactory.
 
 It defines:
 
-- the remaining critical path to self-hosting;
+- the remaining critical path to the final version;
 - which work may proceed in parallel;
 - recovery ownership and disposition;
-- merge/cutover/release/fleet gates;
+- merge/engine-completion/release/fleet gates;
 - the final acceptance path through #361 and #68.
 
 It does **not** contain workflow run IDs, temporary branch heads, execution diaries or per-run checkpoints. GitHub issues, PRs and Actions remain the source of live execution state.
@@ -142,7 +142,21 @@ Direct authorship never waives:
 
 Once df can reliably own its own development lifecycle, use it for the remaining work.
 
-### 3.5 CI concurrency rule
+### 3.5 No supported production-migration phase
+
+DarkFactory is being completed directly in its final architecture.
+
+- There is no required supported legacy-to-df production migration, dual-engine compatibility window, shadow-parity phase, staged cutover, rollback compatibility layer or migration-tooling milestone.
+- Historical #242 shadow/parity work is evidence only. It is not a dependency of #359 and must not be recreated or extended.
+- Legacy Python and recovered historical implementations are inspected only to preserve required behavior and provenance; they are not compatibility targets.
+- Implement missing behavior directly in the final TypeScript package/capability owner, then delete or retire the legacy owner as soon as the final owner is sufficient.
+- Do not create adapters, aliases, tests, workflows or operational paths solely to keep obsolete production behavior supported during the rebuild.
+- A canary/pre-release may be produced opportunistically when it accelerates packaging feedback, but it is never a mandatory phase between engine completion and the final release.
+- Fleet work validates clean install/update of the final release; it does not require supported migration from legacy production.
+
+The optimization target is the shortest safe path to the final #360/#361/#68 end state while preserving required behavior, recovery provenance, deterministic verification and governance.
+
+### 3.6 CI concurrency rule
 
 A red canonical/default branch is a repository-wide stop-the-line event.
 
@@ -184,11 +198,11 @@ Every recovery source must have an explicit terminal disposition before #361.
 
 ---
 
-## 5. Active critical path to self-hosting
+## 5. Active critical path to final engine completion
 
 The bootstrap/package/runtime foundations (#413, #365, #406, #420, #421), final hard transition (#340), unified Planning lifecycle (#391), and capability-tier routing (#331) are complete.
 
-The remaining hard dependency spine to the earliest safe #359 cutover is:
+The remaining hard dependency spine to the #359 rebuilt-engine completion gate is:
 
 ```text
 #329  natural-stop result capture ───┐
@@ -196,10 +210,10 @@ The remaining hard dependency spine to the earliest safe #359 cutover is:
 #341  capability-driven quality ────┘       ↓
                                             #317  truthful branch-repair / mutation evidence
                                               ↓
-                                            #359  df-only production cutover
+                                            #359  df production engine complete
 ```
 
-This graph is a **merge/cutover dependency graph**, not a serial development schedule. #329 and #341 should progress concurrently. #358 recovery analysis may also proceed while they finish, but its final implementation/merge must consume their landed contracts. The production-critical #422 credential slice is already satisfied by #523 and is no longer part of this spine.
+This graph is a **merge/engine-completion dependency graph**, not a serial development schedule. #329 and #341 should progress concurrently. #358 recovery analysis may also proceed while they finish, but its final implementation/merge must consume their landed contracts. The production-critical #422 credential slice is already satisfied by #523 and is no longer part of this spine.
 
 ### Immediate development concurrency
 
@@ -228,11 +242,11 @@ Merge only when each lane's actual interfaces are stable.
 
 ---
 
-## 6. #359 rebuilt-engine completion boundary
+## 6. #359 rebuilt-engine completion/deletion boundary
 
-#359 is intentionally an **early self-hosting/rebuild-completion gate**, not the final product-completion gate.
+#359 is intentionally a **core rebuilt-engine completion/deletion gate**, not the final product-completion gate and not a production-migration milestone.
 
-There is no required dual-engine transition period. Legacy Python may be deleted as its final TypeScript replacements land.
+There is no required dual-engine transition period, compatibility window or staged cutover. Legacy Python should be deleted as its final TypeScript replacements land.
 
 #359 does **not** wait for #332, #384, #385, #386, #388 full, TUI, docs/web completion or final release polish unless current implementation proves one of them is actually required for the core Request lifecycle.
 
@@ -262,13 +276,13 @@ Close #359 only when all are true:
 7. Normal production no longer requires shell/subprocess GitHub mutation.
 8. No responsibility exists only in the retired Python engine.
 
-After #359, use the real df-native system for remaining work wherever it is the efficient path.
+Independent final-product work does not wait for #359 when its interfaces are stable. After #359, use the real df-native system for remaining work wherever that is the fastest path.
 
 ---
 
-## 7. Parallel work outside the cutover path
+## 7. Parallel final-version work outside the core-engine path
 
-These Requests should not unnecessarily slow #359.
+These Requests should proceed in parallel whenever their interfaces are stable and should not be serialized behind #359 unless they genuinely depend on it.
 
 ### Provider/runtime extension
 
@@ -278,7 +292,7 @@ These Requests should not unnecessarily slow #359.
 
 ### Delivery/governance capabilities
 
-Preparation may begin before cutover; final implementation should use the self-hosted system where practical:
+Preparation and implementation may begin before #359; use the self-hosted system when available, but do not wait for #359 solely to preserve a sequencing narrative:
 
 - #339 — hooks capability from F47;
 - #384 — deterministic git/rebase/conflict capability;
@@ -304,9 +318,9 @@ Preparation may begin before cutover; final implementation should use the self-h
 
 ---
 
-## 8. Self-hosted completion wave
+## 8. Final completion wave
 
-After #359, finish remaining product work through df itself.
+Remaining product work may already be running in parallel before #359. Once #359 lands, continue it through df itself where that is the fastest path; #359 is not a start gate for unrelated final-version work.
 
 Independent lanes should run concurrently subject to real interface dependencies:
 
@@ -343,9 +357,11 @@ The intended GitHub Packages namespace is the planned `darkfactory` GitHub organ
 
 The normal df installation is batteries-included with official capabilities while third-party capabilities use the same loader/ABI.
 
-### Canary
+### Optional packaging smoke / pre-release
 
-As soon as #359 is complete, publish a canary/pre-release sufficient to test:
+Use a canary or pre-release only when it accelerates discovery of packaging/consumer/web deployment problems. It is **not** a mandatory phase and must not delay direct work on the final release.
+
+When useful, it may test:
 
 - source-free install;
 - package resolution;
@@ -355,7 +371,7 @@ As soon as #359 is complete, publish a canary/pre-release sufficient to test:
 - GitHub Packages mechanics;
 - prebuilt web bundle deployment.
 
-The canary is feedback, not #360 final acceptance.
+This smoke artifact is disposable feedback, not a supported migration release, not a compatibility promise and not a prerequisite for #360 if equivalent final-release verification is already available.
 
 ### #360 final release
 
@@ -387,7 +403,7 @@ The final fleet is resolved by stable GitHub repository identity:
 
 After #360:
 
-1. migrate the five non-DarkFactory consumers using released df;
+1. install the final released df into the five non-DarkFactory consumers without adding legacy-production migration compatibility;
 2. re-check DarkFactory through the same install/update contract;
 3. run install/update twice to prove idempotency;
 4. verify package/domain/capability detection, workflows, protection, checks, docs/web/auth and recovery provenance;
@@ -409,7 +425,7 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 | #341 | yes | landed #340/#420/#421 contracts; capability-driven quality/action model |
 | #358 | recovery now | F30-4 disposition + final #329/#341 + landed #331/#391 |
 | #317 | prepare | #358 + #341 truthful observed-effect path |
-| #359 | prepare ledger | #329/#341/#358/#317 |
+| #359 | prepare ledger now | #329/#341/#358/#317; final engine completion/deletion, not migration |
 | #248 | yes | #422 + terminal F14 disposition |
 | #252 | prepare | #365/#421 usable interfaces |
 | #332 | prepare | #358/#329/#331; preferably self-hosted |
@@ -428,7 +444,7 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 | #390 | prepare | #425 shell + shipped quota/provider protocol |
 | #336 | recovery now | #424 README renderer + #339/#341 docs-impact owners |
 | #337 | recovery now | architecture/product materially final |
-| #360 | canary after #359 | all required final product Requests terminal |
+| #360 | work in parallel where possible | all required final product Requests terminal; optional packaging smoke is not a gate |
 | #361 | prepare audit schema | six-repo released-df migration green |
 | #68 | final only | #361 + original graph acceptance green |
 
@@ -450,6 +466,9 @@ Only still-open completion Requests are listed here. Completed foundations #413/
 - keyword/model-claim mutation truth;
 - production shell `gh` mutation;
 - Python production orchestration;
+- a supported dual-engine production-migration/cutover phase;
+- mandatory Python-vs-df parity or shadow equivalence before replacement;
+- legacy compatibility adapters retained only to support migration;
 - ProperDocs/MkDocs as final docs runtime;
 - separate docs/dashboard frontends;
 - per-consumer React builds;
@@ -467,7 +486,7 @@ Update `PLAN.md` only when one of these changes:
 - a durable architecture decision;
 - a cross-Request start/merge/final dependency;
 - recovery ownership/disposition;
-- #359 cutover requirements;
+- #359 rebuilt-engine completion/deletion requirements;
 - release/fleet/final acceptance;
 - the set of Requests required for completion;
 - a prerequisite becomes permanently satisfied and keeping it in the active plan would misrepresent the remaining critical path.
