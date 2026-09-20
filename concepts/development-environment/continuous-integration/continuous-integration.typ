@@ -29,9 +29,13 @@ Konkrétní automatizační platformu popisuje #term(terms.github_actions), izol
 ]
 ]
 
+#diff[
 #critique[
   Nestálost testů (Flaky Tests) v integračních bězích:
   Spoléhání se na automatické testy v CI naráží na problém nestálých testů (_flaky tests_), které občas selžou kvůli časování, síťové odezvě či asynchronním stavům, aniž by kód obsahoval chybu. Pokud agent narazí na takto náhodně selhávající test, může začít nesmyslně upravovat správný kód ve snaze chybu odstranit. CI pipeline proto musí nestálé testy minimalizovat nebo umožnit automatické opakování selhaného běhu v čistém prostředí.
+]
+][
+Riziko nestálých testů je vyčleněno do samostatného konceptu #term(terms.flaky_test).
 ]
   ],
   theory_body: none,
