@@ -1,4 +1,4 @@
-import { expect, mock, test, afterEach } from "bun:test";
+import { afterEach, expect, mock, test } from "bun:test";
 
 mock.module("node:fs/promises", () => ({
 	access: async () => {},
