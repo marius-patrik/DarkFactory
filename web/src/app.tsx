@@ -433,7 +433,7 @@ function ActivityBar({
   );
 }
 
-function RepoTreeBranchfunction RepoTreeBranch({
+function RepoTreeBranch({
   nodes,
   depth,
   repositoryUrl,
@@ -510,9 +510,8 @@ function SidebarResizeHandle({
   };
 
   return (
-    <div
+    <hr
       className={"sidebar-resizer sidebar-resizer-" + side}
-      role="separator"
       aria-orientation="vertical"
       aria-label="Resize sidebar"
       onPointerDown={beginResize}
@@ -566,7 +565,7 @@ function RepoFilesPanel({
   );
 }
 
-function LanguagePickerfunction LanguagePicker({
+function LanguagePicker({
   manifest,
   templateName,
   profileName,
@@ -650,23 +649,23 @@ function LanguagePickerfunction LanguagePicker({
   );
 }
 
-function RendererPickerfunction RendererPicker({
+function RendererPicker({
   mode,
-  viewerHref,
+  viewerTarget,
   reviewHref,
   rawHref,
   onNavigate,
   onSelectMode,
 }: {
   mode: ViewerMode;
-  viewerHref: string;
+  viewerTarget: string;
   reviewHref: string;
   rawHref: string;
   onNavigate: (href: string) => void;
   onSelectMode?: (mode: ViewerMode) => void;
 }) {
   const options: Array<{ mode: ViewerMode; label: string; href: string; icon: string[] }> = [
-    { mode: "final", label: "View", href: viewerHref, icon: ["EyeIcon"] },
+    { mode: "final", label: "View", href: viewerTarget, icon: ["EyeIcon"] },
     { mode: "review", label: "Review", href: reviewHref, icon: ["PencilLineIcon"] },
     { mode: "raw", label: "Raw", href: rawHref, icon: ["BracesIcon", "FileCode2Icon"] },
   ];
@@ -707,7 +706,7 @@ function RendererPickerfunction RendererPicker({
     </DropdownMenu>
   );
 }
-function FormatPickerfunction FormatPicker({
+function FormatPicker({
   format,
   pdfHref,
   markdownHref,
@@ -778,7 +777,7 @@ function FormatPickerfunction FormatPicker({
   );
 }
 
-function ChapterPickerfunction ChapterPicker({
+function ChapterPicker({
   chapters,
   page,
   onSelect,
@@ -1916,7 +1915,7 @@ export function ViewerApp() {
           <span className="status-divider" aria-hidden="true" />
           <RendererPicker
             mode={scopedMode}
-            viewerHref={finalTarget}
+            viewerTarget={finalTarget}
             reviewHref={reviewTarget}
             rawHref={rawTarget}
             onNavigate={navigateViewer}
