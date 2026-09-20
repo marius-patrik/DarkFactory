@@ -1,6 +1,6 @@
 # ADR-0001 — Domains sit above environments
 
-**Status**: Accepted · 2026-09-08
+**Status**: Superseded by ADR-0021 · 2026-09-20
 
 **Resolves**: #18
 
