@@ -14,10 +14,8 @@
 #let item = concept(
   key: "compaction",
   term: terminology,
-  heading: terms => [Kompakce kontextu a ztrátová komprese],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 Správa aktivního kontextu je součástí kontextového inženýrství (#term(terms.context_engineering, language: "en", marker: false, linked: false, emphasized: false)). Při rozsáhlejších úlohách se kontextové okno nevyhnutelně zaplní. V okamžiku, kdy objem historie dosáhne kritické hranice, musí agent harness přistoupit ke kompakci kontextu #diff[(_compaction_)][(_compaction_ @jiang2023llmlingua)] — model je vyzván, aby dosavadní průběh sezení zkrátil do syntetického souhrnu, který nahradí starší část historie.
 
 Tento proces však představuje destruktivní ztrátovou kompresi:
@@ -25,14 +23,10 @@ Tento proces však představuje destruktivní ztrátovou kompresi:
 - Oslabení negativních pravidel: Explicitní zákazy (např. neměnit veřejné rozhraní API) bývají v souhrnu zevšeobecněny nebo zcela vypuštěny.
 - Konfirmační zkreslení (_Confirmation Bias_): Model v souhrnu upřednostňuje fakta odpovídající jeho vnitřním statistickým asociacím na úkor netriviálních specifik konkrétního projektu.
   ],
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: unconfirmed,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "dependency", target: "context_window"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "dependency", target: "context_window"),),
 )
