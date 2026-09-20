@@ -6,12 +6,13 @@ from __future__ import annotations
 import html.parser
 import mimetypes
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "DarkFactory" / "img" / "external"
-UA = "DarkFactory-Paper/1.0 (+https://github.com/marius-patrik/DarkFactory-Paper)"
+UA = "Mozilla/5.0 (compatible; DarkFactory-Paper/1.0; +https://github.com/marius-patrik/DarkFactory-Paper)"
 
 ASSETS = (
     {
@@ -63,6 +64,7 @@ def get(url: str) -> tuple[bytes, str]:
         headers={
             "User-Agent": UA,
             "Accept": "image/avif,image/webp,image/png,image/jpeg,text/html;q=0.8,*/*;q=0.5",
+            "Accept-Language": "en-US,en;q=0.9",
         },
     )
     with urllib.request.urlopen(request, timeout=45) as response:
@@ -77,7 +79,7 @@ def resolve_og(page_url: str) -> str:
     parser.feed(payload.decode("utf-8", errors="replace"))
     if not parser.image:
         raise RuntimeError(f"no og:image found at {page_url}")
-    return parser.image
+    return urllib.parse.urljoin(page_url, parser.image)
 
 
 def looks_like_image(payload: bytes, content_type: str) -> bool:
