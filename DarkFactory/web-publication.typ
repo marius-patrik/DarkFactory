@@ -1,6 +1,6 @@
 #import "/DarkFactory/metadata.typ": meta, title-value, title-display
 #import "/DarkFactory/templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
-#import "/DarkFactory/index.typ": book-title, render-introduction, render-theory, render-practical, render-results, render-conclusion, render-appendices
+#import "/DarkFactory/index.typ": book-title, render-manuscript, render-appendices
 
 #let publication(
   review: false,
@@ -48,11 +48,7 @@
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
-  render-introduction()
-  render-theory()
-  render-practical()
-  render-results()
-  render-conclusion()
+  render-manuscript()
 
   bibliography(
     "/DarkFactory/bib/references.bib",
