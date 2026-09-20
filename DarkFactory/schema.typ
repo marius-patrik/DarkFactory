@@ -222,11 +222,11 @@
 #let render-concept(item, terms, graph, level: 1) = {
   let output = [#heading(level: level)[#finalized[#render-concept-title(item)]]]
 
-  let definition = if item.definition != none { item.definition(terms) } else { render-term-definition(item) }
+  let definition = if item.definition != none { (item.definition)(terms) } else { render-term-definition(item) }
   if definition != none { output += definition }
 
-  if item.description != none { output += item.description(terms) }
-  if item.visual != none { output += item.visual(terms) }
+  if item.description != none { output += (item.description)(terms) }
+  if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
     output += render-concept(example, terms, graph, level: level + 1)
@@ -235,7 +235,7 @@
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
 
-  if item.summary != none { output += item.summary(terms) }
+  if item.summary != none { output += (item.summary)(terms) }
 
   let citations = render-citations(item)
   if citations != none { output += [#citations] }
