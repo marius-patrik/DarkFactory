@@ -14,7 +14,6 @@
 #let item = concept(
   key: "language_models",
   term: terminology,
-  heading: terms => [#finalized[Language Models, Chatbots, and Agents (Jazykové modely, chatboti a agenti)]],
   theory_enabled: true,
   theory_intro: terms => [
 #blue-note[

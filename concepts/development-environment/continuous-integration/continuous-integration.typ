@@ -16,7 +16,6 @@
 #let item = concept(
   key: "continuous_integration",
   term: terminology,
-  heading: terms => [#finalized[Kontinuální integrace (CI a GitHub Actions)]],
   theory_enabled: true,
   theory_intro: terms => [
 #unconfirmed[

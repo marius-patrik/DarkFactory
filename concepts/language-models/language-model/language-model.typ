@@ -16,7 +16,6 @@
 #let item = concept(
   key: "language_model",
   term: terminology,
-  heading: terms => [#term(terms.language_model, marker: false, linked: false, emphasized: false)],
   theory_enabled: false,
   theory_intro: terms => [
 #accepted[

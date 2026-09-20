@@ -13,7 +13,6 @@
 #let item = concept(
   key: "git",
   term: terminology,
-  heading: terms => [#finalized[#term(terms.git, marker: false, linked: false, emphasized: false) a #term(terms.github, marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
   theory_intro: terms => [
 #accepted[

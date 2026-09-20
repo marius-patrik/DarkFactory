@@ -14,7 +14,6 @@
 #let item = concept(
   key: "development_environment",
   term: terminology,
-  heading: terms => [#finalized[Development Environment and Practices (Vývojové prostředí a praxe)]],
   theory_enabled: true,
   theory_intro: terms => [
 #accepted[
