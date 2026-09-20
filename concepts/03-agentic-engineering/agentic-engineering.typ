@@ -11,10 +11,14 @@
 #let item = concept(
   key: "agentic_engineering",
   term: terminology,
-  heading: terms => [#term(terms.agentic_engineering, marker: false, linked: false, emphasized: false)],
-  theory_enabled: false,
+  heading: terms => [#term(terms.agentic_engineering, render: "both", detail-language: "cs", detail-style: "inline", marker: false, linked: false, emphasized: false)],
+  theory_enabled: true,
   theory_intro: none,
-  theory_body: none,
+  theory_body: terms => [
+#accepted[
+#term(terms.agentic_engineering, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false)
+]
+  ],
   theory_summary: none,
   theory_after: none,
   theory_wrapper: none,
