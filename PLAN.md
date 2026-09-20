@@ -164,11 +164,11 @@ The following work should proceed before #359 whenever its interfaces are stable
 The native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path is landed. `properdocs.yml` and `mkdocs.yml` are absent; they are not compatibility inputs.
 
 Continue in parallel:
-- #334 — keep strict TSDoc/API coverage complete as final public exports are added.
-- #424 — finish the remaining native docs-compiler contract, especially recovery dispositions and final capability/repository metadata integration; do not reintroduce ProperDocs/MkDocs compatibility.
-- #335 — publish the detected first-party API + architecture content through the native content graph once #334 completes strict public-surface extraction; #341 detection is already available.
+- #334 — complete. Strict detected TypeScript/TSDoc API coverage is enforced by the native docs path and CI.
+- #335 — complete. Detected first-party API + architecture content is published through the canonical content graph and rendered by `@darkfactory/web`.
+- #424 — finish only the remaining native docs-compiler delta: final repository/capability/graph metadata integration. D4/F42/F44 dispositions are terminal; do not reintroduce ProperDocs/MkDocs compatibility.
 - #336 — finish deterministic docs-impact enforcement using the shipped detection/diff contract plus #339 hooks rather than another detector.
-- #337 — finish the current-only documentation/governance truth pass and automated contradiction enforcement against the final shipped architecture.
+- #337 — current-only README/retired-surface drift enforcement is landed; keep it active and finish the final repository-wide contradiction pass after the product surface stabilizes.
 - #425 — finish the broader GitHub-backed operator application on the existing `@darkfactory/web` package.
 - #390 — integrate remaining operator/dashboard surfaces into that shared application.
 
@@ -231,9 +231,12 @@ After #361 is green, re-run the original declarable-graph product contract again
 ### Stable / landed
 
 - The canonical/default branch is `darkfactory`.
-- Current canonical HEAD is `b479516545c5b5434943c6acd0135456ff6ab07d`, merged through PR #858.
+- Current canonical HEAD after the latest merge is `a3b085627b2088cd203fea3346e39dac5fea969c`.
 - #858 repaired the packaged df runtime boundary by resolving workflow contracts through `@darkfactory/protocol/workflow` instead of a source-tree-relative import.
 - #341 is landed with the final repository evidence + capability-resolved deterministic action contract.
+- #880 landed deterministic current-documentation truth checks: README projection drift and retired docs surfaces now fail native docs CI.
+- #885 landed explicit nonterminal `Advances #N` Request binding, separating partial-delivery binding from terminal GitHub closing intent.
+- #887 landed the stable `@darkfactory/cli` command-registry slice with deterministic metadata shared by CLI/TUI/web consumers.
 - #741's deterministic git/workspace primitive slice, #423 browser-auth boundary, the native docs/web foundation and the unified Planning lifecycle remain landed.
 - The final-only architecture remains authoritative: no compatibility release, dual-engine parity phase, shadow production path, canary/pre-release phase, historical README, or separate public harness architecture.
 
@@ -305,11 +308,12 @@ Continue stable release engineering in parallel for final package metadata, Node
 
 #### Documentation and operator lanes
 
-- #334 remains open for strict TSDoc coverage over actual current first-party exports.
-- #424 remains open for the remaining native `docs.df` → `@darkfactory/docs` compiler/content-graph contract. PR #867 is closed because it changed only `bun.lock`.
-- #337 remains open for automated current-only documentation contradiction/drift enforcement. PR #869 is closed because it changed only `bun.lock`.
-- #403 remains open for the final `@darkfactory/cli` command registry/operator surface.
-- #335 follows strict #334 extraction; #336 joins the final #339 hook enforcement; #425/#390 may consume the already-shipped auth/browser boundaries.
+- #334 is complete: F42 recovery is terminal and strict TypeDoc/TSDoc extraction is enforced through the detected native docs path.
+- #335 is complete: detected API + architecture content is carried in the canonical content graph and rendered/tested through `@darkfactory/web`.
+- #424 remains open only for the real missing repository/capability/graph metadata portion of the native content graph. PR #867 remains closed because it changed only `bun.lock`.
+- #337 remains open for the final repository-wide contradiction audit; its deterministic README/retired-surface enforcement slice landed through PR #880.
+- #403 remains open, but the stable command-registry/metadata slice landed through PR #887. Finish only the remaining real operator commands and later engine/release joins against final owners.
+- #336 joins the final #339 hook enforcement; #425/#390 may consume the already-shipped auth/browser boundaries.
 
 ### Recovery and branch cleanup
 
@@ -323,7 +327,7 @@ All other previously retained remote `recovery/*` refs have been deleted after r
 
 The local recovery-cleanup pass is complete for the previously preserved September recovery set: terminal recovery refs were dispositioned in their owning GitHub Requests and removed, leaving only the three active recovery inputs above.
 
-Remote branch hygiene is now a separate execution-safety task. Numerous superseded `feature/*` refs from closed/invalid pipeline attempts still exist remotely even though they are not valid implementation vehicles. They must never be selected as continuation state. Delete each terminal stale feature ref once its owning Request/PR evidence proves no unique required work remains; retain only branches that are explicitly current execution vehicles.
+Remote branch hygiene is nearly complete. Exactly two stale `feature/*` refs remain from superseded work: `feature/capability-driven-repository-detection-and-quality` (landed #341 vehicle) and `feature/wire-graph-executor-handlers-and-graph-native-orch` (rejected #358 vehicle). Neither is a valid continuation branch. Delete both; all new #358 work starts from the exact current `darkfactory` HEAD on a fresh branch.
 
 The three remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique required state remains.
 
@@ -425,12 +429,12 @@ These lanes should not touch the engine spine except through already-defined cre
 
 Run stable pieces in parallel, with only these waits:
 
-- #334: F42 recovery refs are already reconciled/deleted; finish strict TSDoc coverage against the shipped #341 detected API action contract on the current tree.
-- #424: finish native docs compiler metadata/recovery dispositions now; no ProperDocs/MkDocs compatibility work.
-- #335: #341 is available; final integration waits only for #334's strict public-surface coverage.
+- #334: COMPLETE. Strict TSDoc coverage now runs through the shipped #341 detected API action contract.
+- #335: COMPLETE. API + architecture content is published through the canonical docs graph and shared web renderer.
+- #424: finish only repository/capability/graph metadata integration in the native content graph; recovery dispositions are already terminal.
 - #336: F44 recovery is already reconciled/deleted; finish shared docs-impact enforcement using the shipped #341 contract plus #339 rather than adding another detector/hook engine.
-- #337: F45 recovery is already integrated/deleted; keep current-only enforcement active now, and perform the final repository-wide truth pass only after the product surface has stopped changing.
-- #403 and #251: finish CLI/TUI surfaces against stable protocol/core APIs; do not wait for #359 where not required.
+- #337: README projection/retired-surface enforcement is active; perform the final repository-wide truth pass only after the product surface has stopped changing.
+- #403: the command-registry/metadata slice is landed; continue the remaining final operator commands and later engine/release joins. #251 consumes the same registry/metadata source for TUI work.
 - #425 and #390: continue the shared `@darkfactory/web` application and integrate the already-shipped #423 authentication contract now.
 
 D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their dispositions remain in the owning GitHub issues; do not recreate those branches.
