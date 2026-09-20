@@ -291,6 +291,9 @@ a {
 
 .renderer-picker {
   height: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
   display: inline-flex;
   align-items: stretch;
   overflow: hidden;

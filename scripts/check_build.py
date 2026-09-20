@@ -755,7 +755,7 @@ for required in ("window.history.pushState", '"popstate"', "navigateViewer", "on
 if "Switch Final / Koncept / Review" in app_source or "Switch Compiled / Koncept / Raw" in app_source:
     fail("legacy mode labels must not remain")
 for required in (
-    'role="group" aria-label="Renderer"',
+    '<fieldset className="renderer-picker" aria-label="Renderer">',
     '<TooltipContent>Renderer</TooltipContent>',
     'label: "View"',
     'label: "Edit"',
@@ -799,6 +799,12 @@ for required in (
         fail(f"viewer missing merged Contents/Files activity-command contract: {required}")
 if 'label="Pages"' in app_source or 'active === "pages"' in app_source:
     fail("page previews must be merged into Contents, not exposed as a separate activity item")
+for required in (
+    '<nav className="path-page-switcher" aria-label="Page navigation">',
+    '<fieldset className="renderer-picker" aria-label="Renderer">',
+):
+    if required not in app_source:
+        fail(f"viewer missing semantic navigation/control contract: {required}")
 for required in (
     '<TooltipContent>Language</TooltipContent>',
     'aria-label="Language"',

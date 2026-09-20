@@ -148,7 +148,7 @@ type CommandBinding = {
 };
 
 function useCommand(binding: CommandBinding) {
-  const { enabled = true, id, key, primaryModifier = false, run } = binding;
+  const { enabled = true, key, primaryModifier = false, run } = binding;
 
   useEffect(() => {
     if (!enabled) return;
@@ -166,7 +166,7 @@ function useCommand(binding: CommandBinding) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [enabled, id, key, primaryModifier, run]);
+  }, [enabled, key, primaryModifier, run]);
 }
 
 function useRepoTree(path: string) {
@@ -328,7 +328,6 @@ function TooltipAction({
         target={target}
         rel={target === "_blank" ? "noopener noreferrer" : undefined}
         aria-label={label}
-        aria-pressed={pressed}
       >
         <AnimatedIcon names={icon} size={18} />
       </a>
@@ -604,7 +603,7 @@ function RendererPicker({
   ];
 
   return (
-    <div className="renderer-picker" role="group" aria-label="Renderer">
+    <fieldset className="renderer-picker" aria-label="Renderer">
       {options.map((option) => (
         <Tooltip key={option.mode}>
           <TooltipTrigger asChild>
@@ -623,7 +622,7 @@ function RendererPicker({
           <TooltipContent>Renderer</TooltipContent>
         </Tooltip>
       ))}
-    </div>
+    </fieldset>
   );
 }
 function FormatPicker({
@@ -817,7 +816,10 @@ function AppearancePicker({
 export function ViewerApp() {
   const { manifest } = useManifest();
   const [routeRevision, setRouteRevision] = useState(0);
-  const params = useMemo(() => new URLSearchParams(window.location.search), [routeRevision]);
+  const params = useMemo(() => {
+    void routeRevision;
+    return new URLSearchParams(window.location.search);
+  }, [routeRevision]);
   const requestedMode = params.get("mode");
   const mode: ViewerMode =
     requestedMode === "review" ? "review" : requestedMode === "raw" ? "raw" : "final";
@@ -1372,7 +1374,7 @@ export function ViewerApp() {
         <div className="toolbar-main">
           <div className="toolbar-left">
             {pagesAvailable && (
-              <div className="path-page-switcher" aria-label="Page navigation">
+              <nav className="path-page-switcher" aria-label="Page navigation">
                 <TooltipAction
                   label="Previous page"
                   icon={["ChevronLeftIcon"]}
@@ -1403,7 +1405,7 @@ export function ViewerApp() {
                   onClick={() => goToPage(state.page + 1)}
                   className="path-page-action"
                 />
-              </div>
+              </nav>
             )}
             <TooltipAction
               label="Refresh document"

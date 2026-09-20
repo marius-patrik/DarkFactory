@@ -394,7 +394,11 @@ function installLinkOverlays(
     node.appendChild(overlay);
     overlays.push(overlay);
   }
-  return () => overlays.forEach((overlay) => overlay.remove());
+  return () => {
+    overlays.forEach((overlay) => {
+      overlay.remove();
+    });
+  };
 }
 
 function Minimap({
@@ -573,9 +577,12 @@ function DocumentNavigationPanel({
             </div>
             <nav className="contents-tree" aria-label="Document outline">
               {chapters.length ? (
-                chapters.map((chapter, index) => (
+                chapters.map((chapter) => (
                   <button
-                    key={chapter.title + "-" + chapter.page + "-" + index}
+                    key={
+                      chapter.anchor ||
+                      `${chapter.title}-${chapter.page}-${chapter.level}`
+                    }
                     type="button"
                     className={activeChapter === chapter ? "contents-item active" : "contents-item"}
                     style={{ paddingLeft: 10 + Math.max(0, chapter.level - 1) * 13 }}
