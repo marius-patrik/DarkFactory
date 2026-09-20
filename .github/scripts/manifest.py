@@ -121,7 +121,7 @@ DEFAULT_IDENTITIES: Dict[str, Any] = {
 
 
 class Manifest:
-    """The parsed contents of a repository's `darkfactory.json`.
+    """The parsed contents of a repository's repo.df.
 
     Attributes:
         root: Absolute path to the repository root.
