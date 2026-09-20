@@ -300,7 +300,7 @@ The final implementation must start fresh from current `darkfactory`: hook invoc
 
 PRs #816 and #862 are closed evidence only; #862 reused the stale release branch and did not satisfy the full release contract.
 
-PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` owns deterministic SHA-256 artifact integrity/source provenance generation. PR #912 landed as `c3660a00adecb2591b79d97e917ccb1387864f52`, adding independent fail-closed verification of installed/downloaded artifact bytes and expected release/source/ABI provenance.
+PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` owns deterministic SHA-256 artifact integrity/source provenance generation. PR #912 landed as `c3660a00adecb2591b79d97e917ccb1387864f52`, adding independent fail-closed verification of installed/downloaded artifact bytes and expected release/source/ABI provenance. PR #914 landed as `e4cec492d2526bd57b3c5b30196135f5286cf27b`, adding lockstep first-party version validation and a final-publication guard that rejects the `0.0.0` development sentinel and prerelease versions.
 
 Continue stable release engineering in parallel for lockstep version/package metadata, Node-compatible CLI/library boundaries, runtime assets, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Reuse the landed release manifest/checksum contract; publish exactly once after the final release join.
 
@@ -326,7 +326,7 @@ All other previously retained remote `recovery/*` refs have been deleted after r
 
 The local recovery-cleanup pass is complete for the previously preserved September recovery set: terminal recovery refs were dispositioned in their owning GitHub Requests and removed, leaving only the active F14/F47 recovery inputs above; F38 was dispositioned and deleted during the current #329 implementation pass.
 
-Remote branch hygiene is nearly complete. Exactly two stale `feature/*` refs remain from superseded work: `feature/capability-driven-repository-detection-and-quality` (landed #341 vehicle) and `feature/wire-graph-executor-handlers-and-graph-native-orch` (rejected #358 vehicle). Neither is a valid continuation branch. Delete both; all new #358 work starts from the exact current `darkfactory` HEAD on a fresh branch.
+Remote branch hygiene is nearly complete. The landed #341 feature ref has already been deleted. Exactly one stale rejected feature ref remains: `feature/wire-graph-executor-handlers-and-graph-native-orch` (superseded #358 vehicle). It is not a valid continuation branch and should be deleted by the local cleanup agent; active draft #894 continues on `feat/graph-native-production-orchestration`.
 
 The two remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique required state remains.
 
@@ -439,7 +439,7 @@ D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their disp
 
 ### 11.6 Workstream E — release engineering
 
-#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed deterministic release artifact checksum/source-provenance generation and PR #912 landed independent fail-closed verification; continue from current `darkfactory` with additional narrow final-owner release slices.
+#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed deterministic release artifact checksum/source-provenance generation, #912 landed independent fail-closed verification, and #914 landed the lockstep version/final-publication guard; continue from current `darkfactory` with additional narrow final-owner release slices.
 
 - package/publish metadata;
 - lockstep versioning + capability ABI version;
