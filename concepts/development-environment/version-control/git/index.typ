@@ -4,6 +4,7 @@
 #import "merge.typ" as merge
 #import "squash.typ" as squash
 #import "pull-request.typ" as pull_request
+#import "issue.typ" as issue
 #import "required-checks.typ" as required_checks
 #import "branch-protection.typ" as branch_protection
 
@@ -14,6 +15,7 @@
     branch.item,
     merge.item,
     squash.item,
+    issue.item,
     pull_request.item,
     required_checks.item,
     branch_protection.item,
