@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": translation, unconfirmed
+#import "/DarkFactory/templates/common.typ": translation, finalized
 #import "/DarkFactory/schema.typ": concept
 
 
@@ -11,7 +11,7 @@ definition: terms => [
 Guardrail je programově vynucené omezení nebo kontrola, která neponechává kritické provozní pravidlo pouze na pravděpodobnostním rozhodnutí modelu.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Pokud samotná instrukce v promptu neposkytuje dostatečnou záruku, harness může pravidlo vynutit deterministicky, například omezením přístupových práv, validací parametrů nástroje nebo odmítnutím nepovoleného stavového přechodu.
 ]
   ],
