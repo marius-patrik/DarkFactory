@@ -79,7 +79,7 @@ html[data-theme="oled"] .toolbar {
 }
 
 html[data-theme="oled"] .appearance-select {
-  color: #f5f5f5;
+  color: var(--text);
 }
 
 * {
