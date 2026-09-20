@@ -2759,6 +2759,39 @@ def parse_plan_files(plan_text: str) -> Set[str]:
     return found
 
 
+def parse_explicit_plan_files(plan_text: str) -> Set[str]:
+    """Extracts an exact file allowlist only when Planning declares one explicitly.
+
+    Behavioral Planning commonly cites package names, config files, current owners and example paths
+    as architectural context. Those references must not become mutation permissions. Exact file
+    scope is opt-in through a dedicated heading so current-tree discovery can choose the concrete
+    implementation files required by the approved behavior.
+
+    Accepted headings are File Scope, Allowed Files, Files to Change and File Allowlist
+    (case-insensitive). The section ends at the next markdown heading.
+
+    Args:
+        plan_text: Approved Planning markdown.
+
+    Returns:
+        Repository paths declared in an explicit file-scope section, or an empty set when Planning
+        intentionally leaves concrete file ownership to current-tree discovery.
+    """
+    if not plan_text:
+        return set()
+
+    heading = re.compile(
+        r"(?:^|\n)#{2,6}\s*(?:File Scope|Allowed Files|Files to Change|File Allowlist)\s*\n",
+        re.IGNORECASE,
+    )
+    match = heading.search(plan_text)
+    if not match:
+        return set()
+    tail = plan_text[match.end():]
+    next_heading = re.search(r"(?:^|\n)#{1,6}\s+", tail)
+    section = tail[: next_heading.start()] if next_heading else tail
+    return parse_plan_files(section)
+
 def is_file_in_plan(file_path: str, plan_files: Set[str]) -> bool:
     """Reports whether a changed file matches any path cited in the approved plan.
 
@@ -3935,7 +3968,7 @@ def run_self_review_iteration(
         plan_body = plan_data.get("body", "")
 
     # Deterministic scope check before LLM review
-    plan_files = parse_plan_files(plan_body)
+    plan_files = parse_explicit_plan_files(plan_body)
     changed_files = get_pr_changed_files(default_branch(), cwd=cwd)
     in_scope_files, out_of_scope_files = check_scope(changed_files, plan_files)
 
