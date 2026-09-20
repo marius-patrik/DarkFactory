@@ -19,6 +19,7 @@ Samotný jazykový model kód pouze generuje na základě statistických závisl
 Konkrétní automatizační platformu popisuje #term(terms.github_actions), izolaci běhu #term(terms.container) a problematiku nedeterministických selhání #term(terms.flaky_test). Koncept CI zde zůstává zaměřen na integrační kontrakt a strojově ověřitelnou zpětnou vazbu.
 
 Riziko nestálých testů je vyčleněno do samostatného konceptu #term(terms.flaky_test).
+]
   ],
   summary: terms => [
 V agentním vývoji CI poskytuje strojově ověřitelnou zpětnou vazbu, která odděluje generování změny od jejího objektivního ověření.
