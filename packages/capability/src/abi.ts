@@ -95,6 +95,7 @@ export interface CapabilityPackageContext {
 	name: string;
 	ecosystem: string;
 	packageManager: string;
+	packageManagerRoot: string;
 	domains: readonly string[];
 	scripts: readonly string[];
 	apiEntryPoints: readonly string[];
