@@ -9,7 +9,7 @@ import type { FC } from "react";
 export type QuotaDashboardState =
 	| { status: "disconnected" }
 	| { status: "loading" }
-	| { status: "error"; message: string }
+	| { status: "error" }
 	| { status: "live"; snapshot: OperatorQuotaSnapshot };
 
 /** Browser-safe limit row rendered by the quota dashboard. */
@@ -35,16 +35,38 @@ export interface QuotaModelView {
 	limits: readonly QuotaLimitView[];
 }
 
+/** Browser-safe account group rendered by the quota dashboard. */
+export interface QuotaAccountView {
+	label: string;
+	models: readonly QuotaModelView[];
+}
+
+/** Browser-safe provider group rendered even when no account/model data exists. */
+export interface QuotaProviderView {
+	id: string;
+	name: string;
+	enabled: boolean;
+	credentials: QuotaCredentialState;
+	state: QuotaState | "no-account";
+	accounts: readonly QuotaAccountView[];
+}
+
 /**
  * Projects the canonical redacted quota snapshot into the even narrower UI model.
  *
  * This is intentionally an allow-list mapper rather than an object spread so unexpected runtime
  * fields can never flow into static/browser rendering.
  */
-export function quotaDashboardModels(snapshot: OperatorQuotaSnapshot): QuotaModelView[] {
-	return snapshot.providers.flatMap((provider) =>
-		provider.accounts.flatMap((account) =>
-			account.models.map((model) => ({
+export function quotaDashboardProviders(snapshot: OperatorQuotaSnapshot): QuotaProviderView[] {
+	return snapshot.providers.map((provider) => ({
+		id: provider.id,
+		name: provider.name,
+		enabled: provider.enabled,
+		credentials: provider.credentials,
+		state: provider.state,
+		accounts: provider.accounts.map((account) => ({
+			label: account.label,
+			models: account.models.map((model) => ({
 				providerId: provider.id,
 				providerName: provider.name,
 				providerState: provider.state,
@@ -62,7 +84,14 @@ export function quotaDashboardModels(snapshot: OperatorQuotaSnapshot): QuotaMode
 					...(item.resetAt === undefined ? {} : { resetAt: item.resetAt }),
 				})),
 			})),
-		),
+		})),
+	}));
+}
+
+/** Flattens the provider-grouped dashboard projection for compact operator summaries. */
+export function quotaDashboardModels(snapshot: OperatorQuotaSnapshot): QuotaModelView[] {
+	return quotaDashboardProviders(snapshot).flatMap((provider) =>
+		provider.accounts.flatMap((account) => account.models),
 	);
 }
 
@@ -147,12 +176,12 @@ export const QuotaDashboardView: FC<{ state: QuotaDashboardState }> = ({ state }
 		return (
 			<section aria-labelledby="quota-dashboard-title">
 				<h2 id="quota-dashboard-title">Quota</h2>
-				<p role="alert">Quota data is unavailable: {state.message}</p>
+				<p role="alert">Quota data is unavailable. The dashboard does not render raw runtime error text.</p>
 			</section>
 		);
 	}
 
-	const models = quotaDashboardModels(state.snapshot);
+	const providers = quotaDashboardProviders(state.snapshot);
 	return (
 		<section aria-labelledby="quota-dashboard-title">
 			<header>
@@ -161,14 +190,39 @@ export const QuotaDashboardView: FC<{ state: QuotaDashboardState }> = ({ state }
 					Snapshot generated <time dateTime={state.snapshot.generatedAt}>{state.snapshot.generatedAt}</time>
 				</p>
 			</header>
-			{state.snapshot.providers.length === 0 ? (
+			{providers.length === 0 ? (
 				<p role="status">No providers are present in this quota snapshot.</p>
-			) : models.length === 0 ? (
-				<p role="status">Providers are present, but no account/model quota data is available.</p>
 			) : (
-				<div className="quota-grid">
-					{models.map((model) => (
-						<ModelQuotaCard key={model.providerId + ":" + model.account + ":" + model.model} model={model} />
+				<div className="quota-providers">
+					{providers.map((provider) => (
+						<section key={provider.id} className="quota-provider" aria-labelledby={"quota-provider-" + provider.id}>
+							<h3 id={"quota-provider-" + provider.id}>{provider.name}</h3>
+							<p>
+								{provider.id} · {provider.enabled ? "Enabled" : "Disabled"} · {stateLabel(provider.state)}
+								{" · credentials " + provider.credentials}
+							</p>
+							{provider.accounts.length === 0 ? (
+								<p>No account/model quota data is available for this provider.</p>
+							) : (
+								provider.accounts.map((account) => (
+									<section key={account.label} className="quota-account">
+										<h4>Account {account.label}</h4>
+										{account.models.length === 0 ? (
+											<p>No model quota data is available for this account.</p>
+										) : (
+											<div className="quota-grid">
+												{account.models.map((model) => (
+													<ModelQuotaCard
+														key={model.providerId + ":" + model.account + ":" + model.model}
+														model={model}
+													/>
+												))}
+											</div>
+										)}
+									</section>
+								))
+							)}
+						</section>
 					))}
 				</div>
 			)}
