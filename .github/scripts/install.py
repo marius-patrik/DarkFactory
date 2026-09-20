@@ -143,8 +143,8 @@ STARTER_AREAS: Dict[str, object] = {
         "keywords": ["ci", "action", "workflow", "pipeline", "automation"],
     },
     "docs": {
-        "description": "Documentation site, theme, architecture notes",
-        "keywords": ["doc", "docs", "documentation", "readme", "site"],
+        "description": "Documentation compiler, API reference and shared web surfaces",
+        "keywords": ["doc", "docs", "documentation", "tsdoc", "typedoc", "readme", "site"],
     },
 }
 
