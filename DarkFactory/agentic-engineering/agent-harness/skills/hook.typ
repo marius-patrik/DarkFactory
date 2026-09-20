@@ -13,7 +13,7 @@ definition: terms => [
 Hook je definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 Hook váže deterministickou logiku na konkrétní událost životního cyklu harnessu, například před spuštěním nástroje, po dokončení kroku nebo při změně stavu běhu.
 ]
   ],
