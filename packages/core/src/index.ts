@@ -1,5 +1,5 @@
 /** @packageDocumentation
- * Runtime-neutral orchestration mechanisms. Implementation is migrated out of the temporary harness incrementally.
+ * DarkFactory execution kernel: configuration, workflow graph/run state, routing mechanisms and deterministic orchestration primitives.
  */
 export * from "../../../harness/src/config.ts";
 export * from "../../../harness/src/graph/index.ts";
