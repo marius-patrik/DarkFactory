@@ -1,6 +1,6 @@
 # ADR-0004 — The repository environment is detected; declaration is the exception
 
-**Status**: Accepted · 2026-09-07
+**Status**: Superseded by ADR-0021 · 2026-09-20
 
 ## Context
 
