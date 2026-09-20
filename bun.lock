@@ -33,6 +33,8 @@
         "df": "src/cli.ts",
       },
       "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+        "@darkfactory/core": "workspace:*",
         "@darkfactory/keychain": "workspace:*",
         "@earendil-works/pi-agent-core": "0.85.1",
         "@earendil-works/pi-ai": "0.85.1",
@@ -86,6 +88,8 @@
       "name": "@darkfactory/docs",
       "version": "0.0.0",
       "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+        "@darkfactory/core": "workspace:*",
         "@darkfactory/protocol": "workspace:*",
         "typedoc": "0.28.20",
       },
