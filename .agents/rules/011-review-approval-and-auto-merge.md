@@ -31,7 +31,7 @@ Review state and merge authority must be based on GitHub/df evidence, not model 
 
 ## Enforcement
 
-Final GitHub/graph/Request capabilities and branch protection own the behavior; legacy workflow/script names are not normative.
+GitHub/graph/Request capabilities and branch protection own this behavior.
 
 ## Exceptions
 
