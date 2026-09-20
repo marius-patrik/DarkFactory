@@ -2,9 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveRepositoryActions } from "@darkfactory/capability/actions";
+import { qualityMatrix, resolveRepositoryActions } from "@darkfactory/capability/actions";
 import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import codeCapability from "../../capabilities/code/capability.ts";
+import mathCapability from "../../capabilities/math/capability.ts";
+import paperCapability from "../../capabilities/paper/capability.ts";
 
 const roots: string[] = [];
 
@@ -27,11 +29,16 @@ async function fixture(): Promise<string> {
 
 	await mkdir(join(root, "python"), { recursive: true });
 	await writeFile(join(root, "python", "pyproject.toml"), '[project]\nname = "python-part"\n');
+	await mkdir(join(root, "paper"), { recursive: true });
+	await writeFile(join(root, "paper", "typst.toml"), '[package]\nname = "paper"\n');
+	await mkdir(join(root, "proofs"), { recursive: true });
+	await writeFile(join(root, "proofs", "lakefile.lean"), "package Proofs\n");
 	await writeFile(
 		join(root, "repo.df"),
 		JSON.stringify({
 			environment: {
 				linting: { python: { command: "ruff check ." } },
+				testing: { python: { versions: ["3.12"] } },
 			},
 		}),
 	);
@@ -46,9 +53,10 @@ describe("repository evidence and capability actions", () => {
 	test("detects Bun/TypeScript and Python packages with exported API entrypoints", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
-		expect(evidence.packages.map((pkg) => pkg.id)).toEqual(["node:.", "python:python"]);
+		expect(evidence.packages.map((pkg) => pkg.id)).toEqual(["lean:proofs", "node:.", "python:python", "typst:paper"]);
 		const node = evidence.packages.find((pkg) => pkg.id === "node:.")!;
 		expect(node.packageManager).toBe("bun");
+		expect(node.packageManagerRoot).toBe(".");
 		expect(node.apiEntryPoints).toEqual(["src/extra.ts", "src/index.ts"]);
 		expect(evidence.domains).toContain("code");
 	});
@@ -56,7 +64,7 @@ describe("repository evidence and capability actions", () => {
 	test("resolves actions only from repo.df overrides and capability contributions", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
-		const resolution = resolveRepositoryActions(evidence, [codeCapability]);
+		const resolution = resolveRepositoryActions(evidence, [codeCapability, paperCapability, mathCapability]);
 		const node = resolution.packages.find((entry) => entry.package.id === "node:.")!;
 		expect(node.actions.test.command).toBe("bun test");
 		expect(node.actions.lint.command).toBe("bun run lint");
@@ -70,8 +78,21 @@ describe("repository evidence and capability actions", () => {
 		const python = resolution.packages.find((entry) => entry.package.id === "python:python")!;
 		expect(python.actions.lint.source).toBe("repo.df");
 		expect(python.actions.lint.command).toBe("ruff check .");
+		expect(python.actions.test.command).toBe("pytest");
+		expect(python.actions.test.metadata).toEqual({ versions: ["3.12"] });
 		expect(python.actions.docs_extract.supported).toBe(false);
 		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "docs_extract")).toBe(true);
+
+		const paper = resolution.packages.find((entry) => entry.package.id === "typst:paper")!;
+		expect(paper.actions.test.command).toContain("typst compile");
+		const math = resolution.packages.find((entry) => entry.package.id === "lean:proofs")!;
+		expect(math.actions.test.command).toBe("lake build");
+
+		const matrix = qualityMatrix(resolution);
+		expect(matrix.filter((entry) => entry.packageId === "python:python" && entry.kind === "test")).toHaveLength(1);
+		expect(matrix.find((entry) => entry.packageId === "python:python" && entry.kind === "test")?.version).toBe("3.12");
+		expect(matrix.some((entry) => entry.packageId === "typst:paper" && entry.kind === "test")).toBe(true);
+		expect(matrix.some((entry) => entry.packageId === "lean:proofs" && entry.kind === "test")).toBe(true);
 	});
 
 	test("does not silently fall back when an action is unsupported", async () => {
