@@ -18,6 +18,11 @@
 - Formalizovat mechanismy zapojení člověka do smyčky (_Human-in-the-loop_), schvalovací brány a protokol revizních značek pro dohled nad textovými výstupy.
 ]
   ],
-  document_enabled: true,
+  description: none,
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
   relations: ((type: "dependency", target: "main_goal"),),
 )
