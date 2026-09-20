@@ -161,15 +161,18 @@ The following work should proceed before #359 whenever its interfaces are stable
 
 ### Documentation and web
 
-The native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path is landed.
+The native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path is landed. `properdocs.yml` and `mkdocs.yml` are absent; they are not compatibility inputs.
 
 Continue in parallel:
 - #334 — keep strict TSDoc/API coverage complete as final public exports are added.
+- #424 — finish the remaining native docs-compiler contract, especially recovery dispositions and final capability/repository metadata integration; do not reintroduce ProperDocs/MkDocs compatibility.
+- #335 — publish the detected first-party API + architecture content through the native content graph after #334 + #341 provide the final extraction/detection contracts.
 - #336 — finish deterministic docs-impact enforcement using #341's final detection/diff contract rather than another detector.
+- #337 — finish the current-only documentation/governance truth pass and automated contradiction enforcement against the final shipped architecture.
 - #425 — finish the broader GitHub-backed operator application on the existing `@darkfactory/web` package.
 - #390 — integrate remaining operator/dashboard surfaces into that shared application.
 
-Documentation work has one compiler, one semantic graph and one renderer.
+Documentation work has one compiler, one semantic graph and one renderer. Historical/superseded documentation state remains only in GitHub issues.
 
 ## 7. Release work
 
