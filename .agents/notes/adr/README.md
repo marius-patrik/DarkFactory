@@ -17,7 +17,7 @@ Current records:
 - ADR-0017 — root workspace packages and first-class capabilities;
 - ADR-0019 — GitHub backs the web control plane;
 - ADR-0020 — machine keychain and browser auth are separate trust boundaries;
-- ADR-0021 — repository declarations and capability-driven detection;
+- ADR-0021 — repository declarations, runtime detection and capability-resolved actions;
 - ADR-0022 — complete the final system directly;
 - ADR-0023 — first-party docs use docs.df and one renderer.
 
