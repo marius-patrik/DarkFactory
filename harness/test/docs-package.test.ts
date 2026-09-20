@@ -25,8 +25,17 @@ async function fixture(withApi = false): Promise<string> {
 	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: "docs/home.md" };
 	if (withApi) {
 		config.api = { typescript: { name: "Fixture API", entryPoints: ["api.ts"], tsconfig: "tsconfig.json" } };
-		await writeFile(join(root, "api.ts"), "/** Public fixture API. */\nexport interface FixtureApi { value: string }\n");
-		await writeFile(join(root, "tsconfig.json"), JSON.stringify({ compilerOptions: { target: "ES2022", module: "ESNext", moduleResolution: "Bundler", strict: true }, include: ["api.ts"] }));
+		await writeFile(
+			join(root, "api.ts"),
+			"/** Public fixture API. */\nexport interface FixtureApi { value: string }\n",
+		);
+		await writeFile(
+			join(root, "tsconfig.json"),
+			JSON.stringify({
+				compilerOptions: { target: "ES2022", module: "ESNext", moduleResolution: "Bundler", strict: true },
+				include: ["api.ts"],
+			}),
+		);
 	}
 	await writeFile(join(root, "docs.df"), JSON.stringify(config));
 	await writeFile(join(root, "docs", "home.md"), "# Home\n\nSee [the PRD](../PRD.md).\n");
@@ -36,7 +45,10 @@ async function fixture(withApi = false): Promise<string> {
 	await writeFile(join(root, ".agents", "rules", "001-test.md"), "# Rule\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "0001-test.md"), "# ADR-0001 — Test\n\n**Status**: Accepted\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "README.md"), "# Decisions\n");
-	await writeFile(join(root, ".github", "workflows", "ci.yml"), "name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n");
+	await writeFile(
+		join(root, ".github", "workflows", "ci.yml"),
+		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
+	);
 	return root;
 }
 
@@ -46,7 +58,11 @@ afterEach(async () => {
 
 describe("@darkfactory/docs", () => {
 	test("parses docs.df including TypeScript API ownership", () => {
-		expect(parseDocsConfig('{"version":1,"site":{"name":"Docs"},"home":"docs/home.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}')).toEqual({
+		expect(
+			parseDocsConfig(
+				'{"version":1,"site":{"name":"Docs"},"home":"docs/home.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
+			),
+		).toEqual({
 			version: 1,
 			site: { name: "Docs" },
 			home: "docs/home.md",
@@ -58,20 +74,34 @@ describe("@darkfactory/docs", () => {
 		const root = await fixture();
 		expect(resolveDocsConfigPath(root)).toBe(join(root, "docs.df"));
 		await mkdir(join(root, ".darkfactory"), { recursive: true });
-		await writeFile(join(root, ".darkfactory", "docs.df"), '{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}');
+		await writeFile(
+			join(root, ".darkfactory", "docs.df"),
+			'{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}',
+		);
 		expect(() => resolveDocsConfigPath(root)).toThrow("only one is allowed");
 	});
 
 	test("compiles current canonical pages and workflow metadata", async () => {
 		const root = await fixture();
 		const graph = compileDocsContentGraph(root, loadDocsConfig(root));
-		expect(graph.pages.map((page) => page.id)).toEqual(["home", "prd", "plan", "agents", "agents-rules-001-test", "agents-notes-adr-0001-test", "agents-notes-adr-readme"]);
+		expect(graph.pages.map((page) => page.id)).toEqual([
+			"home",
+			"prd",
+			"plan",
+			"agents",
+			"agents-rules-001-test",
+			"agents-notes-adr-0001-test",
+			"agents-notes-adr-readme",
+		]);
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
 
 	test("rejects non-current ADRs", async () => {
 		const root = await fixture();
-		await writeFile(join(root, ".agents", "notes", "adr", "0002-not-current.md"), "# ADR-0002 — Not current\n\n**Status**: Proposed\n");
+		await writeFile(
+			join(root, ".agents", "notes", "adr", "0002-not-current.md"),
+			"# ADR-0002 — Not current\n\n**Status**: Proposed\n",
+		);
 		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
 	});
 
@@ -94,7 +124,9 @@ describe("@darkfactory/docs", () => {
 
 	test("renders README from the canonical home page", async () => {
 		const root = await fixture();
-		expect(renderReadmeMarkdown(compileDocsContentGraph(root))).toBe(`${README_GENERATED_MARKER}\n\n# Home\n\nSee [the PRD](PRD.md).\n`);
+		expect(renderReadmeMarkdown(compileDocsContentGraph(root))).toBe(
+			`${README_GENERATED_MARKER}\n\n# Home\n\nSee [the PRD](PRD.md).\n`,
+		);
 	});
 
 	test("the repository README is the exact generated homepage projection", async () => {
