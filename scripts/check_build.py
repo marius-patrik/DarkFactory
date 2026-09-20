@@ -480,9 +480,10 @@ for forbidden in (
 if '.before(<body-end-anchor>, inclusive: false)' not in gjkt_source:
     fail("core-text extent must stop before appendices")
 
-if gjkt_source.count("Seznam obrázků a tabulek") != 1:
+figures_tables_title = 'ui-label([Seznam obrázků a tabulek], [List of figures and tables])'
+if gjkt_source.count(figures_tables_title) != 1:
     fail("Seznam obrázků a tabulek must render exactly once")
-if gjkt_source.index("Seznam obrázků a tabulek") < gjkt_source.index("#let prilohy(body)"):
+if gjkt_source.index(figures_tables_title) < gjkt_source.index("#let prilohy(body)"):
     fail("Seznam obrázků a tabulek must live in the appendix/back-matter renderer")
 
 for forbidden in ('state("review-mode"', 'state("publication-profile"'):
