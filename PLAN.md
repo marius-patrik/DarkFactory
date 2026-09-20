@@ -231,7 +231,7 @@ After #361 is green, re-run the original declarable-graph product contract again
 ### Stable / landed
 
 - The canonical/default branch is `darkfactory`.
-- The latest implementation integration point is PR #887 (`a3b085627b2088cd203fea3346e39dac5fea969c`); always resolve the live `darkfactory` HEAD at execution time rather than hard-coding a self-referential PLAN SHA.
+- Recent stable integration points include PR #889 (docs-impact policy), PR #898 (shared redacted operator quota protocol) and PR #905 (`888c79329ce96d7217fdd6b8b064821544c8bb28`, release integrity/provenance). Always resolve the live `darkfactory` HEAD at execution time rather than hard-coding a self-referential PLAN SHA.
 - #858 repaired the packaged df runtime boundary by resolving workflow contracts through `@darkfactory/protocol/workflow` instead of a source-tree-relative import.
 - #341 is landed with the final repository evidence + capability-resolved deterministic action contract.
 - #880 landed deterministic current-documentation truth checks: README projection drift and retired docs surfaces now fail native docs CI.
@@ -244,27 +244,23 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 #### #329 / F38
 
-#329 remains open. `recovery/f38-result-capture` has a terminal integrated/rejected disposition recorded on #329 and has been deleted. PR #891 is the current fresh implementation vehicle but remains draft/nonterminal pending routed structured extraction, final-owner placement and green aggregate checks.
+#329 remains open. `recovery/f38-result-capture` has a terminal integrated/rejected disposition recorded on #329 and has been deleted. PR #891 is the active draft implementation vehicle and aggregate CI is green, but semantic blockers remain: its supervisor extraction path still does not install/force the capture context/tool, the direct extraction path still has a hard-coded Gemini fallback, the exact F38 `safeParse` function guard is not preserved, and new durable behavior remains in deletion-bound `harness/` ownership.
 
 Prior PRs #811 and #860 are closed evidence only. #860 reused a stale branch and carried scratch/debug files, so it is not an implementation vehicle.
 
-The next #329 implementation must start from the exact current `darkfactory` HEAD on a fresh branch, use natural model stop, derive code-node truth from observed workspace/diff/verification/commit/effect evidence, use the normal routed supervisor path for judgement extraction, expose explicit offline `df run --capture-schema`, and record F38 disposition before cleanup.
+Repair PR #891 in place from its current fresh branch: use natural model stop, derive code-node truth from observed workspace/diff/verification/commit/effect evidence, route judgement extraction through the normal supervisor while actually supplying provider-enforced structured output, remove fixed provider/model fallbacks, preserve the exact F38 schema guard, and move new durable mechanisms/CLI surfaces into final package owners. F38 disposition/cleanup is already terminal.
 
 #### #358
 
-#358 remains open with no valid implementation PR.
+#358 remains open. PR #894 is the active draft current-tree implementation vehicle; aggregate CI is green, but it is not merge-ready because production handlers still contain truth-breaking fallbacks (swallowed GitHub/mutation failures, fabricated/default lifecycle outputs, scripted automation success and deletion-bound `harness/src/graph` ownership). PR #859 remains closed evidence only.
 
-PR #859 is closed evidence only: its handlers returned scripted success instead of invoking the real supervisor/workspace/run-state machinery.
-
-The next implementation starts fresh from current `darkfactory` and wires real production handlers, durable run persistence/resume, check/gate behavior, idempotent external-event resume and the unified lifecycle in existing final owners. It consumes #329 only at the real typed result boundary and does not invent substitute result or verification contracts.
+Repair #894 in place: every external effect must fail closed unless observed successful, Planning/review/alignment outputs must come from real routed judgement contracts, repository base state must be dynamically observed, automation scripts must perform real effects or fail closed, and durable persisted effect identity/resume must prove exactly-once behavior in final owners. Consume #329 only at its final typed boundary.
 
 #### #317
 
-#317 remains open with no valid implementation PR.
+#317 remains open. PR #899 is the active draft current-tree implementation vehicle; aggregate CI is green, but it remains semantically blocked because mutation claims are still inferred by regex/phrase matching, claim targets are not matched exactly to observed evidence, default-branch resolution still falls back to `darkfactory`, push/commit failures can still be converted into repaired success, and `readyForReentry: true` is not actual graph re-entry. PRs #809/#870 remain closed evidence only.
 
-PRs #809 and #870 are closed evidence only. #870 reused the stale superseded branch and did not represent a current-tree implementation.
-
-The next implementation starts fresh from current `darkfactory`, uses the landed deterministic git/workspace primitives, resolves the actual base branch dynamically, validates structured mutation claims against observed effects, performs deterministic update/conflict repair and verification, and joins graph re-entry only when the relevant #358 surface exists.
+Repair #899 in place using the landed deterministic git/workspace primitives: typed structured claims from the routed extraction boundary, exact target/effect matching, fail-closed dynamic base resolution, truthful commit/push evidence, detected verification, and real #358 graph re-entry once that interface is final.
 
 #### #359
 
@@ -300,7 +296,7 @@ The final implementation must start fresh from current `darkfactory`: hook invoc
 
 #### #360
 
-#360 remains open with no valid implementation PR.
+#360 remains open. PR #905 is a valid landed partial implementation; the Request is nonterminal.
 
 PRs #816 and #862 are closed evidence only; #862 reused the stale release branch and did not satisfy the full release contract.
 
@@ -378,23 +374,22 @@ Run these **concurrently now**:
 - F49 disposition is recorded and its terminal recovery branch has been deleted.
 
 **A2 — #329 natural-stop result capture**
-- PRs #811 and #860 are retired evidence; create one fresh current-tree implementation from the exact canonical HEAD.
-- Reuse only compatible F38 forced-tool/schema mechanics.
-- Use the ordinary routed supervisor path for judgement extraction; do not create a second routing/failover abstraction.
-- Implement natural-stop runtime completion, offline `df run --capture-schema`, and code-node truth from observed effects + shipped #341 verification.
-- Record F38 disposition and delete its recovery branch when terminal.
+- PR #891 is the active draft vehicle; PRs #811/#860 are retired evidence.
+- F38 disposition and recovery-ref deletion are terminal.
+- Repair #891 so the ordinary routed supervisor actually receives/enforces the capture tool/schema, remove fixed candidate fallbacks, preserve the exact schema guard, and place new durable logic/CLI surfaces in final owners.
+- Keep natural-stop runtime completion, offline `df run --capture-schema`, and code-node truth from observed effects + shipped #341 verification.
 
 **A3 — #358 graph-native orchestration**
-- Start a fresh current-tree implementation; PR #859 is rejected evidence because it used scripted success instead of real production handlers.
-- Wire shipped #341 verification/actions immediately.
-- Implement the real production handler inventory, durable run/state owner, graph execution/resume and lifecycle effects now.
+- PR #894 is the active draft vehicle; PR #859 is rejected evidence.
+- Keep shipped #341 verification/actions, but remove swallowed/fabricated success, hard-coded/default repository state and unsupported automation fallbacks.
+- Implement the real production handler inventory, durable run/effect state, graph execution/resume and unified lifecycle effects in final owners.
 - Do not invent a substitute result interface; join only the final #329 result contract when A2 lands.
 
 **A4 — #317 truthful mutation/branch repair**
-- Start fresh from current `darkfactory`; PRs #809 and #870 remain rejected evidence.
-- Implement structured mutation-claim validation against observed workspace/git/effect evidence using shipped #341 + landed #384.
-- Finish deterministic branch update/conflict behavior and tests now.
-- Join #329 for final result-contract truth and #358 only for graph re-entry/resume.
+- PR #899 is the active draft vehicle; PRs #809/#870 remain rejected evidence.
+- Replace regex prose scanning with typed mutation claims extracted through the final structured-result boundary and validate exact branch/SHA/PR/file targets against observed effects using shipped #341 + landed #384.
+- Make base resolution, commit and push fail closed; finish deterministic conflict repair/verification now.
+- Join #329 for final result-contract truth and #358 for real graph re-entry/resume.
 
 **Join A condition:** #341 is already merged. Join A now requires #329 merged, #358 consuming #329 + #341 and merged, and #317 merged/green. Immediately execute #359's final responsibility/deletion pass. Do not wait for auth, docs, web, TUI, stacked PRs, generalized recovery intake or other final-product surfaces unless live implementation proves they are required by the core lifecycle.
 
@@ -444,7 +439,7 @@ D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their disp
 
 ### 11.6 Workstream E — release engineering
 
-#360 engineering is continuous. PRs #816 and #862 are closed evidence only; continue from a fresh current-tree vehicle with only valid final packaging semantics.
+#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed the official release capability plus deterministic artifact checksum/source-provenance contract; continue from current `darkfactory` with additional narrow final-owner release slices.
 
 - package/publish metadata;
 - lockstep versioning + capability ABI version;
@@ -498,7 +493,7 @@ When #361 is green, perform the final #68 declarable-graph contract check and cl
 
 The highest-downstream-value work is therefore **not a serial 1→10 queue**:
 
-- create fresh current-tree #329, #358 and #317 vehicles simultaneously; #341 is already shipped and must be consumed directly;
+- repair the active draft #891/#894/#899 vehicles in parallel against their documented semantic blockers; do not spawn replacement branches unless a current vehicle is proven unrecoverably stale;
 - start fresh final-owner #339 now that #341 is available;
 - consolidate #422's two stale PRs into one current-tree vehicle while docs/operator work and #360 release engineering continue in parallel; #423 is already landed;
 - begin #385/#332 the moment #358's owning state interfaces stabilize;
