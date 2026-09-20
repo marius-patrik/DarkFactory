@@ -3114,12 +3114,49 @@ def generate_branch_name(title: str) -> str:
     return f"feature/{slug}"
 
 
+def _node_script_command(cwd: str, script: str) -> Optional[List[str]]:
+    """Resolves one declared package script through a Node-compatible runner available in the image.
+
+    The agent image is intentionally Bun-first and does not guarantee npm. A root `package.json`
+    therefore identifies a Node workspace, not a specific package-manager binary.
+
+    Args:
+        cwd: Repository working directory.
+        script: Package script name to execute.
+
+    Returns:
+        The command to execute, or `None` when the script is not declared or no package runner is
+        installed.
+    """
+    path = os.path.join(cwd, "package.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            package = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    scripts = package.get("scripts", {})
+    if not isinstance(scripts, dict) or not isinstance(scripts.get(script), str):
+        return None
+
+    declared = package.get("packageManager")
+    preferred = str(declared).split("@", 1)[0] if isinstance(declared, str) else ""
+    runners = [preferred] if preferred in {"bun", "pnpm", "npm", "yarn"} else []
+    runners.extend(name for name in ("bun", "pnpm", "npm", "yarn") if name not in runners)
+    for runner in runners:
+        if not shutil.which(runner):
+            continue
+        if runner in {"bun", "pnpm", "npm"}:
+            return [runner, "run", script]
+        return [runner, script]
+    return None
+
+
 def format_repository(cwd: str) -> List[str]:
-    """Runs every formatter whose toolchain is present in the repository.
+    """Runs every formatter whose manifest and executable are available.
 
     Formatting is never a review topic (`.agents/rules/008-formatting-and-linting.md`), so the agent normalizes the tree itself
-    before committing. Each formatter is skipped silently when its manifest is absent, which keeps
-    the pipeline green while the repository is still a scaffold.
+    before committing. Optional formatters are skipped when either their manifest/script or their
+    executable is absent; deterministic verification remains responsible for required quality gates.
 
     Args:
         cwd: Repository working directory.
@@ -3128,12 +3165,16 @@ def format_repository(cwd: str) -> List[str]:
         Human-readable names of the formatters that actually ran.
     """
     ran: List[str] = []
-    for name, manifest, cmd in (
+    formatters = [
         ("black", "pyproject.toml", ["black", "."]),
         ("cargo fmt", "Cargo.toml", ["cargo", "fmt", "--all"]),
-        ("web formatter", "package.json", ["npm", "run", "--if-present", "format"]),
-    ):
-        if not os.path.exists(os.path.join(cwd, manifest)):
+    ]
+    node_format = _node_script_command(cwd, "format")
+    if node_format is not None:
+        formatters.append(("web formatter", "package.json", node_format))
+
+    for name, manifest, cmd in formatters:
+        if not os.path.exists(os.path.join(cwd, manifest)) or not shutil.which(cmd[0]):
             continue
         result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
         if result.returncode == 0:
@@ -3144,10 +3185,11 @@ def format_repository(cwd: str) -> List[str]:
 
 
 def verify_repository(cwd: str) -> subprocess.CompletedProcess:
-    """Runs every test suite whose toolchain is present in the repository.
+    """Runs every declared test suite through an executable available in the agent image.
 
     Returns on the first failing suite so the agent's fix prompt receives the output that actually
-    matters instead of a concatenation of every suite.
+    matters instead of a concatenation of every suite. A declared Node test with no available
+    package runner fails explicitly instead of crashing the runner.
 
     Args:
         cwd: Repository working directory.
@@ -3157,13 +3199,38 @@ def verify_repository(cwd: str) -> subprocess.CompletedProcess:
         successful result is returned when no suite is present at all.
     """
     last = subprocess.CompletedProcess(args=["true"], returncode=0, stdout="", stderr="")
-    for manifest, cmd in (
+    suites = [
         ("pyproject.toml", ["python3", "-m", "pytest", "tests/", "-q"]),
         ("Cargo.toml", ["cargo", "test", "--workspace", "--quiet"]),
-        ("package.json", ["npm", "test", "--if-present"]),
-    ):
+    ]
+    node_manifest = os.path.join(cwd, "package.json")
+    if os.path.exists(node_manifest):
+        try:
+            with open(node_manifest, encoding="utf-8") as handle:
+                scripts = json.load(handle).get("scripts", {})
+        except (OSError, ValueError):
+            scripts = {}
+        if isinstance(scripts, dict) and isinstance(scripts.get("test"), str):
+            node_test = _node_script_command(cwd, "test")
+            if node_test is None:
+                return subprocess.CompletedProcess(
+                    args=["node-package-runner"],
+                    returncode=127,
+                    stdout="",
+                    stderr="package.json declares a test script but no Bun/npm/pnpm/yarn runner is available",
+                )
+            suites.append(("package.json", node_test))
+
+    for manifest, cmd in suites:
         if not os.path.exists(os.path.join(cwd, manifest)):
             continue
+        if not shutil.which(cmd[0]):
+            return subprocess.CompletedProcess(
+                args=cmd,
+                returncode=127,
+                stdout="",
+                stderr=f"Required verification executable is unavailable: {cmd[0]}",
+            )
         last = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
         if last.returncode != 0:
             return last
