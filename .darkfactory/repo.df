@@ -75,7 +75,8 @@
       },
       "node": {
         "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
-        "enabled": false
+        "enabled": true,
+        "artifacts": ["dist/**"]
       }
     }
   },
