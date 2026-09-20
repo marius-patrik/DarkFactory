@@ -12,7 +12,7 @@
   key: "version_control",
   term: terminology,
   heading: terms => [#finalized[Správa verzí \[Version Control\]]],
-  theory_enabled: false,
+  theory_enabled: true,
   theory_intro: none,
   theory_body: none,
   theory_summary: none,
