@@ -132,7 +132,9 @@ def test_every_adr_is_a_discrete_record_with_status_and_date():
         numbers.append(number)
         status_match = re.search(r"\*\*Status\*\*:\s*([^\n]+)", content)
         assert status_match, f"{name} must carry a Status field"
-        assert status_match.group(1).strip() == "Accepted", f"{name} must be Accepted; non-current ADRs are forbidden"
+        assert (
+            status_match.group(1).strip() == "Accepted"
+        ), f"{name} must be Accepted; non-current ADRs are forbidden"
         assert f"ADR-{number}" in readme_content, f"ADR-{number} must be indexed in README.md"
 
     assert len(numbers) == len(set(numbers)), "ADR numbers must be unique"
