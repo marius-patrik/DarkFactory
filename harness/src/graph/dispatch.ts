@@ -1,6 +1,4 @@
-import { AssertionError, deepStrictEqual } from "node:assert";
-import { appendFile, readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { bundledGraphPath } from "./assets.ts";
@@ -8,7 +6,6 @@ import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from
 import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
 import { plan } from "./planner.ts";
 import { loadRunState, saveRunState } from "./run-state.ts";
-import type { PlanAction } from "./types.ts";
 import { validateGraph } from "./validator.ts";
 
 /**
@@ -20,8 +17,6 @@ export interface DispatchOptions {
 	eventPath: string;
 	graphPath?: string;
 	runsPath?: string;
-	shadow: boolean;
-	summaryPath?: string;
 }
 
 interface GitHubTokenEnv {
@@ -37,7 +32,6 @@ function parseArgs(argv: string[]): DispatchOptions {
 	const args: DispatchOptions = {
 		eventName: "",
 		eventPath: "",
-		shadow: false,
 	};
 
 	let i = 0;
@@ -56,16 +50,6 @@ function parseArgs(argv: string[]): DispatchOptions {
 			case "--runs":
 				if (i < argv.length) args.runsPath = argv[i++];
 				break;
-			case "--shadow":
-				if (i < argv.length && (argv[i] === "true" || argv[i] === "false")) {
-					args.shadow = argv[i++] === "true";
-				} else {
-					args.shadow = true;
-				}
-				break;
-			case "--summary":
-				if (i < argv.length) args.summaryPath = argv[i++];
-				break;
 		}
 	}
 
@@ -80,51 +64,11 @@ function extractSubject(translated: TranslatedEvent & { kind: "event" }): string
 	return `${translated.subject.number}`;
 }
 
-/** The job summary to append to: --summary, else GITHUB_STEP_SUMMARY; outside Actions nothing is written. */
-function summaryTarget(explicit: string | undefined): string | undefined {
-	return explicit || process.env.GITHUB_STEP_SUMMARY;
-}
-
 function githubCheckSource(token: string, repository: string): CheckStateSource {
 	const [owner, repo] = repository.split("/");
 	if (!owner || !repo) throw new Error("Invalid GITHUB_REPOSITORY format");
 	const repoInstance = new GitHubRepository(new GitHubClient({ token }), owner, repo);
 	return { checkStates: (ref) => repoInstance.checkStates(ref) };
-}
-
-interface PythonAction {
-	type: string;
-	nodes?: string[];
-	node?: string;
-}
-
-// Semantic comparison for actions
-function actionsMatch(pythonAction: unknown, tsAction: PlanAction): boolean {
-	if (!pythonAction || typeof pythonAction !== "object") return false;
-	const p = pythonAction as PythonAction;
-
-	if (p.type !== tsAction.type) return false;
-
-	if (tsAction.type === "none") return p.type === "none";
-
-	try {
-		if (tsAction.type === "run") {
-			// Compare nodes
-			const pyNodes = Array.isArray(p.nodes) ? p.nodes : [];
-			if (!Array.isArray(tsAction.nodes)) return false;
-			deepStrictEqual(pyNodes.slice().sort(), tsAction.nodes.slice().sort());
-		} else if (tsAction.type === "gate" || tsAction.type === "hint" || tsAction.type === "comment") {
-			// Compare node
-			if (typeof p.node === "undefined") return false;
-			deepStrictEqual(p.node, tsAction.node);
-		}
-		return true;
-	} catch (e) {
-		if (e instanceof AssertionError) {
-			return false;
-		}
-		throw e;
-	}
 }
 
 export async function resolveCommitSha(
@@ -161,13 +105,7 @@ export async function resolveCommitSha(
 
 	if (eventPayload && typeof eventPayload === "object") {
 		if (eventPayload.head_sha) return eventPayload.head_sha;
-		if (eventPayload.pull_request?.head?.sha) return eventPayload.pull_request.head.sha;
-	}
-
-	return "HEAD";
-}
-
-/**
+		if (eventPayload.pull_request?./**
  * Dispatch a workflow based on a GitHub event.
  * @param argv - Command line arguments passed to the dispatch command.
  * @param options - Optional overrides, such as a custom check state source.
@@ -177,21 +115,9 @@ export async function dispatch(
 	argv: string[],
 	options?: {
 		checkStateSource?: CheckStateSource;
-		shadowVerify?: boolean;
-		pythonActionPath?: string;
 	},
 ): Promise<void> {
 	const opts = parseArgs(argv);
-
-	const shadowVerify = options?.shadowVerify ?? process.env.DF_SHADOW_VERIFY === "true";
-	const pythonActionPath =
-		options?.pythonActionPath ??
-		process.env.DF_PYTHON_ACTION_PATH ??
-		(opts.graphPath ? join(dirname(opts.graphPath), "python_action.json") : ".darkfactory/python_action.json");
-
-	if (shadowVerify && !pythonActionPath) {
-		throw new Error("DF_PYTHON_ACTION_PATH must be set for shadow verification");
-	}
 
 	// Load the event payload
 	const eventPayload = await readJsonFile(opts.eventPath);
@@ -283,87 +209,6 @@ export async function dispatch(
 	// Print the output
 	console.log(JSON.stringify(output));
 
-	const isShadow = opts.shadow || process.env.DF_SHADOW_MODE === "true";
-
-	// Handle shadow mode
-	if (isShadow) {
-		const summaryPath = summaryTarget(opts.summaryPath);
-		const summaryLines: string[] = [];
-
-		// Verification logic: Shadow verification diffs
-		let parityMatch = true;
-		if (shadowVerify) {
-			summaryLines.push("### Verification Diff");
-			try {
-				const pythonAction = await readJsonFile(pythonActionPath!);
-				if (actionsMatch(pythonAction, action)) {
-					summaryLines.push("✅ No drift detected between TS and Python actions.");
-				} else {
-					parityMatch = false;
-					summaryLines.push(
-						`❌ **Drift detected!**`,
-						`TS action: \`${JSON.stringify(action)}\``,
-						`Python action: \`${JSON.stringify(pythonAction)}\``,
-					);
-				}
-			} catch (e) {
-				parityMatch = false;
-				summaryLines.push(
-					`⚠️ **Incomplete/In-progress:** Unable to verify.`,
-					`Error: ${e instanceof Error ? e.message : String(e)}`,
-				);
-			}
-			summaryLines.push("");
-		}
-
-		// Append markdown summary
-		summaryLines.push(
-			`## Dispatch: ${subject}`,
-			`Event: ${translated.event.type}`,
-			`Current node: ${runState.current_node}`,
-			`Action: ${action.type}`,
-			...(action.type === "run" && action.nodes
-				? [`Commands:`, ...action.nodes.map((id) => `- bun df run --node ${id}`)]
-				: []),
-		);
-
-		if (summaryPath) {
-			try {
-				await appendFile(summaryPath, `${summaryLines.join("\n")}\n\n`);
-			} catch (e) {
-				throw new Error(`Failed to write shadow run summary: ${e}`);
-			}
-		}
-
-		// Emit real GitHub Checks API check run using event-specific target SHA if token & repo present
-		const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-		const repo = process.env.GITHUB_REPOSITORY;
-		if (token && repo) {
-			try {
-				const [owner, name] = repo.split("/");
-				if (owner && name) {
-					const repoInstance = new GitHubRepository(new GitHubClient({ token }), owner, name);
-					const commitSha = await resolveCommitSha(opts.eventName, eventPayload, repoInstance);
-					await repoInstance.createCheckRun({
-						name: "df-dispatch",
-						head_sha: commitSha,
-						status: "completed",
-						conclusion: shadowVerify && !parityMatch ? "failure" : "success",
-						output: {
-							title: `DF Dispatch: ${subject} (${translated.event.type})`,
-							summary: summaryLines.join("\n"),
-						},
-						completed_at: new Date().toISOString(),
-					});
-				}
-			} catch {
-				// non-fatal if checks API call fails (e.g. in offline or unit test environments)
-			}
-		}
-	} else {
-		// Save the updated RunState
-		await saveRunState(runsDir, subject, runState);
-	}
-}
+	await saveRunState(runsDir, subject, runState);
 
 export type { TranslatedEvent } from "./events.ts";
