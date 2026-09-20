@@ -343,7 +343,7 @@ for required in (
     "#finalized[Vyvolávání nástrojů \\[Tool Calling\\]]",
     "Škálování: Multiagentní systémy (Subagenti) a grafy",
     "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh.",
-    "caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting)",
+    "caption: [#finalized[Architektura autonomní ReAct smyčky (Reasoning + Acting)",
 ):
     if required not in concept_text:
         fail(f"migrated concept content missing approved contract: {required}")
