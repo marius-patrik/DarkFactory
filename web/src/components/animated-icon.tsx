@@ -21,6 +21,7 @@ import {
   Maximize,
   Minimize,
   Minus,
+  Moon,
   PanelBottomOpen,
   PanelLeft,
   PanelsLeftRight,
@@ -30,6 +31,9 @@ import {
   Square,
   PencilLine,
   RefreshCw,
+  Sun,
+  SunMoon,
+  X,
 } from "lucide-react";
 
 type AnimatedIconProps = HTMLAttributes<HTMLDivElement> & {
@@ -109,6 +113,14 @@ const STATIC_FALLBACKS: Record<string, LucideStaticComponent> = {
   MinimizeIcon: Minimize,
   Minus,
   MinusIcon: Minus,
+  Moon,
+  MoonIcon: Moon,
+  Sun,
+  SunIcon: Sun,
+  SunMoon,
+  SunMoonIcon: SunMoon,
+  X,
+  XIcon: X,
   RefreshCw,
   RefreshCwIcon: RefreshCw,
 };
