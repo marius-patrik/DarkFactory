@@ -682,7 +682,7 @@ for path in concept_paths:
         fail(f"concept contains an ad-hoc term definition instead of canonical terms.<id>: {path}")
     if "#accepted[#diff" in source or "#finalized[#diff" in source:
         fail(f"accepted/finalized content must not retain a diff: {path}")
-    raw_bold = re.search(r"(?<!\\*)\\*[^*\\n]+\\*(?!\\*)", source)
+    raw_bold = re.search(r"(?<!\*)\*[^*\n]+\*(?!\*)", source)
     if raw_bold:
         fail(
             f"concept contains raw bold emphasis; use a heading or canonical term instead: "
