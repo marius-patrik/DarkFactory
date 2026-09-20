@@ -95,7 +95,14 @@ const rawSchema = z.object({
 			on: onSchema,
 			loop: z
 				.object({
-					kind: z.enum(["self_review", "ci_repair", "gate_revision", "deviation_rework", "planning_revision", "review_fix"]),
+					kind: z.enum([
+						"self_review",
+						"ci_repair",
+						"gate_revision",
+						"deviation_rework",
+						"planning_revision",
+						"review_fix",
+					]),
 					safety_budget: z.number().int().positive().optional(),
 				})
 				.optional(),
@@ -157,7 +164,8 @@ export function validateGraph(value: unknown): WorkflowGraph {
 					issues.push(`nodes[${node.id}].chain[${index}]: expected provider/model@account`);
 			if (node.review) {
 				for (const key of [node.review.context, node.review.artifact])
-					if (!node.inputs?.includes(key)) issues.push(`nodes[${node.id}].review: "${key}" must be declared as an input`);
+					if (!node.inputs?.includes(key))
+						issues.push(`nodes[${node.id}].review: "${key}" must be declared as an input`);
 				if (node.review.phase === "review") {
 					if (!node.outputs?.includes(node.review.findings))
 						issues.push(`nodes[${node.id}].review.findings: must be a declared output`);
@@ -186,7 +194,10 @@ export function validateGraph(value: unknown): WorkflowGraph {
 			const gate = graph.nodes.some(
 				(candidate) => candidate.kind === "gate" && candidate.approves_review === node.requires_review_approval,
 			);
-			if (!gate) issues.push(`nodes[${node.id}].requires_review_approval: no approval gate exists for ${node.requires_review_approval}`);
+			if (!gate)
+				issues.push(
+					`nodes[${node.id}].requires_review_approval: no approval gate exists for ${node.requires_review_approval}`,
+				);
 		}
 	}
 	graph.edges.forEach((edge, index) => {
