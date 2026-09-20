@@ -20,7 +20,7 @@
 #let item = section(
   key: "development_environment",
   term: terminology,
-  heading: terms => [#finalized[Správa verzí (Version control)]],
+  heading: terms => [#finalized[Vývojové prostředí a praxe]],
   theory_prelude: none,
   theory_intro_heading: none,
   theory_intro: none,
