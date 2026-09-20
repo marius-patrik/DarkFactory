@@ -21,9 +21,13 @@ Monolitická agentní smyčka selhává při řešení komplexních, vícefázov
 ]
 
 #unconfirmed[
+#diff[
 Klíčové přístupy ke škálování zahrnují:
-- #diff[Subagenti (_Subagents_)][Subagenti (_Subagents_ @wu2023autogen)]: Hlavní orchestrátor dekomponuje rozsáhlou úlohu a deleguje dílčí kroky na specializované agenty (např. průzkumník repozitáře, plánovač, kódovací dělník). Po dokončení je kontext subagenta zahozen a orchestrátor obdrží pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
+- Subagenti (_Subagents_ @wu2023autogen): Hlavní orchestrátor dekomponuje rozsáhlou úlohu a deleguje dílčí kroky na specializované agenty (např. průzkumník repozitáře, plánovač, kódovací dělník). Po dokončení je kontext subagenta zahozen a orchestrátor obdrží pouze čistý výsledek, což chrání primární kontext před znečištěním (_context pollution_).
 - Pracovní postupy jako grafy (#term(terms.dag, language: "en", marker: false, linked: false, emphasized: false) / Graph Engineering): Životní cyklus požadavku je modelován jako orientovaný acyklický graf (příjem $arrow$ plán $arrow$ kód $arrow$ testy $arrow$ schválení). Hrany definují striktní závislosti (`needs`); selhání v libovolném uzlu okamžitě zastaví navazující kroky.
+][
+Škálování je dále rozloženo na dva samostatné koncepty: hierarchickou delegaci prostřednictvím #term(terms.subagent) a explicitní závislosti pracovního postupu prostřednictvím #term(terms.dag).
+]
 ]
   ],
   theory_body: none,
