@@ -59,7 +59,7 @@ The final first-party package boundaries are:
 - `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
 - `@darkfactory/web` — the sole first-party web application/renderer.
 
-The existing `@darkfactory/harness` package is migration-only and does not survive as a final public architecture boundary.
+Any remaining implementation under `harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
 
 Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
 
@@ -132,7 +132,7 @@ The final system must not rely on one ever-growing repository-specific language/
 
 ### 7.1 Repository/runtime configuration
 
-The final #340 hard-transition rules apply:
+The final #340 declaration rules apply:
 
 - repository declaration is `repo.df`;
 - runtime/user/provider configuration is `config.df`;
@@ -145,7 +145,7 @@ The final #340 hard-transition rules apply:
 
 Documentation uses `docs.df` as the native DarkFactory configuration.
 
-`properdocs.yml` and `mkdocs.yml` are accepted compatibility inputs to `@darkfactory/docs`, but ProperDocs/MkDocs are not final runtime dependencies.
+`docs.df` is the only DarkFactory documentation configuration contract. ProperDocs/MkDocs configuration is not part of the final system and is not a compatibility target.
 
 Documentation configuration does not move into `repo.df` or `config.df`.
 
@@ -356,8 +356,6 @@ The final release contains, as required:
 Initial installation must not require Python, a source checkout or a pre-existing df installation.
 
 The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
-
-A canary/pre-release after the core #359 self-hosting cutover is used to discover packaging/consumer/web deployment problems early. Final acceptance remains #360.
 
 ## 17. Consumer/fleet model
 
