@@ -28,7 +28,7 @@ One content graph prevents API docs, README and the published site from becoming
 
 ## Enforcement
 
-Docs/API/README checks consume the final #341 capability-aware detection contract and #424 docs compiler. Required API surfaces build with zero required documentation warnings.
+Docs/API/README checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings.
 
 ## Exceptions
 
