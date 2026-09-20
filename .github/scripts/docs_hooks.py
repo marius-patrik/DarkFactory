@@ -174,13 +174,7 @@ def render_adr_index(records: List[Dict[str, str]]) -> str:
         )
 
     accepted = sum(1 for r in records if r["status"].lower().startswith("accepted"))
-    proposed = sum(1 for r in records if r["status"].lower().startswith("proposed"))
-    lines += [
-        "",
-        f"{len(records)} records — {accepted} accepted, {proposed} proposed. Records are "
-        "append-only: a decision that turns out wrong is superseded by a new one, never edited away.",
-        "",
-    ]
+    lines += ["", f"{accepted} current accepted architecture decisions.", ""]
     return "\n".join(lines)
 
 
