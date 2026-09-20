@@ -13,16 +13,10 @@ definition: terms => [
 Pull Request je formální návrh na začlenění změn z jedné větve repozitáře do druhé a společné místo pro automatizované kontroly, lidskou revizi a diskusi nad navrženými úpravami.
   ],
   description: terms => [
-#unconfirmed[
-#term(terms.pull_request) @chacon2014. V tomto bodě se plně uplatňuje princip #term(terms.human_in_the_loop): agent kód samostatně navrhne a otestuje, avšak konečné rozhodnutí o jeho přijetí náleží vývojáři.
+#finalized[
+V navrženém procesu DarkFactory tvoří #term(terms.pull_request) kontrolní hranici mezi pracovní větví agenta a hlavní historií repozitáře @chacon2014. Agent připraví změnu, její souhrn a výsledky automatických kontrol; lidský revizor následně rozhodne o přijetí, přepracování nebo zamítnutí změny v souladu s principem #term(terms.human_in_the_loop).
 
-Rozhraní pull requestu integruje všechny podstatné informace na jednom místě:
-- Řádkový diff: Vizuální srovnání původního a nového stavu, kde jsou jasně barevně odlišeny přidané, změněné a smazané řádky.
-- Strukturovaný souhrn změn: Agent v popisu PR srozumitelně shrne, jaké úpravy provedl, jakou logiku zvolil a na které původní issue reagoval.
-- Výsledky automatických kontrol: Přehled stavu automatizovaných testů a linterů z GitHub Actions (zelený či červený indikátor).
-- Revizní diskuse: Možnost vývojáře přidávat komentáře k libovolnému řádku kódu, klást doplňující dotazy nebo vyžadovat přepracování konkrétních částí.
-
-Lidský vývojář v roli revizora (Reviewer) posuzuje celkový architektonický záměr a rozhoduje o schválení, vrácení k dopracování, či zamítnutí pull requestu.
+Pull request soustřeďuje na jednom místě řádkový diff, popis změny, vazbu na původní zadání, výsledky automatických kontrol a revizní diskusi. Tím poskytuje společný bod pro strojové ověření i lidskou sémantickou kontrolu před integrací.
 ]
   ],
   summary: terms => [
