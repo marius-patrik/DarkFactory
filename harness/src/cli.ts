@@ -49,10 +49,7 @@ import { redactErrorMessage } from "./redaction.ts";
 import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
-import {
-	candidateTierKey,
-	type CapabilityEscalationPolicy,
-} from "./router/tiers.ts";
+import { type CapabilityEscalationPolicy, candidateTierKey } from "./router/tiers.ts";
 import type {
 	Difficulty,
 	ModelCapability,
@@ -113,7 +110,11 @@ function routerInput(args: string[], prompt: string, config: DfConfig): RouterIn
 	if (difficulty && !["easy", "medium", "hard"].includes(difficulty))
 		throw new Error("--difficulty must be easy, medium, or hard");
 	const minTier = option(args, "--min-tier");
-	if (minTier && config.router?.capabilityTiers?.length && !config.router.capabilityTiers.some((tier) => tier.id === minTier))
+	if (
+		minTier &&
+		config.router?.capabilityTiers?.length &&
+		!config.router.capabilityTiers.some((tier) => tier.id === minTier)
+	)
 		throw new Error(`--min-tier must be one of: ${config.router.capabilityTiers.map((tier) => tier.id).join(", ")}`);
 	const needs = options(args, "--need") as TaskNeed[];
 	if (needs.some((need) => !TASK_NEEDS.includes(need)))
