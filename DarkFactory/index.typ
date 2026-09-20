@@ -1,4 +1,5 @@
-#import "/DarkFactory/schema.typ": build-vocabulary, render-document-chapter, render-folders, render-theory-chapter, render-practical-chapter
+#import "/DarkFactory/schema.typ": folder, build-vocabulary, render-document-chapter, render-folders, render-theory-chapter, render-practical-chapter
+#import "/DarkFactory/templates/common.typ": translation
 #import "/DarkFactory/manuscript/introduction/index.typ" as introduction
 #import "/DarkFactory/manuscript/results/index.typ" as results
 #import "/DarkFactory/manuscript/conclusion/index.typ" as conclusion
@@ -7,7 +8,7 @@
 #import "/DarkFactory/language-models/index.typ" as language_models
 #import "/DarkFactory/agentic-engineering/index.typ" as agentic_engineering
 
-#let folders = (
+#let content-folders = (
   introduction.node,
   development_environment.node,
   language_models.node,
@@ -17,6 +18,16 @@
   appendices.node,
 )
 
+// The book itself is the top structural folder. Its key intentionally matches
+// the directory name, so the main title is owned by structure rather than metadata.
+#let root = folder(
+  key: "DarkFactory",
+  title: translation(cs: "DarkFactory", en: "DarkFactory"),
+  children: content-folders,
+)
+
+#let folders = root.children
+#let book-title = root.title
 #let vocabulary = build-vocabulary(folders)
 
 #let render-introduction() = render-document-chapter(introduction.node, vocabulary)
