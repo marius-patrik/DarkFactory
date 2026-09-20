@@ -87,6 +87,7 @@ async function resolveTemplateContext(repoDir: string): Promise<TemplateContext>
 	return {
 		...(upstream?.repo ? { pipeline_repo: upstream.repo } : {}),
 		...(upstream?.ref ? { pipeline_ref: upstream.ref } : {}),
+		default_branch: evidence.repoDf.identity?.default_branch ?? "main",
 	};
 }
 
