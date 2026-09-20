@@ -38,7 +38,7 @@
 )
 
 #let nadpis-bez-cisla(text-nadpisu) = {
-  heading(numbering: none, outlined: true, text-nadpisu)
+  heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)
 }
 
 #let titulni-list(book-title, meta, logo: none) = {
@@ -342,7 +342,8 @@
   // ── Zadní část ───────────────────────────────────────────
   if bibliografie != none {
     pagebreak(weak: true)
-    bibliography(bibliografie, style: bib-styl, title: ui-label([Seznam zdrojů], [References]), full: true)
+    nadpis-bez-cisla[#ui-label([Seznam zdrojů], [References])]
+    bibliography(bibliografie, style: bib-styl, title: none, full: true)
   }
 
   // ── Jednotný výpočet rozsahu pro normal i review ──────────

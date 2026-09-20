@@ -100,6 +100,7 @@ required_sources = (
     ROOT / "index.typ",
     ROOT / "templates/common.typ",
     ROOT / "templates/registry.typ",
+    ROOT / "templates/gjkt-odborna-prace/template.typ",
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
@@ -136,6 +137,14 @@ book = sources[ROOT / "book.typ"]
 for contract in ("root.key", "root.title", "default-template-name", "render-pdf", "render-web"):
     if contract not in book:
         fail(f"book interface is missing contract: {contract}")
+
+school_template = sources[ROOT / "templates/gjkt-odborna-prace/template.typ"]
+for contract in (
+    "heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)",
+    "bibliography(bibliografie, style: bib-styl, title: none, full: true)",
+):
+    if contract not in school_template:
+        fail(f"front/back matter bookmark contract missing: {contract}")
 
 catalog = sources[ROOT / "index.typ"]
 for contract in (
