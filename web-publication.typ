@@ -20,11 +20,21 @@
   meta.nazev
 }
 
+#let publication-title-display = if profile-mode in ("school", "cs", "merged") {
+  [
+    DarkFactory:#linebreak()
+    Umělá inteligence v praxi -#linebreak()
+    Agentické a harnessové inženýrství
+  ]
+} else {
+  publication-title
+}
+
 #set document(title: publication-title, author: meta.autor)
 #set text(lang: "cs")
 #set heading(numbering: "1.1")
 
-#heading(level: 1, numbering: none)[#publication-title]
+#heading(level: 1, numbering: none)[#publication-title-display]
 #par[
   #meta.autor · #meta.skola · #meta.rok
 ]

@@ -126,8 +126,9 @@ manifest = {
     "templates": template_names,
     "variants": VARIANTS,
     "viewer": {
-        "engine": "React + PDF.js + compiled Typst HTML/Markdown",
+        "engine": "React + PDF.js + rendered Markdown + compiled Typst HTML",
         "formats": ["pdf", "markdown", "html"],
+        "modes": ["compiled", "concept", "raw"],
         "pdfjs_version": PDFJS_VERSION,
         "entrypoint": "viewer.html",
         "stack": [

@@ -25,199 +25,7 @@ PROFILES = (
 )
 
 
-PUBLICATION_STYLE = r"""
-<style id="darkfactory-publication-style">
-:root {
-  color-scheme: light;
-  --paper-bg: #eef2f7;
-  --paper-surface: #ffffff;
-  --paper-text: #172033;
-  --paper-muted: #667085;
-  --paper-border: #d8dee9;
-  --paper-link: #175cd3;
-  --paper-code: #101828;
-  --paper-code-text: #f8fafc;
-  --paper-accent: #3157d5;
-}
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --paper-bg: #0b0f17;
-  --paper-surface: #111827;
-  --paper-text: #e5e7eb;
-  --paper-muted: #9ca3af;
-  --paper-border: #293241;
-  --paper-link: #8ab4ff;
-  --paper-code: #080b11;
-  --paper-code-text: #f3f4f6;
-  --paper-accent: #9bb7ff;
-}
-html[data-theme="oled"] {
-  color-scheme: dark;
-  --paper-bg: #000000;
-  --paper-surface: #000000;
-  --paper-text: #f5f5f5;
-  --paper-muted: #a3a3a3;
-  --paper-border: #1a1a1a;
-  --paper-link: #8ab4ff;
-  --paper-code: #000000;
-  --paper-code-text: #f5f5f5;
-  --paper-accent: #8ab4ff;
-}
-html[data-theme="oled"] body {
-  box-shadow: 0 0 0 1px var(--paper-border);
-}
-* { box-sizing: border-box; }
-html {
-  scroll-behavior: smooth;
-  background: var(--paper-bg);
-}
-body {
-  width: min(100% - 32px, 940px);
-  margin: 0 auto;
-  padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px) 88px;
-  background: var(--paper-surface);
-  color: var(--paper-text);
-  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: 17px;
-  line-height: 1.72;
-  overflow-wrap: anywhere;
-  box-shadow: 0 0 0 1px var(--paper-border), 0 20px 60px rgb(15 23 42 / 10%);
-}
-body > h2:first-of-type {
-  margin-top: 0;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--paper-border);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(2rem, 4.8vw, 3.4rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-  text-align: center;
-}
-body > h2:first-of-type + p {
-  margin: -8px 0 52px;
-  color: var(--paper-muted);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  text-align: center;
-}
-h1, h2, h3, h4, h5, h6 {
-  scroll-margin-top: 24px;
-  margin: 2.1em 0 .7em;
-  color: var(--paper-text);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  line-height: 1.2;
-  letter-spacing: -0.018em;
-}
-h2 { font-size: 1.9rem; }
-h3 { font-size: 1.48rem; }
-h4 { font-size: 1.22rem; }
-h5 { font-size: 1.08rem; }
-h6 { font-size: 1rem; }
-h2 .prefix, h3 .prefix, h4 .prefix, h5 .prefix, h6 .prefix {
-  color: var(--paper-muted);
-  font-variant-numeric: tabular-nums;
-}
-p { margin: .8em 0 1.1em; }
-a {
-  color: var(--paper-link);
-  text-decoration-thickness: .08em;
-  text-underline-offset: .18em;
-}
-a:hover { text-decoration-thickness: .13em; }
-ul, ol { padding-left: 1.55em; }
-li { margin: .28em 0; }
-li > ul, li > ol { margin-top: .35em; }
-nav[role="doc-toc"] {
-  margin: 46px 0 62px;
-  padding: 26px 30px 28px;
-  border: 1px solid var(--paper-border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--paper-surface) 92%, var(--paper-accent) 8%);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.45;
-}
-nav[role="doc-toc"] h2 { margin: 0 0 16px; font-size: 1.35rem; }
-nav[role="doc-toc"] ol { margin: 0; padding-left: 1.15em; }
-nav[role="doc-toc"] li { margin: .36em 0; }
-nav[role="doc-toc"] a { color: var(--paper-text); text-decoration: none; }
-nav[role="doc-toc"] a:hover { color: var(--paper-link); }
-figure {
-  margin: 2rem 0;
-  padding: 18px;
-  border: 1px solid var(--paper-border);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--paper-surface) 95%, var(--paper-accent) 5%);
-}
-figure img, figure svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
-figcaption {
-  margin-top: 12px;
-  color: var(--paper-muted);
-  font-size: .92rem;
-  line-height: 1.5;
-}
-pre {
-  max-width: 100%;
-  margin: 1.4rem 0;
-  padding: 18px 20px;
-  overflow: auto;
-  border: 1px solid var(--paper-border);
-  border-radius: 10px;
-  background: var(--paper-code);
-  color: var(--paper-code-text);
-  font: 13px/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-}
-code {
-  border-radius: 4px;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: .88em;
-}
-p code, li code {
-  padding: .12em .34em;
-  background: color-mix(in srgb, var(--paper-surface) 84%, var(--paper-accent) 16%);
-}
-table {
-  width: 100%;
-  margin: 1.5rem 0;
-  border-collapse: collapse;
-  font-size: .95rem;
-}
-th, td {
-  padding: 9px 11px;
-  border: 1px solid var(--paper-border);
-  text-align: left;
-  vertical-align: top;
-}
-blockquote {
-  margin: 1.5rem 0;
-  padding: .2rem 0 .2rem 1.2rem;
-  border-left: 3px solid var(--paper-accent);
-  color: var(--paper-muted);
-}
-math { max-width: 100%; overflow-x: auto; }
-mark { border-radius: 3px; padding: 0 .12em; }
-@media (max-width: 640px) {
-  body {
-    width: 100%;
-    padding: 24px 18px 64px;
-    box-shadow: none;
-  }
-  nav[role="doc-toc"] { padding: 20px; }
-}
-@media print {
-  :root {
-    --paper-bg: #fff;
-    --paper-surface: #fff;
-    --paper-text: #111;
-    --paper-muted: #555;
-    --paper-border: #ddd;
-  }
-  body { width: auto; margin: 0; padding: 0; box-shadow: none; }
-  nav[role="doc-toc"] { break-after: page; }
-}
-</style>
-"""
-
-
+PUBLICATION_CSS = Path("web/src/publication.css")
 @dataclass
 class Node:
     tag: str
@@ -403,7 +211,31 @@ def style_compiled_html(source: str) -> str:
         return source
     if "</head>" not in source:
         raise SystemExit("compiled HTML has no </head> for publication styling")
-    return source.replace("</head>", PUBLICATION_STYLE + "</head>", 1)
+    if not PUBLICATION_CSS.is_file():
+        raise SystemExit(f"missing shared publication stylesheet: {PUBLICATION_CSS}")
+
+    css = PUBLICATION_CSS.read_text(encoding="utf-8")
+    style = '<style id="darkfactory-publication-style">\n' + css + '\n</style>'
+
+    body_match = re.search(r"<body(?P<attrs>[^>]*)>", source, flags=re.IGNORECASE)
+    if not body_match:
+        raise SystemExit("compiled HTML has no <body> for publication styling")
+    attrs = body_match.group("attrs")
+    class_match = re.search(r'class="([^"]*)"', attrs)
+    if class_match:
+        classes = class_match.group(1).split()
+        if "publication-surface" not in classes:
+            classes.append("publication-surface")
+        replacement_attrs = re.sub(
+            r'class="[^"]*"',
+            'class="' + " ".join(classes) + '"',
+            attrs,
+            count=1,
+        )
+    else:
+        replacement_attrs = attrs + ' class="publication-surface"'
+    source = source[:body_match.start()] + "<body" + replacement_attrs + ">" + source[body_match.end():]
+    return source.replace("</head>", style + "</head>", 1)
 
 
 def compile_html(

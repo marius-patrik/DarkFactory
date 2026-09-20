@@ -655,6 +655,9 @@ for dependency in (
     "lucide-animated",
     "lucide-react",
     "pdfjs-dist",
+    "react-markdown",
+    "rehype-raw",
+    "remark-gfm",
     "@radix-ui/react-tooltip",
     "@radix-ui/react-context-menu",
     "@radix-ui/react-dropdown-menu",
@@ -705,7 +708,7 @@ for required in (
     "FileCode2Icon",
     "Code2Icon",
     "PencilLineIcon",
-    'mode === "review" ? "Koncept" : "Compiled"',
+    'mode === "review" ? "Koncept" : mode === "raw" ? "Raw" : "Compiled"',
 ):
     if required not in app_source:
         fail(f"viewer path controls missing icon/chapter/mode contract: {required}")
@@ -732,13 +735,19 @@ for required in ("window.history.pushState", '"popstate"', "navigateViewer", "on
         fail(f"fullscreen-preserving viewer routing missing contract: {required}")
 if "Switch Final / Koncept / Review" in app_source:
     fail("Review must remain a separate toolbar action, not a mode-select option")
+for required in ('requestedMode === "raw"', 'mode: "raw"', "rawHref={rawTarget}", 'mode === "raw" ? "Raw Markdown"'):
+    if required not in app_source:
+        fail(f"viewer missing Raw publication mode contract: {required}")
 
 compiled_artifact_source = Path("web/src/compiled-artifact.tsx").read_text(encoding="utf-8")
 for required in (
     'fetch(path, { cache: "no-store" })',
     'src={path}',
     'format === "html"',
-    'Loading compiled Markdown',
+    '<ReactMarkdown',
+    'remarkPlugins={[remarkGfm]}',
+    'rehypePlugins={[rehypeRaw]}',
+    'raw-markdown-artifact',
     'data-theme',
     'theme: "dark" | "light" | "oled"',
 ):
@@ -770,6 +779,7 @@ if "window.location.reload()" in app_source:
 
 viewer_css_source = Path("web/src/viewer.css").read_text(encoding="utf-8")
 for required in (
+    '@import "./publication.css"',
     'html[data-theme="oled"]',
     '--bg: #000000',
     '--toolbar: #000000',
@@ -828,12 +838,13 @@ if "<ViewerApp />" not in main_source or "PublicationIndex" in main_source:
     fail("site root must open directly into the viewer")
 for required in (
     'const profileName = params.get("profile") || "school"',
-    'const mode: ViewerMode = params.get("mode") === "review" ? "review" : "final"',
+    'const mode: ViewerMode =',
     'requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf"',
+    'requestedMode === "raw"',
     'Loading school Compiled PDF…',
 ):
     if required not in app_source:
-        fail(f"viewer root missing school/compiled/PDF default contract: {required}")
+        fail(f"viewer root missing school/compiled/raw/PDF default contract: {required}")
 
 vite_source = Path("web/vite.config.ts").read_text(encoding="utf-8")
 for required in ("@vitejs/plugin-react", "@tailwindcss/vite", "viewer.html", "index.html"):
@@ -846,6 +857,20 @@ for required_path in (web_publication, web_exporter):
     if not required_path.is_file() or required_path.stat().st_size == 0:
         fail(f"missing compiled web publication source/tool: {required_path}")
 
+publication_css = Path("web/src/publication.css")
+if not publication_css.is_file() or publication_css.stat().st_size == 0:
+    fail("missing shared HTML/Markdown publication stylesheet")
+publication_css_source = publication_css.read_text(encoding="utf-8")
+for required in (
+    ".publication-surface",
+    "font-family: Caladea, Cambria",
+    "font-size: 12pt",
+    "line-height: 1.5",
+    "padding: 2.5cm 2.5cm 2.5cm 3cm",
+):
+    if required not in publication_css_source:
+        fail(f"shared publication stylesheet missing PDF-aligned contract: {required}")
+
 web_export_source = web_exporter.read_text(encoding="utf-8")
 for required in (
     '"--features", "html"',
@@ -854,11 +879,11 @@ for required in (
     'parser.add_argument("--source", default="web-publication.typ")',
     'output.with_suffix(".md")',
     'darkfactory-publication-style',
+    'PUBLICATION_CSS = Path("web/src/publication.css")',
+    'class="publication-surface"',
     'style_compiled_html',
     'nav[role="doc-toc"]',
-    'html[data-theme="oled"]',
-    '--paper-bg: #000000',
-    '--paper-surface: #000000',
+    'html_to_markdown',
 ):
     if required not in web_export_source:
         fail(f"web exporter missing compiled HTML/Markdown contract: {required}")
