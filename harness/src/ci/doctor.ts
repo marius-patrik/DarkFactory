@@ -62,10 +62,13 @@ export async function runCiDoctor(
 			details: { checks: config.checks, alert_after: config.alert_after },
 		};
 	} catch (err: unknown) {
-		configResult = {
-			status: "fail",
-			message: err instanceof Error ? err.message : String(err),
-		};
+		const message = err instanceof Error ? err.message : String(err);
+		configResult = message.includes(".darkfactory/ci.json not found")
+			? {
+				status: "skipped",
+				message: "Legacy .darkfactory/ci.json is absent; detected repository actions are the quality source of truth",
+			}
+			: { status: "fail", message };
 	}
 
 	// 2. Check workflows
@@ -152,7 +155,7 @@ export async function runCiDoctor(
 		}
 	}
 
-	const ok = repositoryResult.status !== "fail" && configResult.status === "pass" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
+	const ok = repositoryResult.status !== "fail" && configResult.status !== "fail" && workflowsResult.status !== "fail" && protectionResult.status !== "fail";
 
 	return {
 		ok,
