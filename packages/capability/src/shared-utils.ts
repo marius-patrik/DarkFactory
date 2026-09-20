@@ -45,9 +45,36 @@ export async function checkToolExists(tool: string): Promise<boolean> {
 
 export function parseShellCommand(cmd: string | string[]): { tool: string; args: string[] } {
 	if (Array.isArray(cmd)) return { tool: cmd[0], args: cmd.slice(1) };
-	// Simple split for now, replace with proper shell-quote if needed
-	const parts = cmd.split(" ");
-	return { tool: parts[0], args: parts.slice(1) };
+
+	const args: string[] = [];
+	let current = "";
+	let inSingleQuote = false;
+	let inDoubleQuote = false;
+	let escaped = false;
+
+	for (let i = 0; i < cmd.length; i++) {
+		const char = cmd[i];
+		if (escaped) {
+			current += char;
+			escaped = false;
+		} else if (char === "\\") {
+			escaped = true;
+		} else if (char === "'" && !inDoubleQuote) {
+			inSingleQuote = !inSingleQuote;
+		} else if (char === '"' && !inSingleQuote) {
+			inDoubleQuote = !inDoubleQuote;
+		} else if (char === " " && !inSingleQuote && !inDoubleQuote) {
+			if (current.length > 0) {
+				args.push(current);
+				current = "";
+			}
+		} else {
+			current += char;
+		}
+	}
+	if (current.length > 0) args.push(current);
+
+	return { tool: args[0] ?? "", args: args.slice(1) };
 }
 
 export interface QualityCommand {
