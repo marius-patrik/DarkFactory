@@ -63,4 +63,3 @@
 #let terms = vocabulary
 
 #let render-keywords = common.render-keywords
-#let render-index = common.render-index
