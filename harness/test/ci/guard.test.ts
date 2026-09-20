@@ -22,16 +22,16 @@ describe("CI required checks state guard", () => {
 	});
 
 	it("accepts neutral or skipped required checks", () => {
-		expect(requiredChecksState(checks, [
-			{ name: "quality", status: "completed", conclusion: "skipped" },
-			{ name: "verify-bound-issue", status: "completed", conclusion: "neutral" },
-		]).state).toBe("green");
+		expect(
+			requiredChecksState(checks, [
+				{ name: "quality", status: "completed", conclusion: "skipped" },
+				{ name: "verify-bound-issue", status: "completed", conclusion: "neutral" },
+			]).state,
+		).toBe("green");
 	});
 
 	it("returns pending for missing or running required checks", () => {
-		const missing = requiredChecksState(checks, [
-			{ name: "quality", status: "completed", conclusion: "success" },
-		]);
+		const missing = requiredChecksState(checks, [{ name: "quality", status: "completed", conclusion: "success" }]);
 		expect(missing.state).toBe("pending");
 		expect(missing.missing).toEqual(["verify-bound-issue"]);
 

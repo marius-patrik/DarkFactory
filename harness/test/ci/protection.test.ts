@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../src/ci/protection.ts";
+import type { ResolvedCheck } from "../../src/ci/schema.ts";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { json, scripted } from "../github/helpers.ts";
-import { applyBranchProtection, computeRequiredChecks, verifyBranchProtection } from "../../src/ci/protection.ts";
-import type { ResolvedCheck } from "../../src/ci/schema.ts";
 
 describe("Branch protection & rulesets synchronizer", () => {
 	const checks: ResolvedCheck[] = [
@@ -19,7 +19,10 @@ describe("Branch protection & rulesets synchronizer", () => {
 	it("applies branch protection with dry-run without calling API", async () => {
 		const { fetch, calls } = scripted([]);
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
-		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], { dryRun: true, branch: "main" });
+		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], {
+			dryRun: true,
+			branch: "main",
+		});
 		expect(result.dryRun).toBe(true);
 		expect(result.contexts).toEqual(["quality", "verify-bound-issue"]);
 		expect(calls.length).toBe(0);
