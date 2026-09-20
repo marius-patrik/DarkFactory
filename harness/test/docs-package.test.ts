@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
 	compileDocsContentGraph,
+	extractTypeScriptApi,
 	loadDocsConfig,
 	parseDocsConfig,
 	README_GENERATED_MARKER,
