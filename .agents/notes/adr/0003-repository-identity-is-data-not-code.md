@@ -1,6 +1,6 @@
 # ADR-0003 — Repository identity is data, not code
 
-**Status**: Accepted · 2026-09-07
+**Status**: Superseded by ADR-0021 · 2026-09-20
 
 ## Context
 
