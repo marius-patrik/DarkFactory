@@ -4,7 +4,7 @@ import type {
 	ReviewIterationRecord,
 	ReviewRuntimeState,
 	ReviewSubject,
-} from "@darkfactory/protocol/review";
+} from "../../../packages/protocol/src/review.ts";
 
 function canonical(value: unknown): string {
 	if (value === null || typeof value !== "object") return JSON.stringify(value);
