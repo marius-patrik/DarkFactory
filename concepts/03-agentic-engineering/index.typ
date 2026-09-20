@@ -19,21 +19,15 @@
 #import "loop-engineering.typ" as loop_engineering
 #import "dag.typ" as dag
 
-#let terminology = define-term(id: "agentic-harness-engineering", proper: translation(cs: "Agentické a harnessové inženýrství", en: "Agentic and Harness Engineering"), explanation_cs: "Návrh, orchestrace a provoz agentních systémů kolem jazykových modelů včetně jejich smyček, nástrojů, kontextu, grafů a lidského dohledu.", explanation_en: "The design, orchestration, and operation of agentic systems around language models, including their loops, tools, context, graphs, and human oversight.", keyword: false)
+#let terminology = define-term(id: "agentic-systems", proper: translation(cs: "Agentické systémy", en: "Agentic Systems"), explanation_cs: "Systémy, v nichž jazykový model prostřednictvím okolní softwarové infrastruktury plánuje, používá nástroje a vykonává vícefázové úlohy.", explanation_en: "Systems in which a language model plans, uses tools, and executes multi-step tasks through surrounding software infrastructure.", keyword: false)
 
 #let item = section(
-  key: "agentic_harness_engineering",
+  key: "agentic_systems",
   term: terminology,
-  heading: terms => [#accepted[#term(terms.agentic_engineering, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false) a #term(terms.harness, language: "en", marker: false, linked: false, emphasized: false)]],
+  heading: terms => [#finalized[Agentic Systems (Agentické systémy)]],
   theory_prelude: none,
-  theory_intro_heading: terms => [#finalized[Úvod]],
-  theory_intro: terms => [
-#accepted[
-V terminologii agentického inženýrství používá tato práce pojem #term(terms.harness). #term(terms.harness, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false). Samotné inferenční jádro provádí výhradně matematické maticové operace nad zadanými váhami a vektory tokenů; veškerou orchestraci, práci se soubory a řízení bezpečnosti zajišťuje harness.
-
-Ústřední komponentou a hlavní prováděcí funkcí, která v architektuře harnessu řídí samotný běh a iterativní koordinaci agenta v reálném vývojovém prostředí, je #term(terms.agent_loop). #term(terms.agent_loop, render: "explanation", detail-language: "cs", detail-style: "inline", register: false, linked: false, marker: false, emphasized: false).
-]
-  ],
+  theory_intro_heading: none,
+  theory_intro: none,
   theory_summary: none,
   practical_prelude: none,
   practical_intro_heading: none,
@@ -41,6 +35,8 @@ V terminologii agentického inženýrství používá tato práce pojem #term(te
   practical_summary: none,
   practical_grouped: false,
   concepts: (
+    agentic_engineering.item,
+    harness.item,
     prompt_engineering.item,
     system_prompt.item,
     agent_loop.item,
@@ -51,8 +47,6 @@ V terminologii agentického inženýrství používá tato práce pojem #term(te
     mcp.item,
     graph_engineering.item,
     human_in_the_loop.item,
-    agentic_engineering.item,
-    harness.item,
     plugins.item,
     script.item,
     hook.item,
