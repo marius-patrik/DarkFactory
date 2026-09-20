@@ -244,7 +244,7 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 #### #329 / F38
 
-#329 remains open. `recovery/f38-result-capture` is one of the three remaining remote recovery inputs.
+#329 remains open. `recovery/f38-result-capture` has a terminal integrated/rejected disposition recorded on #329 and has been deleted. PR #891 is the current fresh implementation vehicle but remains draft/nonterminal pending routed structured extraction, final-owner placement and green aggregate checks.
 
 Prior PRs #811 and #860 are closed evidence only. #860 reused a stale branch and carried scratch/debug files, so it is not an implementation vehicle.
 
@@ -317,19 +317,20 @@ Continue stable release engineering in parallel for final package metadata, Node
 
 ### Recovery and branch cleanup
 
-Remote recovery cleanup has advanced from 16 refs to exactly three:
+Remote recovery cleanup has advanced from 16 refs to exactly two active inputs:
 
 - `recovery/f14-borrowed-refresh` → #422;
-- `recovery/f38-result-capture` → #329;
 - `recovery/f47-hooks` → #339.
+
+F38 has terminal disposition recorded on #329 and `recovery/f38-result-capture` is deleted.
 
 All other previously retained remote `recovery/*` refs have been deleted after reconciliation. GitHub issues remain the durable provenance record.
 
-The local recovery-cleanup pass is complete for the previously preserved September recovery set: terminal recovery refs were dispositioned in their owning GitHub Requests and removed, leaving only the three active recovery inputs above.
+The local recovery-cleanup pass is complete for the previously preserved September recovery set: terminal recovery refs were dispositioned in their owning GitHub Requests and removed, leaving only the active F14/F47 recovery inputs above; F38 was dispositioned and deleted during the current #329 implementation pass.
 
 Remote branch hygiene is nearly complete. Exactly two stale `feature/*` refs remain from superseded work: `feature/capability-driven-repository-detection-and-quality` (landed #341 vehicle) and `feature/wire-graph-executor-handlers-and-graph-native-orch` (rejected #358 vehicle). Neither is a valid continuation branch. Delete both; all new #358 work starts from the exact current `darkfactory` HEAD on a fresh branch.
 
-The three remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique required state remains.
+The two remaining recovery branches are deleted immediately after their owning Requests record terminal integrated/superseded/rejected dispositions and no unique required state remains.
 
 ### Pipeline hygiene
 
