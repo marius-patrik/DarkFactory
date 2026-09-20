@@ -111,6 +111,7 @@ required_sources = (
     Path("scripts/build_review.py"),
     Path("scripts/build_web_exports.py"),
     Path("scripts/build_site.py"),
+    Path("scripts/fetch_external_assets.py"),
 )
 sources = {path: require_file(path) for path in required_sources if path.suffix != ".jpeg"}
 
@@ -138,13 +139,11 @@ for contract in (
     "#let root = folder(",
     f'key: "{BOOK}"',
     "title: translation(",
+    "#let manuscript-folders",
+    "#let appendix-folders",
     "#let book-title = root.title",
     "#let vocabulary = build-vocabulary(folders)",
-    "#let render-introduction()",
-    "#let render-theory()",
-    "#let render-practical()",
-    "#let render-results()",
-    "#let render-conclusion()",
+    "#let render-manuscript()",
     "#let render-appendices()",
 ):
     if contract not in catalog:
@@ -153,11 +152,17 @@ for contract in (
 schema = sources[ROOT / "schema.typ"]
 for contract in (
     "#let concept(",
+    "definition: none",
+    "description: none",
+    "summary: none",
+    "examples: ()",
+    "attachments: ()",
     "#let folder(",
     "title: none",
     "#let relation(",
     "#let build-vocabulary(folders)",
-    "#let render-section-title(item) = context",
+    "#let render-concept-title(item) = context",
+    "#let render-concept(item, terms, graph, level: 1)",
     'surface: "proper"',
     'profile in ("school", "cs")',
 ):
@@ -197,10 +202,38 @@ if BOOK == "DarkFactory" and len(concept_files) < 45:
 
 concept_keys: list[str] = []
 term_ids: list[str] = []
+legacy_concept_fields = (
+    "heading:",
+    "document_enabled:",
+    "document_intro:",
+    "document_body:",
+    "document_summary:",
+    "document_after:",
+    "document_wrapper:",
+    "theory_enabled:",
+    "theory_intro:",
+    "theory_body:",
+    "theory_summary:",
+    "theory_after:",
+    "theory_wrapper:",
+    "practical_enabled:",
+    "practical_intro:",
+    "practical_body:",
+    "practical_summary:",
+    "practical_after:",
+    "practical_wrapper:",
+)
+
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
     if "#let terminology = define-term(" not in source:
         fail(f"concept file does not own canonical terminology: {path}")
+    for field in ("definition:", "description:", "summary:"):
+        if field not in source:
+            fail(f"concept file is missing canonical {field[:-1]} field: {path}")
+    for field in legacy_concept_fields:
+        if field in source:
+            fail(f"legacy manuscript field {field[:-1]} is forbidden: {path}")
     key = re.search(r'key:\s*"([^"]+)"', source)
     term_id = re.search(r'id:\s*"([^"]+)"', source)
     if key is None or term_id is None:
@@ -212,6 +245,17 @@ if len(concept_keys) != len(set(concept_keys)):
     fail("concept keys must be unique within a book")
 if len(term_ids) != len(set(term_ids)):
     fail("term ids must be unique within a book")
+
+for path in all_book_typ:
+    if path == ROOT / "templates/common.typ":
+        continue
+    source = path.read_text(encoding="utf-8")
+    if "#let terminology = define-term(" in source and "#let item = concept(" not in source:
+        fail(f"canonical term must be owned by a concept: {path}")
+
+for legacy_token in ("theory_enabled", "practical_enabled", "document_enabled", "render-theory", "render-practical"):
+    if legacy_token in schema or legacy_token in catalog:
+        fail(f"legacy theory/practical manuscript contract remains: {legacy_token}")
 
 for manifest_path in folder_manifests:
     source = manifest_path.read_text(encoding="utf-8")
@@ -229,6 +273,14 @@ if BOOK == "DarkFactory":
         ROOT / "development-environment/index.typ",
         ROOT / "language-models/index.typ",
         ROOT / "agentic-engineering/index.typ",
+        ROOT / "manuscript/introduction/motivation/ai-diffusion-figure.typ",
+        ROOT / "language-models/examples/chatgpt.typ",
+        ROOT / "agentic-engineering/agent-harness/examples/codex.typ",
+        ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
+        ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
+        ROOT / "language-models/language-model/examples/gpt-5-6.typ",
+        ROOT / "language-models/language-model/examples/claude-opus-5.typ",
+        ROOT / "language-models/language-model/examples/deepseek-v4-1-flash.typ",
     ):
         if not required.is_file():
             fail(f"DarkFactory book is missing required publication component: {required}")
@@ -260,11 +312,19 @@ for contract in (
     "<ReviewWorkspace",
     "<SplitViewPicker",
     "<FileMenu",
-    "<AppearancePicker",
+    "DropdownMenuSubTrigger",
+    "Appearance",
+    "SourceFileView",
+    "onOpenFile={openRepositoryFile}",
     'className="zoom-value"',
 ):
     if contract not in app:
         fail(f"viewer shell is missing UI contract: {contract}")
+
+site_builder = sources[Path("scripts/build_site.py")]
+for contract in ("publish_tracked_sources", '"source": f"repository/{tracked_path}"', '"repository_source_root": "repository/"'):
+    if contract not in site_builder:
+        fail(f"site builder is missing internal Explorer source contract: {contract}")
 
 for contract in ("DockviewReact", "paper-viewer-workspace-layout", "splitActive", "updateActive", "onDidLayoutChange"):
     if contract not in workspace:
