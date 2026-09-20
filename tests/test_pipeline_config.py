@@ -77,12 +77,14 @@ def test_ci_quality_matrix_is_detector_driven():
     assert "\n  rust:" not in content
     assert "\n  harness:" not in content
 
+
 def test_ci_has_one_aggregate_quality_context():
     """Branch protection consumes one stable quality result over the detected matrix."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert re.search(r"^  quality:$", content, re.MULTILINE)
     assert re.search(r"^    name: quality$", content, re.MULTILINE)
     assert "needs: [detect, quality-run, docs-check]" in content
+
 
 def test_python_actions_and_docs_have_separate_final_owners():
     """Capability actions execute in the matrix while docs.df uses the native compiler."""
@@ -91,6 +93,7 @@ def test_python_actions_and_docs_have_separate_final_owners():
     assert "DF_ACTION_COMMAND" in ci
     assert "docs.df" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
+
 
 def test_required_checks_match_final_stable_contexts():
     """Deletion-bound settings metadata mirrors the TypeScript required-check contract."""
@@ -101,6 +104,7 @@ def test_required_checks_match_final_stable_contexts():
     verify = _read(os.path.join(WORKFLOW_DIR, "verify-pr-issue.yml"))
     assert re.search(r"^    name: quality$", ci, re.MULTILINE)
     assert re.search(r"^  verify-bound-issue:$", verify, re.MULTILINE)
+
 
 def test_verify_bound_issue_job_name_is_stable():
     """The required check name must match the job id in `verify-pr-issue.yml`."""
@@ -427,6 +431,7 @@ def test_ci_is_a_direct_detector_driven_workflow():
     assert "merge_group" in triggers
     assert document["jobs"]["quality"]["name"] == "quality"
 
+
 def test_ci_still_runs_for_this_repository_itself():
     """A file that only ran when called would leave the upstream repository untested."""
     yaml = pytest.importorskip("yaml")
@@ -443,10 +448,12 @@ def test_consumer_ci_uses_a_pinned_darkfactory_runtime_checkout():
     assert "Check out pinned DarkFactory runtime" in content
     assert "PYTHONPATH" not in content
 
+
 def test_runtime_checkout_is_skipped_when_running_in_place():
     """DarkFactory uses its checked-out PR branch rather than recursively checking itself out."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "if: github.repository != 'marius-patrik/DarkFactory'" in content
+
 
 def test_workflows_trigger_on_the_declared_default_branch():
     """DarkFactory's default branch is named after itself, so a consumer that adds it as a
@@ -475,18 +482,24 @@ def test_branch_protection_targets_the_declared_default_branch():
 def test_the_docs_job_uses_the_native_docs_contract():
     """The direct docs-check job detects docs.df and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    docs_job = content[content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))]
+    docs_job = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "docs.df" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
     assert "packages/web" not in docs_job
 
+
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
     """A repository without docs.df reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    docs_job = content[content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))]
+    docs_job = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "No documentation configured" in docs_job
     assert "steps.docs.outputs.present != 'true'" in docs_job
+
 
 def test_repo_settings_can_configure_a_consumer_checkout():
     """Consumers carry no copy of these scripts, so the script must target another repository.
@@ -1172,8 +1185,9 @@ def test_bot_comments_do_not_start_an_agent_container():
 def test_ci_docs_job_runs_the_native_bun_compiler():
     """docs.df is compiled by the Bun workspace in the direct docs-check job."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
-    block = content[content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))]
+    block = content[
+        content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
+    ]
     assert "uses: oven-sh/setup-bun@v2" in block
     assert "bun install --frozen-lockfile" in block
     assert 'bun "$ROOT/scripts/build-docs.ts"' in block
-

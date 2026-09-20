@@ -529,9 +529,7 @@ PIN_PATTERN = re.compile(r"(?P<prefix>\.github/workflows/[\w.-]+\.yml@)(?P<ref>\
 REF_INPUT_PATTERN = re.compile(
     r'(?P<prefix>pipeline-ref:\s*)(?P<quote>"?)(?P<ref>[^"\s]*)(?P=quote)'
 )
-DIRECT_CI_REF_PATTERN = re.compile(
-    r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE
-)
+DIRECT_CI_REF_PATTERN = re.compile(r'(?P<prefix>^\s*ref:\s*")[^"]+(?P<suffix>"\s*$)', re.MULTILINE)
 
 
 def retarget(root: str, ref: str) -> List[str]:
