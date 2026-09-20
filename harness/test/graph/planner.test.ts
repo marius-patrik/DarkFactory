@@ -33,27 +33,44 @@ describe("pure DarkFactory planner", () => {
 		],
 		[
 			"planning review success",
-			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: null } },
+			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: null, planning_review_clean: true } },
 			state("planning-review"),
 			{ type: "gate", node: "planning-gate", status: "Blocked" },
 		],
 		[
 			"planning review fails",
-			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: "issue" } },
+			{ type: "node.completed", node: "planning-review", outcome: "success", outputs: { planning_findings: [{ id: "x" }], planning_review_clean: false } },
 			state("planning-review"),
-			{ type: "run", nodes: ["planning"] },
+			{ type: "run", nodes: ["planning-fix"] },
+		],
+		[
+			"planning fix returns to independent review",
+			{ type: "node.completed", node: "planning-fix", outcome: "success", outputs: { plan_artifact: "revised" } },
+			state("planning-fix"),
+			{ type: "run", nodes: ["planning-review"] },
 		],
 		[
 			"planning approved",
 			{ type: "comment", body: "/df approve", actor: { login: "owner", association: "OWNER", is_bot: false } },
-			state("planning-gate"),
+			state("planning-gate", {
+				reviews: {
+					planning: {
+						subject: "planning",
+						contextFingerprint: "ctx",
+						findings: [],
+						clean: true,
+						iteration: 1,
+						history: [],
+					},
+				},
+			}),
 			{ type: "run", nodes: ["implement"] },
 		],
 		[
 			"planning revised",
 			{ type: "comment", body: "/revise", actor: { login: "owner", association: "OWNER", is_bot: false } },
 			state("planning-gate"),
-			{ type: "run", nodes: ["planning"], feedback: "/revise" },
+			{ type: "run", nodes: ["planning-fix"], feedback: "/revise" },
 		],
 		[
 			"free text hint",
@@ -76,6 +93,12 @@ describe("pure DarkFactory planner", () => {
 				outputs: { review_clean: false, deviation_detected: false },
 			},
 			state("self-review"),
+			{ type: "run", nodes: ["review-fix"] },
+		],
+		[
+			"review fix returns to the same reviewer",
+			{ type: "node.completed", node: "review-fix", outcome: "success", outputs: { implementation_artifact: "fixed" } },
+			state("review-fix"),
 			{ type: "run", nodes: ["self-review"] },
 		],
 		[
@@ -149,6 +172,26 @@ describe("pure DarkFactory planner", () => {
 				state("request-intake"),
 			),
 		).toEqual({ type: "none", reason: "event filter did not match" }));
+	test("planning approval cannot advance before independent review is clean", () =>
+		expect(
+			plan(
+				graph,
+				{ type: "comment", body: "/approve", actor: { login: "owner", association: "OWNER", is_bot: false } },
+				state("planning-gate", {
+					reviews: {
+						planning: {
+							subject: "planning",
+							contextFingerprint: "ctx",
+							findings: [{ id: "x", category: "test", severity: "error", message: "still broken" }],
+							clean: false,
+							iteration: 1,
+							history: [],
+						},
+					},
+				}),
+			),
+		).toEqual({ type: "none", reason: "planning review is not clean" }));
+
 	test("gate authorization rejects outsiders", () =>
 		expect(
 			plan(
@@ -177,7 +220,7 @@ describe("pure DarkFactory planner", () => {
 				},
 				state("self-review", { iterations: { "self-review": 5 } }),
 			),
-		).toEqual({ type: "run", nodes: ["self-review"], alerts: ["self-review exceeded safety budget 5"] }));
+		).toEqual({ type: "run", nodes: ["review-fix"], alerts: ["self-review exceeded safety budget 5"] }));
 	test("deviation gate stays blocked and reminds at seven days", () =>
 		expect(
 			plan(
