@@ -6,11 +6,13 @@ import { definitionFromModule } from "./compatibility.ts";
 
 const ENTRYPOINTS = ["capability.ts", "capability.js", "capability.mjs"] as const;
 
+/** Loads and validates one capability module from disk. */
 export async function loadCapability(path: string): Promise<CapabilityDefinition> {
 	const module = (await import(pathToFileURL(resolve(path)).href)) as CapabilityModule;
 	return definitionFromModule(module);
 }
 
+/** Discovers and validates capability modules under a capability root. */
 export async function discoverCapabilities(root: string): Promise<CapabilityDefinition[]> {
 	const entries = (await readdir(root, { withFileTypes: true }))
 		.filter((entry) => entry.isDirectory())
