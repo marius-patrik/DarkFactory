@@ -1799,7 +1799,7 @@ a {
 .statusbar .version-select,
 .statusbar .format-select,
 .status-short-id,
-...statusbar .version-fallback,
+.statusbar .version-fallback,
 .zoom-value,
 .split-label,
 .build-revision {
@@ -1807,7 +1807,7 @@ a {
 }
 
 .version-option small,
-..contents-item small,
+.contents-item small,
 .ui-secondary {
   color: var(--muted);
   font-size: var(--ui-font-size);
