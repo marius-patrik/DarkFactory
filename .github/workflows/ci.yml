@@ -2,368 +2,220 @@ name: CI
 
 on:
   push:
-    branches: ["darkfactory"]
   pull_request:
-    branches: ["darkfactory"]
+  merge_group:
   workflow_dispatch:
-  # The same file is this repository's own CI and the reusable workflow every consumer calls, so
-  # the two cannot drift. A consumer's caller stub is six lines and pins `pipeline-ref` to a SHA;
-  # everything below then runs against the *caller's* checkout, because `github.repository` in a
-  # called workflow is the caller.
-  workflow_call:
-    inputs:
-      pipeline-ref:
-        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
-        required: false
-        type: string
-        default: ""
-      pipeline-repo:
-        description: "Repository holding the shared scripts."
-        required: false
-        type: string
-        default: "marius-patrik/DarkFactory"
 
-# Every job below always reports a conclusion, even while the product tree is still a scaffold:
-# language-specific steps are guarded by `hashFiles`, so the job succeeds with skipped steps rather
-# than being skipped itself. A skipped job never satisfies a required status check, which would
-# block every merge forever.
+permissions:
+  contents: read
+
 jobs:
-  pipeline:
-    name: pipeline
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has-actions: ${{ steps.matrix.outputs.has-actions }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out pinned DarkFactory runtime
+        if: github.repository != 'marius-patrik/DarkFactory'
+        uses: actions/checkout@v4
+        with:
+          repository: "marius-patrik/DarkFactory"
+          ref: "darkfactory"
+          path: .darkfactory-runtime
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
+
+      - name: Resolve detected quality matrix
+        id: matrix
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$ROOT/capabilities" > "$RUNNER_TEMP/darkfactory-quality.json"
+          jq -c '.matrix' "$RUNNER_TEMP/darkfactory-quality.json"             | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
+          if [ "$(jq '.matrix | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
+            echo "has-actions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-actions=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$(jq '.gaps | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
+            echo "::warning::DarkFactory detected unsupported or missing deterministic actions:"
+            jq -r '.gaps[] | "  \(.packageId) \(.kind): \(.reason // .description)"'               "$RUNNER_TEMP/darkfactory-quality.json"
+          fi
+
+  quality-run:
+    name: ${{ matrix.id }}
+    needs: detect
+    if: needs.detect.outputs.has-actions == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-
+        include: ${{ fromJSON(needs.detect.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check out the pinned pipeline
-        # Only when called from another repository: the shared scripts live in the pipeline
-        # repository at a pinned SHA, so a consumer carries none of them in its own tree.
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
+      - name: Set up Bun
+        if: matrix.packageManager == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set up Node
+        if: matrix.ecosystem == 'node' && matrix.packageManager != 'bun'
+        uses: actions/setup-node@v4
         with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
+          node-version: "24"
 
-      - name: Put the pipeline scripts on the path
-        run: |
-          if [ -d .darkfactory-pipeline/.github/scripts ]; then
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
-          else
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
-          fi
+      - name: Enable Corepack
+        if: matrix.packageManager == 'pnpm' || matrix.packageManager == 'yarn'
+        run: corepack enable
 
-      - name: Detect a Python project
-        id: detect
-        # A consumer need not contain Python at all - a paper repository does not - and this job
-        # is a required check, so it has to report a conclusion rather than fail on a missing
-        # requirements file.
-        run: echo "present=${{ hashFiles('requirements-dev.txt') != '' }}" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        if: steps.detect.outputs.present == 'true'
+      - name: Set up Python
+        if: matrix.ecosystem == 'python'
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          python-version: ${{ matrix.version || '3.13' }}
 
-      - name: Install dependencies
-        if: steps.detect.outputs.present == 'true'
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+      - name: Install Python package manager
+        if: matrix.packageManager == 'uv' || matrix.packageManager == 'poetry' || matrix.packageManager == 'pipenv'
+        env:
+          DF_PACKAGE_MANAGER: ${{ matrix.packageManager }}
+        run: python -m pip install "$DF_PACKAGE_MANAGER"
 
-      - name: Check formatting
-        if: steps.detect.outputs.present == 'true'
-        run: black --check --diff .
-
-      - name: Run repository automation tests
-        if: steps.detect.outputs.present == 'true'
-        run: pytest -v tests
-
-      - name: No Python in this repository
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No requirements-dev.txt; nothing for the pipeline job to test."
-
-  rust:
-    name: rust
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Detect Rust workspace
-        id: detect
-        run: echo "present=${{ hashFiles('Cargo.toml') != '' }}" >> "$GITHUB_OUTPUT"
-
-      - name: Install Rust toolchain
-        if: steps.detect.outputs.present == 'true'
+      - name: Set up Rust
+        if: matrix.ecosystem == 'rust'
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      - name: Cache cargo artifacts
-        if: steps.detect.outputs.present == 'true'
-        uses: Swatinem/rust-cache@v2
-
-      - name: cargo fmt
-        if: steps.detect.outputs.present == 'true'
-        run: cargo fmt --all -- --check
-
-      - name: cargo clippy
-        if: steps.detect.outputs.present == 'true'
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: cargo test
-        if: steps.detect.outputs.present == 'true'
-        run: cargo test --workspace
-
-      - name: No Rust workspace yet
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No Cargo.toml at the repository root; nothing to build."
-
-  paper:
-    name: paper
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check out the pinned pipeline
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
+      - name: Set up Go
+        if: matrix.ecosystem == 'go'
+        uses: actions/setup-go@v5
         with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-pipeline
+          go-version: stable
 
-      - name: Detect the paper domain
-        id: detect
-        # Which engines are present decides which toolchains to install: a Typst-only paper must
-        # not pull down a TeX distribution to prove it typesets.
-        run: |
-          SCRIPTS=".github/scripts"
-          [ -d .darkfactory-pipeline/.github/scripts ] && SCRIPTS=".darkfactory-pipeline/.github/scripts"
-          PYTHONPATH="$SCRIPTS" python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import environment
-
-          env = environment.configure(".")
-          plan = env.test_plan()
-          print(f"present={str(env.has_domain('paper')).lower()}")
-          print(f"typst={str('typst' in plan).lower()}")
-          print(f"latex={str('latex' in plan).lower()}")
-          for engine in ("typst", "latex"):
-              if engine in plan:
-                  print(f"{engine}_command={plan[engine]['command']}")
-          PY
+      - name: Set up Deno
+        if: matrix.ecosystem == 'deno'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - name: Set up Typst
-        if: steps.detect.outputs.typst == 'true'
+        if: matrix.ecosystem == 'typst'
         uses: typst-community/setup-typst@v5
 
-      - name: Set up TeX Live
-        # Installed from the distribution rather than through an action: the popular LaTeX actions
-        # compile a document themselves, which would bypass the command the repository declared.
-        if: steps.detect.outputs.latex == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
-
-      - name: Typeset with Typst
-        if: steps.detect.outputs.typst == 'true'
-        # Neither engine creates its output directory, and the artifact globs expect out/.
-        run: |
-          mkdir -p out
-          ${{ steps.detect.outputs.typst_command }}
-
-      - name: Typeset with LaTeX
-        if: steps.detect.outputs.latex == 'true'
-        run: |
-          mkdir -p out
-          ${{ steps.detect.outputs.latex_command }}
-
-      - name: Upload the typeset document
-        if: steps.detect.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: paper
-          path: |
-            out/*.pdf
-            *.pdf
-          if-no-files-found: error
-
-      - name: No paper in this repository
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No typst.toml or .latexmkrc; nothing to typeset."
-
-  math:
-    name: math
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Detect the math domain
-        id: detect
-        run: |
-          present=false
-          for marker in lakefile.lean lakefile.toml; do
-            [ -f "$marker" ] && present=true
-          done
-          echo "present=$present" >> "$GITHUB_OUTPUT"
-
       - name: Set up Lean
-        if: steps.detect.outputs.present == 'true'
+        if: matrix.ecosystem == 'lean'
         uses: leanprover/lean-action@v1
         with:
           build: false
           test: false
 
-      - name: Check the proofs
-        # Building is the proof check; there is no separate test step.
-        if: steps.detect.outputs.present == 'true'
-        run: lake build
-
-      - name: No proofs in this repository
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No lakefile; nothing to prove."
-
-  web:
-    name: web
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Detect web workspace
-        id: detect
-        run: echo "present=${{ hashFiles('package.json') != '' }}" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Bun
-        if: steps.detect.outputs.present == 'true'
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install dependencies
-        if: steps.detect.outputs.present == 'true'
-        run: bun install --frozen-lockfile
-
-      - name: Lint
-        if: steps.detect.outputs.present == 'true'
-        run: bun run --if-present lint
-
-      - name: Typecheck
-        if: steps.detect.outputs.present == 'true'
-        run: bun run --if-present typecheck
-
-      - name: Test
-        if: steps.detect.outputs.present == 'true'
-        run: bun run --if-present test
-
-      - name: No web workspace yet
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No package.json at the repository root; nothing to build."
-
-  harness:
-    name: harness
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # The format/lint check compares against the base branch.
-          fetch-depth: 0
-
-      - name: Detect the df harness
-        id: detect
-        run: echo "present=${{ hashFiles('harness/package.json') != '' }}" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Bun
-        if: steps.detect.outputs.present == 'true'
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install harness dependencies
-        if: steps.detect.outputs.present == 'true'
-        working-directory: harness
-        run: bun install --frozen-lockfile
-
-      - name: Check harness formatting and lint
-        # Blocking for every file the change touches. Until the one-time full reformat lands (plans/repository-truth.md
-        # Q1) untouched files are not checked; after it, this becomes `bun run check`.
-        if: steps.detect.outputs.present == 'true'
-        working-directory: harness
+      - name: Set up TeX Live
+        if: matrix.ecosystem == 'latex'
         run: |
-          base="${GITHUB_BASE_REF:-${{ github.event.repository.default_branch }}}"
-          git fetch --no-tags origin "$base"
-          bun x biome ci --changed --since="origin/$base" --no-errors-on-unmatched .
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
 
-      - name: Typecheck harness
-        if: steps.detect.outputs.present == 'true'
-        working-directory: harness
-        run: bun run typecheck
+      - name: Install package dependencies
+        if: matrix.setupCommand != ''
+        env:
+          DF_SETUP_COMMAND: ${{ matrix.setupCommand }}
+          DF_SETUP_CWD: ${{ matrix.setupCwd }}
+        run: |
+          cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"
+          bash -lc "$DF_SETUP_COMMAND"
 
-      - name: Test harness
-        if: steps.detect.outputs.present == 'true'
-        working-directory: harness
-        run: bun test
+      - name: Run detected quality action
+        env:
+          DF_ACTION_COMMAND: ${{ matrix.command }}
+          DF_ACTION_CWD: ${{ matrix.cwd }}
+        run: |
+          cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
+          bash -lc "$DF_ACTION_COMMAND"
 
-      - name: Build harness
-        if: steps.detect.outputs.present == 'true'
-        working-directory: harness
-        run: bun run build
-
-      - name: No df harness in this repository
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No harness/package.json; nothing for the harness job to test."
-
-  docs:
-    name: docs
+  docs-check:
+    name: docs-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Check out pinned DarkFactory
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-runtime
 
       - name: Detect docs.df
-        id: detect
+        id: docs
         run: |
-          if [ -f docs.df ] || [ -f .darkfactory/docs.df ]; then
+          if [ -f "$GITHUB_WORKSPACE/docs.df" ] || [ -f "$GITHUB_WORKSPACE/.darkfactory/docs.df" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check out pinned DarkFactory runtime
+        if: steps.docs.outputs.present == 'true' && github.repository != 'marius-patrik/DarkFactory'
+        uses: actions/checkout@v4
+        with:
+          repository: "marius-patrik/DarkFactory"
+          ref: "darkfactory"
+          path: .darkfactory-runtime
+
       - name: Set up Bun
-        if: steps.detect.outputs.present == 'true'
+        if: steps.docs.outputs.present == 'true'
         uses: oven-sh/setup-bun@v2
 
-      - name: Install DarkFactory workspace
-        if: steps.detect.outputs.present == 'true'
+      - name: Install DarkFactory runtime
+        if: steps.docs.outputs.present == 'true'
         run: |
           ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          cd "$ROOT"
-          bun install --frozen-lockfile
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
 
-      - name: Build documentation
-        if: steps.detect.outputs.present == 'true'
+      - name: Build native documentation
+        if: steps.docs.outputs.present == 'true'
         run: |
           ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
           bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
 
       - name: No documentation configured
-        if: steps.detect.outputs.present != 'true'
-        run: echo "No docs.df; nothing to build."
+        if: steps.docs.outputs.present != 'true'
+        run: echo "No docs.df; native documentation check is not applicable."
+
+  quality:
+    name: quality
+    if: always()
+    needs: [detect, quality-run, docs-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce detected quality result
+        env:
+          DF_DETECT_RESULT: ${{ needs.detect.result }}
+          DF_HAS_ACTIONS: ${{ needs.detect.outputs.has-actions }}
+          DF_QUALITY_RESULT: ${{ needs.quality-run.result }}
+          DF_DOCS_RESULT: ${{ needs.docs-check.result }}
+        run: |
+          test "$DF_DETECT_RESULT" = "success"
+          test "$DF_DOCS_RESULT" = "success"
+          if [ "$DF_HAS_ACTIONS" = "true" ]; then
+            test "$DF_QUALITY_RESULT" = "success"
+          else
+            test "$DF_QUALITY_RESULT" = "skipped"
+          fi
