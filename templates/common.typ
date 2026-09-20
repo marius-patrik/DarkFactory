@@ -443,7 +443,6 @@
   assert(value.kind == "term", message: "term() expects a value created by define-term()")
   assert(render in ("term", "explanation", "both"), message: "term render must be term, explanation, or both")
   assert(language in ("auto", "cs", "en", "both"), message: "term language must be auto, cs, en, or both")
-  assert(name-type-separator in ("bar", "paren", "dash"), message: "term name type separator must be bar, paren, or dash")
   assert(detail-order in ("cs-en", "en-cs"), message: "term detail order must be cs-en or en-cs")
   assert(detail-style in ("inline", "stacked"), message: "term detail style must be inline or stacked")
 
