@@ -53,10 +53,10 @@
     "path": "/"
   },
   "environment": {
-    "$comment": "The paper is one Typst project with template-neutral manuscript semantics in templates/common.typ, selection in templates/registry.typ, and switchable document templates under templates/<name>/. CI builds Final/Review × profile publications as canonical PDFs plus semantic Typst HTML and derived Markdown, validates architecture, and Pages exposes every template/profile/review/format combination. Release assets include all three compiled publication formats for the default template.",
+    "$comment": "DarkFactory-Paper is a multi-book Typst project. Each registered book is a self-contained root (currently DarkFactory/) owning its structural concept tree, metadata, templates, fonts, bibliography, and images. Root entrypoints dispatch through books.typ. CI builds the selected book's Final/Review × profile matrix as PDF plus semantic Typst HTML and derived Markdown, validates the book contract and web workbench, and Pages publishes every template/profile/review/format combination.",
     "testing": {
       "typst": {
-        "command": "make ci"
+        "command": "make ci BOOK=DarkFactory"
       },
       "node": {
         "enabled": false
@@ -64,7 +64,7 @@
     },
     "release": {
       "typst": {
-        "command": "make ci"
+        "command": "make ci BOOK=DarkFactory"
       },
       "node": {
         "enabled": false
@@ -80,8 +80,8 @@
     },
     "documentation": {
       "typst": {
-        "command": "make site",
-        "source": "Typst publication matrix"
+        "command": "make site BOOK=DarkFactory",
+        "source": "Registered Typst book publication matrix"
       },
       "node": {
         "enabled": false
