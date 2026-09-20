@@ -92,17 +92,17 @@ describe("capability ABI", () => {
 		expect(mcp.manifest).toEqual(native.manifest);
 	});
 
-	test("official semantic-domain capabilities are discovered without a core registry", async () => {
+	test("official capabilities are discovered without a core registry", async () => {
 		const root = resolve(import.meta.dir, "../../capabilities");
 		const definitions = await discoverCapabilities(root);
-		expect(definitions.map((item) => item.id)).toEqual(["code", "math", "paper"]);
+		expect(definitions.map((item) => item.id)).toEqual(["code", "math", "paper", "release"]);
 
 		const multiDomain = resolveCapabilities(definitions, ["paper", "code"]);
 		expect(multiDomain.domains).toEqual(["code", "paper"]);
-		expect(multiDomain.capabilities.map((item) => item.id)).toEqual(["code", "paper"]);
+		expect(multiDomain.capabilities.map((item) => item.id)).toEqual(["code", "paper", "release"]);
 
 		const mathOnly = resolveCapabilities(definitions, ["math"]);
-		expect(mathOnly.capabilities.map((item) => item.id)).toEqual(["math"]);
+		expect(mathOnly.capabilities.map((item) => item.id)).toEqual(["math", "release"]);
 	});
 
 	test("a project capability loads from disk without modifying core tables", async () => {

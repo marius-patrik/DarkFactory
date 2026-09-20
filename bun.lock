@@ -26,6 +26,13 @@
         "@darkfactory/capability": "workspace:*",
       },
     },
+    "capabilities/release": {
+      "name": "@darkfactory/capability-release",
+      "version": "0.0.0",
+      "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+      },
+    },
     "harness": {
       "name": "@darkfactory/harness",
       "version": "0.0.0",
