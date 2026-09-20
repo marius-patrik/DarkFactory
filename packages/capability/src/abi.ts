@@ -82,10 +82,49 @@ export interface CapabilityVerificationDefinition {
 	description: string;
 }
 
-/** Declares a hook contributed by a capability. */
+/** Hook trigger points owned by the deterministic df invocation layer. */
+export type CapabilityHookEvent = "pre-tool" | "post-edit" | "pre-commit" | "pre-push" | "pr-open" | "ci";
+
+/** Deterministic change/effect evidence supplied to capability-owned hook behavior. */
+export interface CapabilityHookContext {
+	/** Repository/worktree root for this hook invocation. */
+	repositoryRoot: string;
+	/** Repository-relative changed paths already observed by the deterministic owner. */
+	changedFiles: readonly string[];
+	/** Source paths classified by the canonical repository/action evidence layer. */
+	sourceFiles?: readonly string[];
+	/** Test paths classified by the canonical repository/action evidence layer. */
+	testFiles?: readonly string[];
+	/** Commit message being validated, when applicable. */
+	commitMessage?: string;
+	/** Branch being validated, when applicable. */
+	branch?: string;
+	/** Pull-request body being validated, when applicable. */
+	prBody?: string;
+	/** Tool invocation being validated, when applicable. */
+	toolCall?: { name: string; input: Readonly<Record<string, unknown>> };
+}
+
+/** Deterministic outcome returned by one capability-owned hook rule. */
+export interface CapabilityHookResult {
+	status: "pass" | "fix" | "fail";
+	message?: string;
+}
+
+/** Declares product/rule hook behavior contributed by a capability. */
 export interface CapabilityHookDefinition {
 	id: string;
-	event: string;
+	/** Human-readable purpose shown in diagnostics and generated documentation. */
+	description?: string;
+	/** Legacy single-event declaration retained for ABI-v1 compatibility. */
+	event?: CapabilityHookEvent;
+	/** Preferred declaration for hooks that apply to multiple deterministic trigger points. */
+	events?: readonly CapabilityHookEvent[];
+	/** Capability-owned rule behavior. Invocation timing/effect ownership remains in core. */
+	execute?(
+		input: CapabilityHookContext,
+		context: CapabilityRuntimeContext,
+	): Promise<CapabilityHookResult> | CapabilityHookResult;
 }
 
 /** Repository/package context supplied while resolving contributed deterministic actions. */
@@ -182,5 +221,16 @@ export function defineCapability<const T extends CapabilityDefinition>(definitio
 		for (const requirement of command.credentialRequirements ?? [])
 			if (!requirementIds.has(requirement))
 				throw new Error(`command ${command.name} references undeclared credential requirement ${requirement}`);
+
+	const hookIds = new Set<string>();
+	for (const hook of definition.hooks ?? []) {
+		identifier(hook.id, "hook id");
+		if (hookIds.has(hook.id)) throw new Error(`capability ${definition.id} contains duplicate hook ${hook.id}`);
+		hookIds.add(hook.id);
+		if (hook.event && hook.events) throw new Error(`hook ${hook.id} must declare event or events, not both`);
+		const events = hook.events ?? (hook.event ? [hook.event] : []);
+		if (events.length === 0) throw new Error(`hook ${hook.id} must declare at least one event`);
+		if (new Set(events).size !== events.length) throw new Error(`hook ${hook.id} contains duplicate events`);
+	}
 	return definition;
 }

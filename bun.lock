@@ -12,6 +12,13 @@
         "@darkfactory/capability": "workspace:*",
       },
     },
+    "capabilities/hooks": {
+      "name": "@darkfactory/capability-hooks",
+      "version": "0.0.0",
+      "dependencies": {
+        "@darkfactory/capability": "workspace:*",
+      },
+    },
     "capabilities/math": {
       "name": "@darkfactory/capability-math",
       "version": "0.0.0",
