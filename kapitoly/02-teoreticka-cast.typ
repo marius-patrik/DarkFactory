@@ -2,6 +2,8 @@
 
 = #finalized[Teoretická část: Vymezení konceptu]
 
+== #finalized[Úvod]
+
 == #finalized[Vývojové prostředí a praxe]
 
 === #finalized[Správa verzí \[Version Control\]]
