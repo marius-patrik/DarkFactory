@@ -13,7 +13,6 @@
 #let item = concept(
   key: "agentic_engineering",
   term: terminology,
-  heading: terms => [#term(terms.agentic_engineering, render: "both", detail-language: "cs", detail-style: "inline", marker: false, linked: false, emphasized: false)],
   theory_enabled: true,
   theory_intro: terms => [
 #accepted[

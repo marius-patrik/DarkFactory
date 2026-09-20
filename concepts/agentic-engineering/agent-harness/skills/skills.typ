@@ -16,7 +16,6 @@
 #let item = concept(
   key: "skills",
   term: terminology,
-  heading: terms => [#finalized[#term(terms.skills, name-separator: "paren", name-order: "cs-en", marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
   theory_intro: terms => [
 Se vzrůstající komplexitou úloh nelze veškeré instrukce, skripty a doménové znalosti vkládat do základního systémového promptu. K modulárnímu rozšíření schopností agenta slouží #diff[#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline").][#term(terms.skills, render: "both", detail-language: "cs", detail-style: "inline") @anthropic2024tooluse.]

@@ -16,7 +16,6 @@
 #let item = concept(
   key: "harness",
   term: terminology,
-  heading: terms => [#term(terms.harness, render: "both", detail-language: "cs", detail-style: "inline", marker: false, linked: false, emphasized: false)],
   theory_enabled: true,
   theory_intro: terms => [
 #accepted[

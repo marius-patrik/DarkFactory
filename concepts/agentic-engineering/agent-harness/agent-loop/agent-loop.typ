@@ -16,7 +16,6 @@
 #let item = concept(
   key: "agent_loop",
   term: terminology,
-  heading: terms => [#finalized[#term(terms.agent_loop, name-type: "both", name-separator: "bar", name-type-separator: "paren", marker: false, linked: false, emphasized: false)]],
   theory_enabled: true,
   theory_intro: terms => [
 Agentní smyčka (_Agent Loop_) představuje výkonné jádro celého agent harnessu. Zatímco pasivní konverzační chatbot jednorázově odpoví na uživatelský dotaz a čeká na další vstup, agentní smyčka autonomně udržuje kontinuální iterativní proces, v němž harness opakovaně vyhodnocuje stav repozitáře, volá jazykový model a vykonává požadované systémové akce.

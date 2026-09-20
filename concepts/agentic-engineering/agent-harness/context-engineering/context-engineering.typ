@@ -13,7 +13,6 @@
 #let item = concept(
   key: "context_engineering",
   term: terminology,
-  heading: terms => [#term(terms.context_engineering, marker: false, linked: false, emphasized: false)],
   theory_enabled: false,
   theory_intro: terms => [
 #accepted[

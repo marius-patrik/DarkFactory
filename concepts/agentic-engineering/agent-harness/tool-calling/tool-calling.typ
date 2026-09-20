@@ -6,7 +6,6 @@
 #let item = concept(
   key: "tool_calling",
   term: terminology,
-  heading: terms => [#finalized[Vyvolávání nástrojů \[Tool Calling\]]],
   theory_enabled: true,
   theory_intro: terms => [
 #unconfirmed[

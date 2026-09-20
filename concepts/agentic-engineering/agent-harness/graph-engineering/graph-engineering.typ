@@ -16,7 +16,6 @@
 #let item = concept(
   key: "graph_engineering",
   term: terminology,
-  heading: terms => [#finalized[Škálování: Multiagentní systémy (Subagenti) a grafy (DAG workflows) \[Scaling: Multiagent Systems (Subagents) and DAG Workflows (Graphs)\]]],
   theory_enabled: true,
   theory_intro: terms => [
 #accepted[
