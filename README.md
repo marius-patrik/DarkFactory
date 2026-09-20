@@ -7,6 +7,13 @@ Práce se zabývá návrhem a realizací autonomního systému pro vývoj softwa
 Praktickou částí je systém [DarkFactory](https://github.com/marius-patrik/DarkFactory),
 který práci zároveň sází, testuje a publikuje.
 
+
+## Konceptově řízený rukopis
+
+Teoretická a praktická část se skládají z kanonických konceptů pod `concepts/`, nikoli z jednoho monolitického souboru kapitoly. Každá hlavní sekce je adresář s `index.typ`; každý termín nebo samostatná podsekce má vlastní `.typ` soubor. Koncept vlastní český a anglický formální název, volitelný průmyslový název, definici a explicitní sloty `theory_intro`, `theory_body`, `theory_summary`, `practical_intro`, `practical_body` a `practical_summary`.
+
+`concepts/index.typ` z indexů sekcí sestaví společný slovník termínů a dynamicky vykreslí teoretickou i praktickou kapitolu. `templates/terms.typ` zůstává pouze kompatibilní projekcí pro existující `terms.<key>` odkazy. Nový obsah ani terminologie se do něj již nepřidávají.
+
 ## Repozitářová architektura
 
 Aktivní architektura má pouze dva repozitáře:

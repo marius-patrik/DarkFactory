@@ -235,113 +235,136 @@ if "označovaná jako *řídicí harness*" in chapter1_source:
     fail("legacy řídicí harness wording must not return")
 for manuscript_path in (
     Path("kapitoly/01-uvod.typ"),
-    Path("kapitoly/02-teoreticka-cast.typ"),
     Path("kapitoly/05-zaver.typ"),
+    *sorted(Path("concepts").glob("*/*.typ")),
 ):
     manuscript_source = manuscript_path.read_text(encoding="utf-8")
     for legacy_harness in ("řídicí harness", "řídicího harnessu", "řídicím harnessu"):
         if legacy_harness in manuscript_source:
             fail(f"legacy Czech harness wording remains in {manuscript_path}: {legacy_harness}")
 
-chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
-llm_section_pos = chapter2_source.find('== #finalized[#term(terms.language_model')
-agent_vs_pos = chapter2_source.find('=== #finalized[#term(terms.agent, marker: false')
-agentic_section_pos = chapter2_source.find('== #accepted[#term(terms.agentic_engineering')
-prompt_engineering_pos = chapter2_source.find('=== #term(terms.prompt_engineering')
-agent_loop_pos = chapter2_source.find('=== #diff[Agentní smyčka')
-if not (0 <= llm_section_pos < agent_vs_pos < agentic_section_pos):
-    fail("Agent vs. Chatbot must live under the LLM/chatbots/agents section")
-if not (0 <= agentic_section_pos < prompt_engineering_pos < agent_loop_pos):
-    fail("Prompt Engineering must live under Agentic Engineering before the agent-loop section")
-if "=== #finalized[#term(terms.mcp, marker: false, linked: false, emphasized: false) servery]" not in chapter2_source:
-    fail("Model Context Protocol (MCP) servery title must remain finalized")
-if "= #finalized[Teoretická část: Vymezení konceptu]" not in chapter2_source:
-    fail("theoretical chapter title must remain finalized as Teoretická část: Vymezení konceptu")
-if "=== #finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]" not in chapter2_source:
-    fail("tokenization/vector representation section title must remain finalized")
-if "=== #diff[#finalized[Tokeny, tokenizace a embedding]" in chapter2_source:
-    fail("legacy token section title diff must not return")
-finalized_scaling_title = (
-    "=== #finalized[Škálování: Multiagentní systémy (Subagenti) a grafy "
-    "(DAG workflows) \\[Scaling: Multiagent Systems (Subagents) and DAG "
-    "Workflows (Graphs)\\]]"
+concept_root = Path("concepts")
+concept_schema = concept_root / "schema.typ"
+concept_catalog = concept_root / "index.typ"
+section_dirs = (
+    concept_root / "01-development-environment",
+    concept_root / "02-language-models",
+    concept_root / "03-agentic-engineering",
 )
-if finalized_scaling_title not in chapter2_source:
-    fail("scaling section must retain the finalized bilingual title")
-accepted_scaling_opening = (
-    "#accepted[\n"
-    "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. "
-    "Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce "
-    "a formalizace procesu do podoby grafu.\n]"
-)
-if accepted_scaling_opening not in chapter2_source:
-    fail("scaling opening paragraph must remain accepted exactly as approved")
-if "=== Škálování: hierarchičtí subagenti a DAG workflow" in chapter2_source:
-    fail("legacy section 2.3.8 title must not return")
+for required in (concept_schema, concept_catalog, *(section / "index.typ" for section in section_dirs)):
+    if not required.is_file() or required.stat().st_size == 0:
+        fail(f"missing concept-driven manuscript file: {required}")
 
-finalized_version_control_title = "== #finalized[Vývojové prostředí a praxe]"
-if finalized_version_control_title not in chapter2_source:
+schema_source = concept_schema.read_text(encoding="utf-8")
+for required in (
+    "#let concept(",
+    "#let section(",
+    "#let build-vocabulary(sections)",
+    "#let render-theory-chapter(sections, terms)",
+    "#let render-practical-chapter(sections, terms)",
+    "theory_intro:",
+    "theory_body:",
+    "theory_summary:",
+    "practical_intro:",
+    "practical_body:",
+    "practical_summary:",
+):
+    if required not in schema_source:
+        fail(f"concept schema missing canonical field/renderer: {required}")
+
+catalog_source = concept_catalog.read_text(encoding="utf-8")
+for required in (
+    '"01-development-environment/index.typ"',
+    '"02-language-models/index.typ"',
+    '"03-agentic-engineering/index.typ"',
+    "#let vocabulary = build-vocabulary(sections)",
+    "#let render-theory() = render-theory-chapter(sections, vocabulary)",
+    "#let render-practical() = render-practical-chapter(sections, vocabulary)",
+):
+    if required not in catalog_source:
+        fail(f"concept catalog missing dynamic composition contract: {required}")
+
+concept_paths = tuple(
+    sorted(
+        path
+        for section in section_dirs
+        for path in section.glob("*.typ")
+        if path.name != "index.typ"
+    )
+)
+if len(concept_paths) < 38:
+    fail(f"concept catalog unexpectedly small: {len(concept_paths)} files")
+for path in concept_paths:
+    source = path.read_text(encoding="utf-8")
+    for required in (
+        "#let terminology = define-term(",
+        "#let item = concept(",
+        "theory_intro:",
+        "theory_body:",
+        "theory_summary:",
+        "practical_intro:",
+        "practical_body:",
+        "practical_summary:",
+    ):
+        if required not in source:
+            fail(f"concept file does not own its complete canonical record: {path}: {required}")
+
+section_sources = {
+    section.name: (section / "index.typ").read_text(encoding="utf-8")
+    for section in section_dirs
+}
+for name, source in section_sources.items():
+    if "#let item = section(" not in source or "concepts: (" not in source:
+        fail(f"section index is not a canonical ordered section record: {name}")
+
+development_source = section_sources["01-development-environment"]
+language_source = section_sources["02-language-models"]
+agentic_source = section_sources["03-agentic-engineering"]
+if "#finalized[Vývojové prostředí a praxe]" not in development_source:
     fail("section 2.1 must remain Vývojové prostředí a praxe")
-for required_stub in (
-    "=== #finalized[Správa verzí \\[Version Control\\]]",
-    "=== #finalized[Plánování \\[Planning\\]]",
-):
-    if required_stub not in chapter2_source:
-        fail(f"section 2.1 missing requested subsection stub: {required_stub}")
-if "=== #finalized[Pull Request]" not in chapter2_source:
-    fail("section 2.1.3 title must remain finalized as Pull Request")
-if "=== Model #term(terms.pull_request" in chapter2_source:
-    fail("legacy section 2.1.3 title must not return")
+if development_source.find("required_checks.item") >= development_source.find("branch_protection.item"):
+    fail("Branch Protection must remain after Required Checks")
+if language_source.find("agent.item") >= language_source.find("context_rot.item"):
+    fail("language-model concept ordering changed unexpectedly")
+if agentic_source.find("prompt_engineering.item") >= agentic_source.find("agent_loop.item"):
+    fail("Prompt Engineering must remain before the agent-loop concept")
 
-if "=== #finalized[Větve (Branches)]" not in chapter2_source:
-    fail("section 2.1.2 must remain finalized as Větve (Branches)")
-if "Větve (Branches) a izolace kódu" in chapter2_source:
-    fail("legacy section 2.1.2 title must not return")
-
-for required_heading in (
-    "=== #finalized[Slučování změn (Commit and Merge)]",
-    "=== #finalized[Kontinuální integrace (CI a GitHub Actions)]",
-    "=== #finalized[Požadované kontroly (Required Checks)]",
-    "=== Ochrana větví (Branch Protection)",
+concept_text = "\n".join(path.read_text(encoding="utf-8") for path in concept_paths)
+for required in (
+    "#finalized[Správa verzí \\[Version Control\\]]",
+    "#finalized[Plánování \\[Planning\\]]",
+    "#finalized[Pull Request]",
+    "#finalized[Větve (Branches)]",
+    "#finalized[Slučování změn (Commit and Merge)]",
+    "#finalized[Kontinuální integrace (CI a GitHub Actions)]",
+    "#finalized[Požadované kontroly (Required Checks)]",
+    "Ochrana větví (Branch Protection)",
+    "#finalized[Tokeny, tokenizace a Vektorová reprezentace \\[Embedding\\]]",
+    "#finalized[Vyvolávání nástrojů \\[Tool Calling\\]]",
+    "Škálování: Multiagentní systémy (Subagenti) a grafy",
+    "Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh.",
+    "caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting)",
 ):
-    if required_heading not in chapter2_source:
-        fail(f"version-control subsection structure missing requested heading: {required_heading}")
-for legacy_heading in (
+    if required not in concept_text:
+        fail(f"migrated concept content missing approved contract: {required}")
+
+for forbidden in (
+    "Větve (Branches) a izolace kódu",
     "Slučování změn (Squash and Merge)",
-    "=== Požadované kontroly (Required Checks) a ochrana větví",
+    "=== Spouštění nástrojů",
+    "Běhové prostředí nástrojů a pískoviště (Sandbox)",
 ):
-    if legacy_heading in chapter2_source:
-        fail(f"legacy version-control subsection title must not return: {legacy_heading}")
-required_checks_pos = chapter2_source.find("=== #finalized[Požadované kontroly (Required Checks)]")
-branch_protection_pos = chapter2_source.find("=== Ochrana větví (Branch Protection)")
-if not (0 <= required_checks_pos < branch_protection_pos):
-    fail("Branch Protection must be a separate section after Required Checks")
-for required_heading in (
-    "=== #finalized[Vyvolávání nástrojů \\[Tool Calling\\]]",
-    "=== Sandbox",
-):
-    if required_heading not in chapter2_source:
-        fail(f"tool runtime split missing numbered section: {required_heading}")
-if "=== Běhové prostředí nástrojů a pískoviště (Sandbox)" in chapter2_source:
-    fail("combined tool-runtime/sandbox section must not return")
-for legacy_tool_heading in (
-    "=== Spouštění nástrojů [Tool Calling]",
-    "=== Spouštění nástrojů \\[Tool Calling\\]",
-):
-    if legacy_tool_heading in chapter2_source:
-        fail(f"legacy Tool Calling Czech title must not return: {legacy_tool_heading}")
-chapter3_source = Path("kapitoly/03-prakticka-cast.typ").read_text(encoding="utf-8")
-if "= #finalized[DarkFactory - Praktická část: Architektura harnessu]" not in chapter3_source:
-    fail("practical chapter title must remain finalized as DarkFactory - Praktická část: Architektura harnessu")
-if "Praktická část – Návrh architektury" in chapter3_source:
-    fail("legacy practical chapter title must not return")
+    if forbidden in concept_text:
+        fail(f"legacy theoretical concept wording returned: {forbidden}")
 
-accepted_react_caption = (
-    "caption: [#accepted[Architektura autonomní ReAct smyčky (Reasoning + Acting) "
-    "a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.]]"
-)
-if accepted_react_caption not in chapter2_source:
-    fail("ReAct figure caption must retain accepted state")
+chapter2_source = Path("kapitoly/02-teoreticka-cast.typ").read_text(encoding="utf-8")
+chapter3_source = Path("kapitoly/03-prakticka-cast.typ").read_text(encoding="utf-8")
+if '#import "../concepts/index.typ": render-theory' not in chapter2_source or "#render-theory()" not in chapter2_source:
+    fail("chapter 2 must be a compatibility projection of the concept catalog")
+if '#import "../concepts/index.typ": render-practical' not in chapter3_source or "#render-practical()" not in chapter3_source:
+    fail("chapter 3 must be a compatibility projection of the concept catalog")
+if "Teoretická část: Vymezení konceptu" in chapter2_source or "DarkFactory - Praktická část" in chapter3_source:
+    fail("chapter 2/3 content must not be duplicated outside concepts/")
 
 gjkt_source = (template_root / "template.typ").read_text(encoding="utf-8")
 for terminology_contract in (
@@ -399,6 +422,8 @@ for path in (
     Path("metadata.typ"),
     Path("thesis.typ"),
     *sorted(Path("kapitoly").glob("*.typ")),
+    *sorted(Path("concepts").glob("*.typ")),
+    *sorted(Path("concepts").glob("*/*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
     imports = active_typst_imports(source)
@@ -410,7 +435,11 @@ for path in (
 # Chapter files contain semantic content only. Structural page/layout directives
 # belong to the selected document template so the same manuscript can be rendered
 # by another template without editing chapter sources.
-for path in sorted(Path("kapitoly").glob("*.typ")):
+for path in (
+    *sorted(Path("kapitoly").glob("*.typ")),
+    *sorted(Path("concepts").glob("*.typ")),
+    *sorted(Path("concepts").glob("*/*.typ")),
+):
     in_fence = False
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         stripped = line.strip()
@@ -431,6 +460,14 @@ for path in sorted(Path("kapitoly").glob("*.typ")):
         )
         if any(token in stripped for token in forbidden):
             fail(f"layout directive belongs in template, not {path}:{line_number}: {stripped}")
+
+thesis_source = Path("thesis.typ").read_text(encoding="utf-8")
+web_publication_source_for_concepts = Path("web-publication.typ").read_text(encoding="utf-8")
+for source_name, source in (("thesis.typ", thesis_source), ("web-publication.typ", web_publication_source_for_concepts)):
+    if '"concepts/index.typ"' not in source or "#render-theory()" not in source or "#render-practical()" not in source:
+        fail(f"{source_name} must render theory/practical chapters from concepts/index.typ")
+    if 'include "kapitoly/02-teoreticka-cast.typ"' in source or 'include "kapitoly/03-prakticka-cast.typ"' in source:
+        fail(f"{source_name} must not build chapter 2/3 from monolithic chapter files")
 
 # Shared terminology must remain declarative and centralized.
 registry_source = Path("templates/registry.typ").read_text(encoding="utf-8")
@@ -486,106 +523,58 @@ for legacy in (
         fail(f"legacy annotation wording must not return: {legacy}")
 
 terms_source = Path("templates/terms.typ").read_text(encoding="utf-8")
-if 'proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering")' not in terms_source:
+if '#import "../concepts/index.typ" as catalog' not in terms_source:
+    fail("templates/terms.typ must be a compatibility projection of concepts/")
+if "#let vocabulary = catalog.vocabulary" not in terms_source:
+    fail("templates/terms.typ must export the concept-built vocabulary")
+if "define-term(" in terms_source:
+    fail("templates/terms.typ must not remain a second terminology database")
+
+concept_source_text = "\n".join(path.read_text(encoding="utf-8") for path in concept_paths)
+if 'proper: translation(cs: "Agentické inženýrství", en: "Agentic Engineering")' not in concept_source_text:
     fail("Agentic Engineering Czech canonical term must be Agentické inženýrství")
-if 'proper: translation(cs: "Agentní harness", en: "Agent Harness")' not in terms_source:
+if 'proper: translation(cs: "Agentní harness", en: "Agent Harness")' not in concept_source_text:
     fail("canonical harness proper term must be Agentní harness [Agent Harness]")
-if 'industry: translation(cs: "Agent Harness", en: "Agent Harness")' not in terms_source:
+if 'industry: translation(cs: "Agent Harness", en: "Agent Harness")' not in concept_source_text:
     fail("canonical harness industry term must be Agent Harness")
 for legacy_harness in ("Řídicí systém", "Control Harness", "Řídicí postroj", "The control harness"):
-    if legacy_harness in terms_source:
+    if legacy_harness in concept_source_text:
         fail(f"legacy harness terminology must not return: {legacy_harness}")
-if 'proper: translation(cs: "Agentní inženýrství", en: "Agentic Engineering")' in terms_source:
+if 'proper: translation(cs: "Agentní inženýrství", en: "Agentic Engineering")' in concept_source_text:
     fail("legacy Agentní inženýrství canonical term must not return")
-if 'proper: translation(cs: "Rozšíření", en: "Plugins")' not in terms_source:
+if 'proper: translation(cs: "Rozšíření", en: "Plugins")' not in concept_source_text:
     fail("Plugins Czech proper term must remain Rozšíření")
-if "Zásuvné moduly" in terms_source:
+if "Zásuvné moduly" in concept_source_text:
     fail("legacy Czech Plugins term Zásuvné moduly must not return")
-if "proper: translation(" not in terms_source:
-    fail("canonical terminology must use proper/formal name records")
-if "define-term(\n    id:" in terms_source and "proper:" not in terms_source:
-    fail("legacy flat term schema detected")
 
-term_ids = re.findall(r'id:\s*"([^"]+)"', terms_source)
+term_ids = re.findall(r'id:\s*"([^"]+)"', concept_source_text)
 duplicate_term_ids = sorted({term_id for term_id in term_ids if term_ids.count(term_id) > 1})
 if duplicate_term_ids:
     fail(f"canonical terminology contains duplicate stable ids: {duplicate_term_ids}")
 
 required_term_ids = {
-    "mcp",
-    "skills",
-    "script",
-    "plugins",
-    "hook",
-    "chatbot",
-    "agent",
-    "token",
-    "tokenizer",
-    "language-model",
-    "transformer",
-    "context-window",
-    "context-compaction",
-    "context-rot",
-    "human-in-the-loop",
-    "agentic-engineering",
-    "software-engineering",
-    "pull-request",
-    "continuous-integration",
-    "github-actions",
-    "dag",
-    "container",
-    "kv-cache",
-    "turn",
-    "context-engineering",
-    "prompt-engineering",
-    "loop-engineering",
-    "graph-engineering",
-    "rag",
-    "merge",
-    "squash",
-    "branch",
+    "mcp", "skills", "script", "plugins", "hook", "chatbot", "agent", "token",
+    "tokenizer", "language-model", "transformer", "context-window", "context-compaction",
+    "context-rot", "human-in-the-loop", "agentic-engineering", "software-engineering",
+    "pull-request", "continuous-integration", "github-actions", "dag", "container",
+    "kv-cache", "turn", "context-engineering", "prompt-engineering", "loop-engineering",
+    "graph-engineering", "rag", "merge", "squash", "branch",
 }
 missing_term_ids = sorted(required_term_ids - set(term_ids))
 if missing_term_ids:
     fail(f"canonical terminology missing required concepts: {missing_term_ids}")
 
 required_term_keys = (
-    "mcp",
-    "skills",
-    "script",
-    "plugins",
-    "hook",
-    "chatbot",
-    "agent",
-    "token",
-    "tokenizer",
-    "language_model",
-    "transformer",
-    "context_window",
-    "compaction",
-    "context_rot",
-    "human_in_the_loop",
-    "agentic_engineering",
-    "software_engineering",
-    "pull_request",
-    "continuous_integration",
-    "github_actions",
-    "dag",
-    "container",
-    "kv_cache",
-    "turn",
-    "context_engineering",
-    "prompt_engineering",
-    "loop_engineering",
-    "graph_engineering",
-    "rag",
-    "merge",
-    "squash",
-    "branch",
+    "mcp", "skills", "script", "plugins", "hook", "chatbot", "agent", "token",
+    "tokenizer", "language_model", "transformer", "context_window", "compaction",
+    "context_rot", "human_in_the_loop", "agentic_engineering", "software_engineering",
+    "pull_request", "continuous_integration", "github_actions", "dag", "container",
+    "kv_cache", "turn", "context_engineering", "prompt_engineering", "loop_engineering",
+    "graph_engineering", "rag", "merge", "squash", "branch",
 )
 for term_key in required_term_keys:
-    if f"\n  {term_key}:" not in terms_source:
-        fail(f"canonical terminology missing public vocabulary key: {term_key}")
+    if f'key: "{term_key}"' not in concept_source_text:
+        fail(f"canonical terminology missing public concept key: {term_key}")
 
 for path in sorted(Path("kapitoly").glob("*.typ")):
     source = path.read_text(encoding="utf-8")
@@ -608,6 +597,8 @@ for path in (
     Path("metadata.typ"),
     Path("AGENTS.md"),
     *sorted(Path("kapitoly").glob("*.typ")),
+    *sorted(Path("concepts").glob("*.typ")),
+    *sorted(Path("concepts").glob("*/*.typ")),
 ):
     source = path.read_text(encoding="utf-8")
     for legacy in ("#confirmed[", "#let confirmed", "common.confirmed"):

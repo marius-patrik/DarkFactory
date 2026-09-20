@@ -1,6 +1,7 @@
 #import "metadata.typ": meta
 #import "templates/common.typ": review-state, profile-state, finalized, ui-label, render-translation, render-keywords, render-index
 #import "templates/terms.typ": vocabulary
+#import "concepts/index.typ": render-theory, render-practical
 
 // Semantic publication entrypoint for Typst's HTML target.
 // It consumes the same manuscript/review/profile state as the PDF build while
@@ -56,8 +57,8 @@
 #outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
 #include "kapitoly/01-uvod.typ"
-#include "kapitoly/02-teoreticka-cast.typ"
-#include "kapitoly/03-prakticka-cast.typ"
+#render-theory()
+#render-practical()
 #include "kapitoly/04-vysledky.typ"
 #include "kapitoly/05-zaver.typ"
 
