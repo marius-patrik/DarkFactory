@@ -337,7 +337,7 @@ A pipeline-generated PR is not evidence of implementation by itself.
 - Reject scripted/stub success paths that do not invoke the actual final owner.
 - Verify the actual diff, base/head relation, checks, implementation review and final alignment before allowing a Request to close.
 - Scratch/debug files are never delivery artifacts.
-- Existing CI failure issue #863 remains an operational signal until the default branch is green again; do not hide a canonical failure behind successful isolated branch work.
+- Default-branch CI recovered after failure issue #863; #863 is closed. Any future canonical-branch failure remains a stop-the-line signal until the default branch is green again.
 
 ## 11. Optimized execution schedule
 
