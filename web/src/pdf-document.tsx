@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type RefObject,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import * as dagre from "@dagrejs/dagre";
@@ -574,7 +575,7 @@ function DocumentNavigationPanel({
     return grouped;
   }, [chapters]);
 
-  const beginResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const beginResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = width;
