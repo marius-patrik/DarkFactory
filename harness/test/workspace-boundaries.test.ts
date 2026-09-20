@@ -39,9 +39,7 @@ describe("publishable workspace boundaries", () => {
 			expect(pkg.name).toBe(`@darkfactory/${name}`);
 			expect(pkg.private).not.toBe(true);
 			expect(pkg.type).toBe("module");
-			expect((pkg.exports as Record<string, string>)["."]).toBe(
-				name === "cli" ? "./dist/index.js" : "./src/index.ts",
-			);
+			expect((pkg.exports as Record<string, string>)["."]).toBe(name === "cli" ? "./dist/index.js" : "./src/index.ts");
 		}
 	});
 
