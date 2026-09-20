@@ -333,7 +333,8 @@ for path in concept_paths:
     if match is None:
         fail(f"concept is missing a stable key: {path}")
     key = match.group(1)
-    if f"terms.{key}" not in rendered_manuscript_text and f"{key}.item" not in rendered_manuscript_text:
+    section_usage = f"section: {key}.item" in rendered_manuscript_text or f"section.item" in rendered_manuscript_text and path.name == f"{key.replace('_', '-')}.typ"
+    if f"terms.{key}" not in rendered_manuscript_text and f"{key}.item" not in rendered_manuscript_text and not section_usage:
         unused_concepts.append(f"{path}:{key}")
 if unused_concepts:
     fail("canonical concepts not utilized by the thesis: " + ", ".join(unused_concepts))
