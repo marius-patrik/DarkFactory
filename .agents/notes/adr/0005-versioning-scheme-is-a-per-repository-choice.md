@@ -1,6 +1,6 @@
 # ADR-0005 — The versioning scheme is a per-repository choice
 
-**Status**: Accepted · 2026-09-07
+**Status**: Superseded by ADR-0021 · 2026-09-20
 
 ## Context
 
