@@ -102,6 +102,7 @@ describe("captureJsonSchema", () => {
 		const jsonSchema = captureJsonSchema(schema);
 		expect(jsonSchema).toBeDefined();
 		expect((jsonSchema as any)["type"]).toBe("object");
+		expect((jsonSchema as any)["properties"]).toBeDefined();
 	});
 });
 
