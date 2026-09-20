@@ -21,7 +21,7 @@ describe("df ci doctor", () => {
 						{ name: "ci-pipeline", required: true, workflow: "ci.yml" },
 						{ name: "verify-bound-issue", required: true, workflow: "verify-bound-issue.yml" },
 					],
-				})
+				}),
 			);
 			await installWorkflows(temp);
 
@@ -63,7 +63,7 @@ describe("df ci doctor", () => {
 				join(temp, ".darkfactory", "ci.json"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 			await installWorkflows(temp);
 

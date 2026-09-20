@@ -41,9 +41,7 @@ describe("CI required checks state guard & alert_after", () => {
 	});
 
 	it("returns pending when a required check is missing", () => {
-		const checkRuns = [
-			{ name: "ci-pipeline", status: "completed", conclusion: "success" },
-		];
+		const checkRuns = [{ name: "ci-pipeline", status: "completed", conclusion: "success" }];
 
 		const result = requiredChecksState(config, checkRuns);
 		expect(result.state).toBe("pending");
@@ -87,9 +85,7 @@ describe("CI required checks state guard & alert_after", () => {
 			],
 		};
 
-		const checkRuns = [
-			{ name: "verify-bound-issue", status: "completed", conclusion: "success" },
-		];
+		const checkRuns = [{ name: "verify-bound-issue", status: "completed", conclusion: "success" }];
 
 		const regular = requiredChecksState(configWithOverride, checkRuns);
 		expect(regular.state).toBe("pending"); // missing ci-pipeline

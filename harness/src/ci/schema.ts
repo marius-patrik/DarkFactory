@@ -2,36 +2,45 @@ import { z } from "zod";
 
 export const ciCheckPerRepoSchema = z.record(
 	z.string(),
-	z.object({
-		required: z.boolean().optional(),
-	}).passthrough(),
+	z
+		.object({
+			required: z.boolean().optional(),
+		})
+		.passthrough(),
 );
 
 export type CiCheckPerRepo = z.infer<typeof ciCheckPerRepoSchema>;
 
-export const ciCheckSchema = z.object({
-	name: z.string().min(1, "check name must not be empty"),
-	required: z.boolean().default(true),
-	workflow: z.string().optional(),
-	job: z.string().optional(),
-	per_repo: ciCheckPerRepoSchema.optional(),
-}).passthrough();
+export const ciCheckSchema = z
+	.object({
+		name: z.string().min(1, "check name must not be empty"),
+		required: z.boolean().default(true),
+		workflow: z.string().optional(),
+		job: z.string().optional(),
+		per_repo: ciCheckPerRepoSchema.optional(),
+	})
+	.passthrough();
 
 export type CiCheck = z.infer<typeof ciCheckSchema>;
 
-export const rawCiConfigSchema = z.object({
-	alert_after: z.number().int().nonnegative().optional(),
-	checks: z.array(ciCheckSchema).default([]),
-	pipeline_repo: z.string().optional(),
-	pipeline_ref: z.string().optional(),
-	upstream_repo: z.string().optional(),
-	upstream_ref: z.string().optional(),
-}).passthrough();
+export const rawCiConfigSchema = z
+	.object({
+		alert_after: z.number().int().nonnegative().optional(),
+		checks: z.array(ciCheckSchema).default([]),
+		pipeline_repo: z.string().optional(),
+		pipeline_ref: z.string().optional(),
+		upstream_repo: z.string().optional(),
+		upstream_ref: z.string().optional(),
+	})
+	.passthrough();
 
 export const ciFileSchema = z.union([
-	z.object({
-		ci: rawCiConfigSchema,
-	}).passthrough().transform((val) => val.ci),
+	z
+		.object({
+			ci: rawCiConfigSchema,
+		})
+		.passthrough()
+		.transform((val) => val.ci),
 	rawCiConfigSchema,
 ]);
 

@@ -11,6 +11,22 @@ import type {
 import { withFileLock } from "./storage/file-lock.ts";
 import { replaceFile } from "./storage/replace-file.ts";
 
+/** Non-destructive borrowed refresh mode. */
+export type BorrowedRefreshMode = "write-back" | "reimport-only" | "never";
+
+/** Prepared refresh plan for a borrowed account. */
+export interface BorrowedRefreshPlan {
+	credential: OAuthCredentialSlot;
+	refresh: boolean;
+	mode: BorrowedRefreshMode;
+}
+
+/** Coordinator for preparing and writing back borrowed CLI credentials. */
+export interface BorrowedCredentialCoordinator {
+	prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan>;
+	writeBack?(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: AuthOperationOptions): Promise<void>;
+}
+
 const VAULT_PREFIX = "vault:";
 
 async function resolveVaultValue(home: string, vaultName: string): Promise<string | undefined> {
@@ -272,15 +288,18 @@ export class FileCredentialStore {
 	readonly path: string;
 	readonly lockPath: string;
 	readonly home: string;
+	public readonly borrowed?: BorrowedCredentialCoordinator;
 
 	constructor(
 		home = defaultDfHome(),
 		private readonly fallback?: CredentialFallback,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
+		borrowed?: BorrowedCredentialCoordinator,
 	) {
 		this.home = home;
 		this.path = join(home, "credentials.df");
 		this.lockPath = `${this.path}.lock.df`;
+		this.borrowed = borrowed;
 	}
 
 	private async load(): Promise<CredentialFile> {
@@ -487,7 +506,20 @@ export class AccountCredentialStore implements CredentialStore {
 			.modifyAccount(
 				this.id,
 				async (current) => {
-					const input = current ? toPiCredential(current) : undefined;
+					let input = current ? toPiCredential(current) : undefined;
+					let plan: BorrowedRefreshPlan | undefined;
+					if (current?.metadata?.importer && input?.type === "oauth" && this.store.borrowed) {
+						plan = await this.store.borrowed.prepare(current, options);
+						input = plan.credential;
+						if (!plan.refresh) {
+							const slotName = primarySlot(current, "oauth")?.[0] ?? "oauth";
+							current.slots[slotName] = clone(plan.credential);
+							return current;
+						}
+						if (plan.mode === "reimport-only") {
+							throw new Error(`Imported account ${current.id} is expired; run the source CLI to refresh or \`df login\` a df-owned account`);
+						}
+					}
 					const next = await fn(input);
 					if (next === undefined) return undefined;
 					const parsed = parseAccountId(this.id)!;
@@ -501,16 +533,22 @@ export class AccountCredentialStore implements CredentialStore {
 						next.type === "oauth"
 							? (primarySlot(account, "oauth")?.[0] ?? "oauth")
 							: (primarySlot(account, "api_key")?.[0] ?? "api_key");
-					account.slots[slotName] =
-						next.type === "oauth"
-							? {
-									type: "oauth",
-									access: next.access,
-									refresh: next.refresh,
-									expires: next.expires,
-									...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}),
-								}
-							: { type: "api_key", value: next.key ?? "" };
+					let newCredential: CredentialSlot;
+					if (next.type === "oauth") {
+						newCredential = {
+							type: "oauth",
+							access: next.access,
+							refresh: next.refresh,
+							expires: next.expires,
+							...(typeof next.accountId === "string" ? { accountId: next.accountId } : {}),
+						};
+					} else {
+						newCredential = { type: "api_key", value: next.key ?? "" };
+					}
+					account.slots[slotName] = newCredential;
+					if (plan?.mode === "write-back" && next.type === "oauth" && this.store.borrowed?.writeBack) {
+						await this.store.borrowed.writeBack(account, newCredential as OAuthCredentialSlot, options);
+					}
 					return account;
 				},
 				options,

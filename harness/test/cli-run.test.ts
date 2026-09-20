@@ -22,7 +22,8 @@ async function run(
 	if (options.config) await writeFile(join(home, "config.df"), JSON.stringify(options.config), "utf8");
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
-	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "run", "--faux", "--json", ...args, prompt], {
+	const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+	const child = Bun.spawn([process.execPath, "run", cliPath, "run", "--faux", "--json", ...args, prompt], {
 		cwd: process.cwd(),
 		env: {
 			DF_HOME: home,
@@ -59,7 +60,8 @@ describe("df run", () => {
 			"utf8",
 		);
 		const invoke = async (...command: string[]) => {
-			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...command], {
+			const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+			const child = Bun.spawn([process.execPath, "run", cliPath, ...command], {
 				cwd: process.cwd(),
 				env: {
 					DF_HOME: home,
@@ -149,7 +151,8 @@ describe("df run", () => {
 			);
 		}
 		const invoke = async (...args: string[]) => {
-			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], {
+			const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+			const child = Bun.spawn([process.execPath, "run", cliPath, ...args], {
 				cwd: process.cwd(),
 				env: { DF_HOME: home, PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" },
 				stdout: "pipe",
@@ -370,7 +373,8 @@ describe("df run", () => {
 			],
 		};
 		await writeFile(join(home, "providers.df"), JSON.stringify(providersConfig), "utf8");
-		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "providers"], {
+		const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+		const child = Bun.spawn([process.execPath, "run", cliPath, "providers"], {
 			cwd: process.cwd(),
 			env: { DF_HOME: home, PATH: process.env.PATH ?? "" },
 			stdout: "pipe",

@@ -60,9 +60,7 @@ describe("CI config loader & validator", () => {
 			const configContent = {
 				ci: {
 					alert_after: 5,
-					checks: [
-						{ name: "test-job", required: true, workflow: "ci.yml", job: "test" },
-					],
+					checks: [{ name: "test-job", required: true, workflow: "ci.yml", job: "test" }],
 				},
 			};
 			await writeFile(join(temp, ".darkfactory", "ci.json"), JSON.stringify(configContent));

@@ -16,7 +16,7 @@ describe("df ci CLI commands", () => {
 				join(temp, ".darkfactory", "ci.json"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 
 			// df ci install --repo <temp>
@@ -44,7 +44,7 @@ describe("df ci CLI commands", () => {
 				join(temp, ".darkfactory", "ci.json"),
 				JSON.stringify({
 					checks: [{ name: "ci-pipeline", required: true, workflow: "ci.yml" }],
-				})
+				}),
 			);
 
 			const { fetch } = scripted([

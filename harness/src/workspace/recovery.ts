@@ -47,20 +47,10 @@ const RECOVERY_IDENTITY = {
 	GIT_COMMITTER_EMAIL: "recovery@users.noreply.example",
 };
 
-/**
- * Scan content for secret patterns before remote publication.
- *
- * @param content - String file content to check.
- * @returns True if the content contains a high-confidence secret pattern.
- */
+import { scanForSecrets as scanForSecretsImpl } from "@darkfactory/keychain";
+/** Scan content for secret patterns before remote publication. */
 export function scanForSecrets(content: string): boolean {
-	const SECRET_PATTERNS = [
-		/bearer\s+[A-Za-z0-9._~+/=-]+/i,
-		/(?:token|secret|password|api[-_ ]?key|authorization)\s*[:=]/i,
-		/sk-live-[A-Za-z0-9_-]+/,
-		/-----BEGIN (?:RSA|EC|PGP|OPENSSH) PRIVATE KEY-----/,
-	];
-	return SECRET_PATTERNS.some((pattern) => pattern.test(content));
+	return scanForSecretsImpl(content);
 }
 
 /**

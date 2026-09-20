@@ -30,7 +30,8 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; ex
 	const home = await mkdtemp(join(tmpdir(), "df-cli-models-"));
 	temporary.push(home);
 	await writeFile(join(home, "providers.df"), JSON.stringify({ version: 1, providers: [provider] }), "utf8");
-	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "models", "--provider", provider.id, ...args], {
+	const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+	const child = Bun.spawn([process.execPath, "run", cliPath, "models", "--provider", provider.id, ...args], {
 		cwd: process.cwd(),
 		env: {
 			DF_HOME: home,
@@ -101,7 +102,8 @@ describe("df models", () => {
 			}),
 			"utf8",
 		);
-		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "models", "--provider", provider.id, "--stale"], {
+		const cliPath = join(process.cwd(), "harness", "src", "cli.ts");
+		const child = Bun.spawn([process.execPath, "run", cliPath, "models", "--provider", provider.id, "--stale"], {
 			cwd: process.cwd(),
 			env: {
 				DF_HOME: home,
