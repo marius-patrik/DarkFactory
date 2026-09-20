@@ -1,4 +1,5 @@
 import type { AssistantMessageEventStream, Context, Model, SimpleStreamOptions } from "@earendil-works/pi-ai";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { z } from "zod";
 import { captureContext, forceCaptureTool, readCapture } from "./capture-request.ts";
 
@@ -45,11 +46,17 @@ export class CaptureError extends Error {
 
 /** Convert a Zod schema to a JSON schema without the top‑level `$schema` key. */
 export function captureJsonSchema(schema: z.ZodType): Record<string, unknown> {
-	const json: any = (z as any).toJSONSchema(schema);
+	const json = zodToJsonSchema(schema) as Record<string, unknown>;
 	if (json && typeof json === "object") {
-		delete json["$schema"];
+		if ("$schema" in json) {
+			delete json["$schema"];
+		}
+		// If it's empty, try to ensure we have a valid object schema if it's an object
+		if (Object.keys(json).length === 0 && (schema as any)._def?.typeName === "ZodObject") {
+			return { type: "object", properties: {}, required: [] };
+		}
 	}
-	return json ?? {};
+	return json;
 }
 
 /**
@@ -80,6 +87,9 @@ export async function captureResult<T>(params: {
 					return forceCaptureTool(candidate.dialect, upstream ?? payload);
 				},
 			});
+			if (typeof (stream as any).result !== "function") {
+				throw new Error("Stream does not have a result method");
+			}
 			const message = await (stream as any).result();
 			const capture = readCapture(message);
 			if (!capture) {
@@ -93,6 +103,9 @@ export async function captureResult<T>(params: {
 			}
 			return { value: parsed.data, model: candidate.model.id, attempts };
 		} catch (e: any) {
+			if (e instanceof CaptureError) {
+				throw e;
+			}
 			attempts.push({ model: candidate.model.id, error: e?.message ?? String(e) });
 		}
 	}

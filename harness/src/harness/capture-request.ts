@@ -108,13 +108,22 @@ export function forceCaptureTool(dialect: ProviderDialect, payload: unknown): un
 export function readCapture(message: AssistantMessage): Record<string, unknown> | undefined {
 	// The shape of AssistantMessage is defined by pi‑ai. It contains a `content`
 	// field that can be a string or an array of content blocks.
-	const anyMsg = message as any;
-	const contents = anyMsg.content;
+	const contents = message.content;
 	if (!Array.isArray(contents)) {
 		return undefined;
 	}
 	for (const block of contents) {
-		if (block && typeof block === "object" && block.type === "toolCall" && block.name === CAPTURE_TOOL_NAME) {
+		if (
+			typeof block === "object" &&
+			block !== null &&
+			"type" in block &&
+			block.type === "toolCall" &&
+			"name" in block &&
+			block.name === CAPTURE_TOOL_NAME &&
+			"arguments" in block &&
+			typeof block.arguments === "object" &&
+			block.arguments !== null
+		) {
 			return block.arguments as Record<string, unknown>;
 		}
 	}
