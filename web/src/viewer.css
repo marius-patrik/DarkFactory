@@ -16,6 +16,12 @@
   --accent-strong: #74a7ff;
   --page-shadow: 0 10px 35px rgba(0, 0, 0, .35);
   --thumb-active: rgba(75, 139, 245, .18);
+  --ui-error: #ff7b72;
+  --document-paper: #ffffff;
+  --selection: rgba(75, 139, 245, .32);
+  --shadow-low: rgba(0, 0, 0, .16);
+  --shadow-medium: rgba(0, 0, 0, .28);
+  --shadow-card: rgba(0, 0, 0, .08);
   --ui-font-size: 13px;
   --ui-pad: 4px;
   --header-height: 32px;
@@ -38,6 +44,12 @@ html[data-theme="light"] {
   --accent-strong: #235fcb;
   --page-shadow: 0 10px 34px rgba(20, 25, 34, .16);
   --thumb-active: rgba(50, 110, 219, .13);
+  --ui-error: #b42318;
+  --document-paper: #ffffff;
+  --selection: rgba(50, 110, 219, .24);
+  --shadow-low: rgba(20, 25, 34, .14);
+  --shadow-medium: rgba(20, 25, 34, .22);
+  --shadow-card: rgba(20, 25, 34, .08);
 }
 
 html[data-theme="oled"] {
@@ -54,6 +66,12 @@ html[data-theme="oled"] {
   --accent-strong: #8ab4ff;
   --page-shadow: none;
   --thumb-active: rgba(91, 148, 247, .2);
+  --ui-error: #ff7b72;
+  --document-paper: #ffffff;
+  --selection: rgba(91, 148, 247, .32);
+  --shadow-low: transparent;
+  --shadow-medium: transparent;
+  --shadow-card: transparent;
 }
 
 html[data-theme="oled"] .toolbar {
@@ -196,7 +214,7 @@ a {
   align-items: stretch;
   background: var(--toolbar);
   border-bottom: 1px solid var(--toolbar-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .16);
+  box-shadow: 0 1px 4px var(--shadow-low);
   z-index: 40;
 }
 
@@ -662,7 +680,7 @@ a {
 }
 
 .repo-files-error {
-  color: #ff7b72;
+  color: var(--ui-error);
 }
 
 .navigation-sidebar {
@@ -857,8 +875,8 @@ a {
 .thumb-canvas-wrap {
   width: 100%;
   display: block;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+  background: var(--document-paper);
+  box-shadow: 0 2px 8px var(--shadow-low);
 }
 
 .thumb canvas {
@@ -883,7 +901,7 @@ a {
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--toolbar-border) 82%, transparent);
   border-radius: 3px;
-  background: color-mix(in srgb, var(--surface) 88%, white 12%);
+  background: color-mix(in srgb, var(--surface) 88%, var(--text) 12%);
   color: var(--muted);
   font-size: var(--ui-font-size);
   cursor: pointer;
@@ -926,7 +944,7 @@ a {
   position: relative;
   flex: 0 0 auto;
   overflow: hidden;
-  background: white;
+  background: var(--document-paper);
   box-shadow: var(--page-shadow);
 }
 
@@ -961,7 +979,7 @@ a {
 }
 
 .page-shell .textLayer ::selection {
-  background: rgba(66, 133, 244, .32);
+  background: var(--selection);
 }
 
 .page-shell .annotationLayer {
@@ -1003,7 +1021,7 @@ a {
   z-index: 5;
   display: grid;
   place-items: center;
-  color: #888;
+  color: var(--muted);
   font-size: var(--ui-font-size);
   pointer-events: none;
 }
@@ -1026,7 +1044,7 @@ a {
 }
 
 .document-error strong {
-  color: #ff7b72;
+  color: var(--ui-error);
 }
 
 .embedded-viewer {
@@ -1085,7 +1103,7 @@ a {
   width: 100%;
   height: 100%;
   border: 0;
-  background: white;
+  background: var(--document-paper);
 }
 
 .markdown-artifact,
@@ -1324,7 +1342,7 @@ a {
   border-radius: 14px;
   padding: var(--ui-pad);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .08);
+  box-shadow: 0 8px 30px var(--shadow-card);
 }
 
 .publication-card-head {
@@ -1433,12 +1451,12 @@ a {
     top: calc(var(--header-height) + var(--tabbar-height));
     bottom: var(--status-height);
     z-index: 45;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, .28);
+    box-shadow: 4px 0 20px var(--shadow-medium);
   }
 
   .sidebar-right {
     right: 36px;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, .28);
+    box-shadow: -4px 0 20px var(--shadow-medium);
   }
 
   .sidebar-left {
@@ -1451,7 +1469,7 @@ a {
     bottom: var(--status-height);
     z-index: 45;
     width: min(82vw, 320px);
-    box-shadow: 4px 0 20px rgba(0, 0, 0, .28);
+    box-shadow: 4px 0 20px var(--shadow-medium);
   }
 
   .repo-files-left {
@@ -1460,7 +1478,7 @@ a {
 
   .repo-files-right {
     right: 36px;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, .28);
+    box-shadow: -4px 0 20px var(--shadow-medium);
   }
 
   .pages {
