@@ -32,7 +32,7 @@ import {
 import { CompiledArtifactView, type ArtifactFormat } from "./compiled-artifact";
 
 const DEFAULT_WORK_TITLE =
-  "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství";
+  "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství";
 
 type ArtifactSet = {
   pdf: string;
@@ -262,6 +262,7 @@ function VersionPicker({
   viewMode,
   format,
   versionTitle,
+  onNavigate,
 }: {
   manifest: Manifest;
   templateName: string;
@@ -270,6 +271,7 @@ function VersionPicker({
   viewMode: ViewMode;
   format: ArtifactFormat;
   versionTitle: string;
+  onNavigate: (href: string) => void;
 }) {
   return (
     <DropdownMenu>
@@ -320,9 +322,7 @@ function VersionPicker({
             <DropdownMenuItem
               key={variant.profile}
               className={active ? "version-item active" : "version-item"}
-              onSelect={() => {
-                window.location.href = href;
-              }}
+              onSelect={() => onNavigate(href)}
             >
               <AnimatedIcon names={["LanguagesIcon"]} size={16} />
               <span className="version-option">
@@ -340,24 +340,17 @@ function VersionPicker({
 
 function ModePicker({
   mode,
-  viewMode,
-  finalHref,
+  compiledHref,
   reviewHref,
-  splitHref,
+  onNavigate,
 }: {
   mode: ViewerMode;
-  viewMode: ViewMode;
-  finalHref: string;
+  compiledHref: string;
   reviewHref: string;
-  splitHref: string;
+  onNavigate: (href: string) => void;
 }) {
-  const label = viewMode === "split" ? "Review" : mode === "review" ? "Koncept" : "Final";
-  const icon =
-    viewMode === "split"
-      ? ["PanelLeftRightIcon"]
-      : mode === "review"
-        ? ["PencilLineIcon"]
-        : ["CheckCircle2Icon"];
+  const label = mode === "review" ? "Koncept" : "Compiled";
+  const icon = mode === "review" ? ["PencilLineIcon"] : ["CheckCircle2Icon"];
 
   return (
     <DropdownMenu>
@@ -365,12 +358,7 @@ function ModePicker({
         <TooltipTrigger asChild>
           <span className="mode-trigger-wrap">
             <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="mode-select"
-                aria-label="Switch Final / Koncept / Review"
-              >
+              <Button type="button" variant="ghost" className="mode-select" aria-label="Switch Compiled / Koncept">
                 <AnimatedIcon names={icon} size={15} />
                 <span>{label}</span>
                 <AnimatedIcon names={["ChevronsUpDownIcon"]} size={14} />
@@ -378,66 +366,33 @@ function ModePicker({
             </DropdownMenuTrigger>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Switch Final / Koncept / Review</TooltipContent>
+        <TooltipContent>Switch Compiled / Koncept</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="mode-menu">
-        <DropdownMenuItem
-          className={viewMode === "single" && mode === "final" ? "mode-item active" : "mode-item"}
-          onSelect={() => {
-            window.location.href = finalHref;
-          }}
-        >
-          <span className="mode-option-label">
-            <AnimatedIcon names={["CheckCircle2Icon"]} size={15} />
-            Final
-          </span>
-          {viewMode === "single" && mode === "final" && (
-            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
-          )}
+        <DropdownMenuItem className={mode === "final" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(compiledHref)}>
+          <span className="mode-option-label"><AnimatedIcon names={["CheckCircle2Icon"]} size={15} />Compiled</span>
+          {mode === "final" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          className={viewMode === "single" && mode === "review" ? "mode-item active" : "mode-item"}
-          onSelect={() => {
-            window.location.href = reviewHref;
-          }}
-        >
-          <span className="mode-option-label">
-            <AnimatedIcon names={["PencilLineIcon"]} size={15} />
-            Koncept
-          </span>
-          {viewMode === "single" && mode === "review" && (
-            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
-          )}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className={viewMode === "split" ? "mode-item active" : "mode-item"}
-          onSelect={() => {
-            window.location.href = splitHref;
-          }}
-        >
-          <span className="mode-option-label">
-            <AnimatedIcon names={["PanelLeftRightIcon"]} size={15} />
-            Review
-          </span>
-          {viewMode === "split" && (
-            <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />
-          )}
+        <DropdownMenuItem className={mode === "review" ? "mode-item active" : "mode-item"} onSelect={() => onNavigate(reviewHref)}>
+          <span className="mode-option-label"><AnimatedIcon names={["PencilLineIcon"]} size={15} />Koncept</span>
+          {mode === "review" && <AnimatedIcon names={["CheckIcon", "CircleCheckIcon"]} size={15} />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-
 function FormatPicker({
   format,
   pdfHref,
   markdownHref,
   htmlHref,
+  onNavigate,
 }: {
   format: ArtifactFormat;
   pdfHref: string;
   markdownHref: string;
   htmlHref: string;
+  onNavigate: (href: string) => void;
 }) {
   const options: Array<{
     format: ArtifactFormat;
@@ -478,9 +433,7 @@ function FormatPicker({
           <DropdownMenuItem
             key={option.format}
             className={format === option.format ? "format-item active" : "format-item"}
-            onSelect={() => {
-              window.location.href = option.href;
-            }}
+            onSelect={() => onNavigate(option.href)}
           >
             <span className="mode-option-label">
               <AnimatedIcon names={option.icon} size={15} />
@@ -608,7 +561,8 @@ function AppearancePicker({
 
 export function ViewerApp() {
   const { manifest } = useManifest();
-  const params = useMemo(() => new URLSearchParams(window.location.search), []);
+  const [routeRevision, setRouteRevision] = useState(0);
+  const params = useMemo(() => new URLSearchParams(window.location.search), [routeRevision]);
   const requestedFormat = params.get("format");
   const format: ArtifactFormat =
     requestedFormat === "markdown" ? "markdown" : requestedFormat === "html" ? "html" : "pdf";
@@ -677,6 +631,17 @@ export function ViewerApp() {
   });
   const [pageDraft, setPageDraft] = useState("1");
   const [refreshRevision, setRefreshRevision] = useState(0);
+
+  const navigateViewer = useCallback((href: string) => {
+    if (!href || href === "#") return;
+    const next = new URL(href, window.location.href);
+    if (next.origin !== window.location.origin) {
+      window.open(next.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+    window.history.pushState(null, "", next.pathname + next.search + next.hash);
+    setRouteRevision((revision) => revision + 1);
+  }, []);
   const renderArtifactPath = withRefreshToken(
     artifactPath || "",
     params.get("refresh") || refreshRevision,
@@ -785,6 +750,12 @@ export function ViewerApp() {
     const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setRouteRevision((revision) => revision + 1);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -904,7 +875,7 @@ export function ViewerApp() {
   }, [embedded, format, goToPage, setZoom, state.page, zoomBy]);
 
   if (!artifactPath && !manifest && !params.get("file")) {
-    return <div className="document-loading">Loading school Final PDF…</div>;
+    return <div className="document-loading">Loading school Compiled PDF…</div>;
   }
 
   if (!artifactPath) {
@@ -1079,21 +1050,7 @@ export function ViewerApp() {
               icon={["RefreshCwIcon", "RotateCwIcon"]}
               onClick={refreshDocument}
             />
-            <TooltipAction
-              label="Home"
-              icon={["HomeIcon"]}
-              href="./"
-            />
-            <span className="identity-separator" aria-hidden="true">\</span>
             <span className="work-title" title={workTitle}>{workTitle}</span>
-            <span className="identity-separator" aria-hidden="true">\</span>
-            <ModePicker
-              mode={mode}
-              viewMode={viewMode}
-              finalHref={finalTarget}
-              reviewHref={reviewTarget}
-              splitHref={canSplit ? splitTarget : "#"}
-            />
             {format === "pdf" && (
               <>
                 <span className="identity-separator" aria-hidden="true">\</span>
@@ -1139,7 +1096,7 @@ export function ViewerApp() {
             <TooltipAction
               label={viewMode === "split" ? "Exit Review" : "Review"}
               icon={["PanelLeftRightIcon"]}
-              href={canSplit ? splitTarget : undefined}
+              onClick={canSplit ? () => navigateViewer(splitTarget) : undefined}
               pressed={viewMode === "split"}
             />
             {viewMode === "split" && format === "pdf" && (
@@ -1190,7 +1147,7 @@ export function ViewerApp() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <div className="split-label">Final</div>
+                <div className="split-label">Compiled</div>
                 <iframe
                   ref={(node) => {
                     splitFrames.current[0] = node;
@@ -1229,7 +1186,7 @@ export function ViewerApp() {
           ) : (
             <div className="document-error">
               <strong>Review comparison unavailable.</strong>
-              <span>Both Final and Koncept {formatLabel} outputs are required.</span>
+              <span>Both Compiled and Koncept {formatLabel} outputs are required.</span>
             </div>
           )
         ) : format === "pdf" ? (
@@ -1266,16 +1223,20 @@ export function ViewerApp() {
               viewMode={viewMode}
               format={format}
               versionTitle={versionTitle}
+              onNavigate={navigateViewer}
             />
           ) : (
             <span className="version-fallback">{versionTitle}</span>
           )}
+          <span className="status-divider" aria-hidden="true" />
+          <ModePicker mode={mode} compiledHref={finalTarget} reviewHref={reviewTarget} onNavigate={navigateViewer} />
           <span className="status-divider" aria-hidden="true" />
           <FormatPicker
             format={format}
             pdfHref={pdfTarget}
             markdownHref={markdownTarget}
             htmlHref={htmlTarget}
+            onNavigate={navigateViewer}
           />
         </div>
 

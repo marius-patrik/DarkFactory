@@ -208,9 +208,12 @@ class AnnotationLinkService {
 type PdfLinkAnnotation = {
   id?: string;
   url?: string;
+  unsafeUrl?: string;
   newWindow?: boolean;
   dest?: PdfDestination;
   action?: string;
+  rect?: number[];
+  title?: string;
 };
 
 function installAnnotationInteractions(
@@ -272,6 +275,41 @@ function installAnnotationInteractions(
 
   node.addEventListener("click", onClick, true);
   return () => node.removeEventListener("click", onClick, true);
+}
+
+function installLinkOverlays(
+  node: HTMLElement,
+  annotations: PdfLinkAnnotation[],
+  viewport: any,
+  linkService: AnnotationLinkService,
+) {
+  const overlays: HTMLAnchorElement[] = [];
+  for (const annotation of annotations) {
+    if (!annotation.rect || annotation.rect.length !== 4) continue;
+    if (!annotation.url && !annotation.dest && !annotation.action) continue;
+    const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(annotation.rect);
+    const overlay = document.createElement("a");
+    overlay.className = "pdf-link-overlay";
+    overlay.style.left = Math.min(x1, x2) + "px";
+    overlay.style.top = Math.min(y1, y2) + "px";
+    overlay.style.width = Math.abs(x2 - x1) + "px";
+    overlay.style.height = Math.abs(y2 - y1) + "px";
+    overlay.setAttribute("aria-label", annotation.title || annotation.url || "PDF link");
+    if (annotation.url) {
+      linkService.addLinkAttributes(overlay, annotation.url, annotation.newWindow);
+    } else {
+      overlay.href = "#";
+      overlay.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (annotation.dest) void linkService.goToDestination(annotation.dest);
+        else if (annotation.action) linkService.executeNamedAction(annotation.action);
+      });
+    }
+    node.appendChild(overlay);
+    overlays.push(overlay);
+  }
+  return () => overlays.forEach((overlay) => overlay.remove());
 }
 
 function Minimap({
@@ -527,6 +565,7 @@ const PdfPage = memo(function PdfPage({
     let disposed = false;
     let renderTask: any = null;
     let removeAnnotationInteractions: (() => void) | null = null;
+    let removeLinkOverlays: (() => void) | null = null;
     setRendered(false);
 
     void (async () => {
@@ -601,6 +640,7 @@ const PdfPage = memo(function PdfPage({
                 annotations,
                 linkService,
               );
+              removeLinkOverlays = installLinkOverlays(annotationLayerNode, annotations, cssViewport, linkService);
             }
           }
         } catch (error) {
@@ -616,6 +656,7 @@ const PdfPage = memo(function PdfPage({
     return () => {
       disposed = true;
       removeAnnotationInteractions?.();
+      removeLinkOverlays?.();
       renderTask?.cancel?.();
     };
   }, [info.number, linkService, pdf, scale, visible]);

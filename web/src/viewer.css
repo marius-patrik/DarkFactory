@@ -669,6 +669,15 @@ a {
   height: 100%;
 }
 
+.page-shell .annotationLayer .pdf-link-overlay {
+  position: absolute;
+  z-index: 20;
+  display: block;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .page-loading {
   position: absolute;
   inset: 0;
@@ -857,6 +866,7 @@ a {
 }
 
 .statusbar .version-select,
+.statusbar .mode-select,
 .statusbar .format-select {
   height: 20px;
   min-height: 20px;
