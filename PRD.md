@@ -138,7 +138,7 @@ The final #340 declaration rules apply:
 - runtime/user/provider configuration is `config.df`;
 - accepted location is `.darkfactory/<name>.df` or root `<name>.df`;
 - both locations for the same logical file is an error;
-- legacy manifest/config paths are not read;
+- only the current `repo.df` / `config.df` contracts are read;
 - `.df` is a filename extension, never a directory.
 
 ### 7.2 Documentation configuration
@@ -151,7 +151,7 @@ Documentation configuration does not move into `repo.df` or `config.df`.
 
 ### 7.3 State
 
-Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations. Final production does not maintain JSON/JSONL aliases merely for legacy compatibility.
+Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations.
 
 ## 8. Governed Request lifecycle
 
@@ -171,7 +171,7 @@ The final Request lifecycle is:
 12. final review/merge authorization;
 13. merge and deterministic reconciliation.
 
-Separate interpretation and plan approval gates are retired.
+The lifecycle has one reviewed Planning artifact and one Planning Approval gate.
 
 Planning/review/fix state is durable and resumable. Planning becomes stale when material Request, dependency, recovery or base context changes; stale approval is never silently reused.
 
@@ -359,7 +359,7 @@ The standard installation includes official capabilities while allowing third-pa
 
 ## 17. Consumer/fleet model
 
-The intended fleet contains six repositories identified by stable GitHub repository identity rather than historical names:
+The intended fleet contains six repositories identified by stable GitHub repository identity:
 
 1. DarkFactory;
 2. omnis;
@@ -389,7 +389,7 @@ Install/update is idempotent and drift-aware.
 DarkFactory is final only when:
 
 - df is the only normal production orchestration/mutation engine;
-- no required legacy Python production path remains;
+- production orchestration and mutation are owned by the final TypeScript df system;
 - package/capability architecture is shipped;
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
@@ -398,7 +398,6 @@ DarkFactory is final only when:
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - released df installs/updates source-free;
 - all six repositories pass governance, detection, capability, docs/web, release and drift checks;
-- every preserved recovery source has an explicit terminal disposition;
 - `audit.df` is internally consistent;
 - #361 is green;
 - the original #68 declarable-graph contract passes against the installed final release.
