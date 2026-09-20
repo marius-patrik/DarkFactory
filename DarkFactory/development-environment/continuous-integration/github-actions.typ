@@ -13,7 +13,7 @@ definition: terms => [
 GitHub Actions je automatizační platforma GitHubu pro spouštění deklarovaných workflow a jejich jobů v reakci na události repozitáře nebo ruční spuštění.
   ],
   description: terms => [
-#unconfirmed[
+#finalized[
 GitHub Actions spouští deklarovaná workflow v reakci na události repozitáře. V této práci představuje konkrétní automatizační prostředí, které realizuje CI kontroly a další repozitářové procesy.
 ]
   ],
