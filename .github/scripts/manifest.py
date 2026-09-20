@@ -1,12 +1,7 @@
-"""Reads the per-repository manifest that the shared pipeline is configured by.
+"""Reads the repository declaration consumed by shared DarkFactory automation.
 
-Every workflow and script in `.github/` is distributed byte-for-byte to each repository that uses
-this pipeline. Anything that differs between them - the owner and repository name, the project
-board, the area taxonomy, the versioning mode - lives in `.darkfactory/manifest.json` instead of
-being hardcoded, so an update to the pipeline is a fast-forward rather than a merge conflict.
-
-Keys are read with defaults throughout: a repository that declares nothing still gets a working
-pipeline, and a key added here later does not break repositories that have not adopted it yet.
+Repository-specific identity, taxonomy, project, release and authorization settings live in
+`repo.df`. Detectable package/runtime facts are discovered rather than duplicated in this declaration.
 """
 
 import json
@@ -18,18 +13,18 @@ try:
 except ImportError:
     from resolver import resolve_df_file
 
-#: Manifest location, relative to the repository root.
+#: Repository declaration filename.
 MANIFEST_PATH = "repo.df"
 
 
 def resolve_manifest_path(root: str) -> str:
-    """Returns the path to the manifest.
+    """Returns the active repo.df path.
 
     Args:
         root: Absolute path to the repository root.
 
     Returns:
-        The path to the manifest file.
+        The path to the repository declaration.
 
     Raises:
         ValueError: If the manifest cannot be resolved.
@@ -41,8 +36,8 @@ def resolve_manifest_path(root: str) -> str:
 #: that is the only domain a repository is guaranteed to have.
 DEFAULT_AREAS: Dict[str, str] = {
     "ci": "GitHub Actions workflows, containers, runner scripts, repository automation",
-    "agents": "Harness orchestration, provider adapters, personas, approvals",
-    "docs": "Documentation site, theme, architecture notes",
+    "agents": "Agent runtime, routing, providers, planning/review orchestration and model execution",
+    "docs": "Documentation compiler, API reference and shared web surfaces",
 }
 
 #: Status checks required when a repository declares none. Only jobs that always report a
