@@ -38,6 +38,8 @@
 #let anthropic_opus5 = <anthropic-opus5>
 #let deepseek_v41_flash = <deepseek-v41-flash>
 
+#let karpathy2025vibecoding = <karpathy2025vibecoding>
+#let willison2025vibecoding = <willison2025vibecoding>
 #let fowler2026vibecoding = <fowler2026vibecoding>
 #let cambridge2026aislop = <cambridge2026aislop>
 #let agent_skills_spec = <agentskills-spec>
@@ -82,6 +84,8 @@
   openai_gpt56: openai_gpt56,
   anthropic_opus5: anthropic_opus5,
   deepseek_v41_flash: deepseek_v41_flash,
+  karpathy2025vibecoding: karpathy2025vibecoding,
+  willison2025vibecoding: willison2025vibecoding,
   fowler2026vibecoding: fowler2026vibecoding,
   cambridge2026aislop: cambridge2026aislop,
   agent_skills_spec: agent_skills_spec,
