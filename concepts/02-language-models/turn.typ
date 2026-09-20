@@ -25,8 +25,8 @@ Interakce mezi modelem, uživatelem a okolním vývojovým prostředím neprobí
   - Tah uživatele či prostředí (_User Turn_): Nové zadání úkolu nebo vnější událost.
   - Tah modelu (_Model Turn_): Vygenerovaná odpověď nebo strukturovaný požadavek na spuštění nástroje.
   - Tah nástroje (_Tool Execution Turn_): Zpětné hlášení výsledku exekuce (výpis souboru, výstup kompilátoru).
-- Správa KV cache (Key-Value Cache): Aby inferenční engine nemusel při každém novém tahu přepočítávat celou historii od začátku, ukládá mezivýpočty klíčů a hodnot matic pozornosti do paměti.
-- Kontextové okno (_Context Window_): Pevně limitovaná kapacita paměti modelu. Tento strop je dán hardwarovými limity GPU akcelerátorů a kvadratickou složitostí plné pozornosti ($O(N^2)$ vzhledem k délce sekvence).
+- Správa KV cache (#term(terms.kv_cache, language: "en", marker: false, linked: false, emphasized: false)): Aby inferenční engine nemusel při každém novém tahu přepočítávat celou historii od začátku, ukládá mezivýpočty klíčů a hodnot matic pozornosti do paměti.
+- Kontextové okno (#term(terms.context_window, language: "en", marker: false, linked: false, emphasized: false)): Pevně limitovaná kapacita paměti modelu. Tento strop je dán hardwarovými limity GPU akcelerátorů a kvadratickou složitostí plné pozornosti ($O(N^2)$ vzhledem k délce sekvence).
   ],
   theory_summary: none,
   theory_after: none,
