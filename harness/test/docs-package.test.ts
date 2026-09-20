@@ -81,6 +81,15 @@ describe("@darkfactory/docs", () => {
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
 
+	test("rejects ADRs that are not current accepted decisions", async () => {
+		const root = await fixture();
+		await writeFile(
+			join(root, ".agents", "notes", "adr", "0002-not-current.md"),
+			"# ADR-0002 — Not current\n\n**Status**: Proposed\n",
+		);
+		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
+	});
+
 	test("renders README from the canonical home page", async () => {
 		const root = await fixture();
 		const markdown = renderReadmeMarkdown(compileDocsContentGraph(root));
