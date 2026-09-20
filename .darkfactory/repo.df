@@ -65,9 +65,6 @@
     "formatting": {
       "python": {
         "command": "black --check --line-length 100 ."
-      },
-      "node": {
-        "command": "cd harness && bun x biome ci --changed --since=\"${DF_BASE_SHA:-origin/darkfactory}\" ."
       }
     },
     "release": {
