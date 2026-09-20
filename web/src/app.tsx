@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactElement,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { AnimatedIcon } from "@/components/animated-icon";
@@ -52,6 +51,17 @@ import {
   type WorkspacePaneKind,
   type WorkspaceSplitDirection,
 } from "./workspace";
+import {
+  clampSidebarWidth,
+  useViewerSettings,
+  type ActivityBarPosition,
+  type ActivityPanel,
+  type ActiveActivityPanel,
+  type AppearanceMode,
+} from "./settings";
+import { SettingsView } from "./settings-view";
+import { AppTabBar, type AppTab } from "./viewer-tabs";
+import { TooltipAction } from "./viewer-ui";
 
 const DEFAULT_WORK_TITLE =
   "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství";
@@ -95,16 +105,13 @@ type Manifest = {
 
 type ViewerMode = "final" | "review" | "raw";
 type ViewMode = "single" | "split";
-type AppearanceMode = "light" | "dark" | "oled";
-type ActivityPanel = "structure" | "explorer" | null;
-type ActiveActivityPanel = Exclude<ActivityPanel, null>;
-type ActivityBarPosition = "left" | "right" | "top" | "bottom";
 
 type RepoTreeNode = {
   name: string;
   path: string;
-  type: "file" | "directory";
+  type: "file" | "directory" | "submodule";
   source?: string | null;
+  url?: string | null;
   children?: RepoTreeNode[];
 };
 
@@ -161,10 +168,6 @@ function languageShortId(profile: string) {
   if (profile === "en") return "EN";
   if (profile === "merged") return "CZ+EN";
   return profile.toUpperCase();
-}
-
-function clampSidebarWidth(value: number) {
-  return Math.max(190, Math.min(640, Math.round(value)));
 }
 
 type CommandBinding = {
@@ -323,80 +326,20 @@ function childHref(args: {
   });
 }
 
-function TooltipAction({
-  label,
-  icon,
-  onClick,
-  href,
-  download,
-  target,
-  pressed,
-  disabled = false,
-  className = "",
-}: {
-  label: string;
-  icon: string | string[];
-  onClick?: () => void;
-  href?: string;
-  download?: boolean;
-  target?: string;
-  pressed?: boolean;
-  disabled?: boolean;
-  className?: string;
-}) {
-  const content = href && !disabled ? (
-    <Button
-      asChild
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={"icon-action " + className}
-    >
-      <a
-        href={href}
-        download={download || undefined}
-        target={target}
-        rel={target === "_blank" ? "noopener noreferrer" : undefined}
-        aria-label={label}
-      >
-        <AnimatedIcon names={icon} />
-      </a>
-    </Button>
-  ) : (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={"icon-action " + className}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={pressed}
-    >
-      <AnimatedIcon names={icon} />
-    </Button>
-  );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
-
 function ActivityBar({
   position,
   active,
   structureAvailable,
   onSelect,
   onMovePosition,
+  onOpenSettings,
 }: {
   position: ActivityBarPosition;
   active: ActivityPanel;
   structureAvailable: boolean;
   onSelect: (panel: ActivityPanel) => void;
   onMovePosition: (position: ActivityBarPosition) => void;
+  onOpenSettings: () => void;
 }) {
   const positions: Array<{ position: ActivityBarPosition; label: string; icon: string[] }> = [
     { position: "left", label: "Left", icon: ["PanelLeftIcon"] },
@@ -422,6 +365,12 @@ function ActivityBar({
             icon={["FolderIcon"]}
             pressed={active === "explorer"}
             onClick={() => onSelect(active === "explorer" ? null : "explorer")}
+            className="activity-action"
+          />
+          <TooltipAction
+            label="Settings"
+            icon={["SettingsIcon"]}
+            onClick={onOpenSettings}
             className="activity-action"
           />
         </aside>
@@ -470,13 +419,20 @@ function RepoTreeBranch({
           <button
             key={node.path}
             type="button"
-            className="repo-tree-file"
+            className={node.type === "submodule" ? "repo-tree-file repo-tree-submodule" : "repo-tree-file"}
             onClick={() => onOpenFile(node)}
-            disabled={!node.source}
-            title={node.source ? node.path : node.path + " is not a regular tracked file"}
+            disabled={node.type === "file" && !node.source}
+            title={
+              node.type === "submodule"
+                ? node.url || node.path + " submodule"
+                : node.source
+                  ? node.path
+                  : node.path + " is not a regular tracked file"
+            }
           >
-            <AnimatedIcon names={["FileIcon", "FileTextIcon"]} />
+            <AnimatedIcon names={node.type === "submodule" ? ["GitBranchIcon"] : ["FileIcon", "FileTextIcon"]} />
             <span>{node.name}</span>
+            {node.type === "submodule" && <span className="ui-secondary">submodule</span>}
           </button>
         ),
       )}
