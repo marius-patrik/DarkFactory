@@ -8,3 +8,4 @@ export {
 	parseDurationMs,
 	redactToolInput,
 } from "../../../harness/src/cli.ts";
+export * from "./registry.ts";
