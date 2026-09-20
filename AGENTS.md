@@ -97,9 +97,9 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Typst HTML remains an experimental semantic artifact and must not replace the React publication shell or the canonical paged PDF.
 - The local live-preview workflow above remains the native Chrome PDF viewer unless the user explicitly asks to change local preview too.
 
-- Keywords remain a compact usage-driven list in front matter. Detailed term names/explanations belong only to the separate `Rejstřík | Index` generated from the full canonical vocabulary in back matter immediately before `Seznam příloh | List of appendices`.
-- Index ordering is alphabetical by canonical term name. Only the top-level `Rejstřík | Index` heading belongs in the main document contents. The Rejstřík begins with a complete linked term list; its letter groups and individual term headings remain real internal headings but use `outlined: false` so they never expand the main Obsah. Aliases are deduplicated by stable term `id`.
-- Inline term links/★ markers target the stable `kw-<id>` index entry; do not restore detailed entries under the keyword heading.
+- Keywords remain a compact usage-driven list in front matter.
+- Do not generate a separate terminology `Rejstřík | Index`. Canonical concepts and terms must be used by the thesis itself rather than published only through a catalog page.
+- CI must reject canonical concept records that are neither rendered as thesis content nor referenced as canonical terms by rendered manuscript content.
 - Index and appendices are outside the core-text word-count boundary.
 - `Seznam příloh | List of appendices` contains top-level appendix headings only. Nested appendix sections remain numbered/outlined but must never leak into the appendix list.
 
