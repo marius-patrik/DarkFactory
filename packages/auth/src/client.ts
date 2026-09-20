@@ -104,3 +104,34 @@ export function restoreSession(now = Date.now()): BrowserSession | null {
 export function clearSession(): void {
 	localStorage.removeItem(SESSION_KEY);
 }
+
+/**
+ * Restores the opaque browser session and refreshes it through the confidential broker when expired.
+ *
+ * The refresh callback is expected to call the server-side auth broker using only the opaque session id.
+ * Any refresh failure clears browser persistence and fails closed.
+ */
+export async function restoreSessionWithRefresh(
+	refresh: (sessionId: string) => Promise<BrowserSession>,
+	now = Date.now(),
+): Promise<BrowserSession | null> {
+	const raw = localStorage.getItem(SESSION_KEY);
+	if (!raw) return null;
+	let session: BrowserSession;
+	try {
+		session = parseBrowserSession(JSON.parse(raw) as unknown);
+	} catch {
+		localStorage.removeItem(SESSION_KEY);
+		return null;
+	}
+	if (session.expiresAt > now) return session;
+	try {
+		const refreshed = parseBrowserSession(await refresh(session.id));
+		if (refreshed.expiresAt <= now) throw new Error("Refreshed session is already expired");
+		persistSession(refreshed);
+		return refreshed;
+	} catch {
+		localStorage.removeItem(SESSION_KEY);
+		return null;
+	}
+}
