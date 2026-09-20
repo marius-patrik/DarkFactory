@@ -1866,3 +1866,70 @@ a {
   gap: var(--ui-pad);
 }
 
+/* Final chrome normalization: one type size, one muted secondary style, one spacing unit. */
+.menubar-button,
+.version-option strong,
+.version-option small,
+.version-fallback,
+.renderer-select,
+.renderer-item,
+.format-select,
+.format-item,
+.chapter-select,
+.chapter-item,
+.path-page-control,
+.activity-panel-header,
+.repo-files-tree,
+.repo-tree-file,
+.repo-tree-directory,
+.navigation-section-header,
+.contents-item,
+.contents-item small,
+.activity-panel-empty,
+.thumb-number,
+.minimap-page,
+.artifact-status,
+.statusbar,
+.statusbar .version-select,
+.statusbar .format-select,
+.status-short-id,
+.status-select-copy strong,
+.status-select-copy small,
+.statusbar .version-fallback,
+.zoom-value,
+.split-label,
+.build-revision {
+  font-size: var(--ui-font-size);
+}
+
+.version-option small,
+.status-select-copy small,
+.contents-item small,
+.ui-secondary {
+  color: var(--muted);
+  font-size: var(--ui-font-size);
+  font-weight: 400;
+}
+
+.toolbar-main,
+.menubar-inline,
+.statusbar,
+.activity-panel-header,
+.repo-tree-file,
+.navigation-section-header,
+.contents-item,
+.path-page-control {
+  padding: var(--ui-pad);
+}
+
+.menubar-button,
+.version-select,
+.renderer-select,
+.format-select,
+.chapter-select,
+.icon-action,
+.status-action,
+.zoom-value {
+  padding: var(--ui-pad);
+}
+
