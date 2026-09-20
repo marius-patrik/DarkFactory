@@ -12,7 +12,7 @@ owners: [tests-audit]
 
 Formatting is deterministic automation, not a review topic.
 
-The final #341 detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
+The canonical detection + capability-resolution contract determines the formatter/linter for each detected package/ecosystem. First-party TypeScript workspace packages use the canonical Biome configuration; other ecosystems use their declared/detected capability actions.
 
 Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
 
@@ -24,7 +24,7 @@ One detected quality contract keeps local mutation, graph verification and CI fr
 
 ## Enforcement
 
-#341, the hooks capability and generated CI consume the same action model.
+Local verification, the hooks capability and generated CI consume the same action model.
 
 ## Exceptions
 
