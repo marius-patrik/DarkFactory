@@ -14,24 +14,18 @@
 #let item = concept(
   key: "mcp",
   term: terminology,
-  heading: terms => [#finalized[#term(terms.mcp, marker: false, linked: false, emphasized: false) servery]],
-  theory_enabled: true,
-  theory_intro: none,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #accepted[Pro sjednocení rozhraní mezi AI aplikacemi a externími nástroji či datovými zdroji vznikl otevřený standard #term(terms.mcp, render: "both", detail-language: "cs", detail-style: "inline") @anthropic-mcp. Namísto vytváření proprietárních rozhraní pro každou službu definuje MCP standardizovaný způsob komunikace.]
 
 Základní vlastnosti protokolu MCP:
 - Protokolové rozhraní: Komunikace probíhá prostřednictvím standardu JSON-RPC (přes standardní vstup/výstup `stdio` nebo proud událostí `Server-Sent Events / SSE`).
 - Architektonické oddělení: Implementace nástrojů běží jako samostatný proces mimo jádro harnessu. MCP servery fungují jako znovupoužitelné komponenty, které lze snadno sdílet napříč různými agenty a projekty.
   ],
-  theory_summary: none,
-  theory_after: none,
-  theory_wrapper: unconfirmed,
-  practical_enabled: false,
-  practical_intro: none,
-  practical_body: none,
-  practical_summary: none,
-  practical_after: none,
-  practical_wrapper: none,
-  relations: ((type: "related", target: "plugins"),)
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "related", target: "plugins"),),
 )
