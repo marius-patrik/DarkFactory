@@ -34,4 +34,4 @@ The temporary bootstrap-authoring exception in `PLAN.md` changes who may author 
 
 ## Change control
 
-Concrete workflow/script owners may change during #359 cutover; this rule names behavior, not legacy file paths.
+Concrete workflow/script owners may change while #359 removes retired production owners; this rule names behavior, not historical file paths.
