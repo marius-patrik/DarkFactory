@@ -4,8 +4,6 @@
 #let terminology = define-term(
   id: "system-prompt",
   proper: translation(cs: "Systémový prompt", en: "System Prompt"),
-  explanation_cs: "Instrukční vrstva s vysokou prioritou, která vymezuje roli, chování, dostupné prostředky a provozní mantinely jazykového modelu nebo agenta.",
-  explanation_en: "A high-priority instruction layer that defines the role, behavior, available capabilities, and operating constraints of a language model or agent.",
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
 )
@@ -13,9 +11,15 @@
 #let item = concept(
   key: "system_prompt",
   term: terminology,
-  definition: none,
-  description: none,
-  summary: none,
+  definition: terms => [
+Systémový prompt je instrukční vrstva s vysokou prioritou, která vymezuje roli, chování, dostupné prostředky a provozní očekávání jazykového modelu nebo agenta.
+  ],
+  description: terms => [
+V agentním harnessu tvoří systémový prompt stabilní základ instrukčního kontextu. Může definovat roli agenta, pracovní postup, způsob používání nástrojů a pravidla komunikace, ale nemůže nahrazovat oprávnění, validaci nástrojů ani jiné deterministické mechanismy.
+  ],
+  summary: terms => [
+Systémový prompt je hlavní instrukční rozhraní harnessu k modelu; určuje očekávané chování, nikoli technicky vynucenou bezpečnostní hranici.
+  ],
   visual: none,
   examples: (),
   attachments: (),

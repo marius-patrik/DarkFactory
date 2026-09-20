@@ -8,8 +8,6 @@
   id: "harness",
   proper: translation(cs: "Agentní harness", en: "Agent Harness"),
   industry: translation(cs: "Agent Harness", en: "Agent Harness"),
-  explanation_cs: "Aplikační a orchestrační vrstva kolem modelu, která zajišťuje nástroje, kontext, stav, oprávnění a řízení prováděcího cyklu.",
-  explanation_en: "An application and orchestration layer around a model that provides tools, context, state, permissions, and execution-loop control.",
   citation: bib.deepseekharness2026,
   source: bib.darkfactory,
 )
