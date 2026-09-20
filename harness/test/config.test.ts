@@ -105,8 +105,20 @@ describe("local configuration and credential sources", () => {
 					classifier: "cheap/classifier@default",
 					candidates: ["acme/fast@work"],
 					models: {
-						"acme/fast": { tools: true, modalities: ["text", "image_gen"], quality: { review: 4 }, limitTier: "tight" },
+						"acme/fast": {
+							tools: true,
+							modalities: ["text", "image_gen"],
+							quality: { review: 4 },
+							limitTier: "tight",
+							capabilityTier: "light",
+						},
 					},
+					capabilityTiers: [
+						{ id: "light", match: ["acme/fast"] },
+						{ id: "deep", match: ["acme/deep"] },
+					],
+					defaultTier: "light",
+					difficultyTiers: { easy: "light", medium: "deep", hard: "deep" },
 					policies: [
 						{
 							id: "review",
@@ -121,12 +133,35 @@ describe("local configuration and credential sources", () => {
 		const config = await loadDfConfig(temp);
 		expect(config.router?.policies[0]?.id).toBe("review");
 		expect(config.router?.models?.["acme/fast"]?.modalities).toEqual(["text", "image_gen"]);
+		expect(config.router?.models?.["acme/fast"]?.capabilityTier).toBe("light");
+		expect(config.router?.capabilityTiers).toEqual([
+			{ id: "light", match: ["acme/fast"] },
+			{ id: "deep", match: ["acme/deep"] },
+		]);
+		expect(config.router?.defaultTier).toBe("light");
+		expect(config.router?.difficultyTiers).toEqual({ easy: "light", medium: "deep", hard: "deep" });
 		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
 			join(temp2, "config.df"),
 			JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
 		);
 		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
+	});
+
+	test("rejects invalid capability-tier mappings", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(
+			join(temp, "config.df"),
+			JSON.stringify({
+				router: {
+					policies: [],
+					capabilityTiers: [{ id: "light", match: ["acme/*"] }],
+					defaultTier: "missing",
+					difficultyTiers: { easy: "light", medium: "missing", hard: "light" },
+				},
+			}),
+		);
+		await expect(loadDfConfig(temp)).rejects.toThrow('Default capability tier "missing" is not declared');
 	});
 
 	test("throws error when both .darkfactory/config.df and root config.df exist simultaneously", async () => {
