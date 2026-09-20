@@ -3,7 +3,8 @@
 The manuscript structure is derived from the concept folder tree.
 
 - A folder is the only source of section hierarchy.
-- A folder may designate one canonical concept as its section concept. Its heading becomes the folder section heading.
+- A folder may designate one canonical concept as its section concept. The folder section heading is rendered from that concept's canonical term name; manual concept heading renderers do not determine section titles.
+- Each rendered folder section emits the section concept's canonical definition at section root, followed by an `Úvod` subsection sourced from the active theory/practical intro variable.
 - Concepts stored in the same folder render as continuous content without automatic subsection headings.
 - Nested folders create nested sections to arbitrary depth.
 - Semantic relations never create sections. They are limited to dependency and related relationships.

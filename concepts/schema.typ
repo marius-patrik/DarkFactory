@@ -1,4 +1,4 @@
-#import "../templates/common.typ": finalized, accepted, term
+#import "../templates/common.typ": finalized, term, translation, render-translation
 
 // Semantic relations never determine manuscript containment.
 // Folder manifests are the sole source of section hierarchy.
@@ -28,7 +28,6 @@
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(term != none, message: "concept requires canonical terminology")
-  assert(heading != none, message: "concept requires a heading renderer")
   (
     kind: "concept",
     key: key,
@@ -211,13 +210,43 @@
   section-content or direct-content or child-content
 }
 
+#let render-section-title(item) = term(
+  item.term,
+  render: "term",
+  language: "auto",
+  register: false,
+  linked: false,
+  marker: false,
+  emphasized: false,
+)
+
+#let render-section-definition(item) = {
+  let value = item.term
+  if value.explanation_cs == none and value.explanation_en == none {
+    none
+  } else {
+    render-translation(
+      translation(cs: value.explanation_cs, en: value.explanation_en),
+      language: "auto",
+      school-both: false,
+      labels: false,
+      stacked: false,
+      separator: "bar",
+      order: "cs-en",
+    )
+  }
+}
+
 #let render-folder(node, terms, graph, mode, level: 2) = {
   if folder-has-content(node, mode) {
     let output = []
     let child-level = level
 
     if node.section != none {
-      output += [#heading(level: level)[#(node.section.heading)(terms)]]
+      // Folder structure owns section hierarchy. The designated section concept
+      // contributes only its canonical term name; legacy manual heading renderers
+      // must never determine visible section titles.
+      output += [#heading(level: level)[#finalized[#render-section-title(node.section)]]]
       child-level = level + 1
 
       let intro = if mode == "theory" { node.section.theory_intro } else { node.section.practical_intro }
@@ -226,20 +255,22 @@
       let after = if mode == "theory" { node.section.theory_after } else { node.section.practical_after }
       let wrapper = if mode == "theory" { node.section.theory_wrapper } else { node.section.practical_wrapper }
 
-      let intro-content = if intro != none {
-        intro(terms)
-      } else if body != none {
-        body(terms)
-      } else {
-        [#accepted[#term(node.section.term, render: "both", detail-language: "cs", detail-style: "inline").]]
+      // The section's root content is its canonical definition.
+      let definition = render-section-definition(node.section)
+      if definition != none {
+        output += definition
       }
 
-      let uvod-heading = heading(level: child-level)[#finalized[Úvod]]
-      let uvod-body = if wrapper == none { intro-content } else { wrapper(intro-content) }
-      output += uvod-heading
-      output += uvod-body
+      // Every folder section exposes an Úvod subsection sourced strictly from
+      // the concept intro variable for the active manuscript mode.
+      output += heading(level: child-level)[#finalized[Úvod]]
+      if intro != none {
+        let intro-content = intro(terms)
+        let uvod-body = if wrapper == none { intro-content } else { wrapper(intro-content) }
+        output += uvod-body
+      }
 
-      if intro != none and body != none {
+      if body != none {
         let body-content = if wrapper == none { body(terms) } else { wrapper(body(terms)) }
         output += body-content
       }
