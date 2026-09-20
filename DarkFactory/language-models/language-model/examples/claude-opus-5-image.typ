@@ -5,6 +5,6 @@
   key: "claude_opus_5_image", term: terminology,
   definition: terms => [Oficiální produktový vizuál modelu Claude Opus 5.],
   description: terms => [Obrazový podklad je převzat z oficiálního oznámení společnosti Anthropic.],
-  visual: terms => [#figure(image("/DarkFactory/img/external/claude-opus-5.webp", width: 82%), caption: [Claude Opus 5. Zdroj: Anthropic.])],
+  visual: terms => [#figure(image("/DarkFactory/img/external/claude-opus-5.png", width: 82%), caption: [Claude Opus 5. Zdroj: Anthropic.])],
   summary: terms => [Vizuální identifikace příkladu jazykového modelu.], citations: (bib.anthropic_opus5,),
 )
