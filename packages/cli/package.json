@@ -1,14 +1,14 @@
 {
   "name": "@darkfactory/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "sideEffects": false,
-  "exports": {
-    ".": "./src/index.ts"
+  "bin": {
+    "df": "./dist/cli.js"
   },
-  "files": [
-    "src"
-  ],
+  "scripts": {
+    "build": "bun build ./src/bin.ts --outfile ./dist/cli.js --target node --external 'node:*'",
+    "prepublishOnly": "bun run build"
+  },
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",

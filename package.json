@@ -11,6 +11,7 @@
     "test": "bun run --cwd harness test",
     "typecheck": "bun run --cwd harness typecheck",
     "check": "bun run --cwd harness check",
-    "docs": "bun scripts/build-docs.ts"
+    "docs": "bun scripts/build-docs.ts",
+    "build:cli": "bun build packages/cli/src/bin.ts --outfile packages/cli/dist/cli.js --target node --external 'node:*'"
   }
 }
