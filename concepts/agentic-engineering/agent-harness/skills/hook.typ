@@ -5,8 +5,6 @@
     id: "hook",
     proper: translation(cs: "Událostní záchytný bod", en: "Event Hook"),
     industry: translation(cs: "Hook", en: "Hook"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.",
     explanation_en: "A defined lifecycle or event point to which custom deterministic logic can be attached before, after, or in place of standard system behavior.",
     citation: bib.deepseekharness2026,

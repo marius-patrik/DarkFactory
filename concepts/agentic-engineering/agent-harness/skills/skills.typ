@@ -5,8 +5,6 @@
     id: "skills",
     proper: translation(cs: "Dovednosti", en: "Skills"),
     industry: translation(cs: "Skills", en: "Skills"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Znovupoužitelné modulární balíčky instrukcí (typicky definovaných v souboru SKILL.md), procedurálních pravidel a volitelných pomocných skriptů či zdrojů, které harness dynamicky načítá do kontextu agenta podle povahy řešeného úkolu.",
     explanation_en: "Reusable modular packages of instructions (typically defined in a SKILL.md file), procedural rules, and optional helper scripts or resources that a harness dynamically loads into an agent's context for a particular class of task.",
     citation: bib.anthropic2024tooluse,

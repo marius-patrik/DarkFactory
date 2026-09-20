@@ -5,8 +5,6 @@
     id: "graph-engineering",
     proper: translation(cs: "Inženýrství pracovních grafů", en: "Workflow-graph Engineering"),
     industry: translation(cs: "Graph Engineering", en: "Graph Engineering"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Návrh agentních nebo automatizačních pracovních postupů jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.",
     explanation_en: "The design of agentic or automation workflows as explicit graphs of nodes, dependencies, and transitions rather than as one unconstrained loop.",
     citation: bib.wu2023autogen,

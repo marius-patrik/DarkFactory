@@ -5,8 +5,6 @@
     id: "dag",
     proper: translation(cs: "Orientovaný acyklický graf", en: "Directed Acyclic Graph"),
     industry: translation(cs: "DAG", en: "DAG"),
-    default-name-type: "both",
-    keyword-name-type: "both",
     explanation_cs: "Orientovaný graf bez orientovaného cyklu. V pracovních postupech umožňuje explicitně vyjádřit závislosti mezi kroky a pořadí, které z nich vyplývá.",
     explanation_en: "A directed graph containing no directed cycle. In workflows it can explicitly represent dependencies among steps and the ordering implied by those dependencies.",
     citation: bib.wu2023autogen,
