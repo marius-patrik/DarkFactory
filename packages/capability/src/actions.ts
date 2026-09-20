@@ -14,13 +14,13 @@ export interface RepositoryActionEvidence {
 	packages: readonly CapabilityPackageContext[];
 	repoDf: {
 		environment?: {
-			testing?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			linting?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			formatting?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			docs_check?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			docs_extract?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			setup?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
-			release?: Readonly<Record<string, { command?: string; enabled?: boolean }>>;
+			testing?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			linting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			formatting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			docs_check?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			docs_extract?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			setup?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			release?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 		};
 	};
 }
@@ -72,7 +72,7 @@ const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>([
 function overrideGroup(
 	evidence: RepositoryActionEvidence,
 	kind: CapabilityActionKind,
-): Readonly<Record<string, { command?: string; enabled?: boolean }>> | undefined {
+): Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>> | undefined {
 	const environment = evidence.repoDf.environment;
 	if (!environment) return undefined;
 	switch (kind) {
@@ -90,7 +90,7 @@ function explicitOverride(
 	evidence: RepositoryActionEvidence,
 	pkg: CapabilityPackageContext,
 	kind: CapabilityActionKind,
-): { command?: string; enabled?: boolean } | undefined {
+): { command?: string; enabled?: boolean; versions?: readonly string[] } | undefined {
 	const group = overrideGroup(evidence, kind);
 	return group?.[pkg.packageManager] ?? group?.[pkg.ecosystem];
 }
@@ -134,6 +134,7 @@ function resolveOne(
 			return {
 				kind, packageId: pkg.id, cwd: pkg.path, supported: true,
 				description: `${kind} declared in repo.df`, command: override.command, source: "repo.df",
+				metadata: override.versions ? { versions: override.versions } : undefined,
 			};
 		}
 	}
@@ -206,25 +207,50 @@ export function actionsForTouchedFiles(
 	return result;
 }
 
-/** Deterministic matrix used by CI generators and required-check synchronization. */
-export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly {
+/** One executable CI quality matrix entry. */
+export interface QualityMatrixEntry {
 	id: string;
 	packageId: string;
-	kind: CapabilityActionKind;
-	command?: string;
+	kind: "test" | "lint" | "format_check" | "docs_check";
+	command: string;
 	cwd: string;
-	supported: boolean;
-}[] {
-	return resolution.packages.flatMap(({ package: pkg, actions }) =>
-		(["test", "lint", "format_check", "docs_check"] as const).map((kind) => ({
-			id: `${pkg.id}:${kind}`,
-			packageId: pkg.id,
-			kind,
-			...(actions[kind].command ? { command: actions[kind].command } : {}),
-			cwd: actions[kind].cwd,
-			supported: actions[kind].supported,
-		})),
-	);
+	ecosystem: string;
+	packageManager: string;
+	version?: string;
+	setupCommand?: string;
+	setupCwd?: string;
+}
+
+/** Deterministic executable matrix consumed by CI and required-check synchronization. */
+export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly QualityMatrixEntry[] {
+	const result: QualityMatrixEntry[] = [];
+	for (const { package: pkg, actions } of resolution.packages) {
+		const setup = actions.setup;
+		for (const kind of ["test", "lint", "format_check", "docs_check"] as const) {
+			const action = actions[kind];
+			if (!action.supported || !action.command) continue;
+			const rawVersions = action.metadata?.versions;
+			const versions = Array.isArray(rawVersions)
+				? rawVersions.filter((value): value is string => typeof value === "string" && value.length > 0)
+				: [];
+			const values = versions.length > 0 ? versions : [undefined];
+			for (const version of values) {
+				result.push({
+					id: `${pkg.id}:${kind}${version ? `@${version}` : ""}`,
+					packageId: pkg.id,
+					kind,
+					command: action.command,
+					cwd: action.cwd,
+					ecosystem: pkg.ecosystem,
+					packageManager: pkg.packageManager,
+					...(version ? { version } : {}),
+					...(setup.supported && setup.command ? { setupCommand: setup.command } : {}),
+					...(setup.supported && setup.command ? { setupCwd: pkg.packageManagerRoot } : {}),
+				});
+			}
+		}
+	}
+	return result;
 }
 
 /** Loads applicable capability definitions and resolves the canonical repository action result. */
