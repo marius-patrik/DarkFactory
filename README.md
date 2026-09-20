@@ -1,4 +1,4 @@
-# Odborná práce — Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj
+# Odborná práce — DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství
 
 > Odborná práce na Gymnáziu J. K. Tyla. Autor: **Patrik Marius**, 4.D.
 > Vedoucí práce: **Michal Dočekal**. Rok: **2026**.

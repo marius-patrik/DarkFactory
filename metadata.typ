@@ -6,10 +6,10 @@
 
 #let meta = (
   // Oficiální školní varianta.
-  nazev: "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj",
+  nazev: "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství",
   // Volitelné jazykové projekce používané při alternativní kompilaci.
-  nazev-cs: "Agentické inženýrství a návrh řídicího systému pro automatizovaný softwarový vývoj",
-  nazev-en: "Agentic Engineering and Harness Design for Automated Software Development",
+  nazev-cs: "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství",
+  nazev-en: "DarkFactory: Artificial Intelligence in Practice – Agentic and Harness Engineering",
   podnazev: none,
 
   autor: "Patrik Marius",

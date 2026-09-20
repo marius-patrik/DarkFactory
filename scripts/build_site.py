@@ -62,7 +62,7 @@ VARIANTS = (
 
 DEFAULT_TEMPLATE = "gjkt-odborna-prace"
 PDFJS_VERSION = "6.3.289"
-WORK_TITLE = "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj"
+WORK_TITLE = "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství"
 OUT = Path("out")
 SITE = Path("site")
 WEB_DIST = Path("web/dist")

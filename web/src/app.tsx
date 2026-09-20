@@ -32,7 +32,7 @@ import {
 import { CompiledArtifactView, type ArtifactFormat } from "./compiled-artifact";
 
 const DEFAULT_WORK_TITLE =
-  "Agentické inženýrství a design harnessu pro automatizovaný softwarový vývoj";
+  "DarkFactory: Umělá inteligence v praxi – Agentické a harnessové inženýrství";
 
 type ArtifactSet = {
   pdf: string;
