@@ -1,8 +1,4 @@
-#import "../templates/registry.typ": note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note
+#import "../concepts/index.typ": render-conclusion
 
-= #finalized[Závěr]
-
-#blue-note[
-  Poznámka k vypracování závěru:
-  Závěr práce bude sepsán jako poslední krok po definitivním ucelení teoretických východisek agentického inženýrství a detailní architektury agent harnessu. Tato závěrečná kapitola syntetizuje zjištění o deterministickém řízení autonomních agentů a zhodnotí formulované principy a výzkumné otázky bez vazby na dřívější ad-hoc testovací repozitáře.
-]
+// Compatibility projection only. Canonical content lives in concepts/manuscript/.
+#render-conclusion()

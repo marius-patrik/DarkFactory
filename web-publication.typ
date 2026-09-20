@@ -1,6 +1,6 @@
 #import "metadata.typ": meta
 #import "templates/common.typ": review-state, profile-state, finalized, ui-label, translation, translation-heading, render-translation, render-keywords
-#import "concepts/index.typ": render-theory, render-practical
+#import "concepts/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion
 
 // Semantic publication entrypoint for Typst's HTML target.
 // It consumes the same manuscript/review/profile state as the PDF build while
@@ -22,9 +22,9 @@
 
 #let publication-title-display = if profile-mode in ("school", "cs", "merged") {
   [
-    DarkFactory:#linebreak()
-    Umělá inteligence v praxi -#linebreak()
-    Agentické a harnessové inženýrství
+    DarkFactory#linebreak()
+    Agentické a harnessové inženýrství:#linebreak()
+    Umělá inteligence v praxi
   ]
 } else {
   publication-title
@@ -33,6 +33,7 @@
 #set document(title: publication-title, author: meta.autor)
 #set text(lang: "cs")
 #set heading(numbering: "1.1")
+#show cite: it => super(it)
 
 #heading(level: 1, numbering: none)[#publication-title-display]
 #par[
@@ -55,11 +56,11 @@
 
 #outline(title: ui-label([Obsah], [Contents]), depth: 6)
 
-#include "kapitoly/01-uvod.typ"
+#render-introduction()
 #render-theory()
 #render-practical()
-#include "kapitoly/04-vysledky.typ"
-#include "kapitoly/05-zaver.typ"
+#render-results()
+#render-conclusion()
 
 #bibliography(
   "/bib/references.bib",

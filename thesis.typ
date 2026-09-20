@@ -1,6 +1,6 @@
 #import "metadata.typ": meta
 #import "templates/registry.typ": default-template, template-for, appendices-for
-#import "concepts/index.typ": render-theory, render-practical
+#import "concepts/index.typ": render-introduction, render-theory, render-practical, render-results, render-conclusion
 
 // Jediný zdroj obsahu práce. Konkrétní dokumentová šablona je zvolena
 // samostatně, takže stejný rukopis lze kompilovat více šablonami.
@@ -19,11 +19,11 @@
     profile: profile,
     koncept: none,
   )[
-    #include "kapitoly/01-uvod.typ"
+    #render-introduction()
     #render-theory()
     #render-practical()
-    #include "kapitoly/04-vysledky.typ"
-    #include "kapitoly/05-zaver.typ"
+    #render-results()
+    #render-conclusion()
 
     #appendices[
       #include "kapitoly/06-prilohy.typ"
