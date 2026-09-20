@@ -43,11 +43,11 @@ RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v
 # The harness source ships with the pipeline checkout (`harness/`, landed separately), so it is
 # copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
 # relative to the source tree, which the wrapper below executes in place.
-COPY package.json bun.lock /opt/darkfactory/
+COPY package.json /opt/darkfactory/
 COPY harness/ /opt/darkfactory/harness/
 COPY packages/ /opt/darkfactory/packages/
 COPY capabilities/ /opt/darkfactory/capabilities/
-RUN bun install --frozen-lockfile --cwd /opt/darkfactory
+RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
 RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
     && chmod +x /usr/local/bin/df \
     && df --help >/dev/null
