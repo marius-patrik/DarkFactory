@@ -6,6 +6,21 @@ type TokenSource = string | (() => string | Promise<string>);
 type Sleep = (milliseconds: number) => Promise<void>;
 interface CacheEntry { etag: string; value: unknown; }
 
+/**
+ * Configuration options for {@link GitHubClient}.
+ *
+ * @property token - Token source; a static token string or a function returning a token.
+ * @property fetch - Optional fetch implementation; defaults to global fetch.
+ * @property apiBase - Base URL for the GitHub REST API; defaults to "https://api.github.com".
+ * @property graphqlUrl - URL for GraphQL endpoint; defaults to `${apiBase}/graphql`.
+ * @property timeoutMs - Optional request timeout in milliseconds.
+ * @property maxRetries - Maximum number of retry attempts for transient failures.
+ * @property random - Function returning a random number for jitter calculation.
+ * @property sleep - Async sleep function; defaults to Bun.sleep.
+ * @property now - Function returning current date; defaults to `new Date()`.
+ * @property userAgent - User‑Agent string sent with requests.
+ * @property onAuthenticationFailure - Callback invoked when authentication errors are encountered.
+ */
 export interface GitHubClientOptions {
   token: TokenSource;
   fetch?: GitHubFetch;
@@ -20,6 +35,11 @@ export interface GitHubClientOptions {
   onAuthenticationFailure?: () => void;
 }
 
+/**
+ * Client for interacting with the GitHub REST and GraphQL APIs.
+ *
+ * Handles authentication, rate‑limit tracking, request caching, and automatic retries.
+ */
 export class GitHubClient {
   readonly #token: TokenSource;
   readonly #transport: FetchTransport;
