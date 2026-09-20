@@ -1,12 +1,8 @@
-#import "thesis.typ": thesis
-#import "templates/registry.typ": default-template
+#import "books.typ": default-book, default-template-for, render-pdf
 
-// Jediný kanonický vstup kompilace.
-// template: název dokumentové šablony z templates/registry.typ
-// review: false/true
-// profile: school/cs/en/merged
+#let book-mode = sys.inputs.at("book", default: default-book)
 #let review-mode = sys.inputs.at("review", default: "false") in ("true", "1", "yes")
-#let template-mode = sys.inputs.at("template", default: default-template)
+#let template-mode = sys.inputs.at("template", default: default-template-for(book-mode))
 #let requested-profile = sys.inputs.at("profile", default: none)
 #let legacy-language = sys.inputs.at("language", default: none)
 
@@ -20,7 +16,8 @@
   "school"
 }
 
-#thesis(
+#render-pdf(
+  book-mode,
   review: review-mode,
   profile: profile-mode,
   template-name: template-mode,
