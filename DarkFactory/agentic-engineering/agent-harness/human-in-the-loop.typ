@@ -13,7 +13,7 @@ definition: terms => [
 Zapojení člověka do smyčky (HITL) je návrhový vzor, v němž lidský operátor zůstává součástí rozhodovacího procesu prostřednictvím explicitních schvalovacích bran, zejména před významnými nebo nevratnými operacemi.
   ],
   description: terms => [
-Základním principem navrženého řešení není nekritická plná autonomie, nýbrž #diff[efektivní kooperace člověka a stroje][efektivní kooperace člověka a stroje (#term(terms.human_in_the_loop, language: "en", marker: false, linked: false, emphasized: false) @mosqueira2023human)]. Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
+Základním principem navrženého řešení není nekritická plná autonomie, nýbrž efektivní kooperace člověka a stroje (#term(terms.human_in_the_loop, language: "en", marker: false, linked: false, emphasized: false) @mosqueira2023human). Autonomnímu systému náleží mechanické a rutinní úkony, zatímco klíčová architektonická a nevratná rozhodnutí zůstávají plně pod kontrolou vývojáře.
 
 Řízení lidského dohledu staví na těchto pilířích:
 - Lidské schvalovací brány (_Human Gates_): Formální procesní uzly, v nichž se automatický běh pozastaví a vyčká na autorizaci operátora:
