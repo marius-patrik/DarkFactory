@@ -28,6 +28,15 @@
 #let merkel2014docker = <merkel2014docker>
 #let kinsman2021actions = <kinsman2021actions>
 #let dabbish2012github = <dabbish2012github>
+#let microsoft2026aidiffusion = <microsoft2026aidiffusion>
+#let microsoft2025aiadoption = <microsoft2025aiadoption>
+#let openai_chatgpt_macos = <openai_chatgpt_macos>
+#let openai_codex_app = <openai_codex_app>
+#let anthropic_claude_code = <anthropic_claude_code>
+#let anthropic_claude_desktop = <anthropic_claude_desktop>
+#let openai_gpt56 = <openai_gpt56>
+#let anthropic_opus5 = <anthropic_opus5>
+#let deepseek_v41_flash = <deepseek_v41_flash>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -57,4 +66,13 @@
   merkel2014docker: merkel2014docker,
   kinsman2021actions: kinsman2021actions,
   dabbish2012github: dabbish2012github,
+  microsoft2026aidiffusion: microsoft2026aidiffusion,
+  microsoft2025aiadoption: microsoft2025aiadoption,
+  openai_chatgpt_macos: openai_chatgpt_macos,
+  openai_codex_app: openai_codex_app,
+  anthropic_claude_code: anthropic_claude_code,
+  anthropic_claude_desktop: anthropic_claude_desktop,
+  openai_gpt56: openai_gpt56,
+  anthropic_opus5: anthropic_opus5,
+  deepseek_v41_flash: deepseek_v41_flash,
 )
