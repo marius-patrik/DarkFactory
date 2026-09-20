@@ -79,16 +79,17 @@ Recovery branches are temporary implementation inputs, not archives.
 
 ## 5. Core production-engine path
 
-The hard dependency spine to #359 is:
+The hard integration spine to #359 is:
 
 ```text
 #329 natural-stop result capture ─┐
-                                  ├─> #358 graph-native production orchestration
-#341 detected quality/actions ────┘              ↓
-                                             #317 truthful branch update/effects
-                                                ↓
-                                             #359 production engine complete
+                                  ├─> #358 graph-native production orchestration ─┐
+#341 detected quality/actions ────┘                                               │
+                                                                                   ├─> #359 production engine complete
+#317 truthful mutation/branch-repair work ─────────────────────────────────────────┘
 ```
+
+#329 and #341 run in parallel. #358 recovery discovery, handler inventory and non-conflicting scaffolding may proceed before they finish, but final integration must consume their shipped interfaces. #317 also proceeds in parallel wherever it can use already-stable git/GitHub/evidence primitives; only its graph re-entry integration waits for the relevant #358 surface.
 
 ### #329 — result capture
 
@@ -105,6 +106,8 @@ Wire real production handlers, durable graph execution/resume and Request lifecy
 ### #317 — truthful branch updates
 
 Finish deterministic branch-update/conflict handling and ensure text-only results cannot claim code mutations.
+
+Do not serialize all of #317 behind #358. Implement mutation-claim validation, deterministic update primitives and tests as soon as their current owners are stable; connect them to the final graph path when #358 exposes that interface.
 
 ### #359 — production engine completion
 
@@ -146,21 +149,25 @@ The following work should proceed before #359 whenever its interfaces are stable
 
 ### Documentation and web
 
-PR #577 is the active documentation convergence gate. It must land the native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path, deterministic README projection and current-only documentation with no alternate documentation runtime.
+The native `docs.df` → `@darkfactory/docs` content/API graph → `@darkfactory/web` renderer path is landed.
 
-After that gate:
+Continue in parallel:
 - #334 — keep strict TSDoc/API coverage complete as final public exports are added.
-- #336 — enforce deterministic docs-impact updates for PRD and other normative surfaces.
-- #425 — finish the broader GitHub-backed operator application on the same `@darkfactory/web` package.
+- #336 — finish deterministic docs-impact enforcement using #341's final detection/diff contract rather than another detector.
+- #425 — finish the broader GitHub-backed operator application on the existing `@darkfactory/web` package.
 - #390 — integrate remaining operator/dashboard surfaces into that shared application.
 
 Documentation work has one compiler, one semantic graph and one renderer.
 
-## 7. Final release
+## 7. Release work
 
-### #360 — publish and install df
+### #360 — prepare continuously, publish once
 
-Publish the actual supported DarkFactory release directly.
+Release engineering is not an end-only phase. Implement every stable piece of #360 in parallel with product completion: package manifests, lockstep versioning, artifact layout, installers/updaters, native builds, web-bundle packaging, checksums/provenance and clean-directory verification.
+
+Do not wait for #359 to begin release work that depends only on already-stable package/ABI/install contracts. Do not publish an intermediate compatibility or pre-release artifact.
+
+When the required final product surface is complete, publish the actual supported DarkFactory release directly.
 
 Acceptance includes:
 
@@ -208,12 +215,13 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 Highest-value concurrent work:
 
-1. #329 and #341 in parallel;
-2. #358 as soon as their required interfaces are available;
-3. #317 then #359 on the core-engine spine;
-4. land PR #577; continue #334/#336/#425/#390 alongside #422/#248/#423, #339/#384/#385/#386/#388 and #403/#251/#332/#252 according to their actual dependencies;
-5. #360 final release;
-6. #361 fleet acceptance;
-7. #68 final product acceptance.
+1. Run #329 and #341 in parallel while locating/reconciling the F30-4 recovery delta for #358.
+2. Advance #358 immediately on discovery, handler inventory and stable scaffolding; integrate #329/#341 as soon as they land.
+3. Advance #317 in parallel on mutation-evidence validation and deterministic branch-update primitives; only graph re-entry waits for the relevant #358 interface.
+4. In parallel, continue #422/#248/#423, #339/#384/#385/#386/#388, #403/#251/#332/#252 and #334/#336/#425/#390 according to their real interface dependencies.
+5. Run #360 release engineering continuously for every stable surface. Final publication happens once; there is no compatibility release, canary, migration release or staged cutover.
+6. Delete obsolete Python/alternate owners incrementally as soon as their final TypeScript/package/capability owner covers the responsibility; #359 verifies completion rather than deferring all deletion until the end.
+7. Complete #359 as soon as #329/#341/#358/#317 satisfy the core lifecycle.
+8. Publish the final #360 release, run #361 fleet acceptance, then close #68.
 
-No work should wait merely to preserve an implementation sequence when its final interfaces are already stable.
+No work should wait merely to preserve an implementation sequence when its final interfaces are already stable. Recovery branches are deleted immediately after terminal disposition is recorded.
