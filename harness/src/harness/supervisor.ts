@@ -918,6 +918,7 @@ export async function createFailoverSupervisor(options: CreateSupervisorOptions)
 			taskEstimate: options.taskEstimate,
 			outcomeStore: options.outcomeStore,
 			taskKind: options.taskKind,
+			...(options.capabilityEscalation ? { capabilityEscalation: options.capabilityEscalation } : {}),
 			...(options.quota ? { quota: options.quota } : {}),
 		},
 		activeIndex,
