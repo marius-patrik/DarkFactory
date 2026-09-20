@@ -62,23 +62,26 @@ VARIANTS = (
     },
 )
 
-DEFAULT_TEMPLATE = "gjkt-odborna-prace"
 PDFJS_VERSION = "6.3.289"
-WORK_TITLE = "DarkFactory: Umělá inteligence v praxi - Agentické a harnessové inženýrství"
 OUT = Path("out")
 SITE = Path("site")
 WEB_DIST = Path("web/dist")
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--book", default="DarkFactory")
+parser.add_argument("--default-template", default="gjkt-odborna-prace")
 parser.add_argument(
     "--allow-missing",
     action="store_true",
     help="build the React site/manifest even when compiled publication artifacts are absent",
 )
 args = parser.parse_args()
+BOOK_ROOT = Path(args.book)
+DEFAULT_TEMPLATE = args.default_template
+WORK_TITLE = args.book
 
 template_names = sorted(
-    path.parent.name for path in Path("templates").glob("*/template.typ")
+    path.parent.name for path in (BOOK_ROOT / "templates").glob("*/template.typ")
 )
 if not template_names:
     raise SystemExit("no templates discovered")
@@ -239,6 +242,7 @@ for template_name in template_names:
 
 manifest = {
     "commit": os.environ.get("GITHUB_SHA", ""),
+    "book": args.book,
     "work_title": WORK_TITLE,
     "default_template": DEFAULT_TEMPLATE,
     "templates": template_names,
@@ -295,6 +299,6 @@ if not static_assets.is_dir() or not any(path.is_file() for path in static_asset
     raise SystemExit("Rsbuild output contains no bundled static assets")
 
 print(
-    f"ok: built React Pages app for {len(template_names)} templates x "
+    f"ok: built React Pages app for {args.book}: {len(template_names)} templates x "
     f"{len(VARIANTS) * 2 * 3} publication artifacts (PDF/Markdown/HTML) using PDF.js {PDFJS_VERSION}"
 )
