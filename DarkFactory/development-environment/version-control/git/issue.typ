@@ -14,11 +14,16 @@
 #let item = concept(
   key: "github_issue",
   term: terminology,
-  theory_enabled: true,
-  theory_body: terms => [
+  definition: none,
+  description: terms => [
 #unconfirmed[
 V agentním vývojovém procesu může Issue fungovat jako explicitní vstupní specifikace úlohy. Odděluje zadání od samotné implementace a poskytuje stabilní referenční bod pro plán, pull request i následnou revizi.
 ]
   ],
-  relations: ((type: "related", target: "github"), (type: "related", target: "pull_request"))
+  summary: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+  relations: ((type: "related", target: "github"), (type: "related", target: "pull_request")),
 )
