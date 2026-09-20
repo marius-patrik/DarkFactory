@@ -71,8 +71,9 @@ async function scanDirectory(
 ): Promise<void> {
 	const entries = await readdir(currentDir, { withFileTypes: true });
 	const relPath = relative(rootDir, currentDir) || ".";
+	const normalizedRelPath = relPath.replace(/\\/g, "/");
 
-	if (ignoredDirs.has(relPath) || relPath.split("/").some((part) => ignoredDirs.has(part))) {
+	if (ignoredDirs.has(normalizedRelPath) || normalizedRelPath.split("/").some((part) => ignoredDirs.has(part))) {
 		return;
 	}
 
@@ -80,30 +81,34 @@ async function scanDirectory(
 	let hasPackageJson = false;
 	let hasPyprojectToml = false;
 	let hasRequirementsTxt = false;
+	let hasCargoToml = false;
+	let hasGoMod = false;
 
 	for (const entry of entries) {
 		if (entry.isFile()) {
 			if (entry.name === "package.json") hasPackageJson = true;
 			else if (entry.name === "pyproject.toml") hasPyprojectToml = true;
 			else if (entry.name === "requirements.txt") hasRequirementsTxt = true;
+			else if (entry.name === "Cargo.toml") hasCargoToml = true;
+			else if (entry.name === "go.mod") hasGoMod = true;
 		}
 	}
 
 	if (hasPackageJson) {
-		let name = relPath === "." ? "root" : relPath.split("/").pop()!;
+		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
 		try {
 			const content = await readFile(join(currentDir, "package.json"), "utf8");
 			const parsed = JSON.parse(content) as { name?: string };
 			if (parsed.name) name = parsed.name;
 		} catch {}
 		packages.push({
-			path: relPath,
+			path: normalizedRelPath,
 			ecosystem: "bun",
 			name,
 			manifest: "package.json",
 		});
 	} else if (hasPyprojectToml || hasRequirementsTxt) {
-		let name = relPath === "." ? "root" : relPath.split("/").pop()!;
+		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
 		if (hasPyprojectToml) {
 			try {
 				const content = await readFile(join(currentDir, "pyproject.toml"), "utf8");
@@ -112,10 +117,38 @@ async function scanDirectory(
 			} catch {}
 		}
 		packages.push({
-			path: relPath,
+			path: normalizedRelPath,
 			ecosystem: "python",
 			name,
 			manifest: hasPyprojectToml ? "pyproject.toml" : "requirements.txt",
+		});
+	} else if (hasCargoToml) {
+		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
+		try {
+			const content = await readFile(join(currentDir, "Cargo.toml"), "utf8");
+			const match = content.match(/^\s*name\s*=\s*['"]([^'"]+)['"]/m);
+			if (match?.[1]) name = match[1];
+		} catch {}
+		packages.push({
+			path: normalizedRelPath,
+			ecosystem: "rust",
+			name,
+			manifest: "Cargo.toml",
+		});
+	} else if (hasGoMod) {
+		let name = normalizedRelPath === "." ? "root" : normalizedRelPath.split("/").pop()!;
+		try {
+			const content = await readFile(join(currentDir, "go.mod"), "utf8");
+			const match = content.match(/^\s*module\s+([^\s\n\r]+)/m);
+			if (match?.[1]) {
+				name = match[1].split("/").pop()!;
+			}
+		} catch {}
+		packages.push({
+			path: normalizedRelPath,
+			ecosystem: "go",
+			name,
+			manifest: "go.mod",
 		});
 	}
 

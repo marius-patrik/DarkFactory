@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { resolveRepositoryActions } from "../src/evidence/capabilities";
-import { resolve } from "node:path";
-import { mkdir, writeFile, rm } from "node:fs/promises";
-import { mkdtemp } from "node:os";
+import { resolve, join } from "node:path";
+import { mkdir, writeFile, rm, mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 describe("evidence resolution", () => {
 	test("resolves actions for a detected Bun/TypeScript package", async () => {
-		const temp = await mkdtemp("evidence-test-");
+		const temp = await mkdtemp(join(tmpdir(), "evidence-test-"));
 		try {
 			await mkdir(resolve(temp, "packages/my-lib"), { recursive: true });
 			await writeFile(
@@ -24,7 +24,7 @@ describe("evidence resolution", () => {
 	});
 
 	test("resolves Python ecosystem defaults", async () => {
-		const temp = await mkdtemp("evidence-test-");
+		const temp = await mkdtemp(join(tmpdir(), "evidence-test-"));
 		try {
 			await mkdir(resolve(temp, "packages/my-py"), { recursive: true });
 			await writeFile(
@@ -41,7 +41,7 @@ describe("evidence resolution", () => {
 	});
 
 	test("applies repo.df environment overrides", async () => {
-		const temp = await mkdtemp("evidence-test-");
+		const temp = await mkdtemp(join(tmpdir(), "evidence-test-"));
 		try {
 			await mkdir(resolve(temp, ".darkfactory"), { recursive: true });
 			await writeFile(

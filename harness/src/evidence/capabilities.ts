@@ -54,6 +54,7 @@ const DEFAULT_ECOSYSTEM_ACTIONS: Record<string, Partial<Record<keyof PackageActi
 		format_check: (path) => path === "." ? "black --check ." : `black --check ${path}`,
 		docs_check: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
 		docs_extract: (path) => path === "." ? "sphinx-build -M html docs/source docs/build" : `sphinx-build -M html ${join(path, "docs/source")} ${join(path, "docs/build")}`,
+		setup: (path) => path === "." ? "pip install -r requirements.txt" : `pip install -r ${join(path, "requirements.txt")}`,
 	},
 };
 
@@ -116,7 +117,12 @@ export async function resolveRepositoryActions(
 					supported = true;
 					description = capAction.description ?? `Capability-contributed ${actionKey}`;
 					if (typeof capAction.command === "function") {
-						command = (capAction.command as (p: string) => string)(pkg.path);
+						try {
+							command = (capAction.command as (p: string) => string)(pkg.path);
+						} catch (error: any) {
+							console.error(`Failed to resolve command from capability action: ${error.message}`);
+							command = "echo 'Failed to resolve capability command'";
+						}
 					} else {
 						command = capAction.command;
 					}
