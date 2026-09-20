@@ -47,5 +47,5 @@ None.
 
 ## Change control
 
-Exact nodes, edges, and stage sequence are owned by `workflow-graph` (issue #68); this rule holds
-the invariants and links to the graph.
+Exact nodes, edges, and stage sequence are owned by the declarable workflow graph; this rule holds
+the invariants and links to that executable graph.
