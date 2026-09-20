@@ -4,26 +4,15 @@
  */
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { accountId, type AccountRecord, type CredentialSlot, type FileCredentialStore, type OAuthCredentialSlot } from "../credentials.ts";
-import type { ImporterConfig, ProviderConfig } from "./provider-types"; // Not imported; we rely on import structure
-import type { HomeReader } from "./reader.ts";
-import { parseJson, record, stringField } from "./shared.ts";
-
-/** Non-destructive borrowed refresh/import mode. */
-export type BorrowedRefreshMode = "write-back" | "reimport-only" | "never";
-
-/** Prepared refresh plan produced by the borrowed credential coordinator. */
-export interface BorrowedRefreshPlan {
-	credential: OAuthCredentialSlot;
-	refresh: boolean;
-	mode: BorrowedRefreshMode;
-}
-
-/** Borrowed credential coordinator interface. */
-export interface BorrowedCredentialCoordinator {
-	prepare(account: AccountRecord, options?: { signal?: AbortSignal }): Promise<BorrowedRefreshPlan>;
-	writeBack?(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: { signal?: AbortSignal }): Promise<void>;
-}
+import type { AuthOperationOptions } from "@earendil-works/pi-ai";
+import type {
+	AccountRecord,
+	BorrowedCredentialCoordinator,
+	BorrowedRefreshMode,
+	BorrowedRefreshPlan,
+	OAuthCredentialSlot,
+} from "../credentials.ts";
+import { parseJson } from "./shared.ts";
 
 function getPath(document: Record<string, unknown>, path: string, sourceEntry?: string): unknown {
 	const parts = (path || "").split(".");
@@ -59,8 +48,15 @@ function setPath(document: Record<string, unknown>, path: string, value: unknown
 	current[parts[parts.length - 1]!] = value;
 }
 
+export interface BorrowedImporterDeclaration {
+	path?: string;
+	refresh?: BorrowedRefreshMode;
+	fieldMapping?: Record<string, string>;
+	formats?: { expires?: "epoch_seconds" | "epoch_milliseconds" | "iso" };
+}
+
 export interface ConfiguredBorrowedCredentialCoordinatorOptions {
-	declaration: (account: AccountRecord) => { importer: ImporterConfig; provider: ProviderConfig };
+	declaration: (account: AccountRecord) => { importer: BorrowedImporterDeclaration };
 	sourceHome: string;
 	documentReader?: (account: AccountRecord) => Promise<Record<string, unknown>>;
 }
@@ -69,21 +65,20 @@ export interface ConfiguredBorrowedCredentialCoordinatorOptions {
 export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredentialCoordinator {
 	readonly #sourceHome: string;
 	readonly #declaration: ConfiguredBorrowedCredentialCoordinatorOptions["declaration"];
+	readonly #documentReader?: ConfiguredBorrowedCredentialCoordinatorOptions["documentReader"];
 
 	constructor(options: ConfiguredBorrowedCredentialCoordinatorOptions) {
 		this.#declaration = options.declaration;
 		this.#sourceHome = options.sourceHome;
+		this.#documentReader = options.documentReader;
 	}
 
-	private sourceEntry(document: Record<string, unknown>, importer: ImporterConfig, account: AccountRecord): string | undefined {
+	private sourceEntry(document: Record<string, unknown>, importer: BorrowedImporterDeclaration, account: AccountRecord): string | undefined {
 		return account.metadata?.source_entry ?? (importer.path ? importer.path.split("/").pop() : undefined);
 	}
 
-	private async loadDocument(account: AccountRecord, importer: ImporterConfig): Promise<Record<string, unknown>> {
-		if (this.#declaration) {
-			const providerConfig = this.#declaration(account);
-			return {}; // Simplified for keychain consolidation
-		}
+	private async loadDocument(account: AccountRecord, importer: BorrowedImporterDeclaration): Promise<Record<string, unknown>> {
+		if (this.#documentReader) return this.#documentReader(account);
 		const relative = account.metadata?.source_path ?? importer.path;
 		if (!relative) throw new Error("Borrowed credential file path is not configured");
 		const path = join(this.#sourceHome, relative);
@@ -94,7 +89,7 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 		}
 	}
 
-	async prepare(account: AccountRecord, options?: { signal?: AbortSignal }): Promise<BorrowedRefreshPlan> {
+	async prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedRefreshPlan> {
 		const parsed = this.#declaration(account);
 		const mode = parsed.importer.refresh ?? "never";
 		const source = await this.loadDocument(account, parsed.importer);
@@ -129,7 +124,7 @@ export class ConfiguredBorrowedCredentialCoordinator implements BorrowedCredenti
 		throw new Error(`Imported account ${account.id} is expired; run the source CLI to refresh or \`df login\` a df-owned account`);
 	}
 
-	async writeBack(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: { signal?: AbortSignal }): Promise<void> {
+	async writeBack(account: AccountRecord, newCredential: OAuthCredentialSlot, options?: AuthOperationOptions): Promise<void> {
 		const parsed = this.#declaration(account);
 		const importer = parsed.importer;
 		if (importer.refresh !== "write-back") return;
