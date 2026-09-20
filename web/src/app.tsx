@@ -861,7 +861,7 @@ function AppearancePicker({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="icon-action status-action appearance-select"
+                className="icon-action appearance-select"
                 aria-label={"Appearance: " + active.label}
               >
                 <AnimatedIcon names={active.icon} size={18} />
@@ -1690,7 +1690,18 @@ export function ViewerApp() {
   };
 
   return (
-    <div className="viewer-shell">
+    <div className={"viewer-shell activity-position-" + activityBarPosition}>
+      <nav className="menubar" aria-label="Application menu">
+        <FileMenu file={currentDownload} formatLabel={formatLabel} />
+        <ViewMenu
+          sidebarOpen={activityPanel !== null}
+          workspace={viewMode === "split"}
+          onToggleSidebar={toggleSidebar}
+          onOpenSplit={openSplit}
+          onSingle={() => navigateViewer(exitSplitTarget)}
+        />
+      </nav>
+
       <header className="toolbar">
         <div className="toolbar-main">
           <div className="toolbar-left">
@@ -1743,13 +1754,13 @@ export function ViewerApp() {
           </div>
 
           <div className="toolbar-right">
-            <TooltipAction
-              label={viewMode === "split" ? "Exit Review" : "Review"}
-              icon={["PanelLeftRightIcon"]}
-              onClick={canSplit ? () => navigateViewer(splitTarget) : undefined}
-              pressed={viewMode === "split"}
+            <SplitViewPicker
+              workspace={viewMode === "split"}
+              onSplit={openSplit}
+              onSingle={() => navigateViewer(exitSplitTarget)}
+              onReset={(direction) => workspaceRef.current?.reset(direction)}
             />
-            {viewMode === "split" && format === "pdf" && (
+            {viewMode === "split" && scopedFormat === "pdf" && (
               <TooltipAction
                 label={
                   splitSyncScroll
@@ -1766,127 +1777,114 @@ export function ViewerApp() {
                 }}
               />
             )}
-            <TooltipAction
-              label={"Download " + formatLabel}
-              icon={["DownloadIcon"]}
-              href={currentDownload || undefined}
-              download
-            />
-            <TooltipAction
-              label={format === "pdf" ? "Open native PDF" : "Open rendered " + formatLabel}
-              icon={["ExternalLinkIcon", "FileTextIcon"]}
-              href={currentDownload || undefined}
-              target="_blank"
-            />
+            <AppearancePicker theme={theme} onChange={setTheme} />
           </div>
         </div>
       </header>
 
-      <div className={"viewer-workbench activity-" + sidebarSide}>
-        {viewMode === "single" && sidebarSide === "left" && (
+      <div className="viewer-body">
+        {activityBarPosition === "top" && (
           <ActivityBar
-            side="left"
+            position="top"
             active={activityPanel}
-            contentsAvailable={contentsAvailable}
+            structureAvailable={structureAvailable}
             onSelect={selectActivityPanel}
-            onMoveSide={moveSidebar}
+            onMovePosition={setActivityBarPosition}
           />
         )}
-        {viewMode === "single" && sidebarSide === "left" && activityPanel === "files" && (
-          <RepoFilesPanel
-            nodes={repoTree}
-            error={repoTreeError}
-            side="left"
-            repositoryUrl={repositoryUrl}
-            commit={manifest?.commit || ""}
-          />
-        )}
-        <main className="viewer-main">
-        {viewMode === "split" ? (
-          rawChild && reviewChild ? (
-            <div className="split-view">
-              <motion.section
-                className="split-column"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <div className="split-label">Viewer</div>
-                <iframe
-                  ref={(node) => {
-                    splitFrames.current[0] = node;
-                  }}
-                  title="Viewer document"
-                  src={refreshedRawChild || rawChild}
-                  onLoad={(event) => {
-                    event.currentTarget.contentWindow?.postMessage(
-                      { source: "paper-split", command: "theme", theme },
-                      "*",
-                    );
-                  }}
+
+        <div className="viewer-workbench">
+          {activityBarPosition === "left" && (
+            <ActivityBar
+              position="left"
+              active={activityPanel}
+              structureAvailable={structureAvailable}
+              onSelect={selectActivityPanel}
+              onMovePosition={setActivityBarPosition}
+            />
+          )}
+
+          {sidebarSide === "left" && activityPanel === "explorer" && (
+            <RepoFilesPanel
+              nodes={repoTree}
+              error={repoTreeError}
+              side="left"
+              width={sidebarWidth}
+              onWidthChange={setSidebarWidth}
+              repositoryUrl={repositoryUrl}
+              commit={manifest?.commit || ""}
+            />
+          )}
+
+          <main className="viewer-main">
+            {viewMode === "split" ? (
+              workspacePanes.length >= 2 ? (
+                <ReviewWorkspace
+                  ref={workspaceRef}
+                  panes={workspacePanes}
+                  initialDirection={initialSplitDirection}
+                  theme={theme}
+                  refreshRevision={refreshRevision}
+                  onActiveChange={setActiveWorkspacePane}
                 />
-              </motion.section>
-              <motion.section
-                className="split-column"
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <div className="split-label">Edit</div>
-                <iframe
-                  ref={(node) => {
-                    splitFrames.current[1] = node;
-                  }}
-                  title="Edit document"
-                  src={refreshedReviewChild || reviewChild}
-                  onLoad={(event) => {
-                    event.currentTarget.contentWindow?.postMessage(
-                      { source: "paper-split", command: "theme", theme },
-                      "*",
-                    );
-                  }}
-                />
-              </motion.section>
-            </div>
-          ) : (
-            <div className="document-error">
-              <strong>Review comparison unavailable.</strong>
-              <span>Both Viewer and Edit {formatLabel} outputs are required.</span>
-            </div>
-          )
-        ) : mode === "raw" ? (
-          <RawArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
-        ) : format === "pdf" ? (
-          <PdfDocumentView
-            ref={documentRef}
-            pdfPath={renderArtifactPath}
-            contentIndex={contentIndex}
-            embedded={false}
-            sidebarSide={sidebarSide}
-            sidebarMode={sidebarMode}
-            sidebarHidden={activityPanel !== "contents"}
-            onMoveSidebar={moveSidebar}
-            onToggleSidebarMode={toggleSidebarMode}
-            onStateChange={handleDocumentState}
-          />
-        ) : (
-          <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
-        )}
-        </main>
-        {viewMode === "single" && sidebarSide === "right" && activityPanel === "files" && (
-          <RepoFilesPanel
-            nodes={repoTree}
-            error={repoTreeError}
-            side="right"
-            repositoryUrl={repositoryUrl}
-            commit={manifest?.commit || ""}
-          />
-        )}
-        {viewMode === "single" && sidebarSide === "right" && (
+              ) : (
+                <div className="document-error">
+                  <strong>Review workspace unavailable.</strong>
+                  <span>Both View and Review outputs are required.</span>
+                </div>
+              )
+            ) : mode === "raw" ? (
+              <RawArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
+            ) : format === "pdf" ? (
+              <PdfDocumentView
+                ref={documentRef}
+                pdfPath={renderArtifactPath}
+                contentIndex={contentIndex}
+                embedded={false}
+                sidebarSide={sidebarSide}
+                sidebarMode={sidebarMode}
+                sidebarHidden={activityPanel !== "structure"}
+                sidebarWidth={sidebarWidth}
+                onMoveSidebar={moveSidebar}
+                onToggleSidebarMode={toggleSidebarMode}
+                onSidebarWidthChange={setSidebarWidth}
+                onStateChange={handleDocumentState}
+              />
+            ) : (
+              <CompiledArtifactView path={renderArtifactPath} format={format} embedded={false} theme={theme} />
+            )}
+          </main>
+
+          {sidebarSide === "right" && activityPanel === "explorer" && (
+            <RepoFilesPanel
+              nodes={repoTree}
+              error={repoTreeError}
+              side="right"
+              width={sidebarWidth}
+              onWidthChange={setSidebarWidth}
+              repositoryUrl={repositoryUrl}
+              commit={manifest?.commit || ""}
+            />
+          )}
+
+          {activityBarPosition === "right" && (
+            <ActivityBar
+              position="right"
+              active={activityPanel}
+              structureAvailable={structureAvailable}
+              onSelect={selectActivityPanel}
+              onMovePosition={setActivityBarPosition}
+            />
+          )}
+        </div>
+
+        {activityBarPosition === "bottom" && (
           <ActivityBar
-            side="right"
+            position="bottom"
             active={activityPanel}
-            contentsAvailable={contentsAvailable}
+            structureAvailable={structureAvailable}
             onSelect={selectActivityPanel}
-            onMoveSide={moveSidebar}
+            onMovePosition={setActivityBarPosition}
           />
         )}
       </div>
@@ -1897,31 +1895,46 @@ export function ViewerApp() {
             <LanguagePicker
               manifest={manifest}
               templateName={templateName}
-              profileName={profileName}
-              mode={mode}
+              profileName={scopedProfile}
+              mode={scopedMode}
               viewMode={viewMode}
-              format={format}
-              versionTitle={versionTitle}
+              format={scopedFormat}
+              versionTitle={scopedVersionTitle}
               onNavigate={navigateViewer}
+              onSelectProfile={
+                viewMode === "split"
+                  ? (variant) => updateActiveWorkspacePane(scopedMode, scopedFormat, variant)
+                  : undefined
+              }
             />
           ) : (
-            <span className="version-fallback">{languageDisplayName(versionTitle)}</span>
+            <span className="version-fallback">{languageShortId(scopedProfile)}</span>
           )}
           <span className="status-divider" aria-hidden="true" />
           <RendererPicker
-            mode={mode}
+            mode={scopedMode}
             viewerHref={finalTarget}
-            editHref={reviewTarget}
+            reviewHref={reviewTarget}
             rawHref={rawTarget}
             onNavigate={navigateViewer}
+            onSelectMode={
+              viewMode === "split"
+                ? (nextMode) => updateActiveWorkspacePane(nextMode, scopedFormat, scopedVariant)
+                : undefined
+            }
           />
           <span className="status-divider" aria-hidden="true" />
           <FormatPicker
-            format={format}
+            format={scopedFormat}
             pdfHref={pdfTarget}
             markdownHref={markdownTarget}
             htmlHref={htmlTarget}
             onNavigate={navigateViewer}
+            onSelectFormat={
+              viewMode === "split"
+                ? (nextFormat) => updateActiveWorkspacePane(scopedMode, nextFormat, scopedVariant)
+                : undefined
+            }
           />
         </div>
 
@@ -1964,16 +1977,9 @@ export function ViewerApp() {
                 onClick={() => zoomBy(0.1)}
                 className="status-action"
               />
-              <TooltipAction
-                label="Fit width"
-                icon={["ScanIcon", "Maximize2Icon"]}
-                onClick={() => setZoom("fit")}
-                className="status-action"
-              />
               <span className="status-divider" aria-hidden="true" />
             </div>
           )}
-          <AppearancePicker theme={theme} onChange={(nextTheme) => setTheme(nextTheme)} />
           <TooltipAction
             label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
             icon={fullscreen ? ["MinimizeIcon", "Minimize2Icon"] : ["MaximizeIcon", "Maximize2Icon"]}
@@ -1983,5 +1989,5 @@ export function ViewerApp() {
         </div>
       </footer>
     </div>
-  );
+  );;
 }
