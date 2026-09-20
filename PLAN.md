@@ -234,41 +234,17 @@ After #361 is green, re-run the original declarable-graph product contract again
 - #733 removed the obsolete shadow/parity dispatcher path.
 - #747 landed the shared `@darkfactory/web` shell on the native docs/web architecture.
 - #741 landed the deterministic git/workspace primitive slice for #384 as `9788f0ad83d83be8da9d647366c4db82edff082f`.
+- #423 landed the final browser-auth/confidential-broker boundary through PR #810 as `ec7db0f748a296ffad41231eb6e6989aa85a945f`.
+- #341 landed the final repository evidence + capability-resolved deterministic action contract through PR #828 as `83e227cd229033a2067fc8d245e5540a77853e49`.
 - Repository docs remain aligned with the final-only architecture: no compatibility release, migration path, shadow engine, pre-release/canary phase, historical README or separate harness documentation is part of the target system.
 
 ### In-flight governed lanes
 
-#### #341 / Planning #780 / PR #787
+#### Landed interfaces from #341 and #423
 
-PR #787 is draft and **not merge-ready**.
-
-Current blocking findings:
-
-- it recreates a central `DEFAULT_ECOSYSTEM_ACTIONS` table, which violates #780's approved rule that core normalizes evidence while capabilities contribute actions;
-- the durable repository-evidence mechanism is being introduced under deletion-bound `harness/` rather than the final core/config owner;
-- the normalized result is not yet wired into doctor/diagnostics, CI/check generation + required-check synchronization, touched-package verification/protection, and docs/TSDoc/API extraction;
-- `@darkfactory/harness` imports `@darkfactory/capability` without declaring the workspace dependency;
-- unrelated `packages/web` changes introduce a Wouter type not exported by the installed version.
-
-A blocking review is recorded on PR #787. Rebase/update it from current `darkfactory`, remove the duplicate action table/unrelated web scope, move durable ownership to the final package boundary, integrate every required consumer, then run the full current format/type/test/docs checks.
-
-#341 remains the highest-value unblocker because #329/#358/#339 consume its final detected-action interface.
-
-#### #423 / Planning #783 / PR #791
-
-PR #791 is draft and **not merge-ready**.
-
-Current blocking findings:
-
-- access/refresh tokens are persisted in browser `localStorage`;
-- callback state/verifier validation and one-time consumption are missing;
-- the confidential broker implements exchange only, not refresh/revocation;
-- restoration does not enforce expiry/refresh policy;
-- permission projection ignores GitHub App installation/repository authority;
-- mutation payload typing uses `any`;
-- negative security/import-isolation tests are missing.
-
-A blocking review is recorded on PR #791. Fix these against the existing `@darkfactory/auth` boundary; do not introduce keychain/browser coupling or a second RBAC/state backend.
+- #341 / Planning #780 is closed. Core repository/package/domain evidence, capability-contributed deterministic actions, detector-driven CI/protection/status, touched-package verification and native docs/API extraction are merged on `darkfactory`.
+- #423 / Planning #783 is closed. `@darkfactory/auth` owns browser GitHub authentication/session state and the confidential broker boundary; browser code does not own machine credentials.
+- Do not revive PR #787, PR #791, their superseded ownership models, or duplicate detection/auth implementations.
 
 #### #422 / Planning #781
 
@@ -278,9 +254,9 @@ Continue the clean current-tree rebuild only for missing #422 behavior: provider
 
 #### #329 / Planning #786
 
-The latest governed implementation attempt produced no file changes. The old F38-derived feature branch remains stale/diverged and is evidence only.
+PR #811 recovered useful F38 extraction mechanics but was blocked because it rebuilt a separate `CaptureCandidate[]` routing/failover subsystem and did not implement natural-stop code-node truth.
 
-Restart from current `darkfactory`. Proceed now with the #341-independent parts (schema/extraction behavior, natural-stop semantics, explicit offline capture-schema mode, removal of forced normal-task capture paths). Final code/workspace verification integration waits only for the shipped #341 interface.
+Restart/rework from current `darkfactory` and consume the now-shipped #341 touched-package verification/action contract directly. Use the normal model-routing path for the one judgement-extraction call; keep the forced capture tool confined to that extraction call; implement natural-stop task completion, explicit `df run --capture-schema` inspection mode and workspace/effect-backed code-node truth. F38 remains evidence only until its exact final disposition is recorded.
 
 #### #384
 
@@ -293,14 +269,13 @@ There are still 16 `recovery/*` branches. Recovery branches are temporary inputs
 - Keep only branches with unresolved unique work for an active Request.
 - Record the exact retained/rejected/subsumed disposition on the owning Request as soon as it is known.
 - Delete each recovery branch immediately after its unique work is terminal; do not wait for #361.
-- F14, F38, F47 and F49 remain active evidence inputs for #422, #329, #339 and #341 respectively until their dispositions are recorded.
+- F14, F38 and F47 remain active evidence inputs for #422, #329 and #339 respectively until their dispositions are recorded.
+- F49 is terminal: its useful semantics were rebuilt in #341, its Python/manifest ownership was rejected, and the final disposition is recorded on #341. Delete `recovery/f49-detected-quality` as soon as a branch-delete action is available.
 - Audit the remaining recovery branches against already-landed Requests and remove terminal branches rather than carrying historical state forward.
 
 ### CI / pipeline interpretation
 
-Pipeline failure issues #794 and #795 were opened from PR #787 merge-ref jobs; those jobs checked out `refs/remotes/pull/787/merge`. They are evidence that #787 is currently failing, not evidence that the settled `darkfactory` checkpoint itself regressed.
-
-Do not paper over those failures with compatibility behavior. Fix #787 at its final owners and rerun the governed checks.
+PR #828 replaced the handwritten/reusable quality topology with detector-driven direct managed workflows and one stable aggregate `quality` check plus `verify-bound-issue`. Feature-branch CI runs on pull requests rather than duplicate push + PR executions. Do not restore `.darkfactory/ci.json`, caller-prefixed quality contexts, or handwritten per-language jobs.
 
 ## 11. Optimized execution schedule
 
@@ -324,18 +299,17 @@ This is the shortest path to #359 and gets df capable of owning the remaining de
 
 Run these **concurrently now**:
 
-**A1 — #341 detected evidence/actions**
-- Correct PR #787 to the final architecture.
-- Core owns normalized repository evidence.
-- Capabilities contribute applicable actions.
-- One resolved result feeds doctor, CI/check synchronization, touched-package verification/protection and docs/API extraction.
-- Reconcile F49 semantics and terminate/delete its recovery branch once disposition is recorded.
+**A1 — #341 detected evidence/actions — COMPLETE**
+- Merged through PR #828 as `83e227cd229033a2067fc8d245e5540a77853e49`.
+- Core owns normalized repository evidence; capabilities contribute applicable actions.
+- Doctor, CI/check synchronization, touched-package verification/protection and docs/API extraction consume the shared result.
+- F49 disposition is recorded; its recovery branch is terminal and deletion-only.
 
 **A2 — #329 natural-stop result capture**
 - Restart from current `darkfactory`, not the stale F38 branch.
 - Implement natural-stop/result-schema/extraction/offline-capture work that does not depend on #341 immediately.
 - Reconcile only compatible F38 behavior.
-- The sole wait is final code-node verification/result integration on the shipped #341 contract.
+- #341 is shipped; final code-node verification/result integration must now use it directly.
 - Record F38 disposition and delete its recovery branch when terminal.
 
 **A3 — #358 graph-native orchestration preparation**
@@ -347,7 +321,7 @@ Run these **concurrently now**:
 - Continue mutation-claim validation, deterministic branch update/conflict behavior and tests now using landed #384 primitives.
 - Only graph re-entry/resume integration waits for the relevant #358 interface.
 
-**Join A condition:** #329 + #341 are merged, #358 consumes them and is merged, and #317 is merged/green. Immediately execute #359's final responsibility/deletion pass. Do not wait for auth, docs, web, TUI, stacked PRs, generalized recovery intake or other final-product surfaces unless live implementation proves they are required by the core lifecycle.
+**Join A condition:** #341 is already merged. Join A now requires #329 merged, #358 consuming #329 + #341 and merged, and #317 merged/green. Immediately execute #359's final responsibility/deletion pass. Do not wait for auth, docs, web, TUI, stacked PRs, generalized recovery intake or other final-product surfaces unless live implementation proves they are required by the core lifecycle.
 
 ### 11.3 Workstream B — governance, git, hooks and recovery productization
 
@@ -374,7 +348,7 @@ Run independently of the engine spine:
 
 - #422 / PR #792: finish only missing keychain ownership; reconcile F14; remove duplicate credential custody.
 - #248: finish df-managed provider login/multi-account behavior against `@darkfactory/keychain` as soon as the required keychain interfaces are stable.
-- #423 / PR #791: finish browser GitHub authentication, broker refresh/revoke, expiry/session restoration, authority intersection and isolation tests.
+- #423 is complete and merged; consume its shipped `@darkfactory/auth` boundary rather than adding another browser/session owner.
 - #252: proceed once its actual provider/login dependencies are satisfied; do not block unrelated auth/keychain completion.
 
 These lanes should not touch the engine spine except through already-defined credential/auth interfaces.
@@ -383,10 +357,10 @@ These lanes should not touch the engine spine except through already-defined cre
 
 Run stable pieces in parallel, with only these waits:
 
-- #334: reconcile F42 TSDoc coverage now; final detected API action integration waits only for #341.
+- #334: reconcile F42 TSDoc coverage and integrate against the shipped #341 detected API action contract now.
 - #424: finish native docs compiler metadata/recovery dispositions now; no ProperDocs/MkDocs compatibility work.
-- #335: starts final integration immediately when #334 + #341 interfaces are available.
-- #336: reconcile F44 behavior now; final shared docs-impact enforcement consumes #339/#341 rather than adding another detector/hook engine.
+- #335: #341 is available; final integration waits only for #334's strict public-surface coverage.
+- #336: reconcile F44 behavior now; final shared docs-impact enforcement consumes the shipped #341 contract plus #339 rather than adding another detector/hook engine.
 - #337: keep current-only enforcement active now, but perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403 and #251: finish CLI/TUI surfaces against stable protocol/core APIs; do not wait for #359 where not required.
 - #425 and #390: continue the shared `@darkfactory/web` application on stable models; integrate #423 authentication when that contract lands.
@@ -449,8 +423,8 @@ When #361 is green, perform the final #68 declarable-graph contract check and cl
 
 The highest-downstream-value work is therefore **not a serial 1→10 queue**:
 
-- keep #341, #329, #358-prep and #317 moving simultaneously toward Join A;
-- keep #422/#423, #339, docs recovery/reconciliation, operator surfaces and #360 engineering moving in parallel;
+- #341 is complete; drive #329, #358 and #317 simultaneously toward Join A using its shipped interface;
+- keep #422, #339, docs recovery/reconciliation, operator surfaces and #360 engineering moving in parallel; #423 is already landed;
 - begin #385/#332 the moment #358's owning state interfaces stabilize;
 - begin #386 as soon as #384+#358+#385 are stable;
 - finish #388 against those same shipped primitives rather than creating a side recovery engine;
