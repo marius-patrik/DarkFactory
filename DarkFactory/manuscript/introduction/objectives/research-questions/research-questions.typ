@@ -1,10 +1,9 @@
 #import "/DarkFactory/templates/common.typ": finalized
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "research_questions",
-  czech: "Výzkumné otázky",
-  english: "Research Questions",
+  title: [Výzkumné otázky],
   definition: terms => [
 - #finalized[O1: Jak lze současný agentní systém zapojit do vývoje softwaru tak, aby samostatně prováděl co největší část běžné práce a člověk se soustředil na zadání, kontrolu a důležitá rozhodnutí?]
 - O2: Jaké mechanismy harnessu pomáhají rozpoznat a zastavit neproduktivní opakování, oscilaci nebo zacyklení během delší úlohy?
@@ -13,5 +12,4 @@
   description: terms => [
 O1–O3 pokrývají autonomii, stabilitu prováděcí smyčky a správu pracovního kontextu.
   ],
-  relations: ((type: "dependency", target: "subgoals"),),
 )
