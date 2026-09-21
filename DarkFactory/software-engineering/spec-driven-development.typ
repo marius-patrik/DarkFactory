@@ -8,10 +8,10 @@
   citation: bib.fowler2025sdd,
   source: bib.fowler2025sdd,
   definition: terms => [
-Přístup k AI-asistovanému vývoji softwaru, při němž se před implementací vytvoří explicitní specifikace a ta slouží jako zdroj pravdy pro člověka i agenta.
+Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí plánování, implementaci a ověřování změny. #cite(bib.fowler2025sdd)
   ],
   description: terms => [
-Specifikace odděluje požadované chování a omezení od konkrétní implementace a používá se při plánování, generování a ověřování změn. #cite(bib.fowler2025sdd)
+Specifikace odděluje požadované chování a omezení od konkrétní implementace a slouží jako společný referenční bod pro člověka i agenta. #cite(bib.fowler2025sdd)
   ],
   relations: (
     (type: "related", target: "planning"),
