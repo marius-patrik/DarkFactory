@@ -1,19 +1,17 @@
-#import "/DarkFactory/templates/common.typ": bib, finalized, scope-note
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": section
-#import "ai-usage-example.typ" as ai_usage
 
 #let item = section(
   key: "motivation_problem_definition",
   title: [Motivace a vymezení problému],
   definition: terms => [
-#finalized[Ukázat, jaké úlohy dokážou současné agentní systémy samostatně provádět a jaká technická vrstva umožňuje převést schopnost jazykového modelu do spolehlivého jednání nad skutečným softwarovým projektem.]
+Současné agentní systémy dokážou nad softwarovým projektem provádět více kroků, pracovat se soubory a nástroji a ověřovat vlastní změny. Hlavním problémem této práce proto není samotné generování kódu, ale technická vrstva, která převádí schopnosti jazykového modelu do řízeného, obnovitelného a ověřitelného vývojového procesu.
   ],
   description: terms => [
-Generativní AI se během několika let rozšířila do masového používání a současně se rozšiřují systémy, které plánují více kroků, pracují se soubory a nástroji, spouštějí příkazy a testy a vykonávají delší úlohy.
+V softwarovém inženýrství tento posun reprezentují například Codex a Claude Code, které pracují nad repozitáři, upravují soubory a používají nástroje pro build nebo testování. #cite(bib.openai_codex_app) #cite(bib.anthropic_claude_code)
 
-V softwarovém inženýrství tento posun reprezentují například Codex a Claude Code, které pracují nad repozitáři, upravují soubory a spouštějí testy. #cite(bib.openai_codex_app) #cite(bib.anthropic_claude_code)
+Rozšíření generativní AI zároveň vytváří praktický důvod tyto systémy studovat: Microsoft AI Economy Institute pro první čtvrtletí roku 2026 odhadl používání generativní AI na 17,8 % světové populace ve věku 15–64 let. #cite(bib.microsoft_ai_diffusion_2026) Tento údaj v práci slouží pouze jako kontext rozšíření technologie, nikoli jako metrika kvality nebo autonomie agentních systémů.
 
-#scope-note[Údaj 2,4 miliardy / 29 % je přibližný sekundární odhad. V práci má sloužit pouze jako kontext motivace, nikoli jako přesná empirická metrika.]
+DarkFactory slouží jako konkrétní artefakt, na kterém práce zkoumá oddělení modelu, trvalého stavu, prostředí, nástrojů a kontrolních mechanismů.
   ],
-  examples: (ai_usage.item,),
 )
