@@ -10,10 +10,10 @@
   citation: bib.openai_agents_guardrails,
   source: bib.openai_agents_guardrails,
   definition: terms => [
-Programově vynucená kontrola, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
+V této práci označuje Guardrail programově vynucenou kontrolu, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
   ],
   description: terms => [
-Guardrails lze spouštět na hranicích vstupu, výstupu nebo volání nástroje a při nesplnění podmínky běh zastavit či odmítnout konkrétní akci. #cite(bib.openai_agents_guardrails)
+Agentní frameworky mohou guardrails implementovat různými způsoby; zde je důležitá deterministicky vyhodnotitelná hranice oddělená od samotného modelového rozhodnutí. Kontrola může běh zastavit nebo odmítnout konkrétní akci před provedením jejího účinku. #cite(bib.openai_agents_guardrails)
   ],
   relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "goal_loops")),
 )
