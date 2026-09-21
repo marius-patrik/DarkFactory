@@ -9,7 +9,7 @@
   citation: (bib.wu2023autogen, bib.openai_agent_orchestration),
   source: bib.openai_agent_orchestration,
   definition: terms => [
-Specializovaná agentní instance, které jiný agent nebo orchestrátor deleguje vymezenou dílčí úlohu.
+Specializovaná agentní instance, které jiný agent nebo orchestrátor deleguje vymezenou dílčí úlohu. #cite(bib.openai_agent_orchestration)
   ],
   description: terms => [
 Subagent umožňuje oddělit roli, instrukce a pracovní kontext dílčí úlohy od koordinujícího běhu a následně vrátit výsledek zpět nadřazené orchestrace. #cite(bib.wu2023autogen) #cite(bib.openai_agent_orchestration)
