@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -7,11 +7,13 @@
   industry: "Guardrail",
   czech: "Deterministický mantinel",
   english: "Deterministic Guardrail",
-  definition: terms => [#finalized[
-Programově vynucené omezení nebo kontrola, která neponechává kritické provozní pravidlo pouze na pravděpodobnostním rozhodnutí modelu.
-  ]],
-  description: terms => [#finalized[
-Pokud samotná instrukce v promptu neposkytuje dostatečnou záruku, harness může pravidlo vynutit deterministicky, například omezením přístupových práv, validací parametrů nástroje nebo odmítnutím nepovoleného stavového přechodu. Kritická bezpečnostní a procesní pravidla patří do deterministicky vynucované vrstvy harnessu, nikoli pouze do textových instrukcí modelu.
-  ]],
+  citation: bib.openai_agents_guardrails,
+  source: bib.openai_agents_guardrails,
+  definition: terms => [
+Programově vynucená kontrola, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje.
+  ],
+  description: terms => [
+Guardrails lze spouštět na hranicích vstupu, výstupu nebo volání nástroje a při nesplnění podmínky běh zastavit či odmítnout konkrétní akci. #cite(bib.openai_agents_guardrails)
+  ],
   relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "loop_engineering")),
 )
