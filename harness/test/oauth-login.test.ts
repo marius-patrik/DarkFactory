@@ -1,10 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { FileCredentialStore } from "../src/credentials.ts";
-import { loginProviderAccount } from "../src/login.ts";
-import { createConfiguredOAuth } from "../src/providers/oauth.ts";
-import type { OAuthAuthConfig, ProviderConfig } from "../src/providers/schema.ts";
+import { FileCredentialStore, loginProviderAccount, createConfiguredOAuth, type OAuthAuthConfig } from "@darkfactory/keychain";
+import type { ProviderConfig } from "../src/providers/schema.ts";
 
 const roots: string[] = [];
 
