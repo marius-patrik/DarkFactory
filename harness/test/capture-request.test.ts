@@ -8,7 +8,7 @@ import {
 	forceCaptureTool,
 	readCapture,
 	validateCaptureSchema,
-} from "../src/harness/capture-request.ts";
+} from "@darkfactory/core/result-capture";
 
 function clone<T>(obj: T): T {
 	return JSON.parse(JSON.stringify(obj));
