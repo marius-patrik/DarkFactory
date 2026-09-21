@@ -3,6 +3,7 @@
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/planning-artifact.typ" as planning_artifact
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/review-fix-loop.typ" as review_fix_loop
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/deterministic-verification.typ" as deterministic_verification
+#import "/DarkFactory/manuscript/practical/execution-lifecycle/final-alignment.typ" as final_alignment
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/reconciliation.typ" as reconciliation
 
 #let request_capture = folder(
@@ -33,8 +34,11 @@
 
 #let integration = folder(
   key: "darkfactory_integration_lifecycle",
-  title: [Integrace],
-  concepts: (reconciliation.item,),
+  title: [Finalizace a integrace],
+  concepts: (
+    final_alignment.item,
+    reconciliation.item,
+  ),
 )
 
 #let recovery = folder(
