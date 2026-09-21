@@ -6,13 +6,13 @@
   industry: "Prompt Injection",
   czech: "Prompt injection",
   english: "Prompt Injection",
-  citation: (bib.owasp_prompt_injection, bib.openai_prompt_injection),
-  source: bib.owasp_prompt_injection,
+  citation: (bib.owasp_prompt_injection, bib.owasp_llm01_prompt_injection, bib.openai_prompt_injection),
+  source: bib.owasp_llm01_prompt_injection,
   definition: terms => [
-Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext. #cite(bib.owasp_prompt_injection)
+Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext. #cite(bib.owasp_llm01_prompt_injection)
   ],
   description: terms => [
-Přímá prompt injection pochází přímo z uživatelského vstupu; nepřímá injection může být skryta například ve webové stránce, e-mailu, dokumentu, repozitáři nebo zdroji RAG. Takový obsah může ovlivnit rozhodování agenta, přestože měl sloužit pouze jako data. #cite(bib.owasp_prompt_injection) #cite(bib.openai_prompt_injection)
+Přímá prompt injection přichází v uživatelském vstupu; nepřímá injection je vložena do externích dat, například webové stránky, e-mailu, dokumentu, repozitáře nebo zdroje RAG. #cite(bib.owasp_prompt_injection) Typickým příkladem je životopis obsahující skrytou instrukci, která se pokusí ovlivnit následné hodnocení kandidáta modelem, přestože dokument měl sloužit pouze jako data. #cite(bib.owasp_llm01_prompt_injection) Důsledky proto závisejí také na oprávněních a nástrojích, které má agent k dispozici. #cite(bib.openai_prompt_injection)
   ],
   relations: (
     (type: "dependency", target: "context_engineering"),
