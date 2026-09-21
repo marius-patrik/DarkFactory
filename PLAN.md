@@ -66,6 +66,33 @@ Elsewhere:
 
 Do not use crude word-frequency thresholds; the target is semantic non-duplication, not unnatural Czech.
 
+### Level-2 section framing rule
+
+Every substantive level-2 section must be framed by its own numbered **Úvod** and **Závěr** subsections.
+
+Apply this to:
+- 2.2 AI-asistovaný vývoj
+- 2.3 Model
+- 2.4 Harness
+- 2.5 Agentické inženýrství
+- 3.2 Architektura DarkFactory
+- 3.3 Životní cyklus požadavku
+- 3.4 Výsledky a diskuse
+
+Do not recursively add Úvod/Závěr under sections that are themselves already an Úvod or Závěr.
+
+Semantic ownership:
+- **Úvod** may only define the scope, purpose, reading order, and relationships among the child sections/concepts. It must not pre-summarize or redefine them.
+- **Závěr** may only synthesize what the section established, make the transition to the next major section, and state distinctions that emerge only from considering the section as a whole. It must not repeat child definitions, examples, evidence, or prose.
+- If a level-2 section has no meaningful synthesis beyond repeating its children, its Závěr should be extremely short rather than padded.
+- Section-level Úvod/Závěr are structural prose, not semantic concepts, and do not enter the concept/keyword graph.
+
+Expected numbering pattern:
+- 2.2.1 Úvod
+- internal numbered groups
+- final 2.2.x Závěr
+and analogously for every listed level-2 section.
+
 ### Current candidate theory hierarchy
 
 - **2.2 AI-asistovaný vývoj**
