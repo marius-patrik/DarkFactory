@@ -8,7 +8,7 @@
   citation: bib.anthropic_context_engineering,
   source: bib.anthropic_context_engineering,
   definition: terms => [
-Cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok.
+Cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok. #cite(bib.anthropic_context_engineering)
   ],
   description: terms => [
 Just-in-time přístup umožňuje udržovat v kontextu pouze odkazy nebo minimální stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
