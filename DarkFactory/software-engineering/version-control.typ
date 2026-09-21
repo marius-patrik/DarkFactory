@@ -14,5 +14,5 @@ Systém pro zaznamenávání historie změn souborů a práci s oddělenými lin
   description: terms => [
 Historie commitů umožňuje změny porovnávat, vracet a slučovat; větve umožňují oddělit souběžnou práci před integrací. #cite(bib.chacon2014)
   ],
-  relations: ((type: "related", target: "github"),),
+  relations: ((type: "related", target: "branch"),),
 )
