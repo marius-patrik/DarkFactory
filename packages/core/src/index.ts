@@ -20,3 +20,4 @@ export type {
 } from "../../../harness/src/harness/supervisor.ts";
 export * from "./repository-evidence.ts";
 export * from "./result-capture.ts";
+export * from "./recovery.ts";

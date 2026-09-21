@@ -10,7 +10,8 @@
     "./planning": "./src/planning.ts",
     "./review": "./src/review.ts",
     "./quota": "./src/quota.ts",
-    "./result-capture": "./src/result-capture.ts"
+    "./result-capture": "./src/result-capture.ts",
+    "./recovery": "./src/recovery.ts"
   },
   "files": [
     "src"
