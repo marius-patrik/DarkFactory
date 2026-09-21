@@ -46,7 +46,7 @@ import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
 import { estimateTask } from "./limits/routing.ts";
-import { loginProviderAccount } from "./login.ts";
+import { loginProviderAccount } from "@darkfactory/keychain/login";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
