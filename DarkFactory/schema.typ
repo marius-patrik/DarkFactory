@@ -103,7 +103,12 @@
 #let collect-folder-concepts(node) = {
   let result = ()
   // Folder sections are structural and numbered; only semantic concepts enter
-  // the vocabulary and semantic graph.
+  // the vocabulary and semantic graph. Examples/attachments owned by a section
+  // are still semantic concepts and must remain addressable.
+  if node.section != none {
+    for item in node.section.examples { result += collect-concept(item) }
+    for item in node.section.attachments { result += collect-concept(item) }
+  }
   for item in node.concepts { result += collect-concept(item) }
   for child in node.children { result += collect-folder-concepts(child) }
   result
