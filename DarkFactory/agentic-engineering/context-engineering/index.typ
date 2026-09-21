@@ -7,7 +7,7 @@
 
 #let node = folder(
   key: "agentic_context",
-  title: [Kontext],
+  title: [Kontextové mechanismy],
   concepts: (
     context_engineering.item,
     context_injection.item,
