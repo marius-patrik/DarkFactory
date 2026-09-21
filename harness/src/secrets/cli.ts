@@ -2,27 +2,26 @@ import {
 	emptyVault,
 	generateVaultKey,
 	isValidVaultKey,
+	type KeychainOptions,
 	loadVaultKey,
 	storeVaultKey,
-	type KeychainOptions,
 } from "@darkfactory/keychain";
 import {
 	loadPushMap,
 	loadVault,
 	resolveDataRepoPath,
 	saveVault,
+	type VaultStoreOptions,
 	vaultGet,
 	vaultList,
 	vaultRm,
 	vaultSet,
-	type VaultStoreOptions,
 } from "@darkfactory/keychain/vault-store";
-import { syncDataRepo, isGitRepo } from "./sync.ts";
-import { pushSecrets } from "./push.ts";
-import { detectDrift } from "./drift.ts";
-
 import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository.ts";
+import { detectDrift } from "./drift.ts";
+import { pushSecrets } from "./push.ts";
+import { isGitRepo, syncDataRepo } from "./sync.ts";
 
 export interface SecretsCommandDeps {
 	dfHome: string;
@@ -190,7 +189,8 @@ export async function secretsCommand(args: string[], deps: SecretsCommandDeps): 
 
 		case "push": {
 			const repoSlug = args[1];
-			if (!repoSlug || !repoSlug.includes("/")) throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
+			if (!repoSlug || !repoSlug.includes("/"))
+				throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
 			const key = await requireKey(keychainOpts);
 			const vault = await loadVault(dataRepoPath, key);
 			const pushMap = await loadPushMap(dataRepoPath);
