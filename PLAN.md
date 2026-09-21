@@ -186,54 +186,57 @@ Inspect the current DarkFactory repository and submodule snapshot for:
 - why persistent governed agent execution is needed.
 
 #### Celková architektura
+- DarkFactory;
+- Protocol;
 - architecture diagram;
 - responsibility boundaries;
 - data/control flow;
 - durable versus transient state.
 
 #### Vykonávací jádro
-- protocol contracts;
-- execution kernel;
-- run state;
-- provider/model routing;
-- result capture;
-- recovery/resume.
+- Run State;
+- Routing;
+- Result Capture;
+- Recovery;
+- execution kernel and graph/run state;
+- provider/model routing and failover.
 
 #### Systém capabilities
-- capability ABI;
+- Capability;
+- Capability ABI;
+- Capability Adapter;
 - discovery/loading/resolution;
 - first-party capabilities;
-- generated adapters;
 - domain versus capability distinction.
 
 #### Externí integrace
-- Git/GitHub control plane;
+- GitHub Control Plane;
 - repository operations;
 - PR/check integration;
 - external services used by the actual implementation.
 
 #### Identita a bezpečnostní hranice
-- keychain;
-- browser/human auth;
-- machine credentials;
+- Keychain;
+- Auth / Browser Authentication;
+- machine credentials versus human/browser identity;
 - trust boundaries;
 - secret custody.
 
 #### Rozhraní
-- CLI/TUI;
-- Web;
-- documentation pipeline.
+- df CLI;
+- DarkFactory Web;
+- DarkFactory Docs.
 
 ### Write 3.3 Životní cyklus požadavku
 
 Ground each stage in code/workflow evidence:
 
-1. Zachycení požadavku
-2. Plánování a schválení
+1. Zachycení požadavku — Request
+2. Plánování a schválení — Planning + Review/Fix Loop
 3. Implementace
-4. Ověření a revize
-5. Integrace
-6. Obnova a pokračování
+4. Ověření a revize — Deterministic Verification
+5. Integrace — Reconciliation
+6. Obnova a pokračování — reuse the Recovery mechanism defined in architecture
 
 ### Exit criteria
 
