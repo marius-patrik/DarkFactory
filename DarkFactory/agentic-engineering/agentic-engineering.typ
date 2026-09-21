@@ -1,22 +1,17 @@
-#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "agentic_engineering",
-    czech: "Agentické inženýrství",
+  czech: "Agentické inženýrství",
   english: "Agentic Engineering",
   citation: bib.wang2024survey,
   source: bib.darkfactory,
-definition: terms => [
-Agentické inženýrství je disciplína zaměřená na návrh, orchestraci a provoz agentních systémů kolem jazykových modelů, včetně nástrojů, kontextu, prováděcích smyček, mantinelů a lidského dohledu.
+  definition: terms => [
+Agentické inženýrství je návrh a provoz systémů kolem jazykových modelů, které zajišťují nástroje, kontext, stav, provádění, mantinely a lidský dohled.
   ],
   description: terms => [
-Předmětem agentického inženýrství není samotná modelová architektura, ale systémové prostředí, které převádí modelový výstup na řízené jednání. Patří sem zejména návrh agentního harnessu, správa kontextu a stavu, rozhraní nástrojů, prováděcí smyčky, ověřování výsledků, izolace a rozhodovací body pro lidský dohled.
+Jeho předmětem je systém, který převádí modelový výstup na řízené a ověřitelné jednání, nikoli architektura nebo trénování samotného modelu.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
   relations: ((type: "dependency", target: "agent"),),
 )

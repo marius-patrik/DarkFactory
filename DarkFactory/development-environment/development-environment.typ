@@ -1,22 +1,17 @@
-#import "/DarkFactory/templates/common.typ": translation, finalized, bib, accepted, term, kw
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "development_environment",
-    czech: "Vývojové prostředí a praxe",
+  czech: "Vývojové prostředí a praxe",
   english: "Development Environment and Practices",
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
-definition: terms => [
-Vývojové prostředí a praxe tvoří soubor verzovacích, plánovacích, integračních a kontrolních postupů, které poskytují deterministický rámec pro agentní vývoj softwaru.
+  definition: terms => [
+Vývojové prostředí a praxe tvoří verzovací, plánovací, integrační a kontrolní mechanismy, ve kterých agent provádí změny softwaru.
   ],
   description: terms => [
-Agentní systém nepracuje pouze s textem, ale se stavem repozitáře a vývojovým procesem. Proto musí být jeho akce ukotveny v explicitních postupech pro verzování, plánování změn, automatické kontroly a revizi výsledků.
+Tyto mechanismy poskytují explicitní stav repozitáře, ověřování změn a kontrolní body nezávislé na tvrzení modelu.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
   relations: (),
 )

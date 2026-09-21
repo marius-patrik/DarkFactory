@@ -11,7 +11,7 @@
 - Navrhnout způsob, jak zachovat lidský dohled nad důležitými rozhodnutími bez nutnosti ručně provádět každou rutinní změnu.
   ],
   description: terms => [
-Dílčí cíle rozkládají hlavní cíl na vývojové prostředí, práci s modelem a kontextem, řízení agentního běhu a lidskou kontrolu. Každá oblast je dále rozpracována jako samostatné koncepty.
+Dílčí cíle pokrývají vývojové prostředí, kontext, provádění a lidský dohled.
   ],
   relations: ((type: "dependency", target: "main_goal"),),
 )

@@ -1,16 +1,15 @@
-#import "/DarkFactory/templates/common.typ": translation, term
+#import "/DarkFactory/templates/common.typ": term
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "language_models",
-    czech: "Jazykové modely, chatboti a agenti",
+  czech: "Jazykové modely, chatboti a agenti",
   english: "Language Models, Chatbots, and Agents",
-definition: terms => [
-Tato skupina konceptů rozlišuje samotný jazykový model od produktových rozhraní a agentních systémů, které model používají.
+  definition: terms => [
+Jazykový model, chatbot a agent jsou odlišné systémové vrstvy.
   ],
   description: terms => [
-#term(terms.language_model), #term(terms.chatbot) a #term(terms.agent) označují různé systémové vrstvy. Toto rozlišení zabraňuje zaměňování schopností modelu s funkcemi, které ve skutečnosti poskytuje aplikační nebo agentní harness.
+#term(terms.language_model) provádí inferenci, #term(terms.chatbot) přidává konverzační aplikační vrstvu a #term(terms.agent) navíc samostatně jedná pomocí nástrojů.
   ],
   relations: ((type: "related", target: "language_model"), (type: "related", target: "chatbot"), (type: "related", target: "agent")),
 )

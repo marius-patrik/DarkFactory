@@ -12,7 +12,7 @@
 Jazykový model je neuronový model pro zpracování a generování posloupností tokenů; současné modely tohoto typu typicky používají #term(terms.transformer).
   ],
   description: terms => [
-Při generování model opakovaně odhaduje další token na základě dosavadního kontextu. Samostatné koncepty dále popisují tokenizaci, reprezentaci dat a omezení kontextu. Funkce jako práce se soubory, spouštění příkazů nebo správa úloh nejsou vlastnostmi jazykového modelu; poskytuje je nadřazený aplikační nebo agentní systém.
+Model při generování odhaduje další token z aktivního kontextu. Práci se soubory, příkazy, nástroji a stavem poskytuje až okolní aplikační nebo agentní vrstva.
   ],
   relations: ((type: "dependency", target: "transformer"),),
 )

@@ -15,9 +15,7 @@
 Agentní harness je aplikační a orchestrační vrstva, která propojuje model s prostředím a řídí jeho opakované jednání nad stavem a nástroji.
   ],
   description: terms => [
-Harness sestavuje pracovní kontext, zpřístupňuje nástroje, spravuje stav úlohy, přijímá výsledky provedených akcí a určuje, kdy může agent pokračovat nebo kdy má běh skončit.
-
-Ústředním prováděcím mechanismem je #term(terms.agent_loop).
+Harness spravuje pracovní kontext, nástroje, stav úlohy, výsledky akcí a podmínky pokračování nebo ukončení běhu; provádění koordinuje #term(terms.agent_loop).
   ],
   examples: (codex.item, claude_code.item, claude_desktop.item),
   relations: ((type: "dependency", target: "agent"), (type: "dependency", target: "language_model")),
