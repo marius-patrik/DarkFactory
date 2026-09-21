@@ -1,21 +1,26 @@
-import { generateVaultKey, isValidVaultKey } from "./crypto.ts";
-import { storeVaultKey, loadVaultKey } from "./keychain.ts";
-import type { KeychainOptions } from "./keychain.ts";
 import {
+	emptyVault,
+	generateVaultKey,
+	isValidVaultKey,
+	loadVaultKey,
+	storeVaultKey,
+	type KeychainOptions,
+} from "@darkfactory/keychain";
+import {
+	loadPushMap,
 	loadVault,
+	resolveDataRepoPath,
 	saveVault,
-	vaultSet,
 	vaultGet,
 	vaultList,
 	vaultRm,
-	resolveDataRepoPath,
-	loadPushMap,
-} from "./vault-store.ts";
-import type { VaultStoreOptions } from "./vault-store.ts";
+	vaultSet,
+	type VaultStoreOptions,
+} from "@darkfactory/keychain/vault-store";
 import { syncDataRepo, isGitRepo } from "./sync.ts";
 import { pushSecrets } from "./push.ts";
 import { detectDrift } from "./drift.ts";
-import { emptyVault } from "./vault.ts";
+
 import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository.ts";
 
