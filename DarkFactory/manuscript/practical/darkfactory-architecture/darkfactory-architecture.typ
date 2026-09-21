@@ -1,15 +1,13 @@
-#import "/DarkFactory/templates/common.typ": critique
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
   key: "darkfactory_architecture",
   title: [Návrh systému DarkFactory],
   definition: terms => [
-Konkrétní uspořádání komponent agentního harnessu do jednoho vývojového systému.
+Tato část popisuje architekturu DarkFactory podle aktuální implementace a jejích veřejných balíčkových a protokolových hranic.
   ],
   description: terms => [
-Spojuje modelovou, stavovou, nástrojovou a kontrolní vrstvu do řízeného toku provádění softwarových úloh.
-
-#critique[Tato část zatím popisuje architekturu pouze obecně. Před finalizací doplnit skutečné komponenty DarkFactory, jejich rozhraní, tok stavu a ověřené vazby na implementaci; nevymýšlet je pouze z návrhového záměru.]
+DarkFactory odděluje vykonávací mechanismy, verzované capabilities, GitHub integraci, credential boundaries a operátorská rozhraní do samostatných komponent s explicitními odpovědnostmi. Následující podsekce vycházejí z aktuálního produktového kontraktu a zdrojového kódu, nikoli z plánované kompatibilní mezivrstvy nebo historické architektury. #cite(bib.darkfactory)
   ],
 )
