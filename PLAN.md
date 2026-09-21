@@ -64,7 +64,7 @@ Deliver a submission-ready Czech thesis and publication set in which:
 
 ## Phase 2 — Theory source and citation pass A
 
-**Status: in progress; weakest source mismatches corrected, full concept audit still pending.**
+**Status: complete for pass A; all theory concepts and theory-owned examples have source/citation metadata and claim-local citations where required.**
 
 **Purpose:** make every surviving theoretical concept source-complete before the final prose pass.
 
@@ -131,6 +131,8 @@ Do not write final answers yet. Replace unsupported answer-like prose with expli
 - Methodology describes the actual evaluation strategy, not a generic school template.
 
 ## Phase 4 — Final theory rewrite pass
+
+**Status: in progress.**
 
 **Purpose:** rewrite the now-stable, sourced theory as one coherent argument.
 
