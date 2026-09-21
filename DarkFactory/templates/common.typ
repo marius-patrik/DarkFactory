@@ -367,18 +367,16 @@
   }
   let ordered = unique.sorted(key: item => lower(term-sort-name(item)))
   if ordered.len() == 0 {
-    finalized[—]
+    [—]
   } else {
-    finalized[
-      #text(size: 11pt, fill: black)[
-        #ordered.map(item => term(
-          item,
-          surface: "full",
-          linked: false,
-          marker: false,
-          emphasized: false,
-        )).join([, ])
-      ]
+    text(size: 11pt, fill: black)[
+      #ordered.map(item => term(
+        item,
+        surface: "full",
+        linked: false,
+        marker: false,
+        emphasized: false,
+      )).join([, ])
     ]
   }
 }
