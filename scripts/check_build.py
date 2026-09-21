@@ -384,6 +384,9 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/index.typ",
         ROOT / "agentic-engineering/agent-harness/turn.typ",
         ROOT / "agentic-engineering/harness-engineering.typ",
+        ROOT / "agentic-engineering/spec-driven-development.typ",
+        ROOT / "agentic-engineering/examples/karpathy-vibe-coding-tweet.typ",
+        ROOT / "img/external/karpathy-vibe-coding.webp",
         ROOT / "agentic-engineering/context-engineering/context-injection.typ",
         ROOT / "agentic-engineering/skills/index.typ",
     ):

@@ -1,6 +1,7 @@
 #import "/DarkFactory/schema.typ": folder
 #import "/DarkFactory/agentic-engineering/agentic-engineering.typ" as section
 #import "/DarkFactory/agentic-engineering/harness-engineering.typ" as harness_engineering
+#import "/DarkFactory/agentic-engineering/spec-driven-development.typ" as spec_driven_development
 #import "/DarkFactory/agentic-engineering/vibe-coding.typ" as vibe_coding
 #import "/DarkFactory/agentic-engineering/slop.typ" as slop
 #import "/DarkFactory/agentic-engineering/guardrail.typ" as guardrail
@@ -17,6 +18,7 @@
   section: section.item,
   concepts: (
     harness_engineering.item,
+    spec_driven_development.item,
     guardrail.item,
     human_in_the_loop.item,
     sandbox.item,

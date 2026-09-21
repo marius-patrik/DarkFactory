@@ -43,6 +43,8 @@
 #let json_schema_2020 = <json-schema2020>
 #let openai_structured_outputs = <openai2024structuredoutputs>
 #let anthropic_code_execution = <anthropic2026codeexecution>
+#let fowler2025sdd = <fowler2025sdd>
+#let coderabbit2026vibehistory = <coderabbit2026vibehistory>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -86,4 +88,6 @@
   json_schema_2020: json_schema_2020,
   openai_structured_outputs: openai_structured_outputs,
   anthropic_code_execution: anthropic_code_execution,
+  fowler2025sdd: fowler2025sdd,
+  coderabbit2026vibehistory: coderabbit2026vibehistory,
 )
