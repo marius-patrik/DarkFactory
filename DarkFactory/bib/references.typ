@@ -34,7 +34,6 @@
 #let openai_codex_app = <openai-codex-app>
 #let anthropic_claude_code = <anthropic-claude-code>
 #let anthropic_claude_desktop = <anthropic-claude-desktop>
-
 #let karpathy2025vibecoding = <karpathy2025vibecoding>
 #let willison2025vibecoding = <willison2025vibecoding>
 #let fowler2026vibecoding = <fowler2026vibecoding>
@@ -45,6 +44,13 @@
 #let anthropic_code_execution = <anthropic2026codeexecution>
 #let fowler2025sdd = <fowler2025sdd>
 #let coderabbit2026vibehistory = <coderabbit2026vibehistory>
+#let openai_agents_sessions = <openai-agents-sessions>
+#let openai_agents_guardrails = <openai-agents-guardrails>
+#let claude_code_plugins = <claude-code-plugins>
+#let claude_code_hooks = <claude-code-hooks>
+#let claude_code_mcp = <claude-code-mcp>
+#let github_branches = <github-branches>
+#let github_pull_requests = <github-pull-requests>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -90,4 +96,11 @@
   anthropic_code_execution: anthropic_code_execution,
   fowler2025sdd: fowler2025sdd,
   coderabbit2026vibehistory: coderabbit2026vibehistory,
+  openai_agents_sessions: openai_agents_sessions,
+  openai_agents_guardrails: openai_agents_guardrails,
+  claude_code_plugins: claude_code_plugins,
+  claude_code_hooks: claude_code_hooks,
+  claude_code_mcp: claude_code_mcp,
+  github_branches: github_branches,
+  github_pull_requests: github_pull_requests,
 )
