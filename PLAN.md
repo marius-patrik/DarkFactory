@@ -14,6 +14,105 @@ Deliver a submission-ready Czech thesis and publication set in which:
 - methodology, goals, research questions, answers, introduction, and conclusion agree with the finished work;
 - final/review PDF, HTML, and Markdown build cleanly and render correctly.
 
+
+## Pending redesign — conversation lock
+
+**Status: planning only. Do not implement until explicitly approved in conversation.**
+
+This gate supersedes the currently implemented theory hierarchy and terminology API once approved.
+
+### Locked target changes
+
+- **2.2 → AI-asistovaný vývoj**. Remove the separate 2.2.1 AI-assisted group; keep the Software Engineering article, Vibe Coding, and Slop directly under 2.2.
+- Add **Inference Engine** under Model.
+- **2.4.3 → Dovednosti a rozšíření**.
+- Remove the duplicate standalone Harness article; keep one numbered **Harness** section whose section body owns the definition.
+- Remove the duplicate standalone Agentic Engineering article; keep one numbered **Agentické inženýrství** section, Czech only.
+- All terms render Czech-first with at most one alternate term.
+- Required target forms include:
+  - **Mezipaměť klíčů a hodnot (KV Cache)**
+  - **Degradace kontextu (Context Rot)**
+  - **Agentické inženýrství**
+  - **Harness**
+
+### Proposed concept terminology API
+
+Replace `industry`, `czech`, `english`, `alias`, and boolean `keyword` with:
+
+- required `term`: canonical Czech-first term;
+- optional `keyword`: the single alternate/industry term.
+
+Rendering becomes only:
+
+- `term`
+- `term (keyword)`
+
+A concept is included in the front keyword list / encyclopedia iff `keyword != none`. No independent keyword boolean remains.
+
+After approval, remove all old multi-surface helpers and migrate `term(...)`, sorting, keyword generation, encyclopedia generation, concept schema, validators, theory, Practical, and docs atomically. Do not maintain a compatibility API.
+
+### Semantic deduplication rule
+
+Every definition, fact, mechanism, distinction, example, limitation, and piece of evidence has one canonical owner.
+
+Elsewhere:
+- reference the owning concept only when the relationship adds new information;
+- never redefine or paraphrase another concept as background;
+- section introductions explain grouping/transition only;
+- Practical explains only the DarkFactory-specific realization/delta;
+- Results report evidence rather than restating architecture;
+- Conclusion answers goals/questions without reproducing Results;
+- cross-concept mentions use canonical `term(...)` references.
+
+Do not use crude word-frequency thresholds; the target is semantic non-duplication, not unnatural Czech.
+
+### Current candidate theory hierarchy
+
+- **2.2 AI-asistovaný vývoj**
+  - Software Engineering article
+  - Vibe Coding
+  - Slop
+  - **2.2.1 Specifikace a plánování** — Spec-Driven Development, Planning, DAG
+  - **2.2.2 Řízení změn a ověřování** — Version Control, Branch, Pull Request, CI, Integration Test
+- **2.3 Model**
+  - **2.3.1 Jazykový model** — LLM, Transformer, Tokenizer, Token, Embedding
+  - **2.3.2 Inference** — Inference Engine, Context Window, KV Cache
+  - **2.3.3 Limity modelu** — Context Rot, Divergence
+- **2.4 Harness**
+  - no duplicate Harness article
+  - **2.4.1 Stav a průběh** — Session, Turn, Transcript, State
+  - **2.4.2 Běh a prostředí** — Agent Loop, Runtime, Environment, Container, Sandbox
+  - **2.4.3 Dovednosti a rozšíření** — Plugins, Tools, JSON Schema Tool Calling, Code Execution, Scripts, Hooks, MCP, Skills
+- **2.5 Agentické inženýrství**
+  - no duplicate Agentic Engineering article
+  - **2.5.1 Instrukce a kontext** — Prompt Engineering, System Prompt, Context Engineering, Context Injection, Prompt Injection, Compaction, RAG
+  - **2.5.2 Řízení běhu** — Loops, Guardrail, HITL
+  - **2.5.3 Multiagentní systémy** — Subagent, Orchestrator, Handoff, Swarm, Graphs
+
+### Decisions required before implementation
+
+1. Confirm that `keyword` is simultaneously the sole alternate rendered term **and** the inclusion marker for keywords/encyclopedia. Consequence: a concept with no alternate term cannot independently be a keyword.
+2. Confirm **2.3.2 Inference** or choose a Czech section label; likely article: **Inferenční engine (Inference Engine)**.
+3. Confirm the Czech-first Software Engineering article, likely **Softwarové inženýrství (Software Engineering)**.
+4. Confirm that Czech-first does not force artificial translations: established terms such as Harness, Transformer, Token, MCP, Vibe Coding, and possibly Prompt Injection may remain the canonical `term`.
+5. Confirm Dovednosti a rozšíření semantics: Skills sibling of Plugins; Plugins owns Tools/Scripts/Hooks/MCP; Tools owns JSON Schema Tool Calling/Code Execution.
+6. Apply the same term/keyword model to all DarkFactory-specific Practical concepts.
+
+### Implementation order after approval
+
+1. Lock the six decisions above.
+2. Update AGENTS.md + positive validators to the approved target only.
+3. Migrate schema/renderers atomically to `term` + optional `keyword`.
+4. Migrate all concepts; remove duplicate Harness/Agentické inženýrství articles.
+5. Add Inference Engine and apply the final theory hierarchy.
+6. Migrate Practical terminology.
+7. Perform the thesis-wide single-owner deduplication pass.
+8. Regenerate keywords/encyclopedia under the new semantics.
+9. Remove all stale API/docs/validation paths.
+10. Run full build/publication QA and inspect rendered output.
+
+**Gate:** none of the implementation steps above may run before explicit approval.
+
 ## Phase 1 — Lock structure and concept model
 
 **Status: complete; structure applied, static relation audit clean, and DarkFactory-Paper CI/Deploy/Release verified green on snapshot 5bc04974.**
