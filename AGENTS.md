@@ -47,6 +47,8 @@ Do not use raw Typst bold emphasis in manuscript prose. Bold typography is reser
 
 Accepted prose should remain clean source. Use review markers only for genuinely unresolved review work; do not wrap settled text in `#finalized`, `#accepted`, or mandatory diff markers.
 
+Keep theory implementation-agnostic. DarkFactory-specific architecture, behavior, workflow, and evaluation claims belong in the practical/results sections unless a brief reference is necessary to connect theory to practice.
+
 ## Citation policy
 
 Use citations aggressively for externally verifiable claims, but do not add decorative citations to connective author prose.
@@ -61,7 +63,7 @@ Definitions, protocol behavior, mechanisms, historical claims, comparisons, quan
 
 A citation must support the specific claim it follows. Do not cite a source merely because it is topically related.
 
-Every theoretical concept should have appropriate source/citation metadata unless the text is explicitly an author-defined term. All citation handles must resolve through `DarkFactory/bib/references.bib`.
+Every theoretical concept should have appropriate source/citation metadata unless the text is explicitly an author-defined term. When a useful thesis term is not established terminology, write `V této práci ...` (or equivalent) and cite authoritative sources for the underlying mechanism rather than presenting the term itself as externally standardized. All citation handles must resolve through `DarkFactory/bib/references.bib`.
 
 Practical implementation claims must be grounded in the actual `darkfactory/` submodule, repository workflows, tests, or measured results. Never infer implementation behavior from the planned architecture.
 
