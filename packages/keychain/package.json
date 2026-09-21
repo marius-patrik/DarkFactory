@@ -5,6 +5,8 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./oauth": "./src/oauth.ts",
+    "./login": "./src/login.ts",
     "./import/reader": "./src/import/reader.ts",
     "./import/shared": "./src/import/shared.ts",
     "./import/keyring": "./src/import/keyring.ts",
