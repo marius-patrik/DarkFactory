@@ -14,5 +14,5 @@ Otevřený protokol pro standardizované propojení AI aplikací s externími n�
   description: terms => [
 MCP odděluje klientskou AI aplikaci od serverů poskytujících nástroje a další schopnosti, takže integrace lze implementovat mimo vlastní jádro harnessu. #cite(bib.anthropic_mcp) #cite(bib.claude_code_mcp)
   ],
-  relations: ((type: "dependency", target: "plugins"), (type: "related", target: "tools")),
+  relations: ((type: "parent", target: "plugins"), (type: "related", target: "tools")),
 )
