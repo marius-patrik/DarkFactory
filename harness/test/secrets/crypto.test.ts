@@ -1,6 +1,6 @@
 import { expect, test, describe } from "bun:test";
-import { generateVaultKey, encryptVault, decryptVault, isValidVaultKey } from "../../src/secrets/crypto.ts";
-import type { Vault } from "../../src/secrets/vault.ts";
+import { decryptVault, encryptVault, generateVaultKey, isValidVaultKey, type Vault } from "@darkfactory/keychain";
+
 
 describe("Secrets Crypto", () => {
   test("generates valid 32-byte base64 vault key", () => {
