@@ -113,14 +113,15 @@ Do not make #317 wait for all of #384. Move only the mechanism required by #317 
 
 The active PR now carries the major missing final-owner work: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
 
+Current validation: PR #931 head `6ea451f` has green CI, docs preview, bound-issue verification, board automation and formatting.
+
 Remaining work:
 
-1. restore the latest PR head to green after the browser-isolation test repair;
-2. finish removal of remaining temporary secret/credential custody facades under `harness/`;
-3. verify no browser bundle can import keychain/private-key code;
-4. record the final F14 integrated/rejected disposition;
-5. delete `recovery/f14-borrowed-refresh` once no unique required state remains;
-6. complete semantic review/alignment and merge.
+1. finish removal of remaining temporary secret/credential custody facades under `harness/`;
+2. retain the green browser/private-key isolation boundary while removing those facades;
+3. record the final F14 integrated/rejected disposition;
+4. delete `recovery/f14-borrowed-refresh` once no unique required state remains;
+5. complete semantic review/alignment and merge.
 
 #248 consumes #422 rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
 
@@ -302,7 +303,7 @@ After #361 is green, rerun the declarable-graph product contract and close #68 o
 Highest-downstream-value work, in order:
 
 1. **#329 / #891:** perform terminal current-head review/alignment and merge; avoid further implementation churn unless review finds a real defect.
-2. **#422 / #931 in parallel:** clear CI, remove remaining harness custody facades, finalize F14 disposition and merge; then delete `recovery/f14-borrowed-refresh`.
+2. **#422 / #931 in parallel:** with aggregate checks green, remove remaining harness custody facades, finalize F14 disposition, review/alignment and merge; then delete `recovery/f14-borrowed-refresh`.
 3. **#358 / #894:** immediately refresh on merged #329, move production orchestration to final owners, prove real persisted exactly-once resume, review/alignment, merge.
 4. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
 5. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #329/#358/#317.
