@@ -15,5 +15,5 @@ Rozhraní, kterým agent vyvolává operace mimo samotnou textovou inferenci, na
   description: terms => [
 Harness zprostředkuje požadavek na nástroj, provede operaci v prostředí a vrátí její výsledek modelu jako další pozorování. #cite(bib.schick2023toolformer) #cite(bib.anthropic2024tooluse)
   ],
-  relations: ((type: "dependency", target: "agent_loop"),),
+  relations: ((type: "dependency", target: "plugins"), (type: "related", target: "agent_loop")),
 )
