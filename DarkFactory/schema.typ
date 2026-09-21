@@ -48,6 +48,33 @@
   )
 }
 
+#let section(
+  key: none,
+  title: none,
+  definition: none,
+  description: none,
+  visual: none,
+  examples: (),
+  attachments: (),
+  citations: (),
+) = {
+  assert(key != none, message: "section requires a stable key")
+  assert(title != none, message: "section requires a title")
+  assert(definition != none, message: "section requires an introductory definition/body")
+  assert(description != none, message: "section requires an introductory description/body")
+  (
+    kind: "section",
+    key: key,
+    title: title,
+    definition: definition,
+    description: description,
+    visual: visual,
+    examples: examples,
+    attachments: attachments,
+    citations: citations,
+  )
+}
+
 #let folder(
   key: none,
   title: none,
@@ -254,7 +281,13 @@
   let has-section = node.title != none or node.section != none
 
   if has-section {
-    let heading-title = if node.title != none { node.title } else { render-concept-title(node.section) }
+    let heading-title = if node.title != none {
+      node.title
+    } else if node.section.kind == "section" {
+      node.section.title
+    } else {
+      render-concept-title(node.section)
+    }
     output += [#heading(level: level)[#heading-title]#label("section-" + node.key)]
     child-level = level + 1
     if node.section != none {
