@@ -15,5 +15,5 @@ Programově vynucená kontrola, která může před pokračováním běhu valido
   description: terms => [
 Guardrails lze spouštět na hranicích vstupu, výstupu nebo volání nástroje a při nesplnění podmínky běh zastavit či odmítnout konkrétní akci. #cite(bib.openai_agents_guardrails)
   ],
-  relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "loop_engineering")),
+  relations: ((type: "dependency", target: "harness"), (type: "related", target: "sandbox"), (type: "related", target: "goal_loops")),
 )
