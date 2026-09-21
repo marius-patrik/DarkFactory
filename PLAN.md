@@ -42,7 +42,7 @@ At the beginning of the run:
 
 1. fetch/prune all refs and inspect `darkfactory`, open Requests/PRs/checks, worktrees, stashes and recovery refs;
 2. inventory local recovered state required by open Requests before regenerating anything, especially #251 and `recovery/f47-hooks`;
-3. delete rejected/generated branches that contain no unresolved unique state;
+3. perform the initial branch/worktree cleanup pass defined in §10 before creating new lanes;
 4. create one isolated worktree per active implementation lane from the exact intended base;
 5. record each lane's Request(s), allowed ownership surface, dependencies and expected terminal evidence;
 6. start the critical lane first, then all safe independent lanes immediately.
@@ -375,7 +375,88 @@ Never create another recovery state model.
 
 At J3 the orchestrator tells operator, web, release and docs-impact agents to replace any held lifecycle assumptions with final interfaces and finish their remaining acceptance criteria.
 
-## 10. Continuous integration algorithm
+## 10. Branch, worktree and recovery cleanup
+
+Branch hygiene is part of implementation, not a post-project courtesy. The orchestrator owns it continuously throughout the single run.
+
+### 10.1 Initial cleanup pass
+
+Before dispatching new implementation lanes:
+
+1. fetch all remotes and run a prune so deleted/stale remote-tracking refs are removed locally;
+2. inventory every local branch, remote branch, worktree, stash and recovery ref;
+3. classify each non-canonical ref as exactly one of:
+   - **active implementation** — bound to a current Request/PR and contains unresolved work;
+   - **recovery evidence** — unique recovered state still required by a current Request;
+   - **deployment/system** — e.g. `gh-pages`;
+   - **cleanup-only** — merged, closed, rejected, superseded, duplicated, abandoned or containing no unique unresolved state;
+4. compare cleanup candidates against canonical and their owning Request/PR before deletion so unique commits/dirty bytes are never lost;
+5. remove stale worktrees first, then delete the corresponding local branches and remote branches;
+6. expire/delete stashes only after their contents are either represented by a durable recovery ref/commit or explicitly recorded as discarded with rationale;
+7. run `git worktree prune`, remote prune and a second ref inventory to prove the cleanup actually took effect.
+
+At the current checkpoint, the following generated/rejected remote refs are **cleanup-only unless fresh inspection proves unique unrepresented state**:
+
+- `feature/centralize-all-machine-and-harness-credentials-in`;
+- `feature/df-supports-deterministic-common-git-workspace-ope`;
+- `feature/finish-the-supported-df-operator-cli-surface`;
+- `feature/publish-and-install-df-as-the-supported-release-ar`;
+- `feature/results-are-captured-when-a-model-stops-without-js`;
+- `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a`.
+
+The orchestrator deletes these during startup after verifying the corresponding rejected/terminal work is already represented in GitHub/current canonical state.
+
+The following refs are protected from startup deletion:
+
+- `darkfactory` — canonical;
+- `feat/graph-native-production-orchestration` — #358 / PR #894;
+- `fix/conflict-repair-mutation-evidence` — #317 / PR #899;
+- `feature/make-darkfactory-web-the-prebuilt-github-backed-op` — #425 / PR #963;
+- `recovery/f47-hooks` — temporary unique recovery evidence for #339 until terminal disposition;
+- `gh-pages` — deployment/system ref.
+
+### 10.2 Continuous post-merge cleanup
+
+Immediately after every terminal merge/disposition, before forgetting the lane:
+
+1. record the merge/rejection/supersession SHA and owning Request disposition;
+2. remove the lane worktree if it is no longer needed;
+3. delete its local topic branch;
+4. delete its remote topic branch;
+5. prune remote-tracking refs;
+6. remove temporary integration/review branches created only for the completed join;
+7. delete any associated recovery ref only when its unique required state has been integrated, explicitly rejected or fully subsumed and that disposition is durable in the owning Request/audit record;
+8. keep `gh-pages` and any other explicitly required deployment/system refs outside implementation cleanup.
+
+Merged topic branches are not archives. GitHub issues/audit evidence are the archive.
+
+### 10.3 Recovery cleanup
+
+Recovery refs/worktrees/stashes require stricter handling:
+
+- never delete recovery state merely because a replacement implementation exists;
+- first prove every unique source commit/dirty/untracked byte has either been integrated, preserved in durable provenance, or explicitly rejected with rationale;
+- #339 owns terminal disposition of `recovery/f47-hooks`;
+- #251 recovery inventory must be preserved before TUI reconciliation;
+- #388 must expose cleanup eligibility for productized recovery inputs;
+- once terminal disposition exists, remove the local recovery worktree, local branch/ref, remote recovery branch and obsolete stash in the same orchestrator run.
+
+### 10.4 Final zero-stale-ref audit
+
+Before #360 release freeze and again before closing #68, require:
+
+- no rejected/generated branches;
+- no merged topic branches;
+- no abandoned integration/review branches;
+- no stale worktrees;
+- no unexplained stashes;
+- no recovery refs lacking an active unresolved Request and explicit unique-state rationale;
+- no remote-tracking refs for already deleted branches;
+- only canonical, deployment/system and genuinely active refs remain.
+
+Any unexpected ref blocks final closure until classified and cleaned or explicitly justified as required current state.
+
+## 11. Continuous integration algorithm
 
 Throughout the run, the orchestrator repeats this loop:
 
@@ -385,14 +466,15 @@ Throughout the run, the orchestrator repeats this loop:
 4. run detected local verification and the repository pipeline;
 5. fix real failures in the owning lane; rerun transient infrastructure failures without product changes;
 6. merge terminal work;
-7. broadcast only the changed interfaces/SHA to affected agents;
-8. dispatch newly unblocked downstream work immediately;
-9. reconcile shared lockfile/export/workflow changes under the integration lock;
-10. close Requests only from acceptance evidence, not agent summaries.
+7. immediately run the §10 post-merge branch/worktree/ref cleanup for that lane;
+8. broadcast only the changed interfaces/SHA to affected agents;
+9. dispatch newly unblocked downstream work immediately;
+10. reconcile shared lockfile/export/workflow changes under the integration lock;
+11. close Requests only from acceptance evidence, not agent summaries.
 
 Do not allow idle time merely because another independent PR is waiting on CI. Agents continue on work that cannot be invalidated by that pending merge.
 
-## 11. Final truth/documentation pass — #337
+## 12. Final truth/documentation pass — #337
 
 When every release-affecting behavior is terminal, dispatch one fresh high-context review agent over the entire canonical tree.
 
@@ -409,7 +491,7 @@ It must:
 
 The agent does not redesign the product during this pass. Any real implementation defect found is sent back to the owning feature lane, fixed, merged and then re-audited.
 
-## 12. Release freeze — #360
+## 13. Release freeze — #360
 
 After #337 is clean and every release-affecting Request is terminal:
 
@@ -424,7 +506,7 @@ After #337 is clean and every release-affecting Request is terminal:
 
 No canary/migration release is created.
 
-## 13. Fleet acceptance — #361
+## 14. Fleet acceptance — #361
 
 The orchestrator installs the published artifact source-free into all six consumers:
 
@@ -452,7 +534,7 @@ For each consumer prove:
 
 Any defect returns immediately to its owning DarkFactory package/Request, is fixed, republished and retested. #361 is not a backlog.
 
-## 14. Terminal closure — #68
+## 15. Terminal closure — #68
 
 Close #68 only when:
 
@@ -460,17 +542,17 @@ Close #68 only when:
 - #361 is closed green;
 - the declarable graph still deterministically renders/validates required workflow behavior;
 - no unresolved unique recovery work remains;
-- rejected/generated/topic branches are removed except deployment refs;
+- the §10 zero-stale-ref audit passes: rejected/generated/merged topic branches, stale worktrees, obsolete stashes and terminal recovery refs are removed except explicitly required deployment/system/current-work refs;
 - repository docs describe current state only;
 - DarkFactory is source-free installable and self-hosting through its own governed df pipeline.
 
-## 15. Orchestrator stop conditions
+## 16. Orchestrator stop conditions
 
 The single run ends only at one of these conditions:
 
 ### Success
 
-`#360 → #361 → #68` are terminal, final release/fleet evidence exists, recovery/branch cleanup is complete and canonical `darkfactory` is green.
+`#360 → #361 → #68` are terminal, final release/fleet evidence exists, the §10 zero-stale-ref audit is clean on both local and remote state, and canonical `darkfactory` is green.
 
 ### Genuine external block
 
