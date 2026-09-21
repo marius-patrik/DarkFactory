@@ -231,6 +231,19 @@ require_contract(
     "terminology renderer",
 )
 
+encyclopedia_source = require_file(ROOT / "manuscript/appendices/encyclopedia/encyclopedia.typ")
+require_contract(
+    encyclopedia_source,
+    (
+        "terms.values()",
+        ".filter(item => item.keyword)",
+        ".sorted(key: item => lower(term-sort-name(item)))",
+        'link(label("concept-" + item.key)',
+        "(item.definition)(terms)",
+    ),
+    "generated concept encyclopedia",
+)
+
 all_book_typ = tuple(sorted(ROOT.rglob("*.typ")))
 concept_files = tuple(
     path for path in all_book_typ if "#let item = concept(" in path.read_text(encoding="utf-8")
