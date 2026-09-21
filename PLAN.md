@@ -37,17 +37,19 @@ This gate supersedes the currently implemented theory hierarchy and terminology 
 
 ### Proposed concept terminology API
 
-Replace `industry`, `czech`, `english`, `alias`, and boolean `keyword` with:
+Replace `industry`, `czech`, `english`, `alias`, and boolean `keyword` with only two optional terminology fields:
 
-- required `term`: canonical Czech-first term;
-- optional `keyword`: the single alternate/industry term.
+- `term`: the canonical Czech-first term when a Czech term is useful;
+- `keyword`: the canonical industry/alternate keyword.
 
-Rendering becomes only:
+At least one of `term` or `keyword` must be present.
 
-- `term`
-- `term (keyword)`
+The renderer has exactly three legal states:
+- `term` only → `term`
+- `term` + `keyword` → `term (keyword)`
+- `keyword` only → `keyword`
 
-A concept is included in the front keyword list / encyclopedia iff `keyword != none`. No independent keyword boolean remains.
+A concept is included in the front keyword list / encyclopedia iff `keyword != none`. Therefore single established terms such as `RAG`, `Harness`, `Transformer`, or `MCP` can be represented as `term: none, keyword: "..."` without inventing a duplicate alternate term. No independent keyword boolean remains.
 
 After approval, remove all old multi-surface helpers and migrate `term(...)`, sorting, keyword generation, encyclopedia generation, concept schema, validators, theory, Practical, and docs atomically. Do not maintain a compatibility API.
 
@@ -118,7 +120,7 @@ and analogously for every listed level-2 section.
 
 ### Decisions required before implementation
 
-1. Confirm that `keyword` is simultaneously the sole alternate rendered term **and** the inclusion marker for keywords/encyclopedia. Consequence: a concept with no alternate term cannot independently be a keyword.
+1. **Resolved terminology-state contract:** `term` and `keyword` are both optional but at least one is required. `keyword` controls keyword/index inclusion and may stand alone as the rendered concept name when no Czech-first `term` is useful.
 2. Confirm **2.3.2 Inference** or choose a Czech section label; likely article: **Inferenční engine (Inference Engine)**.
 3. Confirm the Czech-first Software Engineering article, likely **Softwarové inženýrství (Software Engineering)**.
 4. Confirm that Czech-first does not force artificial translations: established terms such as Harness, Transformer, Token, MCP, Vibe Coding, and possibly Prompt Injection may remain the canonical `term`.
