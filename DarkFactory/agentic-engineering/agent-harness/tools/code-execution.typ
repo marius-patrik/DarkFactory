@@ -14,5 +14,5 @@ Nástrojová schopnost umožňující vykonat program nebo příkaz a vrátit je
   description: terms => [
 Při vývoji softwaru zpřístupňuje agentovi například testy, buildy, formátovače a diagnostické příkazy místo odhadování jejich výsledku. #cite(bib.anthropic_code_execution)
   ],
-  relations: ((type: "dependency", target: "tools"), (type: "related", target: "runtime")),
+  relations: ((type: "parent", target: "tools"), (type: "related", target: "runtime")),
 )
