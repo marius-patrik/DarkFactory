@@ -6,13 +6,13 @@
   industry: "MCP",
   czech: "Model Context Protocol",
   english: "Model Context Protocol",
-  citation: bib.anthropic_mcp,
+  citation: (bib.anthropic_mcp, bib.claude_code_mcp),
   source: bib.anthropic_mcp,
   definition: terms => [
-Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji, zdroji a daty.
+Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji a datovými zdroji. #cite(bib.anthropic_mcp)
   ],
   description: terms => [
-MCP používá klient–server rozhraní nad JSON-RPC, takže nástroje a datové zdroje mohou být implementovány mimo jádro harnessu a znovu používány různými aplikacemi. #cite(bib.anthropic_mcp)
+MCP odděluje klientskou AI aplikaci od serverů poskytujících nástroje a další schopnosti, takže integrace lze implementovat mimo vlastní jádro harnessu. #cite(bib.anthropic_mcp) #cite(bib.claude_code_mcp)
   ],
   relations: ((type: "dependency", target: "tools"), (type: "related", target: "plugins")),
 )
