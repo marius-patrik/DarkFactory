@@ -3,9 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { emptyVault, generateVaultKey } from "@darkfactory/keychain";
-import { syncDataRepo } from "../../src/secrets/sync.ts";
-
 import { loadVault, saveVault } from "@darkfactory/keychain/vault-store";
+import { syncDataRepo } from "../../src/secrets/sync.ts";
 
 async function git(cwd: string, ...args: string[]) {
 	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
