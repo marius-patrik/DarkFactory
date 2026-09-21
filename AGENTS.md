@@ -132,17 +132,37 @@ Practical describes verified DarkFactory implementation, not intended architectu
 - **Návrh systému DarkFactory**
   - Cíle návrhu
   - Celková architektura
+    - DarkFactory
+    - Protocol (Protokol DarkFactory) [DarkFactory Protocol]
   - Vykonávací jádro
+    - Run State (Stav běhu)
+    - Routing (Směrování)
+    - Result Capture (Zachycení výsledku)
+    - Recovery (Obnova běhu)
   - Systém capabilities
+    - Capability
+    - Capability ABI
+    - Capability Adapter (Adaptér capability)
   - Externí integrace
+    - GitHub Control Plane (GitHub jako řídicí vrstva)
   - Identita a bezpečnostní hranice
+    - Keychain (Správa strojových přihlašovacích údajů)
+    - Auth (Autentizace uživatele) [Browser Authentication]
   - Rozhraní
+    - df CLI (Příkazové rozhraní df) [df Command-Line Interface]
+    - DarkFactory Web (Webové rozhraní DarkFactory)
+    - DarkFactory Docs (Kompilátor dokumentace DarkFactory) [DarkFactory Documentation Compiler]
 - **Životní cyklus požadavku**
   - Zachycení požadavku
+    - Request (Požadavek DarkFactory) [DarkFactory Request]
   - Plánování a schválení
+    - Planning (Plánování DarkFactory) [DarkFactory Planning]
+    - Review/Fix Loop (Smyčka revize a opravy)
   - Implementace
   - Ověření a revize
+    - Deterministic Verification (Deterministické ověření)
   - Integrace
+    - Reconciliation (Rekonciliace stavu) [State Reconciliation]
   - Obnova a pokračování
 - **Výsledky a diskuse**
   - Metoda ověření
