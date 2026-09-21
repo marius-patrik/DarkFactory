@@ -7,6 +7,14 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
+import {
+	defaultDfHome,
+	exportCredentialAccount,
+	FileCredentialStore,
+	importCredentialAccount,
+	loadVaultKey,
+	parseAccountId,
+} from "@darkfactory/keychain";
 import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
 import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
 import { importCodexAccount } from "@darkfactory/keychain/import/codex";
@@ -18,14 +26,6 @@ import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
-import {
-	defaultDfHome,
-	exportCredentialAccount,
-	FileCredentialStore,
-	importCredentialAccount,
-	loadVaultKey,
-	parseAccountId,
-} from "@darkfactory/keychain";
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
