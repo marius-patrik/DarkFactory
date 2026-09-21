@@ -3,7 +3,7 @@
 
 #let item = concept(
   key: "workflow_graphs",
-  industry: "Workflow Graphs",
+  industry: "Graphs",
   czech: "Pracovní grafy",
   english: "Workflow Graphs",
   citation: (bib.wu2023autogen, bib.anthropic2024tooluse),
