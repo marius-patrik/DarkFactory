@@ -4,15 +4,16 @@
 #let item = concept(
   key: "prompt_engineering",
   keyword: true,
+  industry: "Prompt Engineering",
   czech: "Promptové inženýrství",
   english: "Prompt Engineering",
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
   definition: terms => [
-Systematický návrh instrukcí a kontextu určujících požadované chování jazykového modelu nebo agenta.
+Systematický návrh instrukcí, příkladů a jejich struktury s cílem ovlivnit chování jazykového modelu. #cite(bib.anthropic_prompt)
   ],
   description: terms => [
-Prompt může řídit postup a používání nástrojů, ale nevynucuje bezpečnostní nebo procesní pravidla; ta zajišťuje #term(terms.guardrail).
+Prompt řídí pravděpodobnostní chování modelu; pravidla, která musí systém technicky vynutit, patří do #term(terms.guardrail) nebo jiné běhové kontroly.
   ],
   relations: (),
 )
