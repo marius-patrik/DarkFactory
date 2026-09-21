@@ -53,6 +53,9 @@
 #let github_pull_requests = <github-pull-requests>
 #let github_actions_docs = <github-actions-docs>
 #let docker_containers_docs = <docker-containers-docs>
+#let anthropic_context_engineering = <anthropic-context-engineering>
+#let anthropic_harness_design = <anthropic-harness-design>
+#let anthropic_managed_agents = <anthropic-managed-agents>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -107,4 +110,7 @@
   github_pull_requests: github_pull_requests,
   github_actions_docs: github_actions_docs,
   docker_containers_docs: docker_containers_docs,
+  anthropic_context_engineering: anthropic_context_engineering,
+  anthropic_harness_design: anthropic_harness_design,
+  anthropic_managed_agents: anthropic_managed_agents,
 )
