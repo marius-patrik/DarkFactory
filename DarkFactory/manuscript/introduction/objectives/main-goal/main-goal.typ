@@ -1,10 +1,9 @@
 #import "/DarkFactory/templates/common.typ": finalized
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "main_goal",
-  czech: "Hlavní cíl",
-  english: "Main Goal",
+  title: [Hlavní cíl],
   definition: terms => [
 #finalized[
 Zjistit, jak lze současnou agentní AI účinně používat při vývoji softwaru, a navrhnout architekturu agent harnessu, která podporuje vysokou míru autonomie při zachování lidského dohledu v důležitých rozhodnutích.
