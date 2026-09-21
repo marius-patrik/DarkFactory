@@ -16,7 +16,7 @@ Deliver a submission-ready Czech thesis and publication set in which:
 
 ## Phase 1 — Lock structure and concept model
 
-**Status: in progress; major hierarchy applied.**
+**Status: structure applied; static relation audit clean; publication/build verification pending.**
 
 ### Work
 
