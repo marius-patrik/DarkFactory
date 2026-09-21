@@ -13,5 +13,5 @@ Spojuje modelovou, stavovou, nástrojovou a kontrolní vrstvu do řízeného tok
 
 #critique[Tato část zatím popisuje architekturu pouze obecně. Před finalizací doplnit skutečné komponenty DarkFactory, jejich rozhraní, tok stavu a ověřené vazby na implementaci; nevymýšlet je pouze z návrhového záměru.]
   ],
-  relations: ((type: "dependency", target: "harness_engineering"),),
+  relations: (),
 )
