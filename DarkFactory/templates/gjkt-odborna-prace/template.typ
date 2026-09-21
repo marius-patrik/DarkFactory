@@ -20,7 +20,7 @@
 #let PISMO = ("Caladea", "New Computer Modern")
 
 #import "/DarkFactory/templates/gjkt-odborna-prace/wordometer.typ": string-word-count, extract-text
-#import "/DarkFactory/templates/common.typ": review-state, bilingual, ui-label, accepted, finalized, unconfirmed, translation, render-translation, translation-heading, render-keywords
+#import "/DarkFactory/templates/common.typ": review-state, bilingual, ui-label, unconfirmed, translation, render-translation, translation-heading, render-keywords
 #import "/DarkFactory/metadata.typ": title-value, title-display
 
 // Jediný stav rozsahu práce. Hodnota se vždy počítá ze skutečně vysázené verze
@@ -56,7 +56,7 @@
 
   v(1fr)
 
-  text(size: 26pt, weight: "bold", hyphenate: false, finalized(title-display(book-title)))
+  text(size: 26pt, weight: "bold", hyphenate: false, title-display(book-title))
 
   if meta.at("podnazev", default: none) != none {
     v(0.4cm)
@@ -83,7 +83,7 @@
     let rozsahy = stack(
       dir: ttb,
       spacing: 3pt,
-      finalized(range-line(s.raw)),
+      range-line(s.raw),
       unconfirmed(range-line(s.review)),
     )
 
@@ -109,10 +109,10 @@
 }
 
 #let prohlaseni(meta) = {
-  nadpis-bez-cisla[#finalized[#ui-label([Prohlášení], [Declaration])]]
+  nadpis-bez-cisla[#ui-label([Prohlášení], [Declaration])]
 
   let zkratka = meta.at("skola-zkratka", default: meta.skola)
-  let cs = finalized[
+  let cs = [
     Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval/a
     samostatně pod dohledem vedoucího uvedeného na první straně. Všechny
     použité zdroje jsou uvedeny v seznamu zdrojů a informace z nich získané
@@ -121,7 +121,7 @@
     tištěný zdroj např. pro další studentské práce či pro prezentaci
     vzdělávání na #zkratka.
   ]
-  let en = finalized[
+  let en = [
     I declare that I prepared this specialized thesis independently under the
     supervision of the supervisor named on the title page. All sources used
     are listed in the bibliography and information derived from them is cited
@@ -148,25 +148,23 @@
 
 #let front-matter-section(title, body, break-after: true) = {
   nadpis-bez-cisla[
-    #finalized[
-      #translation-heading(
-        title,
-        language: "auto",
-        school-both: true,
-        separator: "paren",
-        order: "en-cs",
-      )
-    ]
+    #translation-heading(
+      title,
+      language: "auto",
+      school-both: true,
+      separator: "paren",
+      order: "en-cs",
+    )
   ]
   body
   if break-after { pagebreak(weak: true) }
 }
 
 #let anotace-strana(meta, concepts) = {
-  nadpis-bez-cisla[#finalized[Anotace]]
+  nadpis-bez-cisla[Anotace]
   meta.at("annotation-cs")
 
-  nadpis-bez-cisla[#finalized[Abstract]]
+  nadpis-bez-cisla[Abstract]
   meta.at("abstract-en")
 
   front-matter-section(
@@ -457,7 +455,7 @@
 
   // Seznam obrázků a tabulek je součást zadní/přílohové části a díky
   // skutečnému outlined nadpisu se zároveň objeví v hlavním Obsahu.
-  nadpis-bez-cisla[#finalized[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]]
+  nadpis-bez-cisla[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]
   outline(
     title: none,
     target: figure.where(kind: image).or(figure.where(kind: table)),
@@ -466,7 +464,7 @@
 
   // Seznam příloh zůstává součástí práce; jeho položky vznikají pouze ze
   // skutečně přítomných příloh.
-  nadpis-bez-cisla[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
+  nadpis-bez-cisla[#ui-label([Seznam příloh], [List of appendices])]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
