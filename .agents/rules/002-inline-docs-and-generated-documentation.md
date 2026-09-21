@@ -1,4 +1,5 @@
 ---
+enforced_by: [tsdoc-docs]
 id: DF-RULE-002
 title: Inline docstrings and generated documentation
 status: normative

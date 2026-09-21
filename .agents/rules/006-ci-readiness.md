@@ -1,4 +1,5 @@
 ---
+enforced_by: [tests-touched]
 id: DF-RULE-006
 title: CI readiness
 status: normative

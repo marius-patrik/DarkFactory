@@ -1,4 +1,5 @@
 ---
+enforced_by: [conventional-commit]
 id: DF-RULE-005
 title: Commit granularity
 status: normative

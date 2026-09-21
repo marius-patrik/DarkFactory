@@ -5,6 +5,7 @@ status: normative
 applies_to: [agents, automation, contributors]
 activation: always
 owners: [tests-audit]
+enforced_by: [tests-touched]
 ---
 # Rule 1 — Unit tests
 

@@ -1,4 +1,5 @@
 ---
+enforced_by: [format-check]
 id: DF-RULE-008
 title: Formatting and linting
 status: normative

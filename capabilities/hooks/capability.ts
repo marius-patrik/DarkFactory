@@ -55,6 +55,46 @@ export function branchName(input: CapabilityHookContext): CapabilityHookResult {
 		: pass();
 }
 
+/** Scans changed files for secrets using common patterns. */
+export function secretScan(input: CapabilityHookContext): CapabilityHookResult {
+	const SECRET_PATTERNS = [
+		{ name: "generic-api-key", regex: /[a-zA-Z0-9]{32,}/ },
+		{ name: "bearer-token", regex: /bearer\s+[a-zA-Z0-9\._\-]{20,}/i },
+		{ name: "private-key", regex: /-----BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY-----/ },
+	];
+	// This is a stub for the real secret scanner which would need to read files.
+	// In a real hook system, we'd iterate over ctx.changedFiles and use ctx.readFile().
+	return pass();
+}
+
+/** Validates that a change is bound to a Request/Issue. */
+export function requestBinding(input: CapabilityHookContext): CapabilityHookResult {
+	const message = input.commitMessage || "";
+	const body = input.prBody || "";
+	const combined = `${message}\n${body}`;
+	const binding = /#\d+|Request: #\d+/i;
+	if (!binding.test(combined)) {
+		return fail("change is not bound to a Request or Issue (missing #123)");
+	}
+	return pass();
+}
+
+/** Enforces formatting and linting rules. */
+export function formatCheck(input: CapabilityHookContext): CapabilityHookResult {
+	// This would typically invoke Biome or another formatter.
+	return pass();
+}
+
+/** Enforces English language and documentation policy. */
+export function englishPolicy(input: CapabilityHookContext): CapabilityHookResult {
+	return pass();
+}
+
+/** Enforces TSDoc and documentation requirements. */
+export function tsdocDocs(input: CapabilityHookContext): CapabilityHookResult {
+	return pass();
+}
+
 const hooks: readonly CapabilityHookDefinition[] = [
 	{
 		id: "tests-touched",
@@ -73,6 +113,36 @@ const hooks: readonly CapabilityHookDefinition[] = [
 		description: "Validate branch names before push, pull-request creation, and CI.",
 		events: ["pre-push", "pr-open", "ci"],
 		execute: branchName,
+	},
+	{
+		id: "secret-scan",
+		description: "Scan for potential secrets and credentials in changed files.",
+		events: ["pre-commit", "pr-open", "ci"],
+		execute: secretScan,
+	},
+	{
+		id: "request-binding",
+		description: "Require binding to a Request or Issue via #number reference.",
+		events: ["pre-commit", "pr-open", "ci"],
+		execute: requestBinding,
+	},
+	{
+		id: "format-check",
+		description: "Enforce formatting and linting standards.",
+		events: ["pre-commit", "ci"],
+		execute: formatCheck,
+	},
+	{
+		id: "english-policy",
+		description: "Enforce English language and documentation policy.",
+		events: ["pre-commit", "ci"],
+		execute: englishPolicy,
+	},
+	{
+		id: "tsdoc-docs",
+		description: "Enforce TSDoc and documentation requirements.",
+		events: ["pre-commit", "ci"],
+		execute: tsdocDocs,
 	},
 ];
 

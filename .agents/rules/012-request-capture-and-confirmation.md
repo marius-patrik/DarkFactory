@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-012
 title: Request capture and confirmation
 status: normative

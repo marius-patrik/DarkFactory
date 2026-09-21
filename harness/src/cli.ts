@@ -9,6 +9,7 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
+import { runHooks, hookFailures, BUILTIN_HOOKS } from "../../packages/core/src/hooks/index.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountRecord } from "./credentials.ts";
@@ -84,6 +85,7 @@ function usage(): string {
 		"  df ci <install|update|status|runs|logs|rerun|protect|doctor> [options]",
 		"  df graph validate [path]",
 		"  df graph plan --event <file> --state <file> [--graph <path>]",
+		"  df hooks run <event> [--json]",
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
@@ -1434,8 +1436,59 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  * @throws {ChainExhaustedError} If all candidates in the chain are unavailable during a run
  * @throws {Error} If an unknown command is provided or a command handler fails
  */
+async function hooksCommand(args: string[]): Promise<void> {
+	const event = args[0] as any;
+	if (!event) throw new Error("hooks run requires an event name (e.g. pre-commit, pre-push, pr-open, ci)");
+	const json = args.includes("--json");
+	let changedFiles: string[] = [];
+	try {
+		const diff = Bun.spawnSync(["git", "diff", "--name-only", "HEAD"]);
+		changedFiles = diff.stdout.toString().split("\n").map((s) => s.trim()).filter(Boolean);
+	} catch {}
+	let branch = "";
+	try {
+		const br = Bun.spawnSync(["git", "rev-parse", "--abbrev-ref", "HEAD"]);
+		branch = br.stdout.toString().trim();
+	} catch {}
+	let commitMessage: string | undefined;
+	try {
+		if (existsSync(".git/COMMIT_EDITMSG")) {
+			commitMessage = await readFile(".git/COMMIT_EDITMSG", "utf8");
+		}
+	} catch {}
+	const sourceFiles = changedFiles.filter((f) => /\.(ts|tsx|js|jsx|py)$/.test(f));
+	const testFiles = changedFiles.filter((f) => /test|spec/.test(f));
+	const ctx = {
+		repoDir: process.cwd(),
+		changedFiles,
+		sourceFiles,
+		testFiles,
+		branch,
+		commitMessage,
+		async readFile(p: string) {
+			return readFile(p, "utf8");
+		}
+	};
+	const results = await runHooks(event, ctx, BUILTIN_HOOKS);
+	const failures = hookFailures(results);
+	if (json) {
+		console.log(JSON.stringify({ event, results, failures }, null, 2));
+	} else {
+		for (const r of results) {
+			console.log(`[hook] ${r.id}: ${r.status}${r.message ? ` - ${r.message}` : ""}`);
+		}
+	}
+	if (failures.length > 0) {
+		process.exitCode = 1;
+	}
+}
+
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph") return graphCommand(args.slice(1));
+	if (args[0] === "hooks") {
+		if (args[1] === "run") return hooksCommand(args.slice(2));
+		throw new Error(`Unknown hooks command: ${args[1] ?? ""}`);
+	}
 	const home = defaultDfHome();
 	const config = await loadDfConfig(home);
 	const providerConfig = await loadProviderConfig(home);

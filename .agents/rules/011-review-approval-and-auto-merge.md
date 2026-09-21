@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-011
 title: Review approval and auto-merge
 status: normative

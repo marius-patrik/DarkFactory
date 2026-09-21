@@ -1,4 +1,5 @@
 ---
+enforced_by: [branch-name]
 id: DF-RULE-007
 title: Branches and pull requests
 status: normative

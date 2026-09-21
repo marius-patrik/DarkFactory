@@ -22,11 +22,21 @@ describe("official hooks capability", () => {
 			"tests-touched",
 			"conventional-commit",
 			"branch-name",
+			"secret-scan",
+			"request-binding",
+			"format-check",
+			"english-policy",
+			"tsdoc-docs",
 		]);
 		expect(capability.hooks?.map((hook) => hook.events)).toEqual([
 			["pre-commit", "pr-open", "ci"],
 			["pre-commit", "ci"],
 			["pre-push", "pr-open", "ci"],
+			["pre-commit", "pr-open", "ci"],
+			["pre-commit", "pr-open", "ci"],
+			["pre-commit", "ci"],
+			["pre-commit", "ci"],
+			["pre-commit", "ci"],
 		]);
 		expect(capability.hooks?.every((hook) => typeof hook.execute === "function")).toBe(true);
 	});

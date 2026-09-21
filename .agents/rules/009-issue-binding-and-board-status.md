@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-009
 title: Issue binding, branch auto-deletion, and board status
 status: normative

@@ -1,4 +1,5 @@
 ---
+enforced_by: [conventional-commit]
 id: DF-RULE-015
 title: Repository taxonomy
 status: normative

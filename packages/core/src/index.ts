@@ -19,3 +19,4 @@ export type {
 	SupervisorOptions,
 } from "../../../harness/src/harness/supervisor.ts";
 export * from "./repository-evidence.ts";
+export * from "./hooks/index.ts";

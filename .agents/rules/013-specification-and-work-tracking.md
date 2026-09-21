@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-013
 title: Specification and work tracking
 status: normative

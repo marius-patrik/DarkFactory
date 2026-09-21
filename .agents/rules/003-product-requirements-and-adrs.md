@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-003
 title: Product requirements and ADRs
 status: normative

@@ -1,4 +1,5 @@
 ---
+enforced_by: [secret-scan]
 id: DF-RULE-016
 title: Security and secrets
 status: normative

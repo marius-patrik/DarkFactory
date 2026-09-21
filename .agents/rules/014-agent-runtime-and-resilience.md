@@ -1,4 +1,5 @@
 ---
+enforced_by: [tests-touched]
 id: DF-RULE-014
 title: Agent runtime and resilience
 status: normative

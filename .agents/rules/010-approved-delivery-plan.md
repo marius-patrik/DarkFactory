@@ -1,4 +1,5 @@
 ---
+enforced_by: [request-binding]
 id: DF-RULE-010
 title: Approved delivery plan
 status: normative

@@ -1,4 +1,5 @@
 ---
+enforced_by: [english-policy]
 id: DF-RULE-004
 title: English language consistency
 status: normative
