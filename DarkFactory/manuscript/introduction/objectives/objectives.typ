@@ -1,14 +1,12 @@
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "thesis_objectives_research_questions",
-  czech: "Cíl práce a výzkumné otázky",
-  english: "Thesis Objective and Research Questions",
+  title: [Cíl práce a výzkumné otázky],
   definition: terms => [
 Tato část stanovuje hlavní cíl, dílčí cíle a výzkumné otázky práce.
   ],
   description: terms => [
 Společně vymezují rozsah návrhu DarkFactory a rámec jeho evaluace.
   ],
-  relations: (),
 )
