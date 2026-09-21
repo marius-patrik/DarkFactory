@@ -165,7 +165,7 @@ Focus transitions on the conceptual backbone:
 
 ## Phase 5 — Practical evidence map and architecture writing
 
-**Status: substantially complete; architecture and governed Request lifecycle are written from current DarkFactory code/PRD evidence. Remaining work is final traceability/figure polish and any implementation changes discovered before submission.**
+**Status: complete; the architecture and governed Request lifecycle are written from current DarkFactory implementation evidence, the architecture schematic is included, and implementation claims are bounded to observed code/tests/workflows rather than planned behavior.**
 
 **Purpose:** write Practical from the implementation outward.
 
@@ -256,7 +256,7 @@ Ground each stage in code/workflow evidence:
 
 ## Phase 6 — Results and evaluation
 
-**Status: in progress; technical CI/test evidence and active target-repository evidence are written. The remaining blocking evidence is one live df-only Request lifecycle covering approval through merge/reconciliation, plus any final fleet acceptance desired beyond the active repositories.**
+**Status: complete at the thesis evidence cutoff of 21 September 2026. Technical CI/test evidence and available target-repository evidence are reported; the absence of one live df-only Request lifecycle and complete fleet acceptance is recorded as a bounded evaluation limitation rather than unfinished thesis work.**
 
 ### Build the evidence set
 
@@ -345,7 +345,7 @@ The conclusion must answer only what the Results established.
 
 ## Phase 8 — Publication and submission QA
 
-**Status: in progress; canonical CI, Deploy Documentation, and Release are green on head `26bf0db738c76ce48bd1eddac8e6df60f6da8462`. Remaining work is final rendered-artifact visual inspection and any resulting presentation-only fixes.**
+**Status: machine-verifiable QA complete; canonical CI, Deploy Documentation, and Release are green and the deployed publication matches the validated manuscript head. Generated HTML/Markdown structure, internal anchors, images, bibliography, contents, keyword list, and encyclopedia/index were checked. The only remaining item is literal page-by-page visual inspection of the newest PDF, which is blocked by the current connector's inability to materialize the deployed PDF binary.**
 
 ### Content QA
 
