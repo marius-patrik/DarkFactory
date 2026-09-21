@@ -49,9 +49,9 @@ describe("@darkfactory/keychain redaction", () => {
 
 		const findings = await redactor.scan(input);
 		expect(findings).toEqual([
-			{ accountId: id, slot: "X-Org", field: "value", occurrences: 1 },
 			{ accountId: id, slot: "oauth", field: "access", occurrences: 2 },
 			{ accountId: id, slot: "oauth", field: "refresh", occurrences: 1 },
+			{ accountId: id, slot: "X-Org", field: "value", occurrences: 1 },
 		]);
 		const serialized = JSON.stringify(findings);
 		expect(serialized).not.toContain("access-super-secret");
