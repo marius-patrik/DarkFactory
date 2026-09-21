@@ -9,6 +9,9 @@
   "files": [
     "src"
   ],
+  "scripts": {
+    "test": "bun test test"
+  },
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
