@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import {
 	type RecoveryCleanupState,
 	type RecoveryIntakeRecord,
+	type RecoverySourceIdentity,
 	recoveryIntakeRecordSchema,
 } from "@darkfactory/protocol/recovery";
 
@@ -17,9 +19,37 @@ export interface RecoveryPlanningFreshness {
 	reasons: readonly ("request_changed" | "base_changed" | "source_changed" | "not_approved")[];
 }
 
-/** Parses and validates one serialized recovery-intake record. */
+/** Computes the canonical SHA-256 identity of one exact recovered source description. */
+export function fingerprintRecoverySource(source: RecoverySourceIdentity): string {
+	const canonical = {
+		id: source.id,
+		kind: source.kind,
+		originalPath: source.originalPath ?? null,
+		originalRef: source.originalRef ?? null,
+		originalHead: source.originalHead,
+		snapshot: source.snapshot
+			? {
+				id: source.snapshot.id,
+				contentSha256: source.snapshot.contentSha256,
+				trackedTreeSha: source.snapshot.trackedTreeSha ?? null,
+				untrackedManifestSha256: source.snapshot.untrackedManifestSha256 ?? null,
+			}
+			: null,
+		recoveryRef: source.recoveryRef ?? null,
+		recoverySha: source.recoverySha ?? null,
+		canonicalBaseSha: source.canonicalBaseSha,
+	};
+	return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
+/** Parses and validates one serialized recovery-intake record, including its claimed exact source fingerprint. */
 export function validateRecoveryIntakeRecord(value: unknown): RecoveryIntakeRecord {
-	return recoveryIntakeRecordSchema.parse(value);
+	const record = recoveryIntakeRecordSchema.parse(value);
+	const expected = fingerprintRecoverySource(record.source);
+	if (record.sourceFingerprint !== expected) {
+		throw new Error(`Recovery source fingerprint mismatch: recorded=${record.sourceFingerprint} expected=${expected}`);
+	}
+	return record;
 }
 
 /**
