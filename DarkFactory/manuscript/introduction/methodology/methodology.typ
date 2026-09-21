@@ -1,10 +1,9 @@
 #import "/DarkFactory/templates/common.typ": term, finalized
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "methodology",
-  czech: "Metodika práce",
-  english: "Methodology",
+  title: [Metodika práce],
   definition: terms => [
 #finalized[
 Práce porovnává veřejně popsané principy současných agentních systémů, rozděluje je do samostatných konceptů a používá je při návrhu DarkFactory.
@@ -19,10 +18,4 @@ Architektura kolem modelu je rozložena do samostatných konceptů, aby měl ka�
 Navržené principy jsou následně promítnuty do DarkFactory.
 ]
   ],
-  relations: (
-    (type: "dependency", target: "thesis_objectives_research_questions"),
-    (type: "related", target: "language_model"),
-    (type: "related", target: "agentic_engineering"),
-    (type: "related", target: "harness"),
-  ),
 )
