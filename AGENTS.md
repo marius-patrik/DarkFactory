@@ -56,27 +56,28 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 - Root `books.typ` is the static registry for books. Root `main.typ`, `review.typ`, and `web-publication.typ` are generic dispatchers and must not contain DarkFactory manuscript structure.
 - `DarkFactory/book.typ` exports the book contract: structural identity/title, default template, PDF renderer, and semantic web renderer. A second book is added as a sibling top-level book root and registered in `books.typ`.
 - Concepts may import shared semantics from their own book's `templates/common.typ` but must never import a concrete document template.
+- Examples are concept records for metadata/citation ownership, but render inline inside their parent rather than as separate numbered sections.
 - `darkfactory/` remains the only git submodule and points to the practical DarkFactory repository.
 - Do not recreate repository-global `concepts/`, `templates/`, `fonts/`, `bib/`, or `img/` roots; those assets belong to their book.
 
 ## Terminology & Translation Model
 - Raw Typst bold emphasis (`*text*`) is forbidden in concept manuscript prose. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)`.
-- Canonical terminology lives with its owning concept under the selected book root and is defined with `define-term(...)`. `DarkFactory/index.typ` builds the vocabulary; `DarkFactory/templates/terms.typ` is a projection only.
+- Canonical terminology lives directly on its owning concept under the selected book root. `DarkFactory/index.typ` builds the vocabulary from concept records.
 - Canonical term metadata lives on each concept as `industry`, `czech`, `english`, and optional `alias`.
 - The canonical full surface leads with the industry term, adds the Czech proper name in parentheses, the English proper name in brackets when distinct, and an optional distinct alias; duplicate layers are suppressed.
 - `term(...)` is the canonical linked term renderer. Section headings use the same canonical full surface.
 - Reuse canonical `terms.<key>` values whenever one concept refers to another. Do not create ad-hoc term strings or duplicate a term record merely to introduce a synonym.
-- Stable term `id` values are unique within a book.
+- Stable concept `key` values are unique within a book.
 
 ## Practical and Results Content
-- There are no chapter files. Practical manuscript projections live on canonical concepts through their `practical_*` fields; evaluation/results content lives under `DarkFactory/manuscript/results/`.
+- There are no chapter files or per-concept theory/practical projection fields. `manuscript/theory/` and `manuscript/practical/` are structural top-level wrappers derived from folder manifests; evaluation/results content lives under `DarkFactory/manuscript/results/`.
 - Do **not** draft, restore, infer, or pre-fill practical implementation claims or results while DarkFactory is still under development.
 - Required order:
   1. Finish and stabilize the practical DarkFactory system.
   2. Inspect and verify the actual production implementation, workflows, configuration, interfaces, tests, and behavior.
-  3. Write the practical concept projections from that verified implementation only.
-  4. Perform the evaluation/measurements against the completed system described by those projections.
-  5. Write the results concepts from those observed results only.
+  3. Write practical-section content from that verified implementation only.
+  4. Perform evaluation/measurements against the completed system.
+  5. Write results concepts from those observed results only.
 - Results must never contain hypothetical, provisional, or architecture-derived measurements.
 
 ## GitHub Pages Viewer

@@ -30,7 +30,7 @@ Kanonický katalog aktuální knihy začíná v `DarkFactory/index.typ`. Koncept
 - zdrojová/citační metadata, `examples` a `attachments`,
 - semantic relations `dependency` a `related`.
 
-Každý koncept se vykresluje jako vlastní číslovaná sekce. Foldery určují pouze strukturální vnoření; neexistuje samostatná teoretická/praktická projekce ani automaticky generované podsekce `Úvod`. Příklady a přílohové/obrazové podklady jsou také koncepty, takže mají vlastní terminologii, citace a případně reálný obrazový zdroj.
+Section koncepty a přímé koncepty se vykreslují jako číslované sekce. Příklady zůstávají samostatnými konceptovými záznamy se svou terminologií, citacemi a obrazovými zdroji, ale vykreslují se přímo uvnitř rodičovského konceptu bez vlastního čísla sekce. Teoretická a praktická část jsou odvozeny z folderové struktury, nikoli z paralelních polí na jednotlivých konceptech.
 
 ## Terminologie
 

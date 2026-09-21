@@ -1,7 +1,6 @@
 #import "/DarkFactory/schema.typ": folder
 #import "/DarkFactory/language-models/language-model/language-model.typ" as section
 #import "/DarkFactory/language-models/language-model/transformer.typ" as transformer
-#import "/DarkFactory/language-models/language-model/stochastic-decoding.typ" as stochastic_decoding
 #import "/DarkFactory/language-models/language-model/tokenizer.typ" as tokenizer
 #import "/DarkFactory/language-models/language-model/token.typ" as token
 #import "/DarkFactory/language-models/language-model/embedding.typ" as embedding
@@ -14,7 +13,6 @@
   section: section.item,
   concepts: (
     transformer.item,
-    stochastic_decoding.item,
     tokenizer.item,
     token.item,
     embedding.item,

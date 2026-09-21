@@ -5,9 +5,9 @@
   czech: "Výsledky a diskuse",
   english: "Results and Discussion",
   definition: terms => [
-Výsledky a diskuse hodnotí, které části navržené architektury byly ve zvoleném snapshotu DarkFactory skutečně implementovány a ověřeny a které zůstávají pouze součástí dokončovaného návrhu.
+Výsledky a diskuse vyhodnocují, jak návrh DarkFactory odpovídá stanoveným cílům a výzkumným otázkám.
   ],
   description: terms => [
-Evaluace je rozdělena do samostatných konceptů: reprodukovatelný snapshot, ověřený stav implementace, odpovědi na výzkumné otázky a omezení evaluace. Tím se oddělují pozorované výsledky od tvrzení, která by vyžadovala dosud neprovedenou koncovou akceptaci.
+Hodnocení je rozděleno na vyhodnocení výzkumných otázek a omezení evaluace.
   ],
 )

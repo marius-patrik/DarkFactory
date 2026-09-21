@@ -1,22 +1,18 @@
-#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "version_control",
-    czech: "Správa verzí",
-  english: "Version control",
+  industry: "Version Control",
+  czech: "Správa verzí",
+  english: "Version Control",
   citation: bib.chacon2014,
   source: bib.chacon2014,
-definition: terms => [
-Správa verzí je řízení a sledování změn zdrojových souborů a dalších verzovaných artefaktů tak, aby bylo možné změny bezpečně větvit, slučovat, auditovat a vracet.
+  definition: terms => [
+Správa verzí je sledování historie změn v repozitáři tak, aby bylo možné změny porovnávat, oddělovat a bezpečně slučovat.
   ],
   description: terms => [
-Pro autonomní vývoj poskytuje verzovací vrstva deterministický záznam reality, který je nezávislý na interním kontextu modelu. Agent může pracovat nad izolovanou změnou, její stav porovnat s výchozí verzí a v případě neúspěchu se vrátit k známému bodu historie.
+DarkFactory používá Git a GitHub jako auditovatelnou hranici mezi pracovním stavem agenta a hlavní historií projektu. Větve, pull requesty a slučování jsou zde prostředky pracovního toku, nikoli samostatné teoretické koncepty. #cite(bib.chacon2014)
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
-  relations: (),
+  relations: ((type: "related", target: "github"),),
 )

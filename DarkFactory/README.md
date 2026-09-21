@@ -10,12 +10,12 @@ The directory name, structural root key, and main book title are one identity. `
 - A folder may designate one section concept, contain direct concepts, and contain child folders.
 - Nested folders create nested sections to arbitrary depth.
 - Section headings are derived from the section concept's canonical full term surface.
-- Every concept, including direct concepts, examples, and attachments, renders as its own numbered section.
-- The canonical prose fields are exactly `definition` and `description`; theory/practical/document projections and a separate concept summary field do not exist.
+- Section concepts and direct concepts render as numbered sections. Example concepts render inline inside their parent without a separate numbered heading.
+- The canonical prose fields are exactly `definition` and `description`; theory/practical/document projection fields and a separate concept summary field do not exist.
 - The renderer never inserts generic `Úvod` subsections.
 - Semantic `dependency` and `related` relations never create containment.
 - Concept files own terminology and manuscript content. Example and attachment concepts also own their citations and any authoritative image source.
-- `manuscript/` owns document-level material such as introduction, objectives, methodology, results, conclusion, and appendices.
+- `manuscript/` owns document-level structure, including Introduction, the top-level Theory and Practical wrappers, Results, Conclusion, and Appendices.
 - `development-environment/`, `language-models/`, and `agentic-engineering/` own reusable domain concepts.
 - `manuscript/appendices/` is the canonical appendix root.
 

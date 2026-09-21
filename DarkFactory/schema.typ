@@ -196,6 +196,27 @@
   }
 }
 
+#let render-inline-example(item, terms, graph) = {
+  let output = [
+    #block[
+      #term-full-name(item). #(item.definition)(terms)
+    ]#label("concept-" + item.key)
+  ]
+  output += (item.description)(terms)
+  if item.visual != none { output += (item.visual)(terms) }
+
+  for example in order-local(item.examples, graph) {
+    output += render-inline-example(example, terms, graph)
+  }
+  for attachment in order-local(item.attachments, graph) {
+    output += render-inline-example(attachment, terms, graph)
+  }
+
+  let citations = render-citations(item)
+  if citations != none { output += [#citations] }
+  output
+}
+
 #let render-concept(item, terms, graph, level: 1) = {
   let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
 
@@ -207,7 +228,7 @@
   if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
-    output += render-concept(example, terms, graph, level: level + 1)
+    output += render-inline-example(example, terms, graph)
   }
   for attachment in order-local(item.attachments, graph) {
     output += render-concept(attachment, terms, graph, level: level + 1)

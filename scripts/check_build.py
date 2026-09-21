@@ -197,6 +197,7 @@ for contract in (
     "#let collect-concepts(folders)",
     "#let build-vocabulary(folders)",
     "#let render-concept-title(item) = {",
+    "#let render-inline-example(item, terms, graph)",
     "#let render-concept(item, terms, graph, level: 1)",
 ):
     if contract not in schema:
@@ -315,6 +316,8 @@ if BOOK == "DarkFactory":
         ROOT / "bib/references.bib",
         ROOT / "img/logo.jpeg",
         ROOT / "manuscript/introduction/index.typ",
+        ROOT / "manuscript/theory/index.typ",
+        ROOT / "manuscript/practical/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
@@ -326,6 +329,7 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/examples/codex.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
+        ROOT / "development-environment/continuous-integration/integration-test.typ",
     ):
         if not required.is_file():
             fail(f"DarkFactory book is missing required publication component: {required}")
