@@ -57,6 +57,7 @@ async function resolveSlotValue(home: string, raw: string): Promise<string> {
 
 const FILE_VERSION = 2;
 const ACCOUNT_SEPARATOR = ":";
+const BORROWED_EXPIRY_SKEW_MS = 30_000;
 
 /** OAuth access/refresh credential slot managed by the keychain. */
 export type OAuthCredentialSlot = {
@@ -78,12 +79,25 @@ export type CredentialSlot =
 /** Credential slot types that can be written directly. */
 export type WritableSlotType = Exclude<CredentialSlot["type"], "oauth">;
 
+/** Typed non-secret OAuth/account metadata retained alongside credential slots. */
+export interface AccountAuthMetadata {
+	/** OAuth scopes granted to the account. */
+	scopes?: string[];
+	/** Intended token audience/resource identifier. */
+	audience?: string;
+	/** Refresh-token expiry when the upstream provider exposes one. */
+	refreshExpiresAt?: number;
+	/** Optional ISO timestamp for operator-requested credential rotation. */
+	rotationDue?: string;
+}
+
 /** Persisted credential account and its typed slots. */
 export interface AccountRecord {
 	id: string;
 	provider: string;
 	label: string;
 	metadata?: Record<string, string>;
+	auth?: AccountAuthMetadata;
 	slots: Record<string, CredentialSlot>;
 }
 
@@ -98,11 +112,31 @@ export interface AccountSummary {
 	provider: string;
 	label: string;
 	metadata?: Record<string, string>;
+	auth?: AccountAuthMetadata;
 	slots: Array<{ name: string; type: CredentialSlot["type"] }>;
 }
 
 /** Fallback resolver for credentials not present in primary storage. */
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
+
+/** Refresh policy for credentials whose authoritative owner is an external CLI. */
+export type BorrowedRefreshMode = "reimport-only" | "never";
+
+/** Current credential material read from an authoritative borrowed source. */
+export interface BorrowedCredentialPlan {
+	credential: OAuthCredentialSlot;
+	mode: BorrowedRefreshMode;
+}
+
+/**
+ * Adapter for re-reading credentials owned by an external CLI.
+ *
+ * Implementations may inspect the source CLI's file/keyring, but DarkFactory
+ * never refreshes or writes that source through this interface.
+ */
+export interface BorrowedCredentialCoordinator {
+	prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedCredentialPlan>;
+}
 
 function throwIfAborted(options?: AuthOperationOptions): void {
 	options?.signal?.throwIfAborted();
@@ -141,6 +175,24 @@ export function isMetadata(value: unknown): value is Record<string, string> | un
 	);
 }
 
+/** Checks whether an unknown value is valid non-secret account auth metadata. */
+export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetadata | undefined {
+	if (value === undefined) return true;
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+	const auth = value as Record<string, unknown>;
+	if (auth.scopes !== undefined && (!Array.isArray(auth.scopes) || auth.scopes.some((scope) => typeof scope !== "string"))) {
+		return false;
+	}
+	if (auth.audience !== undefined && typeof auth.audience !== "string") return false;
+	if (auth.refreshExpiresAt !== undefined && (typeof auth.refreshExpiresAt !== "number" || !Number.isFinite(auth.refreshExpiresAt))) {
+		return false;
+	}
+	if (auth.rotationDue !== undefined && (typeof auth.rotationDue !== "string" || Number.isNaN(Date.parse(auth.rotationDue)))) {
+		return false;
+	}
+	return true;
+}
+
 /** Checks whether an unknown value is a credential account record. */
 export function isAccount(value: unknown, id: string): value is AccountRecord {
 	if (!value || typeof value !== "object") return false;
@@ -150,6 +202,7 @@ export function isAccount(value: unknown, id: string): value is AccountRecord {
 		isNonEmptyString(account.provider) &&
 		isNonEmptyString(account.label) &&
 		isMetadata(account.metadata) &&
+		isAccountAuthMetadata(account.auth) &&
 		typeof account.slots === "object" &&
 		account.slots !== null &&
 		Object.entries(account.slots).every(([name, slot]) => isNonEmptyString(name) && isSlot(slot))
@@ -172,6 +225,7 @@ export function validateAccountRecord(value: unknown, expectedId?: string): Acco
 		throw new Error(`Account record label (${record.label}) does not match id (${id})`);
 	}
 	if (!isMetadata(record.metadata)) throw new Error("Account metadata must be string key-value pairs");
+	if (!isAccountAuthMetadata(record.auth)) throw new Error("Account auth metadata is invalid");
 	if (
 		!record.slots ||
 		typeof record.slots !== "object" ||
@@ -188,6 +242,7 @@ export function validateAccountRecord(value: unknown, expectedId?: string): Acco
 		provider: parsed.provider,
 		label: parsed.label,
 		...(record.metadata ? { metadata: record.metadata as Record<string, string> } : {}),
+		...(record.auth ? { auth: clone(record.auth as AccountAuthMetadata) } : {}),
 		slots: record.slots as Record<string, CredentialSlot>,
 	};
 }
@@ -277,6 +332,7 @@ export class FileCredentialStore {
 		home = defaultDfHome(),
 		private readonly fallback?: CredentialFallback,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
+		readonly borrowed?: BorrowedCredentialCoordinator,
 	) {
 		this.home = home;
 		this.path = join(home, "credentials.df");
@@ -285,22 +341,7 @@ export class FileCredentialStore {
 
 	private async load(): Promise<CredentialFile> {
 		try {
-			const parsed = parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
-			const migratedIds: string[] = [];
-			for (const account of Object.values(parsed.accounts)) {
-				if (account.metadata?.ownership === "borrowed") {
-					account.metadata.ownership = "df-owned";
-					if (account.metadata.importer && !account.metadata.importedFrom) {
-						account.metadata.importedFrom = account.metadata.importer;
-					}
-					migratedIds.push(account.id);
-				}
-			}
-			if (migratedIds.length > 0) {
-				console.error(`Notice: migrated borrowed accounts to df-owned in ${this.path}: ${migratedIds.join(", ")}`);
-				await this.save(parsed);
-			}
-			return parsed;
+			return parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") return { version: FILE_VERSION, accounts: {} };
 			if (error instanceof SyntaxError) throw new Error("Invalid credentials file JSON");
@@ -361,6 +402,7 @@ export class FileCredentialStore {
 			provider: current?.provider ?? parsed.provider,
 			label: current?.label ?? parsed.label,
 			...(current?.metadata ? { metadata: current.metadata } : {}),
+			...(current?.auth ? { auth: clone(current.auth) } : {}),
 			slots: { ...(current?.slots ?? {}), [slotName]: clone(slot) },
 		}));
 		if (!account) throw new Error("Account slot was not written");
@@ -394,6 +436,7 @@ export class FileCredentialStore {
 				provider: account.provider,
 				label: account.label,
 				...(account.metadata ? { metadata: clone(account.metadata) } : {}),
+				...(account.auth ? { auth: clone(account.auth) } : {}),
 				slots: Object.entries(account.slots)
 					.map(([name, slot]) => ({ name, type: slot.type }))
 					.sort((a, b) => a.name.localeCompare(b.name)),
@@ -439,6 +482,25 @@ export class FileCredentialStore {
 		throwIfAborted(options);
 		let account = await this.readAccount(accountId(provider, label), options);
 		if (account) account = await resolveAccountVaultSlots(this.home, account);
+		if (account?.metadata?.ownership === "borrowed") {
+			if (this.borrowed) {
+				const plan = await this.borrowed.prepare(account, options);
+				throwIfAborted(options);
+				if (plan.credential.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+					throw new Error(
+						`Borrowed account ${account.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+					);
+				}
+				return clone(plan.credential);
+			}
+			const storedBorrowed = toPiCredential(account);
+			if (storedBorrowed?.type === "oauth" && storedBorrowed.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+				throw new Error(
+					`Borrowed account ${account.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+				);
+			}
+			if (storedBorrowed) return storedBorrowed;
+		}
 		const stored = account ? toPiCredential(account) : undefined;
 		if (stored) return stored;
 		if (!this.fallback) return undefined;
@@ -477,12 +539,30 @@ export class AccountCredentialStore implements CredentialStore {
 		return credential ? [{ providerId: this.provider(), type: credential.type }] : [];
 	}
 
-	modify(
+	async modify(
 		providerId: string,
 		fn: (current: Credential | undefined) => Promise<Credential | undefined>,
 		options?: AuthOperationOptions,
 	): Promise<Credential | undefined> {
 		this.assertProvider(providerId);
+		const currentAccount = await this.store.readAccount(this.id, options);
+		if (currentAccount?.metadata?.ownership === "borrowed") {
+			if (this.store.borrowed) {
+				const plan = await this.store.borrowed.prepare(currentAccount, options);
+				if (plan.credential.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+					throw new Error(
+						`Borrowed account ${currentAccount.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+					);
+				}
+				return clone(plan.credential);
+			}
+			const stored = toPiCredential(currentAccount);
+			if (stored?.type === "oauth" && stored.expires > Date.now() + BORROWED_EXPIRY_SKEW_MS) return stored;
+			throw new Error(
+				`Borrowed account ${currentAccount.id} cannot be refreshed by DarkFactory; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+			);
+		}
+
 		return this.store
 			.modifyAccount(
 				this.id,

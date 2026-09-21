@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { FileCredentialStore } from "@darkfactory/keychain";
 import { redactToolInput } from "../src/cli.ts";
-import { FileCredentialStore } from "../src/credentials.ts";
 
 const temporary: string[] = [];
 
@@ -166,7 +166,7 @@ describe("df run", () => {
 		expect(listed.exitCode).toBe(0);
 		expect(listed.stdout).toContain("type\texpiry\trefresh\townership");
 		expect(listed.stdout).toContain("fixture:acct-a\toauth");
-		expect(listed.stdout).toContain("df-managed\tdf-owned (imported from fixture)");
+		expect(listed.stdout).toContain("source-managed\tborrowed (imported from fixture)");
 		expect(listed.stdout).toContain("df-managed\tdf-owned");
 		expect((await invoke("logout", "fixture", "--account", "acct-b")).exitCode).toBe(0);
 		expect(await store.readAccount("fixture:acct-a")).toBeDefined();

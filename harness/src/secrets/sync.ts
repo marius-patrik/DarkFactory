@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { Vault } from "./vault.ts";
-import { loadVault, mergeVaults, saveVault } from "./vault-store.ts";
+import type { Vault } from "@darkfactory/keychain";
+import { loadVault, mergeVaults, saveVault } from "@darkfactory/keychain/vault-store";
 
 export interface SyncOptions {
 	dataRepoPath: string;
@@ -111,7 +111,7 @@ async function readRemoteVault(options: SyncOptions, keyBase64: string): Promise
 	if (show.exitCode !== 0) return undefined;
 	try {
 		const envelope = JSON.parse(show.stdout);
-		const { decryptVault } = await import("./crypto.ts");
+		const { decryptVault } = await import("@darkfactory/keychain");
 		return decryptVault(envelope, keyBase64);
 	} catch {
 		return undefined;

@@ -2,9 +2,37 @@ import { createHash, randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { OAuthAuth, OAuthCredential, ProviderAuthInteraction } from "@earendil-works/pi-ai";
-import type { OAuthAuthConfig, ValueReference } from "./schema.ts";
 
-interface OAuthDependencies {
+/** Configuration value supplied literally or via an environment variable. */
+export interface ValueReference {
+	value?: string;
+	env?: string;
+}
+
+/** Declarative machine OAuth configuration owned by the keychain. */
+export interface OAuthAuthConfig {
+	kind: "oauth";
+	slot: string;
+	flow: "device_code" | "pkce";
+	authorizationEndpoint?: string;
+	deviceCodeEndpoint?: string;
+	tokenEndpoint: string;
+	clientId: ValueReference;
+	clientSecret?: ValueReference;
+	scopes: string[];
+	isSubscription?: boolean;
+	loginLabel?: string;
+	authHeaders?: Record<string, string>;
+	accountIdHeader?: string;
+	placement?: "bearer" | "api_key";
+	tokenEncoding?: "form" | "json";
+	redirectUri?: string;
+	authorizationParams?: Record<string, string>;
+	accountIdJwtClaim?: string[];
+}
+
+/** Injectable OAuth runtime dependencies for deterministic tests and machine execution. */
+export interface OAuthDependencies {
 	fetch: typeof globalThis.fetch;
 	now: () => number;
 	env: Readonly<Record<string, string | undefined>>;
@@ -132,6 +160,13 @@ async function deviceLogin(config: OAuthAuthConfig, deps: OAuthDependencies, int
 	}
 	throw new Error("OAuth device code expired");
 }
+/**
+ * Creates a pi OAuth implementation from the keychain-owned declarative config.
+ *
+ * @param config - Provider OAuth flow and token configuration.
+ * @param dependencies - Optional deterministic/runtime dependency overrides.
+ * @returns OAuth implementation with login, refresh, and request-auth behavior.
+ */
 export function createConfiguredOAuth(config: OAuthAuthConfig, dependencies: Partial<OAuthDependencies> = {}): OAuthAuth {
 	const deps = { ...DEFAULTS, ...dependencies };
 	return {

@@ -1,3 +1,7 @@
+import type { LoginHydrationConfig, OAuthAuthConfig } from "@darkfactory/keychain";
+
+export type { LoginHydrationConfig, OAuthAuthConfig, ValueReference } from "@darkfactory/keychain";
+
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import defaults from "../../assets/providers.defaults.json";
@@ -23,10 +27,6 @@ export type ConfiguredLimitType =
 	| "access"
 	| "model";
 
-export interface ValueReference {
-	value?: string;
-	env?: string;
-}
 export interface ApiKeyAuthConfig {
 	kind: "api_key";
 	slot: string;
@@ -35,26 +35,6 @@ export interface ApiKeyAuthConfig {
 	env?: string[];
 	optional?: boolean;
 	anonymousValue?: string;
-}
-export interface OAuthAuthConfig {
-	kind: "oauth";
-	slot: string;
-	flow: "device_code" | "pkce";
-	authorizationEndpoint?: string;
-	deviceCodeEndpoint?: string;
-	tokenEndpoint: string;
-	clientId: ValueReference;
-	clientSecret?: ValueReference;
-	scopes: string[];
-	isSubscription?: boolean;
-	loginLabel?: string;
-	authHeaders?: Record<string, string>;
-	accountIdHeader?: string;
-	placement?: "bearer" | "api_key";
-	tokenEncoding?: "form" | "json";
-	redirectUri?: string;
-	authorizationParams?: Record<string, string>;
-	accountIdJwtClaim?: string[];
 }
 export type ProviderAuthConfig = ApiKeyAuthConfig | OAuthAuthConfig;
 
@@ -193,17 +173,6 @@ export interface GeneratedHeaderConfig {
 	group?: string;
 	prefix?: string;
 	length?: number;
-}
-export interface LoginHydrationConfig {
-	path: string;
-	method?: "GET" | "POST";
-	headers?: Record<string, string>;
-	body?: Record<string, unknown>;
-	authorization?: "bearer" | "none";
-	responsePath: string;
-	targetSlot: string;
-	slotType: "header" | "other";
-	stripPrefix?: string;
 }
 export interface ProviderConfig {
 	routing?: {

@@ -1,23 +1,27 @@
-import { generateVaultKey, isValidVaultKey } from "./crypto.ts";
-import { storeVaultKey, loadVaultKey } from "./keychain.ts";
-import type { KeychainOptions } from "./keychain.ts";
 import {
+	emptyVault,
+	generateVaultKey,
+	isValidVaultKey,
+	type KeychainOptions,
+	loadVaultKey,
+	storeVaultKey,
+} from "@darkfactory/keychain";
+import {
+	loadPushMap,
 	loadVault,
+	resolveDataRepoPath,
 	saveVault,
-	vaultSet,
+	type VaultStoreOptions,
 	vaultGet,
 	vaultList,
 	vaultRm,
-	resolveDataRepoPath,
-	loadPushMap,
-} from "./vault-store.ts";
-import type { VaultStoreOptions } from "./vault-store.ts";
-import { syncDataRepo, isGitRepo } from "./sync.ts";
-import { pushSecrets } from "./push.ts";
-import { detectDrift } from "./drift.ts";
-import { emptyVault } from "./vault.ts";
+	vaultSet,
+} from "@darkfactory/keychain/vault-store";
 import type { GitHubClient } from "../github/client.ts";
 import type { GitHubRepository } from "../github/repository.ts";
+import { detectDrift } from "./drift.ts";
+import { pushSecrets } from "./push.ts";
+import { isGitRepo, syncDataRepo } from "./sync.ts";
 
 export interface SecretsCommandDeps {
 	dfHome: string;
@@ -185,7 +189,8 @@ export async function secretsCommand(args: string[], deps: SecretsCommandDeps): 
 
 		case "push": {
 			const repoSlug = args[1];
-			if (!repoSlug || !repoSlug.includes("/")) throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
+			if (!repoSlug || !repoSlug.includes("/"))
+				throw new Error("Usage: df secrets push <owner/repo> [--only NAME] [--dry-run]");
 			const key = await requireKey(keychainOpts);
 			const vault = await loadVault(dataRepoPath, key);
 			const pushMap = await loadPushMap(dataRepoPath);

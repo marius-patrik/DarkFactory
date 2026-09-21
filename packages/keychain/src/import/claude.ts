@@ -92,6 +92,11 @@ export async function importClaudeAccount(
 		id,
 		provider,
 		label,
+		auth: {
+			...(current?.auth ?? {}),
+			scopes: [...login.scopes],
+			...(login.refreshTokenExpiresAt !== undefined ? { refreshExpiresAt: login.refreshTokenExpiresAt } : {}),
+		},
 		metadata: {
 			...(current?.metadata ?? {}),
 			ownership: "df-owned", sync: "machine-only",

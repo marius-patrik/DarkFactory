@@ -8,6 +8,7 @@ export async function importKimiAccount(store: FileCredentialStore, label: strin
 	const access = stringField(document, "access_token");
 	const refresh = stringField(document, "refresh_token");
 	const rawExpiry = document.expires_at;
+	const scopes = typeof document.scope === "string" ? document.scope.split(/\s+/).filter(Boolean) : [];
 	const expires = typeof rawExpiry === "number" && rawExpiry < 100_000_000_000
 		? epochMsFromSeconds(rawExpiry)
 		: epochMsFromMilliseconds(rawExpiry);
@@ -16,6 +17,7 @@ export async function importKimiAccount(store: FileCredentialStore, label: strin
 	const id = accountId(provider, label);
 	await store.modifyAccount(id, async (current) => ({
 		id, provider, label,
+		auth: { ...(current?.auth ?? {}), scopes },
 		metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", importedFrom: "kimi", source: "kimi-code-credentials" },
 		slots: { ...(current?.slots ?? {}), oauth: { type: "oauth", access, refresh, expires } },
 	}));

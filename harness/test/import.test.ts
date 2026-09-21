@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { FileCredentialStore } from "@darkfactory/keychain";
+import { importAntigravityAccount } from "@darkfactory/keychain/import/antigravity";
+import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
+import { importGrokAccount } from "@darkfactory/keychain/import/grok";
+import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "@darkfactory/keychain/import/keyring";
+import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
+import type { HomeReader } from "@darkfactory/keychain/import/reader";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
-import { FileCredentialStore } from "../src/credentials.ts";
-import { importAntigravityAccount } from "../src/import/antigravity.ts";
-import { importClaudeAccount } from "../src/import/claude.ts";
-import { importCodexAccount } from "../src/import/codex.ts";
-import { importGrokAccount } from "../src/import/grok.ts";
-import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../src/import/keyring.ts";
-import { importKimiAccount } from "../src/import/kimi.ts";
-import type { HomeReader } from "../src/import/reader.ts";
 
 const roots: string[] = [];
 
@@ -81,6 +81,7 @@ describe("import claude", () => {
 			expires: 1_900_000_000_000,
 		});
 		expect(account?.metadata).toMatchObject({ source: ".claude/.credentials.json", account: "org-123", plan: "max" });
+		expect(account?.auth).toEqual({ scopes: ["user:read", "user:write"], refreshExpiresAt: 2_000_000_000_000 });
 	});
 
 	test("falls back to a macOS keychain item when there is no credentials file", async () => {
@@ -175,6 +176,7 @@ describe("import codex", () => {
 		});
 		const credential = await store.forAccount("openai-codex", "work").read("openai-codex");
 		expect((credential as OAuthCredential).accountId).toBe("acct-123");
+		expect(account?.auth).toEqual({ scopes: [] });
 	});
 
 	test("falls back to importing OPENAI_API_KEY as a metered api_key account", async () => {
@@ -254,6 +256,7 @@ describe("import grok", () => {
 			issuer: "https://issuer.example",
 			source: "grok-auth-json",
 		});
+		expect(account?.auth).toEqual({ scopes: ["openid", "email", "grok-cli:access"] });
 	});
 
 	test("derives expiry from the JWT exp when expires_at is absent", async () => {
@@ -303,7 +306,9 @@ describe("import kimi and antigravity", () => {
 			refresh: "kimi-refresh",
 			expires: 2_000_000_000_000,
 		});
-		expect((await store.readAccount("kimi-coding:main"))?.metadata).toMatchObject({ source: "kimi-code-credentials" });
+		const kimiAccount = await store.readAccount("kimi-coding:main");
+		expect(kimiAccount?.metadata).toMatchObject({ source: "kimi-code-credentials" });
+		expect(kimiAccount?.auth).toEqual({ scopes: ["openid"] });
 	});
 
 	test("fills the bare Antigravity project slot from loadCodeAssist", async () => {

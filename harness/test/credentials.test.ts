@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { accountId, FileCredentialStore, validateAccountRecord } from "@darkfactory/keychain";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { accountId, FileCredentialStore, validateAccountRecord } from "../src/credentials.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
-import { importCodexAccount } from "../src/import/codex.ts";
 
 const roots: string[] = [];
 
@@ -213,7 +213,7 @@ describe("FileCredentialStore", () => {
 		expect(await readFile(sourceFile, "utf8")).toBe(initialSourceContent);
 	});
 
-	test("borrowed accounts in an old store migrate to df-owned", async () => {
+	test("borrowed accounts preserve external ownership without rewriting persisted state", async () => {
 		const root = await temporaryHome();
 		const storePath = join(root, "credentials.df");
 		const oldStore = {
@@ -244,12 +244,14 @@ describe("FileCredentialStore", () => {
 		const store = new FileCredentialStore(root);
 		const account = await store.readAccount("borrowed:main");
 		expect(account).toBeDefined();
-		expect(account?.metadata?.ownership).toBe("df-owned");
-		expect(account?.metadata?.importedFrom).toBe("fixture");
+		expect(account?.metadata?.ownership).toBe("borrowed");
+		expect(account?.metadata?.importer).toBe("fixture");
+		expect(account?.metadata?.importedFrom).toBeUndefined();
 		expect(account?.slots.oauth).toMatchObject({ access: "tok-access", refresh: "tok-refresh" });
 
 		const diskFile = JSON.parse(await readFile(storePath, "utf8"));
-		expect(diskFile.accounts["borrowed:main"].metadata.ownership).toBe("df-owned");
+		expect(diskFile.accounts["borrowed:main"].metadata.ownership).toBe("borrowed");
+		expect(diskFile.accounts["borrowed:main"].metadata.importer).toBe("fixture");
 		expect(diskFile.accounts["borrowed:main"].slots.oauth.access).toBe("tok-access");
 	});
 

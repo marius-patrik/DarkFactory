@@ -13,6 +13,7 @@ export interface ImportedCodexOAuth {
 	authMode?: string;
 	lastRefresh?: string;
 	expiresAt?: number;
+	scopes: string[];
 }
 
 /** Parse the ChatGPT OAuth triad out of `~/.codex/auth.json` (dsh-stack `codex-auth-json.ts:44-84`). */
@@ -36,6 +37,7 @@ export function parseCodexOAuthDocument(document: Record<string, unknown>): Impo
 	const authMode = stringField(document, "auth_mode");
 	const lastRefresh = stringField(document, "last_refresh");
 	const expiresAt = epochMsFromSeconds(accessClaims?.exp);
+	const scopes = typeof accessClaims?.scope === "string" ? String(accessClaims.scope).split(/\s+/).filter(Boolean) : [];
 	return {
 		accessToken,
 		...(refreshToken ? { refreshToken } : {}),
@@ -48,6 +50,7 @@ export function parseCodexOAuthDocument(document: Record<string, unknown>): Impo
 		...(authMode ? { authMode } : {}),
 		...(lastRefresh ? { lastRefresh } : {}),
 		...(expiresAt !== undefined ? { expiresAt } : {}),
+		scopes,
 	};
 }
 
@@ -93,6 +96,7 @@ export async function importCodexAccount(store: FileCredentialStore, label: stri
 			id,
 			provider,
 			label,
+			auth: { ...(current?.auth ?? {}), scopes: [...oauth.scopes] },
 			metadata: {
 				...(current?.metadata ?? {}),
 				ownership: "df-owned", sync: "machine-only",

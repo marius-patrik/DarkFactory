@@ -1,8 +1,29 @@
 import type { AuthEvent, AuthPrompt, OAuthCredential } from "@earendil-works/pi-ai";
 import { accountId, type CredentialSlot, type FileCredentialStore } from "./credentials.ts";
-import { createConfiguredOAuth } from "./providers/oauth.ts";
-import type { LoginHydrationConfig, ProviderConfig } from "./providers/schema.ts";
+import { createConfiguredOAuth, type OAuthAuthConfig } from "./oauth.ts";
 
+/** Optional post-login request that hydrates an additional credential slot. */
+export interface LoginHydrationConfig {
+	path: string;
+	method?: "GET" | "POST";
+	headers?: Record<string, string>;
+	body?: Record<string, unknown>;
+	authorization?: "bearer" | "none";
+	responsePath: string;
+	targetSlot: string;
+	slotType: "header" | "other";
+	stripPrefix?: string;
+}
+
+/** Minimal auth-bearing provider shape needed by machine login custody. */
+export interface LoginProviderConfig {
+	id: string;
+	baseUrl: string;
+	auth: Array<{ kind: string }>;
+	login?: { hydration?: LoginHydrationConfig[] };
+}
+
+/** Inputs and injected dependencies for one provider login. */
 export interface LoginOptions {
 	prompt(prompt: AuthPrompt): Promise<string>;
 	notify(event: AuthEvent): void;
@@ -22,7 +43,7 @@ function endpoint(baseUrl: string, path: string): string {
 	return path.startsWith(":") ? `${baseUrl.replace(/\/$/u, "")}${path}` : new URL(path, `${baseUrl.replace(/\/$/u, "")}/`).toString();
 }
 
-async function hydrate(config: ProviderConfig, credential: OAuthCredential, fetcher: typeof globalThis.fetch, spec: LoginHydrationConfig, signal: AbortSignal): Promise<CredentialSlot> {
+async function hydrate(config: LoginProviderConfig, credential: OAuthCredential, fetcher: typeof globalThis.fetch, spec: LoginHydrationConfig, signal: AbortSignal): Promise<CredentialSlot> {
 	const headers = new Headers(spec.headers);
 	if (spec.authorization !== "none") headers.set("authorization", `Bearer ${credential.access}`);
 	if (spec.body !== undefined && !headers.has("content-type")) headers.set("content-type", "application/json");
@@ -35,9 +56,13 @@ async function hydrate(config: ProviderConfig, credential: OAuthCredential, fetc
 	return { type: spec.slotType, value: normalized };
 }
 
-/** Completes a config-declared OAuth login and commits all account slots atomically. */
-export async function loginProviderAccount(config: ProviderConfig, label: string, store: FileCredentialStore, options: LoginOptions): Promise<void> {
-	const oauthConfig = config.auth.find((entry) => entry.kind === "oauth");
+/**
+ * Completes a config-declared OAuth login and commits all account slots atomically.
+ *
+ * OAuth scopes are persisted as non-secret account auth metadata.
+ */
+export async function loginProviderAccount(config: LoginProviderConfig, label: string, store: FileCredentialStore, options: LoginOptions): Promise<void> {
+	const oauthConfig = config.auth.find((entry): entry is OAuthAuthConfig => entry.kind === "oauth");
 	if (!oauthConfig) throw new Error(`Provider ${config.id} does not support OAuth login`);
 	const signal = options.signal ?? new AbortController().signal;
 	const fetcher = options.fetch ?? globalThis.fetch;
@@ -48,6 +73,7 @@ export async function loginProviderAccount(config: ProviderConfig, label: string
 	await store.modifyAccount(id, async (current) => ({
 		id, provider: config.id, label,
 		metadata: { ...(current?.metadata ?? {}), ownership: "df-owned", sync: "machine-only", login: "oauth" },
+		auth: { ...(current?.auth ?? {}), scopes: [...oauthConfig.scopes] },
 		slots: {
 			...(current?.slots ?? {}),
 			[oauthConfig.slot]: { type: "oauth", access: credential.access, refresh: credential.refresh, expires: credential.expires, ...(typeof credential.accountId === "string" ? { accountId: credential.accountId } : {}) },

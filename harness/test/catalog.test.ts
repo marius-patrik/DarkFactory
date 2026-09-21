@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { FileCredentialStore } from "@darkfactory/keychain";
 import { fauxProvider, type Provider } from "@earendil-works/pi-ai";
-import { FileCredentialStore } from "../src/credentials.ts";
 import { type CatalogFetch, ModelCatalog } from "../src/models/catalog.ts";
 import { providerFromConfig } from "../src/providers/runtime.ts";
 import { BUILTIN_PROVIDER_CONFIG, type ProviderConfig } from "../src/providers/schema.ts";

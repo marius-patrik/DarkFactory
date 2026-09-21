@@ -8,11 +8,26 @@ import { dirname, join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { formatCaptureSchema } from "@darkfactory/cli/capture-schema";
+import {
+	defaultDfHome,
+	exportCredentialAccount,
+	FileCredentialStore,
+	importCredentialAccount,
+	loadVaultKey,
+	parseAccountId,
+} from "@darkfactory/keychain";
+import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
+import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
+import { importGrokAccount } from "@darkfactory/keychain/import/grok";
+import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
+import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
+import { OsHomeReader } from "@darkfactory/keychain/import/reader";
+import { loginProviderAccount } from "@darkfactory/keychain/login";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
-import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountRecord } from "./credentials.ts";
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
@@ -29,18 +44,10 @@ import {
 	RunTimeoutError,
 } from "./harness/supervisor.ts";
 import { runDoctorIdentities } from "./identities/index.ts";
-import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
-import { importClaudeAccount } from "./import/claude.ts";
-import { importCodexAccount } from "./import/codex.ts";
-import { importGrokAccount } from "./import/grok.ts";
-import { OsClaudeKeyringAdapter } from "./import/keyring.ts";
-import { importKimiAccount } from "./import/kimi.ts";
-import { OsHomeReader } from "./import/reader.ts";
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
 import { estimateTask } from "./limits/routing.ts";
-import { loginProviderAccount } from "./login.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
 import { ProviderRegistry } from "./providers/runtime.ts";
@@ -445,12 +452,19 @@ async function accountsCommand(store: FileCredentialStore): Promise<void> {
 			oauth?.type === "oauth"
 				? `${new Date(oauth.expires).toISOString()} (${oauth.expires > Date.now() ? "valid" : "expired"})`
 				: "-";
-		const refresh = oauth?.type === "oauth" && oauth.refresh ? "df-managed" : "-";
 		const baseOwnership = account.metadata?.ownership ?? "df-owned";
+		const refresh =
+			oauth?.type === "oauth" && oauth.refresh ? (baseOwnership === "borrowed" ? "source-managed" : "df-managed") : "-";
 		const importedFrom = account.metadata?.importedFrom ?? account.metadata?.importer;
 		const ownership = importedFrom ? `${baseOwnership} (imported from ${importedFrom})` : baseOwnership;
 		console.log(`${account.id}\t${types}\t${expiry}\t${refresh}\t${ownership}\t${slots || "-"}`);
 	}
+}
+
+async function accountTransferKey(store: FileCredentialStore): Promise<string> {
+	const key = await loadVaultKey({ dfHome: store.home, allowFileKey: true });
+	if (!key) throw new Error("No machine vault key is available; run `df secrets init` before account transfer");
+	return key;
 }
 
 async function accountExportCommand(store: FileCredentialStore, args: string[]): Promise<void> {
@@ -458,27 +472,28 @@ async function accountExportCommand(store: FileCredentialStore, args: string[]):
 	if (!id) throw new Error("account export requires <provider:label>");
 	const account = await store.readAccount(id);
 	if (!account) throw new Error(`Account not found: ${id}`);
-	console.log(JSON.stringify(account));
+	const key = await accountTransferKey(store);
+	console.log(JSON.stringify(exportCredentialAccount(account, key)));
 }
 
 async function accountLoadCommand(store: FileCredentialStore, args: string[]): Promise<void> {
 	const id = args[0];
 	const fromEnv = option(args, "--from-env");
 	if (!id || !fromEnv) throw new Error("account load requires <provider:label> --from-env <VAR>");
-	const parsedId = parseAccountId(id);
-	if (!parsedId) throw new Error("Invalid account id; expected <provider:label>");
+	if (!parseAccountId(id)) throw new Error("Invalid account id; expected <provider:label>");
 	const raw = process.env[fromEnv];
 	if (!raw?.trim()) throw new Error(`Environment variable ${fromEnv} is empty or not set`);
-	let parsedJson: unknown;
+	let envelope: Parameters<typeof importCredentialAccount>[0];
 	try {
-		parsedJson = JSON.parse(raw);
+		envelope = JSON.parse(raw) as Parameters<typeof importCredentialAccount>[0];
 	} catch {
-		throw new Error("Invalid account JSON");
+		throw new Error("Invalid encrypted account export JSON");
 	}
-	const validated = validateAccountRecord(parsedJson, id);
+	const key = await accountTransferKey(store);
+	const validated = importCredentialAccount(envelope, key, id);
 	validated.metadata = { ...(validated.metadata ?? {}), ownership: "df-owned" };
 	await store.modifyAccount(id, async () => validated);
-	console.log(`Loaded account ${id} from ${fromEnv}.`);
+	console.log(`Loaded encrypted account ${id} from ${fromEnv}.`);
 }
 
 async function accountSetCommand(store: FileCredentialStore, args: string[]): Promise<void> {

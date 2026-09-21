@@ -69,6 +69,7 @@ export async function importGrokAccount(store: FileCredentialStore, label: strin
 		id,
 		provider,
 		label,
+		auth: { ...(current?.auth ?? {}), scopes: [...entry.scopes] },
 		metadata: {
 			...(current?.metadata ?? {}),
 			ownership: "df-owned", sync: "machine-only",

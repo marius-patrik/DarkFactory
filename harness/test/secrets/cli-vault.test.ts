@@ -2,12 +2,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { emptyVault, generateVaultKey } from "@darkfactory/keychain";
+import { savePushMap, saveVault } from "@darkfactory/keychain/vault-store";
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { secretsCommand } from "../../src/secrets/cli.ts";
-import { generateVaultKey } from "../../src/secrets/crypto.ts";
-import { emptyVault } from "../../src/secrets/vault.ts";
-import { savePushMap, saveVault } from "../../src/secrets/vault-store.ts";
 import { json, scripted } from "../github/helpers.ts";
 
 const sodium: typeof import("libsodium-wrappers") = require("libsodium-wrappers");

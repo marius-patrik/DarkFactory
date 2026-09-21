@@ -1,9 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { hostname } from "node:os";
 import { dirname, join } from "node:path";
-import { withFileLock } from "../storage/file-lock.ts";
-import { replaceFile } from "../storage/replace-file.ts";
-import { decryptVault, encryptVault } from "./crypto.ts";
+import { withFileLock } from "./storage/file-lock.ts";
+import { replaceFile } from "./storage/replace-file.ts";
+import { decryptVault, encryptVault } from "./vault-crypto.ts";
 import {
 	type EncryptedVaultEnvelope,
 	emptyPushMap,
