@@ -6,13 +6,13 @@
   industry: "Compaction",
   czech: "Kompakce kontextu",
   english: "Context Compaction",
-  citation: bib.jiang2023llmlingua,
-  source: bib.jiang2023llmlingua,
+  citation: (bib.anthropic_context_engineering, bib.jiang2023llmlingua),
+  source: bib.anthropic_context_engineering,
   definition: terms => [
-Zmenšení aktivního kontextu výběrem, shrnutím nebo nahrazením starší historie kompaktnější reprezentací.
+Zmenšení aktivního kontextu nahrazením části historie kratší reprezentací, typicky shrnutím nebo výběrem důležitých informací. #cite(bib.anthropic_context_engineering)
   ],
   description: terms => [
-Kompakce uvolňuje místo v kontextovém okně za cenu možné ztráty přesných detailů; důležité požadavky a stav proto nemají existovat pouze v rekurzivně shrnované historii. #cite(bib.jiang2023llmlingua)
+Kompakce uvolňuje kapacitu pro další běh, ale příliš agresivní komprese může odstranit detaily, které se později ukážou jako důležité. #cite(bib.anthropic_context_engineering) #cite(bib.jiang2023llmlingua)
   ],
-  relations: ((type: "dependency", target: "context_window"),),
+  relations: ((type: "dependency", target: "context_engineering"),),
 )
