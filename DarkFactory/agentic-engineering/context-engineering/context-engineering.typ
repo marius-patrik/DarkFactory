@@ -13,7 +13,7 @@
 Systematický výběr a správa informací, které jsou modelu zpřístupněny v aktivním kontextu během inference. #cite(bib.anthropic_context_engineering)
   ],
   description: terms => [
-Kontext zahrnuje nejen prompt, ale také nástroje, externí data a historii zpráv; jeho obsah je nutné průběžně kurátorovat vzhledem k omezené kapacitě a nerovnoměrnému využití dlouhého kontextu. #cite(bib.anthropic_context_engineering) #cite(bib.liu2024)
+Aktivní kontext může obsahovat instrukce, popisy dostupných nástrojů, externí data a vybranou historii interakce. Jeho obsah je nutné kurátorovat vzhledem k omezené kapacitě a nerovnoměrnému využití dlouhého kontextu. #cite(bib.anthropic_context_engineering) #cite(bib.liu2024)
   ],
-  relations: ((type: "dependency", target: "context_window"),),
+  relations: ((type: "dependency", target: "context_window"), (type: "related", target: "state"), (type: "related", target: "transcript")),
 )
