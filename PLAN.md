@@ -1,0 +1,380 @@
+# DarkFactory-Paper — Completion Plan
+
+This file is the finite execution roadmap for finishing the thesis. Durable writing, terminology, structure, citation, and repository rules live in `AGENTS.md`.
+
+## Completion target
+
+Deliver a submission-ready Czech thesis and publication set in which:
+
+- the final hierarchy is stable and semantically meaningful;
+- every intended concept is present exactly once and indexed;
+- theory is concise, sourced, and implementation-agnostic;
+- Practical describes the verified DarkFactory implementation rather than the intended design;
+- Results are based on reproducible evidence;
+- methodology, goals, research questions, answers, introduction, and conclusion agree with the finished work;
+- final/review PDF, HTML, and Markdown build cleanly and render correctly.
+
+## Phase 1 — Lock structure and concept model
+
+**Status: in progress; major hierarchy applied.**
+
+### Work
+
+- Use folders as numbered structural sections.
+- Render semantic concepts as unnumbered, outlined headings that remain visible in the contents.
+- Keep semantic relations separate from document nesting.
+- Finalize the theory groups:
+  - Software Engineering
+  - Model
+  - Harness
+  - Agentic Engineering
+- Finalize Practical groups:
+  - Úvod
+  - Návrh systému DarkFactory
+  - Životní cyklus požadavku
+  - Výsledky a diskuse
+- Add the currently missing concepts:
+  - Branch
+  - Pull Request
+  - State
+  - Environment
+  - Prompt Injection
+  - Goal Loops
+  - Orchestrator
+  - Handoff
+  - Swarm
+  - Workflow Graphs
+- Place DAG under Software Engineering.
+- Place Divergence under Model and absorb Semantic Drift.
+- Place Sandbox under Harness runtime.
+- Place Subagent under Multi-Agent Systems.
+- Remove Harness Engineering, Loop Engineering, Graph Engineering, Semantic Drift, and superseded duplicate concept files.
+- Keep GitHub/GitHub Actions as implementation evidence rather than theory concepts.
+- Update positive structure validation to the new hierarchy.
+
+### Exit criteria
+
+- Every rendered section is numbered.
+- Every rendered concept is unnumbered and present in the contents.
+- No duplicate concept keys or orphaned intended concepts.
+- No semantic relation points at a removed concept.
+- `scripts/check_build.py` describes only the new final structure.
+- Canonical build reaches the next failure for content/evidence reasons rather than obsolete hierarchy assumptions.
+
+## Phase 2 — Theory source and citation pass A
+
+**Purpose:** make every surviving theoretical concept source-complete before the final prose pass.
+
+### Work
+
+Audit every indexed theory concept for:
+
+- source/citation metadata;
+- claim-local inline citations;
+- direct/primary source preference;
+- terminology accuracy;
+- unsupported historical or comparative claims;
+- obsolete or weak secondary sources.
+
+Specific source work:
+
+- replace weak or indirect sources for DAG/runtime where a better formal or first-party source exists;
+- verify State and Environment against current agent-runtime documentation;
+- verify Plugins/Tools/Scripts/Hooks/MCP taxonomy with first-party specifications/docs;
+- verify Goal Loops against ReAct and current agent workflow literature;
+- verify Orchestrator/Handoff/Swarm/Workflow Graphs against first-party multi-agent documentation;
+- verify Prompt Injection with OWASP/OpenAI sources, including indirect injection from documents, web content, repositories, email, RAG, and résumé-style attacks;
+- verify Divergence wording so thesis-defined scope is clearly separated from cited empirical mechanisms.
+
+### Exit criteria
+
+- Every externally defined theory concept has at least one appropriate authoritative source.
+- Every externally verifiable mechanism/history/security claim is cited where asserted.
+- Thesis-defined terminology is explicitly marked as thesis-defined.
+- No citation exists merely because it is topically related.
+
+## Phase 3 — Methodology, goals, and research questions pass A
+
+**Purpose:** align the research framing with the architecture we are actually documenting before Results are written.
+
+### Work
+
+Rewrite and normalize:
+
+- motivation;
+- main goal;
+- partial goals;
+- methodology;
+- research questions;
+- expected form of evidence;
+- mapping from each goal/question to the Practical/Results section that can answer it.
+
+For every research question define:
+
+- what exactly is being asked;
+- what evidence can answer it;
+- what evidence would *not* justify the answer;
+- whether the answer is architectural, functional, empirical, or comparative.
+
+Do not write final answers yet. Replace unsupported answer-like prose with explicit evaluation requirements.
+
+### Exit criteria
+
+- Every goal is measurable or demonstrable within the thesis scope.
+- Every research question has a concrete evidence path.
+- No question requires evidence the project will not collect.
+- Methodology describes the actual evaluation strategy, not a generic school template.
+
+## Phase 4 — Final theory rewrite pass
+
+**Purpose:** rewrite the now-stable, sourced theory as one coherent argument.
+
+### Work
+
+For every concept:
+
+- tighten definition;
+- remove duplicated explanation;
+- remove generic motivation;
+- enforce Czech technical prose and canonical concept rendering;
+- normalize cross-references;
+- ensure surrounding section grouping creates a natural reading order;
+- add only examples/figures that materially improve comprehension;
+- remove product-specific implementation claims from theory.
+
+Focus transitions on the conceptual backbone:
+
+1. Software Engineering explains reliable software change.
+2. Model explains the inference component and its limits.
+3. Harness explains runtime state, environment, loop, and extension machinery around the model.
+4. Agentic Engineering explains techniques for directing that machinery toward goals, context management, and multi-agent coordination.
+
+### Exit criteria
+
+- Every theory sentence adds definition, mechanism, distinction, consequence, evidence, or a necessary relation.
+- No concept repeats another concept's responsibility.
+- Section transitions explain why the next group is needed.
+- Theory is ready to stand independently of DarkFactory.
+
+## Phase 5 — Practical evidence map and architecture writing
+
+**Purpose:** write Practical from the implementation outward.
+
+### Evidence baseline
+
+Inspect the current DarkFactory repository and submodule snapshot for:
+
+- `@darkfactory/protocol`;
+- `@darkfactory/core`;
+- `@darkfactory/capability`;
+- `@darkfactory/github`;
+- `@darkfactory/keychain`;
+- `@darkfactory/auth`;
+- `@darkfactory/docs`;
+- `@darkfactory/cli`;
+- `@darkfactory/web`;
+- first-party capabilities;
+- workflow/state/recovery contracts;
+- CI and repository governance;
+- generated/release artifacts.
+
+### Write 3.2 Návrh systému DarkFactory
+
+#### Cíle návrhu
+- concrete system problem;
+- constraints;
+- why persistent governed agent execution is needed.
+
+#### Celková architektura
+- architecture diagram;
+- responsibility boundaries;
+- data/control flow;
+- durable versus transient state.
+
+#### Vykonávací jádro
+- protocol contracts;
+- execution kernel;
+- run state;
+- provider/model routing;
+- result capture;
+- recovery/resume.
+
+#### Systém capabilities
+- capability ABI;
+- discovery/loading/resolution;
+- first-party capabilities;
+- generated adapters;
+- domain versus capability distinction.
+
+#### Externí integrace
+- Git/GitHub control plane;
+- repository operations;
+- PR/check integration;
+- external services used by the actual implementation.
+
+#### Identita a bezpečnostní hranice
+- keychain;
+- browser/human auth;
+- machine credentials;
+- trust boundaries;
+- secret custody.
+
+#### Rozhraní
+- CLI/TUI;
+- Web;
+- documentation pipeline.
+
+### Write 3.3 Životní cyklus požadavku
+
+Ground each stage in code/workflow evidence:
+
+1. Zachycení požadavku
+2. Plánování a schválení
+3. Implementace
+4. Ověření a revize
+5. Integrace
+6. Obnova a pokračování
+
+### Exit criteria
+
+- Every implementation claim can be traced to code, configuration, tests, workflows, or generated artifacts.
+- Planned but unimplemented behavior is excluded or explicitly identified.
+- Package names support architectural explanations rather than replacing them.
+
+## Phase 6 — Results and evaluation
+
+### Build the evidence set
+
+Collect reproducible evidence for:
+
+- build/test/check success;
+- end-to-end request lifecycle;
+- state persistence and resume;
+- deterministic verification;
+- branch/PR/check behavior;
+- capability loading/execution;
+- authentication/credential boundaries where testable;
+- representative target-repository operation.
+
+### Write 3.4
+
+#### Metoda ověření
+Define tested configuration, repositories, commands, artifacts, and acceptance conditions.
+
+#### Technické výsledky
+Report observed test/build/validation results.
+
+#### End-to-end ověření
+Demonstrate a complete governed request lifecycle.
+
+#### Ověření na cílových repozitářích
+Report only repositories actually exercised and the evidence produced.
+
+#### Vyhodnocení cílů a výzkumných otázek
+Answer each question directly from the evidence.
+
+#### Omezení
+State what was not measured or cannot be generalized.
+
+#### Diskuse
+Interpret results without introducing unsupported superiority claims.
+
+### Exit criteria
+
+- Every result is evidence-backed.
+- No architecture claim is presented as a measured result.
+- No general benchmark/comparative claim is made without an actual experiment.
+- Each research question has a direct, bounded answer.
+
+## Phase 7 — Alignment pass B
+
+**Purpose:** make the framing and sourcing exactly match the finished thesis.
+
+### Citation pass B
+
+- audit every external claim in final prose;
+- remove unused bibliography entries;
+- replace any remaining indirect citation where a direct source is available;
+- verify every citation supports the exact surrounding claim;
+- verify figures/examples have appropriate source attribution.
+
+### Methodology/goals/questions pass B
+
+Rewrite again using the completed Practical and Results:
+
+- motivation;
+- methodology;
+- main and partial goals;
+- research questions;
+- final answers;
+- limitations.
+
+Then rewrite:
+
+- Úvod;
+- Závěr;
+- annotations/abstract;
+- keywords.
+
+The conclusion must answer only what the Results established.
+
+### Exit criteria
+
+- goals, questions, answers, results, and conclusion form a closed chain;
+- no promised evaluation is missing;
+- no final claim exceeds the evidence;
+- bibliography contains only used/relevant sources.
+
+## Phase 8 — Publication and submission QA
+
+### Content QA
+
+- terminology consistency;
+- Czech grammar/style;
+- section/concept ordering;
+- contents;
+- encyclopedia/index;
+- figures and captions;
+- cross-references;
+- bibliography;
+- appendix placement.
+
+### Build QA
+
+Run:
+
+```bash
+make all BOOK=DarkFactory
+make web-check
+make ci BOOK=DarkFactory
+make site BOOK=DarkFactory
+```
+
+Verify:
+
+- final/review PDF;
+- final/review HTML;
+- final/review Markdown;
+- generated site;
+- links/assets;
+- viewer structure tree;
+- concept headings unnumbered;
+- section headings numbered.
+
+Inspect the final PDF page by page.
+
+### Repository cleanup
+
+- remove unused/superseded concept files;
+- remove stale review wrappers;
+- remove obsolete bibliography entries;
+- remove temporary planning/review artifacts;
+- ensure README, AGENTS.md, validation, and actual structure agree.
+
+### Exit criteria
+
+- all canonical checks green;
+- all publication artifacts valid;
+- final PDF visually inspected;
+- no known unresolved review marker;
+- repository contains only the final thesis architecture and supporting source.
