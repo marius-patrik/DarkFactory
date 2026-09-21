@@ -10,10 +10,10 @@
   citation: bib.agent_skills_spec,
   source: bib.agent_skills_spec,
   definition: terms => [
-Znovupoužitelný balíček instrukcí a volitelných zdrojů načítaný pro úlohy, ke kterým je relevantní.
+Znovupoužitelný balíček instrukcí a volitelných zdrojů, který se načítá pro úlohy odpovídající jeho účelu. #cite(bib.agent_skills_spec)
   ],
   description: terms => [
-Formát Agent Skills používá soubor SKILL.md s metadaty a instrukcemi a může doplnit skripty, reference nebo další zdroje. #cite(bib.agent_skills_spec)
+Agent Skill je definován souborem `SKILL.md` a může odkazovat na doplňující skripty, reference nebo další zdroje načítané podle potřeby. #cite(bib.agent_skills_spec)
   ],
   examples: (skill_md_format.item,),
   relations: ((type: "dependency", target: "tools"),),
