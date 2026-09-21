@@ -239,6 +239,17 @@ Do not use raw Typst bold emphasis in manuscript prose. Accepted prose remains c
 
 Keep theory implementation-agnostic. DarkFactory-specific architecture, behavior, workflow, product names, and evaluation claims belong in Practical/Results unless a brief example is necessary.
 
+## Research framing and evaluation
+
+- The main goal and partial goals must describe work that the thesis can actually demonstrate.
+- Every research question must have an explicit evidence path before final answers are written.
+- Distinguish architectural evidence, functional evidence, empirical measurements, and comparative claims.
+- Do not ask a research question that requires evidence the project will not collect.
+- Do not use vague optimization language such as “maximum autonomy” unless a measurable comparison is actually performed.
+- Final answers must be bounded by the evidence and state what the evidence does not establish.
+- Methodology must describe the evaluation actually performed in Practical/Results, not a generic school template.
+- Pass A aligns goals/questions/evidence before evaluation; Pass B rewrites them again after Results are complete.
+
 ## Citation policy
 
 Use citations for externally verifiable claims, not decorative citation density.
