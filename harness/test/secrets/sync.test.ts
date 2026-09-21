@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { generateVaultKey } from "../../src/secrets/crypto.ts";
+import { emptyVault, generateVaultKey } from "@darkfactory/keychain";
 import { syncDataRepo } from "../../src/secrets/sync.ts";
-import { emptyVault } from "../../src/secrets/vault.ts";
-import { loadVault, saveVault } from "../../src/secrets/vault-store.ts";
+
+import { loadVault, saveVault } from "@darkfactory/keychain/vault-store";
 
 async function git(cwd: string, ...args: string[]) {
 	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
