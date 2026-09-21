@@ -6,7 +6,7 @@ import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completio
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
 import { openAICodexResponsesApi } from "@earendil-works/pi-ai/api/openai-codex-responses.lazy";
 import { cloudcodeAgentApi } from "./cloudcode-agent.ts";
-import { createConfiguredOAuth } from "./oauth.ts";
+import { createConfiguredOAuth } from "@darkfactory/keychain/oauth";
 import type { ApiKeyAuthConfig, ProviderConfig, ProviderConfigFile } from "./schema.ts";
 
 const COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
