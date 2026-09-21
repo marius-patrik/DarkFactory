@@ -301,7 +301,7 @@
   podekovani-strana(meta)
   anotace-strana(meta, concepts)
 
-  outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: auto)
+  outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: 1.4em)
 
   // ── Vlastní text ─────────────────────────────────────────
   // Čísla stran se uvádí od úvodu; za stranu 1 se považuje titulní strana,

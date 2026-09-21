@@ -7,7 +7,7 @@
     czech: "Rozhraní aplikace Claude",
   english: "Claude Desktop Interface",
 definition: terms => [Oficiální snímek aplikačního rozhraní Claude s pracovním artefaktem.],
-  description: terms => [Snímek ukazuje, že aplikační vrstva může vedle konverzace zpřístupnit soubory, nástroje a samostatný pracovní povrch.],
+  description: terms => [Konverzace s pracovním artefaktem a samostatným pracovním povrchem.],
   visual: terms => [
 #figure(
   image("/DarkFactory/img/external/claude-desktop.png", width: 86%),

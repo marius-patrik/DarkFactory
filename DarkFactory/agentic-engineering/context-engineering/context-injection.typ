@@ -1,3 +1,4 @@
+#import "/DarkFactory/templates/common.typ": issue
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -9,6 +10,8 @@ Context Injection je cílené vložení informací do aktivního kontextu modelu
   ],
   description: terms => [
 Harness může tímto způsobem doplnit instrukce, stav projektu, výsledky nástrojů nebo externě načtená data bez jejich trvalého držení v celém průběhu sezení.
+
+#issue[Doplnit primární nebo odborný zdroj pro pojem Context Injection, případně jej explicitně označit jako vlastní pojmenování mechanismu v této práci.]
   ],
   relations: ((type: "dependency", target: "context_engineering"),),
 )

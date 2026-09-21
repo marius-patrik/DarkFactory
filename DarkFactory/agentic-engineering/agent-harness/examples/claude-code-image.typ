@@ -7,7 +7,7 @@
     czech: "Rozhraní Claude Code",
   english: "Claude Code Interface",
 definition: terms => [Oficiální snímek rozhraní Claude Code při práci se zdrojovým kódem.],
-  description: terms => [Snímek zobrazuje čtení souboru, zápis změny a průběžný stav agentní úlohy.],
+  description: terms => [Čtení souboru, zápis změny a průběžný stav agentní úlohy.],
   visual: terms => [
 #figure(
   image("/DarkFactory/img/external/claude-code.webp", width: 72%),

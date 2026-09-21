@@ -200,12 +200,16 @@
 }
 
 #let render-inline-example(item, terms, graph) = {
-  let output = [
-    #block[
-      #term-full-name(item). #(item.definition)(terms)
-    ]#label("concept-" + item.key)
-  ]
-  output += (item.description)(terms)
+  let output = if item.visual != none {
+    [#block[#(item.description)(terms)]#label("concept-" + item.key)]
+  } else {
+    [
+      #block[
+        #term-full-name(item). #(item.definition)(terms)
+      ]#label("concept-" + item.key)
+      #(item.description)(terms)
+    ]
+  }
   if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
@@ -220,11 +224,12 @@
   output
 }
 
-#let render-concept(item, terms, graph, level: 1) = {
+#let render-concept(item, terms, graph, level: 1, title: none) = {
+  let heading-title = if title != none { title } else { render-concept-title(item) }
   let output = if level >= 4 {
-    [#heading(level: level, numbering: none, outlined: true)[#render-concept-title(item)]#label("concept-" + item.key)]
+    [#heading(level: level, numbering: none, outlined: true)[#heading-title]#label("concept-" + item.key)]
   } else {
-    [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
+    [#heading(level: level)[#heading-title]#label("concept-" + item.key)]
   }
 
   output += [
@@ -252,7 +257,7 @@
   let child-level = level
 
   if node.section != none {
-    output += render-concept(node.section, terms, graph, level: level)
+    output += render-concept(node.section, terms, graph, level: level, title: node.title)
     child-level = level + 1
   }
 

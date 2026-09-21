@@ -16,6 +16,7 @@
 
 #let node = folder(
   key: "harness",
+  title: [Harness],
   section: section.item,
   concepts: (
     agentic_ai.item,

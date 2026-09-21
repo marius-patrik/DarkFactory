@@ -9,8 +9,8 @@ The directory name, structural root key, and main book title are one identity. `
 - Folder manifests (`index.typ`) are the sole source of section hierarchy.
 - A folder may designate one section concept, contain direct concepts, and contain child folders.
 - Nested folders create nested sections to arbitrary depth.
-- Section headings are derived from the section concept's canonical full term surface.
-- Section concepts and direct concepts render as headings. Levels 1–3 are numbered; level 4 and deeper remain outlined/indexed but render without section numbers. Example concepts render inline inside their parent without a separate heading.
+- Section headings use the section concept's canonical full term surface unless the structural folder provides an explicit display-only `title`.
+- Section concepts and direct concepts render as headings. Levels 1–3 are numbered; level 4 and deeper remain outlined/indexed but render without section numbers. The contents uses explicit per-level indentation so unnumbered deep headings remain visibly nested. Visual inline examples render only their description and figure; non-visual examples retain their inline term/definition rendering.
 - The canonical prose fields are exactly `definition` and `description`; theory/practical/document projection fields and a separate concept summary field do not exist.
 - `keyword` defaults to `false`; only deliberately curated thesis-defining concepts set `keyword: true` and appear in the Keywords list.
 - The renderer never inserts generic `Úvod` subsections.

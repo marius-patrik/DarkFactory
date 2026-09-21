@@ -7,7 +7,7 @@
     czech: "Rozhraní aplikace Codex",
   english: "Codex App Interface",
 definition: terms => [Oficiální produktový snímek aplikace Codex.],
-  description: terms => [Snímek dokumentuje specializované rozhraní pro práci s agentními úlohami a dovednostmi.],
+  description: terms => [Rozhraní pro práci s agentními úlohami a dovednostmi.],
   visual: terms => [
 #figure(
   image("/DarkFactory/img/external/codex-app.webp", width: 82%),

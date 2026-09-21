@@ -1,3 +1,4 @@
+#import "/DarkFactory/templates/common.typ": issue
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -9,6 +10,8 @@ Sémantický posun je postupné zkreslování významu nebo faktického stavu p�
   ],
   description: terms => [
 Každá další komprese může převzít nepřesnost z předchozí verze jako fakt, až se pracovní reprezentace agenta rozejde se skutečným stavem systému.
+
+#issue[Ověřit terminologii „Sémantický posun“ vůči odborným zdrojům a doplnit citaci pro tvrzení o kumulaci chyb při opakované kompresi kontextu.]
   ],
   relations: ((type: "related", target: "context_rot"), (type: "related", target: "compaction")),
 )

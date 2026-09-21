@@ -12,9 +12,7 @@
 Embedding je vícerozměrná vektorová reprezentace tokenů nebo jiných dat, v níž numerické vztahy mezi vektory zachycují užitečné vztahy mezi reprezentovanými objekty.
   ],
   description: terms => [
-V jazykovém modelu embedding převádí diskrétní identifikátory tokenů na spojité vektory zpracovatelné neuronovou sítí. Podobné reprezentace lze použít také pro sémantické vyhledávání nebo porovnávání podobnosti.
-
-Známým didaktickým příkladem je přibližný relační vztah mezi vektory slov král, muž, žena a královna. Obrázek zobrazuje pouze trojrozměrnou projekci; skutečný embeddingový prostor má obvykle mnohem více rozměrů. #cite(bib.mikolov2013word2vec)
+V jazykovém modelu embedding převádí diskrétní identifikátory tokenů na spojité vektory zpracovatelné neuronovou sítí. Podobné reprezentace lze použít také pro sémantické vyhledávání nebo porovnávání podobnosti. #cite(bib.mikolov2013word2vec)
   ],
   visual: terms => [
 #figure(

@@ -7,7 +7,7 @@
     czech: "Webové rozhraní ChatGPT",
   english: "ChatGPT Web Interface",
 definition: terms => [Snímek úplného webového rozhraní ChatGPT v prohlížeči.],
-  description: terms => [Snímek ukazuje celé rozhraní chatgpt.com včetně postranního panelu, aktivní konverzace a vstupního pole.],
+  description: terms => [Úplné webové rozhraní s postranním panelem, aktivní konverzací a vstupním polem.],
   visual: terms => [
 #figure(
   image("/DarkFactory/img/external/chatgpt-web.png", width: 100%),

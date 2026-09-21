@@ -162,7 +162,7 @@ school_template = sources[ROOT / "templates/gjkt-odborna-prace/template.typ"]
 for contract in (
     "heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)",
     "bibliography(bibliografie, style: bib-styl, title: none, full: true)",
-    "outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: auto)",
+    "outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: 1.4em)",
 ):
     if contract not in school_template:
         fail(f"front/back matter bookmark contract missing: {contract}")
@@ -200,7 +200,7 @@ for contract in (
     "#let build-vocabulary(folders)",
     "#let render-concept-title(item) = {",
     "#let render-inline-example(item, terms, graph)",
-    "#let render-concept(item, terms, graph, level: 1)",
+    "#let render-concept(item, terms, graph, level: 1, title: none)",
 ):
     if contract not in schema:
         fail(f"concept schema is missing contract: {contract}")
@@ -215,7 +215,9 @@ for forbidden in (
 for contract in (
     "if level >= 4 {",
     "heading(level: level, numbering: none, outlined: true)",
-    "heading(level: level)[#render-concept-title(item)]",
+    "heading(level: level)[#heading-title]",
+    "let heading-title = if title != none { title } else { render-concept-title(item) }",
+    "if item.visual != none {",
 ):
     if contract not in schema:
         fail(f"concept heading numbering/index contract missing: {contract}")
@@ -348,6 +350,17 @@ if BOOK == "DarkFactory":
     ):
         if stale_file.exists():
             fail(f"concept remains at obsolete source location: {stale_file}")
+
+    harness_manifest = require_file(ROOT / "agentic-engineering/agent-harness/index.typ")
+    for contract in (
+        'title: [Harness]',
+        'section: section.item',
+        'concepts: (',
+    ):
+        if contract not in harness_manifest:
+            fail(f"flat Harness section contract missing: {contract}")
+    if "children:" in harness_manifest:
+        fail("Harness section must remain single-level")
 
     for required in (
         ROOT / "bib/references.bib",
