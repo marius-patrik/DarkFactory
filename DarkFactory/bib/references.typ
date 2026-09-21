@@ -66,6 +66,8 @@
 #let microsoft_ai_diffusion_2026 = <microsoft-ai-diffusion-2026>
 #let brown2020 = <brown2020>
 #let owasp_llm01_prompt_injection = <owasp-llm01-prompt-injection>
+#let darkfactory_e9c10221 = <darkfactory-e9c10221>
+#let darkfactory_ci_35616745304 = <darkfactory-ci-35616745304>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -133,4 +135,6 @@
   microsoft_ai_diffusion_2026: microsoft_ai_diffusion_2026,
   brown2020: brown2020,
   owasp_llm01_prompt_injection: owasp_llm01_prompt_injection,
+  darkfactory_e9c10221: darkfactory_e9c10221,
+  darkfactory_ci_35616745304: darkfactory_ci_35616745304,
 )
