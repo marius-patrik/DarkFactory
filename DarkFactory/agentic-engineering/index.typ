@@ -3,6 +3,7 @@
 #import "/DarkFactory/agentic-engineering/guardrail.typ" as guardrail
 #import "/DarkFactory/agentic-engineering/human-in-the-loop.typ" as human_in_the_loop
 #import "/DarkFactory/agentic-engineering/sandbox.typ" as sandbox
+#import "/DarkFactory/agentic-engineering/harness-engineering/index.typ" as harness_engineering
 #import "/DarkFactory/agentic-engineering/prompt-engineering/index.typ" as prompt_engineering
 #import "/DarkFactory/agentic-engineering/loop-engineering/index.typ" as loop_engineering
 #import "/DarkFactory/agentic-engineering/graph-engineering/index.typ" as graph_engineering
@@ -17,6 +18,7 @@
     sandbox.item,
   ),
   children: (
+    harness_engineering.node,
     prompt_engineering.node,
     loop_engineering.node,
     graph_engineering.node,
