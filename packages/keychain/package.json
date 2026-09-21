@@ -4,7 +4,15 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./import/reader": "./src/import/reader.ts",
+    "./import/shared": "./src/import/shared.ts",
+    "./import/keyring": "./src/import/keyring.ts",
+    "./import/codex": "./src/import/codex.ts",
+    "./import/claude": "./src/import/claude.ts",
+    "./import/grok": "./src/import/grok.ts",
+    "./import/kimi": "./src/import/kimi.ts",
+    "./import/antigravity": "./src/import/antigravity.ts"
   },
   "files": [
     "src"
