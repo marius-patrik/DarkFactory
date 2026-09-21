@@ -283,12 +283,12 @@
 
 #let term-full-name(value) = {
   assert(value.kind == "concept", message: "term-full-name() expects a concept")
-  let lead = if value.industry != none { value.industry } else if value.english != none { value.english } else { value.czech }
+  let lead = if value.industry != none { value.industry } else if value.czech != none { value.czech } else { value.english }
   let lead-raw = str(lead)
   let cs-raw = if value.czech != none { str(value.czech) } else { none }
   let en-raw = if value.english != none { str(value.english) } else { none }
   let output = [#lead]
-  if value.czech != none and cs-raw != lead-raw {
+  if value.industry != none and value.czech != none and cs-raw != lead-raw {
     output += [#text(" (")#text(lang: "cs")[#value.czech]#text(")")]
   }
   if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
