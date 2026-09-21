@@ -113,17 +113,17 @@ Do not make #317 wait for all of #384. Move only the mechanism required by #317 
 
 `@darkfactory/keychain` is the only machine/harness credential owner.
 
-The active PR now carries the major missing final-owner work: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
+The active PR carries the final machine-credential convergence: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
 
-Current validation: PR #931 head `6ea451f` has green CI, docs preview, bound-issue verification, board automation and formatting.
+F14 has terminal disposition under #422, its recovery ref is deleted, and deletion-bound machine credential/secret custody facades have been removed in favor of direct `@darkfactory/keychain` consumption.
+
+Current validation: PR #931 head `b11e411` has green CI, docs preview, bound-issue verification, board automation and formatting.
 
 Remaining work:
 
-1. finish removal of remaining temporary secret/credential custody facades under `harness/`;
-2. retain the green browser/private-key isolation boundary while removing those facades;
-3. record the final F14 integrated/rejected disposition;
-4. delete `recovery/f14-borrowed-refresh` once no unique required state remains;
-5. complete semantic review/alignment and merge.
+1. semantically refresh/rebase #931 onto current canonical `darkfactory` after #891 without reintroducing deleted compatibility owners;
+2. retain the green browser/private-key isolation boundary;
+3. complete semantic review/alignment and merge.
 
 #248 consumes #422 rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
 
@@ -265,6 +265,10 @@ The rejected #329 ref `feature/results-are-captured-when-a-model-stops-without-j
 
 The generated #384 ref `feature/df-supports-deterministic-common-git-workspace-ope` produced invalid lockfile-only PR #953 while claiming completion from deletion-bound harness state. PR #953 is closed; delete this ref and do not reuse it as #384 implementation evidence.
 
+The generated #403 ref `feature/finish-the-supported-df-operator-cli-surface` produced nonterminal PR #955 whose only substantive source change was a wrapper-test path fix while claiming `Closes #403`. PR #955 is closed; delete this ref and resume #403 only with real `@darkfactory/cli` operator-command implementation.
+
+The generated #339 ref `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a` produced PR #956 with scratch Python scripts, deletion-bound harness CLI ownership, source-relative package coupling and red verification. PR #956 is closed; delete this ref and rebuild #339 from final core/capability/CLI package boundaries. `recovery/f47-hooks` remains evidence only.
+
 After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
 
 Do not keep historical branches as archives.
@@ -308,11 +312,11 @@ After #361 is green, rerun the declarable-graph product contract and close #68 o
 Highest-downstream-value work, in order:
 
 1. **#358 / #894:** refresh on shipped #329, move production orchestration to final owners, prove real persisted exactly-once resume, review/alignment, merge.
-2. **#422 / #931 in parallel:** F14 is fully reconciled and deleted; finish aggregate validation, final review/alignment and merge.
+2. **#422 / #931 in parallel:** F14/facade cleanup is complete and checks are green; semantically refresh onto current canonical, complete final review/alignment and merge.
 3. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
 4. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #358/#317.
 5. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
 6. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
-7. Delete the merged #329 topic branch and the invalid generated #329/#384 branches once their unique state is confirmed represented; clean other merged topic branches immediately.
+7. Delete invalid generated #329/#384/#403/#339 branches and clean merged topic branches immediately; none are archives or reusable implementation vehicles.
 
 Converge only at the final release freeze, publish once, validate through #361, then close #68.
