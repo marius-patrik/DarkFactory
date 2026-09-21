@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
-import type { CredentialFallback } from "./credentials.ts";
+import type { CredentialFallback } from "@darkfactory/keychain";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import { assertTierConfiguration } from "./router/tiers.ts";
 import type {

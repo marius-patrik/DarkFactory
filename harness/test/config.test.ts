@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
-import { FileCredentialStore } from "../src/credentials.ts";
+import { FileCredentialStore } from "@darkfactory/keychain";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 
 const LOCAL_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";

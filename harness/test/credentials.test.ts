@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { join } from "node:path";
 import { importCodexAccount } from "@darkfactory/keychain/import/codex";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { accountId, FileCredentialStore, validateAccountRecord } from "../src/credentials.ts";
+import { accountId, FileCredentialStore, validateAccountRecord } from "@darkfactory/keychain";
 import { QuotaStore } from "../src/harness/quota-store.ts";
 
 const roots: string[] = [];

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { exportPKCS8, generateKeyPair } from "jose";
-import { AppInstallationTokenProvider, appIdentityFromManifest, resolveGitHubCredential } from "../../src/github/auth.ts";
+import { AppInstallationTokenProvider, appIdentityFromManifest, resolveGitHubCredential } from "@darkfactory/keychain";
 import { GitHubClient } from "../../src/github/client.ts";
 import { json, scripted } from "./helpers.ts";
 

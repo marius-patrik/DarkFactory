@@ -33,11 +33,11 @@ describe("hard .df transition in the final TypeScript system", () => {
 
 	test("df-owned runtime state cannot regress to JSON/JSONL or non-df lock/temp aliases", async () => {
 		const contracts: Record<string, string[]> = {
-			"harness/src/credentials.ts": ["credentials.json", "vault.key", ".lock`", ".tmp`"],
+			"packages/keychain/src/credentials.ts": ["credentials.json", "vault.key", ".lock`", ".tmp`"],
 			"harness/src/limits/ledger.ts": ["quota.df", 'source: "migration"', ".lock`", ".tmp`"],
 			"harness/src/limits/quota-engine.ts": [".lock`", ".tmp`"],
 			"harness/src/models/catalog.ts": ["${provider}.json", ".tmp`"],
-			"harness/src/secrets/vault-store.ts": [".secrets.lock", ".tmp`"],
+			"packages/keychain/src/vault-store.ts": [".secrets.lock", ".tmp`"],
 			"harness/src/graph/run-state.ts": ["${subject}.json", ".tmp.json", ".json`"],
 			"harness/src/graph/executor.ts": ["state.json", "events.jsonl", "result.json", ".tmp`"],
 		};

@@ -19,7 +19,7 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import { defaultDfHome, FileCredentialStore } from "../credentials.ts";
+import { defaultDfHome, FileCredentialStore } from "@darkfactory/keychain";
 import type { Candidate } from "../failover.ts";
 import { type CatalogResult, materializeCatalogModels } from "../models/catalog.ts";
 import type { ProviderConfig } from "../providers/schema.ts";

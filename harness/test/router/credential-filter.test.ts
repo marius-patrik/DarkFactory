@@ -5,7 +5,7 @@ import { join } from "node:path";
 import defaultsJson from "../../assets/providers.defaults.json";
 import { routerModels } from "../../src/cli.ts";
 import type { DfConfig } from "../../src/config.ts";
-import { FileCredentialStore } from "../../src/credentials.ts";
+import { FileCredentialStore } from "@darkfactory/keychain";
 import { LimitLedger } from "../../src/limits/ledger.ts";
 import { ProviderRegistry } from "../../src/providers/runtime.ts";
 import { type ProviderConfigFile, parseProviderConfigFile } from "../../src/providers/schema.ts";

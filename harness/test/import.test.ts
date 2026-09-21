@@ -9,7 +9,7 @@ import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "@darkfact
 import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
 import type { HomeReader } from "@darkfactory/keychain/import/reader";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
-import { FileCredentialStore } from "../src/credentials.ts";
+import { FileCredentialStore } from "@darkfactory/keychain";
 
 const roots: string[] = [];
 
