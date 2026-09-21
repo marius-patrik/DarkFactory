@@ -9,10 +9,10 @@
   citation: bib.lewis2020rag,
   source: bib.lewis2020rag,
   definition: terms => [
-Architektura, v níž systém vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu.
+Architektura, ve které systém před generováním vyhledá relevantní informace z externího zdroje a poskytne je modelu jako další kontext. #cite(bib.lewis2020rag)
   ],
   description: terms => [
-RAG umožňuje načítat potřebné informace podle aktuální úlohy místo jejich trvalého držení v aktivním kontextu. #cite(bib.lewis2020rag)
+RAG odděluje znalost uloženou v externím korpusu od parametrů modelu a umožňuje vybírat podklady podle aktuálního dotazu. #cite(bib.lewis2020rag)
   ],
-  relations: ((type: "dependency", target: "embedding"),),
+  relations: ((type: "dependency", target: "context_engineering"), (type: "related", target: "embedding")),
 )
