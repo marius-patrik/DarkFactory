@@ -32,7 +32,7 @@
 
 #let failure_modes = folder(
   key: "model_failure_modes",
-  title: [Selhání modelu],
+  title: [Limity modelu],
   concepts: (
     context_rot.item,
     divergence.item,
