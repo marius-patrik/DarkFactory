@@ -261,6 +261,8 @@ keyword_keys: list[str] = []
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
     require_contract(source, ("definition:", "description:", "key:"), f"concept {path}")
+    if path.is_relative_to(ROOT / "software-engineering") or path.is_relative_to(ROOT / "language-models") or path.is_relative_to(ROOT / "agentic-engineering"):
+        require_contract(source, ("citation:", "source:"), f"theory concept {path}")
     if not any(
         re.search(rf"{field}:\s*(?!none\b)", source)
         for field in ("industry", "czech", "english")
