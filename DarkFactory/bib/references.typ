@@ -74,6 +74,10 @@
 #let chesswithquests_ci_34708180783 = <chesswithquests-ci-34708180783>
 #let template_odbornaprace_repo = <template-odbornaprace-repo>
 #let odbornaprace_mono_repo = <odbornaprace-mono-repo>
+#let darkfactory_paper_5bc04974 = <darkfactory-paper-5bc04974>
+#let darkfactory_paper_ci_35617820423 = <darkfactory-paper-ci-35617820423>
+#let darkfactory_paper_deploy_35617820271 = <darkfactory-paper-deploy-35617820271>
+#let darkfactory_paper_release_35617820286 = <darkfactory-paper-release-35617820286>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -149,4 +153,8 @@
   chesswithquests_ci_34708180783: chesswithquests_ci_34708180783,
   template_odbornaprace_repo: template_odbornaprace_repo,
   odbornaprace_mono_repo: odbornaprace_mono_repo,
+  darkfactory_paper_5bc04974: darkfactory_paper_5bc04974,
+  darkfactory_paper_ci_35617820423: darkfactory_paper_ci_35617820423,
+  darkfactory_paper_deploy_35617820271: darkfactory_paper_deploy_35617820271,
+  darkfactory_paper_release_35617820286: darkfactory_paper_release_35617820286,
 )
