@@ -4,9 +4,9 @@
   key: "results_discussion",
   title: [Výsledky a diskuse],
   definition: terms => [
-Vyhodnocení, jak implementace DarkFactory odpovídá stanoveným cílům a výzkumným otázkám.
+Tato část odděluje doložené vlastnosti implementace DarkFactory od tvrzení, která vyžadují další end-to-end nebo fleet-level důkaz.
   ],
   description: terms => [
-Výsledky musí vycházet z konkrétních testů, workflow, artefaktů a dalších ověřitelných důkazů a oddělit pozorované výsledky od jejich interpretace.
+Výsledky vycházejí z konkrétního referenčního commitu, automatických testů, CI check runů a zdrojového kódu. Architektonická existence mechanismu není zaměňována za důkaz jeho úspěšného použití v celém produkčním životním cyklu.
   ],
 )
