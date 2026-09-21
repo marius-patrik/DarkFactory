@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "subagent",
-  industry: "Subagent",
-  czech: "Podřízený agent",
-  english: "Subagent",
+  keyword: "Subagent",
   citation: (bib.wu2023autogen, bib.openai_agent_orchestration),
   source: bib.openai_agent_orchestration,
   definition: terms => [

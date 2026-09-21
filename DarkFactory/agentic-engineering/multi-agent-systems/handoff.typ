@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "handoff",
-  industry: "Handoff",
-  czech: "Předání řízení",
-  english: "Handoff",
+  term: "Předání řízení",
+  keyword: "Handoff",
   citation: bib.openai_agent_orchestration,
   source: bib.openai_agent_orchestration,
   definition: terms => [

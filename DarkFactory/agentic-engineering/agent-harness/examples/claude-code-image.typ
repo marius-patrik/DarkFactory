@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "claude_code_image",
-  czech: "Rozhraní Claude Code",
-  english: "Claude Code Interface",
+  term: "Rozhraní Claude Code",
   citation: bib.anthropic_claude_code,
   source: bib.anthropic_claude_code,
   definition: terms => [

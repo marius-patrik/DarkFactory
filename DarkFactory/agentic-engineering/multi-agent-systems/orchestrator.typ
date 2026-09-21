@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "orchestrator",
-  industry: "Orchestrator",
-  czech: "Orchestrátor",
-  english: "Orchestrator",
+  term: "Orchestrátor",
+  keyword: "Orchestrator",
   citation: (bib.openai_agent_orchestration, bib.anthropic2024tooluse),
   source: bib.openai_agent_orchestration,
   definition: terms => [

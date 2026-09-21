@@ -3,7 +3,7 @@
 
 #let item = concept(
   key: "karpathy_vibe_coding_tweet",
-  czech: "Tweet Andreje Karpathyho o Vibe Coding",
+  term: "Původ termínu Vibe Coding",
   citation: (bib.karpathy2025vibecoding, bib.coderabbit2026vibehistory),
   source: bib.coderabbit2026vibehistory,
   definition: terms => [

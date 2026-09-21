@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "codex_app_image",
-  czech: "Rozhraní aplikace Codex",
-  english: "Codex App Interface",
+  term: "Rozhraní aplikace Codex",
   citation: bib.openai_codex_app,
   source: bib.openai_codex_app,
   definition: terms => [

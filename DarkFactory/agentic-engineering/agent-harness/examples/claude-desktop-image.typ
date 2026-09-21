@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "claude_desktop_image",
-  czech: "Rozhraní aplikace Claude",
-  english: "Claude Desktop Interface",
+  term: "Rozhraní aplikace Claude",
   citation: bib.anthropic_claude_desktop,
   source: bib.anthropic_claude_desktop,
   definition: terms => [
