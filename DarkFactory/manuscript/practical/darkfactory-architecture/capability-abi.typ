@@ -14,5 +14,5 @@ Verzovaný kontrakt určující strukturu a kompatibilitu capability modulů Dar
   description: terms => [
 Aktuální ABI definuje metadata, credential requirements, nástroje, příkazy, detektory, graph contributions, verifikační pravidla, hooks, actions a další surfaces, které capability může poskytovat.
   ],
-  relations: ((type: "dependency", target: "darkfactory_capability"),),
+  relations: ((type: "parent", target: "darkfactory_capability"),),
 )
