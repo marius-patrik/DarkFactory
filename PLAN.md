@@ -258,7 +258,9 @@ Only these recovery refs are intentionally active:
 
 A recovery ref exists only while it contains unresolved unique required state. Record final disposition in the owning Request and delete the ref immediately once that state is integrated, rejected or fully subsumed.
 
-The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orch` is not an implementation input and must be deleted. The active #358 vehicle is PR #894 on `feat/graph-native-production-orchestration`.
+The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orch` has been deleted. The active #358 vehicle is PR #894 on `feat/graph-native-production-orchestration`.
+
+The rejected #329 ref `feature/results-are-captured-when-a-model-stops-without-js` was incorrectly recreated by an autonomous resume and produced invalid lockfile-only PR #952. PR #952 is closed; this ref must be deleted again and must not be reused. The only active #329 vehicle is PR #891 on `feat/natural-stop-result-truth`.
 
 After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
 
