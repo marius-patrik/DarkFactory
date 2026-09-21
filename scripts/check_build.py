@@ -178,7 +178,7 @@ require_contract(
     (
         "#let root = folder(",
         f'key: "{BOOK}"',
-        "Agentic AI, Agentic Engineering and Harness Engineering",
+        "DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)",
         "#let manuscript-folders",
         "#let appendix-folders",
         "#let book-title = root.title",
@@ -282,7 +282,6 @@ if BOOK == "DarkFactory":
         ),
         ROOT / "manuscript/practical/index.typ": (
             "manuscript/practical/introduction/index.typ",
-            "manuscript/practical/harness-engineering/index.typ",
             "manuscript/practical/darkfactory-architecture/index.typ",
             "manuscript/results/index.typ",
         ),
@@ -316,6 +315,7 @@ if BOOK == "DarkFactory":
             "guardrail.typ",
             "human-in-the-loop.typ",
             "sandbox.typ",
+            "harness-engineering/index.typ",
             "prompt-engineering/index.typ",
             "loop-engineering/index.typ",
             "graph-engineering/index.typ",
@@ -333,7 +333,7 @@ if BOOK == "DarkFactory":
         ROOT / "manuscript/introduction/index.typ",
         ROOT / "manuscript/theory/introduction/index.typ",
         ROOT / "manuscript/practical/introduction/index.typ",
-        ROOT / "manuscript/practical/harness-engineering/index.typ",
+        ROOT / "agentic-engineering/harness-engineering/index.typ",
         ROOT / "manuscript/practical/darkfactory-architecture/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
