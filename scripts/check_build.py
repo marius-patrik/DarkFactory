@@ -444,10 +444,10 @@ for contract in ('aria-label="Document structure"', "chaptersByPage", "structure
 manifest = json.loads(require_file(Path(".github/darkfactory.json")))
 release_assets = {Path(value) for value in manifest.get("release", {}).get("assets", [])}
 if release_assets != set(EXPECTED):
-    fail("release asset list must exactly match the canonical publication matrix")
+    fail("release asset list must exactly match the canonical publication artifact set")
 
 print(
-    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, {len(template_names)} template matrix/matrices, "
+    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, {len(template_names)} template(s), "
     f"{len(concept_files)} concepts, concept-owned terminology, and web workbench validated"
 )
 

@@ -26,7 +26,7 @@ help:
 	@echo "make all BOOK=$(BOOK) TEMPLATE=$(TEMPLATE)   – PDF/HTML/Markdown final + review"
 	@echo "make all-templates BOOK=$(BOOK)             – build every template in the selected book"
 	@echo "make all-books                              – build every registered book root"
-	@echo "make template-check BOOK=$(BOOK)            – school/final smoke for every book template"
+	@echo "make template-check BOOK=$(BOOK)            – final-publication smoke for every book template"
 	@echo "make web-lint                               – Biome lint web viewer"
 	@echo "make web-format                             – Biome format web viewer"
 	@echo "make web-check                              – Biome + TypeScript + production Rsbuild"

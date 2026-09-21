@@ -63,7 +63,7 @@
     "documentation": {
       "typst": {
         "command": "make site BOOK=DarkFactory",
-        "source": "Registered Typst book publication matrix"
+        "source": "Canonical Typst thesis publication"
       },
       "node": {
         "enabled": false
