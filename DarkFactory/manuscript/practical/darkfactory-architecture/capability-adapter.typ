@@ -14,5 +14,5 @@ Odvozené rozhraní, které zpřístupňuje jednu kanonickou capability jinému 
   description: terms => [
 Současná implementace umí z capability definice vytvořit nativní in-process adaptér, Pi adaptér a MCP adaptér bez duplikace samotné capability definice.
   ],
-  relations: ((type: "dependency", target: "capability_abi"), (type: "related", target: "mcp")),
+  relations: ((type: "parent", target: "darkfactory_capability"), (type: "dependency", target: "capability_abi"), (type: "related", target: "mcp")),
 )
