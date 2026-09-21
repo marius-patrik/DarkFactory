@@ -1,11 +1,10 @@
 #import "/DarkFactory/templates/common.typ": bib, finalized, scope-note
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 #import "ai-usage-example.typ" as ai_usage
 
-#let item = concept(
+#let item = section(
   key: "motivation_problem_definition",
-  czech: "Motivace a vymezení problému",
-  english: "Motivation and Problem Definition",
+  title: [Motivace a vymezení problému],
   definition: terms => [
 #finalized[Ukázat, jaké úlohy dokážou současné agentní systémy samostatně provádět a jaká technická vrstva umožňuje převést schopnost jazykového modelu do spolehlivého jednání nad skutečným softwarovým projektem.]
   ],
@@ -17,5 +16,4 @@ V softwarovém inženýrství tento posun reprezentují například Codex a Clau
 #scope-note[Údaj 2,4 miliardy / 29 % je přibližný sekundární odhad. V práci má sloužit pouze jako kontext motivace, nikoli jako přesná empirická metrika.]
   ],
   examples: (ai_usage.item,),
-  relations: ((type: "related", target: "harness"),),
 )
