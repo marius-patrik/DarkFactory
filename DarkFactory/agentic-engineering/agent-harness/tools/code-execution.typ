@@ -9,10 +9,10 @@
   citation: bib.anthropic_code_execution,
   source: bib.anthropic_code_execution,
   definition: terms => [
-Nástrojová schopnost, která umožňuje vykonat program nebo příkaz a získat jeho skutečný výstup.
+Nástrojová schopnost umožňující vykonat program nebo příkaz a vrátit jeho skutečný výstup modelu. #cite(bib.anthropic_code_execution)
   ],
   description: terms => [
-Při vývoji softwaru umožňuje spouštět testy, buildy, formátovače a diagnostické příkazy v řízeném prostředí místo odhadování jejich výsledku modelem. #cite(bib.anthropic_code_execution)
+Při vývoji softwaru zpřístupňuje agentovi například testy, buildy, formátovače a diagnostické příkazy místo odhadování jejich výsledku. #cite(bib.anthropic_code_execution)
   ],
   relations: ((type: "dependency", target: "tools"), (type: "related", target: "runtime")),
 )
