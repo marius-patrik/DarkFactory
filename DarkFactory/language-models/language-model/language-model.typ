@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "language_model",
-  keyword: true,
-  industry: "LLM",
-  czech: "Jazykový model",
-  english: "Large Language Model",
+  term: "Velký jazykový model",
+  keyword: "LLM",
   citation: (bib.brown2020, bib.vaswani2017),
   source: bib.brown2020,
   definition: terms => [

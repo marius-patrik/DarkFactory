@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "embedding",
-  industry: "Embedding",
-  czech: "Vektorová reprezentace",
-  english: "Embedding",
+  term: "Vektorová reprezentace",
+  keyword: "Embedding",
   citation: bib.mikolov2013word2vec,
   source: bib.mikolov2013word2vec,
   definition: terms => [

@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "token",
-  czech: "Token",
-  english: "Token",
+  keyword: "Token",
   citation: bib.sennrich2016bpe,
   source: bib.sennrich2016bpe,
   definition: terms => [

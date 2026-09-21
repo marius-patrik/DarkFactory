@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "transformer",
-  industry: "Transformer",
-  czech: "Transformer",
+  keyword: "Transformer",
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
   definition: terms => [

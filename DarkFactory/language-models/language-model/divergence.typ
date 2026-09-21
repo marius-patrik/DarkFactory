@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "divergence",
-  industry: "Divergence",
-  czech: "Divergence modelu",
-  english: "Model Divergence",
+  term: "Divergence modelu",
   citation: (bib.liu2024, bib.jiang2023llmlingua),
   source: bib.liu2024,
   definition: terms => [

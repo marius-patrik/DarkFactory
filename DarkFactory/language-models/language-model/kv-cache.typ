@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "kv_cache",
-  industry: "KV Cache",
-  czech: "Mezipaměť klíčů a hodnot",
-  english: "Key–Value Cache",
+  term: "Mezipaměť klíčů a hodnot",
+  keyword: "KV Cache",
   citation: (bib.dao2022, bib.ainslie2023),
   source: bib.ainslie2023,
   definition: terms => [
