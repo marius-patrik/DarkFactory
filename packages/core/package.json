@@ -5,13 +5,16 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./repository-evidence": "./src/repository-evidence.ts"
+    "./repository-evidence": "./src/repository-evidence.ts",
+    "./result-capture": "./src/result-capture.ts"
   },
   "files": [
     "src"
   ],
   "license": "GPL-3.0",
   "dependencies": {
-    "@darkfactory/protocol": "workspace:*"
+    "@darkfactory/protocol": "workspace:*",
+    "@earendil-works/pi-ai": "0.85.1",
+    "zod": "4.1.5"
   }
 }

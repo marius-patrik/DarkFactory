@@ -54,18 +54,20 @@ The following foundations are already landed and should be consumed rather than 
 
 ### Core production-engine vehicles
 
-#### #329 → PR #891 — natural-stop/result truth
+#### #329 — COMPLETE
 
-Current state:
+PR #891 merged as `bc76f27d3a2e464fa39580d07382e3fae20e1c15`.
 
-- final result-capture contracts exist in `@darkfactory/protocol`;
-- structured extraction and code-result truth exist in `@darkfactory/core`;
-- capture-schema CLI behavior exists in `@darkfactory/cli`;
-- deletion-bound result-capture compatibility bridges have been removed;
-- routed provider-enforced judgement extraction, exact schema guard and natural-stop code truth are implemented;
-- PR #891 is non-draft and its last completed head checks are green; refresh against current `darkfactory` only if merge policy/base drift requires it.
+Shipped final ownership:
 
-Remaining work is governance only: terminal current-head review/alignment and merge. Do not add new feature work to #891 unless a new review finding or canonical-base change requires it.
+- result-capture contracts in `@darkfactory/protocol`;
+- structured extraction and code-result truth in `@darkfactory/core`;
+- capture-schema CLI behavior in `@darkfactory/cli`;
+- routed provider-enforced judgement extraction through the normal candidate/account/quota path;
+- natural-stop code truth from deterministic workspace/scope/#341 verification/commit evidence;
+- deletion-bound result-capture compatibility bridges removed.
+
+#358 must consume this shipped contract directly.
 
 #### #358 → PR #894 — graph-native production orchestration
 
@@ -111,17 +113,17 @@ Do not make #317 wait for all of #384. Move only the mechanism required by #317 
 
 `@darkfactory/keychain` is the only machine/harness credential owner.
 
-The active PR now carries the major missing final-owner work: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
+The active PR carries the final machine-credential convergence: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
 
-Current validation: PR #931 head `6ea451f` has green CI, docs preview, bound-issue verification, board automation and formatting.
+F14 has terminal disposition under #422, its recovery ref is deleted, and deletion-bound machine credential/secret custody facades have been removed in favor of direct `@darkfactory/keychain` consumption.
+
+Current validation: PR #931 head `b11e411` has green CI, docs preview, bound-issue verification, board automation and formatting.
 
 Remaining work:
 
-1. finish removal of remaining temporary secret/credential custody facades under `harness/`;
-2. retain the green browser/private-key isolation boundary while removing those facades;
-3. record the final F14 integrated/rejected disposition;
-4. delete `recovery/f14-borrowed-refresh` once no unique required state remains;
-5. complete semantic review/alignment and merge.
+1. semantically refresh/rebase #931 onto current canonical `darkfactory` after #891 without reintroducing deleted compatibility owners;
+2. retain the green browser/private-key isolation boundary;
+3. complete semantic review/alignment and merge.
 
 #248 consumes #422 rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
 
@@ -138,7 +140,7 @@ The critical production-engine dependency path is:
 ```text
 #341 complete
       ↓
-#329 / PR #891 — terminal review + merge
+#329 complete
       ↓
 #358 / PR #894 — final-owner orchestration + durable resume
       ↓
@@ -149,11 +151,9 @@ The critical production-engine dependency path is:
 
 #317's typed evidence and deterministic repair work may continue before #358 merges. Only its final graph re-entry/resume step is serialized behind #358.
 
-### Join A — #329
+### Join A — #329 — COMPLETE
 
-Merge #891 first. It is the interface-defining result contract for #358 and should not remain open while downstream work invents around it.
-
-Join A condition: #891 has terminal review/alignment, current checks are green and #329 is merged.
+PR #891 merged green as `bc76f27d3a2e464fa39580d07382e3fae20e1c15`.
 
 ### Join B — #358
 
@@ -251,14 +251,25 @@ Do not publish while accepted release-affecting behavior is still changing. Publ
 
 ## 6. Recovery and branch hygiene
 
-Only these recovery refs are intentionally active:
+Only this recovery ref remains intentionally active:
 
-- `recovery/f14-borrowed-refresh` → #422;
 - `recovery/f47-hooks` → #339.
+
+F14 has received terminal disposition under #422 and `recovery/f14-borrowed-refresh` has been deleted.
 
 A recovery ref exists only while it contains unresolved unique required state. Record final disposition in the owning Request and delete the ref immediately once that state is integrated, rejected or fully subsumed.
 
-The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orch` is not an implementation input and must be deleted. The active #358 vehicle is PR #894 on `feat/graph-native-production-orchestration`.
+The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orch` has been deleted. The active #358 vehicle is PR #894 on `feat/graph-native-production-orchestration`.
+
+The rejected #329 ref `feature/results-are-captured-when-a-model-stops-without-js` was incorrectly recreated by an autonomous resume and produced invalid lockfile-only PR #952. PR #952 is closed; this ref must be deleted again and must not be reused. The only active #329 vehicle is PR #891 on `feat/natural-stop-result-truth`.
+
+The generated #384 ref `feature/df-supports-deterministic-common-git-workspace-ope` produced invalid lockfile-only PR #953 while claiming completion from deletion-bound harness state. PR #953 is closed; delete this ref and do not reuse it as #384 implementation evidence.
+
+The generated #403 ref `feature/finish-the-supported-df-operator-cli-surface` produced nonterminal PR #955 whose only substantive source change was a wrapper-test path fix while claiming `Closes #403`. PR #955 is closed; delete this ref and resume #403 only with real `@darkfactory/cli` operator-command implementation.
+
+The generated #339 ref `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a` produced PR #956 with scratch Python scripts, deletion-bound harness CLI ownership, source-relative package coupling and red verification. PR #956 is closed; delete this ref and rebuild #339 from final core/capability/CLI package boundaries. `recovery/f47-hooks` remains evidence only.
+
+The generated #360 ref `feature/publish-and-install-df-as-the-supported-release-ar` produced invalid PR #957 with a fabricated `packages/df-release`, hard-coded unapproved `1.0.0`, unrelated stale harness/provider changes and red tests. PR #957 is closed; delete this ref and continue #360 only from canonical first-party package/release owners while preserving the `0.0.0` development sentinel until final freeze.
 
 After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
 
@@ -302,13 +313,12 @@ After #361 is green, rerun the declarable-graph product contract and close #68 o
 
 Highest-downstream-value work, in order:
 
-1. **#329 / #891:** perform terminal current-head review/alignment and merge; avoid further implementation churn unless review finds a real defect.
-2. **#422 / #931 in parallel:** with aggregate checks green, remove remaining harness custody facades, finalize F14 disposition, review/alignment and merge; then delete `recovery/f14-borrowed-refresh`.
-3. **#358 / #894:** immediately refresh on merged #329, move production orchestration to final owners, prove real persisted exactly-once resume, review/alignment, merge.
-4. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
-5. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #329/#358/#317.
-6. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
-7. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
-8. Delete the rejected stale #358 branch and clean merged topic branches as soon as their unique state is represented.
+1. **#358 / #894:** refresh on shipped #329, move production orchestration to final owners, prove real persisted exactly-once resume, review/alignment, merge.
+2. **#422 / #931 in parallel:** F14/facade cleanup is complete and checks are green; semantically refresh onto current canonical, complete final review/alignment and merge.
+3. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
+4. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #358/#317.
+5. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
+6. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
+7. Delete invalid generated #329/#384/#403/#339/#360 branches and clean merged topic branches immediately; none are archives or reusable implementation vehicles.
 
 Converge only at the final release freeze, publish once, validate through #361, then close #68.

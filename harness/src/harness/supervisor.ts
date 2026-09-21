@@ -1,5 +1,13 @@
+import { captureContext, forceCaptureTool, readCapture } from "@darkfactory/core/result-capture";
+import {
+	type CaptureAttempt,
+	CaptureError,
+	captureJsonSchema,
+	type ExtractedJudgement,
+} from "@darkfactory/protocol/result-capture";
 import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
 import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
+import type { z } from "zod";
 import type { Candidate } from "../failover.ts";
 import { LimitLedger } from "../limits/ledger.ts";
 import { defaultLimit, observeAnswer, observeLimits } from "../limits/observe.ts";
@@ -848,6 +856,153 @@ export class FailoverSupervisor {
 
 			if (!(await this.nextCandidate(failure, errorMessage, budget)))
 				throw new ChainExhaustedError(this.failures, this.reasons, await this.options.ledger.list());
+		}
+	}
+
+	/**
+	 * Extract structured judgement from natural prose using provider-enforced
+	 * structured output (forced capture tool) routed through candidate failover.
+	 *
+	 * @param options - Parameters containing the model prose, target Zod schema, and optional deadline.
+	 * @returns Extracted and validated result with candidate metadata.
+	 * @throws CaptureError when all candidates fail.
+	 */
+	async extractJudgement<T>(options: {
+		answer: string;
+		schema: z.ZodType<T>;
+		budget?: RunDeadline;
+	}): Promise<ExtractedJudgement<T>> {
+		const { answer, schema, budget } = options;
+		if (typeof (schema as any)?.safeParse !== "function") {
+			throw new Error("Provided schema is not a Zod schema");
+		}
+		this.assertWithinDeadline(budget);
+		const jsonSchema = captureJsonSchema(schema);
+		const context = captureContext(answer, jsonSchema);
+		const attempts: CaptureAttempt[] = [];
+
+		while (true) {
+			this.assertWithinDeadline(budget);
+			const attemptStartedAt = (this.options.now ?? Date.now)();
+			const preflight = await this.usable(this.activeCandidate, (this.options.now ?? Date.now)());
+			if (!preflight.usable) {
+				const entry = preflight.entries[0];
+				const kind: FailureKind =
+					entry?.type === "auth"
+						? "auth"
+						: entry?.type === "overload"
+							? "transient"
+							: entry?.type === "rate"
+								? "rate_limited"
+								: "quota_exhausted";
+				if (
+					!(await this.nextCandidate(
+						{ kind, ...(entry ? { resetAt: entry.resetAt, pool: entry.pool } : {}) },
+						"proactive limit/capacity skip",
+						budget,
+						false,
+					))
+				) {
+					throw new CaptureError(attempts);
+				}
+				continue;
+			}
+
+			const candidate = this.activeCandidate;
+			let thrown: unknown;
+			try {
+				await this.withinDeadline(this.options.runtime.validateCandidate(candidate), budget);
+				await this.withinDeadline(this.options.runtime.bindCandidate(candidate), budget);
+			} catch (error) {
+				thrown = error;
+			}
+
+			if (thrown instanceof RunTimeoutError) throw thrown;
+
+			if (!thrown) {
+				try {
+					const model = this.options.runtime.modelRuntime.getModel(candidate.provider, candidate.model);
+					if (!model) throw new Error(`Unknown model ${candidate.provider}/${candidate.model}`);
+
+					const config = this.options.providerConfigs?.get(candidate.provider);
+					const dialect = config?.dialect ?? "openai-responses";
+
+					const stream = this.options.runtime.modelRuntime.streamSimple(model, context, {
+						onPayload: (payload: unknown) => forceCaptureTool(dialect, payload),
+						maxRetries: 0,
+					});
+
+					const message = (await this.withinDeadline(stream.result(), budget)) as AssistantMessage;
+					const durationMs = Math.max(0, (this.options.now ?? Date.now)() - attemptStartedAt);
+
+					if (message.stopReason !== "error" && message.stopReason !== "aborted") {
+						const capture = readCapture(message);
+						if (!capture) {
+							attempts.push({
+								model: candidate.model,
+								provider: candidate.provider,
+								account: candidate.account,
+								error: "no capture tool call",
+							});
+							await this.recordOutcome(candidate, false, message.usage, durationMs);
+							await this.recordUsage(candidate, message.usage, false);
+						} else {
+							const parsed = schema.safeParse(capture);
+							if (!parsed.success) {
+								attempts.push({
+									model: candidate.model,
+									provider: candidate.provider,
+									account: candidate.account,
+									error: `schema validation failed: ${parsed.error.message}`,
+								});
+								await this.recordOutcome(candidate, false, message.usage, durationMs);
+								await this.recordUsage(candidate, message.usage, false);
+							} else {
+								await this.recordOutcome(candidate, true, message.usage, durationMs);
+								await this.recordUsage(candidate, message.usage, true);
+								return {
+									value: parsed.data,
+									model: candidate.model,
+									provider: candidate.provider,
+									account: candidate.account,
+									usage: message.usage,
+									attempts,
+								};
+							}
+						}
+					} else {
+						attempts.push({
+							model: candidate.model,
+							provider: candidate.provider,
+							account: candidate.account,
+							error: message.errorMessage ?? message.stopReason,
+						});
+						await this.recordOutcome(candidate, false, message.usage, durationMs);
+						await this.recordUsage(candidate, message.usage, false);
+					}
+				} catch (error) {
+					if (error instanceof RunTimeoutError) throw error;
+					attempts.push({
+						model: candidate.model,
+						provider: candidate.provider,
+						account: candidate.account,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
+			} else {
+				attempts.push({
+					model: candidate.model,
+					provider: candidate.provider,
+					account: candidate.account,
+					error: thrown instanceof Error ? thrown.message : String(thrown),
+				});
+			}
+
+			const failure: FailureClassification = { kind: "transient", errorClass: "ExtractionFailure" };
+			const errorMessage = attempts.at(-1)?.error ?? "Extraction failure";
+			if (!(await this.nextCandidate(failure, errorMessage, budget))) {
+				throw new CaptureError(attempts);
+			}
 		}
 	}
 }

@@ -9,3 +9,4 @@ export {
 	redactToolInput,
 } from "../../../harness/src/cli.ts";
 export * from "./registry.ts";
+export * from "./capture-schema.ts";
