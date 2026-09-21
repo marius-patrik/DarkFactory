@@ -27,7 +27,7 @@
   heading(level: 1, numbering: none)[#translation-heading(
     translation(cs: [Klíčová slova], en: [Keywords]),
     separator: "paren",
-    order: "en-cs",
+    order: "cs-en",
   )]
   render-keywords(concepts)
 
