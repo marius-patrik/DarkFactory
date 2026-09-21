@@ -10,10 +10,10 @@
   citation: bib.mosqueira2023human,
   source: bib.mosqueira2023human,
   definition: terms => [
-Návrhový vzor, v němž člověk schvaluje nebo přebírá rozhodnutí v určených bodech automatizovaného procesu.
+Uspořádání automatizovaného procesu, ve kterém člověk v určených bodech poskytuje zpětnou vazbu, schválení nebo rozhodnutí.
   ],
   description: terms => [
-V DarkFactory zůstávají člověku zejména významná nebo nevratná rozhodnutí, zatímco rutinní kroky může harness provádět samostatně. Ke kontrole má předkládat pozorovatelný stav, například diff, výsledky kontrol a chyby. #cite(bib.mosqueira2023human)
+HITL ponechává část rozhodovacího procesu člověku místo úplné automatizace a používá lidský zásah jako součást řízení nebo kontroly systému. #cite(bib.mosqueira2023human)
   ],
-  relations: ((type: "related", target: "version_control"),),
+  relations: ((type: "related", target: "guardrail"),),
 )
