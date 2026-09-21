@@ -250,8 +250,8 @@
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
-  // Každá hlavní kapitola začíná na nové straně. Úrovně 1–4 jsou číslované;
-  // úrovně 5+ zůstávají skutečnými nadpisy v obsahu, ale bez čísla.
+  // Každá hlavní kapitola začíná na nové straně. Úrovně 1–3 jsou číslované;
+  // úrovně 4+ zůstávají skutečnými nadpisy v obsahu, ale bez čísla.
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
     regular-level-one-heading(it)

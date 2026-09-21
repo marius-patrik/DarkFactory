@@ -221,7 +221,7 @@
 }
 
 #let render-concept(item, terms, graph, level: 1) = {
-  let output = if level >= 5 {
+  let output = if level >= 4 {
     [#heading(level: level, numbering: none, outlined: true)[#render-concept-title(item)]#label("concept-" + item.key)]
   } else {
     [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]

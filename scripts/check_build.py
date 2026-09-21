@@ -213,7 +213,7 @@ for forbidden in (
     if forbidden in schema:
         fail(f"concept heading metadata remains contextual: {forbidden}")
 for contract in (
-    "if level >= 5 {",
+    "if level >= 4 {",
     "heading(level: level, numbering: none, outlined: true)",
     "heading(level: level)[#render-concept-title(item)]",
 ):

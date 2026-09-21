@@ -10,7 +10,7 @@ The directory name, structural root key, and main book title are one identity. `
 - A folder may designate one section concept, contain direct concepts, and contain child folders.
 - Nested folders create nested sections to arbitrary depth.
 - Section headings are derived from the section concept's canonical full term surface.
-- Section concepts and direct concepts render as headings. Levels 1–4 are numbered; level 5 and deeper remain outlined/indexed but render without section numbers. Example concepts render inline inside their parent without a separate heading.
+- Section concepts and direct concepts render as headings. Levels 1–3 are numbered; level 4 and deeper remain outlined/indexed but render without section numbers. Example concepts render inline inside their parent without a separate heading.
 - The canonical prose fields are exactly `definition` and `description`; theory/practical/document projection fields and a separate concept summary field do not exist.
 - `keyword` defaults to `false`; only deliberately curated thesis-defining concepts set `keyword: true` and appear in the Keywords list.
 - The renderer never inserts generic `Úvod` subsections.
