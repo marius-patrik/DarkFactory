@@ -1,4 +1,3 @@
-#import "/DarkFactory/templates/common.typ": issue
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -6,16 +5,14 @@
   czech: "Vyhodnocení výzkumných otázek",
   english: "Research Question Evaluation",
   definition: terms => [
-Posouzení, jak navržená architektura DarkFactory odpovídá na stanovené otázky.
+Strukturované přiřazení každé výzkumné otázky ke konkrétním důkazům, ze kterých bude možné ve finální evaluaci odvodit omezenou odpověď.
   ],
   description: terms => [
-O1 — autonomie při zachování lidského dohledu: harness odděluje zadání, provádění, automatické kontroly a lidská rozhodnutí tak, aby rutinní kroky mohl vykonávat agent a člověk zůstal u významných rozhodnutí.
+O1 bude vyhodnocena pomocí end-to-end životního cyklu Requestu, explicitních schvalovacích bodů, deterministických kontrol, pull requestu a finální integrace. Tato evidence může doložit umístění lidských rozhodnutí a samostatně prováděných kroků, nikoli obecně určit „maximální“ možnou míru autonomie.
 
-O2 — rozpoznání neproduktivního běhu: návrh používá explicitní stav, limity běhu, deterministické kontroly a eskalaci k člověku namísto neomezeného pokračování modelové smyčky.
+O2 bude vyhodnocena pomocí omezení počtu tahů a času, chování Supervisoru při selhání kandidáta nebo kvótě, review/fix smyček, deterministického zachycení výsledku a recovery/resume scénáře. Důkaz musí zahrnovat, že již přijaté deterministické účinky nejsou při pokračování zbytečně opakovány.
 
-O3 — zachování kontextu: trvalý stav úlohy je oddělen od omezeného kontextového okna modelu a potřebné informace lze průběžně komprimovat a znovu načítat.
-
-#issue[Každou odpověď O1–O3 propojit s konkrétním ověřitelným prvkem návrhu nebo implementace a s výsledkem kontroly/testu. Současné znění je argumentační shrnutí, nikoli ještě doložená evaluace.]
+O3 bude vyhodnocena pomocí oddělení Run State, Session/Transcriptu a modelového kontextu a pomocí reprodukovatelného přerušení a obnovení běhu. Evidence musí ukázat zachování nezbytného trvalého stavu; sama o sobě nebude dokazovat nulovou informační ztrátu pro libovolně dlouhou úlohu.
   ],
   relations: (),
 )
