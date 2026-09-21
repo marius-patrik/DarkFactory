@@ -51,6 +51,8 @@
 #let claude_code_mcp = <claude-code-mcp>
 #let github_branches = <github-branches>
 #let github_pull_requests = <github-pull-requests>
+#let github_actions_docs = <github-actions-docs>
+#let docker_containers_docs = <docker-containers-docs>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -103,4 +105,6 @@
   claude_code_mcp: claude_code_mcp,
   github_branches: github_branches,
   github_pull_requests: github_pull_requests,
+  github_actions_docs: github_actions_docs,
+  docker_containers_docs: docker_containers_docs,
 )
