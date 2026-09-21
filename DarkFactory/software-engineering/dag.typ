@@ -6,13 +6,13 @@
   industry: "DAG",
   czech: "Orientovaný acyklický graf",
   english: "Directed Acyclic Graph",
-  citation: bib.wu2023autogen,
-  source: bib.wu2023autogen,
+  citation: bib.networkx_dag,
+  source: bib.networkx_dag,
   definition: terms => [
-Orientovaný graf, který neobsahuje orientovaný cyklus a umožňuje vyjádřit závislosti mezi prvky v pořadí bez návratu k předchozímu uzlu.
+Orientovaný graf bez orientovaných cyklů. #cite(bib.networkx_dag)
   ],
   description: terms => [
-Ve workflow lze uzly použít pro dílčí kroky a hrany pro jejich závislosti; nezávislé větve pak mohou být prováděny souběžně. Konkrétní Workflow Graph nemusí být DAG, pokud podporuje cykly nebo návraty. 
+DAG lze použít jako dependency graph: uzly představují prvky nebo úlohy a orientované hrany jejich pořadí či závislosti; absence cyklu umožňuje konzistentní topologické uspořádání. #cite(bib.networkx_dag) Konkrétní Workflow Graph nemusí být DAG, pokud podporuje návraty nebo jiné cykly.
   ],
   relations: ((type: "related", target: "planning"), (type: "related", target: "workflow_graphs")),
 )
