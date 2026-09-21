@@ -8,10 +8,10 @@
   citation: bib.merkel2014docker,
   source: bib.merkel2014docker,
   definition: terms => [
-Prostředí, ve kterém se program nebo agent vykonává a využívá procesy, souborový systém, síť a další systémové prostředky.
+Prostředí a systémové prostředky dostupné programu během jeho vykonávání.
   ],
   description: terms => [
-Runtime určuje skutečné nástroje, soubory a oprávnění dostupné agentovi a může být omezen kontejnerem nebo sandboxem.
+Běhové prostředí určuje například dostupné procesy, souborový systém, síť a oprávnění; jeho hranice lze dále omezit kontejnerem nebo sandboxem. #cite(bib.merkel2014docker)
   ],
   relations: ((type: "related", target: "sandbox"),),
 )
