@@ -39,11 +39,11 @@ Deliver a submission-ready Czech thesis and publication set in which:
   - State
   - Environment
   - Prompt Injection
-  - Goal Loops
+  - Loops (Goal Loops)
   - Orchestrator
   - Handoff
   - Swarm
-  - Workflow Graphs
+  - Graphs (Workflow Graphs)
 - Place DAG under Software Engineering.
 - Place Divergence under Model and absorb Semantic Drift.
 - Place Sandbox under Harness runtime.
@@ -81,8 +81,8 @@ Specific source work:
 - replace weak or indirect sources for DAG/runtime where a better formal or first-party source exists;
 - verify State and Environment against current agent-runtime documentation;
 - verify Plugins/Tools/Scripts/Hooks/MCP taxonomy with first-party specifications/docs;
-- verify Goal Loops against ReAct and current agent workflow literature;
-- verify Orchestrator/Handoff/Swarm/Workflow Graphs against first-party multi-agent documentation;
+- verify Loops (Goal Loops) against ReAct and current agent workflow literature;
+- verify Orchestrator/Handoff/Swarm/Graphs (Workflow Graphs) against first-party multi-agent documentation;
 - verify Prompt Injection with OWASP/OpenAI sources, including indirect injection from documents, web content, repositories, email, RAG, and résumé-style attacks;
 - verify Divergence wording so thesis-defined scope is clearly separated from cited empirical mechanisms.
 
