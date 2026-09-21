@@ -8,7 +8,7 @@
   citation: bib.liu2024,
   source: bib.liu2024,
   definition: terms => [
-Maximální rozsah tokenové sekvence dostupný modelu v jednom inferenčním běhu.
+Maximální rozsah tokenové sekvence dostupný modelu v jednom inferenčním běhu. #cite(bib.liu2024)
   ],
   description: terms => [
 Do aktivního kontextu se společně vkládají instrukce, uživatelské vstupy, historie a výsledky nástrojů. Samotná nominální délka okna nezaručuje, že model všechny vložené informace využije stejně spolehlivě. #cite(bib.liu2024)
