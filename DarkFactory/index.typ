@@ -17,7 +17,10 @@
 
 #let root = folder(
   key: "DarkFactory",
-  title: translation(cs: "Agentic AI, Agentic Engineering and Harness Engineering", en: "Agentic AI, Agentic Engineering and Harness Engineering"),
+  title: translation(
+    cs: "DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)",
+    en: "DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)",
+  ),
   children: manuscript-folders + appendix-folders,
 )
 
