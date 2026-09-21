@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -8,10 +8,10 @@
   citation: bib.wu2023autogen,
   source: bib.wu2023autogen,
   definition: terms => [
-Dočasná nebo specializovaná agentní instance, které nadřazený orchestrátor deleguje vymezenou dílčí úlohu a následně převezme její výsledek.
+Specializovaná agentní instance, které nadřazený orchestrátor deleguje vymezenou dílčí úlohu.
   ],
-  description: terms => [#finalized[
-Subagent izoluje dílčí práci, například průzkum, plánování nebo implementaci, a může nadřazenému orchestrátoru vrátit pouze výsledek místo celé pracovní historie.
-  ]],
+  description: terms => [
+Rozdělení práce mezi více agentních instancí umožňuje oddělit role a dílčí kontexty a následně předat výsledek zpět koordinujícímu procesu. #cite(bib.wu2023autogen)
+  ],
   relations: ((type: "dependency", target: "harness"), (type: "related", target: "graph_engineering")),
 )
