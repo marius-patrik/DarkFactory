@@ -7,6 +7,13 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
+import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
+import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
+import { importGrokAccount } from "@darkfactory/keychain/import/grok";
+import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
+import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
+import { OsHomeReader } from "@darkfactory/keychain/import/reader";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
@@ -28,13 +35,6 @@ import {
 	RunTimeoutError,
 } from "./harness/supervisor.ts";
 import { runDoctorIdentities } from "./identities/index.ts";
-import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
-import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
-import { importCodexAccount } from "@darkfactory/keychain/import/codex";
-import { importGrokAccount } from "@darkfactory/keychain/import/grok";
-import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
-import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
-import { OsHomeReader } from "@darkfactory/keychain/import/reader";
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";

@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { OAuthCredential } from "@earendil-works/pi-ai";
-import { FileCredentialStore } from "../src/credentials.ts";
 import { importAntigravityAccount } from "@darkfactory/keychain/import/antigravity";
 import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
 import { importCodexAccount } from "@darkfactory/keychain/import/codex";
@@ -10,6 +8,8 @@ import { importGrokAccount } from "@darkfactory/keychain/import/grok";
 import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "@darkfactory/keychain/import/keyring";
 import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
 import type { HomeReader } from "@darkfactory/keychain/import/reader";
+import type { OAuthCredential } from "@earendil-works/pi-ai";
+import { FileCredentialStore } from "../src/credentials.ts";
 
 const roots: string[] = [];
 

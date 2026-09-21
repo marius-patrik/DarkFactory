@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
 import { accountId, FileCredentialStore, validateAccountRecord } from "../src/credentials.ts";
 import { QuotaStore } from "../src/harness/quota-store.ts";
-import { importCodexAccount } from "@darkfactory/keychain/import/codex";
 
 const roots: string[] = [];
 
