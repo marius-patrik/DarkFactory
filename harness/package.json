@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@darkfactory/capability": "workspace:*",
+    "@darkfactory/cli": "workspace:*",
     "@darkfactory/core": "workspace:*",
     "@darkfactory/keychain": "workspace:*",
     "@darkfactory/protocol": "workspace:*",
