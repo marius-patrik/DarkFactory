@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "context_window",
+  industry: "Context Window",
   czech: "Kontextové okno",
   english: "Context Window",
   citation: bib.liu2024,
