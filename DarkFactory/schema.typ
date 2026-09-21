@@ -1,7 +1,7 @@
 #import "/DarkFactory/templates/common.typ": term-full-name, resolve-citation-label
 
 #let relation(type, target) = {
-  assert(type in ("dependency", "related"), message: "unsupported semantic relation: " + type)
+  assert(type in ("dependency", "related", "parent", "child"), message: "unsupported semantic relation: " + type)
   assert(target != none, message: "concept relation requires a target")
   (type: type, target: target)
 }
@@ -134,20 +134,30 @@
   let keys = concepts.map(item => item.key)
   let dependencies = (:)
   let related = (:)
+  let parents = (:)
+  let children = (:)
   for item in concepts {
     dependencies.insert(item.key, ())
     related.insert(item.key, ())
+    parents.insert(item.key, ())
+    children.insert(item.key, ())
   }
 
   for item in concepts {
     for edge in item.relations {
-      assert(edge.type in ("dependency", "related"), message: "unsupported semantic relation " + edge.type + " on " + item.key)
+      assert(edge.type in ("dependency", "related", "parent", "child"), message: "unsupported semantic relation " + edge.type + " on " + item.key)
       assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
       if edge.type == "dependency" {
         if not edge.target in dependencies.at(item.key) { dependencies.at(item.key).push(edge.target) }
-      } else {
+      } else if edge.type == "related" {
         if not edge.target in related.at(item.key) { related.at(item.key).push(edge.target) }
         if not item.key in related.at(edge.target) { related.at(edge.target).push(item.key) }
+      } else if edge.type == "parent" {
+        if not edge.target in parents.at(item.key) { parents.at(item.key).push(edge.target) }
+        if not item.key in children.at(edge.target) { children.at(edge.target).push(item.key) }
+      } else {
+        if not edge.target in children.at(item.key) { children.at(item.key).push(edge.target) }
+        if not item.key in parents.at(edge.target) { parents.at(edge.target).push(item.key) }
       }
     }
   }
@@ -167,7 +177,7 @@
     assert(progressed, message: "dependency cycle in concept graph")
   }
 
-  (dependencies: dependencies, related: related)
+  (dependencies: dependencies, related: related, parents: parents, children: children)
 }
 
 #let order-local(items, graph) = {
