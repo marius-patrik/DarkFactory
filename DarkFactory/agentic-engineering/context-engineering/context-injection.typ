@@ -1,17 +1,17 @@
-#import "/DarkFactory/templates/common.typ": issue
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
   key: "context_injection",
   industry: "Context Injection",
   czech: "Vkládání kontextu",
+  citation: bib.anthropic_context_engineering,
+  source: bib.anthropic_context_engineering,
   definition: terms => [
-Cílené vložení informací do aktivního kontextu modelu v okamžiku, kdy jsou potřebné pro aktuální krok úlohy.
+Cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok.
   ],
   description: terms => [
-Harness může tímto způsobem doplnit instrukce, stav projektu, výsledky nástrojů nebo externě načtená data bez jejich trvalého držení v celém průběhu sezení.
-
-#issue[Doplnit primární nebo odborný zdroj pro pojem Context Injection, případně jej explicitně označit jako vlastní pojmenování mechanismu v této práci.]
+Just-in-time přístup umožňuje udržovat v kontextu pouze odkazy nebo minimální stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
   ],
   relations: ((type: "dependency", target: "context_engineering"),),
 )
