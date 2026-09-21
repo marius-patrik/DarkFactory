@@ -9,7 +9,7 @@
   citation: (bib.wu2023autogen, bib.anthropic2024tooluse),
   source: bib.wu2023autogen,
   definition: terms => [
-Explicitní grafová reprezentace vícefázového workflow, v níž uzly představují dílčí práci a hrany určují možné přechody nebo závislosti.
+Explicitní grafová reprezentace vícefázového workflow, v níž uzly představují dílčí práci a hrany určují možné přechody nebo závislosti. #cite(bib.wu2023autogen)
   ],
   description: terms => [
 Workflow Graph může koordinovat sekvenční, podmíněné i paralelní kroky a může používat více agentů; pokud neobsahuje cykly a hrany vyjadřují pouze závislosti, lze jej realizovat jako DAG. #cite(bib.wu2023autogen)
