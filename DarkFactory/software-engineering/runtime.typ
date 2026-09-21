@@ -11,7 +11,7 @@
 V této práci označuje Runtime prostředí a systémové prostředky dostupné programu během jeho vykonávání.
   ],
   description: terms => [
-Běhové prostředí vymezuje například procesy, souborový systém, síť, oprávnění a další podmínky vykonávání. Standardizované runtime specifikace mohou tyto podmínky definovat jako přenositelný kontrakt; OCI Runtime Specification například popisuje konfiguraci, execution environment a lifecycle kontejneru. #cite(bib.oci_runtime_spec)
+Běhové prostředí vymezuje například procesy, souborový systém, síť, oprávnění a další podmínky vykonávání. Standardizované runtime specifikace mohou tyto podmínky definovat jako přenositelný kontrakt; OCI Runtime Specification například popisuje konfiguraci, běhové prostředí a životní cyklus kontejneru. #cite(bib.oci_runtime_spec)
   ],
   relations: ((type: "related", target: "container"), (type: "related", target: "sandbox")),
 )
