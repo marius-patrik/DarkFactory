@@ -10,7 +10,7 @@
   citation: bib.openai_agents_guardrails,
   source: bib.openai_agents_guardrails,
   definition: terms => [
-Programově vynucená kontrola, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje.
+Programově vynucená kontrola, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
   ],
   description: terms => [
 Guardrails lze spouštět na hranicích vstupu, výstupu nebo volání nástroje a při nesplnění podmínky běh zastavit či odmítnout konkrétní akci. #cite(bib.openai_agents_guardrails)
