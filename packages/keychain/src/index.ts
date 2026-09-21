@@ -11,3 +11,4 @@ export * from "./redaction.ts";
 export * from "./external-keyring.ts";
 export * from "./external-source.ts";
 export * from "./diagnostics.ts";
+export * from "./transfer.ts";
