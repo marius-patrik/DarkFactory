@@ -269,6 +269,8 @@ The generated #403 ref `feature/finish-the-supported-df-operator-cli-surface` pr
 
 The generated #339 ref `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a` produced PR #956 with scratch Python scripts, deletion-bound harness CLI ownership, source-relative package coupling and red verification. PR #956 is closed; delete this ref and rebuild #339 from final core/capability/CLI package boundaries. `recovery/f47-hooks` remains evidence only.
 
+The generated #360 ref `feature/publish-and-install-df-as-the-supported-release-ar` produced invalid PR #957 with a fabricated `packages/df-release`, hard-coded unapproved `1.0.0`, unrelated stale harness/provider changes and red tests. PR #957 is closed; delete this ref and continue #360 only from canonical first-party package/release owners while preserving the `0.0.0` development sentinel until final freeze.
+
 After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
 
 Do not keep historical branches as archives.
@@ -317,6 +319,6 @@ Highest-downstream-value work, in order:
 4. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #358/#317.
 5. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
 6. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
-7. Delete invalid generated #329/#384/#403/#339 branches and clean merged topic branches immediately; none are archives or reusable implementation vehicles.
+7. Delete invalid generated #329/#384/#403/#339/#360 branches and clean merged topic branches immediately; none are archives or reusable implementation vehicles.
 
 Converge only at the final release freeze, publish once, validate through #361, then close #68.
