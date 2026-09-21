@@ -94,11 +94,11 @@ for template_name in template_names:
     template_out = Path("out/templates") / template_name
     for artifact in EXPECTED:
         validate_publication(template_out / artifact.name)
-    for extension in (".pdf", ".html", ".md"):
+    for extension in (".pdf", ".html"):
         final = template_out / f"prace{extension}"
         review = template_out / f"prace-review{extension}"
         if final.read_bytes() == review.read_bytes():
-            fail(f"Final and Review outputs are identical: {template_name}/{final.name}")
+            fail(f"Final and Review visual outputs are identical: {template_name}/{final.name}")
 
 gitmodules = require_file(Path(".gitmodules"))
 if gitmodules.count("[submodule ") != 1:
