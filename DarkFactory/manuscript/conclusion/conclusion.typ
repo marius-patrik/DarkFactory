@@ -12,6 +12,6 @@ Na systému DarkFactory byla tato architektura rozložena do explicitních runti
 
 Výsledky podporují architektonickou odpověď na výzkumné otázky: řízená autonomie vyžaduje explicitní schvalovací a verifikační body, odolnost běhu vyžaduje persistovaný stav a kontrolovaný failover/recovery a kontinuita dlouhotrvající úlohy nemůže být závislá pouze na modelovém context window.
 
-Evaluace však zatím neobsahuje jeden uzavřený živý df-only průchod celým Request lifecycle od schválení Planningu po merge a rekonciliaci; stejná podmínka zůstává otevřenou acceptance položkou Requestu #359. #cite(bib.darkfactory_request_359) Práce proto nevyvozuje obecnou výkonnostní převahu DarkFactory ani úplnou autonomii; tato tvrzení zůstávají mimo rozsah současných důkazů.
+V evidence setu uzavřeném 21. září 2026 nebyl prokázán jeden živý df-only průchod celým Request lifecycle od schválení Planningu po merge a rekonciliaci; stejná podmínka zůstala otevřenou acceptance položkou Requestu #359. #cite(bib.darkfactory_request_359) Práce proto nevyvozuje obecnou výkonnostní převahu DarkFactory ani úplnou autonomii; tato tvrzení zůstávají mimo rozsah provedené evaluace.
   ],
 )
