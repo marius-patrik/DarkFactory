@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -6,13 +6,13 @@
   industry: "Scripts",
   czech: "Skripty",
   english: "Scripts",
-  citation: bib.anthropic2024tooluse,
-  source: bib.anthropic2024tooluse,
+  citation: (bib.agent_skills_spec, bib.claude_code_plugins),
+  source: bib.claude_code_plugins,
   definition: terms => [
-Soubory nebo posloupnosti příkazů určené k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.
+Spustitelné soubory nebo posloupnosti příkazů používané k deterministickému provedení opakovatelné operace.
   ],
-  description: terms => [#finalized[
-V harnessu se používají pro opakovatelné transformace, validace a další kroky, které nemají vyžadovat nové rozhodnutí modelu.
-  ]],
+  description: terms => [
+Agentní rozšíření mohou skripty používat pro transformace, validace nebo jiné kroky, které je výhodnější provést programově než novým modelovým rozhodnutím. #cite(bib.agent_skills_spec) #cite(bib.claude_code_plugins)
+  ],
   relations: ((type: "dependency", target: "tools"),),
 )
