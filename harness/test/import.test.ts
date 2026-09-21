@@ -81,6 +81,7 @@ describe("import claude", () => {
 			expires: 1_900_000_000_000,
 		});
 		expect(account?.metadata).toMatchObject({ source: ".claude/.credentials.json", account: "org-123", plan: "max" });
+		expect(account?.auth).toEqual({ scopes: ["user:read", "user:write"], refreshExpiresAt: 2_000_000_000_000 });
 	});
 
 	test("falls back to a macOS keychain item when there is no credentials file", async () => {
@@ -175,6 +176,7 @@ describe("import codex", () => {
 		});
 		const credential = await store.forAccount("openai-codex", "work").read("openai-codex");
 		expect((credential as OAuthCredential).accountId).toBe("acct-123");
+		expect(account?.auth).toEqual({ scopes: [] });
 	});
 
 	test("falls back to importing OPENAI_API_KEY as a metered api_key account", async () => {
@@ -254,6 +256,7 @@ describe("import grok", () => {
 			issuer: "https://issuer.example",
 			source: "grok-auth-json",
 		});
+		expect(account?.auth).toEqual({ scopes: ["openid", "email", "grok-cli:access"] });
 	});
 
 	test("derives expiry from the JWT exp when expires_at is absent", async () => {
@@ -303,7 +306,9 @@ describe("import kimi and antigravity", () => {
 			refresh: "kimi-refresh",
 			expires: 2_000_000_000_000,
 		});
-		expect((await store.readAccount("kimi-coding:main"))?.metadata).toMatchObject({ source: "kimi-code-credentials" });
+		const kimiAccount = await store.readAccount("kimi-coding:main");
+		expect(kimiAccount?.metadata).toMatchObject({ source: "kimi-code-credentials" });
+		expect(kimiAccount?.auth).toEqual({ scopes: ["openid"] });
 	});
 
 	test("fills the bare Antigravity project slot from loadCodeAssist", async () => {
