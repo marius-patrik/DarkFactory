@@ -3,16 +3,16 @@
 
 #let item = concept(
   key: "darkfactory_routing",
-  industry: "Routing",
-  czech: "Směrování",
-  english: "Routing",
+  industry: "Model Routing",
+  czech: "Směrování modelu",
+  english: "Model Routing",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [
-Mechanismus vykonávacího jádra pro výběr vhodného modelu, poskytovatele nebo dalšího prováděcího kandidáta podle požadavků běhu.
+Mechanismus vykonávacího jádra pro výběr vhodného modelu, poskytovatele a účtu podle požadavků úlohy, dostupnosti a provozních omezení.
   ],
   description: terms => [
-Routing je součástí `@darkfactory/core` a používá sdílené modelové a kvótové kontrakty; jeho konkrétní chování musí být v praktické části doloženo aktuální implementací a testy.
+Model Routing je součástí `@darkfactory/core`; vyhodnocuje vhodnost kandidátů podle task kind, capability tier, kontextové kapacity, kvót a dostupnosti. Samotné přepínání mezi kandidáty při selhání řídí Supervisor.
   ],
   relations: ((type: "dependency", target: "darkfactory_system"),),
 )
