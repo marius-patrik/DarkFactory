@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "slop",
-  industry: "Slop",
-  czech: "Slop",
-  english: "Slop",
+  keyword: "Slop",
   citation: bib.cambridge2026aislop,
   source: bib.cambridge2026aislop,
   definition: terms => [

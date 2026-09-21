@@ -3,8 +3,8 @@
 
 #let item = concept(
   key: "integration_test",
-  industry: "Integration Test",
-  czech: "Integrační test",
+  term: "Integrační test",
+  keyword: "Integration Test",
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [

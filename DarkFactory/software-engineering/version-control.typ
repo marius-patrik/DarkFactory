@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "version_control",
-  keyword: true,
-  industry: "Version Control",
-  czech: "Správa verzí",
+  term: "Správa verzí",
+  keyword: "Version Control",
   citation: bib.chacon2014,
   source: bib.chacon2014,
   definition: terms => [

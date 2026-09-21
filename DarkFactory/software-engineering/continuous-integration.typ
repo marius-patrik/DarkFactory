@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "continuous_integration",
-  keyword: true,
-  industry: "CI",
-  czech: "Průběžná integrace",
-  english: "Continuous Integration",
+  term: "Průběžná integrace",
+  keyword: "CI",
   citation: bib.humble2010,
   source: bib.humble2010,
   definition: terms => [

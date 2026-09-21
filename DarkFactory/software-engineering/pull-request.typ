@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "pull_request",
-  industry: "Pull Request",
-  czech: "Pull Request",
-  english: "Pull Request",
+  keyword: "Pull Request",
   citation: bib.github_pull_requests,
   source: bib.github_pull_requests,
   definition: terms => [

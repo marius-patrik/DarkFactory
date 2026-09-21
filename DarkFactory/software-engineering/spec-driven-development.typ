@@ -3,8 +3,8 @@
 
 #let item = concept(
   key: "spec_driven_development",
-  industry: "Spec-Driven Development",
-  czech: "Vývoj řízený specifikací",
+  term: "Vývoj řízený specifikací",
+  keyword: "Spec-Driven Development",
   citation: bib.fowler2025sdd,
   source: bib.fowler2025sdd,
   definition: terms => [

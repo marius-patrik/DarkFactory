@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "branch",
-  industry: "Branch",
-  czech: "Větev",
-  english: "Branch",
+  term: "Větev",
+  keyword: "Branch",
   citation: (bib.chacon2014, bib.github_branches),
   source: bib.github_branches,
   definition: terms => [
