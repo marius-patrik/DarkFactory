@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "tokenizer",
+  industry: "Tokenizer",
   czech: "Tokenizér",
   english: "Tokenizer",
   citation: bib.sennrich2016bpe,
