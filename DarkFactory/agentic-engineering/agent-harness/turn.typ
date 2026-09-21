@@ -13,5 +13,5 @@ Jedna diskrétní jednotka interakce v konverzačním nebo agentním běhu, nap�
   description: terms => [
 Posloupnost tahů tvoří historii, ze které harness sestavuje vstup pro další iteraci agentní smyčky. #cite(bib.yao2022)
   ],
-  relations: ((type: "dependency", target: "context_window"),),
+  relations: ((type: "parent", target: "agent_session"), (type: "dependency", target: "context_window")),
 )
