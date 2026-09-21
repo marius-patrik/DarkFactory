@@ -1,22 +1,17 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "context_window",
-    czech: "Kontextové okno",
+  czech: "Kontextové okno",
   english: "Context Window",
   citation: bib.liu2024,
-  source: bib.vaswani2017,
-definition: terms => [#finalized[
-Maximální rozsah tokenové sekvence, kterou model při jednom inferenčním běhu dokáže zahrnout do aktivního kontextu.
-  ]],
-  description: terms => [#finalized[
-Do tohoto limitu se společně započítávají systémové instrukce, uživatelský vstup, historie běhu, výsledky nástrojů a další data předaná modelu. Omezení proto přímo ovlivňuje, kolik pracovního stavu může agent udržovat současně bez výběru, externí paměti nebo kompakce.
-  ]],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
+  source: bib.liu2024,
+  definition: terms => [
+Maximální rozsah tokenové sekvence dostupný modelu v jednom inferenčním běhu.
+  ],
+  description: terms => [
+Do aktivního kontextu se společně vkládají instrukce, uživatelské vstupy, historie a výsledky nástrojů. Samotná nominální délka okna nezaručuje, že model všechny vložené informace využije stejně spolehlivě. #cite(bib.liu2024)
+  ],
   relations: ((type: "dependency", target: "token"),),
 )
