@@ -28,6 +28,13 @@ def require_file(path: Path, minimum_size: int = 1) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def require_present(path: Path, minimum_size: int = 1) -> None:
+    if not path.is_file():
+        fail(f"missing required file: {path}")
+    if path.stat().st_size < minimum_size:
+        fail(f"required file is unexpectedly small: {path}")
+
+
 def require_contract(source: str, contracts: tuple[str, ...], label: str) -> None:
     missing = [contract for contract in contracts if contract not in source]
     if missing:
@@ -339,7 +346,7 @@ if BOOK == "DarkFactory":
         ROOT / "software-engineering/examples/karpathy-vibe-coding-tweet.typ",
         ROOT / "img/external/karpathy-vibe-coding.png",
     ):
-        require_file(required)
+        require_present(required)
 
 package = json.loads(sources[Path("web/package.json")])
 dependencies = {**package.get("dependencies", {}), **package.get("devDependencies", {})}
