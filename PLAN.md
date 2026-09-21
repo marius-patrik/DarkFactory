@@ -64,6 +64,8 @@ Deliver a submission-ready Czech thesis and publication set in which:
 
 ## Phase 2 — Theory source and citation pass A
 
+**Status: in progress; weakest source mismatches corrected, full concept audit still pending.**
+
 **Purpose:** make every surviving theoretical concept source-complete before the final prose pass.
 
 ### Work
@@ -95,6 +97,8 @@ Specific source work:
 - No citation exists merely because it is topically related.
 
 ## Phase 3 — Methodology, goals, and research questions pass A
+
+**Status: complete for pass A; final answers remain intentionally deferred to Phase 7.**
 
 **Purpose:** align the research framing with the architecture we are actually documenting before Results are written.
 
