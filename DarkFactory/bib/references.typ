@@ -64,6 +64,7 @@
 #let hevner2004designscience = <hevner2004designscience>
 #let peffers2007dsrm = <peffers2007dsrm>
 #let microsoft_ai_diffusion_2026 = <microsoft-ai-diffusion-2026>
+#let brown2020 = <brown2020>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -129,4 +130,5 @@
   hevner2004designscience: hevner2004designscience,
   peffers2007dsrm: peffers2007dsrm,
   microsoft_ai_diffusion_2026: microsoft_ai_diffusion_2026,
+  brown2020: brown2020,
 )
