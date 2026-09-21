@@ -162,6 +162,7 @@ school_template = sources[ROOT / "templates/gjkt-odborna-prace/template.typ"]
 for contract in (
     "heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)",
     "bibliography(bibliografie, style: bib-styl, title: none, full: true)",
+    "outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: auto)",
 ):
     if contract not in school_template:
         fail(f"front/back matter bookmark contract missing: {contract}")
@@ -211,8 +212,13 @@ for forbidden in (
 ):
     if forbidden in schema:
         fail(f"concept heading metadata remains contextual: {forbidden}")
-if 'let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]' not in schema:
-    fail("concept heading construction is not bookmark-safe")
+for contract in (
+    "if level >= 5 {",
+    "heading(level: level, numbering: none, outlined: true)",
+    "heading(level: level)[#render-concept-title(item)]",
+):
+    if contract not in schema:
+        fail(f"concept heading numbering/index contract missing: {contract}")
 
 common = sources[ROOT / "templates/common.typ"]
 for contract in (

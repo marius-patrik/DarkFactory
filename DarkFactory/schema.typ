@@ -221,7 +221,11 @@
 }
 
 #let render-concept(item, terms, graph, level: 1) = {
-  let output = [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
+  let output = if level >= 5 {
+    [#heading(level: level, numbering: none, outlined: true)[#render-concept-title(item)]#label("concept-" + item.key)]
+  } else {
+    [#heading(level: level)[#render-concept-title(item)]#label("concept-" + item.key)]
+  }
 
   output += [
     #set par(first-line-indent: (amount: 1.5em, all: true))

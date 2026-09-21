@@ -250,8 +250,8 @@
   // Za poslední číslicí čísla kapitoly se nepíše tečka.
   set heading(numbering: "1.1")
 
-  // Každá hlavní kapitola začíná na nové straně; hlubší úrovně jsou
-  // odsazené podle hierarchie, ale zůstávají skutečnými číslovanými nadpisy.
+  // Každá hlavní kapitola začíná na nové straně. Úrovně 1–4 jsou číslované;
+  // úrovně 5+ zůstávají skutečnými nadpisy v obsahu, ale bez čísla.
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
     regular-level-one-heading(it)
@@ -301,7 +301,7 @@
   podekovani-strana(meta)
   anotace-strana(meta, concepts)
 
-  outline(title: ui-label([Obsah], [Contents]), depth: 6, indent: auto)
+  outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: auto)
 
   // ── Vlastní text ─────────────────────────────────────────
   // Čísla stran se uvádí od úvodu; za stranu 1 se považuje titulní strana,

@@ -5,7 +5,6 @@
   key: "runtime",
   industry: "Runtime",
   czech: "Běhové prostředí",
-  english: "Runtime Environment",
   citation: bib.merkel2014docker,
   source: bib.merkel2014docker,
   definition: terms => [

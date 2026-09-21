@@ -30,7 +30,7 @@ Kanonický katalog aktuální knihy začíná v `DarkFactory/index.typ`. Koncept
 - zdrojová/citační metadata, `examples` a `attachments`,
 - semantic relations `dependency` a `related`.
 
-`keyword` má výchozí hodnotu `false`; pouze ručně vybrané hlavní pojmy používají `keyword: true` a zobrazují se v seznamu klíčových slov. Section koncepty a přímé koncepty se vykreslují jako číslované sekce. Příklady zůstávají samostatnými konceptovými záznamy se svou terminologií, citacemi a obrazovými zdroji, ale vykreslují se přímo uvnitř rodičovského konceptu bez vlastního čísla sekce. Teoretická a praktická část jsou odvozeny z folderové struktury, nikoli z paralelních polí na jednotlivých konceptech.
+`keyword` má výchozí hodnotu `false`; pouze ručně vybrané hlavní pojmy používají `keyword: true` a zobrazují se v seznamu klíčových slov. Section koncepty a přímé koncepty se vykreslují jako nadpisy; úrovně 1–4 jsou číslované, úroveň 5 a hlubší zůstává v obsahu bez čísla sekce. Příklady zůstávají samostatnými konceptovými záznamy se svou terminologií, citacemi a obrazovými zdroji, ale vykreslují se přímo uvnitř rodičovského konceptu bez vlastního čísla sekce. Teoretická a praktická část jsou odvozeny z folderové struktury, nikoli z paralelních polí na jednotlivých konceptech.
 
 ## Terminologie
 
