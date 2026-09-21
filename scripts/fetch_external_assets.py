@@ -32,6 +32,10 @@ ASSETS = (
         "path": "claude-desktop.png",
         "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/c5823949d9350145ce2fda51acbc7076f2139cd0-1920x1080.png",
     },
+    {
+        "path": "karpathy-vibe-coding.png",
+        "url": "https://www.coderabbit.ai/content/assets/a-semantic-history-how-the-term-vibe-coding-went-from-a-tweet-to-prod-inline-image.png",
+    },
 )
 
 

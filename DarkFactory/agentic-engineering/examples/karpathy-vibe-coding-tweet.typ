@@ -14,7 +14,7 @@ Tweet Andreje Karpathyho z 2. února 2025, ve kterém popsal původní význam V
   ],
   visual: terms => [
 #figure(
-  image("/DarkFactory/img/external/karpathy-vibe-coding.webp", width: 92%),
+  image("/DarkFactory/img/external/karpathy-vibe-coding.png", width: 92%),
   caption: [Původní tweet Andreje Karpathyho o Vibe Coding. #cite(bib.karpathy2025vibecoding) #cite(bib.coderabbit2026vibehistory)],
 )
   ],
