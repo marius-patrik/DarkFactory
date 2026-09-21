@@ -196,11 +196,12 @@ Inspect the current DarkFactory repository and submodule snapshot for:
 #### Vykonávací jádro a stav
 - Protocol;
 - Run State;
-- Routing;
+- Model Routing;
+- Supervisor;
 - Result Capture;
 - Recovery;
 - execution kernel and graph/run state;
-- provider/model routing and failover.
+- provider/model routing, failover, turn limits, time budgets, quota admission, and capability-tier escalation.
 
 #### Systém capabilities
 - Capability;
