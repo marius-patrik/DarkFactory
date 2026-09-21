@@ -451,8 +451,8 @@ async function accountsCommand(store: FileCredentialStore): Promise<void> {
 			oauth?.type === "oauth"
 				? `${new Date(oauth.expires).toISOString()} (${oauth.expires > Date.now() ? "valid" : "expired"})`
 				: "-";
-		const refresh = oauth?.type === "oauth" && oauth.refresh ? "df-managed" : "-";
 		const baseOwnership = account.metadata?.ownership ?? "df-owned";
+		const refresh = oauth?.type === "oauth" && oauth.refresh ? (baseOwnership === "borrowed" ? "source-managed" : "df-managed") : "-";
 		const importedFrom = account.metadata?.importedFrom ?? account.metadata?.importer;
 		const ownership = importedFrom ? `${baseOwnership} (imported from ${importedFrom})` : baseOwnership;
 		console.log(`${account.id}\t${types}\t${expiry}\t${refresh}\t${ownership}\t${slots || "-"}`);
