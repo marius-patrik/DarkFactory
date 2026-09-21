@@ -10,10 +10,10 @@
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
   definition: terms => [
-Neuronový model pro zpracování a generování posloupností tokenů; současné modely tohoto typu typicky používají #term(terms.transformer).
+Neuronový model pro zpracování a generování posloupností tokenů.
   ],
   description: terms => [
-Model při generování odhaduje další token z aktivního kontextu. Práci se soubory, příkazy, nástroji a stavem poskytuje až okolní aplikační nebo agentní vrstva.
+Současné LLM typicky používají architekturu #term(terms.transformer), která při autoregresivním generování odhaduje další token z předchozí sekvence. #cite(bib.vaswani2017) Práci s nástroji, stavem a prostředím zajišťuje okolní agentní runtime nebo harness, nikoli samotná textová inference. #cite(bib.anthropic2024tooluse)
   ],
   relations: ((type: "dependency", target: "transformer"),),
 )
