@@ -8,10 +8,10 @@
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [
-Ověření spolupráce více komponent nebo vrstev systému přes jejich skutečná rozhraní.
+Ověření spolupráce více komponent nebo vrstev systému přes jejich rozhraní. #cite(bib.sommerville2016)
   ],
   description: terms => [
-V agentním vývoji ověřuje, že změna funguje nejen izolovaně, ale také v toku mezi částmi aplikace, službami, úložišti nebo automatizačními kroky. #cite(bib.sommerville2016)
+Integrační test zachycuje chyby vznikající ve vzájemném propojení částí systému, které izolované testování jednotlivých komponent nemusí odhalit. #cite(bib.sommerville2016)
   ],
   relations: ((type: "dependency", target: "continuous_integration"),),
 )
