@@ -9,10 +9,10 @@
   citation: bib.claude_code_plugins,
   source: bib.claude_code_plugins,
   definition: terms => [
-Distribuovatelný balíček rozšíření, kterým lze doplnit schopnosti a běhové chování agentního prostředí. #cite(bib.claude_code_plugins)
+V této práci označují Plugins distribuovatelný mechanismus pro doplnění schopností a běhového chování agentního prostředí. #cite(bib.claude_code_plugins)
   ],
   description: terms => [
-Plugin může sdružovat více komponent, například skills, agenty, hooks a konfiguraci MCP serverů. #cite(bib.claude_code_plugins)
+Konkrétní platformy mohou do jednoho plugin balíčku zahrnout různé druhy rozšíření, například skills, agenty, hooks nebo konfiguraci MCP serverů. #cite(bib.claude_code_plugins) Taxonomie této práce ale odděluje koncept Skills od Plugins a pod Plugins řadí Tools, Scripts, Hooks a MCP.
   ],
   relations: ((type: "dependency", target: "harness"),),
 )
