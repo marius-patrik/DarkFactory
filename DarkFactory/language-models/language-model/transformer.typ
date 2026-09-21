@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": unconfirmed, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -8,10 +8,10 @@
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
   definition: terms => [
-Architektura neuronových sítí založená na mechanismu pozornosti, která modeluje vztahy mezi prvky sekvence a tvoří základ většiny současných velkých jazykových modelů.
+Architektura neuronové sítě založená na mechanismu pozornosti, který modeluje vztahy mezi prvky sekvence. #cite(bib.vaswani2017)
   ],
-  description: terms => [#unconfirmed[
-Při generování textu se často používá dekodérové uspořádání, které z dosavadní sekvence vytváří reprezentace pro odhad následujícího tokenu.
-  ]],
+  description: terms => [
+Při autoregresivním generování dekodér z dosavadní sekvence vytváří reprezentaci použitou k odhadu následujícího tokenu. #cite(bib.vaswani2017)
+  ],
   relations: (),
 )
