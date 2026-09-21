@@ -119,20 +119,24 @@ The thesis argument belongs in Section 1. The hierarchy after it should *demonst
 
 - **2.2 AI-asistovaný vývoj**
   - **2.2.1 Úvod**
-  - **2.2.2 Od asistence k delegaci**
+    - frames the shift from AI assistance to delegated software work; no standalone Software Engineering article.
+  - **2.2.2 Zadání a způsob práce**
     - Vibe Coding
-    - Slop
     - Vývoj řízený specifikací (Spec-Driven Development)
-  - **2.2.3 Řízení práce a změn**
     - Plánování (Planning)
+    - argument: the quality of delegated work increasingly depends on how intent and constraints are made explicit before implementation.
+  - **2.2.3 Řízení změny**
     - Správa verzí (Version Control)
     - Větev (Branch)
     - Pull Request
-  - **2.2.4 Ověřování**
+    - argument: AI-generated work still has to enter a controlled software-change process.
+  - **2.2.4 Kvalita a ověřování**
+    - Slop
     - Průběžná integrace (CI)
     - Integrační test (Integration Test)
+    - argument: delegated generation creates output, not truth; quality must be established independently.
   - **2.2.5 Závěr**
-  - No standalone Software Engineering article.
+    - derives the need for a system that can preserve intent, act through controlled interfaces, observe results, and iterate on machine-verifiable feedback.
 
 - **2.3 Jazykový model a inference**
   - **2.3.1 Úvod**
@@ -181,7 +185,8 @@ The thesis argument belongs in Section 1. The hierarchy after it should *demonst
 - **2.5 Agentické inženýrství**
   - The section itself owns the definition; no duplicate Agentic Engineering article.
   - **2.5.1 Úvod**
-  - **2.5.2 Kontext a instrukce**
+    - transitions from “what the Harness makes possible” to “how those capabilities are deliberately composed into useful agentic behavior.”
+  - **2.5.2 Instrukce a kontext**
     - Promptové inženýrství (Prompt Engineering)
     - Systémový prompt (System Prompt)
     - Kontextové inženýrství (Context Engineering)
@@ -189,18 +194,22 @@ The thesis argument belongs in Section 1. The hierarchy after it should *demonst
     - Kompakce kontextu (Context Compaction)
     - RAG
     - Prompt Injection
-  - **2.5.3 Řízení autonomie**
+    - argument: first control what information and instructions reach the model; Prompt Injection is the corresponding integrity failure mode, not a separate security taxonomy.
+  - **2.5.3 Řízení agentního chování**
     - Cílené smyčky (Goal Loops)
     - Guardrail
     - Člověk ve smyčce (HITL)
-  - **2.5.4 Orchestrace**
+    - argument: model output becomes governed behavior only when progress, boundaries, intervention, and termination are explicit.
+  - **2.5.4 Orchestrace agentů**
     - Subagent
     - Orchestrátor (Orchestrator)
     - Předání řízení (Handoff)
     - Pracovní graf (Workflow Graph)
-    - DAG becomes a property/special case explained here, not a standalone article unless final prose proves independent value.
-    - Swarm becomes an orchestration example/pattern, not a standalone article unless final prose proves independent value.
+    - DAG is explained as an acyclic graph property/special case here, not a standalone article unless later writing proves independent value.
+    - Swarm is an orchestration example/pattern, not a standalone article unless later writing proves independent value.
+    - argument: once one governed agent is understood, work can be decomposed and control distributed across multiple agents.
   - **2.5.5 Závěr**
+    - synthesizes context design, behavioral control, and orchestration as the engineering discipline that Practical realizes in DarkFactory.
 
 #### 3 Praktická část: DarkFactory
 
