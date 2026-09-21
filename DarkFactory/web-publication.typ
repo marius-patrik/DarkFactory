@@ -1,5 +1,5 @@
 #import "/DarkFactory/metadata.typ": meta, title-value, title-display
-#import "/DarkFactory/templates/common.typ": review-state, finalized, ui-label, translation, translation-heading, render-keywords
+#import "/DarkFactory/templates/common.typ": review-state, ui-label, translation, translation-heading, render-keywords
 #import "/DarkFactory/index.typ": book-title, concepts, render-manuscript, render-appendices
 
 #let publication(
@@ -18,17 +18,17 @@
   heading(level: 1, numbering: none)[#publication-title-display]
   par[#meta.autor · #meta.skola · #meta.rok]
 
-  heading(level: 1, numbering: none)[#finalized[Anotace]]
+  heading(level: 1, numbering: none)[Anotace]
   meta.at("annotation-cs")
 
-  heading(level: 1, numbering: none)[#finalized[Abstract]]
+  heading(level: 1, numbering: none)[Abstract]
   meta.at("abstract-en")
 
-  heading(level: 1, numbering: none)[#finalized[#translation-heading(
+  heading(level: 1, numbering: none)[#translation-heading(
     translation(cs: [Klíčová slova], en: [Keywords]),
     separator: "paren",
     order: "en-cs",
-  )]]
+  )]
   render-keywords(concepts)
 
   outline(title: ui-label([Obsah], [Contents]), depth: 6)
@@ -42,10 +42,10 @@
     full: true,
   )
 
-  heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]]
+  heading(level: 1, numbering: none)[#ui-label([Seznam obrázků a tabulek], [List of figures and tables])]
   outline(title: none, target: figure.where(kind: image).or(figure.where(kind: table)))
 
-  heading(level: 1, numbering: none)[#finalized[#ui-label([Seznam příloh], [List of appendices])]]
+  heading(level: 1, numbering: none)[#ui-label([Seznam příloh], [List of appendices])]
   counter(heading).update(0)
   set heading(numbering: "A.1", supplement: [Příloha])
   outline(title: none, target: heading.where(level: 1, supplement: [Příloha]))
