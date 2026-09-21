@@ -177,6 +177,14 @@ Practical describes verified DarkFactory implementation, not intended architectu
 
 Practical headings describe architecture or lifecycle concerns. Do not turn every package name into a concept. Package names such as `@darkfactory/core` are implementation evidence for the corresponding architectural concept/section.
 
+## Indexes and appendices
+
+- The front-matter **Klíčová slova** list is generated from canonical concepts with `keyword: true`.
+- The detailed **Encyklopedie a rejstřík pojmů** lives in the appendix and is generated from the same keyword-marked concept records in alphabetical order.
+- Do not maintain a separate handwritten terminology registry or duplicate definitions for the index.
+- The encyclopedia links back to the canonical concept definition; editing the concept must automatically update both keyword and encyclopedia surfaces.
+- **Seznam obrázků a tabulek** remains in the appendix/back matter and must stay visible in the main contents.
+
 ## Language and terminology
 
 The manuscript prose is Czech.
