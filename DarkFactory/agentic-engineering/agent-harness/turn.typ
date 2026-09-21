@@ -8,10 +8,10 @@
   citation: bib.yao2022,
   source: bib.yao2022,
   definition: terms => [
-Jedna diskrétní jednotka interakce v konverzačním nebo agentním protokolu, například zpráva uživatele, výstup modelu nebo samostatně evidovaný výsledek nástroje.
+Jedna diskrétní jednotka interakce v konverzačním nebo agentním běhu, například vstup uživatele, výstup modelu nebo výsledek nástroje.
   ],
   description: terms => [
-Historie tahů tvoří část pracovního kontextu; harness rozhoduje, které vstupy, modelová rozhodnutí a výsledky nástrojů zůstanou dostupné v dalších iteracích.
+Posloupnost tahů tvoří historii, ze které harness sestavuje vstup pro další iteraci agentní smyčky. #cite(bib.yao2022)
   ],
   relations: ((type: "dependency", target: "context_window"),),
 )
