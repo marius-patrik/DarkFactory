@@ -1,10 +1,9 @@
 #import "/DarkFactory/templates/common.typ": finalized
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "thesis_introduction",
-  czech: "Úvod",
-  english: "Introduction",
+  title: [Úvod],
   definition: terms => [
 #finalized[
 Tato práce zkoumá, jak dnes účinně využívat agentní umělou inteligenci při vývoji softwaru.
