@@ -275,6 +275,14 @@ for path in concept_files:
 
 if len(concept_keys) != len(set(concept_keys)):
     fail("concept keys must be unique within a book")
+
+concept_key_set = set(concept_keys)
+for path in concept_files:
+    source = path.read_text(encoding="utf-8")
+    for target in re.findall(r'target:\s*"([^"]+)"', source):
+        if target not in concept_key_set:
+            fail(f"concept relation in {path} targets unknown concept: {target}")
+
 if BOOK == "DarkFactory" and not 5 <= len(keyword_keys) <= 20:
     fail(f"DarkFactory keyword curation is unexpectedly sized: {len(keyword_keys)} keyword concepts")
 
