@@ -97,37 +97,45 @@ and analogously for every listed level-2 section.
 
 ### Candidate hierarchy — causal reading order
 
-The hierarchy must read as one argument:
+The thesis argument belongs in Section 1. The hierarchy after it should *demonstrate* that argument rather than restating it.
 
-**how AI changes software development → what the model is and can do → what the harness adds around it → how agentic behavior is deliberately engineered → how DarkFactory realizes those ideas → what the evidence establishes.**
+#### 1 Úvod
 
-Do not preserve an existing concept merely because it already has a file. Every numbered group and every standalone article must earn its place in that causal chain.
+- **1.1 Motivace a vymezení problému**
+- **1.2 Východisko a argument práce**
+  - canonical argument:
+    **jak AI mění vývoj softwaru → co model skutečně je a dokáže → co kolem něj přidává Harness → jak se tyto mechanismy záměrně skládají do agentního chování → jak je realizuje DarkFactory → co o výsledku ukazují důkazy.**
+- **1.3 Cíle práce**
+  - 1.3.1 Hlavní cíl
+  - 1.3.2 Dílčí cíle
+- **1.4 Výzkumné otázky**
+- **1.5 Metodika práce**
+- Do not add a separate “structure of the thesis” section if it only repeats 1.2.
 
-#### 2 Teoretická část
+#### 2 Teoretická část: Agentní vývoj softwaru
 
 - **2.1 Úvod**
-  - establishes the causal chain above and the scope boundary: model training is outside the thesis.
+  - scope boundary for the whole theoretical part; no model-training theory beyond what the argument needs.
 
 - **2.2 AI-asistovaný vývoj**
   - **2.2.1 Úvod**
-    - explains the shift from code generation/chat assistance toward agent-driven software work.
-    - concepts directly after the introduction: Vibe Coding, Slop.
-  - **2.2.2 Specifikace a plánování**
+  - **2.2.2 Od asistence k delegaci**
+    - Vibe Coding
+    - Slop
     - Vývoj řízený specifikací (Spec-Driven Development)
+  - **2.2.3 Řízení práce a změn**
     - Plánování (Planning)
-  - **2.2.3 Řízení změn a ověřování**
     - Správa verzí (Version Control)
     - Větev (Branch)
     - Pull Request
+  - **2.2.4 Ověřování**
     - Průběžná integrace (CI)
     - Integrační test (Integration Test)
-  - **2.2.4 Závěr**
-    - derives the need for explicit state, feedback, and machine-verifiable boundaries when more work is delegated to AI.
-  - Remove the standalone Software Engineering article unless a unique semantic responsibility is found for it.
+  - **2.2.5 Závěr**
+  - No standalone Software Engineering article.
 
-- **2.3 Model**
+- **2.3 Jazykový model a inference**
   - **2.3.1 Úvod**
-    - defines the model as the probabilistic inference component consumed by the surrounding system.
   - **2.3.2 Jazykový model**
     - Velký jazykový model (LLM)
     - Transformer
@@ -138,46 +146,42 @@ Do not preserve an existing concept merely because it already has a file. Every 
     - Inferenční engine (Inference Engine)
     - Kontextové okno (Context Window)
     - Mezipaměť klíčů a hodnot (KV Cache)
-  - **2.3.4 Limity modelu**
+  - **2.3.4 Limity inference**
     - Degradace kontextu (Context Rot)
     - Divergence modelu
   - **2.3.5 Závěr**
-    - establishes that the model can generate/choose but does not itself own persistent state, tools, environment, authorization, or reliable long-running control.
 
 - **2.4 Harness**
-  - no duplicate Harness article; the section introduction owns the definition.
+  - The section itself owns the Harness definition and may carry canonical vocabulary metadata; no duplicate Harness article.
   - **2.4.1 Úvod**
-    - answers what must be added around model inference to obtain a persistent acting system.
-  - **2.4.2 Běh a stav**
+  - **2.4.2 Smyčka a stav**
     - Agentní smyčka (Agent Loop)
     - Agentní sezení (Session)
-    - Tah (Turn)
     - Přepis (Transcript)
     - Stav (State)
-  - **2.4.3 Prostředí a nástroje**
+    - Turn is folded into Session/Transcript unless later writing proves it needs independent semantic ownership.
+  - **2.4.3 Nástroje a prostředí**
     - Prostředí agenta (Agent Environment)
     - Nástroje (Tools)
     - Vyvolávání nástrojů (Tool Calling)
     - Spouštění kódu (Code Execution)
     - Izolované prostředí (Sandbox)
-    - Kontejner (Container)
+    - Container is folded into Sandbox as one realization unless later writing proves a unique conceptual role.
   - **2.4.4 Dovednosti a rozšíření**
     - Dovednosti (Skills)
-    - Pluginy
+    - Pluginy (Plugins)
     - Skripty (Scripts)
     - Hooks
-    - Model Context Protocol (MCP)
+    - MCP
   - **2.4.5 Závěr**
-    - establishes that Harness provides execution, continuity, action surfaces, and extensibility but not the higher-level strategy for using them.
-  - Remove generic Runtime as a standalone concept unless it proves a unique responsibility not already owned by Inference Engine, Environment, Sandbox, or Container.
-  - Replace JSON Schema Tool Calling as a taxonomy concept with the broader Tool Calling; JSON Schema belongs in its mechanism/prose where relevant.
-  - Agent Loop and ReAct must not be treated as synonyms; ReAct is a pattern/example of an agent loop.
+  - No standalone Runtime article.
+  - ReAct is an example/pattern of Agent Loop, not an alternate name for Agent Loop.
+  - JSON Schema is a mechanism inside Tool Calling, not part of the taxonomy title.
 
 - **2.5 Agentické inženýrství**
-  - no duplicate Agentic Engineering article; section introduction owns the definition.
+  - The section itself owns the definition; no duplicate Agentic Engineering article.
   - **2.5.1 Úvod**
-    - answers how the capabilities supplied by the harness are deliberately composed and constrained to produce useful agentic behavior.
-  - **2.5.2 Instrukce a kontext**
+  - **2.5.2 Kontext a instrukce**
     - Promptové inženýrství (Prompt Engineering)
     - Systémový prompt (System Prompt)
     - Kontextové inženýrství (Context Engineering)
@@ -189,82 +193,80 @@ Do not preserve an existing concept merely because it already has a file. Every 
     - Cílené smyčky (Goal Loops)
     - Guardrail
     - Člověk ve smyčce (HITL)
-  - **2.5.4 Orchestrace agentů**
+  - **2.5.4 Orchestrace**
     - Subagent
     - Orchestrátor (Orchestrator)
     - Předání řízení (Handoff)
     - Pracovní graf (Workflow Graph)
-    - Orientovaný acyklický graf (DAG), if its definition is still necessary after Workflow Graph is written
-    - Swarm should be demoted to an orchestration example/pattern unless its final prose proves a unique conceptual responsibility.
+    - DAG becomes a property/special case explained here, not a standalone article unless final prose proves independent value.
+    - Swarm becomes an orchestration example/pattern, not a standalone article unless final prose proves independent value.
   - **2.5.5 Závěr**
-    - connects context, control, and orchestration into the design discipline that Practical then realizes.
 
-#### 3 Praktická část
+#### 3 Praktická část: DarkFactory
 
 - **3.1 Úvod**
-  - states that Practical demonstrates the realization of the theoretical chain in DarkFactory and distinguishes architecture from evidence.
+  - maps the theoretical argument to the concrete artifact and evidence model.
 
-- **3.2 DarkFactory**
-  - no duplicate DarkFactory article.
+- **3.2 Architektura systému**
   - **3.2.1 Úvod**
-    - introduces the implementation boundaries and the architecture schematic.
-  - **3.2.2 Vykonávací jádro**
+  - **3.2.2 Stav a vykonávání**
     - Protokol DarkFactory (Protocol)
     - Stav běhu (Run State)
     - Směrování modelu (Model Routing)
     - Dohled nad během (Supervisor)
-    - Zachycení výsledku (Result Capture)
-    - Obnova běhu (Recovery)
-  - **3.2.3 Rozšiřitelnost systému**
+  - **3.2.3 Rozšiřitelnost**
     - Capability
-    - Capability ABI
-    - Adaptér capability (Capability Adapter)
-  - **3.2.4 Řídicí vrstva a identita**
+    - ABI and adapters are mechanisms inside Capability unless final prose proves they need independent ownership.
+  - **3.2.4 Řídicí a bezpečnostní hranice**
     - GitHub jako řídicí vrstva (GitHub Control Plane)
-    - Keychain
-    - Autentizace uživatele (Auth)
+    - machine credentials / user identity boundary; Keychain/Auth package names are implementation evidence, not automatically glossary concepts.
   - **3.2.5 Rozhraní**
-    - df CLI
-    - DarkFactory Web
-    - DarkFactory Docs
+    - df CLI, DarkFactory Web, DarkFactory Docs are implementation surfaces; keep as concepts only if each ends up owning unique architectural meaning.
   - **3.2.6 Závěr**
-    - synthesizes how the implementation realizes Harness and Agentické inženýrství without repeating theory.
 
-- **3.3 Životní cyklus požadavku**
+- **3.3 Životní cyklus změny**
   - **3.3.1 Úvod**
-    - gives the ordered lifecycle and states which mechanisms are cross-cutting.
-  - **3.3.2 Zadání a plánování**
+  - **3.3.2 Zadání a plán**
     - Požadavek (Request)
     - Plán DarkFactory (Planning)
   - **3.3.3 Implementace**
-    - structural prose only unless a genuinely unique concept emerges.
+    - structural prose; no filler concept.
   - **3.3.4 Ověření a revize**
+    - Zachycení výsledku (Result Capture)
     - Deterministické ověření (Deterministic Verification)
     - Smyčka revize a opravy (Review/Fix Loop)
-  - **3.3.5 Finalizace a integrace**
+  - **3.3.5 Finalizace**
     - Finální kontrola souladu (Final Alignment)
     - Rekonciliace stavu (Reconciliation)
   - **3.3.6 Přerušení a obnova**
-    - references the already-owned Recovery concept; no duplicate Recovery article.
+    - Obnova běhu (Recovery)
   - **3.3.7 Závěr**
 
 - **3.4 Vyhodnocení**
   - **3.4.1 Úvod**
-    - identifies the fixed evidence snapshot; does not duplicate methodology from 1.3.
+    - fixed evidence snapshot only; methodology remains owned by 1.5.
   - **3.4.2 Ověření mechanismů**
-    - automated tests / CI evidence for individual mechanisms.
   - **3.4.3 Ověření systému**
-    - integrated runtime and full-lifecycle evidence, including the bounded result that a live complete df-only lifecycle was not demonstrated at the evidence cutoff.
   - **3.4.4 Ověření na repozitářích**
-    - DarkFactory, omnis, ChessWithQuests, DarkFactory-Paper, archived targets distinguished.
   - **3.4.5 Výzkumné otázky**
-    - O1–O3 as document answers, not semantic glossary concepts.
+    - document answers, not glossary concepts.
   - **3.4.6 Diskuse a omezení**
-    - document prose, not an indexed domain concept.
+    - document prose, not glossary concepts.
   - **3.4.7 Závěr**
 
-- **4 Závěr**
-  - closes the thesis only at the level of goals/questions and established evidence; does not reproduce Results.
+#### 4 Závěr
+
+- closes goals/questions at the level supported by evidence;
+- does not reproduce Results.
+
+#### Structural vocabulary ownership
+
+A structural section may optionally own `term` / `keyword` metadata when the section itself is the one canonical owner of a concept-level definition. This is required to deduplicate concepts such as **Harness** and **Agentické inženýrství** without losing them from canonical vocabulary/indexing.
+
+Examples:
+- Harness section: `term: none, keyword: "Harness"`
+- Agentické inženýrství section: choose either `term: "Agentické inženýrství", keyword: none` if it should not be a keyword, or keyword-only if it should appear in the keyword/index system.
+- Ordinary structural sections such as Úvod, Ověřování, or Závěr carry only a structural title and never enter the concept graph.
 
 ### Decisions required before implementation
 
