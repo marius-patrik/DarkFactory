@@ -62,6 +62,9 @@
 #let autogen_swarm = <autogen-swarm>
 #let networkx_dag = <networkx-dag>
 #let oci_runtime_spec = <oci-runtime-spec>
+#let hevner2004designscience = <hevner2004designscience>
+#let peffers2007dsrm = <peffers2007dsrm>
+#let microsoft_ai_diffusion_2026 = <microsoft-ai-diffusion-2026>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -125,4 +128,7 @@
   autogen_swarm: autogen_swarm,
   networkx_dag: networkx_dag,
   oci_runtime_spec: oci_runtime_spec,
+  hevner2004designscience: hevner2004designscience,
+  peffers2007dsrm: peffers2007dsrm,
+  microsoft_ai_diffusion_2026: microsoft_ai_diffusion_2026,
 )
