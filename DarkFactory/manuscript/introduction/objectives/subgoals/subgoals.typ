@@ -5,11 +5,13 @@
   title: [Dílčí cíle],
   definition: terms => [
 - Vymezit teoretické mechanismy Software Engineering, Modelu, Harnessu a Agentic Engineering potřebné pro dlouhotrvající agentní vývoj softwaru.
-- Navrhnout a implementovat DarkFactory jako systém s explicitním stavem běhu, odděleným prostředím, capability rozhraním, GitHub control plane a oddělenými hranicemi identity a přihlašovacích údajů.
-- Realizovat řízený životní cyklus požadavku od zachycení zadání přes Planning a implementaci po deterministické ověření, Final Alignment, integraci a obnovu přerušeného běhu.
-- Ověřit implementaci pomocí automatických kontrol, end-to-end scénáře a provozu na vybraných cílových repozitářích a výsledky vztáhnout k výzkumným otázkám.
+- Navrhnout a implementovat DarkFactory s explicitním stavem běhu, odděleným prostředím, capability rozhraním, GitHub control plane a oddělenými hranicemi lidské a strojové identity.
+- Implementovat mechanismy řízeného životního cyklu požadavku: Planning, deterministické ověření, review/fix, Final Alignment, integraci a obnovu přerušeného běhu.
+- Ověřit implementované mechanismy automatickými testy a CI nad konkrétním commitem.
+- Ověřit přenositelnost vybraných částí řešení na konkrétních cílových repozitářích a samostatně vyhodnotit, zda existuje důkaz celého živého end-to-end Request lifecycle.
+- Vztáhnout zjištěné výsledky a jejich omezení přímo k výzkumným otázkám.
   ],
   description: terms => [
-Dílčí cíle vytvářejí sled od teoretického vymezení přes návrh artefaktu k jeho technickému ověření.
+Dílčí cíle oddělují teoretické vymezení, konstrukci artefaktu a jednotlivé úrovně jeho ověření. Nesplněná nebo neprokázaná úroveň evaluace proto nemusí být nahrazena silnějším tvrzením z jiné vrstvy důkazů.
   ],
 )
