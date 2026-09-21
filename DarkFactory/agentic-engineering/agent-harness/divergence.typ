@@ -8,10 +8,10 @@
   citation: bib.shinn2023reflexion,
   source: bib.shinn2023reflexion,
   definition: terms => [
-Selhání agentní smyčky, při němž se běh vzdaluje cíli opakováním neúčinných kroků, oscilací nebo nekontrolovanou spotřebou zdrojů.
+Selhání agentní smyčky, při němž další iterace nepřibližují běh k cíli.
   ],
   description: terms => [
-Typickými projevy jsou opakování stejné neúspěšné akce, střídání protichůdných změn a pokračování běhu bez měřitelného pokroku. Harness je proto musí rozpoznat pomocí pozorovaného stavu, limitů a podmínek ukončení. #cite(bib.shinn2023reflexion)
+Projevem může být opakování neúčinných kroků nebo pokračování bez měřitelného pokroku; mechanismy reflexe a zpětné vazby jsou jedním ze způsobů, jak takové opakované selhání omezovat. #cite(bib.shinn2023reflexion)
   ],
   relations: ((type: "related", target: "loop_engineering"),),
 )
