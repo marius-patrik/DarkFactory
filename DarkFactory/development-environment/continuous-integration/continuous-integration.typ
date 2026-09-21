@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "continuous_integration",
+  keyword: true,
   industry: "CI",
   czech: "Průběžná integrace",
   english: "Continuous Integration",

@@ -5,6 +5,7 @@
 
 #let item = concept(
   key: "tool_calling",
+  keyword: true,
   industry: "Tool Calling",
   czech: "Vyvolávání nástrojů",
   english: "Tool Calling",

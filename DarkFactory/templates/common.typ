@@ -361,7 +361,7 @@
 
 #let render-keywords(items) = context {
   let unique = ()
-  for item in items {
+  for item in items.filter(item => item.keyword) {
     if not unique.any(existing => existing.key == item.key) {
       unique.push(item)
     }

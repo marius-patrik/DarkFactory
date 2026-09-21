@@ -4,6 +4,7 @@
 
 #let item = concept(
   key: "agent",
+  keyword: true,
     czech: "Agent",
   english: "Agent",
   citation: bib.wooldridge1995,

@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "prompt_engineering",
+  keyword: true,
   czech: "Promptové inženýrství",
   english: "Prompt Engineering",
   citation: bib.anthropic_prompt,

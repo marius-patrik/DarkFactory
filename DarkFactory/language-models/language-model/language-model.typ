@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "language_model",
+  keyword: true,
   industry: "LLM",
   czech: "Jazykový model",
   english: "Large Language Model",

@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "human_in_the_loop",
+  keyword: true,
   industry: "HITL",
   czech: "Zapojení člověka do smyčky",
   english: "Human-in-the-loop",

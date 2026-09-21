@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "guardrail",
+  keyword: true,
   industry: "Guardrail",
   czech: "Deterministický mantinel",
   english: "Deterministic Guardrail",

@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "agentic_engineering",
+  keyword: true,
   czech: "Agentické inženýrství",
   english: "Agentic Engineering",
   citation: bib.wang2024survey,

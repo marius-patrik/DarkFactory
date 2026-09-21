@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "version_control",
+  keyword: true,
   industry: "Version Control",
   czech: "Správa verzí",
   english: "Version Control",

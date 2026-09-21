@@ -188,6 +188,7 @@ for contract in (
     "czech: none",
     "english: none",
     "alias: none",
+    "keyword: false",
     "definition: none",
     "description: none",
     "examples: ()",
@@ -220,6 +221,7 @@ for contract in (
     'surface in ("full", "industry", "proper", "alias")',
     'assert(value.kind == "concept", message: "term() expects a concept")',
     '#let render-keywords(items) = context',
+    'items.filter(item => item.keyword)',
 ):
     if contract not in common:
         fail(f"concept-owned terminology surface is missing contract: {contract}")
@@ -248,6 +250,7 @@ if BOOK == "DarkFactory" and len(concept_files) < 45:
     fail(f"DarkFactory concept catalog is unexpectedly small: {len(concept_files)} concept files")
 
 concept_keys: list[str] = []
+keyword_keys: list[str] = []
 legacy_concept_fields = (
     "heading:",
     "document_enabled:",
@@ -292,9 +295,15 @@ for path in concept_files:
     if key is None:
         fail(f"concept file is missing stable key: {path}")
     concept_keys.append(key.group(1))
+    keyword = re.search(r"keyword:\s*(true|false)\b", source)
+    if keyword is not None:
+        if keyword.group(1) == "true":
+            keyword_keys.append(key.group(1))
 
 if len(concept_keys) != len(set(concept_keys)):
     fail("concept keys must be unique within a book")
+if BOOK == "DarkFactory" and not 5 <= len(keyword_keys) <= 20:
+    fail(f"DarkFactory keyword curation is unexpectedly sized: {len(keyword_keys)} keyword concepts")
 
 for path in all_book_typ:
     source = path.read_text(encoding="utf-8")

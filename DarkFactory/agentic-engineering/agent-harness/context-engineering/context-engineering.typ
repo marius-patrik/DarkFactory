@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "context_engineering",
+  keyword: true,
   czech: "Kontextové inženýrství",
   english: "Context Engineering",
   citation: bib.liu2024,

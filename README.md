@@ -25,12 +25,12 @@ Folder manifesty `index.typ` jsou jediným zdrojem sekční hierarchie. Každý 
 
 Kanonický katalog aktuální knihy začíná v `DarkFactory/index.typ`. Koncepty vlastní:
 - stabilní `key`,
-- kanonickou terminologii a volitelný alias,
+- kanonickou terminologii, volitelný alias a `keyword` příznak,
 - textová pole přesně `definition` a `description`,
 - zdrojová/citační metadata, `examples` a `attachments`,
 - semantic relations `dependency` a `related`.
 
-Section koncepty a přímé koncepty se vykreslují jako číslované sekce. Příklady zůstávají samostatnými konceptovými záznamy se svou terminologií, citacemi a obrazovými zdroji, ale vykreslují se přímo uvnitř rodičovského konceptu bez vlastního čísla sekce. Teoretická a praktická část jsou odvozeny z folderové struktury, nikoli z paralelních polí na jednotlivých konceptech.
+`keyword` má výchozí hodnotu `false`; pouze ručně vybrané hlavní pojmy používají `keyword: true` a zobrazují se v seznamu klíčových slov. Section koncepty a přímé koncepty se vykreslují jako číslované sekce. Příklady zůstávají samostatnými konceptovými záznamy se svou terminologií, citacemi a obrazovými zdroji, ale vykreslují se přímo uvnitř rodičovského konceptu bez vlastního čísla sekce. Teoretická a praktická část jsou odvozeny z folderové struktury, nikoli z paralelních polí na jednotlivých konceptech.
 
 ## Terminologie
 

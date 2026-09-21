@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "sandbox",
+  keyword: true,
   industry: "Sandbox",
   czech: "Izolované běhové prostředí",
   english: "Sandbox",

@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "agent_loop",
+  keyword: true,
   industry: "Agent Loop",
   czech: "Smyčka ReAct",
   english: "ReAct Loop",

@@ -12,6 +12,7 @@
   czech: none,
   english: none,
   alias: none,
+  keyword: false,
   citation: none,
   source: none,
   definition: none,
@@ -24,6 +25,7 @@
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(czech != none or english != none or industry != none, message: "concept requires canonical terminology")
+  assert(type(keyword) == bool, message: "concept keyword must be a boolean")
   assert(definition != none, message: "concept requires a definition")
   assert(description != none, message: "concept requires a description")
   (
@@ -33,6 +35,7 @@
     czech: czech,
     english: english,
     alias: alias,
+    keyword: keyword,
     citation: citation,
     source: source,
     definition: definition,

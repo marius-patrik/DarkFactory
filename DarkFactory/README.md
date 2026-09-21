@@ -12,6 +12,7 @@ The directory name, structural root key, and main book title are one identity. `
 - Section headings are derived from the section concept's canonical full term surface.
 - Section concepts and direct concepts render as numbered sections. Example concepts render inline inside their parent without a separate numbered heading.
 - The canonical prose fields are exactly `definition` and `description`; theory/practical/document projection fields and a separate concept summary field do not exist.
+- `keyword` defaults to `false`; only deliberately curated thesis-defining concepts set `keyword: true` and appear in the Keywords list.
 - The renderer never inserts generic `Úvod` subsections.
 - Semantic `dependency` and `related` relations never create containment.
 - Concept files own terminology and manuscript content. Example and attachment concepts also own their citations and any authoritative image source.

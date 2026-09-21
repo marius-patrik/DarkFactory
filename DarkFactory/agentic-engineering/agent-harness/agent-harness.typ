@@ -6,6 +6,7 @@
 
 #let item = concept(
   key: "harness",
+  keyword: true,
   industry: "Agent Harness",
   czech: "Agentní harness",
   english: "Agent Harness",
