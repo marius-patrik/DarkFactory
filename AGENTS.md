@@ -136,7 +136,8 @@ Practical describes verified DarkFactory implementation, not intended architectu
   - Vykonávací jádro a stav
     - Protocol (Protokol DarkFactory) [DarkFactory Protocol]
     - Run State (Stav běhu)
-    - Routing (Směrování)
+    - Model Routing (Směrování modelu)
+    - Supervisor (Dohled nad během) [Execution Supervisor]
     - Result Capture (Zachycení výsledku)
     - Recovery (Obnova běhu)
   - Systém capabilities
