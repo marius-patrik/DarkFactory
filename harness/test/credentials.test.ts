@@ -213,7 +213,7 @@ describe("FileCredentialStore", () => {
 		expect(await readFile(sourceFile, "utf8")).toBe(initialSourceContent);
 	});
 
-	test("borrowed accounts in an old store migrate to df-owned", async () => {
+	test("borrowed accounts preserve external ownership without rewriting persisted state", async () => {
 		const root = await temporaryHome();
 		const storePath = join(root, "credentials.df");
 		const oldStore = {
@@ -244,12 +244,14 @@ describe("FileCredentialStore", () => {
 		const store = new FileCredentialStore(root);
 		const account = await store.readAccount("borrowed:main");
 		expect(account).toBeDefined();
-		expect(account?.metadata?.ownership).toBe("df-owned");
-		expect(account?.metadata?.importedFrom).toBe("fixture");
+		expect(account?.metadata?.ownership).toBe("borrowed");
+		expect(account?.metadata?.importer).toBe("fixture");
+		expect(account?.metadata?.importedFrom).toBeUndefined();
 		expect(account?.slots.oauth).toMatchObject({ access: "tok-access", refresh: "tok-refresh" });
 
 		const diskFile = JSON.parse(await readFile(storePath, "utf8"));
-		expect(diskFile.accounts["borrowed:main"].metadata.ownership).toBe("df-owned");
+		expect(diskFile.accounts["borrowed:main"].metadata.ownership).toBe("borrowed");
+		expect(diskFile.accounts["borrowed:main"].metadata.importer).toBe("fixture");
 		expect(diskFile.accounts["borrowed:main"].slots.oauth.access).toBe("tok-access");
 	});
 
