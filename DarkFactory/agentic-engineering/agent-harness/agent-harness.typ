@@ -10,13 +10,13 @@
   industry: "Agent Harness",
   czech: "Agentní harness",
   english: "Agent Harness",
-  citation: (bib.anthropic2024tooluse, bib.deepseekharness2026),
-  source: bib.anthropic2024tooluse,
+  citation: (bib.anthropic_managed_agents, bib.anthropic_harness_design),
+  source: bib.anthropic_managed_agents,
   definition: terms => [
-Běhová a orchestrační vrstva, která propojuje jazykový model s nástroji, stavem a prostředím.
+Běhová a orchestrační vrstva, která propojuje jazykový model se stavem, nástroji a prostředím.
   ],
   description: terms => [
-Harness spravuje pracovní kontext, provádění nástrojů, stav běhu a podmínky pokračování nebo ukončení; opakované jednání koordinuje #term(terms.agent_loop). #cite(bib.anthropic2024tooluse)
+Harness řídí smyčku modelových volání a směruje nástrojové akce do příslušné infrastruktury; může současně spravovat pracovní kontext, stav běhu a podmínky pokračování nebo ukončení. #cite(bib.anthropic_managed_agents) Opakované jednání v této práci reprezentuje #term(terms.agent_loop).
   ],
   examples: (codex.item, claude_code.item, claude_desktop.item),
   relations: ((type: "dependency", target: "language_model"),),
