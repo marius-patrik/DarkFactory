@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "evaluation_limitations",
-  czech: "Omezení evaluace",
-  english: "Evaluation Limitations",
+  term: "Omezení evaluace",
   definition: terms => [
 Vymezení tvrzení, která nelze z architektonického, testovacího a integračního ověření spolehlivě odvodit.
   ],

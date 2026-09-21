@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "research_question_evaluation",
-  czech: "Odpovědi na výzkumné otázky",
-  english: "Research Question Answers",
+  term: "Odpovědi na výzkumné otázky",
   definition: terms => [
 Odpovědi na výzkumné otázky jsou omezeny na vlastnosti doložené implementací, automatickými testy, CI a dostupnými provozními artefakty.
   ],
