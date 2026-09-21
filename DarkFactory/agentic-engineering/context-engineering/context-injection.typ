@@ -8,10 +8,10 @@
   citation: bib.anthropic_context_engineering,
   source: bib.anthropic_context_engineering,
   definition: terms => [
-Cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok. #cite(bib.anthropic_context_engineering)
+V této práci označuje Context Injection cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok. #cite(bib.anthropic_context_engineering)
   ],
   description: terms => [
-Just-in-time přístup umožňuje udržovat v kontextu pouze odkazy nebo minimální stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
+Just-in-time přístup umožňuje mimo modelový kontext uchovávat odkazy nebo trvalý stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
   ],
-  relations: ((type: "dependency", target: "context_engineering"),),
+  relations: ((type: "dependency", target: "context_engineering"), (type: "related", target: "state")),
 )
