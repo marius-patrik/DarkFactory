@@ -57,6 +57,7 @@ async function resolveSlotValue(home: string, raw: string): Promise<string> {
 
 const FILE_VERSION = 2;
 const ACCOUNT_SEPARATOR = ":";
+const BORROWED_EXPIRY_SKEW_MS = 30_000;
 
 /** OAuth access/refresh credential slot managed by the keychain. */
 export type OAuthCredentialSlot = {
@@ -103,6 +104,25 @@ export interface AccountSummary {
 
 /** Fallback resolver for credentials not present in primary storage. */
 export type CredentialFallback = (provider: string, label: string) => Promise<Credential | undefined>;
+
+/** Refresh policy for credentials whose authoritative owner is an external CLI. */
+export type BorrowedRefreshMode = "reimport-only" | "never";
+
+/** Current credential material read from an authoritative borrowed source. */
+export interface BorrowedCredentialPlan {
+	credential: OAuthCredentialSlot;
+	mode: BorrowedRefreshMode;
+}
+
+/**
+ * Adapter for re-reading credentials owned by an external CLI.
+ *
+ * Implementations may inspect the source CLI's file/keyring, but DarkFactory
+ * never refreshes or writes that source through this interface.
+ */
+export interface BorrowedCredentialCoordinator {
+	prepare(account: AccountRecord, options?: AuthOperationOptions): Promise<BorrowedCredentialPlan>;
+}
 
 function throwIfAborted(options?: AuthOperationOptions): void {
 	options?.signal?.throwIfAborted();
@@ -277,6 +297,7 @@ export class FileCredentialStore {
 		home = defaultDfHome(),
 		private readonly fallback?: CredentialFallback,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
+		readonly borrowed?: BorrowedCredentialCoordinator,
 	) {
 		this.home = home;
 		this.path = join(home, "credentials.df");
@@ -285,22 +306,7 @@ export class FileCredentialStore {
 
 	private async load(): Promise<CredentialFile> {
 		try {
-			const parsed = parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
-			const migratedIds: string[] = [];
-			for (const account of Object.values(parsed.accounts)) {
-				if (account.metadata?.ownership === "borrowed") {
-					account.metadata.ownership = "df-owned";
-					if (account.metadata.importer && !account.metadata.importedFrom) {
-						account.metadata.importedFrom = account.metadata.importer;
-					}
-					migratedIds.push(account.id);
-				}
-			}
-			if (migratedIds.length > 0) {
-				console.error(`Notice: migrated borrowed accounts to df-owned in ${this.path}: ${migratedIds.join(", ")}`);
-				await this.save(parsed);
-			}
-			return parsed;
+			return parseFile(JSON.parse(await readFile(this.path, "utf8")) as unknown);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") return { version: FILE_VERSION, accounts: {} };
 			if (error instanceof SyntaxError) throw new Error("Invalid credentials file JSON");
@@ -439,6 +445,25 @@ export class FileCredentialStore {
 		throwIfAborted(options);
 		let account = await this.readAccount(accountId(provider, label), options);
 		if (account) account = await resolveAccountVaultSlots(this.home, account);
+		if (account?.metadata?.ownership === "borrowed") {
+			if (this.borrowed) {
+				const plan = await this.borrowed.prepare(account, options);
+				throwIfAborted(options);
+				if (plan.credential.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+					throw new Error(
+						`Borrowed account ${account.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+					);
+				}
+				return clone(plan.credential);
+			}
+			const storedBorrowed = toPiCredential(account);
+			if (storedBorrowed?.type === "oauth" && storedBorrowed.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+				throw new Error(
+					`Borrowed account ${account.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+				);
+			}
+			if (storedBorrowed) return storedBorrowed;
+		}
 		const stored = account ? toPiCredential(account) : undefined;
 		if (stored) return stored;
 		if (!this.fallback) return undefined;
@@ -477,12 +502,30 @@ export class AccountCredentialStore implements CredentialStore {
 		return credential ? [{ providerId: this.provider(), type: credential.type }] : [];
 	}
 
-	modify(
+	async modify(
 		providerId: string,
 		fn: (current: Credential | undefined) => Promise<Credential | undefined>,
 		options?: AuthOperationOptions,
 	): Promise<Credential | undefined> {
 		this.assertProvider(providerId);
+		const currentAccount = await this.store.readAccount(this.id, options);
+		if (currentAccount?.metadata?.ownership === "borrowed") {
+			if (this.store.borrowed) {
+				const plan = await this.store.borrowed.prepare(currentAccount, options);
+				if (plan.credential.expires <= Date.now() + BORROWED_EXPIRY_SKEW_MS) {
+					throw new Error(
+						`Borrowed account ${currentAccount.id} is expired; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+					);
+				}
+				return clone(plan.credential);
+			}
+			const stored = toPiCredential(currentAccount);
+			if (stored?.type === "oauth" && stored.expires > Date.now() + BORROWED_EXPIRY_SKEW_MS) return stored;
+			throw new Error(
+				`Borrowed account ${currentAccount.id} cannot be refreshed by DarkFactory; refresh it in the source CLI and re-import, or use df login for a df-owned account`,
+			);
+		}
+
 		return this.store
 			.modifyAccount(
 				this.id,
