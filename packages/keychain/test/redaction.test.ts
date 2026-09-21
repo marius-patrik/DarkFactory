@@ -72,7 +72,8 @@ describe("@darkfactory/keychain browser isolation", () => {
 		for (const path of await sourceFiles(webRoot)) {
 			const content = await readFile(path, "utf8");
 			expect(content).not.toContain("@darkfactory/keychain");
-			expect(content).not.toMatch(/packages\\/keychain|\\.\\.\\/keychain/);
+			expect(content).not.toContain("packages/keychain");
+			expect(content).not.toContain("../keychain");
 		}
 	});
 });
