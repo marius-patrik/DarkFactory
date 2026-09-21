@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "context_rot",
+  industry: "Context Rot",
   czech: "Degradace kontextu",
   english: "Context Rot",
   citation: bib.liu2024,
