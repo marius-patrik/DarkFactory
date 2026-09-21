@@ -1,5 +1,5 @@
 import type { GitHubRepository } from "../github/repository.ts";
-import type { PushMap, Vault } from "./vault.ts";
+import type { PushMap, Vault } from "@darkfactory/keychain";
 
 export interface PushResult {
 	name: string;
