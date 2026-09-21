@@ -24,16 +24,14 @@
 #let overview = folder(
   key: "darkfactory_architecture_overview",
   title: [Celková architektura],
-  concepts: (
-    darkfactory.item,
-    protocol.item,
-  ),
+  concepts: (darkfactory.item,),
 )
 
 #let execution_engine = folder(
   key: "darkfactory_execution_engine",
-  title: [Vykonávací jádro],
+  title: [Vykonávací jádro a stav],
   concepts: (
+    protocol.item,
     run_state.item,
     routing.item,
     result_capture.item,
