@@ -9,7 +9,7 @@
   citation: (bib.owasp_prompt_injection, bib.openai_prompt_injection),
   source: bib.owasp_prompt_injection,
   definition: terms => [
-Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext.
+Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext. #cite(bib.owasp_prompt_injection)
   ],
   description: terms => [
 Přímá prompt injection pochází přímo z uživatelského vstupu; nepřímá injection může být skryta například ve webové stránce, e-mailu, dokumentu, repozitáři nebo zdroji RAG. Takový obsah může ovlivnit rozhodování agenta, přestože měl sloužit pouze jako data. #cite(bib.owasp_prompt_injection) #cite(bib.openai_prompt_injection)
