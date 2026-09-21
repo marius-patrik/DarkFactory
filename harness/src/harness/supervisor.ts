@@ -1,13 +1,13 @@
 import type { AssistantMessage, StopReason, Usage } from "@earendil-works/pi-ai";
 import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
 import type { z } from "zod";
-import { captureContext, forceCaptureTool, readCapture } from "../../../packages/core/src/result-capture.ts";
+import { captureContext, forceCaptureTool, readCapture } from "@darkfactory/core/result-capture";
 import {
 	type CaptureAttempt,
 	CaptureError,
 	captureJsonSchema,
 	type ExtractedJudgement,
-} from "../../../packages/protocol/src/result-capture.ts";
+} from "@darkfactory/protocol/result-capture";
 import type { Candidate } from "../failover.ts";
 import { LimitLedger } from "../limits/ledger.ts";
 import { defaultLimit, observeAnswer, observeLimits } from "../limits/observe.ts";
