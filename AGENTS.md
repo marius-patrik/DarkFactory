@@ -112,7 +112,7 @@ Numbered groups and concepts:
   - Compaction (Kompakce kontextu) [Context Compaction]
   - RAG (Generování rozšířené vyhledáváním) [Retrieval-Augmented Generation]
 - **Cílené vykonávání**
-  - Goal Loops (Cílené smyčky)
+  - Loops (Cílené smyčky) [Goal Loops]
   - Guardrail (Deterministický mantinel) [Deterministic Guardrail]
   - HITL (Zapojení člověka do smyčky) [Human-in-the-loop]
 - **Multi-Agent Systems**
@@ -120,9 +120,9 @@ Numbered groups and concepts:
   - Orchestrator (Orchestrátor)
   - Handoff (Předání řízení)
   - Swarm (Roj)
-  - Workflow Graphs (Pracovní grafy)
+  - Graphs (Pracovní grafy) [Workflow Graphs]
 
-Workflow Graphs may use a DAG, but DAG remains a general Software Engineering concept. Subagent belongs to Multi-Agent Systems, not Harness.
+Graphs (Workflow Graphs) may use a DAG, but DAG remains a general Software Engineering concept. Subagent belongs to Multi-Agent Systems, not Harness.
 
 ## Canonical practical structure
 
