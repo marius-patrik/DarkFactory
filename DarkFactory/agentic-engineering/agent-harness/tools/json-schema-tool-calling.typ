@@ -14,5 +14,5 @@ Popis parametrů nástroje pomocí JSON Schema, podle kterého lze validovat str
   description: terms => [
 Schéma určuje například povinná pole, datové typy a další omezení; structured-output mechanismy mohou generování argumentů omezit tak, aby zadanému schématu odpovídaly. #cite(bib.openai_structured_outputs)
   ],
-  relations: ((type: "dependency", target: "tools"),),
+  relations: ((type: "parent", target: "tools"),),
 )
