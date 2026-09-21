@@ -256,6 +256,29 @@ for path in section_files:
     source = path.read_text(encoding="utf-8")
     require_contract(source, ("key:", "title:", "definition:", "description:"), f"section {path}")
 
+references_typ_path = ROOT / "bib/references.typ"
+references_bib_path = ROOT / "bib/references.bib"
+references_typ = require_file(references_typ_path)
+references_bib = require_file(references_bib_path)
+reference_handles = re.findall(r'#let\s+([A-Za-z0-9_]+)\s*=\s*<([^>]+)>', references_typ)
+bib_keys = set(re.findall(r'@[A-Za-z]+\{([^,]+),', references_bib))
+exposed_bib_keys = {key for _, key in reference_handles}
+missing_handles = sorted(bib_keys - exposed_bib_keys)
+if missing_handles:
+    fail("bibliography entries missing references.typ handles: " + ", ".join(missing_handles))
+
+bibliography_usage = "\n".join(
+    path.read_text(encoding="utf-8")
+    for path in all_book_typ
+    if path != references_typ_path
+)
+unused_handles = sorted(
+    handle for handle, _ in reference_handles
+    if f"bib.{handle}" not in bibliography_usage
+)
+if unused_handles:
+    fail("unused bibliography handles: " + ", ".join(unused_handles))
+
 concept_keys: list[str] = []
 keyword_keys: list[str] = []
 for path in concept_files:
