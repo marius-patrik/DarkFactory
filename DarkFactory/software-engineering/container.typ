@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -6,13 +6,13 @@
   industry: "Container",
   czech: "Softwarový kontejner",
   english: "Software Container",
-  citation: bib.merkel2014docker,
-  source: bib.merkel2014docker,
+  citation: bib.docker_containers_docs,
+  source: bib.docker_containers_docs,
   definition: terms => [
-Izolované uživatelské běhové prostředí, které balí aplikaci a její závislosti při sdílení jádra hostitelského operačního systému.
+Izolovaný proces s vlastním uživatelským prostředím a soubory potřebnými pro běh aplikace, který sdílí jádro hostitelského operačního systému. #cite(bib.docker_containers_docs)
   ],
-  description: terms => [#finalized[
-V CI poskytuje kontejner opakovatelné prostředí s deklarovanými nástroji a závislostmi, ale sám o sobě nezaručuje úplnou bezpečnostní izolaci.
-  ]],
-  relations: (),
+  description: terms => [
+Kontejner umožňuje balit aplikaci a její závislosti do přenositelného běhového prostředí, ale neposkytuje stejnou izolační hranici jako samostatný virtuální stroj. #cite(bib.docker_containers_docs)
+  ],
+  relations: ((type: "related", target: "runtime"),),
 )
