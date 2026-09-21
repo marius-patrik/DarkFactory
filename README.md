@@ -6,24 +6,31 @@ Repozitář obsahuje konceptově řízený Typst rukopis, publikační šablony,
 
 ## Rukopis
 
-Kanonická struktura začíná v `DarkFactory/index.typ`. Folder manifesty `index.typ` jsou jediným zdrojem hierarchie.
+Kanonická struktura začíná v `DarkFactory/index.typ`. Folder manifesty `index.typ` jsou jediným zdrojem dokumentové hierarchie.
+
+Struktura rozlišuje dvě vrstvy:
+
+- **sekce** — foldery, které organizují argument práce; renderují se číslovaně a jsou v obsahu;
+- **koncepty** — termíny a mechanismy; renderují se nečíslovaně a jsou rovněž v obsahu.
 
 Hlavní struktura:
 
 1. Úvod
 2. Teoretická část
    - Software Engineering
-   - LLM
+   - Model
    - Harness
    - Agentic Engineering
-     - Harness Engineering
 3. Praktická část
    - Úvod
-   - Architektura DarkFactory
+   - Návrh systému DarkFactory
+   - Životní cyklus požadavku
    - Výsledky a diskuse
 4. Závěr
 
-Koncept vlastní svůj stabilní klíč, terminologii, definici, popis, citace, příklady a semantic relations. Plný termín vede oborovým termínem, následuje český název v závorkách a odlišný anglický název v hranatých závorkách.
+Theory používá grouping sections pro AI-asistovaný vývoj, řízení změn, verifikaci, modelový kontext, stav a runtime harnessu, kontextové techniky, cílené smyčky a multi-agentní systémy.
+
+Kanonický koncept vlastní stabilní klíč, terminologii, definici, popis, citace, příklady a semantic relations. Plný název konceptu vede ustáleným industry termem, následuje odlišný český název v závorkách a odlišný anglický formální název v hranatých závorkách. Bez samostatného industry termu vede český název.
 
 ## Publikace
 
@@ -48,11 +55,11 @@ make site BOOK=DarkFactory
 | Cesta | Účel |
 | --- | --- |
 | `DarkFactory/index.typ` | strukturální root a název práce |
-| `DarkFactory/schema.typ` | concept/folder/relation/render model |
+| `DarkFactory/schema.typ` | section/concept/folder/relation/render model |
 | `DarkFactory/manuscript/` | dokumentová struktura, praktická část a výsledky |
 | `DarkFactory/software-engineering/` | Software Engineering |
-| `DarkFactory/language-models/` | LLM a související koncepty |
-| `DarkFactory/agentic-engineering/` | Harness, Agentic Engineering a Harness Engineering |
+| `DarkFactory/language-models/` | Model a modelové koncepty |
+| `DarkFactory/agentic-engineering/` | Harness a Agentic Engineering |
 | `DarkFactory/bib/` | bibliografie |
 | `DarkFactory/img/` | obrázky |
 | `DarkFactory/templates/` | Typst semantics a layouty |
@@ -60,4 +67,4 @@ make site BOOK=DarkFactory
 | `scripts/` | build/export/site validace |
 | `darkfactory/` | praktický DarkFactory submodule |
 
-Pravidla pro budoucí agentské úpravy jsou v `AGENTS.md`.
+`AGENTS.md` obsahuje trvalá pravidla. `PLAN.md` obsahuje pouze konečný postup dokončení práce.
