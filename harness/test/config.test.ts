@@ -2,8 +2,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { FileCredentialStore } from "@darkfactory/keychain";
+import { loadDfConfig, localCredentialFallback } from "../src/config.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 
 const LOCAL_CHAIN = "google/gemini-3.8-flash@default,groq/openai/gpt-oss-120b@default";

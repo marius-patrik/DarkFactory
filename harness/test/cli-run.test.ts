@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { redactToolInput } from "../src/cli.ts";
 import { FileCredentialStore } from "@darkfactory/keychain";
+import { redactToolInput } from "../src/cli.ts";
 
 const temporary: string[] = [];
 
