@@ -11,7 +11,7 @@
 Převod požadavku na explicitní kroky, závislosti a podmínky ověření před prováděním změn. #cite(bib.sommerville2016)
   ],
   description: terms => [
-Plán rozděluje práci na kontrolovatelné části a určuje, podle jakých podmínek lze posoudit jejich dokončení. #cite(bib.sommerville2016)
+Plán rozděluje práci na kontrolovatelné části a určuje, podle jakých podmínek lze posoudit jejich dokončení. Závislosti mezi částmi práce lze reprezentovat například pomocí DAG. #cite(bib.sommerville2016)
   ],
-  relations: (),
+  relations: ((type: "related", target: "dag"),),
 )
