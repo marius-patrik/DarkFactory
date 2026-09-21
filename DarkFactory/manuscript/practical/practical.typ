@@ -1,13 +1,12 @@
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "practical",
-  czech: "Praktická část",
-  english: "Practical Part",
+  title: [Praktická část],
   definition: terms => [
 Aplikace teoretických principů na konkrétní systém DarkFactory.
   ],
   description: terms => [
-Praktická část popisuje ověřenou architekturu DarkFactory a hodnotí doložitelné vlastnosti výsledného řešení.
+Praktická část popisuje ověřenou architekturu DarkFactory, životní cyklus požadavku a doložitelné výsledky implementace.
   ],
 )
