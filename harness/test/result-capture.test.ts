@@ -12,7 +12,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { z } from "zod";
 import type { Candidate } from "../src/failover.ts";
-import { CAPTURE_TOOL_NAME } from "../src/harness/capture-request.ts";
+
 import {
 	alignmentResultSchema,
 	CaptureError,
@@ -20,7 +20,8 @@ import {
 	extractJudgementResult,
 	planningResultSchema,
 	reviewResultSchema,
-} from "../src/harness/result-capture.ts";
+	CAPTURE_TOOL_NAME,
+} from "@darkfactory/core";
 import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
 import { runGit } from "../src/workspace/git.ts";
 
