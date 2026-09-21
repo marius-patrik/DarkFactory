@@ -2,8 +2,8 @@
 
 #let item = concept(
   key: "theory",
-  czech: "Teoretická část: Agentic AI and Agentic Engineering",
-  english: "Theory: Agentic AI and Agentic Engineering",
+  czech: "Teoretická část",
+  english: "Theory",
   definition: terms => [
 Vymezení konceptů potřebných pro pochopení současného agentního vývoje softwaru.
   ],
