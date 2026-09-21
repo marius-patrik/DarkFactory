@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./oauth": "./src/oauth.ts",
     "./login": "./src/login.ts",
+    "./vault-store": "./src/vault-store.ts",
     "./import/reader": "./src/import/reader.ts",
     "./import/shared": "./src/import/shared.ts",
     "./import/keyring": "./src/import/keyring.ts",
