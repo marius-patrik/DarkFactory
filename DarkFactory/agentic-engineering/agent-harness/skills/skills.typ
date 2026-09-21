@@ -16,5 +16,5 @@ Znovupoužitelný balíček instrukcí a volitelných zdrojů, který se načít
 Agent Skill je definován souborem `SKILL.md` a může odkazovat na doplňující skripty, reference nebo další zdroje načítané podle potřeby. #cite(bib.agent_skills_spec)
   ],
   examples: (skill_md_format.item,),
-  relations: ((type: "dependency", target: "tools"),),
+  relations: ((type: "dependency", target: "harness"), (type: "related", target: "plugins")),
 )
