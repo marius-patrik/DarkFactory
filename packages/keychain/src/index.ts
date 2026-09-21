@@ -7,3 +7,4 @@ export * from "./os-keychain.ts";
 export * from "./github-app.ts";
 export * from "./vault.ts";
 export * from "./vault-crypto.ts";
+export * from "./redaction.ts";
