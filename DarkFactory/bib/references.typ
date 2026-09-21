@@ -68,6 +68,12 @@
 #let owasp_llm01_prompt_injection = <owasp-llm01-prompt-injection>
 #let darkfactory_e9c10221 = <darkfactory-e9c10221>
 #let darkfactory_ci_35616745304 = <darkfactory-ci-35616745304>
+#let omnis_a53660a1 = <omnis-a53660a1>
+#let omnis_ci_34708160162 = <omnis-ci-34708160162>
+#let chesswithquests_50a50797 = <chesswithquests-50a50797>
+#let chesswithquests_ci_34708180783 = <chesswithquests-ci-34708180783>
+#let template_odbornaprace_repo = <template-odbornaprace-repo>
+#let odbornaprace_mono_repo = <odbornaprace-mono-repo>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -137,4 +143,10 @@
   owasp_llm01_prompt_injection: owasp_llm01_prompt_injection,
   darkfactory_e9c10221: darkfactory_e9c10221,
   darkfactory_ci_35616745304: darkfactory_ci_35616745304,
+  omnis_a53660a1: omnis_a53660a1,
+  omnis_ci_34708160162: omnis_ci_34708160162,
+  chesswithquests_50a50797: chesswithquests_50a50797,
+  chesswithquests_ci_34708180783: chesswithquests_ci_34708180783,
+  template_odbornaprace_repo: template_odbornaprace_repo,
+  odbornaprace_mono_repo: odbornaprace_mono_repo,
 )
