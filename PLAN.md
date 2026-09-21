@@ -132,7 +132,7 @@ Do not write final answers yet. Replace unsupported answer-like prose with expli
 
 ## Phase 4 — Final theory rewrite pass
 
-**Status: in progress.**
+**Status: complete; theory structure, concept boundaries, citations, and prose have been aligned to the final taxonomy.**
 
 **Purpose:** rewrite the now-stable, sourced theory as one coherent argument.
 
@@ -164,6 +164,8 @@ Focus transitions on the conceptual backbone:
 - Theory is ready to stand independently of DarkFactory.
 
 ## Phase 5 — Practical evidence map and architecture writing
+
+**Status: in progress.**
 
 **Purpose:** write Practical from the implementation outward.
 
