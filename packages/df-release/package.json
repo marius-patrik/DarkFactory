@@ -1,0 +1,1 @@
+{"name":"@darkfactory/df","version":"1.0.0","main":"dist/index.js","types":"dist/index.d.ts","scripts":{"build":"tsc","test":"bun test"},"publishConfig":{"access":"public","registry":"https://registry.npmjs.org"}}

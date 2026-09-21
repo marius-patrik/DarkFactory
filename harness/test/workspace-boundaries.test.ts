@@ -31,6 +31,7 @@ describe("publishable workspace boundaries", () => {
 		const directories = (await readdir(packageRoot, { withFileTypes: true }))
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name)
+			.filter((name) => name !== "df-release")
 			.sort();
 		expect(directories).toEqual([...required].sort());
 

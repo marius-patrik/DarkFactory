@@ -3,8 +3,6 @@
     "code": 429,
     "message": "Gemini weekly quota exhausted",
     "status": "RESOURCE_EXHAUSTED",
-    "details": [
-      { "quotaId": "gemini-weekly", "retryDelay": "3600s" }
-    ]
+    "details": [{ "quotaId": "gemini-weekly", "retryDelay": "3600s" }]
   }
 }

@@ -31,7 +31,7 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; ex
 	temporary.push(home);
 	await writeFile(join(home, "providers.df"), JSON.stringify({ version: 1, providers: [provider] }), "utf8");
 	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "models", "--provider", provider.id, ...args], {
-		cwd: process.cwd(),
+		cwd: join(import.meta.dir, ".."),
 		env: {
 			DF_HOME: home,
 			DF_OFFLINE: "1",
@@ -102,7 +102,7 @@ describe("df models", () => {
 			"utf8",
 		);
 		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "models", "--provider", provider.id, "--stale"], {
-			cwd: process.cwd(),
+			cwd: join(import.meta.dir, ".."),
 			env: {
 				DF_HOME: home,
 				DF_OFFLINE: "1",

@@ -27,7 +27,10 @@ function compileRule(value: string): Rule {
 	const kind = (match?.[1] ?? "any") as RuleKind;
 	const raw = match?.[2] ?? value;
 	if (!raw) throw new Error("Policy rules cannot be empty");
-	const source = raw.split("*").map((part) => part.replace(/[\\^$+?.()|[\]{}]/g, "\\$&")).join(".*");
+	const source = raw
+		.split("*")
+		.map((part) => part.replace(/[\\^$+?.()|[\]{}]/g, "\\$&"))
+		.join(".*");
 	return { kind, raw: value, pattern: new RegExp(`^${source}$`, "iu") };
 }
 
@@ -52,11 +55,14 @@ function canonicalPath(path: string): string {
 }
 
 function matches(rules: readonly Rule[], kind: Exclude<RuleKind, "any">, values: readonly string[]): boolean {
-	return rules.some((rule) => (rule.kind === "any" || rule.kind === kind) && values.some((value) => rule.pattern.test(value)));
+	return rules.some(
+		(rule) => (rule.kind === "any" || rule.kind === kind) && values.some((value) => rule.pattern.test(value)),
+	);
 }
 
 function suspiciousCommandPaths(command: string): string[] {
-	const tokens = command.match(/(?:[A-Za-z]:[\\/][^\s"']+|~(?:[\\/][^\s"']*)?|\.\.[\\/][^\s"']*|\/(?:[^\s"']+))/gu) ?? [];
+	const tokens =
+		command.match(/(?:[A-Za-z]:[\\/][^\s"']+|~(?:[\\/][^\s"']*)?|\.\.[\\/][^\s"']*|\/(?:[^\s"']+))/gu) ?? [];
 	return tokens.map((token) => token.replace(/[;,|&]+$/u, ""));
 }
 
@@ -79,18 +85,26 @@ export class ToolPolicy {
 		if (event.toolName === "bash" || event.toolName === "powershell") {
 			const command = typeof input.command === "string" ? input.command : "";
 			const values = [command, `${event.toolName}:${command}`];
-			if (matches(this.deny, "command", values)) return { allowed: false, reason: `Command denied by policy: ${command}` };
+			if (matches(this.deny, "command", values))
+				return { allowed: false, reason: `Command denied by policy: ${command}` };
 			const commandAllow = this.allow.filter((rule) => rule.kind === "command" || rule.kind === "any");
 			if (commandAllow.length > 0 && !matches(commandAllow, "command", values)) {
 				return { allowed: false, reason: "Command is not included by --allow policy" };
 			}
-			if (/(?:^|[\s;&|])(?:cd|pushd)\s+(?:["']?(?:\.\.|~|\/|[A-Za-z]:)|\\\.\.)|\$(?:\{)?HOME(?:\})?|%USERPROFILE%/iu.test(command) &&
-				!matches(this.allow, "command", values)) {
+			if (
+				/(?:^|[\s;&|])(?:cd|pushd)\s+(?:["']?(?:\.\.|~|\/|[A-Za-z]:)|\\\.\.)|\$(?:\{)?HOME(?:\})?|%USERPROFILE%/iu.test(
+					command,
+				) &&
+				!matches(this.allow, "command", values)
+			) {
 				return { allowed: false, reason: "Command may escape the workspace" };
 			}
 			for (const token of suspiciousCommandPaths(command)) {
 				const normalized = token.startsWith("~") ? token : resolve(this.cwd, token);
-				if ((token.startsWith("~") || !inside(this.cwd, normalized)) && !matches(this.allow, "path", [token, normalized])) {
+				if (
+					(token.startsWith("~") || !inside(this.cwd, normalized)) &&
+					!matches(this.allow, "path", [token, normalized])
+				) {
 					return { allowed: false, reason: `Command path escapes workspace: ${token}` };
 				}
 			}
@@ -101,7 +115,14 @@ export class ToolPolicy {
 			const raw = typeof input.path === "string" ? input.path : this.cwd;
 			const absolute = resolve(this.cwd, raw);
 			const canonical = canonicalPath(absolute);
-			const values = [raw, absolute, canonical, `${event.toolName}:${raw}`, `${event.toolName}:${absolute}`, `${event.toolName}:${canonical}`];
+			const values = [
+				raw,
+				absolute,
+				canonical,
+				`${event.toolName}:${raw}`,
+				`${event.toolName}:${absolute}`,
+				`${event.toolName}:${canonical}`,
+			];
 			if (matches(this.deny, "path", values)) return { allowed: false, reason: `Path denied by policy: ${raw}` };
 			if (!inside(this.canonicalCwd, canonical) && !matches(this.allow, "path", values)) {
 				return { allowed: false, reason: `Path escapes workspace: ${raw}` };

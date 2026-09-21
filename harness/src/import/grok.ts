@@ -55,12 +55,21 @@ export async function findGrokEntries(options: GrokFindOptions): Promise<Importe
  * refresh flow need a refresh token (device login rotates it), so a login without
  * one is rejected rather than imported in a state that cannot self-heal.
  */
-export async function importGrokAccount(store: FileCredentialStore, label: string, homeReader: HomeReader, provider: string): Promise<void> {
+export async function importGrokAccount(
+	store: FileCredentialStore,
+	label: string,
+	homeReader: HomeReader,
+	provider: string,
+): Promise<void> {
 	const entries = await findGrokEntries({ homeReader });
 	if (entries.length === 0) throw new Error("No Grok CLI login was found in ~/.grok/auth.json");
 	const entry = entries[0]!;
-	if (!entry.refreshToken) throw new Error("Grok CLI login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account");
-	if (!entry.expiresAt || !Number.isFinite(entry.expiresAt)) throw new Error("Grok CLI login has no valid access token expiry");
+	if (!entry.refreshToken)
+		throw new Error(
+			"Grok CLI login has no refresh token; it cannot self-heal and cannot be imported as an OAuth account",
+		);
+	if (!entry.expiresAt || !Number.isFinite(entry.expiresAt))
+		throw new Error("Grok CLI login has no valid access token expiry");
 	const accessToken = entry.accessToken;
 	const refreshToken = entry.refreshToken;
 	const expiresAt = entry.expiresAt;
@@ -71,7 +80,8 @@ export async function importGrokAccount(store: FileCredentialStore, label: strin
 		label,
 		metadata: {
 			...(current?.metadata ?? {}),
-			ownership: "df-owned", sync: "machine-only",
+			ownership: "df-owned",
+			sync: "machine-only",
 			importedFrom: "grok",
 			...(entry.email ? { account: entry.email } : {}),
 			issuer: entry.issuer,

@@ -23,7 +23,7 @@ async function run(
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
 	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "run", "--faux", "--json", ...args, prompt], {
-		cwd: process.cwd(),
+		cwd: join(import.meta.dir, ".."),
 		env: {
 			DF_HOME: home,
 			DF_FAUX: "1",
@@ -60,7 +60,7 @@ describe("df run", () => {
 		);
 		const invoke = async (...command: string[]) => {
 			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...command], {
-				cwd: process.cwd(),
+				cwd: join(import.meta.dir, ".."),
 				env: {
 					DF_HOME: home,
 					DF_FAUX: "1",
@@ -150,7 +150,7 @@ describe("df run", () => {
 		}
 		const invoke = async (...args: string[]) => {
 			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...args], {
-				cwd: process.cwd(),
+				cwd: join(import.meta.dir, ".."),
 				env: { DF_HOME: home, PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows" },
 				stdout: "pipe",
 				stderr: "pipe",
@@ -371,7 +371,7 @@ describe("df run", () => {
 		};
 		await writeFile(join(home, "providers.df"), JSON.stringify(providersConfig), "utf8");
 		const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "providers"], {
-			cwd: process.cwd(),
+			cwd: join(import.meta.dir, ".."),
 			env: { DF_HOME: home, PATH: process.env.PATH ?? "" },
 			stdout: "pipe",
 			stderr: "pipe",

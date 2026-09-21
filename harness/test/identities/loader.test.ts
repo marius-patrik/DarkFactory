@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadIdentities, validateIdentities, IdentitiesValidationError } from "../../src/identities/index.ts";
+import { IdentitiesValidationError, loadIdentities, validateIdentities } from "../../src/identities/index.ts";
 
 describe("validateIdentities", () => {
 	it("validates a complete and valid identities manifest", () => {
@@ -156,9 +156,7 @@ describe("loadIdentities", () => {
 	});
 
 	it("throws IdentitiesValidationError when manifest file does not exist", async () => {
-		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(
-			IdentitiesValidationError,
-		);
+		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(IdentitiesValidationError);
 	});
 
 	it("throws IdentitiesValidationError when manifest JSON is invalid", async () => {

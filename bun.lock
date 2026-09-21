@@ -4,7 +4,6 @@
   "workspaces": {
     "": {
       "name": "darkfactory-workspace",
-      "version": "0.0.0",
     },
     "capabilities/code": {
       "name": "@darkfactory/capability-code",
@@ -51,6 +50,7 @@
         "@darkfactory/capability": "workspace:*",
         "@darkfactory/core": "workspace:*",
         "@darkfactory/keychain": "workspace:*",
+        "@darkfactory/protocol": "workspace:*",
         "@earendil-works/pi-agent-core": "0.85.1",
         "@earendil-works/pi-ai": "0.85.1",
         "@earendil-works/pi-coding-agent": "0.85.1",
@@ -228,9 +228,13 @@
 
     "@darkfactory/capability-code": ["@darkfactory/capability-code@workspace:capabilities/code"],
 
+    "@darkfactory/capability-hooks": ["@darkfactory/capability-hooks@workspace:capabilities/hooks"],
+
     "@darkfactory/capability-math": ["@darkfactory/capability-math@workspace:capabilities/math"],
 
     "@darkfactory/capability-paper": ["@darkfactory/capability-paper@workspace:capabilities/paper"],
+
+    "@darkfactory/capability-release": ["@darkfactory/capability-release@workspace:capabilities/release"],
 
     "@darkfactory/cli": ["@darkfactory/cli@workspace:packages/cli"],
 
@@ -424,6 +428,8 @@
 
     "chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
+    "commander": ["commander@15.0.0", "", {}, "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg=="],
+
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
     "csstype": ["csstype@3.2.3", "", {}, "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="],
@@ -475,8 +481,6 @@
     "isexe": ["isexe@2.0.0", "", {}, "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="],
 
     "jiti": ["jiti@2.7.0", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ=="],
-
-    "commander": ["commander@15.0.0", "", {}, "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg=="],
 
     "jose": ["jose@6.1.0", "", {}, "sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA=="],
 

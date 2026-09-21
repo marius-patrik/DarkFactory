@@ -3,8 +3,18 @@ import { executableChainFor } from "../src/cli.ts";
 import type { RankedCandidate } from "../src/router/types.ts";
 
 const candidate = (provider: string, model: string) => ({ provider, model, account: "plskynech" });
-const ranked = (status: RankedCandidate["status"], provider: string, model: string, reason: string): RankedCandidate => ({
-	candidate: candidate(provider, model), rank: 0, status, reason, score: 0, details: [],
+const ranked = (
+	status: RankedCandidate["status"],
+	provider: string,
+	model: string,
+	reason: string,
+): RankedCandidate => ({
+	candidate: candidate(provider, model),
+	rank: 0,
+	status,
+	reason,
+	score: 0,
+	details: [],
 });
 
 test("limit-skipped candidates follow the chosen chain so the run can wait for them", () => {
