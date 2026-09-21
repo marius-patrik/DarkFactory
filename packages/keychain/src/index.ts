@@ -12,3 +12,5 @@ export * from "./external-keyring.ts";
 export * from "./external-source.ts";
 export * from "./diagnostics.ts";
 export * from "./transfer.ts";
+export * from "./oauth.ts";
+export * from "./login.ts";
