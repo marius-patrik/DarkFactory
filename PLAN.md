@@ -303,6 +303,8 @@ Interpret results without introducing unsupported superiority claims.
 
 ## Phase 7 — Alignment pass B
 
+**Status: partially complete; introduction, conclusion, title metadata, annotation, abstract, goals/questions, and evidence boundaries are aligned to current Results. Final closure is blocked only by evidence that would materially change the final answers, especially the live df-only lifecycle.**
+
 **Purpose:** make the framing and sourcing exactly match the finished thesis.
 
 ### Citation pass B
