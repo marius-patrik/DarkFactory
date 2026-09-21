@@ -3,13 +3,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { OAuthCredential } from "@earendil-works/pi-ai";
 import { FileCredentialStore } from "../src/credentials.ts";
-import { importAntigravityAccount } from "../src/import/antigravity.ts";
-import { importClaudeAccount } from "../src/import/claude.ts";
-import { importCodexAccount } from "../src/import/codex.ts";
-import { importGrokAccount } from "../src/import/grok.ts";
-import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "../src/import/keyring.ts";
-import { importKimiAccount } from "../src/import/kimi.ts";
-import type { HomeReader } from "../src/import/reader.ts";
+import { importAntigravityAccount } from "@darkfactory/keychain/import/antigravity";
+import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
+import { importGrokAccount } from "@darkfactory/keychain/import/grok";
+import { CLAUDE_CREDENTIALS_SERVICE_PREFIX, type ClaudeKeyring } from "@darkfactory/keychain/import/keyring";
+import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
+import type { HomeReader } from "@darkfactory/keychain/import/reader";
 
 const roots: string[] = [];
 
