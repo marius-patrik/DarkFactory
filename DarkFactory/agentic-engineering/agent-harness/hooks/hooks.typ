@@ -14,5 +14,5 @@ Konfigurované reakce spouštěné při určených událostech životního cyklu
   description: terms => [
 Hook může před nebo po vybrané události spustit deterministickou logiku, například validaci, příkaz nebo jinou automatizaci. #cite(bib.claude_code_hooks)
   ],
-  relations: ((type: "dependency", target: "tools"),),
+  relations: ((type: "dependency", target: "plugins"),),
 )
