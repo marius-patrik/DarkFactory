@@ -1,26 +1,35 @@
 #import "/DarkFactory/schema.typ": folder
 #import "/DarkFactory/manuscript/results/results.typ" as section
+#import "/DarkFactory/manuscript/results/evaluation-method.typ" as method_section
+#import "/DarkFactory/manuscript/results/technical-results.typ" as technical_results_section
+#import "/DarkFactory/manuscript/results/end-to-end-evaluation.typ" as end_to_end_section
+#import "/DarkFactory/manuscript/results/target-repository-evaluation.typ" as target_repositories_section
+#import "/DarkFactory/manuscript/results/discussion.typ" as discussion_section
 #import "/DarkFactory/manuscript/results/research-question-evaluation.typ" as questions
 #import "/DarkFactory/manuscript/results/evaluation-limitations.typ" as limitations
 
 #let method = folder(
   key: "evaluation_method",
   title: [Metoda ověření],
+  section: method_section.item,
 )
 
 #let technical_results = folder(
   key: "technical_results",
   title: [Technické výsledky],
+  section: technical_results_section.item,
 )
 
 #let end_to_end = folder(
   key: "end_to_end_evaluation",
   title: [End-to-end ověření],
+  section: end_to_end_section.item,
 )
 
 #let target_repositories = folder(
   key: "target_repository_evaluation",
   title: [Ověření na cílových repozitářích],
+  section: target_repositories_section.item,
 )
 
 #let goal_evaluation = folder(
@@ -38,6 +47,7 @@
 #let discussion = folder(
   key: "results_discussion_section",
   title: [Diskuse],
+  section: discussion_section.item,
 )
 
 #let node = folder(
