@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import type { RecoveryIntakeRecord } from "@darkfactory/protocol/recovery";
+import type { RecoveryIntakeRecord, RecoverySourceIdentity } from "@darkfactory/protocol/recovery";
 import {
 	assertRecoveryCleanupTruth,
 	assertRecoveryPublicationAllowed,
 	evaluateRecoveryCleanup,
 	evaluateRecoveryPlanningFreshness,
+	fingerprintRecoverySource,
 	validateRecoveryIntakeForLifecycle,
 	validateRecoveryIntakeRecord,
 } from "../src/recovery.ts";
@@ -13,20 +14,23 @@ const SHA_A = "a".repeat(40);
 const SHA_B = "b".repeat(40);
 const SHA_C = "c".repeat(40);
 
+const SOURCE: RecoverySourceIdentity = {
+	id: "source:F14",
+	kind: "branch",
+	originalRef: "recovery/f14-borrowed-refresh",
+	originalHead: SHA_A,
+	recoveryRef: "recovery/f14-borrowed-refresh",
+	recoverySha: SHA_A,
+	canonicalBaseSha: SHA_B,
+};
+const SOURCE_FINGERPRINT = fingerprintRecoverySource(SOURCE);
+
 function record(overrides: Partial<RecoveryIntakeRecord> = {}): RecoveryIntakeRecord {
 	return {
 		version: 1,
 		id: "recovery:F14",
-		sourceFingerprint: "source:f14:exact",
-		source: {
-			id: "source:F14",
-			kind: "branch",
-			originalRef: "recovery/f14-borrowed-refresh",
-			originalHead: SHA_A,
-			recoveryRef: "recovery/f14-borrowed-refresh",
-			recoverySha: SHA_A,
-			canonicalBaseSha: SHA_B,
-		},
+		sourceFingerprint: SOURCE_FINGERPRINT,
+		source: SOURCE,
 		binding: { request: 422, requestVersion: "v7" },
 		safety: {
 			status: "safe",
@@ -64,6 +68,11 @@ describe("recovery provenance contract", () => {
 		expect(() => validateRecoveryIntakeRecord(candidate)).toThrow("branch recovery requires originalRef");
 	});
 
+	test("rejects a forged source fingerprint that does not match exact provenance", () => {
+		const forged = record({ sourceFingerprint: "f".repeat(64) });
+		expect(() => validateRecoveryIntakeRecord(forged)).toThrow("Recovery source fingerprint mismatch");
+	});
+
 	test("requires approved Planning to match Request, base and exact imported source", () => {
 		const approved = record({
 			planning: {
@@ -71,7 +80,7 @@ describe("recovery provenance contract", () => {
 				contextFingerprint: "planning:approved",
 				approvedRequestVersion: "v7",
 				approvedBaseSha: SHA_B,
-				approvedSourceFingerprint: "source:f14:exact",
+				approvedSourceFingerprint: SOURCE_FINGERPRINT,
 			},
 			lifecycle: "reconciling",
 		});
@@ -80,7 +89,7 @@ describe("recovery provenance contract", () => {
 			evaluateRecoveryPlanningFreshness(approved, {
 				requestVersion: "v7",
 				baseSha: SHA_B,
-				sourceFingerprint: "source:f14:exact",
+				sourceFingerprint: SOURCE_FINGERPRINT,
 			}),
 		).toEqual({ valid: true, reasons: [] });
 
@@ -88,7 +97,7 @@ describe("recovery provenance contract", () => {
 			evaluateRecoveryPlanningFreshness(approved, {
 				requestVersion: "v8",
 				baseSha: SHA_C,
-				sourceFingerprint: "source:f14:changed",
+				sourceFingerprint: "d".repeat(64),
 			}),
 		).toEqual({
 			valid: false,
