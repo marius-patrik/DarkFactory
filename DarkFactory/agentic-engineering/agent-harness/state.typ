@@ -9,7 +9,7 @@
   citation: bib.anthropic_managed_agents,
   source: bib.anthropic_managed_agents,
   definition: terms => [
-Persistovaná reprezentace skutečností a řídicích údajů, které musí harness zachovat mezi jednotlivými kroky běhu.
+Persistovaná reprezentace skutečností a řídicích údajů, které musí harness zachovat mezi jednotlivými kroky běhu. #cite(bib.anthropic_managed_agents)
   ],
   description: terms => [
 Stav je odlišný od transcriptu i aktivního kontextu: nemusí obsahovat úplnou historii a nemusí být v každém kroku celý předán modelu. #cite(bib.anthropic_managed_agents)
