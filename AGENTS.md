@@ -15,7 +15,7 @@ The document hierarchy and the semantic concept graph are different structures.
 - A **concept is a semantic leaf**. Every rendered concept has an unnumbered heading and also appears in the contents.
 - Numbering is determined by structural role, never by heading depth.
 - Grouping sections exist to make the argument readable; they do not need to invent a new concept.
-- Semantic relations describe conceptual dependency/relationship and must not be inferred from folder nesting.
+- Semantic relations describe conceptual dependency/relationship and must not be inferred from folder nesting. Supported relation types are `dependency`, `related`, `parent`, and `child`; use `parent`/`child` for semantic ownership or composition rather than misusing `dependency`.
 - Do not create a numbered subsection merely because a term is important. If it is a term/mechanism rather than a grouping, it is a concept.
 
 ## Canonical theory structure
@@ -29,8 +29,10 @@ Numbered groups and concepts:
 - **AI-asistovaný vývoj**
   - Vibe Coding
   - Slop
+- **Specifikace a plánování**
   - Spec-Driven Development (Vývoj řízený specifikací)
   - Planning (Plánování)
+  - DAG (Orientovaný acyklický graf) [Directed Acyclic Graph]
 - **Řízení změn**
   - Version Control (Správa verzí)
   - Branch (Větev)
@@ -38,8 +40,6 @@ Numbered groups and concepts:
 - **Ověřování a integrace**
   - CI (Průběžná integrace) [Continuous Integration]
   - Integration Test (Integrační test)
-- **Modelování pracovních postupů**
-  - DAG (Orientovaný acyklický graf) [Directed Acyclic Graph]
 - **Běhová prostředí**
   - Runtime (Běhové prostředí)
   - Container (Softwarový kontejner) [Software Container]
@@ -58,7 +58,7 @@ Numbered groups and concepts:
 - **Inferenční kontext**
   - Context Window (Kontextové okno)
   - KV Cache (Mezipaměť klíčů a hodnot) [Key–Value Cache]
-- **Selhání modelu**
+- **Limity modelu**
   - Context Rot (Degradace kontextu)
   - Divergence (Divergence modelu) [Model Divergence]
 
@@ -105,13 +105,13 @@ Numbered groups and concepts:
 - **Instrukce modelu**
   - Prompt Engineering (Promptové inženýrství)
   - System Prompt (Systémový prompt)
-- **Kontext**
+- **Kontextové mechanismy**
   - Context Engineering (Kontextové inženýrství)
   - Context Injection (Vkládání kontextu)
   - Prompt Injection
   - Compaction (Kompakce kontextu) [Context Compaction]
   - RAG (Generování rozšířené vyhledáváním) [Retrieval-Augmented Generation]
-- **Cílené vykonávání**
+- **Řízení provádění**
   - Loops (Cílené smyčky) [Goal Loops]
   - Guardrail (Deterministický mantinel) [Deterministic Guardrail]
   - HITL (Zapojení člověka do smyčky) [Human-in-the-loop]
@@ -133,8 +133,8 @@ Practical describes verified DarkFactory implementation, not intended architectu
   - Cíle návrhu
   - Celková architektura
     - DarkFactory
+  - Vykonávací jádro a stav
     - Protocol (Protokol DarkFactory) [DarkFactory Protocol]
-  - Vykonávací jádro
     - Run State (Stav běhu)
     - Routing (Směrování)
     - Result Capture (Zachycení výsledku)
@@ -161,7 +161,8 @@ Practical describes verified DarkFactory implementation, not intended architectu
   - Implementace
   - Ověření a revize
     - Deterministic Verification (Deterministické ověření)
-  - Integrace
+  - Finalizace a integrace
+    - Final Alignment (Finální kontrola souladu)
     - Reconciliation (Rekonciliace stavu) [State Reconciliation]
   - Obnova a pokračování
 - **Výsledky a diskuse**
