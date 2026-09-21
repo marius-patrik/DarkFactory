@@ -4,7 +4,7 @@
 #let item = concept(
   key: "prompt_injection",
   industry: "Prompt Injection",
-  czech: "Prompt injection",
+  czech: "Prompt Injection",
   english: "Prompt Injection",
   citation: (bib.owasp_prompt_injection, bib.owasp_llm01_prompt_injection, bib.openai_prompt_injection),
   source: bib.owasp_llm01_prompt_injection,
