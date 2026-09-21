@@ -1,17 +1,17 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
   key: "github_actions",
-  industry: "Actions",
+  industry: "GitHub Actions",
   czech: "GitHub Actions",
-  citation: bib.kinsman2021actions,
-  source: bib.kinsman2021actions,
+  citation: bib.github_actions_docs,
+  source: bib.github_actions_docs,
   definition: terms => [
-Automatizační platforma GitHubu pro spouštění deklarovaných workflow a jejich jobů v reakci na události repozitáře nebo ruční spuštění.
+Automatizační platforma GitHubu, která spouští workflow složená z jobů a kroků v reakci na události, plán nebo ruční spuštění. #cite(bib.github_actions_docs)
   ],
-  description: terms => [#finalized[
-V DarkFactory GitHub Actions spouští CI kontroly a další automatizované procesy repozitáře.
-  ]],
-  relations: ((type: "related", target: "github"),),
+  description: terms => [
+Workflow jsou verzované YAML soubory v repozitáři a mohou automatizovat build, testování i nasazení. #cite(bib.github_actions_docs)
+  ],
+  relations: ((type: "related", target: "github"), (type: "related", target: "continuous_integration")),
 )
