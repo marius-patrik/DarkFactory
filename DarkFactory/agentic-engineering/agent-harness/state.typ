@@ -14,5 +14,5 @@ Persistovaná reprezentace skutečností a řídicích údajů, které musí har
   description: terms => [
 Stav je odlišný od transcriptu i aktivního kontextu: nemusí obsahovat úplnou historii a nemusí být v každém kroku celý předán modelu. #cite(bib.anthropic_managed_agents)
   ],
-  relations: ((type: "dependency", target: "agent_session"), (type: "related", target: "transcript"), (type: "related", target: "context_engineering")),
+  relations: ((type: "parent", target: "agent_session"), (type: "related", target: "transcript"), (type: "related", target: "context_engineering")),
 )
