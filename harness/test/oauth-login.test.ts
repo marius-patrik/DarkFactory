@@ -92,10 +92,12 @@ describe("df-managed OAuth", () => {
 				access: "access-a",
 				refresh: "refresh-a",
 			});
-			expect((await store.readAccount(`${provider.id}:acct-a`))?.metadata).toMatchObject({
+			const account = await store.readAccount(`${provider.id}:acct-a`);
+			expect(account?.metadata).toMatchObject({
 				ownership: "df-owned",
 				sync: "machine-only",
 			});
+			expect(account?.auth).toEqual({ scopes: ["openid", "offline_access"] });
 		} finally {
 			server.stop(true);
 		}
