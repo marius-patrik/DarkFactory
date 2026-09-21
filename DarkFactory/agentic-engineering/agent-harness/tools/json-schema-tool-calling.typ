@@ -9,10 +9,10 @@
   citation: (bib.json_schema_2020, bib.openai_structured_outputs),
   source: bib.openai_structured_outputs,
   definition: terms => [
-Formální popis parametrů nástroje pomocí JSON Schema s ověřením, že vygenerované argumenty před provedením odpovídají očekávané struktuře.
+Popis parametrů nástroje pomocí JSON Schema, podle kterého lze validovat strukturu vygenerovaných argumentů. #cite(bib.json_schema_2020)
   ],
   description: terms => [
-Schéma určuje povinná pole, datové typy a další omezení vstupu; rozhraní modelu může zároveň omezit generování argumentů tak, aby schématu odpovídaly. #cite(bib.json_schema_2020) #cite(bib.openai_structured_outputs)
+Schéma určuje například povinná pole, datové typy a další omezení; structured-output mechanismy mohou generování argumentů omezit tak, aby zadanému schématu odpovídaly. #cite(bib.openai_structured_outputs)
   ],
   relations: ((type: "dependency", target: "tools"),),
 )
