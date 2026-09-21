@@ -418,6 +418,13 @@ if BOOK == "DarkFactory":
             'title: [Finalizace a integrace]',
             'title: [Obnova a pokračování]',
         ),
+        ROOT / "manuscript/appendices/index.typ": (
+            "manuscript/appendices/encyclopedia/index.typ",
+        ),
+        ROOT / "manuscript/appendices/encyclopedia/index.typ": (
+            "encyclopedia.typ",
+            "Encyklopedie a rejstřík pojmů",
+        ),
         ROOT / "manuscript/results/index.typ": (
             'title: [Metoda ověření]',
             'title: [Technické výsledky]',
@@ -444,6 +451,8 @@ if BOOK == "DarkFactory":
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
+        ROOT / "manuscript/appendices/encyclopedia/index.typ",
+        ROOT / "manuscript/appendices/encyclopedia/encyclopedia.typ",
         ROOT / "software-engineering/branch.typ",
         ROOT / "software-engineering/pull-request.typ",
         ROOT / "software-engineering/dag.typ",
