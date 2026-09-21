@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "goal_loops",
-  industry: "Loops",
-  czech: "Cílené smyčky",
-  english: "Goal Loops",
+  term: "Cílené smyčky",
+  keyword: "Goal Loops",
   citation: (bib.yao2022, bib.anthropic2024tooluse),
   source: bib.anthropic2024tooluse,
   definition: terms => [

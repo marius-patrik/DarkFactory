@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "compaction",
-  industry: "Compaction",
-  czech: "Kompakce kontextu",
-  english: "Context Compaction",
+  term: "Kompakce kontextu",
+  keyword: "Context Compaction",
   citation: (bib.anthropic_context_engineering, bib.jiang2023llmlingua),
   source: bib.anthropic_context_engineering,
   definition: terms => [

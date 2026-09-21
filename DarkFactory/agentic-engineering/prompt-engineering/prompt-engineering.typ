@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "prompt_engineering",
-  keyword: true,
-  industry: "Prompt Engineering",
-  czech: "Promptové inženýrství",
-  english: "Prompt Engineering",
+  term: "Promptové inženýrství",
+  keyword: "Prompt Engineering",
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
   definition: terms => [

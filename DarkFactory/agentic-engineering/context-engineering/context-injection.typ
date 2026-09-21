@@ -3,8 +3,8 @@
 
 #let item = concept(
   key: "context_injection",
-  industry: "Context Injection",
-  czech: "Vkládání kontextu",
+  term: "Vkládání kontextu",
+  keyword: "Context Injection",
   citation: bib.anthropic_context_engineering,
   source: bib.anthropic_context_engineering,
   definition: terms => [

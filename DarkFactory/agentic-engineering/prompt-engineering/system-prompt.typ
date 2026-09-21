@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "system_prompt",
-  industry: "System Prompt",
-  czech: "Systémový prompt",
-  english: "System Prompt",
+  term: "Systémový prompt",
+  keyword: "System Prompt",
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
   definition: terms => [

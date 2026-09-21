@@ -3,10 +3,7 @@
 
 #let item = concept(
   key: "guardrail",
-  keyword: true,
-  industry: "Guardrail",
-  czech: "Deterministický mantinel",
-  english: "Deterministic Guardrail",
+  keyword: "Guardrail",
   citation: bib.openai_agents_guardrails,
   source: bib.openai_agents_guardrails,
   definition: terms => [

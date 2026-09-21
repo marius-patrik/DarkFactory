@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "human_in_the_loop",
-  keyword: true,
-  industry: "HITL",
-  czech: "Zapojení člověka do smyčky",
-  english: "Human-in-the-loop",
+  term: "Člověk ve smyčce",
+  keyword: "HITL",
   citation: bib.mosqueira2023human,
   source: bib.mosqueira2023human,
   definition: terms => [

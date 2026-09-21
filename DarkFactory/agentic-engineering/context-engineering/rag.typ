@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "rag",
-  industry: "RAG",
-  czech: "Generování rozšířené vyhledáváním",
-  english: "Retrieval-Augmented Generation",
+  keyword: "RAG",
   citation: bib.lewis2020rag,
   source: bib.lewis2020rag,
   definition: terms => [
