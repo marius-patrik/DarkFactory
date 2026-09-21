@@ -177,6 +177,21 @@
     assert(progressed, message: "dependency cycle in concept graph")
   }
 
+  let owned = ()
+  let ownership-remaining = keys
+  while ownership-remaining.len() > 0 {
+    let progressed = false
+    for key in ownership-remaining {
+      if parents.at(key).all(parent => parent in owned or not parent in ownership-remaining) {
+        owned.push(key)
+        ownership-remaining = ownership-remaining.filter(candidate => candidate != key)
+        progressed = true
+        break
+      }
+    }
+    assert(progressed, message: "parent/child cycle in concept graph")
+  }
+
   (dependencies: dependencies, related: related, parents: parents, children: children)
 }
 
