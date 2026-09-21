@@ -9,10 +9,14 @@
     "./workflow": "./src/workflow.ts",
     "./planning": "./src/planning.ts",
     "./review": "./src/review.ts",
-    "./quota": "./src/quota.ts"
+    "./quota": "./src/quota.ts",
+    "./result-capture": "./src/result-capture.ts"
   },
   "files": [
     "src"
   ],
-  "license": "GPL-3.0"
+  "license": "GPL-3.0",
+  "dependencies": {
+    "zod": "4.1.5"
+  }
 }

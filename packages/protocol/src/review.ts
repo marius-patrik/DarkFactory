@@ -53,3 +53,5 @@ export type ReviewNodeConfig =
 			artifact: string;
 			findings: string;
 	  };
+
+export { reviewFindingSchema, reviewResultSchema } from "./result-capture.ts";
