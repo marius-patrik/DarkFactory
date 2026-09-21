@@ -1,10 +1,9 @@
 #import "/DarkFactory/templates/common.typ": critique
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "darkfactory_architecture",
-  czech: "Architektura DarkFactory",
-  english: "DarkFactory Architecture",
+  title: [Návrh systému DarkFactory],
   definition: terms => [
 Konkrétní uspořádání komponent agentního harnessu do jednoho vývojového systému.
   ],
@@ -13,5 +12,4 @@ Spojuje modelovou, stavovou, nástrojovou a kontrolní vrstvu do řízeného tok
 
 #critique[Tato část zatím popisuje architekturu pouze obecně. Před finalizací doplnit skutečné komponenty DarkFactory, jejich rozhraní, tok stavu a ověřené vazby na implementaci; nevymýšlet je pouze z návrhového záměru.]
   ],
-  relations: (),
 )
