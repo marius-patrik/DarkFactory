@@ -28,13 +28,13 @@ import {
 	RunTimeoutError,
 } from "./harness/supervisor.ts";
 import { runDoctorIdentities } from "./identities/index.ts";
-import { importAntigravityAccount, OsKeyringAdapter } from "./import/antigravity.ts";
-import { importClaudeAccount } from "./import/claude.ts";
-import { importCodexAccount } from "./import/codex.ts";
-import { importGrokAccount } from "./import/grok.ts";
-import { OsClaudeKeyringAdapter } from "./import/keyring.ts";
-import { importKimiAccount } from "./import/kimi.ts";
-import { OsHomeReader } from "./import/reader.ts";
+import { importAntigravityAccount, OsKeyringAdapter } from "@darkfactory/keychain/import/antigravity";
+import { importClaudeAccount } from "@darkfactory/keychain/import/claude";
+import { importCodexAccount } from "@darkfactory/keychain/import/codex";
+import { importGrokAccount } from "@darkfactory/keychain/import/grok";
+import { OsClaudeKeyringAdapter } from "@darkfactory/keychain/import/keyring";
+import { importKimiAccount } from "@darkfactory/keychain/import/kimi";
+import { OsHomeReader } from "@darkfactory/keychain/import/reader";
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
