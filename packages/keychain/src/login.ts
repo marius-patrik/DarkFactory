@@ -16,7 +16,7 @@ export interface LoginHydrationConfig {
 }
 
 /** Minimal auth-bearing provider shape needed by machine login custody. */
-export interface LoginLoginProviderConfig {
+export interface LoginProviderConfig {
 	id: string;
 	baseUrl: string;
 	auth: Array<{ kind: string }>;
