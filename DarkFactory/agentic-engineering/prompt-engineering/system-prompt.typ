@@ -3,15 +3,16 @@
 
 #let item = concept(
   key: "system_prompt",
+  industry: "System Prompt",
   czech: "Systémový prompt",
   english: "System Prompt",
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
   definition: terms => [
-Instrukční vrstva s vysokou prioritou, která vymezuje roli a základní pravidla chování modelu nebo agenta.
+Systémová instrukční vrstva, která vymezuje roli, pravidla a výchozí způsob chování modelu nebo agenta.
   ],
   description: terms => [
-V harnessu tvoří stabilní instrukční základ pro práci s kontextem a nástroji, nikoli technickou bezpečnostní hranici.
+Systémový prompt poskytuje stabilní instrukční kontext, ale sám o sobě není technickou izolační ani autorizační hranicí. #cite(bib.anthropic_prompt)
   ],
   relations: ((type: "dependency", target: "prompt_engineering"),),
 )
