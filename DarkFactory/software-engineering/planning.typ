@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "planning",
+  industry: "Planning",
   czech: "Plánování",
   english: "Planning",
   citation: bib.sommerville2016,
