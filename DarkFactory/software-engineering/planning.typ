@@ -8,10 +8,10 @@
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [
-Proces převodu požadavku na explicitní posloupnost kroků, závislostí a ověřovacích podmínek před prováděním změn.
+Převod požadavku na explicitní kroky, závislosti a podmínky ověření před prováděním změn.
   ],
   description: terms => [
-V agentním vývoji plán před změnami určuje kontrolovatelné kroky a podmínky, podle nichž se ověří splnění zadání.
+Plán rozděluje práci na kontrolovatelné části a určuje, podle jakých podmínek lze posoudit jejich dokončení. #cite(bib.sommerville2016)
   ],
   relations: (),
 )
