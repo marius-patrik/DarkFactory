@@ -1,3 +1,4 @@
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -5,11 +6,13 @@
   industry: "Transcript",
   czech: "Přepis",
   english: "Transcript",
+  citation: bib.openai_agents_sessions,
+  source: bib.openai_agents_sessions,
   definition: terms => [
-Uspořádaný záznam zpráv, tahů, volání nástrojů, jejich výsledků a dalších událostí vzniklých během agentního sezení.
+Uspořádaný záznam položek vzniklých během session, například zpráv, tahů a výsledků nástrojů.
   ],
   description: terms => [
-Slouží k rekonstrukci průběhu sezení, auditu a výběru informací, které se mají znovu vložit do aktivního kontextu.
+Persistovaná historie umožňuje rekonstruovat předchozí průběh a vybírat informace pro pokračování dalšího běhu. #cite(bib.openai_agents_sessions)
   ],
   relations: ((type: "dependency", target: "agent_session"), (type: "related", target: "context_engineering")),
 )
