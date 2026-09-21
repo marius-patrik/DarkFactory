@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type CommandRunner, deleteVaultKey, loadVaultKey, storeVaultKey } from "../../src/secrets/keychain.ts";
+import { type CommandRunner, deleteVaultKey, loadVaultKey, storeVaultKey } from "@darkfactory/keychain";
 
 describe("Keychain with Injected Command Runner", () => {
 	test("stores and loads macOS key via injected runner without touching real keychain", async () => {
