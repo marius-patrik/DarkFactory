@@ -123,6 +123,7 @@ required_sources = (
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
+    Path("web/src/compiled-artifact.tsx"),
     Path("web/src/pdf-document.tsx"),
     Path("web/src/workspace.tsx"),
     Path("web/src/settings.ts"),
