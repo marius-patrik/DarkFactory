@@ -73,20 +73,26 @@ Shipped final ownership:
 
 Current state:
 
-- the active PR remains draft and its last completed head CI/docs are green;
-- prior fabricated/swallowed success paths have been narrowed/removed;
-- durable production handler ownership is still under deletion-bound `harness/src/graph/production-handlers.ts`, so the Request is not terminal.
+- #894 is refreshed on current canonical state and the stale pre-#329 capture implementation has been removed;
+- graph planner/executor/review/planning/check/validation mechanisms now have final `@darkfactory/core/graph` ownership;
+- final core production handlers use the shipped #329 result-capture contract and injected repository/GitHub/quota/board effects;
+- the deletion-bound `harness/src/graph/production-handlers.ts` owner and its harness test suite are removed;
+- protocol/core now persist ingress identity, internal continuation state and pending external actions;
+- deterministic external mutations use an evidence-backed effect journal keyed by durable run/event/node/iteration/effect identity;
+- retries reconcile prior effect evidence and fail closed on missing or mismatched evidence;
+- package-level tests prove effect reuse, pending-action crash recovery, ingress dedupe and branch-update push-SHA truth;
+- the complete pre-refresh #894 CI/docs/binding wave is green, and the branch has been conflict-free refreshed on merged #422.
 
 Remaining work:
 
-1. consume the merged #329 result contract directly;
-2. move durable graph production mechanisms into final core/protocol/capability owners;
-3. inject workspace/GitHub/quota effects instead of importing deletion-bound implementations into core;
-4. source Planning/review/alignment from real routed contracts and repository state;
-5. prove persisted effect identity, exactly-once external-event resume and fail-closed effect outcomes;
-6. remove the superseded harness production-handler owner and complete semantic review/alignment.
+1. implement the concrete `ProductionGraphEffects` adapters in final existing owners, not under deletion-bound harness ownership;
+2. wire `df graph dispatch` / normal production dispatch to call `runGraph` with those adapters instead of only planning/printing commands;
+3. use final deterministic workspace/git primitives for worktree/commit/update/push and final `@darkfactory/github` Node ownership for PR/comment/merge/issue effects;
+4. connect real quota-resume and board-sync effects to their existing final owners;
+5. run aggregate verification plus a crash/retry E2E proving no duplicated external effects;
+6. complete semantic review/alignment and merge.
 
-Do not create another transitional orchestration layer while waiting for #329.
+No compatibility orchestration layer or second effect/state backend may be added.
 
 #### #317 → PR #899 — truthful mutation evidence and branch repair
 
@@ -109,23 +115,13 @@ Do not make #317 wait for all of #384. Move only the mechanism required by #317 
 
 ### Independent credential lane
 
-#### #422 → PR #931 — final machine credential custody
+#### #422 — COMPLETE
 
-`@darkfactory/keychain` is the only machine/harness credential owner.
+PR #931 merged as `437364d5050e80ac5955ac9e86cf959fea3c1937`.
 
-The active PR carries the final machine-credential convergence: borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence.
+`@darkfactory/keychain` is the only machine/harness credential owner. The merged implementation owns borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence. F14 has terminal disposition and its recovery ref is deleted; deletion-bound machine credential/secret custody facades are removed.
 
-F14 has terminal disposition under #422, its recovery ref is deleted, and deletion-bound machine credential/secret custody facades have been removed in favor of direct `@darkfactory/keychain` consumption.
-
-Current validation: PR #931 head `b11e411` has green CI, docs preview, bound-issue verification, board automation and formatting.
-
-Remaining work:
-
-1. semantically refresh/rebase #931 onto current canonical `darkfactory` after #891 without reintroducing deleted compatibility owners;
-2. retain the green browser/private-key isolation boundary;
-3. complete semantic review/alignment and merge.
-
-#248 consumes #422 rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
+#248 consumes this shipped keychain mechanism rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
 
 ### Active hook recovery lane
 
@@ -313,9 +309,8 @@ After #361 is green, rerun the declarable-graph product contract and close #68 o
 
 Highest-downstream-value work, in order:
 
-1. **#358 / #894:** refresh on shipped #329, move production orchestration to final owners, prove real persisted exactly-once resume, review/alignment, merge.
-2. **#422 / #931 in parallel:** F14/facade cleanup is complete and checks are green; semantically refresh onto current canonical, complete final review/alignment and merge.
-3. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
+1. **#358 / #894:** finish concrete final-owner effect adapters and real dispatch execution on the now-shipped core graph/effect journal, prove crash/retry E2E, review/alignment, merge.
+2. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
 4. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #358/#317.
 5. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
 6. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
