@@ -60,6 +60,8 @@
 #let openai_prompt_injection = <openai-prompt-injection>
 #let openai_agent_orchestration = <openai-agent-orchestration>
 #let autogen_swarm = <autogen-swarm>
+#let networkx_dag = <networkx-dag>
+#let oci_runtime_spec = <oci-runtime-spec>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -121,4 +123,6 @@
   openai_prompt_injection: openai_prompt_injection,
   openai_agent_orchestration: openai_agent_orchestration,
   autogen_swarm: autogen_swarm,
+  networkx_dag: networkx_dag,
+  oci_runtime_spec: oci_runtime_spec,
 )
