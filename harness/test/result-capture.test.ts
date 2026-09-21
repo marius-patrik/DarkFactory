@@ -22,7 +22,18 @@ import {
 import { z } from "zod";
 import type { Candidate } from "../src/failover.ts";
 import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
+import { changedFiles } from "../src/workspace/changedFiles.ts";
+import { commitChunk } from "../src/workspace/commitChunk.ts";
 import { runGit } from "../src/workspace/git.ts";
+import { runDetectedVerification } from "../src/workspace/runVerify.ts";
+import { scopeCheck } from "../src/workspace/scopeCheck.ts";
+
+const workspaceOperations = {
+	changedFiles,
+	scopeCheck,
+	runDetectedVerification,
+	commitChunk,
+};
 
 describe("result-capture: judgement prose extraction and failover", () => {
 	const sampleSchema = z.object({
@@ -235,6 +246,7 @@ describe("result-capture: code-node truth from observed workspace evidence", () 
 		writeFileSync(join(testRepo, "feature.ts"), "export const x = 1;\n");
 		const result = await captureCodeResult({
 			worktree: testRepo,
+			workspace: workspaceOperations,
 			allowedPatterns: ["**/*.ts"],
 			commitMessage: "feat: add feature file",
 			identity: { name: "Agent Bot", email: "bot@example.com" },
@@ -250,6 +262,7 @@ describe("result-capture: code-node truth from observed workspace evidence", () 
 		writeFileSync(join(testRepo, "unexpected.txt"), "rogue change\n");
 		const result = await captureCodeResult({
 			worktree: testRepo,
+			workspace: workspaceOperations,
 			allowedPatterns: ["src/**/*.ts"],
 		});
 
@@ -262,6 +275,7 @@ describe("result-capture: code-node truth from observed workspace evidence", () 
 		writeFileSync(join(testRepo, "src.ts"), "code\n");
 		const result = await captureCodeResult({
 			worktree: testRepo,
+			workspace: workspaceOperations,
 			allowedPatterns: ["**/*.ts"],
 			requiredTests: ["test/required.test.ts"],
 		});
