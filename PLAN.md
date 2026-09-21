@@ -16,7 +16,7 @@ Deliver a submission-ready Czech thesis and publication set in which:
 
 ## Phase 1 — Lock structure and concept model
 
-**Status: structure applied; static relation audit clean; publication/build verification pending.**
+**Status: complete; structure applied, static relation audit clean, and DarkFactory-Paper CI/Deploy/Release verified green on snapshot 5bc04974.**
 
 ### Work
 
@@ -165,7 +165,7 @@ Focus transitions on the conceptual backbone:
 
 ## Phase 5 — Practical evidence map and architecture writing
 
-**Status: in progress.**
+**Status: substantially complete; architecture and governed Request lifecycle are written from current DarkFactory code/PRD evidence. Remaining work is final traceability/figure polish and any implementation changes discovered before submission.**
 
 **Purpose:** write Practical from the implementation outward.
 
@@ -255,6 +255,8 @@ Ground each stage in code/workflow evidence:
 - Package names support architectural explanations rather than replacing them.
 
 ## Phase 6 — Results and evaluation
+
+**Status: in progress; technical CI/test evidence and active target-repository evidence are written. The remaining blocking evidence is one live df-only Request lifecycle covering approval through merge/reconciliation, plus any final fleet acceptance desired beyond the active repositories.**
 
 ### Build the evidence set
 
