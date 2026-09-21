@@ -23,6 +23,7 @@ Deliver a submission-ready Czech thesis and publication set in which:
 - Use folders as numbered structural sections.
 - Render semantic concepts as unnumbered, outlined headings that remain visible in the contents.
 - Keep semantic relations separate from document nesting.
+- Use `dependency`, `related`, `parent`, and `child` explicitly; do not encode semantic ownership through folder nesting.
 - Finalize the theory groups:
   - Software Engineering
   - Model
@@ -187,13 +188,13 @@ Inspect the current DarkFactory repository and submodule snapshot for:
 
 #### Celková architektura
 - DarkFactory;
-- Protocol;
 - architecture diagram;
 - responsibility boundaries;
 - data/control flow;
 - durable versus transient state.
 
-#### Vykonávací jádro
+#### Vykonávací jádro a stav
+- Protocol;
 - Run State;
 - Routing;
 - Result Capture;
@@ -235,7 +236,7 @@ Ground each stage in code/workflow evidence:
 2. Plánování a schválení — Planning + Review/Fix Loop
 3. Implementace
 4. Ověření a revize — Deterministic Verification
-5. Integrace — Reconciliation
+5. Finalizace a integrace — Final Alignment + Reconciliation
 6. Obnova a pokračování — reuse the Recovery mechanism defined in architecture
 
 ### Exit criteria
