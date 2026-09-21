@@ -8,7 +8,7 @@
 Harness Engineering je návrh, implementace a provoz běhové vrstvy, která propojuje jazykový model s nástroji, stavem a kontrolními mechanismy.
   ],
   description: terms => [
-V praktické části určuje, jak jsou tyto mechanismy spojeny do implementovatelného a ověřitelného systému.
+Určuje, jak jsou model, nástroje, stav a kontrolní mechanismy spojeny do implementovatelného a ověřitelného agentního systému.
   ],
   relations: ((type: "dependency", target: "agentic_engineering"),),
 )

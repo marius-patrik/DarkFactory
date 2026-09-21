@@ -287,18 +287,17 @@
   let lead-raw = str(lead)
   let cs-raw = if value.czech != none { str(value.czech) } else { none }
   let en-raw = if value.english != none { str(value.english) } else { none }
-  [
-    #lead
-    #if value.czech != none and cs-raw != lead-raw {
-      [#text(" (")#text(lang: "cs")[#value.czech]#text(")")]
-    }
-    #if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
-      [#text(" [")#text(lang: "en")[#value.english]#text("]")]
-    }
-    #if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
-      [#text(" [")#value.alias#text("]")]
-    }
-  ]
+  let output = [#lead]
+  if value.czech != none and cs-raw != lead-raw {
+    output += [#text(" (")#text(lang: "cs")[#value.czech]#text(")")]
+  }
+  if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
+    output += [#text(" [")#text(lang: "en")[#value.english]#text("]")]
+  }
+  if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
+    output += [#text(" [")#value.alias#text("]")]
+  }
+  output
 }
 
 #let term-name(value, surface: "full", language: "auto") = {

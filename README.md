@@ -119,8 +119,8 @@ Aktuální shell používá:
 | `DarkFactory/manuscript/` | document-level struktura |
 | `DarkFactory/development-environment/` | doménové koncepty |
 | `DarkFactory/language-models/` | koncepty jazykového modelu |
-| `DarkFactory/agentic-ai/` | agentní systémy a jejich runtime/harness koncepty |
-| `DarkFactory/agentic-engineering/` | návrhové a řídicí koncepty agentického inženýrství |
+| `DarkFactory/agentic-engineering/agent-harness/` | agentní harness a jeho přímé runtime koncepty |
+| `DarkFactory/agentic-engineering/` | agentické a harnessové inženýrství |
 | `DarkFactory/templates/` | book-local Typst semantics a layouts |
 | `DarkFactory/fonts/` | book-local fonty |
 | `DarkFactory/bib/` | book-local bibliografie |

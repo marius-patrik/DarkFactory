@@ -17,7 +17,7 @@ The directory name, structural root key, and main book title are one identity. `
 - Semantic `dependency` and `related` relations never create containment.
 - Concept files own terminology and manuscript content. Example and attachment concepts also own their citations and any authoritative image source.
 - `manuscript/` owns document-level structure, including Introduction, the top-level Theory and Practical wrappers, Results, Conclusion, and Appendices.
-- `language-models/` owns LLM concepts, `agentic-ai/` owns agent/runtime concepts, `agentic-engineering/` owns engineering/control concepts, and `development-environment/` is one flat Practical section whose concepts cover software-development infrastructure and practice.
+- `language-models/` owns LLM concepts; `agentic-engineering/agent-harness/` is one flat Agent Harness section; `agentic-engineering/` owns the engineering/control sections including Harness Engineering, Context Engineering, and Skills; `development-environment/` is one flat Practical section.
 - `manuscript/appendices/` is the canonical appendix root.
 
 ## Book-local publication assets

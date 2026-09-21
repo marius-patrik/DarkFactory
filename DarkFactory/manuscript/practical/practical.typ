@@ -8,6 +8,6 @@
 Praktická část převádí principy teoretické části do návrhu systému DarkFactory.
   ],
   description: terms => [
-Popisuje harnessové inženýrství, architekturu DarkFactory, vývojové prostředí a následné vyhodnocení.
+Popisuje architekturu DarkFactory, vývojové prostředí a následné vyhodnocení.
   ],
 )

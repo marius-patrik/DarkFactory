@@ -1,6 +1,6 @@
 #import "/DarkFactory/templates/common.typ": translation, bib
 #import "/DarkFactory/schema.typ": concept
-#import "examples/chatgpt.typ" as chatgpt
+#import "/DarkFactory/language-models/examples/chatgpt.typ" as chatgpt
 
 
 #let item = concept(

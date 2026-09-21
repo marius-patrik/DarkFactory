@@ -331,9 +331,23 @@ if BOOK == "DarkFactory":
         ROOT / "development-environment/software-engineering",
         ROOT / "development-environment/version-control",
         ROOT / "development-environment/continuous-integration",
+        ROOT / "agentic-ai",
+        ROOT / "agentic-engineering/agent-harness/agent-loop",
+        ROOT / "agentic-engineering/agent-harness/tool-calling",
+        ROOT / "agentic-engineering/agent-harness/skills",
+        ROOT / "agentic-engineering/agent-harness/context-engineering",
+        ROOT / "manuscript/practical/harness-engineering",
     ):
         if stale_path.exists():
-            fail(f"development-environment must remain a single flat section: {stale_path}")
+            fail(f"obsolete nested manuscript structure remains: {stale_path}")
+
+    for stale_file in (
+        ROOT / "language-models/chatbot.typ",
+        ROOT / "language-models/agent.typ",
+        ROOT / "language-models/language-model/turn.typ",
+    ):
+        if stale_file.exists():
+            fail(f"concept remains at obsolete source location: {stale_file}")
 
     for required in (
         ROOT / "bib/references.bib",
@@ -341,14 +355,12 @@ if BOOK == "DarkFactory":
         ROOT / "manuscript/introduction/index.typ",
         ROOT / "manuscript/theory/index.typ",
         ROOT / "manuscript/practical/index.typ",
-        ROOT / "manuscript/practical/harness-engineering/index.typ",
         ROOT / "manuscript/practical/darkfactory-architecture/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
         ROOT / "development-environment/index.typ",
         ROOT / "language-models/index.typ",
-        ROOT / "agentic-ai/index.typ",
         ROOT / "agentic-engineering/index.typ",
         ROOT / "manuscript/introduction/motivation/ai-usage-example.typ",
         ROOT / "language-models/examples/chatgpt.typ",
@@ -356,7 +368,11 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
         ROOT / "development-environment/integration-test.typ",
-        ROOT / "agentic-engineering/agent-harness/context-engineering/context-injection.typ",
+        ROOT / "agentic-engineering/agent-harness/index.typ",
+        ROOT / "agentic-engineering/agent-harness/turn.typ",
+        ROOT / "agentic-engineering/harness-engineering.typ",
+        ROOT / "agentic-engineering/context-engineering/context-injection.typ",
+        ROOT / "agentic-engineering/skills/index.typ",
     ):
         if not required.is_file():
             fail(f"DarkFactory book is missing required publication component: {required}")
