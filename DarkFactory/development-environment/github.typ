@@ -11,7 +11,7 @@
 GitHub je cloudová platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí Issues, Pull Requests a automatizačních workflow.
   ],
   description: terms => [#finalized[
-GitHub poskytuje nad repozitářem koordinační vrstvu pro zadání práce, revizi změn a automatizaci.
+Nad historií spravovanou Gitem přidává GitHub zadání práce, revizi změn a automatizační workflow.
   ]],
   relations: ((type: "related", target: "version_control"), (type: "related", target: "github_actions")),
 )

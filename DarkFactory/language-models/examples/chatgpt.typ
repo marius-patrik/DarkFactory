@@ -9,7 +9,7 @@
   czech: "ChatGPT",
   english: "ChatGPT",
 definition: terms => [ChatGPT je konverzační produkt OpenAI zpřístupňující modely prostřednictvím chatového a aplikačního rozhraní.],
-  description: terms => [Jako příklad chatbota odděluje modelovou vrstvu od uživatelského produktu: rozhraní přidává práci se soubory, obrazem, webem a dalšími nástroji, které samotný model neposkytuje.],
+  description: terms => [Rozhraní ChatGPT přidává k modelové vrstvě práci se soubory, obrazem, webem a dalšími nástroji.],
   attachments: (screenshot.item,),
   citations: (bib.openai_chatgpt_home,),
   relations: ((type: "related", target: "chatbot"),)

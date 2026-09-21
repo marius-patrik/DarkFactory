@@ -13,7 +13,7 @@
 Správa verzí je sledování historie změn v repozitáři tak, aby bylo možné změny porovnávat, oddělovat a bezpečně slučovat.
   ],
   description: terms => [
-DarkFactory používá Git a GitHub jako auditovatelnou hranici mezi pracovním stavem agenta a hlavní historií projektu. Větve, pull requesty a slučování jsou zde prostředky pracovního toku, nikoli samostatné teoretické koncepty. #cite(bib.chacon2014)
+DarkFactory používá Git a GitHub k oddělení pracovního stavu agenta od hlavní historie projektu a k dohledání provedených změn. #cite(bib.chacon2014)
   ],
   relations: ((type: "related", target: "github"),),
 )

@@ -14,7 +14,7 @@ Inženýrství prováděcí smyčky je návrh a řízení stavových přechodů,
   ],
   description: terms => [
 #finalized[
-Inženýrství prováděcí smyčky odděluje provozní řízení od samotného modelového rozhodování. Patří sem stavové přechody, podmínky ukončení, rozpočty běhu, opakování po selhání, detekce uvíznutí a pravidla pro eskalaci nebo lidské schválení.
+Harness tak může nezávisle na modelu omezit počet iterací, ukončit neproduktivní běh, opakovat selhaný krok nebo vyžádat lidské schválení.
 ]
   ],
   visual: none,

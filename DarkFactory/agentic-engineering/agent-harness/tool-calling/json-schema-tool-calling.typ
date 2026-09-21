@@ -12,7 +12,7 @@
 JSON Schema Tool Calling popisuje parametry nástroje formálním JSON Schema a před provedením ověřuje, že vygenerované argumenty odpovídají očekávané struktuře.
   ],
   description: terms => [
-JSON Schema je standardní formát pro popis struktury a validaci JSON dat. Při vyvolávání nástrojů tak může harness přesně určit povinná pole, datové typy a další omezení vstupu. Moderní rozhraní modelů mohou navíc generování argumentů přímo omezit tak, aby odpovídalo dodanému schématu. #cite(bib.json_schema_2020) #cite(bib.openai_structured_outputs)
+Schéma určuje povinná pole, datové typy a další omezení vstupu; rozhraní modelu může zároveň omezit generování argumentů tak, aby schématu odpovídaly. #cite(bib.json_schema_2020) #cite(bib.openai_structured_outputs)
   ],
   relations: ((type: "dependency", target: "tool_calling"),),
 )

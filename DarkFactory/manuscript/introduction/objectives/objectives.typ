@@ -5,10 +5,10 @@
   czech: "Cíl práce a výzkumné otázky",
   english: "Thesis Objective and Research Questions",
   definition: terms => [
-Cíl práce a výzkumné otázky určují, co má návrh DarkFactory řešit a podle čeho bude posuzován.
+Tato část stanovuje hlavní cíl, dílčí cíle a výzkumné otázky práce.
   ],
   description: terms => [
-Hlavní cíl vymezuje výsledný návrh, dílčí cíle jeho oblasti a výzkumné otázky hodnoticí problémy.
+Společně vymezují rozsah návrhu DarkFactory a rámec jeho evaluace.
   ],
   relations: (),
 )

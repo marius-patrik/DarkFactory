@@ -14,7 +14,7 @@ Transformer je architektura neuronových sítí založená na mechanismu pozorno
   ],
   description: terms => [
 #finalized[
-Současné velké jazykové modely jsou typicky realizovány transformerovou architekturou. Pro generování textu se často používá dekodérové uspořádání, které nad dosavadní sekvencí vytváří reprezentace potřebné k odhadu následujícího tokenu.
+Při generování textu se často používá dekodérové uspořádání, které z dosavadní sekvence vytváří reprezentace pro odhad následujícího tokenu.
 ]
   ],
   visual: none,

@@ -13,7 +13,7 @@ Skript je soubor nebo posloupnost příkazů určených k automatizovanému vyko
   ],
   description: terms => [
 #finalized[
-Skript poskytuje deterministickou exekuci pro úlohy, u nichž není vhodné znovu rozhodovat pomocí jazykového modelu, například pro opakovatelné transformace, validace nebo obslužné kroky dovednosti.
+V harnessu se skript používá pro opakovatelné transformace, validace a další kroky, které nemají vyžadovat nové rozhodnutí modelu.
 ]
   ],
   visual: none,

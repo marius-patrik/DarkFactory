@@ -14,7 +14,7 @@ Softwarový kontejner je izolované uživatelské běhové prostředí, které b
   ],
   description: terms => [
 #finalized[
-Kontejner může CI běhu poskytnout opakovatelné uživatelské prostředí s deklarovanými nástroji a závislostmi. Tím omezuje vliv lokální konfigurace vývojářského počítače, aniž by sám o sobě zaručoval úplnou bezpečnostní izolaci.
+V CI poskytuje kontejner opakovatelné prostředí s deklarovanými nástroji a závislostmi, ale sám o sobě nezaručuje úplnou bezpečnostní izolaci.
 ]
   ],
   visual: none,

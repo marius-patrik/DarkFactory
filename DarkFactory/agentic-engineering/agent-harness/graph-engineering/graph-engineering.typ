@@ -14,11 +14,7 @@ Inženýrství pracovních grafů je návrh agentních nebo automatizačních wo
   ],
   description: terms => [
 #finalized[
-Monolitická agentní smyčka selhává při řešení komplexních, vícefázových úloh. Pro spolehlivé škálování se v moderních systémech uplatňuje hierarchická dělba práce a formalizace procesu do podoby grafu.
-]
-
-#finalized[
-Škálování je dále rozloženo na dva samostatné koncepty: hierarchickou delegaci prostřednictvím #term(terms.subagent) a explicitní závislosti pracovního postupu prostřednictvím #term(terms.dag).
+Graf umožňuje explicitně řídit pořadí, paralelizaci a kontrolní body vícefázové úlohy. Dílčí práci lze delegovat pomocí #term(terms.subagent) a její závislosti vyjádřit pomocí #term(terms.dag).
 ]
   ],
   visual: none,

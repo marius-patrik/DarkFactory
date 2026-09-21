@@ -11,7 +11,7 @@
 - O3: Jak spravovat pracovní kontext agenta tak, aby při delších úlohách neztrácel důležité požadavky a stav projektu?
   ],
   description: terms => [
-Otázky soustřeďují hodnocení na praktickou míru samostatnosti, spolehlivost prováděcí smyčky a zachování potřebného pracovního kontextu.
+O1–O3 pokrývají autonomii, stabilitu prováděcí smyčky a správu pracovního kontextu.
   ],
   relations: ((type: "dependency", target: "subgoals"),),
 )

@@ -13,9 +13,7 @@
 Průběžná integrace (CI) je vývojová praxe, při níž se změny často integrují a automaticky ověřují sestavením, testy a dalšími kontrolami.
   ],
   description: terms => [#finalized[
-Kód vytvořený jazykovým modelem nelze považovat za ověřený pouze proto, že byl úspěšně vygenerován. CI poskytuje externí a opakovatelnou kontrolu sestavení, testů a dalších strojově vyhodnotitelných podmínek. #cite(bib.humble2010)
-
-Konkrétní automatizační platformu popisuje #term(terms.github_actions), izolaci běhu #term(terms.container) a ověření spolupráce částí systému #term(terms.integration_test).
+Kód vytvořený jazykovým modelem nelze považovat za ověřený pouze proto, že byl vygenerován. CI poskytuje opakovatelnou kontrolu sestavení, testů a dalších strojově vyhodnotitelných podmínek. #cite(bib.humble2010)
   ]],
   relations: ((type: "dependency", target: "version_control"),),
 )

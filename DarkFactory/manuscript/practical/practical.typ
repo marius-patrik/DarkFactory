@@ -8,6 +8,6 @@
 Praktická část převádí popsané principy do návrhu harnessu DarkFactory.
   ],
   description: terms => [
-Zaměřuje se na výsledné řešení, jeho vyhodnocení a omezení.
+Obsahuje vyhodnocení výzkumných otázek a omezení evaluace.
   ],
 )

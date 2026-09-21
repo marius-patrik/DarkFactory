@@ -8,6 +8,6 @@
 Výsledky a diskuse vyhodnocují, jak návrh DarkFactory odpovídá stanoveným cílům a výzkumným otázkám.
   ],
   description: terms => [
-Hodnocení je rozděleno na vyhodnocení výzkumných otázek a omezení evaluace.
+Výsledky odpovídají na O1–O3 a odděleně vymezují hranice toho, co lze z provedeného ověření tvrdit.
   ],
 )

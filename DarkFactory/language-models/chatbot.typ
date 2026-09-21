@@ -10,7 +10,7 @@
   citation: bib.wooldridge1995,
   source: bib.wooldridge1995,
 definition: terms => [Chatbot je aplikační systém, který zpřístupňuje jazykový model prostřednictvím konverzační interakce.],
-  description: terms => [Na rozdíl od samotného modelu může chatbot přidávat historii konverzace, multimodální vstupy, práci se soubory, webové vyhledávání nebo další nástroje. Tyto funkce patří aplikační vrstvě, nikoli modelu samotnému.],
+  description: terms => [Chatbot může k modelu přidat historii konverzace, multimodální vstupy, soubory, webové vyhledávání a další nástroje; tyto funkce patří aplikační vrstvě.],
   examples: (chatgpt.item,),
   relations: ((type: "dependency", target: "language_model"),)
 )

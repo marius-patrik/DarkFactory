@@ -13,7 +13,7 @@ definition: terms => [
 Agent je softwarový systém řízený jazykovým modelem a vybavený nástroji, který samostatně vnímá stav prostředí a provádí vícekrokové akce směřující k zadanému cíli.
   ],
   description: terms => [
-Rozdíl mezi #term(terms.chatbot) a agentem nespočívá nutně v použitém jazykovém modelu, ale v architektuře jeho zapojení do prostředí. Agent může číst stav repozitáře, provádět změny, spouštět nástroje a podle jejich výsledků pokračovat v další iteraci. Tuto schopnost zajišťuje nadřazená prováděcí a nástrojová vrstva, nikoli samotný model.
+Oproti #term(terms.chatbot) může agent pozorovat stav prostředí, volat nástroje a pokračovat podle jejich výsledků. Tyto schopnosti poskytuje harness, nikoli samotný model.
   ],
   visual: none,
   examples: (),

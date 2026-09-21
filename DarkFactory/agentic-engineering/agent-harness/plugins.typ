@@ -12,7 +12,7 @@
 Plugin je programové rozšíření běžící přímo v prostředí harnessu, které může doplnit exekuční jádro o systémové adaptéry, ovladače nástrojů nebo deterministické záchytné body.
   ],
   description: terms => [
-Plugin rozšiřuje běhovou vrstvu harnessu programovou komponentou; pluginové systémy jsou příkladem dynamické kompozice komponent. #cite(bib.deepseekharness2026)
+Na rozdíl od instrukční dovednosti mění plugin programové chování běhové vrstvy harnessu. #cite(bib.deepseekharness2026)
   ],
   relations: ((type: "dependency", target: "harness"),),
 )
