@@ -11,7 +11,7 @@ describe("Unix df wrapper", () => {
 		const root = await mkdtemp(join(process.cwd(), ".wrapper-test-")); roots.push(root);
 		const wrapperDir = join(root, "wrapper"); const systemDir = join(root, "system");
 		await mkdir(wrapperDir, { recursive: true }); await mkdir(systemDir, { recursive: true });
-		await Bun.write(join(wrapperDir, "df"), Bun.file(join(process.cwd(), "scripts", "df-wrapper.sh")));
+		await Bun.write(join(wrapperDir, "df"), Bun.file(join(import.meta.dir, "../scripts/df-wrapper.sh")));
 		await Bun.write(join(root, "df-bin"), "#!/bin/sh\nprintf 'dark:%s\\n' \"$*\"\n");
 		await Bun.write(join(systemDir, "df"), "#!/bin/sh\nprintf 'system:%s\\n' \"$*\"\n");
 		await Promise.all([chmod(join(wrapperDir, "df"), 0o755), chmod(join(root, "df-bin"), 0o755), chmod(join(systemDir, "df"), 0o755)]);
