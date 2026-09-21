@@ -95,28 +95,176 @@ Expected numbering pattern:
 - final 2.2.x Závěr
 and analogously for every listed level-2 section.
 
-### Current candidate theory hierarchy
+### Candidate hierarchy — causal reading order
+
+The hierarchy must read as one argument:
+
+**how AI changes software development → what the model is and can do → what the harness adds around it → how agentic behavior is deliberately engineered → how DarkFactory realizes those ideas → what the evidence establishes.**
+
+Do not preserve an existing concept merely because it already has a file. Every numbered group and every standalone article must earn its place in that causal chain.
+
+#### 2 Teoretická část
+
+- **2.1 Úvod**
+  - establishes the causal chain above and the scope boundary: model training is outside the thesis.
 
 - **2.2 AI-asistovaný vývoj**
-  - Software Engineering article
-  - Vibe Coding
-  - Slop
-  - **2.2.1 Specifikace a plánování** — Spec-Driven Development, Planning, DAG
-  - **2.2.2 Řízení změn a ověřování** — Version Control, Branch, Pull Request, CI, Integration Test
+  - **2.2.1 Úvod**
+    - explains the shift from code generation/chat assistance toward agent-driven software work.
+    - concepts directly after the introduction: Vibe Coding, Slop.
+  - **2.2.2 Specifikace a plánování**
+    - Vývoj řízený specifikací (Spec-Driven Development)
+    - Plánování (Planning)
+  - **2.2.3 Řízení změn a ověřování**
+    - Správa verzí (Version Control)
+    - Větev (Branch)
+    - Pull Request
+    - Průběžná integrace (CI)
+    - Integrační test (Integration Test)
+  - **2.2.4 Závěr**
+    - derives the need for explicit state, feedback, and machine-verifiable boundaries when more work is delegated to AI.
+  - Remove the standalone Software Engineering article unless a unique semantic responsibility is found for it.
+
 - **2.3 Model**
-  - **2.3.1 Jazykový model** — LLM, Transformer, Tokenizer, Token, Embedding
-  - **2.3.2 Inference** — Inference Engine, Context Window, KV Cache
-  - **2.3.3 Limity modelu** — Context Rot, Divergence
+  - **2.3.1 Úvod**
+    - defines the model as the probabilistic inference component consumed by the surrounding system.
+  - **2.3.2 Jazykový model**
+    - Velký jazykový model (LLM)
+    - Transformer
+    - Tokenizér (Tokenizer)
+    - Token
+    - Vektorová reprezentace (Embedding)
+  - **2.3.3 Inference**
+    - Inferenční engine (Inference Engine)
+    - Kontextové okno (Context Window)
+    - Mezipaměť klíčů a hodnot (KV Cache)
+  - **2.3.4 Limity modelu**
+    - Degradace kontextu (Context Rot)
+    - Divergence modelu
+  - **2.3.5 Závěr**
+    - establishes that the model can generate/choose but does not itself own persistent state, tools, environment, authorization, or reliable long-running control.
+
 - **2.4 Harness**
-  - no duplicate Harness article
-  - **2.4.1 Stav a průběh** — Session, Turn, Transcript, State
-  - **2.4.2 Běh a prostředí** — Agent Loop, Runtime, Environment, Container, Sandbox
-  - **2.4.3 Dovednosti a rozšíření** — Plugins, Tools, JSON Schema Tool Calling, Code Execution, Scripts, Hooks, MCP, Skills
+  - no duplicate Harness article; the section introduction owns the definition.
+  - **2.4.1 Úvod**
+    - answers what must be added around model inference to obtain a persistent acting system.
+  - **2.4.2 Běh a stav**
+    - Agentní smyčka (Agent Loop)
+    - Agentní sezení (Session)
+    - Tah (Turn)
+    - Přepis (Transcript)
+    - Stav (State)
+  - **2.4.3 Prostředí a nástroje**
+    - Prostředí agenta (Agent Environment)
+    - Nástroje (Tools)
+    - Vyvolávání nástrojů (Tool Calling)
+    - Spouštění kódu (Code Execution)
+    - Izolované prostředí (Sandbox)
+    - Kontejner (Container)
+  - **2.4.4 Dovednosti a rozšíření**
+    - Dovednosti (Skills)
+    - Pluginy
+    - Skripty (Scripts)
+    - Hooks
+    - Model Context Protocol (MCP)
+  - **2.4.5 Závěr**
+    - establishes that Harness provides execution, continuity, action surfaces, and extensibility but not the higher-level strategy for using them.
+  - Remove generic Runtime as a standalone concept unless it proves a unique responsibility not already owned by Inference Engine, Environment, Sandbox, or Container.
+  - Replace JSON Schema Tool Calling as a taxonomy concept with the broader Tool Calling; JSON Schema belongs in its mechanism/prose where relevant.
+  - Agent Loop and ReAct must not be treated as synonyms; ReAct is a pattern/example of an agent loop.
+
 - **2.5 Agentické inženýrství**
-  - no duplicate Agentic Engineering article
-  - **2.5.1 Instrukce a kontext** — Prompt Engineering, System Prompt, Context Engineering, Context Injection, Prompt Injection, Compaction, RAG
-  - **2.5.2 Řízení běhu** — Loops, Guardrail, HITL
-  - **2.5.3 Multiagentní systémy** — Subagent, Orchestrator, Handoff, Swarm, Graphs
+  - no duplicate Agentic Engineering article; section introduction owns the definition.
+  - **2.5.1 Úvod**
+    - answers how the capabilities supplied by the harness are deliberately composed and constrained to produce useful agentic behavior.
+  - **2.5.2 Instrukce a kontext**
+    - Promptové inženýrství (Prompt Engineering)
+    - Systémový prompt (System Prompt)
+    - Kontextové inženýrství (Context Engineering)
+    - Vkládání kontextu (Context Injection)
+    - Kompakce kontextu (Context Compaction)
+    - RAG
+    - Prompt Injection
+  - **2.5.3 Řízení autonomie**
+    - Cílené smyčky (Goal Loops)
+    - Guardrail
+    - Člověk ve smyčce (HITL)
+  - **2.5.4 Orchestrace agentů**
+    - Subagent
+    - Orchestrátor (Orchestrator)
+    - Předání řízení (Handoff)
+    - Pracovní graf (Workflow Graph)
+    - Orientovaný acyklický graf (DAG), if its definition is still necessary after Workflow Graph is written
+    - Swarm should be demoted to an orchestration example/pattern unless its final prose proves a unique conceptual responsibility.
+  - **2.5.5 Závěr**
+    - connects context, control, and orchestration into the design discipline that Practical then realizes.
+
+#### 3 Praktická část
+
+- **3.1 Úvod**
+  - states that Practical demonstrates the realization of the theoretical chain in DarkFactory and distinguishes architecture from evidence.
+
+- **3.2 DarkFactory**
+  - no duplicate DarkFactory article.
+  - **3.2.1 Úvod**
+    - introduces the implementation boundaries and the architecture schematic.
+  - **3.2.2 Vykonávací jádro**
+    - Protokol DarkFactory (Protocol)
+    - Stav běhu (Run State)
+    - Směrování modelu (Model Routing)
+    - Dohled nad během (Supervisor)
+    - Zachycení výsledku (Result Capture)
+    - Obnova běhu (Recovery)
+  - **3.2.3 Rozšiřitelnost systému**
+    - Capability
+    - Capability ABI
+    - Adaptér capability (Capability Adapter)
+  - **3.2.4 Řídicí vrstva a identita**
+    - GitHub jako řídicí vrstva (GitHub Control Plane)
+    - Keychain
+    - Autentizace uživatele (Auth)
+  - **3.2.5 Rozhraní**
+    - df CLI
+    - DarkFactory Web
+    - DarkFactory Docs
+  - **3.2.6 Závěr**
+    - synthesizes how the implementation realizes Harness and Agentické inženýrství without repeating theory.
+
+- **3.3 Životní cyklus požadavku**
+  - **3.3.1 Úvod**
+    - gives the ordered lifecycle and states which mechanisms are cross-cutting.
+  - **3.3.2 Zadání a plánování**
+    - Požadavek (Request)
+    - Plán DarkFactory (Planning)
+  - **3.3.3 Implementace**
+    - structural prose only unless a genuinely unique concept emerges.
+  - **3.3.4 Ověření a revize**
+    - Deterministické ověření (Deterministic Verification)
+    - Smyčka revize a opravy (Review/Fix Loop)
+  - **3.3.5 Finalizace a integrace**
+    - Finální kontrola souladu (Final Alignment)
+    - Rekonciliace stavu (Reconciliation)
+  - **3.3.6 Přerušení a obnova**
+    - references the already-owned Recovery concept; no duplicate Recovery article.
+  - **3.3.7 Závěr**
+
+- **3.4 Vyhodnocení**
+  - **3.4.1 Úvod**
+    - identifies the fixed evidence snapshot; does not duplicate methodology from 1.3.
+  - **3.4.2 Ověření mechanismů**
+    - automated tests / CI evidence for individual mechanisms.
+  - **3.4.3 Ověření systému**
+    - integrated runtime and full-lifecycle evidence, including the bounded result that a live complete df-only lifecycle was not demonstrated at the evidence cutoff.
+  - **3.4.4 Ověření na repozitářích**
+    - DarkFactory, omnis, ChessWithQuests, DarkFactory-Paper, archived targets distinguished.
+  - **3.4.5 Výzkumné otázky**
+    - O1–O3 as document answers, not semantic glossary concepts.
+  - **3.4.6 Diskuse a omezení**
+    - document prose, not an indexed domain concept.
+  - **3.4.7 Závěr**
+
+- **4 Závěr**
+  - closes the thesis only at the level of goals/questions and established evidence; does not reproduce Results.
 
 ### Decisions required before implementation
 
