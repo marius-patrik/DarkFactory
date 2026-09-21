@@ -7,9 +7,9 @@
 #import "/DarkFactory/agentic-engineering/context-engineering/index.typ" as context
 #import "/DarkFactory/agentic-engineering/multi-agent-systems/index.typ" as multi_agent_systems
 
-#let goal_directed_execution = folder(
-  key: "agentic_goal_directed_execution",
-  title: [Cílené vykonávání],
+#let execution_control = folder(
+  key: "agentic_execution_control",
+  title: [Řízení provádění],
   concepts: (
     goal_loops.item,
     guardrail.item,
@@ -24,7 +24,7 @@
   children: (
     prompting.node,
     context.node,
-    goal_directed_execution,
+    execution_control,
     multi_agent_systems.node,
   ),
 )
