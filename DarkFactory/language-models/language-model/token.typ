@@ -1,22 +1,17 @@
-#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "token",
-    czech: "Token",
+  czech: "Token",
   english: "Token",
   citation: bib.sennrich2016bpe,
   source: bib.sennrich2016bpe,
-definition: terms => [
-Diskrétní jednotka zpracovávaná jazykovým modelem, odpovídající položce slovníku tokenizéru a reprezentovaná číselným identifikátorem.
+  definition: terms => [
+Diskrétní jednotka vstupní nebo výstupní sekvence reprezentovaná identifikátorem ve slovníku tokenizéru.
   ],
   description: terms => [
-Token nemusí odpovídat celému slovu; podle použitého tokenizéru může představovat slovo, část slova, znakový fragment nebo jinou jednotku. Po tokenizaci jsou identifikátory převedeny na vektorové reprezentace, se kterými pracují vrstvy modelu.
+Token nemusí odpovídat celému slovu; subword tokenizace může pracovat s částmi slov nebo jinými textovými fragmenty. #cite(bib.sennrich2016bpe) Identifikátor tokenu je před zpracováním neuronovou sítí převeden na vektorovou reprezentaci.
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
-  relations: (),
+  relations: ((type: "related", target: "tokenizer"),),
 )
