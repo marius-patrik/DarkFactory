@@ -17,5 +17,5 @@ O3 — zachování kontextu: trvalý stav úlohy je oddělen od omezeného konte
 
 #issue[Každou odpověď O1–O3 propojit s konkrétním ověřitelným prvkem návrhu nebo implementace a s výsledkem kontroly/testu. Současné znění je argumentační shrnutí, nikoli ještě doložená evaluace.]
   ],
-  relations: ((type: "dependency", target: "practical"),),
+  relations: (),
 )
