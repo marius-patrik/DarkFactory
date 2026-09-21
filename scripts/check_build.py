@@ -327,11 +327,14 @@ if BOOK == "DarkFactory":
         ROOT / "manuscript/introduction/index.typ",
         ROOT / "manuscript/theory/index.typ",
         ROOT / "manuscript/practical/index.typ",
+        ROOT / "manuscript/practical/harness-engineering/index.typ",
+        ROOT / "manuscript/practical/darkfactory-architecture/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
         ROOT / "development-environment/index.typ",
         ROOT / "language-models/index.typ",
+        ROOT / "agentic-ai/index.typ",
         ROOT / "agentic-engineering/index.typ",
         ROOT / "manuscript/introduction/motivation/ai-usage-example.typ",
         ROOT / "language-models/examples/chatgpt.typ",
@@ -339,6 +342,7 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
         ROOT / "development-environment/continuous-integration/integration-test.typ",
+        ROOT / "agentic-engineering/agent-harness/context-engineering/context-injection.typ",
     ):
         if not required.is_file():
             fail(f"DarkFactory book is missing required publication component: {required}")

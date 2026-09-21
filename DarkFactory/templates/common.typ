@@ -371,11 +371,11 @@
     finalized[—]
   } else {
     finalized[
-      #text(size: 11pt)[
+      #text(size: 11pt, fill: black)[
         #ordered.map(item => term(
           item,
           surface: "full",
-          linked: true,
+          linked: false,
           marker: false,
           emphasized: false,
         )).join([, ])

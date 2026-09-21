@@ -10,4 +10,5 @@ Výsledky a diskuse vyhodnocují, jak návrh DarkFactory odpovídá stanoveným 
   description: terms => [
 Výsledky odpovídají na O1–O3 a odděleně vymezují hranice toho, co lze z provedeného ověření tvrdit.
   ],
+  relations: ((type: "dependency", target: "darkfactory_architecture"),),
 )

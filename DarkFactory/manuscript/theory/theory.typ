@@ -2,12 +2,12 @@
 
 #let item = concept(
   key: "theory",
-  czech: "Teoretická část: koncepty agentického AI",
-  english: "Theory: Agentic AI Concepts",
+  czech: "Teoretická část",
+  english: "Theory",
   definition: terms => [
-Teoretická část vymezuje koncepty agentického AI používané v práci.
+Teoretická část vymezuje koncepty potřebné pro návrh a pochopení agentních systémů.
   ],
   description: terms => [
-Obsahuje jazykové modely, agentické inženýrství a vývojové prostředí potřebné pro návrh agentního harnessu.
+Postupuje od jazykového modelu přes agentic AI a agentické inženýrství k vývojovému prostředí.
   ],
 )

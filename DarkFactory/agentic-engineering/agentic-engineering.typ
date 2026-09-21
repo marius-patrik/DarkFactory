@@ -4,8 +4,8 @@
 #let item = concept(
   key: "agentic_engineering",
   keyword: true,
+  industry: "Agentic Engineering",
   czech: "Agentické inženýrství",
-  english: "Agentic Engineering",
   citation: bib.wang2024survey,
   source: bib.darkfactory,
   definition: terms => [
@@ -14,5 +14,5 @@ Agentické inženýrství je návrh a provoz systémů kolem jazykových modelů
   description: terms => [
 Jeho předmětem je systém, který převádí modelový výstup na řízené a ověřitelné jednání, nikoli architektura nebo trénování samotného modelu.
   ],
-  relations: ((type: "dependency", target: "agent"),),
+  relations: ((type: "dependency", target: "agentic_ai"),),
 )
