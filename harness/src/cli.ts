@@ -9,7 +9,7 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { runHooks, hookFailures, BUILTIN_HOOKS } from "../../packages/core/src/hooks/index.ts";
+import { BUILTIN_HOOKS, hookFailures, runHooks } from "../../packages/core/src/hooks/index.ts";
 import { runCiCli } from "./ci/cli.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import { defaultDfHome, FileCredentialStore, parseAccountId, validateAccountRecord } from "./credentials.ts";
@@ -1443,7 +1443,11 @@ async function hooksCommand(args: string[]): Promise<void> {
 	let changedFiles: string[] = [];
 	try {
 		const diff = Bun.spawnSync(["git", "diff", "--name-only", "HEAD"]);
-		changedFiles = diff.stdout.toString().split("\n").map((s) => s.trim()).filter(Boolean);
+		changedFiles = diff.stdout
+			.toString()
+			.split("\n")
+			.map((s) => s.trim())
+			.filter(Boolean);
 	} catch {}
 	let branch = "";
 	try {
@@ -1467,7 +1471,7 @@ async function hooksCommand(args: string[]): Promise<void> {
 		commitMessage,
 		async readFile(p: string) {
 			return readFile(p, "utf8");
-		}
+		},
 	};
 	const results = await runHooks(event, ctx, BUILTIN_HOOKS);
 	const failures = hookFailures(results);
