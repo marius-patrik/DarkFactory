@@ -83,7 +83,7 @@ export const recoveryPlanningStateSchema = z.object({
 	contextFingerprint: z.string().min(1).optional(),
 	approvedRequestVersion: z.string().min(1).optional(),
 	approvedBaseSha: gitShaSchema.optional(),
-	approvedSourceFingerprint: z.string().min(1).optional(),
+	approvedSourceFingerprint: sha256Schema.optional(),
 });
 
 /** Terminal disposition represented in provenance/audit state. */
@@ -104,7 +104,7 @@ export const recoveryCleanupStateSchema = z.object({
 export const recoveryIntakeRecordSchema = z.object({
 	version: z.literal(1),
 	id: z.string().min(1),
-	sourceFingerprint: z.string().min(1),
+	sourceFingerprint: sha256Schema,
 	source: recoverySourceIdentitySchema,
 	binding: recoveryRequestBindingSchema,
 	safety: recoverySafetySchema,
