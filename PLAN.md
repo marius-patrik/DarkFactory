@@ -2,297 +2,206 @@
 
 ## 1. Purpose and authority
 
-This file contains only the current forward execution plan for finishing DarkFactory.
+This file contains only forward execution state for finishing the DarkFactory harness/product.
 
-- `PRD.md` defines product requirements and architecture.
+- `PRD.md` defines product requirements and final architecture.
 - Current GitHub Requests define approved feature-specific behavior.
 - Accepted ADRs under `.agents/notes/adr/` define durable architectural decisions.
-- GitHub issues, pull requests, checks and branches are the authoritative live work state.
-- This file defines cross-Request sequencing and dependency joins only.
+- GitHub issues, pull requests, checks and refs are the authoritative live implementation state.
+- This file owns only cross-Request sequencing, dependency joins and final convergence.
 
-The optimization target is the shortest safe path to the final `#360 → #361 → #68` end state.
+The optimization target is the shortest safe path to `#360 → #361 → #68`. Historical implementation narratives, rejected approaches and recovery provenance belong in GitHub issues, not here.
 
-Historical implementation narratives, rejected approaches and recovery provenance belong in GitHub issues, not repository documentation.
-
-## 2. Non-negotiable execution constraints
-
-All remaining work targets the final architecture directly.
+## 2. Non-negotiable final architecture
 
 - Final first-party packages are `protocol`, `core`, `capability`, `github`, `keychain`, `auth`, `docs`, `cli` and `web`.
 - Agentic/product behavior belongs in versioned capabilities.
-- `repo.df`, `config.df` and `docs.df` are the current configuration contracts.
-- `.df` is a filename extension, never a directory.
+- `repo.df`, `config.df` and `docs.df` are the configuration/content contracts; `.df` is a filename extension, never a directory.
 - Production GitHub effects use `@darkfactory/github`.
-- Machine/harness credentials and machine authentication use `@darkfactory/keychain`.
-- Human/browser authentication uses `@darkfactory/auth`.
-- `@darkfactory/docs` owns the documentation content graph.
-- `@darkfactory/web` is the sole first-party web renderer/application package.
-- `@darkfactory/cli` owns the supported `df` CLI/TUI surface.
-- Remaining `harness/` implementation is deletion-bound source, not final architecture.
-- Final packages must remain acyclic; browser-safe code cannot import machine-secret/private-key owners.
-- When a final owner covers a responsibility, remove the alternate/deletion-bound owner instead of maintaining both.
+- Machine credentials/authentication use `@darkfactory/keychain`; browser/human authentication uses `@darkfactory/auth`.
+- `@darkfactory/docs` owns the documentation content graph, `@darkfactory/web` is the sole first-party web application/renderer, and `@darkfactory/cli` owns the supported `df` CLI/TUI surface.
+- Remaining `harness/` code is migration/deletion-bound implementation state, not a final ownership target.
+- Final package dependencies remain acyclic; browser-safe code cannot import machine-secret/private-key owners.
+- When a final owner covers a responsibility, remove the alternate owner instead of maintaining both.
 - There is no compatibility, parity, shadow, canary or staged production-migration phase.
 
-Models may judge and edit files. Deterministic repository/GitHub effects and completion truth are owned by the engine. A model statement is never proof of commit, push, merge, verification, delivery or resume.
+Models may judge and edit files. Deterministic repository/GitHub effects and completion truth belong to the engine. Model prose is never evidence of commit, push, merge, verification, delivery or resume.
 
-Use the governed DarkFactory pipeline wherever the currently shipped pipeline can execute the work correctly. Manual/bootstrap work is limited to gaps the current pipeline cannot yet safely perform and must return to normal governed execution at the earliest reliable point.
+Use the governed DarkFactory pipeline whenever the currently shipped pipeline can execute the work correctly. Bootstrap/manual work is only for gaps the current pipeline cannot yet safely perform and must rejoin normal governed execution immediately afterward.
 
-## 3. Current checkpoint — 2026-09-21
+## 3. Live checkpoint — 2026-09-21
 
-### Completed foundations
+Canonical branch: `darkfactory` at `be63e238e3470b67e8c2d652048ea50da779e870` when this plan was aligned.
 
-The following foundations are already landed and should be consumed rather than rebuilt:
+### Shipped foundations
 
-- #341 capability-driven detection, verification/action evidence and repository classification;
-- #391 unified reviewed Planning lifecycle;
-- #423 `@darkfactory/auth` browser/session boundary;
-- #334, #335 and #424 documentation architecture work;
-- stable CLI command registry/metadata;
-- capability-owned initial #339 hook behavior from PR #917;
-- browser-safe redacted quota protocol/static quota view;
-- release integrity/provenance and lockstep/development-version guards.
+- #341 capability-driven detection, verification/action evidence and repository classification.
+- #329 natural-stop/result truth through merged PR #891 (`bc76f27d3a2e464fa39580d07382e3fae20e1c15`).
+- #391 unified reviewed Planning lifecycle.
+- #422 final machine-credential/keychain ownership through merged PR #931 (`437364d5050e80ac5955ac9e86cf959fea3c1937`).
+- #388 dependency-independent recovery provenance/intake foundation through merged PR #962 (`5aa9c33258175c779838c3abc0653438800832b0`).
+- #423 browser/session auth boundary, #334/#335/#424 documentation architecture, stable command registry metadata and the initial capability-owned #339 hooks from PR #917.
+- Release provenance/integrity guards and the browser-safe static/redacted quota surface.
 
-### Core production-engine vehicles
+### Active pull requests
 
-#### #329 — COMPLETE
+#### #358 → PR #894 — critical path
 
-PR #891 merged as `bc76f27d3a2e464fa39580d07382e3fae20e1c15`.
+- Tip: `ab1b08e1c48ad08a8af7d2099fafc1fd159861ad`.
+- Relative to current `darkfactory`: 94 commits ahead, 0 behind.
+- Current PR-triggered CI, docs preview, binding and board automation are green.
+- Graph planning/execution/review/planning/check/validation semantics and production handlers have moved into `@darkfactory/core/graph`.
+- Durable ingress identity, continuation state, pending external actions and evidence-backed effect journaling are implemented.
+- The remaining repository/GitHub/runtime composition is still explicitly temporary under `harness/src/graph/production-composition.ts` and `harness/src/graph/runtime-composition.ts`; green CI does not make this terminal.
 
-Shipped final ownership:
+Terminal delta:
 
-- result-capture contracts in `@darkfactory/protocol`;
-- structured extraction and code-result truth in `@darkfactory/core`;
-- capture-schema CLI behavior in `@darkfactory/cli`;
-- routed provider-enforced judgement extraction through the normal candidate/account/quota path;
-- natural-stop code truth from deterministic workspace/scope/#341 verification/commit evidence;
-- deletion-bound result-capture compatibility bridges removed.
+1. move production repository/GitHub/runtime composition into the settled final package/capability owners and remove temporary harness ownership;
+2. make normal production `df graph dispatch` / production dispatch consume those final adapters through `runGraph`;
+3. connect deterministic workspace/git, `@darkfactory/github`, board-sync and quota-resume effects without a second effect/state backend;
+4. prove interruption/crash/retry idempotency against real external-effect evidence;
+5. run final semantic review/alignment, merge and close #358.
 
-#358 must consume this shipped contract directly.
+#### #317 → PR #899 — wait for Join B
 
-#### #358 → PR #894 — graph-native production orchestration
+- Tip: `c045522c08192b9124453e37c20278237aaa8f74`.
+- Relative to current `darkfactory`: 14 commits ahead, 145 behind.
+- Its own last CI/docs wave is green, but the branch is structurally stale.
+- Typed mutation claim/evidence contracts already exist in `@darkfactory/protocol` and `@darkfactory/core`.
+- Conflict-repair execution still has deletion-bound harness ownership and real graph re-entry depends on the shipped #358 interface.
 
-Current state:
+Do not repeatedly refresh or extend #899 before #894 merges. After #358 lands, refresh #899 once, preserve valid protocol/core work, move the deterministic repair mechanism into final ownership, replace metadata-only readiness with real graph re-entry/resume, verify and merge.
 
-- #894 is refreshed on current canonical state and the stale pre-#329 capture implementation has been removed;
-- graph planner/executor/review/planning/check/validation mechanisms now have final `@darkfactory/core/graph` ownership;
-- final core production handlers use the shipped #329 result-capture contract and injected repository/GitHub/quota/board effects;
-- the deletion-bound `harness/src/graph/production-handlers.ts` owner and its harness test suite are removed;
-- protocol/core now persist ingress identity, internal continuation state and pending external actions;
-- deterministic external mutations use an evidence-backed effect journal keyed by durable run/event/node/iteration/effect identity;
-- retries reconcile prior effect evidence and fail closed on missing or mismatched evidence;
-- package-level tests prove effect reuse, pending-action crash recovery, ingress dedupe and branch-update push-SHA truth;
-- the complete pre-refresh #894 CI/docs/binding wave is green, and the branch has been conflict-free refreshed on merged #422.
+#### #425 → PR #963 — independent but nonterminal
 
-Remaining work:
+- Tip: `a8757fb142b7b4f2898c9344cd485e3681a67f1d`.
+- Relative to current `darkfactory`: 12 commits ahead, 118 behind.
+- Current CI and docs preview are red; observed failures include a web export/router type mismatch and the workspace package-boundary test.
+- #963 does not block #358/#317/#359. Refresh it from current canonical state before further feature work, fix the known failures, then continue #425 on the browser-safe transport boundary.
 
-1. implement the concrete `ProductionGraphEffects` adapters in final existing owners, not under deletion-bound harness ownership;
-2. wire `df graph dispatch` / normal production dispatch to call `runGraph` with those adapters instead of only planning/printing commands;
-3. use final deterministic workspace/git primitives for worktree/commit/update/push and final `@darkfactory/github` Node ownership for PR/comment/merge/issue effects;
-4. connect real quota-resume and board-sync effects to their existing final owners;
-5. run aggregate verification plus a crash/retry E2E proving no duplicated external effects;
-6. complete semantic review/alignment and merge.
+### Current repository mismatch that must disappear by #359
 
-No compatibility orchestration layer or second effect/state backend may be added.
+The root workspace still includes `harness`, and root `test`/`typecheck`/`check`/format behavior still delegates primarily through the harness tree. That is current implementation state, not final architecture. #359 must leave normal production and repository verification owned by final packages/capabilities rather than by deletion-bound harness code.
 
-#### #317 → PR #899 — truthful mutation evidence and branch repair
+### Pipeline health note
 
-Current state:
+Issue #996 records a failed Auto Format run caused by an unused hook import. That import is absent from current `darkfactory`; treat #996 as a verification item for the next default-branch run unless the failure reproduces. Do not spend a feature lane rebuilding around a stale pipeline-failure issue.
 
-- typed mutation evidence/claim contracts are already in `@darkfactory/protocol` and `@darkfactory/core`;
-- exact-target/fail-closed repair work has progressed and aggregate CI/docs are green;
-- conflict-repair execution still has deletion-bound harness ownership;
-- actual graph re-entry remains dependent on the real #358 resume interface.
-
-Remaining work:
-
-1. place the remaining deterministic repair mechanism in its final core/git-capability owner;
-2. keep default/base, commit, push and mutation outcomes fail-closed and evidence-backed;
-3. use detected verification on repaired state;
-4. replace metadata-only readiness with actual #358 graph re-entry/resume;
-5. complete review/alignment after rebasing on the final #358 interface.
-
-Do not make #317 wait for all of #384. Move only the mechanism required by #317 into the settled final git/core ownership; #384 can extend that same substrate later.
-
-### Independent credential lane
-
-#### #422 — COMPLETE
-
-PR #931 merged as `437364d5050e80ac5955ac9e86cf959fea3c1937`.
-
-`@darkfactory/keychain` is the only machine/harness credential owner. The merged implementation owns borrowed-source custody, external file/keyring import, provider importers, OAuth/login, auth metadata, redaction/scanning/diagnostics, encrypted transfer, browser isolation and vault persistence. F14 has terminal disposition and its recovery ref is deleted; deletion-bound machine credential/secret custody facades are removed.
-
-#248 consumes this shipped keychain mechanism rather than creating another credential owner. Its remaining responsibility is provider-facing login/multi-account behavior and `df login/logout` product integration through keychain + CLI.
-
-### Active hook recovery lane
-
-#339 remains open after PR #917 landed final capability-owned `tests-touched`, conventional-commit and branch-name behavior.
-
-Remaining work is deterministic invocation at required mutation/CI trigger points, rule `enforced_by` validation, diagnostics, binding/security hooks, applicable format/English/TSDoc/docs hooks, shared local/CI execution and final F47 disposition. Never recreate `harness/src/hooks/*`.
-
-## 4. Core dependency joins
-
-The critical production-engine dependency path is:
+## 4. Critical production-engine path
 
 ```text
 #341 complete
       ↓
 #329 complete
       ↓
-#358 / PR #894 — final-owner orchestration + durable resume
+#358 / PR #894
       ↓
-#317 / PR #899 — actual graph re-entry on the shipped #358 interface
+#317 / PR #899
       ↓
-#359 — df production engine completion / legacy production-owner retirement
+#359
 ```
 
-#317's typed evidence and deterministic repair work may continue before #358 merges. Only its final graph re-entry/resume step is serialized behind #358.
+### Join B — finish #358 / #894 now
 
-### Join A — #329 — COMPLETE
+This is the highest-downstream-value work in the repository. Do not start another orchestration owner, effect journal, resume store or compatibility path.
 
-PR #891 merged green as `bc76f27d3a2e464fa39580d07382e3fae20e1c15`.
+Join B is complete only when the actual production dispatcher executes through final-owned adapters, deterministic external effects are evidence-backed and resumable, crash/retry cannot duplicate completed mutations, deletion-bound harness composition no longer owns production orchestration, and the PR is reviewed/aligned/green and merged.
 
-### Join B — #358
+### Join C — finish #317 / #899 immediately after #894
 
-Immediately rebase/refresh #894 after #891 lands, finish final-owner production orchestration and prove durable resume/idempotency.
+Refresh once on merged #358. Keep the valid typed mutation evidence. Re-home conflict repair into the same deterministic git/workspace substrate used by the final engine, run detected verification on repaired state, enforce fail-closed push/base/mutation evidence, and re-enter the shipped graph rather than setting a readiness flag.
 
-Join B condition: #358 is merged/green with no production scripted success, swallowed external-effect failure or durable production-handler ownership left under deletion-bound harness code.
+Do not serialize #317 behind the whole of #384; move only the substrate #317 actually requires. #384 extends the same substrate later.
 
-### Join C — #317
+### Join D — execute #359 immediately after #358 + #317
 
-Refresh #899 on the shipped #358 interface and replace `readyForReentry`-style metadata with actual graph re-entry.
+#359 is the rebuilt-engine completion/deletion gate. It closes only when:
 
-Join C condition: #317 is merged/green with typed exact mutation evidence, fail-closed repair effects, final ownership and real graph re-entry.
-
-### Join D — #359
-
-Execute #359 immediately after #329 + #358 + #317 are merged.
-
-#359 closes only when:
-
-- df is the sole normal mutating dispatcher for the core Request lifecycle;
-- Planning/review/alignment/check/merge behavior uses shipped final owners;
-- interruption/resume does not duplicate completed deterministic effects;
-- completion/mutation evidence is truthful and auditable;
+- `df` is the sole normal mutating dispatcher for the core Request lifecycle;
+- Planning/review/alignment/check/merge/resume behavior uses shipped final owners;
 - a real df-only Request lifecycle completes end to end;
-- core lifecycle responsibilities no longer depend on legacy Python or deletion-bound harness owners.
+- interruption/resume does not duplicate completed deterministic effects;
+- completion/mutation claims are backed by observed state;
+- legacy Python mutation/orchestration is deleted or unreachable from normal production;
+- no core lifecycle responsibility remains owned only by deletion-bound `harness/` code;
+- root/workspace verification no longer depends on harness being the architectural owner.
 
-#359 is an engine-completion/deletion gate, not final product completion.
+#359 is not final product completion. Once it lands, use the finished df engine to drive the remaining product work.
 
 ## 5. Parallel workstreams
 
-### Credentials and provider authentication
+Parallel work is allowed only where it will not be invalidated by the critical joins.
 
-Run now:
+### Hooks and governance — #339
 
-- #422 final keychain/F14 convergence;
-- #248 provider-specific login/multi-account product behavior on top of #422 interfaces once each needed keychain contract is stable.
+Start from current canonical state, not the rejected generated branch. Continue deterministic core/mutation invocation, official `capabilities/hooks` behavior, `enforced_by` validation, `df hooks run` diagnostics, PR/Request binding, secret scanning and applicable formatting/English/TSDoc/docs hooks. `recovery/f47-hooks` is evidence only and is deleted after terminal disposition.
 
-Then:
+### Credentials/providers — #248 → #252
 
-- #252 provider-backed image/video generation once its actual provider/login dependencies are available.
+#422 is complete. #248 can implement provider-facing multi-account login/logout behavior now through `@darkfactory/keychain` + `@darkfactory/cli`. #252 starts as soon as the specific login/account interfaces it consumes are available; unrelated auth work must not serialize it.
 
-No credential custody may be introduced outside `@darkfactory/keychain`.
+### Git/recovery/topology — #384, #385, #332, #386, #388
 
-### Git, governance, hooks and recovery
+- #384 may implement deterministic primitives that do not depend on unsettled resume state. Prioritize only the substrate required by #317 until Join C is complete.
+- #388 provenance/intake contracts are already shipped through #962. Do not rebuild them. Its remaining work is actual git reconciliation, graph resume, gate integration and live recovery E2E.
+- Start #385 and #332 once the #358 run/resume interface is shipped and stable.
+- Start #386 after #384 + #358 + #385 provide the required git/resume/relationship substrate.
+- Finish the deeper #388 execution joins against those shipped interfaces rather than inventing temporary recovery machinery.
 
-Run stable work now:
+### Operator surfaces — #403, #251, #425, #390
 
-- #339 deterministic hook invocation, rule binding/diagnostics and shared local/CI enforcement;
-- #384 deterministic git primitives that do not require the unsettled resume contract;
-- #388 intake/provenance/secret/request-binding pieces that use already-shipped primitives.
+- #403 can implement stable `@darkfactory/cli` commands now where they do not require unsettled production-run state.
+- #251 must preserve/reconcile the recovered TUI implementation evidence; do not regenerate it from clean trunk merely because final ownership moved.
+- #425/#390 are independent of the core production-engine join. Repair/refresh #963 in a separate lane, but do not expose machine/keychain credentials or invent a second browser state backend while the live GitHub transport contract is unsettled.
 
-After #358 persisted run/resume interfaces are stable:
+### Release engineering — #360
 
-- finish #384 conflict persistence/resume integration;
-- #385 Epic/Request relationship model;
-- #332 graph-native parallel chunk/worktree execution;
-- #388 deep resume/reconciliation integration.
+Continue release construction against stable interfaces: package metadata, source-free artifact layout, runtime/capability/data assets, installers/updaters, native smoke matrix, packed-command verification, prebuilt `@darkfactory/web`, checksums and exact source provenance.
 
-After #384 + #358 + #385 stabilize:
+Keep `0.0.0` as the development sentinel. Do not choose/publish the final version until all release-affecting Requests are terminal. There is one final supported release, not a migration/canary sequence.
 
-- #386 stacked PR topology/restack/dependency-aware merge order.
+### Documentation — #336/#337
 
-### Operator surfaces
+#336 should converge docs-impact enforcement on the final #339 hook surface. #337 is the final repository-wide current-truth audit after release-affecting surfaces stabilize. Repository docs must remain current-only.
 
-Continue against stable package contracts:
+## 6. Branch hygiene
 
-- #403 supported operator CLI;
-- #251 interactive TUI using the same command/runtime metadata;
-- #425 shared GitHub-backed operator application in `@darkfactory/web`;
-- #390 live browser-safe operator/quota transport and deployment acceptance.
+Current valid long-lived/nonterminal refs are:
 
-Do not create a second state backend, browser keychain path or duplicate command model.
+- `darkfactory` — canonical branch;
+- `feat/graph-native-production-orchestration` — PR #894 / #358;
+- `fix/conflict-repair-mutation-evidence` — PR #899 / #317;
+- `feature/make-darkfactory-web-the-prebuilt-github-backed-op` — PR #963 / #425;
+- `recovery/f47-hooks` — temporary recovery evidence for #339;
+- `gh-pages` — deployment branch.
 
-### Documentation
+The following rejected/generated refs still exist and are cleanup-only; never resume work from them:
 
-- #336 finishes shared PR-base/local/CI docs-impact enforcement through the final #339 hook surface, then the late PRD truth pass.
-- #337 remains the final repository-wide current-truth contradiction audit after release-affecting product surfaces stabilize.
+- `feature/centralize-all-machine-and-harness-credentials-in`;
+- `feature/df-supports-deterministic-common-git-workspace-ope`;
+- `feature/finish-the-supported-df-operator-cli-surface`;
+- `feature/publish-and-install-df-as-the-supported-release-ar`;
+- `feature/results-are-captured-when-a-model-stops-without-js`;
+- `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a`.
 
-There is one documentation compiler/content graph and one first-party renderer.
+Delete those refs as soon as the available GitHub/local tooling permits. After each active PR reaches terminal disposition, delete its topic branch. Recovery refs exist only while unique unresolved state remains. Do not retain historical implementation branches as archives.
 
-### Release engineering
-
-Continue #360 continuously where interfaces are stable:
-
-- publish/package metadata;
-- source-free npm/native artifact layout;
-- runtime/capability/data assets;
-- installers/updaters;
-- native/platform smoke matrix;
-- clean-directory packed-command verification;
-- prebuilt `@darkfactory/web` bundle;
-- checksums and exact source provenance.
-
-Do not publish while accepted release-affecting behavior is still changing. Publish one final supported release only after all release-affecting #68 Requests are terminal.
-
-## 6. Recovery and branch hygiene
-
-Only this recovery ref remains intentionally active:
-
-- `recovery/f47-hooks` → #339.
-
-F14 has received terminal disposition under #422 and `recovery/f14-borrowed-refresh` has been deleted.
-
-A recovery ref exists only while it contains unresolved unique required state. Record final disposition in the owning Request and delete the ref immediately once that state is integrated, rejected or fully subsumed.
-
-The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orch` has been deleted. The active #358 vehicle is PR #894 on `feat/graph-native-production-orchestration`.
-
-The rejected #329 ref `feature/results-are-captured-when-a-model-stops-without-js` was incorrectly recreated by an autonomous resume and produced invalid lockfile-only PR #952. PR #952 is closed; this ref must be deleted again and must not be reused. The only active #329 vehicle is PR #891 on `feat/natural-stop-result-truth`.
-
-The generated #384 ref `feature/df-supports-deterministic-common-git-workspace-ope` produced invalid lockfile-only PR #953 while claiming completion from deletion-bound harness state. PR #953 is closed; delete this ref and do not reuse it as #384 implementation evidence.
-
-The generated #403 ref `feature/finish-the-supported-df-operator-cli-surface` produced nonterminal PR #955 whose only substantive source change was a wrapper-test path fix while claiming `Closes #403`. PR #955 is closed; delete this ref and resume #403 only with real `@darkfactory/cli` operator-command implementation.
-
-The generated #339 ref `feature/rules-are-enforced-by-df-hooks-in-lanes-pipeline-a` produced PR #956 with scratch Python scripts, deletion-bound harness CLI ownership, source-relative package coupling and red verification. PR #956 is closed; delete this ref and rebuild #339 from final core/capability/CLI package boundaries. `recovery/f47-hooks` remains evidence only.
-
-The generated #360 ref `feature/publish-and-install-df-as-the-supported-release-ar` produced invalid PR #957 with a fabricated `packages/df-release`, hard-coded unapproved `1.0.0`, unrelated stale harness/provider changes and red tests. PR #957 is closed; delete this ref and continue #360 only from canonical first-party package/release owners while preserving the `0.0.0` development sentinel until final freeze.
-
-The generated #422 ref `feature/centralize-all-machine-and-harness-credentials-in` produced invalid duplicate PR #968 after #931 was already terminal: its implementation evidence was lockfile-only and it falsely claimed `Closes #422`. PR #968 is closed; delete this ref. #422 is complete through merged PR #931.
-
-After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
-
-Do not keep historical branches as archives.
-
-## 7. Final release and fleet acceptance
+## 7. Final convergence
 
 ### #360 — final supported release
 
-Freeze only after all release-affecting Requests are terminal and final owners are in place.
+Freeze only after every release-affecting Request is terminal and final owners are in place. At freeze:
 
-At release freeze:
-
-1. finish the #337 truth/documentation audit;
-2. remove remaining alternate/deletion-bound owners whose final responsibilities have landed;
-3. disposition/delete terminal recovery/topic refs;
+1. finish #337 current-truth audit;
+2. remove remaining alternate/deletion-bound owners;
+3. disposition/delete terminal recovery and topic refs;
 4. run final package/API/docs/security/governance checks;
-5. freeze the supported product surface and version;
-6. publish the final #360 artifact.
-
-There is no migration/parity/canary release.
+5. freeze the supported product surface/version;
+6. publish one final #360 artifact.
 
 ### #361 — installed fleet acceptance
 
-Validate the published artifact source-free across:
+Validate the published source-free artifact across:
 
 1. DarkFactory;
 2. omnis;
@@ -301,21 +210,20 @@ Validate the published artifact source-free across:
 5. template-OdbornaPrace;
 6. OdbornaPrace-mono.
 
-#361 proves install/update, detection/capabilities, full governed Request lifecycle, interruption/resume, git/hooks/governance, keychain/auth boundaries, docs/web, release/update behavior, recovery provenance and consistent `audit.df`.
+#361 must prove install/update, detection/capabilities, the full governed Request lifecycle, interruption/resume, git/hooks/governance, keychain/auth boundaries, docs/web, release/update behavior, recovery provenance and consistent `audit.df`.
 
-Known implementation defects discovered by #361 are fixed in their owning final package/Request and republished; #361 is not a place to defer known implementation.
+Fix defects discovered by #361 in their owning final package/Request and republish. After #361 is green and all required child Requests are terminal, rerun the declarable-graph product contract and close #68.
 
-After #361 is green, rerun the declarable-graph product contract and close #68 only when every required child Request is terminal.
+## 8. Execution scheduler
 
-## 8. Immediate execution order
+Use the following scheduling policy to minimize wasted work:
 
-Highest-downstream-value work, in order:
+1. **Critical lane:** #894 → #899 → #359. Keep this lane continuously occupied.
+2. **Do not rebase stale dependent branches early:** refresh #899 once after #894 merges, not repeatedly before the dependency join.
+3. **Independent lanes:** #339; #248/#252; stable #403/#251 work; #425/#390 repair; stable #360 construction; dependency-independent #384 work.
+4. **Dependency-triggered lanes:** #385/#332 after #358; #386 after #384 + #358 + #385; deeper #388 execution after its required shipped interfaces exist.
+5. **One implementation vehicle per Request.** Rejected/generated refs are never reused.
+6. **Green is necessary, not sufficient.** A PR is terminal only when final ownership, Request acceptance, review/alignment and real evidence are complete.
+7. **No speculative compatibility work.** If a final owner exists, delete the superseded owner instead of maintaining both.
 
-1. **#358 / #894:** finish concrete final-owner effect adapters and real dispatch execution on the now-shipped core graph/effect journal, prove crash/retry E2E, review/alignment, merge.
-2. **#317 / #899:** continue final-owner repair work in parallel, then refresh on merged #358 for actual graph re-entry; review/alignment, merge.
-4. **#359:** execute the df-only lifecycle/legacy-retirement completion gate immediately after #358/#317.
-5. **#339:** continue deterministic invocation/rule-binding work and remove `recovery/f47-hooks` after terminal disposition.
-6. Continue #384/#388 stable pieces, #403/#251/#425/#390 and #360 release construction in parallel; start #385/#332 when #358 state is stable and #386 when #384 + #358 + #385 are stable.
-7. Delete invalid generated #329/#384/#403/#339/#360/#422 branches plus merged topic branches immediately; none are archives or reusable implementation vehicles.
-
-Converge only at the final release freeze, publish once, validate through #361, then close #68.
+Converge only at final release freeze, publish once, validate through #361, then close #68.
