@@ -7,13 +7,13 @@
   industry: "Sandbox",
   czech: "Izolované běhové prostředí",
   english: "Sandbox",
-  citation: bib.agache2020firecracker,
-  source: bib.agache2020firecracker,
+  citation: (bib.anthropic_managed_agents, bib.agache2020firecracker),
+  source: bib.anthropic_managed_agents,
   definition: terms => [
-Omezené běhové prostředí, které odděluje prováděný kód a jeho oprávnění od hostitelského systému.
+Oddělené execution environment, ve kterém agent může spouštět kód nebo měnit pracovní soubory bez přímého přístupu ke všem prostředkům hostitelského systému. #cite(bib.anthropic_managed_agents)
   ],
   description: terms => [
-Izolační hranice mohou omezovat přístup k systémovým prostředkům; microVM představují jednu z možností silnější izolace nedůvěryhodných workloadů. #cite(bib.agache2020firecracker)
+Sandbox vytváří bezpečnostní hranici kolem nedůvěryhodných účinků; konkrétní realizace může používat například kontejner nebo microVM. #cite(bib.anthropic_managed_agents) #cite(bib.agache2020firecracker)
   ],
   relations: ((type: "dependency", target: "environment"), (type: "related", target: "guardrail")),
 )
