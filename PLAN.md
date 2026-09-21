@@ -262,6 +262,8 @@ The rejected #358 ref `feature/wire-graph-executor-handlers-and-graph-native-orc
 
 The rejected #329 ref `feature/results-are-captured-when-a-model-stops-without-js` was incorrectly recreated by an autonomous resume and produced invalid lockfile-only PR #952. PR #952 is closed; this ref must be deleted again and must not be reused. The only active #329 vehicle is PR #891 on `feat/natural-stop-result-truth`.
 
+The generated #384 ref `feature/df-supports-deterministic-common-git-workspace-ope` produced invalid lockfile-only PR #953 while claiming completion from deletion-bound harness state. PR #953 is closed; delete this ref and do not reuse it as #384 implementation evidence.
+
 After an active PR merges, remove its topic branch when safe. `gh-pages` is a deployment branch and is excluded from implementation-branch cleanup.
 
 Do not keep historical branches as archives.
