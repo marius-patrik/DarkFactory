@@ -6,13 +6,13 @@
   keyword: true,
   industry: "Agentic Engineering",
   czech: "Agentické inženýrství",
-  citation: bib.wang2024survey,
-  source: bib.darkfactory,
+  citation: (bib.wang2024survey, bib.anthropic2024tooluse, bib.anthropic_harness_design),
+  source: bib.anthropic_harness_design,
   definition: terms => [
-Návrh a provoz systémů kolem jazykových modelů, které zajišťují nástroje, kontext, stav, provádění, mantinely a lidský dohled.
+V této práci zastřešuje návrh systémů, které kolem jazykového modelu zajišťují nástroje, kontext, stav, provádění a kontrolní mechanismy.
   ],
   description: terms => [
-Jeho předmětem je systém, který převádí modelový výstup na řízené a ověřitelné jednání, nikoli architektura nebo trénování samotného modelu.
+Předmětem není trénování modelu, ale inženýrství systému, který z modelových rozhodnutí vytváří řízené akce nad prostředím. #cite(bib.wang2024survey) #cite(bib.anthropic2024tooluse)
   ],
   relations: ((type: "dependency", target: "harness"),),
 )
