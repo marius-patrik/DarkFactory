@@ -4,7 +4,7 @@
 #import "/DarkFactory/agentic-engineering/human-in-the-loop.typ" as human_in_the_loop
 #import "/DarkFactory/agentic-engineering/goal-loops.typ" as goal_loops
 #import "/DarkFactory/agentic-engineering/prompt-engineering/index.typ" as prompting
-#import "/DarkFactory/agentic-engineering/context-engineering/index.typ" as context
+#import "/DarkFactory/agentic-engineering/context-engineering/index.typ" as context_engineering
 #import "/DarkFactory/agentic-engineering/multi-agent-systems/index.typ" as multi_agent_systems
 
 #let execution_control = folder(
@@ -23,7 +23,7 @@
   concepts: (agentic_engineering.item,),
   children: (
     prompting.node,
-    context.node,
+    context_engineering.node,
     execution_control,
     multi_agent_systems.node,
   ),
