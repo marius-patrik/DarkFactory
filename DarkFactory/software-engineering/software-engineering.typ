@@ -9,10 +9,10 @@
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [
-Systematické uplatňování inženýrských principů na specifikaci, návrh, implementaci, ověřování, provoz a údržbu softwarových systémů.
+Systematické uplatňování inženýrských principů na specifikaci, vývoj, ověřování, provoz a údržbu softwarových systémů. #cite(bib.sommerville2016)
   ],
   description: terms => [
-V agentním vývoji zasazuje generování kódu do řízeného procesu požadavků, změn, automatického ověřování a revize.
+Pro tuto práci poskytuje procesní rámec, ve kterém musí být změny nejen vytvořeny, ale také řízeny, ověřeny a integrovány.
   ],
   relations: (),
 )
