@@ -6,13 +6,13 @@
   industry: "Plugins",
   czech: "Rozšíření",
   english: "Plugins",
-  citation: bib.deepseekharness2026,
-  source: bib.deepseekharness2026,
+  citation: bib.claude_code_plugins,
+  source: bib.claude_code_plugins,
   definition: terms => [
-Programové rozšíření běžící přímo v prostředí harnessu, které může doplnit exekuční jádro o systémové adaptéry, ovladače nástrojů nebo deterministické záchytné body.
+Distribuovatelný balíček rozšíření, kterým lze doplnit schopnosti a běhové chování agentního prostředí.
   ],
   description: terms => [
-Na rozdíl od instrukční dovednosti mění plugin programové chování běhové vrstvy harnessu. #cite(bib.deepseekharness2026)
+Plugin může sdružovat více komponent, například skills, agenty, hooks a konfiguraci MCP serverů. #cite(bib.claude_code_plugins)
   ],
   relations: ((type: "dependency", target: "harness"),),
 )
