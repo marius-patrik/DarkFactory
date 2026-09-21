@@ -4,9 +4,7 @@
 
 #let item = concept(
   key: "claude_desktop",
-  industry: "Claude Desktop",
-  czech: "Aplikace Claude pro desktop",
-  english: "Claude Desktop App",
+  keyword: "Claude Desktop",
   citation: bib.anthropic_claude_desktop,
   source: bib.anthropic_claude_desktop,
   definition: terms => [

@@ -4,9 +4,7 @@
 
 #let item = concept(
   key: "claude_code",
-  industry: "Claude Code",
-  czech: "Claude Code",
-  english: "Claude Code",
+  keyword: "Claude Code",
   citation: bib.anthropic_claude_code,
   source: bib.anthropic_claude_code,
   definition: terms => [

@@ -4,9 +4,7 @@
 
 #let item = concept(
   key: "codex",
-  industry: "Codex",
-  czech: "Codex",
-  english: "Codex",
+  keyword: "Codex",
   citation: bib.openai_codex_app,
   source: bib.openai_codex_app,
   definition: terms => [

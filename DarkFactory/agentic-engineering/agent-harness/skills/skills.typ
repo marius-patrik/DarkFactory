@@ -4,9 +4,8 @@
 
 #let item = concept(
   key: "skills",
-  industry: "Skills",
-  czech: "Dovednosti",
-  english: "Skills",
+  term: "Dovednosti",
+  keyword: "Skills",
   citation: bib.agent_skills_spec,
   source: bib.agent_skills_spec,
   definition: terms => [

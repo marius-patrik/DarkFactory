@@ -3,9 +3,7 @@
 
 #let item = concept(
   key: "skill_md_format",
-  industry: "SKILL.md",
-  czech: "Formát SKILL.md",
-  english: "SKILL.md Format",
+  term: "Formát SKILL.md",
   citation: bib.agent_skills_spec,
   source: bib.agent_skills_spec,
   definition: terms => [

@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "plugins",
-  industry: "Plugins",
-  czech: "Rozšíření",
-  english: "Plugins",
+  term: "Pluginy",
+  keyword: "Plugins",
   citation: bib.claude_code_plugins,
   source: bib.claude_code_plugins,
   definition: terms => [
