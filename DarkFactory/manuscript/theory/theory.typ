@@ -1,13 +1,12 @@
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "theory",
-  czech: "Teoretická část",
-  english: "Theory",
+  title: [Teoretická část],
   definition: terms => [
 Vymezení konceptů potřebných pro pochopení současného agentního vývoje softwaru.
   ],
   description: terms => [
-Postupuje od softwarového inženýrství přes jazykový model a harness k agentickému inženýrství.
+Postupuje od Software Engineering přes Model a Harness k Agentic Engineering.
   ],
 )
