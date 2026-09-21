@@ -4,6 +4,7 @@
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/protocol.typ" as protocol
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/run-state.typ" as run_state
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/routing.typ" as routing
+#import "/DarkFactory/manuscript/practical/darkfactory-architecture/supervisor.typ" as supervisor
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/result-capture.typ" as result_capture
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/recovery.typ" as recovery
 #import "/DarkFactory/manuscript/practical/darkfactory-architecture/capability.typ" as capability
@@ -34,6 +35,7 @@
     protocol.item,
     run_state.item,
     routing.item,
+    supervisor.item,
     result_capture.item,
     recovery.item,
   ),
