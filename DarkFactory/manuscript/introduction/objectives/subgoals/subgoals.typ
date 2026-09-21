@@ -1,9 +1,8 @@
-#import "/DarkFactory/schema.typ": concept
+#import "/DarkFactory/schema.typ": section
 
-#let item = concept(
+#let item = section(
   key: "subgoals",
-  czech: "Dílčí cíle",
-  english: "Sub-goals",
+  title: [Dílčí cíle],
   definition: terms => [
 - Vymezit infrastrukturu pro správu verzí a průběžné automatické ověřování změn.
 - Popsat limity modelového kontextu, jeho správu a mechanismy pro dlouhotrvající agentní úlohy.
@@ -13,5 +12,4 @@
   description: terms => [
 Dílčí cíle pokrývají vývojové prostředí, kontext, provádění a lidský dohled.
   ],
-  relations: ((type: "dependency", target: "main_goal"),),
 )
