@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": finalized, bib
+#import "/DarkFactory/templates/common.typ": bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -6,13 +6,13 @@
   industry: "Hooks",
   czech: "Událostní záchytné body",
   english: "Hooks",
-  citation: bib.deepseekharness2026,
-  source: bib.deepseekharness2026,
+  citation: bib.claude_code_hooks,
+  source: bib.claude_code_hooks,
   definition: terms => [
-Definované body životního cyklu nebo události, na které lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
+Konfigurované reakce spouštěné při určených událostech životního cyklu agentního prostředí.
   ],
-  description: terms => [#finalized[
-Používají se například před spuštěním nástroje, po dokončení kroku nebo při změně stavu běhu.
-  ]],
+  description: terms => [
+Hook může před nebo po vybrané události spustit deterministickou logiku, například validaci, příkaz nebo jinou automatizaci. #cite(bib.claude_code_hooks)
+  ],
   relations: ((type: "dependency", target: "tools"),),
 )
