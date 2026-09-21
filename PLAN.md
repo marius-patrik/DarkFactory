@@ -31,7 +31,7 @@ Use the governed DarkFactory pipeline whenever the currently shipped pipeline ca
 
 ## 3. Live checkpoint — 2026-09-21
 
-Canonical branch: `darkfactory` at `be63e238e3470b67e8c2d652048ea50da779e870` when this plan was aligned.
+Canonical branch: `darkfactory`. Do not pin its moving HEAD here; GitHub is authoritative for the live commit, check and divergence state.
 
 ### Shipped foundations
 
@@ -47,9 +47,8 @@ Canonical branch: `darkfactory` at `be63e238e3470b67e8c2d652048ea50da779e870` wh
 
 #### #358 → PR #894 — critical path
 
-- Tip: `ab1b08e1c48ad08a8af7d2099fafc1fd159861ad`.
-- Relative to current `darkfactory`: 94 commits ahead, 0 behind.
-- Current PR-triggered CI, docs preview, binding and board automation are green.
+- PR #894 is the active #358 implementation vehicle.
+- At the alignment checkpoint it was refreshed onto canonical state and its PR-triggered CI, docs preview, binding and board automation were green. Re-check live divergence/checks immediately before terminal review/merge.
 - Graph planning/execution/review/planning/check/validation semantics and production handlers have moved into `@darkfactory/core/graph`.
 - Durable ingress identity, continuation state, pending external actions and evidence-backed effect journaling are implemented.
 - The remaining repository/GitHub/runtime composition is still explicitly temporary under `harness/src/graph/production-composition.ts` and `harness/src/graph/runtime-composition.ts`; green CI does not make this terminal.
@@ -64,9 +63,7 @@ Terminal delta:
 
 #### #317 → PR #899 — wait for Join B
 
-- Tip: `c045522c08192b9124453e37c20278237aaa8f74`.
-- Relative to current `darkfactory`: 14 commits ahead, 145 behind.
-- Its own last CI/docs wave is green, but the branch is structurally stale.
+- PR #899 is materially stale behind canonical state. Its own last inspected CI/docs wave was green, but that does not make the branch current.
 - Typed mutation claim/evidence contracts already exist in `@darkfactory/protocol` and `@darkfactory/core`.
 - Conflict-repair execution still has deletion-bound harness ownership and real graph re-entry depends on the shipped #358 interface.
 
@@ -74,18 +71,16 @@ Do not repeatedly refresh or extend #899 before #894 merges. After #358 lands, r
 
 #### #425 → PR #963 — independent but nonterminal
 
-- Tip: `a8757fb142b7b4f2898c9344cd485e3681a67f1d`.
-- Relative to current `darkfactory`: 12 commits ahead, 118 behind.
-- Current CI and docs preview are red; observed failures include a web export/router type mismatch and the workspace package-boundary test.
+- PR #963 is stale behind canonical state and its last inspected CI/docs preview were red; observed failures included a web export/router type mismatch and the workspace package-boundary test.
 - #963 does not block #358/#317/#359. Refresh it from current canonical state before further feature work, fix the known failures, then continue #425 on the browser-safe transport boundary.
 
 ### Current repository mismatch that must disappear by #359
 
 The root workspace still includes `harness`, and root `test`/`typecheck`/`check`/format behavior still delegates primarily through the harness tree. That is current implementation state, not final architecture. #359 must leave normal production and repository verification owned by final packages/capabilities rather than by deletion-bound harness code.
 
-### Pipeline health note
+### Pipeline health rule
 
-Issue #996 records a failed Auto Format run caused by an unused hook import. That import is absent from current `darkfactory`; treat #996 as a verification item for the next default-branch run unless the failure reproduces. Do not spend a feature lane rebuilding around a stale pipeline-failure issue.
+Keep default-branch pipeline health green before expanding autonomous work. Fix reproducible repository failures at their owning source; rerun clearly transient infrastructure failures rather than changing product code around them. Live pipeline-failure issues are operational state and are intentionally not pinned into this plan.
 
 ## 4. Critical production-engine path
 
