@@ -1,5 +1,5 @@
 import type { GitHubClient } from "../github/client.ts";
-import type { VaultMeta, PushMap } from "./vault.ts";
+import type { PushMap, VaultMeta } from "@darkfactory/keychain";
 
 export interface GitHubSecretInfo {
 	name: string;
