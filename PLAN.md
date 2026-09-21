@@ -303,7 +303,7 @@ Interpret results without introducing unsupported superiority claims.
 
 ## Phase 7 — Alignment pass B
 
-**Status: partially complete; introduction, conclusion, title metadata, annotation, abstract, goals/questions, and evidence boundaries are aligned to current Results. Final closure is blocked only by evidence that would materially change the final answers, especially the live df-only lifecycle.**
+**Status: complete against the currently available evidence; introduction, conclusion, title metadata, annotation, abstract, methodology, goals, research questions, bounded answers, citation set, and evidence boundaries are aligned. Reopen only if new live end-to-end evidence materially changes the Results.**
 
 **Purpose:** make the framing and sourcing exactly match the finished thesis.
 
@@ -340,9 +340,12 @@ The conclusion must answer only what the Results established.
 - goals, questions, answers, results, and conclusion form a closed chain;
 - no promised evaluation is missing;
 - no final claim exceeds the evidence;
-- bibliography contains only used/relevant sources.
+- bibliography contains only used/relevant sources;
+- the front-matter keyword list and appendix encyclopedia derive from the same canonical `keyword: true` concepts.
 
 ## Phase 8 — Publication and submission QA
+
+**Status: in progress; canonical CI, Deploy Documentation, and Release are green on head `26bf0db738c76ce48bd1eddac8e6df60f6da8462`. Remaining work is final rendered-artifact visual inspection and any resulting presentation-only fixes.**
 
 ### Content QA
 
