@@ -28,7 +28,7 @@ Hlavní struktura:
    - Výsledky a diskuse
 4. Závěr
 
-Theory používá grouping sections pro AI-asistovaný vývoj, řízení změn, verifikaci, modelový kontext, stav a runtime harnessu, kontextové techniky, cílené smyčky a multi-agentní systémy.
+Theory používá grouping sections pro AI-asistovaný vývoj, specifikaci a plánování, řízení změn, verifikaci, modelový kontext, stav a runtime harnessu, kontextové mechanismy, řízení provádění a multi-agentní systémy.
 
 Kanonický koncept vlastní stabilní klíč, terminologii, definici, popis, citace, příklady a semantic relations. Plný název konceptu vede ustáleným industry termem, následuje odlišný český název v závorkách a odlišný anglický formální název v hranatých závorkách. Bez samostatného industry termu vede český název.
 
