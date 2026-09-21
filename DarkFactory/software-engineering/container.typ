@@ -6,13 +6,13 @@
   industry: "Container",
   czech: "Softwarový kontejner",
   english: "Software Container",
-  citation: bib.docker_containers_docs,
-  source: bib.docker_containers_docs,
+  citation: (bib.docker_containers_docs, bib.oci_runtime_spec),
+  source: bib.oci_runtime_spec,
   definition: terms => [
-Izolovaný proces s vlastním uživatelským prostředím a soubory potřebnými pro běh aplikace, který sdílí jádro hostitelského operačního systému. #cite(bib.docker_containers_docs)
+Izolované procesové prostředí vytvořené podle definované konfigurace a lifecycle pravidel, ve kterém běží aplikace se svými potřebnými soubory a závislostmi. #cite(bib.oci_runtime_spec)
   ],
   description: terms => [
-Kontejner umožňuje balit aplikaci a její závislosti do přenositelného běhového prostředí, ale neposkytuje stejnou izolační hranici jako samostatný virtuální stroj. #cite(bib.docker_containers_docs)
+Kontejnery poskytují oddělené uživatelské prostředí při sdílení jádra hostitelského operačního systému a usnadňují přenositelné zabalení aplikace a jejích závislostí. #cite(bib.docker_containers_docs)
   ],
-  relations: ((type: "related", target: "runtime"),),
+  relations: ((type: "parent", target: "runtime"),),
 )
