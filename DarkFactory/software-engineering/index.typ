@@ -4,12 +4,12 @@
 #import "/DarkFactory/software-engineering/slop.typ" as slop
 #import "/DarkFactory/software-engineering/spec-driven-development.typ" as spec_driven_development
 #import "/DarkFactory/software-engineering/planning.typ" as planning
+#import "/DarkFactory/software-engineering/dag.typ" as dag
 #import "/DarkFactory/software-engineering/version-control.typ" as version_control
 #import "/DarkFactory/software-engineering/branch.typ" as branch
 #import "/DarkFactory/software-engineering/pull-request.typ" as pull_request
 #import "/DarkFactory/software-engineering/continuous-integration.typ" as continuous_integration
 #import "/DarkFactory/software-engineering/integration-test.typ" as integration_test
-#import "/DarkFactory/software-engineering/dag.typ" as dag
 #import "/DarkFactory/software-engineering/runtime.typ" as runtime
 #import "/DarkFactory/software-engineering/container.typ" as container
 
@@ -19,8 +19,16 @@
   concepts: (
     vibe_coding.item,
     slop.item,
+  ),
+)
+
+#let specification_planning = folder(
+  key: "software_engineering_specification_planning",
+  title: [Specifikace a plánování],
+  concepts: (
     spec_driven_development.item,
     planning.item,
+    dag.item,
   ),
 )
 
@@ -43,12 +51,6 @@
   ),
 )
 
-#let workflow_modelling = folder(
-  key: "software_engineering_workflow_modelling",
-  title: [Modelování pracovních postupů],
-  concepts: (dag.item,),
-)
-
 #let execution_environments = folder(
   key: "software_engineering_execution_environments",
   title: [Běhová prostředí],
@@ -64,9 +66,9 @@
   concepts: (software_engineering.item,),
   children: (
     ai_assisted_development,
+    specification_planning,
     change_management,
     verification,
-    workflow_modelling,
     execution_environments,
   ),
 )
