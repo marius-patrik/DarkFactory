@@ -20,17 +20,3 @@ export type {
 } from "../../../harness/src/harness/supervisor.ts";
 export * from "./repository-evidence.ts";
 export * from "./result-capture.ts";
-
-import { changedFiles } from "../../../harness/src/workspace/changedFiles.ts";
-import { commitChunk } from "../../../harness/src/workspace/commitChunk.ts";
-import { runDetectedVerification } from "../../../harness/src/workspace/runVerify.ts";
-import { scopeCheck } from "../../../harness/src/workspace/scopeCheck.ts";
-import { registerWorkspaceOperations } from "./result-capture.ts";
-
-registerWorkspaceOperations({
-	changedFiles,
-	scopeCheck,
-	runDetectedVerification,
-	commitChunk,
-});
-
