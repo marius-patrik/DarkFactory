@@ -78,6 +78,7 @@
 #let darkfactory_paper_ci_35617820423 = <darkfactory-paper-ci-35617820423>
 #let darkfactory_paper_deploy_35617820271 = <darkfactory-paper-deploy-35617820271>
 #let darkfactory_paper_release_35617820286 = <darkfactory-paper-release-35617820286>
+#let darkfactory_request_359 = <darkfactory-request-359>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -157,4 +158,5 @@
   darkfactory_paper_ci_35617820423: darkfactory_paper_ci_35617820423,
   darkfactory_paper_deploy_35617820271: darkfactory_paper_deploy_35617820271,
   darkfactory_paper_release_35617820286: darkfactory_paper_release_35617820286,
+  darkfactory_request_359: darkfactory_request_359,
 )
