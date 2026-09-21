@@ -63,7 +63,7 @@ Current state:
 - capture-schema CLI behavior exists in `@darkfactory/cli`;
 - deletion-bound result-capture compatibility bridges have been removed;
 - routed provider-enforced judgement extraction, exact schema guard and natural-stop code truth are implemented;
-- PR #891 is non-draft, mergeable and current checks are green.
+- PR #891 is non-draft and its last completed head checks are green; refresh against current `darkfactory` only if merge policy/base drift requires it.
 
 Remaining work is governance only: terminal current-head review/alignment and merge. Do not add new feature work to #891 unless a new review finding or canonical-base change requires it.
 
@@ -71,7 +71,7 @@ Remaining work is governance only: terminal current-head review/alignment and me
 
 Current state:
 
-- the active PR is mergeable and aggregate CI/docs are green;
+- the active PR remains draft and its last completed head CI/docs are green;
 - prior fabricated/swallowed success paths have been narrowed/removed;
 - durable production handler ownership is still under deletion-bound `harness/src/graph/production-handlers.ts`, so the Request is not terminal.
 
