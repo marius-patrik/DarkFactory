@@ -20,5 +20,5 @@ Pravděpodobnostní dekódování znamená, že shodný vstup nemusí vždy vytv
   examples: (),
   attachments: (),
   citations: (),
-  relations: ((type: "dependency", target: "autoregression"), (type: "related", target: "harness")),
+  relations: ((type: "dependency", target: "language_model"), (type: "related", target: "harness")),
 )
