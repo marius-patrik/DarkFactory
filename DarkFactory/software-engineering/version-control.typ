@@ -9,10 +9,10 @@
   citation: bib.chacon2014,
   source: bib.chacon2014,
   definition: terms => [
-Sledování historie změn v repozitáři tak, aby bylo možné změny porovnávat, oddělovat a bezpečně slučovat.
+Systém pro zaznamenávání historie změn souborů a práci s oddělenými liniemi vývoje. #cite(bib.chacon2014)
   ],
   description: terms => [
-DarkFactory používá Git a GitHub k oddělení pracovního stavu agenta od hlavní historie projektu a k dohledání provedených změn. #cite(bib.chacon2014)
+Historie commitů umožňuje změny porovnávat, vracet a slučovat; větve umožňují oddělit souběžnou práci před integrací. #cite(bib.chacon2014)
   ],
   relations: ((type: "related", target: "github"),),
 )
