@@ -1,27 +1,30 @@
 #import "/DarkFactory/schema.typ": folder
-#import "/DarkFactory/agentic-engineering/agentic-engineering.typ" as section
+#import "/DarkFactory/agentic-engineering/agentic-engineering.typ" as agentic_engineering
 #import "/DarkFactory/agentic-engineering/guardrail.typ" as guardrail
 #import "/DarkFactory/agentic-engineering/human-in-the-loop.typ" as human_in_the_loop
-#import "/DarkFactory/agentic-engineering/sandbox.typ" as sandbox
-#import "/DarkFactory/agentic-engineering/harness-engineering/index.typ" as harness_engineering
-#import "/DarkFactory/agentic-engineering/prompt-engineering/index.typ" as prompt_engineering
-#import "/DarkFactory/agentic-engineering/loop-engineering/index.typ" as loop_engineering
-#import "/DarkFactory/agentic-engineering/graph-engineering/index.typ" as graph_engineering
-#import "/DarkFactory/agentic-engineering/context-engineering/index.typ" as context_engineering
+#import "/DarkFactory/agentic-engineering/goal-loops.typ" as goal_loops
+#import "/DarkFactory/agentic-engineering/prompt-engineering/index.typ" as prompting
+#import "/DarkFactory/agentic-engineering/context-engineering/index.typ" as context
+#import "/DarkFactory/agentic-engineering/multi-agent-systems/index.typ" as multi_agent_systems
+
+#let goal_directed_execution = folder(
+  key: "agentic_goal_directed_execution",
+  title: [Cílené vykonávání],
+  concepts: (
+    goal_loops.item,
+    guardrail.item,
+    human_in_the_loop.item,
+  ),
+)
 
 #let node = folder(
   key: "agentic_engineering",
-  section: section.item,
-  concepts: (
-    guardrail.item,
-    human_in_the_loop.item,
-    sandbox.item,
-  ),
+  title: [Agentic Engineering],
+  concepts: (agentic_engineering.item,),
   children: (
-    harness_engineering.node,
-    prompt_engineering.node,
-    loop_engineering.node,
-    graph_engineering.node,
-    context_engineering.node,
+    prompting.node,
+    context.node,
+    goal_directed_execution,
+    multi_agent_systems.node,
   ),
 )
