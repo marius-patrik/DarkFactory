@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "deterministic_verification",
-  industry: "Deterministic Verification",
-  czech: "Deterministické ověření",
-  english: "Deterministic Verification",
+  term: "Deterministické ověření",
+  keyword: "Deterministic Verification",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [
@@ -14,5 +13,5 @@ Ověření výsledku změny pomocí přímo pozorovatelných strojových důkaz�
   description: terms => [
 DarkFactory odvozuje výsledek kódového kroku ze skutečně změněných souborů, scope checku, detekovaných verifikačních akcí, jejich exit stavů a případně vytvořeného commitu.
   ],
-  relations: ((type: "dependency", target: "result_capture"), (type: "related", target: "integration_test")),
+  relations: ((type: "related", target: "integration_test")),
 )

@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "final_alignment",
-  industry: "Final Alignment",
-  czech: "Finální kontrola souladu",
-  english: "Final Alignment",
+  term: "Finální kontrola souladu",
+  keyword: "Final Alignment",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [

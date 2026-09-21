@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "review_fix_loop",
-  industry: "Review/Fix Loop",
-  czech: "Smyčka revize a opravy",
-  english: "Review/Fix Loop",
+  term: "Smyčka revize a opravy",
+  keyword: "Review/Fix Loop",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [

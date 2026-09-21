@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "darkfactory_planning",
-  industry: "Planning",
-  czech: "Plánování DarkFactory",
-  english: "DarkFactory Planning",
+  term: "Plán DarkFactory",
+  keyword: "Planning",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [
