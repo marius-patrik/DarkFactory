@@ -1,6 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
-import { z } from "zod";
 import {
 	CAPTURE_TOOL_NAME,
 	captureContext,
@@ -9,6 +7,8 @@ import {
 	readCapture,
 	validateCaptureSchema,
 } from "@darkfactory/core/result-capture";
+import type { AssistantMessage } from "@earendil-works/pi-ai";
+import { z } from "zod";
 
 function clone<T>(obj: T): T {
 	return JSON.parse(JSON.stringify(obj));

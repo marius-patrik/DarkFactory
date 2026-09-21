@@ -4,6 +4,15 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	alignmentResultSchema,
+	CAPTURE_TOOL_NAME,
+	CaptureError,
+	captureCodeResult,
+	extractJudgementResult,
+	planningResultSchema,
+	reviewResultSchema,
+} from "@darkfactory/core";
+import {
 	type AssistantMessage,
 	type Context,
 	fauxAssistantMessage,
@@ -12,16 +21,6 @@ import {
 } from "@earendil-works/pi-ai";
 import { z } from "zod";
 import type { Candidate } from "../src/failover.ts";
-
-import {
-	alignmentResultSchema,
-	CaptureError,
-	captureCodeResult,
-	extractJudgementResult,
-	planningResultSchema,
-	reviewResultSchema,
-	CAPTURE_TOOL_NAME,
-} from "@darkfactory/core";
 import { createFailoverSupervisor } from "../src/harness/supervisor.ts";
 import { runGit } from "../src/workspace/git.ts";
 
