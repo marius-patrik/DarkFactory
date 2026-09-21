@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "state",
-  industry: "State",
-  czech: "Stav",
-  english: "State",
+  term: "Stav",
+  keyword: "State",
   citation: bib.anthropic_managed_agents,
   source: bib.anthropic_managed_agents,
   definition: terms => [

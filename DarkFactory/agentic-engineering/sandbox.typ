@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "sandbox",
-  keyword: true,
-  industry: "Sandbox",
-  czech: "Izolované běhové prostředí",
-  english: "Sandbox",
+  term: "Izolované prostředí",
+  keyword: "Sandbox",
   citation: (bib.anthropic_managed_agents, bib.agache2020firecracker),
   source: bib.anthropic_managed_agents,
   definition: terms => [

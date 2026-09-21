@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "transcript",
-  industry: "Transcript",
-  czech: "Přepis",
-  english: "Transcript",
+  term: "Přepis",
+  keyword: "Transcript",
   citation: (bib.openai_agents_sessions, bib.anthropic_managed_agents),
   source: bib.anthropic_managed_agents,
   definition: terms => [

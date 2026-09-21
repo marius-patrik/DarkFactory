@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "tools",
-  keyword: true,
-  industry: "Tools",
-  czech: "Nástroje",
-  english: "Tools",
+  term: "Nástroje",
+  keyword: "Tools",
   citation: (bib.schick2023toolformer, bib.anthropic2024tooluse),
   source: bib.anthropic2024tooluse,
   definition: terms => [
@@ -15,5 +13,5 @@ Rozhraní, kterým agent vyvolává operace mimo samotnou textovou inferenci, na
   description: terms => [
 Harness zprostředkuje požadavek na nástroj, provede operaci v prostředí a vrátí její výsledek modelu jako další pozorování. #cite(bib.schick2023toolformer) #cite(bib.anthropic2024tooluse)
   ],
-  relations: ((type: "parent", target: "plugins"), (type: "related", target: "agent_loop")),
+  relations: ((type: "dependency", target: "harness"), (type: "related", target: "agent_loop")),
 )

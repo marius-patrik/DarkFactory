@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "environment",
-  industry: "Environment",
-  czech: "Běhové prostředí agenta",
-  english: "Agent Environment",
+  term: "Prostředí agenta",
+  keyword: "Agent Environment",
   citation: bib.anthropic_managed_agents,
   source: bib.anthropic_managed_agents,
   definition: terms => [

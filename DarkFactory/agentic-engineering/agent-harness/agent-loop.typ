@@ -3,10 +3,8 @@
 
 #let item = concept(
   key: "agent_loop",
-  keyword: true,
-  industry: "Agent Loop",
-  czech: "Smyčka ReAct",
-  english: "ReAct Loop",
+  term: "Agentní smyčka",
+  keyword: "Agent Loop",
   citation: bib.yao2022,
   source: bib.yao2022,
   definition: terms => [

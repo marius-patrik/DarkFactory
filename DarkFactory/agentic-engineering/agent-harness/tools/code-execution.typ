@@ -3,9 +3,8 @@
 
 #let item = concept(
   key: "code_execution",
-  industry: "Code Execution",
-  czech: "Spouštění kódu",
-  english: "Code Execution",
+  term: "Spouštění kódu",
+  keyword: "Code Execution",
   citation: bib.anthropic_code_execution,
   source: bib.anthropic_code_execution,
   definition: terms => [
@@ -14,5 +13,5 @@ Nástrojová schopnost umožňující vykonat program nebo příkaz a vrátit je
   description: terms => [
 Při vývoji softwaru zpřístupňuje agentovi například testy, buildy, formátovače a diagnostické příkazy místo odhadování jejich výsledku. #cite(bib.anthropic_code_execution)
   ],
-  relations: ((type: "parent", target: "tools"), (type: "related", target: "runtime")),
+  relations: ((type: "parent", target: "tools"), (type: "related", target: "sandbox")),
 )
