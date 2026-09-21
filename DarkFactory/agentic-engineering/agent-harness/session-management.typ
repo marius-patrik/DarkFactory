@@ -7,7 +7,7 @@
     czech: "Agentní sezení",
   english: "Agent Session",
 definition: terms => [
-Agentní sezení je ohraničený běh agenta se sdíleným stavem, systémovými instrukcemi, pracovním kontextem, historií tahů a provozními rozpočty.
+Ohraničený běh agenta se sdíleným stavem, systémovými instrukcemi, pracovním kontextem, historií tahů a provozními rozpočty.
   ],
   description: terms => [
 #finalized[

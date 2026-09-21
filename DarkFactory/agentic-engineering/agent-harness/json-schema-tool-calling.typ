@@ -9,7 +9,7 @@
   citation: (bib.json_schema_2020, bib.openai_structured_outputs),
   source: bib.openai_structured_outputs,
   definition: terms => [
-JSON Schema Tool Calling popisuje parametry nástroje formálním JSON Schema a před provedením ověřuje, že vygenerované argumenty odpovídají očekávané struktuře.
+Formální popis parametrů nástroje pomocí JSON Schema s ověřením, že vygenerované argumenty před provedením odpovídají očekávané struktuře.
   ],
   description: terms => [
 Schéma určuje povinná pole, datové typy a další omezení vstupu; rozhraní modelu může zároveň omezit generování argumentů tak, aby schématu odpovídaly. #cite(bib.json_schema_2020) #cite(bib.openai_structured_outputs)

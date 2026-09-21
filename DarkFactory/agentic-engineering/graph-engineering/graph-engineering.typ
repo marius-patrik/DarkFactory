@@ -10,7 +10,7 @@
   citation: bib.wu2023autogen,
   source: bib.wu2023autogen,
 definition: terms => [
-Inženýrství pracovních grafů je návrh agentních nebo automatizačních workflow jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.
+Návrh agentních nebo automatizačních workflow jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.
   ],
   description: terms => [
 #finalized[

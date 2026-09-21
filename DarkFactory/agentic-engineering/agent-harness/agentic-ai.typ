@@ -7,7 +7,7 @@
   industry: "Agentic AI",
   czech: "Agentické AI",
   definition: terms => [
-Agentic AI je systémové použití jazykového modelu, při němž model prostřednictvím nástrojů samostatně provádí vícekrokové akce nad stavem prostředí.
+Systémové použití jazykového modelu, při němž model prostřednictvím nástrojů samostatně provádí vícekrokové akce nad stavem prostředí.
   ],
   description: terms => [
 Tato vrstva zahrnuje agenty, jejich běhový harness, prováděcí smyčku, nástroje a správu pracovního kontextu.

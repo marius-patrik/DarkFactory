@@ -302,6 +302,33 @@ for path in concept_files:
     key = re.search(r'key:\s*"([^"]+)"', source)
     if key is None:
         fail(f"concept file is missing stable key: {path}")
+
+    definition_match = re.search(
+        r"definition:\s*terms\s*=>\s*\[([\s\S]*?)\],\s*\n\s*description:",
+        source,
+    )
+    if definition_match is not None:
+        definition_text = definition_match.group(1).strip()
+        definition_text = re.sub(
+            r"^#(?:finalized|accepted|unconfirmed|draft|added|removed|diff)\[\s*",
+            "",
+            definition_text,
+        )
+        definition_text = re.sub(r"\s+", " ", definition_text).strip()
+        for term_field in ("industry", "czech", "english", "alias"):
+            term_match = re.search(rf'{term_field}:\s*"([^"]+)"', source)
+            if term_match is None:
+                continue
+            term_value = term_match.group(1).strip()
+            if not term_value:
+                continue
+            if definition_text.casefold().startswith(term_value.casefold()):
+                remainder = definition_text[len(term_value):]
+                if not remainder or remainder[0].isspace() or remainder[0] in ".,:;([—–-":
+                    fail(
+                        f"definition repeats its own {term_field} term instead of starting with the meaning: {path}"
+                    )
+
     concept_keys.append(key.group(1))
     keyword = re.search(r"keyword:\s*(true|false)\b", source)
     if keyword is not None:

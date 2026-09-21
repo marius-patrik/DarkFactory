@@ -9,7 +9,7 @@
   citation: bib.deepseekharness2026,
   source: bib.deepseekharness2026,
   definition: terms => [
-Plugin je programové rozšíření běžící přímo v prostředí harnessu, které může doplnit exekuční jádro o systémové adaptéry, ovladače nástrojů nebo deterministické záchytné body.
+Programové rozšíření běžící přímo v prostředí harnessu, které může doplnit exekuční jádro o systémové adaptéry, ovladače nástrojů nebo deterministické záchytné body.
   ],
   description: terms => [
 Na rozdíl od instrukční dovednosti mění plugin programové chování běhové vrstvy harnessu. #cite(bib.deepseekharness2026)

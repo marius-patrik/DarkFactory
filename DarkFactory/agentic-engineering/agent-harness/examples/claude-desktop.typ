@@ -8,7 +8,7 @@
     industry: "Claude Desktop",
   czech: "Aplikace Claude pro desktop",
   english: "Claude Desktop App",
-definition: terms => [Claude Desktop je desktopová aplikační vrstva nad modely Claude, která propojuje konverzaci s lokálními soubory, aplikacemi, webem a dalšími schopnostmi.],
+definition: terms => [Desktopová aplikační vrstva nad modely Claude, která propojuje konverzaci s lokálními soubory, aplikacemi, webem a dalšími schopnostmi.],
   description: terms => [Se souhlasem uživatele může aplikace číst, upravovat a ukládat soubory a pracovat s dalšími aplikacemi.],
   attachments: (screenshot.item,),
   citations: (bib.anthropic_claude_desktop,),

@@ -13,7 +13,7 @@
   citation: bib.deepseekharness2026,
   source: bib.darkfactory,
   definition: terms => [
-Agentní harness je aplikační a orchestrační vrstva, která propojuje model s prostředím a řídí jeho opakované jednání nad stavem a nástroji.
+Aplikační a orchestrační vrstva, která propojuje model s prostředím a řídí jeho opakované jednání nad stavem a nástroji.
   ],
   description: terms => [
 Harness spravuje pracovní kontext, nástroje, stav úlohy, výsledky akcí a podmínky pokračování nebo ukončení běhu; provádění koordinuje #term(terms.agent_loop).

@@ -6,7 +6,7 @@
   czech: "Omezení evaluace",
   english: "Evaluation Limitations",
   definition: terms => [#finalized[
-Omezení evaluace vymezují, která tvrzení nelze z architektonického a implementačního ověření spolehlivě odvodit.
+Vymezení tvrzení, která nelze z architektonického a implementačního ověření spolehlivě odvodit.
   ]],
   description: terms => [#finalized[
 Práce nepředstavuje statistický benchmark úspěšnosti agentů, ceny, latence ani četnosti zacyklení na reprezentativním souboru úloh. Taková tvrzení vyžadují samostatný kontrolovaný experiment.

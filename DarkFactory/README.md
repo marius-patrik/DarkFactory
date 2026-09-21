@@ -11,7 +11,7 @@ The directory name, structural root key, and main book title are one identity. `
 - Nested folders create nested sections to arbitrary depth.
 - Section headings use the section concept's canonical full term surface unless the structural folder provides an explicit display-only `title`.
 - Section concepts and direct concepts render as headings. Levels 1–3 are numbered; level 4 and deeper remain outlined/indexed but render without section numbers. The contents uses explicit per-level indentation so unnumbered deep headings remain visibly nested. Visual inline examples render only their description and figure; non-visual examples retain their inline term/definition rendering.
-- The canonical prose fields are exactly `definition` and `description`; theory/practical/document projection fields and a separate concept summary field do not exist.
+- The canonical prose fields are exactly `definition` and `description`; a definition starts directly with the meaning and must not repeat any of the concept's own canonical term surfaces. Theory/practical/document projection fields and a separate concept summary field do not exist.
 - `keyword` defaults to `false`; only deliberately curated thesis-defining concepts set `keyword: true` and appear in the Keywords list.
 - The renderer never inserts generic `Úvod` subsections.
 - Semantic `dependency` and `related` relations never create containment.
@@ -39,7 +39,8 @@ A second book must be a sibling top-level directory with the same `book.typ` con
 
 Canonical terms use:
 - `industry` — established field-facing term or abbreviation,
-- `proper` — formal localized name,
+- `czech` — Czech formal name,
+- `english` — English formal name,
 - optional `alias` — alternate name.
 
-The full surface leads with the industry term, then adds the Czech proper name in parentheses, the English proper name in brackets when distinct, and an optional alias when distinct. Duplicate layers are removed, and section titles use this same canonical surface.
+The full surface leads with the industry term, then adds the Czech name in parentheses, the English name in brackets when distinct, and an optional alias when distinct. Duplicate layers are removed, and section titles use this same canonical surface.

@@ -8,7 +8,7 @@
   citation: bib.dabbish2012github,
   source: bib.dabbish2012github,
   definition: terms => [
-GitHub je cloudová platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí Issues, Pull Requests a automatizačních workflow.
+Cloudová platforma pro hosting gitových repozitářů a koordinaci vývojového cyklu pomocí Issues, Pull Requests a automatizačních workflow.
   ],
   description: terms => [#finalized[
 Nad historií spravovanou Gitem přidává GitHub zadání práce, revizi změn a automatizační workflow.

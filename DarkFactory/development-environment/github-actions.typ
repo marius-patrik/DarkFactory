@@ -8,7 +8,7 @@
   citation: bib.kinsman2021actions,
   source: bib.kinsman2021actions,
   definition: terms => [
-GitHub Actions je automatizační platforma GitHubu pro spouštění deklarovaných workflow a jejich jobů v reakci na události repozitáře nebo ruční spuštění.
+Automatizační platforma GitHubu pro spouštění deklarovaných workflow a jejich jobů v reakci na události repozitáře nebo ruční spuštění.
   ],
   description: terms => [#finalized[
 V DarkFactory GitHub Actions spouští CI kontroly a další automatizované procesy repozitáře.

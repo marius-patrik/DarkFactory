@@ -8,7 +8,7 @@
     industry: "Codex",
   czech: "Codex",
   english: "Codex",
-definition: terms => [Codex je agentní vývojový systém OpenAI určený pro samostatné plnění softwarově-inženýrských úloh.],
+definition: terms => [Agentní vývojový systém OpenAI určený pro samostatné plnění softwarově-inženýrských úloh.],
   description: terms => [Desktopová aplikace umožňuje řídit více agentů paralelně, oddělovat jejich práci do vláken a worktree, kontrolovat diffy a delegovat dlouhotrvající úlohy.],
   attachments: (screenshot.item,),
   citations: (bib.openai_codex_app,),

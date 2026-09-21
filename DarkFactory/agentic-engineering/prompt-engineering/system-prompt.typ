@@ -8,7 +8,7 @@
   citation: bib.anthropic_prompt,
   source: bib.anthropic_prompt,
   definition: terms => [
-Systémový prompt je instrukční vrstva s vysokou prioritou, která vymezuje roli a základní pravidla chování modelu nebo agenta.
+Instrukční vrstva s vysokou prioritou, která vymezuje roli a základní pravidla chování modelu nebo agenta.
   ],
   description: terms => [
 V harnessu tvoří stabilní instrukční základ pro práci s kontextem a nástroji, nikoli technickou bezpečnostní hranici.

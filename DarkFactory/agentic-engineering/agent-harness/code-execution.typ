@@ -9,7 +9,7 @@
   citation: bib.anthropic_code_execution,
   source: bib.anthropic_code_execution,
   definition: terms => [
-Spouštění kódu je nástrojová schopnost, která agentovi umožňuje vykonat program nebo příkaz a získat jeho skutečný výstup.
+Nástrojová schopnost, která agentovi umožňuje vykonat program nebo příkaz a získat jeho skutečný výstup.
   ],
   description: terms => [
 Při vývoji softwaru umožňuje spouštět testy, buildy, formátovače a diagnostické příkazy v řízeném prostředí místo odhadování jejich výsledku modelem. #cite(bib.anthropic_code_execution)

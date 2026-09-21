@@ -6,7 +6,7 @@
   czech: "Vyhodnocení výzkumných otázek",
   english: "Research Question Evaluation",
   definition: terms => [
-Vyhodnocení výzkumných otázek posuzuje, jak navržená architektura DarkFactory odpovídá na stanovené otázky.
+Posouzení, jak navržená architektura DarkFactory odpovídá na stanovené otázky.
   ],
   description: terms => [
 O1 — autonomie při zachování lidského dohledu: harness odděluje zadání, provádění, automatické kontroly a lidská rozhodnutí tak, aby rutinní kroky mohl vykonávat agent a člověk zůstal u významných rozhodnutí.

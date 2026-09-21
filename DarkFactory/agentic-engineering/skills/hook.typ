@@ -10,7 +10,7 @@
   citation: bib.deepseekharness2026,
   source: bib.deepseekharness2026,
 definition: terms => [
-Hook je definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
+Definovaný bod životního cyklu nebo události, na který lze navázat vlastní deterministickou logiku před, po nebo místo standardního chování systému.
   ],
   description: terms => [
 #finalized[

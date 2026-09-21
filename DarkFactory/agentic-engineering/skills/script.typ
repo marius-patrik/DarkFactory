@@ -9,7 +9,7 @@
   citation: bib.anthropic2024tooluse,
   source: bib.anthropic2024tooluse,
 definition: terms => [
-Skript je soubor nebo posloupnost příkazů určených k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.
+Soubor nebo posloupnost příkazů určených k automatizovanému vykonání interpretem, shellem nebo jiným běhovým prostředím.
   ],
   description: terms => [
 #finalized[

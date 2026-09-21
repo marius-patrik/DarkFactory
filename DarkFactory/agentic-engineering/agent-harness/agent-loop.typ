@@ -10,7 +10,7 @@
   citation: bib.yao2022,
   source: bib.yao2022,
   definition: terms => [
-Agent Loop je iterativní cyklus, v němž model vyhodnotí stav, zvolí akci, harness ji provede a výsledek vrátí do další iterace.
+Iterativní cyklus, v němž model vyhodnotí stav, zvolí akci, harness ji provede a výsledek vrátí do další iterace.
   ],
   description: terms => [
 Ve vzoru ReAct se cyklus opakuje jako rozhodnutí → volání nástroje → pozorování výsledku → další rozhodnutí. Harness zajišťuje provedení nástroje a vrácení pozorování do aktivního kontextu. #cite(bib.yao2022)

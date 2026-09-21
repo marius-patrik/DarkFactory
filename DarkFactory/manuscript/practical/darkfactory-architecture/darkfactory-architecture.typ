@@ -6,7 +6,7 @@
   czech: "Architektura DarkFactory",
   english: "DarkFactory Architecture",
   definition: terms => [
-Architektura DarkFactory je konkrétní uspořádání komponent agentního harnessu do jednoho vývojového systému.
+Konkrétní uspořádání komponent agentního harnessu do jednoho vývojového systému.
   ],
   description: terms => [
 Spojuje modelovou, stavovou, nástrojovou a kontrolní vrstvu do řízeného toku provádění softwarových úloh.

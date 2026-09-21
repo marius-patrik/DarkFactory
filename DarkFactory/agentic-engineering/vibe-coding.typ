@@ -10,7 +10,7 @@
   citation: (bib.karpathy2025vibecoding, bib.willison2025vibecoding),
   source: bib.karpathy2025vibecoding,
   definition: terms => [
-Vibe Coding je způsob tvorby softwaru, při kterém člověk zadává požadované chování přirozeným jazykem a iteruje nad výsledkem bez průběžné kontroly vygenerovaného kódu.
+Způsob tvorby softwaru, při kterém člověk zadává požadované chování přirozeným jazykem a iteruje nad výsledkem bez průběžné kontroly vygenerovaného kódu.
   ],
   description: terms => [
 Termín zavedl Andrej Karpathy v roce 2025. Přístup urychluje experimentování, ale u udržovaného softwaru nenahrazuje kontrolu požadavků, testů a výsledného chování. #cite(bib.karpathy2025vibecoding) #cite(bib.willison2025vibecoding)

@@ -8,7 +8,7 @@
   citation: bib.liu2024,
   source: bib.liu2024,
   definition: terms => [
-Degradace kontextu je pokles schopnosti modelu spolehlivě využívat informace v dlouhém nebo zahlceném kontextu.
+Pokles schopnosti modelu spolehlivě využívat informace v dlouhém nebo zahlceném kontextu.
   ],
   description: terms => [
 Nominální délka kontextového okna nezaručuje rovnoměrné využití všech informací; výkon může klesat zejména u relevantních údajů umístěných uvnitř dlouhého vstupu. #cite(bib.liu2024)

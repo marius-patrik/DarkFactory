@@ -9,7 +9,7 @@
   citation: bib.lewis2020rag,
   source: bib.lewis2020rag,
   definition: terms => [
-Retrieval-Augmented Generation (RAG) je architektura, v níž systém vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu.
+Architektura, v níž systém vyhledá relevantní informace z externího zdroje a vloží je do kontextu modelu.
   ],
   description: terms => [
 RAG umožňuje načítat potřebné informace podle aktuální úlohy místo jejich trvalého držení v aktivním kontextu. #cite(bib.lewis2020rag)

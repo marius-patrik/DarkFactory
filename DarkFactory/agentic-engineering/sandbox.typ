@@ -10,7 +10,7 @@
   citation: bib.agache2020firecracker,
   source: bib.agache2020firecracker,
   definition: terms => [
-Sandbox je omezené běhové prostředí, které odděluje prováděný kód a jeho oprávnění od hostitelského systému.
+Omezené běhové prostředí, které odděluje prováděný kód a jeho oprávnění od hostitelského systému.
   ],
   description: terms => [
 Harness v sandboxu omezuje přístup k souborům, síti, tajnostem a dalším systémovým prostředkům. Silnější izolaci nedůvěryhodného kódu mohou poskytovat virtualizované hranice, například microVM. #cite(bib.agache2020firecracker)

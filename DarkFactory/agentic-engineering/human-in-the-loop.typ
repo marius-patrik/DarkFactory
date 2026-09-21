@@ -10,7 +10,7 @@
   citation: bib.mosqueira2023human,
   source: bib.mosqueira2023human,
   definition: terms => [
-Zapojení člověka do smyčky (HITL) je návrhový vzor, v němž člověk schvaluje nebo přebírá rozhodnutí v určených bodech automatizovaného procesu.
+Návrhový vzor, v němž člověk schvaluje nebo přebírá rozhodnutí v určených bodech automatizovaného procesu.
   ],
   description: terms => [
 V DarkFactory zůstávají člověku zejména významná nebo nevratná rozhodnutí, zatímco rutinní kroky může harness provádět samostatně. Ke kontrole má předkládat pozorovatelný stav, například diff, výsledky kontrol a chyby. #cite(bib.mosqueira2023human)

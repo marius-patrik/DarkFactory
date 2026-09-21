@@ -5,7 +5,7 @@
   czech: "Teoretická část",
   english: "Theory",
   definition: terms => [
-Teoretická část vymezuje koncepty potřebné pro návrh a pochopení agentních systémů.
+Vymezení konceptů potřebných pro návrh a pochopení agentních systémů.
   ],
   description: terms => [
 Postupuje od jazykového modelu přes agentní harness k agentickému inženýrství.

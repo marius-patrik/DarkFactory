@@ -8,7 +8,7 @@
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [
-Vývojové prostředí a praxe tvoří verzovací, plánovací, integrační a kontrolní mechanismy, ve kterých agent provádí změny softwaru.
+Verzovací, plánovací, integrační a kontrolní mechanismy, ve kterých agent provádí změny softwaru.
   ],
   description: terms => [
 Tyto mechanismy poskytují explicitní stav repozitáře, ověřování změn a kontrolní body nezávislé na tvrzení modelu.

@@ -7,7 +7,7 @@
   czech: "Motivace a vymezení problému",
   english: "Motivation and Problem Definition",
   definition: terms => [
-#finalized[Motivací práce je ukázat, jaké úlohy dokážou současné agentní systémy samostatně provádět a jaká technická vrstva umožňuje převést schopnost jazykového modelu do spolehlivého jednání nad skutečným softwarovým projektem.]
+#finalized[Ukázat, jaké úlohy dokážou současné agentní systémy samostatně provádět a jaká technická vrstva umožňuje převést schopnost jazykového modelu do spolehlivého jednání nad skutečným softwarovým projektem.]
   ],
   description: terms => [
 Generativní AI se během několika let rozšířila do masového používání a současně se rozšiřují systémy, které plánují více kroků, pracují se soubory a nástroji, spouštějí příkazy a testy a vykonávají delší úlohy.

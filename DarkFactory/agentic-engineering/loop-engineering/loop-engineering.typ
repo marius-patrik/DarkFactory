@@ -10,7 +10,7 @@
   citation: bib.yao2022,
   source: bib.deepseekharness2026,
 definition: terms => [
-Inženýrství prováděcí smyčky je návrh a řízení stavových přechodů, podmínek ukončení, rozpočtů, opakování, eskalací a vazby mezi rozhodováním modelu a nástroji.
+Návrh a řízení stavových přechodů, podmínek ukončení, rozpočtů, opakování, eskalací a vazby mezi rozhodováním modelu a nástroji.
   ],
   description: terms => [
 #finalized[

@@ -10,7 +10,7 @@
   citation: bib.schick2023toolformer,
   source: bib.anthropic2024tooluse,
   definition: terms => [
-Vyvolávání nástrojů je mechanismus, kterým model požádá okolní systém o provedení konkrétní externí akce a předá jí potřebné parametry.
+Mechanismus, kterým model požádá okolní systém o provedení konkrétní externí akce a předá jí potřebné parametry.
   ],
   description: terms => [
 Nástroj zpřístupňuje modelu operaci, kterou samotná textová inference neprovádí, například čtení souboru, dotaz na API nebo změnu stavu systému. Harness přijme požadavek modelu, zkontroluje jej, provede příslušnou operaci a vrátí výsledek zpět do dalšího kroku agentního běhu.

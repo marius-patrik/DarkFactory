@@ -9,7 +9,7 @@
   citation: bib.jiang2023llmlingua,
   source: bib.jiang2023llmlingua,
   definition: terms => [
-Kompakce kontextu je zmenšení aktivního kontextu výběrem, shrnutím nebo nahrazením starší historie kompaktnější reprezentací.
+Zmenšení aktivního kontextu výběrem, shrnutím nebo nahrazením starší historie kompaktnější reprezentací.
   ],
   description: terms => [
 Kompakce uvolňuje místo v kontextovém okně za cenu možné ztráty přesných detailů; důležité požadavky a stav proto nemají existovat pouze v rekurzivně shrnované historii. #cite(bib.jiang2023llmlingua)

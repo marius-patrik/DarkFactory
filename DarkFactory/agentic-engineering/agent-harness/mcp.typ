@@ -9,7 +9,7 @@
   citation: bib.anthropic_mcp,
   source: bib.anthropic_mcp,
   definition: terms => [
-Model Context Protocol (MCP) je otevřený protokol pro standardizované propojení AI aplikací s externími nástroji, zdroji a daty.
+Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji, zdroji a daty.
   ],
   description: terms => [
 MCP používá klient–server rozhraní nad JSON-RPC, takže nástroje a datové zdroje mohou být implementovány mimo jádro harnessu a znovu používány různými aplikacemi. #cite(bib.anthropic_mcp)

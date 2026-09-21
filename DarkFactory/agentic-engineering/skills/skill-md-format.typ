@@ -9,7 +9,7 @@
   citation: bib.agent_skills_spec,
   source: bib.agent_skills_spec,
   definition: terms => [
-`SKILL.md` je povinný definiční soubor Agent Skill. Podle specifikace obsahuje YAML frontmatter následovaný instrukcemi v Markdownu; povinnými poli frontmatteru jsou `name` a `description`. #cite(bib.agent_skills_spec)
+Povinný definiční soubor Agent Skill. Podle specifikace obsahuje YAML frontmatter následovaný instrukcemi v Markdownu; povinnými poli frontmatteru jsou `name` a `description`. #cite(bib.agent_skills_spec)
   ],
   description: terms => [
 Následující úplný příklad používá povinná pole i několik volitelných polí povolených specifikací: #cite(bib.agent_skills_spec)
