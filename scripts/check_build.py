@@ -327,6 +327,14 @@ for manifest_path in folder_manifests:
         fail(f"book folder index must declare a folder node: {manifest_path}")
 
 if BOOK == "DarkFactory":
+    for stale_path in (
+        ROOT / "development-environment/software-engineering",
+        ROOT / "development-environment/version-control",
+        ROOT / "development-environment/continuous-integration",
+    ):
+        if stale_path.exists():
+            fail(f"development-environment must remain a single flat section: {stale_path}")
+
     for required in (
         ROOT / "bib/references.bib",
         ROOT / "img/logo.jpeg",
@@ -347,7 +355,7 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/examples/codex.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
         ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
-        ROOT / "development-environment/continuous-integration/integration-test.typ",
+        ROOT / "development-environment/integration-test.typ",
         ROOT / "agentic-engineering/agent-harness/context-engineering/context-injection.typ",
     ):
         if not required.is_file():

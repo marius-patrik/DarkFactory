@@ -13,5 +13,5 @@ Vývojové prostředí a praxe tvoří verzovací, plánovací, integrační a k
   description: terms => [
 Tyto mechanismy poskytují explicitní stav repozitáře, ověřování změn a kontrolní body nezávislé na tvrzení modelu.
   ],
-  relations: (),
+  relations: ((type: "dependency", target: "darkfactory_architecture"),),
 )

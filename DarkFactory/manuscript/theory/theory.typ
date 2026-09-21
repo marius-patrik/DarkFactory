@@ -8,6 +8,6 @@
 Teoretická část vymezuje koncepty potřebné pro návrh a pochopení agentních systémů.
   ],
   description: terms => [
-Postupuje od jazykového modelu přes agentic AI a agentické inženýrství k vývojovému prostředí.
+Postupuje od jazykového modelu přes agentic AI k agentickému inženýrství.
   ],
 )

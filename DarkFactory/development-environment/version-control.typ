@@ -6,7 +6,6 @@
   keyword: true,
   industry: "Version Control",
   czech: "Správa verzí",
-  english: "Version Control",
   citation: bib.chacon2014,
   source: bib.chacon2014,
   definition: terms => [

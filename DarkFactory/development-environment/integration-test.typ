@@ -5,7 +5,6 @@
   key: "integration_test",
   industry: "Integration Test",
   czech: "Integrační test",
-  english: "Integration Test",
   citation: bib.sommerville2016,
   source: bib.sommerville2016,
   definition: terms => [
