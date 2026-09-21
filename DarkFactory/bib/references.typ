@@ -58,6 +58,8 @@
 #let anthropic_managed_agents = <anthropic-managed-agents>
 #let owasp_prompt_injection = <owasp-prompt-injection>
 #let openai_prompt_injection = <openai-prompt-injection>
+#let openai_agent_orchestration = <openai-agent-orchestration>
+#let autogen_swarm = <autogen-swarm>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -117,4 +119,6 @@
   anthropic_managed_agents: anthropic_managed_agents,
   owasp_prompt_injection: owasp_prompt_injection,
   openai_prompt_injection: openai_prompt_injection,
+  openai_agent_orchestration: openai_agent_orchestration,
+  autogen_swarm: autogen_swarm,
 )
