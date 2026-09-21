@@ -13,7 +13,7 @@
   citation: (bib.anthropic_managed_agents, bib.anthropic_harness_design),
   source: bib.anthropic_managed_agents,
   definition: terms => [
-Běhová a orchestrační vrstva, která propojuje jazykový model se stavem, nástroji a prostředím.
+Běhová a orchestrační vrstva, která propojuje jazykový model se stavem, nástroji a prostředím. #cite(bib.anthropic_managed_agents)
   ],
   description: terms => [
 Harness řídí smyčku modelových volání a směruje nástrojové akce do příslušné infrastruktury; může současně spravovat pracovní kontext, stav běhu a podmínky pokračování nebo ukončení. #cite(bib.anthropic_managed_agents) Opakované jednání v této práci reprezentuje #term(terms.agent_loop).
