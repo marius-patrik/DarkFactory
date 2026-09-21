@@ -65,6 +65,7 @@
 #let peffers2007dsrm = <peffers2007dsrm>
 #let microsoft_ai_diffusion_2026 = <microsoft-ai-diffusion-2026>
 #let brown2020 = <brown2020>
+#let owasp_llm01_prompt_injection = <owasp-llm01-prompt-injection>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -131,4 +132,5 @@
   peffers2007dsrm: peffers2007dsrm,
   microsoft_ai_diffusion_2026: microsoft_ai_diffusion_2026,
   brown2020: brown2020,
+  owasp_llm01_prompt_injection: owasp_llm01_prompt_injection,
 )
