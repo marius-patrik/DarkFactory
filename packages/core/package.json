@@ -6,11 +6,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./repository-evidence": "./src/repository-evidence.ts",
-    "./result-capture": "./src/result-capture.ts"
+    "./result-capture": "./src/result-capture.ts",
+    "./recovery": "./src/recovery.ts"
   },
   "files": [
     "src"
   ],
+  "scripts": {
+    "test": "bun test test"
+  },
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
