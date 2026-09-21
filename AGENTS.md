@@ -33,11 +33,14 @@ edit this projection.
 
 ### Rule 1 — Unit tests
 
-Every change that adds or modifies code, classes, or methods MUST be accompanied by corresponding
-tests. Behavior is verified per change or per pull request, not by an artificial test manufactured
-for every commit. Rust code is tested with `cargo test`, TypeScript with `bun test`, and repository
-automation (`.github/scripts/`) with `pytest`. All applicable suites MUST pass before a push is
-considered green.
+Every change that adds or modifies behavior MUST be accompanied by corresponding tests at the
+appropriate package/capability boundary. Behavior is verified per change or pull request, not by an
+artificial test manufactured for every commit.
+
+Applicable test actions come from the canonical repository/package detection plus capability-resolution
+contract. First-party TypeScript packages/capabilities use the normalized Bun test action. Retained
+non-TypeScript tooling uses its detected/capability-provided test action. All applicable suites MUST
+pass before a push is considered green.
 
 ### Rule 2 — Inline documentation and generated documentation
 
