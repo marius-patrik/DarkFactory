@@ -3,7 +3,7 @@ const sodium: typeof import("libsodium-wrappers") = require("libsodium-wrappers"
 import { GitHubClient } from "../../src/github/client.ts";
 import { GitHubRepository } from "../../src/github/repository.ts";
 import { pushSecrets } from "../../src/secrets/push.ts";
-import type { Vault, PushMap } from "../../src/secrets/vault.ts";
+import type { PushMap, Vault } from "@darkfactory/keychain";
 import { json, scripted } from "../github/helpers.ts";
 
 describe("push sealed-box payload", () => {
