@@ -9,10 +9,10 @@
   citation: bib.mikolov2013word2vec,
   source: bib.mikolov2013word2vec,
   definition: terms => [
-Vícerozměrná vektorová reprezentace tokenů nebo jiných dat, v níž numerické vztahy mezi vektory zachycují užitečné vztahy mezi reprezentovanými objekty.
+Vícerozměrná vektorová reprezentace diskrétních prvků, v níž geometrické vztahy mohou zachycovat užitečné vztahy mezi reprezentovanými objekty. #cite(bib.mikolov2013word2vec)
   ],
   description: terms => [
-V jazykovém modelu embedding převádí diskrétní identifikátory tokenů na spojité vektory zpracovatelné neuronovou sítí. Podobné reprezentace lze použít také pro sémantické vyhledávání nebo porovnávání podobnosti. #cite(bib.mikolov2013word2vec)
+V jazykovém modelu embedding převádí identifikátory tokenů na spojité vektory zpracovatelné neuronovou sítí; vektorové reprezentace lze také porovnávat podle podobnosti. #cite(bib.mikolov2013word2vec)
   ],
   visual: terms => [
 #figure(
