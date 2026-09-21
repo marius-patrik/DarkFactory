@@ -1,6 +1,6 @@
 # DarkFactory-Paper
 
-Odborná práce **DarkFactory — Agentické a harnessové inženýrství: Umělá inteligence v praxi**. Repozitář obsahuje konceptově řízený Typst rukopis, publikační šablony, webový viewer a integrační bod praktického systému [DarkFactory](https://github.com/marius-patrik/DarkFactory).
+Odborná práce **Agentic AI, Agentic Engineering and Harness Engineering**. Repozitář obsahuje konceptově řízený Typst rukopis, publikační šablony, webový viewer a integrační bod praktického systému [DarkFactory](https://github.com/marius-patrik/DarkFactory).
 
 ## Multi-book architektura
 
@@ -117,10 +117,10 @@ Aktuální shell používá:
 | `DarkFactory/index.typ` | top-level strukturální root a katalog |
 | `DarkFactory/schema.typ` | concept/folder/relation/render model |
 | `DarkFactory/manuscript/` | document-level struktura |
-| `DarkFactory/development-environment/` | doménové koncepty |
+| `DarkFactory/software-engineering/` | softwarové inženýrství a vývojová praxe |
 | `DarkFactory/language-models/` | koncepty jazykového modelu |
-| `DarkFactory/agentic-engineering/agent-harness/` | agentní harness a jeho přímé runtime koncepty |
-| `DarkFactory/agentic-engineering/` | agentické a harnessové inženýrství |
+| `DarkFactory/agentic-engineering/agent-harness/` | Harness, Tools, Skills, Scripts, Hooks a runtime koncepty |
+| `DarkFactory/agentic-engineering/` | agentické inženýrství a kontextové/řídicí mechanismy |
 | `DarkFactory/templates/` | book-local Typst semantics a layouts |
 | `DarkFactory/fonts/` | book-local fonty |
 | `DarkFactory/bib/` | book-local bibliografie |

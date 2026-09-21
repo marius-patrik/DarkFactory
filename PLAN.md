@@ -1,36 +1,61 @@
-# DarkFactory-Paper — Final Restructure Plan
+# DarkFactory-Paper — Final Thesis Structure Plan
 
-## Goal
-
-Converge the thesis onto one final concept hierarchy with no compatibility structure, no duplicate conceptual wrappers, no blacklist-style legacy validation, and no prose/diagram duplication.
-
-The theoretical part owns the concepts behind Agentic AI, Harnesses, Agentic Engineering, and Harness Engineering. The practical part owns Software Engineering practice, the verified DarkFactory implementation, and evaluation.
-
-## Final work title
+## Canonical title
 
 **Agentic AI, Agentic Engineering and Harness Engineering**
 
-The current `DarkFactory + title suffix` title composition should be replaced by this single canonical thesis title. DarkFactory remains the practical system/case study, not the thesis title.
+DarkFactory remains the practical system/case study, not the thesis title.
 
-## Final top-level structure
+## Final manuscript hierarchy
 
 1. Úvod
 2. **Teoretická část: Agentic AI and Agentic Engineering**
-3. **Praktická část: Software Engineering and DarkFactory**
+   - 2.1 Úvod
+   - 2.2 **Software Engineering (Softwarové inženýrství)**
+   - 2.3 **LLM (Jazykový model) [Large Language Model]**
+   - 2.4 **Harness**
+   - 2.5 **Agentic Engineering (Agentické inženýrství)**
+3. **Praktická část: Harness and Harness Engineering**
+   - 3.1 Úvod
+   - 3.2 **Harness Engineering (Harnessové inženýrství)**
+   - 3.3 **Architektura DarkFactory**
+   - 3.4 **Výsledky a diskuse**
 4. Závěr
 
-### 2 Teoretická část: Agentic AI and Agentic Engineering
+Levels 4+ remain unnumbered but stay visible and correctly indented in the contents.
 
-#### 2.1 Úvod
+## 2.1 Úvod
 
-A short section-specific introduction explaining:
-- the abstraction boundary: the model is treated as an inference component;
-- Agentic AI is the system-level capability, not a standalone glossary concept;
-- the theoretical progression is LLM → Harness → Agentic Engineering.
+Short theoretical framing:
+- software engineering is the application domain;
+- the LLM is treated as an inference component;
+- Agentic AI is a system-level framing term, not a standalone glossary concept;
+- the progression is Software Engineering → LLM → Harness → Agentic Engineering.
 
-This is prose/structure only; **Agentic AI must not exist as a separate concept record**.
+Agentic AI, Agent, and Chatbot are not standalone concept records.
 
-#### 2.2 LLM (Jazykový model) [Large Language Model]
+## 2.2 Software Engineering
+
+One section with one direct concept level.
+
+Order:
+1. Vibe Coding
+2. Slop
+3. Spec-Driven Development
+4. Planning
+5. Version Control
+6. GitHub
+7. Runtime
+8. CI
+9. GitHub Actions
+10. Container
+11. Integration Test
+
+The former Development Environment wrapper is removed completely.
+
+## 2.3 LLM
+
+Canonical title: **LLM (Jazykový model) [Large Language Model]**
 
 Direct concepts:
 - Transformer
@@ -41,262 +66,104 @@ Direct concepts:
 - KV Cache
 - Context Rot / Degradace kontextu
 
-Changes:
-- add `english: "Large Language Model"` to the LLM concept;
-- move Context Rot out of Context Engineering and directly below LLM;
-- keep the Transformer generation sentence unconfirmed until explicitly accepted;
-- keep definitions meaning-first and free of term repetition.
+Context Rot moves here from Context Engineering.
 
-#### 2.3 Harness
+## 2.4 Harness
 
-Delete as standalone concepts:
-- Agentic AI
-- Agent
-- Chatbot
+Agentic AI, Agent, and Chatbot concept files are deleted.
 
-Direct Harness concepts, all on one level:
-1. Turn (Tah interakce)
-2. Session / Agentní sezení
-3. Transcript / Přepis
+Direct concepts:
+1. Turn
+2. Agent Session
+3. Transcript
 4. Agent Loop
 5. Divergence
-6. **Tools (Nástroje)** — replaces Tool Calling as the canonical concept/surface
-7. JSON Schema Tool Calling
-8. Code Execution
-9. MCP
-10. Plugins
-11. Subagent
-12. **Skills**
-13. **Scripts**
-14. **Hooks**
+6. Plugins
+7. Subagent
 
-Rules:
-- Skills, Scripts, Hooks, and Tools are independent direct sections under Harness.
-- Remove the nested Skills folder.
-- Rename the Tool Calling key/source cleanly to Tools; do not preserve a compatibility alias/path.
-- Add Transcript immediately after Session. Transcript represents the persisted/ordered record of turns, messages, tool calls/results, and other session events.
-- Harness stays theoretical.
+Direct child sections under Harness:
+- **Tools (Nástroje)**
+- **Skills (Dovednosti)**
+- **Scripts (Skripty)**
+- **Hooks (Událostní záchytné body)**
 
-#### 2.4 Agentic Engineering (Agentické inženýrství)
+Transcript is the ordered persisted record of messages, turns, tool calls/results, and other session events used for reconstruction, audit, or context selection.
 
-Order the opening concepts intentionally:
-1. Vibe Coding
-2. Slop
-3. Spec-Driven Development
-4. Harness Engineering
-5. Guardrail
-6. Human-in-the-loop
-7. Sandbox
+Tools replaces Tool Calling completely and uses the canonical key tools. It contains JSON Schema Tool Calling, Code Execution, and MCP.
 
-Then engineering sections:
+Skills, Scripts, and Hooks are sibling Harness sections. Scripts and Hooks are no longer nested under Skills.
+
+## 2.5 Agentic Engineering
+
+Direct concepts:
+- Guardrail
+- Human-in-the-loop
+- Sandbox
+
+Child sections:
 - Prompt Engineering
 - Loop Engineering
 - Graph Engineering
 - Context Engineering
 
-Context Engineering contains:
-- Context Injection
-- Compaction
-- RAG
-- Semantic Drift
+Context Engineering contains Context Injection, Compaction, RAG, and Semantic Drift. Context Rot moves to LLM.
 
-Context Rot is no longer here; it belongs under LLM.
+## 3.1 Úvod
 
-Harness Engineering stays theoretical and remains a concept/discipline under Agentic Engineering.
+The practical introduction frames Harness Engineering as the implementation discipline, DarkFactory as the concrete system, and Results as evaluation of verified behavior/evidence.
 
-### 3 Praktická část: Software Engineering and DarkFactory
+## 3.2 Harness Engineering
 
-#### 3.1 Úvod
+Moves from Theory to Practical and describes the implementation discipline for combining model, state, tools, execution and deterministic controls into the practical harness.
 
-A short practical-part introduction stating that the following sections apply the theoretical mechanisms to actual software-development practice and then to the verified DarkFactory implementation.
+## 3.3 Architektura DarkFactory
 
-#### 3.2 Software Engineering
+Must be grounded only in verified implementation: package/component structure, execution/data flow, state ownership, model/tool interfaces, auth/keychain boundary, runtime/CI integration, and implementation evidence.
 
-This replaces the current **Vývojové prostředí a praxe** wrapper completely.
+## 3.4 Results
 
-One clean section, with only one level of direct concepts beneath it:
-- Planning
-- Version Control
-- GitHub
-- Runtime
-- CI
-- GitHub Actions
-- Container
-- Integration Test
+Keep research-question evaluation and evaluation limitations. O1–O3 conclusions must point to concrete implementation/test evidence before finalization.
 
-The section should own the practical development process around DarkFactory. No nested Software Engineering / Version Control / CI structural wrappers return.
+## Terminology
 
-#### 3.3 Architektura DarkFactory
-
-Write this only from the verified completed DarkFactory implementation.
-
-Required content once implementation is stable:
-- concrete component/package structure;
-- execution/data flow;
-- state ownership;
-- model/tool interfaces;
-- authentication/keychain boundary;
-- CI/runtime integration;
-- verified implementation evidence.
-
-Do not infer practical claims from the theoretical design.
-
-#### 3.4 Výsledky a diskuse
-
-Keep:
-- research-question evaluation;
-- evaluation limitations.
-
-Before finalization, each O1–O3 conclusion must point to concrete implementation/test evidence.
-
-## Terminology changes
-
-- LLM → `LLM (Jazykový model) [Large Language Model]`
-- Tool Calling → **Tools (Nástroje)**
-- Agentic AI remains a thesis/chapter framing term, not a concept record.
-- Agent and Chatbot concept records are deleted.
-- Harness remains the structural title for the Harness section.
-- Main work title becomes **Agentic AI, Agentic Engineering and Harness Engineering**.
-
-## Embedding diagram replacement
-
-Replace the current 3D SVG completely.
-
-Target: a clean illustrative **2D projection** with Czech axes:
-- x-axis: **Pohlaví**
-- y-axis: **Královský status**
-
-Four points:
-- muž
-- žena
-- král
-- královna
-
-Vector geometry:
-- `muž → žena` and `král → královna` are parallel horizontal vectors;
-- `muž → král` and `žena → královna` are parallel vertical vectors;
-- optionally show the equation `v(král) − v(muž) + v(žena) ≈ v(královna)`.
-
-Style:
-- flat 2D Cartesian plane;
-- no perspective plane;
-- no third semantic dimension;
-- no decorative prose inside the graphic;
-- Czech labels only;
-- simple, clean arrows/vectors;
-- caption explicitly calls it an illustrative projection, not literal learned embedding dimensions.
-
-## Image/prose rule
-
-For image attachments/examples:
-- render only the concise image description + figure;
-- do not prepend generic prose such as “this screenshot shows…”;
-- do not duplicate the caption in surrounding prose;
-- parent concepts retain only substantive explanatory text.
+- Main title → Agentic AI, Agentic Engineering and Harness Engineering
+- LLM → LLM (Jazykový model) [Large Language Model]
+- Tool Calling → Tools (Nástroje)
+- Agentic AI → framing term only, not a concept
+- remove standalone Agent
+- remove standalone Chatbot
+- Harness remains the structural section title
+- Theory → Teoretická část: Agentic AI and Agentic Engineering
+- Practical → Praktická část: Harness and Harness Engineering
 
 ## Definition rule
 
-Canonical headings already display the term. Definitions therefore start directly with the meaning and must not repeat the term.
+Headings already display the term. Definitions begin directly with meaning and must not repeat their own term.
 
-Examples:
-- `Agent Harness je aplikační vrstva…` → `Aplikační vrstva…`
-- `MCP je otevřený protokol…` → `Otevřený protokol…`
+## Embedding figure
 
-Do not reintroduce term repetition during this restructure.
+Replace the current 3D diagram with a flat 2D illustrative projection.
+Axes in Czech: x = Pohlaví; y = Královský status.
+Points: muž, žena, král, královna.
+Geometry: muž → žena and král → královna are parallel horizontal vectors; muž → král and žena → královna are parallel vertical vectors.
+No perspective plane or third dimension. Caption must state that the axes are an illustrative projection, not literal learned embedding dimensions.
 
-## Validation cleanup
+## Validation
 
-Replace blacklist/absence-based validation with positive contracts.
+Use positive validation only.
+Keep expected final entrypoints/manifests, unique concept keys, resolving relations, valid publication artifacts, resolving image references, and required build/UI contracts.
+Remove stale-path blacklists, forbidden-token scans, must-not-contain checks, legacy-name scans, compatibility cleanup assertions, and definition-prefix prohibition.
 
-Remove checks whose purpose is:
-- forbidding old paths/tokens;
-- asserting stale files do not exist;
-- scanning for legacy names;
-- enforcing “must not contain” text;
-- historical compatibility cleanup;
-- definition-prefix prohibition.
+## Execution order
 
-Keep positive correctness validation only:
-- expected entrypoints exist;
-- expected final hierarchy manifests exist;
-- concepts referenced by manifests exist;
-- concept keys/relations resolve;
-- required source/citation metadata is structurally valid;
-- publication artifacts build and are non-empty/valid;
-- images referenced by the publication resolve;
-- expected UI/build contracts compile.
-
-The final filesystem itself is the source of truth; no compatibility/legacy blacklist is needed.
-
-## Implementation sequence
-
-1. **Lock metadata and top-level titles**
-   - thesis title;
-   - Theory title;
-   - Practical title.
-
-2. **Add 2.1 and 3.1 Úvod section manifests/concepts**
-   - short, non-duplicative section framing.
-
-3. **Rebuild Theory hierarchy atomically**
-   - LLM;
-   - Harness;
-   - Agentic Engineering;
-   - delete Agentic AI/Agent/Chatbot concepts;
-   - move Context Rot;
-   - add Transcript;
-   - flatten Skills/Scripts/Hooks;
-   - rename Tool Calling → Tools.
-
-4. **Rebuild Practical hierarchy atomically**
-   - remove Development Environment wrapper;
-   - make Software Engineering 3.2;
-   - mount the existing development-practice concepts directly beneath it;
-   - keep DarkFactory Architecture and Results after it.
-
-5. **Normalize terminology and relations**
-   - update concept keys/imports/relations;
-   - remove obsolete paths instead of aliases.
-
-6. **Replace the embedding visual**
-   - new 2D Czech royalty/gender projection;
-   - update caption.
-
-7. **Simplify validation**
-   - delete negative/legacy validation;
-   - retain positive build/semantic contracts only.
-
-8. **Review prose after structural move**
-   - remove cross-section duplication introduced by moves;
-   - keep definition/description responsibilities distinct;
-   - preserve explicitly accepted/finalized wording unless the structural change necessarily invalidates it.
-
-9. **Build and inspect**
-   - final + review PDF;
-   - HTML/Markdown;
-   - TOC numbering/indentation;
-   - figure list and image rendering;
-   - semantic links.
-
-10. **Final cleanup**
-   - no stale folders/imports;
-   - no compatibility aliases;
-   - no historical/superseded docs;
-   - one final hierarchy represented identically by folder structure, semantic graph, TOC, and viewer.
-
-## Expected numbering after restructure
-
-- 1 Úvod
-- 2 Teoretická část: Agentic AI and Agentic Engineering
-  - 2.1 Úvod
-  - 2.2 LLM (Jazykový model) [Large Language Model]
-  - 2.3 Harness
-  - 2.4 Agentic Engineering (Agentické inženýrství)
-- 3 Praktická část: Software Engineering and DarkFactory
-  - 3.1 Úvod
-  - 3.2 Software Engineering (Softwarové inženýrství)
-  - 3.3 Architektura DarkFactory
-  - 3.4 Výsledky a diskuse
-- 4 Závěr
-
-Levels 4+ remain unnumbered but stay correctly indented and visible in the contents.
+1. Lock title + Theory/Practical titles.
+2. Add 2.1 and 3.1 introductions.
+3. Move Software Engineering back to Theory and flatten its concepts.
+4. Rebuild LLM and move Context Rot.
+5. Rebuild Harness; delete Agentic AI/Agent/Chatbot; add Transcript.
+6. Replace Tool Calling with Tools; split Skills/Scripts/Hooks into sibling sections.
+7. Rebuild Agentic Engineering and move Harness Engineering to Practical.
+8. Replace embedding figure.
+9. Replace negative validation with positive contracts.
+10. Build final/review PDF + HTML/Markdown and inspect TOC/figures.
+11. Remove obsolete source paths as part of the same final hierarchy commit.

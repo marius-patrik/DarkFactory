@@ -6,6 +6,7 @@
   keyword: true,
   industry: "LLM",
   czech: "Jazykový model",
+  english: "Large Language Model",
   citation: bib.vaswani2017,
   source: bib.vaswani2017,
   definition: terms => [

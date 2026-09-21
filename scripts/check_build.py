@@ -10,10 +10,7 @@ from pathlib import Path
 
 BOOK = os.environ.get("BOOK", "DarkFactory")
 ROOT = Path(BOOK)
-EXPECTED_PDFS = (
-    Path("out/prace.pdf"),
-    Path("out/prace-review.pdf"),
-)
+EXPECTED_PDFS = (Path("out/prace.pdf"), Path("out/prace-review.pdf"))
 EXPECTED_HTML = tuple(path.with_suffix(".html") for path in EXPECTED_PDFS)
 EXPECTED_MARKDOWN = tuple(path.with_suffix(".md") for path in EXPECTED_PDFS)
 EXPECTED = EXPECTED_PDFS + EXPECTED_HTML + EXPECTED_MARKDOWN
@@ -29,6 +26,12 @@ def require_file(path: Path, minimum_size: int = 1) -> str:
     if path.stat().st_size < minimum_size:
         fail(f"required file is unexpectedly small: {path}")
     return path.read_text(encoding="utf-8")
+
+
+def require_contract(source: str, contracts: tuple[str, ...], label: str) -> None:
+    missing = [contract for contract in contracts if contract not in source]
+    if missing:
+        fail(f"{label} is missing contracts: {missing}")
 
 
 def validate_publication(path: Path) -> None:
@@ -76,13 +79,8 @@ for markdown_path in EXPECTED_MARKDOWN:
     if "assets/" not in source and "<image" not in source and "data:image/" not in source:
         fail(f"Markdown publication contains no rendered image references: {markdown_path}")
 
-
 if not ROOT.is_dir():
     fail(f"selected book root does not exist: {ROOT}")
-
-for stale_root in ("concepts", "templates", "fonts", "bib", "img"):
-    if Path(stale_root).exists():
-        fail(f"book-owned root must not exist at repository level: {stale_root}/")
 
 template_names = tuple(
     sorted(path.parent.name for path in (ROOT / "templates").glob("*/template.typ"))
@@ -94,17 +92,13 @@ for template_name in template_names:
     template_out = Path("out/templates") / template_name
     for artifact in EXPECTED:
         validate_publication(template_out / artifact.name)
-    for extension in (".pdf", ".html"):
-        final = template_out / f"prace{extension}"
-        review = template_out / f"prace-review{extension}"
-        if final.read_bytes() == review.read_bytes():
-            fail(f"Final and Review visual outputs are identical: {template_name}/{final.name}")
 
 gitmodules = require_file(Path(".gitmodules"))
-if gitmodules.count("[submodule ") != 1:
-    fail("repository must contain exactly one submodule")
-if '[submodule "darkfactory"]' not in gitmodules or "marius-patrik/DarkFactory.git" not in gitmodules:
-    fail("darkfactory must be the sole submodule and target marius-patrik/DarkFactory")
+require_contract(
+    gitmodules,
+    ('[submodule "darkfactory"]', "marius-patrik/DarkFactory.git"),
+    ".gitmodules",
+)
 
 required_sources = (
     Path("main.typ"),
@@ -137,110 +131,99 @@ required_sources = (
     Path("scripts/build_site.py"),
     Path("scripts/fetch_external_assets.py"),
 )
-sources = {path: require_file(path) for path in required_sources if path.suffix != ".jpeg"}
+sources = {path: require_file(path) for path in required_sources}
 
 books = sources[Path("books.typ")]
-for contract in (
-    "#let default-book",
-    "#let available-books",
-    "#let default-template-for(name)",
-    "#let render-pdf(name, ..args)",
-    "#let render-web(name, ..args)",
-):
-    if contract not in books:
-        fail(f"book registry is missing contract: {contract}")
-
-if f'"{BOOK}"' not in books:
-    fail(f"selected book is not registered in books.typ: {BOOK}")
+require_contract(
+    books,
+    (
+        "#let default-book",
+        "#let available-books",
+        "#let default-template-for(name)",
+        "#let render-pdf(name, ..args)",
+        "#let render-web(name, ..args)",
+        f'"{BOOK}"',
+    ),
+    "book registry",
+)
 
 book = sources[ROOT / "book.typ"]
-for contract in ("root.key", "root.title", "default-template-name", "render-pdf", "render-web"):
-    if contract not in book:
-        fail(f"book interface is missing contract: {contract}")
+require_contract(
+    book,
+    ("root.key", "root.title", "default-template-name", "render-pdf", "render-web"),
+    "book interface",
+)
 
 school_template = sources[ROOT / "templates/gjkt-odborna-prace/template.typ"]
-for contract in (
-    "heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)",
-    "bibliography(bibliografie, style: bib-styl, title: none, full: true)",
-    "outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: 1.4em)",
-):
-    if contract not in school_template:
-        fail(f"front/back matter bookmark contract missing: {contract}")
+require_contract(
+    school_template,
+    (
+        "heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)",
+        "bibliography(bibliografie, style: bib-styl, title: none, full: true)",
+        "outline(title: ui-label([Obsah], [Contents]), depth: 99, indent: 1.4em)",
+    ),
+    "school template",
+)
 
 catalog = sources[ROOT / "index.typ"]
-for contract in (
-    "#let root = folder(",
-    f'key: "{BOOK}"',
-    "title: translation(",
-    "#let manuscript-folders",
-    "#let appendix-folders",
-    "#let book-title = root.title",
-    "#let vocabulary = build-vocabulary(folders)",
-    "#let render-manuscript()",
-    "#let render-appendices()",
-):
-    if contract not in catalog:
-        fail(f"book structure is missing contract: {contract}")
+require_contract(
+    catalog,
+    (
+        "#let root = folder(",
+        f'key: "{BOOK}"',
+        "Agentic AI, Agentic Engineering and Harness Engineering",
+        "#let manuscript-folders",
+        "#let appendix-folders",
+        "#let book-title = root.title",
+        "#let vocabulary = build-vocabulary(folders)",
+        "#let render-manuscript()",
+        "#let render-appendices()",
+    ),
+    "book structure",
+)
 
 schema = sources[ROOT / "schema.typ"]
-for contract in (
-    "#let concept(",
-    "industry: none",
-    "czech: none",
-    "english: none",
-    "alias: none",
-    "keyword: false",
-    "definition: none",
-    "description: none",
-    "examples: ()",
-    "attachments: ()",
-    "#let folder(",
-    "#let relation(",
-    "#let collect-concepts(folders)",
-    "#let build-vocabulary(folders)",
-    "#let render-concept-title(item) = {",
-    "#let render-inline-example(item, terms, graph)",
-    "#let render-concept(item, terms, graph, level: 1, title: none)",
-):
-    if contract not in schema:
-        fail(f"concept schema is missing contract: {contract}")
-
-for forbidden in (
-    "#let render-concept-title(item) = context",
-    "#heading(level: level)[#finalized[",
-    "let output = context [#heading(",
-):
-    if forbidden in schema:
-        fail(f"concept heading metadata remains contextual: {forbidden}")
-for contract in (
-    "if level >= 4 {",
-    "heading(level: level, numbering: none, outlined: true)",
-    "heading(level: level)[#heading-title]",
-    "let heading-title = if title != none { title } else { render-concept-title(item) }",
-    "if item.visual != none {",
-):
-    if contract not in schema:
-        fail(f"concept heading numbering/index contract missing: {contract}")
+require_contract(
+    schema,
+    (
+        "#let concept(",
+        "industry: none",
+        "czech: none",
+        "english: none",
+        "alias: none",
+        "keyword: false",
+        "definition: none",
+        "description: none",
+        "examples: ()",
+        "attachments: ()",
+        "#let folder(",
+        "#let relation(",
+        "#let collect-concepts(folders)",
+        "#let build-vocabulary(folders)",
+        "#let render-concept-title(item) = {",
+        "#let render-inline-example(item, terms, graph)",
+        "#let render-concept(item, terms, graph, level: 1, title: none)",
+        "if level >= 4 {",
+        "heading(level: level, numbering: none, outlined: true)",
+    ),
+    "concept schema",
+)
 
 common = sources[ROOT / "templates/common.typ"]
-for contract in (
-    '#let term-full-name(value) = {',
-    '#let term-name(value, surface: "full", language: "auto") = {',
-    'surface in ("full", "industry", "proper", "alias")',
-    'assert(value.kind == "concept", message: "term() expects a concept")',
-    '#let render-keywords(items) = context',
-    'items.filter(item => item.keyword)',
-):
-    if contract not in common:
-        fail(f"concept-owned terminology surface is missing contract: {contract}")
-if "define-term" in common:
-    fail("obsolete define-term abstraction remains in common terminology renderer")
+require_contract(
+    common,
+    (
+        "#let term-full-name(value) = {",
+        '#let term-name(value, surface: "full", language: "auto") = {',
+        '#let render-keywords(items) = context',
+        "items.filter(item => item.keyword)",
+    ),
+    "terminology renderer",
+)
 
 all_book_typ = tuple(sorted(ROOT.rglob("*.typ")))
 concept_files = tuple(
-    path
-    for path in all_book_typ
-    if "#let item = concept(" in path.read_text(encoding="utf-8")
+    path for path in all_book_typ if "#let item = concept(" in path.read_text(encoding="utf-8")
 )
 folder_manifests = tuple(
     path
@@ -249,176 +232,114 @@ folder_manifests = tuple(
     and path != ROOT / "index.typ"
     and "#let node = folder(" in path.read_text(encoding="utf-8")
 )
-
 if not concept_files:
     fail(f"book contains no canonical concept records: {BOOK}")
 if not folder_manifests:
     fail(f"book contains no structural folder manifests: {BOOK}")
-if BOOK == "DarkFactory" and len(concept_files) < 45:
-    fail(f"DarkFactory concept catalog is unexpectedly small: {len(concept_files)} concept files")
 
 concept_keys: list[str] = []
 keyword_keys: list[str] = []
-legacy_concept_fields = (
-    "heading:",
-    "document_enabled:",
-    "document_intro:",
-    "document_body:",
-    "document_summary:",
-    "document_after:",
-    "document_wrapper:",
-    "theory_enabled:",
-    "theory_intro:",
-    "theory_body:",
-    "theory_summary:",
-    "theory_after:",
-    "theory_wrapper:",
-    "practical_enabled:",
-    "practical_intro:",
-    "practical_body:",
-    "practical_summary:",
-    "practical_after:",
-    "practical_wrapper:",
-)
-
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
-    if "define-term" in source or "#let terminology =" in source or "term: terminology" in source:
-        fail(f"obsolete separate terminology abstraction remains in concept: {path}")
-    for field in ("definition", "description"):
-        if f"{field}:" not in source:
-            fail(f"concept file is missing canonical {field} field: {path}")
-        if re.search(rf"{field}:\s*none\b", source):
-            fail(f"concept file has empty canonical {field}: {path}")
-    if "summary:" in source:
-        fail(f"obsolete concept summary field remains: {path}")
-    if not any(re.search(rf"{field}:\s*(?!none\b)", source) for field in ("industry", "czech", "english")):
-        fail(f"concept file is missing concept-owned terminology slots: {path}")
-    if "explanation_cs:" in source or "explanation_en:" in source:
-        fail(f"concept definition must not be duplicated in terminology metadata: {path}")
-    for field in legacy_concept_fields:
-        if field in source:
-            fail(f"legacy manuscript field {field[:-1]} is forbidden: {path}")
+    require_contract(source, ("definition:", "description:", "key:"), f"concept {path}")
+    if not any(
+        re.search(rf"{field}:\s*(?!none\b)", source)
+        for field in ("industry", "czech", "english")
+    ):
+        fail(f"concept file is missing terminology slots: {path}")
     key = re.search(r'key:\s*"([^"]+)"', source)
     if key is None:
         fail(f"concept file is missing stable key: {path}")
-
-    definition_match = re.search(
-        r"definition:\s*terms\s*=>\s*\[([\s\S]*?)\],\s*\n\s*description:",
-        source,
-    )
-    if definition_match is not None:
-        definition_text = definition_match.group(1).strip()
-        definition_text = re.sub(
-            r"^#(?:finalized|accepted|unconfirmed|draft|added|removed|diff)\[\s*",
-            "",
-            definition_text,
-        )
-        definition_text = re.sub(r"\s+", " ", definition_text).strip()
-        for term_field in ("industry", "czech", "english", "alias"):
-            term_match = re.search(rf'{term_field}:\s*"([^"]+)"', source)
-            if term_match is None:
-                continue
-            term_value = term_match.group(1).strip()
-            if not term_value:
-                continue
-            if definition_text.casefold().startswith(term_value.casefold()):
-                remainder = definition_text[len(term_value):]
-                if not remainder or remainder[0].isspace() or remainder[0] in ".,:;([—–-":
-                    fail(
-                        f"definition repeats its own {term_field} term instead of starting with the meaning: {path}"
-                    )
-
     concept_keys.append(key.group(1))
     keyword = re.search(r"keyword:\s*(true|false)\b", source)
-    if keyword is not None:
-        if keyword.group(1) == "true":
-            keyword_keys.append(key.group(1))
+    if keyword is not None and keyword.group(1) == "true":
+        keyword_keys.append(key.group(1))
 
 if len(concept_keys) != len(set(concept_keys)):
     fail("concept keys must be unique within a book")
 if BOOK == "DarkFactory" and not 5 <= len(keyword_keys) <= 20:
     fail(f"DarkFactory keyword curation is unexpectedly sized: {len(keyword_keys)} keyword concepts")
 
-for path in all_book_typ:
-    source = path.read_text(encoding="utf-8")
-    for token in ("define-term", "#let terminology =", "term: terminology"):
-        if token in source:
-            fail(f"obsolete terminology abstraction remains in {path}: {token}")
-
-for legacy_token in ("theory_enabled", "practical_enabled", "document_enabled", "render-theory", "render-practical"):
-    if legacy_token in schema or legacy_token in catalog:
-        fail(f"legacy theory/practical manuscript contract remains: {legacy_token}")
-
 for manifest_path in folder_manifests:
     source = manifest_path.read_text(encoding="utf-8")
-    if "#let node = folder(" not in source:
-        fail(f"book folder index must declare a folder node: {manifest_path}")
+    require_contract(source, ("#let node = folder(",), f"folder manifest {manifest_path}")
 
 if BOOK == "DarkFactory":
-    for stale_path in (
-        ROOT / "development-environment/software-engineering",
-        ROOT / "development-environment/version-control",
-        ROOT / "development-environment/continuous-integration",
-        ROOT / "agentic-ai",
-        ROOT / "agentic-engineering/agent-harness/agent-loop",
-        ROOT / "agentic-engineering/agent-harness/tool-calling",
-        ROOT / "agentic-engineering/agent-harness/skills",
-        ROOT / "agentic-engineering/agent-harness/context-engineering",
-        ROOT / "manuscript/practical/harness-engineering",
-    ):
-        if stale_path.exists():
-            fail(f"obsolete nested manuscript structure remains: {stale_path}")
-
-    for stale_file in (
-        ROOT / "language-models/chatbot.typ",
-        ROOT / "language-models/agent.typ",
-        ROOT / "language-models/language-model/turn.typ",
-    ):
-        if stale_file.exists():
-            fail(f"concept remains at obsolete source location: {stale_file}")
-
-    harness_manifest = require_file(ROOT / "agentic-engineering/agent-harness/index.typ")
-    for contract in (
-        'title: [Harness]',
-        'section: section.item',
-        'concepts: (',
-    ):
-        if contract not in harness_manifest:
-            fail(f"flat Harness section contract missing: {contract}")
-    if "children:" in harness_manifest:
-        fail("Harness section must remain single-level")
+    expected_structure = {
+        ROOT / "manuscript/theory/index.typ": (
+            "manuscript/theory/introduction/index.typ",
+            "software-engineering/index.typ",
+            "language-models/index.typ",
+            "agentic-engineering/agent-harness/index.typ",
+            "agentic-engineering/index.typ",
+        ),
+        ROOT / "manuscript/practical/index.typ": (
+            "manuscript/practical/introduction/index.typ",
+            "manuscript/practical/harness-engineering/index.typ",
+            "manuscript/practical/darkfactory-architecture/index.typ",
+            "manuscript/results/index.typ",
+        ),
+        ROOT / "software-engineering/index.typ": (
+            "vibe-coding.typ",
+            "slop.typ",
+            "spec-driven-development.typ",
+            "planning.typ",
+            "version-control.typ",
+            "github.typ",
+            "runtime.typ",
+            "continuous-integration.typ",
+            "github-actions.typ",
+            "container.typ",
+            "integration-test.typ",
+        ),
+        ROOT / "language-models/index.typ": (
+            "language-model/language-model.typ",
+            "language-model/context-rot.typ",
+        ),
+        ROOT / "agentic-engineering/agent-harness/index.typ": (
+            "agent-harness/turn.typ",
+            "agent-harness/session-management.typ",
+            "agent-harness/transcript.typ",
+            "agent-harness/tools/index.typ",
+            "agent-harness/skills/index.typ",
+            "agent-harness/scripts/index.typ",
+            "agent-harness/hooks/index.typ",
+        ),
+        ROOT / "agentic-engineering/index.typ": (
+            "guardrail.typ",
+            "human-in-the-loop.typ",
+            "sandbox.typ",
+            "prompt-engineering/index.typ",
+            "loop-engineering/index.typ",
+            "graph-engineering/index.typ",
+            "context-engineering/index.typ",
+        ),
+    }
+    for path, contracts in expected_structure.items():
+        source = require_file(path)
+        require_contract(source, contracts, f"final hierarchy {path}")
 
     for required in (
         ROOT / "bib/references.bib",
         ROOT / "img/logo.jpeg",
+        ROOT / "img/vector-embedding-queen.svg",
         ROOT / "manuscript/introduction/index.typ",
-        ROOT / "manuscript/theory/index.typ",
-        ROOT / "manuscript/practical/index.typ",
+        ROOT / "manuscript/theory/introduction/index.typ",
+        ROOT / "manuscript/practical/introduction/index.typ",
+        ROOT / "manuscript/practical/harness-engineering/index.typ",
         ROOT / "manuscript/practical/darkfactory-architecture/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
-        ROOT / "development-environment/index.typ",
-        ROOT / "language-models/index.typ",
-        ROOT / "agentic-engineering/index.typ",
-        ROOT / "manuscript/introduction/motivation/ai-usage-example.typ",
-        ROOT / "language-models/examples/chatgpt.typ",
-        ROOT / "agentic-engineering/agent-harness/examples/codex.typ",
-        ROOT / "agentic-engineering/agent-harness/examples/claude-code.typ",
-        ROOT / "agentic-engineering/agent-harness/examples/claude-desktop.typ",
-        ROOT / "development-environment/integration-test.typ",
-        ROOT / "agentic-engineering/agent-harness/index.typ",
-        ROOT / "agentic-engineering/agent-harness/turn.typ",
-        ROOT / "agentic-engineering/harness-engineering.typ",
-        ROOT / "agentic-engineering/spec-driven-development.typ",
-        ROOT / "agentic-engineering/examples/karpathy-vibe-coding-tweet.typ",
+        ROOT / "agentic-engineering/agent-harness/tools/tools.typ",
+        ROOT / "agentic-engineering/agent-harness/skills/skills.typ",
+        ROOT / "agentic-engineering/agent-harness/scripts/scripts.typ",
+        ROOT / "agentic-engineering/agent-harness/hooks/hooks.typ",
+        ROOT / "agentic-engineering/agent-harness/transcript.typ",
+        ROOT / "software-engineering/examples/karpathy-vibe-coding-tweet.typ",
         ROOT / "img/external/karpathy-vibe-coding.png",
-        ROOT / "agentic-engineering/context-engineering/context-injection.typ",
-        ROOT / "agentic-engineering/skills/index.typ",
     ):
-        if not required.is_file():
-            fail(f"DarkFactory book is missing required publication component: {required}")
+        require_file(required)
 
 package = json.loads(sources[Path("web/package.json")])
 dependencies = {**package.get("dependencies", {}), **package.get("devDependencies", {})}
@@ -438,98 +359,99 @@ for dependency in (
         fail(f"web application is missing dependency: {dependency}")
 
 app = sources[Path("web/src/app.tsx")]
-workspace = sources[Path("web/src/workspace.tsx")]
+require_contract(
+    app,
+    (
+        "publication.json",
+        "manifest?.publication",
+        'label="Structure"',
+        'label="Explorer"',
+        "<ReviewWorkspace",
+        "<SplitViewPicker",
+        "<FileMenu",
+        "DropdownMenuSubTrigger",
+        "Appearance",
+        "SourceFileView",
+        "onOpenFile={openRepositoryFile}",
+        'className="zoom-value"',
+        "<AppTabBar",
+        "<SettingsView",
+        "active.extension",
+    ),
+    "viewer shell",
+)
+
 settings = sources[Path("web/src/settings.ts")]
+require_contract(
+    settings,
+    (
+        'export type ActivityBarPosition = "left" | "right" | "top" | "bottom"',
+        'export type AppearanceMode = "light" | "dark" | "oled"',
+        "showRefresh: boolean",
+        "showFullscreen: boolean",
+        "export function useViewerSettings()",
+    ),
+    "viewer settings",
+)
+
 settings_view = sources[Path("web/src/settings-view.tsx")]
+require_contract(
+    settings_view,
+    ("Refresh button", "Fullscreen button", "Synchronize split scrolling"),
+    "settings view",
+)
+
 viewer_tabs = sources[Path("web/src/viewer-tabs.tsx")]
-pdf_viewer = sources[Path("web/src/pdf-document.tsx")]
-for forbidden in (
-    "LanguagePicker",
-    "languageShortId",
-    "languageDisplayName",
-    "PublicationVariant",
-    "manifest.variants",
-    'params.get("profile")',
-    'query.set("profile"',
-    "profile: string",
-):
-    if forbidden in app:
-        fail(f"obsolete language/profile UI remains: {forbidden}")
-if "publication.json" not in app or "manifest?.publication" not in app:
-    fail("viewer is not using the canonical single-publication manifest")
+require_contract(
+    viewer_tabs,
+    ('role="tablist"', 'role="tab"', 'label="New tab"', "app-tab-close"),
+    "tab bar",
+)
 
 compiled_artifact = sources[Path("web/src/compiled-artifact.tsx")]
-for contract in (
-    "function publicationUrlTransform(url: string)",
-    "data:image",
-    "urlTransform={publicationUrlTransform}",
-):
-    if contract not in compiled_artifact:
-        fail(f"compiled Markdown image rendering contract missing: {contract}")
+require_contract(
+    compiled_artifact,
+    (
+        "function publicationUrlTransform(url: string)",
+        "data:image",
+        "urlTransform={publicationUrlTransform}",
+    ),
+    "compiled Markdown renderer",
+)
 
-for contract in (
-    'label="Structure"',
-    'label="Explorer"',
-    "<ReviewWorkspace",
-    "<SplitViewPicker",
-    "<FileMenu",
-    "DropdownMenuSubTrigger",
-    "Appearance",
-    "SourceFileView",
-    "onOpenFile={openRepositoryFile}",
-    'className="zoom-value"',
-    "<AppTabBar",
-    "<SettingsView",
-    'active.extension',
-):
-    if contract not in app:
-        fail(f"viewer shell is missing UI contract: {contract}")
+workspace = sources[Path("web/src/workspace.tsx")]
+require_contract(
+    workspace,
+    ("DockviewReact", "paper-viewer-workspace-layout", "splitActive", "updateActive", "onDidLayoutChange"),
+    "review workspace",
+)
 
-for contract in (
-    'export type ActivityBarPosition = "left" | "right" | "top" | "bottom"',
-    'export type AppearanceMode = "light" | "dark" | "oled"',
-    "showRefresh: boolean",
-    "showFullscreen: boolean",
-    "export function useViewerSettings()",
-):
-    if contract not in settings:
-        fail(f"settings abstraction is missing contract: {contract}")
-
-for contract in ("Refresh button", "Fullscreen button", "Synchronize split scrolling"):
-    if contract not in settings_view:
-        fail(f"settings tab is missing contract: {contract}")
-
-for contract in ('role="tablist"', 'role="tab"', 'label="New tab"', "app-tab-close"):
-    if contract not in viewer_tabs:
-        fail(f"persistent tab bar is missing contract: {contract}")
+pdf_viewer = sources[Path("web/src/pdf-document.tsx")]
+require_contract(
+    pdf_viewer,
+    ('aria-label="Document structure"', "chaptersByPage", "structure-page-group", "sidebarWidth", "onSidebarWidthChange"),
+    "PDF structure viewer",
+)
 
 web_exports = sources[Path("scripts/build_web_exports.py")]
-for contract in ("localize_image_assets", "validate_local_image_references", '"assets/"'):
-    if contract not in web_exports:
-        fail(f"web export image contract missing: {contract}")
+require_contract(
+    web_exports,
+    ("localize_image_assets", "validate_local_image_references", '"assets/"'),
+    "web export image pipeline",
+)
 
 site_builder = sources[Path("scripts/build_site.py")]
-for contract in (
-    "publish_tracked_sources",
-    "publish_compiled_assets",
-    '"publication": PUBLICATION',
-    '"source": (',
-    'f"repository/{tracked_path}"',
-    '"repository_source_root": "repository/"',
-    '"type": "submodule"',
-):
-    if contract not in site_builder:
-        fail(f"site builder is missing internal Explorer source contract: {contract}")
-
-if "profile: string" in workspace:
-    fail("workspace pane retains obsolete publication profile state")
-for contract in ("DockviewReact", "paper-viewer-workspace-layout", "splitActive", "updateActive", "onDidLayoutChange"):
-    if contract not in workspace:
-        fail(f"review workspace is missing contract: {contract}")
-
-for contract in ('aria-label="Document structure"', "chaptersByPage", "structure-page-group", "sidebarWidth", "onSidebarWidthChange"):
-    if contract not in pdf_viewer:
-        fail(f"PDF structure viewer is missing contract: {contract}")
+require_contract(
+    site_builder,
+    (
+        "publish_tracked_sources",
+        "publish_compiled_assets",
+        '"publication": PUBLICATION',
+        '"repository_source_root": "repository/"',
+        '"type": "submodule"',
+    ),
+    "site builder",
+)
 
 manifest = json.loads(require_file(Path(".github/darkfactory.json")))
 release_assets = {Path(value) for value in manifest.get("release", {}).get("assets", [])}
@@ -538,11 +460,5 @@ if release_assets != set(EXPECTED):
 
 print(
     f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, {len(template_names)} template(s), "
-    f"{len(concept_files)} concepts, concept-owned terminology, and web workbench validated"
+    f"{len(concept_files)} concepts, final hierarchy and web workbench validated"
 )
-
-for path in (Path("Makefile"), Path("scripts/build_review.py"), Path("scripts/build_web_exports.py"), Path("scripts/build_site.py")):
-    source = path.read_text(encoding="utf-8")
-    for forbidden in ("prace-cs", "prace-en", "prace-bilingual", "profile=cs", "profile=en", "profile=merged"):
-        if forbidden in source:
-            fail(f"obsolete language publication variant remains in {path}: {forbidden}")

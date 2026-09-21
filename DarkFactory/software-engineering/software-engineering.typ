@@ -3,6 +3,7 @@
 
 #let item = concept(
   key: "software_engineering",
+  industry: "Software Engineering",
   czech: "Softwarové inženýrství",
   english: "Software Engineering",
   citation: bib.sommerville2016,

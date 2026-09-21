@@ -9,7 +9,7 @@
 Návrh, implementace a provoz běhové vrstvy, která propojuje jazykový model s nástroji, stavem a kontrolními mechanismy.
   ],
   description: terms => [
-Určuje, jak jsou model, nástroje, stav a kontrolní mechanismy spojeny do implementovatelného a ověřitelného agentního systému.
+V praktické části určuje, jak jsou model, nástroje, stav, provádění a deterministické kontroly spojeny do implementovatelného a ověřitelného systému.
 
 #scope-note[Termín Harness Engineering je zde použit jako zastřešující označení. Před finalizací rozhodnout, zda jej opřít o autoritativní zdroj, nebo výslovně vymezit jako pracovní termín této práce.]
   ],

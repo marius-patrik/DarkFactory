@@ -10,5 +10,5 @@ Vyhodnocení, jak návrh DarkFactory odpovídá stanoveným cílům a výzkumný
   description: terms => [
 Výsledky odpovídají na O1–O3 a odděleně vymezují hranice toho, co lze z provedeného ověření tvrdit.
   ],
-  relations: ((type: "dependency", target: "development_environment"),),
+  relations: ((type: "dependency", target: "darkfactory_architecture"),),
 )

@@ -2,7 +2,7 @@
 
 `DarkFactory/` is one complete book inside the multi-book `DarkFactory-Paper` project.
 
-The directory name, structural root key, and main book title are one identity. `index.typ` declares the top-level folder `DarkFactory`; its exported `book-title` is consumed by the PDF and web renderers. Repository-global metadata does not duplicate the book's main title.
+The directory name and structural root key identify the book as `DarkFactory`; the human-facing thesis title is the root folder's `title`. `index.typ` exports that `book-title` to the PDF and web renderers, while repository-global metadata does not duplicate it.
 
 ## Structural contract
 

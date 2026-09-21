@@ -14,5 +14,5 @@ Formální popis parametrů nástroje pomocí JSON Schema s ověřením, že vyg
   description: terms => [
 Schéma určuje povinná pole, datové typy a další omezení vstupu; rozhraní modelu může zároveň omezit generování argumentů tak, aby schématu odpovídaly. #cite(bib.json_schema_2020) #cite(bib.openai_structured_outputs)
   ],
-  relations: ((type: "dependency", target: "tool_calling"),),
+  relations: ((type: "dependency", target: "tools"),),
 )

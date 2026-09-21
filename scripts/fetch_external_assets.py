@@ -17,10 +17,6 @@ ASSETS = (
         "url": "https://cpa.rip/wp-content/uploads/2026/09/how-many-people-use-ai-the-world-population-as-a-dot-grid-2-scaled.png.webp",
     },
     {
-        "path": "chatgpt-web.png",
-        "url": "https://us1.discourse-cdn.com/openai1/original/4X/e/0/1/e01cea10cd73de5710e6f980c3ffcff611824edf.png",
-    },
-    {
         "path": "codex-app.webp",
         "url": "https://images.ctfassets.net/kftzwdyauwt9/212T6zWyTJxsZOe79RrI1a/8af0d0131ab9d1bcc90789fe0910de4e/tablet_m_feature02.png?w=2400&q=90&fm=webp",
     },

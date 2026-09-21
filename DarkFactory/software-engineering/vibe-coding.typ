@@ -1,5 +1,5 @@
 #import "/DarkFactory/templates/common.typ": bib
-#import "/DarkFactory/agentic-engineering/examples/karpathy-vibe-coding-tweet.typ" as karpathy_tweet
+#import "/DarkFactory/software-engineering/examples/karpathy-vibe-coding-tweet.typ" as karpathy_tweet
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(

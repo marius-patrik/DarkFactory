@@ -6,13 +6,10 @@
 
 #let meta = (
   // The main title is structural and comes from DarkFactory/index.typ.
-  title-suffix: translation(
-    cs: "Agentické a harnessové inženýrství: Umělá inteligence v praxi",
-    en: "Agentic and Harness Engineering: Artificial Intelligence in Practice",
-  ),
+  title-suffix: translation(cs: "", en: ""),
   title-lines: (
-    cs: ("Agentické a harnessové inženýrství:", "Umělá inteligence v praxi"),
-    en: ("Agentic and Harness Engineering:", "Artificial Intelligence in Practice"),
+    cs: ("Agentic AI,", "Agentic Engineering and", "Harness Engineering"),
+    en: ("Agentic AI,", "Agentic Engineering and", "Harness Engineering"),
   ),
   podnazev: none,
 
@@ -45,14 +42,12 @@
 )
 
 
-#let title-value(book-title) = {
-  str(book-title.cs) + ": " + str(meta.title-suffix.cs)
-}
+#let title-value(book-title) = str(book-title.cs)
 
 #let title-display(book-title) = {
   [
-    #book-title.cs#linebreak()
     #meta.title-lines.cs.at(0)#linebreak()
-    #meta.title-lines.cs.at(1)
+    #meta.title-lines.cs.at(1)#linebreak()
+    #meta.title-lines.cs.at(2)
   ]
 }

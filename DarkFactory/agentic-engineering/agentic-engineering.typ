@@ -14,5 +14,5 @@ Návrh a provoz systémů kolem jazykových modelů, které zajišťují nástro
   description: terms => [
 Jeho předmětem je systém, který převádí modelový výstup na řízené a ověřitelné jednání, nikoli architektura nebo trénování samotného modelu.
   ],
-  relations: ((type: "dependency", target: "agentic_ai"),),
+  relations: ((type: "dependency", target: "harness"),),
 )

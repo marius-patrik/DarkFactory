@@ -2,12 +2,12 @@
 
 #let item = concept(
   key: "practical",
-  czech: "Praktická část",
-  english: "Practical Part",
+  czech: "Praktická část: Harness and Harness Engineering",
+  english: "Practical Part: Harness and Harness Engineering",
   definition: terms => [
-Převod principů teoretické části do návrhu systému DarkFactory.
+Převod teoretických principů do implementační disciplíny a konkrétního systému DarkFactory.
   ],
   description: terms => [
-Popisuje architekturu DarkFactory, vývojové prostředí a následné vyhodnocení.
+Praktická část vymezuje Harness Engineering, popisuje architekturu DarkFactory a následně hodnotí ověřené vlastnosti výsledného řešení.
   ],
 )

@@ -19,5 +19,5 @@ Aplikační a orchestrační vrstva, která propojuje model s prostředím a ř�
 Harness spravuje pracovní kontext, nástroje, stav úlohy, výsledky akcí a podmínky pokračování nebo ukončení běhu; provádění koordinuje #term(terms.agent_loop).
   ],
   examples: (codex.item, claude_code.item, claude_desktop.item),
-  relations: ((type: "dependency", target: "agent"), (type: "dependency", target: "language_model")),
+  relations: ((type: "dependency", target: "language_model"),),
 )

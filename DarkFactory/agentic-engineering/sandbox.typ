@@ -15,5 +15,5 @@ Omezené běhové prostředí, které odděluje prováděný kód a jeho oprávn
   description: terms => [
 Harness v sandboxu omezuje přístup k souborům, síti, tajnostem a dalším systémovým prostředkům. Silnější izolaci nedůvěryhodného kódu mohou poskytovat virtualizované hranice, například microVM. #cite(bib.agache2020firecracker)
   ],
-  relations: ((type: "dependency", target: "tool_calling"),),
+  relations: ((type: "dependency", target: "tools"),),
 )

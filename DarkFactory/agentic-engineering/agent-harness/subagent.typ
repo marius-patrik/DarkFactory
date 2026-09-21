@@ -13,5 +13,5 @@ Dočasná nebo specializovaná agentní instance, které nadřazený orchestrát
   description: terms => [#finalized[
 Subagent izoluje dílčí práci, například průzkum, plánování nebo implementaci, a může nadřazenému orchestrátoru vrátit pouze výsledek místo celé pracovní historie.
   ]],
-  relations: ((type: "dependency", target: "agent"), (type: "related", target: "graph_engineering")),
+  relations: ((type: "dependency", target: "harness"), (type: "related", target: "graph_engineering")),
 )

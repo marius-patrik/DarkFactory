@@ -6,6 +6,7 @@
 #import "/DarkFactory/language-models/language-model/embedding.typ" as embedding
 #import "/DarkFactory/language-models/language-model/context-window.typ" as context_window
 #import "/DarkFactory/language-models/language-model/kv-cache.typ" as kv_cache
+#import "/DarkFactory/language-models/language-model/context-rot.typ" as context_rot
 
 #let node = folder(
   key: "language_models",
@@ -17,5 +18,6 @@
     embedding.item,
     context_window.item,
     kv_cache.item,
+    context_rot.item,
   ),
 )

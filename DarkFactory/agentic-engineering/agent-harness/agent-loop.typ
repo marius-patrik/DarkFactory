@@ -21,5 +21,5 @@ Ve vzoru ReAct se cyklus opakuje jako rozhodnutí → volání nástroje → poz
   caption: [Smyčka ReAct: model rozhodne o akci, harness ji provede a výsledek vrátí modelu.],
 ) <fig-react-loop>
   ],
-  relations: ((type: "dependency", target: "agent"),),
+  relations: ((type: "dependency", target: "harness"),),
 )

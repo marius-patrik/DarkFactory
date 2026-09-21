@@ -14,5 +14,5 @@ Otevřený protokol pro standardizované propojení AI aplikací s externími n�
   description: terms => [
 MCP používá klient–server rozhraní nad JSON-RPC, takže nástroje a datové zdroje mohou být implementovány mimo jádro harnessu a znovu používány různými aplikacemi. #cite(bib.anthropic_mcp)
   ],
-  relations: ((type: "related", target: "plugins"),),
+  relations: ((type: "dependency", target: "tools"), (type: "related", target: "plugins")),
 )

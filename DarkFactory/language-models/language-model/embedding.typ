@@ -17,7 +17,7 @@ V jazykovém modelu embedding převádí diskrétní identifikátory tokenů na 
   visual: terms => [
 #figure(
   image("/DarkFactory/img/vector-embedding-queen.svg", width: 100%),
-  caption: [Třírozměrná projekce příkladu vektorového vztahu král − muž + žena ≈ královna.],
+  caption: [Ilustrativní 2D projekce vztahu král − muž + žena ≈ královna; osy Pohlaví a Královský status slouží pouze k názornému vysvětlení a nepředstavují doslovné naučené dimenze embeddingového prostoru.],
 )
   ],
   relations: ((type: "dependency", target: "token"),),

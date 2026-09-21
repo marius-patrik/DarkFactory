@@ -18,5 +18,5 @@ Sezení vymezuje stav jednoho běhu; harness v něm spravuje pracovní kontext a
   examples: (),
   attachments: (),
   citations: (),
-  relations: ((type: "dependency", target: "agent_loop"), (type: "related", target: "context_engineering")),
+  relations: ((type: "dependency", target: "turn"), (type: "related", target: "context_engineering")),
 )
