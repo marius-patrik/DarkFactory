@@ -1,25 +1,18 @@
-#import "/DarkFactory/templates/common.typ": translation, note, issue, alert, struct-alert, critique, added, draft, unconfirmed, accepted, finalized, removed, diff, scope-note, blue-note, term, kw, bib
+#import "/DarkFactory/templates/common.typ": term, bib
 #import "/DarkFactory/schema.typ": concept
-
 
 #let item = concept(
   key: "graph_engineering",
-    industry: "Graph Engineering",
+  industry: "Graph Engineering",
   czech: "Inženýrství pracovních grafů",
   english: "Workflow-graph Engineering",
   citation: bib.wu2023autogen,
   source: bib.wu2023autogen,
-definition: terms => [
-Návrh agentních nebo automatizačních workflow jako explicitních grafů uzlů, závislostí a přechodů namísto jediné neomezené smyčky.
+  definition: terms => [
+V této práci označuje návrh vícefázových agentních workflow jako explicitních uzlů, závislostí a přechodů.
   ],
   description: terms => [
-#finalized[
-Graf umožňuje explicitně řídit pořadí, paralelizaci a kontrolní body vícefázové úlohy. Dílčí práci lze delegovat pomocí #term(terms.subagent) a její závislosti vyjádřit pomocí #term(terms.dag).
-]
+Grafová struktura umožňuje oddělit role a fáze, vyjádřit jejich závislosti a řídit, které části práce mohou probíhat sekvenčně nebo paralelně. Multiagentní orchestrace využívá obdobné dělení rolí a komunikace mezi agenty. #cite(bib.wu2023autogen)
   ],
-  visual: none,
-  examples: (),
-  attachments: (),
-  citations: (),
-  relations: ((type: "dependency", target: "agent_loop"),),
+  relations: ((type: "dependency", target: "agent_loop"), (type: "related", target: "subagent")),
 )
