@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { accountId, FileCredentialStore } from "../../src/credentials.ts";
-import { generateVaultKey } from "../../src/secrets/crypto.ts";
-import { saveVault } from "../../src/secrets/vault-store.ts";
+import { accountId, FileCredentialStore, generateVaultKey } from "@darkfactory/keychain";
+import { saveVault } from "@darkfactory/keychain/vault-store";
 
 let root = "";
 let dfHome = "";
