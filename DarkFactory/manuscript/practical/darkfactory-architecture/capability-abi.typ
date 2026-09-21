@@ -4,7 +4,7 @@
 #let item = concept(
   key: "capability_abi",
   industry: "Capability ABI",
-  czech: "ABI capabilities",
+  czech: "Capability ABI",
   english: "Capability ABI",
   citation: bib.darkfactory,
   source: bib.darkfactory,
