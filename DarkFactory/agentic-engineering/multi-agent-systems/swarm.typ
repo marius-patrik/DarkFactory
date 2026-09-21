@@ -9,7 +9,7 @@
   citation: bib.autogen_swarm,
   source: bib.autogen_swarm,
   definition: terms => [
-Decentralizovaný multiagentní vzor, ve kterém agenti lokálně předávají úlohu dalším agentům podle jejich schopností bez nutnosti jediného centrálního orchestrátoru.
+Decentralizovaný multiagentní vzor, ve kterém agenti lokálně předávají úlohu dalším agentům podle jejich schopností bez nutnosti jediného centrálního orchestrátoru. #cite(bib.autogen_swarm)
   ],
   description: terms => [
 Jednotliví účastníci sdílejí pracovní kontext a rozhodnutí o dalším aktivním agentovi vzniká prostřednictvím handoffů mezi členy týmu. #cite(bib.autogen_swarm)
