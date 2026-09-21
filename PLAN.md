@@ -226,12 +226,12 @@ After #361 is green, re-run the original declarable-graph product contract again
 
 #68 closes only when the final system satisfies the current PRD and all required Requests are terminal.
 
-## 10. Current execution checkpoint — 2026-09-20
+## 10. Current execution checkpoint — 2026-09-21
 
 ### Stable / landed
 
 - The canonical/default branch is `darkfactory`.
-- Recent stable integration points include PR #889 (docs-impact policy), PR #898 (shared redacted operator quota protocol) and PR #905 (`888c79329ce96d7217fdd6b8b064821544c8bb28`, release integrity/provenance). Always resolve the live `darkfactory` HEAD at execution time rather than hard-coding a self-referential PLAN SHA.
+- Recent stable integration points include PR #917 (`97ccd60f9cf8e064b8e88229f15c767b616b7422`, capability-owned hook behavior), PR #920 (`46f6ec26f42c8fc17399cfa5c0ed463c7a6905b5`, browser-safe quota dashboard), and PR #921 (`17c94b1a27c44b7675434d92155fa31133a2e724`, canonical development version source). Always resolve the live `darkfactory` HEAD at execution time rather than hard-coding a self-referential PLAN SHA.
 - #858 repaired the packaged df runtime boundary by resolving workflow contracts through `@darkfactory/protocol/workflow` instead of a source-tree-relative import.
 - #341 is landed with the final repository evidence + capability-resolved deterministic action contract.
 - #880 landed deterministic current-documentation truth checks: README projection drift and retired docs surfaces now fail native docs CI.
@@ -300,9 +300,9 @@ Remaining work is deterministic invocation in final core/mutation owners, canoni
 
 PRs #816 and #862 are closed evidence only; #862 reused the stale release branch and did not satisfy the full release contract.
 
-PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` owns deterministic SHA-256 artifact integrity/source provenance generation. PR #912 landed as `c3660a00adecb2591b79d97e917ccb1387864f52`, adding independent fail-closed verification of installed/downloaded artifact bytes and expected release/source/ABI provenance. PR #914 landed as `e4cec492d2526bd57b3c5b30196135f5286cf27b`, adding lockstep first-party version validation and a final-publication guard that rejects the `0.0.0` development sentinel and prerelease versions.
+PR #905 landed as `888c79329ce96d7217fdd6b8b064821544c8bb28`: the official `@darkfactory/capability-release` owns deterministic SHA-256 artifact integrity/source provenance generation. PR #912 landed as `c3660a00adecb2591b79d97e917ccb1387864f52`, adding independent fail-closed verification of installed/downloaded artifact bytes and expected release/source/ABI provenance. PR #914 landed as `e4cec492d2526bd57b3c5b30196135f5286cf27b`, adding lockstep first-party version validation and a final-publication guard that rejects the `0.0.0` development sentinel and prerelease versions. PR #921 landed as `17c94b1a27c44b7675434d92155fa31133a2e724`, making root `package.json` the canonical `0.0.0` development version source and recording the same workspace version in `bun.lock`.
 
-Continue stable release engineering in parallel for lockstep version/package metadata, Node-compatible CLI/library boundaries, runtime assets, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Reuse the landed release manifest/checksum contract; publish exactly once after the final release join.
+Continue stable release engineering in parallel for applying the eventual final lockstep SemVer across detected first-party packages/capabilities, Node-compatible CLI/library boundaries, runtime assets, native/platform smoke coverage, packed clean-directory installation and the prebuilt web artifact. Reuse the landed release manifest/checksum/version contracts; publish exactly once after the final release join.
 
 #### Documentation and operator lanes
 
@@ -311,7 +311,7 @@ Continue stable release engineering in parallel for lockstep version/package met
 - #424 is complete through `1340019ee75cd9100f79cc032b484a65c62a762f`; detected repository/package/capability metadata and capability-declared docs are part of the native graph with no duplicate detector.
 - #337 remains open only for the late final repository-wide contradiction audit; deterministic README/retired-surface enforcement already landed through PR #880.
 - #403 remains open, but the stable command-registry/metadata slice landed through PR #887. Finish only the remaining real operator commands and later engine/release joins against final owners.
-- #336 joins the final #339 hook enforcement; #425/#390 may consume the already-shipped auth/browser boundaries.
+- #336 joins the final #339 hook enforcement. #390 now has its first functional quota/operator view through PR #920 (`46f6ec26f42c8fc17399cfa5c0ed463c7a6905b5`): `@darkfactory/web` consumes the shared redacted quota snapshot with explicit disconnected/loading/error/empty/live states and public/static disconnected-by-default behavior. Remaining #390 live data waits only on an explicit browser-safe GitHub/auth transport boundary; do not expose keychain credentials or invent a second state backend. #425 continues the broader shared operator application.
 
 ### Recovery and branch cleanup
 
@@ -433,13 +433,13 @@ Run stable pieces in parallel, with only these waits:
 - #336: F44 recovery is reconciled/deleted and the pure #341-backed impact classifier is landed through #889. Wire PR-base diff and shared local/CI enforcement through #339 once its final hook surface lands, then perform the late PRD truth pass.
 - #337: README projection/retired-surface enforcement is active; perform the final repository-wide truth pass only after the product surface has stopped changing.
 - #403: the command-registry/metadata slice is landed; continue the remaining final operator commands and later engine/release joins. #251 consumes the same registry/metadata source for TUI work.
-- #425 and #390: continue the shared `@darkfactory/web` application. PR #898 (`0cc4f61d5c9488f6d981daa1ea34bcba851ef53f`) landed the shared redacted `@darkfactory/protocol/quota` snapshot for CLI/TUI/web; live authenticated GitHub data remains held on an explicit browser-transport/auth contract rather than leaking broker/keychain credentials or inventing a backend state store.
+- #425 and #390: continue the shared `@darkfactory/web` application. PR #898 (`0cc4f61d5c9488f6d981daa1ea34bcba851ef53f`) landed the shared redacted `@darkfactory/protocol/quota` snapshot and PR #920 (`46f6ec26f42c8fc17399cfa5c0ed463c7a6905b5`) landed the browser-safe quota route/view with disconnected-by-default public behavior. Live authenticated GitHub data remains held on an explicit browser-transport/auth contract rather than leaking broker/keychain credentials or inventing a backend state store.
 
 D4/F42/F44/F45 remote recovery refs are already terminal and deleted. Their dispositions remain in the owning GitHub issues; do not recreate those branches.
 
 ### 11.6 Workstream E — release engineering
 
-#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed deterministic release artifact checksum/source-provenance generation, #912 landed independent fail-closed verification, and #914 landed the lockstep version/final-publication guard; continue from current `darkfactory` with additional narrow final-owner release slices.
+#360 engineering is continuous. PRs #816/#862 are closed evidence only. PR #905 landed deterministic release artifact checksum/source-provenance generation, #912 landed independent fail-closed verification, #914 landed the lockstep version/final-publication guard, and #921 established root `package.json` as the canonical `0.0.0` development version source; continue from current `darkfactory` with additional narrow final-owner release slices.
 
 - package/publish metadata;
 - lockstep versioning + capability ABI version;
@@ -494,7 +494,7 @@ When #361 is green, perform the final #68 declarable-graph contract check and cl
 The highest-downstream-value work is therefore **not a serial 1→10 queue**:
 
 - repair the active draft #891/#894/#899 vehicles in parallel against their documented semantic blockers; do not spawn replacement branches unless a current vehicle is proven unrecoverably stale;
-- start fresh final-owner #339 now that #341 is available;
+- #339's capability-owned F47 rule behavior is already landed through #917; continue only the remaining deterministic invocation/rule-binding/diagnostics/CI integration in final owners;
 - consolidate #422's two stale PRs into one current-tree vehicle while docs/operator work and #360 release engineering continue in parallel; #423 is already landed;
 - begin #385/#332 the moment #358's owning state interfaces stabilize;
 - begin #386 as soon as #384+#358+#385 are stable;
