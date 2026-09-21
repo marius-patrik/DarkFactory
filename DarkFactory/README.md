@@ -1,46 +1,30 @@
 # DarkFactory book root
 
-`DarkFactory/` is one complete book inside the multi-book `DarkFactory-Paper` project.
-
-The directory name and structural root key identify the book as `DarkFactory`; the human-facing thesis title is the root folder's `title`. `index.typ` exports that `book-title` to the PDF and web renderers, while repository-global metadata does not duplicate it.
+`DarkFactory/` je kompletní book root práce **DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)**.
 
 ## Structural contract
 
-- Folder manifests (`index.typ`) are the sole source of section hierarchy.
-- A folder may designate one section concept, contain direct concepts, and contain child folders.
-- Nested folders create nested sections to arbitrary depth.
-- Section headings use the section concept's canonical full term surface unless the structural folder provides an explicit display-only `title`.
-- Section concepts and direct concepts render as headings. Levels 1–3 are numbered; level 4 and deeper remain outlined/indexed but render without section numbers. The contents uses explicit per-level indentation so unnumbered deep headings remain visibly nested. Visual inline examples render only their description and figure; non-visual examples retain their inline term/definition rendering.
-- The canonical prose fields are exactly `definition` and `description`; a definition starts directly with the meaning and must not repeat any of the concept's own canonical term surfaces. Theory/practical/document projection fields and a separate concept summary field do not exist.
-- `keyword` defaults to `false`; only deliberately curated thesis-defining concepts set `keyword: true` and appear in the Keywords list.
-- The renderer never inserts generic `Úvod` subsections.
-- Semantic `dependency` and `related` relations never create containment.
-- Concept files own terminology and manuscript content. Example and attachment concepts also own their citations and any authoritative image source.
-- `manuscript/` owns document-level structure, including Introduction, the top-level Theory and Practical wrappers, Results, Conclusion, and Appendices.
-- `language-models/` owns LLM concepts; `agentic-engineering/agent-harness/` is one flat Agent Harness section; `agentic-engineering/` owns the engineering/control sections including Harness Engineering, Context Engineering, and Skills; `development-environment/` is one flat Practical section.
-- `manuscript/appendices/` is the canonical appendix root.
+- `index.typ` folder manifesty jsou jediným zdrojem sekční hierarchie.
+- Koncepty vlastní terminologii, `definition`, `description`, citace, příklady, attachments a semantic relations.
+- Section headings používají stejný canonical term surface jako odkazy v textu.
+- Levels 1–3 jsou číslované; level 4+ zůstává v obsahu, ale bez čísla.
+- Relations `dependency` a `related` nevytvářejí containment.
+- `manuscript/` vlastní pouze document-level strukturu, praktickou část, výsledky, závěr a appendices.
+- `agentic-engineering/harness-engineering/` je child section Agentic Engineering.
+- Praktická část neobsahuje Harness Engineering; popisuje DarkFactory a doložitelné výsledky.
 
-## Book-local publication assets
+## Terminology
 
-This book owns all resources required to publish itself:
+Canonical full surface:
+1. `industry`,
+2. `czech` v kulatých závorkách,
+3. odlišné `english` v hranatých závorkách,
+4. volitelné odlišné `alias`.
 
-- `templates/` — shared semantics, template registry, and document layouts,
-- `fonts/` — reproducible fonts,
-- `bib/` — bibliography data and citation handles,
-- `img/` — book figures and school/logo assets,
-- `metadata.typ` — author/school/front-matter metadata and title suffix,
-- `thesis.typ` — paged PDF composition,
-- `web-publication.typ` — semantic HTML composition,
-- `book.typ` — root interface exported to `../books.typ`.
+Příklad: **Session (Agentní sezení) [Agent Session]**.
 
-A second book must be a sibling top-level directory with the same `book.typ` contract. It must not share a repository-global concepts/templates/assets tree.
+## Book-owned resources
 
-## Terminology contract
+`DarkFactory/` vlastní `templates/`, `fonts/`, `bib/`, `img/`, `metadata.typ`, `thesis.typ`, `web-publication.typ` a `book.typ`.
 
-Canonical terms use:
-- `industry` — established field-facing term or abbreviation,
-- `czech` — Czech formal name,
-- `english` — English formal name,
-- optional `alias` — alternate name.
-
-The full surface leads with the industry term, then adds the Czech name in parentheses, the English name in brackets when distinct, and an optional alias when distinct. Duplicate layers are removed, and section titles use this same canonical surface.
+Podrobné psací, citační a validační instrukce jsou v kořenovém `AGENTS.md`.
