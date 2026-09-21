@@ -29,6 +29,29 @@ loader.config({ monaco });
 
 export type ArtifactFormat = "pdf" | "markdown" | "html";
 
+function publicationUrlTransform(url: string) {
+  const value = url.trim();
+  if (!value) return "";
+
+  // Typst emits embedded figures as data:image URLs in semantic HTML/Markdown.
+  // Preserve those generated images while rejecting executable/unknown schemes.
+  if (/^data:image\/(?:png|jpeg|jpg|gif|webp|svg\+xml);base64,/i.test(value)) {
+    return value;
+  }
+
+  if (
+    value.startsWith("#") ||
+    value.startsWith("/") ||
+    value.startsWith("./") ||
+    value.startsWith("../") ||
+    !/^[a-z][a-z0-9+.-]*:/i.test(value)
+  ) {
+    return value;
+  }
+
+  return /^(?:https?:|mailto:)/i.test(value) ? value : "";
+}
+
 
 function editorLanguageForPath(path: string) {
   const lower = path.toLowerCase();
@@ -326,7 +349,11 @@ export function CompiledArtifactView({
     <div className={embedded ? "compiled-artifact embedded-artifact" : "compiled-artifact"}>
       <div className="markdown-artifact">
         <article className="publication-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            urlTransform={publicationUrlTransform}
+          >
             {markdown}
           </ReactMarkdown>
         </article>

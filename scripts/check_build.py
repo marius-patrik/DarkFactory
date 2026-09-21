@@ -367,6 +367,15 @@ for forbidden in (
 if "publication.json" not in app or "manifest?.publication" not in app:
     fail("viewer is not using the canonical single-publication manifest")
 
+compiled_artifact = sources[Path("web/src/compiled-artifact.tsx")]
+for contract in (
+    "function publicationUrlTransform(url: string)",
+    "data:image",
+    "urlTransform={publicationUrlTransform}",
+):
+    if contract not in compiled_artifact:
+        fail(f"compiled Markdown image rendering contract missing: {contract}")
+
 for contract in (
     'label="Structure"',
     'label="Explorer"',
