@@ -56,6 +56,8 @@
 #let anthropic_context_engineering = <anthropic-context-engineering>
 #let anthropic_harness_design = <anthropic-harness-design>
 #let anthropic_managed_agents = <anthropic-managed-agents>
+#let owasp_prompt_injection = <owasp-prompt-injection>
+#let openai_prompt_injection = <openai-prompt-injection>
 
 #let bib = (
   darkfactory: darkfactory,
@@ -113,4 +115,6 @@
   anthropic_context_engineering: anthropic_context_engineering,
   anthropic_harness_design: anthropic_harness_design,
   anthropic_managed_agents: anthropic_managed_agents,
+  owasp_prompt_injection: owasp_prompt_injection,
+  openai_prompt_injection: openai_prompt_injection,
 )
