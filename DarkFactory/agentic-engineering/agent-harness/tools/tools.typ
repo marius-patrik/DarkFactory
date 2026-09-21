@@ -7,13 +7,13 @@
   industry: "Tools",
   czech: "Nástroje",
   english: "Tools",
-  citation: bib.schick2023toolformer,
+  citation: (bib.schick2023toolformer, bib.anthropic2024tooluse),
   source: bib.anthropic2024tooluse,
   definition: terms => [
-Rozhraní zpřístupňující modelu operace mimo samotnou textovou inferenci, například čtení souboru, dotaz na API nebo změnu stavu systému.
+Rozhraní, kterým agent vyvolává operace mimo samotnou textovou inferenci, například čtení dat, volání API nebo změnu stavu systému.
   ],
   description: terms => [
-Harness přijme požadavek modelu, zkontroluje parametry, provede příslušnou operaci a vrátí její výsledek do dalšího kroku běhu.
+Harness zprostředkuje požadavek na nástroj, provede operaci v prostředí a vrátí její výsledek modelu jako další pozorování. #cite(bib.schick2023toolformer) #cite(bib.anthropic2024tooluse)
   ],
   relations: ((type: "dependency", target: "agent_loop"),),
 )
