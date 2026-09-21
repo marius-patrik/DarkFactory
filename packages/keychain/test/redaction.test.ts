@@ -62,7 +62,7 @@ describe("@darkfactory/keychain redaction", () => {
 		expect(output).not.toContain("access-super-secret");
 		expect(output).not.toContain("refresh-super-secret");
 		expect(output).not.toContain("org-super-secret");
-		expect((output.match(/\\[REDACTED\\]/g) ?? []).length).toBe(4);
+		expect(output.split("[REDACTED]").length - 1).toBe(4);
 	});
 });
 
