@@ -12,9 +12,6 @@ Cíl práce a výzkumné otázky převádějí motivaci do konkrétního návrho
   description: terms => [
 Hlavní cíl určuje výsledný předmět návrhu. Dílčí cíle rozkládají práci na nezbytné oblasti a výzkumné otázky formulují problémy, které musí architektura a její evaluace zodpovědět.
   ],
-  summary: terms => [
-Tato struktura propojuje motivaci s metodikou a výsledky: každá část práce má být dohledatelná k některému cíli nebo výzkumné otázce.
-  ],
   visual: none,
   examples: (),
   attachments: (),

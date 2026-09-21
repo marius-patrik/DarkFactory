@@ -15,9 +15,6 @@ Guardrail je programově vynucené omezení nebo kontrola, která neponechává 
 Pokud samotná instrukce v promptu neposkytuje dostatečnou záruku, harness může pravidlo vynutit deterministicky, například omezením přístupových práv, validací parametrů nástroje nebo odmítnutím nepovoleného stavového přechodu.
 ]
   ],
-  summary: terms => [
-Kritická bezpečnostní a procesní pravidla patří do deterministicky vynucované vrstvy harnessu, nikoli pouze do textových instrukcí modelu.
-  ],
   visual: none,
   examples: (),
   attachments: (),

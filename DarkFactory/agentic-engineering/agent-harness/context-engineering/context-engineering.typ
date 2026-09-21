@@ -14,9 +14,6 @@ Kontextové inženýrství je systematický návrh, výběr, pořadí a životn�
   description: terms => [
 Kontext zahrnuje systémové instrukce, pracovní historii, výsledky nástrojů, externě načtená data a další informace, které model používá při rozhodování. Návrh této vrstvy určuje, které informace jsou modelu dostupné, kdy se načítají, jak dlouho zůstávají aktivní a jak se nahrazují při omezené kapacitě kontextového okna.
   ],
-  summary: terms => [
-Kontextové inženýrství řídí informační prostředí modelu; cílem není maximalizovat objem kontextu, ale udržet relevantní, přesný a provozně použitelný stav.
-  ],
   visual: none,
   examples: (),
   attachments: (),

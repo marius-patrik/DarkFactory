@@ -19,9 +19,6 @@ V navrženém procesu DarkFactory tvoří #term(terms.pull_request) kontrolní h
 Pull request soustřeďuje na jednom místě řádkový diff, popis změny, vazbu na původní zadání, výsledky automatických kontrol a revizní diskusi. Tím poskytuje společný bod pro strojové ověření i lidskou sémantickou kontrolu před integrací.
 ]
   ],
-  summary: terms => [
-Pull Request vytváří kontrolní hranici mezi samostatně připravenou změnou a jejím přijetím do hlavní historie projektu.
-  ],
   visual: none,
   examples: (),
   attachments: (),

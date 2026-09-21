@@ -45,8 +45,5 @@ For every unresolved failure, include the command, failing target, and relevant 
 
 Specifikace dovoluje vedle `SKILL.md` také volitelné adresáře například pro skripty, reference a assety; ty se načítají pouze podle potřeby. #cite(bib.agent_skills_spec)
   ],
-  summary: terms => [
-Formát `SKILL.md` odděluje stručná metadata potřebná pro nalezení dovednosti od detailních instrukcí, které agent načte až při jejím použití.
-  ],
   relations: ((type: "dependency", target: "skills"),),
 )

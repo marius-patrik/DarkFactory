@@ -18,9 +18,6 @@ Při agentním vývoji poskytuje správa verzí auditovatelnou historii změn a 
 Samotný #term(terms.git) zde zůstává vymezen jako distribuovaný systém správy verzí. Hosting a koordinaci repozitáře popisuje #term(terms.github), zadání práce #term(terms.github_issue), revizní integraci #term(terms.pull_request) a automatizaci #term(terms.github_actions).
 ]
   ],
-  summary: terms => [
-Git poskytuje agentnímu vývoji auditovatelnou historii a možnost bezpečně izolovat, porovnávat, slučovat nebo vracet změny bez závislosti na paměti modelu.
-  ],
   visual: none,
   examples: (),
   attachments: (),

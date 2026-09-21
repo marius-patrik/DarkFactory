@@ -19,9 +19,6 @@ Mezi typické patologie patří:
 - Oscilace a těkání (_Thrashing_): Střídavé přepínání mezi dvěma protichůdnými zásahy (úprava modulu A rozbije modul B a následná oprava B rozbije modul A).
 - Nekontrolovaná spotřeba zdrojů (_Context Runaway_): Rychlé vyčerpání kontextového okna i finančního rozpočtu na volání API bez dosažení cíle.
   ],
-  summary: terms => [
-Divergenci nelze řešit pouze lepším promptem; harness musí rozpoznávat neproduktivní trajektorie a omezovat jejich pokračování.
-  ],
   visual: none,
   examples: (),
   attachments: (),

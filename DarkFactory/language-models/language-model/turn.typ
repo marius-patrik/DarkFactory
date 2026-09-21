@@ -15,9 +15,6 @@ Tah je jedna diskrétní jednotka interakce v konverzačním nebo agentním prot
   description: terms => [
 Agentní běh skládá sekvenci tahů, v níž se střídají vstupy prostředí, modelová rozhodnutí a výsledky provedených akcí. Historie těchto tahů tvoří část pracovního kontextu a harness rozhoduje, které z nich zůstávají modelu dostupné v dalších iteracích.
   ],
-  summary: terms => [
-Tah je protokolová jednotka agentní interakce; odděluje jednotlivé vstupy, rozhodnutí a pozorování, z nichž harness sestavuje další kontext.
-  ],
   visual: none,
   examples: (),
   attachments: (),

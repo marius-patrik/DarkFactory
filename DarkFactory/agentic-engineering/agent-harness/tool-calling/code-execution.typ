@@ -16,8 +16,5 @@ V současných agentních systémech se tato schopnost typicky poskytuje přes �
 
 Pro vývoj softwaru umožňuje Code Execution spouštět testy, formátovače, buildy, diagnostické příkazy a další ověřovací kroky místo toho, aby model jejich výsledek pouze odhadoval.
   ],
-  summary: terms => [
-Code Execution umožňuje agentovi ověřovat změny skutečným během programu a vracet pozorovaný výsledek zpět do agentní smyčky.
-  ],
   relations: ((type: "dependency", target: "tool_calling"), (type: "related", target: "runtime")),
 )

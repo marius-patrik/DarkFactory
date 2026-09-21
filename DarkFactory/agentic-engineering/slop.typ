@@ -16,8 +16,5 @@ Cambridge Dictionary uvádí pojem AI slop pro nekvalitní digitální obsah vyt
 
 V kontextu softwaru lze stejný problém pozorovat jako rychle vytvořený výstup, který na první pohled splňuje zadání, ale obsahuje zbytečné vrstvy, duplicity, neověřené předpoklady nebo obtížně udržovatelný kód. Agentní workflow proto musí hodnotit výsledek podle testů, architektury a skutečného stavu repozitáře, ne podle množství vygenerovaného textu nebo kódu.
   ],
-  summary: terms => [
-Pojem Slop pojmenovává riziko, že vysoká rychlost generování vytvoří mnoho výstupu bez odpovídající kvality a ověření.
-  ],
   relations: ((type: "related", target: "vibe_coding"),),
 )

@@ -21,9 +21,6 @@ K hlavním přístupům patří:
 
 Díky tomu může agent kdykoliv obnovit přesný stav projektu bez závislosti na ztrátovém rekurzivním shrnování.
   ],
-  summary: terms => [
-RAG odděluje dlouhodobé uchování informací od omezeného aktivního kontextu a umožňuje načítat pouze data relevantní pro aktuální krok.
-  ],
   visual: none,
   examples: (),
   attachments: (),

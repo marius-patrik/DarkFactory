@@ -16,9 +16,6 @@ Vyvolávání nástrojů je mechanismus, kterým model požádá okolní systém
   description: terms => [
 Nástroj zpřístupňuje modelu operaci, kterou samotná textová inference neprovádí, například čtení souboru, dotaz na API nebo změnu stavu systému. Harness přijme požadavek modelu, zkontroluje jej, provede příslušnou operaci a vrátí výsledek zpět do dalšího kroku agentního běhu.
   ],
-  summary: terms => [
-Tool Calling vytváří rozhraní mezi rozhodnutím modelu a skutečnou operací provedenou mimo model.
-  ],
   examples: (json_schema_tool_calling.item, code_execution.item),
   relations: ((type: "dependency", target: "agent_loop"),),
 )

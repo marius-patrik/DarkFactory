@@ -16,9 +16,6 @@ GitHub poskytuje pravidla ochrany větví _Branch Protection Rules_ @chacon2014,
 
 - Povinné schválení člověkem: Požadavek na explicitní autorizaci kódu lidským vývojářem dříve, než GitHub povolí sloučení do produkční větve.
   ],
-  summary: terms => [
-Ochrana větví převádí procesní pravidla integrace do technicky vynucované bariéry, kterou agent ani člověk nemůže obejít běžným přímým zápisem.
-  ],
   visual: none,
   examples: (),
   attachments: (),

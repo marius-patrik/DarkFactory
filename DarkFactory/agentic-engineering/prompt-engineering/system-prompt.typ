@@ -14,9 +14,6 @@ Systémový prompt je instrukční vrstva s vysokou prioritou, která vymezuje r
   description: terms => [
 V agentním harnessu tvoří systémový prompt stabilní základ instrukčního kontextu. Může definovat roli agenta, pracovní postup, způsob používání nástrojů a pravidla komunikace, ale nemůže nahrazovat oprávnění, validaci nástrojů ani jiné deterministické mechanismy.
   ],
-  summary: terms => [
-Systémový prompt je hlavní instrukční rozhraní harnessu k modelu; určuje očekávané chování, nikoli technicky vynucenou bezpečnostní hranici.
-  ],
   visual: none,
   examples: (),
   attachments: (),

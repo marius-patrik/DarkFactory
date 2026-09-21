@@ -13,8 +13,8 @@ UA = "Mozilla/5.0 (compatible; DarkFactory-Paper/1.0; +https://github.com/marius
 
 ASSETS = (
     {
-        "path": "microsoft-ai-diffusion-2025.png",
-        "url": "https://www.microsoft.com/en-us/corporate-responsibility//wp-content/uploads/2026/01/table1-1-1-1024x213.png",
+        "path": "cpa-ai-usage-worldwide.webp",
+        "url": "https://cpa.rip/wp-content/uploads/2026/09/how-many-people-use-ai-the-world-population-as-a-dot-grid-2-scaled.png.webp",
     },
     {
         "path": "chatgpt-web.png",

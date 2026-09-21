@@ -13,8 +13,5 @@
   description: terms => [
 Dílčí cíle rozkládají hlavní cíl na vývojové prostředí, práci s modelem a kontextem, řízení agentního běhu a lidskou kontrolu. Každá oblast je dále rozpracována jako samostatné koncepty.
   ],
-  summary: terms => [
-Splnění dílčích cílů vytváří podklady pro návrh DarkFactory a pro následné zodpovězení výzkumných otázek.
-  ],
   relations: ((type: "dependency", target: "main_goal"),),
 )

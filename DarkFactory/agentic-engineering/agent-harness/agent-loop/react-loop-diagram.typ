@@ -18,8 +18,5 @@ Diagram odděluje modelové rozhodnutí od exekuce nástroje a zpětného vlože
   caption: [Architektura autonomní ReAct smyčky a tok dat mezi uživatelem, kontextem, modelem a výkonným prostředím.],
 ) <fig-react-loop>
   ],
-  summary: terms => [
-Vizuální tok ukazuje, že agentní běh je uzavřená iterace modelového rozhodnutí, externí akce a nového pozorování.
-  ],
   citations: (bib.yao2022,),
 )

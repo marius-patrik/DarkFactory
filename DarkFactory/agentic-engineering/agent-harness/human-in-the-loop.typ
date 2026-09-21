@@ -20,9 +20,6 @@ Moderní code review je kognitivně náročná činnost a porozumění změně p
 
 Dohledatelnost původního zadání zajišťuje trvalé uchování doslovného požadavku v GitHub Issue. Při selhání se nemá modelové vysvětlení zaměňovat za důkaz úspěchu; harness má předat pozorovatelný stav, například diff, chybové hlášení, výsledek kontrol a stav běhu.
   ],
-  summary: terms => [
-Lidský dohled je nejúčinnější v několika explicitních branách nad srozumitelnými a ověřitelnými změnami, nikoli v mikromanagementu každé agentní iterace.
-  ],
   visual: none,
   examples: (),
   attachments: (),

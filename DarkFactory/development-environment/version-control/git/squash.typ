@@ -15,9 +15,6 @@ Squash je operace, při níž se více po sobě jdoucích commitů nahradí jedn
   description: terms => [
 V agentním běhu často vzniká více pomocných commitů během iterativního ladění. Před začleněním výsledné změny lze tyto mezikroky sloučit do jednoho logického záznamu odpovídajícího dokončenému úkolu.
   ],
-  summary: terms => [
-Squash odděluje experimentální průběh práce od dlouhodobé historie projektu a umožňuje uchovat jednu logickou změnu jako jeden auditovatelný commit.
-  ],
   visual: none,
   examples: (),
   attachments: (),

@@ -21,9 +21,6 @@ Konkrétní automatizační platformu popisuje #term(terms.github_actions), izol
 Riziko nestálých testů je vyčleněno do samostatného konceptu #term(terms.flaky_test).
 ]
   ],
-  summary: terms => [
-V agentním vývoji CI poskytuje strojově ověřitelnou zpětnou vazbu, která odděluje generování změny od jejího objektivního ověření.
-  ],
   visual: none,
   examples: (),
   attachments: (),

@@ -14,6 +14,5 @@ definition: terms => [Oficiální snímek rozhraní Claude Code při práci se z
   caption: [Claude Code při práci se souborem. Zdroj: Anthropic.],
 )
   ],
-  summary: terms => [Vizuální příklad nástrojově řízeného kódovacího agenta.],
   citations: (bib.anthropic_claude_code,),
 )

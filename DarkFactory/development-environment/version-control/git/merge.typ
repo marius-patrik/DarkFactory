@@ -19,9 +19,6 @@ Agent může během jednoho úkolu vytvářet více pracovních commitů při it
 Výsledkem je jeden integrační commit odpovídající jednomu dokončenému úkolu. Pomocné mezikroky zůstávají v pracovní větvi, zatímco hlavní historie zachovává výslednou změnu jako jeden celek, který lze samostatně auditovat nebo případně vrátit.
 ]
   ],
-  summary: terms => [
-Způsob sloučení určuje, jak se pracovní historie agenta promítne do stabilní větve; před integrací je vhodné oddělit užitečný výsledný stav od experimentálních mezikroků.
-  ],
   visual: none,
   examples: (),
   attachments: (),

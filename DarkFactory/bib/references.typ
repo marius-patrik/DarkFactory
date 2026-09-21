@@ -28,8 +28,7 @@
 #let merkel2014docker = <merkel2014docker>
 #let kinsman2021actions = <kinsman2021actions>
 #let dabbish2012github = <dabbish2012github>
-#let microsoft2026aidiffusion = <microsoft2026aidiffusion>
-#let microsoft2025aiadoption = <microsoft2025aiadoption>
+#let cparip2026aiusage = <cparip2026aiusage>
 #let openai_chatgpt_home = <openai-chatgpt-home>
 #let openai_chatgpt_web = <openai-community-chatgpt-web>
 #let openai_codex_app = <openai-codex-app>
@@ -73,8 +72,7 @@
   merkel2014docker: merkel2014docker,
   kinsman2021actions: kinsman2021actions,
   dabbish2012github: dabbish2012github,
-  microsoft2026aidiffusion: microsoft2026aidiffusion,
-  microsoft2025aiadoption: microsoft2025aiadoption,
+  cparip2026aiusage: cparip2026aiusage,
   openai_chatgpt_home: openai_chatgpt_home,
   openai_chatgpt_web: openai_chatgpt_web,
   openai_codex_app: openai_codex_app,

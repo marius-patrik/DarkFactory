@@ -15,9 +15,6 @@ KV Cache je mezipaměť dříve vypočtených vektorů klíčů a hodnot v pozor
   description: terms => [
 Při každém novém tokenu lze znovu použít klíče a hodnoty vytvořené pro předchozí část sekvence namísto jejich úplného přepočítání. Mezipaměť tím snižuje výpočetní režii generování, ale její velikost roste s délkou aktivní sekvence a představuje významnou část paměťových nároků inference.
   ],
-  summary: terms => [
-KV Cache urychluje autoregresivní inferenci výměnou výpočetní práce za paměť, jejíž spotřeba roste s kontextem.
-  ],
   visual: none,
   examples: (),
   attachments: (),

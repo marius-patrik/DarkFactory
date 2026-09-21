@@ -20,9 +20,6 @@ Tento proces však představuje destruktivní ztrátovou kompresi:
 - Oslabení negativních pravidel: Explicitní zákazy (např. neměnit veřejné rozhraní API) bývají v souhrnu zevšeobecněny nebo zcela vypuštěny.
 - Konfirmační zkreslení (_Confirmation Bias_): Model v souhrnu upřednostňuje fakta odpovídající jeho vnitřním statistickým asociacím na úkor netriviálních specifik konkrétního projektu.
   ],
-  summary: terms => [
-Kompakce prodlužuje běh za cenu ztráty informace, a proto musí být navržena tak, aby neodstraňovala detaily nutné pro další rozhodování.
-  ],
   visual: none,
   examples: (),
   attachments: (),

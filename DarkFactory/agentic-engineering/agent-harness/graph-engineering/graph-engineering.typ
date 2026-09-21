@@ -21,9 +21,6 @@ Monolitická agentní smyčka selhává při řešení komplexních, vícefázov
 Škálování je dále rozloženo na dva samostatné koncepty: hierarchickou delegaci prostřednictvím #term(terms.subagent) a explicitní závislosti pracovního postupu prostřednictvím #term(terms.dag).
 ]
   ],
-  summary: terms => [
-Grafová struktura umožňuje rozdělit složitou úlohu na kontrolovatelné kroky, oddělit jejich odpovědnosti a explicitně řídit závislosti mezi nimi.
-  ],
   visual: none,
   examples: (),
   attachments: (),

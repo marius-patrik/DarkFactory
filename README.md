@@ -25,36 +25,34 @@ Folder manifesty `index.typ` jsou jediným zdrojem sekční hierarchie. Každý 
 
 Kanonický katalog aktuální knihy začíná v `DarkFactory/index.typ`. Koncepty vlastní:
 - stabilní `key`,
-- kanonickou terminologii,
-- definici,
-- `definition`, `description` a `summary`,
-- nested `examples` a `attachments`,
+- kanonickou terminologii a volitelný alias,
+- textová pole přesně `definition` a `description`,
+- zdrojová/citační metadata, `examples` a `attachments`,
 - semantic relations `dependency` a `related`.
 
 Každý koncept se vykresluje jako vlastní číslovaná sekce. Foldery určují pouze strukturální vnoření; neexistuje samostatná teoretická/praktická projekce ani automaticky generované podsekce `Úvod`. Příklady a přílohové/obrazové podklady jsou také koncepty, takže mají vlastní terminologii, citace a případně reálný obrazový zdroj.
 
 ## Terminologie
 
-`define-term(...)` používá tři pojmenovací role:
+Kanonická terminologie je vlastností samotného konceptu:
 
 - `industry` — zavedený oborový termín nebo zkratka,
-- `proper` — formální lokalizovaný název,
+- `czech` — český formální název,
+- `english` — anglický formální název,
 - `alias` — volitelný skutečný alternativní název.
 
-Plný povrch termínu je **Industry (Proper) [Alias]** s automatickým potlačením duplicit. Renderer podporuje `surface: "full" | "industry" | "proper" | "alias"`.
+Plný povrch termínu vede oborovým termínem a podle potřeby doplňuje český název v kulatých závorkách, anglický název v hranatých závorkách a volitelný alias; duplicitní vrstvy se potlačují. Stejný kanonický povrch používají odkazy v textu i sekční názvy.
 
-Section headings používají vždy `proper` surface. V profilech `school` a `cs` se jejich názvy vykreslují pouze česky; `en` používá angličtinu a `merged` může zobrazit obě jazykové vrstvy. Odborný termín v běžném textu může nadále používat plný industry/proper/alias povrch.
+## Publikace
 
-## Publikační profily
+Publikace má jedinou obsahovou variantu a dva review stavy:
 
-| Profil | Final | Review | Charakter |
+| Stav | PDF | HTML | Markdown |
 | --- | --- | --- | --- |
-| `school` | `out/prace.pdf` | `out/prace-review.pdf` | český rukopis a české section headings, kanonická odborná terminologie |
-| `cs` | `out/prace-cs.pdf` | `out/prace-cs-review.pdf` | česká projekce |
-| `en` | `out/prace-en.pdf` | `out/prace-en-review.pdf` | anglická projekce tam, kde existuje |
-| `merged` | `out/prace-bilingual.pdf` | `out/prace-bilingual-review.pdf` | bilingvní projekce |
+| Final | `out/prace.pdf` | `out/prace.html` | `out/prace.md` |
+| Review | `out/prace-review.pdf` | `out/prace-review.html` | `out/prace-review.md` |
 
-Každá varianta vzniká také jako kompilované HTML a z něj deterministicky odvozený Markdown.
+PDF je kanonický paged/print výstup; HTML a Markdown jsou odvozené publikační artefakty stejného rukopisu.
 
 ## Build
 
@@ -75,7 +73,7 @@ make template-check BOOK=DarkFactory
 make watch BOOK=DarkFactory
 ```
 
-`make all-books` projde všechny top-level adresáře s `book.typ` a sestaví jejich kompletní template matici do `out/books/<book>/`.
+`make all-books` projde všechny top-level adresáře s `book.typ` a sestaví jejich kompletní publikační výstupy do `out/books/<book>/`.
 
 Typst používá fonty z `<book>/fonts/`; pro DarkFactory tedy `DarkFactory/fonts/`.
 
@@ -100,7 +98,7 @@ Aktuální shell používá:
 - activity bar vlevo/vpravo/nahoře/dole,
 - Dockview workspace s draggable tabs a libovolnými horizontálními/vertikálními split konfiguracemi,
 - renderer select **View / Review / Raw**,
-- kompaktní status selektory jazyka a file type,
+- kompaktní status selektor file type,
 - File/View menubar,
 - Appearance menu s Light / Dark / OLED,
 - PDF.js text a annotation layers, interní PDF navigaci, zoom a selectable text.

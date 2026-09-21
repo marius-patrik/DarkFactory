@@ -45,7 +45,7 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 ## Typst Live Preview Workflow
 - Use the canonical selected-book build from the repository root: `make watch BOOK=DarkFactory`.
-- Equivalent direct command: `typst watch --font-path DarkFactory/fonts --input book=DarkFactory --input template=gjkt-odborna-prace --input profile=school main.typ out/prace.pdf`.
+- Equivalent direct command: `typst watch --font-path DarkFactory/fonts --input book=DarkFactory --input template=gjkt-odborna-prace main.typ out/prace.pdf`.
 - The local preview may use the repository's React/PDF.js viewer or a native browser PDF view as appropriate; it must consume the same generated PDF rather than a parallel manuscript renderer.
 
 ## Repository Architecture
@@ -62,10 +62,9 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 ## Terminology & Translation Model
 - Raw Typst bold emphasis (`*text*`) is forbidden in concept manuscript prose. Bold typography is reserved for actual section headings or canonical terminology rendered through `term(...)`.
 - Canonical terminology lives with its owning concept under the selected book root and is defined with `define-term(...)`. `DarkFactory/index.typ` builds the vocabulary; `DarkFactory/templates/terms.typ` is a projection only.
-- Naming has exactly three semantic roles: `industry`, `proper`, and optional `alias`. `industry` is the established field-facing term/abbreviation, `proper` is the formal localized name, and `alias` is a genuinely alternate name rather than a second language slot.
-- The canonical full surface is `Industry (Proper) [Alias]`, with duplicate layers suppressed. Language selection localizes each role; English is not appended merely because the English proper translation differs from Czech.
-- `term(..., surface: "full" | "industry" | "proper" | "alias")` is the only name-surface selector. Content rendering remains `render: "term" | "explanation" | "both"`.
-- Section headings are structural and render the `proper` surface. In the `school` and `cs` profiles section headings are Czech-only; `en` uses English and `merged` may render both.
+- Canonical term metadata lives on each concept as `industry`, `czech`, `english`, and optional `alias`.
+- The canonical full surface leads with the industry term, adds the Czech proper name in parentheses, the English proper name in brackets when distinct, and an optional distinct alias; duplicate layers are suppressed.
+- `term(...)` is the canonical linked term renderer. Section headings use the same canonical full surface.
 - Reuse canonical `terms.<key>` values whenever one concept refers to another. Do not create ad-hoc term strings or duplicate a term record merely to introduce a synonym.
 - Stable term `id` values are unique within a book.
 
@@ -82,15 +81,15 @@ When working on the thesis manuscript (`DarkFactory-Paper`), agents must strictl
 
 ## GitHub Pages Viewer
 - Pages is a React + TypeScript Rsbuild application under `web/`, formatted/linted with Biome. Use shadcn/ui/Radix primitives, Tailwind, Dockview, Motion, Dagre, `lucide-animated`, and PDF.js.
-- PDF remains the canonical paged/print document. Compiled HTML and Markdown are also produced for every Final/Review × profile × template combination; Markdown is derived from compiled Typst HTML by `scripts/build_web_exports.py`.
+- PDF remains the canonical paged/print document. Compiled HTML and Markdown are also produced for Final and Review; Markdown is derived from compiled Typst HTML by `scripts/build_web_exports.py`.
 - The application opens directly into the viewer. Renderer states are `View`, `Review`, and `Raw`; do not reintroduce `Edit` or `Koncept` naming.
-- Review uses Dockview as a real workspace: pane-local tabs, draggable groups, arbitrary nested horizontal/vertical splits, resize handles, persisted layout, and pane-scoped renderer/language/file-type state.
+- Review uses Dockview as a real workspace: pane-local tabs, draggable groups, arbitrary nested horizontal/vertical splits, resize handles, persisted layout, and pane-scoped renderer/file-type state.
 - The activity bar supports left, right, top, and bottom placement. The sidebar side, width, open/closed state, representation, and activity-bar placement persist independently.
 - The document navigation pane is `Structure` and uses the files icon. It is one ordered stream that interleaves semantic headings with page previews/minimap entries according to page sequence; separate Contents and Pages panes must not return.
 - Repository file browsing is `Explorer` and uses the folder icon.
-- The status bar language and file-type selectors display short identifiers only (`CZ`, `EN`, `CZ+EN`; `PDF`, `MD`, `HTML`). Renderer is a select. The zoom number itself performs fit-to-width; no separate Fit button exists.
+- The status bar file-type selector displays short identifiers only (`PDF`, `MD`, `HTML`). Renderer is a select. The zoom number itself performs fit-to-width; no separate Fit button exists.
 - A thin text menubar sits above the main toolbar. Open-native/open-rendered and Download live under File. Appearance lives in the main toolbar menu, with persistent Light, Dark, and true-black OLED modes.
 - PDF.js must preserve selectable text, annotation/link layers, direct artifact download, and native-PDF fallback. The custom renderer owns internal destination navigation.
 - PDF-only page/zoom controls are hidden for Markdown/HTML. Appearance propagates into embedded compiled HTML and all Dockview panes.
-- `make web-check` is the viewer gate; `make all BOOK=<book>` builds PDF/HTML/Markdown; `make site BOOK=<book>` publishes the matrix and runtime manifests.
+- `make web-check` is the viewer gate; `make all BOOK=<book>` builds PDF/HTML/Markdown; `make site BOOK=<book>` publishes the canonical artifacts and runtime manifests.
 

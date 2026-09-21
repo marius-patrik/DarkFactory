@@ -25,9 +25,6 @@ Tento postup přináší několik praktických vlastností:
 Pokud se hlavní větev během práce posune, pracovní větev se před integrací zaktualizuje pomocí běžných mechanismů Gitu, například rebase nebo merge.
 ]
   ],
-  summary: terms => [
-Samostatná pracovní větev izoluje mezistavy a chyby agentního běhu od stabilní hlavní linie a umožňuje celý neúspěšný pokus bezpečně zahodit.
-  ],
   visual: none,
   examples: (),
   attachments: (),

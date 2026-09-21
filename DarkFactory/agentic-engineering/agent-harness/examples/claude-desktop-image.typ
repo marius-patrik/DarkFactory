@@ -14,6 +14,5 @@ definition: terms => [Oficiální snímek aplikačního rozhraní Claude s praco
   caption: [Aplikační rozhraní Claude. Zdroj: Anthropic.],
 )
   ],
-  summary: terms => [Vizuální příklad desktopového aplikačního harnessu.],
   citations: (bib.anthropic_claude_desktop,),
 )

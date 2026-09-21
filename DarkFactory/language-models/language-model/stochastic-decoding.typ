@@ -16,9 +16,6 @@ Stochastické dekódování je výběr výstupních tokenů z pravděpodobnostn�
 Pravděpodobnostní dekódování znamená, že shodný vstup nemusí vždy vytvořit totožný výstup. V agentním systému proto nelze provozní spolehlivost opřít pouze o model; kritická pravidla a stavové přechody musí vynucovat deterministická vrstva harnessu.
 ]
   ],
-  summary: terms => [
-Nedeterminismus dekódování je jedním z důvodů, proč kritická provozní pravidla agentního systému musí vynucovat harness mimo model.
-  ],
   visual: none,
   examples: (),
   attachments: (),

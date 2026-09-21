@@ -20,9 +20,6 @@ Rizika sémantického posunu spočívají v těchto jevech:
 
 Výsledkem je stav, kdy agent sebevědomě reportuje vyřešení úkolu, ačkoliv reálný kód zůstává v nefunkčním či neúplném stavu.
   ],
-  summary: terms => [
-Opakovaná komprese může změnit pracovní reprezentaci reality natolik, že další rozhodování vychází z chybných historických předpokladů.
-  ],
   visual: none,
   examples: (),
   attachments: (),

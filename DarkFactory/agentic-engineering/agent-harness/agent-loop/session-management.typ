@@ -14,9 +14,6 @@ Agentní sezení je ohraničený běh agenta se sdíleným stavem, systémovými
 Správa agentního sezení zahrnuje sestavení systémového promptu, načtení relevantního kontextu repozitáře, průběžné uchování stavu a sledování rozpočtů, například spotřeby tokenů nebo počtu iterací.
 ]
   ],
-  summary: terms => [
-Sezení poskytuje jednotku životního cyklu, ve které lze konzistentně spravovat stav, kontext a zdrojové limity jednoho agentního běhu.
-  ],
   visual: none,
   examples: (),
   attachments: (),

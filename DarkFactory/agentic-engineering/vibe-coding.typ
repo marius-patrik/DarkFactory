@@ -16,8 +16,5 @@ Označení zavedl Andrej Karpathy v příspěvku na síti X v únoru 2025, kde t
 
 Pro experimenty a malé jednorázové aplikace může být tento způsob velmi rychlý. Pro dlouhodobě udržovaný software však nestačí samotná schopnost rychle generovat změny; důležitá zůstává kontrola požadavků, testů, verzí a výsledného chování systému.
   ],
-  summary: terms => [
-Vibe Coding ukazuje nejméně kontrolovaný konec spektra práce s agentní AI a pomáhá odlišit rychlé generování od řízeného agentního softwarového inženýrství.
-  ],
   relations: ((type: "related", target: "software_engineering"),),
 )

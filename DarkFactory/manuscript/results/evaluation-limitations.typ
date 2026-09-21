@@ -14,8 +14,5 @@ Z toho vyplývají dvě omezení. Zaprvé, úspěšné CI a dílčí agentní b�
 
 Výsledky proto mají charakter architektonické a implementační validace. Nejsou tvrzením o dokončené produkční připravenosti ani o obecně platné výkonnostní převaze DarkFactory nad jinými agentními systémy.
   ],
-  summary: terms => [
-Nejsilnější neověřená tvrzení byla z výsledků záměrně vyloučena; k jejich doložení je nutné dokončit produkční engine, finální vydání a flotilovou akceptaci.
-  ],
   relations: ((type: "dependency", target: "research_question_evaluation"),),
 )

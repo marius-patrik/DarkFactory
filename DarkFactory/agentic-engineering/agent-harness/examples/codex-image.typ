@@ -14,6 +14,5 @@ definition: terms => [Oficiální produktový snímek aplikace Codex.],
   caption: [Aplikace Codex. Zdroj: OpenAI.],
 )
   ],
-  summary: terms => [Vizuální příklad agentního vývojového prostředí.],
   citations: (bib.openai_codex_app,),
 )

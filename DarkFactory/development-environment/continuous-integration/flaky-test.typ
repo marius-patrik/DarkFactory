@@ -17,9 +17,6 @@ Nestálý test je test, který může nad stejným kódem střídavě projít a 
 Nestálé testy oslabují roli CI jako deterministické zpětné vazby. Agent může náhodné selhání mylně interpretovat jako regresi a začít měnit správný kód; proto je vhodné zdroje nedeterminismu omezovat a podezřelé běhy ověřovat opakováním v čistém prostředí.
 ]
   ],
-  summary: terms => [
-Nestálé testy snižují informační hodnotu CI a mohou agenta vést k opravám správného kódu; podezřelé selhání proto musí být reprodukovatelné nebo explicitně označené jako nedeterministické.
-  ],
   visual: none,
   examples: (),
   attachments: (),

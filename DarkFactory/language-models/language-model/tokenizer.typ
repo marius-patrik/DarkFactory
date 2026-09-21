@@ -14,9 +14,6 @@ Tokenizér je komponenta, která převádí text nebo jiný podporovaný vstup n
   description: terms => [
 Konkrétní tokenizér určuje slovník i pravidla rozdělení vstupu, často pomocí subword metod, jako je Byte Pair Encoding. Stejný text proto může mít u různých modelových rodin odlišný počet tokenů a jinou segmentaci.
   ],
-  summary: terms => [
-Tokenizér je deterministické rozhraní mezi textovým povrchem a diskrétní sekvencí, kterou model skutečně zpracovává.
-  ],
   visual: none,
   examples: (),
   attachments: (),

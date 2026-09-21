@@ -14,9 +14,6 @@ Softwarové inženýrství je systematické uplatňování inženýrských princ
   description: terms => [
 Pro agentní systémy je tento rámec důležitý proto, že generování kódu představuje pouze jednu část životního cyklu změny. Výsledek musí být zasazen do specifikace požadavku, řízeného procesu změn, automatického ověřování a následné revize.
   ],
-  summary: terms => [
-Agentní vývoj je podmnožinou softwarového inženýrství: kvalita výsledku se neposuzuje podle množství vygenerovaného kódu, ale podle splnění požadavků a ověřitelnosti změny.
-  ],
   visual: none,
   examples: (),
   attachments: (),

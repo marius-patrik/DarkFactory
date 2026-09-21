@@ -17,9 +17,6 @@ Plugin je programové rozšíření běžící přímo v prostředí harnessu, k
 Plugin rozšiřuje samotný harness programovým modulem. Na rozdíl od instrukční dovednosti tak může přidávat systémové adaptéry, ovladače nástrojů nebo deterministické zásahy přímo do běhové vrstvy.
 ]
   ],
-  summary: terms => [
-Plugin patří do exekuční vrstvy harnessu a používá se tehdy, když rozšíření vyžaduje programové chování namísto pouhých instrukcí pro model.
-  ],
   visual: none,
   examples: (),
   attachments: (),

@@ -17,9 +17,6 @@ Otevřený formát Agent Skills používá adresář se souborem `SKILL.md`. Ten
 
 Smyslem je přesunout specializované postupy mimo základní systémový prompt. Agent tak může mít k dispozici větší množství schopností, aniž by musel jejich úplné instrukce držet v kontextu po celou dobu práce.
   ],
-  summary: terms => [
-Skills modularizují opakovatelné postupy a umožňují načítat specializované instrukce až ve chvíli, kdy jsou potřeba.
-  ],
   examples: (skill_md_format.item,),
   relations: ((type: "dependency", target: "tool_calling"),),
 )

@@ -14,9 +14,6 @@ Kontextové okno je maximální rozsah tokenové sekvence, kterou model při jed
   description: terms => [#finalized[
 Do tohoto limitu se společně započítávají systémové instrukce, uživatelský vstup, historie běhu, výsledky nástrojů a další data předaná modelu. Omezení proto přímo ovlivňuje, kolik pracovního stavu může agent udržovat současně bez výběru, externí paměti nebo kompakce.
   ]],
-  summary: terms => [#finalized[
-Kontextové okno je konečný pracovní prostor inference; harness musí aktivně rozhodovat, které informace v něm zůstanou.
-  ]],
   visual: none,
   examples: (),
   attachments: (),

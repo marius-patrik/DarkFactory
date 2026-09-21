@@ -13,10 +13,7 @@ definition: terms => [
 Velký jazykový model je neuronový model pro zpracování a generování posloupností tokenů; současné modely tohoto typu typicky používají #term(terms.transformer).
   ],
   description: terms => [
-Při generování model opakovaně odhaduje další token na základě dosavadního kontextu. Samostatné koncepty dále popisují #term(terms.autoregression), tokenizaci, reprezentaci dat a omezení kontextu. Funkce jako práce se soubory, spouštění příkazů nebo správa úloh nejsou vlastnostmi jazykového modelu; poskytuje je nadřazený aplikační nebo agentní systém.
+Při generování model opakovaně odhaduje další token na základě dosavadního kontextu. Samostatné koncepty dále popisují tokenizaci, reprezentaci dat a omezení kontextu. Funkce jako práce se soubory, spouštění příkazů nebo správa úloh nejsou vlastnostmi jazykového modelu; poskytuje je nadřazený aplikační nebo agentní systém.
   ],
-  summary: terms => [
-Jazykový model je inferenční komponenta. V této práci je důležité především jeho rozhraní a omezení, protože provozní chování agenta vzniká až propojením modelu s harness-em.
-  ],
-  relations: ((type: "dependency", target: "transformer"), (type: "related", target: "autoregression")),
+  relations: ((type: "dependency", target: "transformer"),),
 )

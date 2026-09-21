@@ -14,9 +14,6 @@ Správa verzí je řízení a sledování změn zdrojových souborů a dalších
   description: terms => [
 Pro autonomní vývoj poskytuje verzovací vrstva deterministický záznam reality, který je nezávislý na interním kontextu modelu. Agent může pracovat nad izolovanou změnou, její stav porovnat s výchozí verzí a v případě neúspěchu se vrátit k známému bodu historie.
   ],
-  summary: terms => [
-Správa verzí je základní stavová a návratová vrstva agentního vývoje; model navrhuje změny, ale repozitář uchovává jejich skutečnou historii.
-  ],
   visual: none,
   examples: (),
   attachments: (),

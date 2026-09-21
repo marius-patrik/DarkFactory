@@ -27,9 +27,6 @@ Vnitřní kognitivní krok modelu uvnitř smyčky se řídí operačním vzorem 
 Kvalita a provozní spolehlivost celého systému tak závisí v prvé řadě na robustnosti architektury harnessu a spolehlivosti jeho agentní smyčky, nikoliv pouze na samotném jazykovém modelu.
 
   ],
-  summary: terms => [
-Agentní smyčka koordinuje opakované rozhodování modelu s vykonáváním akcí; její provozní spolehlivost proto závisí na řízení stavu, nástrojů, rozpočtů a podmínek ukončení.
-  ],
   visual: none,
   examples: (),
   attachments: (react_loop_diagram.item,),

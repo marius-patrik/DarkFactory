@@ -13,7 +13,4 @@ Zjistit, jak lze současnou agentní AI účinně používat při vývoji softwa
   description: terms => [
 Cíl spojuje popis současných agentních postupů s návrhem konkrétního systému DarkFactory. Výsledná architektura má podporovat samostatné provádění vývojových úloh a současně zachovat jasná místa pro lidskou kontrolu.
   ],
-  summary: terms => [
-Výsledkem práce má být použitelný návrh agentního harnessu a popis principů, které umožňují současnou agentní AI efektivně zapojit do vývoje softwaru.
-  ],
 )

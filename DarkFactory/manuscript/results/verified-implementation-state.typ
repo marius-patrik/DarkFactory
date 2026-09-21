@@ -14,8 +14,5 @@ Dokončena je také hranice #raw("@darkfactory/auth") pro uživatelskou autentiz
 
 Tyto výsledky ukazují, že navržené dělení odpovědností do detekce, capability vrstvy, deterministických akcí, autentizace, dokumentačního grafu a společných operátorských rozhraní není pouze teoretické. Jednotlivé části existují v produkčním stromu a procházejí automatizovanými kontrolami.
   ],
-  summary: terms => [
-Implementace prokazuje funkčnost několika klíčových stavebních bloků harnessu, nikoli však ještě úplný koncový životní cyklus požadavku.
-  ],
   relations: ((type: "dependency", target: "evaluation_snapshot"),),
 )

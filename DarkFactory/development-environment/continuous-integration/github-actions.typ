@@ -17,9 +17,6 @@ GitHub Actions je automatizační platforma GitHubu pro spouštění deklarovan�
 GitHub Actions spouští deklarovaná workflow v reakci na události repozitáře. V této práci představuje konkrétní automatizační prostředí, které realizuje CI kontroly a další repozitářové procesy.
 ]
   ],
-  summary: terms => [
-V této práci GitHub Actions představuje konkrétní prováděcí prostředí CI a repozitářové automatizace, nikoli samotný princip průběžné integrace.
-  ],
   visual: none,
   examples: (),
   attachments: (),

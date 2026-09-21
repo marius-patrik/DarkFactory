@@ -14,6 +14,5 @@ definition: terms => [Snímek úplného webového rozhraní ChatGPT v prohlíže
   caption: [Webové rozhraní ChatGPT. Zdroj: OpenAI Developer Community.],
 )
   ],
-  summary: terms => [Příklad uživatelského povrchu nad jazykovým modelem.],
   citations: (bib.openai_chatgpt_web,),
 )

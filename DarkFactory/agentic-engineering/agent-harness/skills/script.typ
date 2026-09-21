@@ -16,9 +16,6 @@ Skript je soubor nebo posloupnost příkazů určených k automatizovanému vyko
 Skript poskytuje deterministickou exekuci pro úlohy, u nichž není vhodné znovu rozhodovat pomocí jazykového modelu, například pro opakovatelné transformace, validace nebo obslužné kroky dovednosti.
 ]
   ],
-  summary: terms => [
-Skripty přesouvají opakovatelné deterministické kroky mimo pravděpodobnostní rozhodování modelu.
-  ],
   visual: none,
   examples: (),
   attachments: (),

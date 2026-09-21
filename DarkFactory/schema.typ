@@ -12,12 +12,10 @@
   czech: none,
   english: none,
   alias: none,
-  title: none,
   citation: none,
   source: none,
   definition: none,
   description: none,
-  summary: none,
   visual: none,
   examples: (),
   attachments: (),
@@ -28,7 +26,6 @@
   assert(czech != none or english != none or industry != none, message: "concept requires canonical terminology")
   assert(definition != none, message: "concept requires a definition")
   assert(description != none, message: "concept requires a description")
-  assert(summary != none, message: "concept requires a summary")
   (
     kind: "concept",
     key: key,
@@ -36,12 +33,10 @@
     czech: czech,
     english: english,
     alias: alias,
-    title: title,
     citation: citation,
     source: source,
     definition: definition,
     description: description,
-    summary: summary,
     visual: visual,
     examples: examples,
     attachments: attachments,
@@ -182,16 +177,12 @@
 }
 
 #let render-concept-title(item) = {
-  if item.title != none {
-    if item.title.cs != none { item.title.cs } else { item.title.en }
-  } else if item.industry != none {
+  if item.industry != none {
     term-full-name(item)
   } else if item.czech != none {
     item.czech
-  } else if item.english != none {
-    item.english
   } else {
-    item.industry
+    item.english
   }
 }
 
@@ -221,8 +212,6 @@
   for attachment in order-local(item.attachments, graph) {
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
-
-  output += (item.summary)(terms)
 
   let citations = render-citations(item)
   if citations != none { output += [#citations] }

@@ -20,9 +20,6 @@ V praxi se projevuje dvěma hlavními mechanismy:
 
 Při komplexním křížovém refaktoringu ve velkém kontextu proto model často přehlédne klíčové souvislosti, které by v menším a čistším okně zpracoval bez potíží.
   ],
-  summary: terms => [
-Nominálně větší kontextové okno samo o sobě nezaručuje lepší výkon; kvalita závisí na tom, zda model dokáže relevantní informace v kontextu skutečně najít a propojit.
-  ],
   visual: none,
   examples: (),
   attachments: (),

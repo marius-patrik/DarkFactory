@@ -17,9 +17,6 @@ Postupné zpřístupňování je strategie, při níž se do aktivního kontextu
 U dovedností snižuje postupné zpřístupňování kontextovou režii: základní prompt obsahuje pouze přehled dostupných dovedností a úplný obsah příslušného `SKILL.md` se načte až tehdy, když jej agent pro konkrétní úlohu potřebuje.
 ]
   ],
-  summary: terms => [
-Do aktivního kontextu se dostávají pouze právě potřebné instrukce, čímž se omezuje režie bez ztráty dostupnosti specializovaných postupů.
-  ],
   visual: none,
   examples: (),
   attachments: (),

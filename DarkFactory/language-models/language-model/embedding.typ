@@ -22,8 +22,5 @@ Známým didaktickým příkladem je přibližný relační vztah mezi vektory s
   caption: [Třírozměrná projekce příkladu vektorového vztahu král − muž + žena ≈ královna.],
 )
   ],
-  summary: terms => [
-Embedding propojuje diskrétní vstupy s numerickým prostorem, v němž lze některé vztahy mezi reprezentacemi vyjádřit směrem a vzdáleností vektorů.
-  ],
   relations: ((type: "dependency", target: "token"),),
 )

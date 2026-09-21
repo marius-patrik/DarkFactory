@@ -17,9 +17,6 @@ Subagent je dočasná nebo specializovaná agentní instance, které nadřazený
 Při hierarchické dělbě práce hlavní orchestrátor rozděluje rozsáhlou úlohu a jednotlivé části deleguje specializovaným subagentům, například pro průzkum repozitáře, plánování nebo implementaci. Po dokončení dílčího běhu může nadřazený agent převzít pouze jeho výsledek namísto celé pracovní historie subagenta.
 ]
   ],
-  summary: terms => [
-Subagenti umožňují paralelní nebo specializovanou práci a současně omezují množství dílčí pracovní historie, které musí zůstat v kontextu hlavního orchestrátoru.
-  ],
   visual: none,
   examples: (),
   attachments: (),

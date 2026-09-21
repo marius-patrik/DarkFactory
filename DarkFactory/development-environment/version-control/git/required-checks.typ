@@ -18,9 +18,6 @@ V procesu DarkFactory nejsou automatické kontroly pouze informativní; vybrané
 Mezi požadované kontroly mohou patřit statická analýza a linter, typová kontrola a sestavení projektu a automatizované testy. Každá kontrola musí vrátit jednoznačný výsledek, který lze použít jako strojově vyhodnotitelnou podmínku před sloučením pull requestu @humble2010.
 ]
   ],
-  summary: terms => [
-Required checks mění CI z informativní zpětné vazby na technicky vynucovanou podmínku integrace.
-  ],
   visual: none,
   examples: (),
   attachments: (),

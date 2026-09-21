@@ -12,8 +12,5 @@ Hodnocení vychází z repozitáře DarkFactory @darkfactory2026repo na větvi #
 
 Snapshot není prezentován jako finální vydání produktu. Jeho účelem je přesně vymezit, ke kterému stavu zdrojového kódu a GitHub řízení se vztahuje následující hodnocení.
   ],
-  summary: terms => [
-Výsledky jsou reprodukovatelně svázány s konkrétním commitem a jeho pozorovatelným CI/GitHub stavem.
-  ],
   relations: (),
 )

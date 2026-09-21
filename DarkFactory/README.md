@@ -9,10 +9,9 @@ The directory name, structural root key, and main book title are one identity. `
 - Folder manifests (`index.typ`) are the sole source of section hierarchy.
 - A folder may designate one section concept, contain direct concepts, and contain child folders.
 - Nested folders create nested sections to arbitrary depth.
-- The section heading is derived from the section concept's canonical `proper` term.
-- In `school` and `cs`, section headings render in Czech only; `en` renders English; `merged` may render both.
+- Section headings are derived from the section concept's canonical full term surface.
 - Every concept, including direct concepts, examples, and attachments, renders as its own numbered section.
-- The canonical content fields are `definition`, `description`, and `summary`; theory/practical/document projections do not exist.
+- The canonical prose fields are exactly `definition` and `description`; theory/practical/document projections and a separate concept summary field do not exist.
 - The renderer never inserts generic `Úvod` subsections.
 - Semantic `dependency` and `related` relations never create containment.
 - Concept files own terminology and manuscript content. Example and attachment concepts also own their citations and any authoritative image source.
@@ -42,4 +41,4 @@ Canonical terms use:
 - `proper` — formal localized name,
 - optional `alias` — alternate name.
 
-The full surface is `Industry (Proper) [Alias]` with duplicate layers removed. A section title explicitly uses the localized `proper` surface rather than the full technical surface.
+The full surface leads with the industry term, then adds the Czech proper name in parentheses, the English proper name in brackets when distinct, and an optional alias when distinct. Duplicate layers are removed, and section titles use this same canonical surface.

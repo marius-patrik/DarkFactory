@@ -19,9 +19,6 @@ Základní vlastnosti protokolu MCP:
 - Protokolové rozhraní: Komunikace probíhá prostřednictvím standardu JSON-RPC (přes standardní vstup/výstup `stdio` nebo proud událostí `Server-Sent Events / SSE`).
 - Architektonické oddělení: Implementace nástrojů běží jako samostatný proces mimo jádro harnessu. MCP servery fungují jako znovupoužitelné komponenty, které lze snadno sdílet napříč různými agenty a projekty.
   ],
-  summary: terms => [
-MCP odděluje implementaci integrací od jádra harnessu a umožňuje stejné nástroje a datové zdroje znovu používat napříč agentními systémy.
-  ],
   visual: none,
   examples: (),
   attachments: (),

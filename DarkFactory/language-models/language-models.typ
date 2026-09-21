@@ -12,8 +12,5 @@ Tato skupina konceptů rozlišuje samotný jazykový model od produktových rozh
   description: terms => [
 #term(terms.language_model), #term(terms.chatbot) a #term(terms.agent) označují různé systémové vrstvy. Toto rozlišení zabraňuje zaměňování schopností modelu s funkcemi, které ve skutečnosti poskytuje aplikační nebo agentní harness.
   ],
-  summary: terms => [
-Další sekce proto popisují model, jeho bezprostřední inferenční mechanismy a nadřazené systémy odděleně.
-  ],
   relations: ((type: "related", target: "language_model"), (type: "related", target: "chatbot"), (type: "related", target: "agent")),
 )

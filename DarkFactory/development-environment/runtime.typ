@@ -16,8 +16,5 @@ Pro agentní systém určuje runtime praktické hranice toho, co může během �
 
 Oddělení runtime od modelu je důležité také pro reprodukovatelnost: stejný model může v různých prostředích disponovat zcela odlišnými nástroji, soubory a systémovými možnostmi.
   ],
-  summary: terms => [
-Runtime převádí požadavek agenta na skutečně proveditelné operace a současně vymezuje technické hranice jejich provádění.
-  ],
   relations: ((type: "related", target: "sandbox"),),
 )

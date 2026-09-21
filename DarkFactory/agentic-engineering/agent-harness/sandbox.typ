@@ -18,9 +18,6 @@ Běžné linuxové kontejnery využívají izolační mechanismy hostitelského 
 
 Bezpečnost sandboxu proto není vlastností jediného runtime přepínače. Je výsledkem kombinace izolační technologie a minimálních oprávnění, omezeného souborového a síťového přístupu, řízení tajností a pozorovatelného životního cyklu spuštěného procesu.
   ],
-  summary: terms => [
-Bezpečné spouštění modelově generovaného kódu vyžaduje vynutitelnou izolaci procesů, souborů, oprávnění, tajností a sítě; podle rizika může být nutná silnější hranice než běžný kontejner.
-  ],
   visual: none,
   examples: (),
   attachments: (),
