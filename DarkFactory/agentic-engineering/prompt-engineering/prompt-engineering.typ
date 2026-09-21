@@ -13,7 +13,7 @@
 Systematický návrh instrukcí, příkladů a jejich struktury s cílem ovlivnit chování jazykového modelu. #cite(bib.anthropic_prompt)
   ],
   description: terms => [
-Prompt řídí pravděpodobnostní chování modelu; pravidla, která musí systém technicky vynutit, patří do #term(terms.guardrail) nebo jiné běhové kontroly.
+Prompt ovlivňuje pravděpodobnostní chování modelu, ale sám nevynucuje technickou bezpečnostní nebo autorizační hranici; pravidla, která musí systém garantovat, patří do #term(terms.guardrail) nebo jiné běhové kontroly.
   ],
-  relations: (),
+  relations: ((type: "dependency", target: "language_model"),),
 )
