@@ -5,6 +5,7 @@
 #import "/DarkFactory/manuscript/results/end-to-end-evaluation.typ" as end_to_end_section
 #import "/DarkFactory/manuscript/results/target-repository-evaluation.typ" as target_repositories_section
 #import "/DarkFactory/manuscript/results/discussion.typ" as discussion_section
+#import "/DarkFactory/manuscript/results/goal-question-section.typ" as goal_question_section
 #import "/DarkFactory/manuscript/results/research-question-evaluation.typ" as questions
 #import "/DarkFactory/manuscript/results/evaluation-limitations.typ" as limitations
 
@@ -35,6 +36,7 @@
 #let goal_evaluation = folder(
   key: "goal_and_question_evaluation",
   title: [Vyhodnocení cílů a výzkumných otázek],
+  section: goal_question_section.item,
   concepts: (questions.item,),
 )
 
