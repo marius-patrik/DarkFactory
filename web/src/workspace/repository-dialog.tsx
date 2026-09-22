@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Github, X } from "lucide-react";
+import { GitBranch, X } from "lucide-react";
 import { useWorkspace } from "./context";
 
 export function RepositoryDialog() {
@@ -62,7 +62,7 @@ export function RepositoryDialog() {
               </div>
             ) : workspace.authConfigured ? (
               <button type="button" className="workspace-signin" onClick={() => void workspace.signIn()}>
-                <Github size={14} /> Sign in with GitHub
+                <GitBranch size={14} /> Sign in with GitHub
               </button>
             ) : (
               <p className="workspace-help">Set <code>PUBLIC_GITHUB_CLIENT_ID</code> for the GitHub App public client to enable private repositories.</p>

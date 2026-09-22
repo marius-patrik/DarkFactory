@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Github, PanelBottom, PanelLeft, PanelRight, UserRound } from "lucide-react";
+import { GitBranch, PanelBottom, PanelLeft, PanelRight, UserRound } from "lucide-react";
 import { useWorkbenchSettings, type AppearanceMode } from "@/settings";
 import { useWorkspace } from "@/workspace/context";
 import { useWorkbenchShortcuts } from "./commands";
@@ -210,7 +210,7 @@ export function WorkbenchShell() {
         <header className="workbench-header">
           <div className="workspace-identity">
             <button type="button" className="workspace-repository-button" onClick={() => workspace.setDialogOpen(true)}>
-              <Github size={13} />
+              <GitBranch size={13} />
               <strong>{workspace.workspace?.repository.fullName || "Open Repository"}</strong>
             </button>
             {workspace.workspace ? (
