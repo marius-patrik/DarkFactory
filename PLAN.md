@@ -32,20 +32,33 @@ Use lower-level headings only where the argument genuinely benefits from them.
 
 The final detailed structure is judged by reading flow, not by preserving a terminology taxonomy.
 
-### A2. Rewrite the theoretical foundation
+### A2. Rebuild the paper around the engineering transition
 
-Rebuild the theory from the source material and citations around the minimum knowledge needed to understand DarkFactory.
+Use the thesis direction in `PRD.md` as the intellectual spine.
 
-The intended progression is:
+The paper should establish, with only the necessary historical context, the progression:
 
-- what a language model provides;
-- the relevant limits of inference/context;
-- what a harness adds;
-- how Agentic Engineering turns those mechanisms into a controlled software-development process.
+**IDE-centered development → code completion → integrated chat → integrated agents → agent-first/ADE-style development**
 
-Integrate terminology into ordinary prose.
+Use that progression to motivate the larger transition:
 
-Keep only source-backed mechanisms that contribute to later reasoning.
+**software engineering → Agentic Engineering**
+
+and:
+
+**IDE-centered execution → harness-centered execution**
+
+The theory should then explain only what is needed to support that argument:
+- the relevant boundary of model inference;
+- why delegated work requires a persistent execution environment;
+- how a harness integrates state, tools, environment, effects, observations, verification, recovery, and orchestration;
+- how Agentic Engineering reorganizes software-engineering responsibility around agents as implementation executors.
+
+Do not turn the historical progression into a product catalogue.
+
+Do not organize the theory as a terminology taxonomy.
+
+The conceptual emphasis should remain on the changing architecture of software development.
 
 ### A3. Build the practical DarkFactory chapter from implementation truth
 
