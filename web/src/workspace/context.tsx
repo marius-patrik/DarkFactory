@@ -86,6 +86,7 @@ type WorkspaceContextValue = {
   openRepository: (input: string, ref?: string) => Promise<void>;
   switchRef: (ref: string) => Promise<void>;
   refreshWorkspace: () => Promise<void>;
+  syncWorkspace: () => Promise<void>;
   readBaseFile: (path: string, sha?: string) => Promise<string>;
   readBaselineFile: (path: string) => Promise<string>;
   readFile: (path: string, sha?: string) => Promise<string>;
@@ -326,6 +327,71 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!workspace) return;
     await openRepository(workspace.repository.fullName, workspace.ref);
   }, [openRepository, workspace]);
+
+  const syncWorkspace = useCallback(async () => {
+    if (!workspace) throw new Error("No workspace is open.");
+    setLoading(true);
+    setError(null);
+    try {
+      const remoteCommit = await getGithubCommit(
+        workspace.repository.fullName,
+        workspace.ref,
+        token,
+      );
+      setRemoteHeadSha(remoteCommit.sha);
+      if (remoteCommit.sha === workspace.baseSha) return;
+
+      const remoteTree = await getGithubTree(
+        workspace.repository.fullName,
+        remoteCommit.commit.tree.sha,
+        token,
+      );
+      const hasLocalState =
+        overlays.length > 0 ||
+        staged.length > 0 ||
+        committedFiles.length > 0 ||
+        commits.length > 0;
+
+      if (hasLocalState) {
+        const touched = new Set<string>();
+        for (const file of [...committedFiles, ...overlays, ...staged]) {
+          touched.add(file.path);
+          if ("renamedFrom" in file && file.renamedFrom) touched.add(file.renamedFrom);
+        }
+
+        const conflicts: string[] = [];
+        for (const path of touched) {
+          const before = workspace.tree.find(
+            (entry) => entry.type === "blob" && entry.path === path,
+          );
+          const after = remoteTree.tree.find(
+            (entry) => entry.type === "blob" && entry.path === path,
+          );
+          if (before?.sha !== after?.sha || before?.mode !== after?.mode) conflicts.push(path);
+        }
+        if (conflicts.length) {
+          throw new Error(
+            `Remote changes overlap local work: ${conflicts.slice(0, 5).join(", ")}${conflicts.length > 5 ? "…" : ""}. Resolve or export the patch before syncing.`,
+          );
+        }
+      }
+
+      const snapshot: WorkspaceSnapshot = {
+        ...workspace,
+        baseSha: remoteCommit.sha,
+        treeSha: remoteTree.sha,
+        tree: remoteTree.tree,
+        updatedAt: Date.now(),
+      };
+      await saveWorkspace(snapshot);
+      setWorkspace(snapshot);
+      setRecent(rememberWorkspace(snapshot));
+      setRemoteHeadSha(remoteCommit.sha);
+      setRefs(await listGithubRefs(workspace.repository.fullName, token).catch(() => refs));
+    } finally {
+      setLoading(false);
+    }
+  }, [committedFiles, commits, overlays, refs, staged, token, workspace]);
 
   const readBaseFile = useCallback(
     async (path: string, sha?: string) => {
@@ -909,6 +975,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       openRepository,
       switchRef,
       refreshWorkspace,
+      syncWorkspace,
       readBaseFile,
       readBaselineFile,
       readFile,
@@ -948,6 +1015,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       openRepository,
       switchRef,
       refreshWorkspace,
+      syncWorkspace,
       readBaseFile,
       readBaselineFile,
       readFile,
