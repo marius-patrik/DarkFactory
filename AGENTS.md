@@ -1,35 +1,25 @@
 # Repository instructions — Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory
 
-`paper/PAPER.typ` is the **single canonical authored Typst source** of the thesis.
+`paper/PAPER.typ` is the single canonical authored Typst thesis source.
 
-`PLAN.md` owns active sequencing and the detailed editorial specification.
-`SCHOOL_RULES.md` owns the recovered Odborná-práce compliance contract.
-`BACKLOG.md` owns deferred thesis work.
-`web/PLAN.md` owns the independent generic IDE workstream.
+- `PLAN.md` defines the active editorial/execution phase.
+- `SCHOOL_RULES.md` defines the school-compliance contract.
+- `BACKLOG.md` defines deferred thesis work.
+- `web/PLAN.md` defines the independent generic IDE workstream.
 
-## Source architecture
+## Source model
 
-Do not recreate the retired modular Typst architecture.
+Author thesis prose directly in `paper/PAPER.typ`.
 
-The only authored thesis Typst file is `paper/PAPER.typ`.
-
-External supporting resources may remain in:
+Supporting resources may live in:
 - `paper/bib/`
 - `paper/data/`
 - `paper/img/`
 - `paper/fonts/`
 
-There must be no parallel schema, manifests, concept-file tree, generated manuscript source, or second authored thesis `.typ`.
-
-Edit `paper/PAPER.typ` directly.
-
-## Canonical title
-
-**Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory**
+Keep manuscript ownership singular: one authored Typst source plus supporting resources.
 
 ## Canonical hierarchy
-
-Maximum numbered heading depth is 3.
 
 1. **Úvod**
    - 1.1 Motivace a vymezení problému
@@ -57,75 +47,41 @@ Maximum numbered heading depth is 3.
    - 4.4 Diskuse a omezení
 5. **Závěr**
 
-Agentické inženýrství is Theory. Practical is reserved for the actual DarkFactory architecture/implementation.
+Maximum numbered heading depth is 3.
 
-Do not invent `3.1.x` DarkFactory subsections until the deferred evidence phase pins the canonical implementation and architecture.
+Agentic Engineering belongs to Theory. Practical is reserved for the verified DarkFactory architecture and implementation.
 
-## Writing contract
+## Editorial contract
 
-The thesis must read as one continuous academic argument, not as a catalogue of concepts.
+Write one connected academic argument.
 
-- headings are for real document structure only;
-- no per-term headings;
-- no standalone definition cards;
-- no explicit **Praktický význam** blocks;
-- introduce necessary terms inline and only to the depth required by the argument;
-- remove prose that merely announces sections, repeats obvious implications, or fills space;
-- every paragraph must advance the argument, explain a required mechanism, present/interpret evidence, establish a limitation, or make a substantive causal transition;
-- prefer concrete subjects and verbs;
-- avoid “Tato práce…”, “V této části…”, “Následující kapitola…” and equivalent metadiscourse unless genuinely necessary;
-- preserve claim-local citations for factual/external claims;
-- synthesize sources into prose rather than structuring prose around one source/example per paragraph;
-- explain evidence/mechanisms once at their semantic owner and use the result later without redefining it.
+- headings represent real document structure;
+- terminology is introduced inline where needed;
+- paragraphs advance the argument, explain required mechanisms, present/interpret evidence, establish limitations, or carry substantive transitions;
+- wording stays concise and concrete;
+- sources support claims locally;
+- original research/specifications and first-party technical documentation are preferred;
+- repeated mechanisms are explained once at their semantic owner;
+- factual claims stay within the scope of their evidence.
 
-The detailed section-by-section keep/cut/rewrite specification in `PLAN.md` is authoritative.
+The detailed section-by-section specification in `PLAN.md` is authoritative.
 
-## Locked editorial constraints
+## Visual contract
 
-Keep:
-- Gradually adoption figure;
-- Epoch ECI capability-trend figure;
-- ReAct action/observation mechanism and diagram;
-- finite active context versus persistent external state;
-- concise Session / Transcript / State distinction;
-- model-requested tool use versus harness-executed effects;
-- sandbox/permission boundary;
-- specification/planning, controlled change, deterministic verification, context management, autonomy controls, and orchestration as the Agentic Engineering methodology.
+The active rewrite retains:
+- Gradually adoption evidence;
+- Epoch ECI capability evidence;
+- ReAct loop diagram.
 
-Remove or do not preserve:
-- Karpathy tweet screenshot;
-- Artificial Analysis benchmark table/model-ranking detour;
-- both embedding diagrams;
-- Claude Code and Antigravity UI screenshots;
-- separate Provider / Inference Engine / Temperature / KV Cache theory articles;
-- Plugin / Script / `.agents/` / `.claude/` as independent theory topics;
-- Slop as a formal concept;
-- Kimi/Swarm discussion unless future pinned DarkFactory evidence makes it materially necessary;
-- standalone encyclopedia/glossary/term index;
-- semantic term registry/stars/backlinks;
-- review/diff/callout manuscript abstractions.
+Later DarkFactory/evaluation figures are added only when verified evidence supports them.
 
-## Evidence/source rules
+## School contract
 
-Prefer original papers/specifications and first-party technical documentation.
+Use `SCHOOL_RULES.md` for school-sensitive formatting and front/back matter.
 
-External factual/mechanistic claims require claim-local citations.
+Unresolved school requirements are finalized during the direct guide-text phase.
 
-Do not generalize survey findings beyond their measured population.
-
-DarkFactory-specific implementation claims must come from current pinned code/docs/tests/workflows during the deferred DarkFactory evidence phase.
-
-Do not describe intended architecture as implemented fact.
-
-## School compliance
-
-Use `SCHOOL_RULES.md`.
-
-Do not import IVT maturita-topic formatting requirements as Odborná-práce rules unless independently present in the actual guide.
-
-Where the school contract is still unresolved, do not guess; defer the exact choice to the direct guide-text audit in `PLAN.md`.
-
-## Build and validation
+## Validation
 
 Canonical checks:
 
@@ -135,6 +91,4 @@ make ci BOOK=DarkFactory
 make site BOOK=DarkFactory
 ```
 
-Validation must operate against `paper/PAPER.typ`.
-
-Keep `README.md`, `AGENTS.md`, `PLAN.md`, and `BACKLOG.md` synchronized with the final single-source architecture and hierarchy.
+The active manuscript phase ends in a pull request against `main` for review. The implementation worker does not merge it.
