@@ -23,7 +23,7 @@ export type TabDefinition = {
 };
 
 const DEFINITIONS: TabDefinition[] = [
-  { type: "editor", title: "Editor", icon: "FileCode2Icon", defaultSurface: "main", initialState: () => ({ value: "", language: "plaintext", path: "Untitled" }) },
+  { type: "editor", title: "Editor", icon: "FileCode2Icon", defaultSurface: "main", initialState: () => ({ value: "", language: "plaintext", path: "Untitled", renderer: "editor", review: false, compare: "none", compareTarget: "", representation: "auto" }) },
   { type: "browser", title: "Browser", icon: "GlobeIcon", defaultSurface: "main", initialState: () => ({ url: "about:blank", history: ["about:blank"], historyIndex: 0 }) },
   { type: "explorer", title: "Explorer", icon: "FilesIcon", defaultSurface: "primary", singleton: true },
   { type: "source-control", title: "Source Control", icon: "GitBranchIcon", defaultSurface: "primary", singleton: true },

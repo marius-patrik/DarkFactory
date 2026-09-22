@@ -37,6 +37,13 @@ export type GithubCommit = {
   commit: {
     tree: { sha: string };
   };
+  parents: Array<{ sha: string }>;
+};
+
+export type GithubPullRequest = {
+  number: number;
+  base: { sha: string; ref: string };
+  head: { sha: string; ref: string };
 };
 
 export type GithubRef = {
@@ -96,6 +103,13 @@ export function getGithubRepository(fullName: string, token: string | null) {
 export function getGithubCommit(fullName: string, ref: string, token: string | null) {
   return githubFetch<GithubCommit>(
     `/repos/${fullName}/commits/${encodeURIComponent(ref)}`,
+    token,
+  );
+}
+
+export function getGithubPullRequest(fullName: string, number: number, token: string | null) {
+  return githubFetch<GithubPullRequest>(
+    `/repos/${fullName}/pulls/${number}`,
     token,
   );
 }
