@@ -6,7 +6,7 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 
 ## Repository model
 
-- `GOAL.md` — semantic road to the finished thesis
+- `GOAL.md` — final-paper quality objective
 - `PRD.md` — finished product requirements and acceptance contract
 - `PLAN.md` — concrete repository execution plan
 - `AGENTS.md` — durable contributor rules
@@ -21,7 +21,7 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 
 ## Direction
 
-The thesis is developed from the semantic path in `GOAL.md`.
+The thesis is developed toward the final-paper quality standard in `GOAL.md` and the thesis-specific product requirements in `PRD.md`.
 
 The repository/product requirements are defined in `PRD.md`.
 
