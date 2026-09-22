@@ -11,7 +11,7 @@
 Maximální rozsah tokenové sekvence dostupný modelu v jednom inferenčním běhu. #cite(bib.liu2024)
   ],
   description: terms => [
-Do aktivního kontextu se společně vkládají instrukce, uživatelské vstupy, historie a výsledky nástrojů. Samotná nominální délka okna nezaručuje, že model všechny vložené informace využije stejně spolehlivě. #cite(bib.liu2024)
+Do aktivního kontextu mohou vstupovat instrukce, uživatelský vstup i další data předaná systému pro daný inferenční běh. Samotná nominální délka okna nezaručuje, že model všechny vložené informace využije stejně spolehlivě. #cite(bib.liu2024)
   ],
   relations: ((type: "dependency", target: "token"),),
 )
