@@ -155,6 +155,7 @@
 
   for item in concepts {
     for edge in item.relations {
+      assert(type(edge) == dictionary, message: "relation entry on " + item.key + " must be a dictionary, got " + repr(type(edge)))
       assert(edge.type in ("dependency", "related", "parent", "child"), message: "unsupported semantic relation " + edge.type + " on " + item.key)
       assert(edge.target in keys, message: "unknown relation target " + edge.target + " from " + item.key)
       if edge.type == "dependency" {
