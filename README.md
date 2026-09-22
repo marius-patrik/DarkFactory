@@ -4,16 +4,16 @@ Typst-first Odborná práce with a React/TypeScript review workbench.
 
 ## Source model
 
-**`main.typ` is the single canonical authored thesis source.**
+**`paper/PAPER.typ` is the single canonical authored thesis source.**
 
 The former modular Typst manuscript/schema/manifest tree has been retired.
 
 Supporting resources remain external where appropriate:
 
-- `DarkFactory/bib/` — bibliography
-- `DarkFactory/data/` — evidence data
-- `DarkFactory/img/` — figures/assets
-- `DarkFactory/fonts/` — fonts
+- `paper/bib/` — bibliography
+- `paper/data/` — evidence data
+- `paper/img/` — figures/assets
+- `paper/fonts/` — fonts
 
 Do not recreate a second authored Typst source tree.
 
