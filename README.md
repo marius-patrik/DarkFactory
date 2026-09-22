@@ -57,4 +57,5 @@ See:
 - `AGENTS.md` — durable manuscript/schema contract;
 - `PLAN.md` — active thesis execution plan;
 - `SCHOOL_RULES.md` — recovered school compliance contract;
+- `BACKLOG.md` — unpromoted backlog and parking lot;
 - `IDE_PLAN.md` — separate generic IDE workstream.

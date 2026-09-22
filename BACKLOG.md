@@ -1,4 +1,4 @@
-# Future TODO
+# Backlog
 
 This file is a parking lot for requests that are not part of the active thesis plan or the IDE workstream.
 

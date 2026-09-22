@@ -73,7 +73,7 @@ template-check: external-assets
 	done
 
 consolidate: external-assets
-	$(PYTHON) scripts/consolidate_paper.py --book $(BOOK) --compile
+	$(PYTHON) scripts/consolidate_paper.py --book $(BOOK) --output $(MAIN) --compile
 
 web-install:
 	$(NPM) --prefix web install --no-audit --no-fund
