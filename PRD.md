@@ -8,7 +8,7 @@
 
 The primary product is the thesis itself. The repository also contains the evidence, source, build pipeline, publication outputs, and generic GitHub workbench required to make the work reproducible and reviewable.
 
-`GOAL.md` defines the semantic destination of the thesis.
+`GOAL.md` defines the quality standard for the finished academic paper.
 
 `PLAN.md` defines how the repository is moved toward this product.
 
@@ -190,6 +190,27 @@ The manuscript must:
 - state limitations explicitly;
 - avoid unsupported generalization.
 
+### Theory scope
+
+The theoretical material exists to support the thesis argument and the later DarkFactory analysis, not to provide a general AI textbook.
+
+The model section should establish only the concepts needed to understand the role and boundary of the model inside an agentic development system.
+
+Product decisions for the current theoretical treatment:
+
+- tokenization may be explained conceptually, but Byte-Pair Encoding (BPE) is not required;
+- embeddings should remain a light conceptual example rather than a mathematical detour;
+- retain the simple king/queen embedding example and `paper/img/vector-embedding-queen.svg`;
+- do not use the previous 3D embedding diagram;
+- retain the ReAct loop where it clarifies the reasoning/action/observation execution cycle;
+- retain the Gradually adoption figure as concise motivation/context;
+- workflow graphs may be used to explain agent workflow planning;
+- DAG-specific discussion is not part of the thesis;
+- Vibe Coding is not part of the thesis argument;
+- Prompt Injection is outside the intended theory scope.
+
+These decisions define the intended level and focus without requiring a fixed paragraph or subsection layout.
+
 ### Sources
 
 Externally verifiable factual/mechanistic claims require appropriate citations.
@@ -253,6 +274,15 @@ The evidence model must record enough provenance to reproduce or inspect importa
 Evidence should support the manuscript rather than duplicate prose.
 
 ## Figure and data requirements
+
+The intended core explanatory visuals currently include:
+- the Gradually adoption figure for motivation/context;
+- the ReAct loop for the harness execution cycle;
+- the simple king/queen embedding diagram for the lightweight embedding example.
+
+The 3D embedding diagram is not part of the intended final visual set.
+
+Other figures remain justified only when they materially improve the final paper.
 
 Figures and tables must materially improve explanation or evidence presentation.
 
