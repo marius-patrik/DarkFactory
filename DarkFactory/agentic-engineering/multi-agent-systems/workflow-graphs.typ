@@ -13,5 +13,8 @@ Explicitní grafová reprezentace vícefázového workflow, v níž uzly předst
   description: terms => [
 Workflow Graph může vyjádřit sekvenční, podmíněné i paralelní větvení a může koordinovat více agentů. Pokud hrany vyjadřují pouze acyklické závislosti, může mít podobu DAG; workflow s návraty nebo opakováním však obecně DAG být nemusí. #cite(bib.wu2023autogen) #cite(bib.anthropic2024tooluse)
   ],
-  relations: ((type: "related", target: "orchestrator"), (type: "related", target: "subagent")),
+  practical: terms => [
+Workflow Graph explicitně zachycuje návaznosti, větvení, paralelismus a smyčky, takže složitější agentní proces lze řídit jako strukturovaný tok práce.
+  ],
+  relations: ((type: "related", target: "orchestrator"), (type: "related", target: "subagent"), (type: "related", target: "swarm"), (type: "related", target: "goal_loops")),
 )

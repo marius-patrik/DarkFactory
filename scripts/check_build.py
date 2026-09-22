@@ -41,6 +41,17 @@ def require_contract(source: str, contracts: tuple[str, ...], label: str) -> Non
         fail(f"{label} is missing contracts: {missing}")
 
 
+def require_in_order(source: str, contracts: tuple[str, ...], label: str) -> None:
+    cursor = -1
+    for contract in contracts:
+        position = source.find(contract, cursor + 1)
+        if position < 0:
+            fail(f"{label} is missing ordered contract: {contract!r}")
+        if position <= cursor:
+            fail(f"{label} has out-of-order contract: {contract!r}")
+        cursor = position
+
+
 def validate_publication(path: Path) -> None:
     if not path.is_file():
         fail(f"missing publication artifact: {path}")
@@ -178,7 +189,7 @@ require_contract(
     (
         "#let root = folder(",
         f'key: "{BOOK}"',
-        "DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)",
+        "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
         "#let manuscript-folders",
         "#let appendix-folders",
         "#let book-title = root.title",
@@ -199,6 +210,7 @@ require_contract(
         "definition: none",
         "description: none",
         "examples: ()",
+        "practical: none",
         "attachments: ()",
         "#let section(",
         "#let folder(",
@@ -208,9 +220,12 @@ require_contract(
         "#let render-concept-title(item) = term-full-name(item)",
         "Reading order is authored explicitly in manifests",
         "#let render-inline-example(item, terms, graph)",
+        "#let render-practical(item, terms)",
         "#let render-concept(item, terms, graph, level: 1, title: none)",
         "#let render-section-body(item, terms, graph)",
-        "heading(level: level, numbering: none, outlined: true)",
+        "heading(level: level, numbering: none, outlined: false, bookmarked: false)",
+        "conclusion: none",
+        "node.section.conclusion != none",
         "let has-section = node.title != none or node.section != none",
         'assert(edge.type in ("dependency", "related", "parent", "child")',
     ),
@@ -298,8 +313,23 @@ keyword_keys: list[str] = []
 for path in concept_files:
     source = path.read_text(encoding="utf-8")
     require_contract(source, ("definition:", "description:", "key:"), f"concept {path}")
-    if path.is_relative_to(ROOT / "software-engineering") or path.is_relative_to(ROOT / "language-models") or path.is_relative_to(ROOT / "agentic-engineering"):
+    is_theory = (
+        path.is_relative_to(ROOT / "software-engineering")
+        or path.is_relative_to(ROOT / "language-models")
+        or path.is_relative_to(ROOT / "agentic-engineering")
+    )
+    is_inline_example = "examples" in path.parts
+    if is_theory:
         require_contract(source, ("citation:", "source:"), f"theory concept {path}")
+    if is_theory and not is_inline_example:
+        require_contract(source, ("practical:",), f"theory concept {path}")
+        practical = re.search(
+            r"practical:\s*terms\s*=>\s*\[(?P<body>.*?)\]\s*,",
+            source,
+            flags=re.DOTALL,
+        )
+        if practical is None or not practical.group("body").strip():
+            fail(f"theory concept requires non-empty practical content: {path}")
     has_term = re.search(r'^\s*term:\s*(?!none\b)', source, flags=re.MULTILINE) is not None
     has_keyword = re.search(r'^\s*keyword:\s*(?!none\b)', source, flags=re.MULTILINE) is not None
     if not (has_term or has_keyword):
@@ -324,6 +354,19 @@ for path in section_files:
         semantic_section_keys.append(key.group(1))
         if has_keyword:
             keyword_keys.append(key.group(1))
+        if (
+            path.is_relative_to(ROOT / "software-engineering")
+            or path.is_relative_to(ROOT / "language-models")
+            or path.is_relative_to(ROOT / "agentic-engineering")
+        ):
+            require_contract(source, ("practical:",), f"theory semantic section {path}")
+            practical = re.search(
+                r"practical:\s*terms\s*=>\s*\[(?P<body>.*?)\]\s*,",
+                source,
+                flags=re.DOTALL,
+            )
+            if practical is None or not practical.group("body").strip():
+                fail(f"theory semantic section requires non-empty practical content: {path}")
 
 semantic_keys = concept_keys + semantic_section_keys
 if len(semantic_keys) != len(set(semantic_keys)):
@@ -354,7 +397,20 @@ for manifest_path in folder_manifests:
     require_contract(source, ("#let node = folder(",), f"folder manifest {manifest_path}")
 
 if BOOK == "DarkFactory":
+    title = "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory"
+    metadata = sources[ROOT / "metadata.typ"]
+    require_contract(metadata, (title,), "book metadata title")
+
     expected_structure = {
+        ROOT / "index.typ": (
+            "manuscript/introduction/index.typ",
+            "language-models/index.typ",
+            "agentic-engineering/agent-harness/index.typ",
+            "software-engineering/index.typ",
+            "manuscript/darkfactory/index.typ",
+            "manuscript/results/index.typ",
+            "manuscript/conclusion/index.typ",
+        ),
         ROOT / "manuscript/introduction/index.typ": (
             "manuscript/introduction/motivation/index.typ",
             "manuscript/introduction/argument/index.typ",
@@ -362,79 +418,87 @@ if BOOK == "DarkFactory":
             "manuscript/introduction/objectives/research-questions/index.typ",
             "manuscript/introduction/methodology/index.typ",
         ),
-        ROOT / "manuscript/theory/index.typ": (
-            "manuscript/theory/introduction/index.typ",
-            "software-engineering/index.typ",
-            "language-models/index.typ",
-            "agentic-engineering/agent-harness/index.typ",
-            "agentic-engineering/index.typ",
-        ),
-        ROOT / "software-engineering/index.typ": (
-            'title: [AI-asistovaný vývoj]',
-            'title: [Zadání a způsob práce]',
-            'title: [Řízení změny]',
-            'title: [Kvalita a ověřování]',
-            "introduction.typ",
-            "conclusion.typ",
-            "vibe-coding.typ",
-            "slop.typ",
-            "spec-driven-development.typ",
-            "planning.typ",
-            "version-control.typ",
-            "branch.typ",
-            "pull-request.typ",
-            "continuous-integration.typ",
-            "integration-test.typ",
-        ),
         ROOT / "language-models/index.typ": (
-            'title: [Jazykový model a inference]',
-            'title: [Jazykový model]',
-            'title: [Inference a její limity]',
-            "language-model/inference-engine.typ",
-            "language-model/context-window.typ",
-            "language-model/kv-cache.typ",
-            "language-model/context-rot.typ",
+            'title: [Architektura a reprezentace]',
+            "language_model.item",
+            "transformer.item",
+            "tokenizer.item",
+            "token.item",
+            "embedding.item",
+            'title: [Inference]',
+            "model_provider.item",
+            "inference_engine.item",
+            "temperature.item",
+            "context_window.item",
+            "kv_cache.item",
+            "context_rot.item",
         ),
         ROOT / "agentic-engineering/agent-harness/index.typ": (
-            'title: [Harness]',
             'title: [Smyčka a stav]',
+            "agent_loop.item",
+            "session.item",
+            "transcript.item",
+            "state.item",
             'title: [Prostředí a nástroje]',
-            'title: [Dovednosti a rozšíření]',
-            "agent-harness/introduction.typ",
-            "agent-harness/tools/tool-calling.typ",
-            "agent-harness/skills/skills.typ",
+            "environment.item",
+            "tools.item",
+            "tool_calling.item",
+            "code_execution.item",
+            "sandbox.item",
+            'title: [Rozšíření]',
+            "skills.item",
+            "plugins.item",
+            "scripts.item",
+            "hooks.item",
+            "mcp.item",
+            "agents_directory.item",
+            "claude_directory.item",
         ),
-        ROOT / "agentic-engineering/index.typ": (
-            'title: [Agentické inženýrství]',
+        ROOT / "software-engineering/index.typ": (
+            'title: [Zadání a způsob práce]',
+            "vibe_coding.item",
+            "spec_driven_development.item",
+            "planning.item",
+            "review.item",
+            'title: [Řízení změny]',
+            "version_control.item",
+            "branch.item",
+            "pull_request.item",
+            'title: [Kvalita a ověřování]',
+            "slop.item",
+            "continuous_integration.item",
+            "integration_test.item",
             'title: [Instrukce a kontext]',
+            "prompt_engineering.item",
+            "system_prompt.item",
+            "agents_md.item",
+            "claude_md.item",
+            "context_engineering.item",
+            "context_injection.item",
+            "compaction.item",
+            "rag.item",
+            "prompt_injection.item",
             'title: [Řízení agentního chování]',
+            "goal_loops.item",
+            "guardrail.item",
+            "human_in_the_loop.item",
             'title: [Orchestrace agentů]',
-            "introduction.typ",
-            "conclusion.typ",
-            "multi-agent-systems/workflow-graphs.typ",
+            "subagent.item",
+            "orchestrator.item",
+            "handoff.item",
+            "workflow_graphs.item",
+            "swarm.item",
         ),
-        ROOT / "manuscript/practical/darkfactory-architecture/index.typ": (
+        ROOT / "manuscript/darkfactory/index.typ": (
             'title: [DarkFactory]',
-            "Intentionally empty",
-        ),
-        ROOT / "manuscript/practical/execution-lifecycle/index.typ": (
-            'title: [Životní cyklus změny]',
-            'title: [Zadání a plán]',
-            'title: [Implementace]',
-            'title: [Ověření a revize]',
-            'title: [Finalizace]',
-            'title: [Přerušení a obnova]',
-            "introduction-section.typ",
-            "conclusion-section.typ",
+            "full canonical autogenerated DarkFactory documentation",
         ),
         ROOT / "manuscript/results/index.typ": (
-            'title: [Vyhodnocení]',
             'title: [Ověření mechanismů]',
             'title: [Ověření systému]',
             'title: [Ověření na repozitářích]',
             'title: [Výzkumné otázky]',
             'title: [Diskuse a omezení]',
-            "conclusion.typ",
         ),
         ROOT / "manuscript/appendices/index.typ": (
             "manuscript/appendices/encyclopedia/index.typ",
@@ -446,7 +510,109 @@ if BOOK == "DarkFactory":
     }
     for path, contracts in expected_structure.items():
         source = require_file(path)
-        require_contract(source, contracts, f"final hierarchy {path}")
+        require_in_order(source, contracts, f"final hierarchy {path}")
+
+    require_contract(
+        require_file(ROOT / "language-models/section.typ"),
+        ("title: [Jazykový model]", "conclusion:"),
+        "Chapter 2 framing",
+    )
+    require_contract(
+        require_file(ROOT / "agentic-engineering/agent-harness/section.typ"),
+        ("title: [Harness]", 'keyword: "Harness"', "practical:", "conclusion:"),
+        "Chapter 3 framing",
+    )
+    require_contract(
+        require_file(ROOT / "software-engineering/section.typ"),
+        ("title: [AI-asistovaný vývoj a agentické inženýrství]", 'term: "Agentické inženýrství"', "practical:", "conclusion:"),
+        "Chapter 4 framing",
+    )
+    require_contract(
+        require_file(ROOT / "manuscript/results/results.typ"),
+        ("title: [Vyhodnocení]", "conclusion:"),
+        "Chapter 6 framing",
+    )
+    require_contract(
+        require_file(ROOT / "manuscript/conclusion/conclusion.typ"),
+        ("title: [Závěr]",),
+        "Chapter 7",
+    )
+
+    required_new_concepts = {
+        ROOT / "language-models/language-model/model-provider.typ": (
+            'key: "model_provider"',
+            'term: "Poskytovatel modelu"',
+            'keyword: "Model Provider"',
+        ),
+        ROOT / "language-models/language-model/temperature.typ": (
+            'key: "temperature"',
+            'term: "Teplota"',
+            'keyword: "Temperature"',
+        ),
+        ROOT / "review.item": (
+            'key: "review"',
+            'term: "Revize"',
+            'keyword: "Review"',
+        ),
+        ROOT / "agentic-engineering/context-engineering/agents-md.typ": (
+            'key: "agents_md"',
+            'keyword: "AGENTS.md"',
+        ),
+        ROOT / "agentic-engineering/context-engineering/claude-md.typ": (
+            'key: "claude_md"',
+            'keyword: "CLAUDE.md"',
+        ),
+        ROOT / "agentic-engineering/agent-harness/skills/agents-directory.typ": (
+            'key: "agents_directory"',
+            'keyword: ".agents/"',
+        ),
+        ROOT / "agentic-engineering/agent-harness/skills/claude-directory.typ": (
+            'key: "claude_directory"',
+            'keyword: ".claude/"',
+        ),
+        ROOT / "agentic-engineering/multi-agent-systems/swarm.typ": (
+            'key: "swarm"',
+            'keyword: "Swarm"',
+        ),
+    }
+    for path, contracts in required_new_concepts.items():
+        source = require_file(path)
+        require_contract(
+            source,
+            contracts + ("definition:", "description:", "practical:", "relations:"),
+            f"new semantic concept {path}",
+        )
+
+    workflow_graph = require_file(ROOT / "agentic-engineering/multi-agent-systems/workflow-graphs.typ")
+    require_contract(
+        workflow_graph,
+        (
+            'target: "orchestrator"',
+            'target: "subagent"',
+            'target: "swarm"',
+            'target: "goal_loops"',
+        ),
+        "workflow graph relations",
+    )
+
+    obsolete_paths = (
+        ROOT / "manuscript/theory",
+        ROOT / "manuscript/practical",
+        ROOT / "agentic-engineering/index.typ",
+        ROOT / "language-models/introduction.typ",
+        ROOT / "language-models/conclusion.typ",
+        ROOT / "agentic-engineering/agent-harness/introduction.typ",
+        ROOT / "agentic-engineering/agent-harness/conclusion.typ",
+        ROOT / "software-engineering/introduction.typ",
+        ROOT / "software-engineering/conclusion.typ",
+        ROOT / "agentic-engineering/introduction.typ",
+        ROOT / "agentic-engineering/conclusion.typ",
+        ROOT / "manuscript/results/evaluation-method.typ",
+        ROOT / "manuscript/results/conclusion.typ",
+    )
+    for obsolete in obsolete_paths:
+        if obsolete.exists():
+            fail(f"obsolete structural owner still exists: {obsolete}")
 
     for required in (
         ROOT / "bib/references.bib",
@@ -454,29 +620,52 @@ if BOOK == "DarkFactory":
         ROOT / "img/vector-embedding-queen.svg",
         ROOT / "manuscript/introduction/index.typ",
         ROOT / "manuscript/introduction/argument/index.typ",
-        ROOT / "manuscript/theory/introduction/index.typ",
-        ROOT / "manuscript/practical/introduction/index.typ",
-        ROOT / "manuscript/practical/darkfactory-architecture/index.typ",
-        ROOT / "manuscript/practical/execution-lifecycle/index.typ",
+        ROOT / "manuscript/darkfactory/index.typ",
         ROOT / "manuscript/results/index.typ",
         ROOT / "manuscript/conclusion/index.typ",
         ROOT / "manuscript/appendices/index.typ",
         ROOT / "manuscript/appendices/encyclopedia/index.typ",
         ROOT / "manuscript/appendices/encyclopedia/encyclopedia.typ",
-        ROOT / "software-engineering/introduction.typ",
-        ROOT / "software-engineering/conclusion.typ",
-        ROOT / "language-models/introduction.typ",
-        ROOT / "language-models/conclusion.typ",
-        ROOT / "language-models/language-model/inference-engine.typ",
-        ROOT / "agentic-engineering/agent-harness/introduction.typ",
-        ROOT / "agentic-engineering/agent-harness/conclusion.typ",
-        ROOT / "agentic-engineering/agent-harness/tools/tool-calling.typ",
-        ROOT / "agentic-engineering/introduction.typ",
-        ROOT / "agentic-engineering/conclusion.typ",
+        ROOT / "language-models/section.typ",
+        ROOT / "agentic-engineering/agent-harness/section.typ",
+        ROOT / "software-engineering/section.typ",
+        ROOT / "language-models/language-model/model-provider.typ",
+        ROOT / "language-models/language-model/temperature.typ",
+        ROOT / "review.item",
+        ROOT / "agentic-engineering/context-engineering/agents-md.typ",
+        ROOT / "agentic-engineering/context-engineering/claude-md.typ",
+        ROOT / "agentic-engineering/agent-harness/skills/agents-directory.typ",
+        ROOT / "agentic-engineering/agent-harness/skills/claude-directory.typ",
+        ROOT / "agentic-engineering/multi-agent-systems/swarm.typ",
         ROOT / "software-engineering/examples/karpathy-vibe-coding-tweet.typ",
         ROOT / "img/external/karpathy-vibe-coding.png",
     ):
         require_present(required)
+
+    root_source = require_file(ROOT / "index.typ")
+    require_in_order(
+        root_source,
+        (
+            "introduction.node",
+            "language_models.node",
+            "harness.node",
+            "ai_assisted_agentic.node",
+            "darkfactory.node",
+            "results.node",
+            "conclusion.node",
+        ),
+        "top-level manuscript order",
+    )
+    for wrapper in ("Teoretická část", "Praktická část"):
+        if wrapper in root_source:
+            fail(f"root structure still exposes wrapper chapter: {wrapper}")
+
+    site_builder = sources[Path("scripts/build_site.py")]
+    require_contract(
+        site_builder,
+        ("class HeadingIndexParser", "def semantic_content_index", '"content_index": "content-index.json"'),
+        "semantic web structure index",
+    )
 
 package = json.loads(sources[Path("web/package.json")])
 dependencies = {**package.get("dependencies", {}), **package.get("devDependencies", {})}

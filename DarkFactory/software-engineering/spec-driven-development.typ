@@ -13,6 +13,9 @@ Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí
   description: terms => [
 Specifikace odděluje požadované chování a omezení od konkrétní implementace a slouží jako společný referenční bod pro člověka i agenta. #cite(bib.fowler2025sdd)
   ],
+  practical: terms => [
+Specifikace dává agentovi explicitní cíl a akceptační podmínky, podle nichž lze plánovat kroky a ověřovat výsledek.
+  ],
   relations: (
     (type: "related", target: "planning"),
     (type: "related", target: "integration_test"),

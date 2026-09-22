@@ -13,5 +13,8 @@ Vzor koordinace, při kterém aktivní agent předá další řízení specializ
   description: terms => [
 Handoff se liší od centralizované orchestrace tím, že specialista není pouze zavolán jako dílčí pracovní jednotka a vrácen orchestrátoru, ale přebírá aktivní pokračování interakce nebo úlohy. #cite(bib.openai_agent_orchestration)
   ],
+  practical: terms => [
+Handoff předává odpovědnost i potřebný kontext jinému agentovi nebo roli, takže další krok nemusí pokračovat ve stejném agentním vlákně.
+  ],
   relations: ((type: "dependency", target: "subagent"), (type: "related", target: "orchestrator")),
 )

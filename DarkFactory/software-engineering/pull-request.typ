@@ -12,5 +12,8 @@ Návrh na sloučení změn z jedné větve do jiné, kolem kterého GitHub soust
   description: terms => [
 Pull request zpřístupňuje diff navržené změny a její stav před integrací do cílové větve. #cite(bib.github_pull_requests)
   ],
+  practical: terms => [
+Pull Request vytváří explicitní integrační a revizní hranici, kde lze porovnat změny, spustit kontroly a zaznamenat rozhodnutí před sloučením.
+  ],
   relations: ((type: "dependency", target: "branch"), (type: "related", target: "continuous_integration")),
 )

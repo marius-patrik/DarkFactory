@@ -19,5 +19,8 @@ V jazykovém modelu embedding převádí identifikátory tokenů na spojité vek
   caption: [Ilustrativní 2D projekce vztahu král − muž + žena ≈ královna; osy Pohlaví a Královský status slouží pouze k názornému vysvětlení a nepředstavují doslovné naučené dimenze embeddingového prostoru.],
 )
   ],
+  practical: terms => [
+Vektorové reprezentace umožňují vyhledávat podle sémantické podobnosti, což je praktický základ pro výběr relevantního kontextu například v retrieval pipeline.
+  ],
   relations: ((type: "dependency", target: "token"),),
 )

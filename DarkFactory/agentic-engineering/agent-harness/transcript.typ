@@ -13,5 +13,8 @@ Uspořádaný historický záznam událostí vzniklých během #term(terms.agent
   description: terms => [
 Transcript odpovídá na otázku, co se během běhu stalo. Je historickým záznamem, nikoli reprezentací právě platného pracovního stavu. #cite(bib.anthropic_managed_agents)
   ],
+  practical: terms => [
+Přepis poskytuje auditovatelnou historii interakcí a nástrojových událostí, z níž lze rekonstruovat průběh běhu a hledat příčiny chyb.
+  ],
   relations: ((type: "parent", target: "agent_session"), (type: "related", target: "state"), (type: "related", target: "context_engineering")),
 )

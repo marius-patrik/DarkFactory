@@ -13,5 +13,9 @@ Způsob tvorby softwaru, při kterém člověk iteruje pomocí pokynů v přiroz
   description: terms => [
 Termín zavedl Andrej Karpathy v roce 2025. V této práci slouží jako kontrast k postupům, které před delegováním práce explicitně formulují specifikaci, plán a podmínky ověření. #cite(bib.karpathy2025vibecoding) #cite(bib.willison2025vibecoding)
   ],
-  examples: (karpathy_tweet.item,),  relations: (),
+  examples: (karpathy_tweet.item,),
+  practical: terms => [
+Vibe Coding může zrychlit průzkumné prototypování, ale bez explicitních kontrol zvyšuje význam následné revize, testů a sledovatelnosti změn.
+  ],
+  relations: (),
 )

@@ -13,5 +13,8 @@ V této práci označuje Context Injection cílené vložení relevantních info
   description: terms => [
 Just-in-time přístup umožňuje mimo modelový kontext uchovávat odkazy nebo trvalý stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
   ],
+  practical: terms => [
+Vkládání kontextu umožňuje Harnessu doplnit modelu aktuální data, instrukce nebo výsledky nástrojů právě v okamžiku, kdy jsou relevantní.
+  ],
   relations: ((type: "dependency", target: "context_engineering"), (type: "related", target: "state")),
 )

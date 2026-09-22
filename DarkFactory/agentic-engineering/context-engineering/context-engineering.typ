@@ -13,5 +13,8 @@ Systematický výběr a správa informací, které jsou modelu zpřístupněny v
   description: terms => [
 Aktivní kontext může obsahovat instrukce, popisy dostupných nástrojů, externí data a vybranou historii interakce. Jeho obsah je nutné kurátorovat vzhledem k omezené kapacitě a nerovnoměrnému využití dlouhého kontextu. #cite(bib.anthropic_context_engineering) #cite(bib.liu2024)
   ],
+  practical: terms => [
+Kontextové inženýrství rozhoduje, které informace mají být v daném kroku modelu skutečně dostupné, což je zásadní pro dlouhé agentní běhy s omezeným rozpočtem.
+  ],
   relations: ((type: "dependency", target: "context_window"), (type: "related", target: "state"), (type: "related", target: "transcript")),
 )

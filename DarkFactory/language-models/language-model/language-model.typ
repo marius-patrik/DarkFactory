@@ -13,5 +13,8 @@ Velký neuronový jazykový model trénovaný na rozsáhlých textových datech 
   description: terms => [
 Současné LLM typicky používají architekturu #term(terms.transformer), která při autoregresivním generování odhaduje další token z předchozí sekvence. #cite(bib.vaswani2017)
   ],
+  practical: terms => [
+V agentickém vývoji je model zdrojem návrhů a rozhodnutí, ale sám nezajišťuje trvalý stav ani provedení účinků mimo inferenci.
+  ],
   relations: ((type: "dependency", target: "transformer"),),
 )

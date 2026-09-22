@@ -12,6 +12,9 @@ Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu
   description: terms => [
 Přímá prompt injection přichází v uživatelském vstupu; nepřímá injection je vložena do externích dat, například webové stránky, e-mailu, dokumentu, repozitáře nebo zdroje RAG. #cite(bib.owasp_prompt_injection) Typickým příkladem je životopis obsahující skrytou instrukci, která se pokusí ovlivnit následné hodnocení kandidáta modelem, přestože dokument měl sloužit pouze jako data. #cite(bib.owasp_llm01_prompt_injection) Důsledky proto závisejí také na oprávněních a nástrojích, které má agent k dispozici. #cite(bib.openai_prompt_injection)
   ],
+  practical: terms => [
+Prompt Injection vyžaduje oddělovat důvěryhodné instrukce od nedůvěryhodného obsahu a omezovat následné nástrojové akce, protože text z prostředí může ovlivnit rozhodování modelu.
+  ],
   relations: (
     (type: "dependency", target: "context_engineering"),
     (type: "related", target: "context_injection"),

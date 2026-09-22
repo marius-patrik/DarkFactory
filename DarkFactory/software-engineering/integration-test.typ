@@ -13,5 +13,8 @@ Ověření spolupráce více komponent nebo vrstev systému přes jejich rozhran
   description: terms => [
 Integrační test zachycuje chyby vznikající ve vzájemném propojení částí systému, které izolované testování jednotlivých komponent nemusí odhalit. #cite(bib.sommerville2016)
   ],
+  practical: terms => [
+Integrační test ověřuje spolupráci více částí systému, a proto zachytí chyby, které izolovaná kontrola jednotlivého modulu nebo generovaného souboru neodhalí.
+  ],
   relations: ((type: "related", target: "continuous_integration"),),
 )

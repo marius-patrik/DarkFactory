@@ -62,6 +62,15 @@
 #let darkfactory_request_359 = <darkfactory-request-359>
 
 #let vllm_inference_engine = <vllm-inference-engine>
+#let openai_model_providers = <openai-model-providers>
+#let openai_responses_temperature = <openai-responses-temperature>
+#let github_pull_request_reviews = <github-pull-request-reviews>
+#let openai_agents_md = <openai-agents-md>
+#let openai_customization_overview = <openai-customization-overview>
+#let claude_code_memory = <claude-code-memory>
+#let claude_code_settings = <claude-code-settings>
+#let claude_code_skills = <claude-code-skills>
+#let kimi_k25_agent_swarm = <kimi-k25-agent-swarm>
 #let bib = (
   darkfactory: darkfactory,
   humble2010: humble2010,
@@ -123,4 +132,13 @@
   darkfactory_paper_release_35617820286: darkfactory_paper_release_35617820286,
   darkfactory_request_359: darkfactory_request_359,
   vllm_inference_engine: vllm_inference_engine,
+  openai_model_providers: openai_model_providers,
+  openai_responses_temperature: openai_responses_temperature,
+  github_pull_request_reviews: github_pull_request_reviews,
+  openai_agents_md: openai_agents_md,
+  openai_customization_overview: openai_customization_overview,
+  claude_code_memory: claude_code_memory,
+  claude_code_settings: claude_code_settings,
+  claude_code_skills: claude_code_skills,
+  kimi_k25_agent_swarm: kimi_k25_agent_swarm,
 )

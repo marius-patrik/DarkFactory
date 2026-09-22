@@ -14,8 +14,9 @@
   source: none,
   definition: none,
   description: none,
-  visual: none,
   examples: (),
+  practical: none,
+  visual: none,
   attachments: (),
   citations: (),
   relations: (),
@@ -38,8 +39,9 @@
     source: source,
     definition: definition,
     description: description,
-    visual: visual,
     examples: examples,
+    practical: practical,
+    visual: visual,
     attachments: attachments,
     citations: citations,
     relations: relations,
@@ -55,11 +57,13 @@
   source: none,
   definition: none,
   description: none,
-  visual: none,
   examples: (),
+  practical: none,
+  visual: none,
   attachments: (),
   citations: (),
   relations: (),
+  conclusion: none,
 ) = {
   assert(key != none, message: "section requires a stable key")
   assert(title != none, message: "section requires a title")
@@ -80,11 +84,13 @@
     source: source,
     definition: definition,
     description: description,
-    visual: visual,
     examples: examples,
+    practical: practical,
+    visual: visual,
     attachments: attachments,
     citations: citations,
     relations: relations,
+    conclusion: conclusion,
   )
 }
 
@@ -260,9 +266,17 @@
   output
 }
 
+#let render-practical(item, terms) = {
+  if item.practical == none {
+    none
+  } else {
+    [#emph[Praktický význam:] #(item.practical)(terms)]
+  }
+}
+
 #let render-concept(item, terms, graph, level: 1, title: none) = {
   let heading-title = if title != none { title } else { render-concept-title(item) }
-  let output = [#heading(level: level, numbering: none, outlined: true)[#heading-title]#label("concept-" + item.key)]
+  let output = [#heading(level: level, numbering: none, outlined: false, bookmarked: false)[#heading-title]#label("concept-" + item.key)]
 
   output += [
     #set par(first-line-indent: (amount: 1.5em, all: true))
@@ -277,6 +291,9 @@
   for attachment in order-local(item.attachments, graph) {
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
+
+  let practical = render-practical(item, terms)
+  if practical != none { output += [#practical] }
 
   let citations = render-citations(item)
   if citations != none { output += [#citations] }
@@ -294,6 +311,11 @@
   for example in order-local(item.examples, graph) {
     output += render-inline-example(example, terms, graph)
   }
+  for attachment in order-local(item.attachments, graph) {
+    output += render-inline-example(attachment, terms, graph)
+  }
+  let practical = render-practical(item, terms)
+  if practical != none { output += [#practical] }
   let citations = render-citations(item)
   if citations != none { output += [#citations] }
   output
@@ -324,6 +346,9 @@
   }
   for child in order-folders(node.children, graph) {
     output += render-folder(child, terms, graph, level: child-level)
+  }
+  if node.section != none and node.section.conclusion != none {
+    output += (node.section.conclusion)(terms)
   }
   output
 }

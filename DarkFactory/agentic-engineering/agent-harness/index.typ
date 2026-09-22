@@ -1,6 +1,5 @@
 #import "/DarkFactory/schema.typ": folder
-#import "/DarkFactory/agentic-engineering/agent-harness/introduction.typ" as introduction
-#import "/DarkFactory/agentic-engineering/agent-harness/conclusion.typ" as conclusion
+#import "/DarkFactory/agentic-engineering/agent-harness/section.typ" as section
 #import "/DarkFactory/agentic-engineering/agent-harness/agent-loop.typ" as agent_loop
 #import "/DarkFactory/agentic-engineering/agent-harness/session-management.typ" as session
 #import "/DarkFactory/agentic-engineering/agent-harness/transcript.typ" as transcript
@@ -15,10 +14,10 @@
 #import "/DarkFactory/agentic-engineering/agent-harness/scripts/scripts.typ" as scripts
 #import "/DarkFactory/agentic-engineering/agent-harness/hooks/hooks.typ" as hooks
 #import "/DarkFactory/agentic-engineering/agent-harness/tools/mcp.typ" as mcp
+#import "/DarkFactory/agentic-engineering/agent-harness/skills/agents-directory.typ" as agents_directory
+#import "/DarkFactory/agentic-engineering/agent-harness/skills/claude-directory.typ" as claude_directory
 
-#let intro = folder(key: "harness", section: introduction.item)
-
-#let state = folder(
+#let state_loop = folder(
   key: "harness_state_loop",
   title: [Smyčka a stav],
   concepts: (
@@ -29,7 +28,7 @@
   ),
 )
 
-#let environment = folder(
+#let environment_tools = folder(
   key: "harness_tools_environment",
   title: [Prostředí a nástroje],
   concepts: (
@@ -42,27 +41,25 @@
 )
 
 #let extensions = folder(
-  key: "harness_skills_extensions",
-  title: [Dovednosti a rozšíření],
+  key: "harness_extensions",
+  title: [Rozšíření],
   concepts: (
     skills.item,
     plugins.item,
     scripts.item,
     hooks.item,
     mcp.item,
+    agents_directory.item,
+    claude_directory.item,
   ),
 )
 
-#let close = folder(key: "harness_conclusion", section: conclusion.item)
-
 #let node = folder(
   key: "harness_section",
-  title: [Harness],
+  section: section.item,
   children: (
-    intro,
-    state,
-    environment,
+    state_loop,
+    environment_tools,
     extensions,
-    close,
   ),
 )

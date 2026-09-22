@@ -12,5 +12,8 @@ Distribuovatelné rozšíření, které do hostitelského agentního prostředí
   description: terms => [
 Konkrétní platforma může plugin použít jako obal pro různé druhy rozšíření, například skills, hooks, agenty nebo konfiguraci externích integrací. Plugin zde proto označuje způsob balení a distribuce, nikoli nadřazenou kategorii všech mechanismů Harnessu. #cite(bib.claude_code_plugins)
   ],
+  practical: terms => [
+Plugin sdružuje rozšiřující schopnosti do distribuovatelné jednotky, takže lze přidat nový pracovní postup nebo integraci bez změny samotného modelu.
+  ],
   relations: ((type: "dependency", target: "harness"), (type: "related", target: "skills"), (type: "related", target: "hooks"), (type: "related", target: "mcp")),
 )

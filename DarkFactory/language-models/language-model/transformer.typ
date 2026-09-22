@@ -12,5 +12,8 @@ Architektura neuronové sítě založená na mechanismu pozornosti, který model
   description: terms => [
 Při autoregresivním generování dekodér z dosavadní sekvence vytváří reprezentaci použitou k odhadu následujícího tokenu. #cite(bib.vaswani2017)
   ],
+  practical: terms => [
+Architektura Transformer umožňuje zpracovat kontext, nad nímž agent vytváří další kroky; délka a kvalita tohoto kontextu proto přímo ovlivňují dostupné rozhodování.
+  ],
   relations: (),
 )

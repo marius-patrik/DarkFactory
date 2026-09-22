@@ -13,5 +13,8 @@ Vnější prostředí, které agent prostřednictvím harnessu pozoruje a mění
   description: terms => [
 Změna souboru nebo spuštění procesu mění stav prostředí mimo modelový kontext. Přístup k těmto účinkům zprostředkovávají #term(terms.tools) a jejich bezpečnostní hranice. #cite(bib.anthropic_managed_agents)
   ],
+  practical: terms => [
+Prostředí dává agentovi konkrétní pracovní prostor, v němž může číst soubory, spouštět příkazy a pozorovat skutečné výsledky.
+  ],
   relations: ((type: "dependency", target: "harness"),),
 )

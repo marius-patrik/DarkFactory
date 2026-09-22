@@ -13,5 +13,8 @@ Systémová instrukční vrstva, která vymezuje roli, pravidla a výchozí způ
   description: terms => [
 Systémový prompt poskytuje stabilní instrukční kontext, ale sám o sobě není technickou izolační ani autorizační hranicí. #cite(bib.anthropic_prompt)
   ],
+  practical: terms => [
+Systémový prompt stanovuje základní instrukce a hranice chování, které Harness přikládá ke každému relevantnímu modelovému kroku.
+  ],
   relations: ((type: "dependency", target: "prompt_engineering"),),
 )

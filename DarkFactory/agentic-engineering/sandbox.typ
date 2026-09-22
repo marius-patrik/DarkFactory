@@ -13,5 +13,8 @@ Oddělené běhové prostředí, ve kterém agent může spouštět kód nebo m�
   description: terms => [
 Sandbox vytváří bezpečnostní hranici kolem nedůvěryhodných účinků; konkrétní realizace může používat například kontejner nebo microVM. #cite(bib.anthropic_managed_agents) #cite(bib.agache2020firecracker)
   ],
+  practical: terms => [
+Sandbox omezuje dopad chybného nebo nežádoucího kroku tím, že vymezuje dostupný souborový systém, síť a další schopnosti prostředí.
+  ],
   relations: ((type: "dependency", target: "environment"), (type: "related", target: "guardrail")),
 )

@@ -12,5 +12,8 @@ Neformální označení pro nekvalitní digitální obsah, zejména obsah vytvo�
   description: terms => [
 V této práci označuje zejména AI-generovaný software, jehož objem nebo zdánlivá úplnost převyšují jeho ověřenou funkčnost a udržovatelnost.
   ],
+  practical: terms => [
+Riziko nekvalitního generovaného výstupu znamená, že agentní práce potřebuje objektivní kontroly a revizi namísto přijetí výsledku jen proto, že je syntakticky úplný.
+  ],
   relations: ((type: "related", target: "vibe_coding"),),
 )

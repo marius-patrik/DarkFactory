@@ -13,5 +13,8 @@ Zmenšení aktivního kontextu nahrazením části historie kratší reprezentac
   description: terms => [
 Kompakce uvolňuje kapacitu pro další běh, ale příliš agresivní komprese může odstranit detaily, které se později ukážou jako důležité. #cite(bib.anthropic_context_engineering) #cite(bib.jiang2023llmlingua)
   ],
+  practical: terms => [
+Kompakce kontextu umožňuje dlouhotrvajícímu agentovi pokračovat přes bezprostřední kontextový rozpočet, za cenu možného ztracení detailů.
+  ],
   relations: ((type: "dependency", target: "context_engineering"),),
 )

@@ -13,5 +13,8 @@ V této práci označuje Context Rot pokles spolehlivosti, s níž model využí
   description: terms => [
 Experimenty s dlouhým kontextem ukazují, že výkon může záviset na poloze relevantní informace a klesat, když je umístěna uvnitř dlouhého vstupu. #cite(bib.liu2024)
   ],
+  practical: terms => [
+Degradace kontextu znamená, že pouhé zvětšování historie nemusí zachovat kvalitu rozhodování; agentní systém proto potřebuje selekci, sumarizaci nebo kompakci.
+  ],
   relations: ((type: "dependency", target: "context_window"),),
 )

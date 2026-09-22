@@ -8,8 +8,8 @@
   // The main title is structural and comes from DarkFactory/index.typ.
   title-suffix: translation(cs: "", en: ""),
   title-lines: (
-    cs: ("DarkFactory:", "Agentické inženýrství v praxi"),
-    en: ("DarkFactory:", "Agentické inženýrství v praxi"),
+    cs: ("AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",),
+    en: ("AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",),
   ),
   podnazev: none,
 
@@ -25,14 +25,14 @@
 
   annotation-cs: [
     Odborná práce zkoumá využití agentní umělé inteligence při vývoji softwaru se zaměřením na architekturu agentního harnessu.
-    Teoretická část sleduje přechod od AI-asistovaného vývoje přes jazykový model a inferenci k Harnessu a Agentickému inženýrství.
-    Praktická část odděluje kanonickou dokumentaci DarkFactory, životní cyklus změny a vyhodnocení dostupných důkazů.
+    Kapitoly 2–4 sledují přechod od jazykového modelu přes Harness k AI-asistovanému vývoji a agentickému inženýrství.
+    Kapitoly 5–6 oddělují kanonickou dokumentaci DarkFactory od vyhodnocení dostupných důkazů.
     Evaluace používá zdrojový kód, automatické testy a CI výsledky a výslovně rozlišuje prokázané mechanismy od neprokázaného plného produkčního průchodu.
   ],
   abstract-en: [
     This thesis examines the use of agentic artificial intelligence in software development, focusing on the architecture of an agent harness.
-    The theoretical part follows the transition from AI-assisted development through language-model inference to the harness and agentic engineering.
-    The practical part separates the canonical DarkFactory documentation, the software-change lifecycle, and evaluation of the available evidence.
+    Chapters 2–4 progress from the language model through the harness to AI-assisted development and agentic engineering.
+    Chapters 5–6 separate the canonical DarkFactory documentation from evaluation of the available evidence.
     The evaluation uses source code, automated tests, and CI results and explicitly distinguishes demonstrated mechanisms from a full production lifecycle that was not demonstrated.
   ],
 

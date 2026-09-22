@@ -13,5 +13,8 @@ Mezipaměť dříve vypočtených klíčů a hodnot v pozornostních vrstvách t
   description: terms => [
 Při generování dalšího tokenu lze uložené klíče a hodnoty předchozí sekvence znovu použít místo jejich úplného přepočítání; paměťové nároky cache přitom rostou s délkou aktivní sekvence. #cite(bib.dao2022) #cite(bib.ainslie2023)
   ],
+  practical: terms => [
+KV cache umožňuje znovu využívat již zpracovaný prefix během generování, což může snižovat režii opakovaných inferenčních kroků v dlouhém sezení.
+  ],
   relations: ((type: "dependency", target: "transformer"),),
 )

@@ -19,5 +19,8 @@ ReAct formalizuje střídání rozhodnutí, akce a pozorování výsledku; nové
   caption: [Smyčka ReAct: model zvolí akci, harness ji provede a výsledek vrátí modelu.],
 ) <fig-react-loop>
   ],
+  practical: terms => [
+Agentní smyčka umožňuje opakovaně převádět pozorování na další akci, takže agent může postupovat po více krocích místo jednorázové odpovědi.
+  ],
   relations: ((type: "dependency", target: "harness"),),
 )

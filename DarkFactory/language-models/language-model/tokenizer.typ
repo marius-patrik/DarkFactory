@@ -12,5 +12,8 @@ Komponenta, která převádí vstup na posloupnost tokenů a jejich identifikát
   description: terms => [
 Pravidla tokenizace určují slovník a segmentaci vstupu; subword metody, například Byte Pair Encoding, umožňují skládat text z jednotek menších než celé slovo. #cite(bib.sennrich2016bpe)
   ],
+  practical: terms => [
+Tokenizace určuje, jak se vstup a výstup počítají do kontextového rozpočtu, takže ovlivňuje délku instrukcí, historie i nástrojových výsledků.
+  ],
   relations: (),
 )

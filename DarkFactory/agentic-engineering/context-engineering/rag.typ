@@ -12,5 +12,8 @@ Architektura, ve které systém před generováním vyhledá relevantní informa
   description: terms => [
 RAG odděluje znalost uloženou v externím korpusu od parametrů modelu a umožňuje vybírat podklady podle aktuálního dotazu. #cite(bib.lewis2020rag)
   ],
+  practical: terms => [
+RAG umožňuje před generováním dohledat relevantní externí informace a přidat je do kontextu, takže agent nemusí spoléhat pouze na parametry modelu.
+  ],
   relations: ((type: "dependency", target: "context_engineering"), (type: "related", target: "embedding")),
 )

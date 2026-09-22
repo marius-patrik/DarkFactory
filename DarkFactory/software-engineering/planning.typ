@@ -13,5 +13,8 @@ Převod požadavku na explicitní kroky, závislosti a podmínky ověření pře
   description: terms => [
 Plán rozděluje práci na kontrolovatelné části, určuje jejich pořadí a stanovuje podmínky, podle kterých lze posoudit dokončení. #cite(bib.sommerville2016)
   ],
+  practical: terms => [
+Plánování převádí zadání na pořadí kroků a podmínky ověření, podle nichž může agent postupovat a průběžně kontrolovat dokončení.
+  ],
   relations: (),
 )

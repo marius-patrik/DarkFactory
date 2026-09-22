@@ -13,5 +13,8 @@ Maximální rozsah tokenové sekvence dostupný modelu v jednom inferenčním b�
   description: terms => [
 Do aktivního kontextu mohou vstupovat instrukce, uživatelský vstup i další data předaná systému pro daný inferenční běh. Samotná nominální délka okna nezaručuje, že model všechny vložené informace využije stejně spolehlivě. #cite(bib.liu2024)
   ],
+  practical: terms => [
+Kontextové okno omezuje množství instrukcí, historie a pozorování dostupných modelu v jednom kroku, takže agent musí kontext vybírat a průběžně spravovat.
+  ],
   relations: ((type: "dependency", target: "token"),),
 )

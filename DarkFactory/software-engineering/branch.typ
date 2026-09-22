@@ -13,5 +13,8 @@ Oddělená linie vývoje v systému správy verzí, která ukazuje na vlastní p
   description: terms => [
 Větev umožňuje izolovat souběžnou změnu od cílové větve a později ji sloučit po kontrole nebo ověření. #cite(bib.chacon2014) #cite(bib.github_branches)
   ],
+  practical: terms => [
+Větev izoluje rozpracovanou agentní změnu od hlavní historie a vytváří bezpečný prostor pro testování a revizi před integrací.
+  ],
   relations: ((type: "parent", target: "version_control"),),
 )

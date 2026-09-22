@@ -13,5 +13,8 @@ Persistovaná reprezentace aktuálně platných pracovních skutečností a ří
   description: terms => [
 State odpovídá na otázku, co je pro další krok právě platné; na rozdíl od #term(terms.transcript) nemusí zachovávat úplnou historii předchozích událostí. #cite(bib.anthropic_managed_agents)
   ],
+  practical: terms => [
+Stav umožňuje pokračovat podle aktuálně platných skutečností a řídicích údajů, aniž by bylo nutné spoléhat na to, že vše zůstane v textové historii modelu.
+  ],
   relations: ((type: "parent", target: "agent_session"), (type: "related", target: "transcript"), (type: "related", target: "context_engineering")),
 )

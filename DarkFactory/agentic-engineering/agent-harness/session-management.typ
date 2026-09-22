@@ -13,5 +13,8 @@ Persistovaná jednotka, která vymezuje jeden souvislý agentní běh a umožňu
   description: terms => [
 Session je vlastníkem identity a hranice pokračujícího běhu; jeho historický průběh vlastní #term(terms.transcript) a aktuální pracovní skutečnosti #term(terms.state). #cite(bib.openai_agents_sessions) #cite(bib.anthropic_managed_agents)
   ],
+  practical: terms => [
+Sezení dává více krokům společnou kontinuitu, takže lze navázat na předchozí položky, nástroje a stav bez zakládání zcela nového běhu.
+  ],
   relations: ((type: "child", target: "transcript"), (type: "child", target: "state"), (type: "related", target: "context_engineering")),
 )
