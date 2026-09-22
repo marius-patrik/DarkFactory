@@ -336,7 +336,7 @@ for path in concept_files:
         fail(f"concept file requires term or keyword: {path}")
     if re.search(r'^\s*(industry|czech|english|alias):', source, flags=re.MULTILINE):
         fail(f"concept file uses removed terminology fields: {path}")
-    key = re.search(r'key:\s*"([^"]+)"', source)
+    key = re.search(r'#let item = concept\([\s\S]*?key:\s*"([^"]+)"', source) or re.search(r'key:\s*"([^"]+)"', source)
     if key is None:
         fail(f"concept file is missing stable key: {path}")
     concept_keys.append(key.group(1))
@@ -348,7 +348,7 @@ for path in section_files:
     has_term = re.search(r'^\s*term:\s*(?!none\b)', source, flags=re.MULTILINE) is not None
     has_keyword = re.search(r'^\s*keyword:\s*(?!none\b)', source, flags=re.MULTILINE) is not None
     if has_term or has_keyword:
-        key = re.search(r'key:\s*"([^"]+)"', source)
+        key = re.search(r'#let item = section\([\s\S]*?key:\s*"([^"]+)"', source) or re.search(r'key:\s*"([^"]+)"', source)
         if key is None:
             fail(f"semantic section is missing stable key: {path}")
         semantic_section_keys.append(key.group(1))

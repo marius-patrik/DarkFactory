@@ -16,3 +16,4 @@ web/package-lock.json
 
 # Authoritative external figures are fetched from their cited primary sources.
 DarkFactory/img/external/
+DarkFactory/img/generated/
