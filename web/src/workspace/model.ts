@@ -12,10 +12,12 @@ export type WorkspaceRepository = {
 };
 
 export type WorkspaceSnapshot = {
+  version: 2;
   id: string;
   repository: WorkspaceRepository;
   ref: string;
   baseSha: string;
+  treeSha: string;
   tree: GithubTreeEntry[];
   updatedAt: number;
 };
