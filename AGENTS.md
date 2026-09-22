@@ -11,7 +11,7 @@ Canonical argument:
 Top-level sections remain:
 
 1. Úvod
-2. Teoretická část: Agentní vývoj softwaru
+2. Teoretická část: Agentické systémy ve vývoji softwaru
 3. Praktická část
 4. Závěr
 
@@ -46,7 +46,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 - 1.4 Výzkumné otázky
 - 1.5 Metodika
 
-### 2 Teoretická část: Agentní vývoj softwaru
+### 2 Teoretická část: Agentické systémy ve vývoji softwaru
 
 #### 2.1 Úvod
 
