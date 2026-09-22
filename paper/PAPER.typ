@@ -178,11 +178,17 @@ Princip #strong[Human-in-the-loop] (#strong[HITL]) stanovuje formální kontroln
 
 #heading(level: 2)[Metodika] <practical-first>
 
-Praktická část práce je koncipována jako analytická případová studie konkrétního softwarového artefaktu. Předmětem zkoumání je systém DarkFactory v referenční revizi @darkfactory-e9c10221, která představuje stabilní implementaci orchestrace autonomního agenta v ekosystému GitHub Actions.
+Praktická část práce navazuje na teoretická východiska o harnessu a Agentickém inženýrství. Jejím cílem je empiricky ověřit, jakým způsobem jsou principy řízeného provádění, ohraničení kontextu a verifikace realizovány v praxi. Předmětem zkoumání je referenční revize systému DarkFactory @darkfactory-e9c10221, která představuje stabilní implementaci autonomní vývojové pipeline v ekosystému GitHub Actions.
 
-Primárními podklady pro analýzu jsou definiční soubory workflow (`.github/workflows/agent.yml`), konfigurace kontejnerizovaného běhového prostředí (`docker/Dockerfile.agent`), skripty pythonovského runneru (`agent_runner.py`) a sada automatizovaných integračních testů. Tyto artefakty umožňují detailně zmapovat způsob, jakým systém inicializuje běhové prostředí, předává kontextové informace modelu a ohraničuje přístupová práva.
+Analýza se zaměřuje na čtyři klíčové inženýrské dimenze odvozené z teoretické části:
+1. *Izolace běhového prostředí a oprávnění:* mechanismus hermetického oddělení agenta od hostitelského CI systému, montování pracovního stromu repozitáře a injektování autentizačních tajemství s minimálními právy.
+2. *Dekompozice úlohy a fázované řízení (HITL):* rozdělení životního cyklu požadavku do diskrétních stavů (interpretace, plánování, implementace) a začlenění formálních schvalovacích bran člověkem.
+3. *Deterministická verifikace a seberevize:* integrace automatizovaných nástrojů (lintery, testovací frameworky), záchyt chybových kódů v samoopravné smyčce a auditování vygenerovaného diffu vůči schválenému plánu.
+4. *Perzistence stavu a zotavení:* serializace parametrů běhu (checkpointing), záchyt výpadků kvót externích API (HTTP 429) a procedura obnovení rozpracované úlohy příkazem /resume.
 
-Metodický postup spočívá v rekonstrukci celého životního cyklu požadavku — od zachycení události v repozitáři přes přípravu izolované pracovní větve a fázované schvalování záměru až po samotnou implementaci a validaci výsledku. U každé fáze je zkoumáno, jaké systémové nástroje jsou agentovi zpřístupněny, jak je uchováván a serializován stav běhu (checkpointing) a jakými kontrolními mechanismy je vymezen přípustný rozsah změn kódu. Tvrzení o strukturálním uspořádání vycházejí z inspekce zdrojových kódů; dynamické chování, odolnost vůči výpadkům a přepnutí poskytovatelů modelu jsou doloženy výsledky integračních testů a záznamy z běhů CI.
+Metodický postup kombinuje statickou inspekci zdrojových kódů a reprodukovatelnou verifikaci testovací sady. Primárními podklady jsou specifikace workflow (`.github/workflows/agent.yml`), definice kontejneru (`docker/Dockerfile.agent`), řídicí skript runneru (`agent_runner.py`) a sada integračních testů v jazyce Python (`tests/test_governance.py`, `tests/test_pipeline_config.py`, `tests/test_workflows.py`). Tvrzení o strukturálním uspořádání a řídicích tocích vycházejí z trasování kódu runneru; spolehlivost přechodů mezi stavy, obnova po přerušení a kontrola rozsahu oprávnění jsou ověřeny vykonáním automatizovaných testů v referenčním prostředí.
+
+Výzkumný rámec je vymezen zkoumáním samotné pythonovské pipeline a jejích řídicích mechanismů. Analýza nehodnotí subjektivní kvalitu kódu generovaného konkrétními modely, nýbrž strukturální a invariantní vlastnosti běhového prostředí, které vymezují bezpečný prostor pro autonomní agentní práci.
 
 #heading(level: 2)[DarkFactory]
 
