@@ -1,6 +1,6 @@
 # Repository instructions — AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory
 
-`main.typ` is the **single canonical authored Typst source** of the thesis.
+`paper/PAPER.typ` is the **single canonical authored Typst source** of the thesis.
 
 `PLAN.md` owns active sequencing.
 `SCHOOL_RULES.md` owns the recovered Odborná-práce compliance contract.
@@ -9,17 +9,17 @@
 
 Do not recreate the retired modular Typst architecture.
 
-The only authored thesis Typst file is `main.typ`.
+The only authored thesis Typst file is `paper/PAPER.typ`.
 
 External supporting resources may remain in:
-- `DarkFactory/bib/`
-- `DarkFactory/data/`
-- `DarkFactory/img/`
-- `DarkFactory/fonts/`
+- `paper/bib/`
+- `paper/data/`
+- `paper/img/`
+- `paper/fonts/`
 
 There must be no parallel schema/manifests/concept/template tree that independently owns thesis prose or structure.
 
-Edit `main.typ` directly.
+Edit `paper/PAPER.typ` directly.
 
 ## Canonical title
 
@@ -64,7 +64,7 @@ Vibe Coding is not a standalone Practical article.
 
 The old schema implementation is retired, but the writing contract remains.
 
-Each semantic article in `main.typ` should contain:
+Each semantic article in `paper/PAPER.typ` should contain:
 1. concise definition;
 2. mechanism/description;
 3. real sourced example(s) where defensible;
@@ -110,7 +110,7 @@ make all BOOK=DarkFactory
 make ci BOOK=DarkFactory
 ```
 
-Validation operates against `main.typ`, not deleted modular sources.
+Validation operates against `paper/PAPER.typ`, not deleted modular sources.
 
 Eventually validate:
 - exactly one authored thesis Typst source;
