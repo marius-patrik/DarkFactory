@@ -342,6 +342,17 @@ Use these canonical terminology records and stable keys:
   - exact scope: Claude Code project/user configuration namespace, including documented project settings such as `.claude/settings.json` and related Claude Code configuration/extension surfaces;
   - source: official Anthropic Claude Code documentation;
   - relations: related to `claude_md`, `skills`, and `hooks`.
+- Workflow Graph:
+  - existing semantic key remains `workflow_graphs`;
+  - `term: "Graf pracovního postupu"`;
+  - `keyword: "Workflow Graph"`;
+  - scope: explicit orchestration structure in which task execution is represented as ordered, branching, parallel, staged, looping, or otherwise connected workflow steps rather than as one undifferentiated agent loop;
+  - primary contemporary implementation/example: **Claude Code Dynamic Workflows** from official Anthropic documentation;
+  - preserve the concrete Anthropic mechanism: Claude dynamically writes a JavaScript orchestration script that can spawn and coordinate many subagents in parallel or stages, hold intermediate results, run verification/fix passes, and resume interrupted work;
+  - cite Anthropic’s **Introducing dynamic workflows in Claude Code** and **A harness for every task: dynamic workflows in Claude Code** as first-party sources;
+  - explicitly mention **`ultracode`** only as the Claude Code setting/trigger that enables Claude to decide when to use a dynamic workflow; do not misname the product/concept itself as “Claude Ultracode”;
+  - distinguish a workflow/graph from Swarm: a workflow has explicit executable orchestration/control-flow structure, while the Kimi Swarm example represents dynamically coordinated agent spawning/parallelism without treating a hand-authored/static workflow graph as the defining abstraction;
+  - relations: related to `orchestrator`, `subagent`, `swarm`, and `goal_loops`.
 - Swarm:
   - `key: "swarm"`
   - `term: none`
@@ -568,6 +579,7 @@ Every implementation/review pass must preserve all of the following unless the u
 - real Harness examples: Claude Code CLI, Google Antigravity IDE, ChatGPT web;
 - distinct semantic articles for **AGENTS.md** and **CLAUDE.md**;
 - distinct semantic articles for **.agents/** and **.claude/**;
+- **Graf pracovního postupu (Workflow Graph)** under **Orchestrace agentů** uses Claude Code **Dynamic Workflows** as its primary contemporary implementation/example and explicitly documents the `ultracode` trigger from official Anthropic sources;
 - **Swarm** included under **Orchestrace agentů**, grounded primarily in official Kimi K2.5 Agent Swarm documentation;
 - school semantics/formatting contract remains binding for the submission profile;
 - unnumbered semantic articles are excluded from the school PDF contents but remain available to the richer web Structure UI;
@@ -836,6 +848,7 @@ Exit:
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
 - source every definitional/mechanistic claim;
+- source/finalize **Graf pracovního postupu (Workflow Graph)** using official Claude Code Dynamic Workflows documentation, including the `ultracode` trigger and dynamically generated JavaScript orchestration-harness behavior;
 - add/finalize **Swarm** under Orchestrace agentů using official Kimi K2.5 Agent Swarm as the primary concrete source/example.
 
 Exit:
@@ -933,6 +946,7 @@ The thesis is complete only when:
 - Theory and Practical use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
 - Review exists under Zadání a způsob práce;
 - AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership;
+- Workflow Graph is owned under Orchestrace agentů and source-backed by official Claude Code Dynamic Workflows documentation, with `ultracode` represented accurately as a trigger/setting rather than the product name;
 - Swarm is owned under Orchestrace agentů and source-backed by official Kimi Agent Swarm documentation;
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
