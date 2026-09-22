@@ -13,18 +13,6 @@ UA = "Mozilla/5.0 (compatible; DarkFactory-Paper/1.0; +https://github.com/marius
 
 ASSETS = (
     {
-        "path": "codex-app.webp",
-        "url": "https://images.ctfassets.net/kftzwdyauwt9/212T6zWyTJxsZOe79RrI1a/8af0d0131ab9d1bcc90789fe0910de4e/tablet_m_feature02.png?w=2400&q=90&fm=webp",
-    },
-    {
-        "path": "claude-code.webp",
-        "url": "https://assets.claude.com/454390de9d9ccefb6082b7c2440c7547c1ec3964.webp",
-    },
-    {
-        "path": "claude-desktop.png",
-        "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/c5823949d9350145ce2fda51acbc7076f2139cd0-1920x1080.png",
-    },
-    {
         "path": "karpathy-vibe-coding.png",
         "url": "https://www.coderabbit.ai/content/assets/a-semantic-history-how-the-term-vibe-coding-went-from-a-tweet-to-prod-inline-image.png",
     },
