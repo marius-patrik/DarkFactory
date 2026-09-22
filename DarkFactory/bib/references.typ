@@ -9,7 +9,6 @@
 #let anthropic_prompt = <anthropic-prompt>
 #let yao2022 = <yao2022>
 #let liu2024 = <liu2024>
-#let dao2022 = <dao2022>
 #let ainslie2023 = <ainslie2023>
 #let schick2023toolformer = <schick2023toolformer>
 #let lewis2020rag = <lewis2020rag>
@@ -85,7 +84,6 @@
   anthropic_prompt: anthropic_prompt,
   yao2022: yao2022,
   liu2024: liu2024,
-  dao2022: dao2022,
   ainslie2023: ainslie2023,
   schick2023toolformer: schick2023toolformer,
   lewis2020rag: lewis2020rag,
