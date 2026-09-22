@@ -360,20 +360,7 @@ Before final submission, perform the remaining direct-text audit listed in `SCHO
 
 ## Remaining execution order
 
-### Phase A — Finish/reconcile current model-inference rewrite — ACTIVE NOW
-
-If the already-dispatched Chapter 2 agent returns:
-- accept useful source-backed rewrites for LLM/Transformer/Tokenizer/Token/Embedding/Inference concepts;
-- accept improved embedding figures if valid;
-- do not preserve its old chapter number/benchmark ownership mechanically;
-- move the resulting model/inference content under **2.1 Jazykový model**;
-- move the Artificial Analysis benchmark to 1.1 during Phase B.
-
-Exit:
-- reusable model/inference prose and visuals are source-complete;
-- no useful agent work is discarded merely because the macrostructure changed.
-
-### Phase B — Structural migration to Odborná-práce hierarchy + introduction evidence move
+### Phase B — Structural migration to Odborná-práce hierarchy + introduction evidence move — ACTIVE NOW
 
 Implement the new numbered hierarchy:
 1 Úvod
@@ -383,14 +370,17 @@ Implement the new numbered hierarchy:
 5 Závěr
 
 Tasks:
+- preserve the completed source-backed Model/Inference articles and embedding figures exactly in substance; migrate their structural ownership rather than rewriting them again;
+- treat the multi-file semantic sources under `DarkFactory/` as authored source and keep the consolidated `main.typ` generation path synchronized; do not edit generated/consolidated output as a substitute for changing authored semantic sources;
+- preserve the current consolidation/build tooling unless structural migration requires a narrowly scoped compatibility update;
 - introduce structural Theory/Practical wrappers;
 - nest Jazykový model and Harness under Theory;
 - move Agentic Engineering under Practical;
 - move DarkFactory under Practical;
 - rename/restructure Results as Výsledky a diskuse;
 - remove Vibe Coding from practical/theory semantic article manifests;
-- integrate Vibe Coding into 1.1/1.5 as sourced motivation/methodological contrast;
-- move Artificial Analysis benchmark from model section to 1.1;
+- integrate Vibe Coding into 1.1/1.5 as a sourced motivation/methodological contrast; do not claim that most coding-agent users are vibe coding unless representative evidence is found;
+- move the accepted Artificial Analysis benchmark block from model section to 1.1 without reselecting/recomputing its pinned rows;
 - keep Gradually + Epoch in 1.1;
 - rewrite 1.1 so all four evidence strands form the central argument;
 - add/align 1.6 Struktura práce;
