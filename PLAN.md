@@ -55,9 +55,10 @@ The submission PDF must comply with the official Gymnázium J. K. Tyla IVT matur
 
 ### Semantic/content requirements
 
-- The written part is an **odborný text** with a theoretical and practical part.
-- Theory must be predominantly a literature review of current domestic/foreign professional sources relevant to the knowledge needed for the practical output; it must search, study, organize, compare, and analyze sources rather than merely define glossary terms.
-- The practical written part must describe the actual project and justify important choices/procedures with references to professional sources where externally factual.
+- The written part is an **odborný text** with theoretical and practical content. The school requirement is semantic; it does not require literal wrapper chapter titles **Teoretická část** and **Praktická část**.
+- Chapters **2–4** are the theoretical part: predominantly a literature review of current domestic/foreign professional sources relevant to the knowledge needed for the practical output, organized and compared rather than reduced to glossary definitions.
+- Chapters **5–6** are the practical part: Chapter 5 uses the full generated DarkFactory documentation as the canonical architecture/system description; Chapter 6 supplies the evaluation and only those school-required explanations not already covered by the generated documentation, Chapter 1, or the practical implications embedded throughout Chapters 2–4.
+- Practical implications embedded in Theory explain what a concept enables, constrains, or changes in agentic software development. They are not required to mention DarkFactory unless DarkFactory is actually the relevant realization.
 - Every claim that is not common knowledge must have a source.
 - Prefer impersonal/passive Czech phrasing in the school submission prose; avoid first-person authorial narration except where the school-mandated declaration requires it.
 - Final manuscript must contain at least **2,500 words**.
@@ -173,125 +174,126 @@ The following decisions are fixed and are not delegated to implementation-agent 
 
 ### Structural numbering and subsection ownership
 
-Explicit numbered **Úvod** and **Závěr** child sections are removed from Theory and Practical. Their prose is preserved as unheaded framing owned directly by the parent section.
+There are **no wrapper chapters named Teoretická část or Praktická část**.
 
-Theory must render exactly as below. Numbered entries are structural sections. Entries marked **[article]** are unnumbered semantic articles rendered in the manuscript but excluded from the school PDF contents.
+There are also no synthetic numbered **Úvod** or **Závěr** child sections inside subject chapters. Each subject chapter owns unheaded opening framing and unheaded closing synthesis.
 
-- **2 Teoretická část**
-  - opening framing prose directly under the section heading; no numbered `Úvod`
-  - **2.1 Jazykový model**
-    - opening framing prose directly under 2.1
-    - latest frontier benchmark snapshot is evidence, not a semantic article
-    - **2.1.1 Architektura a reprezentace**
-      - **[article] Velký jazykový model (LLM)**
-      - **[article] Transformer**
-      - **[article] Tokenizér**
-      - **[article] Token**
-      - **[article] Vektorová reprezentace (Embedding)**
-    - **2.1.2 Inference**
-      - **[article] Poskytovatel modelu (Model Provider)**
-      - **[article] Inferenční engine (Inference Engine)**
-      - **[article] Teplota (Temperature)**
-      - **[article] Kontextové okno (Context Window)**
-      - **[article] Mezipaměť klíčů a hodnot (KV Cache)**
-      - **[article] Degradace kontextu (Context Rot)**
-    - unheaded closing synthesis/transition owned by 2.1
-  - **2.2 Harness**
-    - opening framing prose directly under 2.2
-    - Harness interface screenshots are examples/attachments here, not standalone articles
-    - **2.2.1 Smyčka a stav**
-      - **[article] Agentní smyčka (Agent Loop)**
-      - **[article] Agentní sezení (Session)**
-      - **[article] Přepis (Transcript)**
-      - **[article] Stav (State)**
-    - **2.2.2 Prostředí a nástroje**
-      - **[article] Prostředí agenta (Agent Environment)**
-      - **[article] Nástroje (Tools)**
-      - **[article] Vyvolávání nástrojů (Tool Calling)**
-      - **[article] Spouštění kódu (Code Execution)**
-      - **[article] Izolované prostředí (Sandbox)**
-    - **2.2.3 Rozšíření**
-      - **[article] Dovednosti (Skills)**
-      - **[article] Plugin**
-      - **[article] Skript**
-      - **[article] Hooks**
-      - **[article] MCP**
-      - **[article] .agents/**
-      - **[article] .claude/**
-    - unheaded closing synthesis/transition owned by 2.2
-  - **2.3 AI-asistovaný vývoj a agentické inženýrství**
-    - opening framing prose directly under 2.3
-    - **2.3.1 Zadání a způsob práce**
-      - **[article] Vibe Coding**
-      - **[article] Vývoj řízený specifikací (Spec-Driven Development)**
-      - **[article] Plánování (Planning)**
-      - **[article] Revize (Review)**
-    - **2.3.2 Řízení změny**
-      - **[article] Správa verzí (Version Control)**
-      - **[article] Větev (Branch)**
-      - **[article] Pull Request**
-    - **2.3.3 Kvalita a ověřování**
-      - **[article] Slop**
-      - **[article] Průběžná integrace (CI)**
-      - **[article] Integrační test (Integration Test)**
-    - **2.3.4 Instrukce a kontext**
-      - **[article] Promptové inženýrství (Prompt Engineering)**
-      - **[article] Systémový prompt (System Prompt)**
-      - **[article] AGENTS.md**
-      - **[article] CLAUDE.md**
-      - **[article] Kontextové inženýrství (Context Engineering)**
-      - **[article] Vkládání kontextu (Context Injection)**
-      - **[article] Kompakce kontextu (Context Compaction)**
-      - **[article] RAG**
-      - **[article] Prompt Injection**
-    - **2.3.5 Řízení agentního chování**
-      - **[article] Cílené smyčky (Goal Loops)**
-      - **[article] Guardrail**
-      - **[article] Člověk ve smyčce (HITL)**
-    - **2.3.6 Orchestrace agentů**
-      - **[article] Subagent**
-      - **[article] Orchestrátor**
-      - **[article] Předání řízení (Handoff)**
-      - **[article] Graf pracovního postupu (Workflow Graph)**
-      - **[article] Swarm**
-    - unheaded closing synthesis/transition owned by 2.3
+Numbered entries below are structural chapters/subchapters. Entries marked **[article]** are unnumbered semantic articles rendered in the manuscript but excluded from the school PDF contents.
 
-The group the user previously referred to as **2.4.2 Zadání a způsob práce** is renumbered to **2.3.1** only because explicit numbered introductory sections and the standalone Theory intro node are removed. **Review remains in that exact semantic group.**
+- **1 Úvod**
+  - **1.1 Motivace a vymezení problému**
+  - **1.2 Východisko a argument práce**
+  - **1.3 Cíle**
+    - **1.3.1 Hlavní cíl**
+    - **1.3.2 Dílčí cíle**
+  - **1.4 Výzkumné otázky**
+  - **1.5 Metodika**
 
-Practical uses the same framing rule:
+- **2 Jazykový model**
+  - opening framing prose directly under Chapter 2
+  - latest frontier benchmark snapshot is evidence, not a semantic article
+  - **2.1 Architektura a reprezentace**
+    - **[article] Velký jazykový model (LLM)**
+    - **[article] Transformer**
+    - **[article] Tokenizér**
+    - **[article] Token**
+    - **[article] Vektorová reprezentace (Embedding)**
+  - **2.2 Inference**
+    - **[article] Poskytovatel modelu (Model Provider)**
+    - **[article] Inferenční engine (Inference Engine)**
+    - **[article] Teplota (Temperature)**
+    - **[article] Kontextové okno (Context Window)**
+    - **[article] Mezipaměť klíčů a hodnot (KV Cache)**
+    - **[article] Degradace kontextu (Context Rot)**
+  - unheaded closing synthesis/transition
 
-- **3 Praktická část**
-  - opening framing prose directly under the section heading; no numbered `Úvod`
-  - **3.1 DarkFactory**
-    - final internal numbered/article hierarchy comes from canonical autogenerated DarkFactory documentation
-  - **3.2 Životní cyklus změny**
-    - opening framing prose directly under 3.2
-    - **3.2.1 Zadání a plán**
-      - **[article] Požadavek (Request)** if retained by final sourced ownership
-      - **[article] Plánování DarkFactory (Planning)** if retained by final sourced ownership
-    - **3.2.2 Implementace**
-    - **3.2.3 Ověření a revize**
-      - **[article] Deterministické ověření (Deterministic Verification)** if retained
-      - **[article] Smyčka revize a opravy (Review/Fix Loop)** if retained
-    - **3.2.4 Finalizace**
-      - **[article] Finální zarovnání (Final Alignment)** if retained
-      - **[article] Reconciliation** if retained
-    - **3.2.5 Přerušení a obnova**
-    - unheaded closing synthesis owned by 3.2
-  - **3.3 Vyhodnocení**
-    - opening framing prose directly under 3.3
-    - **3.3.1 Ověření mechanismů**
-    - **3.3.2 Ověření systému**
-    - **3.3.3 Ověření na repozitářích**
-    - **3.3.4 Výzkumné otázky**
-    - **3.3.5 Diskuse a omezení**
-    - unheaded closing synthesis owned by 3.3
+- **3 Harness**
+  - opening framing prose directly under Chapter 3
+  - real interface examples/attachments: Claude Code CLI, Google Antigravity IDE, ChatGPT web
+  - **3.1 Smyčka a stav**
+    - **[article] Agentní smyčka (Agent Loop)**
+    - **[article] Agentní sezení (Session)**
+    - **[article] Přepis (Transcript)**
+    - **[article] Stav (State)**
+  - **3.2 Prostředí a nástroje**
+    - **[article] Prostředí agenta (Agent Environment)**
+    - **[article] Nástroje (Tools)**
+    - **[article] Vyvolávání nástrojů (Tool Calling)**
+    - **[article] Spouštění kódu (Code Execution)**
+    - **[article] Izolované prostředí (Sandbox)**
+  - **3.3 Rozšíření**
+    - **[article] Dovednosti (Skills)**
+    - **[article] Plugin**
+    - **[article] Skript**
+    - **[article] Hooks**
+    - **[article] MCP**
+    - **[article] .agents/**
+    - **[article] .claude/**
+  - unheaded closing synthesis/transition
 
-**4 Závěr** remains a real top-level thesis section because it is the mandatory final thesis conclusion, not a framing subsection.
+- **4 AI-asistovaný vývoj a agentické inženýrství**
+  - opening framing prose directly under Chapter 4
+  - **4.1 Zadání a způsob práce**
+    - **[article] Vibe Coding**
+    - **[article] Vývoj řízený specifikací (Spec-Driven Development)**
+    - **[article] Plánování (Planning)**
+    - **[article] Revize (Review)**
+  - **4.2 Řízení změny**
+    - **[article] Správa verzí (Version Control)**
+    - **[article] Větev (Branch)**
+    - **[article] Pull Request**
+  - **4.3 Kvalita a ověřování**
+    - **[article] Slop**
+    - **[article] Průběžná integrace (CI)**
+    - **[article] Integrační test (Integration Test)**
+  - **4.4 Instrukce a kontext**
+    - **[article] Promptové inženýrství (Prompt Engineering)**
+    - **[article] Systémový prompt (System Prompt)**
+    - **[article] AGENTS.md**
+    - **[article] CLAUDE.md**
+    - **[article] Kontextové inženýrství (Context Engineering)**
+    - **[article] Vkládání kontextu (Context Injection)**
+    - **[article] Kompakce kontextu (Context Compaction)**
+    - **[article] RAG**
+    - **[article] Prompt Injection**
+  - **4.5 Řízení agentního chování**
+    - **[article] Cílené smyčky (Goal Loops)**
+    - **[article] Guardrail**
+    - **[article] Člověk ve smyčce (HITL)**
+  - **4.6 Orchestrace agentů**
+    - **[article] Subagent**
+    - **[article] Orchestrátor**
+    - **[article] Předání řízení (Handoff)**
+    - **[article] Graf pracovního postupu (Workflow Graph)**
+    - **[article] Swarm**
+  - unheaded closing synthesis/transition
 
-The above order is canonical. Agents must not reorder groups or articles without first updating PLAN.
+- **5 DarkFactory**
+  - opening framing prose only
+  - the **full canonical autogenerated DarkFactory documentation** is the architecture and system-description body
+  - preserve/map the generated hierarchy into the manuscript
+  - no parallel hand-maintained architecture, lifecycle, component, or mechanism explanation
+  - hand-maintained prose may exist only for a **specific school requirement demonstrably not covered** by Chapter 1, the practical implications in Chapters 2–4, the generated documentation, or Chapter 6
 
-A rendered numbered section has one owning folder manifest. Concept files may remain in existing domain directories when moving them would create churn, but superseded `index.typ` files must no longer act as parallel rendered section owners.
+- **6 Vyhodnocení**
+  - opening framing prose directly under Chapter 6
+  - **6.1 Ověření mechanismů**
+  - **6.2 Ověření systému**
+  - **6.3 Ověření na repozitářích**
+  - **6.4 Výzkumné otázky**
+  - **6.5 Diskuse a omezení**
+  - any additional school-required practical explanation goes here only if it cannot be answered by the generated DarkFactory docs or existing evidence
+  - unheaded closing synthesis
+
+- **7 Závěr**
+
+The school’s theoretical/practical distinction is represented semantically rather than by wrapper headings:
+- Chapters **2–4** = theoretical literature-backed explanation plus concise practical implications;
+- Chapters **5–6** = practical project documentation and evidence.
+
+The above order is canonical. Agents must not introduce Teoretická/Praktická wrapper chapters or reintroduce a parallel hand-maintained DarkFactory architecture/lifecycle narrative.
+
+A rendered numbered section has one owning folder manifest. Semantic concept articles remain unnumbered. Superseded wrapper/manifests and old explicit introduction/conclusion child files are removed after useful prose is migrated.
 
 ### New concept identity
 
@@ -573,12 +575,62 @@ No new semantic concept may exist solely because the thesis invents a local defi
 - DarkFactory-specific → source it from DarkFactory code/generated docs/tests;
 - neither → remove it or write the relationship without promoting it to a glossary concept.
 
+### Semantic article field contract
+
+The semantic schema must encode the article responsibilities directly.
+
+Every Theory semantic item — both a `concept` and a section-owned semantic term such as Harness — uses these canonical rendered content fields:
+
+1. **`definition` — what it is**
+   - concise boundary/identity of the concept;
+   - externally established concepts use a direct primary citation in the rendered definition;
+   - no practical implications or product-specific implementation detail unless needed to distinguish the concept.
+
+2. **`description` — how it works / why it matters**
+   - mechanism, important distinctions, constraints, relationships, and consequences;
+   - factual mechanism claims remain claim-locally sourced;
+   - this field carries the explanatory body, not another dictionary definition.
+
+3. **`examples` — real cited examples**
+   - one or more concrete implementations, source-paper examples, API examples, screenshots, code fragments, diagrams, or product realizations;
+   - each externally factual example carries its own direct citation/provenance;
+   - examples do not become new semantic concepts merely because they are rendered;
+   - if no defensible real example exists, the array may be empty and the source audit records why.
+
+4. **`practical` — practical implication**
+   - answers: **Co to znamená v praxi pro agentický softwarový vývoj?**
+   - explains what the concept enables, constrains, changes, or makes possible when designing/using an agentic development system;
+   - concise synthesis, normally one paragraph;
+   - **not required to mention DarkFactory**;
+   - use DarkFactory only where it is genuinely the clearest concrete realization and support DarkFactory-specific claims from current code/generated docs/tests;
+   - avoid self-reference such as “v této práci” or “pro nás”; write naturally, e.g. “Nástroje umožňují agentovi spouštět příkazy a získávat skutečné výsledky testů místo jejich odhadování.”
+   - if the implication contains a new externally factual claim, cite it; if it is a direct engineering consequence of the already sourced definition/description, it may be presented as synthesis without inventing new facts.
+
+Canonical rendering order for every semantic article:
+
+**heading → definition → description → examples/visuals → practical**
+
+Do not add visible subheadings for these four fields by default. They are semantic/layout fields, not new outline levels. A subtle inline label such as **Praktický význam:** may be used for the practical field if needed for readability, but it must not enter the PDF outline.
+
+Existing `visual` and `attachments` remain presentation mechanisms:
+- `visual` belongs with the relevant example/explanation;
+- `attachments` may supply real screenshots/assets for examples;
+- they do not replace `examples` or `practical`.
+
+Schema migration requirements:
+- add canonical optional/required `practical` support to `concept`;
+- add the same content capability to section-owned semantic terms so Harness or another section-owned concept is not weaker than file-backed concepts;
+- Theory concepts require non-empty `definition`, `description`, and `practical`;
+- `examples` remains structurally supported and is required to contain at least one rendered example when the source audit says a defensible real example exists;
+- Practical/generated-doc concepts may use a different content contract if their canonical source already supplies equivalent architecture prose; do not force Theory-style repetition into generated DarkFactory documentation.
+
 ### Direct citation + concrete example contract
 
-Every semantic article for which an authoritative specification, paper, API, product implementation, or reproducible real-world instance exists must contain **both**:
+Every semantic article for which an authoritative specification, paper, API, product implementation, or reproducible real-world instance exists must map evidence to the semantic fields above:
 
-1. a **direct primary citation** supporting the definition/mechanism being described; and
-2. at least one **concrete cited example** demonstrating the concept in a real implementation or in the primary source itself.
+1. **`definition` / `description`** carry the direct primary citation supporting the definition/mechanism; and
+2. **`examples`** carries at least one concrete cited example demonstrating the concept in a real implementation or in the primary source itself.
+3. **`practical`** then derives the practical engineering implication without pretending the implication itself is a separate external definition.
 
 This is a manuscript-body requirement, not merely metadata:
 - the definition/mechanism sentence must carry its claim-local citation;
@@ -707,15 +759,18 @@ Product screenshots and product-behavior claims must use first-party sources whe
 Every implementation/review pass must preserve all of the following unless the user explicitly supersedes one:
 
 - exact work title: **AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory**;
-- Section 2 title: **Teoretická část**;
+- no wrapper chapters named **Teoretická část** or **Praktická část**;
 - no synthetic numbered `Úvod`/`Závěr` children; preserve their framing prose unheaded;
+- top-level subject chapters are **2 Jazykový model**, **3 Harness**, **4 AI-asistovaný vývoj a agentické inženýrství**, **5 DarkFactory**, **6 Vyhodnocení**, **7 Závěr**;
 - AI-assisted development and Agentic Engineering merged into one Theory section;
 - **Revize (Review)** included in **Zadání a způsob práce**;
 - Harness extension group titled only **Rozšíření**;
 - Model owns the latest frontier benchmark snapshot;
 - Section 1 owns Gradually adoption/coding-agent evidence and the long-term Epoch capability curve;
 - all factual/definitional/product/benchmark claims come from real sources;
-- every externally realizable semantic article has a direct primary citation and at least one concrete cited example when a defensible example exists;
+- every Theory article follows **definition → description → examples → practical implication**;
+- every externally realizable semantic article has a direct primary citation in definition/description and at least one concrete cited example when a defensible example exists;
+- every Theory article has a concise practical implication explaining what the concept means for agentic software development, without forcing a DarkFactory mention;
 - MCP is defined from the MCP 2026-07-28 specification and includes the official SDK weather-server example;
 - Skills, Tools, Tool Calling, Code Execution, Sandbox, Plugin, Script, and Hooks each carry their own direct citation + concrete example rather than borrowing a generic Harness citation;
 - remove “v této práci” / equivalent self-referential published prose;
@@ -731,8 +786,11 @@ Every implementation/review pass must preserve all of the following unless the u
 - **Swarm** included under **Orchestrace agentů**, grounded primarily in official Kimi K2.5 Agent Swarm documentation;
 - school semantics/formatting contract remains binding for the submission profile;
 - unnumbered semantic articles are excluded from the school PDF contents but remain available to the richer web Structure UI;
-- 3.1 DarkFactory remains generated rather than hand-reconstructed;
-- no legacy/transitional compatibility structure is kept merely to preserve old paths.
+- Chapter 5 DarkFactory is the full generated canonical DarkFactory documentation and remains the sole architecture/system-description source;
+- no separate hand-maintained lifecycle/architecture chapter survives; school-required practical gaps are answered only where not already covered by generated docs, Theory practical implications, Chapter 1, or Chapter 6;
+- no legacy/transitional compatibility structure is kept merely to preserve old paths;
+- Theory practical notes answer what each concept means in agentic software development generally; DarkFactory is mentioned only when it is the relevant realization;
+- the practical part does not duplicate DarkFactory architecture/lifecycle prose: generated Chapter 5 is canonical, and hand-maintained practical prose exists only for genuine GJKT gaps and Chapter 6 evaluation.
 
 If a side agent finds a conflict between two locked requirements, it must stop that conflicting subchange and report the conflict rather than silently choosing one.
 
@@ -746,7 +804,7 @@ These items are intentionally unresolved until the named phase because they depe
 - **Exact screenshot files/URLs (Phase 4):** products and documentation can change. Select the current real first-party screenshots at execution time under the fixed screenshot contract.
 - **Exact diagram coordinates, dimensions, typography, and spacing (Phases 3/4):** semantic contents are fixed; visual geometry is an implementation detail so long as it satisfies the rendering contracts and survives PDF inspection.
 - **Exact full rewritten prose (Phases 3–8):** ownership, claims, terminology, sources, and section purpose are fixed; agents must write concise source-backed Czech prose rather than preserve old wording mechanically.
-- **3.2 generated internal hierarchy (Phase 9):** must come from the pinned current DarkFactory-generated documentation. Do not design it manually in advance.
+- **Chapter 5 generated internal hierarchy (Phase 9):** must come from the pinned current DarkFactory-generated documentation. Do not design it manually in advance.
 - **Pinned DarkFactory/target-repository commits and CI run IDs (Phase 10):** choose them only after implementation/docs are stabilized.
 - **Exact final result values and limitations (Phase 10):** report only evidence actually observed from the pinned runs.
 - **Final wording of goals, research questions, methodology, answers, conclusion, annotation/abstract, and final keywords (Phase 7/11):** align these only after the final evidence design/results are known.
@@ -759,166 +817,16 @@ A side agent must not broaden its task into any deferred item assigned to a late
 
 ## Target hierarchy
 
-### 1 Úvod
+The canonical hierarchy is the Locked implementation contract above. No secondary/legacy hierarchy is maintained.
 
-1.1 Motivace a vymezení problému  
-1.2 Východisko a argument práce  
-1.3 Cíle  
-1.3.1 Hlavní cíl  
-1.3.2 Dílčí cíle  
-1.4 Výzkumné otázky  
-1.5 Metodika
+Evidence ownership:
+- **1.1 Motivace a vymezení problému** owns the Gradually adoption/coding-agent dot visual and the long-term Epoch capability curve.
+- **Chapter 2 Jazykový model** owns the latest frontier benchmark snapshot.
+- **Chapter 5 DarkFactory** owns architecture/system description through autogenerated DarkFactory documentation.
+- **Chapter 6 Vyhodnocení** owns evidence/results, research-question answers, discussion, limitations, and any remaining school-required practical explanation not already covered elsewhere.
 
-Section 1 owns the research motivation, argument, goals, questions, methodology, and the high-level evidence for why the topic matters.
-
-Required evidence in Section 1:
-- restore the broad **AI adoption/usage statistic**;
-- restore the previous **dot-style adoption/usage diagram**;
-- explicitly contrast broad AI adoption with the still-low estimated usage of coding agents using the user-selected Gradually 2026 source, with its editorial-estimate caveat preserved;
-- include the **long-term model capability/improvement curves** from a stable longitudinal source;
-- keep these as motivation/context, not as a detailed benchmark survey.
-
-The latest point-in-time frontier-model benchmark comparison belongs in 2.1 Jazykový model, not in Section 1.
-
-### 2 Teoretická část
-
-Rename the top-level section from the longer current title to exactly **Teoretická část**.
-
-Theory opening scope/transition prose is rendered directly under **2 Teoretická část** without a numbered `Úvod` child.
-
-#### 2.1 Jazykový model
-
-Split the current combined **Jazykový model a inference** section. This section owns the model itself, its representation, generation controls, and provider boundary.
-
-Target internal structure and exact numbering are fixed in the Locked implementation contract above.
-
-Model-provider wording must describe the externally supplied model/service boundary from real provider/API documentation, not invent a new architectural abstraction.
-
-Temperature must be sourced from real model/API documentation and explain its effect without overstating deterministic semantics.
-
-##### Evidence ownership between Section 1 and 2.1
-
-Section 1 owns:
-- broad AI adoption/usage;
-- the restored dot-style adoption/usage diagram;
-- the contrast between broad AI adoption and directly measured coding-agent usage;
-- long-term model capability/improvement curves.
-
-Section 2.1 owns:
-- the **latest frontier-model benchmark comparison** only, pinned to an exact benchmark/version/date.
-
-Do not duplicate these surfaces across both sections.
-
-Current source anchors:
-- Gradually AI, “How Many People Use AI? Facts & Figures 2026” (23 Aug 2026) for the Section 1 world-population dot diagram and its explicitly qualified coding-agent estimate;
-- Epoch AI ECI for the long-term capability curve;
-- Artificial Analysis Intelligence Index v4.3.2 (September 2026), or a newer stable version available when implemented, for the latest model comparison.
-
-Every exact number must be re-verified against the final cited source at implementation time.
-
-##### Embedding visuals
-
-Keep the existing queen/king relationship as an explicitly illustrative projection, but replace/refine the visual:
-
-1. First diagram: clean **2D** projection of the sourced relation analogous to **král − muž + žena ≈ královna**.
-   - all visible graph text in Czech;
-   - labels such as **muž**, **žena**, **král**, **královna** must not intersect axis lines;
-   - axes must be cleanly separated from point labels;
-   - no implication that the displayed axes are literal learned embedding dimensions.
-
-2. Immediately after it, add a second **3D explanatory projection** adding a third relationship/dimension and another term/set of terms to demonstrate why real embeddings require many dimensions.
-   - the third relation must be defensible from a real source rather than arbitrarily invented;
-   - prefer a well-documented linguistic relation from the embedding literature;
-   - all graph labels and axes in Czech;
-   - caption explicitly states that the three displayed dimensions are an educational projection, not the literal coordinates learned by a production embedding model.
-
-The implementation agent must choose and cite the exact source-backed third relation before drawing the second diagram.
-
-Inference is not a separate level-2 section. It is **2.1.2 Inference** inside **2.1 Jazykový model**, combining the former “Generování a poskytování” material with inference execution/limits.
-
-#### 2.2 Harness
-
-Harness follows **2.1 Jazykový model** and its **2.1.2 Inference** subsection.
-
-Exact Harness numbering, group names, and ordering are fixed in the Locked implementation contract above. Existing concepts remain assigned to those groups as described there and in the canonical hierarchy.
-
-Rename any **Agentní rozšíření** / **Dovednosti a rozšíření** structural heading to simply **Rozšíření**.
-
-##### State wording
-
-Audit every use of **Stav (State)**. Wording must explain that the current working facts/control data are **called/represented as state**, not grammatically imply that those facts are “owned by State” as though State were an actor/entity.
-
-##### ReAct / Agent Loop diagram
-
-Replace the current dense ReAct SVG with a much simpler diagram whose primary purpose is to make the loop immediately legible.
-
-Target semantic flow:
-
-**Model → Akce → Nástroj / prostředí → Pozorování → Model**
-
-Optionally show **Výsledek** as the exit path.
-
-Remove decorative/internal implementation detail that is not needed to explain the loop. Keep Czech labels, generous spacing, minimal arrows, and a print-readable composition. Source the ReAct mechanism from the original ReAct paper.
-
-##### Real harness/interface examples
-
-Harness must contain real, sourced examples covering at least three interaction surfaces:
-
-- **terminal:** Claude Code CLI;
-- **desktop/IDE:** Google Antigravity IDE;
-- **web:** ChatGPT web.
-
-Use real screenshots, not recreated/generated mockups. Prefer first-party product/documentation imagery or reproducible captures of the actual product UI. Each image requires source/provenance and a caption explaining only the harness-relevant behavior visible in the screenshot.
-
-These are examples of real harness/product surfaces, not new abstract taxonomy items unless the source and writing justify a semantic concept.
-
-#### 2.3 AI-asistovaný vývoj a agentické inženýrství
-
-Merge the current **AI-asistovaný vývoj** and **Agentické inženýrství** level-2 sections into one second-level section after Harness.
-
-The section explains how model + inference + harness capabilities are deliberately used to develop software.
-
-Its exact numbered groups and unnumbered article order are fixed in the Locked implementation contract above. **Review is part of Zadání a způsob práce. AGENTS.md and CLAUDE.md are separate articles; .agents/ and .claude/ are separate Harness extension articles.**
-
-### 3 Praktická část
-
-Practical opening Theory → realization → evidence prose is rendered directly under **3 Praktická část** without a numbered `Úvod` child.
-
-#### 3.1 DarkFactory
-
-Keep empty in hand-maintained source until generated documentation is integrated.
-
-Do not recreate manual architecture prose.
-
-#### 3.2 Životní cyklus změny
-
-Target numbered structure:
-- Zadání a plán
-- Implementace
-- Ověření a revize
-- Finalizace
-- Přerušení a obnova
-
-Opening and closing framing prose remains, but without separate numbered Úvod/Závěr headings.
-
-Rewrite only from actual DarkFactory behavior/evidence and keep ownership distinct from generated 3.1 documentation.
-
-#### 3.3 Vyhodnocení
-
-Target numbered structure:
-- Ověření mechanismů
-- Ověření systému
-- Ověření na repozitářích
-- Výzkumné otázky
-- Diskuse a omezení
-
-Opening and closing framing prose remains, but without separate numbered Úvod/Závěr headings.
-
-Results report evidence, not architecture.
-
-### 4 Závěr
-
-Final synthesis only after Results are pinned. Do not repeat Results prose.
+Theoretical semantic articles in Chapters 2–4 render:
+**definition → description → real cited examples → practical implication**.
 
 ## Execution order from this revision
 
@@ -927,15 +835,19 @@ Final synthesis only after Results are pinned. Do not repeat Results prose.
 This phase is **structure-only** except for the minimum sourced definitions required for newly introduced schema records. It must not redesign figures, restore statistics, collect screenshots, or perform the full prose rewrite.
 
 - apply the new work title everywhere;
-- rename section 2 to **Teoretická část**;
-- remove synthetic numbered Theory/Practical Úvod/Závěr child sections and migrate their prose into section-owned opening/closing framing;
-- make **Jazykový model** 2.1 and merge inference into **2.1.2 Inference**;
-- make **Harness** 2.2;
-- merge AI-asistovaný vývoj + Agentické inženýrství into **2.3**;
+- remove the **Teoretická část** and **Praktická část** wrapper chapters entirely;
+- remove synthetic numbered subject-chapter Úvod/Závěr children and migrate their prose into section-owned opening/closing framing;
+- make **Jazykový model** Chapter 2 with **2.2 Inference**;
+- make **Harness** Chapter 3;
+- make merged **AI-asistovaný vývoj a agentické inženýrství** Chapter 4;
+- make generated **DarkFactory** Chapter 5;
+- make **Vyhodnocení** Chapter 6 and thesis **Závěr** Chapter 7;
 - make unnumbered concept articles excluded from the school PDF contents while remaining available to the web Structure UI;
 - align the GJKT school-PDF template/front matter/numbering contract defined above;
 - rename the extensions group to **Rozšíření**;
 - add Temperature, Model Provider, Review, AGENTS.md, CLAUDE.md, .agents/, and .claude/ as the distinct locked concepts defined above;
+- extend the semantic schema with the canonical `practical` field and section-owned equivalent;
+- align article rendering to definition → description → examples → practical;
 - update manifests, relations, vocabulary ownership, README, and `AGENTS.md`;
 - remove superseded structure rather than keeping compatibility paths;
 - verify semantic graph resolution and rendered hierarchy.
@@ -944,7 +856,7 @@ Exit:
 - hierarchy/vocabulary are structurally frozen under the new design;
 - `AGENTS.md`, README, manifests, and PLAN agree.
 
-### Phase 2 — Section 1 evidence restoration + 2.1 benchmark snapshot
+### Phase 2 — Section 1 evidence restoration + Chapter 2 benchmark snapshot
 
 Section 1:
 - implement the Gradually-derived 2,500-dot world-population visualization defined above;
@@ -952,29 +864,30 @@ Section 1:
 - verify and restore the Epoch AI long-term model capability curve;
 - record source population, observation date, methodology, and caveats.
 
-Section 2.1:
+Chapter 2:
 - verify a current frontier-model comparison pinned to benchmark/version/date;
 - keep it compact and point-in-time; do not duplicate the long-term curves or adoption evidence from Section 1.
 
 Exit:
 - Section 1 has sourced adoption/coding-agent usage evidence and long-term capability curves;
-- 2.1 has the latest benchmark snapshot;
+- Chapter 2 has the latest benchmark snapshot;
 - the coding-agent estimate is represented with Gradually’s stated caveats and provenance;
 - the 2,500-dot diagram is sourced and publication-ready.
 
-### Phase 3 — Model / 2.1.2 Inference rewrite and visuals
+### Phase 3 — Chapter 2 Model / 2.2 Inference rewrite and visuals
 
-- rewrite 2.1 Jazykový model from source-backed responsibilities;
-- rewrite **2.1.2 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
+- rewrite Chapter 2 Jazykový model from source-backed responsibilities;
+- rewrite **2.2 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
 - rebuild 2D embedding figure;
 - add sourced 3D projection;
-- citation pass across 2.1;
-- apply the direct-source + concrete-example contract to every 2.1 article where an implementation/example exists.
+- citation pass across Chapter 2;
+- apply the direct-source + concrete-example contract to every Chapter 2 article where an implementation/example exists.
 
 Exit:
-- architecture/representation and inference responsibilities are cleanly separated inside 2.1 and all factual claims/visual relations are sourced.
+- architecture/representation and inference responsibilities are cleanly separated inside Chapter 2;
+- every Chapter 2 article has definition, description, sourced examples where available, and practical implication.
 
-### Phase 4 — Harness rewrite, terminology, diagrams, examples
+### Phase 4 — Chapter 3 Harness rewrite, terminology, examples, practical implications
 
 - audit/rewrite Harness articles;
 - correct State wording;
@@ -984,39 +897,42 @@ Exit:
 - add real Claude Code CLI, Antigravity IDE, and ChatGPT web screenshots with provenance;
 - remove self-referential wording;
 - source every product/mechanism claim;
-- enforce the locked direct citation + concrete example pairs for Agent Loop, Session, Transcript, State, Environment, Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, .agents/, and .claude/.
+- enforce the locked direct citation + concrete example pairs for Agent Loop, Session, Transcript, State, Environment, Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, .agents/, and .claude/;
+- write the practical implication field for every Harness article, focusing on what the mechanism enables/changes in agentic software development rather than forcing DarkFactory-specific prose.
 
 Exit:
 - Harness is understandable independently of DarkFactory and grounded in real systems.
 
-### Phase 5 — Merge/rewrite AI-assisted development + Agentic Engineering
+### Phase 5 — Chapter 4 AI-assisted development + Agentic Engineering rewrite
 
-- physically merge the old level-2 sections into the locked 2.3 hierarchy;
+- physically merge the old level-2 sections into the locked Chapter 4 hierarchy;
 - add Review under Zadání a způsob práce;
 - split the former umbrella project-instructions concept into separate AGENTS.md and CLAUDE.md articles and cite them from the locked OpenAI/Anthropic first-party documentation;
 - preserve the locked group/article order while rewriting transitions into a continuous software-development argument;
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
 - source every definitional/mechanistic claim;
-- apply the direct-source + concrete-example contract to every 2.3 article where an authoritative implementation/example exists;
+- apply the direct-source + concrete-example contract to every Chapter 4 article where an authoritative implementation/example exists;
 - source/finalize **Graf pracovního postupu (Workflow Graph)** using official Claude Code Dynamic Workflows documentation, including the `ultracode` trigger and dynamically generated JavaScript orchestration-harness behavior;
 - add/finalize **Swarm** under Orchestrace agentů using official Kimi K2.5 Agent Swarm as the primary concrete source/example.
 
 Exit:
-- one coherent level-2 section follows Harness and explains deliberate agentic software-development practice.
+- Chapter 4 is one coherent continuation after Harness;
+- every article has definition, description, sourced examples where available, and practical implication.
 
 ### Phase 6 — Theory-wide source and single-owner pass
 
 Audit:
-1. 2.1 Jazykový model, including 2.1.2 Inference;
-2. 2.2 Harness;
-3. 2.3 AI-asistovaný vývoj a agentické inženýrství.
+1. Chapter 2 Jazykový model, including 2.2 Inference;
+2. Chapter 3 Harness;
+3. Chapter 4 AI-asistovaný vývoj a agentické inženýrství.
 
 For every claim/concept:
 - establish one semantic owner;
 - establish a real primary source where externally factual;
 - verify the direct definition/mechanism citation is rendered claim-locally;
 - verify at least one concrete cited example is rendered whenever a defensible real example exists;
+- verify every Theory article has a practical implication field;
 - record any concept for which no real example exists rather than inventing one;
 - delete paraphrased duplication;
 - replace unnecessary restatement with canonical references.
@@ -1035,21 +951,39 @@ Finalize:
 
 Ensure the research frame maps onto evidence that can actually be collected.
 
-### Phase 8 — Finalize hand-maintained Practical shell
+### Phase 8 — Practical-gap audit
 
-- keep section-owned Practical opening/closing framing unheaded;
-- keep 3.1 DarkFactory generated/empty in hand-maintained source;
-- rewrite/finalize 3.2 lifecycle only from actual DarkFactory behavior.
+Before writing any new hand-maintained practical prose:
+- inventory what Chapter 1 already answers;
+- inventory what the practical implication fields in Chapters 2–4 already answer;
+- inventory what the canonical generated DarkFactory documentation answers about architecture, components, operation, lifecycle, configuration, and implementation;
+- inventory what Chapter 6 evidence/results can answer;
+- map these against the GJKT practical-part requirements.
 
-### Phase 9 — Integrate autogenerated DarkFactory docs into 3.1
+Create a short internal **school practical-gap table**:
+- school requirement;
+- already covered by;
+- sufficient: yes/no;
+- missing fact/explanation;
+- intended owner.
+
+Do not create a new manual lifecycle/architecture chapter. Only genuine uncovered school requirements proceed to a hand-maintained addition.
+
+### Phase 9 — Integrate autogenerated DarkFactory documentation as Chapter 5
 
 - pin the DarkFactory revision;
-- generate canonical docs;
-- map generated hierarchy into 3.1;
-- prevent duplication with Theory and 3.2;
-- preserve traceability/reproducibility.
+- generate the full canonical DarkFactory docs;
+- make them the body/architecture/description of Chapter 5;
+- preserve/map their generated hierarchy;
+- avoid redefining Theory concepts unnecessarily;
+- avoid parallel manual architecture/lifecycle prose;
+- preserve source traceability and regeneration from the pinned DarkFactory revision.
 
-### Phase 10 — Pin evidence and rewrite Results
+Exit:
+- Chapter 5 is the canonical generated DarkFactory documentation;
+- every architecture/system-description requirement is either covered there or explicitly identified as a genuine school gap.
+
+### Phase 10 — Pin evidence and write Chapter 6 Vyhodnocení
 
 Pin:
 - DarkFactory commit;
@@ -1057,21 +991,30 @@ Pin:
 - workflow/CI runs;
 - generated docs snapshot.
 
-Then rewrite/finalize 3.3 around concrete reproducible evidence.
+Write:
+- 6.1 Ověření mechanismů;
+- 6.2 Ověření systému;
+- 6.3 Ověření na repozitářích;
+- 6.4 Výzkumné otázky;
+- 6.5 Diskuse a omezení.
+
+Add only the remaining practical explanations from the school practical-gap table that are not already adequately covered by Chapters 1–5 or by the evidence itself.
+
+Results report evidence, not architecture.
 
 ### Phase 11 — Thesis-wide deduplication and final alignment
 
 Audit:
-- Section 1 ↔ Theory;
-- Theory ↔ generated 3.1;
-- Theory/generated docs ↔ 3.2;
-- Practical ↔ Results;
-- Results ↔ Conclusion.
+- Chapter 1 ↔ Chapters 2–4;
+- Theory practical implications ↔ generated Chapter 5;
+- Chapters 2–4 ↔ generated Chapter 5;
+- generated Chapter 5 ↔ Chapter 6;
+- Chapter 6 ↔ Chapter 7 Conclusion.
 
 Then finalize:
 - answers to research questions;
 - goals/methodology wording;
-- Conclusion;
+- Chapter 7 Conclusion;
 - annotation/abstract;
 - front keywords;
 - encyclopedia/index;
@@ -1096,25 +1039,27 @@ Then finalize:
 
 The thesis is complete only when:
 - title and hierarchy match the final design;
-- 2.1.2 Inference is the single inference subsection inside 2.1 Jazykový model;
-- Harness is 2.2;
-- AI-asistovaný vývoj and Agentické inženýrství form coherent section 2.3;
-- Theory and Practical use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
+- no Teoretická/Praktická wrapper chapters remain;
+- Chapter 2 is Jazykový model with 2.2 Inference;
+- Chapter 3 is Harness;
+- Chapter 4 is AI-asistovaný vývoj a agentické inženýrství;
+- subject chapters use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
 - Review exists under Zadání a způsob práce;
 - AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership and first-party citations matching the exact mechanism claimed;
 - Workflow Graph is owned under Orchestrace agentů and source-backed by official Claude Code Dynamic Workflows documentation, with `ultracode` represented accurately as a trigger/setting rather than the product name;
 - Swarm is owned under Orchestrace agentů and source-backed by official Kimi Agent Swarm documentation;
 - all factual/definitional claims are source-backed;
+- every Theory article renders definition → description → examples → practical implication;
 - every externally realizable Theory concept has a rendered direct primary citation and a concrete cited example where one defensibly exists;
 - MCP, Skills, Tools, Tool Calling, Code Execution, Sandbox, Plugin, Script, and Hooks satisfy their locked source/example contracts;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
-- the latest model benchmark comparison in 2.1 is pinned and cited;
+- the latest model benchmark comparison in Chapter 2 is pinned and cited;
 - diagrams are clean, sourced, and pedagogically accurate;
 - real harness examples use real screenshots with provenance;
-- 3.1 comes from generated DarkFactory documentation;
-- 3.2 owns lifecycle behavior;
-- 3.3 owns evidence;
+- Chapter 5 is the full generated canonical DarkFactory documentation and the sole architecture/system-description source;
+- no parallel hand-maintained lifecycle/architecture chapter exists;
+- Chapter 6 owns evidence/results and only genuine school-required practical gaps not already covered elsewhere;
 - semantic duplication is eliminated;
 - final research questions, Results, and Conclusion align;
 - the school-PDF profile satisfies the GJKT IVT semantic and formatting contract;
