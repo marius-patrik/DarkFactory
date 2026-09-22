@@ -56,7 +56,7 @@ Theory and Practical must demonstrate this chain rather than restating it.
 ### 1 Úvod
 
 1.1 Motivace a vymezení problému  
-1.2 Argument  
+1.2 Východisko a argument práce  
 1.3 Cíle  
 1.3.1 Hlavní cíl  
 1.3.2 Dílčí cíle  
@@ -69,12 +69,12 @@ Theory and Practical must demonstrate this chain rather than restating it.
 
 2.2 AI-asistovaný vývoj  
 2.2.1 Úvod  
-2.2.2 Specifikace a plánování  
+2.2.2 Zadání a způsob práce  
 2.2.3 Řízení změny  
-2.2.4 Ověřování kvality  
+2.2.4 Kvalita a ověřování  
 2.2.5 Závěr
 
-2.3 Model  
+2.3 Jazykový model a inference  
 2.3.1 Úvod  
 2.3.2 Jazykový model  
 2.3.3 Inference  
