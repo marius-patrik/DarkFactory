@@ -18,6 +18,9 @@
 #let mosqueira2023human = <mosqueira2023human>
 #let sennrich2016bpe = <sennrich2016bpe>
 #let mikolov2013word2vec = <mikolov2013word2vec>
+#let mikolov2013linguistic = <mikolov2013linguistic>
+#let mikolov2013compositionality = <mikolov2013compositionality>
+#let kwon2023pagedattention = <kwon2023pagedattention>
 #let wu2023autogen = <wu2023autogen>
 #let sommerville2016 = <sommerville2016>
 #let anthropic2024tooluse = <anthropic2024tooluse>
@@ -91,6 +94,9 @@
   mosqueira2023human: mosqueira2023human,
   sennrich2016bpe: sennrich2016bpe,
   mikolov2013word2vec: mikolov2013word2vec,
+  mikolov2013linguistic: mikolov2013linguistic,
+  mikolov2013compositionality: mikolov2013compositionality,
+  kwon2023pagedattention: kwon2023pagedattention,
   wu2023autogen: wu2023autogen,
   sommerville2016: sommerville2016,
   anthropic2024tooluse: anthropic2024tooluse,
