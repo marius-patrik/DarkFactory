@@ -12,6 +12,18 @@ Guide-aligned template evidence:
 
 A newer school-issued guide supersedes the 2024 guide if one is located during final reconciliation.
 
+## Verified objective and methodology requirements
+
+Directly checked against the 2024 guide on 2026-09-22:
+- §2.2, pp. 7–8: the Introduction must establish a concrete, achievable, verifiable objective.
+- §2.3, p. 8 recommends research questions as part of a literature-review procedure; §3.1, p. 11 explicitly presents a research question as one possible formulation of an objective. A separately numbered O1–O3 set is therefore not mandatory.
+- §3.1, p. 11 explicitly states that hypotheses are not mandatory.
+- §2.4, p. 9 places methodology in the Practical part. It should identify the subject, tools, procedure and analysis in enough detail to permit repetition, without reporting results.
+- §2.5, pp. 9–10 permits combined Results and Discussion but distinguishes factual results from interpretation.
+- §2.6, p. 10 requires the Conclusion to assess achievement of the objective without introducing new ideas.
+
+Editorial application: state the explanatory objective and concrete DarkFactory evaluation objective in the Introduction; place methodology under Practical; discuss findings against the objectives without artificial O1–O3 references. This verifies these structural requirements only, not full school compliance.
+
 ## Working contract
 
 | Area | Requirement |
@@ -44,7 +56,7 @@ A newer school-issued guide supersedes the 2024 guide if one is located during f
 ## Authorial presentation target pending guide reconciliation
 
 The current authorial target for the paper is:
-- every level-1 and level-2 section begins on a new page;
+- level-1 and level-2 sections begin on new pages, except the first subsection under parent-only Theory and Practical headings, which shares its parent's page;
 - ordinary body paragraphs use a visible first-line indent comparable to a conventional tab stop;
 - spacing between paragraphs is materially larger than spacing between lines within a paragraph.
 

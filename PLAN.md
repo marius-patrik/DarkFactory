@@ -130,7 +130,7 @@ Results should be generated from verified evidence, then interpreted in prose.
 
 After Theory, DarkFactory, and Results are stable:
 - rewrite the Introduction;
-- finalize objectives and research questions;
+- finalize the explanatory objective and concrete practical evaluation objective;
 - finalize methodology;
 - rewrite Conclusion;
 - rewrite Czech annotation/English abstract;
@@ -166,7 +166,7 @@ Actions:
 - keep only formatting helpers that make the source clearer;
 - keep review/comparison behavior outside the manuscript content model;
 - keep paragraphs normally breakable;
-- start every level-1 and level-2 section on a new page;
+- follow PRD heading pagination, keeping parent-only Theory and Practical headings with their first subsection;
 - use a visible first-line paragraph indent as the authorial target;
 - make inter-paragraph spacing materially larger than intra-paragraph line spacing;
 - keep the first-line-indent / paragraph-spacing school-rule conflict explicit until direct guide reconciliation;
@@ -375,7 +375,7 @@ Active until the theoretical and editorial foundation is stable enough that late
 - keep model theory proportionate to the runtime/engineering argument;
 - simplify `paper/PAPER.typ`;
 - curate bibliography/figures alongside the rewrite;
-- establish clean academic typography, including page starts for all level-1/2 sections and the intended paragraph rhythm;
+- establish clean academic typography using the heading pagination and paragraph rhythm defined in PRD;
 - keep Practical as a clean DarkFactory boundary until evidence is pinned;
 - keep validators editorially generic rather than hard-coding level-2/3 prose structure;
 - re-read the generated PDF end-to-end before accepting the phase.

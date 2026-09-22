@@ -6,6 +6,12 @@ Keep it short and current. Durable product requirements belong in `PRD.md`; road
 
 ## In flight
 
+### Evidence correction before finalizing Practical
+
+- Select and inspect the historical Python pipeline revision requested by the author. The earlier editorial pass labelled `e9c10221` as that baseline without verifying the boundary; it also contains TypeScript components. Reconcile the submodule, manifest, Practical, abstracts and Results after selection, and do not attribute TypeScript test evidence to the Python pipeline.
+- Complete the methodology with exact source/test paths, commands and run provenance from that selected revision. Its current procedural description is not yet a complete reproduction protocol.
+- The objective now replaces O1–O3; methodology belongs under Practical, as verified directly in `SCHOOL_RULES.md`.
+
 ### Paper foundation — PR #151
 
 Wait for the active worker to finish its current pass, then review the resulting PR against the latest `main`, `GOAL.md`, `PRD.md`, and `PLAN.md`.
@@ -20,7 +26,7 @@ Queued review requirements after reviewing the completed worker pass:
 - cover prompt engineering, context engineering, explicit goals/specifications/acceptance criteria, goal loops, verification feedback, tool/harness engineering, and human review/integration;
 - cover multi-agent orchestration beyond simple subagents: parallel workers, coordinator patterns, swarms, and graph/workflow-based execution where these materially help explain scalable agentic work;
 - explain Tools, Skills, Hooks, and MCP concisely as capabilities supplied/integrated by the harness, alongside state/context, verification, and orchestration;
-- every level-1 and level-2 section starts on a new page;
+- use PRD heading pagination; parent-only Theory and Practical headings share a page with their first subsection;
 - use a visible first-line paragraph indent and noticeably larger inter-paragraph spacing, subject to direct school-guide reconciliation;
 - tokenization remains conceptual; BPE-specific exposition is already absent and must stay absent;
 - restore the embedding treatment to one concise king/queen example plus `paper/img/vector-embedding-queen.svg`;
