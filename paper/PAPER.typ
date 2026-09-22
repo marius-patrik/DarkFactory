@@ -19,101 +19,8 @@
   abstract-en: [
     This thesis investigates the agent harness architecture and agentic engineering methodology for long-running software development. It builds on the premise that language model inference alone does not provide persistent state, controlled environment side effects, or deterministic change verification. The thesis formulates the role of the harness as a runtime layer connecting model inference with durable state, tools, and control mechanisms, presenting DarkFactory as an implementation artefact of this approach. Evaluation based on implementation, automated test suites, and CI runs across target repositories substantiates the core mechanisms of controlled autonomy and execution recovery while defining the empirical boundaries of the findings.
   ],
-  podekovani: none,
 )
 
-#let string-word-count(string) = (
-  characters: string.replace(regex("\s+"), "").clusters().len(),
-  words: string.matches(regex("\b[\w'’.,\-]+\b")).len(),
-  sentences: string.matches(regex("\w+\s*[.?!]")).len(),
-)
-
-#let concat-adjacent-text(children) = {
-  if children.len() == 0 { return () }
-  let squashed = (children.at(0),)
-  let as-text(el) = {
-    let fn = repr(el.func())
-    if fn == "text" { el.text }
-    else if fn == "space" { " " }
-    else if fn in "linebreak" { "\n" }
-    else if fn in "parbreak" { "\n\n" }
-    else if fn in "pagebreak" { "\n\n\n\n" }
-    else if fn == "smartquote" {
-      if el.double { "\"" } else { "'" }
-    }
-  }
-  let last-text = as-text(squashed.at(-1))
-  for child in children.slice(1) {
-    let has-label = child.at("label", default: none) != none
-    if has-label {
-      squashed.push(child)
-      last-text = none
-      continue
-    }
-    let this-text = as-text(child)
-    let merge-with-last = last-text != none and this-text != none
-    if merge-with-last {
-      last-text = last-text + this-text
-      squashed.at(-1) = text(last-text)
-    } else {
-      last-text = this-text
-      squashed.push(child)
-    }
-  }
-  squashed
-}
-
-#let IGNORED_ELEMENTS = (
-  "bibliography", "cite", "display", "equation", "h", "hide", "image",
-  "line", "linebreak", "locate", "metadata", "pagebreak", "parbreak",
-  "path", "polygon", "ref", "repeat", "smartquote", "space", "style",
-  "update", "v",
-)
-
-#let map-tree(f, content, exclude: IGNORED_ELEMENTS) = {
-  if content == none { return none }
-  let fn = repr(content.func())
-  let fields = content.fields().keys()
-  if fn in exclude {
-    none
-  } else if content.at("label", default: none) in exclude {
-    none
-  } else if fn in ("text", "raw") {
-    f(content.text)
-  } else if "children" in fields {
-    let children = content.children
-    if fn == "sequence" { children = concat-adjacent-text(children) }
-    children.map(map-tree.with(f, exclude: exclude)).filter(x => x != none)
-  } else if fn == "figure" {
-    (
-      if "figure-body" not in exclude { map-tree(f, content.body, exclude: exclude) },
-      if "caption" in content.fields() { map-tree(f, content.caption, exclude: exclude) },
-    ).filter(x => x != none)
-  } else if fn == "styled" {
-    map-tree(f, content.child, exclude: exclude)
-  } else if "body" in fields {
-    map-tree(f, content.body, exclude: exclude)
-  } else {
-    none
-  }
-}
-
-#let extract-text(content, ..options) = {
-  let out = (map-tree(x => x, content, ..options),).flatten().join(" ")
-  out + ""
-}
-
-#let review-state = state("review-mode", sys.inputs.at("review", default: "false") in ("true", "1", "yes"))
-#let word-stats-state = state("word-stats-state", (
-  raw: (words: 0, chars: 0),
-  review: (words: 0, chars: 0),
-))
-
-#let alert(body) = context if review-state.get() {
-  [#block(fill: rgb("fefce8"), stroke: (left: 3pt + rgb("eab308")), inset: (x: 10pt, y: 8pt), radius: (right: 4pt), width: 100%, text(fill: rgb("854d0e"), size: 10.5pt)[📐 *Strukturální upozornění:* #body]) <callout>]
-} else { none }
-
-#let regular-level-one-heading(it) = block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
 #let nadpis-bez-cisla(text-nadpisu) = heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)
 
 #set document(title: "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory", author: meta.autor)
@@ -124,7 +31,6 @@
 )
 #set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
 #set par(justify: true, leading: 1.5 * 0.65em, spacing: 8pt, first-line-indent: 0pt)
-#show par: it => block(breakable: false, it)
 
 #set list(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
 #set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
@@ -134,7 +40,7 @@
 #set heading(numbering: "1.1")
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
-  regular-level-one-heading(it)
+  block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
 }
 #show heading.where(level: 2): it => pad(left: 0.75em)[#block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))]
 #show heading.where(level: 3): it => pad(left: 1.5em)[#block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))]
@@ -168,19 +74,10 @@
 ]
 #align(left)[
   #set text(size: 12pt)
-  #context {
-    let s = word-stats-state.final()
-    let range-line(stats) = [Rozsah práce: #stats.words slov / #stats.chars znaků]
-    grid(
-      columns: (1fr, auto),
-      column-gutter: 1.2em,
-      row-gutter: 4pt,
-      [Autor práce: #meta.autor, #meta.trida],
-      range-line(s.raw),
-      [Vedoucí práce: #meta.vedouci],
-      none,
-    )
-  }
+  #grid(columns: (1fr, auto), column-gutter: 1.2em,
+    [Autor práce: #meta.autor, #meta.trida],
+    [Vedoucí práce: #meta.vedouci],
+  )
   #v(0.8cm)
   #align(center)[#text(size: 12pt, str(meta.rok))]
 ]
@@ -217,11 +114,9 @@ agentic AI; agentic engineering; agent harness; software engineering; language m
 #set page(footer: context {
   align(center, text(font: PISMO, size: 11pt, counter(page).display("1")))
 })
-#metadata("body-start") <body-start-anchor>
-
 #heading(level: 1)[Úvod]
 
-Tato práce se zabývá systematickým využitím agentní umělé inteligence při vývoji softwaru a technickými podmínkami, které umožňují delegovat komplexní programátorské úlohy bez ztráty kontroly nad trvalým stavem, vnějšími účinky a deterministickým ověřováním výsledků. Předmětem zkoumání není samotný trénink jazykových modelů, nýbrž systémové a softwarově-inženýrské vrstvy nezbytné pro jejich spolehlivé zapojení do vývojového procesu.
+Delegování komplexních programátorských úloh na agentní systém má smysl teprve tehdy, když lze současně kontrolovat jeho stav, účinky v prostředí a ověřování změn. Růst schopností jazykových modelů proto sám o sobě nestačí; rozhodující je běhové a metodické okolí, které jejich výstupy zapojí do vývojového procesu.
 
 #heading(level: 2)[Motivace a vymezení problému]
 
@@ -241,11 +136,11 @@ Zároveň dochází k prudkému růstu vnitřních schopností samotných model�
   caption: [Vývoj technologické hranice Epoch Capabilities Index (ECI) od nástupu reasoning modelů v září 2024. Trendy ukazují růst přibližně 14 bodů ročně pro reasoning modely oproti 6 bodům ročně u standardních modelů. Převzato z @epoch-eci-frontier-2026.],
 ) <fig-epoch-eci>
 
-Rostoucí schopnost modelu generovat řešení však sama o sobě neřeší fundamentální inženýrské výzvy. Jazykový model je ze své podstaty bezstavový inferenční mechanismus: nepamatuje si předchozí běhy mimo bezprostřední kontextové okno, nedisponuje přístupem k souborovému systému ani k síťovým službám a nedokáže sám o sobě ověřit funkčnost navrženého kódu kompilací či spuštěním testů. Bez okolního řídicího systému vede spoléhání na čistě modelovou inferenci k nekontrolovaným halucinacím, nekonzistentním úpravám souborů a ztrátě kontextu při rozsáhlejších úlohách.
+Rostoucí schopnost modelu generovat řešení však sama o sobě neřeší fundamentální inženýrské výzvy. Jazykový model je ze své podstaty bezstavový inferenční mechanismus: nepamatuje si předchozí běhy mimo bezprostřední kontextové okno a bez napojení na nástroje nemůže sám ověřit funkčnost navrženého kódu kompilací či spuštěním testů. Bez okolního řídicího systému zvyšuje čistě modelová inference riziko nekonzistentních úprav souborů a ztráty kontextu při rozsáhlejších úlohách.
 
-V populárním diskurzu se v této souvislosti objevil koncept tzv. *Vibe Coding* @karpathy2025vibecoding, který popisuje intuitivní styl programování, kdy uživatel zadává pokyny v přirozeném jazyce a bez hlubší kontroly přebírá navržený kód. Tento přístup může být efektivní pro rychlou tvorbu jednorázových prototypů nebo experimentů @willison2025vibecoding, avšak v profesionálním softwarovém inženýrství selhává z důvodu absence exaktních specifikací, nedohledatelnosti změn a rizika akumulace skrytých vad.
+V populárním diskurzu se v této souvislosti objevil koncept tzv. *Vibe Coding* @karpathy2025vibecoding, který označuje intuitivní styl programování založený na pokynech v přirozeném jazyce a omezené kontrole navrženého kódu. Tento přístup může být účinný při tvorbě prototypů nebo experimentech @willison2025vibecoding, sám však nepokrývá specifikaci, dohledatelnost změn a systematické odhalování vad, které vyžaduje dlouhodobý vývoj.
 
-Skutečnou technickou odpovědí na tyto limity je proto vybudování specializované běhové vrstvy — *harnessu* — a formulace disciplinované metodiky *agentického inženýrství*. Harness obklopuje modelovou inferenci, spravuje trvalý stav úlohy, poskytuje bezpečné nástroje pro interakci s prostředím a vykonává deterministické kontroly. Agentické inženýrství pak definuje metodický rámec, který transformuje nestrukturované schopnosti modelu v reprodukovatelný, auditovatelný a bezpečný vývojový proces.
+Technickou odpověď proto představuje specializovaná běhová vrstva — *harness* — spolu s metodikou *agentického inženýrství*. Harness obklopuje modelovou inferenci, spravuje trvalý stav úlohy, zprostředkovává nástroje a provádí kontroly. Agentické inženýrství tyto schopnosti organizuje do procesu, jehož změny lze sledovat, ověřovat a podle potřeby zastavit.
 
 #heading(level: 2)[Cíl práce a výzkumné otázky]
 
@@ -257,7 +152,7 @@ K naplnění hlavního cíle jsou stanoveny čtyři dílčí cíle:
 3. *Implementace DarkFactory:* Realizovat navrženou architekturu a metodiku v podobě funkčního softwarového harnessu DarkFactory.
 4. *Empirické vyhodnocení:* Technicky vyhodnotit vlastnosti a limity navrženého řešení na základě reprodukovatelných důkazů z implementace, automatizovaných testů, CI běhů a integrace do cílových repozitářů.
 
-V rámci práce jsou formulovány tři výzkumné otázky, na které navržený systém odpovídá:
+Práce zkoumá tři otázky:
 - *O1 (Řízená autonomie):* Jak lze v dlouhotrvajícím agentním procesu zajistit autonomní postup modelu tak, aby prováděné změny zůstaly deterministicky ověřitelné a podléhaly explicitním hranicím kontroly a integrace?
 - *O2 (Přerušení a obnova):* Jaké systémové mechanismy harnessu umožňují spolehlivě detekovat uváznutí, chybové stavy a přerušení dlouhotrvajícího běhu a obnovit stav vývojového procesu bez ztráty kontinuity a nutnosti opakovat celou úlohu?
 - *O3 (Trvalý stav a aktivní kontext):* Jakým způsobem lze efektivně oddělit dlouhodobý stav vývojové úlohy od konečného a degradačně zatíženého kontextového okna jazykového modelu?
@@ -274,11 +169,11 @@ Postup práce zahrnuje následující kroky:
 
 #heading(level: 1)[Teoretická část]
 
-Teoretická část práce systematicky rozvíjí argumentační linii: nejprve objasňuje fundamentální fungování a vnitřní limity jazykového modelu (§2.1), následně definuje harness jako nezbytný běhový systém překonávající tato omezení (§2.2) a na tomto základě formuluje disciplinovanou metodiku agentického inženýrství (§2.3).
+Růst schopností modelu je užitečný pro vývoj pouze v kombinaci s prostředím, které zachová stav, zprostředkuje účinky a umožní jejich kontrolu. Teoretická část proto spojuje vlastnosti jazykového modelu s návrhem harnessu a následně s metodikou agentického inženýrství.
 
 #heading(level: 2)[Jazykový model]
 
-Základním výpočetním stavebním kamenem agentních systémů je velký jazykový model (Large Language Model, LLM). Pro správné vymezení jeho role v softwarovém inženýrství je nezbytné porozumět jeho reprezentaci dat a způsobu provádění inference.
+Agentní systém využívá velký jazykový model (Large Language Model, LLM) jako mechanismus pro zpracování instrukcí a tvorbu dalšího kroku. Pro určení hranic této role je podstatná jeho reprezentace dat a způsob inference.
 
 #heading(level: 3)[Architektura a reprezentace]
 
@@ -286,15 +181,15 @@ Velký jazykový model je v základu parametrický statistický model aproximuj�
 
 Přirozený text i zdrojový kód jsou do modelu přenášeny prostřednictvím *tokenizéru*, který rozkládá vstupní řetězec na posloupnost celočíselných identifikátorů. Současné tokenizéry využívají subword algoritmy, nejčastěji *Byte-Pair Encoding (BPE)* @sennrich2016bpe. Tokenizace umožňuje efektivně reprezentovat běžná slova a syntaktické konstrukce jazyka jediným tokenem, zatímco neznámá či vzácná slova skládá z menších podslovních fragmentů. Počet tokenů přímo vymezuje výpočetní náročnost zpracování, spotřebu paměti a limity maximální délky vstupu.
 
-Každý diskrétní token je následně namapován do spojitého vícerozměrného prostoru prostřednictvím *vektorové reprezentace* (*embeddingu*) @mikolov2013word2vec @mikolov2013linguistic. V tomto spojitém latentním prostoru jsou sémanticky příbuzné pojmy a syntaktické entity umístěny blízko sebe. Natrénovaná reprezentace zachycuje bohaté strukturální a funkční vztahy v programovacích jazycích, což modelu umožňuje pracovat s abstraktními pojmy jako typy, proměnné, funkce či softwarové architektury. Tyto vnitřní reprezentace jsou však aktivní výhradně během dopředného průchodu modelem; model si vytvořené abstrakce po dokončení výpočtu nepamatuje.
+Každý diskrétní token je následně namapován do spojitého vícerozměrného prostoru prostřednictvím *vektorové reprezentace* (*embeddingu*) @mikolov2013word2vec @mikolov2013linguistic. V tomto spojitém latentním prostoru mohou být sémanticky nebo syntakticky příbuzné prvky reprezentovány podobnými vektory. Natrénovaná reprezentace tak modelu pomáhá pracovat s abstraktními pojmy, jako jsou typy, proměnné, funkce či softwarové architektury. Tyto vnitřní reprezentace jsou však aktivní výhradně během dopředného průchodu modelem; model si vytvořené abstrakce po dokončení výpočtu nepamatuje.
 
 #heading(level: 3)[Inference a kontext]
 
-Vlastní provádění výpočtu — *inference* — probíhá autoregresivním způsobem: model přijme na vstupu posloupnost tokenů (aktivní kontext), provede dopředný průchod neuronovou sítí a na výstupu spočítá pravděpodobnostní rozdělení pro následující token. Z tohoto rozdělení je vybrán další token, který je připojen ke stávajícímu kontextu, a celý cyklus se opakuje, dokud model nevygeneruje speciální ukončovací token (*end-of-sequence*) nebo nedosáhne nastaveného limitu @vllm-inference-engine. Generování lze řídit parametry vzorkování, zejména *teplotou* (*temperature*), která škáluje logity pravděpodobnostního rozdělení @openai-responses-temperature; pro deterministické inženýrské úlohy a generování kódu se zpravidla volí nízká teplota (např. 0,0 až 0,2), preferující nejvíce pravděpodobné tokeny.
+Vlastní provádění výpočtu — *inference* — probíhá autoregresivním způsobem: model přijme na vstupu posloupnost tokenů (aktivní kontext), provede dopředný průchod neuronovou sítí a na výstupu spočítá pravděpodobnostní rozdělení pro následující token. Z tohoto rozdělení je vybrán další token, který je připojen ke stávajícímu kontextu, a celý cyklus se opakuje, dokud model nevygeneruje speciální ukončovací token (*end-of-sequence*) nebo nedosáhne nastaveného limitu @vllm-inference-engine. Generování lze řídit parametry vzorkování, zejména *teplotou* (*temperature*), která ovlivňuje koncentraci pravděpodobnostního výběru @openai-responses-temperature. Nižší teplota omezuje variabilitu výstupu, sama však nezaručuje správnost ani úplný determinismus.
 
 Zásadním technickým mechanismem pro optimalizaci inference je *KV Cache (Key-Value Cache)* @ainslie2023 @kwon2023pagedattention. Jelikož se dříve vygenerované tokeny v kontextu nemění, výpočetní systém ukládá jejich spočtené vektory klíčů a hodnot do vyrovnávací paměti GPU, aby je nemusel při každém kroku počítat znovu. Velikost KV cache roste lineárně s délkou kontextu a počtem souběžných požadavků, což představuje významný hardwarový limit pro maximální délku aktivního kontextového okna (*context window*).
 
-Ačkoliv moderní modely nabízejí nominální kontextová okna o kapacitě stovek tisíc až milionů tokenů, jejich schopnost efektivně využívat informace napříč celým oknem naráží na zásadní limity. Experimentální práce Liu et al. @liu2024 prokázala jev označovaný jako *Lost in the Middle*: schopnost modelu vyhledat a správně aplikovat relevantní informaci výrazně klesá, pokud je tato informace umístěna uprostřed dlouhého kontextu, zatímco informace na začátku a konci okna jsou zpracovávány s vyšší přesností. Tento fenomén degradace pozornosti (*context rot*) znamená, že pouhé mechanické nafukování kontextu celými repozitáři vede k poklesu spolehlivosti a nárůstu chybovosti.
+Ačkoliv moderní modely nabízejí nominální kontextová okna o kapacitě stovek tisíc až milionů tokenů, jejich schopnost efektivně využívat informace napříč celým oknem naráží na zásadní limity. Experimentální práce Liu et al. @liu2024 prokázala jev označovaný jako *Lost in the Middle*: schopnost modelu vyhledat a správně aplikovat relevantní informaci výrazně klesá, pokud je tato informace umístěna uprostřed dlouhého kontextu, zatímco informace na začátku a konci okna jsou zpracovávány s vyšší přesností. Tento fenomén degradace pozornosti (*context rot*) znamená, že pouhé mechanické nafukování kontextu celými repozitáři může snížit spolehlivost a zvýšit chybovost.
 
 Z hlediska dlouhotrvajícího vývoje z toho plyne zásadní závěr: samotný jazykový model nemůže sloužit jako spolehlivá trvalá paměť softwarového projektu. Dlouhodobý stav vývojového procesu musí být spravován externě, mimo kontextové okno modelu.
 
@@ -326,7 +221,7 @@ Tuto interakci harness zprostředkovává pomocí mechanismu *vyvolávání nás
 
 Harness požadavek zachytí a podrobí jej validaci: zkontroluje formální správnost parametrů, oprávnění agenta a bezpečnostní limity. Teprve po úspěšném ověření harness nástroj fyzicky spustí a jeho výstup (např. obsah souboru, výstup kompilátoru, chybovou hlášku) předá zpět modelu jako pozorování. Tím je striktně oddělen *záměr modelu* od *skutečného provedení účinku*.
 
-Skutečné spouštění kódu (*code execution*) a spouštění testovacích sad v reálném prostředí představuje klíčový zdroj deterministické pravdivé zpětné vazby (*ground-truth observation*) @anthropic2026codeexecution. Na rozdíl od modelové sebeevaluace, která podléhá halucinacím, výsledek kompilátoru nebo jednotkového testu poskytuje exaktní důkaz o správnosti navrženého řešení. Z bezpečnostního hlediska harness tyto operace izoluje v *izolovaném prostředí* (*sandboxu*), například v lehkých kontejnerech či virtualizačních klecích @agache2020firecracker @openai-agents-sandbox, aby zabránil poškození hostitelského systému nekontrolovanými skripty.
+Skutečné spouštění kódu (*code execution*) a testovacích sad v reálném prostředí představuje zdroj ověřitelné zpětné vazby (*ground-truth observation*) @anthropic2026codeexecution. Výsledek kompilátoru nebo testu poskytuje informaci o konkrétním běhu, kterou nelze nahradit samotným odhadem modelu. Z bezpečnostního hlediska harness tyto operace izoluje v *izolovaném prostředí* (*sandboxu*), například v lehkých kontejnerech či virtualizačních klecích @agache2020firecracker @openai-agents-sandbox, aby omezil možné účinky nekontrolovaných skriptů na hostitelský systém.
 
 #heading(level: 3)[Rozšíření]
 
@@ -342,15 +237,15 @@ Samotná existence modelu a harnessu poskytuje technické schopnosti, avšak neu
 
 #heading(level: 3)[Zadání a plánování]
 
-Základním pravidlem agentického inženýrství je, že žádná netriviální změna kódu nesmí být zahájena bez explicitního zadání a ohraničeného plánu @sommerville2016. Neformální pokyny v přirozeném jazyce často trpí nejednoznačností a opomíjejí okrajové stavy.
+Pro netriviální změnu agentické inženýrství vyžaduje explicitní zadání a ohraničený plán @sommerville2016. Neformální pokyny v přirozeném jazyce často trpí nejednoznačností a opomíjejí okrajové stavy.
 
 Metodika proto zavádí *vývoj řízený specifikací* (*Spec-Driven Development*) @github-spec-kit. Specifikace před zahájením implementace spojuje požadovaný výsledek s omezeními, negativními cíli a akceptačními podmínkami. Vymezuje tedy nové chování, zachovávaná rozhraní, hranice úlohy i způsob ověření, aby plán později nešel posuzovat podle neurčitého dojmu z výsledného kódu.
 
-Na základě schválené specifikace agent vytváří *ohraničený plán* (*bounded plan*), který rozkládá implementaci do posloupnosti logických, na sebe navazujících kroků. Fáze plánování je striktně oddělena od fáze implementace: harness zabraňuje agentovi provádět zápisy do repozitáře, dokud není plán zvalidován a schválen. Průběžná i závěrečná revize se následně odvolává přímo na schválenou specifikaci, což eliminuje riziko odklonu od původního zadání (*goal drift*).
+Na základě schválené specifikace agent vytváří *ohraničený plán* (*bounded plan*), který rozkládá implementaci do posloupnosti logických, na sebe navazujících kroků. Oddělení plánování od implementace umožňuje před zápisem ověřit rozsah práce a následně posuzovat změnu přímo proti specifikaci, čímž se snižuje riziko odklonu od původního zadání (*goal drift*).
 
 #heading(level: 3)[Řízení změny a ověřování]
 
-Veškerý kód vygenerovaný jazykovým modelem je v agentickém inženýrství považován za netestovaný návrh změny. Úloha proto probíhá v izolované větvi, jejíž pracovní strom neovlivňuje hlavní větev ani souběžné procesy @chacon2014 @github-branches. Pull Request tvoří následnou integrační hranici: soustřeďuje diff, historii commitů i diskusi a umožňuje posoudit změnu proti zadání @github-pull-requests @github-pull-request-reviews.
+Veškerý kód vygenerovaný jazykovým modelem je v agentickém inženýrství považován za netestovaný návrh změny. Úloha proto probíhá v izolované větvi, jejíž pracovní strom neovlivňuje hlavní větev ani souběžné procesy @chacon2014 @github-branches. Pull Request v tomto procesu tvoří integrační hranici: soustřeďuje diff, historii commitů i diskusi a umožňuje posoudit změnu proti zadání @github-pull-requests @github-pull-request-reviews.
 
 Před přijetím změny proběhnou deterministické kontroly zahrnující sestavení, statickou analýzu a testy @sommerville2016. CI je spouští v čistém prostředí nad přesným hashem revize @humble2010; povinné stavové kontroly proto mohou mechanicky zabránit sloučení neúspěšného návrhu @github-required-status-checks. Automatické výsledky doplňuje revize člověkem nebo specializovaným agentem, která ověřuje shodu s požadavky a specifikací.
 
@@ -362,7 +257,7 @@ Správa kontextu vyžaduje aktivní selekci a *kompakci* (*context compaction*) 
 
 Závažným bezpečnostním rizikem je zpracování nedůvěryhodných externích dat. Útok typu *Prompt Injection* (OWASP LLM01) @owasp-llm01-prompt-injection @owasp-prompt-injection spočívá v tom, že záškodnický text obsažený v analyzovaném souboru, webové stránce či chybovém logu přebije systémové instrukce a přiměje model k nežádoucí akci. Harness proto musí striktně oddělovat řídicí kanál (instrukce) od datového kanálu (pozorování z prostředí) a uplatňovat striktní validaci vstupů.
 
-Autonomie agenta musí být deterministicky ohraničena. Harness nastavuje pevné *rozpočty běhu* (*execution budgets*): maximální počet iterací smyčky, stropy na počet spotřebovaných tokenů, finanční limity a časové zámky @microsoft-agent-looping. Pro vysoce rizikové operace (např. destruktivní změny souborů, nasazení do produkce, autorizace sloučení větve) systém uplatňuje přístup *Člověk ve smyčce (Human-in-the-loop, HITL)* @openai-agents-hitl, kdy harness vyžaduje explicitní schválení lidským operátorem před provedením akce.
+Autonomie agenta má být deterministicky ohraničena. Harness může nastavit pevné *rozpočty běhu* (*execution budgets*), například maximální počet iterací, stropy na počet tokenů, finanční limity a časové zámky @microsoft-agent-looping. Pro vysoce rizikové operace (např. destruktivní změny souborů, nasazení do produkce nebo autorizace sloučení větve) je vhodný přístup *Člověk ve smyčce (Human-in-the-loop, HITL)* @openai-agents-hitl, při němž harness vyžaduje schválení lidským operátorem před provedením akce.
 
 #heading(level: 3)[Orchestrace]
 
@@ -372,17 +267,15 @@ Základním předpokladem efektivní orchestrace je *oddělitelné vlastnictví*
 
 Koordinátor může delegovat oddělitelnou dílčí odpovědnost specializovanému subagentovi s vlastním kontextem a nástroji @anthropic-managed-agents. Pokud se mění vlastník celé úlohy, handoff předá další roli pouze stav relevantní pro pokračování @openai-agent-orchestration. Pro explicitní pořadí, větvení a návraty je vhodný workflow graf @microsoft-agent-workflows. DAG popisuje pouze acyklické závislosti, zatímco agentní proces potřebuje obecný orientovaný graf, pokud se po neúspěšném testu nebo zamítnuté revizi vrací do opravy @microsoft-agent-looping.
 
-I při zapojení pokročilé orchestrace však zůstává v platnosti základní pravidlo: orchestrace rozšiřuje kapacitu systému, avšak nikdy nenahrazuje finální integrační bránu, deterministické CI kontroly a formální revizi.
+I při zapojení pokročilé orchestrace zůstává nutné zachovat finální integrační bránu, deterministické CI kontroly a formální revizi.
 
 #heading(level: 1)[Praktická část]
 
 #heading(level: 2)[DarkFactory]
 
-Podrobný popis architektury a implementace systému DarkFactory je v této fázi vyhrazen navazující evidenční etapě. Tato hranice udržuje praktickou část oddělenou od teoretického modelu harnessu; její obsah bude doplněn až po ustavení pinované implementace a odpovídajících důkazů.
-
 #heading(level: 1)[Výsledky a diskuse]
 
-Vyhodnocení systému vychází ze zásad reprodukovatelného empirického zkoumání. Faktuální zjištění jsou striktně oddělena od jejich interpretace a jsou důsledně vázána na konkrétní dohledatelné záznamy z testovacích sad, CI běhů a repozitářů.
+Dostupná evidence je vázána na konkrétní revize zdrojového kódu, testovací sady, CI běhy a cílové repozitáře. Následující výsledky proto rozlišují mezi pozorovaným průběhem a tím, co z něj lze oprávněně vyvodit.
 
 #heading(level: 2)[Ověření implementace a systému]
 
@@ -420,29 +313,25 @@ Zbývající dva původně zamýšlené repozitáře (`template-OdbornaPrace` a 
 
 #heading(level: 2)[Odpovědi na výzkumné otázky]
 
-Na základě shromážděných teoretických poznatků a empirických důkazů lze formulovat odpovědi na stanovené výzkumné otázky:
+*O1 (Řízená autonomie):* Dostupná evidence podporuje řízenou autonomii jako kombinaci formální specifikace, schváleného plánu, izolované větve, validačních bran a řízeného Pull Requestu. Sada 670 automatizovaných testů a úspěšný CI run `35616745304` systému DarkFactory dokládají kontrolu rozsahu oprávnění, blokování zápisu bez schváleného plánu a ověřování změn @darkfactory-e9c10221 @darkfactory-ci-35616745304. Absence plného živého průchodu celým životním cyklem v produkčním nasazení @darkfactory-request-359 ponechává odolnost vůči neočekávaným vnějším událostem ověřenou pouze v simulačních a integračních testech.
 
-*O1 (Řízená autonomie):* Řízené autonomie v dlouhotrvajícím vývojovém procesu lze dosáhnout výhradně dekompozicí procesu do striktně oddělených fází: formální specifikace, schváleného plánu, izolované větve správy verzí, deterministických validačních bran a řízeného Pull Requestu. *Důkazy:* Sada 670 automatizovaných testů a úspěšný CI run `35616745304` systému DarkFactory prokazují funkčnost kontroly rozsahu oprávnění, blokování zápisu bez schváleného plánu a deterministické ověřování změn @darkfactory-e9c10221 @darkfactory-ci-35616745304. *Omezení:* Absence plného živého průchodu celým životním cyklem v produkčním nasazení @darkfactory-request-359 znamená, že odolnost těchto kontrolních mechanismů vůči neočekávaným vnějším asynchronním událostem zůstává ověřena pouze v simulačních a integračních testech.
+*O2 (Přerušení a obnova):* V dostupném návrhu je obnova založena na oddělení provozního stavu (Run State) a žurnálu interakcí (Session/Transcript) od operační paměti, na rozpočtech běhu a na ověření integrity stavu. Testovací případy v DarkFactory ověřují, že po simulovaném pádu či provider failoveru systém načte Run State, ověří recovery provenance a naváže na rozpracovanou práci bez ztráty konzistence pracovního stromu @darkfactory-e9c10221. Evidence potvrzuje obnovitelnost testovaných scénářů, nikoli univerzální garanci pro libovolný distribuovaný stav třetích stran.
 
-*O2 (Přerušení a obnova):* Spolehlivá obnova procesu po přerušení vyžaduje úplné vyčlenění provozního stavu (Run State) a žurnálu interakcí (Session/Transcript) z operační paměti do trvalého strukturovaného úložiště, doplněné o budgetové limity a verifikaci integrity stavu. *Důkazy:* Testovací případy v DarkFactory ověřují, že po simulovaném pádu či provider failoveru systém načte Run State, ověří recovery provenance a naváže na rozpracovanou práci bez ztráty konzistence pracovního stromu @darkfactory-e9c10221. *Omezení:* Doložená evidence potvrzuje idempotenci a obnovitelnost na úrovni testovaných scénářů harnessu, nikoli však univerzální crash-recovery garanci pro libovolný distribuovaný stav třetích stran.
-
-*O3 (Trvalý stav a aktivní kontext):* Řešení rozporu mezi dlouhodobým vývojovým stavem a omezeným kontextovým oknem spočívá v jejich striktním architektonickém oddělení. Harness spravuje kompletní stav a historii v externím úložišti, zatímco aktivní kontextové okno modelu plní pouze dynamicky vybranými, vysoce relevantními a zkompaktovanými daty potřebnými pro bezprostředně následující krok smyčky, čímž eliminuje degradaci pozornosti (Lost in the Middle). *Důkazy:* Architektura DarkFactory úspěšně odděluje Run State od generovaných promptů a využívá selektivní injekci kontextu @darkfactory-e9c10221. *Omezení:* Selektivní výběr a kompakce kontextu principiálně nese riziko opomenutí skrytých závislostí v rozsáhlých kódech, což žádný selekční algoritmus nemůže teoreticky zcela vyloučit.
+*O3 (Trvalý stav a aktivní kontext):* Rozpor mezi dlouhodobým vývojovým stavem a omezeným kontextovým oknem řeší oddělení externího stavu a historie od aktivního kontextu, do něhož se vybírají data potřebná pro bezprostřední krok smyčky. Architektura DarkFactory podle dostupné evidence odděluje Run State od generovaných promptů a používá selektivní injekci kontextu @darkfactory-e9c10221. Tento postup může omezit degradaci pozornosti, ale výběr a kompakce stále mohou vynechat skryté závislosti v rozsáhlém kódu.
 
 #heading(level: 2)[Diskuse a omezení]
 
-Dosažené výsledky poskytují silné argumenty pro nutnost systémového zastřešení modelové inference harnessem. Prokázané fungování testovacích sad a integračních pipeline dokládá, že navržená architektura DarkFactory úspěšně řeší deterministickou kontrolu změn, izolaci v repozitáři i základní postupy obnovy běhu.
+Dosažené výsledky podporují závěr, že samotnou modelovou inferenci je pro dlouhotrvající vývoj účelné zastřešit harnessem. Testovací sady a integrační pipeline dokládají fungování kontroly změn, izolace v repozitáři a základních postupů obnovy v ověřených scénářích.
 
 Zároveň je však nezbytné jasně formulovat, co z dostupných důkazů nevyplývá. Práce nepředkládá statistický srovnávací benchmark produktivity, nákladů či chybovosti agentního vývoje oproti lidským programátorům na standardizovaných sadách úloh, například SWE-bench. Výsledky nedokazují schopnost systému zcela autonomně vyvíjet komplexní software bez počátečního zadání a finální lidské revize; člověk jako garant specifikace a schvalovatel v bodech HITL zůstává podmínkou bezpečnosti. Evaluace také neodstraňuje stochastickou povahu jazykových modelů: harness může chybné výstupy zachytit a zablokovat, ale nezaručuje, že model v libovolné situaci nalezne optimální řešení.
 
 #heading(level: 1)[Závěr]
 
-Tato odborná práce se zabývala architekturou agentního harnessu a metodikou agentického inženýrství pro dlouhotrvající vývoj softwaru. Východiskem práce bylo poznání, že samotný růst schopností velkých jazykových modelů nepostačuje k vytvoření spolehlivého inženýrského procesu: bezstavová inference nezajišťuje trvalou kontinuitu, neposkytuje bezpečné provedení účinků v prostředí a trpí degradací pozornosti v dlouhém kontextu.
+Spolehlivý dlouhotrvající vývoj nelze založit na růstu schopností jazykového modelu samotného: bezstavová inference nezajišťuje trvalou kontinuitu, neposkytuje řízené provedení účinků v prostředí a v dlouhém kontextu čelí degradaci pozornosti.
 
-Hlavním přínosem práce je návrh ucelené architektury harnessu a formulace metodiky agentického inženýrství, které tyto fundamentální nedostatky překonávají. Práce definovala klíčovou roli harnessu jako běhové vrstvy organizující agentní smyčku ReAct, spravující perzistentní Run State nezávisle na kontextovém okně modelu a vynucující deterministické kontroly. Na této bázi byla zformulována metodika propojující vývoj řízený specifikací, ohraničené plánování, izolaci větví Git, povinné integrační kontroly v CI a strukturovanou orchestraci subagentů.
+Přínosem je propojení harnessu a metodiky agentického inženýrství do jednoho návrhového rámce. Harness organizuje agentní smyčku ReAct, spravuje perzistentní Run State mimo kontextové okno modelu a zprostředkuje nástroje i kontroly. Metodika na tuto vrstvu navazuje specifikací, ohraničeným plánováním, izolací větví Git, CI kontrolami a explicitní integrací.
 
-Navržené principy byly prakticky realizovány v referenčním systému DarkFactory a podrobeny empirickému vyhodnocení. Získané výsledky — zahrnující 670 úspěšných automatizovaných testů v 15 CI jobech a verifikaci na třech aktivních repozitářích — potvrdily funkčnost mechanismů řízené autonomie, odolnosti vůči chybám a oddělení stavu od aktivního kontextu. Práce zároveň otevřeně vymezila své limity v podobě neprovedeného živého produkčního průchodu. Vytvořená architektura představuje robustní základ pro další rozvoj spolehlivých, plně auditovatelných systémů autonomního softwarového inženýrství.
-
-#metadata("body-end") <body-end-anchor>
+Principy byly v dostupné implementaci a testovacím rámci ověřeny prostřednictvím 670 úspěšných automatizovaných testů v 15 CI jobech a verifikace na třech aktivních repozitářích. Evidence podporuje mechanismy řízené autonomie, obnovy a oddělení stavu od aktivního kontextu v testovaných scénářích. Zároveň chybí živý produkční průchod celým životním cyklem, takže rozsah zobecnění zůstává omezený.
 
 // ── Zadní část ───────────────────────────────────────────
 #pagebreak(weak: true)
@@ -452,72 +341,3 @@ Navržené principy byly prakticky realizovány v referenčním systému DarkFac
 #pagebreak(weak: true)
 #nadpis-bez-cisla[Seznam obrázků a tabulek]
 #outline(title: none, target: figure.where(kind: image).or(figure.where(kind: table)))
-
-// ── Výpočet rozsahu práce ─────────────────────────────────
-#context {
-  let core = sel => selector(sel)
-    .after(<body-start-anchor>, inclusive: false)
-    .before(<body-end-anchor>, inclusive: false)
-
-  let containers = selector(list).or(enum).or(table).or(figure.caption)
-  let nested-par-locs = query(core(selector(par).within(containers))).map(it => it.location())
-  let nested-list-locs = query(core(selector(list).within(containers))).map(it => it.location())
-  let nested-enum-locs = query(core(selector(enum).within(containers))).map(it => it.location())
-  let nested-table-locs = query(core(selector(table).within(containers))).map(it => it.location())
-
-  let review-words = 0
-  let review-chars = 0
-  let stats-of = item => string-word-count(extract-text(item))
-
-  for p in query(core(par)) {
-    if p.location() not in nested-par-locs {
-      let s = stats-of(p.body)
-      review-words += s.words
-      review-chars += s.characters
-    }
-  }
-  for item in query(core(list)) {
-    if item.location() not in nested-list-locs {
-      let s = stats-of(item)
-      review-words += s.words
-      review-chars += s.characters
-    }
-  }
-  for item in query(core(enum)) {
-    if item.location() not in nested-enum-locs {
-      let s = stats-of(item)
-      review-words += s.words
-      review-chars += s.characters
-    }
-  }
-  for item in query(core(table)) {
-    if item.location() not in nested-table-locs {
-      let s = stats-of(item)
-      review-words += s.words
-      review-chars += s.characters
-    }
-  }
-  for h in query(core(heading)) {
-    let s = stats-of(h.body)
-    review-words += s.words
-    review-chars += s.characters
-  }
-  for caption in query(core(figure.caption)) {
-    let s = stats-of(caption)
-    review-words += s.words
-    review-chars += s.characters
-  }
-  for item in query(core(<callout>)) {
-    let s = stats-of(item)
-    review-words -= s.words
-    review-chars -= s.characters
-  }
-
-  let review-stats = (
-    words: calc.max(0, review-words),
-    chars: calc.max(0, review-chars),
-  )
-  let stats = (raw: review-stats, review: review-stats)
-  word-stats-state.update(stats)
-  [#metadata(stats) <word-stats>]
-}

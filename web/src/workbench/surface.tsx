@@ -4,7 +4,9 @@ import {
   DockviewReact,
   themeAbyss,
   themeLight,
-  type ContextMenuItem,
+  type BuiltInContextMenuItem,
+  type GetTabContextMenuItemsParams,
+  type ReactContextMenuItemConfig,
 } from "dockview-react";
 import { EmptyWorkbench } from "./empty-workbench";
 import { LauncherButton } from "./launcher";
@@ -48,7 +50,9 @@ export function WorkbenchSurfaceView({
   const HeaderActions = useMemo(() => () => <LauncherButton surface={surface} />, [surface]);
   const dockTheme = runtime.settings.theme === "light" ? themeLight : themeAbyss;
 
-  const tabContextMenuItems = (params: any): ContextMenuItem[] => {
+  const tabContextMenuItems = (
+    params: GetTabContextMenuItemsParams,
+  ): (BuiltInContextMenuItem | ReactContextMenuItemConfig)[] => {
     const tab = paramsOf(params.panel);
     if (!tab) return [];
 
@@ -65,7 +69,7 @@ export function WorkbenchSurfaceView({
       (typeof tab.state.path === "string" ? tab.state.path : "") ||
       (typeof tab.state.url === "string" ? tab.state.url : "");
 
-    const items: ContextMenuItem[] = [
+    const items: (BuiltInContextMenuItem | ReactContextMenuItemConfig)[] = [
       {
         label: tab.pinned ? "Unpin" : "Pin",
         action: () => runtimeRef.current.setPinned(tab.id, !tab.pinned),
@@ -144,7 +148,7 @@ export function WorkbenchSurfaceView({
         tabComponents={tabComponents}
         defaultRenderer="always"
         rightHeaderActionsComponent={HeaderActions}
-        getTabContextMenuItems={tabContextMenuItems as any}
+        getTabContextMenuItems={tabContextMenuItems}
         onReady={(event: any) => {
           const api = event.api;
           onReady(surface, api);

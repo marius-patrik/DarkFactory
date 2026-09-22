@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
-"""Compile a review PDF with the canonical raw/final word/character count.
-
-The final count is obtained from the same Typst document, template and publication
-with review mode disabled. The review build then receives those values as
-sys.inputs while computing its own review count normally inside the template.
-Review PDFs disable accessibility tags because Typst 0.15.x can hit a Krilla
-tag-tree serializer panic on the review-only markup path. Final PDFs retain the
-default tagged-PDF export.
-"""
+"""Compile the print-oriented review PDF from the canonical manuscript."""
 
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 from pathlib import Path
 
@@ -45,30 +36,6 @@ common = []
 for font_path in args.font_path:
     common.extend(["--font-path", font_path])
 
-query_expr = "query(<word-stats>).last().value.raw"
-query_cmd = [
-    args.typst,
-    "eval",
-    query_expr,
-    "--in",
-    args.main,
-    *common,
-    "--input",
-    f"book={args.book}",
-    "--input",
-    f"template={args.template}",
-    "--format",
-    "json",
-]
-stats = json.loads(run(query_cmd, capture=True))
-if not isinstance(stats, dict) or set(stats) < {"words", "chars"}:
-    raise SystemExit(f"unexpected word-count metadata: {stats!r}")
-
-words = int(stats["words"])
-chars = int(stats["chars"])
-if words < 0 or chars < 0:
-    raise SystemExit(f"invalid word-count metadata: {stats!r}")
-
 output = Path(args.output)
 output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -81,17 +48,10 @@ compile_cmd = [
     f"book={args.book}",
     "--input",
     f"template={args.template}",
-    "--input",
-    "review=true",
-    "--input",
-    f"raw-words={words}",
-    "--input",
-    f"raw-chars={chars}",
     args.main,
     str(output),
 ]
 run(compile_cmd)
 print(
-    f"ok: review {args.book}/{args.template}: "
-    f"raw={words} words/{chars} chars -> {output}"
+    f"ok: review {args.book}/{args.template}: {output}"
 )

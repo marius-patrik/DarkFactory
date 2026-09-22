@@ -153,8 +153,6 @@ require_contract(
         "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory",
         "DarkFactory",
         '#bibliography("bib/references.bib"',
-        "<callout>",
-        "<word-stats>",
     ),
     f"{paper_file} manuscript",
 )
@@ -177,10 +175,10 @@ for stale in ("consolidate:", "scripts/consolidate_paper.py", "make consolidate"
     if stale in makefile:
         fail(f"Makefile still contains obsolete single-file transition contract: {stale}")
 
-body_start = main_source.find('#metadata("body-start")')
-body_end = main_source.find('#metadata("body-end")')
+body_start = main_source.find("#heading(level: 1)[Úvod]")
+body_end = main_source.find("#nadpis-bez-cisla[Seznam zdrojů]")
 if body_start < 0 or body_end <= body_start:
-    fail(f"{paper_file} body markers are missing or out of order")
+    fail(f"{paper_file} manuscript boundaries are missing or out of order")
 body_source = main_source[body_start:body_end]
 
 heading_pattern = re.compile(

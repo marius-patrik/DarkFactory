@@ -274,10 +274,10 @@ def typst_manuscript_index(source_path: Path | None = None) -> list[dict[str, ob
     if source_path is None:
         source_path = Path("paper/PAPER.typ") if Path("paper/PAPER.typ").exists() else Path("main.typ")
     source = source_path.read_text(encoding="utf-8")
-    body_start = source.find('#metadata("body-start")')
-    body_end = source.find('#metadata("body-end")')
+    body_start = source.find("#heading(level: 1)[Úvod]")
+    body_end = source.find("#nadpis-bez-cisla[Seznam zdrojů]")
     if body_start < 0 or body_end <= body_start:
-        raise SystemExit(f"{source_path} body markers are missing or out of order")
+        raise SystemExit(f"{source_path} manuscript boundaries are missing or out of order")
 
     body = source[body_start:body_end]
     heading_pattern = re.compile(
