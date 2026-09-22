@@ -5,10 +5,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useWorkspace } from "@/workspace/context";
 import type { WorkbenchSurface, WorkbenchTabType } from "./model";
 import { useWorkbenchRuntime } from "./runtime";
 
-export type LauncherEntry = { group: "Files" | "Git" | "Tools" | "Workspace"; label: string; type?: WorkbenchTabType; disabled?: boolean };
+export type LauncherEntry = {
+  group: "Files" | "Git" | "Tools" | "Workspace";
+  label: string;
+  type?: WorkbenchTabType;
+  workspaceAction?: "open" | "recent";
+};
 
 export const LAUNCHER_ENTRIES: LauncherEntry[] = [
   { group: "Files", label: "Editor", type: "editor" },
@@ -19,12 +25,13 @@ export const LAUNCHER_ENTRIES: LauncherEntry[] = [
   { group: "Tools", label: "Problems", type: "problems" },
   { group: "Tools", label: "Output", type: "output" },
   { group: "Tools", label: "Settings", type: "settings" },
-  { group: "Workspace", label: "Open Repository", disabled: true },
-  { group: "Workspace", label: "Recent Workspaces", disabled: true },
+  { group: "Workspace", label: "Open Repository", workspaceAction: "open" },
+  { group: "Workspace", label: "Recent Workspaces", workspaceAction: "recent" },
 ];
 
 export function LauncherButton({ surface }: { surface: WorkbenchSurface }) {
   const runtime = useWorkbenchRuntime();
+  const workspace = useWorkspace();
   const groups = ["Files", "Git", "Tools", "Workspace"] as const;
   return (
     <DropdownMenu>
@@ -38,8 +45,11 @@ export function LauncherButton({ surface }: { surface: WorkbenchSurface }) {
             {LAUNCHER_ENTRIES.filter((entry) => entry.group === group).map((entry) => (
               <DropdownMenuItem
                 key={entry.label}
-                disabled={entry.disabled}
-                onSelect={() => entry.type && runtime.openTab(entry.type, surface)}
+                disabled={entry.workspaceAction === "recent" && workspace.recent.length === 0}
+                onSelect={() => {
+                  if (entry.type) runtime.openTab(entry.type, surface);
+                  if (entry.workspaceAction) workspace.setDialogOpen(true);
+                }}
               >
                 {entry.label}
               </DropdownMenuItem>

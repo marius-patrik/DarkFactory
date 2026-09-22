@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PanelBottom, PanelLeft, PanelRight, UserRound } from "lucide-react";
+import { Github, PanelBottom, PanelLeft, PanelRight, UserRound } from "lucide-react";
 import { useWorkbenchSettings, type AppearanceMode } from "@/settings";
+import { useWorkspace } from "@/workspace/context";
 import { useWorkbenchShortcuts } from "./commands";
 import type { PersistedWorkbench, SplitDirection, WorkbenchSurface, WorkbenchTab, WorkbenchTabType } from "./model";
 import { createWorkbenchTab, tabDefinition } from "./registry";
@@ -18,6 +19,7 @@ function paramsOf(panel: any): WorkbenchTab | null {
 
 export function WorkbenchShell() {
   const { settings, setSetting } = useWorkbenchSettings();
+  const workspace = useWorkspace();
   const [initial] = useState(() => loadWorkbench(settings.theme));
   const [visibility, setVisibility] = useState<Record<WorkbenchSurface, boolean>>(() => ({
     primary: initial.surfaces.primary.visible,
@@ -75,12 +77,17 @@ export function WorkbenchShell() {
 
   const openTab = useCallback((type: WorkbenchTabType, requestedSurface?: WorkbenchSurface, state?: Record<string, unknown>) => {
     const definition = tabDefinition(type);
-    if (definition.singleton) {
+    const resource = typeof state?.path === "string" ? state.path : undefined;
+    if (definition.singleton || resource) {
       for (const surface of SURFACES) {
         const api = apis.current.get(surface);
         for (const panel of api?.panels ?? []) {
           const existing = paramsOf(panel);
-          if (existing?.type === type) {
+          if (
+            existing &&
+            ((definition.singleton && existing.type === type) ||
+              (resource && existing.type === type && existing.resource === resource))
+          ) {
             if (surface !== "main") setSurfaceVisible(surface, true);
             panel.api?.setActive?.();
             return;
@@ -91,7 +98,8 @@ export function WorkbenchShell() {
     const surface = requestedSurface ?? definition.defaultSurface;
     const api = apis.current.get(surface);
     if (!api) return;
-    const tab = createWorkbenchTab(type, { state });
+    const title = resource ? resource.split("/").at(-1) || definition.title : undefined;
+    const tab = createWorkbenchTab(type, { state, resource, title });
     if (surface !== "main") setSurfaceVisible(surface, true);
     const panel = api.addPanel({ id: tab.id, component: "workbench", tabComponent: "workbenchTab", title: tab.title, params: tab, renderer: "always" });
     panel.api?.setActive?.();
@@ -200,9 +208,42 @@ export function WorkbenchShell() {
     <WorkbenchRuntimeContext.Provider value={runtime}>
       <div className={`workbench-shell${visibility.primary ? "" : " primary-collapsed"}${visibility.secondary ? "" : " secondary-collapsed"}${visibility.panel ? "" : " panel-collapsed"}`}>
         <header className="workbench-header">
-          <div className="workspace-identity"><strong>Repository</strong><span>no workspace</span><span className="workspace-ref">ref —</span></div>
+          <div className="workspace-identity">
+            <button type="button" className="workspace-repository-button" onClick={() => workspace.setDialogOpen(true)}>
+              <Github size={13} />
+              <strong>{workspace.workspace?.repository.fullName || "Open Repository"}</strong>
+            </button>
+            {workspace.workspace ? (
+              <select
+                className="workspace-ref-select"
+                value={workspace.workspace.ref}
+                onChange={(event) => void workspace.switchRef(event.target.value)}
+                aria-label="Repository ref"
+              >
+                {!workspace.refs.some((ref) => ref.name === workspace.workspace?.ref) && (
+                  <option value={workspace.workspace.ref}>{workspace.workspace.ref}</option>
+                )}
+                {workspace.refs.map((ref) => (
+                  <option key={`${ref.kind}:${ref.name}`} value={ref.name}>
+                    {ref.kind === "tag" ? "tag: " : ""}{ref.name}
+                  </option>
+                ))}
+              </select>
+            ) : <span className="workspace-ref">ref —</span>}
+          </div>
           <Omnibar ref={omnibarRef} />
-          <div className="shell-actions"><button type="button" className="account-placeholder" disabled><UserRound size={14} /><span>Sign in</span></button></div>
+          <div className="shell-actions">
+            <button
+              type="button"
+              className="account-placeholder"
+              disabled={!workspace.user && !workspace.authConfigured}
+              onClick={() => workspace.user ? workspace.signOut() : void workspace.signIn()}
+              title={workspace.user ? "Sign out" : workspace.authConfigured ? "Sign in with GitHub" : "Set PUBLIC_GITHUB_CLIENT_ID to enable GitHub sign-in"}
+            >
+              {workspace.user ? <img src={workspace.user.avatar_url} alt="" /> : <UserRound size={14} />}
+              <span>{workspace.user?.login || "Sign in"}</span>
+            </button>
+          </div>
         </header>
         <div className="workbench-center">
           <aside className="root-surface root-primary"><WorkbenchSurfaceView surface="primary" restoredLayout={initial.surfaces.primary.layout} defaultTabs={defaults.primary} onReady={registerSurface} /></aside>
@@ -211,7 +252,7 @@ export function WorkbenchShell() {
         </div>
         <section className="root-surface root-panel"><WorkbenchSurfaceView surface="panel" restoredLayout={initial.surfaces.panel.layout} defaultTabs={defaults.panel} onReady={registerSurface} /></section>
         <footer className="workbench-statusbar">
-          <span>Workbench</span>
+          <span>{workspace.workspace ? `${workspace.workspace.repository.fullName} · ${workspace.overlays.length} local change${workspace.overlays.length === 1 ? "" : "s"}` : "Workbench"}</span>
           <div>
             <button type="button" aria-pressed={visibility.primary} onClick={() => toggleSurface("primary")} title="Toggle Primary Sidebar (Cmd/Ctrl+B)"><PanelLeft size={13} /></button>
             <button type="button" aria-pressed={visibility.panel} onClick={() => toggleSurface("panel")} title="Toggle Panel (Cmd/Ctrl+J)"><PanelBottom size={13} /></button>

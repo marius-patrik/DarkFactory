@@ -57,7 +57,13 @@ export function tabDefinition(type: WorkbenchTabType) {
 
 export function createWorkbenchTab(
   type: WorkbenchTabType,
-  options: { id?: string; pinned?: boolean; state?: Record<string, unknown>; title?: string } = {},
+  options: {
+    id?: string;
+    pinned?: boolean;
+    state?: Record<string, unknown>;
+    title?: string;
+    resource?: string;
+  } = {},
 ): WorkbenchTab {
   const definition = tabDefinition(type);
   return {
@@ -65,6 +71,7 @@ export function createWorkbenchTab(
     type,
     title: options.title ?? definition.title,
     icon: definition.icon,
+    resource: options.resource,
     pinned: options.pinned ?? false,
     state: { ...(definition.initialState?.() ?? {}), ...(options.state ?? {}) },
   };
