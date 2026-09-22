@@ -22,7 +22,7 @@ This file is a parking lot for requests that are not part of the active thesis p
 
 ### Thesis-wide closure
 
-Deferred final manuscript-content pass after the active plan reaches its Phase 3 exit.
+Deferred final manuscript-content pass after the active plan reaches its current-plan exit.
 
 Scope:
 - deduplicate across Introduction / Theory / Practical / DarkFactory / Results;
