@@ -138,7 +138,9 @@ Treat §3.1 as stable unless a concrete factual/source/build defect is found.
 Workflow Graph and Swarm belong under Practical / Agentic Engineering, not Theory.
 
 ### DarkFactory
-Generated/current DarkFactory documentation is the architecture/system-description authority for 3.2. Do not build a competing manual architecture narrative.
+DarkFactory integration is intentionally backlogged for now. Do not begin §3.2 or implementation-evidence pinning from the active plan.
+
+When promoted, generated/current DarkFactory documentation is the architecture/system-description authority for 3.2. Do not build a competing manual architecture narrative.
 
 ## School contract
 
@@ -146,43 +148,53 @@ Use `SCHOOL_RULES.md` for any school-sensitive decision.
 
 Do not substitute IVT maturita-topic requirements for Odborná-práce rules.
 
-Final school-guide audit and publication QA are deferred in `BACKLOG.md`.
+The direct school-guide text audit is active in Phase 2 below. Final publication QA remains deferred in `BACKLOG.md`.
 
 ## Remaining execution
 
-### Phase 1 — Integrate DarkFactory and pin implementation evidence — NEXT
+### Phase 1 — Remove encyclopedia / term index — NEXT
 
-Complete 3.2 and prepare evaluation inputs in one pass.
-
-Scope:
-- pin the exact DarkFactory revision;
-- generate/fetch the canonical DarkFactory documentation;
-- integrate the canonical architecture/system description into 3.2;
-- connect 3.1 practices to their concrete DarkFactory realization where useful;
-- avoid parallel manual lifecycle/architecture prose;
-- pin target repository revisions, workflow runs, docs snapshot, and other implementation evidence needed by Chapter 4;
-- produce an internal evidence map from planned research questions/results sections to concrete artifacts.
-
-Exit:
-- 3.2 is complete and reproducible;
-- implementation/evaluation evidence is pinned before Results writing begins.
-
-### Phase 2 — Research frame + Results and discussion
-
-Align the research frame to the actual implementation/evidence, then write the evaluation without another separate framing pass.
+Remove the standalone **Encyklopedie / rejstřík pojmů** from the thesis now, before further manuscript expansion.
 
 Scope:
-- finalize 1.2–1.6, including goals, subgoals, RQs, methodology, and structure;
-- change 1.1 only where required for consistency;
-- ensure every RQ maps to collected evidence;
-- write 4.1–4.5 from the pinned evidence;
-- answer RQs explicitly;
-- separate observed results from interpretation and limitations;
-- do not use Chapter 4 to re-explain architecture.
+- remove the encyclopedia/glossary/index-of-terms heading and generated entries;
+- remove navigation, index references, backlinks, and back-matter plumbing used only for that section;
+- preserve ordinary front-matter keywords and normal in-text terminology;
+- do not replace it with another glossary;
+- reconcile printed Contents, web/content structure, back matter, and validators;
+- keep Theory, §3.1, §3.2, Results, and school formatting substantively unchanged.
 
 Exit:
-- introduction/research frame and evaluation are mutually consistent;
-- every RQ is answerable and answered.
+- no standalone encyclopedia/term index remains in any canonical output;
+- no dead links, generated entries, or validator assumptions remain;
+- all canonical manuscript/site builds still pass.
+
+### Phase 2 — Direct Odborná-práce guide audit and school-contract reconciliation
+
+Replace the remaining recovered/template-inferred school assumptions with a direct-text audit of the actual school guide.
+
+Primary source already identified in `SCHOOL_RULES.md`:
+- `marius-patrik/OdbornaPrace-mono/docs/Pruvodce-tvorbou-odborne-prace-2024.pdf`
+
+Scope:
+- inspect the guide itself directly, not only the archived template or README;
+- verify the exact declaration wording;
+- verify annotation requirements;
+- verify the required bibliography heading;
+- determine whether English annotation/keywords are mandatory;
+- verify submission artifact requirements;
+- verify any minimum/maximum page or word-count rule;
+- verify any similarity/plagiarism rule or threshold;
+- capture any other Odborná-práce requirements not represented by the archived template;
+- reconcile `SCHOOL_RULES.md` so it clearly distinguishes verified requirements from any still-unresolved evidence;
+- do not import IVT maturita-topic requirements into the Odborná-práce contract;
+- make only structural manuscript corrections that are unquestionably required by the verified guide and independent of unfinished DarkFactory/Results content.
+
+Exit:
+- `SCHOOL_RULES.md` is grounded directly in the actual guide text rather than relying on unresolved recovered assumptions;
+- every previously listed exact-guide uncertainty is resolved where the guide supports an answer;
+- any genuinely unsupported item is explicitly marked unsupported rather than guessed;
+- final publication QA can later operate from a verified school contract.
 
 ## Current-plan exit
 
@@ -191,9 +203,9 @@ The active plan ends after Phase 2.
 At that checkpoint:
 - Theory is complete;
 - Practical Agentic Engineering is complete;
-- DarkFactory is integrated from canonical documentation;
-- implementation/evaluation evidence is pinned;
-- goals, methodology, and research questions are aligned to the evidence;
-- Results and discussion are written and answer the research questions.
+- the standalone encyclopedia / term index is removed;
+- the Odborná-práce school contract has been directly audited and reconciled;
+- DarkFactory integration/evidence pinning remains intentionally backlogged;
+- Results/research-frame completion remains downstream of the backlogged DarkFactory evidence phase;
+- thesis-wide closure and final publication QA remain deferred in `BACKLOG.md`.
 
-Thesis-wide closure, encyclopedia removal, final annotations/keywords/bibliography cleanup, and Odborná-práce publication QA remain deferred in `BACKLOG.md`.
