@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SettingsView } from "@/settings-view";
 import { BrowserTab } from "@/tabs/browser-tab";
 import { DocumentTab } from "@/tabs/document-tab";
+import { DiffTab } from "@/tabs/diff-tab";
 import { EditorTab } from "@/tabs/editor-tab";
 import { ExplorerTab } from "@/tabs/explorer-tab";
 import { OutputTab } from "@/tabs/output-tab";
@@ -94,6 +95,7 @@ function RegisteredTabContent({ tab }: { tab: WorkbenchTab }): ReactNode {
     case "output": return <OutputTab />;
     case "settings": return <SettingsView settings={runtime.settings} onThemeChange={runtime.setTheme} />;
     case "document": return <DocumentTab />;
+    case "diff": return <DiffTab tab={tab} theme={runtime.settings.theme} />;
     default: return <UnavailableTab title={tab.title} />;
   }
 }

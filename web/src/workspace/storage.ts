@@ -1,10 +1,17 @@
-import type { WorkspaceSnapshot, WorkingFile } from "./model";
+import type {
+  CommittedFile,
+  LocalCommit,
+  StagedFile,
+  WorkspaceSnapshot,
+  WorkingFile,
+} from "./model";
 
 const DATABASE = "darkfactory-workbench";
-const VERSION = 1;
+const VERSION = 2;
 const RECENT_KEY = "workbench-recent-workspaces-v1";
 
 type BlobRecord = { key: string; workspaceId: string; sha: string; content: string; updatedAt: number };
+type StoreName = "workspaces" | "blobs" | "overlays" | "staged" | "committed" | "commits";
 
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -20,6 +27,15 @@ function openDatabase() {
       if (!database.objectStoreNames.contains("overlays")) {
         database.createObjectStore("overlays", { keyPath: "key" });
       }
+      if (!database.objectStoreNames.contains("staged")) {
+        database.createObjectStore("staged", { keyPath: "key" });
+      }
+      if (!database.objectStoreNames.contains("committed")) {
+        database.createObjectStore("committed", { keyPath: "key" });
+      }
+      if (!database.objectStoreNames.contains("commits")) {
+        database.createObjectStore("commits", { keyPath: "id" });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("IndexedDB open failed"));
@@ -34,7 +50,7 @@ function requestResult<T>(request: IDBRequest<T>) {
 }
 
 async function withStore<T>(
-  name: "workspaces" | "blobs" | "overlays",
+  name: StoreName,
   mode: IDBTransactionMode,
   action: (store: IDBObjectStore) => IDBRequest<T>,
 ) {
@@ -45,6 +61,11 @@ async function withStore<T>(
   } finally {
     database.close();
   }
+}
+
+async function allForWorkspace<T extends { workspaceId: string }>(name: StoreName, workspaceId: string) {
+  const all = await withStore<T[]>(name, "readonly", (store) => store.getAll());
+  return all.filter((item) => item.workspaceId === workspaceId);
 }
 
 export function saveWorkspace(snapshot: WorkspaceSnapshot) {
@@ -84,9 +105,80 @@ export async function removeOverlay(workspaceId: string, path: string) {
   await withStore("overlays", "readwrite", (store) => store.delete(`${workspaceId}:${path}`));
 }
 
-export async function loadOverlays(workspaceId: string) {
-  const all = await withStore<WorkingFile[]>("overlays", "readonly", (store) => store.getAll());
-  return all.filter((file) => file.workspaceId === workspaceId);
+export function loadOverlays(workspaceId: string) {
+  return allForWorkspace<WorkingFile>("overlays", workspaceId);
+}
+
+export async function saveStaged(file: StagedFile) {
+  await withStore("staged", "readwrite", (store) => store.put(file));
+}
+
+export async function removeStaged(workspaceId: string, path: string) {
+  await withStore("staged", "readwrite", (store) => store.delete(`${workspaceId}:${path}`));
+}
+
+export function loadStaged(workspaceId: string) {
+  return allForWorkspace<StagedFile>("staged", workspaceId);
+}
+
+export async function saveCommittedFile(file: CommittedFile) {
+  await withStore("committed", "readwrite", (store) => store.put(file));
+}
+
+export async function removeCommittedFile(workspaceId: string, path: string) {
+  await withStore("committed", "readwrite", (store) => store.delete(`${workspaceId}:${path}`));
+}
+
+export function loadCommittedFiles(workspaceId: string) {
+  return allForWorkspace<CommittedFile>("committed", workspaceId);
+}
+
+export async function saveLocalCommit(commit: LocalCommit) {
+  await withStore("commits", "readwrite", (store) => store.put(commit));
+}
+
+export async function removeLocalCommit(id: string) {
+  await withStore("commits", "readwrite", (store) => store.delete(id));
+}
+
+export async function loadLocalCommits(workspaceId: string) {
+  const commits = await allForWorkspace<LocalCommit>("commits", workspaceId);
+  return commits.sort((left, right) => left.createdAt - right.createdAt);
+}
+
+async function clearStoreForWorkspace<T extends { key?: string; id?: string; workspaceId: string }>(
+  name: StoreName,
+  workspaceId: string,
+) {
+  const items = await allForWorkspace<T>(name, workspaceId);
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(name, "readwrite");
+    const store = transaction.objectStore(name);
+    for (const item of items) {
+      const key = item.key ?? item.id;
+      if (key) store.delete(key);
+    }
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB transaction failed"));
+      transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    });
+  } finally {
+    database.close();
+  }
+}
+
+export async function clearStaged(workspaceId: string) {
+  await clearStoreForWorkspace<StagedFile>("staged", workspaceId);
+}
+
+export async function clearLocalGitState(workspaceId: string) {
+  await Promise.all([
+    clearStoreForWorkspace<StagedFile>("staged", workspaceId),
+    clearStoreForWorkspace<CommittedFile>("committed", workspaceId),
+    clearStoreForWorkspace<LocalCommit>("commits", workspaceId),
+  ]);
 }
 
 export function loadRecentWorkspaces() {

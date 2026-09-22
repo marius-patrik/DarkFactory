@@ -14,7 +14,7 @@ import type { GithubTreeEntry } from "@/github/client";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
 import { useWorkspace } from "@/workspace/context";
 import { languageForPath } from "@/workspace/languages";
-import type { WorkingFile, WorkingFileStatus } from "@/workspace/model";
+import type { CommittedFile, WorkingFile, WorkingFileStatus } from "@/workspace/model";
 
 type ExplorerNode = {
   name: string;
@@ -30,7 +30,7 @@ type MutableNode = Omit<ExplorerNode, "children"> & {
   childrenByName: Map<string, MutableNode>;
 };
 
-function buildExplorerTree(tree: GithubTreeEntry[], overlays: WorkingFile[]) {
+function buildExplorerTree(tree: GithubTreeEntry[], committedFiles: CommittedFile[], overlays: WorkingFile[]) {
   const overlayByPath = new Map(overlays.map((file) => [file.path, file]));
   const records = new Map<string, { kind: ExplorerNode["kind"]; sha?: string; status?: WorkingFileStatus | null }>();
 
@@ -38,8 +38,12 @@ function buildExplorerTree(tree: GithubTreeEntry[], overlays: WorkingFile[]) {
     records.set(entry.path, {
       kind: entry.type === "tree" ? "directory" : entry.type === "commit" ? "submodule" : "file",
       sha: entry.sha,
-      status: overlayByPath.get(entry.path)?.status ?? null,
+      status: null,
     });
+  }
+  for (const committed of committedFiles) {
+    if (committed.deleted) records.delete(committed.path);
+    else records.set(committed.path, { kind: "file", sha: committed.baseSha, status: null });
   }
   for (const overlay of overlays) {
     if (!records.has(overlay.path) || overlay.status === "renamed" || overlay.status === "added") {
@@ -206,8 +210,10 @@ export function ExplorerTab() {
   const workspace = useWorkspace();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const entries = useMemo(
-    () => workspace.workspace ? buildExplorerTree(workspace.workspace.tree, workspace.overlays) : [],
-    [workspace.overlays, workspace.workspace],
+    () => workspace.workspace
+      ? buildExplorerTree(workspace.workspace.tree, workspace.committedFiles, workspace.overlays)
+      : [],
+    [workspace.committedFiles, workspace.overlays, workspace.workspace],
   );
 
   if (!workspace.workspace) {

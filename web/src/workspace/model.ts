@@ -35,12 +35,37 @@ export type WorkingFile = {
   updatedAt: number;
 };
 
+export type StagedFile = WorkingFile & {
+  stagedAt: number;
+};
+
+export type CommittedFile = {
+  key: string;
+  workspaceId: string;
+  path: string;
+  content?: string;
+  deleted: boolean;
+  baseSha?: string;
+  updatedAt: number;
+};
+
+export type LocalCommit = {
+  id: string;
+  workspaceId: string;
+  message: string;
+  createdAt: number;
+  files: WorkingFile[];
+};
+
 export type WorkspaceState = {
   authToken: string | null;
   user: GithubUser | null;
   workspace: WorkspaceSnapshot | null;
   refs: GithubRef[];
   overlays: WorkingFile[];
+  staged: StagedFile[];
+  committedFiles: CommittedFile[];
+  commits: LocalCommit[];
   recent: WorkspaceSnapshot[];
   loading: boolean;
   error: string | null;
