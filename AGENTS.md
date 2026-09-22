@@ -23,6 +23,7 @@ Document hierarchy and semantic vocabulary are separate.
 - Concept = unnumbered semantic article visible in the contents.
 - A structural section may itself own a semantic term when duplicating it as an article would add no meaning. Harness and Agentické inženýrství use this mechanism.
 - Semantic relations are independent of folder nesting.
+- Manifest sequence is the only article reading order; semantic dependencies and parent/child relations never reorder sections, concepts, or examples.
 - Supported relation types: `dependency`, `related`, `parent`, `child`.
 - Do not create a concept merely because an implementation type/package exists.
 - Do not preserve a concept because it existed historically. Every article must own unique semantic meaning.
