@@ -148,7 +148,7 @@ A direct-text audit of the school guide may run independently of manuscript edit
 
 ## Remaining execution
 
-### Phase 1 — Complete Theory: Harness — NEXT
+### Phase 1 — Complete Theory: Harness — ACTIVE NOW
 
 Finish 2.2 in one pass.
 
