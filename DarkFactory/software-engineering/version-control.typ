@@ -8,10 +8,10 @@
   citation: bib.chacon2014,
   source: bib.chacon2014,
   definition: terms => [
-Systém pro zaznamenávání historie změn souborů a práci s oddělenými liniemi vývoje. #cite(bib.chacon2014)
+Systém pro zaznamenávání a porovnávání historie změn souborů v čase. #cite(bib.chacon2014)
   ],
   description: terms => [
-Historie commitů umožňuje změny porovnávat, vracet a slučovat; větve umožňují oddělit souběžnou práci před integrací. #cite(bib.chacon2014)
+Uložená historie umožňuje identifikovat původ změny, vracet se k předchozím stavům a slučovat samostatně vzniklé změny. #cite(bib.chacon2014)
   ],
   relations: ((type: "related", target: "branch"),),
 )
