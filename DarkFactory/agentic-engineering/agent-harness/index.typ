@@ -55,7 +55,7 @@
 )
 
 #let node = folder(
-  key: "harness_section",
+  key: "harness",
   section: section.item,
   children: (
     state_loop,

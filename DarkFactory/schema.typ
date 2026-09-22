@@ -224,8 +224,8 @@
 }
 
 #let order-folders(nodes, graph) = {
-  // Structural order is explicit in each folder manifest. Semantic dependencies
-  // order concepts inside a section, not numbered document sections.
+  // Structural and semantic article order is explicit in each folder manifest.
+  // Semantic relations are validated metadata and never reorder the document.
   nodes
 }
 

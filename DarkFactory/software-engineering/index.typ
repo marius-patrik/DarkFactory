@@ -98,7 +98,7 @@
 )
 
 #let node = folder(
-  key: "ai_assisted_agentic_engineering",
+  key: "agentic_engineering",
   section: section.item,
   children: (
     specification,

@@ -12,7 +12,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 PUBLICATION = {
-    "title": "DarkFactory",
+    "title": "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
     "final": "prace.pdf",
     "review": "prace-review.pdf",
     "artifacts": {
@@ -37,7 +37,7 @@ parser.add_argument(
 args = parser.parse_args()
 BOOK_ROOT = Path(args.book)
 DEFAULT_TEMPLATE = args.default_template
-WORK_TITLE = args.book
+WORK_TITLE = PUBLICATION["title"]
 
 template_names = sorted(
     path.parent.name for path in (BOOK_ROOT / "templates").glob("*/template.typ")
