@@ -340,9 +340,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--typst", default="typst")
     parser.add_argument("--font-path", action="append", default=[])
-    parser.add_argument("--book", required=True)
-    parser.add_argument("--template", required=True)
-    parser.add_argument("--source", default="web-publication.typ")
+    parser.add_argument("--book", default="DarkFactory")
+    parser.add_argument("--template", default="gjkt-odborna-prace")
+    parser.add_argument("--source", default="main.typ")
     parser.add_argument("--output-dir", default="out")
     args = parser.parse_args()
 

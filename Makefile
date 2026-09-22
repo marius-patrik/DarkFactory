@@ -43,34 +43,21 @@ external-assets:
 
 build: external-assets
 	@mkdir -p $(OUT_DIR)
-	$(TYPST) compile $(FONTS) --input book=$(BOOK) --input template=$(TEMPLATE) $(MAIN) $(OUT_FINAL)
+	$(TYPST) compile $(FONTS) $(MAIN) $(OUT_FINAL)
 
 review: external-assets
-	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --book "$(BOOK)" --font-path "$(BOOK_ROOT)/fonts" --template "$(TEMPLATE)" --main "$(MAIN)" --output "$(OUT_REVIEW)"
+	$(PYTHON) scripts/build_review.py --typst "$(TYPST)" --font-path "$(BOOK_ROOT)/fonts" --main "$(MAIN)" --output "$(OUT_REVIEW)"
 
 exports: external-assets
-	$(PYTHON) scripts/build_web_exports.py --typst "$(TYPST)" --book "$(BOOK)" --font-path "$(BOOK_ROOT)/fonts" --template "$(TEMPLATE)" --source "$(WEB_SOURCE)" --output-dir "$(OUT_DIR)"
+	$(PYTHON) scripts/build_web_exports.py --typst "$(TYPST)" --font-path "$(BOOK_ROOT)/fonts" --source "$(MAIN)" --output-dir "$(OUT_DIR)"
 
 all: build review exports
 
-all-templates:
-	@set -e; for template in $(TEMPLATES); do \
-		echo "==> building $(BOOK) template $$template"; \
-		$(MAKE) all BOOK=$(BOOK) TEMPLATE=$$template OUT_DIR=$(OUT_DIR)/templates/$$template; \
-	done
+all-templates: build review exports
 
-all-books:
-	@set -e; for book in $(BOOKS); do \
-		echo "==> building book $$book"; \
-		$(MAKE) all-templates BOOK=$$book OUT_DIR=out/books/$$book; \
-	done
+all-books: all-templates
 
-template-check: external-assets
-	@mkdir -p $(OUT_DIR)/template-check
-	@set -e; for template in $(TEMPLATES); do \
-		echo "==> checking $(BOOK) template $$template"; \
-		$(TYPST) compile $(FONTS) --input book=$(BOOK) --input template=$$template $(MAIN) $(OUT_DIR)/template-check/$$template.pdf; \
-	done
+template-check: build
 
 consolidate: external-assets
 	$(PYTHON) scripts/consolidate_paper.py --book $(BOOK) --output $(MAIN) --compile

@@ -39,11 +39,11 @@ BOOK_ROOT = Path(args.book)
 DEFAULT_TEMPLATE = args.default_template
 WORK_TITLE = PUBLICATION["title"]
 
-template_names = sorted(
-    path.parent.name for path in (BOOK_ROOT / "templates").glob("*/template.typ")
-)
-if not template_names:
-    raise SystemExit("no templates discovered")
+template_paths = sorted((BOOK_ROOT / "templates").glob("*/template.typ"))
+if template_paths:
+    template_names = sorted(path.parent.name for path in template_paths)
+else:
+    template_names = [DEFAULT_TEMPLATE]
 
 for required in (WEB_DIST / "index.html", WEB_DIST / "viewer.html"):
     if not required.is_file():
