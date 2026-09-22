@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PdfDocumentView } from "@/pdf-document";
 import {
-  rendererCapabilityForPath,
+  resourceCapabilityForPath,
   type RendererCapabilityId,
 } from "./capabilities";
 
@@ -114,6 +114,6 @@ export function RenderedResource({
       </div>
     );
   }
-  const capability = rendererCapabilityForPath(path);
-  return renderCapability(capability.id, path, snapshot, objectUrl);
+  const capability = resourceCapabilityForPath(path);
+  return renderCapability(capability.renderer, path, snapshot, objectUrl);
 }

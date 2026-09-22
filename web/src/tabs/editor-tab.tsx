@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Editor, { DiffEditor } from "@monaco-editor/react";
+import { registerCapabilityLanguages } from "@/capabilities/monaco";
 import type { AppearanceMode } from "@/settings";
 import { useWorkspace } from "@/workspace/context";
 import { languageForPath } from "@/workspace/languages";
@@ -111,6 +112,7 @@ export function EditorTab({
       body = (
         <DiffEditor
           height="100%"
+          beforeMount={registerCapabilityLanguages}
           language={language}
           original={comparison.before.content}
           modified={comparison.after.content}
@@ -129,6 +131,7 @@ export function EditorTab({
       <Editor
         key={workspace.workspace ? `${workspace.workspace.id}:${path}` : tab.id}
         height="100%"
+        beforeMount={registerCapabilityLanguages}
         path={workspace.workspace ? `${workspace.workspace.id}/${path}` : tab.id}
         language={language}
         value={value}
