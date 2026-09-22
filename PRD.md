@@ -178,6 +178,19 @@ The paper contains the school-level macrostructure:
 
 The detailed hierarchy is determined by the thesis direction and requirements in this PRD, while `GOAL.md` defines the overall final-paper quality bar.
 
+### Presentation requirements
+
+The intended reading rhythm should make major sections visually distinct and paragraphs clearly separated.
+
+Target presentation:
+- every level-1 section begins on a new page;
+- every level-2 section begins on a new page;
+- ordinary prose paragraphs use a visible first-line indent comparable to a conventional tab stop;
+- spacing between paragraphs is materially larger than the spacing between lines within a paragraph;
+- paragraph spacing and first-line indentation should create clear paragraph boundaries without turning the page into a loose web/documentation layout.
+
+The current working school contract in `SCHOOL_RULES.md` still records no first-line indent and 8 pt paragraph spacing. That conflict must be resolved from the direct school guide before final submission. Until then, treat the above as the authorial presentation target and preserve the conflict explicitly rather than silently making the documents disagree.
+
 ### Content quality
 
 The manuscript must:
@@ -422,9 +435,11 @@ The final repository should contain only active product code, data, assets, docu
 Coordination ownership is:
 - `GOAL.md` — final-paper quality objective;
 - `PRD.md` — finished product contract;
-- `PLAN.md` — execution;
-- `AGENTS.md` — contributor rules;
-- `SCHOOL_RULES.md` — verified school contract;
+- `PLAN.md` — roadmap, workstreams, sequencing, and phase gates;
+- `TODO.md` — current and next actionable coordination work;
+- `BACKLOG.md` — accepted but intentionally deferred work;
+- `AGENTS.md` — contributor rules and document ownership;
+- `SCHOOL_RULES.md` — verified school contract and unresolved compliance conflicts;
 - `web/PLAN.md` — IDE implementation workstream.
 
 ## Non-goals

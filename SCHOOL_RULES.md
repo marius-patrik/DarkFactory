@@ -41,6 +41,15 @@ A newer school-issued guide supersedes the 2024 guide if one is located during f
 | Results/discussion | factual results followed by interpretation/comparison/limitations |
 | Conclusion | returns to objective and introduces no new information |
 
+## Authorial presentation target pending guide reconciliation
+
+The current authorial target for the paper is:
+- every level-1 and level-2 section begins on a new page;
+- ordinary body paragraphs use a visible first-line indent comparable to a conventional tab stop;
+- spacing between paragraphs is materially larger than spacing between lines within a paragraph.
+
+The first-line-indent and paragraph-spacing targets conflict with the current working-contract rows above (`none` and `8 pt`). Do not silently rewrite those rows as verified school requirements. Resolve the conflict directly from the authoritative school guide during the dedicated reconciliation phase.
+
 ## Direct guide-text reconciliation
 
 Before final submission, confirm directly from the school PDF:
@@ -54,6 +63,9 @@ Before final submission, confirm directly from the school PDF:
 - page/word limits;
 - similarity/plagiarism requirements;
 - exact pagination details;
+- whether level-1 and level-2 sections may/should always begin on new pages;
+- whether first-line paragraph indentation is permitted/required;
+- required or permitted paragraph spacing relative to 1.5 line spacing;
 - figure/table-list rules;
 - appendix/list-of-appendices rules;
 - any additional school requirement not represented above.

@@ -6,6 +6,10 @@
 
 This file defines the concrete repository work and sequencing required to satisfy the goal and product contract.
 
+`TODO.md` tracks the current/next actionable queue.
+
+`BACKLOG.md` tracks accepted work that is intentionally deferred until its prerequisite or phase gate is reached.
+
 ## Workstream A — Build the paper from the argument
 
 Primary files:
@@ -137,6 +141,10 @@ Actions:
 - keep only formatting helpers that make the source clearer;
 - keep review/comparison behavior outside the manuscript content model;
 - keep paragraphs normally breakable;
+- start every level-1 and level-2 section on a new page;
+- use a visible first-line paragraph indent as the authorial target;
+- make inter-paragraph spacing materially larger than intra-paragraph line spacing;
+- keep the first-line-indent / paragraph-spacing school-rule conflict explicit until direct guide reconciliation;
 - use conventional academic typography.
 
 The source should be easy to read as a manuscript file without understanding a secondary semantic framework.
@@ -342,7 +350,7 @@ Active until the theoretical and editorial foundation is stable enough that late
 - keep model theory proportionate to the runtime/engineering argument;
 - simplify `paper/PAPER.typ`;
 - curate bibliography/figures alongside the rewrite;
-- establish clean academic typography;
+- establish clean academic typography, including page starts for all level-1/2 sections and the intended paragraph rhythm;
 - keep Practical as a clean DarkFactory boundary until evidence is pinned;
 - keep validators editorially generic rather than hard-coding level-2/3 prose structure;
 - re-read the generated PDF end-to-end before accepting the phase.

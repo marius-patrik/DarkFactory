@@ -4,9 +4,13 @@
 
 `PRD.md` defines the finished repository/publication product contract.
 
-`PLAN.md` defines the concrete execution path.
+`PLAN.md` defines the roadmap, workstreams, sequencing, and phase gates.
 
-`SCHOOL_RULES.md` defines the school-compliance contract.
+`TODO.md` defines the current/next actionable queue.
+
+`BACKLOG.md` records accepted work that is intentionally deferred.
+
+`SCHOOL_RULES.md` defines the school-compliance contract and unresolved compliance conflicts.
 
 `web/PLAN.md` defines the independent generic IDE workstream.
 
@@ -36,7 +40,14 @@ Use:
 - original research/specifications and first-party documentation where appropriate;
 - verified DarkFactory implementation evidence for practical claims.
 
-Use `PRD.md` for product requirements and `PLAN.md` for sequencing/file ownership.
+Use:
+- `GOAL.md` for the final-paper quality standard;
+- `PRD.md` for durable product/thesis requirements;
+- `PLAN.md` for roadmap, sequencing, and workstream ownership;
+- `TODO.md` for current/next actionable work;
+- `BACKLOG.md` for deferred accepted work.
+
+When a durable decision changes, update the owning document rather than duplicating it elsewhere. Keep `README.md` aligned with this document model.
 
 ## Practical evidence
 
