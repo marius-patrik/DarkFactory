@@ -6,6 +6,27 @@
   (type: type, target: target)
 }
 
+#let example(
+  key: none,
+  title: none,
+  source: none,
+  description: none,
+  visual: none,
+  citations: (),
+) = {
+  assert(key != none, message: "example requires a stable key")
+  assert(description != none, message: "example requires a description")
+  (
+    kind: "example",
+    key: key,
+    title: title,
+    source: source,
+    description: description,
+    visual: visual,
+    citations: citations,
+  )
+}
+
 #let concept(
   key: none,
   term: none,
@@ -113,10 +134,14 @@
 }
 
 #let collect-concept(item) = {
-  let result = (item,)
-  for child in item.examples { result += collect-concept(child) }
-  for child in item.attachments { result += collect-concept(child) }
-  result
+  if item.kind == "example" {
+    ()
+  } else {
+    let result = (item,)
+    for child in item.examples { result += collect-concept(child) }
+    for child in item.attachments { result += collect-concept(child) }
+    result
+  }
 }
 
 #let collect-folder-concepts(node) = {
@@ -242,7 +267,14 @@
 }
 
 #let render-inline-example(item, terms, graph) = {
-  let output = if item.visual != none {
+  let output = if item.kind == "example" {
+    let body = (item.description)(terms)
+    if item.title != none {
+      [#block[#strong[#item.title.] #body]#label("example-" + item.key)]
+    } else {
+      [#block[#body]#label("example-" + item.key)]
+    }
+  } else if item.visual != none {
     [#block[#(item.description)(terms)]#label("concept-" + item.key)]
   } else {
     [
@@ -252,13 +284,16 @@
       #(item.description)(terms)
     ]
   }
+
   if item.visual != none { output += (item.visual)(terms) }
 
-  for example in order-local(item.examples, graph) {
-    output += render-inline-example(example, terms, graph)
-  }
-  for attachment in order-local(item.attachments, graph) {
-    output += render-inline-example(attachment, terms, graph)
+  if item.kind != "example" {
+    for example in order-local(item.examples, graph) {
+      output += render-inline-example(example, terms, graph)
+    }
+    for attachment in order-local(item.attachments, graph) {
+      output += render-inline-example(attachment, terms, graph)
+    }
   }
 
   let citations = render-citations(item)
@@ -283,11 +318,11 @@
     #(item.definition)(terms)
   ]
   output += (item.description)(terms)
-  if item.visual != none { output += (item.visual)(terms) }
 
   for example in order-local(item.examples, graph) {
     output += render-inline-example(example, terms, graph)
   }
+  if item.visual != none { output += (item.visual)(terms) }
   for attachment in order-local(item.attachments, graph) {
     output += render-concept(attachment, terms, graph, level: level + 1)
   }
@@ -307,10 +342,10 @@
     #(item.definition)(terms)
   ]
   output += (item.description)(terms)
-  if item.visual != none { output += (item.visual)(terms) }
   for example in order-local(item.examples, graph) {
     output += render-inline-example(example, terms, graph)
   }
+  if item.visual != none { output += (item.visual)(terms) }
   for attachment in order-local(item.attachments, graph) {
     output += render-inline-example(attachment, terms, graph)
   }
