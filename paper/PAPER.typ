@@ -17,13 +17,11 @@
 #let lewis2020rag = <lewis2020rag>
 #let jiang2023llmlingua = <jiang2023llmlingua>
 #let agache2020firecracker = <agache2020firecracker>
-#let mosqueira2023human = <mosqueira2023human>
 #let sennrich2016bpe = <sennrich2016bpe>
 #let mikolov2013word2vec = <mikolov2013word2vec>
 #let mikolov2013linguistic = <mikolov2013linguistic>
 #let mikolov2013compositionality = <mikolov2013compositionality>
 #let kwon2023pagedattention = <kwon2023pagedattention>
-#let wu2023autogen = <wu2023autogen>
 #let sommerville2016 = <sommerville2016>
 #let anthropic2024tooluse = <anthropic2024tooluse>
 #let karpathy2025vibecoding = <karpathy2025vibecoding>
@@ -31,7 +29,6 @@
 #let cambridge2026aislop = <cambridge2026aislop>
 #let agent_skills_spec = <agentskills-spec>
 #let anthropic_code_execution = <anthropic2026codeexecution>
-#let fowler2025sdd = <fowler2025sdd>
 #let coderabbit2026vibehistory = <coderabbit2026vibehistory>
 #let openai_agents_sessions = <openai-agents-sessions>
 #let openai_agents_guardrails = <openai-agents-guardrails>
@@ -70,12 +67,17 @@
 #let openai_model_providers = <openai-model-providers>
 #let openai_responses_temperature = <openai-responses-temperature>
 #let github_pull_request_reviews = <github-pull-request-reviews>
+#let github_spec_kit = <github-spec-kit>
+#let github_required_status_checks = <github-required-status-checks>
+#let openai_agents_hitl = <openai-agents-hitl>
+#let microsoft_agent_workflows = <microsoft-agent-workflows>
+#let microsoft_agent_looping = <microsoft-agent-looping>
+#let kimi_agent_swarm = <kimi-agent-swarm>
 #let openai_agents_md = <openai-agents-md>
 #let openai_customization_overview = <openai-customization-overview>
 #let claude_code_memory = <claude-code-memory>
 #let claude_code_settings = <claude-code-settings>
 #let claude_code_skills = <claude-code-skills>
-#let kimi_k25_agent_swarm = <kimi-k25-agent-swarm>
 #let openai_agents_sdk = <openai-agents-sdk>
 #let openai_agents_tools = <openai-agents-tools>
 #let openai_agents_run_state = <openai-agents-run-state>
@@ -98,13 +100,11 @@
   lewis2020rag: lewis2020rag,
   jiang2023llmlingua: jiang2023llmlingua,
   agache2020firecracker: agache2020firecracker,
-  mosqueira2023human: mosqueira2023human,
   sennrich2016bpe: sennrich2016bpe,
   mikolov2013word2vec: mikolov2013word2vec,
   mikolov2013linguistic: mikolov2013linguistic,
   mikolov2013compositionality: mikolov2013compositionality,
   kwon2023pagedattention: kwon2023pagedattention,
-  wu2023autogen: wu2023autogen,
   sommerville2016: sommerville2016,
   anthropic2024tooluse: anthropic2024tooluse,
   karpathy2025vibecoding: karpathy2025vibecoding,
@@ -112,7 +112,6 @@
   cambridge2026aislop: cambridge2026aislop,
   agent_skills_spec: agent_skills_spec,
   anthropic_code_execution: anthropic_code_execution,
-  fowler2025sdd: fowler2025sdd,
   coderabbit2026vibehistory: coderabbit2026vibehistory,
   openai_agents_sessions: openai_agents_sessions,
   openai_agents_guardrails: openai_agents_guardrails,
@@ -150,12 +149,17 @@
   openai_model_providers: openai_model_providers,
   openai_responses_temperature: openai_responses_temperature,
   github_pull_request_reviews: github_pull_request_reviews,
+  github_spec_kit: github_spec_kit,
+  github_required_status_checks: github_required_status_checks,
+  openai_agents_hitl: openai_agents_hitl,
+  microsoft_agent_workflows: microsoft_agent_workflows,
+  microsoft_agent_looping: microsoft_agent_looping,
+  kimi_agent_swarm: kimi_agent_swarm,
   openai_agents_md: openai_agents_md,
   openai_customization_overview: openai_customization_overview,
   claude_code_memory: claude_code_memory,
   claude_code_settings: claude_code_settings,
   claude_code_skills: claude_code_skills,
-  kimi_k25_agent_swarm: kimi_k25_agent_swarm,
   openai_agents_sdk: openai_agents_sdk,
   openai_agents_tools: openai_agents_tools,
   openai_agents_run_state: openai_agents_run_state,
@@ -1113,282 +1117,354 @@ Modelová inference poskytuje rozhodnutí nebo výstup pro aktuální krok. Harn
 Praktická část převádí teoretické mechanismy do způsobu práce se softwarem. Část 3.1 popisuje a zdůvodňuje postupy Agentického inženýrství; část 3.2 je vyhrazena jejich konkrétní realizaci v systému DarkFactory.
 
 #heading(level: 2)[Agentické inženýrství] <section-agentic_engineering>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  AI ve vývoji softwaru posouvá část práce od přímého psaní k zadávání, delegování a kontrole změn. Agentické inženýrství označuje návrh způsobu, jakým se schopnosti Harnessu skládají, omezují a koordinují tak, aby agent cíleně plnil delší úlohu. #cite(bib.anthropic_context_engineering)
+  Agentické inženýrství je softwarově-inženýrský způsob práce, který obaluje pravděpodobnostní rozhodování agenta explicitními artefakty, izolací změny, řízeným kontextem a ověřitelnými kontrolními body. Nezavádí nový běhový mechanismus vedle Harnessu; určuje, jak se mechanismy vysvětlené v části 2.2 skládají do kontrolovatelného vývojového procesu. #cite(bib.anthropic_context_engineering) #cite(bib.anthropic2024tooluse)
 ]
 
-Kapitola spojuje způsob formulace práce, řízení změny a nezávislé ověření kvality s návrhem instrukcí, kontextu, řízení chování a orchestrace agentů.
+Praktický postup v této kapitole sleduje jednu návaznost: nejprve vznikne explicitní zadání a plán, změna se provádí v izolované a dohledatelné historii, instrukce a kontext se dávkují podle aktuálního kroku, provedení je omezeno deterministickými pravidly, výsledek prochází objektivním ověřením a revizí a teprve tam, kde to rozsah úlohy odůvodňuje, se práce rozděluje mezi více agentů. Jednotlivé pojmy níže proto nejsou samostatnými slovníkovými položkami, ale stavebními prvky této metodiky.
 
-[#emph[Praktický význam:] Agentické inženýrství převádí obecné schopnosti modelu a Harnessu do opakovatelného vývojového procesu s explicitním zadáním, kontrolami, řízeným kontextem a koordinací práce.]
+[#emph[Praktický význam:] Schopný model ani Harness samy neurčují, co má být přijato jako správná změna. Agentické inženýrství převádí cíl člověka na sled artefaktů, omezení a důkazů, podle nichž lze práci řídit a zkontrolovat.]
 
 #heading(level: 3)[Zadání a způsob práce] <section-ai_assisted_specification>
+Dobrá agentní změna začíná dříve než editací kódu. Zadání musí oddělit požadovaný výsledek od předpokládané implementace, uvést omezení a ne-cíle a popsat, podle čeho bude dokončení poznatelné. Z takového zadání lze vytvořit plán a později provést revizi proti stejnému referenčnímu bodu místo hodnocení podle toho, zda výstup pouze působí dokončeně.
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vývoj řízený specifikací (Spec-Driven Development)] <concept-spec_driven_development>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí plánování, implementaci a ověřování změny. #cite(bib.fowler2025sdd)
+  Vývoj řízený specifikací je postup, ve kterém se požadované chování, omezení a akceptační podmínky zachytí jako explicitní specifikace dříve, než začne implementace, a tato specifikace zůstává referenčním bodem pro plánování i ověření.
 ]
 
-Specifikace odděluje požadované chování a omezení od konkrétní implementace a slouží jako společný referenční bod pro člověka i agenta. #cite(bib.fowler2025sdd)
+Mechanismus odděluje otázku „co má systém dělat“ od otázky „jak to bude implementováno“. Aktuální GitHub Spec Kit tento postup realizuje příkazy pro vytvoření specifikace, implementačního plánu a seznamu úloh; po implementaci přidává fázi convergence, která kontroluje soulad implementace se specifikací a plánem a vrací zjištěné odchylky k opravě. #cite(bib.github_spec_kit)
 
-[#emph[Praktický význam:] Specifikace dává agentovi explicitní cíl a akceptační podmínky, podle nichž lze plánovat kroky a ověřovat výsledek.]
+#block[#strong[GitHub Spec Kit.] Referenční workflow GitHubu vede úlohu přes `specify → plan → tasks → implement → converge`; před implementací lze vložit také clarification a checklist kroky. Specifikace je tedy verzovaný vstup pro další rozhodování, ne jednorázový prompt, který po zahájení práce ztratí význam. #cite(bib.github_spec_kit)] <example-spec_driven_development_spec_kit>
+
+[#emph[Praktický význam:] Specifikace má obsahovat takové podmínky, které lze při revizi nebo automatické kontrole znovu použít. Čím více důležitých požadavků zůstane pouze implicitních, tím více se přijetí změny opírá o úsudek modelu namísto dohledatelného kontraktu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Plánování (Planning)] <concept-planning>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Převod požadavku na explicitní kroky, závislosti a podmínky ověření před prováděním změn. #cite(bib.sommerville2016)
+  Plánování převádí specifikaci na pořadí kroků, závislosti, hranice změny a způsob ověření tak, aby bylo před provedením zřejmé, co se má měnit a jak budou výsledky jednotlivých kroků posouzeny. #cite(bib.sommerville2016)
 ]
 
-Plán rozděluje práci na kontrolovatelné části, určuje jejich pořadí a stanovuje podmínky, podle kterých lze posoudit dokončení. #cite(bib.sommerville2016)
+U agentní práce je plán současně řídicím artefaktem: dovoluje porovnávat průběh s očekávaným stavem a zmenšuje potřebu znovu odvozovat původní záměr z dlouhého přepisu. GitHub Spec Kit například odvozuje technický plan a následné tasks ze schválené specifikace, takže implementační kroky zachovávají vazbu na původní požadavek. #cite(bib.github_spec_kit)
 
-[#emph[Praktický význam:] Plánování převádí zadání na pořadí kroků a podmínky ověření, podle nichž může agent postupovat a průběžně kontrolovat dokončení.]
+#block[#strong[Plán před implementací.] V Agentic SDD workflow Spec Kitu vzniká technický plán před rozkladem na úlohy a před implementací; následující analýza může ještě před editací odhalit nekonzistenci mezi specifikací, plánem a úlohami. #cite(bib.github_spec_kit)] <example-planning_spec_kit>
+
+[#emph[Praktický význam:] Plán má být dostatečně konkrétní pro kontrolu postupu, ale nemá zbytečně předepisovat implementační detail, který lze bezpečně rozhodnout až podle skutečného stavu repozitáře.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Revize (Review)] <concept-review>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Revize je samostatná kontrola změny nebo výstupu proti explicitním požadavkům a kvalitativním kritériím před jeho přijetím.
+  Revize je oddělené posouzení navržené změny proti specifikaci, diffu, výsledkům kontrol a dalším explicitním kritériím před jejím přijetím.
 ]
 
-GitHub Pull Request review například umožňuje změny komentovat, schválit nebo vrátit s požadavkem na úpravy před sloučením. #cite(bib.github_pull_request_reviews)
+GitHub Pull Request review poskytuje pro tuto hranici konkrétní stavový mechanismus: reviewer může změny komentovat, schválit nebo vyžádat další úpravy. Revize proto není opakováním implementace stejným agentem, ale novým kontrolním krokem nad vzniklým artefaktem a dostupnými důkazy. #cite(bib.github_pull_request_reviews)
 
-[#emph[Praktický význam:] Revize poskytuje samostatný kontrolní krok proti požadavkům a kvalitativním kritériím, takže nalezené odchylky lze vrátit k opravě před přijetím změny.]
+#block[#strong[Request changes.] GitHub rozlišuje review výsledky Comment, Approve a Request changes; poslední z nich může při odpovídající branch protection zabránit sloučení, dokud není požadovaná revize vyřešena. #cite(bib.github_pull_request_reviews)] <example-review_github_pr>
+
+[#emph[Praktický význam:] Revize má porovnávat konkrétní změnu s původním zadáním a výsledky ověření. Nález se vrací jako nový vstup do opravy; „vypadá to správně“ není náhradou za akceptační podmínku.]
+
+Specifikace, plán a revizní kritéria společně určují, co má agent změnit. Dalším krokem je zajistit, aby samotné provedení zůstalo izolované a dohledatelné.
 
 #heading(level: 3)[Řízení změny] <section-ai_assisted_change_control>
+Agent má pracovat nad skutečným stavem repozitáře, ale jeho rozpracovaný výsledek nemá nekontrolovaně přepisovat integrační větev. Správa verzí proto vytváří auditní stopu, větev izoluje práci a Pull Request tvoří explicitní hranici, na kterou lze navázat revizi a automatické kontroly.
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Správa verzí (Version Control)] <concept-version_control>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Systém pro zaznamenávání a porovnávání historie změn souborů v čase. #cite(bib.chacon2014)
+  Správa verzí zaznamenává historii změn jako identifikovatelné revize, které lze porovnávat, spojovat a v případě potřeby vracet. #cite(bib.chacon2014)
 ]
 
-Uložená historie umožňuje identifikovat původ změny, vracet se k předchozím stavům a slučovat samostatně vzniklé změny. #cite(bib.chacon2014)
+Pro agentní workflow je důležité, že pracovní výsledek lze ukotvit ke konkrétnímu commitu a odlišit jej od pozdějších změn jiného aktéra. Diff pak poskytuje přesný rozsah toho, co má revize a automatické ověření posoudit, místo aby se hodnotil neurčitý aktuální stav pracovního adresáře. #cite(bib.chacon2014)
 
-[#emph[Praktický význam:] Správa verzí umožňuje agentním změnám zůstat dohledatelné, porovnatelné a vratné místo přepisování pracovního stavu bez historie.]
+#block[#strong[Commit jako kontrolní bod.] Git ukládá commit jako snímek projektu s vazbou na rodičovský commit; historii tak lze procházet a dvě revize přímo porovnat. #cite(bib.chacon2014)] <example-version_control_git_commit>
+
+[#emph[Praktický význam:] Agentní změna má být dohledatelná ke konkrétním commitům. To umožňuje reprodukovat, která verze byla testována, a oddělit vlastní výsledek od souběžných změn v repozitáři.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Větev (Branch)] <concept-branch>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Oddělená linie vývoje v systému správy verzí, která ukazuje na vlastní posloupnost commitů. #cite(bib.chacon2014)
+  Větev je pojmenovaná linie vývoje ukazující na vlastní posloupnost commitů a umožňující provádět změnu mimo cílovou integrační větev. #cite(bib.chacon2014) #cite(bib.github_branches)
 ]
 
-Větev umožňuje izolovat souběžnou změnu od cílové větve a později ji sloučit po kontrole nebo ověření. #cite(bib.chacon2014) #cite(bib.github_branches)
+Izolace však není jednorázový stav. Pokud cílová větev během práce postoupí, musí být před integrací znovu porovnán základ změny a případné konflikty vyřešeny podle významu obou úprav. GitHub dokumentuje větve jako oddělené linie práce, které lze před sloučením aktualizovat vůči cílové větvi. #cite(bib.github_branches)
 
-[#emph[Praktický význam:] Větev izoluje rozpracovanou agentní změnu od hlavní historie a vytváří bezpečný prostor pro testování a revizi před integrací.]
+#block[#strong[Feature branch.] Běžný Git workflow vytváří pro izolovanou práci samostatnou větev a její commity později slučuje s cílovou historií; paralelní práce tak nemusí sdílet jednu rozpracovanou linii. #cite(bib.chacon2014)] <example-branch_git_feature>
+
+[#emph[Praktický význam:] Agent má měnit čerstvou izolovanou větev a před integrací zkontrolovat, zda se cílová větev nezměnila v jeho vlastněném rozsahu. Konflikt je změna významu, ne pouze textová překážka k automatickému přepsání.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Pull Request] <concept-pull_request>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Návrh na sloučení změn z jedné větve do jiné, kolem kterého GitHub soustřeďuje revizi, diskusi a automatické kontroly. #cite(bib.github_pull_requests)
+  Pull Request je návrh na integraci změn mezi větvemi, který zpřístupňuje diff, diskusi, review a stav automatických kontrol před sloučením. #cite(bib.github_pull_requests)
 ]
 
-Pull request zpřístupňuje diff navržené změny a její stav před integrací do cílové větve. #cite(bib.github_pull_requests)
+Tím vzniká jednotná integrační hranice: stejná navržená revize je viditelná člověku, reviewerovi i CI. Pokud se branch head změní, automatické kontroly se vztahují k nové revizi a přijetí se musí opírat o důkazy odpovídající aktuálnímu headu, nikoli o starší úspěšný běh. #cite(bib.github_required_status_checks)
 
-[#emph[Praktický význam:] Pull Request vytváří explicitní integrační a revizní hranici, kde lze porovnat změny, spustit kontroly a zaznamenat rozhodnutí před sloučením.]
+#block[#strong[GitHub Pull Request.] GitHub zobrazuje změny mezi head a base větví a spojuje je s review a status checks; chráněná větev může vyžadovat úspěšné kontroly před merge. #cite(bib.github_pull_requests) #cite(bib.github_required_status_checks)] <example-pull_request_github>
+
+[#emph[Praktický význam:] Pull Request je vhodné místo pro integrační rozhodnutí, protože propojuje přesný diff s revizí a strojovými důkazy. Agent nemá obcházet tuto hranici pouze proto, aby získal zelený stav cílové větve.]
+
+Izolovaná a verzovaná změna je teprve kandidát k přijetí. O tom, zda splňuje požadavky, musí rozhodovat ověření nad konkrétní revizí.
 
 #heading(level: 3)[Kvalita a ověřování] <section-ai_assisted_quality_verification>
+Modelový výstup je návrh, nikoli důkaz správnosti. Akceptační podmínky ze specifikace se proto převádějí do objektivních quality gates všude, kde je lze vyhodnotit deterministicky: typicky sestavení, statická analýza, testy, kontroly formátu, generování artefaktů nebo ověření invariantu. Výsledek kontroly se vrací do další opravy a teprve úspěšná revize stejného commitu může být kandidátem na integraci.
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Slop] <concept-slop>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Neformální označení pro nekvalitní digitální obsah, zejména obsah vytvořený umělou inteligencí. #cite(bib.cambridge2026aislop)
+  Slop je neformální označení pro nekvalitní digitální obsah, zvláště masově vytvářený pomocí generativní AI; termín nepopisuje technickou kategorii vady ani měřitelnou úroveň kvality. #cite(bib.cambridge2026aislop)
 ]
 
-V této práci označuje zejména AI-generovaný software, jehož objem nebo zdánlivá úplnost převyšují jeho ověřenou funkčnost a udržovatelnost.
+V softwarovém workflow je proto užitečnější převést obavu z nekvalitního generovaného výstupu na konkrétní selhání: nesplněnou specifikaci, chybějící test, regresi, neprocházející build nebo nepřijatelný diff. Takový problém lze reprodukovat a vrátit k opravě, zatímco obecný dojem „slopu“ neposkytuje agentovi jednoznačnou podmínku dalšího kroku.
 
-[#emph[Praktický význam:] Riziko nekvalitního generovaného výstupu znamená, že agentní práce potřebuje objektivní kontroly a revizi namísto přijetí výsledku jen proto, že je syntakticky úplný.]
+[#emph[Praktický význam:] Neurčité hodnocení kvality má být nahrazeno explicitním kritériem, kdykoli je to možné. Tím se kontrola přesouvá od dojmu z výstupu k reprodukovatelnému důkazu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Průběžná integrace (CI)] <concept-continuous_integration>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Vývojová praxe, při níž se změny průběžně integrují a automaticky ověřují sestavením, testy a dalšími kontrolami. #cite(bib.humble2010)
+  Průběžná integrace automaticky sestavuje a ověřuje průběžně vznikající změny tak, aby integrační problémy a regrese byly odhaleny před jejich hromaděním. #cite(bib.humble2010)
 ]
 
-CI převádí část podmínek kvality do opakovatelných strojově vyhodnotitelných kontrol spouštěných nad změnami. #cite(bib.humble2010)
+CI je pro agentní práci externí hodnotitel: příkazy, prostředí a akceptační podmínky jsou definovány mimo modelový úsudek a stejná kontrola se opakuje nad každou relevantní revizí. GitHub required status checks mohou spojit tento výsledek přímo s merge politikou a vyžadovat úspěšný check na aktuálním commitu Pull Requestu. #cite(bib.github_required_status_checks)
 
-[#emph[Praktický význam:] CI převádí opakovatelné kontroly změny do automatického signálu, který může agent i člověk použít při rozhodování o dalším kroku.]
+#block[#strong[Required status check.] GitHub při chráněné větvi blokuje merge, pokud požadovaná kontrola nemá úspěšný stav pro příslušný head commit; starší zelený běh tedy nenahrazuje ověření novější změny. #cite(bib.github_required_status_checks)] <example-ci_github_required_check>
+
+[#emph[Praktický význam:] Quality gate, která má být povinná, musí být vynucena workflow nebo merge politikou, nikoli pouze uvedena v promptu. Agent může selhání diagnostikovat a opravit, ale nemá sám prohlásit neúspěšnou kontrolu za splněnou.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Integrační test (Integration Test)] <concept-integration_test>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Ověření spolupráce více komponent nebo vrstev systému přes jejich rozhraní. #cite(bib.sommerville2016)
+  Integrační test ověřuje spolupráci více komponent nebo vrstev přes jejich rozhraní a hledá chyby, které izolovaný test jediné jednotky nemusí odhalit. #cite(bib.sommerville2016)
 ]
 
-Integrační test zachycuje chyby vznikající ve vzájemném propojení částí systému, které izolované testování jednotlivých komponent nemusí odhalit. #cite(bib.sommerville2016)
+Jeho role v agentním workflow nastává po lokálních kontrolách jednotlivých změněných částí: například může ověřit, zda změna aplikační vrstvy stále spolupracuje s persistencí a veřejným rozhraním jako jeden celek. Taková zkouška musí používat konkrétní vstup a očekávaný výsledek; samotné tvrzení agenta, že rozhraní „by měla být kompatibilní“, integračním testem není. #cite(bib.sommerville2016)
 
-[#emph[Praktický význam:] Integrační test ověřuje spolupráci více částí systému, a proto zachytí chyby, které izolovaná kontrola jednotlivého modulu nebo generovaného souboru neodhalí.]
+#block[#strong[Ověření rozhraní.] Sommerville popisuje integration testing jako fázi, ve které jsou samostatně vyvinuté komponenty spojovány a testovány se zaměřením na interakce a rozhraní mezi nimi. #cite(bib.sommerville2016)] <example-integration_test_interfaces>
+
+[#emph[Praktický význam:] Testovací pyramida agentní změny má obsahovat kontrolu na nejnižší vrstvě, která může dané riziko skutečně odhalit. Jestliže požadavek závisí na interakci komponent, nestačí pouze unit test jedné z nich.]
+
+Objektivní gate určuje, zda je změna technicky přijatelná; revize navíc ověřuje, zda je to skutečně změna, která byla požadována. Aby agent dokázal obě podmínky plnit i v delším běhu, musí dostávat správné instrukce a správný kontext ve správný okamžik.
 
 #heading(level: 3)[Instrukce a kontext] <section-agentic_context_instructions>
+Instrukční a kontextová vrstva má tři časové horizonty. Stabilní pravidla patří do systémových nebo repozitářových instrukcí, konkrétní úloha do specifikace a pracovního promptu a proměnlivá fakta se načítají až podle potřeby. Smíchání všech tří vrstev do stále rostoucího promptu zvyšuje nároky na aktivní kontext a zhoršuje rozlišení mezi autoritativní instrukcí a pouhými daty. #cite(bib.anthropic_context_engineering)
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Promptové inženýrství (Prompt Engineering)] <concept-prompt_engineering>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Systematický návrh instrukcí, příkladů a jejich struktury s cílem ovlivnit chování jazykového modelu. #cite(bib.anthropic_prompt)
+  Promptové inženýrství je systematický návrh instrukcí, příkladů a struktury vstupu s cílem zvýšit pravděpodobnost požadovaného chování modelu. #cite(bib.anthropic_prompt)
 ]
 
-Prompt ovlivňuje pravděpodobnostní chování modelu, ale sám nevynucuje technickou bezpečnostní nebo autorizační hranici; pravidla, která musí systém garantovat, patří do #term(terms.guardrail) nebo jiné běhové kontroly.
+U agentní úlohy má prompt především zpřesnit cíl, výstupní formát, omezení a dostupné rozhodovací informace. Instrukce však zůstává vstupem pravděpodobnostního modelu; pravidlo, které systém musí vynutit bez ohledu na modelovou odpověď, proto patří do deterministické kontroly popsané v části 3.1.5.
 
-[#emph[Praktický význam:] Promptové inženýrství umožňuje zpřesnit instrukce pro jeden modelový krok; u agentů je však třeba jeho účinek kombinovat se stavem, nástroji a řízením kontextu.]
+#block[#strong[Strukturované instrukce.] Anthropic doporučuje před pokročilými promptovými technikami jasně formulovat kritéria úspěchu a způsob jejich empirického ověření; prompt je pak jednou z optimalizovaných částí systému, nikoli náhradou evaluace. #cite(bib.anthropic_prompt)] <example-prompt_engineering_anthropic>
+
+[#emph[Praktický význam:] Prompt má modelu vysvětlit úlohu, ne suplovat oprávnění, testovací infrastrukturu nebo stav workflow. Čím důležitější je pravidlo pro bezpečnost či integritu změny, tím méně má jeho vynucení záviset pouze na formulaci instrukce.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Systémový prompt (System Prompt)] <concept-system_prompt>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Systémová instrukční vrstva, která vymezuje roli, pravidla a výchozí způsob chování modelu nebo agenta. #cite(bib.anthropic_prompt)
+  Systémový prompt je stabilní instrukční vrstva, která nastavuje roli, obecná pravidla a výchozí způsob chování modelu nebo agenta v rámci podporovaného rozhraní. #cite(bib.anthropic_prompt)
 ]
 
-Systémový prompt poskytuje stabilní instrukční kontext, ale sám o sobě není technickou izolační ani autorizační hranicí. #cite(bib.anthropic_prompt)
+Patří sem pravidla společná více úlohám, nikoli proměnlivý obsah konkrétního repozitáře nebo aktuální výstup nástroje. Přesun stabilního pravidla do systémové vrstvy snižuje potřebu opakovat jej v každém zadání, ale nezmění jej v technickou autorizační hranici.
 
-[#emph[Praktický význam:] Systémový prompt stanovuje základní instrukce a hranice chování, které Harness přikládá ke každému relevantnímu modelovému kroku.]
+#block[#strong[Oddělení instrukční vrstvy.] Dokumentace prompt engineeringu Anthropic pracuje s explicitní rolí a instrukční strukturou jako s prostředkem řízení modelového chování; účinek je stále součástí modelové inference. #cite(bib.anthropic_prompt)] <example-system_prompt_instruction_layer>
+
+[#emph[Praktický význam:] Do systémových instrukcí patří dlouhodobé zásady společné běhům. Projektová pravidla je vhodnější verzovat spolu s repozitářem a aktuální fakta načítat až podle potřeby.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[AGENTS.md] <concept-agents_md>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  AGENTS.md je mechanismus projektových instrukcí Codexu, který dodává agentovi trvalý repozitářový kontext před zahájením práce. #cite(bib.openai_agents_md)
+  AGENTS.md je projektový instrukční mechanismus Codexu, kterým lze verzovat trvalé pokyny vztahující se k repozitáři nebo jeho podstromu. #cite(bib.openai_agents_md)
 ]
 
-Codex hledá instrukce od kořene repozitáře směrem k aktuálnímu pracovnímu adresáři, skládá je v tomto pořadí a bližší instrukce tak dostávají vyšší prioritu; na úrovni adresáře může AGENTS.override.md nahradit AGENTS.md. #cite(bib.openai_agents_md)
+Codex skládá použitelné AGENTS.md instrukce od kořene repozitáře směrem k aktuálnímu pracovnímu adresáři; bližší soubor má vyšší prioritu a `AGENTS.override.md` může pravidlo na konkrétní úrovni nahradit. Tím lze držet globální pravidla u kořene a specializovat je pouze tam, kde je to potřeba. #cite(bib.openai_agents_md)
 
-[#emph[Praktický význam:] AGENTS.md umožňuje udržovat repozitářové instrukce přímo u kódu a automaticky je přidávat do kontextu Codexu podle pracovního umístění.]
+#block[#strong[Hierarchické instrukce Codexu.] Kořenový AGENTS.md může stanovit společné build a review příkazy a další AGENTS.md v podadresáři doplnit pravidla pro konkrétní část projektu; Codex je při práci v daném podstromu skládá podle dokumentované precedence. #cite(bib.openai_agents_md)] <example-agents_md_codex_hierarchy>
+
+[#emph[Praktický význam:] AGENTS.md má nést Codex-specific repozitářová pravidla, která mají přežít jednotlivý prompt. Nemá být zaměněn s adresářem `.agents/`, který Theory vlastní jako samostatný rozšiřovací mechanismus.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[CLAUDE.md] <concept-claude_md>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  CLAUDE.md je soubor trvalých instrukcí a kontextu, který Claude Code načítá do sezení. #cite(bib.claude_code_memory)
+  CLAUDE.md je persistentní instrukční mechanismus Claude Code pro projektový nebo uživatelský kontext; jde o mechanismus odlišný od Codex AGENTS.md. #cite(bib.claude_code_memory)
 ]
 
-Projektové instrukce mohou být v `./CLAUDE.md` nebo `./.claude/CLAUDE.md`, uživatelské v `~/.claude/CLAUDE.md`; soubory nad pracovním adresářem se načítají při spuštění a soubory v podadresářích se mohou načíst až při práci v nich. Jde o kontextové instrukce, nikoli o vynucenou bezpečnostní hranici. #cite(bib.claude_code_memory)
+Claude Code může načíst projektové instrukce z `./CLAUDE.md` nebo `./.claude/CLAUDE.md`, uživatelské z `~/.claude/CLAUDE.md` a další pravidla podle dokumentované adresářové hierarchie. Projekt tedy může držet instrukce přímo u kódu, aniž by se jejich formát nebo precedence vydávaly za univerzální standard pro všechny agenty. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)
 
-[#emph[Praktický význam:] CLAUDE.md umožňuje udržovat trvalé projektové nebo uživatelské instrukce, které Claude Code načítá do kontextu sezení.]
+#block[#strong[Projektová paměť Claude Code.] Dokumentace Claude Code odděluje CLAUDE.md a `.claude/rules/` od nastavení v `.claude/settings.json`; instrukce a runtime konfigurace tak zůstávají rozdílnými vrstvami projektu. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)] <example-claude_md_project_instructions>
+
+[#emph[Praktický význam:] AGENTS.md a CLAUDE.md plní podobnou metodickou potřebu — verzovat persistentní repozitářové instrukce — ale mají odlišné vlastníky, vyhledávání i precedence pravidla a nemají se slévat do jednoho fiktivního „agent instruction file“ standardu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Kontextové inženýrství (Context Engineering)] <concept-context_engineering>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Systematický výběr a správa informací, které jsou modelu zpřístupněny v aktivním kontextu během inference. #cite(bib.anthropic_context_engineering)
+  Kontextové inženýrství je záměrný výběr, strukturování a obměna informací, které mají být modelu dostupné pro právě prováděný krok. #cite(bib.anthropic_context_engineering)
 ]
 
-Aktivní kontext může obsahovat instrukce, popisy dostupných nástrojů, externí data a vybranou historii interakce. Jeho obsah je nutné kurátorovat vzhledem k omezené kapacitě a nerovnoměrnému využití dlouhého kontextu. #cite(bib.anthropic_context_engineering) #cite(bib.liu2024)
+Metodika vychází z vlastností kontextového okna a degradace dlouhého kontextu vysvětlených v části 2.1, aniž by je znovu definovala. Praktické rozhodnutí spočívá v tom, zda má být informace stabilní instrukcí, právě načteným stavem, výsledkem nástroje, vyhledaným dokumentem nebo historií, kterou lze z aktivního vstupu odstranit. Anthropic doporučuje u dlouhotrvajících agentů držet kontext co nejmenší a načítat další informace just-in-time podle potřeby. #cite(bib.anthropic_context_engineering)
 
-[#emph[Praktický význam:] Kontextové inženýrství rozhoduje, které informace mají být v daném kroku modelu skutečně dostupné, což je zásadní pro dlouhé agentní běhy s omezeným rozpočtem.]
+#block[#strong[Just-in-time retrieval.] Anthropic popisuje strategii, kdy agent místo přednačtení všech dostupných dat uchovává lehké reference a detailní obsah vyhledá nástrojem až při vzniku potřeby. #cite(bib.anthropic_context_engineering)] <example-context_engineering_anthropic_jit>
+
+[#emph[Praktický význam:] Kontext má být sestaven pro aktuální rozhodnutí, ne jako archiv všeho, co se během běhu stalo. Trvalý stav a přepis proto zůstávají mimo aktivní vstup a vybírají se z nich jen relevantní části.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vkládání kontextu (Context Injection)] <concept-context_injection>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  V této práci označuje Context Injection cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok. #cite(bib.anthropic_context_engineering)
+  Vkládání kontextu je just-in-time postup, při kterém Harness doplní do aktivního vstupu informaci až ve chvíli, kdy je relevantní pro aktuální rozhodnutí. #cite(bib.anthropic_context_engineering)
 ]
 
-Just-in-time přístup umožňuje mimo modelový kontext uchovávat odkazy nebo trvalý stav a potřebná data načíst nástrojem až během běhu. #cite(bib.anthropic_context_engineering)
+Zdrojem může být aktuální stav workflow, soubor načtený z repozitáře, výsledek nástroje nebo jiná externí informace. Mechanismus snižuje potřebu držet celý pracovní svět v každém modelovém kroku a současně umožňuje před vložením zkontrolovat původ a důvěryhodnost dat. #cite(bib.anthropic_context_engineering)
 
-[#emph[Praktický význam:] Vkládání kontextu umožňuje Harnessu doplnit modelu aktuální data, instrukce nebo výsledky nástrojů právě v okamžiku, kdy jsou relevantní.]
+#block[#strong[Načtení podle potřeby.] Místo vložení celé dokumentace do počátečního promptu může agent nejprve dostat index nebo cestu a konkrétní soubor načíst až tehdy, když jej plánovaný krok potřebuje; Anthropic tento přístup uvádí jako just-in-time context retrieval. #cite(bib.anthropic_context_engineering)] <example-context_injection_jit>
+
+[#emph[Praktický význam:] Vkládání kontextu má být řízeno potřebou konkrétního kroku. Zkracuje vstup, ale vyžaduje evidovat, odkud vložená informace pochází a zda se může chovat jako nedůvěryhodný obsah.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Kompakce kontextu (Context Compaction)] <concept-compaction>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Zmenšení aktivního kontextu nahrazením části historie kratší reprezentací, typicky shrnutím nebo výběrem důležitých informací. #cite(bib.anthropic_context_engineering)
+  Kompakce kontextu nahrazuje část aktivní historie kratší reprezentací, která zachová informace nutné pro pokračování a uvolní kapacitu pro další práci. #cite(bib.anthropic_context_engineering)
 ]
 
-Kompakce uvolňuje kapacitu pro další běh, ale příliš agresivní komprese může odstranit detaily, které se později ukážou jako důležité. #cite(bib.anthropic_context_engineering) #cite(bib.jiang2023llmlingua)
+Kompakce může používat shrnutí, výběr relevantních položek nebo specializovanou kompresi; vždy však představuje informační ztrátu, kterou je potřeba řídit. LLMLingua například komprimuje prompt výběrem tokenů s cílem snížit vstupní náklady při zachování výkonu na testovaných úlohách, což dokládá mechanismus komprese, nikoli univerzální záruku bezztrátového pokračování agentní práce. #cite(bib.jiang2023llmlingua)
 
-[#emph[Praktický význam:] Kompakce kontextu umožňuje dlouhotrvajícímu agentovi pokračovat přes bezprostřední kontextový rozpočet, za cenu možného ztracení detailů.]
+#block[#strong[Shrnutí před pokračováním.] Anthropic doporučuje při dlouhých agentních bězích průběžně shrnovat nebo jinak komprimovat starší kontext a zachovat přitom architektonická rozhodnutí, nevyřešené chyby a další údaje důležité pro další krok. #cite(bib.anthropic_context_engineering)] <example-context_compaction_anthropic>
+
+[#emph[Praktický význam:] Před kompakcí je vhodné uložit kritická fakta do explicitního stavu nebo artefaktu. Shrnutí pak může z aktivního vstupu odstranit detail, aniž by se jediná kopie důležité informace ztratila spolu s historií.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[RAG] <concept-rag>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Architektura, ve které systém před generováním vyhledá relevantní informace z externího zdroje a poskytne je modelu jako další kontext. #cite(bib.lewis2020rag)
+  Retrieval-Augmented Generation (RAG) kombinuje generování s vyhledáním relevantních položek z externího korpusu, které jsou před vytvořením odpovědi přidány k modelovému vstupu. #cite(bib.lewis2020rag)
 ]
 
-RAG odděluje znalost uloženou v externím korpusu od parametrů modelu a umožňuje vybírat podklady podle aktuálního dotazu. #cite(bib.lewis2020rag)
+Původní práce RAG odděluje parametrickou znalost modelu od neparametrické externí paměti reprezentované vyhledávaným korpusem. V agentním softwarovém workflow lze stejný princip použít pro dokumentaci nebo jiné rozsáhlé zdroje, ale relevance retrievalu stále musí odpovídat konkrétnímu kroku a nalezený text zůstává vstupem, jehož důvěryhodnost je nutné posoudit. #cite(bib.lewis2020rag)
 
-[#emph[Praktický význam:] RAG umožňuje před generováním dohledat relevantní externí informace a přidat je do kontextu, takže agent nemusí spoléhat pouze na parametry modelu.]
+#block[#strong[Původní RAG.] Lewis et al. propojují sekvenční generátor s retrieverem nad externím indexem Wikipedie a ukazují retrieval jako samostatný zdroj podkladů pro generování. #cite(bib.lewis2020rag)] <example-rag_original>
+
+[#emph[Praktický význam:] RAG je jedním z mechanismů výběru just-in-time kontextu. Nemá sloužit k bezvýběrovému vložení všech nalezených dokumentů a samotné nalezení textu mu nedává instrukční autoritu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Prompt Injection] <concept-prompt_injection>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext. #cite(bib.owasp_llm01_prompt_injection)
+  Prompt Injection je útok nebo manipulační vzor, při kterém instrukce obsažená v uživatelském či externím obsahu ovlivní model tak, aby se odchýlil od zamýšlených instrukcí systému. #cite(bib.owasp_llm01_prompt_injection)
 ]
 
-Přímá prompt injection přichází v uživatelském vstupu; nepřímá injection je vložena do externích dat, například webové stránky, e-mailu, dokumentu, repozitáře nebo zdroje RAG. #cite(bib.owasp_prompt_injection) Typickým příkladem je životopis obsahující skrytou instrukci, která se pokusí ovlivnit následné hodnocení kandidáta modelem, přestože dokument měl sloužit pouze jako data. #cite(bib.owasp_llm01_prompt_injection) Důsledky proto závisejí také na oprávněních a nástrojích, které má agent k dispozici. #cite(bib.openai_prompt_injection)
+Riziko přímo souvisí s context injection a RAG: dokument, webová stránka, e-mail nebo soubor repozitáře může obsahovat nepřímou instrukci, přestože měl být zpracován pouze jako data. OWASP proto rozlišuje direct a indirect prompt injection a OpenAI zdůrazňuje, že důsledky závisí na tom, k jakým datům a akcím má agent přístup. #cite(bib.owasp_prompt_injection) #cite(bib.openai_prompt_injection)
 
-[#emph[Praktický význam:] Prompt Injection vyžaduje oddělovat důvěryhodné instrukce od nedůvěryhodného obsahu a omezovat následné nástrojové akce, protože text z prostředí může ovlivnit rozhodování modelu.]
+#block[#strong[Nedůvěryhodný dokument.] OWASP uvádí nepřímou injection v externím obsahu jako dokument nebo webovou stránku s vloženou instrukcí. Pokud takový obsah agent načte do kontextu, model může instrukci zaměnit za legitimní pokyn; ochrana proto nemůže stát jen na formulaci systémového promptu. #cite(bib.owasp_prompt_injection)] <example-prompt_injection_indirect>
+
+[#emph[Praktický význam:] Externí text se má považovat za nedůvěryhodná data, oddělovat od autoritativních instrukcí a kombinovat s minimálními oprávněními, validací akcí a případným lidským schválením.]
+
+Řízený kontext zvyšuje kvalitu rozhodnutí, ale stále nezaručuje, že model zvolí povolenou nebo účelnou akci. Další vrstva proto odděluje pravděpodobnostní rozhodování od pravidel, která musí být vynucena deterministicky.
 
 #heading(level: 3)[Řízení agentního chování] <section-agentic_behavior_control>
+Agentní autonomie má mít explicitní podmínku pokračování a ukončení, limity prostředků a hranice akcí. Model může rozhodovat uvnitř tohoto prostoru, zatímco Harness nebo workflow kontroluje, zda krok splňuje programově vyhodnotitelné podmínky a zda není nutný zásah člověka.
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Cílené smyčky (Goal Loops)] <concept-goal_loops>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  V této práci označují řídicí smyčky, které opakují jednání podle explicitního cíle, pozorovaného výsledku a podmínky dalšího pokračování nebo ukončení.
+  Cílená smyčka opakuje plánování, provedení a vyhodnocení vůči explicitnímu cíli, dokud není splněna podmínka dokončení nebo některý z předem stanovených limitů.
 ]
 
-Na rozdíl od samotného běhového Agent Loopu zahrnuje Goal Loop také zpětnou vazbu k dosažení cíle, ověření výsledku a rozhodnutí, zda pokračovat, změnit postup nebo běh ukončit. #cite(bib.yao2022) #cite(bib.anthropic2024tooluse)
+Rozdíl oproti běhové Agent Loop z Theory spočívá v řídicí podmínce vyšší úrovně: nestačí, že model vytvořil další akci; workflow vyhodnocuje, zda se přiblížilo k cíli a zda smí pokračovat. Microsoft Agent Framework například umožňuje opakovaně volat agenta přes `LoopAgent`, nastavit maximum iterací a přidat vlastní evaluator rozhodující o dokončení. #cite(bib.microsoft_agent_looping)
 
-[#emph[Praktický význam:] Cílená smyčka umožňuje opakovat plánování a ověřování až do splnění explicitní podmínky místo ukončení po prvním přijatelně vypadajícím výstupu.]
+#block[#strong[Ohraničený LoopAgent.] Dokumentace Microsoft Agent Framework ukazuje loop s `max_iterations` a volitelnou completion condition; smyčka tedy může být autonomní v jednotlivých iteracích, ale má vnější ukončovací hranici. #cite(bib.microsoft_agent_looping)] <example-goal_loop_microsoft>
+
+[#emph[Praktický význam:] Každá autonomní smyčka má mít měřitelný cíl a alespoň jeden nezávislý stop mechanismus, například limit iterací, času nebo rozpočtu. Jinak se neúspěch může změnit v neomezené opakování stejné strategie.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Guardrail] <concept-guardrail>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  V této práci označuje Guardrail programově vynucenou kontrolu, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
+  Guardrail je programově vyhodnocovaná kontrolní hranice, která může před pokračováním validovat nebo odmítnout vstup, výstup či požadovanou akci. #cite(bib.openai_agents_guardrails)
 ]
 
-Agentní frameworky mohou guardrails implementovat různými způsoby; zde je důležitá deterministicky vyhodnotitelná hranice oddělená od samotného modelového rozhodnutí. Kontrola může běh zastavit nebo odmítnout konkrétní akci před provedením jejího účinku. #cite(bib.openai_agents_guardrails)
+Jeho účel se liší od promptu: modelu pravidlo nevysvětluje pouze jako požadované chování, ale okolní systém rozhodne, zda konkrétní stav splňuje kontrolní podmínku. OpenAI Agents SDK například podporuje input a output guardrails, které mohou při splnění tripwire podmínky běh ukončit. #cite(bib.openai_agents_guardrails)
 
-[#emph[Praktický význam:] Guardrails umožňují deterministickými kontrolami vynucovat omezení, která nemají záviset pouze na tom, zda je model dodrží.]
+#block[#strong[Tripwire v Agents SDK.] Guardrail může vrátit `tripwireTriggered`; runner pak vyvolá odpovídající výjimku a běh nepokračuje běžnou cestou. Rozhodnutí o zastavení je tak součástí runtime řízení, ne dalšího požadavku na poslušnost modelu. #cite(bib.openai_agents_guardrails)] <example-guardrail_openai_tripwire>
+
+[#emph[Praktický význam:] Vynutitelná pravidla — například zakázaný rozsah souborů, schéma výstupu nebo povinný test — mají být implementována jako deterministická kontrola tam, kde to systém umožňuje.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Člověk ve smyčce (HITL)] <concept-human_in_the_loop>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Uspořádání automatizovaného procesu, ve kterém člověk v určených bodech poskytuje zpětnou vazbu, schválení nebo rozhodnutí. #cite(bib.mosqueira2023human)
+  Člověk ve smyčce je schvalovací nebo rozhodovací bod, ve kterém automatizované provádění čeká na explicitní lidský vstup před pokračováním.
 ]
 
-HITL ponechává vybraná rozhodnutí člověku místo úplné automatizace. V agentním workflow může být lidský zásah explicitní přechod nebo schvalovací bod, po kterém automatizované provádění pokračuje. #cite(bib.mosqueira2023human)
+Aktuální OpenAI Agents SDK realizuje tento vzor u nástrojů vyžadujících approval: běh se při takovém požadavku přeruší, vrátí seznam interruptions a po schválení nebo odmítnutí lze pokračovat ze stejného `RunState`. Stejný mechanismus se vztahuje i na schvalované akce vzniklé v nested agentu nebo po handoffu. #cite(bib.openai_agents_hitl)
 
-[#emph[Praktický význam:] HITL umožňuje vyžádat lidské rozhodnutí před citlivou nebo nevratnou akcí a tím vložit explicitní schvalovací hranici do jinak automatického běhu.]
+#block[#strong[Schválení nástroje.] Funkční nástroj s `needsApproval` zastaví Agents SDK před provedením účinku; aplikace rozhodnutí zapíše do uloženého stavu a runner následně pokračuje bez opakování celého běhu od začátku. #cite(bib.openai_agents_hitl)] <example-hitl_openai_approval>
+
+[#emph[Praktický význam:] HITL má být umístěn před akcemi, u nichž systém nemá dostatečný automatický podklad k bezpečnému rozhodnutí nebo jejichž dopad vyžaduje vlastníka. Nemá nahrazovat deterministickou kontrolu, kterou lze spolehlivě provést automaticky.]
+
+Cílená smyčka určuje, proč pokračovat, guardrail vymezuje, co je automaticky přípustné, a HITL eskaluje rozhodnutí, která mají zůstat člověku. Teprve nad těmito hranicemi má smysl škálovat práci do více agentních větví.
 
 #heading(level: 3)[Orchestrace agentů] <section-agentic_orchestration>
+Více agentů není samo o sobě metodou kvality. Delegace je užitečná tehdy, když lze úlohu rozdělit na samostatně zadatelné části, vymezit jejich kontext a určit, kdo vlastní integraci výsledků. Bez těchto hranic paralelismus pouze násobí změny, které je později nutné sjednotit.
+
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Subagent] <concept-subagent>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Specializovaná agentní instance, které jiný agent nebo orchestrátor deleguje vymezenou dílčí úlohu. #cite(bib.openai_agent_orchestration)
+  Subagent je specializovaná agentní instance, které koordinující běh deleguje vymezenou dílčí úlohu s vlastním kontextem a očekávaným výsledkem. #cite(bib.openai_agent_orchestration)
 ]
 
-Subagent umožňuje oddělit roli, instrukce a pracovní kontext dílčí úlohy od koordinujícího běhu a následně vrátit výsledek zpět nadřazené orchestrace. #cite(bib.wu2023autogen) #cite(bib.openai_agent_orchestration)
+OpenAI Agents SDK rozlišuje například model „agents as tools“, ve kterém centrální agent zůstává vlastníkem konverzace a specialistu volá jako nástroj. Tento vzor je vhodný, když má hlavní běh po dokončení dílčí práce převzít výsledek a rozhodnout o dalším kroku. #cite(bib.openai_agent_orchestration)
 
-[#emph[Praktický význam:] Subagent umožňuje oddělit dílčí úlohu do samostatného kontextu a paralelizovat nebo specializovat práci bez zahlcení hlavního agentního vlákna.]
+#block[#strong[Agent jako nástroj.] Agents SDK umožňuje vystavit specializovaného agenta hlavnímu agentovi přes `agent.as_tool()`, takže delegovaný běh vrátí výsledek zpět koordinátorovi místo převzetí celé konverzace. #cite(bib.openai_agent_orchestration)] <example-subagent_openai_agent_as_tool>
+
+[#emph[Praktický význam:] Subagent má dostat jen kontext a oprávnění potřebná pro jeho dílčí odpovědnost. Návratový kontrakt má být dostatečně explicitní, aby koordinátor mohl výsledek ověřit a integrovat.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Orchestrátor] <concept-orchestrator>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Koordinační role nebo komponenta, která rozhoduje, kterému specializovanému agentovi předat dílčí práci a jak jeho výsledek začlenit do pokračujícího běhu. #cite(bib.openai_agent_orchestration)
+  Orchestrátor je koordinační agent nebo komponenta, která rozkládá práci, přiděluje dílčí úlohy specialistům, sleduje jejich výsledky a skládá je do pokračujícího workflow.
 ]
 
-Centralizovaný orchestrátor zůstává vlastníkem hlavního workflow a může specialisty volat jako omezené pracovní jednotky, případně jejich práci kombinovat nebo spouštět paralelně. #cite(bib.openai_agent_orchestration) #cite(bib.anthropic2024tooluse)
+Anthropic popisuje vzor orchestrator-workers, ve kterém centrální LLM dynamicky určuje potřebné dílčí úlohy, předává je workerům a syntetizuje jejich výsledky. Jako vhodný příklad uvádí coding úlohy, kde nelze předem určit počet a povahu změněných souborů. #cite(bib.anthropic2024tooluse)
 
-[#emph[Praktický význam:] Orchestrátor rozděluje práci, spouští dílčí vykonavatele a skládá jejich výsledky, čímž umožňuje koordinovat více agentních větví jako jeden proces.]
+#block[#strong[Orchestrator-workers.] Na rozdíl od pevného paralelního workflow určuje orchestrátor za běhu, jaké workery vytvořit a jak jejich výsledky spojit; dynamika tedy vzniká v koordinaci, ne tím, že každý worker vlastní celý proces. #cite(bib.anthropic2024tooluse)] <example-orchestrator_anthropic_workers>
+
+[#emph[Praktický význam:] Orchestrátor má vlastnit rozklad a integraci, zatímco worker má vlastnit jen přidělenou část. Tato hranice snižuje kolize a dovoluje použít odlišné instrukce nebo modely pro různé typy práce.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Předání řízení (Handoff)] <concept-handoff>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Vzor koordinace, při kterém aktivní agent předá další řízení specializovanému agentovi. #cite(bib.openai_agent_orchestration)
+  Handoff je vzor, ve kterém aktivní agent předá pokračující řízení jinému agentovi, který se stane vykonavatelem následující části interakce nebo úlohy. #cite(bib.openai_agent_orchestration)
 ]
 
-Handoff se liší od centralizované orchestrace tím, že specialista není pouze zavolán jako dílčí pracovní jednotka a vrácen orchestrátoru, ale přebírá aktivní pokračování interakce nebo úlohy. #cite(bib.openai_agent_orchestration)
+Tím se liší od subagenta volaného jako nástroj: u centralizované delegace se výsledek vrací orchestrátorovi, zatímco po handoffu pokračuje specialista jako aktivní agent. OpenAI Agents SDK podporuje oba vzory odděleně a dokumentace doporučuje jejich volbu podle toho, zda má centrální agent zůstat vlastníkem workflow. #cite(bib.openai_agent_orchestration)
 
-[#emph[Praktický význam:] Handoff předává odpovědnost i potřebný kontext jinému agentovi nebo roli, takže další krok nemusí pokračovat ve stejném agentním vlákně.]
+#block[#strong[Handoff specialistovi.] V routing příkladu Agents SDK triage agent podle typu požadavku předá řízení specializovanému agentovi; následující interakce pak probíhá pod specialistou namísto návratu každého kroku triage agentovi. #cite(bib.openai_agent_orchestration)] <example-handoff_openai_routing>
+
+[#emph[Praktický význam:] Handoff má být explicitní změna vlastníka dalšího kroku. Předání musí zahrnout jen potřebný kontext a zachovat informaci o tom, kdo nyní odpovídá za pokračování.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Graf pracovního postupu (Workflow Graph)] <concept-workflow_graphs>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Explicitní grafová reprezentace vícefázového workflow, v níž uzly představují dílčí práci a hrany určují přechody nebo závislosti mezi kroky. #cite(bib.wu2023autogen)
+  Graf pracovního postupu je explicitní orientovaný graf, jehož uzly představují vykonavatele nebo kroky a hrany určují možné přechody a tok dat či řízení mezi nimi.
 ]
 
-Workflow Graph může vyjádřit sekvenční, podmíněné i paralelní větvení a může koordinovat více agentů. Pokud hrany vyjadřují pouze acyklické závislosti, může mít podobu DAG; workflow s návraty nebo opakováním však obecně DAG být nemusí. #cite(bib.wu2023autogen) #cite(bib.anthropic2024tooluse)
+Microsoft Agent Framework implementuje tento model pomocí `WorkflowBuilder`, do kterého se přidávají executors a edges a z výsledné definice se sestaví spustitelný workflow. Dokumentace současně podporuje looping patterns, takže obecný workflow graph není synonymem pro DAG: DAG je pouze takový orientovaný graf, který neobsahuje cyklus; workflow s návratovou nebo opakovací hranou tuto podmínku nesplňuje. #cite(bib.microsoft_agent_workflows) #cite(bib.microsoft_agent_looping)
 
-[#emph[Praktický význam:] Workflow Graph explicitně zachycuje návaznosti, větvení, paralelismus a smyčky, takže složitější agentní proces lze řídit jako strukturovaný tok práce.]
+#block[#strong[Microsoft Agent Framework Workflow.] První workflow příklad vytváří dva executors a propojí je hranou přes `WorkflowBuilder`; framework vedle lineárních a větvených toků dokumentuje také loop orchestration. Jde tedy o konkrétní implementaci obecného grafového workflow, nikoli pouze o plán DAG závislostí. #cite(bib.microsoft_agent_workflows) #cite(bib.microsoft_agent_looping)] <example-workflow_graph_microsoft>
+
+[#emph[Praktický význam:] Workflow Graph je vhodný, když musí být pořadí, větvení, paralelismus nebo návratové hrany explicitní a auditovatelné. DAG je vhodnou podmnožinou pro čistě acyklické závislosti, nikoli univerzálním názvem pro každý agentní graf.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Swarm] <concept-swarm>
-[
+#block[
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Swarm označuje dynamicky koordinované paralelní provádění úlohy více subagenty pod orchestrujícím agentem nebo systémem; nejde o univerzální formální standard.
+  Swarm je popisné označení pro víceagentní uspořádání, ve kterém systém dynamicky vytváří a koordinuje větší počet paralelních subagentů; nejde o jednotný formální standard a vlastnosti konkrétního swarmu jsou vlastnostmi dané implementace.
 ]
 
-Kimi K2.5 Agent Swarm je konkrétní realizace, v níž orchestrátor dynamicky vytváří a koordinuje paralelní subagenty bez předem definovaných rolí nebo ručně napsaného workflow. #cite(bib.kimi_k25_agent_swarm)
+Aktuální Kimi Help Center popisuje Agent Swarm jako produktový režim, ve kterém systém automaticky koordinuje subagenty bez předem definovaných rolí a bez ručně navrženého workflow a používá jej k paralelnímu zpracování složitých úloh. Tyto vlastnosti popisují Kimi Agent Swarm a nesmí být bez dalšího zobecněny na všechny systémy označené jako swarm. #cite(bib.kimi_agent_swarm)
 
-[#emph[Praktický význam:] Swarm umožňuje dynamicky rozdělit rozsáhlou úlohu mezi více paralelních subagentů, pokud zadání přirozeně obsahuje nezávislé části práce.]
+#block[#strong[Kimi Agent Swarm.] Současná produktová dokumentace Kimi uvádí automatickou koordinaci více subagentů a dynamické rozdělení práce jako vlastnosti Agent Swarm; konkrétní produkt se tím liší od ručně definovaného Workflow Graphu, jehož strukturu určuje vývojář. #cite(bib.kimi_agent_swarm)] <example-swarm_kimi_current>
 
-Delegování práce AI nezmenšuje potřebu softwarově-inženýrských kontrol; přesouvá jejich význam k explicitnímu zadání, sledovatelným změnám, řízenému kontextu a strojově ověřitelné zpětné vazbě. Tyto principy vytvářejí základ pro konkrétní realizaci v systému DarkFactory.
+[#emph[Praktický význam:] Swarm-style orchestrace dává smysl pro úlohy s mnoha relativně nezávislými částmi, pokud orchestrátor umí jejich výsledky ověřit a sjednotit. Paralelismus nesmí obejít vlastnictví změn, quality gates ani integrační hranici.]
+
+Celá metodika tak tvoří uzavřený proces: explicitní specifikace určí cíl a akceptaci, plán rozloží práci, větev a Pull Request izolují a zpřístupní změnu, instrukční a kontextová vrstva poskytuje správné podklady, cílené smyčky pracují uvnitř deterministických a lidských hranic a CI s revizí rozhodují o přijetí. Subagenti, handoffy, workflow graphy nebo swarm-style paralelismus tento proces škálují, ale nenahrazují jeho kontrolní body. Tato posloupnost je základem, na kterém může následující část popsat konkrétní realizaci v DarkFactory.
 
 #heading(level: 2)[DarkFactory] <section-darkfactory>
 #heading(level: 1)[Výsledky a diskuse] <section-evaluation>
@@ -1507,7 +1583,7 @@ AGENTS.md je mechanismus projektových instrukcí Codexu, který dodává agento
 CLAUDE.md je soubor trvalých instrukcí a kontextu, který Claude Code načítá do sezení. #cite(bib.claude_code_memory)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-goal_loops>, strong([Cílené smyčky (Goal Loops)]))]
-V této práci označují řídicí smyčky, které opakují jednání podle explicitního cíle, pozorovaného výsledku a podmínky dalšího pokračování nebo ukončení.
+Řídicí smyčky, které opakují plánování, provedení a vyhodnocení podle explicitního cíle a ukončovací podmínky. #cite(bib.microsoft_agent_looping)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-context_rot>, strong([Degradace kontextu (Context Rot)]))]
 Degradace kontextu (Context Rot) označuje praktický pokles spolehlivosti, s níž model dokáže využívat relevantní informace při růstu délky, informačního zatížení nebo nevýhodném umístění informace v aktivním kontextu. #cite(bib.liu2024)
@@ -1516,7 +1592,7 @@ Degradace kontextu (Context Rot) označuje praktický pokles spolehlivosti, s n�
 Znovupoužitelný balíček instrukcí a volitelných zdrojů, který se načítá pro úlohy odpovídající jeho účelu. #cite(bib.agent_skills_spec)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-workflow_graphs>, strong([Graf pracovního postupu (Workflow Graph)]))]
-Explicitní grafová reprezentace vícefázového workflow, v níž uzly představují dílčí práci a hrany určují přechody nebo závislosti mezi kroky. #cite(bib.wu2023autogen)
+Explicitní orientovaný graf workflow, v němž uzly představují vykonavatele nebo kroky a hrany určují možné přechody mezi nimi. #cite(bib.microsoft_agent_workflows)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-guardrail>, strong([Guardrail]))]
 V této práci označuje Guardrail programově vynucenou kontrolu, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
@@ -1603,7 +1679,7 @@ Persistovaná reprezentace aktuálně platných pracovních skutečností a ří
 Specializovaná agentní instance, které jiný agent nebo orchestrátor deleguje vymezenou dílčí úlohu. #cite(bib.openai_agent_orchestration)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-swarm>, strong([Swarm]))]
-Swarm označuje dynamicky koordinované paralelní provádění úlohy více subagenty pod orchestrujícím agentem nebo systémem; nejde o univerzální formální standard.
+Popisné označení pro dynamicky koordinované paralelní provádění více subagenty; nejde o univerzální formální standard. #cite(bib.kimi_agent_swarm)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-system_prompt>, strong([Systémový prompt (System Prompt)]))]
 Systémová instrukční vrstva, která vymezuje roli, pravidla a výchozí způsob chování modelu nebo agenta. #cite(bib.anthropic_prompt)
@@ -1633,13 +1709,13 @@ V této práci označuje Context Injection cílené vložení relevantních info
 Mechanismus, kterým model místo běžné textové odpovědi vybere konkrétní #term(terms.tools) a vytvoří strukturované argumenty pro jeho vyvolání. #cite(bib.anthropic2024tooluse)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-spec_driven_development>, strong([Vývoj řízený specifikací (Spec-Driven Development)]))]
-Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí plánování, implementaci a ověřování změny. #cite(bib.fowler2025sdd)
+Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí plánování, implementaci a ověřování změny. #cite(bib.github_spec_kit)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-branch>, strong([Větev (Branch)]))]
 Oddělená linie vývoje v systému správy verzí, která ukazuje na vlastní posloupnost commitů. #cite(bib.chacon2014)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-human_in_the_loop>, strong([Člověk ve smyčce (HITL)]))]
-Uspořádání automatizovaného procesu, ve kterém člověk v určených bodech poskytuje zpětnou vazbu, schválení nebo rozhodnutí. #cite(bib.mosqueira2023human)
+Uspořádání automatizovaného procesu, ve kterém člověk v určených bodech poskytuje schválení nebo rozhodnutí před pokračováním. #cite(bib.openai_agents_hitl)
 
 
 // ── Výpočet rozsahu práce ─────────────────────────────────
