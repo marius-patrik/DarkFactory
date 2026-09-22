@@ -56,7 +56,7 @@
 #let close = folder(key: "harness_conclusion", section: conclusion.item)
 
 #let node = folder(
-  key: "harness",
+  key: "harness_section",
   title: [Harness],
   children: (
     intro,
