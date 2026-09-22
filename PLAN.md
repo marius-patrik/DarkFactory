@@ -624,7 +624,7 @@ Model-provider wording must describe the externally supplied model/service bound
 
 Temperature must be sourced from real model/API documentation and explain its effect without overstating deterministic semantics.
 
-##### Evidence ownership between Section 1 and 2.2
+##### Evidence ownership between Section 1 and 2.1
 
 Section 1 owns:
 - broad AI adoption/usage;
@@ -729,7 +729,7 @@ Target numbered structure:
 
 Opening and closing framing prose remains, but without separate numbered Úvod/Závěr headings.
 
-Rewrite only from actual DarkFactory behavior/evidence and keep ownership distinct from generated 3.2 documentation.
+Rewrite only from actual DarkFactory behavior/evidence and keep ownership distinct from generated 3.1 documentation.
 
 #### 3.3 Vyhodnocení
 
@@ -799,7 +799,7 @@ Exit:
 - citation pass across 2.1.
 
 Exit:
-- architecture/representation and inference responsibilities are cleanly separated inside 2.2 and all factual claims/visual relations are sourced.
+- architecture/representation and inference responsibilities are cleanly separated inside 2.1 and all factual claims/visual relations are sourced.
 
 ### Phase 4 — Harness rewrite, terminology, diagrams, examples
 
@@ -807,6 +807,7 @@ Exit:
 - correct State wording;
 - simplify ReAct diagram;
 - rename group to Rozšíření;
+- source and finalize the distinct .agents/ and .claude/ extension/configuration articles;
 - add real Claude Code CLI, Antigravity IDE, and ChatGPT web screenshots with provenance;
 - remove self-referential wording;
 - source every product/mechanism claim.
@@ -831,8 +832,8 @@ Exit:
 
 Audit:
 1. 2.1 Jazykový model, including 2.1.2 Inference;
-2. 2.3 Harness;
-3. 2.4 AI-asistovaný vývoj a agentické inženýrství.
+2. 2.2 Harness;
+3. 2.3 AI-asistovaný vývoj a agentické inženýrství.
 
 For every claim:
 - establish one semantic owner;
@@ -863,7 +864,7 @@ Ensure the research frame maps onto evidence that can actually be collected.
 - pin the DarkFactory revision;
 - generate canonical docs;
 - map generated hierarchy into 3.1;
-- prevent duplication with Theory and 3.3;
+- prevent duplication with Theory and 3.2;
 - preserve traceability/reproducibility.
 
 ### Phase 10 — Pin evidence and rewrite Results
@@ -922,7 +923,7 @@ The thesis is complete only when:
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
-- the latest model benchmark comparison in 2.2 is pinned and cited;
+- the latest model benchmark comparison in 2.1 is pinned and cited;
 - diagrams are clean, sourced, and pedagogically accurate;
 - real harness examples use real screenshots with provenance;
 - 3.1 comes from generated DarkFactory documentation;
