@@ -12,5 +12,3 @@ This file is a parking lot for requests that are not part of the active thesis p
 ## Requests
 
 _No unpromoted future requests currently recorded._
-
-The previous thesis restructuring / Odborná-práce school-contract request has been promoted into `PLAN.md`, `AGENTS.md`, and `SCHOOL_RULES.md`.
