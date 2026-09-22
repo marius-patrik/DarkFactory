@@ -1152,7 +1152,94 @@ A normal TypeScript repository should still be fully usable without any of those
 
 ---
 
-# 27. Security boundaries
+# 27. Rich document editing as an optional capability
+
+The generic IDE is not a thesis editor, but repositories/languages may contribute a structured document-editing capability to the **Browser** renderer.
+
+When a resource supports lossless structured editing, Browser may expose Word-like contextual tools while the **Editor** renderer always exposes the exact source in Monaco.
+
+Possible structured-document controls include:
+- undo/redo;
+- bold/italic/underline/strike;
+- superscript/subscript;
+- lists;
+- indentation;
+- alignment where semantically valid;
+- links;
+- images/figures;
+- tables;
+- equations/math;
+- code blocks;
+- footnotes;
+- citations;
+- cross-references;
+- captions;
+- comments/review actions;
+- find/replace;
+- word/character count.
+
+The source remains authoritative.
+
+Do not implement a generic WYSIWYG serializer that destroys arbitrary source syntax, imports, comments, macros/functions, or repository-specific semantics.
+
+For Typst capability specifically:
+- Browser may provide source-preserving structured document editing;
+- Editor is Monaco over the exact `.typ` source;
+- arbitrary custom Typst functions remain first-class;
+- completion/symbol data may expose repository-defined functions;
+- a contextual **Insert Typst Function…** command may insert the real call and known arguments;
+- unsupported/custom constructs remain lossless and may be presented as atomic source-backed nodes rather than rewritten;
+- structured edits must patch source ranges deterministically rather than regenerate the full file from a reduced document model.
+
+Review remains independent from Browser/Editor and therefore applies to structured Browser editing and Monaco alike.
+
+---
+
+# 30. Client preview and canonical GitHub build
+
+Unpushed changes must remain previewable without sending source to GitHub.
+
+Where a repository capability provides client-side compilation/rendering:
+
+`browser working tree → client preview artifacts`
+
+Client preview may produce:
+- rendered Browser output;
+- diagnostics;
+- generated intermediate representations;
+- downloadable working-tree artifacts.
+
+After explicit Push, GitHub Actions remains authoritative for canonical CI/publication/release output:
+
+`GitHub commit → Actions → canonical artifacts → Pages / Release`
+
+The IDE should always distinguish:
+- **local preview**, derived from the browser working tree;
+- **canonical remote build**, tied to an exact GitHub commit SHA.
+
+For Typst-capable repositories:
+- use a current browser/WASM Typst implementation where feasible;
+- resolve imports/resources from the virtual browser working tree;
+- support incremental recompilation where practical;
+- expose the deterministic single-file compiled Typst intermediate;
+- never require a push merely to preview ordinary edits.
+
+For DarkFactory-Paper canonical releases, the configured build/release pipeline should publish at least:
+- PDF;
+- HTML;
+- Markdown;
+- compiled single-file Typst;
+- project/source ZIP.
+
+Review-profile artifacts may be released only when intentionally part of the repository publication contract.
+
+Ad-hoc Git comparison/diff artifacts remain client exports by default rather than multiplying release assets.
+
+The Actions/Pages/Release views should reconcile their artifacts/status against the exact pushed SHA visible in the workspace.
+
+---
+
+# 31. Security boundaries
 
 Because the application is a static browser IDE:
 
@@ -1169,7 +1256,7 @@ Because the application is a static browser IDE:
 
 ---
 
-# 28. Parallel-safe repository boundaries
+# 30. Parallel-safe repository boundaries
 
 This IDE workstream is intended to run in parallel with thesis work.
 
@@ -1194,11 +1281,26 @@ Avoid editing:
 
 unless a specific integration requires a narrowly scoped metadata/build hook.
 
+High-conflict shared files require explicit reconciliation before modification:
+- `PLAN.md`;
+- `AGENTS.md`;
+- `README.md`;
+- `DarkFactory/schema.typ`;
+- publication templates;
+- publication/build scripts;
+- `.github/workflows/*`;
+- release configuration.
+
+Early IDE phases should not touch these merely for convenience.
+
 If IDE work needs a repository-specific contract, consume the current public schema rather than redesigning it.
+
+`PLAN.md` remains authoritative for thesis execution.
+`IDE_PLAN.md` remains authoritative for the IDE workstream.
 
 ---
 
-# 29. Implementation sequence
+# 31. Implementation sequence
 
 ## IDE Phase 1 — Workbench shell
 
@@ -1424,7 +1526,7 @@ No repository-specific assumptions may leak into generic paths.
 
 ---
 
-# 30. Initial acceptance matrix
+# 32. Initial acceptance matrix
 
 Before declaring the generic IDE foundation complete, demonstrate at least:
 
@@ -1457,7 +1559,7 @@ Before declaring the generic IDE foundation complete, demonstrate at least:
 
 ---
 
-# 31. Non-goals for the generic core
+# 33. Non-goals for the generic core
 
 Do not make the generic IDE dependent on:
 
@@ -1477,7 +1579,7 @@ Do not recreate every GitHub administration/security/settings surface unless the
 
 ---
 
-# 32. DarkFactory-Paper as validation consumer
+# 34. DarkFactory-Paper as validation consumer
 
 DarkFactory-Paper should use the generic IDE without changing the generic architecture.
 
@@ -1502,7 +1604,7 @@ The IDE must remain useful if all DarkFactory-Paper-specific capability provider
 
 ---
 
-# 33. Final gate
+# 35. Final gate
 
 The secondary IDE plan is complete only when:
 
