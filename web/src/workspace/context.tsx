@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   getGithubBlob,
+  getGithubCommit,
   getGithubRepository,
   getGithubTree,
   getGithubUser,
@@ -166,12 +167,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       try {
         const repository = await getGithubRepository(fullName, token);
         const ref = requestedRef || repository.default_branch;
-        const tree = await getGithubTree(repository.full_name, ref, token);
+        const commit = await getGithubCommit(repository.full_name, ref, token);
+        const tree = await getGithubTree(repository.full_name, commit.commit.tree.sha, token);
         const snapshot: WorkspaceSnapshot = {
+          version: 2,
           id: workspaceId(repository.full_name, ref),
           repository: repositoryFromGithub(repository),
           ref,
-          baseSha: tree.sha,
+          baseSha: commit.sha,
+          treeSha: tree.sha,
           tree: tree.tree,
           updatedAt: Date.now(),
         };
