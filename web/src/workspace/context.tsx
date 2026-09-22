@@ -628,7 +628,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           updatedAt: now,
         });
         const current = overlays.find((entry) => entry.path === file.path);
-        if (current && sameWorkingFile(current, file)) await removeOverlay(workspace.id, file.path);
+        if (current && sameWorkingFile(current, file)) {
+          await removeOverlay(workspace.id, file.path);
+        } else if (
+          current &&
+          file.status !== "deleted" &&
+          (current.status === "added" || current.status === "renamed")
+        ) {
+          await saveOverlay({
+            ...current,
+            status: "modified",
+            renamedFrom: undefined,
+            updatedAt: Date.now(),
+          });
+        }
       }
       await saveLocalCommit(commit);
       await clearStaged(workspace.id);
@@ -651,13 +664,60 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         await createGithubBranchRef(workspace.repository.fullName, name, workspace.baseSha, token);
+        const nextId = workspaceId(workspace.repository.fullName, name);
+        const nextWorkspace: WorkspaceSnapshot = {
+          ...workspace,
+          id: nextId,
+          ref: name,
+          updatedAt: Date.now(),
+        };
+        await saveWorkspace(nextWorkspace);
+
+        for (const file of overlays) {
+          await saveOverlay({
+            ...file,
+            key: overlayKey(nextId, file.path),
+            workspaceId: nextId,
+          });
+        }
+        for (const file of staged) {
+          await saveStaged({
+            ...file,
+            key: overlayKey(nextId, file.path),
+            workspaceId: nextId,
+          });
+        }
+        for (const file of committedFiles) {
+          await saveCommittedFile({
+            ...file,
+            key: overlayKey(nextId, file.path),
+            workspaceId: nextId,
+          });
+        }
+        for (const localCommit of commits) {
+          const id = `${nextId}:local:${localCommit.createdAt}:${crypto.randomUUID()}`;
+          await saveLocalCommit({
+            ...localCommit,
+            id,
+            workspaceId: nextId,
+            files: localCommit.files.map((file) => ({
+              ...file,
+              key: overlayKey(nextId, file.path),
+              workspaceId: nextId,
+            })),
+          });
+        }
+
+        setWorkspace(nextWorkspace);
+        setRemoteHeadSha(workspace.baseSha);
+        setRecent(rememberWorkspace(nextWorkspace));
         setRefs(await listGithubRefs(workspace.repository.fullName, token));
-        await openRepository(workspace.repository.fullName, name);
+        await loadLocalState(nextId);
       } finally {
         setLoading(false);
       }
     },
-    [openRepository, token, workspace],
+    [committedFiles, commits, loadLocalState, overlays, staged, token, workspace],
   );
 
   const pushLocalCommits = useCallback(async () => {
