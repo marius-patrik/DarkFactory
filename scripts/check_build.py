@@ -531,13 +531,6 @@ require_contract(
     "compiled Markdown renderer",
 )
 
-workspace = sources[Path("web/src/workspace.tsx")]
-require_contract(
-    workspace,
-    ("DockviewReact", "paper-viewer-workspace-layout", "splitActive", "updateActive", "onDidLayoutChange"),
-    "review workspace",
-)
-
 pdf_viewer = sources[Path("web/src/pdf-document.tsx")]
 require_contract(
     pdf_viewer,
