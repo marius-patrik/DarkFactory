@@ -254,12 +254,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const id = workspaceId(repository.full_name, ref);
         const cached = await loadWorkspace(id);
         const remoteCommit = await getGithubCommit(repository.full_name, ref, token);
-        const localState = cached ? await Promise.all([
-          loadOverlays(id),
-          loadStaged(id),
-          loadCommittedFiles(id),
-          loadLocalCommits(id),
-        ]) : [[], [], [], []] as const;
+        const localState: [WorkingFile[], StagedFile[], CommittedFile[], LocalCommit[]] = cached
+          ? await Promise.all([
+              loadOverlays(id),
+              loadStaged(id),
+              loadCommittedFiles(id),
+              loadLocalCommits(id),
+            ])
+          : [[], [], [], []];
         const hasLocalState = localState.some((items) => items.length > 0);
 
         if (cached && hasLocalState && cached.baseSha !== remoteCommit.sha) {
