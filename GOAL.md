@@ -2,7 +2,7 @@
 
 Produce the best **proper academic paper** possible from the available material.
 
-Treat the current manuscript, research, citations, evidence, figures, terminology, and implementation context as material to work from—not as a structure that must be preserved.
+Treat the manuscript, research, citations, evidence, figures, terminology, implementation context, and repository history as material to work from—not as a structure or wording that must be preserved.
 
 The finished paper should:
 
@@ -21,12 +21,12 @@ The finished paper should:
 - satisfy the applicable academic and school requirements;
 - look and read like a polished final thesis.
 
-Do not optimize for preserving existing wording, headings, terminology, examples, length, or implementation history.
+Do not optimize for preserving existing wording, headings, terminology, examples, length, abstractions, or implementation history.
 
-Rewrite, combine, move, shorten, expand, or omit material whenever doing so improves the paper as a whole.
+Rewrite, combine, move, shorten, expand, replace, or omit material whenever doing so improves the paper as a whole.
 
 The standard is the finished reading experience.
 
-A reader should be able to read the work from beginning to end and understand what is being argued, why each part is present, how the evidence supports the claims, and what can legitimately be concluded.
+A reader should be able to move from the opening problem to the final conclusion without reconstructing the argument themselves. It should be clear what is being argued, why each part is present, how the evidence supports the claims, and what can legitimately be concluded.
 
 If material does not help produce that paper, it does not need to remain.
