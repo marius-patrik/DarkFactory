@@ -18,7 +18,7 @@
 
 #let intro = folder(key: "agentic_engineering", section: introduction.item)
 
-#let context = folder(
+#let context_ = folder(
   key: "agentic_context_instructions",
   title: [Instrukce a kontext],
   concepts: (
@@ -60,7 +60,7 @@
   title: [Agentické inženýrství],
   children: (
     intro,
-    context,
+    context_,
     behavior,
     orchestration,
     close,
