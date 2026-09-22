@@ -8,11 +8,8 @@
 
 #let concept(
   key: none,
-  industry: none,
-  czech: none,
-  english: none,
-  alias: none,
-  keyword: false,
+  term: none,
+  keyword: none,
   citation: none,
   source: none,
   definition: none,
@@ -24,17 +21,16 @@
   relations: (),
 ) = {
   assert(key != none, message: "concept requires a stable key")
-  assert(czech != none or english != none or industry != none, message: "concept requires canonical terminology")
-  assert(type(keyword) == bool, message: "concept keyword must be a boolean")
+  assert(term != none or keyword != none, message: "concept requires term or keyword")
+  if term != none and keyword != none {
+    assert(lower(str(term)) != lower(str(keyword)), message: "concept term and keyword must be distinct")
+  }
   assert(definition != none, message: "concept requires a definition")
   assert(description != none, message: "concept requires a description")
   (
     kind: "concept",
     key: key,
-    industry: industry,
-    czech: czech,
-    english: english,
-    alias: alias,
+    term: term,
     keyword: keyword,
     citation: citation,
     source: source,
@@ -51,27 +47,40 @@
 #let section(
   key: none,
   title: none,
+  term: none,
+  keyword: none,
+  citation: none,
+  source: none,
   definition: none,
   description: none,
   visual: none,
   examples: (),
   attachments: (),
   citations: (),
+  relations: (),
 ) = {
   assert(key != none, message: "section requires a stable key")
   assert(title != none, message: "section requires a title")
+  if term != none and keyword != none {
+    assert(lower(str(term)) != lower(str(keyword)), message: "section term and keyword must be distinct")
+  }
   assert(definition != none, message: "section requires an introductory definition/body")
   assert(description != none, message: "section requires an introductory description/body")
   (
     kind: "section",
     key: key,
     title: title,
+    term: term,
+    keyword: keyword,
+    citation: citation,
+    source: source,
     definition: definition,
     description: description,
     visual: visual,
     examples: examples,
     attachments: attachments,
     citations: citations,
+    relations: relations,
   )
 }
 
@@ -102,12 +111,13 @@
 
 #let collect-folder-concepts(node) = {
   let result = ()
-  // Folder sections are structural and numbered; only semantic concepts enter
-  // the vocabulary and semantic graph. Examples/attachments owned by a section
-  // are still semantic concepts and must remain addressable.
   if node.section != none {
-    for item in node.section.examples { result += collect-concept(item) }
-    for item in node.section.attachments { result += collect-concept(item) }
+    if node.section.term != none or node.section.keyword != none {
+      result += collect-concept(node.section)
+    } else {
+      for item in node.section.examples { result += collect-concept(item) }
+      for item in node.section.attachments { result += collect-concept(item) }
+    }
   }
   for item in node.concepts { result += collect-concept(item) }
   for child in node.children { result += collect-folder-concepts(child) }
@@ -221,15 +231,7 @@
   nodes
 }
 
-#let render-concept-title(item) = {
-  if item.industry != none {
-    term-full-name(item)
-  } else if item.czech != none {
-    item.czech
-  } else {
-    item.english
-  }
-}
+#let render-concept-title(item) = term-full-name(item)
 
 #let render-citations(item) = {
   if item.citations.len() > 0 {
