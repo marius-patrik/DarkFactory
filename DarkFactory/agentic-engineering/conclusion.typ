@@ -4,9 +4,9 @@
   key: "agentic_engineering_conclusion",
   title: [Závěr],
   definition: terms => [
-Agentické inženýrství spojuje návrh kontextu, řízení agentního chování a orchestrace do jedné vrstvy nad schopnostmi poskytovanými Harnessem.
+Agentické inženýrství určuje, jak jsou schopnosti Harnessu použity pro cílenou práci: co model dostává do kontextu, jak jsou jeho kroky řízeny a jak se práce koordinuje.
   ],
   description: terms => [
-Praktická část tyto abstrakce znovu nedefinuje; ukazuje jejich konkrétní realizaci a následně odděleně vyhodnocuje dostupné důkazy.
+Tím končí teoretická argumentace. Praktická část už tyto pojmy znovu nedefinuje; ukazuje jejich realizaci v DarkFactory a odděleně vyhodnocuje dostupné důkazy.
   ],
 )

@@ -4,9 +4,9 @@
   key: "harness_conclusion",
   title: [Závěr],
   definition: terms => [
-Harness mění izolované modelové volání na stavový systém schopný opakovaně pozorovat prostředí, volit akce a zachovávat průběh práce.
+Harness doplňuje modelovou inferenci o kontinuitu běhu a rozhraní pro pozorování a změnu externího prostředí.
   ],
   description: terms => [
-Sám ale neurčuje, jak má být kontext kurátorován, autonomie omezována nebo práce rozdělována mezi více agentů. To je úloha Agentického inženýrství.
+Tím vzniká agentní runtime schopný jednat, ale samotné mechanismy ještě neurčují strategii práce. Výběr kontextu, řízení chování a rozdělování práce jsou už návrhovými rozhodnutími Agentického inženýrství.
   ],
 )

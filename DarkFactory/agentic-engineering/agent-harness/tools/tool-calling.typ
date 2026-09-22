@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": bib
+#import "/DarkFactory/templates/common.typ": term, bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
@@ -8,10 +8,10 @@
   citation: (bib.anthropic2024tooluse, bib.openai_structured_outputs),
   source: bib.anthropic2024tooluse,
   definition: terms => [
-Mechanismus, kterým model vybere nástroj a předá jeho strukturované argumenty Harnessu místo přímého provedení operace.
+Mechanismus, kterým model místo běžné textové odpovědi vybere konkrétní #term(terms.tools) a vytvoří strukturované argumenty pro jeho vyvolání. #cite(bib.anthropic2024tooluse)
   ],
   description: terms => [
-Harness popisuje dostupné nástroje modelu a po výběru nástroje validuje argumenty, provede příslušnou operaci a výsledek vrátí do dalšího kroku agentní smyčky. JSON Schema je jedním z prostředků popisu rozhraní nástroje, nikoli samostatnou kategorií agentního mechanismu.
+Schéma rozhraní omezuje tvar argumentů a umožňuje jejich programovou validaci; JSON Schema je jedním z používaných formátů takového kontraktu. #cite(bib.openai_structured_outputs)
   ],
   relations: ((type: "dependency", target: "tools"), (type: "related", target: "agent_loop")),
 )

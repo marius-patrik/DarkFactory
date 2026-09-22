@@ -4,9 +4,9 @@
   key: "model_inference_intro",
   title: [Úvod],
   definition: terms => [
-Jazykový model je v této práci chápán jako pravděpodobnostní komponenta, která při inferenci zpracovává omezený vstup a generuje další tokeny.
+Tato část odděluje vlastnosti jazykového modelu, jeho běhové inference a limity, které z tohoto způsobu zpracování vyplývají.
   ],
   description: terms => [
-Oddělení modelu od inferenčního enginu umožňuje přesně určit, které vlastnosti patří modelové architektuře, které běhovému provedení inference a které už musí zajistit Harness.
+Cílem je vymezit hranici modelové vrstvy: končí vytvořením výstupu nad aktuálním kontextem. Trvalý stav úlohy, účinky v externím prostředí, nástroje a dlouhodobé řízení patří až do Harnessu.
   ],
 )
