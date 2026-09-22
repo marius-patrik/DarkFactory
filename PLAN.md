@@ -206,7 +206,7 @@ The remaining direct-text guide audit is mandatory before final submission.
 
 ## Remaining execution order
 
-### Phase C — Harness theory rewrite — ACTIVE NOW
+### Phase C — Harness theory rewrite — NEXT
 
 Rewrite/finalize Harness under 2.2 directly in `paper/PAPER.typ`.
 
