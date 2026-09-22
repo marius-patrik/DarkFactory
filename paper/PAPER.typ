@@ -66,6 +66,8 @@
 #align(center)[
   #v(1cm)
   #text(size: 14pt, weight: "bold", meta.skola)
+  #v(0.5cm)
+  #image("img/logo.jpeg", width: 3cm)
   #v(1fr)
   #text(size: 24pt, weight: "bold", hyphenate: false)[Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory]
   #v(0.7cm)
@@ -138,7 +140,6 @@ Zároveň dochází k prudkému růstu vnitřních schopností samotných model�
 
 Rostoucí schopnost modelu generovat řešení však sama o sobě neřeší fundamentální inženýrské výzvy. Jazykový model je ze své podstaty bezstavový inferenční mechanismus: nepamatuje si předchozí běhy mimo bezprostřední kontextové okno a bez napojení na nástroje nemůže sám ověřit funkčnost navrženého kódu kompilací či spuštěním testů. Bez okolního řídicího systému zvyšuje čistě modelová inference riziko nekonzistentních úprav souborů a ztráty kontextu při rozsáhlejších úlohách.
 
-V populárním diskurzu se v této souvislosti objevil koncept tzv. *Vibe Coding* @karpathy2025vibecoding, který označuje intuitivní styl programování založený na pokynech v přirozeném jazyce a omezené kontrole navrženého kódu. Tento přístup může být účinný při tvorbě prototypů nebo experimentech @willison2025vibecoding, sám však nepokrývá specifikaci, dohledatelnost změn a systematické odhalování vad, které vyžaduje dlouhodobý vývoj.
 
 Technickou odpověď proto představuje specializovaná běhová vrstva — *harness* — spolu s metodikou *agentického inženýrství*. Harness obklopuje modelovou inferenci, spravuje trvalý stav úlohy, zprostředkovává nástroje a provádí kontroly. Agentické inženýrství tyto schopnosti organizuje do procesu, jehož změny lze sledovat, ověřovat a podle potřeby zastavit.
 
@@ -255,7 +256,6 @@ Efektivita a bezpečnost agenta závisí na způsobu, jakým jsou mu dodávány 
 
 Správa kontextu vyžaduje aktivní selekci a *kompakci* (*context compaction*) @jiang2023llmlingua. Jelikož repozitáře přesahují velikost kontextového okna a trpí degradací pozornosti @liu2024, harness využívá selektivní načítání a vyhledávání (*Retrieval-Augmented Generation, RAG*) @lewis2020rag, aby do kontextu vkládal pouze soubory a symboly bezprostředně související s aktuálním krokem.
 
-Závažným bezpečnostním rizikem je zpracování nedůvěryhodných externích dat. Útok typu *Prompt Injection* (OWASP LLM01) @owasp-llm01-prompt-injection @owasp-prompt-injection spočívá v tom, že záškodnický text obsažený v analyzovaném souboru, webové stránce či chybovém logu přebije systémové instrukce a přiměje model k nežádoucí akci. Harness proto musí striktně oddělovat řídicí kanál (instrukce) od datového kanálu (pozorování z prostředí) a uplatňovat striktní validaci vstupů.
 
 Autonomie agenta má být deterministicky ohraničena. Harness může nastavit pevné *rozpočty běhu* (*execution budgets*), například maximální počet iterací, stropy na počet tokenů, finanční limity a časové zámky @microsoft-agent-looping. Pro vysoce rizikové operace (např. destruktivní změny souborů, nasazení do produkce nebo autorizace sloučení větve) je vhodný přístup *Člověk ve smyčce (Human-in-the-loop, HITL)* @openai-agents-hitl, při němž harness vyžaduje schválení lidským operátorem před provedením akce.
 
@@ -265,7 +265,7 @@ Komplexní softwarové úlohy často přesahují možnosti jediného agentního 
 
 Základním předpokladem efektivní orchestrace je *oddělitelné vlastnictví* (*separable ownership*). Dvě úlohy mohou běžet paralelně pouze tehdy, pokud modifikují vzájemně nezávislé části kódu a jejich změny lze deterministicky integrovat bez kolizí. Pokud tato podmínka není splněna, paralelní generování kódu vede ke zmatení kontextu a konfliktním změnám.
 
-Koordinátor může delegovat oddělitelnou dílčí odpovědnost specializovanému subagentovi s vlastním kontextem a nástroji @anthropic-managed-agents. Pokud se mění vlastník celé úlohy, handoff předá další roli pouze stav relevantní pro pokračování @openai-agent-orchestration. Pro explicitní pořadí, větvení a návraty je vhodný workflow graf @microsoft-agent-workflows. DAG popisuje pouze acyklické závislosti, zatímco agentní proces potřebuje obecný orientovaný graf, pokud se po neúspěšném testu nebo zamítnuté revizi vrací do opravy @microsoft-agent-looping.
+Koordinátor může delegovat oddělitelnou dílčí odpovědnost specializovanému subagentovi s vlastním kontextem a nástroji @anthropic-managed-agents. Pokud se mění vlastník celé úlohy, handoff předá další roli pouze stav relevantní pro pokračování @openai-agent-orchestration. Pro explicitní pořadí, větvení a návraty lze použít workflow graf, který zachycuje návaznosti mezi jednotlivými kroky a agenty @microsoft-agent-workflows.
 
 I při zapojení pokročilé orchestrace zůstává nutné zachovat finální integrační bránu, deterministické CI kontroly a formální revizi.
 

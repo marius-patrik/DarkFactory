@@ -244,8 +244,6 @@ introduction = body_source[intro_start:theory_start]
 theory = body_source[theory_start:practical_start]
 practical = body_source[practical_start:results_start]
 
-if "Vibe Coding" not in introduction:
-    fail("Vibe Coding must be mentioned in Introduction")
 if "Agentické inženýrství" not in theory:
     fail("Agentické inženýrství must belong to Theory")
 if "DarkFactory" not in practical:
