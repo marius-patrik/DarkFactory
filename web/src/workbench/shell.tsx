@@ -182,9 +182,14 @@ export function WorkbenchShell() {
     persist(theme);
   }, [persist, setSetting]);
 
+  const focusOmnibar = useCallback((mode: "navigation" | "command", value?: string) => {
+    omnibarRef.current?.focus(mode, value);
+  }, []);
+
   const runtime = useMemo<WorkbenchRuntime>(() => ({
     settings,
     activeTab,
+    focusOmnibar,
     setTheme,
     openTab,
     moveTab,
@@ -196,15 +201,15 @@ export function WorkbenchShell() {
     setSurfaceVisible,
     layoutChanged: () => persist(),
     getTab,
-  }), [settings, activeTab, setTheme, openTab, moveTab, splitTab, closeTab, setPinned, updateTabState, toggleSurface, setSurfaceVisible, persist, getTab]);
+  }), [settings, activeTab, focusOmnibar, setTheme, openTab, moveTab, splitTab, closeTab, setPinned, updateTabState, toggleSurface, setSurfaceVisible, persist, getTab]);
 
   const shortcutHandlers = useMemo(() => ({
     togglePrimary: () => toggleSurface("primary"),
     toggleSecondary: () => toggleSurface("secondary"),
     togglePanel: () => toggleSurface("panel"),
-    focusNavigation: () => omnibarRef.current?.focus("navigation"),
-    focusCommands: () => omnibarRef.current?.focus("command"),
-  }), [toggleSurface]);
+    focusNavigation: () => focusOmnibar("navigation"),
+    focusCommands: () => focusOmnibar("command"),
+  }), [focusOmnibar, toggleSurface]);
   useWorkbenchShortcuts(shortcutHandlers);
 
   const defaults = useMemo<Record<WorkbenchSurface, WorkbenchTab[]>>(() => ({

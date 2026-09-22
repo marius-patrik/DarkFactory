@@ -8,7 +8,7 @@ import { useWorkbenchRuntime } from "./runtime";
 
 export type OmnibarMode = "navigation" | "command";
 export type OmnibarQueryKind = "command" | "symbol" | "issue" | "line" | "url" | "resource";
-export type OmnibarControl = { focus: (mode: OmnibarMode) => void };
+export type OmnibarControl = { focus: (mode: OmnibarMode, value?: string) => void };
 
 const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primary" | "secondary" | "panel" }> = [
   { label: "Open Editor", type: "editor" },
@@ -67,9 +67,9 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   }, [activeResource, focused, mode]);
 
   useImperativeHandle(ref, () => ({
-    focus(nextMode) {
+    focus(nextMode, value) {
       setMode(nextMode);
-      setQuery(nextMode === "command" ? ">" : activeResource);
+      setQuery(value ?? (nextMode === "command" ? ">" : ""));
       requestAnimationFrame(() => inputRef.current?.focus());
     },
   }), [activeResource]);
