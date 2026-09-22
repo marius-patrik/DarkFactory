@@ -69,7 +69,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 
 No standalone Software Engineering article.
 
-#### 2.3 Jazykový model a inference
+#### 2.3 Model
 
 - 2.3.1 Úvod
 - 2.3.2 Jazykový model
@@ -99,7 +99,7 @@ Harness is owned by the numbered section itself; there is no duplicate Harness a
   - Agentní sezení (Session)
   - Přepis (Transcript)
   - Stav (State)
-- 2.4.3 Nástroje a prostředí
+- 2.4.3 Prostředí a nástroje
   - Prostředí agenta (Agent Environment)
   - Nástroje (Tools)
   - Vyvolávání nástrojů (Tool Calling)
