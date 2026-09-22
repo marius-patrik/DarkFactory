@@ -101,21 +101,37 @@ A rendered numbered section has one owning folder manifest. Concept files may re
 
 ### New concept identity
 
-Use these canonical terminology records unless a source proves the wording factually wrong:
+Use these canonical terminology records and stable keys:
 
 - Temperature:
+  - `key: "temperature"`
   - `term: "Teplota"`
   - `keyword: "Temperature"`
+  - relations: dependency on `language_model`; related to `inference_engine`.
 - Model Provider:
+  - `key: "model_provider"`
   - `term: "Poskytovatel modelu"`
   - `keyword: "Model Provider"`
+  - relations: related to `language_model` and `inference_engine`.
 - AGENTS.md / CLAUDE.md article:
+  - `key: "project_instructions"`
   - `term: "Projektové instrukce"`
   - `keyword: "AGENTS.md / CLAUDE.md"`
   - article scope is specifically project/repository instruction files consumed by coding agents;
-  - AGENTS.md and CLAUDE.md are concrete implementations/examples, not asserted to be one universal standard.
+  - AGENTS.md and CLAUDE.md are concrete implementations/examples, not asserted to be one universal standard;
+  - relations: related to `system_prompt` and `context_engineering`;
+  - exact reading position: immediately after **Systémový prompt (System Prompt)** and before **Kontextové inženýrství (Context Engineering)**.
+
+These relation edges express conceptual linkage only and must not change manifest reading order.
 
 ### Section 1 adoption and deployment evidence
+
+Exact placement: **1.1 Motivace a vymezení problému**. Neither the adoption/deployment dot grid nor the longitudinal capability curve belongs in 1.2–1.5.
+
+Within 1.1, use this evidence order:
+1. broad organizational AI adoption versus mature software-engineering agent deployment;
+2. longitudinal model-capability trend;
+3. prose transition from rapid capability/adoption growth to the still-unsettled engineering problem addressed by the thesis.
 
 Use a native vector/Typst **100-dot-grid visual**, restoring the visual language of the earlier dot diagram without reusing the old third-party CPA.RIP asset.
 
@@ -153,6 +169,8 @@ The textual takeaway may state the source’s measured trend only. As of the Sep
 Do not replace this with a collection of unrelated benchmark bars.
 
 ### 2.2 current frontier benchmark snapshot
+
+Exact placement: **2.2.1 Úvod**, after its opening scope/transition paragraph and before 2.2.2 Architektura a reprezentace.
 
 Use **Artificial Analysis Intelligence Index v4.3.2** as the pinned current comparison for this revision unless Artificial Analysis publishes a newer stable index version before the implementation agent begins.
 
@@ -505,6 +523,8 @@ Final synthesis only after Results are pinned. Do not repeat Results prose.
 ## Execution order from this revision
 
 ### Phase 1 — Structural migration and durable-rule synchronization
+
+This phase is **structure-only** except for the minimum sourced definitions required for newly introduced schema records. It must not redesign figures, restore statistics, collect screenshots, or perform the full prose rewrite.
 
 - apply the new work title everywhere;
 - rename section 2 to **Teoretická část**;
