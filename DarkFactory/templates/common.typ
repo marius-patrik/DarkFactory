@@ -262,7 +262,7 @@
   if value.keyword != none {
     assert(type(value.keyword) == str, message: "semantic keyword must be a string on " + value.key + ": " + repr(value.keyword))
   }
-  value
+  none
 }
 
 #let term-source(value) = {
