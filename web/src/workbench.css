@@ -2088,3 +2088,21 @@ a {
 .github-file-link:hover {
   text-decoration: underline;
 }
+
+
+.github-inline-action {
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.github-inline-action:hover {
+  background: var(--surface-2);
+}

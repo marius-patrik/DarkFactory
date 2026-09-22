@@ -732,10 +732,11 @@ export function cancelGithubWorkflowRun(fullName: string, id: number, token: str
 async function githubDownload(
   path: string,
   token: string | null,
+  accept = "application/vnd.github+json",
 ): Promise<Uint8Array> {
   const response = await fetch(`https://api.github.com${path}`, {
     headers: {
-      Accept: "application/vnd.github+json",
+      Accept: accept,
       "X-GitHub-Api-Version": GITHUB_API_VERSION,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -764,6 +765,29 @@ export function downloadGithubArtifact(
   return githubDownload(
     `/repos/${fullName}/actions/artifacts/${artifactId}/zip`,
     token,
+  );
+}
+
+export function downloadGithubRepositoryArchive(
+  fullName: string,
+  ref: string,
+  token: string | null,
+) {
+  return githubDownload(
+    `/repos/${fullName}/zipball/${encodeURIComponent(ref)}`,
+    token,
+  );
+}
+
+export function downloadGithubReleaseAsset(
+  fullName: string,
+  assetId: number,
+  token: string | null,
+) {
+  return githubDownload(
+    `/repos/${fullName}/releases/assets/${assetId}`,
+    token,
+    "application/octet-stream",
   );
 }
 

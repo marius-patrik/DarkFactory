@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createGithubRelease,
+  downloadGithubReleaseAsset,
   getGithubCommit,
   getGithubProject,
   getGithubRelease,
@@ -13,8 +14,10 @@ import {
   type GithubProject,
   type GithubProjectItem,
   type GithubRelease,
+  type GithubReleaseAsset,
 } from "@/github/client";
 import type { WorkbenchTab } from "@/workbench/model";
+import { downloadBytes } from "@/workspace/export";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
 import {
   dateLabel,
@@ -142,6 +145,11 @@ export function ReleaseTab({ tab }: { tab: WorkbenchTab }) {
   if (error) return <ErrorState error={error} />;
   if (!release) return <div className="tab-empty"><span>Release not found.</span></div>;
 
+  const downloadAsset = async (asset: GithubReleaseAsset) => {
+    const bytes = await downloadGithubReleaseAsset(fullName, asset.id, token);
+    downloadBytes(bytes, asset.name, asset.content_type || "application/octet-stream");
+  };
+
   const edit = async () => {
     const name = window.prompt("Release name", release.name || release.tag_name);
     if (name === null) return;
@@ -170,7 +178,12 @@ export function ReleaseTab({ tab }: { tab: WorkbenchTab }) {
           {release.assets.map((asset) => (
             <div key={asset.id} className="github-data-row">
               <a href={asset.browser_download_url} target="_blank" rel="noreferrer">{asset.name}</a>
-              <span>{Math.round(asset.size / 1024)} KB · {asset.download_count} downloads</span>
+              <span>
+                {Math.round(asset.size / 1024)} KB · {asset.download_count} downloads ·{" "}
+                <button type="button" className="github-inline-action" onClick={() => void downloadAsset(asset)}>
+                  Download
+                </button>
+              </span>
             </div>
           ))}
           {!release.assets.length && <p className="github-empty-body">No assets.</p>}

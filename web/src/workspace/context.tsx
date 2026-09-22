@@ -18,6 +18,7 @@ import {
   getGithubCommit,
   getGithubRepository,
   getGithubTree,
+  downloadGithubRepositoryArchive,
   getGithubUser,
   listGithubRefs,
   listGithubRepositories,
@@ -105,6 +106,7 @@ type WorkspaceContextValue = {
   pushLocalCommits: () => Promise<string>;
   exportPatch: () => Promise<void>;
   exportWorkspaceZip: () => Promise<void>;
+  exportRemoteArchive: () => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -955,6 +957,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [committedFiles, overlays, token, workspace]);
 
+  const exportRemoteArchive = useCallback(async () => {
+    if (!workspace) throw new Error("No workspace is open.");
+    setLoading(true);
+    setError(null);
+    try {
+      const archive = await downloadGithubRepositoryArchive(
+        workspace.repository.fullName,
+        workspace.ref,
+        token,
+      );
+      const filename = `${workspace.repository.name}-${workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-")}-remote.zip`;
+      downloadBytes(archive, filename, "application/zip");
+    } finally {
+      setLoading(false);
+    }
+  }, [token, workspace]);
+
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       token,
@@ -996,6 +1015,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       pushLocalCommits,
       exportPatch,
       exportWorkspaceZip,
+      exportRemoteArchive,
     }),
     [
       token,
@@ -1036,6 +1056,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       pushLocalCommits,
       exportPatch,
       exportWorkspaceZip,
+      exportRemoteArchive,
     ],
   );
 

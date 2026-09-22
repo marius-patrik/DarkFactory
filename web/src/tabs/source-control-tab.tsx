@@ -120,6 +120,7 @@ export function SourceControlTab() {
           <button type="button" disabled={busy || !workspace.commits.length || !workspace.token || !branchWorkspace || Boolean(diverged)} onClick={() => void run(workspace.pushLocalCommits)} title="Push local commits"><Upload size={12} /></button>
           <button type="button" disabled={busy || (!workspace.overlays.length && !workspace.commits.length)} onClick={() => void run(workspace.exportPatch)} title="Export patch"><Download size={12} /></button>
           <button type="button" disabled={busy} onClick={() => void run(workspace.exportWorkspaceZip)} title="Export current workspace ZIP"><Archive size={12} /></button>
+          <button type="button" disabled={busy} onClick={() => void run(workspace.exportRemoteArchive)} title="Download remote ref ZIP"><Archive size={12} /></button>
         </div>
       </div>
       <div className="scm-ref-row">
