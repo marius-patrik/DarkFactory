@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, X } from "lucide-react";
 import type { WorkbenchTab } from "@/workbench/model";
+
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:", "about:", "blob:"]);
 
 function normalizeUrl(input: string) {
   const value = input.trim();
   if (!value) return "about:blank";
-  if (/^[a-z][a-z\d+.-]*:/i.test(value)) return value;
-  return `https://${value}`;
+  const candidate = /^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`;
+  const url = new URL(candidate, window.location.href);
+  if (!ALLOWED_PROTOCOLS.has(url.protocol)) {
+    throw new Error(`Unsupported browser URL protocol: ${url.protocol}`);
+  }
+  return url.href;
 }
 
 export function BrowserTab({
@@ -17,21 +23,45 @@ export function BrowserTab({
   updateState: (patch: Record<string, unknown>) => void;
 }) {
   const initialUrl = typeof tab.state.url === "string" ? tab.state.url : "about:blank";
-  const history = Array.isArray(tab.state.history) ? tab.state.history.filter((item): item is string => typeof item === "string") : [initialUrl];
-  const index = typeof tab.state.historyIndex === "number" ? Math.max(0, Math.min(history.length - 1, tab.state.historyIndex)) : Math.max(0, history.length - 1);
+  const history = Array.isArray(tab.state.history)
+    ? tab.state.history.filter((item): item is string => typeof item === "string")
+    : [initialUrl];
+  const index = typeof tab.state.historyIndex === "number"
+    ? Math.max(0, Math.min(history.length - 1, tab.state.historyIndex))
+    : Math.max(0, history.length - 1);
   const current = history[index] ?? initialUrl;
   const [draft, setDraft] = useState(current === "about:blank" ? "" : current);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(current !== "about:blank");
-  const [frameError, setFrameError] = useState(false);
+  const [frameError, setFrameError] = useState("");
+  const [slowFrame, setSlowFrame] = useState(false);
+
+  useEffect(() => {
+    setDraft(current === "about:blank" ? "" : current);
+  }, [current]);
+
+  useEffect(() => {
+    if (!loading || current === "about:blank" || frameError) {
+      setSlowFrame(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSlowFrame(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [current, frameError, loading, revision]);
 
   const navigate = (value: string) => {
-    const url = normalizeUrl(value);
-    const nextHistory = [...history.slice(0, index + 1), url];
-    updateState({ url, history: nextHistory, historyIndex: nextHistory.length - 1 });
-    setDraft(url === "about:blank" ? "" : url);
-    setFrameError(false);
-    setLoading(url !== "about:blank");
+    try {
+      const url = normalizeUrl(value);
+      const nextHistory = [...history.slice(0, index + 1), url];
+      updateState({ url, history: nextHistory, historyIndex: nextHistory.length - 1 });
+      setDraft(url === "about:blank" ? "" : url);
+      setFrameError("");
+      setSlowFrame(false);
+      setLoading(url !== "about:blank");
+    } catch (reason) {
+      setFrameError(reason instanceof Error ? reason.message : String(reason));
+      setLoading(false);
+    }
   };
 
   const step = (delta: number) => {
@@ -39,8 +69,16 @@ export function BrowserTab({
     if (nextIndex < 0 || nextIndex >= history.length) return;
     updateState({ url: history[nextIndex], historyIndex: nextIndex });
     setDraft(history[nextIndex]);
-    setFrameError(false);
+    setFrameError("");
+    setSlowFrame(false);
     setLoading(true);
+  };
+
+  const reload = () => {
+    setRevision((value) => value + 1);
+    setFrameError("");
+    setSlowFrame(false);
+    setLoading(current !== "about:blank");
   };
 
   return (
@@ -48,7 +86,7 @@ export function BrowserTab({
       <div className="browser-toolbar">
         <button type="button" className="workbench-icon-button" disabled={index <= 0} onClick={() => step(-1)} aria-label="Back"><ArrowLeft size={14} /></button>
         <button type="button" className="workbench-icon-button" disabled={index >= history.length - 1} onClick={() => step(1)} aria-label="Forward"><ArrowRight size={14} /></button>
-        <button type="button" className="workbench-icon-button" onClick={() => { setRevision((value) => value + 1); setFrameError(false); setLoading(current !== "about:blank"); }} aria-label="Reload"><RefreshCw size={14} /></button>
+        <button type="button" className="workbench-icon-button" onClick={reload} aria-label="Reload"><RefreshCw size={14} /></button>
         <form className="browser-location" onSubmit={(event) => { event.preventDefault(); navigate(draft); }}>
           <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Enter URL" aria-label="URL" />
         </form>
@@ -59,11 +97,37 @@ export function BrowserTab({
         {current === "about:blank" ? (
           <div className="tab-empty"><strong>Browser</strong><span>Enter a URL to open an embeddable web page.</span></div>
         ) : frameError ? (
-          <div className="tab-empty"><X size={20} /><strong>This page could not be embedded.</strong><span>The site may block iframes with browser security policy. Open it externally instead.</span><a href={current} target="_blank" rel="noreferrer">Open externally</a></div>
+          <div className="tab-empty">
+            <X size={20} />
+            <strong>This page could not be embedded.</strong>
+            <span>{frameError}</span>
+            <a href={current} target="_blank" rel="noreferrer">Open externally</a>
+          </div>
         ) : (
           <>
             {loading && <div className="browser-loading">Loading…</div>}
-            <iframe key={`${current}:${revision}`} title={current} src={current} sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts" referrerPolicy="no-referrer" onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFrameError(true); }} />
+            {slowFrame && (
+              <div className="browser-frame-warning">
+                This page is taking unusually long to embed. It may block iframes.
+                <a href={current} target="_blank" rel="noreferrer">Open externally</a>
+              </div>
+            )}
+            <iframe
+              key={`${current}:${revision}`}
+              title={current}
+              src={current}
+              sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts"
+              referrerPolicy="no-referrer"
+              onLoad={() => {
+                setLoading(false);
+                setSlowFrame(false);
+              }}
+              onError={() => {
+                setLoading(false);
+                setSlowFrame(false);
+                setFrameError("The site may block embedding through browser security policy.");
+              }}
+            />
           </>
         )}
       </div>

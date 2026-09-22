@@ -106,7 +106,7 @@ function RegisteredTabContent({ tab }: { tab: WorkbenchTab }): ReactNode {
     case "problems": return <ProblemsTab />;
     case "output": return <OutputTab />;
     case "settings": return <SettingsView settings={runtime.settings} onThemeChange={runtime.setTheme} />;
-    case "document": return <DocumentTab />;
+    case "document": return <DocumentTab tab={tab} />;
     case "diff": return <DiffTab tab={tab} theme={runtime.settings.theme} />;
     case "issues": return <IssuesTab />;
     case "issue": return <IssueTab tab={tab} />;

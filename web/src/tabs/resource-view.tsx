@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   getGithubBlobBytes,
   getGithubCommit,
   getGithubPullRequest,
   getGithubTree,
 } from "@/github/client";
-import { PdfDocumentView } from "@/pdf-document";
+import { isTextResourcePath, mimeForPath, representationForPath } from "@/renderers/capabilities";
+import { RenderedResource } from "@/renderers/registry";
 import { useWorkspace } from "@/workspace/context";
 
 export type ResourceRenderer = "editor" | "browser";
@@ -32,59 +31,7 @@ export type ResourceComparison = {
   after: ResourceSnapshot;
 };
 
-const BINARY_EXTENSIONS = new Set([
-  "pdf", "png", "jpg", "jpeg", "gif", "webp", "ico", "zip", "gz", "tar",
-  "woff", "woff2", "ttf", "otf", "wasm", "mp3", "mp4", "mov", "avi",
-]);
-
-function extension(path: string) {
-  const name = path.split("/").at(-1) || path;
-  const index = name.lastIndexOf(".");
-  return index >= 0 ? name.slice(index + 1).toLowerCase() : "";
-}
-
-export function representationForPath(path: string) {
-  const ext = extension(path);
-  return ext ? `.${ext}` : "text";
-}
-
-export function mimeForPath(path: string) {
-  switch (extension(path)) {
-    case "md":
-    case "mdx":
-      return "text/markdown;charset=utf-8";
-    case "html":
-    case "htm":
-      return "text/html;charset=utf-8";
-    case "svg":
-      return "image/svg+xml";
-    case "pdf":
-      return "application/pdf";
-    case "png":
-      return "image/png";
-    case "jpg":
-    case "jpeg":
-      return "image/jpeg";
-    case "gif":
-      return "image/gif";
-    case "webp":
-      return "image/webp";
-    case "json":
-      return "application/json;charset=utf-8";
-    case "css":
-      return "text/css;charset=utf-8";
-    case "js":
-    case "mjs":
-    case "cjs":
-      return "text/javascript;charset=utf-8";
-    default:
-      return "text/plain;charset=utf-8";
-  }
-}
-
-function isTextPath(path: string) {
-  return !BINARY_EXTENSIONS.has(extension(path));
-}
+export { RenderedResource };
 
 function snapshotFromBytes(path: string, label: string, bytes: Uint8Array | null): ResourceSnapshot {
   if (!bytes) {
@@ -93,7 +40,7 @@ function snapshotFromBytes(path: string, label: string, bytes: Uint8Array | null
   return {
     label,
     exists: true,
-    content: isTextPath(path) ? new TextDecoder().decode(bytes) : null,
+    content: isTextResourcePath(path) ? new TextDecoder().decode(bytes) : null,
     bytes,
     mime: mimeForPath(path),
   };
@@ -288,97 +235,6 @@ export function useResourceComparison(path: string, compare: CompareMode, target
   ]);
 
   return { current, comparison, loading, error };
-}
-
-function bytesBlob(bytes: Uint8Array, type: string) {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return new Blob([copy.buffer], { type });
-}
-
-function useObjectUrl(snapshot: ResourceSnapshot | null) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    if (!snapshot?.exists || !snapshot.bytes) {
-      setUrl("");
-      return;
-    }
-    const next = URL.createObjectURL(bytesBlob(snapshot.bytes, snapshot.mime));
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [snapshot]);
-  return url;
-}
-
-const noop = () => undefined;
-
-export function RenderedResource({
-  path,
-  snapshot,
-}: {
-  path: string;
-  snapshot: ResourceSnapshot | null;
-}) {
-  const objectUrl = useObjectUrl(snapshot);
-  const ext = extension(path);
-
-  if (!snapshot) return <div className="tab-empty"><span>No resource loaded.</span></div>;
-  if (!snapshot.exists) return <div className="tab-empty"><strong>{snapshot.label}</strong><span>File does not exist in this side of the comparison.</span></div>;
-
-  if (ext === "md" || ext === "mdx") {
-    return (
-      <div className="rendered-scroll">
-        <article className="publication-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{snapshot.content ?? ""}</ReactMarkdown>
-        </article>
-      </div>
-    );
-  }
-
-  if (ext === "html" || ext === "htm") {
-    return (
-      <iframe
-        className="resource-html-frame"
-        title={snapshot.label}
-        srcDoc={snapshot.content ?? ""}
-        sandbox="allow-forms allow-popups"
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-
-  if (ext === "pdf" && objectUrl) {
-    return (
-      <div className="resource-pdf">
-        <PdfDocumentView
-          pdfPath={objectUrl}
-          embedded
-          sidebarSide="left"
-          sidebarMode="thumbnails"
-          sidebarHidden
-          sidebarWidth={220}
-          onMoveSidebar={noop}
-          onToggleSidebarMode={noop}
-          onSidebarWidthChange={noop}
-          onStateChange={noop}
-        />
-      </div>
-    );
-  }
-
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext) && objectUrl) {
-    return (
-      <div className="resource-image">
-        <img src={objectUrl} alt={path} />
-      </div>
-    );
-  }
-
-  if (snapshot.content !== null) {
-    return <pre className="resource-pre">{snapshot.content}</pre>;
-  }
-
-  return <div className="tab-empty"><strong>{snapshot.label}</strong><span>No Browser renderer is available for this binary file yet.</span></div>;
 }
 
 export function ResourceControls({

@@ -1,5 +1,8 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Command, Search } from "lucide-react";
+import { preferredWorkbenchTabForPath } from "@/renderers/capabilities";
+import { useWorkspace } from "@/workspace/context";
+import { languageForPath } from "@/workspace/languages";
 import type { WorkbenchTabType } from "./model";
 import { useWorkbenchRuntime } from "./runtime";
 
@@ -13,6 +16,9 @@ const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primar
   { label: "Open Explorer", type: "explorer" },
   { label: "Open Source Control", type: "source-control" },
   { label: "Open Search", type: "search" },
+  { label: "Open Issues", type: "issues" },
+  { label: "Open Pull Requests", type: "pull-requests" },
+  { label: "Open Actions", type: "actions" },
   { label: "Open Problems", type: "problems" },
   { label: "Open Output", type: "output" },
   { label: "Open Settings", type: "settings" },
@@ -37,6 +43,7 @@ export function classifyOmnibarQuery(value: string): OmnibarQueryKind {
 
 export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   const runtime = useWorkbenchRuntime();
+  const workspace = useWorkspace();
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<OmnibarMode>("navigation");
   const [query, setQuery] = useState("");
@@ -51,15 +58,63 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   }), []);
 
   const commandQuery = query.replace(/^>/, "").trim().toLowerCase();
-  const visibleCommands = COMMANDS.filter((command) => !commandQuery || command.label.toLowerCase().includes(commandQuery)).slice(0, 8);
+  const visibleCommands = COMMANDS
+    .filter((command) => !commandQuery || command.label.toLowerCase().includes(commandQuery))
+    .slice(0, 8);
+
+  const resourcePaths = useMemo(() => {
+    if (!workspace.workspace) return [];
+    const paths = new Set(
+      workspace.workspace.tree
+        .filter((entry) => entry.type === "blob")
+        .map((entry) => entry.path),
+    );
+    for (const file of workspace.committedFiles) {
+      if (file.deleted) paths.delete(file.path);
+      else paths.add(file.path);
+    }
+    for (const file of workspace.overlays) {
+      if (file.status === "deleted") paths.delete(file.path);
+      else paths.add(file.path);
+    }
+    return [...paths].sort();
+  }, [workspace.committedFiles, workspace.overlays, workspace.workspace]);
+
+  const queryKind = mode === "command" ? "command" : classifyOmnibarQuery(query);
+  const resourceQuery = query.trim().toLowerCase();
+  const resourceResults = queryKind === "resource" && resourceQuery
+    ? resourcePaths
+        .filter((path) => path.toLowerCase().includes(resourceQuery))
+        .sort((left, right) => {
+          const leftName = left.split("/").at(-1)?.toLowerCase() ?? left.toLowerCase();
+          const rightName = right.split("/").at(-1)?.toLowerCase() ?? right.toLowerCase();
+          const leftExact = leftName === resourceQuery ? 0 : 1;
+          const rightExact = rightName === resourceQuery ? 0 : 1;
+          return leftExact - rightExact || left.length - right.length || left.localeCompare(right);
+        })
+        .slice(0, 8)
+    : [];
+
+  const closeResults = () => {
+    setFocused(false);
+    inputRef.current?.blur();
+  };
 
   const runCommand = (command: (typeof COMMANDS)[number]) => {
     if (command.type) runtime.openTab(command.type);
     if (command.action === "primary") runtime.toggleSurface("primary");
     if (command.action === "secondary") runtime.toggleSurface("secondary");
     if (command.action === "panel") runtime.toggleSurface("panel");
-    setFocused(false);
-    inputRef.current?.blur();
+    closeResults();
+  };
+
+  const openResource = (path: string) => {
+    if (preferredWorkbenchTabForPath(path) === "document") {
+      runtime.openTab("document", "main", { path });
+    } else {
+      runtime.openTab("editor", "main", { path, language: languageForPath(path) });
+    }
+    closeResults();
   };
 
   return (
@@ -74,12 +129,14 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
           onChange={(event) => {
             const next = event.target.value;
             setQuery(next);
-            if (next.startsWith(">")) setMode("command");
+            setMode(next.startsWith(">") ? "command" : "navigation");
           }}
           onKeyDown={(event) => {
-            if (event.key === "Escape") { inputRef.current?.blur(); setFocused(false); return; }
+            if (event.key === "Escape") {
+              closeResults();
+              return;
+            }
             if (event.key !== "Enter") return;
-            const queryKind = mode === "command" ? "command" : classifyOmnibarQuery(query);
             if (queryKind === "command") {
               const command = visibleCommands[0];
               if (command) runCommand(command);
@@ -88,18 +145,52 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
             if (queryKind === "url") {
               const url = /^[a-z][a-z\d+.-]*:/i.test(query) ? query : `https://${query}`;
               runtime.openTab("browser", "main", { url, history: [url], historyIndex: 0 });
+              closeResults();
+              return;
+            }
+            if (queryKind === "issue") {
+              const number = Number(query.replace(/^#/, ""));
+              if (Number.isInteger(number) && number > 0) {
+                runtime.openTab("issue", "main", { number });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "resource" && resourceResults[0]) {
+              openResource(resourceResults[0]);
             }
           }}
-          placeholder={mode === "command" ? "Type a command" : "Search files, resources, or enter URL"}
+          placeholder={mode === "command" ? "Type a command" : "Search files, #issues, or enter URL"}
           aria-label="Workbench omnibar"
         />
         <kbd>{mode === "command" ? "⌘⇧P" : "⌘P"}</kbd>
       </div>
-      {focused && (mode === "command" || query.startsWith(">")) && (
+      {focused && queryKind === "command" && (
         <div className="omnibar-results">
           {visibleCommands.length ? visibleCommands.map((command) => (
-            <button key={command.label} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand(command)}>{command.label}</button>
+            <button
+              key={command.label}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runCommand(command)}
+            >
+              {command.label}
+            </button>
           )) : <div className="omnibar-empty">No matching commands</div>}
+        </div>
+      )}
+      {focused && queryKind === "resource" && query.trim() && (
+        <div className="omnibar-results">
+          {resourceResults.length ? resourceResults.map((path) => (
+            <button
+              key={path}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => openResource(path)}
+            >
+              {path}
+            </button>
+          )) : <div className="omnibar-empty">No matching files</div>}
         </div>
       )}
     </div>

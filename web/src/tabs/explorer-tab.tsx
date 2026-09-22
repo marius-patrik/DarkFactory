@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { GithubTreeEntry } from "@/github/client";
+import { preferredWorkbenchTabForPath } from "@/renderers/capabilities";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
 import { useWorkspace } from "@/workspace/context";
 import { languageForPath } from "@/workspace/languages";
@@ -230,6 +231,11 @@ export function ExplorerTab() {
   }
 
   const openFile = (node: ExplorerNode) => {
+    const target = preferredWorkbenchTabForPath(node.path);
+    if (target === "document") {
+      runtime.openTab("document", "main", { path: node.path });
+      return;
+    }
     runtime.openTab("editor", "main", {
       path: node.path,
       language: languageForPath(node.path),
