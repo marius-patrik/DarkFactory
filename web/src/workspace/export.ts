@@ -29,7 +29,9 @@ export function wholeFilePatch(path: string, before: string | null, after: strin
 }
 
 export function downloadBytes(bytes: Uint8Array, filename: string, type: string) {
-  const blob = new Blob([bytes], { type });
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  const blob = new Blob([copy.buffer], { type });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
