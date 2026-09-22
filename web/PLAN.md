@@ -10,6 +10,28 @@ The two plans may execute in parallel. IDE work must not silently redesign manus
 
 ---
 
+## Execution status — 2026-09-22
+
+The generic IDE implementation is functionally complete through Phases 1–8 and has completed the Phase 9 code/CI audit.
+
+Validated generic-core state:
+
+- static GitHub Pages architecture remains intact;
+- arbitrary GitHub repository workspaces, local editing, staging, local commits, explicit push/sync, diffs, and persistence are implemented;
+- all four Dockview root surfaces, movable/pinnable/splittable tabs, launchers, shortcuts, omnibar navigation, Browser tabs, renderer/review/compare axes, GitHub client surfaces, exports, and capability registry are implemented;
+- Explorer handles files, directories, submodules, symlinks, local rename/delete, staged decorations, and copy-path;
+- omnibar supports files, symbols, commands, branches, tags, commits, issues/PRs, workflow runs, projects, releases, recent workspaces, URLs, and line navigation;
+- patch export supports aggregate local state, working tree, staged state, all local commits, and individual local commits;
+- current-workspace ZIP, remote-ref ZIP, Actions artifacts/logs, and release-asset downloads are implemented;
+- generic `web/` code contains no DarkFactory, thesis, school, manuscript-path, or publication-schema assumptions;
+- the dedicated `ci / web` gate is green on the current generic implementation.
+
+Remaining validation work is manual browser QA across the acceptance matrix where CI cannot exercise drag/drop, iframe blocking, reload UX, narrow-window interaction, and real authenticated repository workflows.
+
+Repository-specific extensions are not generic-core blockers. The notable outstanding DarkFactory-Paper extension is deterministic compiled single-file Typst generation and publication as a canonical release artifact. Browser-side Typst compilation and semantic manuscript Review remain optional capability-provider work unless separately promoted.
+
+---
+
 ## Product goal
 
 Build a **general-purpose GitHub IDE that runs entirely as a static GitHub Pages application**.
