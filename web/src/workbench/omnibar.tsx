@@ -1,5 +1,19 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Command, Search } from "lucide-react";
+import {
+  listGithubCommits,
+  listGithubIssues,
+  listGithubProjects,
+  listGithubPullRequests,
+  listGithubReleases,
+  listGithubWorkflowRuns,
+  type GithubCommit,
+  type GithubIssue,
+  type GithubProject,
+  type GithubPullRequest,
+  type GithubRelease,
+  type GithubWorkflowRun,
+} from "@/github/client";
 import { preferredWorkbenchTabForPath } from "@/renderers/capabilities";
 import { useWorkspace } from "@/workspace/context";
 import { languageForPath } from "@/workspace/languages";
@@ -7,7 +21,20 @@ import type { WorkbenchTabType } from "./model";
 import { useWorkbenchRuntime } from "./runtime";
 
 export type OmnibarMode = "navigation" | "command";
-export type OmnibarQueryKind = "command" | "symbol" | "issue" | "line" | "url" | "resource";
+export type OmnibarQueryKind =
+  | "command"
+  | "symbol"
+  | "issue"
+  | "line"
+  | "url"
+  | "branch"
+  | "tag"
+  | "commit"
+  | "run"
+  | "project"
+  | "release"
+  | "workspace"
+  | "resource";
 export type OmnibarControl = { focus: (mode: OmnibarMode, value?: string) => void };
 
 const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primary" | "secondary" | "panel" }> = [
@@ -37,6 +64,13 @@ export function classifyOmnibarQuery(value: string): OmnibarQueryKind {
   if (query.startsWith("@")) return "symbol";
   if (query.startsWith("#")) return "issue";
   if (query.startsWith(":")) return "line";
+  if (/^branch:/i.test(query)) return "branch";
+  if (/^tag:/i.test(query)) return "tag";
+  if (/^commit:/i.test(query)) return "commit";
+  if (/^(run|workflow):/i.test(query)) return "run";
+  if (/^project:/i.test(query)) return "project";
+  if (/^release:/i.test(query)) return "release";
+  if (/^workspace:/i.test(query)) return "workspace";
   if (looksLikeUrl(query)) return "url";
   return "resource";
 }
@@ -48,6 +82,14 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   const [mode, setMode] = useState<OmnibarMode>("navigation");
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [issues, setIssues] = useState<GithubIssue[]>([]);
+  const [pullRequests, setPullRequests] = useState<GithubPullRequest[]>([]);
+  const [commits, setCommits] = useState<GithubCommit[]>([]);
+  const [runs, setRuns] = useState<GithubWorkflowRun[]>([]);
+  const [projects, setProjects] = useState<GithubProject[]>([]);
+  const [releases, setReleases] = useState<GithubRelease[]>([]);
+  const [entityLoading, setEntityLoading] = useState(false);
+  const [entityError, setEntityError] = useState("");
 
   const activeResource = useMemo(() => {
     const active = runtime.activeTab;
@@ -98,6 +140,61 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   }, [workspace.committedFiles, workspace.overlays, workspace.workspace]);
 
   const queryKind = mode === "command" ? "command" : classifyOmnibarQuery(query);
+
+  useEffect(() => {
+    const current = workspace.workspace;
+    if (!focused || !current) return;
+    if (!["issue", "commit", "run", "project", "release"].includes(queryKind)) return;
+
+    let disposed = false;
+    const timer = window.setTimeout(() => {
+      setEntityLoading(true);
+      setEntityError("");
+      const fullName = current.repository.fullName;
+      let request: Promise<unknown>;
+
+      if (queryKind === "issue") {
+        request = Promise.all([
+          listGithubIssues(fullName, workspace.token, "all"),
+          listGithubPullRequests(fullName, workspace.token, "all"),
+        ]).then(([nextIssues, nextPullRequests]) => {
+          if (disposed) return;
+          setIssues(nextIssues);
+          setPullRequests(nextPullRequests);
+        });
+      } else if (queryKind === "commit") {
+        request = listGithubCommits(fullName, workspace.token, current.ref).then((items) => {
+          if (!disposed) setCommits(items);
+        });
+      } else if (queryKind === "run") {
+        request = listGithubWorkflowRuns(fullName, workspace.token).then((result) => {
+          if (!disposed) setRuns(result.workflow_runs);
+        });
+      } else if (queryKind === "project") {
+        request = listGithubProjects(fullName, workspace.token).then((items) => {
+          if (!disposed) setProjects(items);
+        });
+      } else {
+        request = listGithubReleases(fullName, workspace.token).then((items) => {
+          if (!disposed) setReleases(items);
+        });
+      }
+
+      void request
+        .catch((reason) => {
+          if (!disposed) setEntityError(reason instanceof Error ? reason.message : String(reason));
+        })
+        .finally(() => {
+          if (!disposed) setEntityLoading(false);
+        });
+    }, 120);
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timer);
+    };
+  }, [focused, queryKind, workspace.token, workspace.workspace]);
+
   const resourceQuery = query.trim().toLowerCase();
   const resourceResults = queryKind === "resource" && resourceQuery
     ? resourcePaths
@@ -108,6 +205,70 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
           const leftExact = leftName === resourceQuery ? 0 : 1;
           const rightExact = rightName === resourceQuery ? 0 : 1;
           return leftExact - rightExact || left.length - right.length || left.localeCompare(right);
+        })
+        .slice(0, 8)
+    : [];
+
+  const entityQuery = query.replace(/^[^:]+:/, "").replace(/^#/, "").trim().toLowerCase();
+  const refResults = (queryKind === "branch" || queryKind === "tag")
+    ? workspace.refs
+        .filter((ref) => ref.kind === queryKind)
+        .filter((ref) => !entityQuery || ref.name.toLowerCase().includes(entityQuery))
+        .slice(0, 8)
+    : [];
+  const workspaceResults = queryKind === "workspace"
+    ? workspace.recent
+        .filter((item) => {
+          const value = `${item.repository.fullName} ${item.ref}`.toLowerCase();
+          return !entityQuery || value.includes(entityQuery);
+        })
+        .slice(0, 8)
+    : [];
+  const issueResults = queryKind === "issue"
+    ? [
+        ...issues.map((item) => ({
+          kind: "issue" as const,
+          number: item.number,
+          title: item.title,
+        })),
+        ...pullRequests.map((item) => ({
+          kind: "pull-request" as const,
+          number: item.number,
+          title: item.title || `Pull Request #${item.number}`,
+        })),
+      ]
+        .filter((item) => {
+          if (!entityQuery) return true;
+          return String(item.number) === entityQuery || item.title.toLowerCase().includes(entityQuery);
+        })
+        .slice(0, 8)
+    : [];
+  const commitResults = queryKind === "commit"
+    ? commits
+        .filter((item) => {
+          const message = item.commit.message || "";
+          return !entityQuery || item.sha.toLowerCase().startsWith(entityQuery) || message.toLowerCase().includes(entityQuery);
+        })
+        .slice(0, 8)
+    : [];
+  const runResults = queryKind === "run"
+    ? runs
+        .filter((item) => {
+          const value = `${item.run_number} ${item.name || ""} ${item.display_title || ""} ${item.head_branch || ""}`.toLowerCase();
+          return !entityQuery || value.includes(entityQuery);
+        })
+        .slice(0, 8)
+    : [];
+  const projectResults = queryKind === "project"
+    ? projects
+        .filter((item) => !entityQuery || String(item.number) === entityQuery || item.title.toLowerCase().includes(entityQuery))
+        .slice(0, 8)
+    : [];
+  const releaseResults = queryKind === "release"
+    ? releases
+        .filter((item) => {
+          const value = `${item.tag_name} ${item.name || ""}`.toLowerCase();
+          return !entityQuery || value.includes(entityQuery);
         })
         .slice(0, 8)
     : [];
@@ -211,9 +372,57 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               return;
             }
             if (queryKind === "issue") {
-              const number = Number(query.replace(/^#/, ""));
-              if (Number.isInteger(number) && number > 0) {
-                runtime.openTab("issue", "main", { number });
+              const first = issueResults[0];
+              if (first) {
+                runtime.openTab(first.kind, "main", { number: first.number });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "branch" || queryKind === "tag") {
+              const first = refResults[0];
+              if (first) {
+                void workspace.switchRef(first.name);
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "commit") {
+              const first = commitResults[0];
+              if (first) {
+                runtime.openTab("commit", "main", { sha: first.sha });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "run") {
+              const first = runResults[0];
+              if (first) {
+                runtime.openTab("workflow-run", "main", { id: first.id });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "project") {
+              const first = projectResults[0];
+              if (first) {
+                runtime.openTab("project", "main", { number: first.number });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "release") {
+              const first = releaseResults[0];
+              if (first) {
+                runtime.openTab("release", "main", { id: first.id });
+                closeResults();
+              }
+              return;
+            }
+            if (queryKind === "workspace") {
+              const first = workspaceResults[0];
+              if (first) {
+                void workspace.openRepository(first.repository.fullName, first.ref);
                 closeResults();
               }
               return;
@@ -226,7 +435,7 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               openResource(resourceResults[0]);
             }
           }}
-          placeholder={runtime.activeTab?.type === "browser" ? "Enter URL" : mode === "command" ? "Type a command" : "Search files, #issues, or enter URL"}
+          placeholder={runtime.activeTab?.type === "browser" ? "Enter URL" : mode === "command" ? "Type a command" : "Search files, #issues, branch:, commit:, run:, or URL"}
           aria-label="Workbench omnibar"
         />
         <kbd>{mode === "command" ? "⌘⇧P" : "⌘P"}</kbd>
@@ -256,6 +465,125 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               Go to line {Number(query.replace(/^:/, ""))}
             </button>
           ) : <div className="omnibar-empty">Enter a line number for the active file</div>}
+        </div>
+      )}
+      {focused && queryKind === "issue" && (
+        <div className="omnibar-results">
+          {entityLoading ? <div className="omnibar-empty">Loading issues and pull requests…</div> : entityError ? <div className="omnibar-empty">{entityError}</div> : issueResults.length ? issueResults.map((item) => (
+            <button
+              key={`${item.kind}:${item.number}`}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runtime.openTab(item.kind, "main", { number: item.number });
+                closeResults();
+              }}
+            >
+              {item.kind === "issue" ? "Issue" : "PR"} #{item.number} · {item.title}
+            </button>
+          )) : <div className="omnibar-empty">No matching issues or pull requests</div>}
+        </div>
+      )}
+      {focused && (queryKind === "branch" || queryKind === "tag") && (
+        <div className="omnibar-results">
+          {refResults.length ? refResults.map((ref) => (
+            <button
+              key={`${ref.kind}:${ref.name}`}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                void workspace.switchRef(ref.name);
+                closeResults();
+              }}
+            >
+              {ref.kind} · {ref.name} · {ref.sha.slice(0, 7)}
+            </button>
+          )) : <div className="omnibar-empty">No matching {queryKind}s</div>}
+        </div>
+      )}
+      {focused && queryKind === "commit" && (
+        <div className="omnibar-results">
+          {entityLoading ? <div className="omnibar-empty">Loading commits…</div> : entityError ? <div className="omnibar-empty">{entityError}</div> : commitResults.length ? commitResults.map((item) => (
+            <button
+              key={item.sha}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runtime.openTab("commit", "main", { sha: item.sha });
+                closeResults();
+              }}
+            >
+              {item.sha.slice(0, 7)} · {item.commit.message?.split("\n")[0] || "Commit"}
+            </button>
+          )) : <div className="omnibar-empty">No matching commits</div>}
+        </div>
+      )}
+      {focused && queryKind === "run" && (
+        <div className="omnibar-results">
+          {entityLoading ? <div className="omnibar-empty">Loading workflow runs…</div> : entityError ? <div className="omnibar-empty">{entityError}</div> : runResults.length ? runResults.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runtime.openTab("workflow-run", "main", { id: item.id });
+                closeResults();
+              }}
+            >
+              Run #{item.run_number} · {item.display_title || item.name || "Workflow"} · {item.status || "unknown"}
+            </button>
+          )) : <div className="omnibar-empty">No matching workflow runs</div>}
+        </div>
+      )}
+      {focused && queryKind === "project" && (
+        <div className="omnibar-results">
+          {entityLoading ? <div className="omnibar-empty">Loading projects…</div> : entityError ? <div className="omnibar-empty">{entityError}</div> : projectResults.length ? projectResults.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runtime.openTab("project", "main", { number: item.number });
+                closeResults();
+              }}
+            >
+              Project #{item.number} · {item.title}
+            </button>
+          )) : <div className="omnibar-empty">No matching projects</div>}
+        </div>
+      )}
+      {focused && queryKind === "release" && (
+        <div className="omnibar-results">
+          {entityLoading ? <div className="omnibar-empty">Loading releases…</div> : entityError ? <div className="omnibar-empty">{entityError}</div> : releaseResults.length ? releaseResults.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                runtime.openTab("release", "main", { id: item.id });
+                closeResults();
+              }}
+            >
+              {item.tag_name} · {item.name || "Release"}
+            </button>
+          )) : <div className="omnibar-empty">No matching releases</div>}
+        </div>
+      )}
+      {focused && queryKind === "workspace" && (
+        <div className="omnibar-results">
+          {workspaceResults.length ? workspaceResults.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                void workspace.openRepository(item.repository.fullName, item.ref);
+                closeResults();
+              }}
+            >
+              {item.repository.fullName} · {item.ref}
+            </button>
+          )) : <div className="omnibar-empty">No matching recent workspaces</div>}
         </div>
       )}
       {focused && queryKind === "resource" && query.trim() && (
