@@ -25,7 +25,7 @@
 #set document(title: "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory", author: meta.autor)
 #set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm), footer: none)
 #set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
-#set par(justify: true, leading: 1.5 * 0.65em, spacing: 8pt, first-line-indent: 0pt)
+#set par(justify: true, leading: 1.5 * 0.65em, spacing: 16pt, first-line-indent: 1.25cm)
 #set list(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
 #set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
 #show list: it => block(above: 3pt, below: 5pt, breakable: true, it)
@@ -33,10 +33,13 @@
 
 #set heading(numbering: "1.1")
 #show heading.where(level: 1): it => {
-  pagebreak(weak: true)
+  pagebreak()
   block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
 }
-#show heading.where(level: 2): it => block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
+#show heading.where(level: 2): it => {
+  pagebreak()
+  block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
+}
 #show heading.where(level: 3): it => block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
 #show figure.caption: set text(size: 10pt)
 #show raw: set text(font: ("DejaVu Sans Mono",), size: 9.5pt)
@@ -144,6 +147,13 @@ Teorie sleduje jednu hranici: model vytváří návrh dalšího kroku, zatímco 
 
 Velký jazykový model je parametrický model, který z kontextu predikuje další tokeny; moderní systémy často používají autoregresivní Transformer @brown2020 @vaswani2017. Pro tuto práci není důležitý výklad všech vnitřních vrstev, ale důsledek inference: model pracuje s aktivním kontextem konkrétního běhu a jeho výstup je návrh, nikoli sám o sobě provedený účinek.
 
+Vektorové reprezentace (*embeddingy*) mohou zachycovat sémantické vztahy geometricky; klasickým příkladem je vztah mezi vektory slov *king* a *queen* @mikolov2013linguistic.
+
+#figure(
+  image("img/vector-embedding-queen.svg", width: 78%),
+  caption: [Jednoduchá ilustrace sémantického vztahu mezi vektorovými reprezentacemi slov *king* a *queen* podle principu popsaného v @mikolov2013linguistic.],
+) <fig-embedding-queen>
+
 Kontext může obsahovat instrukce, stav úlohy, obsah souborů, historii nástrojů i pozorování. Jeho rozsah však není totéž co projektová paměť. Výzkum dlouhého kontextu ukazuje, že schopnost využít informaci se mění podle jejího umístění v kontextu @liu2024. Trvalý stav, historie a výběr relevantního kontextu proto musí být spravovány mimo model. Z toho plyne hranice odpovědnosti: model navrhuje další krok; okolní runtime rozhoduje, co model uvidí, co smí vykonat a jak bude výsledek zaznamenán.
 
 #heading(level: 2)[Harness jako vývojový runtime]
@@ -177,8 +187,6 @@ Praktickým důsledkem je změna jednotky práce. Člověk nemusí ručně prov�
 #heading(level: 1)[Praktická část]
 
 #heading(level: 2)[DarkFactory]
-
-DarkFactory je konkrétní artefakt, prostřednictvím něhož práce zkoumá harness-centered software development @darkfactory. Tato kapitola představuje hranici mezi konceptuálním návrhem a implementační analýzou. Podrobný popis runtime, stavů, oprávnění, obnovy, integrace a ověřování musí být vázán na jedinou pinovanou revizi zdrojového repozitáře, jeho testy, workflow a evidenční manifest.
 
 #heading(level: 1)[Výsledky a diskuse]
 
