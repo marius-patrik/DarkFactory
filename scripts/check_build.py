@@ -329,6 +329,19 @@ semantic_keys = concept_keys + semantic_section_keys
 if len(semantic_keys) != len(set(semantic_keys)):
     fail("semantic keys must be unique within a book")
 
+semantic_keywords: list[tuple[str, str]] = []
+for path in concept_files + section_files:
+    source = path.read_text(encoding="utf-8")
+    keyword = re.search(r'^\s*keyword:\s*"([^"]+)"', source, flags=re.MULTILINE)
+    if keyword is not None:
+        semantic_keywords.append((keyword.group(1).casefold(), str(path)))
+
+keyword_owners: dict[str, str] = {}
+for keyword, owner in semantic_keywords:
+    if keyword in keyword_owners:
+        fail(f"semantic keyword has multiple owners: {keyword!r}: {keyword_owners[keyword]} and {owner}")
+    keyword_owners[keyword] = owner
+
 semantic_key_set = set(semantic_keys)
 for path in concept_files + section_files:
     source = path.read_text(encoding="utf-8")
