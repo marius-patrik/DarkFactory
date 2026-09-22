@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   cancelGithubWorkflowRun,
   dispatchGithubWorkflow,
+  downloadGithubArtifact,
+  downloadGithubJobLogs,
   getGithubWorkflowRun,
   listGithubWorkflowArtifacts,
   listGithubWorkflowJobs,
@@ -15,6 +17,7 @@ import {
 } from "@/github/client";
 import type { WorkbenchTab } from "@/workbench/model";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
+import { downloadBytes } from "@/workspace/export";
 import {
   ErrorState,
   LoadingState,
@@ -175,6 +178,26 @@ export function WorkflowRunTab({ tab }: { tab: WorkbenchTab }) {
     setRevision((value) => value + 1);
   };
 
+  const downloadLogs = async (job: GithubWorkflowJob) => {
+    try {
+      const bytes = await downloadGithubJobLogs(fullName, job.id, token);
+      const safe = job.name.replace(/[^A-Za-z0-9._-]+/g, "-");
+      downloadBytes(bytes, `${safe || "job"}-${job.id}.log`, "text/plain;charset=utf-8");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+
+  const downloadArtifact = async (artifact: GithubArtifact) => {
+    try {
+      const bytes = await downloadGithubArtifact(fullName, artifact.id, token);
+      const safe = artifact.name.replace(/[^A-Za-z0-9._-]+/g, "-");
+      downloadBytes(bytes, `${safe || "artifact"}.zip`, "application/zip");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+
   return (
     <div className="github-detail">
       <header className="github-detail-header">
@@ -203,7 +226,10 @@ export function WorkflowRunTab({ tab }: { tab: WorkbenchTab }) {
           {jobs.map((job) => (
             <div key={job.id} className="github-data-row">
               <strong>{job.name}</strong>
-              <span>{job.status}{job.conclusion ? ` · ${job.conclusion}` : ""}</span>
+              <span className="github-row-actions">
+                <span>{job.status}{job.conclusion ? ` · ${job.conclusion}` : ""}</span>
+                <button type="button" onClick={() => void downloadLogs(job)}>Logs</button>
+              </span>
             </div>
           ))}
           {!jobs.length && <p className="github-empty-body">No jobs.</p>}
@@ -213,9 +239,18 @@ export function WorkflowRunTab({ tab }: { tab: WorkbenchTab }) {
           {artifacts.map((artifact) => (
             <div key={artifact.id} className="github-data-row">
               <strong>{artifact.name}</strong>
-              <span>
-                {Math.round(artifact.size_in_bytes / 1024)} KB
-                {artifact.expired ? " · expired" : ""}
+              <span className="github-row-actions">
+                <span>
+                  {Math.round(artifact.size_in_bytes / 1024)} KB
+                  {artifact.expired ? " · expired" : ""}
+                </span>
+                <button
+                  type="button"
+                  disabled={artifact.expired}
+                  onClick={() => void downloadArtifact(artifact)}
+                >
+                  Download
+                </button>
               </span>
             </div>
           ))}
