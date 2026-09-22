@@ -1,0 +1,1 @@
+export function OutputTab() { return <div className="generic-tool-tab"><div className="tool-tab-header"><strong>Output</strong></div><div className="tab-empty"><span>No output yet.</span></div></div>; }
