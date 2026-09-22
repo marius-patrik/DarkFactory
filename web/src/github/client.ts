@@ -32,6 +32,13 @@ export type GithubTree = {
   tree: GithubTreeEntry[];
 };
 
+export type GithubCommit = {
+  sha: string;
+  commit: {
+    tree: { sha: string };
+  };
+};
+
 export type GithubRef = {
   name: string;
   sha: string;
@@ -68,6 +75,13 @@ export function listGithubRepositories(token: string) {
 
 export function getGithubRepository(fullName: string, token: string | null) {
   return githubFetch<GithubRepository>(`/repos/${fullName}`, token);
+}
+
+export function getGithubCommit(fullName: string, ref: string, token: string | null) {
+  return githubFetch<GithubCommit>(
+    `/repos/${fullName}/commits/${encodeURIComponent(ref)}`,
+    token,
+  );
 }
 
 export function getGithubTree(fullName: string, ref: string, token: string | null) {
