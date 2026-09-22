@@ -6,7 +6,8 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 
 ## Repository model
 
-- `GOAL.md` — definition of the finished paper
+- `GOAL.md` — semantic road to the finished thesis
+- `PRD.md` — finished product requirements and acceptance contract
 - `PLAN.md` — concrete repository execution plan
 - `AGENTS.md` — durable contributor rules
 - `SCHOOL_RULES.md` — school-compliance contract
@@ -16,12 +17,14 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 - `paper/img/` — paper figures/assets
 - `darkfactory` — pinned DarkFactory implementation source
 - `web/` — generic GitHub IDE/workbench
-- `web/PLAN.md` — remaining IDE work
+- `web/PLAN.md` — IDE execution plan
 
 ## Direction
 
-The repository is optimized around producing one coherent, evidence-based academic thesis about DarkFactory.
+The thesis is developed from the semantic path in `GOAL.md`.
+
+The repository/product requirements are defined in `PRD.md`.
+
+Implementation sequencing lives in `PLAN.md`.
 
 The paper source stays simple, practical claims come from pinned implementation evidence, and the publication pipeline generates the canonical paper/site/release artifacts reproducibly.
-
-See `GOAL.md` for the product objective and `PLAN.md` for the work required to reach it.
