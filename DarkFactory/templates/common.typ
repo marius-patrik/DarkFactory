@@ -255,7 +255,13 @@
 
 #let semantic-term(value) = {
   assert(value.kind in ("concept", "section"), message: "term API expects a semantic concept or section")
-  assert(value.term != none or value.keyword != none, message: "semantic item requires term or keyword")
+  assert(value.term != none or value.keyword != none, message: "semantic item requires term or keyword: " + value.key)
+  if value.term != none {
+    assert(type(value.term) == str, message: "semantic term must be a string on " + value.key + ": " + repr(value.term))
+  }
+  if value.keyword != none {
+    assert(type(value.keyword) == str, message: "semantic keyword must be a string on " + value.key + ": " + repr(value.keyword))
+  }
   value
 }
 
