@@ -10,7 +10,7 @@ import type { WorkbenchSurface, WorkbenchTabType } from "./model";
 import { useWorkbenchRuntime } from "./runtime";
 
 export type LauncherEntry = {
-  group: "Files" | "Git" | "Tools" | "Workspace";
+  group: "Files" | "Git" | "GitHub" | "Tools" | "Workspace";
   label: string;
   type?: WorkbenchTabType;
   workspaceAction?: "open" | "recent";
@@ -21,6 +21,13 @@ export const LAUNCHER_ENTRIES: LauncherEntry[] = [
   { group: "Files", label: "Explorer", type: "explorer" },
   { group: "Files", label: "Search", type: "search" },
   { group: "Git", label: "Source Control", type: "source-control" },
+  { group: "Git", label: "Branches & Tags", type: "branches" },
+  { group: "Git", label: "Commits", type: "commits" },
+  { group: "GitHub", label: "Issues", type: "issues" },
+  { group: "GitHub", label: "Pull Requests", type: "pull-requests" },
+  { group: "GitHub", label: "Projects", type: "projects" },
+  { group: "GitHub", label: "Actions", type: "actions" },
+  { group: "GitHub", label: "Releases", type: "releases" },
   { group: "Tools", label: "Browser", type: "browser" },
   { group: "Tools", label: "Problems", type: "problems" },
   { group: "Tools", label: "Output", type: "output" },
@@ -32,7 +39,7 @@ export const LAUNCHER_ENTRIES: LauncherEntry[] = [
 export function LauncherButton({ surface }: { surface: WorkbenchSurface }) {
   const runtime = useWorkbenchRuntime();
   const workspace = useWorkspace();
-  const groups = ["Files", "Git", "Tools", "Workspace"] as const;
+  const groups = ["Files", "Git", "GitHub", "Tools", "Workspace"] as const;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

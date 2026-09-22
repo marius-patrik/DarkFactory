@@ -5,6 +5,18 @@ import { DocumentTab } from "@/tabs/document-tab";
 import { DiffTab } from "@/tabs/diff-tab";
 import { EditorTab } from "@/tabs/editor-tab";
 import { ExplorerTab } from "@/tabs/explorer-tab";
+import { ActionsTab, WorkflowRunTab } from "@/tabs/github-actions-tabs";
+import { IssueTab, IssuesTab } from "@/tabs/github-issues-tabs";
+import { PullRequestTab, PullRequestsTab } from "@/tabs/github-pr-tabs";
+import {
+  BranchesTab,
+  CommitTab,
+  CommitsTab,
+  ProjectTab,
+  ProjectsTab,
+  ReleaseTab,
+  ReleasesTab,
+} from "@/tabs/github-repo-tabs";
 import { OutputTab } from "@/tabs/output-tab";
 import { ProblemsTab } from "@/tabs/problems-tab";
 import { SearchTab } from "@/tabs/search-tab";
@@ -33,18 +45,18 @@ const DEFINITIONS: TabDefinition[] = [
   { type: "settings", title: "Settings", icon: "SettingsIcon", defaultSurface: "main", singleton: true },
   { type: "document", title: "Document", icon: "FileTextIcon", defaultSurface: "main" },
   { type: "diff", title: "Diff", icon: "Columns2Icon", defaultSurface: "main" },
-  { type: "issues", title: "Issues", icon: "CircleDotIcon", defaultSurface: "main" },
+  { type: "issues", title: "Issues", icon: "CircleDotIcon", defaultSurface: "main", singleton: true },
   { type: "issue", title: "Issue", icon: "CircleDotIcon", defaultSurface: "main" },
-  { type: "pull-requests", title: "Pull Requests", icon: "GitPullRequestIcon", defaultSurface: "main" },
+  { type: "pull-requests", title: "Pull Requests", icon: "GitPullRequestIcon", defaultSurface: "main", singleton: true },
   { type: "pull-request", title: "Pull Request", icon: "GitPullRequestIcon", defaultSurface: "main" },
-  { type: "projects", title: "Projects", icon: "LayoutDashboardIcon", defaultSurface: "main" },
+  { type: "projects", title: "Projects", icon: "LayoutDashboardIcon", defaultSurface: "main", singleton: true },
   { type: "project", title: "Project", icon: "LayoutDashboardIcon", defaultSurface: "main" },
-  { type: "actions", title: "Actions", icon: "PlayIcon", defaultSurface: "main" },
+  { type: "actions", title: "Actions", icon: "PlayIcon", defaultSurface: "main", singleton: true },
   { type: "workflow-run", title: "Workflow Run", icon: "PlayIcon", defaultSurface: "main" },
-  { type: "releases", title: "Releases", icon: "PackageIcon", defaultSurface: "main" },
+  { type: "releases", title: "Releases", icon: "PackageIcon", defaultSurface: "main", singleton: true },
   { type: "release", title: "Release", icon: "PackageIcon", defaultSurface: "main" },
-  { type: "branches", title: "Branches", icon: "GitBranchIcon", defaultSurface: "main" },
-  { type: "commits", title: "Commits", icon: "GitCommitIcon", defaultSurface: "main" },
+  { type: "branches", title: "Branches", icon: "GitBranchIcon", defaultSurface: "main", singleton: true },
+  { type: "commits", title: "Commits", icon: "GitCommitIcon", defaultSurface: "main", singleton: true },
   { type: "commit", title: "Commit", icon: "GitCommitIcon", defaultSurface: "main" },
 ];
 
@@ -96,6 +108,19 @@ function RegisteredTabContent({ tab }: { tab: WorkbenchTab }): ReactNode {
     case "settings": return <SettingsView settings={runtime.settings} onThemeChange={runtime.setTheme} />;
     case "document": return <DocumentTab />;
     case "diff": return <DiffTab tab={tab} theme={runtime.settings.theme} />;
+    case "issues": return <IssuesTab />;
+    case "issue": return <IssueTab tab={tab} />;
+    case "pull-requests": return <PullRequestsTab />;
+    case "pull-request": return <PullRequestTab tab={tab} />;
+    case "projects": return <ProjectsTab />;
+    case "project": return <ProjectTab tab={tab} />;
+    case "actions": return <ActionsTab />;
+    case "workflow-run": return <WorkflowRunTab tab={tab} />;
+    case "releases": return <ReleasesTab />;
+    case "release": return <ReleaseTab tab={tab} />;
+    case "branches": return <BranchesTab />;
+    case "commits": return <CommitsTab />;
+    case "commit": return <CommitTab tab={tab} />;
     default: return <UnavailableTab title={tab.title} />;
   }
 }
