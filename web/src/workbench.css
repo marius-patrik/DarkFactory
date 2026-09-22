@@ -2026,3 +2026,65 @@ a {
     flex-wrap: wrap;
   }
 }
+
+
+.tool-tab-header select {
+  min-height: 23px;
+  padding: 2px 5px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+}
+
+.github-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.github-row-actions button,
+.github-file-link {
+  padding: 2px 6px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.github-row-actions button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.github-data-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.github-data-button:hover {
+  background: var(--surface-2);
+}
+
+.github-file-link {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-file-link:hover {
+  text-decoration: underline;
+}
