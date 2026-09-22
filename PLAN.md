@@ -17,16 +17,16 @@ Theory and Practical must demonstrate this chain rather than restating it.
 - `term` / optional `keyword` is the only terminology model.
 - Old `industry/czech/english/alias` terminology surfaces are removed from migrated content.
 - Section-owned semantic vocabulary is supported.
-- Section 1 now contains **Argument**.
+- Section 1 now contains **Východisko a argument práce**.
 - Cíle and Výzkumné otázky are separate sections.
 - 2.2 is **AI-asistovaný vývoj** with:
   - Úvod
-  - Specifikace a plánování
+  - Zadání a způsob práce
   - Řízení změny
-  - Ověřování kvality
+  - Kvalita a ověřování
   - Závěr
 - Standalone Software Engineering, DAG, Runtime, and Container articles were removed.
-- 2.3 is **Model**.
+- 2.3 is **Jazykový model a inference**.
 - **Inferenční engine (Inference Engine)** was added.
 - Model now ends at inference and its limits.
 - 2.4 Harness owns its own semantic definition; duplicate Harness article removed.
