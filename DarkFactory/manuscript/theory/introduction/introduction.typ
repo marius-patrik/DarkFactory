@@ -4,9 +4,9 @@
   key: "theory_introduction",
   title: [Úvod],
   definition: terms => [
-Vymezení hranic teoretické části a vztahů mezi jejími hlavními vrstvami.
+Teoretická část rozpracovává technické předpoklady argumentu formulovaného v části 1.2.
   ],
   description: terms => [
-Jazykový model je v práci chápán jako hotová inferenční komponenta. Teoretická část postupuje přes Software Engineering a Model k Harnessu a Agentic Engineering. Harness kolem modelu vytváří stavové, nástrojové a kontrolní mechanismy, na které navazují agentické techniky.
+Rozsah začíná změnou způsobu vývoje softwaru při delegování práce AI a končí metodami, kterými se nad schopnostmi Harnessu navrhuje agentní chování. Trénování modelů, optimalizace vah a obecná teorie strojového učení zůstávají mimo rozsah práce.
   ],
 )
