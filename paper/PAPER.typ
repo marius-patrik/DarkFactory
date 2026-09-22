@@ -106,30 +106,30 @@ language models; coding agents; harness; Agentic Engineering; GitHub Actions; Da
 
 #heading(level: 1)[Úvod]
 
-Generativní AI se ve vývoji softwaru používá od doplňování kódu a konverzační podpory až po nástroje, které pracují v repozitáři, spouštějí příkazy a testy a připravují změny k revizi @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Část činností, které dosud vývojář prováděl přímo, lze proto delegovat na agenta.
+Nástroje založené na jazykových modelech dnes doplňují kód, odpovídají na dotazy v IDE a v posledních verzích pracují přímo v repozitáři — spouštějí příkazy, testy a připravují změny k revizi @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Část práce, kterou dosud vývojář prováděl sám, tak lze přenést na agenta.
 
-Široké používání generativní AI však neznamená stejně rozšířené používání #strong[coding agents]. Odhad Gradually uvádí pravidelné uživatele AI coding agents jako malou část všech uživatelů generativní AI @gradually-ai-usage-2026.
+Z toho ale neplyne, že coding agents jsou běžně používané. Podle odhadu Gradually tvoří jejich pravidelní uživatelé jen malou část všech uživatelů generativní AI @gradually-ai-usage-2026.
 
 #figure(
   image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI podle nejpokročilejší používané kategorie. Pravidelní uživatelé AI coding agents tvoří podle Gradually malou část celku @gradually-ai-usage-2026.],
 ) <fig-gradually-usage>
 
-Práce agenta nad projektem vyžaduje více než vytvoření odpovědi: výběr kontextu, přístup k pracovnímu prostředí, řízení účinků změn, pozorování z testů nebo CI, trvalý stav a rozhodnutí o přijetí výsledku @anthropic-harness-design @anthropic-managed-agents. Jejich propojení umožňuje postupovat od požadavku k ověřené změně v projektu.
+Aby mohl agent pracovat nad projektem, nestačí mu vytvořit odpověď. Potřebuje kontext z repozitáře, přístup k prostředí, nástroje pro testy a CI, trvalý stav mezi kroky a bod, v němž člověk rozhodne o přijetí výsledku @anthropic-harness-design @anthropic-managed-agents.
 
 #heading(level: 2)[Cíl a vymezení] <intro-goal>
 
-Cílem je ukázat, jak se jazykový model propojuje s prostředím vývoje softwaru, jakou roli při tom má #strong[harness] a jaké postupy umožňují agenty využívat účinně a kontrolovaně.
+Cílem práce je ukázat, jak se jazykový model propojuje s prostředím vývoje softwaru, jakou roli při tom hraje #strong[harness] a jaké postupy umožňují agenty využívat účinně a kontrolovaně.
 
-Praktickým cílem je popsat, jak DarkFactory organizuje delegovanou práci agenta, a ověřit vybrané mechanismy řízení, kontroly změn a pokračování běhu na základě zdrojového kódu, testů a záznamů CI.
+Praktická část analyzuje Pythonovou pipeline DarkFactory a ověřuje vybrané mechanismy řízení, kontroly změn a pokračování běhu na základě zdrojového kódu, testů a záznamů CI.
 
 #heading(level: 1)[Teoretická část]
 
 #heading(level: 2)[Jazykový model v agentním systému] <theory-first>
 
-Jazykový model předpovídá další token podle tokenů, které mu předcházejí. Architektura jazykových modelů #strong[LLM] je založena na #strong[Transformeru], který využívá mechanismus #strong[attention] ke zpracování vztahů mezi tokeny @vaswani2017 @brown2020. Při #strong[inferenci] model zpracuje obsah #strong[context window] a vytvoří výstup. Model sám však nemění soubory ani nespouští příkazy; provedení navržené akce zajišťuje #strong[harness] @anthropic2024tooluse.
+Jazykový model (#strong[LLM]) předpovídá další token na základě předchozích. Architektura Transformer zpracovává vztahy mezi tokeny pomocí mechanismu attention @vaswani2017 @brown2020. Při inferenci model dostane obsah context window a vytvoří výstup. Sám však soubory nemění ani nespouští příkazy — provedení navržené akce zajišťuje harness @anthropic2024tooluse.
 
-Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi vektory slov #strong[king] a #strong[queen] @mikolov2013linguistic.
+Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi vektory slov king a queen @mikolov2013linguistic.
 
 #figure(
   image("img/vector-embedding-queen.svg", width: 78%),
@@ -138,17 +138,17 @@ Vektorové reprezentace, označované jako #strong[embeddingy], zachycují séma
 
 #heading(level: 3)[Context window a kompakce]
 
-#strong[Context window] vymezuje informace dostupné při jednom volání modelu. Může obsahovat instrukce, části repozitáře, historii nástrojů i výsledky předchozích kroků. Jeho velikost však sama nezaručuje, že model využije všechny podstatné informace; jejich účinnost závisí také na umístění v dlouhém kontextu @liu2024.
+#strong[Context window] vymezuje informace dostupné při jednom volání modelu — instrukce, části repozitáře, historii nástrojů, výsledky předchozích kroků. Samotná velikost okna nezaručuje, že model všechny podstatné informace využije; jejich účinnost závisí i na umístění v dlouhém kontextu @liu2024.
 
-Při delší práci proto harness vybírá, které informace předá do dalšího kroku. #strong[Kompakce] nahrazuje starší průběh strukturovaným souhrnem rozhodnutí, provedených změn a dosavadních výsledků. Zachovává návaznost práce, aniž by se do každého volání vkládal celý přepis předchozí interakce @anthropic-context-engineering.
+Při delší práci proto harness vybírá, co do dalšího kroku předá. Kompakce nahrazuje starší průběh strukturovaným souhrnem rozhodnutí a výsledků, takže se do každého volání nemusí vkládat celý přepis @anthropic-context-engineering.
 
 #heading(level: 2)[Agent a harness]
 
-Agentní systém propojuje jazykový model s nástroji a prostředím, v němž vzniká změna. #strong[Harness] pro tento proces připravuje context window, udržuje stav běhu, zprostředkovává pracovní prostředí a zaznamenává pozorování @anthropic-harness-design @anthropic-managed-agents.
+Harness je runtime, který propojuje model s nástroji a prostředím projektu. Připravuje context window, udržuje stav běhu, zprostředkovává přístup k souborům a zaznamenává pozorování @anthropic-harness-design @anthropic-managed-agents.
 
 #heading(level: 3)[Smyčka agentního provádění]
 
-V agentní smyčce model navrhne další akci, harness ji předá prostředí a výsledek vrátí jako pozorování. Tento princip odpovídá přístupu #strong[ReAct], v němž se střídá uvažování, jednání a pozorování prostředí @yao2022. Harness určuje, které akce jsou dostupné, jak se provedou a jak se jejich výsledek uloží.
+V agentní smyčce model navrhne další akci, harness ji provede v prostředí a výsledek vrátí jako pozorování. Tento princip odpovídá přístupu #strong[ReAct], v němž se střídá uvažování, jednání a pozorování @yao2022.
 
 #figure(
   image("img/react-loop.svg", width: 92%),
@@ -157,35 +157,35 @@ V agentní smyčce model navrhne další akci, harness ji předá prostředí a 
 
 #heading(level: 3)[Agent a chatbot]
 
-Chatbot poskytuje odpověď v konverzaci; člověk sám vybírá soubory, upravuje projekt, spouští nástroje a rozhoduje o dalším postupu. Agent naproti tomu pracuje v prostředí projektu. Prostřednictvím harnessu může číst a měnit soubory, spouštět příkazy a testy, přijímat jejich výstup a pokračovat podle něj. Rozdíl proto nespočívá pouze v kvalitě vytvářeného textu, ale v účasti na provádění vymezené práce @anthropic2024tooluse @openai-agents-sandbox.
+U chatbotu člověk sám vybírá soubory, upravuje projekt a spouští nástroje; chatbot jen odpovídá v konverzaci. Agent naproti tomu prostřednictvím harnessu čte a mění soubory, spouští příkazy a testy, přijímá jejich výstup a pokračuje podle něj. Podstatný rozdíl je tedy v tom, kdo provádí práci nad projektem @anthropic2024tooluse @openai-agents-sandbox.
 
 #heading(level: 2)[Agentické inženýrství]
 
-Agentické inženýrství označuje postupy, které umožňují agenty využívat účinně a kontrolovaně. Předmětem návrhu není pouze výsledný software, ale i zadání, kontext, ověřování a způsob integrace výsledku @anthropic-harness-design @anthropic-managed-agents.
+Pokud má agent pracovat spolehlivě, nestačí dobře navrhnout výsledný software. Je třeba promyslet zadání, kontext, ověřování a způsob integrace výsledku. Tyto postupy se souhrnně označují jako Agentické inženýrství @anthropic-harness-design @anthropic-managed-agents.
 
 #heading(level: 3)[Zadání a kontext]
 
-Delegovaná práce potřebuje explicitní výsledek, rozsah, omezení a podmínky přijetí. Specifikace určuje, co se má změnit i co se změnit nesmí. Při #strong[prompt engineeringu] se formulují instrukce pro konkrétní krok; #strong[context engineering] vybírá zadání, pravidla repozitáře, soubory, historii a výsledky nástrojů pro context window @openai-prompt-engineering @anthropic-context-engineering. Soubor #strong[AGENTS.md] může tato pravidla, příkazy sestavení a ověřování uchovat přímo v repozitáři @agents-md.
+Delegovaná práce potřebuje explicitní výsledek, rozsah, omezení a podmínky přijetí. Specifikace určuje, co se má změnit, i co se změnit nesmí. Při #strong[prompt engineeringu] se formulují instrukce pro konkrétní krok; #strong[context engineering] vybírá zadání, pravidla repozitáře, soubory, historii a výsledky nástrojů pro context window @openai-prompt-engineering @anthropic-context-engineering. Soubor AGENTS.md může tato pravidla uchovat přímo v repozitáři @agents-md.
 
-#strong[Skills] rozšiřují prostředí o znovu použitelné instrukce, postupy, skripty a zdroje pro určité úlohy @agentskills-spec. #strong[Hooks] reagují na události běhu a mohou zaznamenat postup, spustit kontrolu nebo vynutit pravidlo @openai-agents-lifecycle. #strong[Model Context Protocol] (#strong[MCP]) standardizuje propojení harnessu s externími nástroji, daty a zdroji @mcp-specification. Nejde o samostatné agenty, ale o prostředky, které harness zpřístupňuje a řídí.
+Harness může prostředí rozšiřovat o další prostředky. Skills jsou znovu použitelné instrukce a skripty pro určité úlohy @agentskills-spec, Hooks reagují na události běhu a mohou spustit kontrolu nebo vynutit pravidlo @openai-agents-lifecycle. Standard MCP (Model Context Protocol) pak umožňuje připojit k harnessu externí nástroje a zdroje @mcp-specification. Tyto prostředky řídí harness; nejde o samostatné agenty.
 
 #heading(level: 3)[Orchestrace a lidská integrace]
 
-Více agentů může rozdělit, specializovat nebo paralelizovat práci. Ve vzoru #strong[coordinator/subagent] hlavní agent předá dílčí úkol s omezeným kontextem a převezme výsledek k integraci. #strong[Workflow graph] popisuje závislosti, větvení a předání mezi kroky; #strong[swarm] označuje volnější spolupráci více agentů @openai-agent-orchestration @openai-swarm.
+Práci lze rozdělit mezi více agentů. Ve vzoru coordinator/subagent hlavní agent předá dílčí úkol s omezeným kontextem a převezme výsledek. Workflow graph popisuje závislosti a větvení mezi kroky; swarm označuje volnější spolupráci skupiny agentů @openai-agent-orchestration @openai-swarm.
 
-#strong[Human-in-the-loop] (#strong[HITL]) vymezuje místa, kde automatizovaný postup vyžaduje lidské rozhodnutí. Člověk může schválit plán, upravit rozsah, vyhodnotit výsledek ověřování nebo přijmout změnu k integraci. Integrace proto vyžaduje nejen technickou kontrolu výsledků a řešení konfliktů, ale i lidskou revizi a převzetí odpovědnosti @github-branches @github-pull-requests.
+Human-in-the-loop (#strong[HITL]) označuje místa, kde postup vyžaduje lidské rozhodnutí — schválení plánu, úpravu rozsahu, vyhodnocení výsledku nebo přijetí změny. Integrace tak zahrnuje nejen technickou kontrolu, ale i lidskou revizi a převzetí odpovědnosti @github-branches @github-pull-requests.
 
 #heading(level: 1)[Praktická část]
 
 #heading(level: 2)[Metodika] <practical-first>
 
-Praktická část má podobu analýzy softwarového artefaktu. Předmětem je vybraná revize systému DarkFactory identifikovaná v bibliografii @darkfactory-e9c10221. Analýza vychází z konfigurace workflow #strong[GitHub Actions], Pythonového runneru, definice #strong[Docker] prostředí a automatizovaných testů. Tyto podklady umožňují popsat spuštění pipeline, předání práce harnessu, řízení změn i ověření vybraných scénářů.
+Praktická část analyzuje vybranou revizi systému DarkFactory @darkfactory-e9c10221. Podklady tvoří konfigurace workflow GitHub Actions, Pythonový runner, definice Docker prostředí a automatizované testy.
 
-Analýza rekonstruuje průběh úlohy od události v repozitáři po předání změny k integraci. Zaměřuje se na vytvoření pracovního prostředí, předání úlohy harnessu, práci se stavem a kontroly, které vymezují rozsah provedené změny. Tvrzení o architektuře vycházejí ze zdrojového kódu; testy a záznamy CI ověřují vybrané scénáře.
+Analýza rekonstruuje průběh úlohy od události v repozitáři po předání změny k integraci. Tvrzení o architektuře vycházejí ze zdrojového kódu; testy a záznamy CI ověřují vybrané scénáře.
 
 #heading(level: 2)[DarkFactory]
 
-DarkFactory tvoří Pythonová pipeline nad #strong[GitHub Actions], která spouští agentní harness v #strong[Docker] kontejneru @darkfactory-e9c10221. Pythonový runner připravuje prostředí, spustí harness, předá mu instrukce a zpracuje výsledek jeho běhu.
+DarkFactory je Pythonová pipeline běžící nad GitHub Actions. Workflow spustí Docker kontejner, v němž Pythonový runner připraví prostředí, předá harnessu instrukce a zpracuje výsledek @darkfactory-e9c10221.
 
 #figure(
   image("img/darkfactory-python-pipeline.svg", width: 100%),
@@ -194,47 +194,43 @@ DarkFactory tvoří Pythonová pipeline nad #strong[GitHub Actions], která spou
 
 #heading(level: 3)[Spuštění a pracovní prostředí]
 
-Pipeline reaguje na události v repozitáři. Workflow připraví pracovní adresář, sestaví obraz kontejneru a předá runneru údaje o události spolu s pracovním stromem projektu. Runner tak propojuje vstup z GitHubu s izolovaným prostředím, v němž může harness pracovat nad konkrétní verzí repozitáře @darkfactory-e9c10221.
+Pipeline reaguje na události v repozitáři. Workflow připraví pracovní adresář, sestaví obraz kontejneru a předá runneru údaje o události spolu s pracovním stromem. Harness tak pracuje v izolovaném prostředí nad konkrétní verzí repozitáře @darkfactory-e9c10221.
 
 #heading(level: 3)[Průchod delegované úlohy]
 
-Runner převede požadavek na instrukci pro harness a řídí jeho další zpracování. Průchod zahrnuje vytvoření plánu, provedení změn a kontrolu výsledku. Plán vymezuje zamýšlenou práci, pracovní větev odděluje prováděnou změnu od hlavní větve a pull request vytváří bod, v němž lze výsledek posoudit před integrací @darkfactory-e9c10221.
+Runner převede požadavek na instrukci pro harness. Průchod zahrnuje vytvoření plánu, provedení změn a kontrolu výsledku. Plán vymezuje zamýšlenou práci, pracovní větev odděluje změnu od hlavní větve a pull request vytváří bod pro posouzení výsledku @darkfactory-e9c10221.
 
 #heading(level: 3)[Řízení změny a pokračování běhu]
 
-Pipeline sleduje rozsah změn a stav pracovního stromu, aby bylo možné rozlišit očekávané a nepovolené účinky provedení. Ukládá rovněž údaje potřebné pro navázání dalšího kroku po přerušení. Testy pokrývají například práci se stavem běhu, obnovení rozpracované úlohy, změnu poskytovatele a kontrolu rozsahu oprávnění @darkfactory-e9c10221. Schválení plánu, revize a integrace zůstávají lidskými rozhodovacími body @darkfactory-request-359.
+Pipeline sleduje rozsah změn a stav pracovního stromu, aby šlo rozlišit očekávané a nepovolené účinky. Při přerušení ukládá checkpoint pro navázání dalšího kroku. Testy pokrývají práci se stavem, obnovení rozpracované úlohy, změnu poskytovatele i kontrolu oprávnění @darkfactory-e9c10221. Schválení plánu, revize a integrace zůstávají lidskými rozhodovacími body @darkfactory-request-359.
 
 #heading(level: 1)[Výsledky a diskuse]
 
 #heading(level: 2)[Zjištění] <results-first>
 
-Pythonová pipeline organizuje průchod požadavku jako sled událostí v repozitáři. Po otevření požadavku runner vytvoří interpretaci; následné lidské schválení spouští vytvoření plánu a další schválení jeho implementaci. Workflow připraví pracovní strom, sestaví kontejner a předá runneru údaje o události. Dvě schvalovací brány tak oddělují vymezení požadavku a plánu od změny zdrojového kódu @darkfactory-e9c10221.
+Pythonová pipeline organizuje průchod požadavku jako sled událostí v repozitáři. Po otevření požadavku runner vytvoří interpretaci; následné lidské schválení spouští vytvoření plánu a další schválení jeho implementaci. Dvě schvalovací brány tak oddělují vymezení požadavku a plánu od změny zdrojového kódu @darkfactory-e9c10221.
 
-Workflow před spuštěním ověřuje, zda je agent pro repozitář povolen, a vynechává komentáře vytvořené boty. Pro přístup k repozitáři používá přihlašovací údaje předané běhu GitHub Actions; pracovní strom je následně připojen do kontejneru, v němž běží Pythonový runner. Tato konfigurace spojuje událost GitHubu, pracovní kopii projektu a agentní běh do jednoho řízeného kroku @darkfactory-e9c10221.
+Workflow před spuštěním ověřuje, zda je agent pro repozitář povolen, a vynechává komentáře vytvořené boty. Přihlašovací údaje předá běh GitHub Actions; pracovní strom je připojen do kontejneru, v němž běží Pythonový runner @darkfactory-e9c10221.
 
-Po schválení plánu pipeline vytvoří pracovní větev a předá implementační instrukci harnessu. Runner následně spustí dostupné formátovací a testovací nástroje; při neúspěchu testů provede jeden opravný krok. Poté vytvoří commit, odešle větev a otevře návrhový pull request. Seberevize pracuje s diffem pull requestu, porovnává změněné soubory s rozsahem plánu a při nálezech spouští opravu a další revizi. Zdrojový kód a testy tak zachycují jak ověřování výsledku, tak kontrolu změn mimo schválený rozsah @darkfactory-e9c10221.
+Po schválení plánu pipeline vytvoří pracovní větev a předá implementační instrukci harnessu. Runner spustí formátovací a testovací nástroje; při neúspěchu testů provede opravný krok. Poté vytvoří commit, odešle větev a otevře návrhový pull request. Seberevize porovná změněné soubory s rozsahem plánu; při nálezech spustí opravu a další revizi. Pokud seberevize nenajde nesoulad, pipeline označí pull request jako připravený k lidské revizi @darkfactory-e9c10221.
 
-Pokud seberevize nenajde další nález, pipeline porovná výsledný diff s plánem. Při shodě označí pull request jako připravený k lidské revizi; při nesouladu uloží odchylky do komentáře k požadavku a plánu. Přechod k lidskému přijetí je proto podmíněn nejen vytvořením změny, ale také kontrolou jejího vztahu ke schválenému rozsahu @darkfactory-e9c10221.
-
-Runner ukládá checkpoint s údaji potřebnými pro navázání rozpracovaného běhu. Při vyčerpání kvóty uchová postup, označí běh jako blokovaný a umožní jeho obnovení příkazem #strong[/resume]. Testy pokrývají serializaci stavu běhu, obnovení pipeline, změnu poskytovatele i kontrolu rozsahu oprávnění @darkfactory-e9c10221.
+Runner ukládá checkpoint pro navázání rozpracovaného běhu. Při vyčerpání kvóty uchová postup, označí běh jako blokovaný a umožní jeho obnovení příkazem /resume. Testy pokrývají serializaci stavu, obnovení pipeline, změnu poskytovatele i kontrolu oprávnění @darkfactory-e9c10221.
 
 #heading(level: 2)[Diskuse]
 
-Zjištěný průchod ukazuje, že delegovaná práce agenta je organizována jako proces nad repozitářem, nikoli jako jednorázová konverzace s modelem. Pythonová pipeline propojuje instrukci s pracovním stromem, nástroji, pozorováním z testů a pull requestem. Tím vytváří prostředí, v němž lze změnu provést, sledovat a předat k posouzení.
+Zjištění ukazují, že delegovaná práce agenta není jednorázová konverzace s modelem, ale proces řízený pipeline nad repozitářem. Model vytváří interpretaci, plán nebo návrh změny; o pořadí kroků, předání údajů a reakci na výsledek rozhoduje Pythonový runner. Toto rozdělení odpovídá pojmu harness z teoretické části — runtime, který zasazuje výstup modelu do pracovního prostředí @darkfactory-e9c10221.
 
-Rozdělení rolí je v tomto uspořádání podstatné. Jazykový model vytváří interpretaci, plán nebo návrh změny, zatímco Pythonový runner rozhoduje, kdy se jednotlivý krok provede, jaké údaje získá a jaký následuje další krok. Harness zde vykonává agentní práci v pracovním prostředí; pipeline ji zasazuje do workflow GitHubu a propojuje ji s pravidly repozitáře @darkfactory-e9c10221.
+Pozoruhodné je, že kontrolní mechanismy pipeline zasahují do více míst průchodu. Schválení interpretace, schválení plánu, seberevize a lidské přijetí pull requestu vytvářejí čtyři brány, z nichž dvě vyžadují lidské rozhodnutí. HITL zde tedy není jen kontrola hotového výstupu, ale součást průchodu, která vymezuje záměr dříve, než se začne implementovat.
 
-Schvalování interpretace a plánu, kontrola rozsahu, seberevize a lidské přijetí pull requestu odpovídají postupům Agentického inženýrství popsaným v teoretické části. #strong[HITL] zde nefunguje jako zásah až po dokončení práce, ale jako součást průchodu, která vymezuje záměr před implementací a rozhoduje o integraci výsledku. Checkpoint doplňuje tento postup o možnost navázat na již vykonanou práci po přerušení.
-
-Checkpoint nemění obsah schváleného plánu ani nenahrazuje revizi změny. Zachovává stav potřebný pro pokračování běhu, zatímco plán, kontrola rozsahu a pull request nadále vymezují, které změny lze provést a přijmout. Kontinuita práce je tak spojena s kontrolními mechanismy pipeline, nikoli pouze s historií jedné konverzace modelu @darkfactory-e9c10221.
+Checkpoint zaznamenává stav potřebný pro pokračování po přerušení, aniž by měnil obsah schváleného plánu nebo nahrazoval revizi. Práce tak může pokračovat i po vyčerpání kvóty nebo selhání poskytovatele, ale kontrolní mechanismy zůstávají v platnosti @darkfactory-e9c10221.
 
 #heading(level: 1)[Závěr]
 
-Jazykový model vytváří výstup v rámci context window; agent vzniká jeho propojením s nástroji, prostředím, stavem a pozorováním. Harness zajišťuje toto propojení a vytváří podmínky pro řízené provádění práce v repozitáři @anthropic2024tooluse @anthropic-harness-design.
+Jazykový model sám vytváří výstup v rámci context window. Agent z něj vzniká až propojením s nástroji, prostředím, stavem a pozorováním — propojením, které zajišťuje harness @anthropic2024tooluse @anthropic-harness-design.
 
-Stanovený cíl byl naplněn vymezením role modelu, harnessu a postupů Agentického inženýrství. Analýza Pythonové pipeline DarkFactory popsala řízený průchod požadavku, práci s pracovní větví, ověřování, kontrolu rozsahu změn, checkpoint a lidské schvalovací brány. Agentické inženýrství tak přesouvá podstatnou část práce vývojáře k návrhu podmínek, v nichž může agent vykonávat vymezenou práci a předat ji k integraci.
+Analýza Pythonové pipeline DarkFactory ukázala, jak takový harness v praxi organizuje práci: řídí průchod požadavku, vytváří pracovní větev, ověřuje výsledek, kontroluje rozsah změn, ukládá checkpoint a předává výsledek k lidské revizi. Stanovený cíl práce — vymezit vztah modelu, harnessu a Agentického inženýrství a ověřit vybrané mechanismy — byl tím naplněn.
 
-Úlohou vývojáře proto není pouze přijmout nebo odmítnout vytvořený kód. Určuje zadání, omezení, podmínky přijetí a místa, v nichž je nezbytné lidské rozhodnutí.
+Úloha vývojáře se tím posouvá od přímého provádění k návrhu zadání, omezení a bodů, v nichž je nezbytné lidské rozhodnutí.
 
 // ── Zadní část ───────────────────────────────────────────
 #pagebreak(weak: true)
