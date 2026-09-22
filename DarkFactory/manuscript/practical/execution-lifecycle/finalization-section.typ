@@ -1,13 +1,13 @@
-#import "/DarkFactory/templates/common.typ": bib
+#import "/DarkFactory/templates/common.typ": term, bib
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
   key: "change_finalization_body",
   title: [Finalizace],
   definition: terms => [
-Před ukončením změny se implementace porovná se schváleným plánem a dosažený výsledek se promítne do trvalého stavu vývojového procesu.
+Finalizace odděluje poslední kontrolu hotové změny od následné aktualizace trvalého workflow stavu.
   ],
   description: terms => [
-Final Alignment kontroluje soulad hotové změny s aktuálním schváleným Planningem. Reconciliation následně sjednocuje stav navázaného Requestu, pull requestu a dalších trvalých workflow objektů podle skutečného výsledku. #cite(bib.darkfactory)
+#term(terms.final_alignment) uzavírá otázku souladu s posledním schváleným plánem; teprve potom #term(terms.darkfactory_reconciliation) promítá dosažený terminální výsledek do navázaných trvalých objektů. #cite(bib.darkfactory)
   ],
 )
