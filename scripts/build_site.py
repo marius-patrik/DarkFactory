@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 from html.parser import HTMLParser
@@ -257,16 +258,107 @@ class HeadingIndexParser(HTMLParser):
         self._attrs = {}
 
 
+MANUSCRIPT_TOP_LEVEL = [
+    "1 Úvod",
+    "2 Teoretická část",
+    "3 Praktická část",
+    "4 Výsledky a diskuse",
+    "5 Závěr",
+]
+
+
+def typst_manuscript_index(source_path: Path = Path("main.typ")) -> list[dict[str, object]]:
+    source = source_path.read_text(encoding="utf-8")
+    body_start = source.find('#metadata("body-start")')
+    body_end = source.find('#metadata("body-end")')
+    if body_start < 0 or body_end <= body_start:
+        raise SystemExit("main.typ body markers are missing or out of order")
+
+    body = source[body_start:body_end]
+    heading_pattern = re.compile(
+        r"^#heading\\(level:\\s*(\\d+)(?P<options>[^)]*)\\)"
+        r"\\[(?P<title>[^\\]]+)\\]"
+        r"\\s*(?:<(?P<anchor>[^>]+)>)?\\s*$"
+    )
+    counters = [0] * 8
+    entries: list[dict[str, object]] = []
+
+    for line in body.splitlines():
+        match = heading_pattern.match(line)
+        if not match:
+            continue
+        level = int(match.group(1))
+        options = match.group("options")
+        title = match.group("title").strip()
+        anchor = (match.group("anchor") or "").strip()
+
+        if "numbering: none" not in options:
+            counters[level] += 1
+            for deeper in range(level + 1, len(counters)):
+                counters[deeper] = 0
+            number = ".".join(
+                str(counters[current])
+                for current in range(1, level + 1)
+                if counters[current]
+            )
+            title = f"{number} {title}"
+
+        entries.append({"title": title, "level": level, "anchor": anchor})
+
+    top_level = [entry["title"] for entry in entries if entry["level"] == 1]
+    if top_level != MANUSCRIPT_TOP_LEVEL:
+        raise SystemExit(
+            f"main.typ web hierarchy differs from manuscript contract: {top_level}"
+        )
+
+    semantic_titles = {
+        str(entry["title"])
+        for entry in entries
+        if entry["level"] == 4 and not str(entry["title"])[0].isdigit()
+    }
+    for required in (
+        "Velký jazykový model (LLM)",
+        "Vektorová reprezentace (Embedding)",
+        "Kontextové okno (Context Window)",
+        "Agentní smyčka (Agent Loop)",
+        "Vývoj řízený specifikací (Spec-Driven Development)",
+    ):
+        if required not in semantic_titles:
+            raise SystemExit(f"main.typ web index is missing semantic article: {required}")
+
+    return entries
+
+
 def semantic_content_index(html_path: Path) -> list[dict[str, object]]:
     parser = HeadingIndexParser()
     parser.feed(html_path.read_text(encoding="utf-8"))
-    entries: list[dict[str, object]] = []
+    html_entries: list[dict[str, object]] = []
     for entry in parser.entries:
         title = str(entry["title"])
-        if entries and entries[-1]["title"] == title and entries[-1]["level"] == entry["level"]:
+        if html_entries and html_entries[-1]["title"] == title and html_entries[-1]["level"] == entry["level"]:
             continue
-        entries.append(entry)
-    return entries
+        html_entries.append(entry)
+
+    manuscript_entries = typst_manuscript_index()
+    first_body = next(
+        (index for index, entry in enumerate(html_entries) if entry["title"] == "1 Úvod"),
+        None,
+    )
+    last_body = next(
+        (
+            index
+            for index in range(len(html_entries) - 1, -1, -1)
+            if html_entries[index]["title"] == "5 Závěr"
+        ),
+        None,
+    )
+
+    if first_body is None or last_body is None or last_body < first_body:
+        raise SystemExit(
+            f"compiled HTML does not expose manuscript body boundaries: {html_path}"
+        )
+
+    return html_entries[:first_body] + manuscript_entries + html_entries[last_body + 1 :]
 
 
 published_assets = 0

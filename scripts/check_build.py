@@ -281,7 +281,14 @@ for required in (
 site_builder = sources[Path("scripts/build_site.py")]
 require_contract(
     site_builder,
-    ("class HeadingIndexParser", "def semantic_content_index", '"content_index": "content-index.json"'),
+    (
+        "class HeadingIndexParser",
+        "def typst_manuscript_index",
+        "MANUSCRIPT_TOP_LEVEL",
+        "Velký jazykový model (LLM)",
+        "def semantic_content_index",
+        '"content_index": "content-index.json"',
+    ),
     "semantic web structure index",
 )
 
