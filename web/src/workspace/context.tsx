@@ -85,8 +85,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-;
-
   useEffect(() => {
     let disposed = false;
     if (!token) {
