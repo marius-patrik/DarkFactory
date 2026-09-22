@@ -239,16 +239,18 @@ export function useResourceComparison(path: string, compare: CompareMode, target
           const number = Number(target);
           if (!Number.isInteger(number) || number < 1) throw new Error("Enter a pull request number.");
           const pull = await getGithubPullRequest(snapshot.repository.fullName, number, token);
+          const baseRepository = pull.base.repo?.full_name || snapshot.repository.fullName;
+          const headRepository = pull.head.repo?.full_name || snapshot.repository.fullName;
           nextComparison = {
             before: await remoteSnapshot(
-              snapshot.repository.fullName,
+              baseRepository,
               token,
               pull.base.sha,
               path,
               `PR #${number} base`,
             ),
             after: await remoteSnapshot(
-              snapshot.repository.fullName,
+              headRepository,
               token,
               pull.head.sha,
               path,
