@@ -11,7 +11,6 @@
 #let liu2024 = <liu2024>
 #let dao2022 = <dao2022>
 #let ainslie2023 = <ainslie2023>
-#let wang2024survey = <wang2024survey>
 #let schick2023toolformer = <schick2023toolformer>
 #let lewis2020rag = <lewis2020rag>
 #let jiang2023llmlingua = <jiang2023llmlingua>
@@ -74,7 +73,6 @@
   liu2024: liu2024,
   dao2022: dao2022,
   ainslie2023: ainslie2023,
-  wang2024survey: wang2024survey,
   schick2023toolformer: schick2023toolformer,
   lewis2020rag: lewis2020rag,
   jiang2023llmlingua: jiang2023llmlingua,
