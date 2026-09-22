@@ -1,4 +1,4 @@
-#import "/DarkFactory/templates/common.typ": bib
+#import "/DarkFactory/templates/common.typ": term, bib
 #import "/DarkFactory/schema.typ": concept
 
 #let item = concept(
