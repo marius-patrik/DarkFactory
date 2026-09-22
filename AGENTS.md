@@ -75,7 +75,7 @@ No standalone Software Engineering article.
 - 2.3.2 Jazykový model
   - Velký jazykový model (LLM)
   - Transformer
-  - Tokenizér (Tokenizer)
+  - Tokenizér
   - Token
   - Vektorová reprezentace (Embedding)
 - 2.3.3 Inference
@@ -107,8 +107,8 @@ Harness is owned by the numbered section itself; there is no duplicate Harness a
   - Izolované prostředí (Sandbox)
 - 2.4.4 Dovednosti a rozšíření
   - Dovednosti (Skills)
-  - Pluginy (Plugins)
-  - Skripty (Scripts)
+  - Plugin
+  - Skript
   - Hooks
   - MCP
 - 2.4.5 Závěr
@@ -140,7 +140,7 @@ Agentické inženýrství is owned by the numbered section itself; there is no d
   - Člověk ve smyčce (HITL)
 - 2.5.4 Orchestrace agentů
   - Subagent
-  - Orchestrátor (Orchestrator)
+  - Orchestrátor
   - Předání řízení (Handoff)
   - Graf pracovního postupu (Workflow Graph)
 - 2.5.5 Závěr
@@ -219,6 +219,8 @@ Examples:
 Removed fields must not return: `industry`, `czech`, `english`, `alias`, boolean `keyword`, or multiple rendering surfaces/languages.
 
 Czech-first means use a natural Czech technical term when one exists. Never manufacture a translation merely to fill `term`.
+
+`keyword` must add terminology information. Do not set it merely to repeat the same cognate, inflection, or spelling variant in English. For example, prefer `Tokenizér`, `Plugin`, `Skript`, and `Orchestrátor` without redundant parenthetical English forms.
 
 ## Single-owner rule
 
