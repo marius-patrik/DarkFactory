@@ -132,7 +132,9 @@ State means persisted currently valid facts/control data. Do not personify it.
 
 Use direct/original source + concrete example for Agent Loop, Session, Transcript, State, Environment, Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, `.agents/`, and `.claude/`.
 
-### Practical orchestration
+### Practical / Agentic Engineering
+Treat §3.1 as stable unless a concrete factual/source/build defect is found.
+
 Workflow Graph and Swarm belong under Practical / Agentic Engineering, not Theory.
 
 ### DarkFactory
@@ -148,24 +150,7 @@ Final school-guide audit and publication QA are deferred in `BACKLOG.md`.
 
 ## Remaining execution
 
-### Phase 1 — Complete Practical: Agentic Engineering — NEXT
-
-Finish 3.1 in one pass.
-
-Scope:
-- rewrite the six practical subsections as a coherent engineering methodology rather than a glossary;
-- source definitions, mechanisms, and real examples;
-- keep AGENTS.md and CLAUDE.md distinct;
-- cover context engineering, verification, behavior control, and orchestration without redefining Theory concepts;
-- ground Workflow Graph and Swarm in current first-party sources;
-- perform the **3.1 source, ownership, duplication, and bibliography audit in the same pass**.
-
-Exit:
-- 3.1 reads as an actionable, literature-backed methodology;
-- concepts owned by Theory are referenced rather than redefined;
-- no separate Practical source/dedup pass is required.
-
-### Phase 2 — Integrate DarkFactory and pin implementation evidence
+### Phase 1 — Integrate DarkFactory and pin implementation evidence — NEXT
 
 Complete 3.2 and prepare evaluation inputs in one pass.
 
@@ -182,7 +167,7 @@ Exit:
 - 3.2 is complete and reproducible;
 - implementation/evaluation evidence is pinned before Results writing begins.
 
-### Phase 3 — Research frame + Results and discussion
+### Phase 2 — Research frame + Results and discussion
 
 Align the research frame to the actual implementation/evidence, then write the evaluation without another separate framing pass.
 
@@ -201,7 +186,7 @@ Exit:
 
 ## Current-plan exit
 
-The active plan ends after Phase 3.
+The active plan ends after Phase 2.
 
 At that checkpoint:
 - Theory is complete;
