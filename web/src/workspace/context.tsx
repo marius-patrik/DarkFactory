@@ -18,12 +18,10 @@ import {
   type GithubUser,
 } from "@/github/client";
 import {
-  beginGithubSignIn,
   clearGithubToken,
-  completeGithubSignIn,
   getGithubToken,
+  setGithubToken,
 } from "@/github/auth";
-import { githubAuthConfigured } from "@/github/config";
 import {
   parseRepositoryInput,
   repositoryFromGithub,
@@ -45,7 +43,6 @@ import {
 } from "./storage";
 
 type WorkspaceContextValue = {
-  authConfigured: boolean;
   token: string | null;
   user: GithubUser | null;
   repositories: GithubRepository[];
@@ -56,7 +53,7 @@ type WorkspaceContextValue = {
   loading: boolean;
   error: string | null;
   dialogOpen: boolean;
-  signIn: () => Promise<void>;
+  connectToken: (token: string) => Promise<void>;
   signOut: () => void;
   setDialogOpen: (open: boolean) => void;
   openRepository: (input: string, ref?: string) => Promise<void>;
@@ -88,21 +85,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    let disposed = false;
-    void (async () => {
-      try {
-        const nextToken = await completeGithubSignIn();
-        if (disposed) return;
-        setToken(nextToken);
-      } catch (reason) {
-        if (!disposed) setError(reason instanceof Error ? reason.message : String(reason));
-      }
-    })();
-    return () => {
-      disposed = true;
-    };
-  }, []);
+;
 
   useEffect(() => {
     let disposed = false;
@@ -145,9 +128,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     };
   }, [recent, token, workspace]);
 
-  const signIn = useCallback(async () => {
+  const connectToken = useCallback(async (candidate: string) => {
+    const value = candidate.trim();
+    if (!value) throw new Error("GitHub token cannot be empty.");
+    setLoading(true);
     setError(null);
-    await beginGithubSignIn();
+    try {
+      const [nextUser, nextRepositories] = await Promise.all([
+        getGithubUser(value),
+        listGithubRepositories(value),
+      ]);
+      setGithubToken(value);
+      setToken(value);
+      setUser(nextUser);
+      setRepositories(nextRepositories);
+    } catch (reason) {
+      clearGithubToken();
+      setToken(null);
+      setUser(null);
+      setRepositories([]);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const signOut = useCallback(() => {
@@ -349,7 +352,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
-      authConfigured: githubAuthConfigured(),
       token,
       user,
       repositories,
@@ -360,7 +362,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       dialogOpen,
-      signIn,
+      connectToken,
       signOut,
       setDialogOpen,
       openRepository,
@@ -384,7 +386,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       dialogOpen,
-      signIn,
+      connectToken,
       signOut,
       openRepository,
       switchRef,
