@@ -1,146 +1,107 @@
 # Backlog
 
-This file is a parking lot for requests that are not part of the active thesis plan or the IDE workstream.
+This file contains thesis work intentionally scheduled after the active coherence rewrite in `PLAN.md`.
 
-## Rules
+## DarkFactory architecture and evidence phase
 
-- `PLAN.md` is the active thesis execution plan.
-- `web/PLAN.md` is the separate generic IDE workstream plan.
-- `SCHOOL_RULES.md` is the recovered Odborná-práce compliance contract.
-- Items here are inactive until explicitly promoted.
+Goal:
+- pin one canonical merged DarkFactory revision;
+- generate/read canonical documentation for that revision;
+- verify architecture claims against source, tests, workflows, and reproducible execution evidence;
+- define and write the final Practical / §3.1 DarkFactory structure from the verified implementation;
+- prepare the evidence package used by Chapter 4.
 
-## Requests
+### Evidence contract
 
-### DarkFactory integration and implementation-evidence pinning
+Use:
+- merged/default-branch source;
+- tests;
+- workflow runs;
+- reproducible execution evidence;
+- generated/current architecture documentation for terminology and intended ownership.
 
-Deferred intentionally until the user promotes it.
+Record:
+- repository identity;
+- branch;
+- exact SHA;
+- commit date;
+- documentation provenance;
+- workflow/run IDs;
+- relevant source/test paths;
+- evidence type/status;
+- target-repository identity;
+- Results/RQ mapping.
 
-This backlog item includes the full previously prepared next-phase intent. It is not active work.
+Distinguish documented architecture from implementation evidence wherever they differ.
 
-Mission:
-- complete Chapter 3 / §3.1 **DarkFactory** as the practical architecture/implementation chapter;
-- pin the exact canonical DarkFactory revision used by the thesis;
-- generate and capture canonical DarkFactory documentation from that exact revision;
-- verify architecture/system-description claims against actual merged source, tests, workflows, and reproducible evidence;
-- prepare the implementation/evaluation evidence package needed by Chapter 4.
+### Practical / §3.1 DarkFactory
 
-Required evidence discipline:
-- treat generated/current DarkFactory documentation as the authority for architecture terminology and intended ownership;
-- distinguish documented/final architecture from implementation truth at the pinned revision;
-- do not treat `README.md`, `PRD.md`, `PLAN.md`, generated docs, or open PRs as proof that a mechanism is implemented;
-- use merged/default-branch source, tests, workflow runs, and reproducible execution evidence for implementation claims;
-- record important open PRs as in-flight/non-canonical evidence only;
-- do not modify the DarkFactory repository as part of the thesis phase.
+Derive the exact `3.1.x` structure from the pinned implementation.
 
-When promoted, refresh both repositories before work. At the last coordinator inspection:
-- DarkFactory repository: `marius-patrik/DarkFactory`;
-- default branch: `darkfactory`;
-- observed canonical head: `9f79c5b7ac71160b27d2e29f6dcf1812ed30c0a5`;
-- notable open/nonterminal work included PRs #894 and #899;
-- remaining `harness/` ownership, `docs.df` targeting `harness/tsconfig.json`, and root quality scripts delegating to `harness` were concrete signs that target architecture and current implementation were not yet identical.
+Cover only architecture and implementation boundaries that materially realize the theoretical model:
+- runtime/state ownership;
+- capability/environment boundaries;
+- GitHub control plane where applicable;
+- lifecycle execution;
+- recovery/effect handling;
+- repository/configuration/documentation contracts;
+- credential/auth boundaries;
+- relevant CLI/web surfaces.
 
-Canonical-docs/evidence work when promoted:
-- inspect `README.md`, `PRD.md`, `PLAN.md`, `AGENTS.md`, `docs.df`, `package.json`, `docs/home.md`, `scripts/build-docs.ts`, `packages/docs/`, relevant `packages/web/`, source packages/capabilities, tests, and workflows;
-- resolve the default branch dynamically and pin one exact merged/default-branch commit;
-- record repository stable identity, branch, SHA, commit date, docs provenance, workflow/run IDs, source paths, test paths, and excluded in-flight PRs;
-- generate docs from a disposable checkout/worktree at the exact pinned revision;
-- capture a reproducible docs snapshot under `paper/data/` when reasonably sized;
-- create a compact machine-readable evidence manifest under `paper/data/` containing provenance, SHAs, workflow IDs, source/test paths, target repositories, evidence type/status, and intended Results/RQ mapping;
-- do not create another authored manuscript source or hidden manuscript generator.
+Use architectural sections rather than a package catalogue unless a package boundary itself explains the system.
 
-§3.1 DarkFactory requirements when promoted:
-- fill the currently empty Practical / §3.1 DarkFactory without moving generic Agentic Engineering back out of Theory;
-- treat §2.3 Agentické inženýrství as stable unless a concrete factual/source defect is found;
-- derive the exact `3.1.x` subsection structure from the pinned canonical DarkFactory architecture rather than stale plans or product taxonomy;
-- explain only architecture/implementation boundaries that materially realize the theoretical mechanisms: runtime/state ownership, capability/environment boundaries, GitHub control-plane role, lifecycle execution, recovery/effect handling, repo/config/docs contracts, credential/auth boundaries, documentation generation, and relevant CLI/web surfaces;
-- keep the chapter architectural rather than package-by-package unless package boundaries are themselves architecturally important;
-- do not smooth over incomplete cutover or describe target architecture as already shipped;
-- where implementation differs from documented architecture, explicitly distinguish current implementation from intended/final ownership.
+### Evidence package
 
-Target-repository/evaluation preparation when promoted:
-- resolve target repositories by stable GitHub identity rather than display name;
-- reconcile historical `OdbornaPrace-*` names with current repositories such as `DarkFactory-Paper`;
-- pin each usable target repository SHA and relevant workflow run;
-- record exactly what each artifact can establish and whether it is current, renamed, archived, unavailable, or limited;
-- inventory existing Chapter 4 evidence pins and mark supersession/currentness without substantively rewriting Results;
-- preserve bibliography entries still needed by current Chapter 4;
-- produce an evidence map for 4.1 implementation/system verification, 4.2 repository verification, 4.3 research-question answers, and 4.4 discussion/limitations;
-- distinguish architecture/docs evidence, source-code evidence, automated tests, CI/workflow evidence, live/integration evidence, and missing evidence.
+Create a compact reproducible manifest under `paper/data/` when appropriate.
 
-Validation when promoted:
-- run `make all BOOK=DarkFactory`;
-- run `make ci BOOK=DarkFactory`;
-- run `make site BOOK=DarkFactory`;
-- inspect final/review PDF, HTML, Markdown, site/content index, and affected Chapter 3 boundary pages;
-- verify the manuscript keeps the final level-1/2/3 hierarchy and does not recreate per-term semantic headings;
-- verify bibliography and evidence snapshots are reproducible.
+Map evidence to:
+- 4.1 implementation/system verification;
+- 4.2 repository verification;
+- 4.3 research-question answers;
+- 4.4 discussion/limitations.
 
-Exit when promoted:
-- exact canonical DarkFactory revision pinned;
-- canonical docs from that revision captured reproducibly;
-- Practical / §3.1 DarkFactory complete;
-- implementation claims verified against actual merged implementation evidence;
-- target repository/workflow evidence pinned;
-- evidence map ready for Chapter 4;
-- limitations explicit;
-- no premature Results rewrite.
+### Validation
 
-### Evidence-aligned research frame + Results refresh
+Run:
+- `make all BOOK=DarkFactory`
+- `make ci BOOK=DarkFactory`
+- `make site BOOK=DarkFactory`
 
-Blocked behind the DarkFactory integration/evidence item above.
+Inspect the Chapter 3 boundary and canonical generated outputs.
 
-The active coherence pass already establishes the final Introduction structure and rewrites the current Results presentation. This backlog item is therefore an evidence refresh, not another structural rewrite.
+### Exit
 
-When promoted:
-- adjust 1.2 Cíl práce a výzkumné otázky and 1.3 Metodika only where the newly pinned DarkFactory evidence requires factual alignment;
-- keep the three-section Introduction hierarchy;
-- ensure every RQ maps to pinned evidence;
-- refresh 4.1–4.4 from the new evidence manifest;
-- answer RQs explicitly;
-- separate observed results from interpretation and limitations;
-- do not use Chapter 4 to re-explain architecture;
-- preserve the concise prose contract established by the active rewrite.
+- canonical DarkFactory revision pinned;
+- §3.1 DarkFactory complete;
+- implementation claims evidence-backed;
+- target repositories/workflows pinned;
+- evidence map ready for Chapter 4.
 
-Exit when promoted:
-- objectives, methodology, evidence, and evaluation are mutually consistent;
-- every RQ is answerable and answered from pinned evidence.
+## Evidence-aligned Results refresh
 
-### Thesis-wide closure
+After the DarkFactory phase:
+- align 1.2 Cíl práce a výzkumné otázky and 1.3 Metodika with the pinned evidence where necessary;
+- refresh 4.1–4.4 from the evidence manifest;
+- answer each RQ from explicit evidence;
+- separate observed results, interpretation, and limitations;
+- keep Chapter 4 focused on evaluation rather than architecture explanation.
 
-Deferred final manuscript-content pass after the evidence/results path is complete.
+## Thesis closure
 
-Scope:
-- deduplicate across Introduction / Theory / Practical / DarkFactory / Results;
-- audit factual claims and citations;
-- remove unused bibliography records;
-- finalize Chapter 5 Závěr;
-- finalize Czech/English annotation material as required by the verified school contract;
-- finalize keywords;
-- verify that the already-promoted encyclopedia/term-index removal remains complete;
-- finalize remaining back matter;
+After evidence and Results are final:
+- perform one cross-chapter coherence pass;
 - verify terminology and cross-references;
-- ensure no new factual material appears only in Conclusion.
+- audit factual claims and citations;
+- prune bibliography records that no longer support final text;
+- finalize annotations/keywords against the completed body;
+- finalize Chapter 5;
+- ensure front/back matter matches the completed manuscript.
 
-Exit when promoted:
-- manuscript content is substantively final;
-- only publication/school-format defects remain.
+## Publication QA
 
-### Odborná-práce publication QA
-
-Deferred final publication/compliance phase.
-
-Prerequisite:
-- the active direct-text school-guide audit has completed and `SCHOOL_RULES.md` is reconciled.
-
-Then:
-- apply exact title-page, declaration, annotation, bibliography, pagination, typography, figures/tables, appendices, and submission rules;
-- validate source/output paths;
-- generate every required submission artifact confirmed by the guide;
-- run final PDF/HTML/Markdown/review/site builds;
+After the direct school-guide reconciliation:
+- apply exact title-page/declaration/annotation/bibliography/pagination/typography/figure/table/appendix rules;
+- generate every confirmed submission artifact;
+- validate PDF/HTML/Markdown/site/release outputs;
 - inspect the final PDF page by page;
-- fix presentation-only defects;
-- require CI, Deploy Documentation, and Release green on the same final head.
-
-Exit when promoted:
-- school compliance is verified against the directly audited Odborná-práce guide;
-- all canonical artifacts and publication workflows are green on one final commit.
+- require canonical CI, documentation deployment, and release publication to be green on one final head.
