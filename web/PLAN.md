@@ -1291,7 +1291,6 @@ High-conflict shared files require explicit reconciliation before modification:
 - `PLAN.md`;
 - `AGENTS.md`;
 - `README.md`;
-- `DarkFactory/schema.typ`;
 - publication templates;
 - publication/build scripts;
 - `.github/workflows/*`;
@@ -1513,7 +1512,7 @@ Align GitHub Actions/Release artifact publication with declared repository capab
 Audit:
 
 - arbitrary public repo;
-- arbitrary private repo available to the GitHub App;
+- arbitrary private repo accessible with a validated user-supplied GitHub token;
 - branch switching;
 - dirty-state persistence;
 - reload recovery;
