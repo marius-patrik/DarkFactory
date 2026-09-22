@@ -11,32 +11,31 @@ The generic IDE workstream is separate in `web/PLAN.md`.
 
 The thesis has been fully consolidated.
 
-**`main.typ` is the single canonical authored Typst source of the thesis.**
+**`paper/PAPER.typ` is the single canonical authored Typst source of the thesis.**
 
 There is no modular manuscript/schema/manifest source tree anymore.
 
 Current repository contract:
 
 ```text
-main.typ                         canonical thesis source
-DarkFactory/bib/                 bibliography data
-DarkFactory/data/                checked-in evidence data
-DarkFactory/img/                 figures/assets
-DarkFactory/fonts/               publication fonts
+paper/PAPER.typ                  canonical thesis source
+paper/bib/                 bibliography data
+paper/data/                checked-in evidence data
+paper/img/                 figures/assets
+paper/fonts/               publication fonts
 scripts/                         build/export/validation helpers
 web/                             generic review/IDE application
 ```
 
 Rules:
 
-- all thesis prose, structure, semantic articles, review helpers, template logic, front matter, back matter, and Typst publication logic are edited directly in `main.typ`;
+- all thesis prose, structure, semantic articles, review helpers, template logic, front matter, back matter, and Typst publication logic are edited directly in `paper/PAPER.typ`;
 - do not recreate `DarkFactory/index.typ`, schema files, concept files, section manifests, template modules, or another parallel authored Typst tree;
-- do not regenerate `main.typ` from retired modular sources;
-- bibliography/data/assets remain external where appropriate and may be referenced by `main.typ`;
+- do not regenerate `paper/PAPER.typ` from retired modular sources;
+- bibliography/data/assets remain external where appropriate and may be referenced by `paper/PAPER.typ`;
 - generated PDF/HTML/Markdown/review outputs remain artifacts, not authored sources;
 - a future decomposition is out of scope unless explicitly requested.
 
-The consolidation landed at `de82d8ac72bd6f0afee5b64e8dd019432b22b699`, and CI, Deploy Documentation, and Release all passed on that exact commit.
 
 ## Working mode
 
@@ -45,7 +44,7 @@ Implementation is delegated task-by-task to side agents.
 Every task must:
 - start from latest `main`;
 - read `AGENTS.md`, `PLAN.md`, and `SCHOOL_RULES.md`;
-- treat `main.typ` as the only thesis Typst source;
+- treat `paper/PAPER.typ` as the only thesis Typst source;
 - preserve accepted sourced content unless a concrete defect is found;
 - use primary/original or first-party technical sources for factual claims;
 - run relevant builds/validation;
@@ -143,7 +142,7 @@ Return explicitly to objectives and research questions. No new factual material.
 
 The old schema types are retired, but the semantic writing contract remains.
 
-Within `main.typ`, every semantic article should read in this order:
+Within `paper/PAPER.typ`, every semantic article should read in this order:
 
 1. concise definition;
 2. description/mechanism;
@@ -207,58 +206,17 @@ The remaining direct-text guide audit is mandatory before final submission.
 
 ## Remaining execution order
 
-### Phase B — Single-file cleanup + structural migration + introduction evidence move — ACTIVE NOW
+### Phase C — Harness theory rewrite — ACTIVE NOW
 
-All thesis edits happen directly in `main.typ`.
-
-First retire transitional consolidation machinery:
-- delete `scripts/consolidate_paper.py`;
-- remove `make consolidate` and related help/phony entries;
-- remove validator/build assumptions that expect deleted modular Typst sources;
-- ensure no workflow/docs describe `main.typ` as generated.
-
-Then implement the hierarchy directly in `main.typ`:
-
-1. Úvod
-2. Teoretická část
-3. Praktická část
-4. Výsledky a diskuse
-5. Závěr
-
-Tasks:
-- preserve completed Model/Inference content and embedding figures in substance;
-- add Theory/Practical structural wrappers;
-- move Jazykový model and Harness under Theory;
-- move Agentic Engineering and DarkFactory under Practical;
-- rename/restructure Vyhodnocení to Výsledky a diskuse;
-- remove standalone Vibe Coding from Practical;
-- integrate its sourced material into 1.1 and/or 1.5;
-- move the accepted Artificial Analysis v4.3.2 benchmark into 1.1 without changing rows;
-- preserve Gradually + Epoch in 1.1;
-- rewrite 1.1 into the coherent adoption → coding agents → Vibe Coding → capability → Agentic Engineering argument;
-- add 1.6 Struktura práce;
-- preserve unnumbered semantic article treatment;
-- update validation and web structure extraction for the new hierarchy.
-
-Exit:
-- exactly one authored Typst source remains: `main.typ`;
-- obsolete consolidation machinery is gone;
-- rendered hierarchy is exactly 1–5;
-- evidence ownership is correct;
-- no duplicated Vibe Coding/benchmark content;
-- all builds green.
-
-### Phase C — Harness theory rewrite
-
-Rewrite/finalize Harness under 2.2 directly in `main.typ`.
+Rewrite/finalize Harness under 2.2 directly in `paper/PAPER.typ`.
 
 ### Phase D — Practical Agentic Engineering rewrite
 
-Rewrite 3.1 directly in `main.typ` as a practical methodology and deduplicate mechanisms already explained in Theory.
+Rewrite 3.1 directly in `paper/PAPER.typ` as a practical methodology and deduplicate mechanisms already explained in Theory.
 
 ### Phase E — Theory/practice source and ownership audit
 
-For every semantic article in `main.typ`: one owner, direct source, claim-local citation, cited example where defensible, practical implication, no duplicated definition.
+For every semantic article in `paper/PAPER.typ`: one owner, direct source, claim-local citation, cited example where defensible, practical implication, no duplicated definition.
 
 ### Phase F — Finalize Introduction, goals, RQs and methodology
 
@@ -266,7 +224,7 @@ Finalize 1.1–1.6 and map RQs directly to actual evidence.
 
 ### Phase G — Integrate generated DarkFactory docs into 3.2
 
-Pin the DarkFactory revision and insert/translate canonical generated documentation into the 3.2 region of `main.typ`. Avoid parallel manual architecture prose.
+Pin the DarkFactory revision and insert/translate canonical generated documentation into the 3.2 region of `paper/PAPER.typ`. Avoid parallel manual architecture prose.
 
 ### Phase H — Evidence pinning + Results and discussion
 
@@ -283,7 +241,7 @@ Complete the direct-text guide audit, then final typography/layout/submission QA
 ## Final gate
 
 Complete only when:
-- `main.typ` is the sole authored thesis Typst source;
+- `paper/PAPER.typ` is the sole authored thesis Typst source;
 - no retired consolidation/schema/manifest architecture remains;
 - introduction contains the coherent adoption → coding agents → Vibe Coding → capability → Agentic Engineering argument;
 - benchmark lives in Introduction;
