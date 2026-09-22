@@ -21,7 +21,7 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 
 ## Direction
 
-The thesis is developed toward the final-paper quality standard in `GOAL.md` and the thesis-specific product requirements in `PRD.md`.
+The thesis is developed toward the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, centered on the transition from IDE-centered software engineering to harness-centered Agentic Engineering.
 
 The repository/product requirements are defined in `PRD.md`.
 
