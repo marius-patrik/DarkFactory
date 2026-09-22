@@ -253,88 +253,61 @@
   else { none }
 }
 
+#let semantic-term(value) = {
+  assert(value.kind in ("concept", "section"), message: "term API expects a semantic concept or section")
+  assert(value.term != none or value.keyword != none, message: "semantic item requires term or keyword")
+  value
+}
+
 #let term-source(value) = {
-  assert(value.kind == "concept", message: "term-source() expects a concept")
+  semantic-term(value)
   value.source
 }
 
 #let term-citation(value) = {
-  assert(value.kind == "concept", message: "term-citation() expects a concept")
+  semantic-term(value)
   value.citation
 }
 
-#let concept-proper(value, language: "auto") = {
-  let lang = if language == "auto" { "cs" } else { language }
-  if lang == "en" {
-    if value.english != none { text(lang: "en")[#value.english] } else if value.czech != none { text(lang: "cs")[#value.czech] } else { value.industry }
-  } else {
-    if value.czech != none { text(lang: "cs")[#value.czech] } else if value.english != none { text(lang: "en")[#value.english] } else { value.industry }
-  }
-}
-
-#let raw-proper(value, language: "auto") = {
-  let lang = if language == "auto" { "cs" } else { language }
-  if lang == "en" {
-    if value.english != none { str(value.english) } else if value.czech != none { str(value.czech) } else { str(value.industry) }
-  } else {
-    if value.czech != none { str(value.czech) } else if value.english != none { str(value.english) } else { str(value.industry) }
-  }
-}
-
 #let term-full-name(value) = {
-  assert(value.kind == "concept", message: "term-full-name() expects a concept")
-  let lead = if value.industry != none { value.industry } else if value.czech != none { value.czech } else { value.english }
-  let lead-raw = str(lead)
-  let cs-raw = if value.czech != none { str(value.czech) } else { none }
-  let en-raw = if value.english != none { str(value.english) } else { none }
-  let output = [#lead]
-  if value.industry != none and value.czech != none and cs-raw != lead-raw {
-    output += [#text(" (")#text(lang: "cs")[#value.czech]#text(")")]
-  }
-  if value.english != none and en-raw != lead-raw and en-raw != cs-raw {
-    output += [#text(" [")#text(lang: "en")[#value.english]#text("]")]
-  }
-  if value.alias != none and str(value.alias) != lead-raw and str(value.alias) != cs-raw and str(value.alias) != en-raw {
-    output += [#text(" [")#value.alias#text("]")]
-  }
-  output
-}
-
-#let term-name(value, surface: "full", language: "auto") = {
-  assert(value.kind == "concept", message: "term-name() expects a concept")
-  assert(surface in ("full", "industry", "proper", "alias"), message: "unsupported term surface")
-  if surface == "full" { return term-full-name(value) }
-
-  let proper = concept-proper(value, language: language)
-  if surface == "proper" { return proper }
-  if surface == "industry" {
-    return if value.industry != none { value.industry } else { proper }
-  }
-  if surface == "alias" {
-    return if value.alias != none { value.alias } else if value.industry != none { value.industry } else { proper }
+  semantic-term(value)
+  if value.term != none and value.keyword != none {
+    [#value.term (#value.keyword)]
+  } else if value.term != none {
+    value.term
+  } else {
+    value.keyword
   }
 }
+
+#let term-name(value) = term-full-name(value)
 
 #let term-sort-name(value) = {
-  if value.industry != none { str(value.industry) }
-  else if value.english != none { str(value.english) }
-  else { str(value.czech) }
+  semantic-term(value)
+  if value.term != none { str(value.term) } else { str(value.keyword) }
+}
+
+#let term-link-label(value) = {
+  semantic-term(value)
+  if value.kind == "section" {
+    label("section-" + value.key)
+  } else {
+    label("concept-" + value.key)
+  }
 }
 
 #let term(
   value,
-  surface: "full",
-  language: "auto",
   linked: true,
   marker: true,
   emphasized: true,
   cite: false,
 ) = context {
-  assert(value.kind == "concept", message: "term() expects a concept")
-  let name = term-name(value, surface: surface, language: language)
+  semantic-term(value)
+  let name = term-full-name(value)
   let displayed = if emphasized { [_*#name*_] } else { name }
   if linked {
-    displayed = link(label("concept-" + value.key), displayed)
+    displayed = link(term-link-label(value), displayed)
   }
   if cite and value.citation != none {
     let render-c(c) = {
@@ -360,7 +333,7 @@
 
 #let render-keywords(items) = context {
   let unique = ()
-  for item in items.filter(item => item.keyword) {
+  for item in items.filter(item => item.keyword != none) {
     if not unique.any(existing => existing.key == item.key) {
       unique.push(item)
     }
@@ -372,7 +345,6 @@
     text(size: 11pt, fill: black)[
       #ordered.map(item => term(
         item,
-        surface: "full",
         linked: false,
         marker: false,
         emphasized: false,
