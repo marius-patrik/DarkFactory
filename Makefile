@@ -5,7 +5,6 @@ NPM ?= npm
 BOOK ?= DarkFactory
 BOOK_ROOT := $(BOOK)
 MAIN := main.typ
-WEB_SOURCE := web-publication.typ
 FONTS := --font-path $(BOOK_ROOT)/fonts
 
 DEFAULT_TEMPLATE := gjkt-odborna-prace
@@ -20,14 +19,13 @@ OUT_DIR ?= out
 OUT_FINAL := $(OUT_DIR)/prace.pdf
 OUT_REVIEW := $(OUT_DIR)/prace-review.pdf
 
-.PHONY: help external-assets build review exports all all-templates all-books template-check consolidate web-install web-lint web-format web-check web-build verify ci site watch png clean check
+.PHONY: help external-assets build review exports all all-templates all-books template-check web-install web-lint web-format web-check web-build verify ci site watch png clean check
 
 help:
 	@echo "make all BOOK=$(BOOK) TEMPLATE=$(TEMPLATE)   – PDF/HTML/Markdown final + review"
 	@echo "make all-templates BOOK=$(BOOK)             – build every template in the selected book"
 	@echo "make all-books                              – build every registered book root"
 	@echo "make template-check BOOK=$(BOOK)            – final-publication smoke for every book template"
-	@echo "make consolidate BOOK=$(BOOK)               – consolidate paper into single .typ file and compile PDF"
 	@echo "make web-lint                               – Biome lint web viewer"
 	@echo "make web-format                             – Biome format web viewer"
 	@echo "make web-check                              – Biome + TypeScript + production Rsbuild"
@@ -58,9 +56,6 @@ all-templates: build review exports
 all-books: all-templates
 
 template-check: build
-
-consolidate: external-assets
-	$(PYTHON) scripts/consolidate_paper.py --book $(BOOK) --output $(MAIN) --compile
 
 web-install:
 	$(NPM) --prefix web install --no-audit --no-fund

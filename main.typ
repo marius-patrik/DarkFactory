@@ -1,6 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-//  KONSOLIDOVANÁ ODBORNÁ PRÁCE (Jediný zdrojový soubor .typ)
-//  Generováno automaticky pomocí scripts/consolidate_paper.py
+//  ODBORNÁ PRÁCE — jediný kanonický zdrojový soubor .typ
 // ─────────────────────────────────────────────────────────────
 
 // ── Kanonické bibliografické proměnné ───────────────────────
@@ -472,14 +471,14 @@
   rok: 2026,
   annotation-cs: [
     Odborná práce zkoumá využití agentní umělé inteligence při vývoji softwaru se zaměřením na architekturu agentního harnessu.
-    Kapitoly 2–4 sledují přechod od jazykového modelu přes Harness k AI-asistovanému vývoji a agentickému inženýrství.
-    Kapitoly 5–6 oddělují kanonickou dokumentaci DarkFactory od vyhodnocení dostupných důkazů.
+    Teoretická část vysvětluje jazykový model, inferenci a Harness; praktická část popisuje Agentické inženýrství a jeho realizaci v DarkFactory.
+    Výsledky a diskuse vyhodnocují dostupné důkazy z implementace, testů, CI a cílových repozitářů.
     Evaluace používá zdrojový kód, automatické testy a CI výsledky a výslovně rozlišuje prokázané mechanismy od neprokázaného plného produkčního průchodu.
   ],
   abstract-en: [
     This thesis examines the use of agentic artificial intelligence in software development, focusing on the architecture of an agent harness.
-    Chapters 2–4 progress from the language model through the harness to AI-assisted development and agentic engineering.
-    Chapters 5–6 separate the canonical DarkFactory documentation from evaluation of the available evidence.
+    The theoretical part explains the language model, inference, and the harness; the practical part describes Agentic Engineering and its realization in DarkFactory.
+    Results and discussion evaluate the available evidence from implementation, tests, CI, and target repositories.
     The evaluation uses source code, automated tests, and CI results and explicitly distinguishes demonstrated mechanisms from a full production lifecycle that was not demonstrated.
   ],
   podekovani: none,
@@ -613,7 +612,7 @@ Předmětem práce není trénování jazykových modelů, ale systémové vrstv
 #heading(level: 2)[Motivace a vymezení problému] <section-motivation_problem_definition>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Současné agentní systémy dokážou nad softwarovým projektem provádět více navazujících kroků, pracovat se soubory a nástroji a ověřovat vlastní změny. Jejich praktická schopnost proto nezávisí pouze na generování kódu, ale také na technické vrstvě, která propojuje model s prostředím, stavem, nástroji a kontrolními mechanismy. #cite(bib.anthropic2024tooluse) #cite(bib.anthropic_harness_design)
+  Rozsah využití generativní AI a rychlý vývoj modelových schopností vytvářejí nové možnosti pro vývoj softwaru. Samotná dostupnost schopného modelu však neurčuje, jak je softwarová práce zadána, provedena, ověřena a řízena.
 ]
 
 Používání generativní AI je už globálně rozšířené. Gradually ve svém srpnovém odhadu z roku 2026 rozděluje světovou populaci do čtyř vzájemně výlučných kategorií podle nejpokročilejšího způsobu používání AI: 1 771 z 2 500 bodů připadá na lidi, kteří generativní AI nikdy vědomě nepoužili, 696 na uživatele bezplatných chatbotů, 24 na platící uživatele a 9 na pravidelné uživatele AI coding agents. #cite(bib.gradually_ai_usage_2026)
@@ -622,19 +621,46 @@ Používání generativní AI je už globálně rozšířené. Gradually ve své
 
 Poslední kategorie nesmí být čtena jako globální sčítání uživatelů. Gradually ji výslovně uvádí jako redakční, deduplikovaný odhad 25–35 milionů pravidelných uživatelů; vizualizace používá střed 30 milionů, tedy přibližně 0,36 % světové populace. #cite(bib.gradually_ai_usage_2026) Rozdíl mezi širokým používáním generativní AI a podstatně menším odhadovaným počtem uživatelů coding agents ukazuje, že pokročilé agentní použití zůstává relativně úzkou podmnožinou celkové adopce.
 
+#block[
+Jedním z rozpoznatelných způsobů AI-asistovaného programování je Vibe Coding: způsob tvorby softwaru, při kterém člověk iteruje pomocí pokynů v přirozeném jazyce bez průběžné kontroly vygenerovaného kódu. #cite(bib.karpathy2025vibecoding)
+] <concept-vibe_coding>
+
+Termín zavedl Andrej Karpathy v roce 2025. Jeho popis představuje nízkostrukturovaný způsob interakce s generativním systémem a poskytuje užitečný kontrast k postupu, který před delegováním práce explicitně formuluje specifikaci, plán a podmínky ověření. #cite(bib.karpathy2025vibecoding) #cite(bib.willison2025vibecoding) Existence tohoto způsobu práce sama o sobě nevypovídá o tom, jak velká část uživatelů coding agents takto postupuje.
+
+#block[Tweet Andreje Karpathyho z 2. února 2025, ve kterém popsal původní význam Vibe Coding.] <concept-karpathy_vibe_coding_tweet>
+
+#figure(
+  image("/DarkFactory/img/external/karpathy-vibe-coding.png", width: 92%),
+  caption: [Původní tweet Andreje Karpathyho o Vibe Coding. #cite(bib.karpathy2025vibecoding) #cite(bib.coderabbit2026vibehistory)],
+)
+
+Takový způsob práce může zrychlit průzkumné prototypování, ale bez explicitních kontrol zvyšuje význam následné revize, testů a sledovatelnosti změn. V této práci proto Vibe Coding slouží jako současný kontrast k záměrně strukturovanému agentickému inženýrství, nikoli jako popis celé populace uživatelů AI pro programování.
+
 Současně se zvyšují schopnosti samotných modelů. Epoch AI na datech Epoch Capabilities Index (ECI) zpřístupněných k 1. září 2026 odhaduje po nástupu reasoning modelů v září 2024 tempo posunu frontier přibližně 14 ECI bodů za rok, zatímco pro non-reasoning frontier přibližně 6 bodů za rok. ECI je kompozitní index skládající více benchmarků do jedné škály schopností; nejde o univerzální měřítko inteligence. #cite(bib.epoch_eci_frontier_2026)
 
 #eci_figure
 
-S růstem modelových schopností se proto technická otázka posouvá od izolované tvorby textu nebo kódu k tomu, jak model zasadit do spolehlivého prostředí s nástroji, trvalejším stavem, ověřováním výsledků a orchestrací více kroků. #cite(bib.anthropic_context_engineering) #cite(bib.anthropic_harness_design)
+Artificial Analysis Intelligence Index v4.3.2 poskytuje bodový snímek současných modelových schopností napříč deseti evaluacemi, mezi nimi Terminal-Bench 4.0 a SciCode. Jde o kompozitní benchmark, nikoli o univerzální pořadí modelů pro každé použití. #cite(bib.artificial_analysis_intelligence_v4_3_2)
+
+#benchmark_snapshot
+
+Dílčí výsledky ukazují rozdílné profily schopností. Claude Fable 5.1 (Max, default fallback) a GPT-6 Astra (max) mají v tomto snímku shodný agregovaný index 53, ale GPT-6 Astra dosahuje vyššího výsledku v Terminal-Bench 4.0 (59 % oproti 52 %), zatímco Claude Fable 5.1 dosahuje vyššího výsledku v SciCode (63 % oproti 56 %). #cite(bib.artificial_analysis_intelligence_v4_3_2) Agregované pořadí a pořadí na jednotlivých benchmarkech se tedy mohou lišit, protože modelová schopnost je vícerozměrná.
+
+Epoch i Artificial Analysis zachycují modelové schopnosti prostřednictvím benchmarků a trendů. Takové výsledky samy o sobě neprokazují spolehlivost reálného softwarově-inženýrského workflow: benchmark modelu nevymezuje perzistentní stav úlohy, provedení nástrojů, interakci s prostředím, ověření účinků, správu kontextu, orchestraci ani způsob řízení změny. #cite(bib.anthropic_context_engineering) #cite(bib.anthropic_harness_design)
+
+Současné agentní systémy proto stavějí kolem modelové inference další běhovou a řídicí vrstvu, která propojuje model se stavem, nástroji, prostředím a kontrolními mechanismy. #cite(bib.anthropic2024tooluse) #cite(bib.anthropic_managed_agents) Technický problém práce tak neleží pouze ve schopnosti modelu generovat kód, ale v tom, jak tyto okolní mechanismy záměrně navrhnout a použít pro delší, ověřitelnou softwarovou práci.
+
+Práce na tento problém odpovídá ve čtyřech navazujících krocích: teoretická část vysvětluje model, inferenci a Harness; praktická část vymezuje postupy Agentického inženýrství; DarkFactory tyto postupy konkrétně realizuje; a část Výsledky a diskuse hodnotí dostupné implementační a provozní důkazy.
 
 #heading(level: 2)[Východisko a argument práce] <section-thesis_argument>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Rostoucí schopnosti jazykových modelů mění vývoj softwaru od dílčí asistence k delegování stále delších a samostatnějších pracovních úloh.
+  Východiskem práce je návaznost model → Harness → Agentické inženýrství → DarkFactory.
 ]
 
-Argument práce postupuje v jedné návaznosti: jak AI mění způsob zadávání, provádění a ověřování softwarové práce; co samotný model skutečně je a dokáže; co kolem něj přidává Harness; jak Agentické inženýrství tyto mechanismy záměrně skládá a omezuje; jak je realizuje DarkFactory; a co o výsledku skutečně ukazují dostupné důkazy.
+Jazykový model poskytuje inferenci nad aktivním tokenovým kontextem. #cite(bib.brown2020) Harness z jednotlivých inferenčních kroků vytváří agentní runtime tím, že udržuje stav, opakuje smyčku, zprostředkovává nástroje a prostředí a poskytuje mechanismy rozšíření. #cite(bib.anthropic_managed_agents)
+
+Agentické inženýrství určuje, jak jsou tyto schopnosti záměrně použity pro softwarovou práci: jak se formuluje zadání, řídí změna, spravuje kontext, ověřuje výsledek a koordinuje více kroků nebo agentů. DarkFactory je implementační artefakt, na kterém jsou tyto postupy realizovány a následně vyhodnoceny. Úplné definice jednotlivých mechanismů jsou ponechány příslušným teoretickým a praktickým částem.
 
 #heading(level: 2)[Cíle] <section-thesis_objectives>
 [
@@ -678,18 +704,20 @@ O1 sleduje řízenou autonomii, O2 odolnost provádění a O3 kontinuitu stavu p
 #heading(level: 2)[Metodika] <section-methodology>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Práce používá konstrukční přístup odpovídající design science: vymezuje problém a cíle řešení, navrhuje a implementuje artefakt DarkFactory a následně jej vyhodnocuje pomocí reprodukovatelných technických důkazů. #cite(bib.hevner2004designscience) #cite(bib.peffers2007dsrm)
+  Práce kombinuje rešerši odborné literatury, technických specifikací a primární dokumentace s konstrukčním přístupem odpovídajícím design science. #cite(bib.hevner2004designscience) #cite(bib.peffers2007dsrm)
 ]
 
-Teoretická část vychází z odborných článků, standardů, protokolových specifikací a primární dokumentace současných agentních systémů. Jednotlivé mechanismy jsou rozděleny do samostatných konceptů, aby bylo možné oddělit vlastnosti #term(terms.language_model), mechanismy Harnessu a postupy Agentického inženýrství.
+Nejprve jsou v teoretické části vysvětleny mechanismy jazykového modelu, inference a Harnessu v rozsahu potřebném pro porozumění agentnímu systému. Na ně navazuje syntéza postupů Agentického inženýrství pro zadávání, řízení změny, ověřování, práci s kontextem a orchestraci.
 
-Předmětem práce není trénování neuronových sítí, optimalizace vah ani matematický rozbor učení modelu. #term(terms.language_model) je chápán jako hotová inferenční komponenta a je popsán pouze v rozsahu potřebném pro vysvětlení architektury okolního systému.
+Tyto postupy jsou následně realizovány v systému DarkFactory. Vyhodnocení používá jako důkaz zdrojový kód, automatické testy, CI a dohledatelné artefakty z cílových repozitářů; síla každého závěru je omezena na rozsah skutečně dostupných reprodukovatelných důkazů.
 
-Praktická část používá zdrojový kód, typované kontrakty, testy, pracovní postupy a generované artefakty DarkFactory jako primární důkaz skutečné implementace. Evaluace rozlišuje architektonický důkaz, automatizované funkční testy, CI nad konkrétním commitem a provozní ověření na konkrétních cílových repozitářích. Tvrzení o úplném produkčním životním cyklu změny je přijato pouze tehdy, pokud existuje reprodukovatelný živý průchod od schválení plánu po sloučení změny a rekonciliaci; aktuální absence tohoto důkazu je uvedena jako omezení, nikoli nahrazena architektonickým předpokladem.
+#heading(level: 2)[Struktura práce] <section-thesis_structure>
+Kapitola 2, Teoretická část, vysvětluje fungování jazykového modelu, inference a Harnessu. Kapitola 3, Praktická část, popisuje postupy Agentického inženýrství a jejich konkrétní realizaci v DarkFactory. Kapitola 4 shrnuje výsledky, odpovídá na výzkumné otázky a diskutuje omezení dostupných důkazů. Kapitola 5 práci uzavírá ve vztahu k jejím cílům a zjištěním.
 
-Práce neprovádí statistický benchmark obecné výkonnosti agentních systémů. Odpovědi na výzkumné otázky jsou omezeny na tvrzení podporovaná konkrétními reprodukovatelnými důkazy.
+#heading(level: 1)[Teoretická část] <section-theory>
+Teoretická část vymezuje mechanismy potřebné k porozumění tomu, jak agentní systém pracuje. Jazykový model a inference vysvětlují vznik modelového výstupu; Harness vysvětluje běhovou vrstvu, která zajišťuje kontinuitu, nástroje a interakci s prostředím.
 
-#heading(level: 1)[Jazykový model] <section-model>
+#heading(level: 2)[Jazykový model] <section-model>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Jazykový model převádí tokenový kontext na inferenční výstup; výsledné chování proto závisí jak na reprezentaci vstupu a architektuře modelu, tak na způsobu provedení inference a jejích runtime omezeních. #cite(bib.brown2020) #cite(bib.vaswani2017)
@@ -697,14 +725,8 @@ Práce neprovádí statistický benchmark obecné výkonnosti agentních systém
 
 Modelová vrstva končí vytvořením výstupu nad aktuálním kontextem. Trvalý stav úlohy, účinky v externím prostředí, nástroje a dlouhodobé řízení patří až do Harnessu.
 
-Artificial Analysis Intelligence Index v4.3.2 poskytuje bodový snímek současných modelových schopností napříč deseti evaluacemi, mezi nimi Terminal-Bench 4.0 a SciCode. Jde o kompozitní benchmark, nikoli o univerzální pořadí modelů pro každé použití. #cite(bib.artificial_analysis_intelligence_v4_3_2)
-
-#benchmark_snapshot
-
-Dílčí výsledky ukazují rozdílné profily schopností. Claude Fable 5.1 (Max, default fallback) a GPT-6 Astra (max) mají v tomto snímku shodný agregovaný index 53, ale GPT-6 Astra dosahuje vyššího výsledku v Terminal-Bench 4.0 (59 % oproti 52 %), zatímco Claude Fable 5.1 dosahuje vyššího výsledku v SciCode (63 % oproti 56 %). #cite(bib.artificial_analysis_intelligence_v4_3_2) Agregované pořadí a pořadí na jednotlivých benchmarkech se tedy mohou lišit, protože modelová schopnost je vícerozměrná.
-
-#heading(level: 2)[Architektura a reprezentace] <section-model_architecture_representation>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Velký jazykový model (LLM)] <concept-language_model>
+#heading(level: 3)[Architektura a reprezentace] <section-model_architecture_representation>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Velký jazykový model (LLM)] <concept-language_model>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Velký jazykový model (LLM) je parametrický model pravděpodobnostního rozdělení nad posloupnostmi tokenů; autoregresivní LLM generuje pokračování postupným odhadem dalšího tokenu z již dostupného kontextu. #cite(bib.brown2020)
@@ -716,7 +738,7 @@ Při inferenci model převádí aktivní posloupnost tokenů na distribuci možn
 
 [#emph[Praktický význam:] Model dodává inferenční schopnost potřebnou pro generování, klasifikaci nebo volbu dalšího kroku. Perzistentní stav workflow, skutečné vykonání nástrojů, účinky v prostředí a dlouhodobá orchestrace proto musí vzniknout mimo samotný model.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Transformer] <concept-transformer>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Transformer] <concept-transformer>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Transformer je architektura neuronové sítě, která zpracovává vztahy v sekvenci pomocí mechanismů pozornosti místo rekurence či konvoluce jako základního mechanismu pro přenos informace mezi pozicemi. #cite(bib.vaswani2017)
@@ -728,7 +750,7 @@ Původní architektura Transformer má enkodér a dekodér; autoregresivní chov
 
 [#emph[Praktický význam:] Pozornost umožňuje, aby výpočet dalšího výstupu podmiňovaly informace z aktivního kontextu. Informace, které mají přetrvat mezi inferenčními běhy nebo mimo dostupný kontext, však musí udržovat okolní systém.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Tokenizér] <concept-tokenizer>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Tokenizér] <concept-tokenizer>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Tokenizér je komponenta, která podle slovníku a segmentačních pravidel mapuje vstup na posloupnost diskrétních tokenů a jejich identifikátorů a umožňuje odpovídající zpětné dekódování. #cite(bib.sennrich2016bpe)
@@ -740,7 +762,7 @@ Subword tokenizace dělí text na jednotky menší než celé slovo, takže mode
 
 [#emph[Praktický význam:] Zvolená tokenizace určuje, kolik tokenů spotřebují instrukce, historie, zdrojový kód i výsledky nástrojů. Stejný text tak může podle tokenizéru zabírat odlišnou část vstupní nebo výstupní kapacity modelu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Token] <concept-token>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Token] <concept-token>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Token je diskrétní jednotka sekvence identifikovaná položkou slovníku tokenizéru; podle tokenizační metody může odpovídat celému slovu, části slova nebo jinému textovému fragmentu. #cite(bib.sennrich2016bpe)
@@ -752,7 +774,7 @@ Token se od tokenizéru liší tím, že je výslednou sekvenční jednotkou, za
 
 [#emph[Praktický význam:] Tokeny jsou jednotkou, podle níž se vyjadřuje délka aktivního kontextu a generovaného výstupu. Agentní systém proto musí sledovat, kolik tokenů zabírají instrukce, historie, data i nástrojové výsledky.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Vektorová reprezentace (Embedding)] <concept-embedding>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vektorová reprezentace (Embedding)] <concept-embedding>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Embedding je spojitá vícerozměrná vektorová reprezentace diskrétního prvku, v níž se naučené geometrické vztahy mohou využít k zachycení podobnosti a dalších vztahů mezi reprezentovanými objekty. #cite(bib.mikolov2013word2vec)
@@ -776,8 +798,8 @@ Uvnitř Transformeru se identifikátory tokenů mapují na naučené vektory, kt
 
 [#emph[Praktický význam:] Vektorové reprezentace umožňují řadit nebo vyhledávat položky podle sémantické podobnosti, což je užitečné při výběru relevantních informací pro další modelový krok. Samotný embedding přitom neurčuje, jak se vybraný kontext následně spravuje nebo používá.]
 
-#heading(level: 2)[Inference] <section-model_inference>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Poskytovatel modelu (Model Provider)] <concept-model_provider>
+#heading(level: 3)[Inference] <section-model_inference>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Poskytovatel modelu (Model Provider)] <concept-model_provider>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Poskytovatel modelu je externí služba nebo programové rozhraní, přes které runtime vybírá a volá konkrétní model; provider může mapovat abstraktní jméno modelu na vlastní implementaci modelového API. #cite(bib.openai_model_providers)
@@ -789,7 +811,7 @@ Provider není samotný jazykový model ani lokální inferenční engine. Zpros
 
 [#emph[Praktický význam:] Volba poskytovatele určuje, ke kterým modelům a schopnostem má agentní runtime přístup, jaké požadavky musí vytvářet a s jakými limity musí počítat. Oddělená provider vrstva umožňuje měnit způsob přístupu bez změny významu samotného modelu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Inferenční engine (Inference Engine)] <concept-inference_engine>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Inferenční engine (Inference Engine)] <concept-inference_engine>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Inferenční engine je běhová vrstva, která načítá model a skutečně provádí jeho dopředné výpočty a autoregresivní generování nad vstupními tokeny. #cite(bib.vllm_inference_engine)
@@ -801,7 +823,7 @@ Serving engine může kromě samotného výpočtu plánovat a dávkovat požadav
 
 [#emph[Praktický význam:] Vlastnosti inference enginu ovlivňují latenci, propustnost, využití paměti a tím i cenu nebo proveditelnost opakovaných a dlouhotrvajících modelových volání. Tyto vlastnosti jsou důležité i tehdy, když je engine skryt za vzdáleným provider API.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Teplota (Temperature)] <concept-temperature>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Teplota (Temperature)] <concept-temperature>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Teplota je parametr vzorkování, který u rozhraní, jež jej podporují, mění koncentraci pravděpodobnostního výběru dalších tokenů a tím ovlivňuje variabilitu generovaného výstupu. #cite(bib.openai_responses_temperature)
@@ -813,7 +835,7 @@ Nižší teplota typicky soustřeďuje výběr na pravděpodobnější pokračov
 
 [#emph[Praktický význam:] Podporované sampling parametry lze volit podle charakteru úlohy: stabilnější strukturované kroky mohou vyžadovat koncentrovanější výběr, zatímco explorační generování může využít větší variabilitu. Nastavení musí respektovat možnosti konkrétního API.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Kontextové okno (Context Window)] <concept-context_window>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Kontextové okno (Context Window)] <concept-context_window>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Kontextové okno je konečný rozsah tokenové sekvence, kterou model může mít v daném inferenčním běhu současně k dispozici jako aktivní vstup. #cite(bib.liu2024)
@@ -825,7 +847,7 @@ O tuto kapacitu se dělí instrukce, historie konverzace, uživatelská data, v�
 
 [#emph[Praktický význam:] Agent nemůže do jednoho inferenčního kroku bez omezení hromadit instrukce, přepis, nástrojové výstupy a další kontext. Musí proto hlídat aktivní tokenový rozpočet a rozhodovat, které informace mají být v konkrétním kroku dostupné.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Mezipaměť klíčů a hodnot (KV Cache)] <concept-kv_cache>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Mezipaměť klíčů a hodnot (KV Cache)] <concept-kv_cache>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   KV cache je runtime mezipaměť dříve vypočtených klíčů a hodnot pozornostních vrstev pro tokeny již zpracovaného prefixu, které lze znovu použít při autoregresivním dekódování dalších tokenů. #cite(bib.ainslie2023)
@@ -837,7 +859,7 @@ Opakované použití uložených klíčů a hodnot omezuje potřebu znovu počí
 
 [#emph[Praktický význam:] KV cache zrychluje pokračující autoregresivní generování z již zpracovaného prefixu za cenu runtime paměti. Při dlouhých nebo souběžných agentních bězích proto může být správa cache významnou součástí kapacitního plánování inference.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Degradace kontextu (Context Rot)] <concept-context_rot>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Degradace kontextu (Context Rot)] <concept-context_rot>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Degradace kontextu (Context Rot) označuje praktický pokles spolehlivosti, s níž model dokáže využívat relevantní informace při růstu délky, informačního zatížení nebo nevýhodném umístění informace v aktivním kontextu. #cite(bib.liu2024)
@@ -851,7 +873,7 @@ Empirické studie dlouhého kontextu ukazují, že schopnost nalézt a využít 
 
 Modelová inference poskytuje výstup z konečného aktivního kontextu, nikoli kontinuitu dlouhotrvající úlohy ani provedení účinků v externím prostředí. Systém, který má uchovávat stav, používat nástroje a pokračovat napříč více kroky, proto potřebuje další vrstvu: Harness.
 
-#heading(level: 1)[Harness] <section-harness>
+#heading(level: 2)[Harness] <section-harness>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Harness je běhová vrstva kolem modelové inference, která drží stav, opakuje agentní smyčku a propojuje model s nástroji a prostředím. #cite(bib.anthropic_managed_agents)
@@ -861,8 +883,8 @@ Jeho odpovědností je kontinuita běhu a provedení účinků mimo model. Strat
 
 [#emph[Praktický význam:] Harness umožňuje převést jednotlivé modelové inference na dlouhotrvající agentní běh, který může udržovat stav, používat nástroje a pracovat se skutečným prostředím.]
 
-#heading(level: 2)[Smyčka a stav] <section-harness_state_loop>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Agentní smyčka (Agent Loop)] <concept-agent_loop>
+#heading(level: 3)[Smyčka a stav] <section-harness_state_loop>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Agentní smyčka (Agent Loop)] <concept-agent_loop>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Iterativní cyklus, v němž model vyhodnotí stav, zvolí akci, harness ji provede a výsledek vrátí do další iterace. #cite(bib.yao2022)
@@ -877,7 +899,7 @@ ReAct formalizuje střídání rozhodnutí, akce a pozorování výsledku; nové
 
 [#emph[Praktický význam:] Agentní smyčka umožňuje opakovaně převádět pozorování na další akci, takže agent může postupovat po více krocích místo jednorázové odpovědi.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Agentní sezení (Session)] <concept-agent_session>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Agentní sezení (Session)] <concept-agent_session>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Persistovaná jednotka, která vymezuje jeden souvislý agentní běh a umožňuje jeho pozdější pokračování. #cite(bib.openai_agents_sessions)
@@ -887,7 +909,7 @@ Session je vlastníkem identity a hranice pokračujícího běhu; jeho historick
 
 [#emph[Praktický význam:] Sezení dává více krokům společnou kontinuitu, takže lze navázat na předchozí položky, nástroje a stav bez zakládání zcela nového běhu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Přepis (Transcript)] <concept-transcript>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Přepis (Transcript)] <concept-transcript>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Uspořádaný historický záznam událostí vzniklých během #term(terms.agent_session), například zpráv, akcí a výsledků nástrojů. #cite(bib.anthropic_managed_agents)
@@ -897,7 +919,7 @@ Transcript odpovídá na otázku, co se během běhu stalo. Je historickým záz
 
 [#emph[Praktický význam:] Přepis poskytuje auditovatelnou historii interakcí a nástrojových událostí, z níž lze rekonstruovat průběh běhu a hledat příčiny chyb.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Stav (State)] <concept-state>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Stav (State)] <concept-state>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Persistovaná reprezentace aktuálně platných pracovních skutečností a řídicích údajů běhu. #cite(bib.anthropic_managed_agents)
@@ -907,8 +929,8 @@ State odpovídá na otázku, co je pro další krok právě platné; na rozdíl 
 
 [#emph[Praktický význam:] Stav umožňuje pokračovat podle aktuálně platných skutečností a řídicích údajů, aniž by bylo nutné spoléhat na to, že vše zůstane v textové historii modelu.]
 
-#heading(level: 2)[Prostředí a nástroje] <section-harness_tools_environment>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Prostředí agenta (Agent Environment)] <concept-environment>
+#heading(level: 3)[Prostředí a nástroje] <section-harness_tools_environment>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Prostředí agenta (Agent Environment)] <concept-environment>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Vnější prostředí, které agent prostřednictvím harnessu pozoruje a mění, například pracovní soubory, procesy, síťové služby a další systémové prostředky. #cite(bib.anthropic_managed_agents)
@@ -918,7 +940,7 @@ Změna souboru nebo spuštění procesu mění stav prostředí mimo modelový k
 
 [#emph[Praktický význam:] Prostředí dává agentovi konkrétní pracovní prostor, v němž může číst soubory, spouštět příkazy a pozorovat skutečné výsledky.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Nástroje (Tools)] <concept-tools>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Nástroje (Tools)] <concept-tools>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Rozhraní, kterým agent vyvolává operace mimo samotnou textovou inferenci, například čtení dat, volání API nebo změnu stavu systému. #cite(bib.anthropic2024tooluse)
@@ -928,7 +950,7 @@ Harness zprostředkuje požadavek na nástroj, provede operaci v prostředí a v
 
 [#emph[Praktický význam:] Nástroje umožňují agentovi spouštět příkazy, číst soubory, volat API, spouštět testy a pracovat se skutečnými výsledky místo jejich predikování.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Vyvolávání nástrojů (Tool Calling)] <concept-tool_calling>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vyvolávání nástrojů (Tool Calling)] <concept-tool_calling>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Mechanismus, kterým model místo běžné textové odpovědi vybere konkrétní #term(terms.tools) a vytvoří strukturované argumenty pro jeho vyvolání. #cite(bib.anthropic2024tooluse)
@@ -938,7 +960,7 @@ Schéma rozhraní omezuje tvar argumentů a umožňuje jejich programovou valida
 
 [#emph[Praktický význam:] Tool Calling propojuje rozhodnutí modelu s deterministicky provedenou funkcí nebo službou a vrací skutečný výsledek zpět do dalšího kroku.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Spouštění kódu (Code Execution)] <concept-code_execution>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Spouštění kódu (Code Execution)] <concept-code_execution>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Nástrojová schopnost umožňující vykonat program nebo příkaz a vrátit jeho skutečný výstup modelu. #cite(bib.anthropic_code_execution)
@@ -948,7 +970,7 @@ Při vývoji softwaru zpřístupňuje agentovi například testy, buildy, formá
 
 [#emph[Praktický význam:] Spouštění kódu umožňuje agentovi ověřovat hypotézy příkazy, testy a programy namísto pouhého predikování jejich výsledku.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Izolované prostředí (Sandbox)] <concept-sandbox>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Izolované prostředí (Sandbox)] <concept-sandbox>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Oddělené běhové prostředí, ve kterém agent může spouštět kód nebo měnit pracovní soubory bez přímého přístupu ke všem prostředkům hostitelského systému. #cite(bib.anthropic_managed_agents)
@@ -958,8 +980,8 @@ Sandbox vytváří bezpečnostní hranici kolem nedůvěryhodných účinků; ko
 
 [#emph[Praktický význam:] Sandbox omezuje dopad chybného nebo nežádoucího kroku tím, že vymezuje dostupný souborový systém, síť a další schopnosti prostředí.]
 
-#heading(level: 2)[Rozšíření] <section-harness_extensions>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Dovednosti (Skills)] <concept-skills>
+#heading(level: 3)[Rozšíření] <section-harness_extensions>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Dovednosti (Skills)] <concept-skills>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Znovupoužitelný balíček instrukcí a volitelných zdrojů, který se načítá pro úlohy odpovídající jeho účelu. #cite(bib.agent_skills_spec)
@@ -969,7 +991,7 @@ Agent Skill je definován souborem `SKILL.md` s YAML frontmatterem a instrukcemi
 
 [#emph[Praktický význam:] Skills umožňují opakovaně balit doménový postup a podpůrné prostředky tak, aby je agent mohl použít konzistentně bez opakovaného zadávání celé instrukce.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Plugin] <concept-plugins>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Plugin] <concept-plugins>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Distribuovatelné rozšíření, které do hostitelského agentního prostředí přidává další chování nebo integrace. #cite(bib.claude_code_plugins)
@@ -979,7 +1001,7 @@ Konkrétní platforma může plugin použít jako obal pro různé druhy rozší
 
 [#emph[Praktický význam:] Plugin sdružuje rozšiřující schopnosti do distribuovatelné jednotky, takže lze přidat nový pracovní postup nebo integraci bez změny samotného modelu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Skript] <concept-scripts>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Skript] <concept-scripts>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Spustitelné soubory nebo posloupnosti příkazů používané k deterministickému provedení opakovatelné operace. #cite(bib.claude_code_plugins)
@@ -989,7 +1011,7 @@ Agentní rozšíření mohou skripty používat pro transformace, validace nebo 
 
 [#emph[Praktický význam:] Skript je vhodný pro deterministické kroky, které mají být provedeny přesně a opakovatelně, například validaci nebo transformaci souborů.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Hooks] <concept-hooks>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Hooks] <concept-hooks>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Konfigurované reakce spouštěné při určených událostech životního cyklu agentního prostředí. #cite(bib.claude_code_hooks)
@@ -999,7 +1021,7 @@ Hook může před nebo po vybrané události spustit deterministickou logiku, na
 
 [#emph[Praktický význam:] Hooks umožňují spustit deterministickou kontrolu nebo reakci v definovaném bodě životního cyklu a vynutit chování nezávisle na tom, zda jej model sám navrhne.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[MCP] <concept-mcp>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[MCP] <concept-mcp>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji a datovými zdroji. #cite(bib.anthropic_mcp)
@@ -1009,7 +1031,7 @@ MCP odděluje klientskou AI aplikaci od serverů poskytujících nástroje a dal
 
 [#emph[Praktický význam:] MCP standardizuje připojení externích nástrojů, zdrojů a promptů k agentnímu hostiteli, takže integrace nemusí být navržena zvlášť pro každý modelový klient.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[.agents/] <concept-agents_directory>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[.agents/] <concept-agents_directory>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   `.agents/` je repozitářový nebo uživatelský jmenný prostor Codexu pro znovupoužitelná agentní rozšíření, zejména Skills. #cite(bib.openai_customization_overview)
@@ -1019,7 +1041,7 @@ Repozitářové Skills se ukládají do `.agents/skills` a uživatelské do `~/.
 
 [#emph[Praktický význam:] Adresář `.agents/` umožňuje držet repozitářové dovednosti a jejich podpůrné prostředky blízko kódu, který je používá, a verzovat je společně s projektem.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[.claude/] <concept-claude_directory>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[.claude/] <concept-claude_directory>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   `.claude/` je projektový nebo uživatelský jmenný prostor Claude Code pro instrukce, pravidla, nastavení a rozšíření. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)
@@ -1031,7 +1053,10 @@ Anthropic dokumentuje `.claude/CLAUDE.md`, modulární `.claude/rules/` a projek
 
 Harness doplňuje modelovou inferenci o kontinuitu běhu a rozhraní pro pozorování a změnu externího prostředí. Tím vzniká stavový agentní systém schopný jednat; výběr kontextu, řízení chování a rozdělování práce jsou navazujícími návrhovými rozhodnutími agentického inženýrství.
 
-#heading(level: 1)[AI-asistovaný vývoj a agentické inženýrství] <section-agentic_engineering>
+#heading(level: 1)[Praktická část] <section-practical>
+Praktická část převádí teoretické mechanismy do způsobu práce se softwarem. Část 3.1 popisuje a zdůvodňuje postupy Agentického inženýrství; část 3.2 je vyhrazena jejich konkrétní realizaci v systému DarkFactory.
+
+#heading(level: 2)[Agentické inženýrství] <section-agentic_engineering>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   AI ve vývoji softwaru posouvá část práce od přímého psaní k zadávání, delegování a kontrole změn. Agentické inženýrství označuje návrh způsobu, jakým se schopnosti Harnessu skládají, omezují a koordinují tak, aby agent cíleně plnil delší úlohu. #cite(bib.anthropic_context_engineering)
@@ -1041,25 +1066,8 @@ Kapitola spojuje způsob formulace práce, řízení změny a nezávislé ověř
 
 [#emph[Praktický význam:] Agentické inženýrství převádí obecné schopnosti modelu a Harnessu do opakovatelného vývojového procesu s explicitním zadáním, kontrolami, řízeným kontextem a koordinací práce.]
 
-#heading(level: 2)[Zadání a způsob práce] <section-ai_assisted_specification>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Vibe Coding] <concept-vibe_coding>
-[
-  #set par(first-line-indent: (amount: 1.5em, all: true))
-  Způsob tvorby softwaru, při kterém člověk iteruje pomocí pokynů v přirozeném jazyce bez průběžné kontroly vygenerovaného kódu. #cite(bib.karpathy2025vibecoding)
-]
-
-Termín zavedl Andrej Karpathy v roce 2025. V této práci slouží jako kontrast k postupům, které před delegováním práce explicitně formulují specifikaci, plán a podmínky ověření. #cite(bib.karpathy2025vibecoding) #cite(bib.willison2025vibecoding)
-
-#block[Tweet Andreje Karpathyho z 2. února 2025, ve kterém popsal původní význam Vibe Coding.] <concept-karpathy_vibe_coding_tweet>
-
-#figure(
-  image("/DarkFactory/img/external/karpathy-vibe-coding.png", width: 92%),
-  caption: [Původní tweet Andreje Karpathyho o Vibe Coding. #cite(bib.karpathy2025vibecoding) #cite(bib.coderabbit2026vibehistory)],
-)
-
-[#emph[Praktický význam:] Vibe Coding může zrychlit průzkumné prototypování, ale bez explicitních kontrol zvyšuje význam následné revize, testů a sledovatelnosti změn.]
-
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Vývoj řízený specifikací (Spec-Driven Development)] <concept-spec_driven_development>
+#heading(level: 3)[Zadání a způsob práce] <section-ai_assisted_specification>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vývoj řízený specifikací (Spec-Driven Development)] <concept-spec_driven_development>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Přístup k AI-asistovanému vývoji, ve kterém explicitní specifikace řídí plánování, implementaci a ověřování změny. #cite(bib.fowler2025sdd)
@@ -1069,7 +1077,7 @@ Specifikace odděluje požadované chování a omezení od konkrétní implement
 
 [#emph[Praktický význam:] Specifikace dává agentovi explicitní cíl a akceptační podmínky, podle nichž lze plánovat kroky a ověřovat výsledek.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Plánování (Planning)] <concept-planning>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Plánování (Planning)] <concept-planning>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Převod požadavku na explicitní kroky, závislosti a podmínky ověření před prováděním změn. #cite(bib.sommerville2016)
@@ -1079,7 +1087,7 @@ Plán rozděluje práci na kontrolovatelné části, určuje jejich pořadí a s
 
 [#emph[Praktický význam:] Plánování převádí zadání na pořadí kroků a podmínky ověření, podle nichž může agent postupovat a průběžně kontrolovat dokončení.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Revize (Review)] <concept-review>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Revize (Review)] <concept-review>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Revize je samostatná kontrola změny nebo výstupu proti explicitním požadavkům a kvalitativním kritériím před jeho přijetím.
@@ -1089,8 +1097,8 @@ GitHub Pull Request review například umožňuje změny komentovat, schválit n
 
 [#emph[Praktický význam:] Revize poskytuje samostatný kontrolní krok proti požadavkům a kvalitativním kritériím, takže nalezené odchylky lze vrátit k opravě před přijetím změny.]
 
-#heading(level: 2)[Řízení změny] <section-ai_assisted_change_control>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Správa verzí (Version Control)] <concept-version_control>
+#heading(level: 3)[Řízení změny] <section-ai_assisted_change_control>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Správa verzí (Version Control)] <concept-version_control>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Systém pro zaznamenávání a porovnávání historie změn souborů v čase. #cite(bib.chacon2014)
@@ -1100,7 +1108,7 @@ Uložená historie umožňuje identifikovat původ změny, vracet se k předchoz
 
 [#emph[Praktický význam:] Správa verzí umožňuje agentním změnám zůstat dohledatelné, porovnatelné a vratné místo přepisování pracovního stavu bez historie.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Větev (Branch)] <concept-branch>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Větev (Branch)] <concept-branch>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Oddělená linie vývoje v systému správy verzí, která ukazuje na vlastní posloupnost commitů. #cite(bib.chacon2014)
@@ -1110,7 +1118,7 @@ Větev umožňuje izolovat souběžnou změnu od cílové větve a později ji s
 
 [#emph[Praktický význam:] Větev izoluje rozpracovanou agentní změnu od hlavní historie a vytváří bezpečný prostor pro testování a revizi před integrací.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Pull Request] <concept-pull_request>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Pull Request] <concept-pull_request>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Návrh na sloučení změn z jedné větve do jiné, kolem kterého GitHub soustřeďuje revizi, diskusi a automatické kontroly. #cite(bib.github_pull_requests)
@@ -1120,8 +1128,8 @@ Pull request zpřístupňuje diff navržené změny a její stav před integrac�
 
 [#emph[Praktický význam:] Pull Request vytváří explicitní integrační a revizní hranici, kde lze porovnat změny, spustit kontroly a zaznamenat rozhodnutí před sloučením.]
 
-#heading(level: 2)[Kvalita a ověřování] <section-ai_assisted_quality_verification>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Slop] <concept-slop>
+#heading(level: 3)[Kvalita a ověřování] <section-ai_assisted_quality_verification>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Slop] <concept-slop>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Neformální označení pro nekvalitní digitální obsah, zejména obsah vytvořený umělou inteligencí. #cite(bib.cambridge2026aislop)
@@ -1131,7 +1139,7 @@ V této práci označuje zejména AI-generovaný software, jehož objem nebo zd�
 
 [#emph[Praktický význam:] Riziko nekvalitního generovaného výstupu znamená, že agentní práce potřebuje objektivní kontroly a revizi namísto přijetí výsledku jen proto, že je syntakticky úplný.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Průběžná integrace (CI)] <concept-continuous_integration>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Průběžná integrace (CI)] <concept-continuous_integration>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Vývojová praxe, při níž se změny průběžně integrují a automaticky ověřují sestavením, testy a dalšími kontrolami. #cite(bib.humble2010)
@@ -1141,7 +1149,7 @@ CI převádí část podmínek kvality do opakovatelných strojově vyhodnotitel
 
 [#emph[Praktický význam:] CI převádí opakovatelné kontroly změny do automatického signálu, který může agent i člověk použít při rozhodování o dalším kroku.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Integrační test (Integration Test)] <concept-integration_test>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Integrační test (Integration Test)] <concept-integration_test>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Ověření spolupráce více komponent nebo vrstev systému přes jejich rozhraní. #cite(bib.sommerville2016)
@@ -1151,8 +1159,8 @@ Integrační test zachycuje chyby vznikající ve vzájemném propojení část�
 
 [#emph[Praktický význam:] Integrační test ověřuje spolupráci více částí systému, a proto zachytí chyby, které izolovaná kontrola jednotlivého modulu nebo generovaného souboru neodhalí.]
 
-#heading(level: 2)[Instrukce a kontext] <section-agentic_context_instructions>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Promptové inženýrství (Prompt Engineering)] <concept-prompt_engineering>
+#heading(level: 3)[Instrukce a kontext] <section-agentic_context_instructions>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Promptové inženýrství (Prompt Engineering)] <concept-prompt_engineering>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Systematický návrh instrukcí, příkladů a jejich struktury s cílem ovlivnit chování jazykového modelu. #cite(bib.anthropic_prompt)
@@ -1162,7 +1170,7 @@ Prompt ovlivňuje pravděpodobnostní chování modelu, ale sám nevynucuje tech
 
 [#emph[Praktický význam:] Promptové inženýrství umožňuje zpřesnit instrukce pro jeden modelový krok; u agentů je však třeba jeho účinek kombinovat se stavem, nástroji a řízením kontextu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Systémový prompt (System Prompt)] <concept-system_prompt>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Systémový prompt (System Prompt)] <concept-system_prompt>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Systémová instrukční vrstva, která vymezuje roli, pravidla a výchozí způsob chování modelu nebo agenta. #cite(bib.anthropic_prompt)
@@ -1172,7 +1180,7 @@ Systémový prompt poskytuje stabilní instrukční kontext, ale sám o sobě ne
 
 [#emph[Praktický význam:] Systémový prompt stanovuje základní instrukce a hranice chování, které Harness přikládá ke každému relevantnímu modelovému kroku.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[AGENTS.md] <concept-agents_md>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[AGENTS.md] <concept-agents_md>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   AGENTS.md je mechanismus projektových instrukcí Codexu, který dodává agentovi trvalý repozitářový kontext před zahájením práce. #cite(bib.openai_agents_md)
@@ -1182,7 +1190,7 @@ Codex hledá instrukce od kořene repozitáře směrem k aktuálnímu pracovním
 
 [#emph[Praktický význam:] AGENTS.md umožňuje udržovat repozitářové instrukce přímo u kódu a automaticky je přidávat do kontextu Codexu podle pracovního umístění.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[CLAUDE.md] <concept-claude_md>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[CLAUDE.md] <concept-claude_md>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   CLAUDE.md je soubor trvalých instrukcí a kontextu, který Claude Code načítá do sezení. #cite(bib.claude_code_memory)
@@ -1192,7 +1200,7 @@ Projektové instrukce mohou být v `./CLAUDE.md` nebo `./.claude/CLAUDE.md`, už
 
 [#emph[Praktický význam:] CLAUDE.md umožňuje udržovat trvalé projektové nebo uživatelské instrukce, které Claude Code načítá do kontextu sezení.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Kontextové inženýrství (Context Engineering)] <concept-context_engineering>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Kontextové inženýrství (Context Engineering)] <concept-context_engineering>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Systematický výběr a správa informací, které jsou modelu zpřístupněny v aktivním kontextu během inference. #cite(bib.anthropic_context_engineering)
@@ -1202,7 +1210,7 @@ Aktivní kontext může obsahovat instrukce, popisy dostupných nástrojů, exte
 
 [#emph[Praktický význam:] Kontextové inženýrství rozhoduje, které informace mají být v daném kroku modelu skutečně dostupné, což je zásadní pro dlouhé agentní běhy s omezeným rozpočtem.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Vkládání kontextu (Context Injection)] <concept-context_injection>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vkládání kontextu (Context Injection)] <concept-context_injection>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   V této práci označuje Context Injection cílené vložení relevantních informací do aktivního kontextu až v okamžiku, kdy jsou potřebné pro aktuální krok. #cite(bib.anthropic_context_engineering)
@@ -1212,7 +1220,7 @@ Just-in-time přístup umožňuje mimo modelový kontext uchovávat odkazy nebo 
 
 [#emph[Praktický význam:] Vkládání kontextu umožňuje Harnessu doplnit modelu aktuální data, instrukce nebo výsledky nástrojů právě v okamžiku, kdy jsou relevantní.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Kompakce kontextu (Context Compaction)] <concept-compaction>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Kompakce kontextu (Context Compaction)] <concept-compaction>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Zmenšení aktivního kontextu nahrazením části historie kratší reprezentací, typicky shrnutím nebo výběrem důležitých informací. #cite(bib.anthropic_context_engineering)
@@ -1222,7 +1230,7 @@ Kompakce uvolňuje kapacitu pro další běh, ale příliš agresivní komprese 
 
 [#emph[Praktický význam:] Kompakce kontextu umožňuje dlouhotrvajícímu agentovi pokračovat přes bezprostřední kontextový rozpočet, za cenu možného ztracení detailů.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[RAG] <concept-rag>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[RAG] <concept-rag>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Architektura, ve které systém před generováním vyhledá relevantní informace z externího zdroje a poskytne je modelu jako další kontext. #cite(bib.lewis2020rag)
@@ -1232,7 +1240,7 @@ RAG odděluje znalost uloženou v externím korpusu od parametrů modelu a umož
 
 [#emph[Praktický význam:] RAG umožňuje před generováním dohledat relevantní externí informace a přidat je do kontextu, takže agent nemusí spoléhat pouze na parametry modelu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Prompt Injection] <concept-prompt_injection>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Prompt Injection] <concept-prompt_injection>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Manipulace chování jazykového modelu pomocí instrukcí vložených do vstupu nebo do externího obsahu, který systém následně zpracuje jako kontext. #cite(bib.owasp_llm01_prompt_injection)
@@ -1242,8 +1250,8 @@ Přímá prompt injection přichází v uživatelském vstupu; nepřímá inject
 
 [#emph[Praktický význam:] Prompt Injection vyžaduje oddělovat důvěryhodné instrukce od nedůvěryhodného obsahu a omezovat následné nástrojové akce, protože text z prostředí může ovlivnit rozhodování modelu.]
 
-#heading(level: 2)[Řízení agentního chování] <section-agentic_behavior_control>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Cílené smyčky (Goal Loops)] <concept-goal_loops>
+#heading(level: 3)[Řízení agentního chování] <section-agentic_behavior_control>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Cílené smyčky (Goal Loops)] <concept-goal_loops>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   V této práci označují řídicí smyčky, které opakují jednání podle explicitního cíle, pozorovaného výsledku a podmínky dalšího pokračování nebo ukončení.
@@ -1253,7 +1261,7 @@ Na rozdíl od samotného běhového Agent Loopu zahrnuje Goal Loop také zpětno
 
 [#emph[Praktický význam:] Cílená smyčka umožňuje opakovat plánování a ověřování až do splnění explicitní podmínky místo ukončení po prvním přijatelně vypadajícím výstupu.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Guardrail] <concept-guardrail>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Guardrail] <concept-guardrail>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   V této práci označuje Guardrail programově vynucenou kontrolu, která může před pokračováním běhu validovat nebo zablokovat vstup, výstup či použití nástroje. #cite(bib.openai_agents_guardrails)
@@ -1263,7 +1271,7 @@ Agentní frameworky mohou guardrails implementovat různými způsoby; zde je d�
 
 [#emph[Praktický význam:] Guardrails umožňují deterministickými kontrolami vynucovat omezení, která nemají záviset pouze na tom, zda je model dodrží.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Člověk ve smyčce (HITL)] <concept-human_in_the_loop>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Člověk ve smyčce (HITL)] <concept-human_in_the_loop>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Uspořádání automatizovaného procesu, ve kterém člověk v určených bodech poskytuje zpětnou vazbu, schválení nebo rozhodnutí. #cite(bib.mosqueira2023human)
@@ -1273,8 +1281,8 @@ HITL ponechává vybraná rozhodnutí člověku místo úplné automatizace. V a
 
 [#emph[Praktický význam:] HITL umožňuje vyžádat lidské rozhodnutí před citlivou nebo nevratnou akcí a tím vložit explicitní schvalovací hranici do jinak automatického běhu.]
 
-#heading(level: 2)[Orchestrace agentů] <section-agentic_orchestration>
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Subagent] <concept-subagent>
+#heading(level: 3)[Orchestrace agentů] <section-agentic_orchestration>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Subagent] <concept-subagent>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Specializovaná agentní instance, které jiný agent nebo orchestrátor deleguje vymezenou dílčí úlohu. #cite(bib.openai_agent_orchestration)
@@ -1284,7 +1292,7 @@ Subagent umožňuje oddělit roli, instrukce a pracovní kontext dílčí úlohy
 
 [#emph[Praktický význam:] Subagent umožňuje oddělit dílčí úlohu do samostatného kontextu a paralelizovat nebo specializovat práci bez zahlcení hlavního agentního vlákna.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Orchestrátor] <concept-orchestrator>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Orchestrátor] <concept-orchestrator>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Koordinační role nebo komponenta, která rozhoduje, kterému specializovanému agentovi předat dílčí práci a jak jeho výsledek začlenit do pokračujícího běhu. #cite(bib.openai_agent_orchestration)
@@ -1294,7 +1302,7 @@ Centralizovaný orchestrátor zůstává vlastníkem hlavního workflow a může
 
 [#emph[Praktický význam:] Orchestrátor rozděluje práci, spouští dílčí vykonavatele a skládá jejich výsledky, čímž umožňuje koordinovat více agentních větví jako jeden proces.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Předání řízení (Handoff)] <concept-handoff>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Předání řízení (Handoff)] <concept-handoff>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Vzor koordinace, při kterém aktivní agent předá další řízení specializovanému agentovi. #cite(bib.openai_agent_orchestration)
@@ -1304,7 +1312,7 @@ Handoff se liší od centralizované orchestrace tím, že specialista není pou
 
 [#emph[Praktický význam:] Handoff předává odpovědnost i potřebný kontext jinému agentovi nebo roli, takže další krok nemusí pokračovat ve stejném agentním vlákně.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Graf pracovního postupu (Workflow Graph)] <concept-workflow_graphs>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Graf pracovního postupu (Workflow Graph)] <concept-workflow_graphs>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Explicitní grafová reprezentace vícefázového workflow, v níž uzly představují dílčí práci a hrany určují přechody nebo závislosti mezi kroky. #cite(bib.wu2023autogen)
@@ -1314,7 +1322,7 @@ Workflow Graph může vyjádřit sekvenční, podmíněné i paralelní větven�
 
 [#emph[Praktický význam:] Workflow Graph explicitně zachycuje návaznosti, větvení, paralelismus a smyčky, takže složitější agentní proces lze řídit jako strukturovaný tok práce.]
 
-#heading(level: 3, numbering: none, outlined: false, bookmarked: false)[Swarm] <concept-swarm>
+#heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Swarm] <concept-swarm>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Swarm označuje dynamicky koordinované paralelní provádění úlohy více subagenty pod orchestrujícím agentem nebo systémem; nejde o univerzální formální standard.
@@ -1326,8 +1334,8 @@ Kimi K2.5 Agent Swarm je konkrétní realizace, v níž orchestrátor dynamicky 
 
 Delegování práce AI nezmenšuje potřebu softwarově-inženýrských kontrol; přesouvá jejich význam k explicitnímu zadání, sledovatelným změnám, řízenému kontextu a strojově ověřitelné zpětné vazbě. Tyto principy vytvářejí základ pro konkrétní realizaci v systému DarkFactory.
 
-#heading(level: 1)[DarkFactory] <section-darkfactory>
-#heading(level: 1)[Vyhodnocení] <section-evaluation>
+#heading(level: 2)[DarkFactory] <section-darkfactory>
+#heading(level: 1)[Výsledky a diskuse] <section-evaluation>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
   Vyhodnocení odděluje důkazy o jednotlivých mechanismech od důkazů o jejich spolupráci na úrovni systému a od přenosu na konkrétní cílové repozitáře.

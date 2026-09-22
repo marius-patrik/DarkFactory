@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Positive validation for the consolidated DarkFactory paper and generated publication matrix."""
+"""Positive validation for the single-source DarkFactory paper and publication matrix."""
 
 from __future__ import annotations
 
 import json
 import os
 import re
+import subprocess
 from pathlib import Path
 
 BOOK = os.environ.get("BOOK", "DarkFactory")
@@ -106,6 +107,7 @@ require_contract(
 
 required_sources = (
     Path("main.typ"),
+    Path("Makefile"),
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
@@ -138,52 +140,133 @@ require_contract(
         'tools: (key: "tools"',
         'subagent: (key: "subagent"',
         'swarm: (key: "swarm"',
-        'DarkFactory',
         '#bibliography("/DarkFactory/bib/references.bib"',
         '<callout>',
         '<word-stats>',
     ),
-    "main.typ consolidated manuscript",
+    "main.typ manuscript",
 )
 
-require_in_order(
-    main_source,
-    (
-        "Úvod",
-        "Motivace a vymezení problému",
-        "Východisko a argument práce",
-        "Cíle",
-        "Výzkumné otázky",
-        "Metodika",
-        "Jazykový model",
-        "Architektura a reprezentace",
-        "Inference",
-        "Harness",
-        "Smyčka a stav",
-        "Prostředí a nástroje",
-        "Rozšíření",
-        "AI-asistovaný vývoj a agentické inženýrství",
-        "Zadání a způsob práce",
-        "Řízení změny",
-        "Kvalita a ověřování",
-        "Instrukce a kontext",
-        "Řízení agentního chování",
-        "Orchestrace agentů",
-        "DarkFactory",
-        "Vyhodnocení",
-        "Ověření mechanismů",
-        "Ověření systému",
-        "Ověření na repozitářích",
-        "Výzkumné otázky",
-        "Diskuse a omezení",
-        "Závěr",
-        "Seznam zdrojů",
-        "Seznam obrázků a tabulek",
-        "Seznam příloh",
-        "Encyklopedie a rejstřík pojmů",
-    ),
-    "main.typ canonical section order",
+tracked = subprocess.run(
+    ["git", "ls-files"],
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines()
+tracked_typst = sorted(Path(path) for path in tracked if path.endswith(".typ"))
+if tracked_typst != [Path("main.typ")]:
+    fail(f"main.typ must be the only authored Typst source, found: {tracked_typst}")
+
+if Path("scripts/consolidate_paper.py").exists():
+    fail("obsolete consolidation script still exists")
+
+makefile = sources[Path("Makefile")]
+for stale in ("consolidate:", "scripts/consolidate_paper.py", "make consolidate", "web-publication.typ"):
+    if stale in makefile:
+        fail(f"Makefile still contains obsolete single-file transition contract: {stale}")
+
+body_start = main_source.find('#metadata("body-start")')
+body_end = main_source.find('#metadata("body-end")')
+if body_start < 0 or body_end <= body_start:
+    fail("main.typ body markers are missing or out of order")
+body_source = main_source[body_start:body_end]
+
+heading_pattern = re.compile(
+    r"^#heading\(level:\s*(\d+)(?P<options>[^)]*)\)\[(?P<title>[^\]]+)\]",
+    flags=re.MULTILINE,
 )
+headings = [
+    (int(match.group(1)), match.group("title"), match.group("options"))
+    for match in heading_pattern.finditer(body_source)
+]
+structural = [
+    (level, title)
+    for level, title, options in headings
+    if "numbering: none" not in options
+]
+expected_structural = [
+    (1, "Úvod"),
+    (2, "Motivace a vymezení problému"),
+    (2, "Východisko a argument práce"),
+    (2, "Cíle"),
+    (3, "Hlavní cíl"),
+    (3, "Dílčí cíle"),
+    (2, "Výzkumné otázky"),
+    (2, "Metodika"),
+    (2, "Struktura práce"),
+    (1, "Teoretická část"),
+    (2, "Jazykový model"),
+    (3, "Architektura a reprezentace"),
+    (3, "Inference"),
+    (2, "Harness"),
+    (3, "Smyčka a stav"),
+    (3, "Prostředí a nástroje"),
+    (3, "Rozšíření"),
+    (1, "Praktická část"),
+    (2, "Agentické inženýrství"),
+    (3, "Zadání a způsob práce"),
+    (3, "Řízení změny"),
+    (3, "Kvalita a ověřování"),
+    (3, "Instrukce a kontext"),
+    (3, "Řízení agentního chování"),
+    (3, "Orchestrace agentů"),
+    (2, "DarkFactory"),
+    (1, "Výsledky a diskuse"),
+    (2, "Ověření mechanismů"),
+    (2, "Ověření systému"),
+    (2, "Ověření na repozitářích"),
+    (2, "Výzkumné otázky"),
+    (2, "Diskuse a omezení"),
+    (1, "Závěr"),
+]
+if structural != expected_structural:
+    fail(f"numbered manuscript hierarchy differs from contract: {structural}")
+
+top_level = [title for level, title in structural if level == 1]
+if top_level != ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]:
+    fail(f"unexpected top-level manuscript hierarchy: {top_level}")
+
+semantic = [(level, title, options) for level, title, options in headings if "numbering: none" in options]
+if not semantic:
+    fail("no semantic article headings found")
+for level, title, options in semantic:
+    if level != 4 or "outlined: false" not in options or "bookmarked: false" not in options:
+        fail(f"semantic article heading violates presentation contract: {title}")
+
+intro_start = body_source.find("#heading(level: 1)[Úvod]")
+theory_start = body_source.find("#heading(level: 1)[Teoretická část]")
+practical_start = body_source.find("#heading(level: 1)[Praktická část]")
+results_start = body_source.find("#heading(level: 1)[Výsledky a diskuse]")
+if min(intro_start, theory_start, practical_start, results_start) < 0:
+    fail("required manuscript ownership boundary is missing")
+introduction = body_source[intro_start:theory_start]
+theory = body_source[theory_start:practical_start]
+practical = body_source[practical_start:results_start]
+
+if "#benchmark_snapshot" not in introduction or "Artificial Analysis Intelligence Index v4.3.2" not in introduction:
+    fail("Artificial Analysis benchmark must be present in Introduction")
+if "#benchmark_snapshot" in theory or "Artificial Analysis Intelligence Index v4.3.2" in theory:
+    fail("Artificial Analysis benchmark must not remain in Theory")
+if "<concept-vibe_coding>" not in introduction or "Vibe Coding" not in introduction:
+    fail("Vibe Coding evidence must be owned by Introduction")
+if re.search(r"heading\([^\n]*\)\[Vibe Coding\]", practical):
+    fail("Vibe Coding must not remain a standalone Practical article")
+
+for title in (
+    "Velký jazykový model (LLM)",
+    "Transformer",
+    "Tokenizér",
+    "Token",
+    "Vektorová reprezentace (Embedding)",
+    "Poskytovatel modelu (Model Provider)",
+    "Inferenční engine (Inference Engine)",
+    "Teplota (Temperature)",
+    "Kontextové okno (Context Window)",
+    "Mezipaměť klíčů a hodnot (KV Cache)",
+    "Degradace kontextu (Context Rot)",
+):
+    if not any(level == 4 and semantic_title == title for level, semantic_title, _ in semantic):
+        fail(f"accepted Model/Inference semantic article missing or numbered incorrectly: {title}")
 
 for required in (
     ROOT / "bib/references.bib",
@@ -320,6 +403,6 @@ if release_assets != set(EXPECTED):
     fail("release asset list must exactly match the canonical publication artifact set")
 
 print(
-    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, single-file consolidated manuscript main.typ, "
+    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, single-source manuscript main.typ, "
     f"and web workbench validated"
 )
