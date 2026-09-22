@@ -295,6 +295,26 @@ For factual manuscript claims, prefer sources in this order:
 Product screenshots and product-behavior claims must use first-party sources wherever available.
 
 
+
+## Explicitly deferred decisions — agents must not invent these early
+
+These items are intentionally unresolved until the named phase because they depend on live sources or implementation evidence.
+
+- **Exact benchmark rows and numeric values (Phase 2/3):** the selection algorithm and source are fixed, but the five model rows/values must be read from the pinned Artificial Analysis snapshot at execution time.
+- **Exact ECI plotted datapoints (Phase 2):** source/series are fixed; use the source dataset rather than hand-entering approximations from prose.
+- **Exact screenshot files/URLs (Phase 4):** products and documentation can change. Select the current real first-party screenshots at execution time under the fixed screenshot contract.
+- **Exact diagram coordinates, dimensions, typography, and spacing (Phases 3/4):** semantic contents are fixed; visual geometry is an implementation detail so long as it satisfies the rendering contracts and survives PDF inspection.
+- **Exact full rewritten prose (Phases 3–8):** ownership, claims, terminology, sources, and section purpose are fixed; agents must write concise source-backed Czech prose rather than preserve old wording mechanically.
+- **3.2 generated internal hierarchy (Phase 9):** must come from the pinned current DarkFactory-generated documentation. Do not design it manually in advance.
+- **Pinned DarkFactory/target-repository commits and CI run IDs (Phase 10):** choose them only after implementation/docs are stabilized.
+- **Exact final result values and limitations (Phase 10):** report only evidence actually observed from the pinned runs.
+- **Final wording of goals, research questions, methodology, answers, conclusion, annotation/abstract, and final keywords (Phase 7/11):** align these only after the final evidence design/results are known.
+- **Final bibliography membership (Phase 11):** individual source choices are made claim-locally during rewrites; prune to actually cited sources only after prose stabilizes.
+- **Physical file moves:** file/directory layout is an implementation detail. A side agent may minimize moves, but there must be exactly one active numbered-section manifest per rendered section and no superseded parallel structural owner.
+
+A side agent must not broaden its task into any deferred item assigned to a later phase.
+
+
 ## Target hierarchy
 
 ### 1 Úvod
