@@ -11,7 +11,7 @@
 Velký neuronový jazykový model trénovaný na rozsáhlých textových datech pro predikci a generování posloupností tokenů. #cite(bib.brown2020)
   ],
   description: terms => [
-Současné LLM typicky používají architekturu #term(terms.transformer), která při autoregresivním generování odhaduje další token z předchozí sekvence. #cite(bib.vaswani2017) Práci s nástroji, stavem a prostředím zajišťuje okolní agentní runtime nebo harness, nikoli samotná textová inference. #cite(bib.anthropic2024tooluse)
+Současné LLM typicky používají architekturu #term(terms.transformer), která při autoregresivním generování odhaduje další token z předchozí sekvence. #cite(bib.vaswani2017)
   ],
   relations: ((type: "dependency", target: "transformer"),),
 )
