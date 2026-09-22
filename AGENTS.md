@@ -1,181 +1,307 @@
 # Repository instructions — AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory
 
-This file is the durable implementation contract for the manuscript architecture. `PLAN.md` owns active coordination and phase sequencing; do not silently diverge from either document.
+This file is the durable manuscript/repository contract.
+`PLAN.md` owns active phase sequencing.
+`SCHOOL_RULES.md` owns the recovered Odborná-práce compliance contract.
+Do not silently diverge from them.
 
 ## Canonical title
 
-The work title is exactly:
-
 **AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory**
-
-Do not keep older title variants as aliases in active metadata, manifests, validators, or documentation.
 
 ## Canonical manuscript hierarchy
 
-There are no wrapper chapters named **Teoretická část** or **Praktická část**. The numbered top-level manuscript is exactly:
+The numbered top-level manuscript is:
 
 1. **Úvod**
-2. **Jazykový model**
-3. **Harness**
-4. **AI-asistovaný vývoj a agentické inženýrství**
-5. **DarkFactory**
-6. **Vyhodnocení**
-7. **Závěr**
+2. **Teoretická část**
+3. **Praktická část**
+4. **Výsledky a diskuse**
+5. **Závěr**
 
-The theoretical/practical distinction is semantic: Chapters 2–4 are theory; Chapters 5–6 are practical project documentation/evidence.
+Appendices follow where applicable.
 
-### 2 Jazykový model
+### 1 Úvod
 
-Opening framing belongs directly to Chapter 2.
+Structural children:
+- **1.1 Motivace a vymezení problému**
+- **1.2 Východisko a argument práce**
+- **1.3 Cíle**
+  - **1.3.1 Hlavní cíl**
+  - **1.3.2 Dílčí cíle**
+- **1.4 Výzkumné otázky**
+- **1.5 Metodika**
+- **1.6 Struktura práce**
 
-- **2.1 Architektura a reprezentace**
-  1. Velký jazykový model (LLM)
-  2. Transformer
-  3. Tokenizér
-  4. Token
-  5. Vektorová reprezentace (Embedding)
-- **2.2 Inference**
-  1. Poskytovatel modelu (Model Provider)
-  2. Inferenční engine (Inference Engine)
-  3. Teplota (Temperature)
-  4. Kontextové okno (Context Window)
-  5. Mezipaměť klíčů a hodnot (KV Cache)
-  6. Degradace kontextu (Context Rot)
+1.1 owns:
+- Gradually adoption/coding-agent evidence;
+- Vibe Coding motivation/baseline;
+- Epoch ECI capability trend;
+- Artificial Analysis current frontier-model benchmark;
+- the transition to the need for Agentic Engineering.
 
-The six numbered entries above are structural groups only; the listed concepts are unnumbered semantic articles in that exact manifest order. Chapter 2 ends with an unheaded synthesis.
+Do not keep a current-model leaderboard inside model theory.
 
-### 3 Harness
+Do not keep Vibe Coding as a later standalone theory/practical semantic article.
 
-Opening framing belongs directly to Chapter 3.
+### 2 Teoretická část
 
-- **3.1 Smyčka a stav**: Agentní smyčka (Agent Loop), Agentní sezení (Session), Přepis (Transcript), Stav (State).
-- **3.2 Prostředí a nástroje**: Prostředí agenta (Agent Environment), Nástroje (Tools), Vyvolávání nástrojů (Tool Calling), Spouštění kódu (Code Execution), Izolované prostředí (Sandbox).
-- **3.3 Rozšíření**: Dovednosti (Skills), Plugin, Skript, Hooks, MCP, .agents/, .claude/.
+Theory explains how agentic systems operate.
 
-The heading is exactly **Rozšíření**. Harness is section-owned semantic data; do not create a duplicate Harness concept file. Chapter 3 ends with an unheaded synthesis.
+#### 2.1 Jazykový model
 
-### 4 AI-asistovaný vývoj a agentické inženýrství
+##### 2.1.1 Architektura a reprezentace
+Unnumbered semantic articles:
+1. Velký jazykový model (LLM)
+2. Transformer
+3. Tokenizér
+4. Token
+5. Vektorová reprezentace (Embedding)
 
-Opening framing belongs directly to Chapter 4.
+##### 2.1.2 Inference
+Unnumbered semantic articles:
+1. Poskytovatel modelu (Model Provider)
+2. Inferenční engine (Inference Engine)
+3. Teplota (Temperature)
+4. Kontextové okno (Context Window)
+5. Mezipaměť klíčů a hodnot (KV Cache)
+6. Degradace kontextu (Context Rot)
 
-- **4.1 Zadání a způsob práce**: Vibe Coding; Vývoj řízený specifikací (Spec-Driven Development); Plánování (Planning); Revize (Review).
-- **4.2 Řízení změny**: Správa verzí (Version Control); Větev (Branch); Pull Request.
-- **4.3 Kvalita a ověřování**: Slop; Průběžná integrace (CI); Integrační test (Integration Test).
-- **4.4 Instrukce a kontext**: Promptové inženýrství (Prompt Engineering); Systémový prompt (System Prompt); AGENTS.md; CLAUDE.md; Kontextové inženýrství (Context Engineering); Vkládání kontextu (Context Injection); Kompakce kontextu (Context Compaction); RAG; Prompt Injection.
-- **4.5 Řízení agentního chování**: Cílené smyčky (Goal Loops); Guardrail; Člověk ve smyčce (HITL).
-- **4.6 Orchestrace agentů**: Subagent; Orchestrátor; Předání řízení (Handoff); Graf pracovního postupu (Workflow Graph); Swarm.
+#### 2.2 Harness
 
-Chapter 4 ends with an unheaded synthesis. AGENTS.md and CLAUDE.md are distinct semantic owners; do not recreate a generic “Projektové instrukce” article.
+##### 2.2.1 Smyčka a stav
+- Agentní smyčka (Agent Loop)
+- Agentní sezení (Session)
+- Přepis (Transcript)
+- Stav (State)
 
-### 5 DarkFactory
+##### 2.2.2 Prostředí a nástroje
+- Prostředí agenta (Agent Environment)
+- Nástroje (Tools)
+- Vyvolávání nástrojů (Tool Calling)
+- Spouštění kódu (Code Execution)
+- Izolované prostředí (Sandbox)
 
-Chapter 5 is the structural destination for the **full canonical autogenerated DarkFactory documentation**. Until generated documentation is integrated, keep hand-maintained architecture content empty. Do not maintain a parallel manual lifecycle/architecture narrative.
+##### 2.2.3 Rozšíření
+- Dovednosti (Skills)
+- Plugin
+- Skript
+- Hooks
+- MCP
+- .agents/
+- .claude/
 
-### 6 Vyhodnocení
+Theory must not absorb Agentic Engineering methodology.
 
-Opening framing belongs directly to Chapter 6. Structural children are exactly:
+### 3 Praktická část
 
-- **6.1 Ověření mechanismů**
-- **6.2 Ověření systému**
-- **6.3 Ověření na repozitářích**
-- **6.4 Výzkumné otázky**
-- **6.5 Diskuse a omezení**
+The practical part explains how agentic systems are used effectively for software engineering and then realizes those practices in DarkFactory.
 
-Closing synthesis is unheaded. Results/evidence content is owned here and is not architecture documentation.
+#### 3.1 Agentické inženýrství
 
-### 7 Závěr
+##### 3.1.1 Zadání a způsob práce
+- Vývoj řízený specifikací (Spec-Driven Development)
+- Plánování (Planning)
+- Revize (Review)
 
-The final thesis conclusion remains a real top-level chapter.
+##### 3.1.2 Řízení změny
+- Správa verzí (Version Control)
+- Větev (Branch)
+- Pull Request
 
-## Section framing
+##### 3.1.3 Kvalita a ověřování
+- Slop
+- Průběžná integrace (CI)
+- Integrační test (Integration Test)
 
-Subject chapters do not create numbered child sections named Úvod or Závěr.
+##### 3.1.4 Instrukce a kontext
+- Promptové inženýrství (Prompt Engineering)
+- Systémový prompt (System Prompt)
+- AGENTS.md
+- CLAUDE.md
+- Kontextové inženýrství (Context Engineering)
+- Vkládání kontextu (Context Injection)
+- Kompakce kontextu (Context Compaction)
+- RAG
+- Prompt Injection
 
-Every structural `section` owns:
-- `definition` + `description` as opening framing rendered immediately after its heading;
-- optional `conclusion` rendered after concepts/child folders.
+##### 3.1.5 Řízení agentního chování
+- Cílené smyčky (Goal Loops)
+- Guardrail
+- Člověk ve smyčce (HITL)
 
-The closing body has no heading, number, outline entry, or semantic term. Delete obsolete standalone framing files after migrating their useful content; never duplicate the prose in both places.
+##### 3.1.6 Orchestrace agentů
+- Subagent
+- Orchestrátor
+- Předání řízení (Handoff)
+- Graf pracovního postupu (Workflow Graph)
+- Swarm
 
-Top-level Chapter 1 Úvod and Chapter 7 Závěr are normal thesis chapters and are not affected by this rule.
+#### 3.2 DarkFactory
+
+The full canonical autogenerated DarkFactory documentation is the primary architecture/system-description body.
+
+Do not maintain a parallel hand-written architecture/lifecycle narrative.
+
+### 4 Výsledky a diskuse
+
+Structural children:
+- **4.1 Ověření mechanismů**
+- **4.2 Ověření systému**
+- **4.3 Ověření na repozitářích**
+- **4.4 Výzkumné otázky**
+- **4.5 Diskuse a omezení**
+
+Results report evidence, not architecture.
+
+### 5 Závěr
+
+Return to the objectives/research questions and introduce no new factual material.
 
 ## Semantic schema
 
-The canonical Theory semantic article contract is:
+Canonical semantic article contract:
 
-1. `definition` — **What is it?** Concise semantic boundary; no practical commentary.
-2. `description` — **How does it work / why does it matter?** Mechanism, distinctions, relationships, constraints, consequences.
-3. `examples` — real implementations/examples when a defensible source exists.
-4. `practical` — **What does this mean in practice for agentic software development?** Concise engineering implication.
+1. `definition` — what it is;
+2. `description` — mechanism, distinctions, relationships, constraints;
+3. `examples` — real cited implementations/examples where defensible;
+4. `practical` — concrete engineering implication.
 
-Theory semantic articles require non-empty `definition`, `description`, and `practical`. `examples` stays structurally supported and may remain empty until the source/example audit establishes a defensible example. Never invent filler merely to satisfy schema shape.
-
-`visual` and `attachments` remain presentation mechanisms associated with explanation/examples. They do not replace `examples` or `practical`.
-
-Section-owned semantic terms use the same semantic capability as file-backed concepts: definition, description, examples, practical, visual/attachments, relations, citations and source metadata. There is one semantic owner only.
-
-### Rendering
-
-Theory semantic articles render:
+Rendering:
 
 **heading → definition → description → examples/visuals/attachments → practical**
 
-Do not add visible child headings named Definition, Description, Examples or Practical. A small inline “Praktický význam:” treatment is allowed but is not a heading.
+Do not add visible child headings named Definition, Description, Examples, or Practical.
 
-Semantic article headings are unnumbered and `outlined: false` in the school PDF, so they do not enter its Contents/bookmark outline. The compiled semantic HTML still contains the headings; the web `content-index.json` and Structure pane may expose them independently.
+Semantic articles are:
+- visible;
+- unnumbered;
+- excluded from the school PDF Contents;
+- available to the richer web Structure index.
 
-## Reading order and semantic relations
+Structural folders/headings are numbered and define reading order.
 
-Manifest order is the **only** reading-order authority. `dependency`, `related`, `parent`, and `child` relations form a semantic graph and must never reorder the manuscript.
-
-Every semantic key is unique and every relation target must resolve. Removing a semantic owner means updating/removing relations to it, not creating a compatibility alias.
-
-Canonical new identities:
-
-- `temperature`: Teplota (Temperature); dependency → `language_model`; related → `inference_engine`.
-- `model_provider`: Poskytovatel modelu (Model Provider); related → `language_model`, `inference_engine`.
-- `review`: Revize (Review); related → `planning`, `pull_request`, `integration_test`.
-- `agents_md`: AGENTS.md; related → `system_prompt`, `context_engineering`, `agents_directory`.
-- `claude_md`: CLAUDE.md; related → `system_prompt`, `context_engineering`, `claude_directory`.
-- `agents_directory`: .agents/; related → `agents_md`, `skills`, `scripts`.
-- `claude_directory`: .claude/; related → `claude_md`, `skills`, `hooks`.
-- `swarm`: Swarm; related → `subagent`, `orchestrator`, `workflow_graphs`, `goal_loops`.
-- Existing `workflow_graphs` remains the Workflow Graph owner and is related to `orchestrator`, `subagent`, `swarm`, `goal_loops`.
+Manifest order is the only reading-order authority.
+Semantic relations never reorder the manuscript.
 
 ## Source ownership
 
-Definitions, mechanisms, product behavior, benchmarks and factual examples require real sources. Prefer original papers/specifications and first-party technical documentation.
+Use:
+1. original papers/specifications;
+2. first-party technical/product documentation;
+3. strong independent research/benchmark sources where cross-vendor comparison requires it.
 
-Metadata fields such as `citation` and `source` do not replace claim-local rendered citations where the prose makes an external factual claim.
+Every external factual/mechanistic claim needs claim-local citation.
 
-Newly introduced structural records have fixed primary sources in `PLAN.md`; do not substitute weaker secondary sources during later prose passes.
+`citation` / `source` metadata does not replace rendered citations.
 
-## School PDF vs web structure
+Do not use self-referential definitions such as:
+- “v této práci”;
+- “pro účely této práce”;
+- equivalent local-definition language.
 
-The school PDF Contents shows numbered structural chapters/subchapters only. Unnumbered semantic articles remain visible and linkable in the manuscript but are excluded from the PDF outline.
+Do not generalize survey results beyond the measured population.
 
-The web viewer is intentionally richer: semantic headings are indexed from compiled HTML and may appear in its Structure pane even though they are absent from the school PDF Contents.
+DarkFactory-specific claims must come from current code/docs/tests/workflows.
 
-Do not change unrelated school formatting (fonts, title-page contract, declaration, headers/footers, DOCX) while working on structural/schema phases unless explicitly assigned.
+## Evidence ownership
+
+### Introduction
+Owns:
+- Gradually adoption/coding-agent evidence;
+- Vibe Coding evidence/definition;
+- Epoch capability trend;
+- Artificial Analysis point-in-time model benchmark.
+
+### Theory
+Owns:
+- model;
+- representations;
+- inference;
+- harness mechanisms.
+
+### Practical
+Owns:
+- Agentic Engineering practices;
+- generated DarkFactory implementation/architecture.
+
+### Results and discussion
+Owns:
+- observed evaluation evidence;
+- interpretation;
+- limitations;
+- research-question answers.
+
+## Locked concept/source constraints
+
+### Embedding
+- 2D relation: `král − muž + žena ≈ královna`;
+- axes: **Pohlaví**, **Královský status**;
+- 3D projection also shows France:Paris :: Italy:Rome;
+- third axis: **Další sémantická dimenze**;
+- captions state that shown axes are pedagogical projections, not literal learned dimensions.
+
+### Agent Loop
+Use:
+**Model → Akce → Nástroj/prostředí → Pozorování → Model**
+with optional **Model → Výsledek**.
+Ground in ReAct.
+
+### State
+State denotes persisted facts/control data valid for continuing execution. Do not personify State.
+
+### Harness examples
+Use direct first-party/original sources for Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, .agents/, .claude/.
+
+### AGENTS.md / CLAUDE.md
+Keep them distinct.
+
+### Workflow Graph / Swarm
+These live in Practical / Agentic Engineering orchestration, not Theory.
+
+## School compliance
+
+Use `SCHOOL_RULES.md`.
+
+Do not import IVT maturita-topic formatting rules as Odborná-práce rules unless the actual Odborná-práce guide independently contains them.
+
+Recovered contract currently includes:
+- work type **ODBORNÁ PRÁCE**;
+- explicit Theory / Practical / Results macrostructure;
+- A4;
+- margins 2.5 cm, binding edge 3 cm;
+- serif 12 pt body;
+- justified paragraphs;
+- 1.5 line spacing;
+- no first-line indent;
+- heading numbering without trailing period;
+- page numbers centered in footer and displayed from Úvod;
+- combined Seznam obrázků a tabulek where applicable;
+- ISO-690 citation system;
+- numbered appendices and Seznam příloh where applicable.
+
+The remaining exact-guide audit in `SCHOOL_RULES.md` is mandatory before final submission.
 
 ## Build and validation
 
-Strong validation for this repository is:
+Strong validation:
 
 ```bash
 make all BOOK=DarkFactory
 make ci BOOK=DarkFactory
 ```
 
-Validation must cover:
-- exact top-level 1–7 hierarchy;
-- exact Theory group/article manifest order;
-- no structural Theory/Practical wrappers;
-- no synthetic subject-level Úvod/Závěr children;
-- unique semantic keys and resolving relation targets;
-- Theory `definition` / `description` / `practical`;
+Validation must eventually cover:
+- exact top-level 1–5 hierarchy;
+- explicit Teoretická / Praktická / Výsledky a diskuse ownership;
+- exact Theory and Practical manifest order;
+- no standalone Vibe Coding article after migration;
+- benchmark owned by Introduction;
+- unique semantic keys and resolving relations;
+- semantic concept fields and source contracts;
 - semantic concepts excluded from school PDF contents;
-- semantic concepts still exposed by web structure indexing;
-- Chapter 5 has no duplicate hand-maintained architecture/lifecycle narrative.
+- generated DarkFactory docs remain canonical architecture;
+- no duplicate lifecycle/architecture narrative;
+- school-profile rules from `SCHOOL_RULES.md`.
 
-Keep `README.md`, this file, manifests, schema and validators synchronized. `PLAN.md` is coordinator-owned and must not be edited by implementation agents.
+Keep README, AGENTS, manifests, schema, validators and PLAN synchronized when their owning phase changes structure.
