@@ -4,7 +4,6 @@
 #let item = concept(
   key: "darkfactory_planning",
   term: "Plán DarkFactory",
-  keyword: "Planning",
   citation: bib.darkfactory,
   source: bib.darkfactory,
   definition: terms => [
