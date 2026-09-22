@@ -145,7 +145,7 @@ Při komplexnějších úlohách proto harness vybírá, jaké informace do dal�
 
 Harness je runtime, který propojuje model s nástroji a prostředím projektu. Připravuje context window, udržuje stav běhu, zprostředkovává přístup k souborům a zaznamenává pozorování @anthropic-harness-design @anthropic-managed-agents.
 
-#heading(level: 3)[Smyčka agentního provádění]
+#heading(level: 3)[Smyčka]
 
 V agentní smyčce model navrhne další akci, harness ji provede v prostředí a výsledek vrátí jako pozorování. Tento princip odpovídá přístupu #strong[ReAct], v němž se střídá uvažování, jednání a pozorování @yao2022.
 
