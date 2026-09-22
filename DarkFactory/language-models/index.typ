@@ -10,7 +10,6 @@
 #import "/DarkFactory/language-models/language-model/context-window.typ" as context_window
 #import "/DarkFactory/language-models/language-model/kv-cache.typ" as kv_cache
 #import "/DarkFactory/language-models/language-model/context-rot.typ" as context_rot
-#import "/DarkFactory/language-models/language-model/divergence.typ" as divergence
 
 #let intro = folder(key: "model_inference_intro", section: introduction.item)
 
@@ -28,20 +27,12 @@
 
 #let inference = folder(
   key: "model_inference",
-  title: [Inference],
+  title: [Inference a její limity],
   concepts: (
     inference_engine.item,
     context_window.item,
     kv_cache.item,
-  ),
-)
-
-#let limits = folder(
-  key: "inference_limits",
-  title: [Limity inference],
-  concepts: (
     context_rot.item,
-    divergence.item,
   ),
 )
 
@@ -54,7 +45,6 @@
     intro,
     model,
     inference,
-    limits,
     close,
   ),
 )
