@@ -13,7 +13,7 @@ Argument práce je vlastněn Úvodem:
 Folder manifesty `index.typ` jsou jediným zdrojem dokumentové hierarchie.
 
 1. Úvod
-2. Teoretická část: Agentní vývoj softwaru
+2. Teoretická část: Agentické systémy ve vývoji softwaru
    - AI-asistovaný vývoj
    - Jazykový model a inference
    - Harness
