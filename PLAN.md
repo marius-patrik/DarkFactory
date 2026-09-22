@@ -1,20 +1,10 @@
 # DarkFactory-Paper — Execution Plan
 
-`GOAL.md` defines the product goal. This file defines the concrete repository work required to reach it.
+`GOAL.md` defines the semantic destination of the thesis.
 
-## End state
+`PRD.md` defines the finished product contract.
 
-The repository should contain:
-
-- one authored thesis source: `paper/PAPER.typ`;
-- one curated bibliography: `paper/bib/references.bib`;
-- only figures/data that support the final paper;
-- a pinned DarkFactory source revision used for practical-section claims;
-- a compact evidence manifest connecting DarkFactory implementation and CI evidence to the evaluation;
-- a simple reproducible publication pipeline;
-- canonical PDF, HTML, Markdown, source, and release artifacts;
-- a generic GitHub IDE in `web/` that remains independent from thesis semantics;
-- CI/Pages/Release workflows that validate and publish exactly those outputs.
+This file defines the concrete repository work and sequencing required to reach both.
 
 ## Workstream A — Build the paper from the argument
 
