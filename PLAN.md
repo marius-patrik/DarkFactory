@@ -47,6 +47,236 @@ The thesis must not invent factual terminology, mechanisms, statistics, benchmar
 - Time-sensitive statistics and benchmarks must include a pinned observation date/version so the text does not imply timelessness.
 - Illustrative diagrams may simplify high-dimensional mechanisms, but captions must clearly distinguish sourced relationships from explanatory projection choices.
 
+
+## Locked implementation contract
+
+The following decisions are fixed and are not delegated to implementation-agent interpretation.
+
+### Structural numbering and subsection ownership
+
+Theory must render exactly as:
+
+- **2 Teoretická část**
+- **2.1 Úvod**
+- **2.2 Jazykový model**
+  - **2.2.1 Úvod**
+  - **2.2.2 Architektura a reprezentace**
+    - Velký jazykový model (LLM)
+    - Transformer
+    - Tokenizér
+    - Token
+    - Vektorová reprezentace (Embedding)
+  - **2.2.3 Generování a poskytování**
+    - Teplota (Temperature)
+    - Poskytovatel modelu (Model Provider)
+  - **2.2.4 Závěr**
+- **2.3 Inference**
+  - **2.3.1 Úvod**
+  - **2.3.2 Inferenční běh**
+    - Inferenční engine (Inference Engine)
+    - Mezipaměť klíčů a hodnot (KV Cache)
+  - **2.3.3 Kontext a limity**
+    - Kontextové okno (Context Window)
+    - Degradace kontextu (Context Rot)
+  - **2.3.4 Závěr**
+- **2.4 Harness**
+  - **2.4.1 Úvod**
+  - **2.4.2 Smyčka a stav**
+  - **2.4.3 Prostředí a nástroje**
+  - **2.4.4 Rozšíření**
+  - **2.4.5 Závěr**
+- **2.5 AI-asistovaný vývoj a agentické inženýrství**
+  - **2.5.1 Úvod**
+  - **2.5.2 Zadání a způsob práce**
+  - **2.5.3 Řízení změny**
+  - **2.5.4 Kvalita a ověřování**
+  - **2.5.5 Instrukce a kontext**
+  - **2.5.6 Řízení agentního chování**
+  - **2.5.7 Orchestrace agentů**
+  - **2.5.8 Závěr**
+
+The above order is canonical. Agents must not reorder these groups.
+
+A rendered numbered section has one owning folder manifest. Concept files may remain in existing domain directories when moving them would create churn, but superseded `index.typ` files must no longer act as parallel rendered section owners.
+
+### New concept identity
+
+Use these canonical terminology records unless a source proves the wording factually wrong:
+
+- Temperature:
+  - `term: "Teplota"`
+  - `keyword: "Temperature"`
+- Model Provider:
+  - `term: "Poskytovatel modelu"`
+  - `keyword: "Model Provider"`
+- AGENTS.md / CLAUDE.md article:
+  - `term: "Projektové instrukce"`
+  - `keyword: "AGENTS.md / CLAUDE.md"`
+  - article scope is specifically project/repository instruction files consumed by coding agents;
+  - AGENTS.md and CLAUDE.md are concrete implementations/examples, not asserted to be one universal standard.
+
+### Section 1 adoption and deployment evidence
+
+Use a native vector/Typst **100-dot-grid visual**, restoring the visual language of the earlier dot diagram without reusing the old third-party CPA.RIP asset.
+
+The primary comparison is fixed to the **2026 Stanford AI Index / McKinsey Global Survey 2025** data because it gives both quantities in a coherent organizational context:
+
+- **88%**: organizations reporting regular AI use in at least one business function in 2025;
+- **6%**: software-engineering AI-agent use at the mature deployment stages, composed of **5% scaling + 1% fully scaled**.
+
+The manuscript must describe the second number precisely as **scaled/fully scaled AI-agent use in software engineering**, not as “only 6% use coding agents.” Earlier experimental/piloting use is a different measure.
+
+Dot visual:
+- two separate 10×10 grids;
+- first grid highlights 88/100 dots;
+- second grid highlights 6/100 dots;
+- Czech labels only;
+- same visual scale;
+- explicit source/year under each grid;
+- caption explains that the contrast is broad organizational AI adoption versus mature agent deployment specifically in software engineering.
+
+If the final primary source revises/corrects these values, use the corrected source values without changing the defined metric.
+
+### Section 1 long-term capability curve
+
+Use **Epoch AI’s Epoch Capabilities Index (ECI)** trend as the primary longitudinal model-progress visual.
+
+Required visual:
+- one line chart;
+- two series: reasoning-model frontier and non-reasoning-model frontier;
+- cover the source’s available period beginning with the reasoning-model transition in September 2024 through the latest source point available at implementation;
+- cite the dated Epoch AI dataset/insight;
+- preserve uncertainty/prediction intervals only if they remain legible in print.
+
+The textual takeaway may state the source’s measured trend only. As of the September 1, 2026 Epoch AI release, the reported frontier rates are approximately **14 ECI points/year for reasoning models** and **6 points/year for non-reasoning models**; re-verify before publication.
+
+Do not replace this with a collection of unrelated benchmark bars.
+
+### 2.2 current frontier benchmark snapshot
+
+Use **Artificial Analysis Intelligence Index v4.3.2** as the pinned current comparison for this revision unless Artificial Analysis publishes a newer stable index version before the implementation agent begins.
+
+Render a compact table, not another trend chart.
+
+Selection contract:
+- rows: the **five highest-scoring distinct base model names** in the selected Artificial Analysis index version;
+- when the same base model has multiple effort/fallback configurations, keep only its highest-scoring evaluated configuration and label that configuration;
+- columns:
+  - model;
+  - provider;
+  - Artificial Analysis Intelligence Index;
+  - Terminal-Bench 4.0;
+  - SciCode;
+- include benchmark/index version and observation date in the caption;
+- source all values from the same Artificial Analysis evaluation snapshot;
+- do not mix vendor-self-reported benchmark values into this table.
+
+This table is the latest point-in-time model comparison. It must not be reused as the Section 1 longitudinal progress visual.
+
+### Embedding figures
+
+The 2D figure remains the sourced gender/royalty analogy:
+
+**král − muž + žena ≈ královna**
+
+2D rendering contract:
+- axes: **Pohlaví** and **Královský status**;
+- point labels: **muž, žena, král, královna**;
+- all labels offset from axes/points so no text intersects an axis line;
+- no English graph labels;
+- caption states that the axes are an explanatory projection and not literal learned coordinates.
+
+The second figure is a 3D explanatory projection. It must add a second established word-vector analogy rather than inventing a semantic feature. Use the classic capital-country relation represented by examples such as:
+
+**Francie : Paříž :: Itálie : Řím**
+
+Rendering contract:
+- preserve the gender/royalty relationship in one plane;
+- place the capital-country relation in a second plane displaced along a third axis labeled **Další sémantická dimenze**;
+- all visible labels in Czech: **Francie, Paříž, Itálie, Řím**;
+- do not label the third axis as a literal learned property;
+- caption explicitly says the 3D geometry is pedagogical and real embeddings have many learned dimensions;
+- cite the source for each analogy family.
+
+### ReAct / Agent Loop figure
+
+The replacement figure has exactly these semantic nodes:
+
+**Model → Akce → Nástroj / prostředí → Pozorování → Model**
+
+and one optional exit arrow:
+
+**Model → Výsledek**
+
+No separate boxes for tokenization, system prompt, transcript/log, JSON payloads, Bash, sandbox internals, MCP servers, or “thought/reasoning.”
+
+Rendering contract:
+- Czech text only;
+- maximum five loop boxes plus the optional result box;
+- one visual loop, clockwise or left-to-right-return;
+- no decorative badges;
+- no shadows required;
+- print-readable at thesis column width;
+- source mechanism from the original ReAct paper.
+
+### State wording
+
+Canonical semantic wording to preserve in substance:
+
+**Stav (State) označuje persistovanou reprezentaci skutečností a řídicích údajů, které jsou v daném okamžiku platné pro pokračování běhu.**
+
+Do not write constructions that grammatically make State an actor or owner of those facts.
+
+### Harness screenshots
+
+The three required interface examples are attachments/examples of Harness, not standalone glossary concepts:
+
+1. **Claude Code CLI** — terminal surface;
+2. **Google Antigravity IDE** — desktop/IDE surface;
+3. **ChatGPT web** — web surface.
+
+Placement:
+- immediately after the Harness introductory definition/description and before **Smyčka a stav**.
+
+Image contract:
+- real first-party screenshots only;
+- prefer official documentation/product imagery;
+- if no suitable official screenshot exists, use a reproducible capture of the real product UI;
+- no generated/recreated UI;
+- cropping/scaling is allowed, semantic editing is not;
+- save a local publication asset with source/provenance metadata;
+- captions state only the visible harness-relevant interface behavior.
+
+### Self-reference ban
+
+The ban applies to the **published thesis prose**, including annotation/abstract, introductions, conclusions, concept definitions/descriptions, captions, and results discussion.
+
+Remove/rewrite formulations such as:
+- „v této práci“;
+- „pro účely této práce“;
+- „tato práce definuje“;
+- „práce se zaměřuje“;
+- equivalent English self-reference in the abstract.
+
+Repository documentation such as README/AGENTS/PLAN may of course refer to “the thesis/work” operationally.
+
+No new semantic concept may exist solely because the thesis invents a local definition. If a term is:
+- externally established → source it externally;
+- DarkFactory-specific → source it from DarkFactory code/generated docs/tests;
+- neither → remove it or write the relationship without promoting it to a glossary concept.
+
+### Source hierarchy
+
+For factual manuscript claims, prefer sources in this order:
+
+1. original paper / specification / benchmark dataset;
+2. first-party technical documentation;
+3. independent research/index report that exposes methodology;
+4. secondary explanatory source only when the primary source is unavailable or insufficient.
+
+Product screenshots and product-behavior claims must use first-party sources wherever available.
+
+
 ## Target hierarchy
 
 ### 1 Úvod
@@ -82,21 +312,7 @@ Scope/transition only. Do not pre-summarize every child concept.
 
 Split the current combined **Jazykový model a inference** section. This section owns the model itself, its representation, generation controls, and provider boundary.
 
-Target internal structure:
-
-- Úvod
-  - concise current-state benchmark evidence before the conceptual explanation:
-    - a compact **latest frontier-model benchmark comparison**, pinned to exact benchmark/version/date;
-  - do not repeat the broad AI adoption statistic, coding-agent usage contrast, or long-term capability curves from Section 1.
-- Jazykový model
-  - Velký jazykový model (LLM)
-  - Transformer
-  - Tokenizér
-  - Token
-  - Vektorová reprezentace (Embedding)
-  - Teplota (Temperature)
-  - Poskytovatel modelu (Model Provider)
-- Závěr
+Target internal structure and exact numbering are fixed in the Locked implementation contract above.
 
 Model-provider wording must describe the externally supplied model/service boundary from real provider/API documentation, not invent a new architectural abstraction.
 
@@ -153,10 +369,7 @@ Move the current inference material here:
 
 The current old 2.3.3/2.3.4 boundary must disappear: inference material and the old conclusion transition are rewritten into the new standalone Inference section rather than preserved as the old sibling pair.
 
-Target internal framing:
-- Úvod
-- Inference a její limity
-- Závěr
+Target internal structure and exact numbering are fixed in the Locked implementation contract above.
 
 The Model/Inference boundary must remain precise: Model owns learned model structure/representation/configurable generation concepts; Inference owns execution of the model and runtime inference constraints.
 
@@ -164,26 +377,7 @@ The Model/Inference boundary must remain precise: Model owns learned model struc
 
 Harness follows Inference.
 
-Target structure:
-- Úvod
-- Smyčka a stav
-  - Agentní smyčka (Agent Loop)
-  - Agentní sezení (Session)
-  - Přepis (Transcript)
-  - Stav (State)
-- Prostředí a nástroje
-  - Prostředí agenta (Agent Environment)
-  - Nástroje (Tools)
-  - Vyvolávání nástrojů (Tool Calling)
-  - Spouštění kódu (Code Execution)
-  - Izolované prostředí (Sandbox)
-- **Rozšíření**
-  - Dovednosti (Skills)
-  - Plugin
-  - Skript
-  - Hooks
-  - MCP
-- Závěr
+Exact Harness numbering, group names, and ordering are fixed in the Locked implementation contract above. Existing concepts remain assigned to those groups as described there and in the canonical hierarchy.
 
 Rename any **Agentní rozšíření** / **Dovednosti a rozšíření** structural heading to simply **Rozšíření**.
 
