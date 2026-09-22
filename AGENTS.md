@@ -1,316 +1,263 @@
 # DarkFactory-Paper Agent Rules
 
-## Canonical thesis identity
+## Thesis argument
 
-- Work title: **DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)**.
-- Top-level manuscript sections are exactly **Úvod**, **Teoretická část**, **Praktická část**, and **Závěr**.
-- DarkFactory is the practical system studied by the thesis.
-- Folder `index.typ` manifests are the sole source of document hierarchy.
+Section 1 owns the argument of the thesis. The rest of the document demonstrates it instead of repeating it.
+
+Canonical argument:
+
+**jak AI mění vývoj softwaru → co model skutečně je a dokáže → co kolem něj přidává Harness → jak se tyto mechanismy záměrně skládají do agentního chování → jak je realizuje DarkFactory → co o výsledku ukazují důkazy**
+
+Top-level sections remain:
+
+1. Úvod
+2. Teoretická část: Agentní vývoj softwaru
+3. Praktická část
+4. Závěr
 
 ## Structural model
 
-The document hierarchy and the semantic concept graph are different structures.
+Document hierarchy and semantic vocabulary are separate.
 
-- A **folder is a section**. Every rendered folder section is numbered and appears in the contents.
-- A **concept is a semantic leaf**. Every rendered concept has an unnumbered heading and also appears in the contents.
-- Numbering is determined by structural role, never by heading depth.
-- Grouping sections exist to make the argument readable; they do not need to invent a new concept.
-- Semantic relations describe conceptual dependency/relationship and must not be inferred from folder nesting. Supported relation types are `dependency`, `related`, `parent`, and `child`; use `parent`/`child` for semantic ownership or composition rather than misusing `dependency`.
-- Do not create a numbered subsection merely because a term is important. If it is a term/mechanism rather than a grouping, it is a concept.
+- Folder = numbered structural section.
+- Concept = unnumbered semantic article visible in the contents.
+- A structural section may itself own a semantic term when duplicating it as an article would add no meaning. Harness and Agentické inženýrství use this mechanism.
+- Semantic relations are independent of folder nesting.
+- Supported relation types: `dependency`, `related`, `parent`, `child`.
+- Do not create a concept merely because an implementation type/package exists.
+- Do not preserve a concept because it existed historically. Every article must own unique semantic meaning.
 
-## Canonical theory structure
+Every substantive level-2 section uses **Úvod** and **Závěr** as framing sections, except an intentionally generated section whose internal structure is supplied externally.
 
-### Software Engineering
+Úvod may establish scope, purpose, reading order, and relationships. It must not pre-repeat child definitions.
 
-Direct concept:
-- Software Engineering (Softwarové inženýrství)
+Závěr may synthesize a relationship visible only after reading the whole section and bridge to the next major section. It must not restate child definitions, examples, or evidence.
 
-Numbered groups and concepts:
-- **AI-asistovaný vývoj**
+## Canonical current hierarchy
+
+### 1 Úvod
+
+- 1.1 Motivace a vymezení problému
+- 1.2 Východisko a argument práce
+- 1.3 Cíle práce
+  - 1.3.1 Hlavní cíl
+  - 1.3.2 Dílčí cíle
+- 1.4 Výzkumné otázky
+- 1.5 Metodika práce
+
+### 2 Teoretická část: Agentní vývoj softwaru
+
+#### 2.1 Úvod
+
+#### 2.2 AI-asistovaný vývoj
+
+- 2.2.1 Úvod
+- 2.2.2 Zadání a způsob práce
   - Vibe Coding
-  - Slop
-- **Specifikace a plánování**
-  - Spec-Driven Development (Vývoj řízený specifikací)
-  - Planning (Plánování)
-  - DAG (Orientovaný acyklický graf) [Directed Acyclic Graph]
-- **Řízení změn**
-  - Version Control (Správa verzí)
-  - Branch (Větev)
+  - Vývoj řízený specifikací (Spec-Driven Development)
+  - Plánování (Planning)
+- 2.2.3 Řízení změny
+  - Správa verzí (Version Control)
+  - Větev (Branch)
   - Pull Request
-- **Ověřování a integrace**
-  - CI (Průběžná integrace) [Continuous Integration]
-  - Integration Test (Integrační test)
-- **Běhová prostředí**
-  - Runtime (Běhové prostředí)
-  - Container (Softwarový kontejner) [Software Container]
+- 2.2.4 Kvalita a ověřování
+  - Slop
+  - Průběžná integrace (CI)
+  - Integrační test (Integration Test)
+- 2.2.5 Závěr
 
-GitHub and GitHub Actions are implementation choices, not standalone theory concepts.
+No standalone Software Engineering article.
 
-### Model
+#### 2.3 Jazykový model a inference
 
-Numbered groups and concepts:
-- **Jazykové modely**
-  - LLM (Jazykový model) [Large Language Model]
+- 2.3.1 Úvod
+- 2.3.2 Jazykový model
+  - Velký jazykový model (LLM)
   - Transformer
-  - Tokenizer (Tokenizér)
+  - Tokenizér (Tokenizer)
   - Token
-  - Embedding (Vektorová reprezentace)
-- **Inferenční kontext**
-  - Context Window (Kontextové okno)
-  - KV Cache (Mezipaměť klíčů a hodnot) [Key–Value Cache]
-- **Limity modelu**
-  - Context Rot (Degradace kontextu)
-  - Divergence (Divergence modelu) [Model Divergence]
+  - Vektorová reprezentace (Embedding)
+- 2.3.3 Inference
+  - Inferenční engine (Inference Engine)
+  - Kontextové okno (Context Window)
+  - Mezipaměť klíčů a hodnot (KV Cache)
+- 2.3.4 Limity inference
+  - Degradace kontextu (Context Rot)
+  - Divergence modelu
+- 2.3.5 Závěr
 
-Semantic Drift is not a separate concept; its useful material belongs in Divergence.
+Boundary rule: Model ends with inference and its limits. Persistent task state, actions in an external environment, tools, and long-running control do not belong to Model.
 
-### Harness
+#### 2.4 Harness
 
-Direct concept:
-- Agent Harness (Agentní harness)
+Harness is owned by the numbered section itself; there is no duplicate Harness article.
 
-Numbered groups and concepts:
-- **Stav běhu**
-  - Session (Agentní sezení) [Agent Session]
-  - Turn (Tah interakce)
-  - Transcript (Přepis)
-  - State (Stav)
-- **Běh a prostředí**
-  - Agent Loop (Smyčka ReAct) [ReAct Loop]
-  - Environment (Běhové prostředí agenta) [Agent Environment]
-  - Sandbox (Izolované běhové prostředí)
-- **Rozšíření harnessu**
-  - Plugins (Rozšíření)
-  - Tools (Nástroje)
-  - JSON Schema Tool Calling (Vyvolávání nástrojů s JSON Schema)
-  - Code Execution (Spouštění kódu)
-  - Scripts (Skripty)
-  - Hooks (Událostní záchytné body)
-  - MCP (Model Context Protocol)
-  - Skills (Dovednosti)
+- 2.4.1 Úvod
+- 2.4.2 Smyčka a stav
+  - Agentní smyčka (Agent Loop)
+  - Agentní sezení (Session)
+  - Přepis (Transcript)
+  - Stav (State)
+- 2.4.3 Nástroje a prostředí
+  - Prostředí agenta (Agent Environment)
+  - Nástroje (Tools)
+  - Vyvolávání nástrojů (Tool Calling)
+  - Spouštění kódu (Code Execution)
+  - Izolované prostředí (Sandbox)
+- 2.4.4 Dovednosti a rozšíření
+  - Dovednosti (Skills)
+  - Pluginy (Plugins)
+  - Skripty (Scripts)
+  - Hooks
+  - MCP
+- 2.4.5 Závěr
 
-Semantic ownership inside extensions:
-- Plugins are the parent mechanism for Tools, Scripts, Hooks, and MCP in this thesis taxonomy.
-- JSON Schema Tool Calling and Code Execution refine Tools.
-- Skills remain a sibling of Plugins, not a subtype of Plugins.
+Do not restore standalone Runtime, Turn, Container, JSON Schema Tool Calling, or Agent Harness unless later writing proves a unique semantic responsibility.
 
-There is no separate Harness Engineering concept or section.
+ReAct is a pattern/example of Agent Loop, not an alternate name.
 
-### Agentic Engineering
+JSON Schema is a tool-interface mechanism inside Tool Calling, not a taxonomy article.
 
-Direct concept:
-- Agentic Engineering (Agentické inženýrství)
+Container is a possible Sandbox realization, not currently a standalone article.
 
-Numbered groups and concepts:
-- **Instrukce modelu**
-  - Prompt Engineering (Promptové inženýrství)
-  - System Prompt (Systémový prompt)
-- **Kontextové mechanismy**
-  - Context Engineering (Kontextové inženýrství)
-  - Context Injection (Vkládání kontextu)
+#### 2.5 Agentické inženýrství
+
+Agentické inženýrství is owned by the numbered section itself; there is no duplicate article.
+
+- 2.5.1 Úvod
+- 2.5.2 Instrukce a kontext
+  - Promptové inženýrství (Prompt Engineering)
+  - Systémový prompt (System Prompt)
+  - Kontextové inženýrství (Context Engineering)
+  - Vkládání kontextu (Context Injection)
+  - Kompakce kontextu (Context Compaction)
+  - RAG
   - Prompt Injection
-  - Compaction (Kompakce kontextu) [Context Compaction]
-  - RAG (Generování rozšířené vyhledáváním) [Retrieval-Augmented Generation]
-- **Řízení provádění**
-  - Loops (Cílené smyčky) [Goal Loops]
-  - Guardrail (Deterministický mantinel) [Deterministic Guardrail]
-  - HITL (Zapojení člověka do smyčky) [Human-in-the-loop]
-- **Multi-Agent Systems**
-  - Subagent (Podřízený agent)
-  - Orchestrator (Orchestrátor)
-  - Handoff (Předání řízení)
-  - Swarm (Roj)
-  - Graphs (Pracovní grafy) [Workflow Graphs]
+- 2.5.3 Řízení agentního chování
+  - Cílené smyčky (Goal Loops)
+  - Guardrail
+  - Člověk ve smyčce (HITL)
+- 2.5.4 Orchestrace agentů
+  - Subagent
+  - Orchestrátor (Orchestrator)
+  - Předání řízení (Handoff)
+  - Pracovní graf (Workflow Graph)
+- 2.5.5 Závěr
 
-Graphs (Workflow Graphs) may use a DAG, but DAG remains a general Software Engineering concept. Subagent belongs to Multi-Agent Systems, not Harness.
+DAG is currently a property/special case discussed inside Workflow Graph, not a standalone article.
 
-## Canonical practical structure
+Swarm is currently an orchestration pattern/example, not a standalone article.
 
-Practical describes verified DarkFactory implementation, not intended architecture.
+### 3 Praktická část
 
-- **Úvod**
-- **Návrh systému DarkFactory**
-  - Cíle návrhu
-  - Celková architektura
-    - DarkFactory
-  - Vykonávací jádro a stav
-    - Protocol (Protokol DarkFactory) [DarkFactory Protocol]
-    - Run State (Stav běhu)
-    - Model Routing (Směrování modelu)
-    - Supervisor (Dohled nad během) [Execution Supervisor]
-    - Result Capture (Zachycení výsledku)
-    - Recovery (Obnova běhu)
-  - Systém capabilities
-    - Capability
-    - Capability ABI
-    - Capability Adapter (Adaptér capability)
-  - Externí integrace
-    - GitHub Control Plane (GitHub jako řídicí vrstva)
-  - Identita a bezpečnostní hranice
-    - Keychain (Správa strojových přihlašovacích údajů)
-    - Auth (Autentizace uživatele) [Browser Authentication]
-  - Rozhraní
-    - df CLI (Příkazové rozhraní df) [df Command-Line Interface]
-    - DarkFactory Web (Webové rozhraní DarkFactory)
-    - DarkFactory Docs (Kompilátor dokumentace DarkFactory) [DarkFactory Documentation Compiler]
-- **Životní cyklus požadavku**
-  - Zachycení požadavku
-    - Request (Požadavek DarkFactory) [DarkFactory Request]
-  - Plánování a schválení
-    - Planning (Plánování DarkFactory) [DarkFactory Planning]
-    - Review/Fix Loop (Smyčka revize a opravy)
-  - Implementace
-  - Ověření a revize
-    - Deterministic Verification (Deterministické ověření)
-  - Finalizace a integrace
-    - Final Alignment (Finální kontrola souladu)
-    - Reconciliation (Rekonciliace stavu) [State Reconciliation]
-  - Obnova a pokračování
-- **Výsledky a diskuse**
-  - Metoda ověření
-  - Technické výsledky
-  - End-to-end ověření
-  - Ověření na cílových repozitářích
-  - Vyhodnocení cílů a výzkumných otázek
-  - Omezení
-  - Diskuse
+#### 3.1 Úvod
 
-Practical headings describe architecture or lifecycle concerns. Do not turn every package name into a concept. Package names such as `@darkfactory/core` are implementation evidence for the corresponding architectural concept/section.
+#### 3.2 DarkFactory
 
-## Indexes and appendices
+This section is intentionally empty in the hand-maintained thesis source.
 
-- The front-matter **Klíčová slova** list is generated from canonical concepts with `keyword: true`.
-- The detailed **Encyklopedie a rejstřík pojmů** lives in the appendix and is generated from the same keyword-marked concept records in alphabetical order.
-- Do not maintain a separate handwritten terminology registry or duplicate definitions for the index.
-- The encyclopedia links back to the canonical concept definition; editing the concept must automatically update both keyword and encyclopedia surfaces.
-- **Seznam obrázků a tabulek** remains in the appendix/back matter and must stay visible in the main contents.
+Its canonical content will come from autogenerated DarkFactory documentation. Do not manually reconstruct package/architecture prose here and do not keep superseded hand-written DarkFactory architecture files.
 
-## Language and terminology
+The generated documentation should own the final internal 3.2 structure.
 
-The manuscript prose is Czech.
+#### 3.3 Životní cyklus změny
 
-### Section titles
+Target structure:
 
-- Structural/grouping section titles are Czech by default.
-- Keep an established industry/proper name when replacing it with Czech would be less precise or contrary to an explicitly locked title. Canonical examples include **Software Engineering**, **Model**, **Harness**, **Agentic Engineering**, and **Multi-Agent Systems**.
-- Section titles are structural labels and do not use the full concept-term renderer.
+- Úvod
+- Zadání a plán
+- Implementace
+- Ověření a revize
+- Finalizace
+- Přerušení a obnova
+- Závěr
 
-### Concept titles
+Use DarkFactory-specific semantic articles only where they own unique meaning: Request, Planning, Result Capture if retained, Deterministic Verification, Review/Fix Loop, Final Alignment, Reconciliation, Recovery if sourced from generated DarkFactory docs.
 
-Canonical terminology metadata lives on the owning concept:
-- `industry` — established field-facing name or abbreviation;
-- `czech` — Czech proper/formal name;
-- `english` — English formal expansion/name;
-- `alias` — optional genuine alternate term.
+#### 3.4 Vyhodnocení
 
-Render concept titles as:
-1. established `industry` term first;
-2. distinct Czech term in parentheses;
-3. distinct English formal term in square brackets.
+Target structure:
+
+- Úvod
+- Ověření mechanismů
+- Ověření systému
+- Ověření na repozitářích
+- Výzkumné otázky
+- Diskuse a omezení
+- Závěr
+
+Research-question answers and evaluation limitations are document sections, not domain glossary concepts unless a later design explicitly proves otherwise.
+
+## Terminology API
+
+There is exactly one terminology API.
+
+Semantic concepts and term-owning sections have only:
+
+- optional `term`
+- optional `keyword`
+
+At least one must exist.
+
+Rendering states:
+
+- `term` only → `term`
+- `term` + `keyword` → `term (keyword)`
+- `keyword` only → `keyword`
+
+`keyword != none` controls inclusion in front-matter keywords and the encyclopedia/index.
 
 Examples:
-- `LLM (Jazykový model) [Large Language Model]`
-- `MCP (Model Context Protocol)`
-- `Branch (Větev)`
-- `DAG (Orientovaný acyklický graf) [Directed Acyclic Graph]`
 
-If there is no separate industry term, lead with Czech and append a distinct English term in square brackets. Never duplicate identical strings merely to fill every slot.
+- `term: "Mezipaměť klíčů a hodnot", keyword: "KV Cache"` → **Mezipaměť klíčů a hodnot (KV Cache)**
+- `term: "Degradace kontextu", keyword: "Context Rot"` → **Degradace kontextu (Context Rot)**
+- `term: none, keyword: "RAG"` → **RAG**
+- `term: none, keyword: "Harness"` → **Harness**
+- `term: "Divergence modelu", keyword: none` → **Divergence modelu**
 
-### Prose
+Removed fields must not return: `industry`, `czech`, `english`, `alias`, boolean `keyword`, or multiple rendering surfaces/languages.
 
-- Explain in Czech.
-- Preserve established technical names, proper names, abbreviations, protocol names, code identifiers, and product names in their canonical form.
-- Do not manufacture Czech translations for terms that are normally used by their industry name.
-- Use the full rendered terminology when defining/indexing a concept; subsequent prose may use the concise industry term or natural Czech grammatical form where unambiguous.
-- Terms coined or scoped specifically by this thesis must say `V této práci ...` or equivalent rather than being presented as universal terminology.
+Czech-first means use a natural Czech technical term when one exists. Never manufacture a translation merely to fill `term`.
 
-## Writing rules
+## Single-owner rule
 
-Write concise technical prose. Every sentence must contribute at least one of:
-- a definition;
-- a mechanism;
-- a distinction;
-- a consequence;
-- evidence;
-- or a necessary relationship.
+Every semantic statement has one canonical owner.
 
-Delete prose that merely repeats a heading, restates the preceding sentence, provides generic motivation, or adds unsupported rhetorical framing.
+A semantic statement includes a definition, fact, mechanism, distinction, example, limitation, or piece of evidence.
 
-Each concept must:
-- begin with a precise definition;
-- contain only the description needed to explain mechanism, distinction, consequence, or relation;
-- use canonical `term(...)` references for other concepts;
-- have correct semantic relations;
-- appear in the structural tree if it belongs in the thesis.
+Another section may mention an owned concept only when the relationship itself adds new information.
 
-Do not use raw Typst bold emphasis in manuscript prose. Accepted prose remains clean source; use review markers only for genuinely unresolved work.
+Never:
 
-Keep theory implementation-agnostic. DarkFactory-specific architecture, behavior, workflow, product names, and evaluation claims belong in Practical/Results unless a brief example is necessary.
+- redefine another concept;
+- paraphrase another article as background;
+- duplicate examples;
+- summarize all child articles in an introduction;
+- restate Theory in Practical;
+- restate architecture in Results;
+- reproduce Results in the Conclusion.
 
-## Research framing and evaluation
+Cross-concept references should use canonical `term(...)` linking wherever grammatically appropriate.
 
-- The main goal and partial goals must describe work that the thesis can actually demonstrate.
-- Every research question must have an explicit evidence path before final answers are written.
-- Distinguish architectural evidence, functional evidence, empirical measurements, and comparative claims.
-- Do not ask a research question that requires evidence the project will not collect.
-- Do not use vague optimization language such as “maximum autonomy” unless a measurable comparison is actually performed.
-- Final answers must be bounded by the evidence and state what the evidence does not establish.
-- Methodology must describe the evaluation actually performed in Practical/Results, not a generic school template.
-- Pass A aligns goals/questions/evidence before evaluation; Pass B rewrites them again after Results are complete.
+Do not enforce this with crude word-frequency rules. Necessary Czech grammar and explicit semantic references may repeat words.
 
-## Citation policy
+## Writing and citation rules
 
-Use citations for externally verifiable claims, not decorative citation density.
+- Manuscript prose is Czech.
+- Keep natural established technical names unchanged when translation would be artificial.
+- Every sentence must contribute definition, mechanism, distinction, consequence, evidence, or a necessary relationship.
+- Theory stays implementation-agnostic.
+- Practical claims must come from actual DarkFactory code/generated docs/tests/workflows, not plans.
+- Prefer primary papers, standards/specifications, and first-party documentation.
+- External definitions/mechanisms/history/security/comparisons require claim-local support.
+- Thesis-defined terminology must say so explicitly.
 
-Prefer:
-1. originating paper, formal standard, or protocol specification;
-2. official first-party documentation;
-3. original source for a coined term or historical claim;
-4. authoritative secondary literature only when a suitable primary source is unavailable.
+## Repository and validation
 
-Definitions, protocol behavior, mechanisms, history, comparisons, quantitative claims, security claims, and external-system claims require claim-specific support.
-
-Every theoretical concept should have appropriate source/citation metadata unless explicitly author-defined. If the thesis defines a useful abstraction, cite authoritative sources for the underlying mechanism rather than pretending the exact term is standardized.
-
-All citation handles must resolve through `DarkFactory/bib/references.bib`.
-
-Practical implementation claims must be grounded in the actual `darkfactory/` submodule, current DarkFactory repository state, workflows, tests, generated artifacts, or measured results. Never infer implementation behavior from a plan.
-
-## Repository architecture
-
-- `DarkFactory/` owns the complete book: concepts, manuscript, bibliography, images, templates, fonts, and metadata.
-- `DarkFactory/index.typ` is the book root and title source.
-- Folder manifests define numbered document sections.
-- Concept files define semantic terms and are rendered unnumbered.
-- `manuscript/` owns document-level and practical/results content.
-- `software-engineering/`, `language-models/`, and `agentic-engineering/` own theory concepts.
-- `darkfactory/` is the implementation evidence source.
-- Do not recreate parallel chapter trees, terminology registries, publication variants, compatibility structures, or superseded concept files.
-
-## Publication and validation
-
-Canonical outputs:
-- Final: `out/prace.pdf`, `out/prace.html`, `out/prace.md`
-- Review: `out/prace-review.pdf`, `out/prace-review.html`, `out/prace-review.md`
-
-Use:
-```bash
-make all BOOK=DarkFactory
-make web-check
-make ci BOOK=DarkFactory
-make site BOOK=DarkFactory
-```
-
-Validation should assert positive final contracts:
-- expected numbered section hierarchy;
-- unique indexed concept keys;
-- every intended concept structurally reachable;
-- resolving semantic relations, citations, and assets;
-- numbered sections versus unnumbered concepts;
-- valid publication artifacts.
-
-Do not add legacy-name blacklists as a substitute for positive final-state checks.
-
-## Git workflow
-
-Commit and push completed repository changes. Keep commits logically scoped. When the practical implementation snapshot changes, update the `darkfactory` submodule gitlink in the same work wave.
+- Folder manifests are the only document hierarchy source.
+- Semantic graph and hierarchy remain separate.
+- Front keywords and encyclopedia derive from the same `keyword != none` semantic records.
+- Section-owned terms participate in vocabulary and linking.
+- Validation asserts only the current positive final contract.
+- Do not restore legacy compatibility APIs or historical structure.
+- Remove superseded files instead of leaving unused parallel implementations.
