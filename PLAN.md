@@ -48,54 +48,207 @@ The thesis must not invent factual terminology, mechanisms, statistics, benchmar
 - Illustrative diagrams may simplify high-dimensional mechanisms, but captions must clearly distinguish sourced relationships from explanatory projection choices.
 
 
+## School compliance contract — GJKT IVT
+
+The submission PDF must comply with the official Gymnázium J. K. Tyla IVT maturitní-práce requirements. The currently published specific source is **Témata maturitních prací z IVT 2026**, especially the section **Specifické požadavky na maturitní práci s obhajobou**. Before final submission, re-check the school Maturity page for a newer IVT-specific edition and update this contract only if the school has superseded it.
+
+### Semantic/content requirements
+
+- The written part is an **odborný text** with a theoretical and practical part.
+- Theory must be predominantly a literature review of current domestic/foreign professional sources relevant to the knowledge needed for the practical output; it must search, study, organize, compare, and analyze sources rather than merely define glossary terms.
+- The practical written part must describe the actual project and justify important choices/procedures with references to professional sources where externally factual.
+- Every claim that is not common knowledge must have a source.
+- Prefer impersonal/passive Czech phrasing in the school submission prose; avoid first-person authorial narration except where the school-mandated declaration requires it.
+- Final manuscript must contain at least **2,500 words**.
+- Directly quoted material must remain comfortably below the school’s 20% ceiling; the final external similarity check must also remain at or below **20%**.
+- The conclusion must be at least **12 rendered lines**, answer the questions established in the introduction, summarize what was reached, and introduce no new facts.
+
+### Required front/back matter order
+
+The school-PDF profile must render in this order:
+
+1. **Title page**
+   - label: **Maturitní práce z IVT**;
+   - exact thesis title/topic;
+   - author name;
+   - class;
+   - Gymnázium J. K. Tyla;
+   - Hradec Králové;
+   - year.
+   - Do not add non-required title-page material such as the current word-count panel or English title variants. Keep supervisor/consultant metadata in repository data, but do not let it displace the school-required title-page fields.
+
+2. **Prohlášení**
+   - use the school-required declaration wording exactly in substance:  
+     **„Prohlašuji, že jsem tuto maturitní práci vypracoval/a samostatně výhradně s použitím uvedených zdrojů a literatury.“**
+   - include **V Hradci Králové**, date, and signature line.
+   - remove the current additional archival-consent/supervisor declaration prose from the school submission profile.
+
+3. **Anotace**
+   - begin with the bibliographic identification line in the school-prescribed form:  
+     **PŘÍJMENÍ, Jméno: Téma. Hradec Králové. Gymnázium J. K. Tyla. ROK. Počet stran XX. Maturitní práce.**
+   - annotation body: approximately **5–10 rendered lines**, briefly summarizing objective and content;
+   - exactly **3–5 front-matter keywords/phrases**.
+   - The final school PDF does **not** render the English Abstract unless a newer school rule explicitly requires it. It may remain as repository/web metadata if useful.
+   - Front-matter keywords are no longer generated from every semantic `keyword != none` record. The semantic vocabulary/index and the school’s 3–5 front keywords are separate surfaces.
+   - Fixed front-keyword set for the current design:
+     - **AI-asistovaný softwarový vývoj**
+     - **Agentické inženýrství**
+     - **Harness**
+     - **Jazykový model**
+     - **DarkFactory**
+
+4. **Obsah + Seznam obrázků**
+   - the PDF contents lists all **numbered structural chapters/subchapters** and their page numbers;
+   - semantic concept articles remain **unnumbered** and must be **excluded from the school PDF contents/outline**;
+   - the web viewer may expose those semantic articles through its richer Structure UI independently of the school PDF contents;
+   - move **Seznam obrázků** to the front matter immediately after the contents and before Úvod;
+   - do not keep the current combined **Seznam obrázků a tabulek** as a back-matter appendix section in the school PDF;
+   - figures, tables, and graphs in the body remain individually numbered and captioned.
+
+5. **Úvod** and the numbered manuscript body.
+
+6. **Závěr**.
+
+7. **Seznam použitých zdrojů** as the final textual section, formatted according to **ČSN ISO 690 / ČSN ISO 690-2**.
+
+Appendices, if retained, must not cause the bibliography to stop being the final source-list section required by the school; final ordering must be checked against the exact current school instruction before submission.
+
+### Numbering/outline contract
+
+- Structural heading levels **1, 2, and 3 are numbered**.
+- Semantic concept articles are a fourth-level semantic layer in the manuscript: visually distinct headings, **unnumbered**, and **not present in the school PDF contents**.
+- No concept is numbered merely to make it appear in the school contents.
+- The PDF contents is therefore a structural map, while the web viewer’s Structure panel may show both structural sections and unnumbered concept articles.
+
+### Required school-PDF typography/layout
+
+- A4.
+- margins: **left 3 cm; top/right/bottom 2.5 cm**.
+- **Times New Roman**, 12 pt, black, for the entire school submission text.
+- paragraphs justified.
+- **1.5 line spacing**.
+- headings use document styles; levels 1–3 are numbered.
+- from Úvod onward:
+  - header: author left + thesis title right;
+  - header 11 pt italic;
+  - footer: centered page number, 11 pt;
+  - page numbering **resets so Úvod is page 1**.
+- final-PDF links, term markers, citations, and code text must not introduce non-black text that violates the school rule. Review/web profiles may retain review colors independently.
+- code/raw blocks in the school PDF must not switch to a non-Times font merely for syntax styling.
+- tables, images, and graphs must have numbered captions.
+- citation rendering must remain consistent with the selected ISO-690 style.
+
+### Required submission artifacts
+
+The school requires:
+- **two bound physical copies**;
+- **PDF**;
+- **DOCX**.
+
+The repository currently treats PDF/HTML/Markdown as publication outputs; final submission work must add a reproducible **DOCX** output/profile and visually inspect it against the same school requirements. Physical printing/binding and the external Odevzdej.cz similarity result remain manual submission gates.
+
+### Known current template deltas that must be fixed
+
+The current `gjkt-odborna-prace` template is not yet fully school-compliant:
+
+- uses **Caladea/New Computer Modern** rather than Times New Roman;
+- title page renders extra/non-required material and uses **ODBORNÁ PRÁCE** instead of **Maturitní práce z IVT**;
+- declaration text differs from the school-required declaration;
+- renders an English Abstract and unlimited semantic keywords on the annotation page;
+- all semantic concepts can leak into the PDF outline;
+- list of figures/tables is currently in back matter instead of immediately after contents;
+- no required author/title running header is rendered from Úvod;
+- page numbering is not reset to 1 at Úvod;
+- links/term markers/raw-code styling can introduce non-black/non-Times text;
+- bibliography heading is **Seznam zdrojů** rather than **Seznam použitých zdrojů**;
+- no DOCX submission artifact exists.
+
+These are positive compliance requirements, not legacy blacklist rules.
+
+
 ## Locked implementation contract
 
 The following decisions are fixed and are not delegated to implementation-agent interpretation.
 
 ### Structural numbering and subsection ownership
 
-Theory must render exactly as:
+Theory must render exactly as below. Numbered entries are structural sections. Indented bullet entries marked **[article]** are unnumbered semantic articles rendered in the manuscript but excluded from the school PDF contents.
 
 - **2 Teoretická část**
 - **2.1 Úvod**
 - **2.2 Jazykový model**
   - **2.2.1 Úvod**
+    - current frontier benchmark snapshot is an evidence figure/table, not a semantic article
   - **2.2.2 Architektura a reprezentace**
-    - Velký jazykový model (LLM)
-    - Transformer
-    - Tokenizér
-    - Token
-    - Vektorová reprezentace (Embedding)
-  - **2.2.3 Generování a poskytování**
-    - Teplota (Temperature)
-    - Poskytovatel modelu (Model Provider)
+    - **[article] Velký jazykový model (LLM)**
+    - **[article] Transformer**
+    - **[article] Tokenizér**
+    - **[article] Token**
+    - **[article] Vektorová reprezentace (Embedding)**
+  - **2.2.3 Inference**
+    - **[article] Poskytovatel modelu (Model Provider)**
+    - **[article] Inferenční engine (Inference Engine)**
+    - **[article] Teplota (Temperature)**
+    - **[article] Kontextové okno (Context Window)**
+    - **[article] Mezipaměť klíčů a hodnot (KV Cache)**
+    - **[article] Degradace kontextu (Context Rot)**
   - **2.2.4 Závěr**
-- **2.3 Inference**
+- **2.3 Harness**
   - **2.3.1 Úvod**
-  - **2.3.2 Inferenční běh**
-    - Inferenční engine (Inference Engine)
-    - Mezipaměť klíčů a hodnot (KV Cache)
-  - **2.3.3 Kontext a limity**
-    - Kontextové okno (Context Window)
-    - Degradace kontextu (Context Rot)
-  - **2.3.4 Závěr**
-- **2.4 Harness**
+    - Harness interface screenshots are examples/attachments here, not standalone articles
+  - **2.3.2 Smyčka a stav**
+    - **[article] Agentní smyčka (Agent Loop)**
+    - **[article] Agentní sezení (Session)**
+    - **[article] Přepis (Transcript)**
+    - **[article] Stav (State)**
+  - **2.3.3 Prostředí a nástroje**
+    - **[article] Prostředí agenta (Agent Environment)**
+    - **[article] Nástroje (Tools)**
+    - **[article] Vyvolávání nástrojů (Tool Calling)**
+    - **[article] Spouštění kódu (Code Execution)**
+    - **[article] Izolované prostředí (Sandbox)**
+  - **2.3.4 Rozšíření**
+    - **[article] Dovednosti (Skills)**
+    - **[article] Plugin**
+    - **[article] Skript**
+    - **[article] Hooks**
+    - **[article] MCP**
+  - **2.3.5 Závěr**
+- **2.4 AI-asistovaný vývoj a agentické inženýrství**
   - **2.4.1 Úvod**
-  - **2.4.2 Smyčka a stav**
-  - **2.4.3 Prostředí a nástroje**
-  - **2.4.4 Rozšíření**
-  - **2.4.5 Závěr**
-- **2.5 AI-asistovaný vývoj a agentické inženýrství**
-  - **2.5.1 Úvod**
-  - **2.5.2 Zadání a způsob práce**
-  - **2.5.3 Řízení změny**
-  - **2.5.4 Kvalita a ověřování**
-  - **2.5.5 Instrukce a kontext**
-  - **2.5.6 Řízení agentního chování**
-  - **2.5.7 Orchestrace agentů**
-  - **2.5.8 Závěr**
+  - **2.4.2 Zadání a způsob práce**
+    - **[article] Vibe Coding**
+    - **[article] Vývoj řízený specifikací (Spec-Driven Development)**
+    - **[article] Plánování (Planning)**
+  - **2.4.3 Řízení změny**
+    - **[article] Správa verzí (Version Control)**
+    - **[article] Větev (Branch)**
+    - **[article] Pull Request**
+  - **2.4.4 Kvalita a ověřování**
+    - **[article] Slop**
+    - **[article] Průběžná integrace (CI)**
+    - **[article] Integrační test (Integration Test)**
+  - **2.4.5 Instrukce a kontext**
+    - **[article] Promptové inženýrství (Prompt Engineering)**
+    - **[article] Systémový prompt (System Prompt)**
+    - **[article] Projektové instrukce (AGENTS.md / CLAUDE.md)**
+    - **[article] Kontextové inženýrství (Context Engineering)**
+    - **[article] Vkládání kontextu (Context Injection)**
+    - **[article] Kompakce kontextu (Context Compaction)**
+    - **[article] RAG**
+    - **[article] Prompt Injection**
+  - **2.4.6 Řízení agentního chování**
+    - **[article] Cílené smyčky (Goal Loops)**
+    - **[article] Guardrail**
+    - **[article] Člověk ve smyčce (HITL)**
+  - **2.4.7 Orchestrace agentů**
+    - **[article] Subagent**
+    - **[article] Orchestrátor**
+    - **[article] Předání řízení (Handoff)**
+    - **[article] Graf pracovního postupu (Workflow Graph)**
+  - **2.4.8 Závěr**
 
-The above order is canonical. Agents must not reorder these groups.
+The above order is canonical. Agents must not reorder these groups or articles without first updating PLAN.
 
 A rendered numbered section has one owning folder manifest. Concept files may remain in existing domain directories when moving them would create churn, but superseded `index.typ` files must no longer act as parallel rendered section owners.
 
@@ -126,32 +279,34 @@ These relation edges express conceptual linkage only and must not change manifes
 
 ### Section 1 adoption and deployment evidence
 
-Exact placement: **1.1 Motivace a vymezení problému**. Neither the adoption/deployment dot grid nor the longitudinal capability curve belongs in 1.2–1.5.
+Exact placement: **1.1 Motivace a vymezení problému**.
 
-Within 1.1, use this evidence order:
-1. broad organizational AI adoption versus mature software-engineering agent deployment;
-2. longitudinal model-capability trend;
-3. prose transition from rapid capability/adoption growth to the still-unsettled engineering problem addressed by the thesis.
+Use the user-selected Gradually source:
+**Finn Hillebrandt, “How Many People Use AI? Facts & Figures 2026”, Gradually AI, 23 August 2026.**
 
-Use a native vector/Typst **100-dot-grid visual**, restoring the visual language of the earlier dot diagram without reusing the old third-party CPA.RIP asset.
+Restore the **2,500-dot world-population visual language** from that source in a clean local vector/Typst figure with Czech labels and a citation to Gradually. The local figure should faithfully reproduce the source encoding/data rather than copy the old CPA.RIP raster asset.
 
-The primary comparison is fixed to the **2026 Stanford AI Index / McKinsey Global Survey 2025** data because it gives both quantities in a coherent organizational context:
+Source snapshot:
+- **2,500 dots ≈ 8.3 billion people**;
+- **1 dot ≈ 3.3 million people**;
+- **~5.9B / 71% / 1,771 dots** — never knowingly used generative AI;
+- **~2.3B / 28% / 696 dots** — uses free AI chatbots as the most advanced category;
+- **~80M / 1% / 24 dots** — pays for an AI subscription as the most advanced category;
+- **~30M / 0.36% / 9 dots** — uses AI coding agents as the most advanced category.
 
-- **88%**: organizations reporting regular AI use in at least one business function in 2025;
-- **6%**: software-engineering AI-agent use at the mature deployment stages, composed of **5% scaling + 1% fully scaled**.
+The categories are mutually exclusive in the source chart: each person is assigned to the most advanced category.
 
-The manuscript must describe the second number precisely as **scaled/fully scaled AI-agent use in software engineering**, not as “only 6% use coding agents.” Earlier experimental/piloting use is a different measure.
+Critical wording constraint:
+- the **~30M / 0.36% coding-agent figure is Gradually’s editorial deduplicated estimate**, using the midpoint of a stated 25–35M range;
+- it is **not** a global census or a single provider’s official metric;
+- the manuscript must label it explicitly as an estimate and preserve the source’s caveats about overlapping provider metrics and incomplete disclosure.
 
-Dot visual:
-- two separate 10×10 grids;
-- first grid highlights 88/100 dots;
-- second grid highlights 6/100 dots;
-- Czech labels only;
-- same visual scale;
-- explicit source/year under each grid;
-- caption explains that the contrast is broad organizational AI adoption versus mature agent deployment specifically in software engineering.
+The visual/prose should emphasize the intended contrast: general generative-AI adoption is already large and growing, while regular coding-agent usage remains a very small share of humanity.
 
-If the final primary source revises/corrects these values, use the corrected source values without changing the defined metric.
+Evidence order inside 1.1:
+1. Gradually 2,500-dot adoption/coding-agent visual;
+2. longitudinal model-capability curve;
+3. transition to the engineering problem motivating the thesis.
 
 ### Section 1 long-term capability curve
 
@@ -310,6 +465,7 @@ These items are intentionally unresolved until the named phase because they depe
 - **Exact final result values and limitations (Phase 10):** report only evidence actually observed from the pinned runs.
 - **Final wording of goals, research questions, methodology, answers, conclusion, annotation/abstract, and final keywords (Phase 7/11):** align these only after the final evidence design/results are known.
 - **Final bibliography membership (Phase 11):** individual source choices are made claim-locally during rewrites; prune to actually cited sources only after prose stabilizes.
+- **Future school-rule revisions:** the plan is aligned to the currently published GJKT IVT 2026 requirements; if GJKT publishes a newer IVT-specific rule set before submission, reconcile it in Phase 12 rather than guessing changes now.
 - **Physical file moves:** file/directory layout is an implementation detail. A side agent may minimize moves, but there must be exactly one active numbered-section manifest per rendered section and no superseded parallel structural owner.
 
 A side agent must not broaden its task into any deferred item assigned to a later phase.
@@ -369,11 +525,10 @@ Section 2.2 owns:
 
 Do not duplicate these surfaces across both sections.
 
-Current source anchors to evaluate during implementation:
-- Microsoft Global AI Diffusion 2026 for broad AI adoption;
-- Stanford AI Index 2026 or another stable longitudinal source for long-term model capability curves;
-- Artificial Analysis Intelligence Index v4.3.2 (September 2026), or a newer defensible independent benchmark snapshot if available when implemented, for the latest model comparison;
-- a separate real survey/telemetry source must be found for actual coding-agent usage before the Section 1 dot diagram is finalized.
+Current source anchors:
+- Gradually AI, “How Many People Use AI? Facts & Figures 2026” (23 Aug 2026) for the Section 1 world-population dot diagram and its explicitly qualified coding-agent estimate;
+- Epoch AI ECI for the long-term capability curve;
+- Artificial Analysis Intelligence Index v4.3.2 (September 2026), or a newer stable version available when implemented, for the latest model comparison.
 
 Every exact number must be re-verified against the final cited source at implementation time.
 
@@ -395,25 +550,11 @@ Keep the existing queen/king relationship as an explicitly illustrative projecti
 
 The implementation agent must choose and cite the exact source-backed third relation before drawing the second diagram.
 
-#### 2.3 Inference
+Inference is not a separate level-2 section. The old standalone inference plan is superseded: inference is the numbered **2.2.3 Inference** subsection inside **2.2 Jazykový model**, combining the former “Generování a poskytování” material with inference execution/limits.
 
-Create a standalone second-level **Inference** section after Model.
+#### 2.3 Harness
 
-Move the current inference material here:
-- Inferenční engine (Inference Engine)
-- Kontextové okno (Context Window)
-- Mezipaměť klíčů a hodnot (KV Cache)
-- Degradace kontextu (Context Rot)
-
-The current old 2.3.3/2.3.4 boundary must disappear: inference material and the old conclusion transition are rewritten into the new standalone Inference section rather than preserved as the old sibling pair.
-
-Target internal structure and exact numbering are fixed in the Locked implementation contract above.
-
-The Model/Inference boundary must remain precise: Model owns learned model structure/representation/configurable generation concepts; Inference owns execution of the model and runtime inference constraints.
-
-#### 2.4 Harness
-
-Harness follows Inference.
+Harness follows **2.2 Jazykový model** and its **2.2.3 Inference** subsection.
 
 Exact Harness numbering, group names, and ordering are fixed in the Locked implementation contract above. Existing concepts remain assigned to those groups as described there and in the canonical hierarchy.
 
@@ -447,7 +588,7 @@ Use real screenshots, not recreated/generated mockups. Prefer first-party produc
 
 These are examples of real harness/product surfaces, not new abstract taxonomy items unless the source and writing justify a semantic concept.
 
-#### 2.5 AI-asistovaný vývoj a agentické inženýrství
+#### 2.4 AI-asistovaný vývoj a agentické inženýrství
 
 Merge the current **AI-asistovaný vývoj** and **Agentické inženýrství** level-2 sections into one second-level section after Harness.
 
@@ -548,9 +689,11 @@ This phase is **structure-only** except for the minimum sourced definitions requ
 
 - apply the new work title everywhere;
 - rename section 2 to **Teoretická část**;
-- split Model and Inference into separate level-2 sections;
-- place Harness after Inference;
-- merge AI-asistovaný vývoj + Agentické inženýrství into the final level-2 theory section;
+- keep **Jazykový model** as 2.2 and merge inference into **2.2.3 Inference**;
+- place **Harness** as 2.3;
+- merge AI-asistovaný vývoj + Agentické inženýrství into **2.4**;
+- make unnumbered concept articles excluded from the school PDF contents while remaining available to the web Structure UI;
+- align the GJKT school-PDF template/front matter/numbering contract defined above;
 - rename the extensions group to **Rozšíření**;
 - add planned Temperature, Model Provider, and AGENTS.md / CLAUDE.md concepts;
 - update manifests, relations, vocabulary ownership, README, and `AGENTS.md`;
@@ -564,12 +707,10 @@ Exit:
 ### Phase 2 — Section 1 evidence restoration + 2.2 benchmark snapshot
 
 Section 1:
-- recover the prior dot-style usage diagram design/asset if it still exists in repository history;
-- verify a current broad AI-adoption statistic;
-- find and verify a **direct measurement of coding-agent usage** that is comparable enough to support the intended contrast without conflating populations;
-- rebuild/restore the dot diagram so broad adoption growth and low coding-agent usage are both visible and correctly labeled;
-- verify and restore high-level long-term model capability/improvement curves from a stable longitudinal source;
-- record source population, observation date, and methodological caveats.
+- implement the Gradually-derived 2,500-dot world-population visualization defined above;
+- preserve the source’s exact category semantics and explicitly label the coding-agent value as an editorial estimate;
+- verify and restore the Epoch AI long-term model capability curve;
+- record source population, observation date, methodology, and caveats.
 
 Section 2.2:
 - verify a current frontier-model comparison pinned to benchmark/version/date;
@@ -578,20 +719,19 @@ Section 2.2:
 Exit:
 - Section 1 has sourced adoption/coding-agent usage evidence and long-term capability curves;
 - 2.2 has the latest benchmark snapshot;
-- no coding-agent usage number is inferred or invented;
-- the dot diagram is sourced and publication-ready.
+- the coding-agent estimate is represented with Gradually’s stated caveats and provenance;
+- the 2,500-dot diagram is sourced and publication-ready.
 
-### Phase 3 — Model + Inference rewrite and visuals
+### Phase 3 — Model / 2.2.3 Inference rewrite and visuals
 
-- rewrite new 2.2 Model from source-backed responsibilities;
-- add Temperature and Model Provider;
+- rewrite 2.2 Jazykový model from source-backed responsibilities;
+- rewrite **2.2.3 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
 - rebuild 2D embedding figure;
 - add sourced 3D projection;
-- rewrite new 2.3 Inference;
-- citation pass for both sections.
+- citation pass across 2.2.
 
 Exit:
-- Model and Inference have a clean conceptual boundary and all factual claims/visual relations are sourced.
+- architecture/representation and inference responsibilities are cleanly separated inside 2.2 and all factual claims/visual relations are sourced.
 
 ### Phase 4 — Harness rewrite, terminology, diagrams, examples
 
@@ -621,10 +761,9 @@ Exit:
 ### Phase 6 — Theory-wide source and single-owner pass
 
 Audit:
-1. Model;
-2. Inference;
-3. Harness;
-4. AI-asistovaný vývoj a agentické inženýrství.
+1. 2.2 Jazykový model, including 2.2.3 Inference;
+2. 2.3 Harness;
+3. 2.4 AI-asistovaný vývoj a agentické inženýrství.
 
 For every claim:
 - establish one semantic owner;
@@ -688,7 +827,10 @@ Then finalize:
 
 ### Phase 12 — Publication/submission QA
 
+- re-check the GJKT Maturity page for any newer IVT-specific rules and reconcile them before final export;
 - positive validator only;
+- validate the full school compliance contract: front-matter order, title page, declaration, annotation line count, 3–5 keywords, contents behavior, list of figures position, Times New Roman/black/12pt, margins, 1.5 spacing, header/footer, page reset at Úvod, numbered levels 1–3, figure/table numbering, conclusion >=12 rendered lines, >=2,500 words, ISO-690 bibliography title/order;
+- generate and inspect both **PDF and DOCX** submission artifacts;
 - CI / Deploy Documentation / Release green on the same final head;
 - PDF / HTML / Markdown / site generated from that head;
 - hierarchy and links correct;
@@ -702,9 +844,9 @@ Then finalize:
 
 The thesis is complete only when:
 - title and hierarchy match the final design;
-- Model and Inference are separate;
-- Harness follows Inference;
-- AI-asistovaný vývoj and Agentické inženýrství are one coherent section;
+- 2.2.3 Inference is the single inference subsection inside 2.2 Jazykový model;
+- Harness is 2.3;
+- AI-asistovaný vývoj and Agentické inženýrství form coherent section 2.4;
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
@@ -716,4 +858,6 @@ The thesis is complete only when:
 - 3.4 owns evidence;
 - semantic duplication is eliminated;
 - final research questions, Results, and Conclusion align;
+- the school-PDF profile satisfies the GJKT IVT semantic and formatting contract;
+- PDF and DOCX submission artifacts are generated and visually checked;
 - all publication outputs are green and internally consistent.
