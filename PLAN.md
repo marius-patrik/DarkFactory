@@ -63,7 +63,7 @@ Theory and Practical must demonstrate this chain rather than restating it.
 1.4 Výzkumné otázky  
 1.5 Metodika
 
-### 2 Teoretická část: Agentní vývoj softwaru
+### 2 Teoretická část: Agentické systémy ve vývoji softwaru
 
 2.1 Úvod
 
