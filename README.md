@@ -1,43 +1,27 @@
-# Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory
+# DarkFactory-Paper
 
-Typst-first Odborná práce with a generic React/TypeScript GitHub workbench.
+**Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory**
 
-## Thesis source
+Typst thesis source, evidence, publication pipeline, and generic GitHub workbench for the DarkFactory academic project.
 
-`paper/PAPER.typ` is the single canonical authored thesis source.
+## Repository model
 
-Supporting resources:
-- `paper/bib/` — bibliography
-- `paper/data/` — evidence data
-- `paper/img/` — figures/assets
-- `paper/fonts/` — fonts
-
-## Manuscript structure
-
-1. Úvod
-2. Teoretická část
-   - 2.1 Jazykový model
-   - 2.2 Harness
-   - 2.3 Agentické inženýrství
-3. Praktická část
-   - 3.1 DarkFactory
-4. Výsledky a diskuse
-5. Závěr
-
-The manuscript is written as continuous academic prose. Theory establishes model, harness, and Agentic Engineering foundations. Practical is reserved for the verified DarkFactory architecture and implementation. Results and discussion evaluate implementation, system, and repository evidence.
-
-## Build
-
-```bash
-make all BOOK=DarkFactory
-make ci BOOK=DarkFactory
-make site BOOK=DarkFactory
-```
-
-## Coordination
-
-- `AGENTS.md` — durable source/editorial contract
-- `PLAN.md` — active thesis phase
+- `GOAL.md` — definition of the finished paper
+- `PLAN.md` — concrete repository execution plan
+- `AGENTS.md` — durable contributor rules
 - `SCHOOL_RULES.md` — school-compliance contract
-- `BACKLOG.md` — deferred thesis phases
-- `web/PLAN.md` — generic IDE workstream
+- `paper/PAPER.typ` — canonical authored thesis source
+- `paper/bib/` — bibliography
+- `paper/data/` — reproducible evidence data
+- `paper/img/` — paper figures/assets
+- `darkfactory` — pinned DarkFactory implementation source
+- `web/` — generic GitHub IDE/workbench
+- `web/PLAN.md` — remaining IDE work
+
+## Direction
+
+The repository is optimized around producing one coherent, evidence-based academic thesis about DarkFactory.
+
+The paper source stays simple, practical claims come from pinned implementation evidence, and the publication pipeline generates the canonical paper/site/release artifacts reproducibly.
+
+See `GOAL.md` for the product objective and `PLAN.md` for the work required to reach it.
