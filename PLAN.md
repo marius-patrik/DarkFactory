@@ -1,6 +1,6 @@
 # DarkFactory-Paper — Completion Plan
 
-This file contains only the remaining path to the final **Odborná práce**.
+This file contains only the **current active thesis execution path**. Deferred closure and publication work lives in `BACKLOG.md`.
 
 - Thesis source: `paper/PAPER.typ`
 - Durable manuscript rules: `AGENTS.md`
@@ -140,11 +140,11 @@ Generated/current DarkFactory documentation is the architecture/system-descripti
 
 ## School contract
 
-Use `SCHOOL_RULES.md`.
+Use `SCHOOL_RULES.md` for any school-sensitive decision.
 
 Do not substitute IVT maturita-topic requirements for Odborná-práce rules.
 
-A direct-text audit of the school guide may run independently of manuscript editing and must be complete before the final publication phase.
+Final school-guide audit and publication QA are deferred in `BACKLOG.md`.
 
 ## Remaining execution
 
@@ -219,54 +219,16 @@ Exit:
 - introduction/research frame and evaluation are mutually consistent;
 - every RQ is answerable and answered.
 
-### Phase 5 — Thesis-wide closure
+## Current-plan exit
 
-Perform one final editorial/source pass rather than separate cleanup waves.
+The active plan ends after Phase 4.
 
-Scope:
-- deduplicate across Introduction / Theory / Practical / DarkFactory / Results;
-- audit factual claims and citations;
-- remove unused bibliography records;
-- finalize Chapter 5 Závěr;
-- finalize Czech/English annotation material as required by the school contract;
-- finalize keywords;
-- finalize encyclopedia/index/back matter;
-- verify terminology and cross-references;
-- ensure no new factual material appears only in Conclusion.
+At that checkpoint:
+- Theory is complete;
+- Practical Agentic Engineering is complete;
+- DarkFactory is integrated from canonical documentation;
+- implementation/evaluation evidence is pinned;
+- goals, methodology, and research questions are aligned to the evidence;
+- Results and discussion are written and answer the research questions.
 
-Exit:
-- manuscript content is substantively final;
-- only publication/school-format defects remain.
-
-### Phase 6 — Odborná-práce publication QA
-
-First complete/consume the direct-text school-guide audit.
-
-Then:
-- apply exact title-page, declaration, annotation, bibliography, pagination, typography, figures/tables, appendices, and submission rules;
-- validate source/output paths after the single-file repository refactor;
-- generate every required submission artifact confirmed by the guide;
-- run final PDF/HTML/Markdown/review/site builds;
-- inspect the final PDF page by page;
-- fix presentation-only defects;
-- require CI, Deploy Documentation, and Release green on the same final head.
-
-Exit:
-- school compliance is verified against the actual Odborná-práce guide;
-- all canonical artifacts and publication workflows are green on one final commit.
-
-## Final gate
-
-The work is complete only when:
-- `paper/PAPER.typ` is the sole authored thesis Typst source;
-- the canonical 1–5 hierarchy is intact;
-- Introduction owns adoption/capability/Vibe Coding evidence;
-- Theory contains model/inference/harness mechanisms only;
-- Practical contains Agentic Engineering and DarkFactory;
-- DarkFactory documentation is the architecture authority;
-- Results answer the research questions from pinned evidence;
-- every externally factual claim is sourced;
-- semantic duplication is eliminated;
-- Conclusion, annotations, keywords, index, and bibliography are final;
-- the actual Odborná-práce school contract is satisfied;
-- final CI, Deploy Documentation, and Release are green on the same head.
+Thesis-wide closure, encyclopedia removal, final annotations/keywords/bibliography cleanup, and Odborná-práce publication QA remain deferred in `BACKLOG.md`.
