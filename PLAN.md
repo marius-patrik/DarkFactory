@@ -252,6 +252,7 @@ Theory must render exactly as below. Numbered entries are structural sections. E
       - **[article] Orchestrátor**
       - **[article] Předání řízení (Handoff)**
       - **[article] Graf pracovního postupu (Workflow Graph)**
+      - **[article] Swarm**
     - unheaded closing synthesis/transition owned by 2.3
 
 The group the user previously referred to as **2.4.2 Zadání a způsob práce** is renumbered to **2.3.1** only because explicit numbered introductory sections and the standalone Theory intro node are removed. **Review remains in that exact semantic group.**
@@ -341,6 +342,16 @@ Use these canonical terminology records and stable keys:
   - exact scope: Claude Code project/user configuration namespace, including documented project settings such as `.claude/settings.json` and related Claude Code configuration/extension surfaces;
   - source: official Anthropic Claude Code documentation;
   - relations: related to `claude_md`, `skills`, and `hooks`.
+- Swarm:
+  - `key: "swarm"`
+  - `term: none`
+  - `keyword: "Swarm"`
+  - exact scope: dynamically coordinated parallel execution by multiple subagents under an orchestrating agent/system;
+  - primary concrete source/example: **Kimi K2.5 Agent Swarm** from official Kimi/Moonshot documentation;
+  - source claim to preserve: Kimi K2.5 introduced a self-directed Agent Swarm in which an orchestrator can dynamically create and coordinate parallel subagents without predefined roles or hand-authored workflows;
+  - later Kimi/Kimi Code versions may be cited only as dated implementation evolution, not used to retroactively redefine the original K2.5 concept;
+  - do not present “swarm” as a universal formal standard across vendors;
+  - relations: related to `subagent`, `orchestrator`, `workflow_graphs`, and `goal_loops`.
 
 Do **not** keep the previous umbrella semantic article **Projektové instrukce (AGENTS.md / CLAUDE.md)**. The structural group **Instrukce a kontext** already provides the umbrella; AGENTS.md and CLAUDE.md own distinct implementation semantics and therefore remain separate articles.
 
@@ -557,6 +568,7 @@ Every implementation/review pass must preserve all of the following unless the u
 - real Harness examples: Claude Code CLI, Google Antigravity IDE, ChatGPT web;
 - distinct semantic articles for **AGENTS.md** and **CLAUDE.md**;
 - distinct semantic articles for **.agents/** and **.claude/**;
+- **Swarm** included under **Orchestrace agentů**, grounded primarily in official Kimi K2.5 Agent Swarm documentation;
 - school semantics/formatting contract remains binding for the submission profile;
 - unnumbered semantic articles are excluded from the school PDF contents but remain available to the richer web Structure UI;
 - 3.1 DarkFactory remains generated rather than hand-reconstructed;
@@ -823,7 +835,8 @@ Exit:
 - preserve the locked group/article order while rewriting transitions into a continuous software-development argument;
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
-- source every definitional/mechanistic claim.
+- source every definitional/mechanistic claim;
+- add/finalize **Swarm** under Orchestrace agentů using official Kimi K2.5 Agent Swarm as the primary concrete source/example.
 
 Exit:
 - one coherent level-2 section follows Harness and explains deliberate agentic software-development practice.
@@ -920,6 +933,7 @@ The thesis is complete only when:
 - Theory and Practical use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
 - Review exists under Zadání a způsob práce;
 - AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership;
+- Swarm is owned under Orchestrace agentů and source-backed by official Kimi Agent Swarm documentation;
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
