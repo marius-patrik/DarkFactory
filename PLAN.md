@@ -70,22 +70,22 @@ Do not claim that most coding-agent users are vibe coding unless representative 
    - 4.5 Diskuse a omezení
 5. **Závěr**
 
-Semantic concept headings are visible but unnumbered and excluded from the printed Contents.
+Use only real document headings. The authored manuscript must not use per-term semantic headings or glossary-style concept sections.
 
-## Article contract
+## Prose contract
 
-For theory and practical-methodology concepts, use:
+The thesis must read as one continuous academic argument, not as a catalogue of definitions.
 
-**definition → mechanism/description → real sourced example(s) → practical implication**
-
-Requirements:
-- one semantic owner for each concept/claim;
-- claim-local citations;
-- original paper/specification or first-party documentation where available;
-- real example where defensible;
-- no self-referential definitions such as “v této práci označuje…”;
-- no duplicated definition across Theory and Practical;
-- no invented product behavior, benchmark values, API behavior, or empirical claims.
+Rules:
+- headings are reserved for actual chapters and subchapters;
+- introduce necessary terminology inline in ordinary prose;
+- define a term once, only where the argument needs it, then continue using it normally;
+- integrate examples and consequences into paragraphs rather than boxed definition/example/“Praktický význam” units;
+- every paragraph must advance the argument, explain a necessary mechanism, present evidence, or connect sections;
+- remove material that exists only to make the terminology system exhaustive;
+- preserve claim-local citations, but do not let citation structure dictate prose structure;
+- use explicit transitions between model → Harness → Agentic Engineering → DarkFactory → evaluation;
+- prefer fewer, stronger figures and examples over comprehensive illustration of every term.
 
 ## Evidence ownership
 
@@ -109,38 +109,21 @@ Requirements:
 - limitations
 - research-question answers
 
-## Locked content
+## Content invariants
 
-### Model / inference
-Treat 2.1 as stable unless a concrete factual/source/build defect is found.
+The existing factual/source work in 2.1, 2.2, and 3.1 is evidence to preserve, not a prose structure to preserve.
 
-Preserve:
-- sourced examples and practical implications;
-- 2D embedding relation `král − muž + žena ≈ královna`;
-- axes **Pohlaví** and **Královský status**;
-- 3D pedagogical analogy visualization;
-- explicit caveat that shown axes are explanatory projections rather than literal learned dimensions.
+During the coherence rewrite:
+- retain correct sourced claims that materially support the thesis;
+- freely merge, shorten, move, or delete glossary-like passages;
+- preserve the ReAct mechanism where useful, but integrate it into normal Harness prose;
+- preserve the distinction between Session, Transcript, and State without requiring separate term headings;
+- preserve the distinction between AGENTS.md and CLAUDE.md where it remains relevant;
+- preserve the distinction between Workflow Graph and DAG, and the cautious treatment of Swarm, if those details survive the relevance cut;
+- do not invent new empirical claims;
+- remove examples, figures, terminology, and implementation detail that do not materially support the paper's argument.
 
-### Harness
-Agent Loop uses the ReAct cycle:
-
-**Model → Akce → Nástroj/prostředí → Pozorování → Model**
-
-with optional **Model → Výsledek**.
-
-State means persisted currently valid facts/control data. Do not personify it.
-
-Use direct/original source + concrete example for Agent Loop, Session, Transcript, State, Environment, Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, `.agents/`, and `.claude/`.
-
-### Practical / Agentic Engineering
-Treat §3.1 as stable unless a concrete factual/source/build defect is found.
-
-Workflow Graph and Swarm belong under Practical / Agentic Engineering, not Theory.
-
-### DarkFactory
-DarkFactory integration is intentionally backlogged for now. Do not begin §3.2 or implementation-evidence pinning from the active plan.
-
-When promoted, generated/current DarkFactory documentation is the architecture/system-description authority for 3.2. Do not build a competing manual architecture narrative.
+DarkFactory integration remains intentionally backlogged. Do not fill §3.2 with unsupported or aspirational prose.
 
 ## School contract
 
@@ -148,64 +131,176 @@ Use `SCHOOL_RULES.md` for any school-sensitive decision.
 
 Do not substitute IVT maturita-topic requirements for Odborná-práce rules.
 
-The direct school-guide text audit is active in Phase 2 below. Final publication QA remains deferred in `BACKLOG.md`.
+Use the recovered school contract as the current formatting floor. During the active rewrite, verify only the guide details needed to avoid formatting the manuscript incorrectly; exhaustive publication QA remains deferred in `BACKLOG.md`.
 
 ## Remaining execution
 
-### Phase 1 — Remove encyclopedia / term index — NEXT
+### Phase 1 — Whole-paper coherence and formatting rewrite — NEXT
 
-Remove the standalone **Encyklopedie / rejstřík pojmů** from the thesis now, before further manuscript expansion.
+Perform one aggressive, bounded pass over the existing manuscript so it reads as a conventional academic paper rather than a concept catalogue.
 
-Scope:
-- remove the encyclopedia/glossary/index-of-terms heading and generated entries;
-- remove navigation, index references, backlinks, and back-matter plumbing used only for that section;
-- preserve ordinary front-matter keywords and normal in-text terminology;
-- do not replace it with another glossary;
-- reconcile printed Contents, web/content structure, back matter, and validators;
-- keep Theory, §3.1, §3.2, Results, and school formatting substantively unchanged.
+This phase supersedes the earlier standalone encyclopedia-removal phase and absorbs that cleanup.
 
-Exit:
-- no standalone encyclopedia/term index remains in any canonical output;
-- no dead links, generated entries, or validator assumptions remain;
-- all canonical manuscript/site builds still pass.
+#### Structure
 
-### Phase 2 — Direct Odborná-práce guide audit and school-contract reconciliation
+Keep only meaningful chapter/subchapter headings.
 
-Replace the remaining recovered/template-inferred school assumptions with a direct-text audit of the actual school guide.
+Target maximum heading depth: **level 3**.
 
-Primary source already identified in `SCHOOL_RULES.md`:
-- `marius-patrik/OdbornaPrace-mono/docs/Pruvodce-tvorbou-odborne-prace-2024.pdf`
+Required top-level flow:
+1. Úvod
+2. Teoretická část
+3. Praktická část
+4. Výsledky a diskuse
+5. Závěr
 
-Scope:
-- inspect the guide itself directly, not only the archived template or README;
-- verify the exact declaration wording;
-- verify annotation requirements;
-- verify the required bibliography heading;
-- determine whether English annotation/keywords are mandatory;
-- verify submission artifact requirements;
-- verify any minimum/maximum page or word-count rule;
-- verify any similarity/plagiarism rule or threshold;
-- capture any other Odborná-práce requirements not represented by the archived template;
-- reconcile `SCHOOL_RULES.md` so it clearly distinguishes verified requirements from any still-unresolved evidence;
-- do not import IVT maturita-topic requirements into the Odborná-práce contract;
-- make only structural manuscript corrections that are unquestionably required by the verified guide and independent of unfinished DarkFactory/Results content.
+Within Theory, retain only the chapter structure needed to explain:
+- jazykový model / reprezentace / inference;
+- Harness / smyčka a stav / prostředí a nástroje / rozšíření.
 
-Exit:
-- `SCHOOL_RULES.md` is grounded directly in the actual guide text rather than relying on unresolved recovered assumptions;
-- every previously listed exact-guide uncertainty is resolved where the guide supports an answer;
-- any genuinely unsupported item is explicitly marked unsupported rather than guessed;
-- final publication QA can later operate from a verified school contract.
+Within Practical, restructure Agentické inženýrství into a small number of coherent process sections. The current six sections may be merged where that improves flow. Prefer approximately:
+- zadání a plánování;
+- řízení změny a ověřování;
+- instrukce, kontext a řízení chování;
+- orchestrace a škálování.
+
+Do not create headings for individual terms.
+
+DarkFactory §3.2 remains backlogged and must not be invented in this phase.
+
+#### Prose rewrite
+
+Rewrite the manuscript so each real section consists of normal connected paragraphs.
+
+Remove:
+- all per-term level-4 headings;
+- standalone definition blocks;
+- square/bracket-style definition wrappers;
+- every explicit **Praktický význam** block/label;
+- glossary-style example boxes;
+- repetitive “term A means…, term B means…” sequencing;
+- encyclopedia/term index and its plumbing;
+- redundant transitions and repeated definitions;
+- nonessential terminology and examples.
+
+Integrate useful definition, example, mechanism, and consequence material directly into the surrounding prose.
+
+The desired paragraph logic is:
+**claim/context → explanation/mechanism → evidence/example where useful → consequence/transition**.
+
+Apply the same prose style to Introduction, Theory, Practical, Results, and Conclusion so the work has one voice.
+
+#### Relevance cut
+
+Every paragraph, term, citation, figure, and table must justify its place by supporting the thesis argument or evaluation.
+
+Aggressively remove decorative or tangential material.
+
+In particular, review whether the following are necessary:
+- the Vibe Coding tweet image;
+- duplicate embedding illustrations;
+- the large benchmark snapshot table;
+- product-specific examples whose only purpose is to define a term;
+- exhaustive extension/tool catalogues.
+
+Prefer a small set of high-value visuals. Keep a figure only when it materially explains or supports an argument better than concise prose.
+
+#### Keywords and front matter
+
+Replace the current glossary-like keyword dump with a short thesis-level keyword set, approximately 5–8 items.
+
+Keywords should describe the work, not enumerate terminology.
+
+Keep annotation/abstract concise and aligned with what the paper actually contains.
+
+#### Typst simplification
+
+Delete semantic/content abstraction machinery that no longer serves the final paper.
+
+Remove where no longer required:
+- the semantic term registry;
+- `term()` / `kw` / term marker stars and term-link machinery;
+- concept-only labels and encyclopedia backreferences;
+- review/diff/callout abstractions;
+- definition/example block abstractions;
+- custom text-tree/word-stat machinery unless a verified school requirement truly needs it;
+- citation alias maps when direct bibliography labels can be used cleanly;
+- figure/content macros that merely hide one-off content.
+
+Keep only small formatting helpers that genuinely reduce simple presentation duplication. Do not maintain a content model inside Typst.
+
+#### Typography
+
+Rebuild the manuscript styling as simple academic typography:
+- A4 and school-compliant margins;
+- 12 pt readable serif body text;
+- justified paragraphs;
+- school-required line spacing / paragraph spacing;
+- normal breakable paragraphs;
+- no `#show par` rule that makes every paragraph unbreakable;
+- left-aligned headings with no decorative indentation;
+- level 1 / 2 / 3 only, with clear size hierarchy;
+- simple figure/table captions;
+- restrained print-friendly links and code;
+- no decorative callout boxes in the final manuscript.
+
+Use direct-text school-guide evidence where necessary to choose between competing formatting rules, but do not turn this phase into the full final publication audit.
+
+#### Results and conclusion
+
+Do not refresh the DarkFactory evidence snapshot in this phase.
+
+However, rewrite the existing Results and Conclusion stylistically so they match the rest of the paper:
+- ordinary paragraphs rather than introductory definition blocks;
+- less repetition;
+- clear separation of result, interpretation, and limitation;
+- direct RQ answers;
+- no glossary tone.
+
+Preserve the current evidentiary limits until the backlogged DarkFactory evidence phase replaces or updates them.
+
+#### Exit
+
+The phase is complete when:
+- there are no per-term headings;
+- there are no `Praktický význam` blocks;
+- there is no standalone encyclopedia/term index;
+- terminology is introduced inline;
+- the paper reads continuously within and between sections;
+- unnecessary material has been removed rather than reformatted;
+- the Typst source is substantially simpler and contains no semantic glossary/review abstraction layer;
+- heading depth is at most 3;
+- front-matter keywords are concise;
+- formatting is conventional, clean, and print-oriented;
+- existing factual claims retained by the rewrite still have appropriate citations;
+- all canonical builds pass;
+- the PDF is visually inspected end-to-end for flow, spacing, headings, figures, page breaks, and back matter.
+
+### Phase 2 — Direct Odborná-práce guide reconciliation
+
+After the manuscript is structurally clean, perform the remaining direct-text audit of the school guide and correct only requirements that are still unresolved.
+
+Resolve:
+- declaration wording;
+- annotation/English-annotation requirements;
+- bibliography heading;
+- submission artifacts;
+- page/word limits if any;
+- similarity/plagiarism rules if any;
+- remaining title-page, pagination, figure/table, appendix, and typography requirements.
+
+Reconcile `SCHOOL_RULES.md` and make the corresponding final formatting corrections.
 
 ## Current-plan exit
 
 The active plan ends after Phase 2.
 
 At that checkpoint:
-- Theory is complete;
-- Practical Agentic Engineering is complete;
-- the standalone encyclopedia / term index is removed;
-- the Odborná-práce school contract has been directly audited and reconciled;
-- DarkFactory integration/evidence pinning remains intentionally backlogged;
-- Results/research-frame completion remains downstream of the backlogged DarkFactory evidence phase;
-- thesis-wide closure and final publication QA remain deferred in `BACKLOG.md`.
+- the existing manuscript reads as one coherent academic work rather than a concept catalogue;
+- the source is simplified to ordinary manuscript content plus clean presentation code;
+- the encyclopedia and per-term heading system are gone;
+- school-sensitive formatting has been directly reconciled;
+- DarkFactory §3.2 and its implementation-evidence refresh remain intentionally backlogged;
+- the dependent final Results/evidence refresh remains backlogged with DarkFactory;
+- final post-DarkFactory closure/publication QA remains deferred in `BACKLOG.md`.
 
