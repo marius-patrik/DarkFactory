@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Editor, { DiffEditor } from "@monaco-editor/react";
 import type { AppearanceMode } from "@/settings";
 import { useWorkspace } from "@/workspace/context";
@@ -97,7 +97,7 @@ export function EditorTab({
   const comparison = resource.comparison;
   const compareActive = compare !== "none";
 
-  let body;
+  let body: ReactNode;
   if (!repositoryFile && renderer === "browser") {
     body = <div className="tab-empty"><strong>Browser renderer</strong><span>Save or open a repository file before using Browser rendering.</span></div>;
   } else if (compareActive && resource.loading) {
