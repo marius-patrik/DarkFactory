@@ -12,12 +12,15 @@ Wait for the active worker to finish its current pass, then review the resulting
 
 Do not move the branch underneath the worker while it is active.
 
-Queued review requirements if the active pass does not already satisfy them:
+Queued review requirements after reviewing the completed worker pass:
 - pull/rebase from latest `main` before the next dispatch;
+- explicitly distinguish a chatbot from a coding agent and use that boundary to strengthen the Gradually motivation;
+- use the IDE → completion → chat → agent → agent-first/ADE history to introduce what real coding agents can do;
+- explain Tools, Skills, Hooks, and MCP concisely as capabilities supplied/integrated by the harness, alongside state/context, verification, and orchestration;
 - every level-1 and level-2 section starts on a new page;
 - use a visible first-line paragraph indent and noticeably larger inter-paragraph spacing, subject to direct school-guide reconciliation;
-- tokenization remains conceptual; remove BPE-specific exposition;
-- keep the embedding treatment to one concise king/queen example plus `paper/img/vector-embedding-queen.svg`;
+- tokenization remains conceptual; BPE-specific exposition is already absent and must stay absent;
+- restore the embedding treatment to one concise king/queen example plus `paper/img/vector-embedding-queen.svg`;
 - do not use the 3D embedding diagram;
 - keep Gradually;
 - keep ReAct;
@@ -26,7 +29,10 @@ Queued review requirements if the active pass does not already satisfy them:
 - keep Prompt Injection absent;
 - keep DAG absent;
 - workflow graphs may remain for agent workflow planning;
-- keep validators independent from exact level-2/3 editorial structure.
+- keep validators independent from exact level-2/3 editorial structure;
+- remove the current future-work/process paragraph from `3.1 DarkFactory` and keep the section as a clean boundary until the evidence phase;
+- do not treat the current provisional Results as final: the revised O1/O2/O3 no longer map cleanly to the existing result paragraphs and must be rebuilt from pinned evidence in Phase 2;
+- update the PR description after the next pass; it is currently stale relative to the actual manuscript and visual set.
 
 ### Generic IDE
 

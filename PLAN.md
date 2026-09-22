@@ -52,6 +52,19 @@ and:
 
 **IDE-centered execution → harness-centered execution**
 
+Make the chatbot → agent boundary explicit:
+- chatbot: conversational output while the human remains the executor;
+- coding agent: iterative repository/environment interaction through a harness, with tools, state, observations, controlled effects, verification, and continuation toward an acceptance condition.
+
+Use that transition to introduce the concrete agent capability surface without turning it into a glossary:
+- Tools;
+- Skills;
+- Hooks;
+- MCP;
+- state/context management;
+- execution observations and verification;
+- orchestration.
+
 The theory should then explain only what is needed to support that argument:
 - the relevant boundary of model inference;
 - why delegated work requires a persistent execution environment;

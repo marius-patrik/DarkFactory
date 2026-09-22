@@ -60,6 +60,32 @@ The purpose of this history is to show how AI moved from assisting individual ed
 
 Use representative examples only where they materially demonstrate a stage in that progression.
 
+### Chatbot-to-agent boundary
+
+The motivation should explicitly distinguish ordinary conversational AI use from real coding-agent use.
+
+A chatbot primarily returns conversational output—explanations, suggestions, code snippets, or proposed changes—while the human remains the executor who chooses context, edits files, invokes development tools, observes results, and carries the workflow forward.
+
+A coding agent participates in an iterative execution process. Through a harness it can inspect the repository and environment, choose or follow a bounded plan, invoke tools, cause controlled changes, observe real outputs, update its working state, verify results, and continue toward an acceptance condition.
+
+The Gradually adoption figure should support this distinction: broad generative-AI or chatbot adoption is not equivalent to adoption of coding agents. The comparatively small coding-agent population motivates explaining what changes when AI moves from conversational assistance to delegated execution.
+
+### Agent capability surface
+
+Use the historical chatbot → agent transition as the natural place to introduce the capabilities that make agentic execution possible.
+
+Explain these as parts of the harness/runtime rather than as isolated glossary entries:
+
+- **Tools** — callable actions through which the agent reads, edits, executes, tests, searches, or otherwise affects its environment.
+- **Skills** — reusable task-specific instructions, scripts, and resources that can be made available when relevant.
+- **Hooks** — deterministic lifecycle handlers that enforce or trigger behavior around events such as tool execution, validation, or completion.
+- **MCP** — a standardized protocol for connecting the harness to external tools and data sources.
+- **State and context management** — persistence of the development process outside any one inference call and selection of information for the next decision.
+- **Verification and observation** — real execution feedback such as tests, compilers, linters, CI, and repository state.
+- **Orchestration** — coordination of multiple agent runs or roles when work can be decomposed and later integrated.
+
+The paper should explain enough of this capability surface for a reader familiar only with chatbots to understand what a coding agent can actually do and why the harness, rather than the model alone, is the relevant engineering object.
+
 ### Engineering transition
 
 As execution moves from the human developer to agents, the role of the engineer changes.
