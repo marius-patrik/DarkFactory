@@ -236,9 +236,8 @@ export function WorkbenchShell() {
             <button
               type="button"
               className="account-placeholder"
-              disabled={!workspace.user && !workspace.authConfigured}
-              onClick={() => workspace.user ? workspace.signOut() : void workspace.signIn()}
-              title={workspace.user ? "Sign out" : workspace.authConfigured ? "Sign in with GitHub" : "Set PUBLIC_GITHUB_CLIENT_ID to enable GitHub sign-in"}
+              onClick={() => workspace.user ? workspace.signOut() : workspace.setDialogOpen(true)}
+              title={workspace.user ? "Sign out" : "Connect GitHub account"}
             >
               {workspace.user ? <img src={workspace.user.avatar_url} alt="" /> : <UserRound size={14} />}
               <span>{workspace.user?.login || "Sign in"}</span>
