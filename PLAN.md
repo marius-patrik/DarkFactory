@@ -69,9 +69,9 @@ Theory and Practical must demonstrate this chain rather than restating it.
 
 2.2 AI-asistovaný vývoj  
 2.2.1 Úvod  
-2.2.2 Zadání a způsob práce  
+2.2.2 Specifikace a plánování  
 2.2.3 Řízení změny  
-2.2.4 Kvalita a ověřování  
+2.2.4 Ověřování kvality  
 2.2.5 Závěr
 
 2.3 Model  
