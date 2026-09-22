@@ -100,11 +100,42 @@ export function getGithubCommit(fullName: string, ref: string, token: string | n
   );
 }
 
-export function getGithubTree(fullName: string, ref: string, token: string | null) {
+async function getGithubTreeNode(fullName: string, sha: string, token: string | null) {
   return githubFetch<GithubTree>(
+    `/repos/${fullName}/git/trees/${encodeURIComponent(sha)}`,
+    token,
+  );
+}
+
+async function walkGithubTree(
+  fullName: string,
+  sha: string,
+  token: string | null,
+  prefix = "",
+): Promise<GithubTreeEntry[]> {
+  const node = await getGithubTreeNode(fullName, sha, token);
+  const entries: GithubTreeEntry[] = [];
+  for (const entry of node.tree) {
+    const path = prefix ? `${prefix}/${entry.path}` : entry.path;
+    entries.push({ ...entry, path });
+    if (entry.type === "tree") {
+      entries.push(...await walkGithubTree(fullName, entry.sha, token, path));
+    }
+  }
+  return entries;
+}
+
+export async function getGithubTree(fullName: string, ref: string, token: string | null) {
+  const recursive = await githubFetch<GithubTree>(
     `/repos/${fullName}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
     token,
   );
+  if (!recursive.truncated) return recursive;
+  return {
+    sha: recursive.sha,
+    truncated: false,
+    tree: await walkGithubTree(fullName, recursive.sha, token),
+  } satisfies GithubTree;
 }
 
 export async function listGithubRefs(fullName: string, token: string | null) {
