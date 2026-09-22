@@ -1,10 +1,10 @@
 # DarkFactory-Paper — Execution Plan
 
-`GOAL.md` defines the semantic destination of the thesis.
+`GOAL.md` defines the quality objective for the finished academic paper.
 
 `PRD.md` defines the finished product contract.
 
-This file defines the concrete repository work and sequencing required to reach both.
+This file defines the concrete repository work and sequencing required to satisfy the goal and product contract.
 
 ## Workstream A — Build the paper from the argument
 
