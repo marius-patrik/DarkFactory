@@ -1,12 +1,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "thesis_objectives_research_questions",
-  title: [Cíl práce a výzkumné otázky],
+  key: "thesis_objectives",
+  title: [Cíle práce],
   definition: terms => [
-Tato část stanovuje hlavní cíl, dílčí cíle a výzkumné otázky práce.
+Tato část stanovuje hlavní a dílčí cíle práce.
   ],
   description: terms => [
-Společně vymezují rozsah návrhu DarkFactory a rámec jeho evaluace.
+Cíle vymezují, jaký artefakt má být navržen a které jeho vlastnosti mají být technicky ověřeny. Výzkumné otázky jsou odděleny do následující samostatné části.
   ],
 )

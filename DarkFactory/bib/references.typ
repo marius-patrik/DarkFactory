@@ -70,6 +70,7 @@
 #let darkfactory_paper_release_35617820286 = <darkfactory-paper-release-35617820286>
 #let darkfactory_request_359 = <darkfactory-request-359>
 
+#let vllm_inference_engine = <vllm-inference-engine>
 #let bib = (
   darkfactory: darkfactory,
   humble2010: humble2010,
@@ -139,4 +140,5 @@
   darkfactory_paper_deploy_35617820271: darkfactory_paper_deploy_35617820271,
   darkfactory_paper_release_35617820286: darkfactory_paper_release_35617820286,
   darkfactory_request_359: darkfactory_request_359,
+  vllm_inference_engine: vllm_inference_engine,
 )
