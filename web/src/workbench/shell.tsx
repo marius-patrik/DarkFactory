@@ -251,7 +251,13 @@ export function WorkbenchShell() {
     togglePanel: () => toggleSurface("panel"),
     focusNavigation: () => focusOmnibar("navigation"),
     focusCommands: () => focusOmnibar("command"),
-  }), [focusOmnibar, toggleSurface]);
+    splitRight: () => {
+      if (activeTab) splitTab(activeTab.id, "right");
+    },
+    splitDown: () => {
+      if (activeTab) splitTab(activeTab.id, "below");
+    },
+  }), [activeTab, focusOmnibar, splitTab, toggleSurface]);
   useWorkbenchShortcuts(shortcutHandlers);
 
   const defaults = useMemo<Record<WorkbenchSurface, WorkbenchTab[]>>(() => ({

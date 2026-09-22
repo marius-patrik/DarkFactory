@@ -43,7 +43,11 @@ type OmnibarSymbol = {
   line: number;
 };
 
-const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primary" | "secondary" | "panel" }> = [
+const COMMANDS: Array<{
+  label: string;
+  type?: WorkbenchTabType;
+  action?: "primary" | "secondary" | "panel" | "split-right" | "split-down";
+}> = [
   { label: "Open Editor", type: "editor" },
   { label: "Open Browser", type: "browser" },
   { label: "Open Explorer", type: "explorer" },
@@ -58,6 +62,8 @@ const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primar
   { label: "Toggle Primary Sidebar", action: "primary" },
   { label: "Toggle Secondary Sidebar", action: "secondary" },
   { label: "Toggle Panel", action: "panel" },
+  { label: "Split Active Tab Right", action: "split-right" },
+  { label: "Split Active Tab Down", action: "split-down" },
 ];
 
 function looksLikeUrl(value: string) {
@@ -365,6 +371,8 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
     if (command.action === "primary") runtime.toggleSurface("primary");
     if (command.action === "secondary") runtime.toggleSurface("secondary");
     if (command.action === "panel") runtime.toggleSurface("panel");
+    if (command.action === "split-right" && runtime.activeTab) runtime.splitTab(runtime.activeTab.id, "right");
+    if (command.action === "split-down" && runtime.activeTab) runtime.splitTab(runtime.activeTab.id, "below");
     closeResults();
   };
 

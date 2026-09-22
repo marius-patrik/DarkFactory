@@ -6,6 +6,8 @@ type CommandHandlers = {
   togglePanel: () => void;
   focusNavigation: () => void;
   focusCommands: () => void;
+  splitRight: () => void;
+  splitDown: () => void;
 };
 
 function modifier(event: KeyboardEvent) {
@@ -19,7 +21,9 @@ export function useWorkbenchShortcuts(handlers: CommandHandlers) {
       const key = event.key.toLowerCase();
       let handled = true;
 
-      if (key === "b" && event.altKey && !event.shiftKey) handlers.toggleSecondary();
+      if (event.code === "Backslash" && event.altKey && !event.shiftKey) handlers.splitDown();
+      else if (event.code === "Backslash" && !event.altKey && !event.shiftKey) handlers.splitRight();
+      else if (key === "b" && event.altKey && !event.shiftKey) handlers.toggleSecondary();
       else if (key === "b" && !event.altKey && !event.shiftKey) handlers.togglePrimary();
       else if (key === "j" && !event.altKey && !event.shiftKey) handlers.togglePanel();
       else if (key === "p" && event.shiftKey && !event.altKey) handlers.focusCommands();
