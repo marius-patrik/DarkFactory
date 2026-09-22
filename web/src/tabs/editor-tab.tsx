@@ -43,6 +43,7 @@ export function EditorTab({
   const [edited, setEdited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const viewStateTimer = useRef<number | null>(null);
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const editorDisposables = useRef<Array<{ dispose: () => void }>>([]);
   const resource = useResourceComparison(repositoryFile ? path : "", compare, compareTarget);
 
@@ -53,6 +54,7 @@ export function EditorTab({
   }, []);
 
   const handleEditorMount: OnMount = (editor) => {
+    editorRef.current = editor;
     for (const disposable of editorDisposables.current) disposable.dispose();
     editorDisposables.current = [];
 
@@ -75,6 +77,24 @@ export function EditorTab({
       editor.onDidScrollChange(persistViewState),
     ];
   };
+
+  useEffect(() => {
+    const requestedLine = Number(tab.state.goToLine);
+    const target = editorRef.current;
+    if (
+      renderer !== "editor" ||
+      !target ||
+      !Number.isInteger(requestedLine) ||
+      requestedLine < 1
+    ) {
+      return;
+    }
+    const lineCount = target.getModel()?.getLineCount() ?? requestedLine;
+    const lineNumber = Math.min(requestedLine, Math.max(1, lineCount));
+    target.setPosition({ lineNumber, column: 1 });
+    target.revealLineInCenter(lineNumber);
+    target.focus();
+  }, [renderer, tab.state.goToLine, tab.state.goToLineRequest]);
 
   useEffect(() => {
     if (!repositoryFile) {

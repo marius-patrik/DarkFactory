@@ -140,6 +140,25 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
     closeResults();
   };
 
+  const goToLine = (value: string) => {
+    const line = Number(value.replace(/^:/, ""));
+    const active = runtime.activeTab;
+    if (
+      !active ||
+      (active.type !== "editor" && active.type !== "document") ||
+      !Number.isInteger(line) ||
+      line < 1
+    ) {
+      return;
+    }
+    runtime.updateTabState(active.id, {
+      renderer: "editor",
+      goToLine: line,
+      goToLineRequest: Date.now(),
+    });
+    closeResults();
+  };
+
   const navigateBrowser = (value: string) => {
     const url = /^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`;
     const active = runtime.activeTab;
@@ -199,6 +218,10 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               }
               return;
             }
+            if (queryKind === "line") {
+              goToLine(query);
+              return;
+            }
             if (queryKind === "resource" && resourceResults[0]) {
               openResource(resourceResults[0]);
             }
@@ -220,6 +243,19 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               {command.label}
             </button>
           )) : <div className="omnibar-empty">No matching commands</div>}
+        </div>
+      )}
+      {focused && queryKind === "line" && (
+        <div className="omnibar-results">
+          {runtime.activeTab && (runtime.activeTab.type === "editor" || runtime.activeTab.type === "document") && Number.isInteger(Number(query.replace(/^:/, ""))) && Number(query.replace(/^:/, "")) > 0 ? (
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => goToLine(query)}
+            >
+              Go to line {Number(query.replace(/^:/, ""))}
+            </button>
+          ) : <div className="omnibar-empty">Enter a line number for the active file</div>}
         </div>
       )}
       {focused && queryKind === "resource" && query.trim() && (
