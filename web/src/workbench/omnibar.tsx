@@ -128,7 +128,7 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
       setQuery(value ?? (nextMode === "command" ? ">" : ""));
       requestAnimationFrame(() => inputRef.current?.focus());
     },
-  }), [activeResource]);
+  }), []);
 
   const commandQuery = query.replace(/^>/, "").trim().toLowerCase();
   const visibleCommands = COMMANDS
