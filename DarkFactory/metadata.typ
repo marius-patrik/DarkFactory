@@ -8,8 +8,8 @@
   // The main title is structural and comes from DarkFactory/index.typ.
   title-suffix: translation(cs: "", en: ""),
   title-lines: (
-    cs: ("DarkFactory:", "Agentic Engineering in practice", "(Agentické inženýrství v praxi)"),
-    en: ("DarkFactory:", "Agentic Engineering in practice", "(Agentické inženýrství v praxi)"),
+    cs: ("DarkFactory:", "Agentické inženýrství v praxi"),
+    en: ("DarkFactory:", "Agentické inženýrství v praxi"),
   ),
   podnazev: none,
 
@@ -25,15 +25,15 @@
 
   annotation-cs: [
     Odborná práce zkoumá využití agentní umělé inteligence při vývoji softwaru se zaměřením na architekturu agentního harnessu.
-    Teoretická část vymezuje mechanismy softwarového inženýrství, jazykových modelů, správy kontextu, nástrojů, řízení provádění a multiagentních systémů.
-    Praktická část popisuje systém DarkFactory, který odděluje modelové rozhodování od trvalého stavu, prostředí, capabilities, GitHub control plane, ověřování a bezpečnostních hranic.
-    Evaluace používá zdrojový kód, automatické testy a CI výsledky a rozlišuje implementované mechanismy od vlastností, které ještě vyžadují živý end-to-end důkaz.
+    Teoretická část sleduje přechod od AI-asistovaného vývoje přes jazykový model a inferenci k Harnessu a Agentickému inženýrství.
+    Praktická část odděluje kanonickou dokumentaci DarkFactory, životní cyklus změny a vyhodnocení dostupných důkazů.
+    Evaluace používá zdrojový kód, automatické testy a CI výsledky a výslovně rozlišuje prokázané mechanismy od neprokázaného plného produkčního průchodu.
   ],
   abstract-en: [
     This thesis examines the use of agentic artificial intelligence in software development, focusing on the architecture of an agent harness.
-    The theoretical part defines mechanisms from software engineering, language models, context management, tools, execution control, and multi-agent systems.
-    The practical part describes DarkFactory, a system that separates model decisions from persistent state, the execution environment, capabilities, the GitHub control plane, verification, and security boundaries.
-    The evaluation uses source code, automated tests, and CI results and distinguishes implemented mechanisms from properties that still require live end-to-end evidence.
+    The theoretical part follows the transition from AI-assisted development through language-model inference to the harness and agentic engineering.
+    The practical part separates the canonical DarkFactory documentation, the software-change lifecycle, and evaluation of the available evidence.
+    The evaluation uses source code, automated tests, and CI results and explicitly distinguishes demonstrated mechanisms from a full production lifecycle that was not demonstrated.
   ],
 
   podekovani: none,
@@ -42,9 +42,5 @@
 #let title-value(book-title) = str(book-title.cs)
 
 #let title-display(book-title) = {
-  [
-    #meta.title-lines.cs.at(0)#linebreak()
-    #meta.title-lines.cs.at(1)#linebreak()
-    #meta.title-lines.cs.at(2)
-  ]
+  meta.title-lines.cs.join(linebreak())
 }
