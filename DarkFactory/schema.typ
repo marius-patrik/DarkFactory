@@ -22,8 +22,10 @@
 ) = {
   assert(key != none, message: "concept requires a stable key")
   assert(term != none or keyword != none, message: "concept requires term or keyword")
+  if term != none { assert(type(term) == str, message: "concept term must be a string") }
+  if keyword != none { assert(type(keyword) == str, message: "concept keyword must be a string") }
   if term != none and keyword != none {
-    assert(lower(str(term)) != lower(str(keyword)), message: "concept term and keyword must be distinct")
+    assert(lower(term) != lower(keyword), message: "concept term and keyword must be distinct")
   }
   assert(definition != none, message: "concept requires a definition")
   assert(description != none, message: "concept requires a description")
@@ -61,8 +63,10 @@
 ) = {
   assert(key != none, message: "section requires a stable key")
   assert(title != none, message: "section requires a title")
+  if term != none { assert(type(term) == str, message: "section term must be a string") }
+  if keyword != none { assert(type(keyword) == str, message: "section keyword must be a string") }
   if term != none and keyword != none {
-    assert(lower(str(term)) != lower(str(keyword)), message: "section term and keyword must be distinct")
+    assert(lower(term) != lower(keyword), message: "section term and keyword must be distinct")
   }
   assert(definition != none, message: "section requires an introductory definition/body")
   assert(description != none, message: "section requires an introductory description/body")
