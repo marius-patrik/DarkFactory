@@ -144,7 +144,7 @@ export function WorkbenchSurfaceView({
         tabComponents={tabComponents}
         defaultRenderer="always"
         rightHeaderActionsComponent={HeaderActions}
-        getTabContextMenuItems={tabContextMenuItems}
+        getTabContextMenuItems={tabContextMenuItems as any}
         onReady={(event: any) => {
           const api = event.api;
           onReady(surface, api);

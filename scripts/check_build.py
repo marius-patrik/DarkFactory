@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 BOOK = os.environ.get("BOOK", "paper")
-if BOOK == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+if BOOK == "DarkFactory" and not (Path("DarkFactory") / "PAPER.typ").exists() and Path("paper").exists():
     BOOK = "paper"
 ROOT = Path(BOOK)
 EXPECTED_PDFS = (Path("out/prace.pdf"), Path("out/prace-review.pdf"))
@@ -150,19 +150,11 @@ main_source = sources[paper_file]
 require_contract(
     main_source,
     (
-        "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
-        "#let terms = (",
-        'agent_loop: (key: "agent_loop"',
-        'language_model: (key: "language_model"',
-        'mcp: (key: "mcp"',
-        'state: (key: "state"',
-        'tools: (key: "tools"',
-        'subagent: (key: "subagent"',
-        'swarm: (key: "swarm"',
-        'DarkFactory',
+        "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory",
+        "DarkFactory",
         '#bibliography("bib/references.bib"',
-        '<callout>',
-        '<word-stats>',
+        "<callout>",
+        "<word-stats>",
     ),
     f"{paper_file} manuscript",
 )
@@ -207,35 +199,27 @@ structural = [
 expected_structural = [
     (1, "Úvod"),
     (2, "Motivace a vymezení problému"),
-    (2, "Východisko a argument práce"),
-    (2, "Cíle"),
-    (3, "Hlavní cíl"),
-    (3, "Dílčí cíle"),
-    (2, "Výzkumné otázky"),
+    (2, "Cíl práce a výzkumné otázky"),
     (2, "Metodika"),
-    (2, "Struktura práce"),
     (1, "Teoretická část"),
     (2, "Jazykový model"),
     (3, "Architektura a reprezentace"),
-    (3, "Inference"),
+    (3, "Inference a kontext"),
     (2, "Harness"),
     (3, "Smyčka a stav"),
     (3, "Prostředí a nástroje"),
     (3, "Rozšíření"),
-    (1, "Praktická část"),
     (2, "Agentické inženýrství"),
-    (3, "Zadání a způsob práce"),
-    (3, "Řízení změny"),
-    (3, "Kvalita a ověřování"),
-    (3, "Instrukce a kontext"),
-    (3, "Řízení agentního chování"),
-    (3, "Orchestrace agentů"),
+    (3, "Zadání a plánování"),
+    (3, "Řízení změny a ověřování"),
+    (3, "Instrukce, kontext a autonomie"),
+    (3, "Orchestrace"),
+    (1, "Praktická část"),
     (2, "DarkFactory"),
     (1, "Výsledky a diskuse"),
-    (2, "Ověření mechanismů"),
-    (2, "Ověření systému"),
+    (2, "Ověření implementace a systému"),
     (2, "Ověření na repozitářích"),
-    (2, "Výzkumné otázky"),
+    (2, "Odpovědi na výzkumné otázky"),
     (2, "Diskuse a omezení"),
     (1, "Závěr"),
 ]
@@ -246,12 +230,11 @@ top_level = [title for level, title in structural if level == 1]
 if top_level != ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]:
     fail(f"unexpected top-level manuscript hierarchy: {top_level}")
 
-semantic = [(level, title, options) for level, title, options in headings if "numbering: none" in options]
-if not semantic:
-    fail("no semantic article headings found")
-for level, title, options in semantic:
-    if level != 4 or "outlined: false" not in options or "bookmarked: false" not in options:
-        fail(f"semantic article heading violates presentation contract: {title}")
+max_depth = max(level for level, _, _ in headings)
+if max_depth > 3:
+    fail(f"maximum numbered heading depth is 3, found level {max_depth}")
+if any("numbering: none" in options for _, _, options in headings):
+    fail("body headings must be numbered structural headings")
 
 intro_start = body_source.find("#heading(level: 1)[Úvod]")
 theory_start = body_source.find("#heading(level: 1)[Teoretická část]")
@@ -263,30 +246,12 @@ introduction = body_source[intro_start:theory_start]
 theory = body_source[theory_start:practical_start]
 practical = body_source[practical_start:results_start]
 
-if "#benchmark_snapshot" not in introduction or "Artificial Analysis Intelligence Index v4.3.2" not in introduction:
-    fail("Artificial Analysis benchmark must be present in Introduction")
-if "#benchmark_snapshot" in theory or "Artificial Analysis Intelligence Index v4.3.2" in theory:
-    fail("Artificial Analysis benchmark must not remain in Theory")
-if "<concept-vibe_coding>" not in introduction or "Vibe Coding" not in introduction:
-    fail("Vibe Coding evidence must be owned by Introduction")
-if re.search(r"heading\([^\n]*\)\[Vibe Coding\]", practical):
-    fail("Vibe Coding must not remain a standalone Practical article")
-
-for title in (
-    "Velký jazykový model (LLM)",
-    "Transformer",
-    "Tokenizér",
-    "Token",
-    "Vektorová reprezentace (Embedding)",
-    "Poskytovatel modelu (Model Provider)",
-    "Inferenční engine (Inference Engine)",
-    "Teplota (Temperature)",
-    "Kontextové okno (Context Window)",
-    "Mezipaměť klíčů a hodnot (KV Cache)",
-    "Degradace kontextu (Context Rot)",
-):
-    if not any(level == 4 and semantic_title == title for level, semantic_title, _ in semantic):
-        fail(f"accepted Model/Inference semantic article missing or numbered incorrectly: {title}")
+if "Vibe Coding" not in introduction:
+    fail("Vibe Coding must be mentioned in Introduction")
+if "Agentické inženýrství" not in theory:
+    fail("Agentické inženýrství must belong to Theory")
+if "DarkFactory" not in practical:
+    fail("DarkFactory must belong to Practical")
 
 for required in (
     ROOT / "bib/references.bib",
@@ -305,7 +270,6 @@ require_contract(
         "class HeadingIndexParser",
         "def typst_manuscript_index",
         "MANUSCRIPT_TOP_LEVEL",
-        "Velký jazykový model (LLM)",
         "def semantic_content_index",
         '"content_index": "content-index.json"',
     ),

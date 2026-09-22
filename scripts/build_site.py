@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 PUBLICATION = {
-    "title": "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
+    "title": "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory",
     "final": "prace.pdf",
     "review": "prace-review.pdf",
     "artifacts": {
@@ -37,7 +37,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 book_name = args.book
-if book_name == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+if book_name == "DarkFactory" and not (Path("DarkFactory") / "PAPER.typ").exists() and Path("paper").exists():
     book_name = "paper"
 BOOK_ROOT = Path(book_name)
 DEFAULT_TEMPLATE = args.default_template
@@ -315,21 +315,6 @@ def typst_manuscript_index(source_path: Path | None = None) -> list[dict[str, ob
         raise SystemExit(
             f"{source_path} web hierarchy differs from manuscript contract: {top_level}"
         )
-
-    semantic_titles = {
-        str(entry["title"])
-        for entry in entries
-        if entry["level"] == 4 and not str(entry["title"])[0].isdigit()
-    }
-    for required in (
-        "Velký jazykový model (LLM)",
-        "Vektorová reprezentace (Embedding)",
-        "Kontextové okno (Context Window)",
-        "Agentní smyčka (Agent Loop)",
-        "Vývoj řízený specifikací (Spec-Driven Development)",
-    ):
-        if required not in semantic_titles:
-            raise SystemExit(f"{source_path} web index is missing semantic article: {required}")
 
     return entries
 
