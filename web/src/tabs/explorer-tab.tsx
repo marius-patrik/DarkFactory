@@ -25,7 +25,10 @@ type ExplorerNode = {
   children: ExplorerNode[];
 };
 
-type MutableNode = Omit<ExplorerNode, "children"> & {\n  children: MutableNode[];\n  childrenByName: Map<string, MutableNode>;\n};
+type MutableNode = Omit<ExplorerNode, "children"> & {
+  children: MutableNode[];
+  childrenByName: Map<string, MutableNode>;
+};
 
 function buildExplorerTree(tree: GithubTreeEntry[], overlays: WorkingFile[]) {
   const overlayByPath = new Map(overlays.map((file) => [file.path, file]));
