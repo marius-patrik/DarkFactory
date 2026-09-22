@@ -1,6 +1,6 @@
 # DarkFactory book root
 
-`DarkFactory/` je kompletní book root práce **DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)**.
+`DarkFactory/` je kompletní book root práce **DarkFactory: Agentické inženýrství v praxi**.
 
 ## Structural contract
 
