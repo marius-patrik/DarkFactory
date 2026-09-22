@@ -1185,3 +1185,240 @@ a {
   margin: 0;
   line-height: 1.45;
 }
+
+
+.diff-tab {
+  display: grid;
+  grid-template-rows: 26px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.diff-hunk-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.diff-hunk-actions button,
+.scm-change-actions button,
+.local-commit-header,
+.scm-section header button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.diff-hunk-actions button {
+  display: inline-grid;
+  width: 21px;
+  height: 20px;
+  place-items: center;
+  border-radius: 3px;
+}
+
+.diff-hunk-actions button:hover,
+.scm-change-actions button:hover,
+.local-commit-header:hover,
+.scm-section header button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.source-control-tab {
+  overflow: hidden;
+}
+
+.scm-ref-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--toolbar-border);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.scm-ref-row span:first-child {
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-ref-row code {
+  font-size: 10px;
+}
+
+.scm-warning {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--toolbar-border);
+  background: color-mix(in srgb, #e2b93d 14%, transparent);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.scm-commit-box {
+  display: grid;
+  gap: 5px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--toolbar-border);
+}
+
+.scm-commit-box textarea {
+  width: 100%;
+  min-height: 52px;
+  resize: vertical;
+  padding: 6px 7px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+.scm-commit-box textarea:focus {
+  border-color: var(--accent);
+}
+
+.scm-commit-box > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 27px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.scm-commit-box > button:disabled,
+.scm-section header button:disabled,
+.tool-tab-actions button:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.scm-section {
+  border-bottom: 1px solid var(--toolbar-border);
+}
+
+.scm-section > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 27px;
+  padding: 0 6px 0 8px;
+  font-size: 10px;
+}
+
+.scm-section > header strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.scm-section > header span {
+  color: var(--muted);
+}
+
+.scm-section > header button {
+  padding: 3px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.scm-change-row {
+  display: flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0 4px 0 8px;
+}
+
+.scm-change-row:hover {
+  background: var(--surface-2);
+}
+
+.scm-change-main {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.scm-change-main > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-change-actions {
+  display: flex;
+  opacity: 0;
+}
+
+.scm-change-row:hover .scm-change-actions {
+  opacity: 1;
+}
+
+.scm-change-actions button {
+  display: inline-grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border-radius: 3px;
+}
+
+.local-commit {
+  font-size: 10px;
+}
+
+.local-commit-header {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 25px;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.local-commit-header span {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-commit-files {
+  display: grid;
+  gap: 2px;
+  padding: 2px 8px 6px 25px;
+  color: var(--muted);
+}
+
+.local-commit-files span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

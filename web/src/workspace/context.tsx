@@ -8,13 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import {
+  createGithubBlob,
+  createGithubBranchRef,
+  createGithubCommit,
+  createGithubTree,
   getGithubBlob,
+  getGithubBlobBytes,
+  getGithubBranchRef,
   getGithubCommit,
   getGithubRepository,
   getGithubTree,
   getGithubUser,
   listGithubRefs,
   listGithubRepositories,
+  updateGithubBranchRef,
   type GithubRepository,
   type GithubUser,
 } from "@/github/client";
@@ -31,6 +38,7 @@ import {
   type WorkingFileStatus,
 } from "./model";
 import {
+  clearLocalGitState,
   clearStaged,
   loadBlob,
   loadCommittedFiles,
@@ -49,6 +57,13 @@ import {
   saveStaged,
   saveWorkspace,
 } from "./storage";
+import {
+  createStoredZip,
+  downloadBytes,
+  downloadText,
+  virtualFiles,
+  wholeFilePatch,
+} from "./export";
 
 type WorkspaceContextValue = {
   token: string | null;
@@ -85,6 +100,10 @@ type WorkspaceContextValue = {
   unstageAll: () => Promise<void>;
   discardFile: (path: string) => Promise<void>;
   commitStaged: (message: string) => Promise<LocalCommit>;
+  createBranch: (branch: string) => Promise<void>;
+  pushLocalCommits: () => Promise<string>;
+  exportPatch: () => Promise<void>;
+  exportWorkspaceZip: () => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -619,6 +638,195 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [loadLocalState, overlays, staged, workspace],
   );
 
+
+  const createBranch = useCallback(
+    async (branch: string) => {
+      if (!workspace) throw new Error("No workspace is open.");
+      if (!token) throw new Error("Connect a GitHub token before creating a branch.");
+      const name = branch.trim();
+      if (!name || /[\s~^:?*\\[\\]\\\\]/.test(name) || name.includes("..") || name.startsWith("/") || name.endsWith("/")) {
+        throw new Error("Enter a valid Git branch name.");
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        await createGithubBranchRef(workspace.repository.fullName, name, workspace.baseSha, token);
+        setRefs(await listGithubRefs(workspace.repository.fullName, token));
+        await openRepository(workspace.repository.fullName, name);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [openRepository, token, workspace],
+  );
+
+  const pushLocalCommits = useCallback(async () => {
+    if (!workspace) throw new Error("No workspace is open.");
+    if (!token) throw new Error("Connect a GitHub token before pushing.");
+    if (!commits.length) throw new Error("There are no local commits to push.");
+    const branch = refs.find((candidate) => candidate.kind === "branch" && candidate.name === workspace.ref);
+    if (!branch) throw new Error("Push requires a branch workspace. Tags and detached refs are read-only.");
+
+    setLoading(true);
+    setError(null);
+    try {
+      const liveRef = await getGithubBranchRef(workspace.repository.fullName, workspace.ref, token);
+      if (liveRef.object.sha !== workspace.baseSha) {
+        setRemoteHeadSha(liveRef.object.sha);
+        throw new Error(
+          `Remote branch moved from ${workspace.baseSha.slice(0, 7)} to ${liveRef.object.sha.slice(0, 7)}. Fetch/sync before pushing.`,
+        );
+      }
+
+      let parentSha = workspace.baseSha;
+      let treeSha = workspace.treeSha;
+
+      for (const localCommit of commits) {
+        const mutations = [];
+        for (const file of localCommit.files) {
+          const sourcePath = file.renamedFrom || file.path;
+          const existing = workspace.tree.find(
+            (entry) => entry.type === "blob" && (entry.path === file.path || entry.path === sourcePath),
+          );
+          const mode = existing?.mode && ["100644", "100755", "120000"].includes(existing.mode)
+            ? existing.mode
+            : "100644";
+
+          if (file.status === "deleted") {
+            mutations.push({ path: file.path, mode, type: "blob" as const, sha: null });
+            continue;
+          }
+
+          const blob = await createGithubBlob(
+            workspace.repository.fullName,
+            file.content ?? "",
+            token,
+          );
+          mutations.push({ path: file.path, mode, type: "blob" as const, sha: blob.sha });
+        }
+
+        const tree = await createGithubTree(
+          workspace.repository.fullName,
+          treeSha,
+          mutations,
+          token,
+        );
+        const commit = await createGithubCommit(
+          workspace.repository.fullName,
+          localCommit.message,
+          tree.sha,
+          [parentSha],
+          token,
+        );
+        parentSha = commit.sha;
+        treeSha = tree.sha;
+      }
+
+      await updateGithubBranchRef(
+        workspace.repository.fullName,
+        workspace.ref,
+        parentSha,
+        token,
+      );
+
+      const remoteCommit = await getGithubCommit(workspace.repository.fullName, parentSha, token);
+      const remoteTree = await getGithubTree(
+        workspace.repository.fullName,
+        remoteCommit.commit.tree.sha,
+        token,
+      );
+      const snapshot: WorkspaceSnapshot = {
+        ...workspace,
+        baseSha: parentSha,
+        treeSha: remoteTree.sha,
+        tree: remoteTree.tree,
+        updatedAt: Date.now(),
+      };
+      await saveWorkspace(snapshot);
+      await clearLocalGitState(workspace.id);
+
+      for (const overlay of overlays) {
+        const remoteEntry = remoteTree.tree.find(
+          (entry) => entry.type === "blob" && entry.path === overlay.path,
+        );
+        if (overlay.status === "deleted" && !remoteEntry) {
+          await removeOverlay(workspace.id, overlay.path);
+          continue;
+        }
+        if (overlay.status === "added" || overlay.status === "renamed") {
+          if (remoteEntry) {
+            await saveOverlay({
+              ...overlay,
+              status: "modified",
+              baseSha: remoteEntry.sha,
+              renamedFrom: undefined,
+              updatedAt: Date.now(),
+            });
+          }
+        }
+      }
+
+      setWorkspace(snapshot);
+      setRemoteHeadSha(parentSha);
+      setRecent(rememberWorkspace(snapshot));
+      await loadLocalState(workspace.id);
+      return parentSha;
+    } finally {
+      setLoading(false);
+    }
+  }, [commits, loadLocalState, overlays, refs, token, workspace]);
+
+  const exportPatch = useCallback(async () => {
+    if (!workspace) throw new Error("No workspace is open.");
+    const paths = new Set<string>();
+    for (const file of committedFiles) paths.add(file.path);
+    for (const file of overlays) paths.add(file.path);
+
+    const parts: string[] = [];
+    for (const path of [...paths].sort()) {
+      const remoteEntry = workspace.tree.find(
+        (entry) => entry.type === "blob" && entry.path === path,
+      );
+      let before: string | null = null;
+      let after: string | null = null;
+      if (remoteEntry) before = await readBaseFile(path, remoteEntry.sha);
+      try {
+        after = await readFile(path);
+      } catch {
+        after = null;
+      }
+      if (before === after) continue;
+      parts.push(wholeFilePatch(path, before, after));
+    }
+
+    if (!parts.length) throw new Error("There are no local changes to export.");
+    const filename = `${workspace.repository.name}-${workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-")}.patch`;
+    downloadText(parts.join("\n"), filename, "text/x-patch;charset=utf-8");
+  }, [committedFiles, overlays, readBaseFile, readFile, workspace]);
+
+  const exportWorkspaceZip = useCallback(async () => {
+    if (!workspace) throw new Error("No workspace is open.");
+    setLoading(true);
+    setError(null);
+    try {
+      const files = virtualFiles(workspace.tree, committedFiles, overlays);
+      const zipFiles = [];
+      for (const file of files) {
+        const bytes = file.content !== undefined
+          ? new TextEncoder().encode(file.content)
+          : file.sha
+            ? await getGithubBlobBytes(workspace.repository.fullName, file.sha, token)
+            : new Uint8Array();
+        zipFiles.push({ path: file.path, bytes });
+      }
+      const archive = createStoredZip(zipFiles);
+      const filename = `${workspace.repository.name}-${workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-")}-workspace.zip`;
+      downloadBytes(archive, filename, "application/zip");
+    } finally {
+      setLoading(false);
+    }
+  }, [committedFiles, overlays, token, workspace]);
+
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       token,
@@ -655,6 +863,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       unstageAll,
       discardFile,
       commitStaged,
+      createBranch,
+      pushLocalCommits,
+      exportPatch,
+      exportWorkspaceZip,
     }),
     [
       token,
@@ -690,6 +902,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       unstageAll,
       discardFile,
       commitStaged,
+      createBranch,
+      pushLocalCommits,
+      exportPatch,
+      exportWorkspaceZip,
     ],
   );
 
