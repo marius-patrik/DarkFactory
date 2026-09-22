@@ -130,16 +130,22 @@ Local changes must survive reloads.
 
 # 2. GitHub authentication
 
-Use the existing GitHub App or a GitHub App configured as a **public client** suitable for a static browser application.
+The IDE must remain fully static and must not embed a GitHub client secret.
 
-Preferred authentication:
+GitHub's current GitHub App authorization-code exchange requires a client secret even when PKCE is used. That conflicts with the hard static/no-secret boundary, so the browser baseline uses an explicitly supplied GitHub user token (preferably fine-grained) stored in `sessionStorage` only.
 
-- authorization-code flow with PKCE;
-- no client secret embedded in the Pages bundle;
-- narrow repository permissions;
-- user-controlled sign-in/sign-out;
-- session-oriented token handling by default;
-- persistent credential storage only if it can be done responsibly and explicitly.
+Authentication behavior:
+
+- public repositories remain usable without authentication;
+- private or otherwise restricted repositories use an explicit user-supplied token;
+- validate the token against GitHub before storing it;
+- keep the token session-scoped by default;
+- clear it on sign-out;
+- request/use only repository permissions needed by implemented features;
+- do not persist credentials across browser sessions unless a later explicit design provides an appropriate secure mechanism;
+- do not reintroduce a browser OAuth exchange that requires shipping a client secret.
+
+If GitHub later provides a secretless browser-safe GitHub App exchange compatible with this static architecture, that flow may replace manual session-token connection without changing the workspace/Git API layers.
 
 Request only permissions needed by implemented features.
 
@@ -1343,7 +1349,7 @@ Exit:
 
 Implement:
 
-- GitHub App PKCE authentication;
+- session-scoped GitHub token authentication compatible with the static/no-secret boundary;
 - repository picker;
 - repository URL opening;
 - recent workspaces;
