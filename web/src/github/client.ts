@@ -134,6 +134,27 @@ export type GithubWorkflowJob = {
   html_url?: string;
 };
 
+export type GithubCheckRun = {
+  id: number;
+  name: string;
+  status: string;
+  conclusion: string | null;
+  html_url: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type GithubPullRequestFile = {
+  sha: string;
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch?: string;
+  blob_url: string;
+};
+
 export type GithubArtifact = {
   id: number;
   name: string;
@@ -575,6 +596,40 @@ export function updateGithubPullRequest(
   );
 }
 
+export function listGithubPullRequestCommits(
+  fullName: string,
+  number: number,
+  token: string | null,
+) {
+  return githubFetch<GithubCommit[]>(
+    `/repos/${fullName}/pulls/${number}/commits?per_page=100`,
+    token,
+  );
+}
+
+export function listGithubPullRequestFiles(
+  fullName: string,
+  number: number,
+  token: string | null,
+) {
+  return githubFetch<GithubPullRequestFile[]>(
+    `/repos/${fullName}/pulls/${number}/files?per_page=100`,
+    token,
+  );
+}
+
+export async function listGithubCheckRuns(
+  fullName: string,
+  ref: string,
+  token: string | null,
+) {
+  const result = await githubFetch<{ total_count: number; check_runs: GithubCheckRun[] }>(
+    `/repos/${fullName}/commits/${encodeURIComponent(ref)}/check-runs?per_page=100`,
+    token,
+  );
+  return result.check_runs;
+}
+
 export function createGithubPullRequestReview(
   fullName: string,
   number: number,
@@ -674,6 +729,44 @@ export function cancelGithubWorkflowRun(fullName: string, id: number, token: str
   );
 }
 
+async function githubDownload(
+  path: string,
+  token: string | null,
+): Promise<Uint8Array> {
+  const response = await fetch(`https://api.github.com${path}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    redirect: "follow",
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || `GitHub download failed (${response.status})`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+export function downloadGithubJobLogs(
+  fullName: string,
+  jobId: number,
+  token: string | null,
+) {
+  return githubDownload(`/repos/${fullName}/actions/jobs/${jobId}/logs`, token);
+}
+
+export function downloadGithubArtifact(
+  fullName: string,
+  artifactId: number,
+  token: string | null,
+) {
+  return githubDownload(
+    `/repos/${fullName}/actions/artifacts/${artifactId}/zip`,
+    token,
+  );
+}
+
 export function listGithubReleases(fullName: string, token: string | null) {
   return githubFetch<GithubRelease[]>(`/repos/${fullName}/releases?per_page=100`, token);
 }
@@ -738,6 +831,33 @@ export async function listGithubProjects(fullName: string, token: string | null)
   return data.repository?.projectsV2.nodes ?? [];
 }
 
+export async function updateGithubProject(
+  projectId: string,
+  patch: {
+    title?: string;
+    shortDescription?: string;
+    closed?: boolean;
+    public?: boolean;
+    readme?: string;
+  },
+  token: string | null,
+) {
+  const data = await githubGraphql<{
+    updateProjectV2: { projectV2: GithubProject | null } | null;
+  }>(
+    `mutation UpdateProject($input: UpdateProjectV2Input!) {
+      updateProjectV2(input: $input) {
+        projectV2 { id number title shortDescription closed url }
+      }
+    }`,
+    { input: { projectId, ...patch } },
+    token,
+  );
+  const project = data.updateProjectV2?.projectV2;
+  if (!project) throw new Error("GitHub did not return the updated project.");
+  return project;
+}
+
 export async function getGithubProject(fullName: string, number: number, token: string | null) {
   const [owner, name] = fullName.split("/");
   const data = await githubGraphql<{
@@ -798,8 +918,13 @@ export async function getGithubProject(fullName: string, number: number, token: 
   };
 }
 
-export async function searchGithubCode(fullName: string, query: string, token: string | null) {
-  const q = encodeURIComponent(`${query} repo:${fullName}`);
+export async function searchGithubCode(
+  fullName: string | null,
+  query: string,
+  token: string | null,
+) {
+  const scoped = fullName ? `${query} repo:${fullName}` : query;
+  const q = encodeURIComponent(scoped);
   const result = await githubFetch<{ total_count: number; items: GithubSearchItem[] }>(
     `/search/code?q=${q}&per_page=100`,
     token,
