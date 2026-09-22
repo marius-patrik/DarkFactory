@@ -1,44 +1,135 @@
 # Goal
 
-Turn the DarkFactory thesis into a **proper academic paper**.
+## Thesis destination
 
-Do not approach this as an edit, cleanup, restructuring pass, or preservation exercise over the manuscript.
+Produce a rigorous, coherent academic thesis about **DarkFactory and agentic software development**.
 
-Treat the existing thesis as **source material**: research, citations, ideas, evidence, terminology, figures, and implementation context that may be reused where they genuinely belong.
+The finished paper should not feel like a catalogue of AI terminology or a record of how the repository evolved. It should read as one authored argument whose theory, practical contribution, evidence, and conclusions all exist for the same reason.
 
-The objective is to produce the best coherent thesis that should exist from that material.
+The paper should leave the reader with a clear understanding of:
 
-Write it as one complete work with a clear argument, deliberate structure, consistent voice, and natural progression from the problem through the theoretical foundation, DarkFactory itself, evaluation, and conclusions.
+- why increasingly capable language models change what can be delegated in software development;
+- why model capability alone is insufficient for a controlled engineering process;
+- what a harness contributes around model inference;
+- how Agentic Engineering turns those runtime capabilities into a disciplined development method;
+- how DarkFactory realizes those ideas as a concrete software system;
+- what the implementation and evaluation evidence actually establish.
 
-Prioritize the quality of the finished paper over preserving existing wording, ordering, sections, abstractions, definitions, examples, or presentation patterns.
+## Semantic path
 
-Use only material that contributes meaningfully to the thesis. Rewrite freely, combine ideas, move them, shorten them, or omit them where appropriate.
+The thesis should move naturally through this chain:
 
-The paper should be concise but substantial. Do not add prose simply to fill sections or make the work longer. Do not overexplain things that are already clear to the intended reader.
+**capability → engineering gap → harness → Agentic Engineering → DarkFactory → evidence → conclusions**
 
-Use headings only where they represent meaningful parts of the argument. Within sections, prefer connected academic prose over fragmented definitions or individually packaged concepts.
+### Capability
 
-Maintain rigorous sourcing. Claims that depend on external facts, research, specifications, documentation, or evidence should be supported by appropriate citations. Sources should strengthen the argument rather than dictate the shape of the writing.
+Begin with the relevant change in what language models can do.
 
-DarkFactory should be the concrete subject of the practical contribution, not just another concept to define. The surrounding theory should exist because it helps the reader understand the problem DarkFactory addresses, the engineering principles behind it, and the significance of the resulting system.
+The purpose is not to survey AI broadly, but to establish why software-development tasks can increasingly be delegated to model-driven systems.
 
-Evaluation and discussion should make clear what the available evidence demonstrates, what it does not demonstrate, and how the findings answer the questions the thesis actually sets out to investigate.
+### Engineering gap
 
-Use clean, conventional academic formatting and keep the underlying Typst implementation simple. The source should serve the paper, not impose a content architecture on it.
+Show the difference between producing plausible model output and carrying out a controlled software-engineering process.
 
-Most importantly, read the work as a reader would.
+This is the problem the thesis needs to solve.
 
-Continuously judge the manuscript at the level of the whole paper:
+### Harness
 
-- Is there a clear reason for this material to be here?
-- Does the argument progress naturally?
-- Does each section contribute to what follows?
-- Is anything being repeated?
-- Is anything explained more deeply than necessary?
-- Is an important connection only implied when it should be explicit?
-- Does the evidence actually support the conclusion being drawn?
-- Does the thesis feel like one authored work?
+Introduce the harness as the runtime that turns isolated model inference into sustained interaction with state, tools, an environment, and control mechanisms.
 
-Make whatever changes are necessary to answer those questions well.
+The theory should explain only the mechanisms needed to understand the later system.
 
-The final result should be a polished, coherent, evidence-based academic thesis about DarkFactory—not a refined version of the manuscript structure.
+### Agentic Engineering
+
+Develop Agentic Engineering as the engineering discipline for using those capabilities deliberately.
+
+The emphasis belongs on specification, bounded work, context, controlled effects, verification, integration, recovery, and orchestration where those ideas materially contribute to the argument.
+
+### DarkFactory
+
+Make DarkFactory the concrete practical contribution.
+
+Its architecture should be explained from implementation truth and in terms of the engineering problems it solves, rather than as a package inventory.
+
+The practical chapter should make the relationship between the theoretical ideas and the implemented system visible without restating the theory.
+
+### Evidence
+
+Evaluate DarkFactory from reproducible evidence.
+
+Separate:
+- what is directly observed;
+- what those observations support;
+- what remains outside the evidence.
+
+The research questions, results, discussion, and conclusion should all be traceable to that evidence.
+
+### Conclusions
+
+End by answering the actual research problem.
+
+The conclusion should synthesize the contribution and evidence, state the strongest limitations, and make clear what has genuinely been demonstrated.
+
+## Writing standard
+
+The paper should be concise, technically precise, and easy to follow.
+
+Every section should have a reason to exist in the argument.
+
+Every paragraph should contribute through one or more of:
+- explanation needed for what follows;
+- evidence;
+- interpretation;
+- limitation;
+- a substantive connection between ideas.
+
+Prefer direct statements over document narration.
+
+Introduce terminology in prose at the point where it is needed.
+
+Explain concepts only to the depth required by the thesis.
+
+Use sources to support the argument, not to determine the shape of the writing.
+
+Prefer original research, specifications, and first-party technical documentation for factual and mechanistic claims.
+
+Avoid repetition by establishing a mechanism or result once and relying on it later.
+
+## Proportion
+
+The paper should spend space according to importance to the thesis:
+
+- enough model theory to understand the harness problem;
+- enough harness theory to understand the runtime;
+- enough Agentic Engineering to understand the methodology;
+- substantial attention to DarkFactory as the original practical contribution;
+- substantial attention to evidence and limitations.
+
+Technical detail that does not help the reader understand DarkFactory, its engineering rationale, or its evaluation should not dominate the paper.
+
+## Reader experience
+
+A reader should be able to move from the opening problem to the final conclusion without needing to reconstruct the thesis argument themselves.
+
+The relationship between chapters should be apparent from the reasoning, not from repeated statements about document structure.
+
+Figures, tables, terminology, citations, and code excerpts should appear because they make the argument or evidence clearer.
+
+The paper should feel consistent in voice and level of abstraction from beginning to end.
+
+## Final standard
+
+The final thesis is complete when it can be read independently as a polished academic work in which:
+
+- the research problem is clear;
+- the theoretical material is necessary and proportionate;
+- DarkFactory is explained as the practical contribution;
+- factual claims are sourced;
+- implementation claims are tied to a pinned system revision;
+- evaluation is reproducible;
+- conclusions follow from evidence;
+- limitations are explicit;
+- formatting satisfies the school contract;
+- no section exists merely because material happened to be available.
+
+The repository, build system, evidence model, and publication tooling exist to support this paper.
