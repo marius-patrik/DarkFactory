@@ -63,7 +63,7 @@ export function BrowserTab({
         ) : (
           <>
             {loading && <div className="browser-loading">Loading…</div>}
-            <iframe key={`${current}:${revision}`} title={current} src={current} onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFrameError(true); }} />
+            <iframe key={`${current}:${revision}`} title={current} src={current} sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts" referrerPolicy="no-referrer" onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFrameError(true); }} />
           </>
         )}
       </div>
