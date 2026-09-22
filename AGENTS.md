@@ -141,7 +141,7 @@ Agentické inženýrství is owned by the numbered section itself; there is no d
   - Subagent
   - Orchestrátor (Orchestrator)
   - Předání řízení (Handoff)
-  - Pracovní graf (Workflow Graph)
+  - Graf pracovního postupu (Workflow Graph)
 - 2.5.5 Závěr
 
 DAG is currently a property/special case discussed inside Workflow Graph, not a standalone article.
