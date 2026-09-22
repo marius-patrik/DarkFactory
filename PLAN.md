@@ -488,7 +488,7 @@ Section 1 owns the research motivation, argument, goals, questions, methodology,
 Required evidence in Section 1:
 - restore the broad **AI adoption/usage statistic**;
 - restore the previous **dot-style adoption/usage diagram**;
-- explicitly contrast broad AI adoption with the still-low measured usage of coding agents, using a real directly measured source for coding-agent usage;
+- explicitly contrast broad AI adoption with the still-low estimated usage of coding agents using the user-selected Gradually 2026 source, with its editorial-estimate caveat preserved;
 - include the **long-term model capability/improvement curves** from a stable longitudinal source;
 - keep these as motivation/context, not as a detailed benchmark survey.
 
@@ -748,9 +748,9 @@ Exit:
 
 ### Phase 5 — Merge/rewrite AI-assisted development + Agentic Engineering
 
-- physically merge the old level-2 sections;
+- physically merge the old level-2 sections into the locked 2.4 hierarchy;
 - add AGENTS.md / CLAUDE.md article;
-- reorder groups into a continuous software-development argument;
+- preserve the locked group/article order while rewriting transitions into a continuous software-development argument;
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
 - source every definitional/mechanistic claim.
