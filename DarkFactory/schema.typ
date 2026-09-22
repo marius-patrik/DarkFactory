@@ -211,23 +211,10 @@
 }
 
 #let order-local(items, graph) = {
-  let keys = items.map(item => item.key)
-  let result = ()
-  let remaining = keys
-  while remaining.len() > 0 {
-    let progressed = false
-    for key in remaining {
-      let deps = graph.dependencies.at(key)
-      if deps.filter(dep => dep in keys).all(dep => dep in result) {
-        result.push(key)
-        remaining = remaining.filter(candidate => candidate != key)
-        progressed = true
-        break
-      }
-    }
-    assert(progressed, message: "local dependency cycle")
-  }
-  result.map(key => items.find(item => item.key == key))
+  // Reading order is authored explicitly in manifests and example lists.
+  // Semantic dependency/ownership relations are validated by semantic-graph
+  // but never reorder the document.
+  items
 }
 
 #let order-folders(nodes, graph) = {
