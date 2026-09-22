@@ -460,9 +460,9 @@ The textual takeaway may state the source’s measured trend only. As of the Sep
 
 Do not replace this with a collection of unrelated benchmark bars.
 
-### 2.1 current frontier benchmark snapshot
+### Chapter 2 current frontier benchmark snapshot
 
-Exact placement: directly in the opening framing prose of **2.1 Jazykový model**, before **2.1.1 Architektura a reprezentace**.
+Exact placement: directly in the opening framing prose of **Chapter 2 Jazykový model**, before **2.1 Architektura a reprezentace**.
 
 Use **Artificial Analysis Intelligence Index v4.3.2** as the pinned current comparison for this revision unless Artificial Analysis publishes a newer stable index version before the implementation agent begins.
 
@@ -645,7 +645,7 @@ This is a manuscript-body requirement, not merely metadata:
 
 #### Locked Harness source/example pairs
 
-These are the minimum direct-source/example contracts for 2.2 Harness.
+These are the minimum direct-source/example contracts for **Chapter 3 Harness**.
 
 - **Agentní smyčka (Agent Loop)**
   - direct source: original ReAct paper;
@@ -799,7 +799,7 @@ If a side agent finds a conflict between two locked requirements, it must stop t
 
 These items are intentionally unresolved until the named phase because they depend on live sources or implementation evidence.
 
-- **Exact benchmark rows and numeric values (Phase 2/3):** the selection algorithm and source are fixed, but the five model rows/values must be read from the pinned Artificial Analysis snapshot at execution time.
+- **Exact benchmark rows and numeric values (Phase 2/3):** the selection algorithm and source are fixed, but the five model rows/values must be read from the pinned Artificial Analysis snapshot at execution time and rendered in Chapter 2.
 - **Exact ECI plotted datapoints (Phase 2):** source/series are fixed; use the source dataset rather than hand-entering approximations from prose.
 - **Exact screenshot files/URLs (Phase 4):** products and documentation can change. Select the current real first-party screenshots at execution time under the fixed screenshot contract.
 - **Exact diagram coordinates, dimensions, typography, and spacing (Phases 3/4):** semantic contents are fixed; visual geometry is an implementation detail so long as it satisfies the rendering contracts and survives PDF inspection.
