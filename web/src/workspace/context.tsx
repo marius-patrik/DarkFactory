@@ -66,6 +66,8 @@ import {
   wholeFilePatch,
 } from "./export";
 
+export type PatchExportScope = "all" | "working" | "staged" | "commits" | "commit";
+
 type WorkspaceContextValue = {
   token: string | null;
   user: GithubUser | null;
@@ -104,7 +106,7 @@ type WorkspaceContextValue = {
   commitStaged: (message: string) => Promise<LocalCommit>;
   createBranch: (branch: string) => Promise<void>;
   pushLocalCommits: () => Promise<string>;
-  exportPatch: () => Promise<void>;
+  exportPatch: (scope?: PatchExportScope, commitId?: string) => Promise<void>;
   exportWorkspaceZip: () => Promise<void>;
   exportRemoteArchive: () => Promise<void>;
 };
@@ -906,33 +908,119 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [commits, loadLocalState, overlays, refs, token, workspace]);
 
-  const exportPatch = useCallback(async () => {
+  const exportPatch = useCallback(async (
+    scope: PatchExportScope = "all",
+    commitId?: string,
+  ) => {
     if (!workspace) throw new Error("No workspace is open.");
-    const paths = new Set<string>();
-    for (const file of committedFiles) paths.add(file.path);
-    for (const file of overlays) paths.add(file.path);
+
+    const readRemote = async (path: string): Promise<string | null> => {
+      const entry = workspace.tree.find(
+        (candidate) => candidate.type === "blob" && candidate.path === path,
+      );
+      return entry ? readBaseFile(path, entry.sha) : null;
+    };
+
+    const readCommitted = async (path: string): Promise<string | null> => {
+      const committed = committedFiles.find((candidate) => candidate.path === path);
+      if (committed) {
+        if (committed.deleted) return null;
+        if (committed.content !== undefined) return committed.content;
+      }
+      return readRemote(path);
+    };
+
+    const contentAfter = (
+      file: WorkingFile | StagedFile,
+      before: string | null,
+    ) => file.status === "deleted" ? null : file.content ?? before;
 
     const parts: string[] = [];
-    for (const path of [...paths].sort()) {
-      const remoteEntry = workspace.tree.find(
-        (entry) => entry.type === "blob" && entry.path === path,
-      );
-      let before: string | null = null;
-      let after: string | null = null;
-      if (remoteEntry) before = await readBaseFile(path, remoteEntry.sha);
-      try {
-        after = await readFile(path);
-      } catch {
-        after = null;
-      }
-      if (before === after) continue;
+    const appendPatch = (
+      path: string,
+      before: string | null,
+      after: string | null,
+    ) => {
+      if (before === after) return;
       parts.push(wholeFilePatch(path, before, after));
+    };
+
+    if (scope === "working") {
+      for (const file of [...overlays].sort((left, right) => left.path.localeCompare(right.path))) {
+        const before = await readCommitted(file.path);
+        appendPatch(file.path, before, contentAfter(file, before));
+      }
+    } else if (scope === "staged") {
+      for (const file of [...staged].sort((left, right) => left.path.localeCompare(right.path))) {
+        const before = await readCommitted(file.path);
+        appendPatch(file.path, before, contentAfter(file, before));
+      }
+    } else if (scope === "commits") {
+      for (const file of [...committedFiles].sort((left, right) => left.path.localeCompare(right.path))) {
+        const before = await readRemote(file.path);
+        const after = file.deleted ? null : file.content ?? before;
+        appendPatch(file.path, before, after);
+      }
+    } else if (scope === "commit") {
+      const targetIndex = commits.findIndex((candidate) => candidate.id === commitId);
+      if (targetIndex < 0) throw new Error("Local commit was not found.");
+      const target = commits[targetIndex];
+      const targetFiles = new Map(target.files.map((file) => [file.path, file]));
+
+      for (const path of [...targetFiles.keys()].sort()) {
+        let before = await readRemote(path);
+        for (let index = 0; index < targetIndex; index += 1) {
+          const prior = commits[index].files.find((file) => file.path === path);
+          if (prior) before = contentAfter(prior, before);
+        }
+        const file = targetFiles.get(path);
+        if (!file) continue;
+        appendPatch(path, before, contentAfter(file, before));
+      }
+    } else {
+      const paths = new Set<string>();
+      for (const file of committedFiles) paths.add(file.path);
+      for (const file of overlays) paths.add(file.path);
+
+      for (const path of [...paths].sort()) {
+        const before = await readRemote(path);
+        let after: string | null = null;
+        try {
+          after = await readFile(path);
+        } catch {
+          after = null;
+        }
+        appendPatch(path, before, after);
+      }
     }
 
-    if (!parts.length) throw new Error("There are no local changes to export.");
-    const filename = `${workspace.repository.name}-${workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-")}.patch`;
-    downloadText(parts.join("\n"), filename, "text/x-patch;charset=utf-8");
-  }, [committedFiles, overlays, readBaseFile, readFile, workspace]);
+    if (!parts.length) throw new Error("There are no changes in this patch scope.");
+
+    const ref = workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-");
+    let suffix = scope;
+    if (scope === "commit") {
+      const target = commits.find((candidate) => candidate.id === commitId);
+      const label = target?.message
+        .trim()
+        .slice(0, 48)
+        .replace(/[^A-Za-z0-9._-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      suffix = label ? `commit-${label}` : "commit";
+    }
+    downloadText(
+      parts.join("\n"),
+      `${workspace.repository.name}-${ref}-${suffix}.patch`,
+      "text/x-patch;charset=utf-8",
+    );
+  }, [
+    committedFiles,
+    commits,
+    overlays,
+    readBaseFile,
+    readFile,
+    staged,
+    workspace,
+  ]);
 
   const exportWorkspaceZip = useCallback(async () => {
     if (!workspace) throw new Error("No workspace is open.");

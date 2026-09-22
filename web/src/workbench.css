@@ -2106,3 +2106,25 @@ a {
 .github-inline-action:hover {
   background: var(--surface-2);
 }
+
+
+.local-commit-export {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 3px 5px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.local-commit-export:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}

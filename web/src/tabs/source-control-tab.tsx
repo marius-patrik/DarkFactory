@@ -13,6 +13,12 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
 import { useWorkspace } from "@/workspace/context";
 import type { LocalCommit, StagedFile, WorkingFile } from "@/workspace/model";
@@ -48,7 +54,13 @@ function ChangeRow({
   );
 }
 
-function CommitRow({ commit }: { commit: LocalCommit }) {
+function CommitRow({
+  commit,
+  onExport,
+}: {
+  commit: LocalCommit;
+  onExport: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="local-commit">
@@ -60,6 +72,9 @@ function CommitRow({ commit }: { commit: LocalCommit }) {
       {open && (
         <div className="local-commit-files">
           {commit.files.map((file) => <span key={file.path}>{file.status}: {file.path}</span>)}
+          <button type="button" className="local-commit-export" onClick={onExport}>
+            <Download size={11} /> Export commit patch
+          </button>
         </div>
       )}
     </div>
@@ -118,7 +133,40 @@ export function SourceControlTab() {
           {diverged && <button type="button" disabled={busy} onClick={() => void run(workspace.syncWorkspace)} title="Sync onto remote head when touched paths do not conflict"><GitMerge size={12} /></button>}
           <button type="button" disabled={busy || !workspace.token} onClick={() => void run(createBranch)} title="Create branch"><GitBranch size={12} /></button>
           <button type="button" disabled={busy || !workspace.commits.length || !workspace.token || !branchWorkspace || Boolean(diverged)} onClick={() => void run(workspace.pushLocalCommits)} title="Push local commits"><Upload size={12} /></button>
-          <button type="button" disabled={busy || (!workspace.overlays.length && !workspace.commits.length)} onClick={() => void run(workspace.exportPatch)} title="Export patch"><Download size={12} /></button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={busy || (!workspace.overlays.length && !workspace.staged.length && !workspace.commits.length)}
+                title="Export patch"
+              >
+                <Download size={12} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => void run(() => workspace.exportPatch("all"))}>
+                All local changes
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!workspace.overlays.length}
+                onSelect={() => void run(() => workspace.exportPatch("working"))}
+              >
+                Working tree
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!workspace.staged.length}
+                onSelect={() => void run(() => workspace.exportPatch("staged"))}
+              >
+                Staged changes
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!workspace.commits.length}
+                onSelect={() => void run(() => workspace.exportPatch("commits"))}
+              >
+                All local commits
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button type="button" disabled={busy} onClick={() => void run(workspace.exportWorkspaceZip)} title="Export current workspace ZIP"><Archive size={12} /></button>
           <button type="button" disabled={busy} onClick={() => void run(workspace.exportRemoteArchive)} title="Download remote ref ZIP"><Archive size={12} /></button>
         </div>
@@ -187,7 +235,13 @@ export function SourceControlTab() {
           <strong>Local Commits</strong>
           <span>{workspace.commits.length}</span>
         </header>
-        {workspace.commits.map((commit) => <CommitRow key={commit.id} commit={commit} />)}
+        {workspace.commits.map((commit) => (
+          <CommitRow
+            key={commit.id}
+            commit={commit}
+            onExport={() => void run(() => workspace.exportPatch("commit", commit.id))}
+          />
+        ))}
       </section>
 
       {!workspace.overlays.length && !workspace.staged.length && !workspace.commits.length && (
