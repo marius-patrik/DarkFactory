@@ -270,7 +270,7 @@
   let output = if item.kind == "example" {
     let body = (item.description)(terms)
     if item.title != none {
-      [#block[#strong[#item.title.] #body]#label("example-" + item.key)]
+      [#block[#strong[#(item.title).] #body]#label("example-" + item.key)]
     } else {
       [#block[#body]#label("example-" + item.key)]
     }
