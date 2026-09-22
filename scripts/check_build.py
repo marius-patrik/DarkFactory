@@ -206,6 +206,7 @@ require_contract(
         "#let collect-concepts(folders)",
         "#let build-vocabulary(folders)",
         "#let render-concept-title(item) = term-full-name(item)",
+        "Reading order is authored explicitly in manifests",
         "#let render-inline-example(item, terms, graph)",
         "#let render-concept(item, terms, graph, level: 1, title: none)",
         "#let render-section-body(item, terms, graph)",
