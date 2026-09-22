@@ -1,5 +1,11 @@
 import { useMemo, useRef, useState } from "react";
-import { DockviewDefaultTab, DockviewReact, themeAbyss, themeLight } from "dockview-react";
+import {
+  DockviewDefaultTab,
+  DockviewReact,
+  themeAbyss,
+  themeLight,
+  type ContextMenuItem,
+} from "dockview-react";
 import { EmptyWorkbench } from "./empty-workbench";
 import { LauncherButton } from "./launcher";
 import type { WorkbenchSurface, WorkbenchTab } from "./model";
@@ -42,6 +48,42 @@ export function WorkbenchSurfaceView({
   const HeaderActions = useMemo(() => () => <LauncherButton surface={surface} />, [surface]);
   const dockTheme = runtime.settings.theme === "light" ? themeLight : themeAbyss;
 
+  const tabContextMenuItems = (params: any): ContextMenuItem[] => {
+    const tab = paramsOf(params.panel);
+    if (!tab) return [];
+
+    const groupPanels = (params.api?.panels ?? []).filter(
+      (candidate: any) => candidate.api?.group?.id === params.group?.id,
+    );
+    const hasProtectedPeer = groupPanels.some((candidate: any) => {
+      if (candidate.id === params.panel.id) return false;
+      return paramsOf(candidate)?.pinned === true;
+    });
+
+    const items: ContextMenuItem[] = [
+      {
+        label: tab.pinned ? "Unpin" : "Pin",
+        action: () => runtimeRef.current.setPinned(tab.id, !tab.pinned),
+      },
+      "separator",
+    ];
+
+    if (!hasProtectedPeer) {
+      items.push("closeOthers", "closeRight");
+    }
+
+    items.push(
+      {
+        label: "Close",
+        disabled: tab.pinned,
+        action: () => runtimeRef.current.closeTab(tab.id),
+      },
+      "separator",
+      "maximize",
+    );
+    return items;
+  };
+
   return (
     <div className={`workbench-surface workbench-surface-${surface}`}>
       <DockviewReact
@@ -51,6 +93,7 @@ export function WorkbenchSurfaceView({
         tabComponents={tabComponents}
         defaultRenderer="always"
         rightHeaderActionsComponent={HeaderActions}
+        getTabContextMenuItems={tabContextMenuItems}
         onReady={(event: any) => {
           const api = event.api;
           onReady(surface, api);
