@@ -3,8 +3,7 @@
 
 #let item = concept(
   key: "scripts",
-  term: "Skripty",
-  keyword: "Scripts",
+  term: "Skript",
   citation: (bib.agent_skills_spec, bib.claude_code_plugins),
   source: bib.claude_code_plugins,
   definition: terms => [
