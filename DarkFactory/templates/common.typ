@@ -272,7 +272,7 @@
 #let term-full-name(value) = {
   semantic-term(value)
   if value.term != none and value.keyword != none {
-    [#value.term (#value.keyword)]
+    [#(value.term) (#(value.keyword))]
   } else if value.term != none {
     value.term
   } else {
