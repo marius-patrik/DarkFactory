@@ -3,7 +3,7 @@
 
 #let item = concept(
   key: "workflow_graphs",
-  term: "Pracovní graf",
+  term: "Graf pracovního postupu",
   keyword: "Workflow Graph",
   citation: (bib.wu2023autogen, bib.anthropic2024tooluse),
   source: bib.wu2023autogen,
