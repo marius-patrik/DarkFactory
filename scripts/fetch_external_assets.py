@@ -17,6 +17,14 @@ ASSETS = (
         "path": "karpathy-vibe-coding.png",
         "url": "https://www.coderabbit.ai/content/assets/a-semantic-history-how-the-term-vibe-coding-went-from-a-tweet-to-prod-inline-image.png",
     },
+    {
+        "path": "claude-code-interface.png",
+        "url": "https://www-cdn.anthropic.com/images/4zrzovbb/website/3613f360926fae004521197488623465eb0cd751-1920x1035.png",
+    },
+    {
+        "path": "antigravity-ide-interface.png",
+        "url": "https://codelabs.developers.google.com/static/getting-started-agy-ide/img/d1465bea8316f991.png",
+    },
 )
 
 

@@ -1,138 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="920" height="540">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420">
   <defs>
-    <!-- Arrowhead markers -->
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#222"/>
     </marker>
-    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
-    </marker>
-    <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669" />
-    </marker>
-    <marker id="arrow-violet" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#7c3aed" />
-    </marker>
-    <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706" />
-    </marker>
-
-    <!-- Filters for subtle shadow -->
-    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.08" />
-    </filter>
   </defs>
-
   <style>
-    .title-text { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-weight: bold; font-size: 14px; }
-    .sub-text { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 11.5px; }
-    .edge-label { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 600; fill: #475569; }
-    .code-badge { font-family: 'Courier New', monospace; font-size: 10.5px; }
-    .loop-badge { font-family: 'Carlito', 'Caladea', system-ui, -apple-system, sans-serif; font-weight: bold; font-size: 11.5px; fill: #047857; }
+    .box { fill: #fff; stroke: #222; stroke-width: 2; }
+    .soft { fill: #f2f2f2; stroke: #222; stroke-width: 2; }
+    .label { font-family: Caladea, serif; font-size: 22px; font-weight: 700; fill: #111; }
+    .sub { font-family: Caladea, serif; font-size: 16px; fill: #333; }
+    .edge { fill: none; stroke: #222; stroke-width: 2.2; marker-end: url(#arrow); }
+    .edge-label { font-family: Caladea, serif; font-size: 15px; fill: #333; }
   </style>
-
-  <!-- Background container -->
-  <rect x="10" y="10" width="900" height="520" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
-
-  <!-- Outer harness boundary box -->
-  <rect x="230" y="28" width="660" height="485" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4" />
-  <text x="250" y="52" class="edge-label" fill="#64748b" font-size="12">AGENT HARNESS &amp; PROSTŘEDÍ</text>
-
-  <!-- 1. Uživatel (User) -->
-  <g filter="url(#shadow)">
-    <rect x="35" y="145" width="155" height="80" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8" />
-    <circle cx="112.5" cy="173" r="14" fill="#cbd5e1" />
-    <path d="M 98 206 A 14 14 0 0 1 127 206 Z" fill="#cbd5e1" />
-    <text x="112.5" y="215" text-anchor="middle" class="title-text" fill="#0f172a">Uživatel</text>
-  </g>
-
-  <!-- Arrow User -> Context -->
-  <path d="M 190 175 L 268 175" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)" />
-  <rect x="195" y="153" width="70" height="18" rx="4" fill="#eff6ff" />
-  <text x="230" y="166" text-anchor="middle" class="edge-label" fill="#1d4ed8">1. Zadání</text>
-
-  <!-- 2. Kontext a historie (Context Window) -->
-  <g filter="url(#shadow)">
-    <rect x="270" y="130" width="180" height="110" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2" />
-    <rect x="282" y="142" width="156" height="24" rx="5" fill="#e0e7ff" />
-    <text x="360" y="158" text-anchor="middle" class="title-text" fill="#312e81">Kontext konverzace</text>
-    <text x="360" y="180" text-anchor="middle" class="sub-text" fill="#4338ca">• System prompt &amp; pravidla</text>
-    <text x="360" y="198" text-anchor="middle" class="sub-text" fill="#4338ca">• Historie zpráv (Turns)</text>
-    <text x="360" y="216" text-anchor="middle" class="sub-text" fill="#4338ca">• Výstupy nástrojů (Log)</text>
-  </g>
-
-  <!-- Arrow Context -> Inference -->
-  <path d="M 450 185 L 518 185" fill="none" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-violet)" />
-  <rect x="456" y="165" width="60" height="18" rx="4" fill="#f5f3ff" />
-  <text x="486" y="178" text-anchor="middle" class="edge-label" fill="#6d28d9">Tokeny</text>
-
-  <!-- 3. Inference & Myšlenka (Reasoning / Thought) -->
-  <g filter="url(#shadow)">
-    <rect x="520" y="115" width="200" height="140" rx="10" fill="#faf5ff" stroke="#a855f7" stroke-width="2" />
-    <rect x="532" y="127" width="176" height="26" rx="5" fill="#f3e8ff" />
-    <text x="620" y="145" text-anchor="middle" class="title-text" fill="#581c87">LLM Inference &amp; Rozvaha</text>
-    <text x="620" y="172" text-anchor="middle" class="title-text" fill="#7e22ce">„Myšlenka“ (Thought)</text>
-    <text x="620" y="193" text-anchor="middle" class="sub-text" fill="#6b21a8">Model analyzuje stav,</text>
-    <text x="620" y="210" text-anchor="middle" class="sub-text" fill="#6b21a8">plánuje další krok a rozhodne:</text>
-    <text x="620" y="235" text-anchor="middle" class="edge-label" fill="#581c87">Akce vs. Dokončení</text>
-  </g>
-
-  <!-- Branch A: Odevzdání výsledku (Final Output) -->
-  <path d="M 620 115 L 620 78 L 112.5 78 L 112.5 143" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-emerald)" />
-  <rect x="300" y="66" width="180" height="24" rx="4" fill="#ecfdf5" stroke="#a7f3d0" />
-  <text x="390" y="82" text-anchor="middle" class="edge-label" fill="#047857">Cíl splněn: Finální odpověď</text>
-
-  <!-- Branch B: Tool Call -->
-  <path d="M 620 255 L 620 308" fill="none" stroke="#d97706" stroke-width="2" marker-end="url(#arrow-amber)" />
-  <rect x="548" y="272" width="144" height="20" rx="4" fill="#fffbeb" />
-  <text x="620" y="286" text-anchor="middle" class="edge-label" fill="#b45309">Potřeba akce (Act)</text>
-
-  <!-- 4. Tool Call (JSON/Bash) -->
-  <g filter="url(#shadow)">
-    <rect x="525" y="310" width="190" height="86" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" />
-    <rect x="537" y="322" width="166" height="24" rx="5" fill="#fef3c7" />
-    <text x="620" y="338" text-anchor="middle" class="title-text" fill="#78350f">Volání nástroje (Tool Call)</text>
-    <text x="620" y="362" text-anchor="middle" class="code-badge" fill="#92400e">{"name": "grep", "args": {...}}</text>
-    <text x="620" y="380" text-anchor="middle" class="sub-text" fill="#b45309">nebo Bash / Code execution</text>
-  </g>
-
-  <!-- Arrow Tool Call -> Execution Environment -->
-  <path d="M 715 353 L 758 353" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
-
-  <!-- 5. Výkonné prostředí (Execution Environment) -->
-  <g filter="url(#shadow)">
-    <rect x="760" y="300" width="120" height="110" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="2" />
-    <rect x="768" y="310" width="104" height="24" rx="5" fill="#ccfbf1" />
-    <text x="820" y="326" text-anchor="middle" class="title-text" fill="#115e59">Prostředí</text>
-    <text x="820" y="348" text-anchor="middle" class="sub-text" fill="#0f766e">• Sandbox / OS</text>
-    <text x="820" y="368" text-anchor="middle" class="sub-text" fill="#0f766e">• Soubory / Git</text>
-    <text x="820" y="388" text-anchor="middle" class="sub-text" fill="#0f766e">• MCP servery</text>
-  </g>
-
-  <!-- Arrow Execution -> Observation -->
-  <path d="M 820 410 L 820 452 L 722 452" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#arrow-emerald)" />
-
-  <!-- 6. Výstup nástroje (Observation) -->
-  <g filter="url(#shadow)">
-    <rect x="520" y="415" width="200" height="75" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
-    <rect x="532" y="425" width="176" height="24" rx="5" fill="#dcfce7" />
-    <text x="620" y="441" text-anchor="middle" class="title-text" fill="#14532d">Pozorování (Observation)</text>
-    <text x="620" y="463" text-anchor="middle" class="sub-text" fill="#15803d">Výstup z nástroje (stdout/stderr)</text>
-    <text x="620" y="478" text-anchor="middle" class="sub-text" fill="#166534">Výsledek vyhledávání / čtení souboru</text>
-  </g>
-
-  <!-- ReAct Feedback Loop Arrow: Observation -> Context Window -->
-  <path d="M 520 452 L 360 452 L 360 242" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)" />
-
-  <!-- Feedback Loop Badge & Label -->
-  <g filter="url(#shadow)">
-    <rect x="375" y="435" width="125" height="34" rx="6" fill="#dcfce7" stroke="#10b981" stroke-width="1.5" />
-    <text x="437.5" y="450" text-anchor="middle" class="loop-badge">ReAct SMYČKA</text>
-    <text x="437.5" y="463" text-anchor="middle" class="sub-text" fill="#065f46">Zpět do kontextu</text>
-  </g>
-
-  <!-- Annotation footer inside harness box -->
-  <text x="250" y="500" class="sub-text" fill="#64748b" font-style="italic">
-    Harness spravuje kontext, volání nástrojů a cyklus opakuje, dokud agent neohlásí hotovo nebo nevyžaduje vstup člověka.
-  </text>
+  <rect x="55" y="55" width="230" height="100" rx="8" class="box"/>
+  <text x="170" y="96" text-anchor="middle" class="label">Model</text>
+  <text x="170" y="124" text-anchor="middle" class="sub">inference</text>
+  <rect x="615" y="55" width="230" height="100" rx="8" class="box"/>
+  <text x="730" y="96" text-anchor="middle" class="label">Akce</text>
+  <text x="730" y="124" text-anchor="middle" class="sub">požadavek modelu</text>
+  <rect x="615" y="265" width="230" height="100" rx="8" class="soft"/>
+  <text x="730" y="305" text-anchor="middle" class="label">Nástroj / prostředí</text>
+  <text x="730" y="333" text-anchor="middle" class="sub">provedení mimo model</text>
+  <rect x="55" y="265" width="230" height="100" rx="8" class="box"/>
+  <text x="170" y="305" text-anchor="middle" class="label">Pozorování</text>
+  <text x="170" y="333" text-anchor="middle" class="sub">skutečný výsledek akce</text>
+  <path d="M 285 105 L 615 105" class="edge"/>
+  <path d="M 730 155 L 730 265" class="edge"/>
+  <path d="M 615 315 L 285 315" class="edge"/>
+  <path d="M 170 265 L 170 155" class="edge"/>
+  <rect x="355" y="175" width="190" height="70" rx="8" class="soft"/>
+  <text x="450" y="206" text-anchor="middle" class="label">Výsledek</text>
+  <text x="450" y="230" text-anchor="middle" class="sub">volitelné ukončení</text>
+  <path d="M 240 155 C 280 195, 315 210, 355 210" class="edge"/>
+  <text x="300" y="186" text-anchor="middle" class="edge-label">hotovo</text>
 </svg>

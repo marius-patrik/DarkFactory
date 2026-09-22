@@ -10,12 +10,10 @@
 #let humble2010 = <humble2010>
 #let chacon2014 = <chacon2014>
 #let vaswani2017 = <vaswani2017>
-#let anthropic_mcp = <anthropic-mcp>
 #let anthropic_prompt = <anthropic-prompt>
 #let yao2022 = <yao2022>
 #let liu2024 = <liu2024>
 #let ainslie2023 = <ainslie2023>
-#let schick2023toolformer = <schick2023toolformer>
 #let lewis2020rag = <lewis2020rag>
 #let jiang2023llmlingua = <jiang2023llmlingua>
 #let agache2020firecracker = <agache2020firecracker>
@@ -32,7 +30,6 @@
 #let willison2025vibecoding = <willison2025vibecoding>
 #let cambridge2026aislop = <cambridge2026aislop>
 #let agent_skills_spec = <agentskills-spec>
-#let openai_structured_outputs = <openai2024structuredoutputs>
 #let anthropic_code_execution = <anthropic2026codeexecution>
 #let fowler2025sdd = <fowler2025sdd>
 #let coderabbit2026vibehistory = <coderabbit2026vibehistory>
@@ -40,7 +37,6 @@
 #let openai_agents_guardrails = <openai-agents-guardrails>
 #let claude_code_plugins = <claude-code-plugins>
 #let claude_code_hooks = <claude-code-hooks>
-#let claude_code_mcp = <claude-code-mcp>
 #let github_branches = <github-branches>
 #let github_pull_requests = <github-pull-requests>
 #let anthropic_context_engineering = <anthropic-context-engineering>
@@ -80,17 +76,25 @@
 #let claude_code_settings = <claude-code-settings>
 #let claude_code_skills = <claude-code-skills>
 #let kimi_k25_agent_swarm = <kimi-k25-agent-swarm>
+#let openai_agents_sdk = <openai-agents-sdk>
+#let openai_agents_tools = <openai-agents-tools>
+#let openai_agents_run_state = <openai-agents-run-state>
+#let openai_agents_sandbox = <openai-agents-sandbox>
+#let openai_agents_sandbox_clients = <openai-agents-sandbox-clients>
+#let mcp_spec_2026 = <mcp-spec-2026>
+#let mcp_tools_2026 = <mcp-tools-2026>
+#let mcp_ts_first_server = <mcp-ts-first-server>
+#let anthropic_claude_code_interface = <anthropic-claude-code-interface>
+#let google_antigravity_ide = <google-antigravity-ide>
 #let bib = (
   darkfactory: darkfactory,
   humble2010: humble2010,
   chacon2014: chacon2014,
   vaswani2017: vaswani2017,
-  anthropic_mcp: anthropic_mcp,
   anthropic_prompt: anthropic_prompt,
   yao2022: yao2022,
   liu2024: liu2024,
   ainslie2023: ainslie2023,
-  schick2023toolformer: schick2023toolformer,
   lewis2020rag: lewis2020rag,
   jiang2023llmlingua: jiang2023llmlingua,
   agache2020firecracker: agache2020firecracker,
@@ -107,7 +111,6 @@
   willison2025vibecoding: willison2025vibecoding,
   cambridge2026aislop: cambridge2026aislop,
   agent_skills_spec: agent_skills_spec,
-  openai_structured_outputs: openai_structured_outputs,
   anthropic_code_execution: anthropic_code_execution,
   fowler2025sdd: fowler2025sdd,
   coderabbit2026vibehistory: coderabbit2026vibehistory,
@@ -115,7 +118,6 @@
   openai_agents_guardrails: openai_agents_guardrails,
   claude_code_plugins: claude_code_plugins,
   claude_code_hooks: claude_code_hooks,
-  claude_code_mcp: claude_code_mcp,
   github_branches: github_branches,
   github_pull_requests: github_pull_requests,
   anthropic_context_engineering: anthropic_context_engineering,
@@ -154,6 +156,16 @@
   claude_code_settings: claude_code_settings,
   claude_code_skills: claude_code_skills,
   kimi_k25_agent_swarm: kimi_k25_agent_swarm,
+  openai_agents_sdk: openai_agents_sdk,
+  openai_agents_tools: openai_agents_tools,
+  openai_agents_run_state: openai_agents_run_state,
+  openai_agents_sandbox: openai_agents_sandbox,
+  openai_agents_sandbox_clients: openai_agents_sandbox_clients,
+  mcp_spec_2026: mcp_spec_2026,
+  mcp_tools_2026: mcp_tools_2026,
+  mcp_ts_first_server: mcp_ts_first_server,
+  anthropic_claude_code_interface: anthropic_claude_code_interface,
+  google_antigravity_ide: google_antigravity_ide,
 )
 
 // ── Vizualizace a empirické snímky ──────────────────────────
@@ -876,182 +888,226 @@ Modelová inference poskytuje výstup z konečného aktivního kontextu, nikoli 
 #heading(level: 2)[Harness] <section-harness>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Harness je běhová vrstva kolem modelové inference, která drží stav, opakuje agentní smyčku a propojuje model s nástroji a prostředím. #cite(bib.anthropic_managed_agents)
+  Model provádí inferenci nad aktuálním vstupem; Harness je běhová vrstva kolem této inference, která z jednotlivých inferenčních kroků vytváří pokračující agentní běh. Opakuje kroky, zachovává kontinuitu sezení a stavu, zpřístupňuje vnější prostředí a nástroje, provádí vyžádané účinky mimo model, omezuje jejich prostředí a načítá rozšíření. OpenAI Agents SDK například poskytuje vestavěnou agentní smyčku, která zpracovává vyvolání nástrojů a vrací jejich výsledky modelu, a SandboxAgent s pracovním prostorem, shellem, souborovým systémem a obnovitelným stavem sandboxu. #cite(bib.openai_agents_sdk) #cite(bib.openai_agents_sandbox)
 ]
 
-Jeho odpovědností je kontinuita běhu a provedení účinků mimo model. Strategie, podle které se tyto schopnosti skládají do cíleného chování, patří do agentického inženýrství.
+Harness zde vysvětluje dostupné běhové mechanismy, nikoli metodiku jejich záměrného skládání. Způsob specifikace úlohy, výběr kontextu, revize práce, orchestrace agentů a návrh CI či workflow patří do části 3.1 Agentické inženýrství.
 
-[#emph[Praktický význam:] Harness umožňuje převést jednotlivé modelové inference na dlouhotrvající agentní běh, který může udržovat stav, používat nástroje a pracovat se skutečným prostředím.]
+#figure(
+  image("img/external/claude-code-interface.png", width: 88%),
+  caption: [Terminálové rozhraní Claude Code jako příklad uživatelské vrstvy agentního Harnessu: model je zpřístupněn uvnitř pokračujícího běhu s viditelným stavem práce a nástrojovými interakcemi. Snímek pochází z oficiálního materiálu Anthropic. #cite(bib.anthropic_claude_code_interface)],
+) <fig-claude-code-interface>
+
+#figure(
+  image("img/external/antigravity-ide-interface.png", width: 88%),
+  caption: [Google Antigravity IDE jako příklad integrovaného agentního prostředí: editor, terminál a agentní panel tvoří rozhraní k pracovnímu prostoru, ve kterém může agent pozorovat a měnit software. Snímek pochází z oficiálního Google Codelabu. #cite(bib.google_antigravity_ide)],
+) <fig-antigravity-ide-interface>
+
+[#emph[Praktický význam:] Harness převádí jednotlivé modelové inference na stavový agentní runtime, ve kterém mohou rozhodnutí modelu navazovat na skutečné výsledky předchozích akcí a působit v kontrolovaném prostředí.]
 
 #heading(level: 3)[Smyčka a stav] <section-harness_state_loop>
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Agentní smyčka (Agent Loop)] <concept-agent_loop>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Iterativní cyklus, v němž model vyhodnotí stav, zvolí akci, harness ji provede a výsledek vrátí do další iterace. #cite(bib.yao2022)
+  Agentní smyčka je opakovaný běhový cyklus, ve kterém model z aktuálního vstupu vybere další akci nebo ukončení; vybranou externí akci provede Harness prostřednictvím nástroje či prostředí a vzniklé pozorování předá do další inference. #cite(bib.yao2022)
 ]
 
-ReAct formalizuje střídání rozhodnutí, akce a pozorování výsledku; nové pozorování se stává vstupem dalšího kroku. #cite(bib.yao2022)
+Základní mechanismus lze vyjádřit jako *Model → Akce → Nástroj/prostředí → Pozorování → Model*, s volitelnou koncovou větví *Model → Výsledek*. Model tedy rozhoduje o požadované akci, ale externí účinek nevykonává sám. Původní práce ReAct kombinuje uvažování a jednání tak, že akce interagují s vnějšími zdroji a jejich výsledky se stávají pozorováními pro další krok. #cite(bib.yao2022)
+
+#block[#strong[ReAct nad Wikipedií.] V úlohách HotpotQA a FEVER autoři ReAct používají jednoduché rozhraní k Wikipedii: model volí akce pro vyhledání či dohledání externí informace a získané pozorování následně ovlivňuje další inferenční krok. Jde o konkrétní instanci principu akce–pozorování, nikoli o univerzální architekturu všech agentních systémů. #cite(bib.yao2022)] <example-agent_loop_react>
 
 #figure(
-  image("img/react-loop.svg", width: 100%),
-  caption: [Smyčka ReAct: model zvolí akci, harness ji provede a výsledek vrátí modelu.],
+  image("img/react-loop.svg", width: 92%),
+  caption: [Schéma agentní smyčky inspirované interakcí ReAct: model volí akci, Harness ji předá nástroji nebo prostředí, pozorování výsledku se vrací modelu a cyklus může skončit výsledkem. ReAct je zde zdrojem mechanismu, nikoli tvrzením, že každý agentní systém používá totožnou architekturu. #cite(bib.yao2022)],
 ) <fig-react-loop>
 
-[#emph[Praktický význam:] Agentní smyčka umožňuje opakovaně převádět pozorování na další akci, takže agent může postupovat po více krocích místo jednorázové odpovědi.]
+[#emph[Praktický význam:] Smyčka umožňuje, aby pozdější rozhodnutí vycházela ze skutečně pozorovaných výsledků předchozích akcí místo z jednorázového odhadu modelu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Agentní sezení (Session)] <concept-agent_session>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Persistovaná jednotka, která vymezuje jeden souvislý agentní běh a umožňuje jeho pozdější pokračování. #cite(bib.openai_agents_sessions)
+  Agentní sezení je identifikační a kontinuální hranice jednoho pokračujícího běhu nebo konverzace, přes kterou lze propojit více modelových kroků a později na ně navázat. #cite(bib.openai_agents_sessions)
 ]
 
-Session je vlastníkem identity a hranice pokračujícího běhu; jeho historický průběh vlastní #term(terms.transcript) a aktuální pracovní skutečnosti #term(terms.state). #cite(bib.openai_agents_sessions) #cite(bib.anthropic_managed_agents)
+Sezení vymezuje, které interakce patří ke stejnému pokračování; samo o sobě není synonymem pro přepis ani pro aktuální provozní stav. OpenAI Agents SDK umožňuje předat implementaci rozhraní `Session` do `Runner.run`; runner před novým tahem načte uložené konverzační položky, po dokončení přidá nové položky a stejné sezení lze použít i při pokračování přerušeného `RunState`. #cite(bib.openai_agents_sessions)
 
-[#emph[Praktický význam:] Sezení dává více krokům společnou kontinuitu, takže lze navázat na předchozí položky, nástroje a stav bez zakládání zcela nového běhu.]
+#block[#strong[MemorySession a OpenAIConversationsSession.] Agents SDK uvádí konkrétní implementace `MemorySession` pro lokální vývoj a `OpenAIConversationsSession` pro Conversations API; obě realizují stejnou hranici pokračování přes rozhraní `Session`. #cite(bib.openai_agents_sessions)] <example-agent_session_openai>
+
+[#emph[Praktický význam:] Stabilní hranice sezení umožňuje navázat další tah nebo obnovený běh na správnou posloupnost interakcí bez směšování nezávislých agentních běhů.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Přepis (Transcript)] <concept-transcript>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Uspořádaný historický záznam událostí vzniklých během #term(terms.agent_session), například zpráv, akcí a výsledků nástrojů. #cite(bib.anthropic_managed_agents)
+  Přepis je uspořádaný historický záznam toho, co během agentního běhu proběhlo: může obsahovat zprávy, požadavky na nástroje, jejich výsledky a další zaznamenané runtime události. #cite(bib.openai_agents_sessions)
 ]
 
-Transcript odpovídá na otázku, co se během běhu stalo. Je historickým záznamem, nikoli reprezentací právě platného pracovního stavu. #cite(bib.anthropic_managed_agents)
+Přepis odpovídá na otázku, co se stalo. Je historickým důkazem průběhu, nikoli automaticky reprezentací právě platného pracovního stavu ani totožností s aktivním modelovým kontextem. V OpenAI Agents SDK tvoří historii sezení uložené konverzační položky, které runner načítá v pořadí před dalším tahem a doplňuje po dokončení běhu. #cite(bib.openai_agents_sessions)
 
-[#emph[Praktický význam:] Přepis poskytuje auditovatelnou historii interakcí a nástrojových událostí, z níž lze rekonstruovat průběh běhu a hledat příčiny chyb.]
+#block[#strong[Historie sezení v Agents SDK.] `MemorySession` ukládá konverzační položky v paměti procesu, zatímco jiné implementace stejného rozhraní mohou používat trvalé úložiště. Jde o konkrétní reprezentaci historie, nikoli o tvrzení, že všechny historické události musí být současně aktivním vstupem modelu. #cite(bib.openai_agents_sessions)] <example-transcript_openai_session>
+
+[#emph[Praktický význam:] Přepis poskytuje auditovatelnou stopu pro rekonstrukci běhu, diagnostiku chyb a dohledání toho, které pozorování vedlo k pozdějšímu rozhodnutí.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Stav (State)] <concept-state>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Persistovaná reprezentace aktuálně platných pracovních skutečností a řídicích údajů běhu. #cite(bib.anthropic_managed_agents)
+  Stav je persistovaná reprezentace aktuálně platných pracovních skutečností a řídicích údajů potřebných k pokračování vykonávání. #cite(bib.openai_agents_run_state)
 ]
 
-State odpovídá na otázku, co je pro další krok právě platné; na rozdíl od #term(terms.transcript) nemusí zachovávat úplnou historii předchozích událostí. #cite(bib.anthropic_managed_agents)
+Stav se liší od úplného historického přepisu, od aktivního tokenového kontextu modelu i od skutečného stavu externího prostředí. Může z historie odvozovat jen údaje, které jsou pro další krok stále platné, a může uchovávat řídicí informace, jež se do každého modelového vstupu neposílají. OpenAI Agents SDK popisuje `RunState` jako serializovatelný snímek běhu; sandboxová vrstva může v tomto stavu nést také údaje potřebné k opětovnému připojení k pracovnímu prostředí. #cite(bib.openai_agents_run_state) #cite(bib.openai_agents_sandbox)
 
-[#emph[Praktický význam:] Stav umožňuje pokračovat podle aktuálně platných skutečností a řídicích údajů, aniž by bylo nutné spoléhat na to, že vše zůstane v textové historii modelu.]
+#block[#strong[Obnovení RunState.] Přerušený běh Agents SDK lze serializovat a později obnovit místo opakování již provedených kroků; runner tak pokračuje z uložených řídicích údajů a případného navázaného sandboxového stavu. #cite(bib.openai_agents_run_state) #cite(bib.openai_agents_sandbox)] <example-state_openai_runstate>
+
+Hranice těchto tří pojmů je proto: #term(terms.agent_session) určuje kontinuitu běhu, #term(terms.transcript) zachycuje jeho historii a #term(terms.state) uchovává právě platná persistovaná fakta a řídicí údaje.
+
+[#emph[Praktický význam:] Explicitní stav umožňuje obnovit běh podle aktuálně platných údajů bez požadavku, aby celý historický přepis zůstával v modelovém kontextu.]
 
 #heading(level: 3)[Prostředí a nástroje] <section-harness_tools_environment>
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Prostředí agenta (Agent Environment)] <concept-environment>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Vnější prostředí, které agent prostřednictvím harnessu pozoruje a mění, například pracovní soubory, procesy, síťové služby a další systémové prostředky. #cite(bib.anthropic_managed_agents)
+  Prostředí agenta je vnější svět, který Harness agentovi dovoluje pozorovat nebo měnit, například repozitářové soubory, procesy, shell, souborový systém, síťové služby a výstupy testů či sestavení. #cite(bib.openai_agents_sandbox)
 ]
 
-Změna souboru nebo spuštění procesu mění stav prostředí mimo modelový kontext. Přístup k těmto účinkům zprostředkovávají #term(terms.tools) a jejich bezpečnostní hranice. #cite(bib.anthropic_managed_agents)
+Účinky v prostředí existují mimo modelový kontext: změna souboru nebo spuštění procesu není textová inference, ale změna externího stavu, jejíž výsledek musí Harness zprostředkovat zpět jako pozorování. OpenAI Sandbox Agents oddělují definici agenta od živého pracovního prostoru; manifest může nový workspace naplnit repozitářem z GitHubu nebo lokálními soubory a sandboxové schopnosti následně zpřístupní souborový systém a shell. #cite(bib.openai_agents_sandbox)
 
-[#emph[Praktický význam:] Prostředí dává agentovi konkrétní pracovní prostor, v němž může číst soubory, spouštět příkazy a pozorovat skutečné výsledky.]
+#block[#strong[Workspace SandboxAgent.] Dokumentace Agents SDK ukazuje agentní workspace inicializovaný repozitářem a následně dostupný přes souborové a shellové schopnosti. Model tak pracuje s reálnými soubory a výstupy procesů, ne s jejich pouhou textovou představou. #cite(bib.openai_agents_sandbox)] <example-environment_openai_sandbox>
+
+[#emph[Praktický význam:] Prostředí poskytuje agentovi skutečný pracovní prostor; Harness přitom určuje, které jeho části a operace jsou agentovi vůbec dostupné.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Nástroje (Tools)] <concept-tools>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Rozhraní, kterým agent vyvolává operace mimo samotnou textovou inferenci, například čtení dat, volání API nebo změnu stavu systému. #cite(bib.anthropic2024tooluse)
+  Nástroj je externí schopnost nebo programové rozhraní zpřístupněné agentovi, například vyhledávání, čtení souboru, shell, editor nebo API. Nástroj je dostupná schopnost; #term(terms.tool_calling) je mechanismus, kterým model požádá o její konkrétní použití. #cite(bib.openai_agents_tools)
 ]
 
-Harness zprostředkuje požadavek na nástroj, provede operaci v prostředí a vrátí její výsledek modelu jako další pozorování. #cite(bib.schick2023toolformer) #cite(bib.anthropic2024tooluse)
+Harness modelu popíše dostupné nástroje a po zvoleném vyvolání zajistí jejich provedení v příslušném prostředí. OpenAI Agents SDK rozlišuje hostované nástroje, lokálně prováděné nástroje a funkční nástroje; u vestavěných `shell` a `apply_patch` volání požaduje model, ale práci vykonává nakonfigurované prostředí mimo samotnou modelovou odpověď. #cite(bib.openai_agents_tools)
 
-[#emph[Praktický význam:] Nástroje umožňují agentovi spouštět příkazy, číst soubory, volat API, spouštět testy a pracovat se skutečnými výsledky místo jejich predikování.]
+#block[#strong[Shell a apply_patch.] Agents SDK uvádí shell pro spuštění příkazů a apply_patch pro změnu souborů jako konkrétní výkonné nástroje. Model může jejich použití požadovat, zatímco aplikace či sandbox provede skutečný příkaz nebo editaci. #cite(bib.openai_agents_tools)] <example-tools_openai_execution>
+
+[#emph[Praktický význam:] Nástroje dávají agentovi ověřitelné schopnosti mimo generování textu; jejich rozhraní současně vymezuje, jaké vnější účinky může agent vůbec vyžádat.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Vyvolávání nástrojů (Tool Calling)] <concept-tool_calling>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Mechanismus, kterým model místo běžné textové odpovědi vybere konkrétní #term(terms.tools) a vytvoří strukturované argumenty pro jeho vyvolání. #cite(bib.anthropic2024tooluse)
+  Vyvolávání nástrojů je modelové a rozhranové propojení, při kterém model vybere deklarovaný nástroj a vytvoří strukturované argumenty pro konkrétní volání. Samotné vyvolání ještě není provedením nástroje. #cite(bib.openai_agents_tools)
 ]
 
-Schéma rozhraní omezuje tvar argumentů a umožňuje jejich programovou validaci; JSON Schema je jedním z používaných formátů takového kontraktu. #cite(bib.openai_structured_outputs)
+Harness přijme požadavek modelu, ověří jeho argumenty podle rozhraní, směruje jej na implementaci nástroje, provede operaci mimo model a vrátí výsledek do další inference. OpenAI Agents SDK obaluje lokální funkce jako function tools s JSON Schema a podle schématu jejich argumenty validuje; výchozí agentní smyčka po provedení nástroje vrací jeho výsledek modelu pro další krok. #cite(bib.openai_agents_tools) #cite(bib.openai_agents_sdk)
 
-[#emph[Praktický význam:] Tool Calling propojuje rozhodnutí modelu s deterministicky provedenou funkcí nebo službou a vrací skutečný výsledek zpět do dalšího kroku.]
+#block[#strong[Funkční nástroj v Agents SDK.] Quickstart SDK definuje nástroj jako TypeScript funkci se jménem, popisem a schématem Zod; z něj vznikne schéma viditelné modelu a argumenty se před spuštěním funkce validují. #cite(bib.openai_agents_tools)] <example-tool_calling_openai_function>
+
+[#emph[Praktický význam:] Oddělení deklarace nástroje, modelového výběru a skutečného provedení dovoluje Harnessu validovat požadavek a kontrolovat účinky předtím, než se projeví v prostředí.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Spouštění kódu (Code Execution)] <concept-code_execution>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Nástrojová schopnost umožňující vykonat program nebo příkaz a vrátit jeho skutečný výstup modelu. #cite(bib.anthropic_code_execution)
+  Spouštění kódu je nástrojová nebo runtime schopnost, která skutečně vykoná program či příkaz a vrátí jeho výstup agentovi jako pozorování. #cite(bib.anthropic_code_execution)
 ]
 
-Při vývoji softwaru zpřístupňuje agentovi například testy, buildy, formátovače a diagnostické příkazy místo odhadování jejich výsledku. #cite(bib.anthropic_code_execution)
+Pro softwarovou práci tak lze místo predikce výsledku skutečně spustit test, sestavení, skript, formátovač nebo diagnostický příkaz a získat jeho návratový kód, standardní výstup či chybu. Anthropic Code Execution například provádí Bash příkazy a práci se soubory v serverovém sandboxovaném kontejneru a výsledky vrací modelu ve stejném požadavku. #cite(bib.anthropic_code_execution)
 
-[#emph[Praktický význam:] Spouštění kódu umožňuje agentovi ověřovat hypotézy příkazy, testy a programy namísto pouhého predikování jejich výsledku.]
+#block[#strong[Anthropic Code Execution.] Aktuální rozhraní zpřístupňuje Bash a souborové operace v izolovaném kontejneru; příkaz je vykonán na serveru a model obdrží skutečný výsledek, nikoli odhad toho, co by se při spuštění stalo. #cite(bib.anthropic_code_execution)] <example-code_execution_anthropic>
+
+[#emph[Praktický význam:] Skutečné vykonání zvyšuje epistemickou kvalitu agentní práce: další rozhodnutí může vycházet z reálného výsledku testu nebo příkazu místo z pravděpodobnostního odhadu modelu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Izolované prostředí (Sandbox)] <concept-sandbox>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Oddělené běhové prostředí, ve kterém agent může spouštět kód nebo měnit pracovní soubory bez přímého přístupu ke všem prostředkům hostitelského systému. #cite(bib.anthropic_managed_agents)
+  Sandbox je bezpečnostní a izolační hranice, která omezuje prostředky a účinky kódu či nástrojů spuštěných agentem. Není synonymem pro kontejner ani microVM; ty jsou možné technické prostředky jeho realizace. #cite(bib.openai_agents_sandbox_clients) #cite(bib.agache2020firecracker)
 ]
 
-Sandbox vytváří bezpečnostní hranici kolem nedůvěryhodných účinků; konkrétní realizace může používat například kontejner nebo microVM. #cite(bib.anthropic_managed_agents) #cite(bib.agache2020firecracker)
+Izolace může kombinovat procesovou nebo virtualizační hranici s omezeními souborového systému, sítě a dalších oprávnění. OpenAI Agents SDK tuto hranici odděluje od konkrétního klienta: `UnixLocalSandboxClient` je určen pro důvěryhodný lokální běh bez OS-level izolace, zatímco `DockerSandboxClient` používá kontejnerovou hranici. Firecracker ukazuje jiný implementační prostředek založený na microVM. #cite(bib.openai_agents_sandbox_clients) #cite(bib.agache2020firecracker)
 
-[#emph[Praktický význam:] Sandbox omezuje dopad chybného nebo nežádoucího kroku tím, že vymezuje dostupný souborový systém, síť a další schopnosti prostředí.]
+#block[#strong[DockerSandboxClient.] Stejný SandboxAgent lze podle dokumentace Agents SDK spustit nad Docker-backed klientem, když je požadována kontejnerová izolace, nebo nad Unix-local klientem pro důvěryhodný lokální vývoj. Rozdíl ukazuje, že sandbox popisuje bezpečnostní hranici, ne jedinou konkrétní virtualizační technologii. #cite(bib.openai_agents_sandbox_clients)] <example-sandbox_openai_clients>
+
+[#emph[Praktický význam:] Sandbox omezuje blast radius chybného nebo nežádoucího kroku; Harness má agentovi poskytnout pouze souborový systém, síť a další schopnosti, které daná úloha skutečně potřebuje.]
 
 #heading(level: 3)[Rozšíření] <section-harness_extensions>
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Dovednosti (Skills)] <concept-skills>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Znovupoužitelný balíček instrukcí a volitelných zdrojů, který se načítá pro úlohy odpovídající jeho účelu. #cite(bib.agent_skills_spec)
+  Dovednost je znovupoužitelný balíček instrukcí a metadat, který může navíc obsahovat podpůrné skripty, reference a další zdroje pro určitou třídu úloh. #cite(bib.agent_skills_spec)
 ]
 
-Agent Skill je definován souborem `SKILL.md` s YAML frontmatterem a instrukcemi v Markdownu; může odkazovat na doplňující skripty, reference nebo další zdroje načítané podle potřeby. #cite(bib.agent_skills_spec)
+Specifikace Agent Skills používá jako vstupní bod `SKILL.md` s YAML frontmatterem a instrukcemi v Markdownu; doplňující obsah může být uložen například v adresářích `scripts/`, `references/` a `assets/` a načítán až podle potřeby. Skill tím přidává znovupoužitelnou pracovní znalost, nikoli sám o sobě novou externí výkonnou schopnost. #cite(bib.agent_skills_spec)
 
-[#emph[Praktický význam:] Skills umožňují opakovaně balit doménový postup a podpůrné prostředky tak, aby je agent mohl použít konzistentně bez opakovaného zadávání celé instrukce.]
+#block[#strong[Skill s podpůrným skriptem.] Specifikace počítá s tím, že vedle `SKILL.md` může balíček obsahovat deterministický program v `scripts/` a samostatné referenční materiály. Agent tak může nejprve načíst stručná metadata a detailní instrukce nebo podpůrný kód použít až tehdy, když jsou pro úlohu relevantní. #cite(bib.agent_skills_spec)] <example-skills_spec_package>
+
+[#emph[Praktický význam:] Skills umožňují verzovat a znovu používat doménové postupy bez opakovaného kopírování celé instrukce do každého zadání a bez zaměňování instrukčního balíčku za samotný nástroj.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Plugin] <concept-plugins>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Distribuovatelné rozšíření, které do hostitelského agentního prostředí přidává další chování nebo integrace. #cite(bib.claude_code_plugins)
+  Plugin je v platformách, které tento mechanismus definují, distribuovatelný balíček rozšíření. V Claude Code může plugin sdružovat například Skills, agenty, Hooks a konfiguraci MCP serverů; tato podoba je specifická pro Claude Code a není univerzální definicí všech agentních pluginů. #cite(bib.claude_code_plugins)
 ]
 
-Konkrétní platforma může plugin použít jako obal pro různé druhy rozšíření, například skills, hooks, agenty nebo konfiguraci externích integrací. Plugin zde proto označuje způsob balení a distribuce, nikoli nadřazenou kategorii všech mechanismů Harnessu. #cite(bib.claude_code_plugins)
+Plugin zde představuje především hranici balení a distribuce. Jednotlivé součásti uvnitř něj si zachovávají vlastní význam: Skill nese instrukce a zdroje, Hook reaguje na událost, MCP popisuje integrační protokol a Tool je konkrétní dostupná schopnost. #cite(bib.claude_code_plugins)
 
-[#emph[Praktický význam:] Plugin sdružuje rozšiřující schopnosti do distribuovatelné jednotky, takže lze přidat nový pracovní postup nebo integraci bez změny samotného modelu.]
+#block[#strong[my-first-plugin.] Oficiální quickstart Claude Code vytváří adresář `my-first-plugin`, manifest `.claude-plugin/plugin.json` a Skill `skills/hello/SKILL.md`; plugin se pro lokální test načte přepínačem `--plugin-dir`. #cite(bib.claude_code_plugins)] <example-plugin_claude_code>
+
+[#emph[Praktický význam:] Plugin umožňuje distribuovat související rozšíření jako jednu verzovatelnou jednotku, aniž by se jejich jednotlivé mechanismy slévaly do jednoho obecného pojmu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Skript] <concept-scripts>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Spustitelné soubory nebo posloupnosti příkazů používané k deterministickému provedení opakovatelné operace. #cite(bib.claude_code_plugins)
+  Skript je spustitelná deterministická programová logika používaná rozšířením nebo workflow k přesnému a opakovatelnému provedení operace.
 ]
 
-Agentní rozšíření mohou skripty používat pro transformace, validace nebo jiné kroky, které je výhodnější provést programově než novým modelovým rozhodnutím. #cite(bib.agent_skills_spec) #cite(bib.claude_code_plugins)
+Na rozdíl od nového modelového kroku provádí skript předem definovaný program. Agent Skills specifikace dovoluje balíčku Skill obsahovat podpůrné spustitelné soubory v `scripts/`; Claude Code plugin může obdobně obsahovat `bin/` s executable soubory zpřístupněnými Bash nástroji po dobu aktivace pluginu. #cite(bib.agent_skills_spec) #cite(bib.claude_code_plugins)
 
-[#emph[Praktický význam:] Skript je vhodný pro deterministické kroky, které mají být provedeny přesně a opakovatelně, například validaci nebo transformaci souborů.]
+#block[#strong[Podpůrný program ve Skill.] Adresář `scripts/` podle Agent Skills odděluje spustitelnou implementaci od textových instrukcí `SKILL.md`; totéž rozšíření tak může modelu popsat postup a přesný dílčí krok provést deterministickým kódem. #cite(bib.agent_skills_spec)] <example-script_agent_skill>
+
+[#emph[Praktický význam:] Jestliže má být krok přesný a opakovatelný, vykonání skriptu je vhodnější než požadovat po modelu, aby stejnou mechanickou transformaci pokaždé znovu generoval.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[Hooks] <concept-hooks>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Konfigurované reakce spouštěné při určených událostech životního cyklu agentního prostředí. #cite(bib.claude_code_hooks)
+  Hooks jsou v platformách s událostním rozhraním konfigurované reakce spuštěné při konkrétních událostech životního cyklu. V Claude Code mohou takové reakce spustit deterministický příkaz, HTTP požadavek nebo jinou podporovanou akci nezávisle na tom, zda se model sám rozhodne tuto kontrolu provést. #cite(bib.claude_code_hooks)
 ]
 
-Hook může před nebo po vybrané události spustit deterministickou logiku, například validaci, příkaz nebo jinou automatizaci. #cite(bib.claude_code_hooks)
+Událost `PreToolUse` nastává po vytvoření argumentů nástroje, ale před jeho zpracováním, takže Hook může použití povolit, odmítnout nebo vyžádat potvrzení; `PostToolUse` nastává po úspěšném provedení nástroje. Jde o konkrétní lifecycle Claude Code, nikoli o tvrzení, že všechny agentní platformy používají stejné názvy událostí. #cite(bib.claude_code_hooks)
 
-[#emph[Praktický význam:] Hooks umožňují spustit deterministickou kontrolu nebo reakci v definovaném bodě životního cyklu a vynutit chování nezávisle na tom, zda jej model sám navrhne.]
+#block[#strong[Lint po změně souboru.] Dokumentace Claude Code uvádí `PostToolUse` Hook s matcherem pro nástroje `Write|Edit`, který po změně souboru spustí lintovací příkaz. Kontrola se váže na událost runtime, takže její spuštění nemusí model plánovat jako další krok. #cite(bib.claude_code_hooks)] <example-hooks_claude_lint>
+
+[#emph[Praktický význam:] Hooks umožňují automaticky připojit povinnou reakci nebo kontrolu ke konkrétní runtime události a oddělit ji od pravděpodobnostního rozhodování modelu.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[MCP] <concept-mcp>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji a datovými zdroji. #cite(bib.anthropic_mcp)
+  Model Context Protocol (MCP) je otevřený protokol pro standardizované propojení AI hostitelů a klientů se servery, které zpřístupňují schopnosti a data. Aktuální specifikace 2026-07-28 definuje hranici mezi hostitelem, klienty a MCP servery; nejde o synonymum pro Tool, Tool Calling ani Plugin. #cite(bib.mcp_spec_2026)
 ]
 
-MCP odděluje klientskou AI aplikaci od serverů poskytujících nástroje a další schopnosti, takže integrace lze implementovat mimo vlastní jádro harnessu. #cite(bib.anthropic_mcp) #cite(bib.claude_code_mcp)
+Server může přes MCP publikovat například nástroje, resources nebo prompts. Protokol standardizuje jejich objevování a vyvolávání přes klientskou hranici, zatímco konkrétní modelový Tool Calling zůstává mechanismem hostitele a Plugin zůstává případným distribučním obalem platformy. #cite(bib.mcp_spec_2026) #cite(bib.mcp_tools_2026)
 
-[#emph[Praktický význam:] MCP standardizuje připojení externích nástrojů, zdrojů a promptů k agentnímu hostiteli, takže integrace nemusí být navržena zvlášť pro každý modelový klient.]
+#block[#strong[Oficiální weather server.] TypeScript SDK pro MCP ukazuje server, který registruje nástroj `get-alerts` pro aktivní výstrahy americké National Weather Service. Klient si nástroj vypíše a zavolá jej se strukturovaným argumentem státu; SDK argument ověří proti schématu a vrátí výsledek přes protokol. #cite(bib.mcp_ts_first_server)] <example-mcp_weather_server>
+
+[#emph[Praktický význam:] MCP umožňuje připojit stejnou serverovou integraci k různým kompatibilním hostitelům bez toho, aby se samotný protokol zaměňoval za konkrétní nástroj nebo rozhodnutí modelu tento nástroj použít.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[.agents/] <concept-agents_directory>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  `.agents/` je repozitářový nebo uživatelský jmenný prostor Codexu pro znovupoužitelná agentní rozšíření, zejména Skills. #cite(bib.openai_customization_overview)
+  `.agents/` je v aktuálním Codexu jmenný prostor pro agentní přizpůsobení, zejména repozitářové Skills; nejde o umístění souboru AGENTS.md. #cite(bib.openai_customization_overview)
 ]
 
-Repozitářové Skills se ukládají do `.agents/skills` a uživatelské do `~/.agents/skills`; AGENTS.md zůstává samostatnou vrstvou projektových instrukcí a není podadresářem `.agents/`. #cite(bib.openai_customization_overview)
+Codex hledá repozitářové Skills v `.agents/skills` v cestě projektu a uživatelské Skills v `~/.agents/skills`. Naproti tomu AGENTS.md je samostatný mechanismus instrukcí hledaný v adresářové hierarchii repozitáře. #cite(bib.openai_customization_overview) #cite(bib.openai_agents_md)
 
-[#emph[Praktický význam:] Adresář `.agents/` umožňuje držet repozitářové dovednosti a jejich podpůrné prostředky blízko kódu, který je používá, a verzovat je společně s projektem.]
+#block[#strong[Repozitářový Skill.] Umístění `.agents/skills/review/SKILL.md` drží Skill přímo v repozitářovém prostoru Codexu, zatímco kořenový `AGENTS.md` zůstává samostatným souborem instrukcí pro příslušnou část stromu. #cite(bib.openai_customization_overview) #cite(bib.openai_agents_md)] <example-agents_directory_codex>
+
+[#emph[Praktický význam:] `.agents/` umožňuje verzovat znovupoužitelná agentní rozšíření spolu s projektem, aniž by se jejich umístění zaměnilo s hierarchickými instrukcemi AGENTS.md.]
 
 #heading(level: 4, numbering: none, outlined: false, bookmarked: false)[.claude/] <concept-claude_directory>
 [
   #set par(first-line-indent: (amount: 1.5em, all: true))
-  `.claude/` je projektový nebo uživatelský jmenný prostor Claude Code pro instrukce, pravidla, nastavení a rozšíření. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)
+  `.claude/` je projektový nebo uživatelský jmenný prostor Claude Code, ve kterém vedle sebe existuje několik odlišných konfiguračních mechanismů; adresář sám proto není jedním univerzálním typem rozšíření. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)
 ]
 
-Anthropic dokumentuje `.claude/CLAUDE.md`, modulární `.claude/rules/` a projektové `.claude/settings.json`; hooks a Skills jsou samostatné rozšiřující mechanismy s vlastními pravidly. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings) #cite(bib.claude_code_hooks) #cite(bib.claude_code_skills)
+Projekt může používat `.claude/CLAUDE.md` pro trvalé instrukce, `.claude/rules/` pro modulární pravidla a `.claude/settings.json` pro sdílená nastavení. Standalone Skills, agenti a Hooks mohou rovněž používat struktury pod `.claude/`, zatímco distribuovatelný Plugin má vlastní kořen a případný manifest `.claude-plugin/plugin.json`. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings) #cite(bib.claude_code_plugins)
 
-[#emph[Praktický význam:] Adresář `.claude/` umožňuje verzovat projektová pravidla, nastavení a rozšíření Claude Code společně s repozitářem.]
+#block[#strong[Oddělené projektové soubory.] Dokumentace Claude Code ukazuje projekt s `.claude/CLAUDE.md`, samostatnými soubory v `.claude/rules/` a projektovým `.claude/settings.json`; každá cesta má jinou úlohu a vlastní precedence pravidla. #cite(bib.claude_code_memory) #cite(bib.claude_code_settings)] <example-claude_directory_structure>
 
-Harness doplňuje modelovou inferenci o kontinuitu běhu a rozhraní pro pozorování a změnu externího prostředí. Tím vzniká stavový agentní systém schopný jednat; výběr kontextu, řízení chování a rozdělování práce jsou navazujícími návrhovými rozhodnutími agentického inženýrství.
+[#emph[Praktický význam:] `.claude/` umožňuje verzovat projektové instrukce, pravidla, nastavení a standalone rozšíření blízko repozitáře, přičemž jejich význam zůstává explicitně oddělen.]
+
+Modelová inference poskytuje rozhodnutí nebo výstup pro aktuální krok. Harness k ní přidává kontinuitu, skutečné účinky v externím prostředí a rozšiřitelné běhové rozhraní; společně tím vzniká agentní runtime. Záměrný návrh zadání, kontextu, ověřování a orchestrace tohoto runtime je tématem následující Praktické části.
 
 #heading(level: 1)[Praktická část] <section-practical>
 Praktická část převádí teoretické mechanismy do způsobu práce se softwarem. Část 3.1 popisuje a zdůvodňuje postupy Agentického inženýrství; část 3.2 je vyhrazena jejich konkrétní realizaci v systému DarkFactory.
@@ -1490,7 +1546,7 @@ Systematický výběr a správa informací, které jsou modelu zpřístupněny v
 Kontextové okno je konečný rozsah tokenové sekvence, kterou model může mít v daném inferenčním běhu současně k dispozici jako aktivní vstup. #cite(bib.liu2024)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-mcp>, strong([MCP]))]
-Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji a datovými zdroji. #cite(bib.anthropic_mcp)
+Otevřený protokol pro standardizované propojení AI aplikací s externími nástroji a datovými zdroji. #cite(bib.mcp_spec_2026)
 
 #block(above: 6pt, below: 2pt)[#link(<concept-kv_cache>, strong([Mezipaměť klíčů a hodnot (KV Cache)]))]
 KV cache je runtime mezipaměť dříve vypočtených klíčů a hodnot pozornostních vrstev pro tokeny již zpracovaného prefixu, které lze znovu použít při autoregresivním dekódování dalších tokenů. #cite(bib.ainslie2023)
