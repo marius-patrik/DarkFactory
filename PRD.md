@@ -113,7 +113,26 @@ The agent increasingly performs:
 
 This does not remove software engineering. It changes where engineering effort is applied.
 
-**Agentic Engineering is software engineering reorganized around agents as primary executors of implementation work.**
+**Agentic Engineering is the set of engineering practices that make AI-assisted software engineering efficient, controlled, repeatable, and scalable.**
+
+As AI takes responsibility for larger units of implementation work, those practices increasingly shape the software-engineering process itself. The engineer therefore works not only on the software product, but also on the conditions under which models and agents can perform useful work reliably.
+
+### Agentic Engineering practices
+
+The paper should explain Agentic Engineering through the practices that improve the effectiveness of AI-assisted software engineering, not as a terminology catalogue.
+
+Relevant practices include, where they materially support the argument:
+
+- **Prompt engineering** — shaping instructions, constraints, examples, and output expectations so a model can perform a bounded task effectively.
+- **Context engineering** — selecting, structuring, refreshing, and compacting the information available for each decision rather than treating the context window as passive storage.
+- **Specification and acceptance engineering** — making intent, constraints, negative goals, and completion conditions explicit enough that delegated work can be judged mechanically and by review.
+- **Goal loops** — structuring execution around repeated progress toward an explicit goal or acceptance condition, using observations and verification to decide the next step rather than treating one model response as the unit of work.
+- **Tool and harness engineering** — choosing and constraining the tools, skills, hooks, protocols, permissions, state, and validation surfaces available to the agent.
+- **Verification and feedback loops** — using tests, compilers, linters, CI, repository state, review, and other observations to turn generation into an iterative engineering process.
+- **Multi-agent orchestration** — decomposing work across multiple agents or runs where useful, including coordinator/subagent patterns, parallel workers, swarms, and graph/workflow-based execution when the work can be meaningfully coordinated and integrated.
+- **Human supervision and integration** — deciding where human judgment, review, approval, and accountability remain necessary.
+
+These practices should be introduced as ways to increase useful work per unit of human attention while preserving engineering control. Their purpose is not maximum autonomy; it is effective software engineering with AI assistance.
 
 ### Harness and IDE
 
@@ -163,16 +182,17 @@ Results and discussion must distinguish:
 
 The finished paper should read as one transformation:
 
-**human-centered software engineering → AI-assisted development → delegated agentic work → harness-centered execution → Agentic Engineering → DarkFactory → evidence**
+**human-centered software engineering → AI-assisted development → delegated agentic work → Agentic Engineering practices → harness-centered execution → DarkFactory → evidence**
 
 At the highest level, the argument is:
 
 1. software development is moving from AI assistance toward meaningful delegation;
 2. meaningful delegation changes the role of both the developer and the development environment;
 3. the harness becomes the runtime that integrates the capabilities required by the agent;
-4. software engineering practiced around this model becomes Agentic Engineering;
-5. DarkFactory implements this approach;
-6. evaluation establishes which claimed properties are actually demonstrated.
+4. Agentic Engineering provides the practices that make increasingly delegated AI-assisted development effective and controllable;
+5. the harness supplies the runtime in which those practices can be executed;
+6. DarkFactory implements this approach;
+7. evaluation establishes which claimed properties are actually demonstrated.
 
 This direction defines the intellectual structure of the thesis without requiring a rigid section-by-section taxonomy.
 

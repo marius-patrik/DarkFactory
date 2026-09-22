@@ -16,6 +16,9 @@ Queued review requirements after reviewing the completed worker pass:
 - pull/rebase from latest `main` before the next dispatch;
 - explicitly distinguish a chatbot from a coding agent and use that boundary to strengthen the Gradually motivation;
 - use the IDE → completion → chat → agent → agent-first/ADE history to introduce what real coding agents can do;
+- reframe Agentic Engineering specifically as the engineering practices that make AI-assisted software engineering efficient, controlled, repeatable, and scalable;
+- cover prompt engineering, context engineering, explicit goals/specifications/acceptance criteria, goal loops, verification feedback, tool/harness engineering, and human review/integration;
+- cover multi-agent orchestration beyond simple subagents: parallel workers, coordinator patterns, swarms, and graph/workflow-based execution where these materially help explain scalable agentic work;
 - explain Tools, Skills, Hooks, and MCP concisely as capabilities supplied/integrated by the harness, alongside state/context, verification, and orchestration;
 - every level-1 and level-2 section starts on a new page;
 - use a visible first-line paragraph indent and noticeably larger inter-paragraph spacing, subject to direct school-guide reconciliation;

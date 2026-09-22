@@ -28,7 +28,7 @@ Keep manuscript ownership singular: one authored Typst source plus supporting re
 
 ## Editorial rule
 
-Optimize the manuscript for the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, including the chatbot-to-agent boundary and the shift from IDE-centered software engineering to harness-centered Agentic Engineering.
+Optimize the manuscript for the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, including the chatbot-to-agent boundary, the IDE-to-harness shift, and Agentic Engineering as the practices that make AI-assisted software engineering effective, efficient, controlled, and scalable.
 
 Treat available prose, terminology, figures, citations, and evidence as material for the final argument rather than as a structure that must be preserved.
 
@@ -41,6 +41,8 @@ Use:
 - verified DarkFactory implementation evidence for practical claims.
 
 When explaining the transition to coding agents, connect capabilities such as Tools, Skills, Hooks, MCP, persistent state, verification, and orchestration to the harness/runtime instead of presenting them as a terminology catalogue.
+
+When explaining Agentic Engineering, focus on practices: prompt/context engineering, explicit goals and acceptance criteria, iterative goal loops, tool/harness design, verification feedback, multi-agent orchestration (including subagents, parallel workers, swarms, and graph/workflow execution where relevant), and human review/integration.
 
 Use:
 - `GOAL.md` for the final-paper quality standard;

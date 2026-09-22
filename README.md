@@ -23,7 +23,7 @@ Typst thesis source, evidence, publication pipeline, and generic GitHub workbenc
 
 ## Direction
 
-The thesis is developed toward the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, centered on the transition from conversational AI assistance to agentic execution, from IDE-centered software engineering to harness-centered Agentic Engineering.
+The thesis is developed toward the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, centered on the transition from conversational AI assistance to agentic execution, from IDE-centered development to harness-centered execution, and on Agentic Engineering as the practices that make AI-assisted software engineering efficient and controllable.
 
 The repository/product requirements are defined in `PRD.md`.
 

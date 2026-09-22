@@ -69,7 +69,19 @@ The theory should then explain only what is needed to support that argument:
 - the relevant boundary of model inference;
 - why delegated work requires a persistent execution environment;
 - how a harness integrates state, tools, environment, effects, observations, verification, recovery, and orchestration;
-- how Agentic Engineering reorganizes software-engineering responsibility around agents as implementation executors.
+- how Agentic Engineering improves AI-assisted software engineering through prompt/context engineering, explicit goals and acceptance criteria, goal loops, tool/harness design, verification feedback, and orchestration.
+
+Agentic Engineering coverage should be practice-centered rather than definition-centered:
+- prompt engineering;
+- context engineering;
+- explicit specifications, constraints, and acceptance criteria;
+- goal loops driven by observations and verification;
+- tool/harness engineering, including Skills, Hooks, MCP, permissions, and state;
+- verification and feedback loops;
+- multi-agent orchestration, including coordinator/subagent patterns, parallel workers, swarms, and graphs/workflows where useful;
+- human supervision, review, and integration.
+
+The paper should explain how these practices increase the efficiency and controllability of AI-assisted software engineering. Do not present them as isolated glossary entries or imply that maximum autonomy is the goal.
 
 Current theory/visual acceptance decisions:
 - keep tokenization conceptual and omit BPE-specific exposition;
