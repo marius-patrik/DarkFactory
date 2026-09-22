@@ -148,27 +148,7 @@ Final school-guide audit and publication QA are deferred in `BACKLOG.md`.
 
 ## Remaining execution
 
-### Phase 1 — Complete Theory: Harness — ACTIVE NOW
-
-Finish 2.2 in one pass.
-
-Scope:
-- rewrite/finalize Harness framing and all 2.2 semantic articles;
-- add direct source + concrete example to every concept where defensible;
-- correct State/Session/Transcript boundaries;
-- finalize the ReAct diagram;
-- add real, properly sourced harness-interface examples/screenshots where useful;
-- ensure `.agents/` and `.claude/` are accurately sourced;
-- perform the **2.2 source, ownership, duplication, and bibliography audit in the same pass**;
-- preserve 2.1 unless a concrete defect is found.
-
-Exit:
-- every 2.2 article satisfies the article contract;
-- Theory cleanly explains model → inference → harness;
-- no Agentic Engineering methodology is taught inside Theory;
-- no additional Harness cleanup pass is required later.
-
-### Phase 2 — Complete Practical: Agentic Engineering
+### Phase 1 — Complete Practical: Agentic Engineering — NEXT
 
 Finish 3.1 in one pass.
 
@@ -185,7 +165,7 @@ Exit:
 - concepts owned by Theory are referenced rather than redefined;
 - no separate Practical source/dedup pass is required.
 
-### Phase 3 — Integrate DarkFactory and pin implementation evidence
+### Phase 2 — Integrate DarkFactory and pin implementation evidence
 
 Complete 3.2 and prepare evaluation inputs in one pass.
 
@@ -202,7 +182,7 @@ Exit:
 - 3.2 is complete and reproducible;
 - implementation/evaluation evidence is pinned before Results writing begins.
 
-### Phase 4 — Research frame + Results and discussion
+### Phase 3 — Research frame + Results and discussion
 
 Align the research frame to the actual implementation/evidence, then write the evaluation without another separate framing pass.
 
@@ -221,7 +201,7 @@ Exit:
 
 ## Current-plan exit
 
-The active plan ends after Phase 4.
+The active plan ends after Phase 3.
 
 At that checkpoint:
 - Theory is complete;
