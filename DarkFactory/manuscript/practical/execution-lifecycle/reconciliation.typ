@@ -13,5 +13,5 @@ Sjednocení trvalého stavu Requestu, pull requestu, projektu a souvisejících 
   description: terms => [
 DarkFactory používá kanonické stavy Backlog, ToDo, In Progress, Blocked, Done, Superseded a Dropped a po terminálních událostech aktualizuje navázaný trvalý stav podle skutečně dosaženého výsledku.
   ],
-  relations: ((type: "related", target: "pull_request")),
+  relations: ((type: "related", target: "pull_request"),),
 )
