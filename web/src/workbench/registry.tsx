@@ -43,7 +43,7 @@ const DEFINITIONS: TabDefinition[] = [
   { type: "problems", title: "Problems", icon: "CircleAlertIcon", defaultSurface: "panel", singleton: true },
   { type: "output", title: "Output", icon: "TerminalSquareIcon", defaultSurface: "panel", singleton: true },
   { type: "settings", title: "Settings", icon: "SettingsIcon", defaultSurface: "main", singleton: true },
-  { type: "document", title: "Document", icon: "FileTextIcon", defaultSurface: "main" },
+  { type: "document", title: "Document", icon: "FileTextIcon", defaultSurface: "main", initialState: () => ({ renderer: "browser", review: false, compare: "none", compareTarget: "", representation: "auto" }) },
   { type: "diff", title: "Diff", icon: "Columns2Icon", defaultSurface: "main" },
   { type: "issues", title: "Issues", icon: "CircleDotIcon", defaultSurface: "main", singleton: true },
   { type: "issue", title: "Issue", icon: "CircleDotIcon", defaultSurface: "main" },
@@ -106,7 +106,7 @@ function RegisteredTabContent({ tab }: { tab: WorkbenchTab }): ReactNode {
     case "problems": return <ProblemsTab />;
     case "output": return <OutputTab />;
     case "settings": return <SettingsView settings={runtime.settings} onThemeChange={runtime.setTheme} />;
-    case "document": return <DocumentTab tab={tab} />;
+    case "document": return <DocumentTab tab={tab} theme={runtime.settings.theme} updateState={updateState} />;
     case "diff": return <DiffTab tab={tab} theme={runtime.settings.theme} />;
     case "issues": return <IssuesTab />;
     case "issue": return <IssueTab tab={tab} />;

@@ -29,6 +29,7 @@ export function WorkbenchShell() {
   }));
   const apis = useRef(new Map<WorkbenchSurface, any>());
   const omnibarRef = useRef<OmnibarControl>(null);
+  const [activeTab, setActiveTab] = useState<WorkbenchTab | null>(null);
 
   const persist = useCallback((theme: AppearanceMode = settings.theme, nextVisibility = visibility) => {
     const state: PersistedWorkbench = {
@@ -51,6 +52,10 @@ export function WorkbenchShell() {
 
   const registerSurface = useCallback((surface: WorkbenchSurface, api: any) => {
     apis.current.set(surface, api);
+  }, []);
+
+  const handleActiveTabChange = useCallback((_surface: WorkbenchSurface, tab: WorkbenchTab | null) => {
+    if (tab) setActiveTab(tab);
   }, []);
 
   const locate = useCallback((id: string) => {
@@ -157,7 +162,9 @@ export function WorkbenchShell() {
     const found = locate(id);
     const tab = found ? paramsOf(found.panel) : null;
     if (!found || !tab) return;
-    found.panel.api?.updateParameters?.({ ...tab, state: { ...tab.state, ...patch } });
+    const nextTab = { ...tab, state: { ...tab.state, ...patch } };
+    found.panel.api?.updateParameters?.(nextTab);
+    setActiveTab((current) => current?.id === id ? nextTab : current);
     persist();
   }, [locate, persist]);
 
@@ -168,6 +175,7 @@ export function WorkbenchShell() {
 
   const runtime = useMemo<WorkbenchRuntime>(() => ({
     settings,
+    activeTab,
     setTheme,
     openTab,
     moveTab,
@@ -179,7 +187,7 @@ export function WorkbenchShell() {
     setSurfaceVisible,
     layoutChanged: () => persist(),
     getTab,
-  }), [settings, setTheme, openTab, moveTab, splitTab, closeTab, setPinned, updateTabState, toggleSurface, setSurfaceVisible, persist, getTab]);
+  }), [settings, activeTab, setTheme, openTab, moveTab, splitTab, closeTab, setPinned, updateTabState, toggleSurface, setSurfaceVisible, persist, getTab]);
 
   const shortcutHandlers = useMemo(() => ({
     togglePrimary: () => toggleSurface("primary"),
@@ -245,11 +253,11 @@ export function WorkbenchShell() {
           </div>
         </header>
         <div className="workbench-center">
-          <aside className="root-surface root-primary"><WorkbenchSurfaceView surface="primary" restoredLayout={initial.surfaces.primary.layout} defaultTabs={defaults.primary} onReady={registerSurface} /></aside>
-          <main className="root-surface root-main"><WorkbenchSurfaceView surface="main" restoredLayout={initial.surfaces.main.layout} defaultTabs={defaults.main} onReady={registerSurface} /></main>
-          <aside className="root-surface root-secondary"><WorkbenchSurfaceView surface="secondary" restoredLayout={initial.surfaces.secondary.layout} defaultTabs={defaults.secondary} onReady={registerSurface} /></aside>
+          <aside className="root-surface root-primary"><WorkbenchSurfaceView surface="primary" restoredLayout={initial.surfaces.primary.layout} defaultTabs={defaults.primary} onReady={registerSurface} onActiveTabChange={handleActiveTabChange} /></aside>
+          <main className="root-surface root-main"><WorkbenchSurfaceView surface="main" restoredLayout={initial.surfaces.main.layout} defaultTabs={defaults.main} onReady={registerSurface} onActiveTabChange={handleActiveTabChange} /></main>
+          <aside className="root-surface root-secondary"><WorkbenchSurfaceView surface="secondary" restoredLayout={initial.surfaces.secondary.layout} defaultTabs={defaults.secondary} onReady={registerSurface} onActiveTabChange={handleActiveTabChange} /></aside>
         </div>
-        <section className="root-surface root-panel"><WorkbenchSurfaceView surface="panel" restoredLayout={initial.surfaces.panel.layout} defaultTabs={defaults.panel} onReady={registerSurface} /></section>
+        <section className="root-surface root-panel"><WorkbenchSurfaceView surface="panel" restoredLayout={initial.surfaces.panel.layout} defaultTabs={defaults.panel} onReady={registerSurface} onActiveTabChange={handleActiveTabChange} /></section>
         <footer className="workbench-statusbar">
           <span>{workspace.workspace ? `${workspace.workspace.repository.fullName} · ${workspace.overlays.length} local change${workspace.overlays.length === 1 ? "" : "s"}` : "Workbench"}</span>
           <div>

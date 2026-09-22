@@ -11,11 +11,13 @@ export function WorkbenchSurfaceView({
   restoredLayout,
   defaultTabs,
   onReady,
+  onActiveTabChange,
 }: {
   surface: WorkbenchSurface;
   restoredLayout: unknown | null;
   defaultTabs: WorkbenchTab[];
   onReady: (surface: WorkbenchSurface, api: any) => void;
+  onActiveTabChange: (surface: WorkbenchSurface, tab: WorkbenchTab | null) => void;
 }) {
   const runtime = useWorkbenchRuntime();
   const runtimeRef = useRef(runtime);
@@ -61,6 +63,12 @@ export function WorkbenchSurfaceView({
           }
           initialized.current = true;
           setPanelCount(api.panels?.length ?? 0);
+          const currentPanel = api.activePanel;
+          onActiveTabChange(surface, currentPanel ? currentPanel.params as WorkbenchTab : null);
+          api.onDidActivePanelChange?.((event: any) => {
+            const panel = event?.panel;
+            onActiveTabChange(surface, panel ? panel.params as WorkbenchTab : null);
+          });
           api.onDidLayoutChange?.(() => {
             const count = api.panels?.length ?? 0;
             setPanelCount(count);

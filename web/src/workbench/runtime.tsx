@@ -4,6 +4,7 @@ import type { SplitDirection, WorkbenchSurface, WorkbenchTab, WorkbenchTabType }
 
 export type WorkbenchRuntime = {
   settings: WorkbenchSettings;
+  activeTab: WorkbenchTab | null;
   setTheme: (theme: AppearanceMode) => void;
   openTab: (type: WorkbenchTabType, surface?: WorkbenchSurface, state?: Record<string, unknown>) => void;
   moveTab: (id: string, surface: WorkbenchSurface) => void;

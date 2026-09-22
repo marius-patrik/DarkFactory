@@ -35,6 +35,7 @@ export function BrowserTab({
   const [loading, setLoading] = useState(current !== "about:blank");
   const [frameError, setFrameError] = useState("");
   const [slowFrame, setSlowFrame] = useState(false);
+  const [stopped, setStopped] = useState(false);
 
   useEffect(() => {
     setDraft(current === "about:blank" ? "" : current);
@@ -57,6 +58,7 @@ export function BrowserTab({
       setDraft(url === "about:blank" ? "" : url);
       setFrameError("");
       setSlowFrame(false);
+      setStopped(false);
       setLoading(url !== "about:blank");
     } catch (reason) {
       setFrameError(reason instanceof Error ? reason.message : String(reason));
@@ -71,6 +73,7 @@ export function BrowserTab({
     setDraft(history[nextIndex]);
     setFrameError("");
     setSlowFrame(false);
+    setStopped(false);
     setLoading(true);
   };
 
@@ -78,7 +81,14 @@ export function BrowserTab({
     setRevision((value) => value + 1);
     setFrameError("");
     setSlowFrame(false);
+    setStopped(false);
     setLoading(current !== "about:blank");
+  };
+
+  const stop = () => {
+    setStopped(true);
+    setLoading(false);
+    setSlowFrame(false);
   };
 
   return (
@@ -86,7 +96,11 @@ export function BrowserTab({
       <div className="browser-toolbar">
         <button type="button" className="workbench-icon-button" disabled={index <= 0} onClick={() => step(-1)} aria-label="Back"><ArrowLeft size={14} /></button>
         <button type="button" className="workbench-icon-button" disabled={index >= history.length - 1} onClick={() => step(1)} aria-label="Forward"><ArrowRight size={14} /></button>
-        <button type="button" className="workbench-icon-button" onClick={reload} aria-label="Reload"><RefreshCw size={14} /></button>
+        {loading ? (
+          <button type="button" className="workbench-icon-button" onClick={stop} aria-label="Stop"><X size={14} /></button>
+        ) : (
+          <button type="button" className="workbench-icon-button" onClick={reload} aria-label="Reload"><RefreshCw size={14} /></button>
+        )}
         <form className="browser-location" onSubmit={(event) => { event.preventDefault(); navigate(draft); }}>
           <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Enter URL" aria-label="URL" />
         </form>
@@ -96,6 +110,13 @@ export function BrowserTab({
       <div className="browser-content">
         {current === "about:blank" ? (
           <div className="tab-empty"><strong>Browser</strong><span>Enter a URL to open an embeddable web page.</span></div>
+        ) : stopped ? (
+          <div className="tab-empty">
+            <strong>Navigation stopped.</strong>
+            <span>{current}</span>
+            <button type="button" onClick={reload}>Reload</button>
+            <a href={current} target="_blank" rel="noreferrer">Open externally</a>
+          </div>
         ) : frameError ? (
           <div className="tab-empty">
             <X size={20} />

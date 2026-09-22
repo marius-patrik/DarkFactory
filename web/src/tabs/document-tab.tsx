@@ -1,47 +1,26 @@
-import { rendererCapabilityForPath } from "@/renderers/capabilities";
+import type { AppearanceMode } from "@/settings";
 import type { WorkbenchTab } from "@/workbench/model";
-import { useWorkbenchRuntime } from "@/workbench/runtime";
-import { RenderedResource, useResourceComparison } from "./resource-view";
+import { EditorTab } from "./editor-tab";
 
-export function DocumentTab({ tab }: { tab: WorkbenchTab }) {
-  const runtime = useWorkbenchRuntime();
-  const path = typeof tab.state.path === "string" ? tab.state.path : "";
-  const resource = useResourceComparison(path, "none", "");
-  const capability = rendererCapabilityForPath(path);
-
-  if (!path) {
-    return (
-      <div className="tab-empty">
-        <strong>Document</strong>
-        <span>No rendered resource is open.</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="resource-tab">
-      <div className="resource-controls">
-        <span className="resource-path" title={path}>{path}</span>
-        <span className="resource-representation">{capability.label}</span>
-        <button
-          type="button"
-          onClick={() => runtime.openTab("editor", "main", { path, renderer: "editor" })}
-        >
-          Open Editor
-        </button>
-      </div>
-      <div className="resource-body">
-        {resource.loading ? (
-          <div className="tab-empty"><span>Loading renderer…</span></div>
-        ) : resource.error ? (
-          <div className="tab-empty">
-            <strong>Renderer unavailable</strong>
-            <span>{resource.error}</span>
-          </div>
-        ) : (
-          <RenderedResource path={path} snapshot={resource.current} />
-        )}
-      </div>
-    </div>
-  );
+export function DocumentTab({
+  tab,
+  theme,
+  updateState,
+}: {
+  tab: WorkbenchTab;
+  theme: AppearanceMode;
+  updateState: (patch: Record<string, unknown>) => void;
+}) {
+  const normalized: WorkbenchTab = {
+    ...tab,
+    state: {
+      renderer: "browser",
+      review: false,
+      compare: "none",
+      compareTarget: "",
+      representation: "auto",
+      ...tab.state,
+    },
+  };
+  return <EditorTab tab={normalized} theme={theme} updateState={updateState} />;
 }

@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Command, Search } from "lucide-react";
 import { preferredWorkbenchTabForPath } from "@/renderers/capabilities";
 import { useWorkspace } from "@/workspace/context";
@@ -49,13 +49,30 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
 
+  const activeResource = useMemo(() => {
+    const active = runtime.activeTab;
+    if (!active) return "";
+    if (active.type === "browser") {
+      const url = typeof active.state.url === "string" ? active.state.url : "about:blank";
+      return url === "about:blank" ? "" : url;
+    }
+    if (active.type === "editor" || active.type === "document") {
+      return typeof active.state.path === "string" ? active.state.path : "";
+    }
+    return "";
+  }, [runtime.activeTab]);
+
+  useEffect(() => {
+    if (!focused && mode !== "command") setQuery(activeResource);
+  }, [activeResource, focused, mode]);
+
   useImperativeHandle(ref, () => ({
     focus(nextMode) {
       setMode(nextMode);
-      setQuery(nextMode === "command" ? ">" : "");
+      setQuery(nextMode === "command" ? ">" : activeResource);
       requestAnimationFrame(() => inputRef.current?.focus());
     },
-  }), []);
+  }), [activeResource]);
 
   const commandQuery = query.replace(/^>/, "").trim().toLowerCase();
   const visibleCommands = COMMANDS
@@ -110,9 +127,37 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
 
   const openResource = (path: string) => {
     if (preferredWorkbenchTabForPath(path) === "document") {
-      runtime.openTab("document", "main", { path });
+      runtime.openTab("document", "main", {
+        path,
+        renderer: "browser",
+        review: false,
+        compare: "none",
+        compareTarget: "",
+      });
     } else {
       runtime.openTab("editor", "main", { path, language: languageForPath(path) });
+    }
+    closeResults();
+  };
+
+  const navigateBrowser = (value: string) => {
+    const url = /^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`;
+    const active = runtime.activeTab;
+    if (active?.type === "browser") {
+      const history = Array.isArray(active.state.history)
+        ? active.state.history.filter((item): item is string => typeof item === "string")
+        : [];
+      const currentIndex = typeof active.state.historyIndex === "number"
+        ? Math.max(0, Math.min(history.length - 1, active.state.historyIndex))
+        : Math.max(0, history.length - 1);
+      const nextHistory = [...history.slice(0, currentIndex + 1), url];
+      runtime.updateTabState(active.id, {
+        url,
+        history: nextHistory,
+        historyIndex: nextHistory.length - 1,
+      });
+    } else {
+      runtime.openTab("browser", "main", { url, history: [url], historyIndex: 0 });
     }
     closeResults();
   };
@@ -143,9 +188,7 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               return;
             }
             if (queryKind === "url") {
-              const url = /^[a-z][a-z\d+.-]*:/i.test(query) ? query : `https://${query}`;
-              runtime.openTab("browser", "main", { url, history: [url], historyIndex: 0 });
-              closeResults();
+              navigateBrowser(query);
               return;
             }
             if (queryKind === "issue") {
@@ -160,7 +203,7 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               openResource(resourceResults[0]);
             }
           }}
-          placeholder={mode === "command" ? "Type a command" : "Search files, #issues, or enter URL"}
+          placeholder={runtime.activeTab?.type === "browser" ? "Enter URL" : mode === "command" ? "Type a command" : "Search files, #issues, or enter URL"}
           aria-label="Workbench omnibar"
         />
         <kbd>{mode === "command" ? "⌘⇧P" : "⌘P"}</kbd>
