@@ -13,10 +13,10 @@
   mesto: "Hradci Králové",
   rok: 2026,
   annotation-cs: [
-    Odborná práce zkoumá přechod od vývoje softwaru organizovaného kolem člověka a IDE k agentickému inženýrství, v němž agenti vykonávají významnou část implementace prostřednictvím harnessu. Vymezuje harness jako běhové prostředí, které pro agenta integruje stav, kontext, nástroje, řízené účinky, pozorování, ověřování, obnovu a orchestraci. DarkFactory představuje praktický artefakt tohoto přístupu. Dostupná implementační a CI evidence podporuje vybrané mechanismy řízené autonomie a obnovy, současně však neprokazuje plně bezobslužný produkční vývoj.
+    Odborná práce zkoumá přechod od konverzační asistence k delegovanému agentnímu vývoji a roli harnessu jako běhového a integračního prostředí coding agenta. Agentické inženýrství vymezuje jako soubor praktik, které činí software engineering s podporou AI efektivním, řízeným, opakovatelným a škálovatelným, zejména prostřednictvím prompt a context engineeringu, explicitních cílů a akceptačních podmínek, goal a verification loops, návrhu nástrojů a harnessu a multi-agent orchestrace. DarkFactory představuje praktický artefakt tohoto přístupu. Dostupná implementační a CI evidence zatím podporuje pouze vybrané mechanismy; konečné vyhodnocení je vázáno na pinovanou implementaci a reprodukovatelnou evidenci.
   ],
   abstract-en: [
-    This thesis examines the transition from software development organized around a human developer and an IDE to Agentic Engineering, in which agents perform substantial implementation work through a harness. It defines the harness as the runtime that integrates state, context, tools, controlled effects, observations, verification, recovery, and orchestration for the agent. DarkFactory is presented as a practical artefact of this architecture. Available implementation and CI evidence supports selected mechanisms of governed autonomy and recovery, but does not establish fully unattended production development.
+    This thesis examines the transition from conversational assistance to delegated agentic software development and the role of the harness as the coding agent's execution and integration environment. It defines Agentic Engineering as the set of practices that make AI-assisted software engineering efficient, controlled, repeatable, and scalable, including prompt and context engineering, explicit goals and acceptance conditions, goal and verification loops, tool and harness design, and multi-agent orchestration. DarkFactory is presented as a practical artefact of this approach. The currently available implementation and CI evidence supports only selected mechanisms; final evaluation is reserved for a pinned implementation revision and reproducible evidence.
   ],
 )
 
@@ -211,7 +211,7 @@ Tool a harness engineering řeší, jaké nástroje existují, jaká mají sché
 
 Více agentů je engineeringová možnost pro rozklad, specializaci, paralelizaci nebo koordinaci práce, nikoli automatický recept na lepší výsledek. Vzor coordinator/subagent ponechává celkový cíl jednomu agentovi nebo runtimu: ten předá subagentovi omezený kontext a odpovědnost, převezme výsledek a integruje jej. U paralelních workerů je práce současná jen tehdy, když jsou rozsahy dostatečně nezávislé, vlastnictví stavu jasné a existuje řízená integrační brána @openai-agent-orchestration.
 
-Swarms označují volnější distribuovaný vzor, v němž více agentů spolupracuje prostřednictvím sdíleného nebo předávaného stavu, zpráv či úkolů; pro tuto práci je důležitý pouze jako kontrast ke koordinačnímu runtimu, nikoli jako samostatný předmět přehledu @openai-swarm. Agentní práce může být popsána také workflow grafem: uzly představují kroky, úkoly nebo agenty a hrany přechody, závislosti a hand-offy. Graf podporuje sekvenci, větvení, paralelní práci, retry, review/fix cykly a integraci. Goal loop řídí opakovaný postup k cíli; workflow graph explicitně strukturuje vztahy mezi více kroky.
+Jako příklad volnější multi-agent orchestrace lze uvést experimentální framework OpenAI Swarm, který zkoumal lehké skládání agentů a hand-offů; jeho produkční nástupce je dnes OpenAI Agents SDK @openai-swarm @openai-agent-orchestration. Pro tuto práci je swarm pouze jedním z možných orchestračních vzorů, nikoli samostatným předmětem přehledu. Agentní práce může být popsána také workflow grafem: uzly představují kroky, úkoly nebo agenty a hrany přechody, závislosti a hand-offy. Graf podporuje sekvenci, větvení, paralelní práci, retry, review/fix cykly a integraci. Goal loop řídí opakovaný postup k cíli; workflow graph explicitně strukturuje vztahy mezi více kroky.
 
 Rozhodující částí orchestrace není dispatch, ale integrace: sběr výsledků, řešení konfliktů, verifikace, review a merge nebo jiná integrační brána. Bez těchto mechanismů paralelní agenti pouze přesunou konflikt do pozdější fáze @github-branches @github-pull-requests.
 
@@ -233,13 +233,11 @@ Evidence uvádí DarkFactory na commitu `e9c10221b40589512d262a0edb95f709b923150
 
 Navazující evidence uvádí úspěšné pipeline na repozitářích `omnis` (commit `a53660a1`, run `34708160162`), `ChessWithQuests` (commit `50a50797`, run `34708180783`) a této práce (commit `5bc04974`, run `35617820423`) @omnis-a53660a1 @omnis-ci-34708160162 @chesswithquests-50a50797 @chesswithquests-ci-34708180783 @darkfactory-paper-5bc04974 @darkfactory-paper-ci-35617820423. U archivovaných repozitářů nelze z jejich stavu vyvozovat současnou provozní přenositelnost.
 
-#heading(level: 2)[Interpretace vzhledem k otázkám]
+#heading(level: 2)[Předběžná interpretace]
 
-Pro *O1* evidence podporuje interpretaci, že agentní práci lze ohraničit kombinací stavu úlohy, oprávnění, izolace změn, automatických kontrol a integrační brány. Tato evidence však neporovnává takový proces s lidským vývojem a neprokazuje optimální řešení modelu.
+Dostupný snapshot dokládá některé mechanismy relevantní pro pozdější vyhodnocení, zejména práci s trvalým stavem, oprávněními, izolací změn, automatickými kontrolami a vybranými scénáři obnovy. Tyto výsledky podporují tvrzení, že harness může část řízení a ověřování delegované práce převzít do runtime, ale samy neodpovídají na současné výzkumné otázky v plném rozsahu.
 
-Pro *O2* dostupné testy podporují existenci mechanismů pro zachycení stavu a vybrané scénáře přerušení nebo změny poskytovatele. Lze proto hovořit o ověřené obnovitelnosti testovaných scénářů, nikoli o univerzální odolnosti vůči každému distribuovanému selhání.
-
-Pro *O3* evidence podporuje oddělení Run State a generovaných promptů. To odpovídá teoretické potřebě udržovat projektový stav mimo aktivní kontext. Samotná evidence však neměří kvalitu výběru kontextu, míru vynechaných závislostí ani dopad na produktivitu.
+Historický a teoretický rozbor poskytuje podklad pro *O1* a vymezení praktik i capability surface pro *O2*, zatímco dostupná implementační evidence přispívá především k části *O2* a *O3*. Snapshot však neměří efektivitu Agentic Engineering, kvalitu context engineeringu, úplnost orchestrace ani přínos jednotlivých praktik. Konečné odpovědi na výzkumné otázky proto musí vzniknout až po pinování kanonické revize DarkFactory a vybudování reprodukovatelného evidenčního manifestu.
 
 #heading(level: 2)[Omezení]
 
