@@ -54,6 +54,15 @@ The theory should then explain only what is needed to support that argument:
 - how a harness integrates state, tools, environment, effects, observations, verification, recovery, and orchestration;
 - how Agentic Engineering reorganizes software-engineering responsibility around agents as implementation executors.
 
+Current theory/visual acceptance decisions:
+- keep tokenization conceptual and omit BPE-specific exposition;
+- keep the embedding treatment to a concise king/queen example plus `paper/img/vector-embedding-queen.svg`;
+- do not use the previous 3D embedding diagram;
+- keep Gradually;
+- keep ReAct;
+- allow workflow graphs for agent workflow planning without DAG-specific discussion;
+- keep Vibe Coding and Prompt Injection outside the thesis.
+
 Do not turn the historical progression into a product catalogue.
 
 Do not organize the theory as a terminology taxonomy.
@@ -326,13 +335,17 @@ Use minimal permissions and simple triggers.
 ## Execution order
 
 ### Phase 1 — Paper foundation
-Can begin immediately.
+Active until the theoretical and editorial foundation is stable enough that later work can focus on DarkFactory evidence rather than redesigning the thesis argument.
 
-- rewrite Theory and Agentic Engineering;
+- rewrite the paper around the IDE → harness and Software Engineering → Agentic Engineering transition;
+- use only light, sourced history for IDE → completion → chat → agents → agent-first/ADE development;
+- keep model theory proportionate to the runtime/engineering argument;
 - simplify `paper/PAPER.typ`;
 - curate bibliography/figures alongside the rewrite;
-- establish clean typography;
-- keep Practical as a boundary until evidence is pinned.
+- establish clean academic typography;
+- keep Practical as a clean DarkFactory boundary until evidence is pinned;
+- keep validators editorially generic rather than hard-coding level-2/3 prose structure;
+- re-read the generated PDF end-to-end before accepting the phase.
 
 Deliver as a PR for review.
 
