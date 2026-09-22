@@ -1,63 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520">
   <defs>
-    <marker id="arrow-x" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#334155"/>
-    </marker>
-    <marker id="arrow-y" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#475569"/>
-    </marker>
-    <marker id="relation-h" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#be123c"/>
-    </marker>
-    <marker id="relation-v" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 Z" fill="#1d4ed8"/>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#111"/>
     </marker>
   </defs>
-
-  <rect x="20" y="20" width="860" height="500" rx="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-
-  <g font-family="Carlito, Arial, sans-serif">
-    <text x="450" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">Ilustrativní 2D projekce embeddingového vztahu</text>
-
-    <!-- axes -->
-    <line x1="170" y1="420" x2="760" y2="420" stroke="#334155" stroke-width="2" marker-end="url(#arrow-x)"/>
-    <line x1="170" y1="420" x2="170" y2="115" stroke="#475569" stroke-width="2" marker-end="url(#arrow-y)"/>
-    <text x="765" y="447" text-anchor="end" font-size="15" font-weight="700" fill="#334155">Pohlaví</text>
-    <text x="122" y="126" transform="rotate(-90 122 126)" text-anchor="end" font-size="15" font-weight="700" fill="#475569">Královský status</text>
-
-    <!-- guide lines -->
-    <line x1="300" y1="190" x2="300" y2="390" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 6"/>
-    <line x1="620" y1="190" x2="620" y2="390" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 6"/>
-    <line x1="300" y1="190" x2="620" y2="190" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 6"/>
-    <line x1="300" y1="390" x2="620" y2="390" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 6"/>
-
-    <!-- relation vectors -->
-    <line x1="318" y1="390" x2="596" y2="390" stroke="#be123c" stroke-width="4" marker-end="url(#relation-h)"/>
-    <line x1="318" y1="190" x2="596" y2="190" stroke="#be123c" stroke-width="4" marker-end="url(#relation-h)"/>
-    <line x1="300" y1="370" x2="300" y2="214" stroke="#1d4ed8" stroke-width="4" marker-end="url(#relation-v)"/>
-    <line x1="620" y1="370" x2="620" y2="214" stroke="#1d4ed8" stroke-width="4" marker-end="url(#relation-v)"/>
-
-    <!-- points -->
-    <circle cx="300" cy="390" r="11" fill="#2563eb" stroke="#1e3a8a" stroke-width="2"/>
-    <circle cx="620" cy="390" r="11" fill="#db2777" stroke="#831843" stroke-width="2"/>
-    <circle cx="300" cy="190" r="11" fill="#2563eb" stroke="#1e3a8a" stroke-width="2"/>
-    <circle cx="620" cy="190" r="11" fill="#db2777" stroke="#831843" stroke-width="2"/>
-
-    <g font-size="17" font-weight="700" fill="#0f172a">
-      <text x="280" y="425" text-anchor="end">muž</text>
-      <text x="640" y="425">žena</text>
-      <text x="280" y="174" text-anchor="end">král</text>
-      <text x="640" y="174">královna</text>
+  <rect x="1" y="1" width="898" height="518" fill="#fff"/>
+  <g font-family="Times New Roman, Liberation Serif, serif" fill="#111" stroke="#111">
+    <line x1="165" y1="410" x2="770" y2="410" stroke-width="2.2" marker-end="url(#arrow)"/>
+    <line x1="165" y1="410" x2="165" y2="95" stroke-width="2.2" marker-end="url(#arrow)"/>
+    <text x="775" y="440" text-anchor="end" font-size="20" font-weight="700" stroke="none">Pohlaví</text>
+    <text x="125" y="110" transform="rotate(-90 125 110)" text-anchor="end" font-size="20" font-weight="700" stroke="none">Královský status</text>
+    <line x1="300" y1="365" x2="625" y2="365" stroke-width="2.4" stroke-dasharray="10 7" marker-end="url(#arrow)"/>
+    <line x1="300" y1="180" x2="625" y2="180" stroke-width="2.4" stroke-dasharray="10 7" marker-end="url(#arrow)"/>
+    <line x1="300" y1="360" x2="300" y2="195" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <line x1="625" y1="360" x2="625" y2="195" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <circle cx="300" cy="365" r="9" fill="#fff" stroke-width="3"/>
+    <circle cx="625" cy="365" r="9" fill="#111" stroke-width="2"/>
+    <circle cx="300" cy="180" r="9" fill="#fff" stroke-width="3"/>
+    <circle cx="625" cy="180" r="9" fill="#111" stroke-width="2"/>
+    <g font-size="21" font-weight="700" stroke="none">
+      <text x="279" y="395" text-anchor="end">muž</text>
+      <text x="647" y="395">žena</text>
+      <text x="279" y="165" text-anchor="end">král</text>
+      <text x="647" y="165">královna</text>
     </g>
-
-    <g font-size="13" fill="#64748b">
-      <text x="300" y="449" text-anchor="middle">mužský pól</text>
-      <text x="620" y="449" text-anchor="middle">ženský pól</text>
-      <text x="148" y="395" text-anchor="end">nižší</text>
-      <text x="148" y="195" text-anchor="end">vyšší</text>
-    </g>
-
-    <rect x="198" y="470" width="504" height="38" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
-    <text x="450" y="495" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">v(král) − v(muž) + v(žena) ≈ v(královna)</text>
+    <rect x="200" y="455" width="500" height="45" rx="5" fill="#fff" stroke-width="1.3"/>
+    <text x="450" y="484" text-anchor="middle" font-size="20" font-weight="700" stroke="none">v(král) − v(muž) + v(žena) ≈ v(královna)</text>
   </g>
 </svg>
