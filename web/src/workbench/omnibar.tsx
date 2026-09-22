@@ -37,6 +37,12 @@ export type OmnibarQueryKind =
   | "resource";
 export type OmnibarControl = { focus: (mode: OmnibarMode, value?: string) => void };
 
+type OmnibarSymbol = {
+  name: string;
+  detail: string;
+  line: number;
+};
+
 const COMMANDS: Array<{ label: string; type?: WorkbenchTabType; action?: "primary" | "secondary" | "panel" }> = [
   { label: "Open Editor", type: "editor" },
   { label: "Open Browser", type: "browser" },
@@ -90,6 +96,8 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
   const [releases, setReleases] = useState<GithubRelease[]>([]);
   const [entityLoading, setEntityLoading] = useState(false);
   const [entityError, setEntityError] = useState("");
+  const [symbols, setSymbols] = useState<OmnibarSymbol[]>([]);
+  const [symbolLoading, setSymbolLoading] = useState(false);
 
   const activeResource = useMemo(() => {
     const active = runtime.activeTab;
@@ -195,6 +203,69 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
     };
   }, [focused, queryKind, workspace.token, workspace.workspace]);
 
+  useEffect(() => {
+    if (!focused || queryKind !== "symbol") return;
+    const active = runtime.activeTab;
+    const path = active && (active.type === "editor" || active.type === "document")
+      ? (typeof active.state.path === "string" ? active.state.path : "")
+      : "";
+    if (!path || !workspace.workspace) {
+      setSymbols([]);
+      return;
+    }
+
+    let disposed = false;
+    setSymbolLoading(true);
+    void workspace.readFile(path)
+      .then((source) => {
+        if (disposed) return;
+        const next: OmnibarSymbol[] = [];
+        const seen = new Set<string>();
+        const lines = source.replace(/\r\n/g, "\n").split("\n");
+
+        const add = (name: string, detail: string, line: number) => {
+          const normalized = name.trim();
+          if (!normalized) return;
+          const key = `${line}:${normalized}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          next.push({ name: normalized, detail, line });
+        };
+
+        lines.forEach((line, index) => {
+          const lineNumber = index + 1;
+          const markdown = line.match(/^\s*(#{1,6})\s+(.+?)\s*#*\s*$/);
+          if (markdown) add(markdown[2], `heading ${markdown[1].length}`, lineNumber);
+
+          const typst = line.match(/^\s*(=+)\s+(.+?)\s*$/);
+          if (typst) add(typst[2], `heading ${typst[1].length}`, lineNumber);
+
+          const declaration = line.match(
+            /^\s*(?:export\s+)?(?:async\s+)?(function|class|interface|type|enum|const|let|var|def|fn|struct|trait|impl)\s+([A-Za-z_$][\w$-]*)/,
+          );
+          if (declaration) add(declaration[2], declaration[1], lineNumber);
+
+          const pythonClass = line.match(/^\s*(class|def)\s+([A-Za-z_]\w*)\s*[(:]/);
+          if (pythonClass) add(pythonClass[2], pythonClass[1], lineNumber);
+
+          const typstLet = line.match(/^\s*#let\s+([A-Za-z_][\w-]*)/);
+          if (typstLet) add(typstLet[1], "let", lineNumber);
+        });
+
+        setSymbols(next);
+      })
+      .catch(() => {
+        if (!disposed) setSymbols([]);
+      })
+      .finally(() => {
+        if (!disposed) setSymbolLoading(false);
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [focused, queryKind, runtime.activeTab, workspace.readFile, workspace.workspace]);
+
   const resourceQuery = query.trim().toLowerCase();
   const resourceResults = queryKind === "resource" && resourceQuery
     ? resourcePaths
@@ -269,6 +340,17 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
         .filter((item) => {
           const value = `${item.tag_name} ${item.name || ""}`.toLowerCase();
           return !entityQuery || value.includes(entityQuery);
+        })
+        .slice(0, 8)
+    : [];
+  const symbolQuery = query.replace(/^@/, "").trim().toLowerCase();
+  const symbolResults = queryKind === "symbol"
+    ? symbols
+        .filter((item) => !symbolQuery || item.name.toLowerCase().includes(symbolQuery))
+        .sort((left, right) => {
+          const leftExact = left.name.toLowerCase() === symbolQuery ? 0 : 1;
+          const rightExact = right.name.toLowerCase() === symbolQuery ? 0 : 1;
+          return leftExact - rightExact || left.line - right.line;
         })
         .slice(0, 8)
     : [];
@@ -371,6 +453,19 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               navigateBrowser(query);
               return;
             }
+            if (queryKind === "symbol") {
+              const first = symbolResults[0];
+              const active = runtime.activeTab;
+              if (first && active && (active.type === "editor" || active.type === "document")) {
+                runtime.updateTabState(active.id, {
+                  renderer: "editor",
+                  goToLine: first.line,
+                  goToLineRequest: Date.now(),
+                });
+                closeResults();
+              }
+              return;
+            }
             if (queryKind === "issue") {
               const first = issueResults[0];
               if (first) {
@@ -465,6 +560,29 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
               Go to line {Number(query.replace(/^:/, ""))}
             </button>
           ) : <div className="omnibar-empty">Enter a line number for the active file</div>}
+        </div>
+      )}
+      {focused && queryKind === "symbol" && (
+        <div className="omnibar-results">
+          {symbolLoading ? <div className="omnibar-empty">Indexing symbols…</div> : symbolResults.length ? symbolResults.map((item) => (
+            <button
+              key={`${item.line}:${item.name}`}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                const active = runtime.activeTab;
+                if (!active || (active.type !== "editor" && active.type !== "document")) return;
+                runtime.updateTabState(active.id, {
+                  renderer: "editor",
+                  goToLine: item.line,
+                  goToLineRequest: Date.now(),
+                });
+                closeResults();
+              }}
+            >
+              {item.name} · {item.detail} · line {item.line}
+            </button>
+          )) : <div className="omnibar-empty">No symbols in the active file</div>}
         </div>
       )}
       {focused && queryKind === "issue" && (
