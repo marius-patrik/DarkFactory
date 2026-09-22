@@ -389,11 +389,11 @@ if BOOK == "DarkFactory":
         ROOT / "language-models/index.typ": (
             'title: [Jazykový model a inference]',
             'title: [Jazykový model]',
-            'title: [Inference]',
-            'title: [Limity inference]',
+            'title: [Inference a její limity]',
             "language-model/inference-engine.typ",
             "language-model/context-window.typ",
             "language-model/kv-cache.typ",
+            "language-model/context-rot.typ",
         ),
         ROOT / "agentic-engineering/agent-harness/index.typ": (
             'title: [Harness]',
