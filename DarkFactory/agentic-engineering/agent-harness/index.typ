@@ -31,7 +31,7 @@
 
 #let environment = folder(
   key: "harness_tools_environment",
-  title: [Nástroje a prostředí],
+  title: [Prostředí a nástroje],
   concepts: (
     environment.item,
     tools.item,
