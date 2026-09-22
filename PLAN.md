@@ -172,83 +172,122 @@ The following decisions are fixed and are not delegated to implementation-agent 
 
 ### Structural numbering and subsection ownership
 
-Theory must render exactly as below. Numbered entries are structural sections. Indented bullet entries marked **[article]** are unnumbered semantic articles rendered in the manuscript but excluded from the school PDF contents.
+Explicit numbered **Úvod** and **Závěr** child sections are removed from Theory and Practical. Their prose is preserved as unheaded framing owned directly by the parent section.
+
+Theory must render exactly as below. Numbered entries are structural sections. Entries marked **[article]** are unnumbered semantic articles rendered in the manuscript but excluded from the school PDF contents.
 
 - **2 Teoretická část**
-- **2.1 Úvod**
-- **2.2 Jazykový model**
-  - **2.2.1 Úvod**
-    - current frontier benchmark snapshot is an evidence figure/table, not a semantic article
-  - **2.2.2 Architektura a reprezentace**
-    - **[article] Velký jazykový model (LLM)**
-    - **[article] Transformer**
-    - **[article] Tokenizér**
-    - **[article] Token**
-    - **[article] Vektorová reprezentace (Embedding)**
-  - **2.2.3 Inference**
-    - **[article] Poskytovatel modelu (Model Provider)**
-    - **[article] Inferenční engine (Inference Engine)**
-    - **[article] Teplota (Temperature)**
-    - **[article] Kontextové okno (Context Window)**
-    - **[article] Mezipaměť klíčů a hodnot (KV Cache)**
-    - **[article] Degradace kontextu (Context Rot)**
-  - **2.2.4 Závěr**
-- **2.3 Harness**
-  - **2.3.1 Úvod**
+  - opening framing prose directly under the section heading; no numbered `Úvod`
+  - **2.1 Jazykový model**
+    - opening framing prose directly under 2.1
+    - latest frontier benchmark snapshot is evidence, not a semantic article
+    - **2.1.1 Architektura a reprezentace**
+      - **[article] Velký jazykový model (LLM)**
+      - **[article] Transformer**
+      - **[article] Tokenizér**
+      - **[article] Token**
+      - **[article] Vektorová reprezentace (Embedding)**
+    - **2.1.2 Inference**
+      - **[article] Poskytovatel modelu (Model Provider)**
+      - **[article] Inferenční engine (Inference Engine)**
+      - **[article] Teplota (Temperature)**
+      - **[article] Kontextové okno (Context Window)**
+      - **[article] Mezipaměť klíčů a hodnot (KV Cache)**
+      - **[article] Degradace kontextu (Context Rot)**
+    - unheaded closing synthesis/transition owned by 2.1
+  - **2.2 Harness**
+    - opening framing prose directly under 2.2
     - Harness interface screenshots are examples/attachments here, not standalone articles
-  - **2.3.2 Smyčka a stav**
-    - **[article] Agentní smyčka (Agent Loop)**
-    - **[article] Agentní sezení (Session)**
-    - **[article] Přepis (Transcript)**
-    - **[article] Stav (State)**
-  - **2.3.3 Prostředí a nástroje**
-    - **[article] Prostředí agenta (Agent Environment)**
-    - **[article] Nástroje (Tools)**
-    - **[article] Vyvolávání nástrojů (Tool Calling)**
-    - **[article] Spouštění kódu (Code Execution)**
-    - **[article] Izolované prostředí (Sandbox)**
-  - **2.3.4 Rozšíření**
-    - **[article] Dovednosti (Skills)**
-    - **[article] Plugin**
-    - **[article] Skript**
-    - **[article] Hooks**
-    - **[article] MCP**
-  - **2.3.5 Závěr**
-- **2.4 AI-asistovaný vývoj a agentické inženýrství**
-  - **2.4.1 Úvod**
-  - **2.4.2 Zadání a způsob práce**
-    - **[article] Vibe Coding**
-    - **[article] Vývoj řízený specifikací (Spec-Driven Development)**
-    - **[article] Plánování (Planning)**
-  - **2.4.3 Řízení změny**
-    - **[article] Správa verzí (Version Control)**
-    - **[article] Větev (Branch)**
-    - **[article] Pull Request**
-  - **2.4.4 Kvalita a ověřování**
-    - **[article] Slop**
-    - **[article] Průběžná integrace (CI)**
-    - **[article] Integrační test (Integration Test)**
-  - **2.4.5 Instrukce a kontext**
-    - **[article] Promptové inženýrství (Prompt Engineering)**
-    - **[article] Systémový prompt (System Prompt)**
-    - **[article] Projektové instrukce (AGENTS.md / CLAUDE.md)**
-    - **[article] Kontextové inženýrství (Context Engineering)**
-    - **[article] Vkládání kontextu (Context Injection)**
-    - **[article] Kompakce kontextu (Context Compaction)**
-    - **[article] RAG**
-    - **[article] Prompt Injection**
-  - **2.4.6 Řízení agentního chování**
-    - **[article] Cílené smyčky (Goal Loops)**
-    - **[article] Guardrail**
-    - **[article] Člověk ve smyčce (HITL)**
-  - **2.4.7 Orchestrace agentů**
-    - **[article] Subagent**
-    - **[article] Orchestrátor**
-    - **[article] Předání řízení (Handoff)**
-    - **[article] Graf pracovního postupu (Workflow Graph)**
-  - **2.4.8 Závěr**
+    - **2.2.1 Smyčka a stav**
+      - **[article] Agentní smyčka (Agent Loop)**
+      - **[article] Agentní sezení (Session)**
+      - **[article] Přepis (Transcript)**
+      - **[article] Stav (State)**
+    - **2.2.2 Prostředí a nástroje**
+      - **[article] Prostředí agenta (Agent Environment)**
+      - **[article] Nástroje (Tools)**
+      - **[article] Vyvolávání nástrojů (Tool Calling)**
+      - **[article] Spouštění kódu (Code Execution)**
+      - **[article] Izolované prostředí (Sandbox)**
+    - **2.2.3 Rozšíření**
+      - **[article] Dovednosti (Skills)**
+      - **[article] Plugin**
+      - **[article] Skript**
+      - **[article] Hooks**
+      - **[article] MCP**
+      - **[article] .agents/**
+      - **[article] .claude/**
+    - unheaded closing synthesis/transition owned by 2.2
+  - **2.3 AI-asistovaný vývoj a agentické inženýrství**
+    - opening framing prose directly under 2.3
+    - **2.3.1 Zadání a způsob práce**
+      - **[article] Vibe Coding**
+      - **[article] Vývoj řízený specifikací (Spec-Driven Development)**
+      - **[article] Plánování (Planning)**
+      - **[article] Revize (Review)**
+    - **2.3.2 Řízení změny**
+      - **[article] Správa verzí (Version Control)**
+      - **[article] Větev (Branch)**
+      - **[article] Pull Request**
+    - **2.3.3 Kvalita a ověřování**
+      - **[article] Slop**
+      - **[article] Průběžná integrace (CI)**
+      - **[article] Integrační test (Integration Test)**
+    - **2.3.4 Instrukce a kontext**
+      - **[article] Promptové inženýrství (Prompt Engineering)**
+      - **[article] Systémový prompt (System Prompt)**
+      - **[article] AGENTS.md**
+      - **[article] CLAUDE.md**
+      - **[article] Kontextové inženýrství (Context Engineering)**
+      - **[article] Vkládání kontextu (Context Injection)**
+      - **[article] Kompakce kontextu (Context Compaction)**
+      - **[article] RAG**
+      - **[article] Prompt Injection**
+    - **2.3.5 Řízení agentního chování**
+      - **[article] Cílené smyčky (Goal Loops)**
+      - **[article] Guardrail**
+      - **[article] Člověk ve smyčce (HITL)**
+    - **2.3.6 Orchestrace agentů**
+      - **[article] Subagent**
+      - **[article] Orchestrátor**
+      - **[article] Předání řízení (Handoff)**
+      - **[article] Graf pracovního postupu (Workflow Graph)**
+    - unheaded closing synthesis/transition owned by 2.3
 
-The above order is canonical. Agents must not reorder these groups or articles without first updating PLAN.
+The group the user previously referred to as **2.4.2 Zadání a způsob práce** is renumbered to **2.3.1** only because explicit numbered introductory sections and the standalone Theory intro node are removed. **Review remains in that exact semantic group.**
+
+Practical uses the same framing rule:
+
+- **3 Praktická část**
+  - opening framing prose directly under the section heading; no numbered `Úvod`
+  - **3.1 DarkFactory**
+    - final internal numbered/article hierarchy comes from canonical autogenerated DarkFactory documentation
+  - **3.2 Životní cyklus změny**
+    - opening framing prose directly under 3.2
+    - **3.2.1 Zadání a plán**
+      - **[article] Požadavek (Request)** if retained by final sourced ownership
+      - **[article] Plánování DarkFactory (Planning)** if retained by final sourced ownership
+    - **3.2.2 Implementace**
+    - **3.2.3 Ověření a revize**
+      - **[article] Deterministické ověření (Deterministic Verification)** if retained
+      - **[article] Smyčka revize a opravy (Review/Fix Loop)** if retained
+    - **3.2.4 Finalizace**
+      - **[article] Finální zarovnání (Final Alignment)** if retained
+      - **[article] Reconciliation** if retained
+    - **3.2.5 Přerušení a obnova**
+    - unheaded closing synthesis owned by 3.2
+  - **3.3 Vyhodnocení**
+    - opening framing prose directly under 3.3
+    - **3.3.1 Ověření mechanismů**
+    - **3.3.2 Ověření systému**
+    - **3.3.3 Ověření na repozitářích**
+    - **3.3.4 Výzkumné otázky**
+    - **3.3.5 Diskuse a omezení**
+    - unheaded closing synthesis owned by 3.3
+
+**4 Závěr** remains a real top-level thesis section because it is the mandatory final thesis conclusion, not a framing subsection.
+
+The above order is canonical. Agents must not reorder groups or articles without first updating PLAN.
 
 A rendered numbered section has one owning folder manifest. Concept files may remain in existing domain directories when moving them would create churn, but superseded `index.typ` files must no longer act as parallel rendered section owners.
 
@@ -266,16 +305,61 @@ Use these canonical terminology records and stable keys:
   - `term: "Poskytovatel modelu"`
   - `keyword: "Model Provider"`
   - relations: related to `language_model` and `inference_engine`.
-- AGENTS.md / CLAUDE.md article:
-  - `key: "project_instructions"`
-  - `term: "Projektové instrukce"`
-  - `keyword: "AGENTS.md / CLAUDE.md"`
-  - article scope is specifically project/repository instruction files consumed by coding agents;
-  - AGENTS.md and CLAUDE.md are concrete implementations/examples, not asserted to be one universal standard;
-  - relations: related to `system_prompt` and `context_engineering`;
-  - exact reading position: immediately after **Systémový prompt (System Prompt)** and before **Kontextové inženýrství (Context Engineering)**.
+- Review:
+  - `key: "review"`
+  - `term: "Revize"`
+  - `keyword: "Review"`
+  - scope: general review of a plan/change/output against explicit requirements or quality criteria; not the DarkFactory-specific Review/Fix Loop;
+  - source from established software/code-review literature or first-party development-platform documentation;
+  - relations: related to `planning`, `pull_request`, and `integration_test`.
+- AGENTS.md:
+  - `key: "agents_md"`
+  - `term: none`
+  - `keyword: "AGENTS.md"`
+  - exact scope: Codex project/repository instruction files discovered hierarchically and injected into agent context;
+  - source: official OpenAI Codex documentation;
+  - relations: related to `system_prompt`, `context_engineering`, and `agents_directory`.
+- CLAUDE.md:
+  - `key: "claude_md"`
+  - `term: none`
+  - `keyword: "CLAUDE.md"`
+  - exact scope: Claude Code project/user memory/instruction files loaded into context;
+  - source: official Anthropic Claude Code documentation;
+  - relations: related to `system_prompt`, `context_engineering`, and `claude_directory`.
+- .agents/:
+  - `key: "agents_directory"`
+  - `term: none`
+  - `keyword: ".agents/"`
+  - exact scope: Codex repository/user namespace whose officially documented repository extension surface includes `.agents/skills/`;
+  - do not imply that every possible Codex configuration file belongs under `.agents/`;
+  - source: official OpenAI Codex skills/customization documentation;
+  - relations: related to `agents_md`, `skills`, and `scripts`.
+- .claude/:
+  - `key: "claude_directory"`
+  - `term: none`
+  - `keyword: ".claude/"`
+  - exact scope: Claude Code project/user configuration namespace, including documented project settings such as `.claude/settings.json` and related Claude Code configuration/extension surfaces;
+  - source: official Anthropic Claude Code documentation;
+  - relations: related to `claude_md`, `skills`, and `hooks`.
+
+Do **not** keep the previous umbrella semantic article **Projektové instrukce (AGENTS.md / CLAUDE.md)**. The structural group **Instrukce a kontext** already provides the umbrella; AGENTS.md and CLAUDE.md own distinct implementation semantics and therefore remain separate articles.
 
 These relation edges express conceptual linkage only and must not change manifest reading order.
+
+### Section framing without numbered Úvod/Závěr
+
+The schema/rendering contract must support framing prose without synthetic child headings:
+
+- every structural `section` keeps its current opening `definition` + `description` body rendered immediately after the section heading;
+- add an optional section-level **closing/synthesis body** (recommended schema field: `conclusion` or equivalently named single canonical field);
+- render that closing body **after the section’s concepts and child folders**, before the next sibling section;
+- the closing body has no heading, no number, no outline entry, and no semantic term of its own;
+- migrate useful prose from old explicit `introduction.typ` / `conclusion.typ` framing files into the owning section’s opening/closing bodies;
+- delete obsolete framing files/manifests once their content is migrated;
+- opening prose establishes scope/transition only; closing prose synthesizes/bridges only;
+- neither opening nor closing framing may duplicate child definitions/evidence.
+
+This applies to Theory and Practical. Top-level **1 Úvod** and **4 Závěr** remain actual thesis sections.
 
 ### Section 1 adoption and deployment evidence
 
@@ -323,9 +407,9 @@ The textual takeaway may state the source’s measured trend only. As of the Sep
 
 Do not replace this with a collection of unrelated benchmark bars.
 
-### 2.2 current frontier benchmark snapshot
+### 2.1 current frontier benchmark snapshot
 
-Exact placement: **2.2.1 Úvod**, after its opening scope/transition paragraph and before 2.2.2 Architektura a reprezentace.
+Exact placement: directly in the opening framing prose of **2.1 Jazykový model**, before **2.1.1 Architektura a reprezentace**.
 
 Use **Artificial Analysis Intelligence Index v4.3.2** as the pinned current comparison for this revision unless Artificial Analysis publishes a newer stable index version before the implementation agent begins.
 
@@ -451,6 +535,36 @@ Product screenshots and product-behavior claims must use first-party sources whe
 
 
 
+## Locked user-request coverage checklist
+
+Every implementation/review pass must preserve all of the following unless the user explicitly supersedes one:
+
+- exact work title: **AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory**;
+- Section 2 title: **Teoretická část**;
+- no synthetic numbered `Úvod`/`Závěr` children; preserve their framing prose unheaded;
+- AI-assisted development and Agentic Engineering merged into one Theory section;
+- **Revize (Review)** included in **Zadání a způsob práce**;
+- Harness extension group titled only **Rozšíření**;
+- Model owns the latest frontier benchmark snapshot;
+- Section 1 owns Gradually adoption/coding-agent evidence and the long-term Epoch capability curve;
+- all factual/definitional/product/benchmark claims come from real sources;
+- remove “v této práci” / equivalent self-referential published prose;
+- Temperature and Model Provider included under Inference;
+- 2D embedding graph: Czech labels, no label/axis collisions;
+- second 3D pedagogical embedding graph demonstrating additional dimensionality;
+- ReAct/Agent Loop diagram simplified to the locked five-node loop;
+- State wording describes facts/data as **state**, never as facts “owned by State”;
+- real Harness examples: Claude Code CLI, Google Antigravity IDE, ChatGPT web;
+- distinct semantic articles for **AGENTS.md** and **CLAUDE.md**;
+- distinct semantic articles for **.agents/** and **.claude/**;
+- school semantics/formatting contract remains binding for the submission profile;
+- unnumbered semantic articles are excluded from the school PDF contents but remain available to the richer web Structure UI;
+- 3.1 DarkFactory remains generated rather than hand-reconstructed;
+- no legacy/transitional compatibility structure is kept merely to preserve old paths.
+
+If a side agent finds a conflict between two locked requirements, it must stop that conflicting subchange and report the conflict rather than silently choosing one.
+
+
 ## Explicitly deferred decisions — agents must not invent these early
 
 These items are intentionally unresolved until the named phase because they depend on live sources or implementation evidence.
@@ -492,17 +606,15 @@ Required evidence in Section 1:
 - include the **long-term model capability/improvement curves** from a stable longitudinal source;
 - keep these as motivation/context, not as a detailed benchmark survey.
 
-The latest point-in-time frontier-model benchmark comparison belongs in 2.2 Jazykový model, not in Section 1.
+The latest point-in-time frontier-model benchmark comparison belongs in 2.1 Jazykový model, not in Section 1.
 
 ### 2 Teoretická část
 
 Rename the top-level section from the longer current title to exactly **Teoretická část**.
 
-#### 2.1 Úvod
+Theory opening scope/transition prose is rendered directly under **2 Teoretická část** without a numbered `Úvod` child.
 
-Scope/transition only. Do not pre-summarize every child concept.
-
-#### 2.2 Jazykový model
+#### 2.1 Jazykový model
 
 Split the current combined **Jazykový model a inference** section. This section owns the model itself, its representation, generation controls, and provider boundary.
 
@@ -520,7 +632,7 @@ Section 1 owns:
 - the contrast between broad AI adoption and directly measured coding-agent usage;
 - long-term model capability/improvement curves.
 
-Section 2.2 owns:
+Section 2.1 owns:
 - the **latest frontier-model benchmark comparison** only, pinned to an exact benchmark/version/date.
 
 Do not duplicate these surfaces across both sections.
@@ -550,11 +662,11 @@ Keep the existing queen/king relationship as an explicitly illustrative projecti
 
 The implementation agent must choose and cite the exact source-backed third relation before drawing the second diagram.
 
-Inference is not a separate level-2 section. The old standalone inference plan is superseded: inference is the numbered **2.2.3 Inference** subsection inside **2.2 Jazykový model**, combining the former “Generování a poskytování” material with inference execution/limits.
+Inference is not a separate level-2 section. It is **2.1.2 Inference** inside **2.1 Jazykový model**, combining the former “Generování a poskytování” material with inference execution/limits.
 
-#### 2.3 Harness
+#### 2.2 Harness
 
-Harness follows **2.2 Jazykový model** and its **2.2.3 Inference** subsection.
+Harness follows **2.1 Jazykový model** and its **2.1.2 Inference** subsection.
 
 Exact Harness numbering, group names, and ordering are fixed in the Locked implementation contract above. Existing concepts remain assigned to those groups as described there and in the canonical hierarchy.
 
@@ -588,92 +700,47 @@ Use real screenshots, not recreated/generated mockups. Prefer first-party produc
 
 These are examples of real harness/product surfaces, not new abstract taxonomy items unless the source and writing justify a semantic concept.
 
-#### 2.4 AI-asistovaný vývoj a agentické inženýrství
+#### 2.3 AI-asistovaný vývoj a agentické inženýrství
 
 Merge the current **AI-asistovaný vývoj** and **Agentické inženýrství** level-2 sections into one second-level section after Harness.
 
 The section explains how model + inference + harness capabilities are deliberately used to develop software.
 
-Target material to preserve/restructure:
-
-- Úvod
-- Zadání a způsob práce
-  - Vibe Coding
-  - Vývoj řízený specifikací (Spec-Driven Development)
-  - Plánování (Planning)
-- Řízení změny
-  - Správa verzí (Version Control)
-  - Větev (Branch)
-  - Pull Request
-- Kvalita a ověřování
-  - Slop
-  - Průběžná integrace (CI)
-  - Integrační test (Integration Test)
-- Instrukce a kontext
-  - Promptové inženýrství (Prompt Engineering)
-  - Systémový prompt (System Prompt)
-  - **AGENTS.md / CLAUDE.md**
-  - Kontextové inženýrství (Context Engineering)
-  - Vkládání kontextu (Context Injection)
-  - Kompakce kontextu (Context Compaction)
-  - RAG
-  - Prompt Injection
-- Řízení agentního chování
-  - Cílené smyčky (Goal Loops)
-  - Guardrail
-  - Člověk ve smyčce (HITL)
-- Orchestrace agentů
-  - Subagent
-  - Orchestrátor
-  - Předání řízení (Handoff)
-  - Graf pracovního postupu (Workflow Graph)
-- Závěr
-
-The implementation agent should optimize the exact group ordering for a continuous argument rather than mechanically concatenate the two old sections.
-
-##### AGENTS.md / CLAUDE.md article
-
-Add one source-backed article covering repository/project instruction files through concrete implementations:
-- OpenAI Codex **AGENTS.md** behavior from official OpenAI documentation;
-- Anthropic Claude Code **CLAUDE.md** behavior from official Anthropic documentation.
-
-Do not claim they are identical or a universal standard. Explain their shared practical role and their implementation-specific differences from the cited documentation.
+Its exact numbered groups and unnumbered article order are fixed in the Locked implementation contract above. **Review is part of Zadání a způsob práce. AGENTS.md and CLAUDE.md are separate articles; .agents/ and .claude/ are separate Harness extension articles.**
 
 ### 3 Praktická část
 
-#### 3.1 Úvod
+Practical opening Theory → realization → evidence prose is rendered directly under **3 Praktická část** without a numbered `Úvod` child.
 
-Explain Theory → concrete realization → evidence.
-
-#### 3.2 DarkFactory
+#### 3.1 DarkFactory
 
 Keep empty in hand-maintained source until generated documentation is integrated.
 
 Do not recreate manual architecture prose.
 
-#### 3.3 Životní cyklus změny
+#### 3.2 Životní cyklus změny
 
-Target structure remains:
-- Úvod
+Target numbered structure:
 - Zadání a plán
 - Implementace
 - Ověření a revize
 - Finalizace
 - Přerušení a obnova
-- Závěr
+
+Opening and closing framing prose remains, but without separate numbered Úvod/Závěr headings.
 
 Rewrite only from actual DarkFactory behavior/evidence and keep ownership distinct from generated 3.2 documentation.
 
-#### 3.4 Vyhodnocení
+#### 3.3 Vyhodnocení
 
-Target structure remains:
-- Úvod
+Target numbered structure:
 - Ověření mechanismů
 - Ověření systému
 - Ověření na repozitářích
 - Výzkumné otázky
 - Diskuse a omezení
-- Závěr
+
+Opening and closing framing prose remains, but without separate numbered Úvod/Závěr headings.
 
 Results report evidence, not architecture.
 
@@ -689,13 +756,14 @@ This phase is **structure-only** except for the minimum sourced definitions requ
 
 - apply the new work title everywhere;
 - rename section 2 to **Teoretická část**;
-- keep **Jazykový model** as 2.2 and merge inference into **2.2.3 Inference**;
-- place **Harness** as 2.3;
-- merge AI-asistovaný vývoj + Agentické inženýrství into **2.4**;
+- remove synthetic numbered Theory/Practical Úvod/Závěr child sections and migrate their prose into section-owned opening/closing framing;
+- make **Jazykový model** 2.1 and merge inference into **2.1.2 Inference**;
+- make **Harness** 2.2;
+- merge AI-asistovaný vývoj + Agentické inženýrství into **2.3**;
 - make unnumbered concept articles excluded from the school PDF contents while remaining available to the web Structure UI;
 - align the GJKT school-PDF template/front matter/numbering contract defined above;
 - rename the extensions group to **Rozšíření**;
-- add planned Temperature, Model Provider, and AGENTS.md / CLAUDE.md concepts;
+- add Temperature, Model Provider, Review, AGENTS.md, CLAUDE.md, .agents/, and .claude/ as the distinct locked concepts defined above;
 - update manifests, relations, vocabulary ownership, README, and `AGENTS.md`;
 - remove superseded structure rather than keeping compatibility paths;
 - verify semantic graph resolution and rendered hierarchy.
@@ -704,7 +772,7 @@ Exit:
 - hierarchy/vocabulary are structurally frozen under the new design;
 - `AGENTS.md`, README, manifests, and PLAN agree.
 
-### Phase 2 — Section 1 evidence restoration + 2.2 benchmark snapshot
+### Phase 2 — Section 1 evidence restoration + 2.1 benchmark snapshot
 
 Section 1:
 - implement the Gradually-derived 2,500-dot world-population visualization defined above;
@@ -712,23 +780,23 @@ Section 1:
 - verify and restore the Epoch AI long-term model capability curve;
 - record source population, observation date, methodology, and caveats.
 
-Section 2.2:
+Section 2.1:
 - verify a current frontier-model comparison pinned to benchmark/version/date;
 - keep it compact and point-in-time; do not duplicate the long-term curves or adoption evidence from Section 1.
 
 Exit:
 - Section 1 has sourced adoption/coding-agent usage evidence and long-term capability curves;
-- 2.2 has the latest benchmark snapshot;
+- 2.1 has the latest benchmark snapshot;
 - the coding-agent estimate is represented with Gradually’s stated caveats and provenance;
 - the 2,500-dot diagram is sourced and publication-ready.
 
-### Phase 3 — Model / 2.2.3 Inference rewrite and visuals
+### Phase 3 — Model / 2.1.2 Inference rewrite and visuals
 
-- rewrite 2.2 Jazykový model from source-backed responsibilities;
-- rewrite **2.2.3 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
+- rewrite 2.1 Jazykový model from source-backed responsibilities;
+- rewrite **2.1.2 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
 - rebuild 2D embedding figure;
 - add sourced 3D projection;
-- citation pass across 2.2.
+- citation pass across 2.1.
 
 Exit:
 - architecture/representation and inference responsibilities are cleanly separated inside 2.2 and all factual claims/visual relations are sourced.
@@ -748,8 +816,9 @@ Exit:
 
 ### Phase 5 — Merge/rewrite AI-assisted development + Agentic Engineering
 
-- physically merge the old level-2 sections into the locked 2.4 hierarchy;
-- add AGENTS.md / CLAUDE.md article;
+- physically merge the old level-2 sections into the locked 2.3 hierarchy;
+- add Review under Zadání a způsob práce;
+- split the former umbrella project-instructions concept into separate AGENTS.md and CLAUDE.md articles;
 - preserve the locked group/article order while rewriting transitions into a continuous software-development argument;
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
@@ -761,7 +830,7 @@ Exit:
 ### Phase 6 — Theory-wide source and single-owner pass
 
 Audit:
-1. 2.2 Jazykový model, including 2.2.3 Inference;
+1. 2.1 Jazykový model, including 2.1.2 Inference;
 2. 2.3 Harness;
 3. 2.4 AI-asistovaný vývoj a agentické inženýrství.
 
@@ -785,15 +854,15 @@ Ensure the research frame maps onto evidence that can actually be collected.
 
 ### Phase 8 — Finalize hand-maintained Practical shell
 
-- finalize 3.1;
-- keep 3.2 empty;
-- rewrite/finalize 3.3 only from actual DarkFactory behavior.
+- keep section-owned Practical opening/closing framing unheaded;
+- keep 3.1 DarkFactory generated/empty in hand-maintained source;
+- rewrite/finalize 3.2 lifecycle only from actual DarkFactory behavior.
 
-### Phase 9 — Integrate autogenerated DarkFactory docs into 3.2
+### Phase 9 — Integrate autogenerated DarkFactory docs into 3.1
 
 - pin the DarkFactory revision;
 - generate canonical docs;
-- map generated hierarchy into 3.2;
+- map generated hierarchy into 3.1;
 - prevent duplication with Theory and 3.3;
 - preserve traceability/reproducibility.
 
@@ -805,14 +874,14 @@ Pin:
 - workflow/CI runs;
 - generated docs snapshot.
 
-Then rewrite/finalize 3.4 around concrete reproducible evidence.
+Then rewrite/finalize 3.3 around concrete reproducible evidence.
 
 ### Phase 11 — Thesis-wide deduplication and final alignment
 
 Audit:
 - Section 1 ↔ Theory;
-- Theory ↔ generated 3.2;
-- Theory/generated docs ↔ 3.3;
+- Theory ↔ generated 3.1;
+- Theory/generated docs ↔ 3.2;
 - Practical ↔ Results;
 - Results ↔ Conclusion.
 
@@ -844,18 +913,21 @@ Then finalize:
 
 The thesis is complete only when:
 - title and hierarchy match the final design;
-- 2.2.3 Inference is the single inference subsection inside 2.2 Jazykový model;
-- Harness is 2.3;
-- AI-asistovaný vývoj and Agentické inženýrství form coherent section 2.4;
+- 2.1.2 Inference is the single inference subsection inside 2.1 Jazykový model;
+- Harness is 2.2;
+- AI-asistovaný vývoj and Agentické inženýrství form coherent section 2.3;
+- Theory and Practical use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
+- Review exists under Zadání a způsob práce;
+- AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership;
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
 - the latest model benchmark comparison in 2.2 is pinned and cited;
 - diagrams are clean, sourced, and pedagogically accurate;
 - real harness examples use real screenshots with provenance;
-- 3.2 comes from generated DarkFactory documentation;
-- 3.3 owns lifecycle behavior;
-- 3.4 owns evidence;
+- 3.1 comes from generated DarkFactory documentation;
+- 3.2 owns lifecycle behavior;
+- 3.3 owns evidence;
 - semantic duplication is eliminated;
 - final research questions, Results, and Conclusion align;
 - the school-PDF profile satisfies the GJKT IVT semantic and formatting contract;
