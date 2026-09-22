@@ -1,10 +1,11 @@
 #import "/DarkFactory/schema.typ": folder
-#import "/DarkFactory/manuscript/practical/execution-lifecycle/request-capture-section.typ" as request_capture_section
+#import "/DarkFactory/manuscript/practical/execution-lifecycle/introduction-section.typ" as introduction
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/planning-section.typ" as planning_section
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/implementation-section.typ" as implementation_section
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/verification-section.typ" as verification_section
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/finalization-section.typ" as finalization_section
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/recovery-section.typ" as recovery_section
+#import "/DarkFactory/manuscript/practical/execution-lifecycle/conclusion-section.typ" as conclusion
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/request.typ" as request
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/planning-artifact.typ" as planning_artifact
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/review-fix-loop.typ" as review_fix_loop
@@ -12,39 +13,40 @@
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/final-alignment.typ" as final_alignment
 #import "/DarkFactory/manuscript/practical/execution-lifecycle/reconciliation.typ" as reconciliation
 
-#let request_capture = folder(
-  key: "darkfactory_request_capture",
-  title: [Zachycení požadavku],
-  section: request_capture_section.item,
-  concepts: (request.item,),
+#let intro = folder(
+  key: "change_lifecycle_intro",
+  section: introduction.item,
 )
 
 #let planning = folder(
-  key: "darkfactory_planning_lifecycle",
-  title: [Plánování a schválení],
+  key: "change_request_plan",
+  title: [Zadání a plán],
   section: planning_section.item,
   concepts: (
+    request.item,
     planning_artifact.item,
-    review_fix_loop.item,
   ),
 )
 
 #let implementation = folder(
-  key: "darkfactory_implementation_lifecycle",
+  key: "change_implementation",
   title: [Implementace],
   section: implementation_section.item,
 )
 
 #let verification = folder(
-  key: "darkfactory_verification_lifecycle",
+  key: "change_verification_review",
   title: [Ověření a revize],
   section: verification_section.item,
-  concepts: (deterministic_verification.item,),
+  concepts: (
+    deterministic_verification.item,
+    review_fix_loop.item,
+  ),
 )
 
-#let integration = folder(
-  key: "darkfactory_integration_lifecycle",
-  title: [Finalizace a integrace],
+#let finalization = folder(
+  key: "change_finalization",
+  title: [Finalizace],
   section: finalization_section.item,
   concepts: (
     final_alignment.item,
@@ -53,20 +55,26 @@
 )
 
 #let recovery = folder(
-  key: "darkfactory_recovery_lifecycle",
-  title: [Obnova a pokračování],
+  key: "change_interruption_recovery",
+  title: [Přerušení a obnova],
   section: recovery_section.item,
 )
 
+#let close = folder(
+  key: "change_lifecycle_conclusion",
+  section: conclusion.item,
+)
+
 #let node = folder(
-  key: "darkfactory_execution_lifecycle",
-  title: [Životní cyklus požadavku],
+  key: "change_lifecycle",
+  title: [Životní cyklus změny],
   children: (
-    request_capture,
+    intro,
     planning,
     implementation,
     verification,
-    integration,
+    finalization,
     recovery,
+    close,
   ),
 )

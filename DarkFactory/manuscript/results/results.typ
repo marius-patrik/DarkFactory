@@ -1,12 +1,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "results_discussion",
-  title: [Výsledky a diskuse],
+  key: "evaluation",
+  title: [Vyhodnocení],
   definition: terms => [
-Tato část odděluje doložené vlastnosti implementace DarkFactory od tvrzení, která vyžadují další end-to-end nebo fleet-level důkaz.
+Vyhodnocení odděluje důkazy o jednotlivých mechanismech od důkazů o jejich spolupráci na úrovni systému a od přenosu na konkrétní cílové repozitáře.
   ],
   description: terms => [
-Výsledky vycházejí z konkrétního referenčního commitu, automatických testů, CI check runů a zdrojového kódu. Architektonická existence mechanismu není zaměňována za důkaz jeho úspěšného použití v celém produkčním životním cyklu.
+Metodika těchto důkazů je stanovena v části 1.5; zde se už neopakuje. Tato část pouze uvádí pevný evidence snapshot, výsledky a hranice závěrů, které z nich lze odvodit.
   ],
 )

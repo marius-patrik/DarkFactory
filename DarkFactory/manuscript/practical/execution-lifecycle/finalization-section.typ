@@ -2,12 +2,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "darkfactory_integration_lifecycle_body",
-  title: [Finalizace a integrace],
+  key: "change_finalization_body",
+  title: [Finalizace],
   definition: terms => [
-Před merge je implementace znovu porovnána se schváleným Planningem a případnými schválenými změnami rozsahu.
+Před ukončením změny se implementace porovná se schváleným plánem a dosažený výsledek se promítne do trvalého stavu vývojového procesu.
   ],
   description: terms => [
-Po Final Alignment následují požadované externí kontroly a finální review nebo merge autorizace. Teprve poté je změna integrována a DarkFactory deterministicky rekonciluje stav navázaných Requestů, pull requestů, projektu a bezpečně odstranitelných větví. #cite(bib.darkfactory)
+Final Alignment kontroluje soulad hotové změny s aktuálním schváleným Planningem. Reconciliation následně sjednocuje stav navázaného Requestu, pull requestu a dalších trvalých workflow objektů podle skutečného výsledku. #cite(bib.darkfactory)
   ],
 )

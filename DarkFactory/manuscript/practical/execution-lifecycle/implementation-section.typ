@@ -2,12 +2,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "darkfactory_implementation_lifecycle_body",
+  key: "change_implementation_body",
   title: [Implementace],
   definition: terms => [
-Po schválení Planningu runtime provádí změnu pomocí capabilities a deterministických mechanismů nad pracovním prostředím repozitáře.
+Po schválení plánu systém provede požadovanou změnu nad pracovním prostředím repozitáře.
   ],
   description: terms => [
-Model může rozhodovat o obsahu změny a používat dostupné nástroje, ale pravdu o mutacích nevlastní jeho textový výstup. Stav souborů, diff, scope, verifikační akce, commity a další účinky jsou zjišťovány z prostředí a zachycovány vykonávacím jádrem. #cite(bib.darkfactory)
+Model může navrhovat a provádět kroky prostřednictvím dostupných schopností, ale zdrojem pravdy zůstává pozorovaný stav pracovního stromu a skutečně provedené účinky. Tato část proto popisuje provedení změny, nikoli její následné hodnocení. #cite(bib.darkfactory)
   ],
 )

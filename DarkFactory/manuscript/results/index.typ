@@ -1,68 +1,64 @@
 #import "/DarkFactory/schema.typ": folder
 #import "/DarkFactory/manuscript/results/results.typ" as section
-#import "/DarkFactory/manuscript/results/evaluation-method.typ" as method_section
-#import "/DarkFactory/manuscript/results/technical-results.typ" as technical_results_section
-#import "/DarkFactory/manuscript/results/end-to-end-evaluation.typ" as end_to_end_section
-#import "/DarkFactory/manuscript/results/target-repository-evaluation.typ" as target_repositories_section
-#import "/DarkFactory/manuscript/results/discussion.typ" as discussion_section
-#import "/DarkFactory/manuscript/results/goal-question-section.typ" as goal_question_section
+#import "/DarkFactory/manuscript/results/evaluation-method.typ" as introduction
+#import "/DarkFactory/manuscript/results/technical-results.typ" as mechanisms
+#import "/DarkFactory/manuscript/results/end-to-end-evaluation.typ" as system
+#import "/DarkFactory/manuscript/results/target-repository-evaluation.typ" as repositories
 #import "/DarkFactory/manuscript/results/research-question-evaluation.typ" as questions
-#import "/DarkFactory/manuscript/results/evaluation-limitations.typ" as limitations
+#import "/DarkFactory/manuscript/results/discussion.typ" as discussion
+#import "/DarkFactory/manuscript/results/conclusion.typ" as conclusion
 
-#let method = folder(
-  key: "evaluation_method",
-  title: [Metoda ověření],
-  section: method_section.item,
+#let intro = folder(
+  key: "evaluation_intro",
+  section: introduction.item,
 )
 
-#let technical_results = folder(
-  key: "technical_results",
-  title: [Technické výsledky],
-  section: technical_results_section.item,
+#let mechanism_verification = folder(
+  key: "mechanism_verification",
+  title: [Ověření mechanismů],
+  section: mechanisms.item,
 )
 
-#let end_to_end = folder(
-  key: "end_to_end_evaluation",
-  title: [End-to-end ověření],
-  section: end_to_end_section.item,
+#let system_verification = folder(
+  key: "system_verification",
+  title: [Ověření systému],
+  section: system.item,
 )
 
-#let target_repositories = folder(
-  key: "target_repository_evaluation",
-  title: [Ověření na cílových repozitářích],
-  section: target_repositories_section.item,
+#let repository_verification = folder(
+  key: "repository_verification",
+  title: [Ověření na repozitářích],
+  section: repositories.item,
 )
 
-#let goal_evaluation = folder(
-  key: "goal_and_question_evaluation",
-  title: [Vyhodnocení cílů a výzkumných otázek],
-  section: goal_question_section.item,
-  concepts: (questions.item,),
+#let research_questions = folder(
+  key: "research_question_answers",
+  title: [Výzkumné otázky],
+  section: questions.item,
 )
 
-#let evaluation_limits = folder(
-  key: "evaluation_limits",
-  title: [Omezení],
-  concepts: (limitations.item,),
+#let discussion_limits = folder(
+  key: "evaluation_discussion_limits",
+  title: [Diskuse a omezení],
+  section: discussion.item,
 )
 
-#let discussion = folder(
-  key: "results_discussion_section",
-  title: [Diskuse],
-  section: discussion_section.item,
+#let close = folder(
+  key: "evaluation_conclusion",
+  section: conclusion.item,
 )
 
 #let node = folder(
-  key: "results_discussion",
-  title: [Výsledky a diskuse],
+  key: "evaluation",
+  title: [Vyhodnocení],
   section: section.item,
   children: (
-    method,
-    technical_results,
-    end_to_end,
-    target_repositories,
-    goal_evaluation,
-    evaluation_limits,
-    discussion,
+    intro,
+    mechanism_verification,
+    system_verification,
+    repository_verification,
+    research_questions,
+    discussion_limits,
+    close,
   ),
 )

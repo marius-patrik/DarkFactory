@@ -2,12 +2,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "darkfactory_planning_lifecycle_body",
-  title: [Plánování a schválení],
+  key: "change_request_plan_body",
+  title: [Zadání a plán],
   definition: terms => [
-Z Requestu a aktuálního stavu repozitáře vzniká jeden sjednocený Planning artefakt, který před implementací projde nezávislou revizí a jedním explicitním schválením vlastníka.
+Řízená změna začíná trvalým Requestem a jeho převodem na konkrétní Planning artefakt před zahájením implementace.
   ],
   description: terms => [
-Planning obsahuje interpretaci požadavku, acceptance criteria, scope, závislosti, pořadí práce a očekávané ověření. Revize a automatická oprava se opakují do čistého výsledku; po materiální změně Requestu, base stavu, závislostí nebo recovery kontextu se předchozí schválení považuje za zastaralé. #cite(bib.darkfactory)
+Request zachovává původní zadání a stav doručení. Planning jej spojuje s aktuálním stavem repozitáře, acceptance criteria, rozsahem, závislostmi, pořadím práce a očekávaným ověřením. Tato fáze vlastní pouze vznik schváleného rámce změny; review/fix implementace patří až do následného ověřování. #cite(bib.darkfactory)
   ],
 )

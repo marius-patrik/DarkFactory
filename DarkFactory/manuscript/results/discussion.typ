@@ -2,14 +2,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "results_discussion_body",
-  title: [Diskuse],
+  key: "evaluation_discussion_limits",
+  title: [Diskuse a omezení],
   definition: terms => [
-Dostupná evidence podporuje architektonické oddělení modelového rozhodování od deterministických mechanismů stavu, verifikace, credentials a obnovy, ale nepodporuje obecné tvrzení o vyšší výkonnosti nebo úplné autonomii.
+Dostupná evidence podporuje realizaci a testované vlastnosti jednotlivých mechanismů, nikoli obecné tvrzení o úplné autonomii nebo výkonnostní převaze DarkFactory.
   ],
   description: terms => [
-Silnou stránkou evaluace je přímá vazba mezi jednotlivými tvrzeními a implementačními nebo testovacími důkazy: například výsledek kódového kroku je odvozován z pracovního stromu a scope checku místo textového tvrzení modelu a recovery kontrakt je testován proti neplatné provenance i citlivému obsahu. #cite(bib.darkfactory_e9c10221)
-
-Slabší část evidence leží na úrovni celého systému. Jednotlivé mechanismy a jejich integrace jsou automaticky testovány a referenční quality run je zelený, ale evaluace neobsahuje jeden živý průchod celým Request lifecycle ani plnou acceptance původní cílové fleety. Odpovědi na výzkumné otázky jsou proto záměrně omezeny na architekturu a testované mechanismy a nepřenášejí tyto výsledky na neprovedené produkční scénáře.
+Práce neprovádí statistický benchmark úspěšnosti, ceny, latence ani četnosti zacyklení na reprezentativním souboru úloh. Evidence také neobsahuje jeden živý plný Request lifecycle ani úplnou acceptance původně plánované fleety. #cite(bib.darkfactory_request_359) Silnou stránkou evaluace je naopak přímá vazba konkrétních tvrzení na implementační a testovací důkazy, například pozorovaný stav pracovního stromu nebo recovery provenance. #cite(bib.darkfactory_e9c10221)
   ],
 )

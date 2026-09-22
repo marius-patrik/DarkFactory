@@ -2,12 +2,12 @@
 #import "/DarkFactory/schema.typ": section
 
 #let item = section(
-  key: "darkfactory_verification_lifecycle_body",
+  key: "change_verification_review_body",
   title: [Ověření a revize],
   definition: terms => [
-Výsledek implementace je nejprve deterministicky ověřen a následně prochází samostatnou review/fix smyčkou.
+Po implementaci se skutečný výsledek změny odvodí z pozorovatelných důkazů a samostatně se zkontroluje jeho správnost.
   ],
   description: terms => [
-Automatické kontroly vycházejí z pozorovaných změn a skutečně spuštěných verifikačních akcí. Revize následně hledá problémy v implementaci a může vyvolat opravu a nové ověření; pokud oprava vyžaduje materiální práci mimo schválený Planning, musí být rozsah explicitně změněn a schválen. #cite(bib.darkfactory)
+Deterministické ověření pracuje se změněnými soubory, rozsahem a výsledky verifikačních akcí. Review/Fix Loop zachycuje zjištění a případné opravy; každá materiální oprava musí znovu projít odpovídajícím ověřením. #cite(bib.darkfactory)
   ],
 )
