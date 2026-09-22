@@ -3,15 +3,22 @@ import {
   createGithubPullRequest,
   createGithubPullRequestReview,
   getGithubPullRequest,
+  listGithubCheckRuns,
   listGithubIssueComments,
+  listGithubPullRequestCommits,
+  listGithubPullRequestFiles,
   listGithubPullRequests,
   mergeGithubPullRequest,
   updateGithubPullRequest,
+  type GithubCheckRun,
+  type GithubCommit,
   type GithubIssueComment,
   type GithubPullRequest,
+  type GithubPullRequestFile,
 } from "@/github/client";
 import type { WorkbenchTab } from "@/workbench/model";
 import { useWorkbenchRuntime } from "@/workbench/runtime";
+import { languageForPath } from "@/workspace/languages";
 import {
   ErrorState,
   LoadingState,
@@ -84,10 +91,14 @@ export function PullRequestsTab() {
 }
 
 export function PullRequestTab({ tab }: { tab: WorkbenchTab }) {
+  const runtime = useWorkbenchRuntime();
   const { workspace, fullName, token } = useRepositoryIdentity();
   const number = Number(tab.state.number) || 0;
   const [pull, setPull] = useState<GithubPullRequest | null>(null);
   const [comments, setComments] = useState<GithubIssueComment[]>([]);
+  const [commits, setCommits] = useState<GithubCommit[]>([]);
+  const [files, setFiles] = useState<GithubPullRequestFile[]>([]);
+  const [checks, setChecks] = useState<GithubCheckRun[]>([]);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(Boolean(fullName && number));
   const [error, setError] = useState("");
@@ -98,19 +109,28 @@ export function PullRequestTab({ tab }: { tab: WorkbenchTab }) {
     let disposed = false;
     setLoading(true);
     setError("");
-    void Promise.all([
-      getGithubPullRequest(fullName, number, token),
-      listGithubIssueComments(fullName, number, token),
-    ]).then(([nextPull, nextComments]) => {
-      if (!disposed) {
-        setPull(nextPull);
-        setComments(nextComments);
-      }
-    }).catch((reason) => {
-      if (!disposed) setError(reason instanceof Error ? reason.message : String(reason));
-    }).finally(() => {
-      if (!disposed) setLoading(false);
-    });
+    void (async () => {
+      const nextPull = await getGithubPullRequest(fullName, number, token);
+      const headRepository = nextPull.head.repo?.full_name || fullName;
+      const [nextComments, nextCommits, nextFiles, nextChecks] = await Promise.all([
+        listGithubIssueComments(fullName, number, token),
+        listGithubPullRequestCommits(fullName, number, token),
+        listGithubPullRequestFiles(fullName, number, token),
+        listGithubCheckRuns(headRepository, nextPull.head.sha, token).catch(() => []),
+      ]);
+      if (disposed) return;
+      setPull(nextPull);
+      setComments(nextComments);
+      setCommits(nextCommits);
+      setFiles(nextFiles);
+      setChecks(nextChecks);
+    })()
+      .catch((reason) => {
+        if (!disposed) setError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => {
+        if (!disposed) setLoading(false);
+      });
     return () => { disposed = true; };
   }, [fullName, number, revision, token]);
 
@@ -147,6 +167,16 @@ export function PullRequestTab({ tab }: { tab: WorkbenchTab }) {
     setRevision((value) => value + 1);
   };
 
+  const compareFile = (path: string) => {
+    runtime.openTab("editor", "main", {
+      path,
+      language: languageForPath(path),
+      renderer: "editor",
+      compare: "pull-request",
+      compareTarget: String(number),
+    });
+  };
+
   return (
     <div className="github-detail">
       <header className="github-detail-header">
@@ -166,6 +196,41 @@ export function PullRequestTab({ tab }: { tab: WorkbenchTab }) {
       </header>
       <div className="github-detail-body">
         <MarkdownBody>{pull.body}</MarkdownBody>
+        <section>
+          <h3>Checks</h3>
+          {checks.map((check) => (
+            <div key={check.id} className="github-data-row">
+              <strong>{check.name}</strong>
+              <span>{check.status}{check.conclusion ? ` · ${check.conclusion}` : ""}</span>
+            </div>
+          ))}
+          {!checks.length && <p className="github-empty-body">No check runs.</p>}
+        </section>
+        <section>
+          <h3>Commits</h3>
+          {commits.map((commit) => (
+            <button
+              key={commit.sha}
+              type="button"
+              className="github-data-row github-data-button"
+              onClick={() => runtime.openTab("commit", "main", { sha: commit.sha })}
+            >
+              <strong>{commit.commit.message?.split("\n")[0] || commit.sha.slice(0, 7)}</strong>
+              <span>{commit.sha.slice(0, 7)}</span>
+            </button>
+          ))}
+        </section>
+        <section>
+          <h3>Files Changed</h3>
+          {files.map((file) => (
+            <div key={file.filename} className="github-data-row">
+              <button type="button" className="github-file-link" onClick={() => compareFile(file.filename)}>
+                {file.filename}
+              </button>
+              <span>{file.status} · +{file.additions} −{file.deletions}</span>
+            </div>
+          ))}
+        </section>
         <section className="github-comments">
           <h3>Conversation</h3>
           {comments.map((item) => (
