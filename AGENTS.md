@@ -1,6 +1,6 @@
 # Repository instructions — DarkFactory-Paper
 
-`GOAL.md` defines the semantic destination of the thesis.
+`GOAL.md` defines the quality objective for the finished academic paper.
 
 `PRD.md` defines the finished repository/publication product contract.
 
@@ -24,7 +24,7 @@ Keep manuscript ownership singular: one authored Typst source plus supporting re
 
 ## Editorial rule
 
-Optimize the manuscript for the semantic path and final reading standard in `GOAL.md`.
+Optimize the manuscript for the final-paper quality standard in `GOAL.md` and the thesis-specific requirements in `PRD.md`.
 
 Treat available prose, terminology, figures, citations, and evidence as material for the final argument rather than as a structure that must be preserved.
 
