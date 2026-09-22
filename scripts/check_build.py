@@ -358,9 +358,9 @@ if BOOK == "DarkFactory":
         ),
         ROOT / "software-engineering/index.typ": (
             'title: [AI-asistovaný vývoj]',
-            'title: [Zadání a způsob práce]',
+            'title: [Specifikace a plánování]',
             'title: [Řízení změny]',
-            'title: [Kvalita a ověřování]',
+            'title: [Ověřování kvality]',
             "introduction.typ",
             "conclusion.typ",
             "vibe-coding.typ",
@@ -374,7 +374,7 @@ if BOOK == "DarkFactory":
             "integration-test.typ",
         ),
         ROOT / "language-models/index.typ": (
-            'title: [Jazykový model a inference]',
+            'title: [Model]',
             'title: [Jazykový model]',
             'title: [Inference]',
             'title: [Limity inference]',
@@ -385,7 +385,7 @@ if BOOK == "DarkFactory":
         ROOT / "agentic-engineering/agent-harness/index.typ": (
             'title: [Harness]',
             'title: [Smyčka a stav]',
-            'title: [Nástroje a prostředí]',
+            'title: [Prostředí a nástroje]',
             'title: [Dovednosti a rozšíření]',
             "agent-harness/introduction.typ",
             "agent-harness/tools/tool-calling.typ",
