@@ -43,6 +43,7 @@ The thesis must not invent factual terminology, mechanisms, statistics, benchmar
 - Do not compensate by inventing local definitions. Prefer established terminology supported by real sources.
 - When a claim is specifically about DarkFactory, state it concretely as a property/behavior of DarkFactory and support it from code/docs/tests/workflows rather than framing it as an arbitrary thesis convention.
 - Definitions, mechanisms, historical claims, product behavior, statistics, benchmark results, and comparisons must be traceable to real sources.
+- Every semantic concept with a real specification/product/paper realization must follow the Direct citation + concrete example contract below; generic bibliography metadata without a rendered claim-local citation is insufficient.
 - Prefer original papers/standards and first-party product documentation; use high-quality independent benchmark datasets/reports for cross-vendor comparisons.
 - Time-sensitive statistics and benchmarks must include a pinned observation date/version so the text does not imply timelessness.
 - Illustrative diagrams may simplify high-dimensional mechanisms, but captions must clearly distinguish sourced relationships from explanatory projection choices.
@@ -572,6 +573,122 @@ No new semantic concept may exist solely because the thesis invents a local defi
 - DarkFactory-specific → source it from DarkFactory code/generated docs/tests;
 - neither → remove it or write the relationship without promoting it to a glossary concept.
 
+### Direct citation + concrete example contract
+
+Every semantic article for which an authoritative specification, paper, API, product implementation, or reproducible real-world instance exists must contain **both**:
+
+1. a **direct primary citation** supporting the definition/mechanism being described; and
+2. at least one **concrete cited example** demonstrating the concept in a real implementation or in the primary source itself.
+
+This is a manuscript-body requirement, not merely metadata:
+- the definition/mechanism sentence must carry its claim-local citation;
+- the example sentence, figure, code excerpt, or attachment must carry the source for that example;
+- setting `citation:`/`source:` on the concept object does not by itself satisfy this rule if the rendered article does not make the evidence visible;
+- prefer one strong canonical example rather than lists of products;
+- a second example is justified when it demonstrates a materially different implementation surface;
+- product examples must be first-party and dated/versioned when behavior can change;
+- academic concepts should use an example from the original paper/specification where practical;
+- if no defensible concrete example exists, do **not** invent one; record that the article is definition/mechanism-only and explain why during the source audit;
+- examples remain examples/attachments and do not automatically become separate glossary concepts.
+
+#### Locked Harness source/example pairs
+
+These are the minimum direct-source/example contracts for 2.2 Harness.
+
+- **Agentní smyčka (Agent Loop)**
+  - direct source: original ReAct paper;
+  - example: the simplified sourced ReAct action/observation loop used by the article’s diagram.
+- **Agentní sezení (Session)**
+  - direct source: OpenAI Managed Agents session API/reference or equivalent first-party session documentation;
+  - example: one real session containing turns/items and a persistent session identifier.
+- **Přepis (Transcript)**
+  - direct source: first-party session/item-history documentation;
+  - example: a real ordered history containing user/assistant/tool-call/tool-result items; distinguish transcript/history from current state.
+- **Stav (State)**
+  - direct source: first-party agent session/state documentation;
+  - example: current persisted run/session facts used to continue execution, contrasted with the full transcript.
+- **Prostředí agenta (Agent Environment)**
+  - direct source: first-party agent environment/sandbox documentation;
+  - example: an OpenAI hosted shell/container or equivalent real agent environment containing workspace/files/tool runtime.
+- **Nástroje (Tools)**
+  - required primary citation: OpenAI **Using tools** (`https://developers.openai.com/api/docs/guides/tools`) or an equally direct first-party tool API specification;
+  - concrete example: the documented `web_search` tool or another first-party built-in tool attached to a Responses request;
+  - explain that “tool” is the exposed capability/interface; do not collapse the concept into Tool Calling.
+- **Vyvolávání nástrojů (Tool Calling)**
+  - required primary citation: OpenAI **Function calling** (`https://developers.openai.com/api/docs/guides/function-calling`);
+  - concrete example: the documented function-calling loop in which a model selects a named function, emits structured arguments, the application executes it, and the result is returned to the model;
+  - retain JSON Schema only as an implementation mechanism/example, not as a standalone taxonomy item.
+- **Spouštění kódu (Code Execution)**
+  - required primary citation: OpenAI **Shell** (`https://developers.openai.com/api/docs/guides/tools-shell`) and/or the directly applicable first-party code-execution documentation;
+  - concrete example: hosted `shell` with `container_auto` executing real commands and returning stdout/stderr to the model;
+  - use a small documented command example rather than invented output.
+- **Izolované prostředí (Sandbox)**
+  - required primary citation: OpenAI sandboxing documentation and/or the Agents sandbox security documentation;
+  - concrete example: a Codex/ChatGPT/Agents sandbox that restricts filesystem/network capabilities and requires approval/escalation outside its allowed boundary;
+  - source the boundary behavior directly; a generic “Docker container” is not sufficient as the only example.
+- **Dovednosti (Skills)**
+  - required primary citations:
+    - OpenAI **Customization overview** / Skills documentation;
+    - the open Agent Skills specification when describing the portable `SKILL.md` format;
+  - concrete example: OpenAI’s documented **commit** skill or **review-pr** skill showing `SKILL.md` plus optional references/scripts/assets;
+  - show the real file shape briefly; do not invent a proprietary schema.
+- **Plugin**
+  - required primary citation: OpenAI **Plugin architecture** (`https://developers.openai.com/plugins/concepts/plugins`) and, where implementation-specific behavior is discussed, the corresponding first-party platform docs;
+  - concrete example: a plugin that packages a Skill together with an MCP server, or the official meeting-follow-up/plugin example from the documentation;
+  - state that a plugin is a packaging/distribution unit, not the parent category of every Harness mechanism.
+- **Skript**
+  - required primary citation: OpenAI Skills/Customization documentation showing optional executable `scripts/` support;
+  - concrete example: the documented `review-pr/scripts/check-changes.sh`-style skill layout or another real first-party skill script used for deterministic validation/transformation;
+  - distinguish a script from a Skill: a script executes deterministic code; the Skill supplies workflow instructions and decides when it is relevant.
+- **Hooks**
+  - required primary citation: first-party OpenAI Hooks/Plugin documentation and/or Anthropic Claude Code Hooks documentation for the exact hook behavior claimed;
+  - concrete example: one documented lifecycle/tool-event hook that executes a deterministic validation/command at a defined event;
+  - the article must name the event and action from the source instead of describing hooks only abstractly.
+- **MCP**
+  - required primary citation: **Model Context Protocol Specification 2026-07-28** (`https://modelcontextprotocol.io/specification/2026-07-28`);
+  - the article must directly source the host/client/server model and the server primitives **resources, prompts, and tools** from the specification;
+  - concrete example: the official MCP TypeScript SDK’s minimal **weather MCP server**, which exposes a real tool from an MCP server to a host/client;
+  - implementation citation: official MCP TypeScript SDK v2 documentation (`https://ts.sdk.modelcontextprotocol.io/v2/`);
+  - do not use Claude Code’s MCP support as the definition of MCP itself; it may be a secondary product example only.
+- **.agents/**
+  - retain its locked OpenAI direct citations;
+  - concrete example: repository-scoped `.agents/skills/<skill>/SKILL.md`.
+- **.claude/**
+  - retain its locked Anthropic direct citations;
+  - concrete examples should include only documented paths actually needed by the article, e.g. `.claude/settings.json`, `.claude/rules/`, or `.claude/CLAUDE.md`.
+
+#### Other Theory articles
+
+The same rule applies outside Harness whenever a real implementation/example exists.
+
+Minimum examples to enforce during later rewrite phases:
+- **Teplota (Temperature):** direct API/model documentation + an actual documented parameter range/value example; do not invent universal semantic guarantees.
+- **Poskytovatel modelu (Model Provider):** direct provider/API documentation + a concrete provider/model API example.
+- **Transformer / Embedding:** original papers + examples/figures grounded in those papers.
+- **Kontextové okno / KV Cache / Context Rot:** direct model/system papers or first-party technical docs + a concrete measured/model implementation example where available.
+- **Revize (Review):** GitHub pull-request review documentation + concrete Approve / Request changes review flow.
+- **Správa verzí / Větev:** Git documentation + a concrete branch/commit example.
+- **Pull Request:** GitHub Pull Request documentation + a real PR lifecycle example.
+- **Průběžná integrace (CI):** first-party CI documentation + an actual workflow/check example.
+- **Promptové inženýrství / Systémový prompt:** first-party model prompting/message-role documentation + concrete sourced prompt/instruction examples.
+- **AGENTS.md / CLAUDE.md / .agents/ / .claude/:** use the already locked source/example contracts in this PLAN.
+- **Kompakce kontextu:** direct first-party compaction/context-management documentation + a real compaction request/response example where available.
+- **RAG:** original RAG literature + a concrete retrieval-then-generation example.
+- **Guardrail:** first-party guardrail documentation + a concrete input/output/tool guard example.
+- **Člověk ve smyčce (HITL):** first-party approval/escalation documentation + a real approval-required action example.
+- **Subagent / Orchestrátor / Handoff:** first-party multi-agent/subagent documentation + a concrete delegation/handoff example.
+- **Graf pracovního postupu (Workflow Graph):** retain the locked Claude Code Dynamic Workflows source and `ultracode` example.
+- **Swarm:** retain the locked Kimi K2.5 Agent Swarm source/example.
+
+The Theory-wide source pass must produce a concept-level audit table internally (it need not render in the thesis) with:
+- concept key;
+- primary definition/mechanism source;
+- rendered claim-local citation present: yes/no;
+- concrete example;
+- example source;
+- example rendered: yes/no;
+- unresolved sourcing problem.
+
 ### Source hierarchy
 
 For factual manuscript claims, prefer sources in this order:
@@ -598,6 +715,9 @@ Every implementation/review pass must preserve all of the following unless the u
 - Model owns the latest frontier benchmark snapshot;
 - Section 1 owns Gradually adoption/coding-agent evidence and the long-term Epoch capability curve;
 - all factual/definitional/product/benchmark claims come from real sources;
+- every externally realizable semantic article has a direct primary citation and at least one concrete cited example when a defensible example exists;
+- MCP is defined from the MCP 2026-07-28 specification and includes the official SDK weather-server example;
+- Skills, Tools, Tool Calling, Code Execution, Sandbox, Plugin, Script, and Hooks each carry their own direct citation + concrete example rather than borrowing a generic Harness citation;
 - remove “v této práci” / equivalent self-referential published prose;
 - Temperature and Model Provider included under Inference;
 - 2D embedding graph: Czech labels, no label/axis collisions;
@@ -848,7 +968,8 @@ Exit:
 - rewrite **2.1.2 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
 - rebuild 2D embedding figure;
 - add sourced 3D projection;
-- citation pass across 2.1.
+- citation pass across 2.1;
+- apply the direct-source + concrete-example contract to every 2.1 article where an implementation/example exists.
 
 Exit:
 - architecture/representation and inference responsibilities are cleanly separated inside 2.1 and all factual claims/visual relations are sourced.
@@ -862,7 +983,8 @@ Exit:
 - source and finalize the distinct .agents/ and .claude/ extension/configuration articles from the locked OpenAI/Anthropic first-party documentation;
 - add real Claude Code CLI, Antigravity IDE, and ChatGPT web screenshots with provenance;
 - remove self-referential wording;
-- source every product/mechanism claim.
+- source every product/mechanism claim;
+- enforce the locked direct citation + concrete example pairs for Agent Loop, Session, Transcript, State, Environment, Tools, Tool Calling, Code Execution, Sandbox, Skills, Plugin, Script, Hooks, MCP, .agents/, and .claude/.
 
 Exit:
 - Harness is understandable independently of DarkFactory and grounded in real systems.
@@ -876,6 +998,7 @@ Exit:
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
 - source every definitional/mechanistic claim;
+- apply the direct-source + concrete-example contract to every 2.3 article where an authoritative implementation/example exists;
 - source/finalize **Graf pracovního postupu (Workflow Graph)** using official Claude Code Dynamic Workflows documentation, including the `ultracode` trigger and dynamically generated JavaScript orchestration-harness behavior;
 - add/finalize **Swarm** under Orchestrace agentů using official Kimi K2.5 Agent Swarm as the primary concrete source/example.
 
@@ -889,11 +1012,16 @@ Audit:
 2. 2.2 Harness;
 3. 2.3 AI-asistovaný vývoj a agentické inženýrství.
 
-For every claim:
+For every claim/concept:
 - establish one semantic owner;
-- establish a real source where externally factual;
+- establish a real primary source where externally factual;
+- verify the direct definition/mechanism citation is rendered claim-locally;
+- verify at least one concrete cited example is rendered whenever a defensible real example exists;
+- record any concept for which no real example exists rather than inventing one;
 - delete paraphrased duplication;
 - replace unnecessary restatement with canonical references.
+
+Produce the internal concept-level source/example audit table defined in the Direct citation + concrete example contract and close every unresolved row before Theory is declared final.
 
 Prune unused bibliography entries only after prose stabilizes.
 
@@ -977,6 +1105,8 @@ The thesis is complete only when:
 - Workflow Graph is owned under Orchestrace agentů and source-backed by official Claude Code Dynamic Workflows documentation, with `ultracode` represented accurately as a trigger/setting rather than the product name;
 - Swarm is owned under Orchestrace agentů and source-backed by official Kimi Agent Swarm documentation;
 - all factual/definitional claims are source-backed;
+- every externally realizable Theory concept has a rendered direct primary citation and a concrete cited example where one defensibly exists;
+- MCP, Skills, Tools, Tool Calling, Code Execution, Sandbox, Plugin, Script, and Hooks satisfy their locked source/example contracts;
 - self-referential “in this work” wording is removed;
 - Section 1 adoption, coding-agent usage, and long-term model-improvement evidence is pinned and cited;
 - the latest model benchmark comparison in 2.1 is pinned and cited;
