@@ -30,6 +30,7 @@ export function IssuesTab() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName) return;
     let disposed = false;
     setLoading(true);
@@ -91,6 +92,7 @@ export function IssueTab({ tab }: { tab: WorkbenchTab }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName || !number) return;
     let disposed = false;
     setLoading(true);

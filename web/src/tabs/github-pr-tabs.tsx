@@ -30,6 +30,7 @@ export function PullRequestsTab() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName) return;
     let disposed = false;
     setLoading(true);
@@ -92,6 +93,7 @@ export function PullRequestTab({ tab }: { tab: WorkbenchTab }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName || !number) return;
     let disposed = false;
     setLoading(true);

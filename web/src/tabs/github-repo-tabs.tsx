@@ -33,6 +33,7 @@ export function ReleasesTab() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName) return;
     let disposed = false;
     setLoading(true);
@@ -114,6 +115,7 @@ export function ReleaseTab({ tab }: { tab: WorkbenchTab }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName || !id) return;
     let disposed = false;
     setLoading(true);
