@@ -43,7 +43,6 @@ export function RepositoryDialog() {
           }}
         >
           <input
-            autoFocus
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="owner/repository or https://github.com/owner/repository"
