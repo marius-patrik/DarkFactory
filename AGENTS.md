@@ -1,6 +1,8 @@
 # Repository instructions — DarkFactory-Paper
 
-`GOAL.md` defines what the repository is trying to produce.
+`GOAL.md` defines the semantic destination of the thesis.
+
+`PRD.md` defines the finished repository/publication product contract.
 
 `PLAN.md` defines the concrete execution path.
 
@@ -22,9 +24,9 @@ Keep manuscript ownership singular: one authored Typst source plus supporting re
 
 ## Editorial rule
 
-Optimize for the finished paper described in `GOAL.md`.
+Optimize the manuscript for the semantic path and final reading standard in `GOAL.md`.
 
-Treat existing prose, structure, terminology, figures, and abstractions as source material rather than constraints.
+Treat available prose, terminology, figures, citations, and evidence as material for the final argument rather than as a structure that must be preserved.
 
 Use:
 - connected academic prose;
@@ -34,7 +36,7 @@ Use:
 - original research/specifications and first-party documentation where appropriate;
 - verified DarkFactory implementation evidence for practical claims.
 
-The detailed repository sequencing and file ownership live in `PLAN.md`.
+Use `PRD.md` for product requirements and `PLAN.md` for sequencing/file ownership.
 
 ## Practical evidence
 
@@ -48,7 +50,7 @@ Use `SCHOOL_RULES.md`.
 
 Resolve unverified school-sensitive requirements from the direct guide text before final publication.
 
-## Validation
+## Validation and review
 
 Use the canonical commands defined by the repository build system and keep CI/documentation aligned with those commands.
 
