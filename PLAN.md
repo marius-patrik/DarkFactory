@@ -74,7 +74,7 @@ Theory and Practical must demonstrate this chain rather than restating it.
 2.2.4 Kvalita a ověřování  
 2.2.5 Závěr
 
-2.3 Jazykový model a inference  
+2.3 Model  
 2.3.1 Úvod  
 2.3.2 Jazykový model  
 2.3.3 Inference  
@@ -84,7 +84,7 @@ Theory and Practical must demonstrate this chain rather than restating it.
 2.4 Harness  
 2.4.1 Úvod  
 2.4.2 Smyčka a stav  
-2.4.3 Nástroje a prostředí  
+2.4.3 Prostředí a nástroje  
 2.4.4 Dovednosti a rozšíření  
 2.4.5 Závěr
 
