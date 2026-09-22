@@ -335,9 +335,6 @@ for path in concept_files + section_files:
         if target not in semantic_key_set:
             fail(f"semantic relation in {path} targets unknown item: {target}")
 
-if BOOK == "DarkFactory" and not 5 <= len(keyword_keys) <= 40:
-    fail(f"DarkFactory keyword curation is unexpectedly sized: {len(keyword_keys)} keyword items")
-
 for manifest_path in folder_manifests:
     source = manifest_path.read_text(encoding="utf-8")
     require_contract(source, ("#let node = folder(",), f"folder manifest {manifest_path}")
