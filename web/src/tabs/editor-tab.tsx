@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Editor, { DiffEditor } from "@monaco-editor/react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Editor, { DiffEditor, type OnMount } from "@monaco-editor/react";
+import type { editor as MonacoEditor } from "monaco-editor";
 import { registerCapabilityLanguages } from "@/capabilities/monaco";
 import type { AppearanceMode } from "@/settings";
 import { useWorkspace } from "@/workspace/context";
@@ -41,7 +42,39 @@ export function EditorTab({
   const [loadedPath, setLoadedPath] = useState(repositoryFile ? "" : path);
   const [edited, setEdited] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const viewStateTimer = useRef<number | null>(null);
+  const editorDisposables = useRef<Array<{ dispose: () => void }>>([]);
   const resource = useResourceComparison(repositoryFile ? path : "", compare, compareTarget);
+
+  useEffect(() => () => {
+    if (viewStateTimer.current !== null) window.clearTimeout(viewStateTimer.current);
+    for (const disposable of editorDisposables.current) disposable.dispose();
+    editorDisposables.current = [];
+  }, []);
+
+  const handleEditorMount: OnMount = (editor) => {
+    for (const disposable of editorDisposables.current) disposable.dispose();
+    editorDisposables.current = [];
+
+    const saved = tab.state.editorViewState;
+    if (saved && typeof saved === "object") {
+      editor.restoreViewState(saved as MonacoEditor.ICodeEditorViewState);
+    }
+
+    const persistViewState = () => {
+      if (viewStateTimer.current !== null) window.clearTimeout(viewStateTimer.current);
+      viewStateTimer.current = window.setTimeout(() => {
+        viewStateTimer.current = null;
+        const next = editor.saveViewState();
+        if (next) updateState({ editorViewState: next });
+      }, 180);
+    };
+
+    editorDisposables.current = [
+      editor.onDidChangeCursorSelection(persistViewState),
+      editor.onDidScrollChange(persistViewState),
+    ];
+  };
 
   useEffect(() => {
     if (!repositoryFile) {
@@ -132,6 +165,7 @@ export function EditorTab({
         key={workspace.workspace ? `${workspace.workspace.id}:${path}` : tab.id}
         height="100%"
         beforeMount={registerCapabilityLanguages}
+        onMount={handleEditorMount}
         path={workspace.workspace ? `${workspace.workspace.id}/${path}` : tab.id}
         language={language}
         value={value}
