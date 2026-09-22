@@ -1140,3 +1140,48 @@ a {
     padding-top: 18px;
   }
 }
+
+
+.workspace-token-connect {
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-token-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 7px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.workspace-token-form input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.workspace-token-form button {
+  padding: 4px 8px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  background: var(--toolbar);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.workspace-token-form button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.workspace-help {
+  margin: 0;
+  line-height: 1.45;
+}
