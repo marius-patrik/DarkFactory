@@ -36,6 +36,29 @@ The product must provide:
 6. a generic browser workbench for viewing and working with the repository and publication;
 7. CI, Pages, and Release automation tied to exact repository revisions.
 
+## Thesis direction
+
+The thesis is about DarkFactory in the context of agentic software development.
+
+Its content should form a coherent progression from the capabilities relevant to modern software-development agents, through the engineering problem that remains around model inference, to harness architecture, Agentic Engineering, DarkFactory as the practical implementation, and evidence-based evaluation.
+
+A useful semantic progression is:
+
+**capability → engineering gap → harness → Agentic Engineering → DarkFactory → evidence → conclusions**
+
+This is a product requirement for the finished thesis, not a requirement to preserve a specific existing section layout.
+
+The theory should include only material needed to understand the practical contribution and evaluation.
+
+DarkFactory should be the concrete subject of the practical contribution.
+
+Results and discussion should distinguish:
+- direct observations;
+- interpretation;
+- limitations.
+
+The conclusion should answer the research problem from the evidence actually established.
+
 ## Manuscript requirements
 
 ### Canonical source
