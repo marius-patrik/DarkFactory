@@ -47,7 +47,7 @@ export function BrowserTab({
     }
     const timer = window.setTimeout(() => setSlowFrame(true), 8000);
     return () => window.clearTimeout(timer);
-  }, [current, frameError, loading, revision]);
+  }, [current, frameError, loading]);
 
   const navigate = (value: string) => {
     try {
