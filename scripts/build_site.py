@@ -276,9 +276,9 @@ def typst_manuscript_index(source_path: Path = Path("main.typ")) -> list[dict[st
 
     body = source[body_start:body_end]
     heading_pattern = re.compile(
-        r"^#heading\\(level:\\s*(\\d+)(?P<options>[^)]*)\\)"
-        r"\\[(?P<title>[^\\]]+)\\]"
-        r"\\s*(?:<(?P<anchor>[^>]+)>)?\\s*$"
+        r"^#heading\(level:\s*(\d+)(?P<options>[^)]*)\)"
+        r"\[(?P<title>[^\]]+)\]"
+        r"\s*(?:<(?P<anchor>[^>]+)>)?\s*$"
     )
     counters = [0] * 8
     entries: list[dict[str, object]] = []
