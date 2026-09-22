@@ -21,12 +21,12 @@ Theory and Practical must demonstrate this chain rather than restating it.
 - Cíle práce and Výzkumné otázky are separate sections.
 - 2.2 is **AI-asistovaný vývoj** with:
   - Úvod
-  - Zadání a způsob práce
+  - Specifikace a plánování
   - Řízení změny
-  - Kvalita a ověřování
+  - Ověřování kvality
   - Závěr
 - Standalone Software Engineering, DAG, Runtime, and Container articles were removed.
-- 2.3 is **Jazykový model a inference**.
+- 2.3 is **Model**.
 - **Inferenční engine (Inference Engine)** was added.
 - Model now ends at inference and its limits.
 - 2.4 Harness owns its own semantic definition; duplicate Harness article removed.
