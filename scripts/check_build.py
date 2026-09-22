@@ -115,15 +115,30 @@ required_sources = (
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
     Path("web/src/app.tsx"),
-    Path("web/src/compiled-artifact.tsx"),
-    Path("web/src/pdf-document.tsx"),
-    Path("web/src/workspace.tsx"),
     Path("web/src/settings.ts"),
     Path("web/src/settings-view.tsx"),
-    Path("web/src/viewer-tabs.tsx"),
-    Path("web/src/viewer-ui.tsx"),
     Path("web/src/main.tsx"),
-    Path("web/src/viewer.css"),
+    Path("web/src/workbench.css"),
+    Path("web/src/workbench/model.ts"),
+    Path("web/src/workbench/registry.tsx"),
+    Path("web/src/workbench/runtime.tsx"),
+    Path("web/src/workbench/shell.tsx"),
+    Path("web/src/workbench/surface.tsx"),
+    Path("web/src/workbench/commands.ts"),
+    Path("web/src/workbench/persistence.ts"),
+    Path("web/src/workbench/launcher.tsx"),
+    Path("web/src/workbench/omnibar.tsx"),
+    Path("web/src/workbench/empty-workbench.tsx"),
+    Path("web/src/tabs/editor-tab.tsx"),
+    Path("web/src/tabs/browser-tab.tsx"),
+    Path("web/src/tabs/explorer-tab.tsx"),
+    Path("web/src/tabs/source-control-tab.tsx"),
+    Path("web/src/tabs/search-tab.tsx"),
+    Path("web/src/tabs/problems-tab.tsx"),
+    Path("web/src/tabs/output-tab.tsx"),
+    Path("web/src/tabs/tab-shell.tsx"),
+    Path("web/src/compiled-artifact.tsx"),
+    Path("web/src/pdf-document.tsx"),
     Path("scripts/build_review.py"),
     Path("scripts/build_web_exports.py"),
     Path("scripts/build_site.py"),
@@ -317,52 +332,193 @@ for dependency in (
 app = sources[Path("web/src/app.tsx")]
 require_contract(
     app,
-    (
-        "publication.json",
-        "manifest?.publication",
-        'label="Structure"',
-        'label="Explorer"',
-        "<ReviewWorkspace",
-        "<SplitViewPicker",
-        "<FileMenu",
-        "DropdownMenuSubTrigger",
-        "Appearance",
-        "SourceFileView",
-        "onOpenFile={openRepositoryFile}",
-        'className="zoom-value"',
-        "<AppTabBar",
-        "<SettingsView",
-        "active.extension",
-    ),
-    "viewer shell",
+    ("WorkbenchShell",),
+    "workbench entry point",
 )
 
 settings = sources[Path("web/src/settings.ts")]
 require_contract(
     settings,
     (
-        'export type ActivityBarPosition = "left" | "right" | "top" | "bottom"',
         'export type AppearanceMode = "light" | "dark" | "oled"',
-        "showRefresh: boolean",
-        "showFullscreen: boolean",
-        "export function useViewerSettings()",
+        "export type WorkbenchSettings",
+        "export function useWorkbenchSettings()",
     ),
-    "viewer settings",
+    "workbench settings",
 )
 
 settings_view = sources[Path("web/src/settings-view.tsx")]
 require_contract(
     settings_view,
-    ("Refresh button", "Fullscreen button", "Synchronize split scrolling"),
+    ("Workbench settings", "Appearance", "Light", "Dark", "OLED"),
     "settings view",
 )
 
-viewer_tabs = sources[Path("web/src/viewer-tabs.tsx")]
+model = sources[Path("web/src/workbench/model.ts")]
 require_contract(
-    viewer_tabs,
-    ('role="tablist"', 'role="tab"', 'label="New tab"', "app-tab-close"),
-    "tab bar",
+    model,
+    (
+        'export type WorkbenchSurface = "primary" | "main" | "secondary" | "panel"',
+        "export type WorkbenchTabType",
+        "export type WorkbenchTab =",
+        "pinned: boolean",
+        "state: SerializableTabState",
+        "export type PersistedWorkbench",
+        "version: 1",
+    ),
+    "unified workbench tab model",
 )
+
+registry = sources[Path("web/src/workbench/registry.tsx")]
+require_contract(
+    registry,
+    (
+        "TAB_REGISTRY",
+        "createWorkbenchTab",
+        '"editor"',
+        '"browser"',
+        '"explorer"',
+        '"source-control"',
+        '"search"',
+        '"problems"',
+        '"output"',
+        '"settings"',
+        '"document"',
+    ),
+    "workbench tab registry",
+)
+
+shell = sources[Path("web/src/workbench/shell.tsx")]
+require_contract(
+    shell,
+    (
+        "WorkbenchRuntimeContext.Provider",
+        'surface="primary"',
+        'surface="main"',
+        'surface="secondary"',
+        'surface="panel"',
+        'createWorkbenchTab("explorer", { id: "explorer", pinned: true })',
+        'createWorkbenchTab("search", { id: "search", pinned: true })',
+        'createWorkbenchTab("source-control", { id: "source-control", pinned: true })',
+        'createWorkbenchTab("problems", { id: "problems", pinned: true })',
+        'createWorkbenchTab("output", { id: "output", pinned: true })',
+        "useWorkbenchShortcuts",
+        "<Omnibar",
+    ),
+    "four-surface workbench shell",
+)
+
+surface = sources[Path("web/src/workbench/surface.tsx")]
+require_contract(
+    surface,
+    (
+        "DockviewReact",
+        "LauncherButton",
+        "api.fromJSON",
+        "api.onDidLayoutChange",
+        "rightHeaderActionsComponent",
+    ),
+    "Dockview workbench surface",
+)
+
+commands = sources[Path("web/src/workbench/commands.ts")]
+require_contract(
+    commands,
+    (
+        'key === "b"',
+        "event.altKey",
+        'key === "j"',
+        'key === "p"',
+        "event.shiftKey",
+        "event.defaultPrevented",
+    ),
+    "central workbench shortcuts",
+)
+
+persistence = sources[Path("web/src/workbench/persistence.ts")]
+require_contract(
+    persistence,
+    (
+        'const STORAGE_KEY = "workbench-layout-v1"',
+        "version: 1",
+        "loadWorkbench",
+        "saveWorkbench",
+    ),
+    "versioned workbench persistence",
+)
+
+launcher = sources[Path("web/src/workbench/launcher.tsx")]
+require_contract(
+    launcher,
+    (
+        "LAUNCHER_ENTRIES",
+        '"Files"',
+        '"Git"',
+        '"Tools"',
+        '"Workspace"',
+        "LauncherButton",
+    ),
+    "universal tab launcher",
+)
+
+omnibar = sources[Path("web/src/workbench/omnibar.tsx")]
+require_contract(
+    omnibar,
+    (
+        'query.startsWith(">")',
+        'query.startsWith("@")',
+        'query.startsWith("#")',
+        'query.startsWith(":")',
+        '"command"',
+        '"url"',
+        "runtime.openTab",
+    ),
+    "omnibar shell",
+)
+
+editor_tab = sources[Path("web/src/tabs/editor-tab.tsx")]
+require_contract(
+    editor_tab,
+    ("<Editor", 'language={language}', "onChange=", "automaticLayout"),
+    "generic editor tab",
+)
+
+browser_tab = sources[Path("web/src/tabs/browser-tab.tsx")]
+require_contract(
+    browser_tab,
+    (
+        "<iframe",
+        'aria-label="Back"',
+        'aria-label="Forward"',
+        'aria-label="Reload"',
+        'aria-label="Copy URL"',
+        'aria-label="Open externally"',
+        "historyIndex",
+    ),
+    "generic browser tab",
+)
+
+for retired_path in (
+    Path("web/src/workspace.tsx"),
+    Path("web/src/viewer-tabs.tsx"),
+):
+    if retired_path.exists():
+        fail(f"retired Phase-1 shell file must not exist: {retired_path}")
+
+for retired_contract in (
+    "ReviewWorkspace",
+    "AppTabBar",
+    "ActivityBarPosition",
+    'ViewMode = "single" | "split"',
+):
+    for path in (
+        Path("web/src/app.tsx"),
+        Path("web/src/settings.ts"),
+        Path("web/src/workbench/model.ts"),
+        Path("web/src/workbench/shell.tsx"),
+    ):
+        if retired_contract in sources[path]:
+            fail(f"retired shell contract {retired_contract!r} remains in {path}")
 
 compiled_artifact = sources[Path("web/src/compiled-artifact.tsx")]
 require_contract(
