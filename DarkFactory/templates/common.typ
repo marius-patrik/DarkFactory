@@ -271,6 +271,12 @@
 
 #let term-full-name(value) = {
   semantic-term(value)
+  if value.term != none {
+    assert(type(value.term) in (str, content), message: "invalid term type on " + value.key + ": " + repr(type(value.term)))
+  }
+  if value.keyword != none {
+    assert(type(value.keyword) in (str, content), message: "invalid keyword type on " + value.key + ": " + repr(type(value.keyword)))
+  }
   if value.term != none and value.keyword != none {
     [#(value.term) (#(value.keyword))]
   } else if value.term != none {
