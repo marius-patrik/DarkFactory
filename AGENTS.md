@@ -78,14 +78,12 @@ No standalone Software Engineering article.
   - Tokenizér
   - Token
   - Vektorová reprezentace (Embedding)
-- 2.3.3 Inference
+- 2.3.3 Inference a její limity
   - Inferenční engine (Inference Engine)
   - Kontextové okno (Context Window)
   - Mezipaměť klíčů a hodnot (KV Cache)
-- 2.3.4 Limity inference
   - Degradace kontextu (Context Rot)
-  - Divergence modelu
-- 2.3.5 Závěr
+- 2.3.4 Závěr
 
 Boundary rule: Model ends with inference and its limits. Persistent task state, actions in an external environment, tools, and long-running control do not belong to Model.
 
