@@ -24,7 +24,7 @@ Keep manuscript ownership singular: one authored Typst source plus supporting re
 
 ## Editorial rule
 
-Optimize the manuscript for the final-paper quality standard in `GOAL.md` and the thesis-specific requirements in `PRD.md`.
+Optimize the manuscript for the final-paper quality standard in `GOAL.md` and the thesis-specific direction in `PRD.md`, including the shift from IDE-centered software engineering to harness-centered Agentic Engineering.
 
 Treat available prose, terminology, figures, citations, and evidence as material for the final argument rather than as a structure that must be preserved.
 
