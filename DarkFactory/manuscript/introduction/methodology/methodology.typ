@@ -3,7 +3,7 @@
 
 #let item = section(
   key: "methodology",
-  title: [Metodika práce],
+  title: [Metodika],
   definition: terms => [
 Práce používá konstrukční přístup odpovídající design science: vymezuje problém a cíle řešení, navrhuje a implementuje artefakt DarkFactory a následně jej vyhodnocuje pomocí reprodukovatelných technických důkazů. #cite(bib.hevner2004designscience) #cite(bib.peffers2007dsrm)
   ],
