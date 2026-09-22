@@ -17,6 +17,48 @@ function paramsOf(panel: any): WorkbenchTab | null {
   return params && typeof params.id === "string" && typeof params.type === "string" ? params as WorkbenchTab : null;
 }
 
+function tabString(tab: WorkbenchTab | null, key: string) {
+  const value = tab?.state[key];
+  return typeof value === "string" ? value : "";
+}
+
+function tabNumber(tab: WorkbenchTab | null, key: string) {
+  const value = tab?.state[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function activeStatusLabel(tab: WorkbenchTab | null) {
+  if (!tab) return "";
+  if (tab.type === "editor" || tab.type === "document") {
+    const path = tabString(tab, "path") || tab.resource || tab.title;
+    const renderer = tabString(tab, "renderer") || (tab.type === "document" ? "browser" : "editor");
+    const language = tabString(tab, "language");
+    const compare = tabString(tab, "compare");
+    const review = tab.state.review === true ? "Review" : "";
+    const viewState = tab.state.editorViewState;
+    const position = viewState && typeof viewState === "object" && "position" in viewState
+      ? (viewState as { position?: { lineNumber?: number; column?: number } }).position
+      : undefined;
+    const cursor = position?.lineNumber
+      ? `Ln ${position.lineNumber}, Col ${position.column ?? 1}`
+      : "";
+    return [path, renderer, language, review, compare && compare !== "none" ? compare : "", cursor]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (tab.type === "browser") return tabString(tab, "url") || "about:blank";
+  if (tab.type === "issue") return `Issue #${tabNumber(tab, "number") ?? "—"}`;
+  if (tab.type === "pull-request") return `Pull Request #${tabNumber(tab, "number") ?? "—"}`;
+  if (tab.type === "project") return `Project #${tabNumber(tab, "number") ?? "—"}`;
+  if (tab.type === "workflow-run") return `Workflow run #${tabNumber(tab, "id") ?? "—"}`;
+  if (tab.type === "release") return `Release #${tabNumber(tab, "id") ?? "—"}`;
+  if (tab.type === "commit") {
+    const sha = tabString(tab, "sha");
+    return sha ? `Commit ${sha.slice(0, 12)}` : "Commit";
+  }
+  return tab.title;
+}
+
 export function WorkbenchShell() {
   const { settings, setSetting } = useWorkbenchSettings();
   const workspace = useWorkspace();
@@ -273,8 +315,20 @@ export function WorkbenchShell() {
         </div>
         <section className="root-surface root-panel"><WorkbenchSurfaceView surface="panel" restoredLayout={initial.surfaces.panel.layout} defaultTabs={defaults.panel} onReady={registerSurface} onActiveTabChange={handleActiveTabChange} /></section>
         <footer className="workbench-statusbar">
-          <span>{workspace.workspace ? `${workspace.workspace.repository.fullName} · ${workspace.overlays.length} local change${workspace.overlays.length === 1 ? "" : "s"}` : "Workbench"}</span>
-          <div>
+          <span className="workbench-status-workspace">
+            {workspace.workspace
+              ? [
+                  `${workspace.workspace.repository.fullName}@${workspace.workspace.ref}`,
+                  `${workspace.overlays.length} change${workspace.overlays.length === 1 ? "" : "s"}`,
+                  workspace.commits.length ? `${workspace.commits.length} outgoing` : "",
+                  workspace.remoteHeadSha && workspace.remoteHeadSha !== workspace.workspace.baseSha ? "remote moved" : "",
+                ].filter(Boolean).join(" · ")
+              : "Workbench"}
+          </span>
+          <span className="workbench-status-context" title={activeStatusLabel(activeTab)}>
+            {activeStatusLabel(activeTab)}
+          </span>
+          <div className="workbench-status-layout">
             <button type="button" aria-pressed={visibility.primary} onClick={() => toggleSurface("primary")} title="Toggle Primary Sidebar (Cmd/Ctrl+B)"><PanelLeft size={13} /></button>
             <button type="button" aria-pressed={visibility.panel} onClick={() => toggleSurface("panel")} title="Toggle Panel (Cmd/Ctrl+J)"><PanelBottom size={13} /></button>
             <button type="button" aria-pressed={visibility.secondary} onClick={() => toggleSurface("secondary")} title="Toggle Secondary Sidebar (Cmd+Option/Ctrl+Alt+B)"><PanelRight size={13} /></button>

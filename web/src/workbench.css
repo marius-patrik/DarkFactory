@@ -676,7 +676,10 @@ a {
 .workbench-statusbar {
   position: relative;
   z-index: 60;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   padding: 0 6px 0 8px;
   border-top: 1px solid var(--toolbar-border);
@@ -685,7 +688,19 @@ a {
   font-size: 10px;
 }
 
-.workbench-statusbar > div {
+.workbench-status-workspace,
+.workbench-status-context {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-status-context {
+  text-align: center;
+}
+
+.workbench-status-layout {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -711,6 +726,14 @@ a {
   .workspace-identity .workspace-ref,
   .account-placeholder span {
     display: none;
+  }
+
+  .workbench-status-context {
+    display: none;
+  }
+
+  .workbench-statusbar {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 

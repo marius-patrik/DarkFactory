@@ -60,13 +60,64 @@ export function WorkbenchSurfaceView({
       return paramsOf(candidate)?.pinned === true;
     });
 
+    const resource =
+      tab.resource ||
+      (typeof tab.state.path === "string" ? tab.state.path : "") ||
+      (typeof tab.state.url === "string" ? tab.state.url : "");
+
     const items: ContextMenuItem[] = [
       {
         label: tab.pinned ? "Unpin" : "Pin",
         action: () => runtimeRef.current.setPinned(tab.id, !tab.pinned),
       },
-      "separator",
+      {
+        label: "Move to Primary Sidebar",
+        action: () => runtimeRef.current.moveTab(tab.id, "primary"),
+      },
+      {
+        label: "Move to Main",
+        action: () => runtimeRef.current.moveTab(tab.id, "main"),
+      },
+      {
+        label: "Move to Secondary Sidebar",
+        action: () => runtimeRef.current.moveTab(tab.id, "secondary"),
+      },
+      {
+        label: "Move to Panel",
+        action: () => runtimeRef.current.moveTab(tab.id, "panel"),
+      },
+      {
+        label: "Split Right",
+        action: () => runtimeRef.current.splitTab(tab.id, "right"),
+      },
+      {
+        label: "Split Down",
+        action: () => runtimeRef.current.splitTab(tab.id, "below"),
+      },
     ];
+
+    if (tab.type === "editor" || tab.type === "document") {
+      const renderer = tab.state.renderer === "browser" ? "browser" : "editor";
+      items.push({
+        label: renderer === "browser" ? "Open in Editor Renderer" : "Open in Browser Renderer",
+        action: () => runtimeRef.current.updateTabState(tab.id, {
+          renderer: renderer === "browser" ? "editor" : "browser",
+        }),
+      });
+    }
+
+    if (resource) {
+      items.push({
+        label: tab.type === "browser" ? "Copy URL" : "Copy Resource Path",
+        action: () => {
+          void navigator.clipboard.writeText(resource).catch(() => {
+            window.prompt(tab.type === "browser" ? "Copy URL" : "Copy resource path", resource);
+          });
+        },
+      });
+    }
+
+    items.push("separator");
 
     if (!hasProtectedPeer) {
       items.push("closeOthers", "closeRight");
