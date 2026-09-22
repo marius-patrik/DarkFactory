@@ -220,7 +220,7 @@ Removed fields must not return: `industry`, `czech`, `english`, `alias`, boolean
 
 Czech-first means use a natural Czech technical term when one exists. Never manufacture a translation merely to fill `term`.
 
-`keyword` must add terminology information. Do not set it merely to repeat the same cognate, inflection, or spelling variant in English. For example, prefer `Tokenizér`, `Plugin`, `Skript`, and `Orchestrátor` without redundant parenthetical English forms.
+`keyword` must add terminology information. Do not set it merely to repeat the same cognate, inflection, or spelling variant in English. For example, prefer `Tokenizér`, `Plugin`, `Skript`, and `Orchestrátor` without redundant parenthetical English forms. A keyword has exactly one semantic owner across the thesis; reuse the owning concept by reference instead of assigning the same keyword to a second concept.
 
 ## Single-owner rule
 
