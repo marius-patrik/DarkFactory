@@ -29,6 +29,7 @@ export function WorkbenchShell() {
   }));
   const apis = useRef(new Map<WorkbenchSurface, any>());
   const omnibarRef = useRef<OmnibarControl>(null);
+  const activeSurfaceRef = useRef<WorkbenchSurface | null>(null);
   const [activeTab, setActiveTab] = useState<WorkbenchTab | null>(null);
 
   const persist = useCallback((theme: AppearanceMode = settings.theme, nextVisibility = visibility) => {
@@ -54,8 +55,16 @@ export function WorkbenchShell() {
     apis.current.set(surface, api);
   }, []);
 
-  const handleActiveTabChange = useCallback((_surface: WorkbenchSurface, tab: WorkbenchTab | null) => {
-    if (tab) setActiveTab(tab);
+  const handleActiveTabChange = useCallback((surface: WorkbenchSurface, tab: WorkbenchTab | null) => {
+    if (tab) {
+      activeSurfaceRef.current = surface;
+      setActiveTab(tab);
+      return;
+    }
+    if (activeSurfaceRef.current === surface) {
+      activeSurfaceRef.current = null;
+      setActiveTab(null);
+    }
   }, []);
 
   const locate = useCallback((id: string) => {

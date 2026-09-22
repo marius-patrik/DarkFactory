@@ -6,6 +6,13 @@ import type { WorkbenchSurface, WorkbenchTab } from "./model";
 import { WorkbenchPanel } from "./registry";
 import { useWorkbenchRuntime } from "./runtime";
 
+function paramsOf(panel: any): WorkbenchTab | null {
+  const params = panel?.api?.getParameters?.() ?? panel?.params;
+  return params && typeof params.id === "string" && typeof params.type === "string"
+    ? params as WorkbenchTab
+    : null;
+}
+
 export function WorkbenchSurfaceView({
   surface,
   restoredLayout,
@@ -63,11 +70,11 @@ export function WorkbenchSurfaceView({
           }
           initialized.current = true;
           setPanelCount(api.panels?.length ?? 0);
-          const currentPanel = api.activePanel;
-          onActiveTabChange(surface, currentPanel ? currentPanel.params as WorkbenchTab : null);
+          if (surface === "main") {
+            onActiveTabChange(surface, paramsOf(api.activePanel));
+          }
           api.onDidActivePanelChange?.((event: any) => {
-            const panel = event?.panel;
-            onActiveTabChange(surface, panel ? panel.params as WorkbenchTab : null);
+            onActiveTabChange(surface, paramsOf(event?.panel));
           });
           api.onDidLayoutChange?.(() => {
             const count = api.panels?.length ?? 0;
