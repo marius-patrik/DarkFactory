@@ -4,11 +4,11 @@
   key: "subgoals",
   title: [Dílčí cíle],
   definition: terms => [
-- Vymezit teoretické mechanismy Software Engineering, Modelu, Harnessu a Agentic Engineering potřebné pro dlouhotrvající agentní vývoj softwaru.
-- Navrhnout a implementovat DarkFactory s explicitním stavem běhu, odděleným prostředím, capability rozhraním, GitHub control plane a oddělenými hranicemi lidské a strojové identity.
-- Implementovat mechanismy řízeného životního cyklu požadavku: Planning, deterministické ověření, review/fix, Final Alignment, integraci a obnovu přerušeného běhu.
+- Vymezit teoretické mechanismy AI-asistovaného vývoje, jazykového modelu a inference, Harnessu a Agentického inženýrství potřebné pro dlouhotrvající agentní vývoj softwaru.
+- Navrhnout a implementovat DarkFactory s explicitním stavem běhu, odděleným prostředím, rozšiřitelným capability rozhraním, GitHubem jako řídicí vrstvou a oddělenými hranicemi lidské a strojové identity.
+- Implementovat mechanismy řízeného životního cyklu změny: plánování, deterministické ověření, smyčku revize a opravy, finální kontrolu souladu, integraci a obnovu přerušeného běhu.
 - Ověřit implementované mechanismy automatickými testy a CI nad konkrétním commitem.
-- Ověřit přenositelnost vybraných částí řešení na konkrétních cílových repozitářích a samostatně vyhodnotit, zda existuje důkaz celého živého end-to-end Request lifecycle.
+- Ověřit přenositelnost vybraných částí řešení na konkrétních cílových repozitářích a samostatně vyhodnotit, zda existuje důkaz úplného živého životního cyklu změny.
 - Vztáhnout zjištěné výsledky a jejich omezení přímo k výzkumným otázkám.
   ],
   description: terms => [
