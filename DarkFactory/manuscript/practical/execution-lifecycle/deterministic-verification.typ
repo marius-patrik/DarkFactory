@@ -13,5 +13,5 @@ Ověření výsledku změny pomocí přímo pozorovatelných strojových důkaz�
   description: terms => [
 DarkFactory odvozuje výsledek kódového kroku ze skutečně změněných souborů, scope checku, detekovaných verifikačních akcí, jejich exit stavů a případně vytvořeného commitu.
   ],
-  relations: ((type: "related", target: "integration_test")),
+  relations: ((type: "related", target: "integration_test"),),
 )
