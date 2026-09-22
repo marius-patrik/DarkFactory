@@ -2,7 +2,7 @@
 
 #let item = section(
   key: "thesis_argument",
-  title: [Východisko a argument práce],
+  title: [Argument],
   definition: terms => [
 Rostoucí schopnosti jazykových modelů mění vývoj softwaru od dílčí asistence k delegování stále delších a samostatnějších pracovních úloh.
   ],
