@@ -56,7 +56,7 @@
 #let close = folder(key: "agentic_engineering_conclusion", section: conclusion.item)
 
 #let node = folder(
-  key: "agentic_engineering",
+  key: "agentic_engineering_section",
   title: [Agentické inženýrství],
   children: (
     intro,
