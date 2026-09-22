@@ -1,6 +1,6 @@
 # DarkFactory-Paper
 
-Odborná práce **DarkFactory: Agentic Engineering in practice (Agentické inženýrství v praxi)**.
+Odborná práce **DarkFactory: Agentické inženýrství v praxi**.
 
 Repozitář obsahuje konceptově řízený Typst rukopis, publikační šablony, webový viewer a submodule praktického systému DarkFactory.
 
