@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, X } from "lucide-react";
 import type { WorkbenchTab } from "@/workbench/model";
 
@@ -24,12 +24,6 @@ export function BrowserTab({
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(current !== "about:blank");
   const [frameError, setFrameError] = useState(false);
-
-  const src = useMemo(() => {
-    if (current === "about:blank") return current;
-    const separator = current.includes("#") ? "&" : "#";
-    return `${current}${separator}workbench-refresh=${revision}`;
-  }, [current, revision]);
 
   const navigate = (value: string) => {
     const url = normalizeUrl(value);
@@ -69,7 +63,7 @@ export function BrowserTab({
         ) : (
           <>
             {loading && <div className="browser-loading">Loading…</div>}
-            <iframe key={src} title={current} src={src} onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFrameError(true); }} />
+            <iframe key={`${current}:${revision}`} title={current} src={current} onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFrameError(true); }} />
           </>
         )}
       </div>
