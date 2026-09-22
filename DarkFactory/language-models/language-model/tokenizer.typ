@@ -4,7 +4,6 @@
 #let item = concept(
   key: "tokenizer",
   term: "Tokenizér",
-  keyword: "Tokenizer",
   citation: bib.sennrich2016bpe,
   source: bib.sennrich2016bpe,
   definition: terms => [
