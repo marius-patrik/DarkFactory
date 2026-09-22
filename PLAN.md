@@ -318,29 +318,57 @@ Use these canonical terminology records and stable keys:
   - `term: none`
   - `keyword: "AGENTS.md"`
   - exact scope: Codex project/repository instruction files discovered hierarchically and injected into agent context;
-  - source: official OpenAI Codex documentation;
+  - required primary citation: OpenAI **Custom instructions with AGENTS.md** (`https://developers.openai.com/docs/agent-configuration/agents-md`);
+  - permitted supporting citation: OpenAI **Model guidance — Using agents.md** where useful for the injection/message representation;
+  - claims that must be sourced from these docs:
+    - Codex reads AGENTS.md before work begins;
+    - project instructions are discovered from repository root toward the current working directory;
+    - deeper instructions take precedence because they are merged later;
+    - AGENTS.override.md can override AGENTS.md at a directory level;
+    - the discovered instruction content is supplied to the model as context rather than being a filesystem convention invented by the thesis;
   - relations: related to `system_prompt`, `context_engineering`, and `agents_directory`.
 - CLAUDE.md:
   - `key: "claude_md"`
   - `term: none`
   - `keyword: "CLAUDE.md"`
-  - exact scope: Claude Code project/user memory/instruction files loaded into context;
-  - source: official Anthropic Claude Code documentation;
+  - exact scope: Claude Code persistent project/user instruction files loaded into session context;
+  - required primary citation: Anthropic **How Claude remembers your project** (`https://code.claude.com/docs/en/memory`);
+  - claims that must be sourced from this page:
+    - CLAUDE.md is a persistent instruction/context mechanism;
+    - project instructions may live at `./CLAUDE.md` or `./.claude/CLAUDE.md`;
+    - user instructions may live at `~/.claude/CLAUDE.md`;
+    - instruction files above the working directory are loaded at launch while nested files can load on demand;
+    - CLAUDE.md content is context/instruction guidance, not an enforced authorization/security boundary;
   - relations: related to `system_prompt`, `context_engineering`, and `claude_directory`.
 - .agents/:
   - `key: "agents_directory"`
   - `term: none`
   - `keyword: ".agents/"`
-  - exact scope: Codex repository/user namespace whose officially documented repository extension surface includes `.agents/skills/`;
+  - exact scope: Codex repository/user namespace used for reusable agent extensions, especially Skills;
+  - required primary citation: OpenAI **Customization overview** (`https://developers.openai.com/docs/customization/overview`);
+  - required concrete claim:
+    - repository-scoped Skills are stored in `.agents/skills`;
+    - user/global Skills are stored in `~/.agents/skills`;
+    - Skills use progressive disclosure: metadata first, then SKILL.md/references/scripts when relevant;
+  - do not imply that AGENTS.md itself lives under `.agents/`; official OpenAI docs treat AGENTS.md and `.agents/skills` as separate customization layers;
   - do not imply that every possible Codex configuration file belongs under `.agents/`;
-  - source: official OpenAI Codex skills/customization documentation;
   - relations: related to `agents_md`, `skills`, and `scripts`.
 - .claude/:
   - `key: "claude_directory"`
   - `term: none`
   - `keyword: ".claude/"`
-  - exact scope: Claude Code project/user configuration namespace, including documented project settings such as `.claude/settings.json` and related Claude Code configuration/extension surfaces;
-  - source: official Anthropic Claude Code documentation;
+  - exact scope: Claude Code project/user configuration and extension namespace;
+  - required primary citations:
+    - Anthropic **How Claude remembers your project** (`https://code.claude.com/docs/en/memory`) for `.claude/CLAUDE.md` and `.claude/rules/`;
+    - Anthropic **Settings files and precedence** (`https://code.claude.com/docs/en/settings`) for `.claude/settings.json` and configuration precedence;
+    - Anthropic **Hooks reference** (`https://code.claude.com/docs/en/hooks`) for hook configuration;
+    - Anthropic **Extend Claude with skills** (`https://code.claude.com/docs/en/skills`) for Claude Code Skills;
+  - claims must be citation-local:
+    - `.claude/CLAUDE.md` is a valid project-instruction location;
+    - `.claude/rules/` holds modular/path-scoped project rules;
+    - `.claude/settings.json` is project configuration;
+    - hooks and skills are separate extension mechanisms documented by Anthropic;
+  - do not collapse the directory into a single “memory” feature and do not imply that every Claude Code extension uses the same loading semantics;
   - relations: related to `claude_md`, `skills`, and `hooks`.
 - Workflow Graph:
   - existing semantic key remains `workflow_graphs`;
@@ -577,8 +605,8 @@ Every implementation/review pass must preserve all of the following unless the u
 - ReAct/Agent Loop diagram simplified to the locked five-node loop;
 - State wording describes facts/data as **state**, never as facts “owned by State”;
 - real Harness examples: Claude Code CLI, Google Antigravity IDE, ChatGPT web;
-- distinct semantic articles for **AGENTS.md** and **CLAUDE.md**;
-- distinct semantic articles for **.agents/** and **.claude/**;
+- distinct semantic articles for **AGENTS.md** and **CLAUDE.md**, each with its locked first-party citation contract;
+- distinct semantic articles for **.agents/** and **.claude/**, each with its locked first-party citation contract;
 - **Graf pracovního postupu (Workflow Graph)** under **Orchestrace agentů** uses Claude Code **Dynamic Workflows** as its primary contemporary implementation/example and explicitly documents the `ultracode` trigger from official Anthropic sources;
 - **Swarm** included under **Orchestrace agentů**, grounded primarily in official Kimi K2.5 Agent Swarm documentation;
 - school semantics/formatting contract remains binding for the submission profile;
@@ -831,7 +859,7 @@ Exit:
 - correct State wording;
 - simplify ReAct diagram;
 - rename group to Rozšíření;
-- source and finalize the distinct .agents/ and .claude/ extension/configuration articles;
+- source and finalize the distinct .agents/ and .claude/ extension/configuration articles from the locked OpenAI/Anthropic first-party documentation;
 - add real Claude Code CLI, Antigravity IDE, and ChatGPT web screenshots with provenance;
 - remove self-referential wording;
 - source every product/mechanism claim.
@@ -843,7 +871,7 @@ Exit:
 
 - physically merge the old level-2 sections into the locked 2.3 hierarchy;
 - add Review under Zadání a způsob práce;
-- split the former umbrella project-instructions concept into separate AGENTS.md and CLAUDE.md articles;
+- split the former umbrella project-instructions concept into separate AGENTS.md and CLAUDE.md articles and cite them from the locked OpenAI/Anthropic first-party documentation;
 - preserve the locked group/article order while rewriting transitions into a continuous software-development argument;
 - aggressively deduplicate against Model, Inference, and Harness;
 - remove “v této práci” style wording;
@@ -945,7 +973,7 @@ The thesis is complete only when:
 - AI-asistovaný vývoj and Agentické inženýrství form coherent section 2.3;
 - Theory and Practical use unheaded section-owned framing instead of synthetic numbered Úvod/Závěr children;
 - Review exists under Zadání a způsob práce;
-- AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership;
+- AGENTS.md, CLAUDE.md, .agents/, and .claude/ each have distinct semantic ownership and first-party citations matching the exact mechanism claimed;
 - Workflow Graph is owned under Orchestrace agentů and source-backed by official Claude Code Dynamic Workflows documentation, with `ultracode` represented accurately as a trigger/setting rather than the product name;
 - Swarm is owned under Orchestrace agentů and source-backed by official Kimi Agent Swarm documentation;
 - all factual/definitional claims are source-backed;
