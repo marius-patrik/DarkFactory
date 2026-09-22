@@ -4,11 +4,9 @@
   key: "thesis_introduction",
   title: [Úvod],
   definition: terms => [
-Tato práce zkoumá, jak lze současné agentní systémy používat při vývoji softwaru tak, aby jejich autonomie byla spojena s trvalým stavem, ověřitelnými účinky a explicitními kontrolními body.
+Práce se zabývá použitím agentní AI při vývoji softwaru a technickými podmínkami, které umožňují delegovat delší úlohy bez ztráty kontroly nad stavem, účinky a ověřením výsledku.
   ],
   description: terms => [
-Teoretická část postupuje od principů softwarového inženýrství přes vlastnosti a limity jazykového modelu k agentnímu harnessu a technikám Agentic Engineering. Praktická část tyto mechanismy vztahuje k systému DarkFactory a odděluje popis implementované architektury od výsledků, které lze doložit testy, CI a provozními artefakty.
-
-Práce se nezaměřuje na trénování modelů. Jazykový model je chápán jako inferenční komponenta uvnitř širšího systému, jehož spolehlivost závisí také na správě stavu, prostředí, nástrojích, verifikaci, bezpečnostních hranicích a způsobu orchestrace.
+Předmětem práce není trénování jazykových modelů, ale systémové vrstvy potřebné pro jejich praktické použití jako součásti agentního vývojového procesu. Východisko a argument, podle kterého je tato otázka dále rozpracována, stanovuje část 1.2.
   ],
 )
