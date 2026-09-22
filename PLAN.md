@@ -59,20 +59,7 @@ The thesis must not invent factual terminology, mechanisms, statistics, benchmar
 1.4 Výzkumné otázky  
 1.5 Metodika
 
-#### Required evidence in Section 1
-
-Restore and update the evidence that establishes why the topic matters:
-
-- **global AI usage/adoption statistic** in the introduction/motivation;
-- **model capability improvement over time** from a stable longitudinal source;
-- **latest frontier-model benchmark comparison** from a current independent evaluation, pinned to its benchmark version/date.
-
-Current source anchors to evaluate during implementation:
-- Microsoft Global AI Diffusion 2026: global AI usage reached **18.8% of the working-age population in June 2026**;
-- Stanford AI Index 2026: longitudinal model/agent capability progress, including benchmark saturation and year-over-year capability gains;
-- Artificial Analysis Intelligence Index **v4.3.2 (September 2026)** for a current cross-model snapshot.
-
-The implementation agent must verify the exact claims against the final cited source before writing them into the manuscript.
+Section 1 owns the research motivation, argument, goals, questions, and methodology, but the quantitative state-of-the-field evidence below belongs in the opening of 2.2 rather than being duplicated here.
 
 ### 2 Teoretická část
 
@@ -89,6 +76,13 @@ Split the current combined **Jazykový model a inference** section. This section
 Target internal structure:
 
 - Úvod
+  - concise state-of-the-field evidence before the conceptual explanation:
+    - one high-level statistic showing continuing growth of general AI adoption;
+    - the restored **dot diagram** used previously for AI usage/adoption;
+    - an explicit contrast showing that **actual coding-agent usage remains very low relative to broad AI adoption**, using a real measured source rather than an inferred ratio;
+    - one high-level longitudinal model-capability improvement statistic;
+    - a compact current frontier-model benchmark comparison, pinned to a benchmark/version/date;
+  - the statistical material motivates why the Model → Inference → Harness distinction matters; it must not become a broad survey of AI history or duplicate later Results.
 - Jazykový model
   - Velký jazykový model (LLM)
   - Transformer
@@ -102,6 +96,27 @@ Target internal structure:
 Model-provider wording must describe the externally supplied model/service boundary from real provider/API documentation, not invent a new architectural abstraction.
 
 Temperature must be sourced from real model/API documentation and explain its effect without overstating deterministic semantics.
+
+##### 2.2 opening evidence and usage visual
+
+The opening of 2.2 owns the high-level usage/capability evidence.
+
+Requirements:
+- restore the prior **dot-style usage diagram** rather than replacing it with a generic bar/line chart;
+- use a sourced broad-AI-adoption statistic and a separately sourced **coding-agent usage** statistic;
+- visually emphasize the gap: AI adoption is rising while actual coding-agent use is still a small minority;
+- do not derive coding-agent use by subtraction or assumption; it must be directly measured by a defensible source with population/date/method stated;
+- include one high-level longitudinal model-improvement statistic from a stable source;
+- include a compact latest benchmark comparison from a current independent evaluation, pinned to exact benchmark/version/date;
+- keep the prose short: these numbers establish scale and trajectory, then the section moves into what the model is.
+
+Current source anchors to evaluate during implementation:
+- Microsoft Global AI Diffusion 2026 for broad AI adoption;
+- Stanford AI Index 2026 for longitudinal capability progress;
+- Artificial Analysis Intelligence Index v4.3.2 (September 2026) for a current model comparison;
+- a separate real survey/telemetry source must be found for actual coding-agent usage before the dot diagram is finalized.
+
+Every exact number must be re-verified against the final cited source at implementation time.
 
 ##### Embedding visuals
 
@@ -307,16 +322,21 @@ Exit:
 - hierarchy/vocabulary are structurally frozen under the new design;
 - `AGENTS.md`, README, manifests, and PLAN agree.
 
-### Phase 2 — Introduction evidence restoration
+### Phase 2 — 2.2 evidence research and restoration
 
-- restore the AI adoption/usage statistic using the newest defensible global source;
-- add sourced longitudinal model-improvement evidence;
-- add a current benchmark comparison pinned to benchmark version/date;
-- rewrite motivation so statistics support the thesis problem rather than become disconnected trivia;
-- remove all self-referential “in this work” wording encountered in Section 1.
+- recover the prior dot-style usage diagram design/asset if it still exists in repository history;
+- verify a current broad AI-adoption statistic;
+- find and verify a **direct measurement of coding-agent usage** that is comparable enough to support the intended contrast without conflating populations;
+- rebuild/restore the dot diagram so broad adoption growth and low coding-agent usage are both visible and correctly labeled;
+- verify one high-level longitudinal model-capability improvement statistic;
+- verify a current frontier-model comparison pinned to benchmark/version/date;
+- keep all quantitative evidence in the opening of 2.2, not Section 1;
+- record source population, observation date, and methodological caveats in the manuscript/citations.
 
 Exit:
-- Section 1 motivation is source-backed and current.
+- 2.2 has a short, defensible state-of-the-field opening;
+- no coding-agent usage number is inferred or invented;
+- the dot diagram is sourced and publication-ready.
 
 ### Phase 3 — Model + Inference rewrite and visuals
 
@@ -444,7 +464,7 @@ The thesis is complete only when:
 - AI-asistovaný vývoj and Agentické inženýrství are one coherent section;
 - all factual/definitional claims are source-backed;
 - self-referential “in this work” wording is removed;
-- current statistics/benchmarks are pinned and cited;
+- current adoption, coding-agent usage, model-improvement, and benchmark statistics in 2.2 are pinned and cited;
 - diagrams are clean, sourced, and pedagogically accurate;
 - real harness examples use real screenshots with provenance;
 - 3.2 comes from generated DarkFactory documentation;
