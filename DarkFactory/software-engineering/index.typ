@@ -18,7 +18,7 @@
 
 #let specification = folder(
   key: "ai_assisted_specification",
-  title: [Specifikace a plánování],
+  title: [Zadání a způsob práce],
   concepts: (
     vibe_coding.item,
     spec_driven_development.item,
@@ -38,7 +38,7 @@
 
 #let verification = folder(
   key: "ai_assisted_quality_verification",
-  title: [Ověřování kvality],
+  title: [Kvalita a ověřování],
   concepts: (
     slop.item,
     continuous_integration.item,
