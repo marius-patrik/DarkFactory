@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { GitBranch, X } from "lucide-react";
+import { KeyRound, X } from "lucide-react";
 import { useWorkspace } from "./context";
 
 export function RepositoryDialog() {
   const workspace = useWorkspace();
   const [input, setInput] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!workspace.dialogOpen) {
       setInput("");
+      setTokenInput("");
       setLocalError(null);
     }
   }, [workspace.dialogOpen]);
@@ -20,6 +22,16 @@ export function RepositoryDialog() {
     setLocalError(null);
     try {
       await workspace.openRepository(value);
+    } catch (reason) {
+      setLocalError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+
+  const connect = async () => {
+    setLocalError(null);
+    try {
+      await workspace.connectToken(tokenInput);
+      setTokenInput("");
     } catch (reason) {
       setLocalError(reason instanceof Error ? reason.message : String(reason));
     }
@@ -60,12 +72,26 @@ export function RepositoryDialog() {
                 <span>{workspace.user.login}</span>
                 <button type="button" onClick={workspace.signOut}>Sign out</button>
               </div>
-            ) : workspace.authConfigured ? (
-              <button type="button" className="workspace-signin" onClick={() => void workspace.signIn()}>
-                <GitBranch size={14} /> Sign in with GitHub
-              </button>
             ) : (
-              <p className="workspace-help">Set <code>PUBLIC_GITHUB_CLIENT_ID</code> for the GitHub App public client to enable private repositories.</p>
+              <div className="workspace-token-connect">
+                <div className="workspace-token-form">
+                  <KeyRound size={14} />
+                  <input
+                    type="password"
+                    value={tokenInput}
+                    onChange={(event) => setTokenInput(event.target.value)}
+                    placeholder="GitHub token"
+                    aria-label="GitHub token"
+                    autoComplete="off"
+                  />
+                  <button type="button" disabled={!tokenInput.trim() || workspace.loading} onClick={() => void connect()}>
+                    Connect
+                  </button>
+                </div>
+                <p className="workspace-help">
+                  Use a fine-grained or user token limited to the repositories you need. It is kept only for this browser session and cleared on sign-out.
+                </p>
+              </div>
             )}
           </section>
           {workspace.recent.length > 0 && (
