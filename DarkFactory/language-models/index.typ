@@ -49,7 +49,7 @@
 
 #let node = folder(
   key: "model",
-  title: [Jazykový model a inference],
+  title: [Model],
   children: (
     intro,
     model,
