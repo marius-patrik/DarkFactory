@@ -51,8 +51,9 @@ export function saveWorkspace(snapshot: WorkspaceSnapshot) {
   return withStore("workspaces", "readwrite", (store) => store.put(snapshot));
 }
 
-export function loadWorkspace(id: string) {
-  return withStore<WorkspaceSnapshot | undefined>("workspaces", "readonly", (store) => store.get(id));
+export async function loadWorkspace(id: string) {
+  const snapshot = await withStore<WorkspaceSnapshot | undefined>("workspaces", "readonly", (store) => store.get(id));
+  return snapshot?.version === 2 ? snapshot : undefined;
 }
 
 export async function saveBlob(workspaceId: string, sha: string, content: string) {
@@ -91,7 +92,7 @@ export async function loadOverlays(workspaceId: string) {
 export function loadRecentWorkspaces() {
   try {
     const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") as WorkspaceSnapshot[];
-    return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
+    return Array.isArray(parsed) ? parsed.filter((item) => item?.version === 2).slice(0, 12) : [];
   } catch {
     return [];
   }
