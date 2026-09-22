@@ -1,6 +1,6 @@
 # DarkFactory-Paper — Completion Plan
 
-This plan is the execution order from the current repository state to the final thesis. Durable writing/structure rules live in `AGENTS.md`, but this plan owns the active migration until each change is implemented and the durable rules are synchronized.
+This plan contains only the remaining execution path from the current repository state to the final thesis. Durable writing/structure rules live in `AGENTS.md`; this file keeps only active/future work, unresolved implementation decisions, and final gates. Completed-phase history belongs in Git rather than this plan.
 
 ## Working mode
 
@@ -37,7 +37,7 @@ Section 1 owns the research motivation and argument. The body then demonstrates 
 
 The thesis must not invent factual terminology, mechanisms, statistics, benchmark claims, product behavior, or implementation claims. External claims come from real sources; DarkFactory-specific claims come from current code, generated documentation, tests, workflows, or pinned repository evidence.
 
-## Global writing/source rules introduced by this revision
+## Global writing/source rules
 
 - Remove self-referential formulations such as **„v této práci“**, **„pro účely této práce“**, and equivalent wording from the manuscript.
 - Do not compensate by inventing local definitions. Prefer established terminology supported by real sources.
@@ -795,12 +795,10 @@ Every implementation/review pass must preserve all of the following unless the u
 If a side agent finds a conflict between two locked requirements, it must stop that conflicting subchange and report the conflict rather than silently choosing one.
 
 
-## Explicitly deferred decisions — agents must not invent these early
+## Deferred decisions
 
-These items are intentionally unresolved until the named phase because they depend on live sources or implementation evidence.
+These items remain intentionally unresolved until their named phase because they depend on live sources or implementation evidence.
 
-- **Exact benchmark rows and numeric values (Phase 2/3):** the selection algorithm and source are fixed, but the five model rows/values must be read from the pinned Artificial Analysis snapshot at execution time and rendered in Chapter 2.
-- **Exact ECI plotted datapoints (Phase 2):** source/series are fixed; use the source dataset rather than hand-entering approximations from prose.
 - **Exact screenshot files/URLs (Phase 4):** products and documentation can change. Select the current real first-party screenshots at execution time under the fixed screenshot contract.
 - **Exact diagram coordinates, dimensions, typography, and spacing (Phases 3/4):** semantic contents are fixed; visual geometry is an implementation detail so long as it satisfies the rendering contracts and survives PDF inspection.
 - **Exact full rewritten prose (Phases 3–8):** ownership, claims, terminology, sources, and section purpose are fixed; agents must write concise source-backed Czech prose rather than preserve old wording mechanically.
@@ -828,91 +826,11 @@ Evidence ownership:
 Theoretical semantic articles in Chapters 2–4 render:
 **definition → description → real cited examples → practical implication**.
 
-## Current checkpoint
+## Remaining execution order
 
-Phase 1 structural/schema migration and Phase 2 evidence restoration are complete.
+Only the phases below are actionable. Do not re-open completed structural/evidence work unless a later phase discovers a concrete factual, source, build, or school-compliance defect.
 
-Verified thesis implementation checkpoints:
-- **Phase 1:** `c10cb4eb2b6084aaebb8431c2176db29ff77692a`
-- **Phase 2 content commit:** **`5de3fc832b3bcfd8d5b9b0ff029be35a5a89adfe`**
-- Phase 2 validation PR: **#146**
-- same-content-head CI: **35724455254 — success**
-- same-content-head Deploy Documentation: **35724452361 — success**
-- same-content-head Release: **35724452393 — success**
-
-Phase 2 is accepted:
-- Section 1 now contains the sourced 2,500-dot Gradually adoption/coding-agent visualization;
-- the coding-agent population is explicitly labeled as Gradually's editorial, deduplicated 25–35M estimate and the visualization uses the 30M midpoint;
-- Section 1 contains the Epoch ECI reasoning/non-reasoning frontier chart using the 2026-09-01 source snapshot and the approximately 14 vs 6 ECI points/year trends;
-- Chapter 2 contains the point-in-time Artificial Analysis Intelligence Index v4.3.2 table with five highest-scoring distinct base model names after configuration deduplication;
-- Phase 2 evidence is normalized in checked-in `DarkFactory/data/phase2-evidence.json`;
-- Gradually/Epoch figures are regenerated deterministically by `scripts/render_phase2_evidence.py` during the build;
-- bibliography handles/records are present and the superseded Microsoft adoption citation was removed;
-- the Phase 2 commit passed canonical build/CI/deploy/release gates.
-
-Source limitations remain explicit rather than treated as implementation defects:
-- Gradually's coding-agent figure is an editorial estimate, not a census/provider count;
-- ECI is a composite capability index, not a universal intelligence measure;
-- Artificial Analysis v4.3.2 is a dated point-in-time benchmark snapshot.
-
-The repository `main` may contain later coordinator/IDE-plan-only commits after the Phase 2 content commit; do not interpret that as Phase 2 drift unless manuscript/content files changed.
-
-**Active next thesis phase: Phase 3 — Chapter 2 Model / 2.2 Inference rewrite and visuals.**
-
-Phase 3 must begin from latest `main`, preserve all accepted Phase 2 evidence, and must not broaden into Harness/Chapter 3 work.
-
-## Execution order from this revision
-
-### Phase 1 — Structural migration and durable-rule synchronization — COMPLETE
-
-Completed at `c10cb4eb2b6084aaebb8431c2176db29ff77692a`. Do not dispatch further Phase 1 implementation work.
-
-This phase was **structure-only** except for the minimum sourced definitions required for newly introduced schema records. It must not redesign figures, restore statistics, collect screenshots, or perform the full prose rewrite.
-
-- apply the new work title everywhere;
-- remove the **Teoretická část** and **Praktická část** wrapper chapters entirely;
-- remove synthetic numbered subject-chapter Úvod/Závěr children and migrate their prose into section-owned opening/closing framing;
-- make **Jazykový model** Chapter 2 with **2.2 Inference**;
-- make **Harness** Chapter 3;
-- make merged **AI-asistovaný vývoj a agentické inženýrství** Chapter 4;
-- make generated **DarkFactory** Chapter 5;
-- make **Vyhodnocení** Chapter 6 and thesis **Závěr** Chapter 7;
-- make unnumbered concept articles excluded from the school PDF contents while remaining available to the web Structure UI;
-- align the GJKT school-PDF template/front matter/numbering contract defined above;
-- rename the extensions group to **Rozšíření**;
-- add Temperature, Model Provider, Review, AGENTS.md, CLAUDE.md, .agents/, and .claude/ as the distinct locked concepts defined above;
-- extend the semantic schema with the canonical `practical` field and section-owned equivalent;
-- align article rendering to definition → description → examples → practical;
-- update manifests, relations, vocabulary ownership, README, and `AGENTS.md`;
-- remove superseded structure rather than keeping compatibility paths;
-- verify semantic graph resolution and rendered hierarchy.
-
-Exit — satisfied:
-- hierarchy/vocabulary are structurally frozen under the new design;
-- `AGENTS.md`, README, manifests, schema, validators, and PLAN agree after this coordinator checkpoint;
-- current-head CI is green.
-
-### Phase 2 — Section 1 evidence restoration + Chapter 2 benchmark snapshot — COMPLETE
-
-Completed at `5de3fc832b3bcfd8d5b9b0ff029be35a5a89adfe`. Preserve this evidence ownership and source caveats during later rewrites.
-
-Section 1:
-- implement the Gradually-derived 2,500-dot world-population visualization defined above;
-- preserve the source’s exact category semantics and explicitly label the coding-agent value as an editorial estimate;
-- verify and restore the Epoch AI long-term model capability curve;
-- record source population, observation date, methodology, and caveats.
-
-Chapter 2:
-- verify a current frontier-model comparison pinned to benchmark/version/date;
-- keep it compact and point-in-time; do not duplicate the long-term curves or adoption evidence from Section 1.
-
-Exit:
-- Section 1 has sourced adoption/coding-agent usage evidence and long-term capability curves;
-- Chapter 2 has the latest benchmark snapshot;
-- the coding-agent estimate is represented with Gradually’s stated caveats and provenance;
-- the 2,500-dot diagram is sourced and publication-ready.
-
-### Phase 3 — Chapter 2 Model / 2.2 Inference rewrite and visuals — ACTIVE
+### Phase 3 — Chapter 2 Model / 2.2 Inference rewrite and visuals — ACTIVE NOW
 
 - rewrite Chapter 2 Jazykový model from source-backed responsibilities;
 - rewrite **2.2 Inference** as the single owner of Model Provider, Inference Engine, Temperature, Context Window, KV Cache, and Context Rot;
@@ -921,7 +839,7 @@ Exit:
 - citation pass across Chapter 2;
 - apply the direct-source + concrete-example contract to every Chapter 2 article where an implementation/example exists;
 - preserve the accepted Artificial Analysis benchmark snapshot in the Chapter 2 opening and do not reselect/recompute Phase 2 evidence unless a real source error is found;
-- remove remaining self-referential wording such as the current Context Rot phrase “V této práci označuje…”;
+- remove any remaining self-referential wording from Chapter 2;
 - fill the canonical `definition → description → examples → practical` contract for every Chapter 2 semantic article rather than leaving examples implicit in prose;
 - keep practical implications about agentic software development generally; do not force DarkFactory-specific application prose.
 
