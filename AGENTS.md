@@ -39,7 +39,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 ### 1 Úvod
 
 - 1.1 Motivace a vymezení problému
-- 1.2 Argument
+- 1.2 Východisko a argument práce
 - 1.3 Cíle
   - 1.3.1 Hlavní cíl
   - 1.3.2 Dílčí cíle
@@ -53,7 +53,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 #### 2.2 AI-asistovaný vývoj
 
 - 2.2.1 Úvod
-- 2.2.2 Specifikace a plánování
+- 2.2.2 Zadání a způsob práce
   - Vibe Coding
   - Vývoj řízený specifikací (Spec-Driven Development)
   - Plánování (Planning)
@@ -61,7 +61,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
   - Správa verzí (Version Control)
   - Větev (Branch)
   - Pull Request
-- 2.2.4 Ověřování kvality
+- 2.2.4 Kvalita a ověřování
   - Slop
   - Průběžná integrace (CI)
   - Integrační test (Integration Test)
@@ -69,7 +69,7 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 
 No standalone Software Engineering article.
 
-#### 2.3 Model
+#### 2.3 Jazykový model a inference
 
 - 2.3.1 Úvod
 - 2.3.2 Jazykový model
