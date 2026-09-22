@@ -2,6 +2,7 @@ out/
 site/
 *.pdf
 !DarkFactory/img/*.pdf
+!paper/img/*.pdf
 
 .DS_Store
 Thumbs.db
@@ -17,3 +18,5 @@ web/package-lock.json
 # Authoritative external figures are fetched from their cited primary sources.
 DarkFactory/img/external/
 DarkFactory/img/generated/
+paper/img/external/
+paper/img/generated/

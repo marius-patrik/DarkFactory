@@ -5,7 +5,7 @@ This file contains only the remaining execution path to the final **Odborn√° pr√
 Durable manuscript rules live in `AGENTS.md`.
 Recovered school-format rules live in `SCHOOL_RULES.md`.
 Unpromoted future requests live in `BACKLOG.md`.
-The generic IDE workstream is separate in `IDE_PLAN.md`.
+The generic IDE workstream is separate in `web/PLAN.md`.
 
 ## Canonical source architecture
 

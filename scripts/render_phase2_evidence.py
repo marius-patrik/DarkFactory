@@ -9,8 +9,9 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "DarkFactory" / "data" / "phase2-evidence.json"
-OUT = ROOT / "DarkFactory" / "img" / "generated"
+BOOK_DIR = "paper" if (ROOT / "paper").exists() else "DarkFactory"
+DATA = ROOT / BOOK_DIR / "data" / "phase2-evidence.json"
+OUT = ROOT / BOOK_DIR / "img" / "generated"
 
 
 def svg_text(x: float, y: float, text: str, *, size: int = 18, weight: str = "normal", anchor: str = "start") -> str:

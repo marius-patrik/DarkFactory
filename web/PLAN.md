@@ -4,7 +4,7 @@ This plan is independent from the thesis/manuscript execution plan in `PLAN.md`.
 
 `PLAN.md` remains authoritative for thesis structure, manuscript content, evidence, school compliance, generated DarkFactory documentation, results, and publication completion.
 
-`IDE_PLAN.md` owns the reusable GitHub-backed IDE/workbench that hosts the repository and publication tooling.
+`web/PLAN.md` owns the reusable GitHub-backed IDE/workbench that hosts the repository and publication tooling.
 
 The two plans may execute in parallel. IDE work must not silently redesign manuscript semantics or overwrite thesis decisions. Thesis work may consume IDE capabilities once they exist, but must not depend on unfinished IDE work unless explicitly stated.
 
@@ -1296,7 +1296,7 @@ Early IDE phases should not touch these merely for convenience.
 If IDE work needs a repository-specific contract, consume the current public schema rather than redesigning it.
 
 `PLAN.md` remains authoritative for thesis execution.
-`IDE_PLAN.md` remains authoritative for the IDE workstream.
+`web/PLAN.md` remains authoritative for the IDE workstream.
 
 ---
 

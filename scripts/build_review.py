@@ -30,11 +30,16 @@ def run(args: list[str], *, capture: bool = False) -> str:
 parser = argparse.ArgumentParser()
 parser.add_argument("--typst", default="typst")
 parser.add_argument("--font-path", action="append", default=[])
-parser.add_argument("--book", default="DarkFactory")
+parser.add_argument("--book", default="paper")
 parser.add_argument("--template", default="gjkt-odborna-prace")
-parser.add_argument("--main", default="main.typ")
+parser.add_argument("--main", default="paper/PAPER.typ")
 parser.add_argument("--output", required=True)
 args = parser.parse_args()
+
+if args.book == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+    args.book = "paper"
+if not Path(args.main).exists() and Path("paper/PAPER.typ").exists():
+    args.main = "paper/PAPER.typ"
 
 common = []
 for font_path in args.font_path:

@@ -28,7 +28,7 @@ SITE = Path("site")
 WEB_DIST = Path("web/dist")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--book", default="DarkFactory")
+parser.add_argument("--book", default="paper")
 parser.add_argument("--default-template", default="gjkt-odborna-prace")
 parser.add_argument(
     "--allow-missing",
@@ -36,7 +36,10 @@ parser.add_argument(
     help="build the React site/manifest even when compiled publication artifacts are absent",
 )
 args = parser.parse_args()
-BOOK_ROOT = Path(args.book)
+book_name = args.book
+if book_name == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+    book_name = "paper"
+BOOK_ROOT = Path(book_name)
 DEFAULT_TEMPLATE = args.default_template
 WORK_TITLE = PUBLICATION["title"]
 
@@ -267,12 +270,14 @@ MANUSCRIPT_TOP_LEVEL = [
 ]
 
 
-def typst_manuscript_index(source_path: Path = Path("main.typ")) -> list[dict[str, object]]:
+def typst_manuscript_index(source_path: Path | None = None) -> list[dict[str, object]]:
+    if source_path is None:
+        source_path = Path("paper/PAPER.typ") if Path("paper/PAPER.typ").exists() else Path("main.typ")
     source = source_path.read_text(encoding="utf-8")
     body_start = source.find('#metadata("body-start")')
     body_end = source.find('#metadata("body-end")')
     if body_start < 0 or body_end <= body_start:
-        raise SystemExit("main.typ body markers are missing or out of order")
+        raise SystemExit(f"{source_path} body markers are missing or out of order")
 
     body = source[body_start:body_end]
     heading_pattern = re.compile(
@@ -308,7 +313,7 @@ def typst_manuscript_index(source_path: Path = Path("main.typ")) -> list[dict[st
     top_level = [entry["title"] for entry in entries if entry["level"] == 1]
     if top_level != MANUSCRIPT_TOP_LEVEL:
         raise SystemExit(
-            f"main.typ web hierarchy differs from manuscript contract: {top_level}"
+            f"{source_path} web hierarchy differs from manuscript contract: {top_level}"
         )
 
     semantic_titles = {
@@ -324,7 +329,7 @@ def typst_manuscript_index(source_path: Path = Path("main.typ")) -> list[dict[st
         "Vývoj řízený specifikací (Spec-Driven Development)",
     ):
         if required not in semantic_titles:
-            raise SystemExit(f"main.typ web index is missing semantic article: {required}")
+            raise SystemExit(f"{source_path} web index is missing semantic article: {required}")
 
     return entries
 

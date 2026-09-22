@@ -9,7 +9,9 @@ import re
 import subprocess
 from pathlib import Path
 
-BOOK = os.environ.get("BOOK", "DarkFactory")
+BOOK = os.environ.get("BOOK", "paper")
+if BOOK == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+    BOOK = "paper"
 ROOT = Path(BOOK)
 EXPECTED_PDFS = (Path("out/prace.pdf"), Path("out/prace-review.pdf"))
 EXPECTED_HTML = tuple(path.with_suffix(".html") for path in EXPECTED_PDFS)
@@ -105,8 +107,10 @@ require_contract(
     ".gitmodules",
 )
 
+paper_file = ROOT / "PAPER.typ" if (ROOT / "PAPER.typ").exists() else Path("PAPER.typ")
+
 required_sources = (
-    Path("main.typ"),
+    paper_file,
     Path("Makefile"),
     Path("web/package.json"),
     Path("web/rsbuild.config.ts"),
@@ -127,7 +131,7 @@ required_sources = (
 )
 sources = {path: require_file(path) for path in required_sources}
 
-main_source = sources[Path("main.typ")]
+main_source = sources[paper_file]
 require_contract(
     main_source,
     (
@@ -140,11 +144,12 @@ require_contract(
         'tools: (key: "tools"',
         'subagent: (key: "subagent"',
         'swarm: (key: "swarm"',
-        '#bibliography("/DarkFactory/bib/references.bib"',
+        'DarkFactory',
+        '#bibliography("bib/references.bib"',
         '<callout>',
         '<word-stats>',
     ),
-    "main.typ manuscript",
+    f"{paper_file} manuscript",
 )
 
 tracked = subprocess.run(
@@ -154,8 +159,8 @@ tracked = subprocess.run(
     text=True,
 ).stdout.splitlines()
 tracked_typst = sorted(Path(path) for path in tracked if path.endswith(".typ"))
-if tracked_typst != [Path("main.typ")]:
-    fail(f"main.typ must be the only authored Typst source, found: {tracked_typst}")
+if tracked_typst != [paper_file]:
+    fail(f"{paper_file} must be the only authored Typst source, found: {tracked_typst}")
 
 if Path("scripts/consolidate_paper.py").exists():
     fail("obsolete consolidation script still exists")
@@ -168,7 +173,7 @@ for stale in ("consolidate:", "scripts/consolidate_paper.py", "make consolidate"
 body_start = main_source.find('#metadata("body-start")')
 body_end = main_source.find('#metadata("body-end")')
 if body_start < 0 or body_end <= body_start:
-    fail("main.typ body markers are missing or out of order")
+    fail(f"{paper_file} body markers are missing or out of order")
 body_source = main_source[body_start:body_end]
 
 heading_pattern = re.compile(
@@ -410,6 +415,6 @@ if release_assets != set(EXPECTED):
     fail("release asset list must exactly match the canonical publication artifact set")
 
 print(
-    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, single-source manuscript main.typ, "
+    f"ok: {BOOK}: {len(EXPECTED)} canonical artifacts, single-source manuscript {paper_file}, "
     f"and web workbench validated"
 )

@@ -8,7 +8,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "DarkFactory" / "img" / "external"
+BOOK_DIR = "paper" if (ROOT / "paper").exists() else "DarkFactory"
+OUT = ROOT / BOOK_DIR / "img" / "external"
 UA = "Mozilla/5.0 (compatible; DarkFactory-Paper/1.0; +https://github.com/marius-patrik/DarkFactory-Paper)"
 
 ASSETS = (

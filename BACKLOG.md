@@ -5,7 +5,7 @@ This file is a parking lot for requests that are not part of the active thesis p
 ## Rules
 
 - `PLAN.md` is the active thesis execution plan.
-- `IDE_PLAN.md` is the separate generic IDE workstream plan.
+- `web/PLAN.md` is the separate generic IDE workstream plan.
 - `SCHOOL_RULES.md` is the recovered Odborná-práce compliance contract.
 - Items here are inactive until explicitly promoted.
 

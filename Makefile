@@ -2,9 +2,17 @@ TYPST ?= typst
 PYTHON ?= python3
 NPM ?= npm
 
-BOOK ?= DarkFactory
-BOOK_ROOT := $(BOOK)
-MAIN := main.typ
+BOOK ?= paper
+ifeq ($(BOOK),DarkFactory)
+  ifeq ($(wildcard DarkFactory),)
+    BOOK_ROOT := paper
+  else
+    BOOK_ROOT := $(BOOK)
+  endif
+else
+  BOOK_ROOT := $(BOOK)
+endif
+MAIN := $(BOOK_ROOT)/PAPER.typ
 FONTS := --font-path $(BOOK_ROOT)/fonts
 
 DEFAULT_TEMPLATE := gjkt-odborna-prace

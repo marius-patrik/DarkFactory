@@ -38,7 +38,7 @@
     "$comment": "DarkFactory-Paper is a Typst thesis project with one canonical publication. CI builds Final/Review as PDF plus semantic Typst HTML and derived Markdown, validates the book contract and web workbench, and Pages publishes both modes in all three formats.",
     "testing": {
       "typst": {
-        "command": "make ci BOOK=DarkFactory"
+        "command": "make ci BOOK=paper"
       },
       "node": {
         "enabled": false
@@ -46,7 +46,7 @@
     },
     "release": {
       "typst": {
-        "command": "make ci BOOK=DarkFactory"
+        "command": "make ci BOOK=paper"
       },
       "node": {
         "enabled": false
@@ -62,7 +62,7 @@
     },
     "documentation": {
       "typst": {
-        "command": "make site BOOK=DarkFactory",
+        "command": "make site BOOK=paper",
         "source": "Canonical Typst thesis publication"
       },
       "node": {

@@ -340,11 +340,16 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--typst", default="typst")
     parser.add_argument("--font-path", action="append", default=[])
-    parser.add_argument("--book", default="DarkFactory")
+    parser.add_argument("--book", default="paper")
     parser.add_argument("--template", default="gjkt-odborna-prace")
-    parser.add_argument("--source", default="main.typ")
+    parser.add_argument("--source", default="paper/PAPER.typ")
     parser.add_argument("--output-dir", default="out")
     args = parser.parse_args()
+
+    if args.book == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+        args.book = "paper"
+    if not Path(args.source).exists() and Path("paper/PAPER.typ").exists():
+        args.source = "paper/PAPER.typ"
 
     source = Path(args.source)
     if not source.is_file():

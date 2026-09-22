@@ -160,20 +160,20 @@
 
 #let adoption_figure = [
 #figure(
-  image("/DarkFactory/img/generated/gradually-ai-usage-2026.svg", width: 100%),
+  image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení světové populace podle nejpokročilejší používané kategorie generativní AI v srpnu 2026. Každý z 2 500 bodů představuje přibližně 3,3 milionu lidí; kategorie jsou vzájemně výlučné. Hodnota pro pravidelné uživatele AI coding agents je redakční, deduplikovaný odhad Gradually (25–35 milionů), přičemž graf používá střed 30 milionů, přibližně 0,36 % populace. #cite(bib.gradually_ai_usage_2026)],
 )
 ]
 
 #let eci_figure = [
 #figure(
-  image("/DarkFactory/img/generated/epoch-eci-frontier-2026-09-01.svg", width: 100%),
+  image("img/generated/epoch-eci-frontier-2026-09-01.svg", width: 100%),
   caption: [Frontier pozorování a lineární trendy Epoch Capabilities Index (ECI) od přechodu k reasoning modelům v září 2024. Epoch uvádí přibližně 14 ECI bodů za rok pro reasoning frontier a přibližně 6 bodů za rok pro non-reasoning frontier; zdrojová data jsou ve verzi z 1. 9. 2026. Pro čitelnost v tisku nejsou zobrazeny 90% predikční intervaly. #cite(bib.epoch_eci_frontier_2026)],
 )
 ]
 
 
-#let evidence = json("/DarkFactory/data/phase2-evidence.json")
+#let evidence = json("data/phase2-evidence.json")
 #let rows = evidence.artificial_analysis.rows
 #let r0 = rows.at(0)
 #let r1 = rows.at(1)
@@ -630,7 +630,7 @@ Termín zavedl Andrej Karpathy v roce 2025. Jeho popis představuje nízkostrukt
 #block[Tweet Andreje Karpathyho z 2. února 2025, ve kterém popsal původní význam Vibe Coding.] <concept-karpathy_vibe_coding_tweet>
 
 #figure(
-  image("/DarkFactory/img/external/karpathy-vibe-coding.png", width: 92%),
+  image("img/external/karpathy-vibe-coding.png", width: 92%),
   caption: [Původní tweet Andreje Karpathyho o Vibe Coding. #cite(bib.karpathy2025vibecoding) #cite(bib.coderabbit2026vibehistory)],
 )
 
@@ -785,14 +785,14 @@ Uvnitř Transformeru se identifikátory tokenů mapují na naučené vektory, kt
 #block[#strong[Analogie král − muž + žena ≈ královna.] Mikolov, Yih a Zweig ukazují, že rozdílové vektory naučených slovních reprezentací mohou zachycovat sémantické vztahy; klasickým příkladem je vektor blízký vztahu „King − Man + Woman ≈ Queen“. #cite(bib.mikolov2013linguistic)] <example-embedding_royalty_2d>
 
 #figure(
-  image("/DarkFactory/img/vector-embedding-queen.svg", width: 100%),
+  image("img/vector-embedding-queen.svg", width: 100%),
   caption: [Ilustrativní 2D projekce vztahu král − muž + žena ≈ královna. Osy Pohlaví a Královský status jsou vysvětlující projekcí pro názornost, nikoli doslovnými naučenými dimenzemi nebo produkčními souřadnicemi embeddingového prostoru.],
 )
 
 #block[#strong[Dvě relační rodiny v projekci.] Vedle vztahu pohlaví a královského statusu ukazují práce o word embeddings také relační rodinu země–hlavní město; Mikolov et al. uvádějí například vztah „Madrid − Spain + France ≈ Paris“. Druhá rovina proto pedagogicky zobrazuje analogickou dvojici Francie–Paříž a Itálie–Řím bez tvrzení, že zakreslené souřadnice odpovídají skutečným naučeným osám. #cite(bib.mikolov2013compositionality) #cite(bib.mikolov2013linguistic)] <example-embedding_semantic_space_3d>
 
 #figure(
-  image("/DarkFactory/img/vector-embedding-3d.svg", width: 100%),
+  image("img/vector-embedding-3d.svg", width: 100%),
   caption: [Pedagogická 3D projekce dvou relačních rodin. Reálné embeddingové prostory jsou vysokodimenzionální; osy Pohlaví, Královský status a Další sémantická dimenze jsou pouze vysvětlující projekční pomůcky a nepředstavují doslovné produkční souřadnice embeddingu.],
 )
 
@@ -893,7 +893,7 @@ Jeho odpovědností je kontinuita běhu a provedení účinků mimo model. Strat
 ReAct formalizuje střídání rozhodnutí, akce a pozorování výsledku; nové pozorování se stává vstupem dalšího kroku. #cite(bib.yao2022)
 
 #figure(
-  image("/DarkFactory/img/react-loop.svg", width: 100%),
+  image("img/react-loop.svg", width: 100%),
   caption: [Smyčka ReAct: model zvolí akci, harness ji provede a výsledek vrátí modelu.],
 ) <fig-react-loop>
 
@@ -1413,7 +1413,7 @@ Rozsah závěru je omezen provedenými důkazy: práce neprokazuje obecnou přev
 // ── Zadní část ───────────────────────────────────────────
 #pagebreak(weak: true)
 #nadpis-bez-cisla[Seznam zdrojů]
-#bibliography("/DarkFactory/bib/references.bib", style: "iso-690-numeric", title: none, full: true)
+#bibliography("bib/references.bib", style: "iso-690-numeric", title: none, full: true)
 
 
 // ── Přílohy ──────────────────────────────────────────────

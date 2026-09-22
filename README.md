@@ -45,4 +45,4 @@ See:
 - `PLAN.md` — active thesis execution plan;
 - `SCHOOL_RULES.md` — recovered school compliance contract;
 - `BACKLOG.md` — unpromoted requests;
-- `IDE_PLAN.md` — separate generic IDE workstream.
+- `web/PLAN.md` — separate generic IDE workstream.
