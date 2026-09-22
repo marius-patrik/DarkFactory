@@ -143,36 +143,36 @@ Při komplexnějších úlohách proto harness vybírá, jaké informace do dal�
 
 #heading(level: 2)[Agent a harness]
 
-Harness je runtime, který propojuje model s nástroji a prostředím projektu. Připravuje context window, udržuje stav běhu, zprostředkovává přístup k souborům a zaznamenává pozorování @anthropic-harness-design @anthropic-managed-agents.
+Tradiční integrovaná vývojová prostředí (IDE) sloužila jako pasivní editory poskytující asistenci lidskému programátorovi. Naproti tomu agentní harness nepředstavuje editor, nýbrž aktivní běhové prostředí (runtime). Jazykový model sám o sobě postrádá schopnost přímé interakce se souborovým systémem či terminálem; funguje jako bezstavový predikční modul. Harness přebírá roli operačního rozhraní: zpřístupňuje sadu povolených nástrojů, dynamicky sestavuje a komprimuje context window, udržuje perzistentní stav běhu a zaznamenává pozorování v pracovním stromu repozitáře @anthropic-harness-design @anthropic-managed-agents.
 
 #heading(level: 3)[Smyčka]
 
-V agentní smyčce model navrhne další akci, harness ji provede v prostředí a výsledek vrátí jako pozorování. Tento princip odpovídá přístupu #strong[ReAct], v němž se střídá uvažování, jednání a pozorování @yao2022.
+Základním mechanismem agentního provádění je iterativní řídicí smyčka. Na rozdíl od jednorázové generace odpovědi u chatbotu probíhá interakce v cyklu podle vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022. Model v každém kroku analyzuje aktuální stav kontextu, zformuluje vnitřní uvažování a navrhne konkrétní volání nástroje ve formě strukturovaného požadavku. Harness tuto akci provede v prostředí projektu, zachytí výsledek a vrátí jej modelu jako nové pozorování. Smyčka pokračuje, dokud model nedosáhne cíle nebo nenarazí na bezpečnostní limit kroků či tokenů.
 
 #figure(
-  image("img/react-loop.svg", width: 92%),
+  image("img/react-loop.svg", width: 75%),
   caption: [Agentní smyčka ReAct: model navrhne akci, harness ji zprostředkuje a vykoná v prostředí a pozorování se vrací do dalšího kroku; princip podle @yao2022.],
 ) <fig-react-loop>
 
 #heading(level: 3)[Agent a chatbot]
 
-U chatbotu člověk sám vybírá soubory, upravuje projekt a spouští nástroje; chatbot jen odpovídá v konverzaci. Agent naproti tomu prostřednictvím harnessu čte a mění soubory, spouští příkazy a testy, přijímá jejich výstup a pokračuje podle něj. Podstatný rozdíl je tedy v tom, kdo práci v projektu skutečně vykonává @anthropic2024tooluse @openai-agents-sandbox.
+Zásadní rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v architektuře použitého modelu, nýbrž v míře delegace provádění. Chatbot setrvává v roli externího rádce: uživatel musí manuálně kopírovat úryvky kódu, dodávat kontext a spouštět navržené příkazy. Agent naproti tomu prostřednictvím harnessu získává přímý přístup k nástrojům repozitáře. Sám prochází souborovou strukturu, upravuje kód, spouští testy a na základě chybových výstupů samostatně koriguje své změny @anthropic2024tooluse @openai-agents-sandbox. Tento posun transformuje roli člověka z přímého vykonavatele na dohlížejícího architekta.
 
 #heading(level: 2)[Agentické inženýrství]
 
-Aby mohl agent pracovat spolehlivě, nestačí spoléhat pouze na schopnosti samotného modelu nebo jednorázové prompty. Je nutné systematicky navrhnout zadání, výběr kontextu, mechanismy ověřování a způsob integrace výsledku. Tyto postupy se souhrnně označují jako Agentické inženýrství @anthropic-harness-design @anthropic-managed-agents.
+Tradiční softwarové inženýrství se soustředí na návrh algoritmů a systémových architektur. Agentické inženýrství (#strong[Agentic Engineering]) naproti tomu představuje disciplínu zaměřenou na systematický návrh podmínek, v nichž může stochastický jazykový model vykonávat programátorské úlohy deterministicky, bezpečně a v souladu s pravidly projektu @anthropic-harness-design @anthropic-managed-agents. Zahrnuje dekompozici úloh, precizní ohraničení kontextu, konstrukci nástrojových rozhraní, verifikační zpětné vazby a mechanismy řízené integrace.
 
 #heading(level: 3)[Zadání a kontext]
 
-Delegovaná práce potřebuje explicitní výsledek, rozsah, omezení a podmínky přijetí. Specifikace určuje, co se má změnit i co má zůstat zachováno. Při #strong[prompt engineeringu] se formulují instrukce pro konkrétní krok; #strong[context engineering] vybírá zadání, pravidla repozitáře, soubory, historii a výsledky nástrojů pro context window @openai-prompt-engineering @anthropic-context-engineering. Soubor AGENTS.md může tato pravidla uchovat přímo v repozitáři @agents-md.
+Spolehlivé delegování práce vyžaduje explicitní definici cíle, rozsahu a podmínek přijetí. Specifikace musí vymezit nejen to, co se má změnit, ale i jaké komponenty musí zůstat nedotčeny. Zatímco #strong[prompt engineering] formuluje instrukce a direktivy pro konkrétní inferenční krok, #strong[context engineering] dynamicky vybírá a ohraničuje informace vstupující do context window — pravidla repozitáře, relevantní symboly abstraktního syntaktického stromu (AST), historii kroků a výstupy nástrojů @openai-prompt-engineering @anthropic-context-engineering. Standardizovaný soubor AGENTS.md umožňuje tato pravidla a příkazy sestavení uchovat přímo v kořeni repozitáře @agents-md.
 
-Harness může prostředí rozšiřovat o další prostředky. Rozšíření Skills představují znovu použitelné instrukce a skripty pro specializované úlohy @agentskills-spec; mechanismus Hooks reaguje na události běhu a umožňuje vynutit pravidla či spustit kontroly @openai-agents-lifecycle. Standard MCP (Model Context Protocol) sjednocuje připojení externích nástrojů a datových zdrojů k harnessu @mcp-specification. Tyto komponenty představují rozhraní a nástroje řízené harnessem, nikoli samostatné autonomní agenty.
+Harness rozšiřuje své schopnosti prostřednictvím modulárních architektonických prvků. Rozšíření #strong[Skills] představují procedurální instrukce a skripty pro specializované doménové operace @agentskills-spec; mechanismus #strong[Hooks] zachycuje události běhu a umožňuje vynutit validační pravidla před akcí či po ní @openai-agents-lifecycle. Standard #strong[Model Context Protocol] (#strong[MCP]) sjednocuje napojení externích nástrojů a datových zdrojů na harness prostřednictvím otevřeného protokolu klient-server @mcp-specification. Tyto komponenty tvoří řízenou infrastrukturu harnessu, nikoli samostatné autonomní agenty.
 
 #heading(level: 3)[Orchestrace a lidská integrace]
 
-Práci lze rozdělit mezi více agentů. Ve vzoru coordinator/subagent hlavní agent předá dílčí úkol s omezeným kontextem a převezme výsledek. Workflow graph popisuje závislosti a větvení mezi kroky; swarm označuje volnější spolupráci skupiny agentů @openai-agent-orchestration @openai-swarm.
+Při řešení rozsáhlých úloh monolitický agent často selhává kvůli degradaci pozornosti v dlouhém kontextu. Proto se uplatňuje dekompozice mezi více spolupracujících agentů. Ve vzoru #strong[coordinator/subagent] hlavní agent deleguje izolovaný podúkol s čistým kontextovým oknem na specializovaného subagenta a přebírá pouze výslednou syntézu. Vzor #strong[workflow graph] definuje deterministický stavový automat či orientovaný graf závislostí a větvení mezi vývojovými fázemi; architektura #strong[swarm] pak označuje volnější spolupráci skupiny agentů s dynamickým předáváním řízení @openai-agent-orchestration @openai-swarm.
 
-Human-in-the-loop (#strong[HITL]) označuje místa, kde postup vyžaduje lidské rozhodnutí — schválení plánu, úpravu rozsahu, vyhodnocení výsledku nebo přijetí změny. Integrace tak zahrnuje nejen technickou kontrolu, ale i lidskou revizi a převzetí odpovědnosti @github-branches @github-pull-requests.
+Princip #strong[Human-in-the-loop] (#strong[HITL]) stanovuje formální kontrolní brány, kde automatizovaný postup vyžaduje explicitní lidské rozhodnutí — schválení specifikace, potvrzení implementačního plánu nebo akceptaci výsledného diffu. Integrace změn do hlavní vývojové větve vyžaduje nejen technické ověření v CI, ale především lidskou revizi a převzetí inženýrské odpovědnosti @github-branches @github-pull-requests.
 
 #heading(level: 1)[Praktická část]
 
