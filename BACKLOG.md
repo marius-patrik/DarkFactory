@@ -11,4 +11,8 @@ This file is a parking lot for requests that are not part of the active thesis p
 
 ## Requests
 
-_No unpromoted future requests currently recorded._
+- Remove the **Encyklopedie / rejstřík pojmů** section from the thesis entirely.
+  - The final manuscript should not contain a standalone encyclopedia/glossary/index-of-terms section.
+  - Remove its heading, generated entries, navigation/index references, and any back-matter plumbing used only for it.
+  - Preserve ordinary front-matter keywords and normal term usage in the manuscript; do not replace the encyclopedia with another glossary unless explicitly requested.
+  - Reconcile TOC/web structure/back matter and validators when this item is promoted.
