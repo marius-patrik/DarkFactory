@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Download,
   GitBranch,
+  GitMerge,
   Minus,
   Plus,
   RefreshCw,
@@ -114,6 +115,7 @@ export function SourceControlTab() {
         <strong>Source Control</strong>
         <div className="tool-tab-actions">
           <button type="button" disabled={busy} onClick={() => void run(workspace.refreshWorkspace)} title="Fetch remote"><RefreshCw size={12} /></button>
+          {diverged && <button type="button" disabled={busy} onClick={() => void run(workspace.syncWorkspace)} title="Sync onto remote head when touched paths do not conflict"><GitMerge size={12} /></button>}
           <button type="button" disabled={busy || !workspace.token} onClick={() => void run(createBranch)} title="Create branch"><GitBranch size={12} /></button>
           <button type="button" disabled={busy || !workspace.commits.length || !workspace.token || !branchWorkspace || Boolean(diverged)} onClick={() => void run(workspace.pushLocalCommits)} title="Push local commits"><Upload size={12} /></button>
           <button type="button" disabled={busy || (!workspace.overlays.length && !workspace.commits.length)} onClick={() => void run(workspace.exportPatch)} title="Export patch"><Download size={12} /></button>
