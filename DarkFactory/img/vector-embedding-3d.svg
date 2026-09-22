@@ -37,7 +37,7 @@
     <rect x="721" y="216" width="18" height="18" fill="#fff" stroke-width="3"/>
     <rect x="812" y="181" width="18" height="18" fill="#111" stroke-width="2"/>
     <g font-size="18" font-weight="700" stroke="none">
-      <text x="505" y="270" text-anchor="end">Francie</text>
+      <text x="525" y="276" text-anchor="middle">Francie</text>
       <text x="616" y="168" text-anchor="middle">Paříž</text>
       <text x="711" y="270" text-anchor="end">Itálie</text>
       <text x="821" y="168" text-anchor="middle">Řím</text>
