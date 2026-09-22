@@ -7,6 +7,7 @@ import {
   listGithubCommits,
   listGithubProjects,
   listGithubReleases,
+  updateGithubProject,
   updateGithubRelease,
   type GithubCommit,
   type GithubProject,
@@ -433,10 +434,12 @@ export function ProjectTab({ tab }: { tab: WorkbenchTab }) {
   const { workspace, fullName, token } = useRepositoryIdentity();
   const number = Number(tab.state.number) || 0;
   const [project, setProject] = useState<(GithubProject & { items: GithubProjectItem[] }) | null>(null);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(Boolean(fullName && number && token));
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (revision < 0) return;
     if (!fullName || !number || !token) return;
     let disposed = false;
     setLoading(true);
@@ -454,7 +457,7 @@ export function ProjectTab({ tab }: { tab: WorkbenchTab }) {
     return () => {
       disposed = true;
     };
-  }, [fullName, number, token]);
+  }, [fullName, number, revision, token]);
 
   if (!workspace.workspace) return <RepositoryRequired />;
   if (!token) return <div className="tab-empty"><strong>Projects requires authentication</strong></div>;
@@ -462,6 +465,27 @@ export function ProjectTab({ tab }: { tab: WorkbenchTab }) {
   if (loading) return <LoadingState label="project" />;
   if (error) return <ErrorState error={error} />;
   if (!project) return <div className="tab-empty"><span>Project not found.</span></div>;
+
+  const edit = async () => {
+    const title = window.prompt("Project title", project.title);
+    if (!title?.trim()) return;
+    const shortDescription = window.prompt(
+      "Project short description",
+      project.shortDescription ?? "",
+    );
+    if (shortDescription === null) return;
+    await updateGithubProject(
+      project.id,
+      { title: title.trim(), shortDescription },
+      token,
+    );
+    setRevision((value) => value + 1);
+  };
+
+  const toggleClosed = async () => {
+    await updateGithubProject(project.id, { closed: !project.closed }, token);
+    setRevision((value) => value + 1);
+  };
 
   return (
     <div className="github-detail">
@@ -473,7 +497,13 @@ export function ProjectTab({ tab }: { tab: WorkbenchTab }) {
             {project.shortDescription ? ` · ${project.shortDescription}` : ""}
           </span>
         </div>
-        <a href={project.url} target="_blank" rel="noreferrer">GitHub</a>
+        <div>
+          <button type="button" onClick={() => void edit()}>Edit</button>
+          <button type="button" onClick={() => void toggleClosed()}>
+            {project.closed ? "Reopen" : "Close"}
+          </button>
+          <a href={project.url} target="_blank" rel="noreferrer">GitHub</a>
+        </div>
       </header>
       <div className="github-detail-body">
         <section>
