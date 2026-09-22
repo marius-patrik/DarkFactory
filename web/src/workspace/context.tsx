@@ -509,7 +509,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
       await refreshOverlays();
     },
-    [baselineExists, readFile, refreshOverlays, workspace],
+    [baselineExists, overlays, readFile, refreshOverlays, workspace],
   );
 
   const fileStatus = useCallback(
