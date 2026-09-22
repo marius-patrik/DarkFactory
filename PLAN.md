@@ -77,9 +77,8 @@ Theory and Practical must demonstrate this chain rather than restating it.
 2.3 Jazykový model a inference  
 2.3.1 Úvod  
 2.3.2 Jazykový model  
-2.3.3 Inference  
-2.3.4 Limity inference  
-2.3.5 Závěr
+2.3.3 Inference a její limity  
+2.3.4 Závěr
 
 2.4 Harness  
 2.4.1 Úvod  
