@@ -8,30 +8,24 @@
   autor: "Patrik Marius",
   trida: "4.D",
   vedouci: "Michal Dočekal",
-  konzultant: none,
   skola: "Gymnázium J. K. Tyla",
   skola-zkratka: "GJKT",
   mesto: "Hradci Králové",
   rok: 2026,
   annotation-cs: [
-    Odborná práce zkoumá architekturu agentního harnessu a metodiku agentického inženýrství pro dlouhotrvající vývoj softwaru. Vychází ze zjištění, že samotná inference jazykového modelu nezajišťuje trvalý stav, kontrolované účinky v prostředí ani deterministické ověřování změn. Práce formuluje roli harnessu jako běhové vrstvy propojující inferenci se stavem, nástroji a kontrolními mechanismy a představuje DarkFactory jako implementační artefakt tohoto přístupu. Evaluace na základě implementace, automatizovaných testů a CI běhů na cílových repozitářích dokládá funkčnost klíčových mechanismů řízené autonomie a obnovitelnosti a přesně vymezuje hranice dosažených výsledků.
+    Odborná práce zkoumá přechod od vývoje softwaru organizovaného kolem člověka a IDE k agentickému inženýrství, v němž agenti vykonávají významnou část implementace prostřednictvím harnessu. Vymezuje harness jako běhové prostředí, které pro agenta integruje stav, kontext, nástroje, řízené účinky, pozorování, ověřování, obnovu a orchestraci. DarkFactory představuje praktický artefakt tohoto přístupu. Dostupná implementační a CI evidence podporuje vybrané mechanismy řízené autonomie a obnovy, současně však neprokazuje plně bezobslužný produkční vývoj.
   ],
   abstract-en: [
-    This thesis investigates the agent harness architecture and agentic engineering methodology for long-running software development. It builds on the premise that language model inference alone does not provide persistent state, controlled environment side effects, or deterministic change verification. The thesis formulates the role of the harness as a runtime layer connecting model inference with durable state, tools, and control mechanisms, presenting DarkFactory as an implementation artefact of this approach. Evaluation based on implementation, automated test suites, and CI runs across target repositories substantiates the core mechanisms of controlled autonomy and execution recovery while defining the empirical boundaries of the findings.
+    This thesis examines the transition from software development organized around a human developer and an IDE to Agentic Engineering, in which agents perform substantial implementation work through a harness. It defines the harness as the runtime that integrates state, context, tools, controlled effects, observations, verification, recovery, and orchestration for the agent. DarkFactory is presented as a practical artefact of this architecture. Available implementation and CI evidence supports selected mechanisms of governed autonomy and recovery, but does not establish fully unattended production development.
   ],
 )
 
 #let nadpis-bez-cisla(text-nadpisu) = heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)
 
 #set document(title: "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory", author: meta.autor)
-#set page(
-  paper: "a4",
-  margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm),
-  footer: none,
-)
+#set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm), footer: none)
 #set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
 #set par(justify: true, leading: 1.5 * 0.65em, spacing: 8pt, first-line-indent: 0pt)
-
 #set list(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
 #set enum(indent: 0pt, body-indent: 0.75em, spacing: 4pt)
 #show list: it => block(above: 3pt, below: 5pt, breakable: true, it)
@@ -42,27 +36,24 @@
   pagebreak(weak: true)
   block(above: 21pt, below: 10pt, sticky: true, text(size: 16pt, weight: "bold", it))
 }
-#show heading.where(level: 2): it => pad(left: 0.75em)[#block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))]
-#show heading.where(level: 3): it => pad(left: 1.5em)[#block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))]
-
+#show heading.where(level: 2): it => block(above: 19pt, below: 9pt, sticky: true, text(size: 14pt, weight: "bold", it))
+#show heading.where(level: 3): it => block(above: 17pt, below: 8pt, sticky: true, text(size: 12pt, weight: "bold", it))
 #show figure.caption: set text(size: 10pt)
 #show raw: set text(font: ("DejaVu Sans Mono",), size: 9.5pt)
 #show raw.where(block: true): it => block(
-  fill: rgb("#1e293b"), stroke: 0.5pt + rgb("#334155"), inset: (x: 10pt, y: 8pt), radius: 4pt, width: 100%,
-  text(fill: rgb("#f1f5f9"), it),
+  fill: rgb("#f4f4f2"), stroke: 0.35pt + rgb("#9a9a96"), inset: (x: 8pt, y: 6pt), width: 100%,
+  text(fill: rgb("#222222"), it),
 )
 #show raw.where(block: false): it => box(
-  fill: rgb("#f1f5f9"), stroke: 0.3pt + rgb("#cbd5e1"), inset: (x: 3pt, y: 1pt), radius: 2pt,
-  text(fill: rgb("#0f172a"), it),
+  fill: rgb("#f4f4f2"), stroke: 0.25pt + rgb("#b0b0aa"), inset: (x: 2pt, y: 0.5pt),
+  text(fill: rgb("#222222"), it),
 )
-#show link: set text(fill: rgb("#0b4f9e"))
+#show link: set text(fill: rgb("#222222"))
 #show cite: it => super(it)
 #set table(stroke: 0.5pt, inset: (x: 5pt, y: 4pt))
 #set figure(numbering: "1")
 
 // ── Přední část ──────────────────────────────────────────
-
-// Titulní strana
 #align(center)[
   #v(1cm)
   #text(size: 14pt, weight: "bold", meta.skola)
@@ -75,7 +66,6 @@
   #v(1fr)
 ]
 #align(left)[
-  #set text(size: 12pt)
   #grid(columns: (1fr, auto), column-gutter: 1.2em,
     [Autor práce: #meta.autor, #meta.trida],
     [Vedoucí práce: #meta.vedouci],
@@ -85,7 +75,6 @@
 ]
 #pagebreak()
 
-// Prohlášení
 #nadpis-bez-cisla[Prohlášení]
 Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval samostatně pod dohledem vedoucího uvedeného na první straně. Všechny použité zdroje jsou uvedeny v seznamu zdrojů a informace z nich získané jsou v textu řádně označeny odkazem na zdroj. Souhlasím s tím, aby tištěná forma práce byla uchována na #meta.skola a tam používána jako tištěný zdroj např. pro další studentské práce či pro prezentaci vzdělávání na #meta.skola-zkratka.
 
@@ -93,245 +82,131 @@ Prohlašuji, že jsem tuto studentskou odbornou práci vypracoval samostatně po
 V #meta.mesto dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce: #box(width: 4.5cm, repeat("…"))
 #pagebreak()
 
-// Anotace a klíčová slova
 #nadpis-bez-cisla[Anotace]
 #meta.annotation-cs
-
 #nadpis-bez-cisla[Abstract]
 #meta.abstract-en
-
 #nadpis-bez-cisla[Klíčová slova]
-agentní AI; agentické inženýrství; agentní harness; softwarové inženýrství; jazykové modely; autonomní agenti; DarkFactory
+agentní AI; agentické inženýrství; harness; softwarové inženýrství; jazykové modely; DarkFactory
 
 #v(0.8cm)
 #text(weight: "bold")[Keywords] \
-agentic AI; agentic engineering; agent harness; software engineering; language models; autonomous agents; DarkFactory
+agentic AI; Agentic Engineering; harness; software engineering; language models; DarkFactory
 #pagebreak()
 
-// Obsah
 #outline(title: [Obsah], depth: 3, indent: 1.4em)
-
-// ── Vlastní text ─────────────────────────────────────────
 
 #set page(footer: context {
   align(center, text(font: PISMO, size: 11pt, counter(page).display("1")))
 })
+
 #heading(level: 1)[Úvod]
 
-Delegování komplexních programátorských úloh na agentní systém má smysl teprve tehdy, když lze současně kontrolovat jeho stav, účinky v prostředí a ověřování změn. Růst schopností jazykových modelů proto sám o sobě nestačí; rozhodující je běhové a metodické okolí, které jejich výstupy zapojí do vývojového procesu.
+Software engineering byl po desetiletí organizován kolem člověka, který prostřednictvím integrovaného vývojového prostředí (IDE) prohlíží zdrojový kód, upravuje soubory, spouští nástroje, sleduje výsledky a rozhoduje o integraci změn. IDE proto není pouze editor; je to pracovní prostředí, které soustřeďuje nástroje a zpětnou vazbu kolem lidského vykonavatele vývojové činnosti.
 
-#heading(level: 2)[Motivace a vymezení problému]
+Do tohoto uspořádání vstupovala umělá inteligence postupně. Nejprve doplňovala fragmenty kódu přímo při psaní. Následně se stala konverzačním pomocníkem, který vysvětluje kód, navrhuje opravy a připravuje testy. Současné IDE už nabízejí agentní režimy, v nichž systém rozkládá úlohu, čte soubory, upravuje více částí projektu, spouští příkazy a reaguje na jejich výsledek @github-copilot-completion @github-copilot-chat @github-copilot-agent. Tím se mění velikost delegované práce: od návrhu dalšího fragmentu k provedení ohraničené implementační úlohy.
 
-Současný pokrok ve schopnostech velkých jazykových modelů zásadním způsobem proměňuje možnosti automatizace softwarového inženýrství. Moderní modely dokáží generovat syntakticky správný kód, navrhovat algoritmy, analyzovat chybové výpisy a vyhledávat souvislosti napříč zdrojovými texty. Samotná schopnost modelu vygenerovat věrohodný textový výstup však ještě nepředstavuje kontrolovaný inženýrský proces. Reálný vývoj softwaru vyžaduje vymezení izolovaných hranic změn, sledování trvalého stavu, provádění deterministických kontrol a řízenou integraci do společného repozitáře.
+Další krok představují agent-first a ADE-style nástroje. Úloha, běh, pracovní prostředí, log a revize se v nich stávají primárními jednotkami práce; editor zůstává důležitou lidskou plochou pro zadání, dohled a kontrolu, ale nemusí být místem, kde probíhá každý implementační krok. První-party popisy cloudových coding agentů již výslovně počítají s izolovaným prostředím, samostatným během, prováděním příkazů, testováním a návrhem změny k revizi @openai-codex-2025 @openai-codex-app-2026.
 
-Empirická data ukazují, že používání generativní umělé inteligence dosáhlo masového globálního rozšíření, avšak její nasazení ve formě autonomních agentů zůstává specifickou doménou. Jak uvádí analýza organizace Gradually ze srpna 2026 @gradually-ai-usage-2026, drtivá většina světové populace buď s generativní AI nepřišla do vědomého kontaktu, nebo využívá základní bezplatné či předplacené textové asistenty. Pravidelné využívání specializovaných kódovacích agentů (AI coding agents) představuje odhadem 25 až 35 milionů uživatelů (přibližně 0,36 % populace), jak ilustruje @fig-gradually-usage. Tento nepoměr potvrzuje, že přechod od interaktivního chatu ke skutečně agentnímu vývoji vyžaduje odlišné nástroje a vyšší míru technické připravenosti.
+Tato posloupnost není katalogem produktů. Ukazuje architektonický posun: #emph[IDE-centered execution → harness-centered execution]. IDE integrovalo prostředky kolem člověka; harness integruje odpovídající prostředky kolem agenta. V tomto přesném smyslu se harness stává pro agenta tím, čím bylo IDE pro lidského vývojáře. Nejde o tvrzení, že harness je grafické IDE. Jde o tvrzení, že harness je běhové prostředí, v němž agent získává kontext, používá nástroje, vyvolává řízené účinky, přijímá pozorování a pokračuje v práci.
+
+Tento přechod je významný proto, že samotná schopnost modelu generovat kód neřeší kontinuitu úlohy, hranice oprávnění, ověřování ani integraci. Pokud agent vykonává podstatnou část implementace, musí být lidská odpovědnost přesunuta k záměru, požadavkům, architektuře, rozkladu práce, akceptačním podmínkám, dohledu, revizi a odpovědnosti za výsledek. Software engineering tím nezaniká; mění se místo, kde se jeho práce vykonává.
+
+Rozšíření generativní AI je přitom širší než rozšíření agentního vývoje. Odhad Gradually ukazuje, že pravidelní uživatelé AI coding agents tvoří jen malou část světové populace, vedle uživatelů základních asistentů a lidí bez vědomého kontaktu s generativní AI @gradually-ai-usage-2026. Obrázek proto slouží pouze jako kontext pro motivaci: agentní vývoj je specifická a náročnější forma delegování, nikoli synonymum pro běžné používání generativní AI.
 
 #figure(
   image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
-  caption: [Odhad rozdělení světové populace podle nejpokročilejší používané kategorie generativní AI v srpnu 2026. Každý z 2 500 bodů představuje přibližně 3,3 milionu lidí; kategorie jsou vzájemně výlučné. Kategorie pravidelných uživatelů AI coding agents vychází z deduplikovaného odhadu Gradually (střed 30 milionů uživatelů). Převzato z @gradually-ai-usage-2026.],
+  caption: [Odhad rozdělení světové populace podle nejpokročilejší používané kategorie generativní AI v srpnu 2026. Kategorie pravidelných uživatelů AI coding agents představuje podle Gradually přibližně 25 až 35 milionů lidí; viz zdroj @gradually-ai-usage-2026.],
 ) <fig-gradually-usage>
 
-Zároveň dochází k prudkému růstu vnitřních schopností samotných modelů. Analýza institutu Epoch AI na datech Epoch Capabilities Index (ECI) k 1. září 2026 @epoch-eci-frontier-2026 dokumentuje, že od nástupu uvažujících (reasoning) modelů v září 2024 dosahuje tempo posunu technologické hranice přibližně 14 ECI bodů ročně, zatímco u modelů bez explicitního uvažování činí růst zhruba 6 bodů ročně (@fig-epoch-eci). Vyšší kapacita logického uvažování umožňuje modelům řešit složitější algoritmické problémy a lépe porozumět rozsáhlým kontextům.
+#heading(level: 2)[Cíl, otázky a vymezení práce]
 
-#figure(
-  image("img/generated/epoch-eci-frontier-2026-09-01.svg", width: 100%),
-  caption: [Vývoj technologické hranice Epoch Capabilities Index (ECI) od nástupu reasoning modelů v září 2024. Trendy ukazují růst přibližně 14 bodů ročně pro reasoning modely oproti 6 bodům ročně u standardních modelů. Převzato z @epoch-eci-frontier-2026.],
-) <fig-epoch-eci>
+Cílem práce je objasnit přechod k Agentic Engineering, vymezit architektonickou roli harnessu v tomto přechodu a posoudit, které z těchto vlastností realizuje systém DarkFactory @darkfactory. Práce neslibuje obecný benchmark produktivity ani důkaz, že agent nahradí lidské rozhodování. Zkoumá především organizaci provádění, kontrolu účinků, kontinuitu a ověřitelnost.
 
-Rostoucí schopnost modelu generovat řešení však sama o sobě neřeší fundamentální inženýrské výzvy. Jazykový model je ze své podstaty bezstavový inferenční mechanismus: nepamatuje si předchozí běhy mimo bezprostřední kontextové okno a bez napojení na nástroje nemůže sám ověřit funkčnost navrženého kódu kompilací či spuštěním testů. Bez okolního řídicího systému zvyšuje čistě modelová inference riziko nekonzistentních úprav souborů a ztráty kontextu při rozsáhlejších úlohách.
+Výzkumné otázky jsou:
 
+- *O1:* Jak se mění rozdělení odpovědností a architektura provádění, když agent vykonává významnou část implementace místo člověka pracujícího přímo v IDE?
+- *O2:* Jaké funkce musí harness integrovat, aby taková delegace zůstala stavová, řízená, pozorovatelná, ověřitelná a obnovitelná?
+- *O3:* Které z těchto vlastností jsou doloženy dostupnou implementační a CI evidencí systému DarkFactory a jaké hranice má toto doložení?
 
-Technickou odpověď proto představuje specializovaná běhová vrstva — *harness* — spolu s metodikou *agentického inženýrství*. Harness obklopuje modelovou inferenci, spravuje trvalý stav úlohy, zprostředkovává nástroje a provádí kontroly. Agentické inženýrství tyto schopnosti organizuje do procesu, jehož změny lze sledovat, ověřovat a podle potřeby zastavit.
-
-#heading(level: 2)[Cíl práce a výzkumné otázky]
-
-Hlavním cílem této práce je navrhnout a technicky vyhodnotit architekturu harnessu pro dlouhotrvající agentní vývoj softwaru, přičemž konkrétním implementačním artefaktem této architektury je systém DarkFactory @darkfactory.
-
-K naplnění hlavního cíle jsou stanoveny čtyři dílčí cíle:
-1. *Teoretická báze:* Vymezit teoretické a architektonické principy fungování velkých jazykových modelů, jejich inferenčních omezení a mechanismů harnessu nezbytných pro dlouhotrvající autonomní běh.
-2. *Metodika agentického inženýrství:* Formulovat ucelenou softwarově-inženýrskou metodiku řízení agentního vývoje, která propojuje specifikaci, plánování, izolaci změn, deterministické ověřování a orchestraci.
-3. *Implementace DarkFactory:* Realizovat navrženou architekturu a metodiku v podobě funkčního softwarového harnessu DarkFactory.
-4. *Empirické vyhodnocení:* Technicky vyhodnotit vlastnosti a limity navrženého řešení na základě reprodukovatelných důkazů z implementace, automatizovaných testů, CI běhů a integrace do cílových repozitářů.
-
-Práce zkoumá tři otázky:
-- *O1 (Řízená autonomie):* Jak lze v dlouhotrvajícím agentním procesu zajistit autonomní postup modelu tak, aby prováděné změny zůstaly deterministicky ověřitelné a podléhaly explicitním hranicím kontroly a integrace?
-- *O2 (Přerušení a obnova):* Jaké systémové mechanismy harnessu umožňují spolehlivě detekovat uváznutí, chybové stavy a přerušení dlouhotrvajícího běhu a obnovit stav vývojového procesu bez ztráty kontinuity a nutnosti opakovat celou úlohu?
-- *O3 (Trvalý stav a aktivní kontext):* Jakým způsobem lze efektivně oddělit dlouhodobý stav vývojové úlohy od konečného a degradačně zatíženého kontextového okna jazykového modelu?
-
+#pagebreak(weak: true)
 #heading(level: 2)[Metodika]
 
-Práce metodologicky vychází z rámce *Design Science Research Methodology (DSRM)* pro informační systémy a softwarové inženýrství @hevner2004designscience @peffers2007dsrm. Výzkum je zaměřen na vytvoření a vyhodnocení nového inženýrského artefaktu — agentního harnessu DarkFactory —, který řeší praktický problém řízeného a dlouhotrvajícího autonomního vývoje.
+Práce kombinuje literární a technickou rešerši, omezenou historickou syntézu vývoje vývojových nástrojů a konstrukci i analýzu softwarového artefaktu. DSRM poskytuje užitečný stručný rámec pro rozlišení problému, návrhu artefaktu a jeho vyhodnocení @hevner2004designscience @peffers2007dsrm; nenahrazuje však popis konkrétní implementace.
 
-Postup práce zahrnuje následující kroky:
-- *Rešerše a analýza požadavků:* Studium primární odborné literatury z oblasti architektury Transformerů, inferenčních systémů a agentních architektur @vaswani2017 @yao2022 @liu2024, doplněné o analýzu otevřených specifikací (Model Context Protocol @mcp-spec-2026, Agent Skills @agentskills-spec) a first-party technické dokumentace předních vývojových platforem @anthropic-harness-design @anthropic-managed-agents @openai-agents-sdk.
-- *Návrh a konstrukce artefaktu:* Architektonický návrh komponent harnessu a formalizace postupů agentického inženýrství. Implementace systému DarkFactory v prostředí TypeScript a běhového systému Bun s využitím verzovacího systému Git a platformy GitHub Actions.
-- *Empirické ověření:* Testování navržených mechanismů pomocí automatizovaných testovacích sad (jednotkové a integrační testy), verifikace stavových přechodů v rámci CI pipeline a nasazení na reálných cílových repozitářích (`omnis`, `ChessWithQuests`, `DarkFactory-Paper`).
-- *Analýza výsledků a omezení:* Faktuální interpretace výsledků testů a běhů CI, vyhodnocení odpovědí na výzkumné otázky a striktní vymezení hranic platnosti závěrů podle dostupných empirických důkazů.
+Teoretická část vychází z odborné literatury o Transformeru, agentních smyčkách a dlouhém kontextu a z first-party dokumentace nástrojů, které ilustrují historický posun. Praktická část vymezuje DarkFactory jako sledovaný artefakt. Výsledky pracují s dostupnými testy, CI běhy, revizemi a dokumentovanými omezeními. Protože tato fáze ještě nepřepisuje důkazy proti nově pinované implementaci, jsou výsledky označeny jako evidence dostupného snapshotu, nikoli jako obecný důkaz agentního vývoje.
 
 #heading(level: 1)[Teoretická část]
 
-Růst schopností modelu je užitečný pro vývoj pouze v kombinaci s prostředím, které zachová stav, zprostředkuje účinky a umožní jejich kontrolu. Teoretická část proto spojuje vlastnosti jazykového modelu s návrhem harnessu a následně s metodikou agentického inženýrství.
+Teorie sleduje jednu hranici: model vytváří návrh dalšího kroku, zatímco runtime zajišťuje, aby tento návrh získal kontext, mohl vyvolat účinek, obdržel pozorování a podléhal kontrole. Z této hranice vyplývá jak definice harnessu, tak změna organizace software engineering.
 
-#heading(level: 2)[Jazykový model]
+#heading(level: 2)[Jazykový model v agentním systému]
 
-Agentní systém využívá velký jazykový model (Large Language Model, LLM) jako mechanismus pro zpracování instrukcí a tvorbu dalšího kroku. Pro určení hranic této role je podstatná jeho reprezentace dat a způsob inference.
+Velký jazykový model je parametrický model, který z kontextu predikuje další tokeny; moderní systémy často používají autoregresivní Transformer @brown2020 @vaswani2017. Pro tuto práci není důležitý výklad všech vnitřních vrstev, ale důsledek inference: model pracuje s aktivním kontextem konkrétního běhu a jeho výstup je návrh, nikoli sám o sobě provedený účinek.
 
-#heading(level: 3)[Architektura a reprezentace]
+Kontext může obsahovat instrukce, stav úlohy, obsah souborů, historii nástrojů i pozorování. Jeho rozsah však není totéž co projektová paměť. Výzkum dlouhého kontextu ukazuje, že schopnost využít informaci se mění podle jejího umístění v kontextu @liu2024. Trvalý stav, historie a výběr relevantního kontextu proto musí být spravovány mimo model. Z toho plyne hranice odpovědnosti: model navrhuje další krok; okolní runtime rozhoduje, co model uvidí, co smí vykonat a jak bude výsledek zaznamenán.
 
-Velký jazykový model je v základu parametrický statistický model aproximující pravděpodobnostní rozdělení nad posloupnostmi diskrétních symbolů — tokenů @brown2020. Většina moderních architektur využívaných v agentních systémech je postavena na autoregresivním dekodéru architektury *Transformer* @vaswani2017. Základním stavebním prvkem je mechanismus vícehlavé pozornosti (*multi-head self-attention*), který umožňuje dynamicky modelovat závislosti mezi libovolnými dvěma pozicemi v sekvenci bez ohledu na jejich vzájemnou vzdálenost. V každé vrstvě Transformeru jsou vstupní vektory transformovány pomocí projekčních matic na dotazy (*queries*), klíče (*keys*) a hodnoty (*values*), přičemž maticové násobení dotazů a klíčů určuje míru pozornosti, kterou model při predikci věnuje ostatním tokenům v kontextu.
+#heading(level: 2)[Harness jako vývojový runtime]
 
-Přirozený text i zdrojový kód jsou do modelu přenášeny prostřednictvím *tokenizéru*, který rozkládá vstupní řetězec na posloupnost celočíselných identifikátorů. Současné tokenizéry využívají subword algoritmy, nejčastěji *Byte-Pair Encoding (BPE)* @sennrich2016bpe. Tokenizace umožňuje efektivně reprezentovat běžná slova a syntaktické konstrukce jazyka jediným tokenem, zatímco neznámá či vzácná slova skládá z menších podslovních fragmentů. Počet tokenů přímo vymezuje výpočetní náročnost zpracování, spotřebu paměti a limity maximální délky vstupu.
+Harness je běhové prostředí agentního vývoje. Udržuje aktivní běh a jeho stav, skládá kontext, poskytuje nástroje, zprostředkovává prostředí, kontroluje účinky, zaznamenává pozorování, spouští ověřování a řídí pokračování, přerušení, obnovu a případnou orchestraci @anthropic-harness-design @anthropic-managed-agents.
 
-Každý diskrétní token je následně namapován do spojitého vícerozměrného prostoru prostřednictvím *vektorové reprezentace* (*embeddingu*) @mikolov2013word2vec @mikolov2013linguistic. V tomto spojitém latentním prostoru mohou být sémanticky nebo syntakticky příbuzné prvky reprezentovány podobnými vektory. Natrénovaná reprezentace tak modelu pomáhá pracovat s abstraktními pojmy, jako jsou typy, proměnné, funkce či softwarové architektury. Tyto vnitřní reprezentace jsou však aktivní výhradně během dopředného průchodu modelem; model si vytvořené abstrakce po dokončení výpočtu nepamatuje.
+#heading(level: 3)[Agentní smyčka a ReAct]
 
-#heading(level: 3)[Inference a kontext]
-
-Vlastní provádění výpočtu — *inference* — probíhá autoregresivním způsobem: model přijme na vstupu posloupnost tokenů (aktivní kontext), provede dopředný průchod neuronovou sítí a na výstupu spočítá pravděpodobnostní rozdělení pro následující token. Z tohoto rozdělení je vybrán další token, který je připojen ke stávajícímu kontextu, a celý cyklus se opakuje, dokud model nevygeneruje speciální ukončovací token (*end-of-sequence*) nebo nedosáhne nastaveného limitu @vllm-inference-engine. Generování lze řídit parametry vzorkování, zejména *teplotou* (*temperature*), která ovlivňuje koncentraci pravděpodobnostního výběru @openai-responses-temperature. Nižší teplota omezuje variabilitu výstupu, sama však nezaručuje správnost ani úplný determinismus.
-
-Zásadním technickým mechanismem pro optimalizaci inference je *KV Cache (Key-Value Cache)* @ainslie2023 @kwon2023pagedattention. Jelikož se dříve vygenerované tokeny v kontextu nemění, výpočetní systém ukládá jejich spočtené vektory klíčů a hodnot do vyrovnávací paměti GPU, aby je nemusel při každém kroku počítat znovu. Velikost KV cache roste lineárně s délkou kontextu a počtem souběžných požadavků, což představuje významný hardwarový limit pro maximální délku aktivního kontextového okna (*context window*).
-
-Ačkoliv moderní modely nabízejí nominální kontextová okna o kapacitě stovek tisíc až milionů tokenů, jejich schopnost efektivně využívat informace napříč celým oknem naráží na zásadní limity. Experimentální práce Liu et al. @liu2024 prokázala jev označovaný jako *Lost in the Middle*: schopnost modelu vyhledat a správně aplikovat relevantní informaci výrazně klesá, pokud je tato informace umístěna uprostřed dlouhého kontextu, zatímco informace na začátku a konci okna jsou zpracovávány s vyšší přesností. Tento fenomén degradace pozornosti (*context rot*) znamená, že pouhé mechanické nafukování kontextu celými repozitáři může snížit spolehlivost a zvýšit chybovost.
-
-Z hlediska dlouhotrvajícího vývoje z toho plyne zásadní závěr: samotný jazykový model nemůže sloužit jako spolehlivá trvalá paměť softwarového projektu. Dlouhodobý stav vývojového procesu musí být spravován externě, mimo kontextové okno modelu.
-
-#heading(level: 2)[Harness]
-
-Pokud je jazykový model vnímán jako bezstavový inferenční engine, pak *harness* představuje běhový systém (*runtime*), který tuto inferenci obklopuje, řídí její vstupy a výstupy a propojuje ji s vnějším světem @anthropic-harness-design @anthropic-managed-agents. Základní vztah lze vyjádřit vzorcem: *model provádí inferenci, harness zajišťuje běh*.
-
-#heading(level: 3)[Smyčka a stav]
-
-Základním provozním mechanismem harnessu je *agentní smyčka* (*agent loop*). Místo jednorázového dotazu a odpovědi harness organizuje cyklus postavený na paradigmatu ReAct (*Reasoning and Acting*) @yao2022. Model na základě aktuálního stavu a instrukcí nejprve formuluje úvahu a následně navrhne konkrétní strukturovanou akci. Harness tuto akci zachytí, ověří, vykoná ve vnějším prostředí a výsledek (pozorování) vrátí modelu jako vstup pro další krok smyčky (@fig-react-loop).
+V agentní smyčce model na základě kontextu navrhne další akci, harness ji validuje a vykoná v prostředí a výsledek vrátí jako pozorování. Tento cyklus odpovídá principu ReAct, v němž se uvažování a jednání střídají s pozorováním prostředí @yao2022. Diagram zdůrazňuje, že model není totožný s celou smyčkou: kontrola přechodu od záměru k účinku patří runtime.
 
 #figure(
   image("img/react-loop.svg", width: 92%),
-  caption: [Schéma agentní smyčky ReAct implementované v harnessu: model na základě kontextu navrhne akci, harness ji zprostředkuje a vykoná v prostředí a vrácené pozorování se stává součástí kontextu pro další inferenční krok. Převzato z @yao2022.],
+  caption: [Agentní smyčka ReAct: model navrhne akci, harness ji zprostředkuje a vykoná v prostředí a pozorování se vrací do dalšího kroku; princip podle @yao2022.],
 ) <fig-react-loop>
 
-Aby mohl vývojový proces trvat déle než jedno kontextové okno a přežít případná přerušení, harness zavádí striktní oddělení tří vrstev kontinuity @openai-agents-sessions @openai-agents-run-state:
-1. *Sezení (Session):* Logická identifikační hranice vymezující souvislý běh nebo komunikační kanál, přes který jsou propojeny jednotlivé tahy a kroky.
-2. *Přepis (Transcript):* Lineární žurnál veškerých událostí, vstupů uživatele, odpovědí modelu, vyvolaných nástrojů a systémových hlášení. Slouží k auditování a reprodukci historie.
-3. *Trvalý stav (State / Run State):* Strukturovaná data zachycující aktuální fázi úlohy, stav pracovního stromu, modifikované soubory, schválený plán a dílčí výsledky.
+#heading(level: 3)[Kontinuita, účinky a ověřování]
 
-Toto rozlišení je kritické: aktivní modelový kontext není totožný s trvalým stavem ani s úplným přepisem. Harness udržuje stav i přepis v externím perzistentním úložišti (např. na disku ve formátu JSON/SQLite) a do kontextového okna modelu předkládá pouze pečlivě vybranou a zhutněnou část informací nezbytnou pro rozhodnutí o následujícím kroku. Dojde-li k pádu procesu, vyčerpání limitů nebo síťovému výpadku, harness dokáže načíst uložený Run State a navázat na práci bez nutnosti začínat od začátku.
+Pro dlouhotrvající práci musí harness oddělit alespoň aktivní kontext od trvalého stavu a přepisu událostí. Stav může zachytit fázi úlohy, schválený rozsah, pracovní strom a dílčí výsledky; přepis zachycuje průběh. Aktivní kontext je pouze výběr potřebný pro další rozhodnutí. Tato separace umožňuje obnovu po přerušení, aniž by se celý běh musel znovu rekonstruovat z poslední zprávy modelu @openai-agents-sessions @openai-agents-run-state.
 
-#heading(level: 3)[Prostředí a nástroje]
+Nástroje a prostředí tvoří hranici mezi záměrem a účinkem. Harness může požadavek na čtení souboru, editaci, příkaz nebo test validovat proti schématu, oprávnění a rozpočtu; teprve potom jej provede a uloží výsledek. Kompilátor, test nebo kontrola CI pak poskytují pozorování založené na skutečném běhu, nikoli pouze na přesvědčivosti textu modelu @anthropic2024tooluse @openai-agents-sandbox. Izolace, schvalování a řízení oprávnění tuto hranici dále zpřesňují.
 
-Agentní systém při vývoji softwaru interaguje s reálným *prostředím* (*agent environment*), které zahrnuje souborový systém, systém správy verzí, kompilátory, testovací nástroje, síťová rozhraní a systémové procesy @anthropic-managed-agents. Model sám o sobě nemá a z bezpečnostních důvodů ani nesmí mít přímý přístup k systémovým voláním operačního systému.
-
-Tuto interakci harness zprostředkovává pomocí mechanismu *vyvolávání nástrojů* (*tool calling*) @anthropic2024tooluse. Harness definuje množinu dostupných nástrojů ve formě schémat (např. JSON Schema), která specifikují název nástroje, popis jeho účelu a typy požadovaných parametrů. Během inference model nevytváří běžný text, ale vygeneruje strukturovaný požadavek na volání konkrétního nástroje s definovanými argumenty.
-
-Harness požadavek zachytí a podrobí jej validaci: zkontroluje formální správnost parametrů, oprávnění agenta a bezpečnostní limity. Teprve po úspěšném ověření harness nástroj fyzicky spustí a jeho výstup (např. obsah souboru, výstup kompilátoru, chybovou hlášku) předá zpět modelu jako pozorování. Tím je striktně oddělen *záměr modelu* od *skutečného provedení účinku*.
-
-Skutečné spouštění kódu (*code execution*) a testovacích sad v reálném prostředí představuje zdroj ověřitelné zpětné vazby (*ground-truth observation*) @anthropic2026codeexecution. Výsledek kompilátoru nebo testu poskytuje informaci o konkrétním běhu, kterou nelze nahradit samotným odhadem modelu. Z bezpečnostního hlediska harness tyto operace izoluje v *izolovaném prostředí* (*sandboxu*), například v lehkých kontejnerech či virtualizačních klecích @agache2020firecracker @openai-agents-sandbox, aby omezil možné účinky nekontrolovaných skriptů na hostitelský systém.
-
-#heading(level: 3)[Rozšíření]
-
-Moderní architektura harnessu je rozšiřitelná, pokud rozlišuje znalosti, vynucování pravidel a připojení vnějších schopností. *Skills* jsou znovupoužitelné balíčky instrukcí, skriptů a doprovodných zdrojů zaměřené na určitý typ úlohy @agentskills-spec @claude-code-skills. Harness tak může příslušné postupy načíst až ve chvíli, kdy je úloha potřebuje, místo aby jimi trvale zatěžoval každý aktivní kontext.
-
-*Hooks* doplňují tento model o deterministické handlery napojené na životní cyklus běhu @claude-code-hooks. Pravidlo spuštěné před vyvoláním nástroje, po jeho dokončení nebo při chybě může vynutit bezpečnostní kontrolu, formátování či linter nezávisle na tom, zda jej model připomene ve své instrukci. Rozhodování modelu tak zůstává oddělené od pravidel, která musí platit při každém provedení.
-
-*Model Context Protocol (MCP)* standardizuje napojení runtime na externí nástroje a datové zdroje @mcp-spec-2026 @mcp-tools-2026. V jeho klient-server architektuře harness komunikuje s lokálními i vzdálenými servery, které poskytují nástroje, prompty a zdroje. Integrace tím získává společné rozhraní a nemusí pro každý externí systém vytvářet vlastní mechanismus.
-
+#pagebreak(weak: true)
 #heading(level: 2)[Agentické inženýrství]
 
-Samotná existence modelu a harnessu poskytuje technické schopnosti, avšak neurčuje, jak má být vývoj organizován, aby splňoval kvalitativní a bezpečnostní standardy softwarového inženýrství. Tuto disciplínu formuluje *agentické inženýrství* (*Agentic Engineering*). Jde o metodický přístup, který na schopnostech harnessu staví systematický, specifikací řízený a deterministicky ověřitelný vývojový proces.
+Agentické inženýrství není katalog komponent ani soubor názvů pro specifikaci, Git, kontext a CI. Je to software engineering reorganizovaný kolem agentů jako primárních vykonavatelů implementační práce. Jeho předmětem proto zůstávají stejné inženýrské závazky — správnost, údržba, bezpečnost, integrace a odpovědnost — ale jejich provedení se rozděluje jinak.
 
-#heading(level: 3)[Zadání a plánování]
+Člověk stále vlastní záměr, požadavky a omezení, architekturu, rozklad práce, akceptační podmínky, dohled, revizi, integraci a odpovědnost za výsledek. Agent v rámci delegovaného rozsahu provádí inspekci repozitáře, plánování, úpravy, volání nástrojů, pozorování výsledků, korekce a přípravu změny k integraci. Specifikace, izolace změn, řízení kontextu, validace, revize a orchestrace jsou mechanismy, jimiž se toto rozdělení stává řiditelným.
 
-Pro netriviální změnu agentické inženýrství vyžaduje explicitní zadání a ohraničený plán @sommerville2016. Neformální pokyny v přirozeném jazyce často trpí nejednoznačností a opomíjejí okrajové stavy.
-
-Metodika proto zavádí *vývoj řízený specifikací* (*Spec-Driven Development*) @github-spec-kit. Specifikace před zahájením implementace spojuje požadovaný výsledek s omezeními, negativními cíli a akceptačními podmínkami. Vymezuje tedy nové chování, zachovávaná rozhraní, hranice úlohy i způsob ověření, aby plán později nešel posuzovat podle neurčitého dojmu z výsledného kódu.
-
-Na základě schválené specifikace agent vytváří *ohraničený plán* (*bounded plan*), který rozkládá implementaci do posloupnosti logických, na sebe navazujících kroků. Oddělení plánování od implementace umožňuje před zápisem ověřit rozsah práce a následně posuzovat změnu přímo proti specifikaci, čímž se snižuje riziko odklonu od původního zadání (*goal drift*).
-
-#heading(level: 3)[Řízení změny a ověřování]
-
-Veškerý kód vygenerovaný jazykovým modelem je v agentickém inženýrství považován za netestovaný návrh změny. Úloha proto probíhá v izolované větvi, jejíž pracovní strom neovlivňuje hlavní větev ani souběžné procesy @chacon2014 @github-branches. Pull Request v tomto procesu tvoří integrační hranici: soustřeďuje diff, historii commitů i diskusi a umožňuje posoudit změnu proti zadání @github-pull-requests @github-pull-request-reviews.
-
-Před přijetím změny proběhnou deterministické kontroly zahrnující sestavení, statickou analýzu a testy @sommerville2016. CI je spouští v čistém prostředí nad přesným hashem revize @humble2010; povinné stavové kontroly proto mohou mechanicky zabránit sloučení neúspěšného návrhu @github-required-status-checks. Automatické výsledky doplňuje revize člověkem nebo specializovaným agentem, která ověřuje shodu s požadavky a specifikací.
-
-#heading(level: 3)[Instrukce, kontext a autonomie]
-
-Efektivita a bezpečnost agenta závisí na způsobu, jakým jsou mu dodávány instrukce a jak je spravován jeho aktivní kontext @anthropic-context-engineering. Nejvyšší prioritu mají systémová pravidla harnessu, pod nimi trvalé projektové instrukce v souborech typu `AGENTS.md` nebo `CLAUDE.md` @openai-agents-md @claude-code-memory, potom specifikace konkrétní úlohy a schválený plán a nakonec dynamická data běhu, například obsah souborů, výstupy terminálu a chybová hlášení. Tato posloupnost odděluje stabilní omezení od informací, které se mění s každým krokem.
-
-Správa kontextu vyžaduje aktivní selekci a *kompakci* (*context compaction*) @jiang2023llmlingua. Jelikož repozitáře přesahují velikost kontextového okna a trpí degradací pozornosti @liu2024, harness využívá selektivní načítání a vyhledávání (*Retrieval-Augmented Generation, RAG*) @lewis2020rag, aby do kontextu vkládal pouze soubory a symboly bezprostředně související s aktuálním krokem.
-
-
-Autonomie agenta má být deterministicky ohraničena. Harness může nastavit pevné *rozpočty běhu* (*execution budgets*), například maximální počet iterací, stropy na počet tokenů, finanční limity a časové zámky @microsoft-agent-looping. Pro vysoce rizikové operace (např. destruktivní změny souborů, nasazení do produkce nebo autorizace sloučení větve) je vhodný přístup *Člověk ve smyčce (Human-in-the-loop, HITL)* @openai-agents-hitl, při němž harness vyžaduje schválení lidským operátorem před provedením akce.
-
-#heading(level: 3)[Orchestrace]
-
-Komplexní softwarové úlohy často přesahují možnosti jediného agentního běhu s plochým kontextem. Pro jejich řešení agentické inženýrství využívá *orchestraci* — koordinaci více specializovaných rolí či procesů @openai-agent-orchestration.
-
-Základním předpokladem efektivní orchestrace je *oddělitelné vlastnictví* (*separable ownership*). Dvě úlohy mohou běžet paralelně pouze tehdy, pokud modifikují vzájemně nezávislé části kódu a jejich změny lze deterministicky integrovat bez kolizí. Pokud tato podmínka není splněna, paralelní generování kódu vede ke zmatení kontextu a konfliktním změnám.
-
-Koordinátor může delegovat oddělitelnou dílčí odpovědnost specializovanému subagentovi s vlastním kontextem a nástroji @anthropic-managed-agents. Pokud se mění vlastník celé úlohy, handoff předá další roli pouze stav relevantní pro pokračování @openai-agent-orchestration. Pro explicitní pořadí, větvení a návraty lze použít workflow graf, který zachycuje návaznosti mezi jednotlivými kroky a agenty @microsoft-agent-workflows.
-
-I při zapojení pokročilé orchestrace zůstává nutné zachovat finální integrační bránu, deterministické CI kontroly a formální revizi.
+Praktickým důsledkem je změna jednotky práce. Člověk nemusí ručně provést každý editovací krok, ale musí být schopen zadat práci tak, aby měla hranice, ověřitelné přijetí a dohledatelný výsledek. Harness tuto odpovědnost podporuje: poskytuje runtime pro agenta, zatímco IDE nebo jiná aplikace může zůstat lidskou plochou pro zadání, sledování a revizi. Orchestrace více běhů má smysl jen tam, kde je vlastnictví změn oddělitelné a existuje společná integrační brána; paralelní generování bez této podmínky pouze přesouvá konflikt do pozdější fáze @openai-agent-orchestration @github-branches @github-pull-requests.
 
 #heading(level: 1)[Praktická část]
 
 #heading(level: 2)[DarkFactory]
 
+DarkFactory je konkrétní artefakt, prostřednictvím něhož práce zkoumá harness-centered software development @darkfactory. Tato kapitola představuje hranici mezi konceptuálním návrhem a implementační analýzou. Podrobný popis runtime, stavů, oprávnění, obnovy, integrace a ověřování musí být vázán na jedinou pinovanou revizi zdrojového repozitáře, jeho testy, workflow a evidenční manifest.
+
 #heading(level: 1)[Výsledky a diskuse]
 
-Dostupná evidence je vázána na konkrétní revize zdrojového kódu, testovací sady, CI běhy a cílové repozitáře. Následující výsledky proto rozlišují mezi pozorovaným průběhem a tím, co z něj lze oprávněně vyvodit.
+Dostupná evidence pochází ze staršího identifikovaného snapshotu DarkFactory a z navazujících CI běhů. Výsledky proto nejprve uvádějí pozorování, potom jejich interpretaci a nakonec omezení. Nejde o obnovené vyhodnocení nové revize.
 
-#heading(level: 2)[Ověření implementace a systému]
+#heading(level: 2)[Pozorování z dostupné evidence]
 
-Evaluace systému DarkFactory se opírá o pevně identifikovaný a reprodukovatelný snapshot zdrojového kódu na commitu `e9c10221b40589512d262a0edb95f709b923150c` @darkfactory-e9c10221 a jemu odpovídající běh průběžné integrace GitHub Actions číslo `35616745304` @darkfactory-ci-35616745304.
+Evidence uvádí DarkFactory na commitu `e9c10221b40589512d262a0edb95f709b923150c` a odpovídajícím CI běhu `35616745304` @darkfactory-e9c10221 @darkfactory-ci-35616745304. V tomto běhu bylo podle dostupného záznamu úspěšných všech 15 jobů a 670 testů ve 102 souborech. Testy se týkaly mimo jiné serializace Run State, stale plánu, přepnutí poskytovatele, odvození stavu pracovního stromu, rozsahu oprávnění a původu obnoveného stavu.
 
-Komponentové a jednotkové ověření realizované v rámci referenčního CI běhu proběhlo plně úspěšně napříč všemi 15 definovanými joby. Hlavní testovací sada spouštěná v prostředí Bun vykázala 670 úspěšných testů ve 102 testovacích souborech bez jediného selhání @darkfactory-ci-35616745304. Testy pokrývají deterministickou persistenci a serializaci Run State, detekci zastaralého plánu, zachování historie při přepnutí poskytovatele, odvození výsledného stavu z pracovního stromu Git, kontrolu rozsahu oprávnění a ověření původu obnoveného stavu.
+Navazující evidence uvádí úspěšné pipeline na repozitářích `omnis` (commit `a53660a1`, run `34708160162`), `ChessWithQuests` (commit `50a50797`, run `34708180783`) a této práce (commit `5bc04974`, run `35617820423`) @omnis-a53660a1 @omnis-ci-34708160162 @chesswithquests-50a50797 @chesswithquests-ci-34708180783 @darkfactory-paper-5bc04974 @darkfactory-paper-ci-35617820423. U archivovaných repozitářů nelze z jejich stavu vyvozovat současnou provozní přenositelnost.
 
-Integrační testy v témže snapshotu ověřily provázanost stavového automatu řídícího životní cyklus úlohy. Testy potvrdily správnost přechodů mezi fázemi zadání, plánování, implementace, automatizované revize a schválení, stejně jako reakci systému na webhooks události z platformy GitHub a respektování povinných stavových kontrol @darkfactory-e9c10221.
+#heading(level: 2)[Interpretace vzhledem k otázkám]
 
-Zároveň je však nutné explicitně konstatovat limity dostupné evidence: empirický materiál uzavřený k září 2026 nezahrnuje ani jeden plně automatizovaný, živý produkční průchod kompletním životním cyklem od schválení požadavku až po finální merge a rekonciliaci na reálném produkčním nasazení (tato položka zůstala otevřeným akceptačním kritériem v rámci Requestu #359 @darkfactory-request-359). Výsledky proto prokazují spolehlivost navržených mechanismů a jejich systémovou integraci v testovacím a simulačním rámci, nikoli však bezobslužný provoz v neomezeném produkčním prostředí.
+Pro *O1* evidence podporuje interpretaci, že agentní práci lze ohraničit kombinací stavu úlohy, oprávnění, izolace změn, automatických kontrol a integrační brány. Tato evidence však neporovnává takový proces s lidským vývojem a neprokazuje optimální řešení modelu.
 
-#heading(level: 2)[Ověření na repozitářích]
+Pro *O2* dostupné testy podporují existenci mechanismů pro zachycení stavu a vybrané scénáře přerušení nebo změny poskytovatele. Lze proto hovořit o ověřené obnovitelnosti testovaných scénářů, nikoli o univerzální odolnosti vůči každému distribuovanému selhání.
 
-Ověření přenositelnosti a funkčnosti navržených vývojových a integračních postupů bylo provedeno na flotile cílových repozitářů. Evaluace rozlišuje mezi aktivními projekty a historickými či archivovanými repozitáři, přičemž hodnotí konkrétní revize s doložitelnými výsledky automatizovaných pipeline (@tab-repositories).
+Pro *O3* evidence podporuje oddělení Run State a generovaných promptů. To odpovídá teoretické potřebě udržovat projektový stav mimo aktivní kontext. Samotná evidence však neměří kvalitu výběru kontextu, míru vynechaných závislostí ani dopad na produktivitu.
 
-#figure(
-  table(
-    columns: (1.5fr, 1fr, 2.2fr, 1.8fr),
-    align: (left, center, left, left),
-    [*Repozitář*], [*Revize*], [*Důkaz ověření*], [*Výsledek*],
-    [`omnis`], [`a53660a1`], [CI run `34708160162`, deploy-docs, release], [Úspěšný (web, paper, docs)],
-    [`ChessWithQuests`], [`50a50797`], [CI run `34708180783`, verify-docs, deploy, release], [Úspěšný (paper, web, docs)],
-    [`DarkFactory-Paper`], [`5bc04974`], [CI run `35617820423`, deploy `35617820271`, release `35617820286`], [Úspěšný (manuscript, site, release)],
-    [`template-OdbornaPrace`], [archivováno], [Stav repozitáře k datu evaluace], [Neaktivní (archivováno)],
-    [`OdbornaPrace-mono`], [archivováno], [Stav repozitáře k datu evaluace], [Neaktivní (archivováno)],
-  ),
-  caption: [Přehled ověření integračních a vývojových pipeline na cílových repozitářích flotily. Zahrnuje konkrétní testované commity a identifikátory běhů CI.],
-) <tab-repositories>
+#heading(level: 2)[Omezení]
 
-V repozitáři `omnis` na revizi `a53660a1c0c6619f94768e5d520405052fb03df6` pipeline run `34708160162` úspěšně dokončil všechny předepsané joby včetně sestavení webové aplikace, kompilace dokumentace a publikačních kontrol @omnis-a53660a1 @omnis-ci-34708160162. V repozitáři `ChessWithQuests` na commitu `50a50797f29c2a636d973981993191a65df3d131` proběhl běh `34708180783` se shodným úspěšným výsledkem pokrývajícím herní logiku, dokumentaci i publikační proces @chesswithquests-50a50797 @chesswithquests-ci-34708180783.
-
-Aktivním publikačním repozitářem samotné této práce je `DarkFactory-Paper`. Na snapshotu `5bc04974f9aed0f55295389154124a09059ff35e` proběhly bez chyb hlavní integrační testy (CI run `35617820423`), nasazení dokumentace (`35617820271`) i publikační release workflow (`35617820286`) @darkfactory-paper-5bc04974 @darkfactory-paper-ci-35617820423 @darkfactory-paper-deploy-35617820271 @darkfactory-paper-release-35617820286.
-
-Zbývající dva původně zamýšlené repozitáře (`template-OdbornaPrace` a `OdbornaPrace-mono`) byly v průběhu výzkumu archivovány @template-odbornaprace-repo @odbornaprace-mono-repo a nejsou proto do aktivního vyhodnocení započítávány. Výsledky tak prokazují spolehlivou funkčnost automatizovaných integračních pipeline na třech odlišných aktivních projektech.
-
-#heading(level: 2)[Odpovědi na výzkumné otázky]
-
-*O1 (Řízená autonomie):* Dostupná evidence podporuje řízenou autonomii jako kombinaci formální specifikace, schváleného plánu, izolované větve, validačních bran a řízeného Pull Requestu. Sada 670 automatizovaných testů a úspěšný CI run `35616745304` systému DarkFactory dokládají kontrolu rozsahu oprávnění, blokování zápisu bez schváleného plánu a ověřování změn @darkfactory-e9c10221 @darkfactory-ci-35616745304. Absence plného živého průchodu celým životním cyklem v produkčním nasazení @darkfactory-request-359 ponechává odolnost vůči neočekávaným vnějším událostem ověřenou pouze v simulačních a integračních testech.
-
-*O2 (Přerušení a obnova):* V dostupném návrhu je obnova založena na oddělení provozního stavu (Run State) a žurnálu interakcí (Session/Transcript) od operační paměti, na rozpočtech běhu a na ověření integrity stavu. Testovací případy v DarkFactory ověřují, že po simulovaném pádu či provider failoveru systém načte Run State, ověří recovery provenance a naváže na rozpracovanou práci bez ztráty konzistence pracovního stromu @darkfactory-e9c10221. Evidence potvrzuje obnovitelnost testovaných scénářů, nikoli univerzální garanci pro libovolný distribuovaný stav třetích stran.
-
-*O3 (Trvalý stav a aktivní kontext):* Rozpor mezi dlouhodobým vývojovým stavem a omezeným kontextovým oknem řeší oddělení externího stavu a historie od aktivního kontextu, do něhož se vybírají data potřebná pro bezprostřední krok smyčky. Architektura DarkFactory podle dostupné evidence odděluje Run State od generovaných promptů a používá selektivní injekci kontextu @darkfactory-e9c10221. Tento postup může omezit degradaci pozornosti, ale výběr a kompakce stále mohou vynechat skryté závislosti v rozsáhlém kódu.
-
-#heading(level: 2)[Diskuse a omezení]
-
-Dosažené výsledky podporují závěr, že samotnou modelovou inferenci je pro dlouhotrvající vývoj účelné zastřešit harnessem. Testovací sady a integrační pipeline dokládají fungování kontroly změn, izolace v repozitáři a základních postupů obnovy v ověřených scénářích.
-
-Zároveň je však nezbytné jasně formulovat, co z dostupných důkazů nevyplývá. Práce nepředkládá statistický srovnávací benchmark produktivity, nákladů či chybovosti agentního vývoje oproti lidským programátorům na standardizovaných sadách úloh, například SWE-bench. Výsledky nedokazují schopnost systému zcela autonomně vyvíjet komplexní software bez počátečního zadání a finální lidské revize; člověk jako garant specifikace a schvalovatel v bodech HITL zůstává podmínkou bezpečnosti. Evaluace také neodstraňuje stochastickou povahu jazykových modelů: harness může chybné výstupy zachytit a zablokovat, ale nezaručuje, že model v libovolné situaci nalezne optimální řešení.
+Současný materiál neobsahuje plně automatizovaný živý průchod od schválení požadavku přes implementaci až po merge a produkční rekonciliaci; tato mezera byla v dostupném snapshotu vedena jako otevřené akceptační kritérium @darkfactory-request-359. Neobsahuje ani statistický benchmark produktivity, nákladů nebo chybovosti proti lidským programátorům. Výsledky tedy podporují tvrzení o existenci a testování vybraných mechanismů, nikoli obecné tvrzení o samostatném vývoji komplexního softwaru.
 
 #heading(level: 1)[Závěr]
 
-Spolehlivý dlouhotrvající vývoj nelze založit na růstu schopností jazykového modelu samotného: bezstavová inference nezajišťuje trvalou kontinuitu, neposkytuje řízené provedení účinků v prostředí a v dlouhém kontextu čelí degradaci pozornosti.
+Práce vymezila přechod od IDE-centered execution k harness-centered execution jako architektonickou změnu v software engineering. Když agent vykonává významnou část implementace, harness přebírá integrační roli, kterou IDE plnilo kolem lidského vývojáře: spojuje kontext, stav, nástroje, prostředí, pozorování, ověřování, obnovu a orchestraci. Agentické inženýrství je v tomto pojetí software engineering organizovaný kolem agentů jako primárních vykonavatelů implementace, přičemž člověk si ponechává záměr, hranice, revizi a odpovědnost.
 
-Přínosem je propojení harnessu a metodiky agentického inženýrství do jednoho návrhového rámce. Harness organizuje agentní smyčku ReAct, spravuje perzistentní Run State mimo kontextové okno modelu a zprostředkuje nástroje i kontroly. Metodika na tuto vrstvu navazuje specifikací, ohraničeným plánováním, izolací větví Git, CI kontrolami a explicitní integrací.
-
-Principy byly v dostupné implementaci a testovacím rámci ověřeny prostřednictvím 670 úspěšných automatizovaných testů v 15 CI jobech a verifikace na třech aktivních repozitářích. Evidence podporuje mechanismy řízené autonomie, obnovy a oddělení stavu od aktivního kontextu v testovaných scénářích. Zároveň chybí živý produkční průchod celým životním cyklem, takže rozsah zobecnění zůstává omezený.
+DarkFactory je konkrétní artefakt, na němž lze tuto architekturu zkoumat. Dostupná starší evidence podporuje vybrané mechanismy řízené autonomie, persistence a obnovy v testovaných scénářích. Nepodporuje však závěr o plně bezobslužném produkčním vývoji; takový závěr vyžaduje další fázi založenou na jediné pinované revizi, reprodukovatelném manifestu a aktuálních důkazech z implementace.
 
 // ── Zadní část ───────────────────────────────────────────
 #pagebreak(weak: true)

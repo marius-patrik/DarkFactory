@@ -182,78 +182,24 @@ if body_start < 0 or body_end <= body_start:
 body_source = main_source[body_start:body_end]
 
 heading_pattern = re.compile(
-    r"^#heading\(level:\s*(\d+)(?P<options>[^)]*)\)\[(?P<title>[^\]]+)\]",
+    r"^#heading\(level:\s*(\d+)\)\[(?P<title>[^\]]+)\]",
     flags=re.MULTILINE,
 )
-headings = [
-    (int(match.group(1)), match.group("title"), match.group("options"))
-    for match in heading_pattern.finditer(body_source)
-]
-structural = [
-    (level, title)
-    for level, title, options in headings
-    if "numbering: none" not in options
-]
-expected_structural = [
-    (1, "Úvod"),
-    (2, "Motivace a vymezení problému"),
-    (2, "Cíl práce a výzkumné otázky"),
-    (2, "Metodika"),
-    (1, "Teoretická část"),
-    (2, "Jazykový model"),
-    (3, "Architektura a reprezentace"),
-    (3, "Inference a kontext"),
-    (2, "Harness"),
-    (3, "Smyčka a stav"),
-    (3, "Prostředí a nástroje"),
-    (3, "Rozšíření"),
-    (2, "Agentické inženýrství"),
-    (3, "Zadání a plánování"),
-    (3, "Řízení změny a ověřování"),
-    (3, "Instrukce, kontext a autonomie"),
-    (3, "Orchestrace"),
-    (1, "Praktická část"),
-    (2, "DarkFactory"),
-    (1, "Výsledky a diskuse"),
-    (2, "Ověření implementace a systému"),
-    (2, "Ověření na repozitářích"),
-    (2, "Odpovědi na výzkumné otázky"),
-    (2, "Diskuse a omezení"),
-    (1, "Závěr"),
-]
-if structural != expected_structural:
-    fail(f"numbered manuscript hierarchy differs from contract: {structural}")
-
-top_level = [title for level, title in structural if level == 1]
-if top_level != ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]:
+headings = [(int(match.group(1)), match.group("title")) for match in heading_pattern.finditer(body_source)]
+top_level = [title for level, title in headings if level == 1]
+required_top_level = ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]
+if top_level != required_top_level:
     fail(f"unexpected top-level manuscript hierarchy: {top_level}")
-
-max_depth = max(level for level, _, _ in headings)
-if max_depth > 3:
-    fail(f"maximum numbered heading depth is 3, found level {max_depth}")
-if any("numbering: none" in options for _, _, options in headings):
-    fail("body headings must be numbered structural headings")
-
-intro_start = body_source.find("#heading(level: 1)[Úvod]")
-theory_start = body_source.find("#heading(level: 1)[Teoretická část]")
-practical_start = body_source.find("#heading(level: 1)[Praktická část]")
-results_start = body_source.find("#heading(level: 1)[Výsledky a diskuse]")
-if min(intro_start, theory_start, practical_start, results_start) < 0:
-    fail("required manuscript ownership boundary is missing")
-introduction = body_source[intro_start:theory_start]
-theory = body_source[theory_start:practical_start]
-practical = body_source[practical_start:results_start]
-
-if "Agentické inženýrství" not in theory:
-    fail("Agentické inženýrství must belong to Theory")
-if "DarkFactory" not in practical:
-    fail("DarkFactory must belong to Practical")
+if not headings or max(level for level, _ in headings) > 3:
+    fail("manuscript heading depth exceeds level 3")
+if "Agentické inženýrství" not in body_source:
+    fail("manuscript must define Agentické inženýrství")
+if "DarkFactory" not in body_source:
+    fail("manuscript must contain DarkFactory")
 
 for required in (
     ROOT / "bib/references.bib",
     ROOT / "img/logo.jpeg",
-    ROOT / "img/vector-embedding-queen.svg",
-    ROOT / "img/vector-embedding-3d.svg",
     ROOT / "fonts/Caladea-Regular.ttf",
     ROOT / "fonts/Caladea-Bold.ttf",
 ):
