@@ -39,12 +39,12 @@ Závěr may synthesize a relationship visible only after reading the whole secti
 ### 1 Úvod
 
 - 1.1 Motivace a vymezení problému
-- 1.2 Východisko a argument práce
-- 1.3 Cíle práce
+- 1.2 Argument
+- 1.3 Cíle
   - 1.3.1 Hlavní cíl
   - 1.3.2 Dílčí cíle
 - 1.4 Výzkumné otázky
-- 1.5 Metodika práce
+- 1.5 Metodika
 
 ### 2 Teoretická část: Agentní vývoj softwaru
 
