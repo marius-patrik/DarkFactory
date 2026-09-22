@@ -79,6 +79,7 @@ export function EditorTab({
   };
 
   useEffect(() => {
+    if (tab.state.goToLineRequest === null) return;
     const requestedLine = Number(tab.state.goToLine);
     const target = editorRef.current;
     if (
