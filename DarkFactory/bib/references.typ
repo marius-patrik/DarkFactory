@@ -44,7 +44,9 @@
 #let openai_agent_orchestration = <openai-agent-orchestration>
 #let hevner2004designscience = <hevner2004designscience>
 #let peffers2007dsrm = <peffers2007dsrm>
-#let microsoft_ai_diffusion_2026 = <microsoft-ai-diffusion-2026>
+#let gradually_ai_usage_2026 = <gradually-ai-usage-2026>
+#let epoch_eci_frontier_2026 = <epoch-eci-frontier-2026>
+#let artificial_analysis_intelligence_v4_3_2 = <artificial-analysis-intelligence-v4-3-2>
 #let brown2020 = <brown2020>
 #let owasp_llm01_prompt_injection = <owasp-llm01-prompt-injection>
 #let darkfactory_e9c10221 = <darkfactory-e9c10221>
@@ -115,7 +117,9 @@
   openai_agent_orchestration: openai_agent_orchestration,
   hevner2004designscience: hevner2004designscience,
   peffers2007dsrm: peffers2007dsrm,
-  microsoft_ai_diffusion_2026: microsoft_ai_diffusion_2026,
+  gradually_ai_usage_2026: gradually_ai_usage_2026,
+  epoch_eci_frontier_2026: epoch_eci_frontier_2026,
+  artificial_analysis_intelligence_v4_3_2: artificial_analysis_intelligence_v4_3_2,
   brown2020: brown2020,
   owasp_llm01_prompt_injection: owasp_llm01_prompt_injection,
   darkfactory_e9c10221: darkfactory_e9c10221,

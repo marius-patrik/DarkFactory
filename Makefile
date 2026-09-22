@@ -38,6 +38,7 @@ help:
 
 external-assets:
 	$(PYTHON) scripts/fetch_external_assets.py
+	$(PYTHON) scripts/render_phase2_evidence.py
 
 build: external-assets
 	@mkdir -p $(OUT_DIR)
