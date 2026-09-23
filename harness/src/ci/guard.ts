@@ -34,7 +34,7 @@ export function requiredChecksState(
 			continue;
 		}
 		const conclusion = run.conclusion ?? "";
-		if (conclusion === "success" || conclusion === "neutral" || conclusion === "skipped") passed.push(check.name);
+		if (conclusion === "success") passed.push(check.name);
 		else failing.push(check.name);
 	}
 
