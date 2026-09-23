@@ -163,13 +163,15 @@ Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu
 
 Specifikace a kontext se promítají do provádění prostřednictvím schopností harnessu. #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět příkazy; #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy @agentskills-spec. #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit deterministickou kontrolu @openai-agents-lifecycle. #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification. Nejde o samostatné agenty, ale o řízené části runtime, jejichž výběr, oprávnění a výstupy určují, co může agent skutečně provést a ověřit.
 
-Po každé akci harness vrací agentovi pozorování, například výsledek testu, překladače nebo stav pracovního stromu. Agent podle něj upraví další krok a pokračuje, dokud nesplní podmínky přijetí nebo nenarazí na stanovený limit. Takový #strong[goal loop] mění jednorázové generování v řízený proces, v němž verifikační zpětná vazba průběžně koriguje další postup @yao2022 @anthropic-harness-design.
+Po každé akci harness vrací agentovi pozorování, například výsledek testu, překladače nebo stav pracovního stromu. Agent podle něj upraví další krok a pokračuje, dokud nesplní podmínky přijetí nebo nenarazí na stanovený limit.
 
 #heading(level: 3)[Orchestrace a lidská integrace]
 
 Rozsáhlou úlohu lze rozdělit do více agentních běhů, pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat #strong[paralelní pracovníci], zatímco #strong[workflow graph] předem určuje závislosti, pořadí a větvení fází. #strong[Swarm] používá volnější koordinaci, při níž si specializovaní agenti dynamicky předávají řízení podle aktuálního stavu úlohy @openai-agent-orchestration @openai-swarm.
 
 Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol.
+
+#strong[Goal loop] tvoří nadřazenou řídicí smyčku vůči jednotlivým cyklům agentní smyčky: po více akcích vyhodnocuje postup k cíli a podle podmínek přijetí rozhoduje o změně strategie, pokračování nebo ukončení běhu @yao2022 @anthropic-harness-design.
 
 Princip #strong[human-in-the-loop] (#strong[HITL]) doplňuje automatizované smyčky o kontrolní brány, v nichž je vyžadováno explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak nadále odpovídá za záměr, architekturu a integraci, zatímco agent provádí ohraničenou implementační práci. Začlenění změn do hlavní větve vyžaduje vedle technického ověření v CI také lidskou revizi a převzetí odpovědnosti za výsledek @github-branches @github-pull-requests.
 
