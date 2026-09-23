@@ -116,10 +116,8 @@ export interface CapabilityHookDefinition {
 	id: string;
 	/** Human-readable purpose shown in diagnostics and generated documentation. */
 	description?: string;
-	/** Legacy single-event declaration retained for ABI-v1 compatibility. */
-	event?: CapabilityHookEvent;
-	/** Preferred declaration for hooks that apply to multiple deterministic trigger points. */
-	events?: readonly CapabilityHookEvent[];
+	/** Deterministic trigger points where this hook executes. */
+	events: readonly CapabilityHookEvent[];
 	/** Capability-owned rule behavior. Invocation timing/effect ownership remains in core. */
 	execute?(
 		input: CapabilityHookContext,
@@ -227,10 +225,8 @@ export function defineCapability<const T extends CapabilityDefinition>(definitio
 		identifier(hook.id, "hook id");
 		if (hookIds.has(hook.id)) throw new Error(`capability ${definition.id} contains duplicate hook ${hook.id}`);
 		hookIds.add(hook.id);
-		if (hook.event && hook.events) throw new Error(`hook ${hook.id} must declare event or events, not both`);
-		const events = hook.events ?? (hook.event ? [hook.event] : []);
-		if (events.length === 0) throw new Error(`hook ${hook.id} must declare at least one event`);
-		if (new Set(events).size !== events.length) throw new Error(`hook ${hook.id} contains duplicate events`);
+		if (hook.events.length === 0) throw new Error(`hook ${hook.id} must declare at least one event`);
+		if (new Set(hook.events).size !== hook.events.length) throw new Error(`hook ${hook.id} contains duplicate events`);
 	}
 	return definition;
 }
