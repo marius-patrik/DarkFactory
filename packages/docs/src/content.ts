@@ -4,7 +4,7 @@ import type { DocsConfig } from "./config.ts";
 import { loadDocsConfig } from "./config.ts";
 
 /** Semantic kind assigned to a documentation page. */
-export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "decisions" | "adr" | "capability";
+export type DocsPageKind = "home" | "product" | "plan" | "rules" | "rule" | "note" | "adr" | "capability";
 
 /** One canonical Markdown page in the DarkFactory content graph. */
 export interface DocsPage {
@@ -125,6 +125,18 @@ function markdownFiles(directory: string): string[] {
 		.sort((a, b) => a.localeCompare(b));
 }
 
+function markdownFilesRecursive(directory: string, prefix = ""): string[] {
+	if (!existsSync(directory)) return [];
+	const files: string[] = [];
+	for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+		const relativePath = prefix ? join(prefix, entry.name) : entry.name;
+		const absolutePath = join(directory, entry.name);
+		if (entry.isDirectory()) files.push(...markdownFilesRecursive(absolutePath, relativePath));
+		else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") files.push(relativePath);
+	}
+	return files;
+}
+
 function workflowSummary(repoRoot: string, source: string): DocsWorkflowSummary {
 	const text = readFileSync(join(repoRoot, source), "utf8").replaceAll("\r\n", "\n");
 	const name = text.match(/^name:\s*["']?(.+?)["']?\s*$/mu)?.[1]?.trim() || basename(source);
@@ -175,8 +187,11 @@ export function compileDocsContentGraph(repoRoot: string, config: DocsConfig = l
 	}
 	const rulesRoot = join(repoRoot, ".agents", "rules");
 	for (const name of markdownFiles(rulesRoot)) pages.push(markdownPage(repoRoot, join(".agents", "rules", name), "rule"));
-	const adrRoot = join(repoRoot, ".agents", "notes", "adr");
-	for (const name of markdownFiles(adrRoot)) pages.push(markdownPage(repoRoot, join(".agents", "notes", "adr", name), name === "README.md" ? "decisions" : "adr"));
+	const notesRoot = join(repoRoot, ".agents", "notes");
+	for (const name of markdownFilesRecursive(notesRoot)) {
+		const source = join(".agents", "notes", name);
+		pages.push(markdownPage(repoRoot, source, name.replaceAll("\\", "/").startsWith("adr/") ? "adr" : "note"));
+	}
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })

@@ -28,6 +28,7 @@ EXPECTED_LINKS: Dict[str, str] = {
     ".agents/AGENTS.md": "../AGENTS.md",
     ".agents/CLAUDE.md": "../AGENTS.md",
     ".agents/README.md": "../README.md",
+    ".agents/notes/README.md": "../../README.md",
     "_notes": ".agents/notes",
     "_rules": ".agents/rules",
 }
