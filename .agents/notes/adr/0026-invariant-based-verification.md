@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-001`, `DF-RULE-006`, `DF-RULE-008`
+
 ## Decision
 
 Tests and CI prove product/architecture invariants rather than freezing incidental repository shape.

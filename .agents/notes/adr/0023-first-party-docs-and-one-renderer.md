@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-002`
+
 ## Decision
 
 - `@darkfactory/docs` is the headless documentation compiler/content-graph owner.

@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-005`, `DF-RULE-007`, `DF-RULE-019`
+
 ## Decision
 
 Parallel implementation uses one authoritative remote delivery branch writer.
