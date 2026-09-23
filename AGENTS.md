@@ -110,9 +110,8 @@ single delivery PR may contain multiple coherent commits; one PR does not imply 
 integration/orchestrator session combines parallel worker output, preserve coherent commit boundaries
 until the final merge rather than collapsing unrelated work into one opaque commit.
 
-All commits across all branches MUST follow the Conventional Commits format
-`<type>(<scope>): <description>` (e.g. `feat(core): add substrate bus frame codec`). The allowed
-types and the area taxonomy are defined by DF-RULE-015; this rule covers granularity only.
+Commit syntax, allowed types and repository scopes are owned by DF-RULE-015. This rule owns only
+commit granularity and preservation of coherent change boundaries.
 
 ### Rule 6 — CI readiness and verification
 
@@ -263,13 +262,11 @@ implementation.
 - Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
 - When the owner consolidates previously separate Requests into one current Request, copy the relevant verbatim owner direction and all still-current required behavior into the consolidated Request before closing duplicates.
 - Resolve Request/Epic/dependency/recovery relationships explicitly.
-- Generate one unified Planning artifact from the verbatim Request and authoritative context.
-- Independently review/fix Planning until clean.
-- Require one explicit owner Planning Approval before implementation.
+- Produce one unified Planning artifact from the verbatim Request and authoritative context.
+- Hand that artifact to the single review/approval/alignment lifecycle owned by DF-RULE-010; this rule does not define a second Planning gate.
 - Subsequent delivery remains bound to the active Request(s) or an explicitly approved shared-Planning record.
 
-There is no final separate `Interpretation` section/gate that must be approved before Planning can
-exist.
+There is no separate `Interpretation` approval lifecycle before Planning.
 
 ### Rule 13 — Specification sequence and work tracking
 

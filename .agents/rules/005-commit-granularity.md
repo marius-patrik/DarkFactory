@@ -15,9 +15,8 @@ single delivery PR may contain multiple coherent commits; one PR does not imply 
 integration/orchestrator session combines parallel worker output, preserve coherent commit boundaries
 until the final merge rather than collapsing unrelated work into one opaque commit.
 
-All commits across all branches MUST follow the Conventional Commits format
-`<type>(<scope>): <description>` (e.g. `feat(core): add substrate bus frame codec`). The allowed
-types and the area taxonomy are defined by DF-RULE-015; this rule covers granularity only.
+Commit syntax, allowed types and repository scopes are owned by DF-RULE-015. This rule owns only
+commit granularity and preservation of coherent change boundaries.
 
 ## Rationale
 
@@ -27,8 +26,7 @@ allowing one PR to deliver one coherent larger Request.
 
 ## Enforcement
 
-The shared hook registry validates commit policy at deterministic commit/CI trigger points, and the
-release capability consumes Conventional Commit metadata for release construction.
+The shared hook registry validates granularity-adjacent delivery policy at deterministic commit/CI trigger points. Commit syntax/taxonomy enforcement remains owned by DF-RULE-015, and the release capability consumes the resulting commit metadata.
 
 ## Exceptions
 

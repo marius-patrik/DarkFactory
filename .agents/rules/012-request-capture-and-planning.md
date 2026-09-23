@@ -17,19 +17,15 @@ implementation.
 - Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
 - When the owner consolidates previously separate Requests into one current Request, copy the relevant verbatim owner direction and all still-current required behavior into the consolidated Request before closing duplicates.
 - Resolve Request/Epic/dependency/recovery relationships explicitly.
-- Generate one unified Planning artifact from the verbatim Request and authoritative context.
-- Independently review/fix Planning until clean.
-- Require one explicit owner Planning Approval before implementation.
+- Produce one unified Planning artifact from the verbatim Request and authoritative context.
+- Hand that artifact to the single review/approval/alignment lifecycle owned by DF-RULE-010; this rule does not define a second Planning gate.
 - Subsequent delivery remains bound to the active Request(s) or an explicitly approved shared-Planning record.
 
-There is no final separate `Interpretation` section/gate that must be approved before Planning can
-exist.
+There is no separate `Interpretation` approval lifecycle before Planning.
 
 ## Rationale
 
-Verbatim capture protects intent; reviewed Planning protects interpretation and implementation
-approach without serializing two redundant human approvals. Consolidation is safe only when it
-preserves intent before the older tracking records become historical.
+Verbatim capture protects intent while DF-RULE-010 owns how Planning is reviewed, approved and aligned. Consolidation is safe only when it preserves intent before older tracking records become historical.
 
 ## Enforcement
 
