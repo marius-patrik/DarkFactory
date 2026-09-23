@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-012
-title: Request capture and confirmation
+title: Request capture and Planning
 status: normative
 applies_to: [agents, automation]
 activation: always

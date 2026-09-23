@@ -21,8 +21,8 @@ accepted ADR metadata; edit canonical rules/notes rather than this projection.
 | `DF-RULE-008` | Formatting and linting | `ADR-0026` | `.agents/rules/008-formatting-and-linting.md` |
 | `DF-RULE-009` | Issue binding, branch auto-deletion, and board status | `ADR-0019` | `.agents/rules/009-issue-binding-and-board-status.md` |
 | `DF-RULE-010` | Approved delivery plan | `ADR-0013` | `.agents/rules/010-approved-delivery-plan.md` |
-| `DF-RULE-011` | Review approval and auto-merge | `ADR-0013`, `ADR-0019` | `.agents/rules/011-review-approval-and-auto-merge.md` |
-| `DF-RULE-012` | Request capture and confirmation | `ADR-0013` | `.agents/rules/012-request-capture-and-confirmation.md` |
+| `DF-RULE-011` | Review approval and governed merge | `ADR-0013`, `ADR-0019` | `.agents/rules/011-review-approval-and-governed-merge.md` |
+| `DF-RULE-012` | Request capture and Planning | `ADR-0013` | `.agents/rules/012-request-capture-and-planning.md` |
 | `DF-RULE-013` | Specification and work tracking | `ADR-0013`, `ADR-0022` | `.agents/rules/013-specification-and-work-tracking.md` |
 | `DF-RULE-014` | Agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | `.agents/rules/014-agent-runtime-and-resilience.md` |
 | `DF-RULE-015` | Repository taxonomy | `ADR-0021` | `.agents/rules/015-repository-taxonomy.md` |
