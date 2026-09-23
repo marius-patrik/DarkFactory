@@ -28,5 +28,8 @@ It is not the product specification or active implementation plan.
 | `ADR-0021` | Repository declarations, runtime detection and capability-resolved actions | [`.agents/notes/adr/0021-final-repository-declarations-and-capability-detection.md`](.agents/notes/adr/0021-final-repository-declarations-and-capability-detection.md) |
 | `ADR-0022` | Complete the final system directly | [`.agents/notes/adr/0022-complete-the-final-system-directly.md`](.agents/notes/adr/0022-complete-the-final-system-directly.md) |
 | `ADR-0023` | First-party docs use docs.df and one renderer | [`.agents/notes/adr/0023-first-party-docs-and-one-renderer.md`](.agents/notes/adr/0023-first-party-docs-and-one-renderer.md) |
+| `ADR-0024` | Effects are serializable and authoritative state is crash-consistent | [`.agents/notes/adr/0024-serializable-effects-and-crash-consistent-state.md`](.agents/notes/adr/0024-serializable-effects-and-crash-consistent-state.md) |
+| `ADR-0025` | Each delivery branch has one integration authority | [`.agents/notes/adr/0025-single-integration-authority.md`](.agents/notes/adr/0025-single-integration-authority.md) |
+| `ADR-0026` | Verification proves invariants and fails closed | [`.agents/notes/adr/0026-invariant-based-verification.md`](.agents/notes/adr/0026-invariant-based-verification.md) |
 
 History that is no longer current belongs in Git and GitHub, not in the live notes index.
