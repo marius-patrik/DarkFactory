@@ -14,10 +14,6 @@ This file records only the high-level execution order. **#68 contains the concre
 
 The old required child Requests are closed historical records. Do not use them as implementation plans.
 
-Backlog outside #1009:
-
-- #252 — Gemini image/video generation
-- #332 — fine-grained cross-provider chunk fan-out
 
 ## Execution order
 
