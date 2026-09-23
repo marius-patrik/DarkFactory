@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { DocsContentGraph } from "./content.ts";
 import { renderReadmeMarkdown } from "./readme.ts";
 import { renderAgentsMarkdown } from "./agents.ts";
+import { analyzeRuleNoteRelations } from "./relations.ts";
 
 /** One deterministic violation of the repository's current-only documentation contract. */
 export interface DocumentationTruthFinding {
@@ -28,6 +29,10 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 			findings.push({ path: path.replaceAll("\\", "/"), message: "retired documentation surface must not exist" });
 		}
 	}
+
+	const relations = analyzeRuleNoteRelations(graph);
+	for (const message of relations.findings) findings.push({ path: ".agents", message });
+	if (relations.findings.length > 0) return findings;
 
 	const readmePath = join(repoRoot, "README.md");
 	if (!existsSync(readmePath)) {
