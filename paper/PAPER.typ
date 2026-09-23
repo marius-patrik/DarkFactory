@@ -105,7 +105,7 @@ V #meta.mesto dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce
 
 #heading(level: 1)[Úvod]
 
-Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny v repozitáři a spouštějí příkazy @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak pravidelné využívání plnohodnotných agentických systémů zůstává omezeno na přibližně 0,36~% světové populace @gradually-ai-usage-2026.
+Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny a spouštějí příkazy v běhovém prostředí @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak pravidelné využívání plnohodnotných agentických systémů zůstává omezeno na přibližně 0,36~% světové populace @gradually-ai-usage-2026.
 
 #figure(
   image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
