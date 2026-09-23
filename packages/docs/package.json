@@ -21,5 +21,8 @@
     "@darkfactory/core": "workspace:*",
     "@darkfactory/protocol": "workspace:*",
     "typedoc": "0.28.20"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }
