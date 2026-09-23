@@ -342,7 +342,6 @@ GitHub user authority and GitHub App installation authority remain distinct.
 
 Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
 
-
 ### Rule 17 — Final architecture, DRY, and deletion
 
 The repository targets the current final architecture directly.
