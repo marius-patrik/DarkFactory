@@ -2,19 +2,19 @@
 
 ## 1. Authority and delivery model
 
-DarkFactory is finished through **one integration branch and one final merge**.
+DarkFactory is finished through **one issue, one integration branch, one PR, and one final merge**.
 
-- Canonical branch: `darkfactory`
+- Product architecture: `PRD.md`
+- Completion/planning/validation contract: #68
 - Integration branch: `finish/darkfactory`
 - Integration PR: #1009
-- Authoritative completion/validation contract: #68
-- Product architecture: `PRD.md`
+- Canonical branch: `darkfactory`
 
-#68 is the planning and validation contract. Child Requests remain traceability records only.
+All previously required child Requests have been consolidated into #68 and closed as duplicate/historical traceability. They are not implementation authorities and workers should not need to read them to discover required scope.
 
-No required child Request receives its own final merge. #1009 remains draft until the complete system is proven from its exact head.
+Explicit backlog outside this merge is listed in #68 and must not block #1009.
 
-Backlog work excluded from #1009 is recorded explicitly in #68 and must not block the merge.
+#1009 remains draft until every required #68 checkbox is proven from its exact final head.
 
 ## 2. Finish directly
 
@@ -45,18 +45,7 @@ For each useful harness area:
 
 Final production code must not import back into `harness/`.
 
-Target owners are the final first-party packages and official capabilities:
-
-- `@darkfactory/protocol`
-- `@darkfactory/core`
-- `@darkfactory/capability`
-- `@darkfactory/github`
-- `@darkfactory/keychain`
-- `@darkfactory/auth`
-- `@darkfactory/docs`
-- `@darkfactory/cli`
-- `@darkfactory/web`
-- official capabilities such as git, GitHub, planning, review, CI, release, recovery, hooks, epics and stacks.
+Final owners are the first-party packages and official capabilities defined by the PRD.
 
 The intended final repository has no production ownership in `harness/`; delete the directory once all unique required behavior has a final owner.
 
@@ -91,12 +80,12 @@ No Python supervisor remains around df.
 
 ## 5. Integrated implementation order
 
-Work may run in parallel inside #1009, but converge in this order where interfaces depend on one another:
+Work may run in parallel inside #1009, but all scope and acceptance comes from #68.
 
-1. **Consolidated foundations already imported**
-   - #358 graph/runtime from former PR #894;
-   - #317 mutation evidence/conflict repair from former PR #899;
-   - #425 web shell from former PR #963.
+1. **Preserve consolidated foundations**
+   - graph/runtime work formerly carried by #894;
+   - mutation-evidence/conflict-repair work formerly carried by #899;
+   - web-shell work formerly carried by #963.
 
 2. **Collapse runtime ownership**
    - finish graph/runtime composition;
@@ -105,16 +94,17 @@ Work may run in parallel inside #1009, but converge in this order where interfac
    - make df the sole Request-lifecycle engine;
    - delete superseded harness and Python owners.
 
-3. **Finish required product surfaces**
+3. **Finish every remaining unchecked implementation item in #68**
    - hooks/rules;
    - provider OAuth/accounts;
    - CLI/TUI;
-   - deterministic git;
+   - git/governance;
    - Epic relationships;
    - stacked PRs;
    - recovery intake;
    - web/dashboard;
-   - docs/currentness.
+   - docs/currentness;
+   - release packaging.
 
 4. **Repository reduction**
    - remove duplicate/dead owners, workflows, tests, scripts, aliases and stale docs;
@@ -125,7 +115,7 @@ Work may run in parallel inside #1009, but converge in this order where interfac
 5. **Release and proof**
    - build one release candidate from the exact #1009 head;
    - prove source-free install;
-   - run all #68 pre-merge acceptance;
+   - execute every pre-merge proof item in #68;
    - install/test the exact candidate across all six consumers;
    - fix every discovered defect on the same branch and rerun affected proof;
    - only then mark #1009 ready and merge once.
@@ -134,21 +124,7 @@ Work may run in parallel inside #1009, but converge in this order where interfac
 
 CI green is necessary but not sufficient.
 
-Before #1009 may merge, every required checkbox in #68 must be backed by observed evidence from the exact final PR head, including:
-
-- graph interruption/resume and effect idempotency;
-- conflict repair and actual graph re-entry;
-- fail-closed mutation truth;
-- real df-only governed Request lifecycle;
-- hooks/governance;
-- provider/account/keychain boundaries;
-- CLI/TUI;
-- web/docs;
-- recovery;
-- Epic/stack behavior;
-- source-free release/install;
-- six-consumer fleet acceptance;
-- final repository/ref cleanup.
+The checklist in #68 is the gate. No separate child-Request acceptance interpretation exists.
 
 There is no known-defect post-merge stabilization phase. Known defects are fixed before merge.
 
@@ -156,7 +132,7 @@ There is no known-defect post-merge stabilization phase. Known defects are fixed
 
 Stop only when:
 
-- #1009 is fully proven, ready, and merged; or
+- every required #68 item is proven and #1009 is ready for the coordinator's final merge decision; or
 - progress is impossible because of a genuine external authorization/service/unavailable-recovery-data blocker.
 
 Merge conflicts, stale code, red tests, architectural cleanup, missing implementation and agent failures are work, not blockers.
