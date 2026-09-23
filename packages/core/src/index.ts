@@ -21,3 +21,4 @@ export type {
 export * from "./repository-evidence.ts";
 export * from "./result-capture.ts";
 export * from "./recovery.ts";
+export * from "./mutation-evidence.ts";

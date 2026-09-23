@@ -11,7 +11,8 @@
     "./review": "./src/review.ts",
     "./quota": "./src/quota.ts",
     "./result-capture": "./src/result-capture.ts",
-    "./recovery": "./src/recovery.ts"
+    "./recovery": "./src/recovery.ts",
+    "./mutation-evidence": "./src/mutation-evidence.ts"
   },
   "files": [
     "src"
