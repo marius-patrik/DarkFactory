@@ -4,7 +4,7 @@
   "rsc": false,
   "tsx": true,
   "tailwind": {
-    "css": "src/viewer.css",
+    "css": "src/workbench.css",
     "baseColor": "neutral",
     "cssVariables": true
   },

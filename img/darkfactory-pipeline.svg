@@ -5,7 +5,7 @@
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#475569"/></marker>
     <marker id="gate-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#b45309"/></marker>
     <style>
-      .title{font:700 17px Carlito,Caladea,Arial,sans-serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.phase{font:700 11px Carlito,Caladea,Arial,sans-serif;letter-spacing:.5px;fill:#475569}.head{font:700 13px Carlito,Caladea,Arial,sans-serif;fill:#0f172a}.body{font:11px Carlito,Caladea,Arial,sans-serif;fill:#475569}.gate{font:700 10px Carlito,Caladea,Arial,sans-serif;fill:#92400e}.small{font:10px Carlito,Caladea,Arial,sans-serif;fill:#64748b}
+      .title{font:700 17px Caladea,serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.phase{font:700 11px Caladea,serif;letter-spacing:.5px;fill:#475569}.head{font:700 13px Caladea,serif;fill:#0f172a}.body{font:11px Caladea,serif;fill:#475569}.gate{font:700 10px Caladea,serif;fill:#92400e}.small{font:10px Caladea,serif;fill:#64748b}
     </style>
   </defs>
   <rect x="8" y="8" width="984" height="414" rx="12" fill="#fff" stroke="#cbd5e1"/>

@@ -149,8 +149,8 @@ test("root regions resize, clamp, hide/show, and persist", async ({ page }) => {
   expect(Math.abs(await readSize("panel") - panel)).toBeLessThan(2);
 
   await page.setViewportSize({ width: 640, height: 640 });
-  const mainBox = await surface(page, "main").boundingBox();
-  expect(mainBox?.width ?? 0).toBeGreaterThanOrEqual(290);
+  await expect.poll(async () => (await surface(page, "main").boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(290);
 });
 
 test("tabs move across root Dockview surfaces, existing groups, splits, and reload", async ({ page }) => {

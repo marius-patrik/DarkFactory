@@ -10,7 +10,6 @@ export default defineConfig({
     define: publicVars,
     entry: {
       index: "./src/main.tsx",
-      viewer: "./src/main.tsx",
     },
   },
   resolve: {
@@ -31,10 +30,5 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-  },
-  tools: {
-    htmlPlugin(config, { entryName }) {
-      config.template = entryName === "viewer" ? "./viewer.html" : "./index.html";
-    },
   },
 });

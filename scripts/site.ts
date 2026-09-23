@@ -1,4 +1,4 @@
-import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
 const WEB_DIST = join("web", "dist");
@@ -12,9 +12,7 @@ async function requireFile(path: string) {
   }
 }
 
-for (const path of [join(WEB_DIST, "index.html"), join(WEB_DIST, "viewer.html")]) {
-  await requireFile(path);
-}
+await requireFile(join(WEB_DIST, "index.html"));
 for (const name of ARTIFACTS) {
   await requireFile(name);
 }
@@ -26,29 +24,4 @@ for (const name of ARTIFACTS) {
   await cp(name, join(SITE, name));
 }
 
-const images = "img";
-const imageInfo = await stat(images).catch(() => null);
-if (imageInfo?.isDirectory()) {
-  await mkdir(join(SITE, images), { recursive: true });
-  await cp(images, join(SITE, images), { recursive: true });
-}
-
-await writeFile(join(SITE, ".nojekyll"), "", "utf8");
-await writeFile(
-  join(SITE, "publication.json"),
-  JSON.stringify(
-    {
-      commit: process.env.GITHUB_SHA ?? "",
-      source: "index.typ",
-      artifacts: {
-        pdf: "ODBORNA_PRACE.pdf",
-        markdown: "README.md",
-      },
-    },
-    null,
-    2,
-  ) + "\n",
-  "utf8",
-);
-
-console.log("ok: assembled Pages site with PDF and Markdown publication artifacts");
+console.log("ok: assembled Pages site with workbench, PDF, and Markdown publication");

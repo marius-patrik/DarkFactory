@@ -65,7 +65,7 @@
   ],
 )
 
-#set document(title: meta.title, author: meta.author)
+#set document(title: meta.title, author: meta.author, date: none)
 #set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
 
 // ── title page ──────────────────────────────────────────
@@ -129,7 +129,7 @@ Nástroje založené na velkých jazykových modelech prošly rychlým vývojem:
 Odhad zastoupení jednotlivých kategorií uživatelů shrnuje @fig-gradually-usage.
 
 #figure(
-  image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
+  image("img/gradually-ai-usage-2026.svg", width: 100%),
   caption: [Odhad rozdělení uživatelů generativní AI. Pravidelní uživatelé agentů pro tvorbu kódu tvoří přibližně 0,36~% světové populace, tedy zhruba 30 milionů lidí @gradually-ai-usage-2026.],
 ) <fig-gradually-usage>
 

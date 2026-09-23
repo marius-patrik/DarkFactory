@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
-import { renderEvidence } from "./evidence";
 
 const ROOT = process.cwd();
 const PAPER = "index.typ";
@@ -44,7 +43,6 @@ async function validatePublication() {
 }
 
 async function main() {
-  await renderEvidence();
   await run(["typst", "compile", "--font-path", FONTS, PAPER, PDF]);
   const temporaryDirectory = await mkdtemp(join(tmpdir(), "darkfactory-publication-"));
   const htmlPath = join(temporaryDirectory, "publication.html");

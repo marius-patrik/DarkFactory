@@ -7,10 +7,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: write
+  contents: write
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -18,10 +19,12 @@ jobs:
     name: repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout repository branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           submodules: recursive
+          fetch-depth: 0
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -32,8 +35,11 @@ jobs:
       - name: Install workspace dependencies
         run: bun install
 
-      - name: Build publication and validate web
-        run: bun run check
+      - name: Generate canonical publication
+        run: bun run publication
+
+      - name: Validate web
+        run: bun run web:check
 
       - name: Install Chromium for browser acceptance
         run: cd web && bunx playwright install --with-deps chromium
@@ -43,3 +49,24 @@ jobs:
 
       - name: Assemble Pages output
         run: bun run site:assemble
+
+      - name: Commit generated publication
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          if git diff --quiet -- ODBORNA_PRACE.pdf README.md bun.lock && test -f bun.lock; then
+            echo "Generated publication is current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ODBORNA_PRACE.pdf README.md bun.lock
+          git commit -m "chore: regenerate publication"
+          git push origin "HEAD:$TARGET_BRANCH"
+
+          # Pushes made with GITHUB_TOKEN intentionally do not trigger normal push/PR
+          # workflows. Dispatch one validation run on the bot-generated head.
+          gh workflow run ci.yml --ref "$TARGET_BRANCH"
