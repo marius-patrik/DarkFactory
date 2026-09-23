@@ -12,7 +12,7 @@
     "src"
   ],
   "scripts": {
-    "test": "bun test test/quota.test.ts"
+    "test": "bun test test"
   },
   "license": "GPL-3.0",
   "dependencies": {
