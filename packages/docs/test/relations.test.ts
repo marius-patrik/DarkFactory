@@ -100,6 +100,12 @@ describe("rule/note relationships", () => {
 		expect(findings).toContain(".agents/rules/099-test.md: filename must start with canonical rule number 001-");
 	});
 
+	test("allows concise index titles to differ from prose headings", () => {
+		const concise = rule("DF-RULE-001");
+		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
+		expect(() => assertRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")]))).not.toThrow();
+	});
+
 	test("fails on incomplete rule or ADR records", () => {
 		const badRule = rule("DF-RULE-001");
 		const badAdr = adr("ADR-0001", "DF-RULE-001");

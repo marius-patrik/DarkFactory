@@ -85,9 +85,6 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		if (!heading?.[1] || Number(heading[1]) !== Number(number)) {
 			findings.push(`${page.source}: rule heading number must match ${id}`);
 		}
-		if (!heading?.[2] || heading[2].trim() !== title) {
-			findings.push(`${page.source}: rule heading title must match front-matter title`);
-		}
 		for (const section of ["Requirement", "Rationale", "Enforcement", "Exceptions", "Change control"]) {
 			if (!hasSection(page.markdown, section)) findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
 		}
