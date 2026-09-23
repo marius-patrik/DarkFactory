@@ -394,22 +394,21 @@ Before submission, direct guide-text verification must settle all remaining unce
 The repository must generate reproducibly from an exact commit:
 - final PDF;
 - HTML publication;
-- Markdown publication;
-- repository/source artifact;
-- compiled single-file Typst artifact for canonical release publication.
+- Markdown publication.
 
-A review-specific publication is optional and exists only if it provides distinct value to an actual review workflow.
+These three artifacts are the canonical publication set. A parallel review publication is not part of the product; review and comparison are workbench/Git concerns.
 
 ### Build contract
 
+The repository root is a Bun workspace. Typst remains the document compiler, while Bun is the package manager and task runner.
+
 The build system should expose a small, obvious command surface for:
 - publication build;
-- validation;
-- web build;
-- Pages/site build;
-- release artifact generation.
+- repository/web validation;
+- browser acceptance;
+- Pages/site build.
 
-Local documentation and CI must invoke the same canonical commands.
+Local documentation, CI, Pages, and Release must invoke the same canonical root commands.
 
 ### Validation
 
@@ -461,8 +460,10 @@ Required checks must correspond to the final repository product rather than inte
 GitHub Pages should publish:
 - the generic web workbench;
 - canonical paper artifacts;
-- repository/publication metadata used by the workbench;
-- the structural content index required for navigation.
+- localized publication assets;
+- lightweight publication metadata where it has a real consumer.
+
+The generic workbench should obtain repository state through its GitHub integration rather than requiring a generated repository-source mirror or manuscript-specific semantic index.
 
 The published site must be usable from a clean deployment of the same commit.
 

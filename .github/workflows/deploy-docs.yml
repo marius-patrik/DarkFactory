@@ -25,21 +25,17 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Set up Typst
         uses: typst-community/setup-typst@v5
 
+      - name: Install workspace dependencies
+        run: bun install
+
       - name: Build canonical Pages site
-        run: make site BOOK=DarkFactory
+        run: bun run site
 
       - name: Publish Pages branch
         uses: JamesIves/github-pages-deploy-action@v4

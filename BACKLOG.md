@@ -36,17 +36,6 @@ Explicit conflict to resolve:
 - current working school contract says **no first-line indent** and **8 pt paragraph spacing**;
 - current authorial presentation target requests a visible first-line indent and substantially larger inter-paragraph spacing.
 
-## Publication pipeline
-
-Can move to TODO when file ownership does not conflict with active manuscript/web work.
-
-- simplify Makefile and publication scripts around `paper/PAPER.typ`;
-- remove unnecessary review-publication machinery if no real consumer remains;
-- keep HTML/Markdown exports deterministic;
-- simplify site metadata/content indexing around actual headings;
-- replace phase-numbered evidence/figure generation with stable naming;
-- align validation with durable product invariants;
-- align CI/Pages/Release with the final artifact contract.
 
 ## Final delivery
 

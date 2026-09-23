@@ -45,28 +45,21 @@ jobs:
           REVISION: ${{ inputs.revision }}
         run: test "$(git rev-parse HEAD)" = "${REVISION,,}"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Set up Typst
         uses: typst-community/setup-typst@v5
 
-      - name: Build and validate canonical artifacts
-        run: make ci BOOK=DarkFactory
+      - name: Install workspace dependencies
+        run: bun install
+
+      - name: Build canonical publication
+        run: bun run publication
 
       - name: Verify release artifact set
         run: |
-          for file in \
-            out/prace.pdf out/prace-review.pdf \
-            out/prace.html out/prace-review.html \
-            out/prace.md out/prace-review.md; do
+          for file in out/prace.pdf out/prace.html out/prace.md; do
             test -s "$file" || { echo "missing release artifact: $file" >&2; exit 1; }
           done
 
@@ -76,10 +69,4 @@ jobs:
           REVISION: ${{ inputs.revision }}
           TAG: ${{ inputs.tag }}
         run: |
-          gh release create "$TAG" \
-            out/prace.pdf out/prace-review.pdf \
-            out/prace.html out/prace-review.html \
-            out/prace.md out/prace-review.md \
-            --target "$REVISION" \
-            --title "$TAG" \
-            --generate-notes
+          gh release create "$TAG"             out/prace.pdf out/prace.html out/prace.md             --target "$REVISION"             --title "$TAG"             --generate-notes

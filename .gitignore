@@ -1,7 +1,11 @@
 out/
 site/
+node_modules/
+web/node_modules/
+web/dist/
+web/package-lock.json
+
 *.pdf
-!DarkFactory/img/*.pdf
 !paper/img/*.pdf
 
 .DS_Store
@@ -9,14 +13,4 @@ Thumbs.db
 .vscode/
 .idea/
 
-.pipeline/
-.darkfactory/
-web/node_modules/
-web/dist/
-web/package-lock.json
-
-# Authoritative external figures are fetched from their cited primary sources.
-DarkFactory/img/external/
-DarkFactory/img/generated/
-paper/img/external/
 paper/img/generated/

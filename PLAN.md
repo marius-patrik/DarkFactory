@@ -211,86 +211,65 @@ If generated evidence figures remain useful, provide one clearly named script wh
 
 Avoid phase-numbered script names.
 
-## Workstream D — Simplify publication/build tooling
+## Workstream D — Bun publication workspace
 
 Primary files:
-- `Makefile`
-- `scripts/build_review.py`
-- `scripts/build_web_exports.py`
-- `scripts/check_build.py`
-- `scripts/build_site.py`
-- `scripts/fetch_external_assets.py`
-- `scripts/render_phase2_evidence.py`
-- `scripts/preview_server.py`
+- `package.json`
+- `scripts/publication.ts`
+- `scripts/evidence.ts`
+- `scripts/site.ts`
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy-docs.yml`
+- `.github/workflows/release.yml`
 
-### D1. Make the paper root explicit
+Target architecture:
+- the repository root is the single Bun workspace;
+- `web/` is the application workspace;
+- Typst remains the only manuscript compiler;
+- `paper/PAPER.typ` is the only authored manuscript source;
+- Bun owns publication orchestration, web validation, Pages assembly, and release commands;
+- no Makefile, Python build layer, shared-pipeline configuration, or source-text contract validator remains.
 
-The canonical manuscript is `paper/PAPER.typ`.
+Canonical publication outputs:
+- `out/prace.pdf`;
+- `out/prace.html`;
+- `out/prace.md`.
 
-Simplify the Makefile around that contract.
+Do not generate a parallel review publication. Review and comparison belong to the generic workbench/Git workflow.
 
-Keep only indirection that still supports a real output.
+### D1. Publication
 
-Target commands should remain simple:
-- build the paper;
-- export web formats;
-- validate;
-- build the site;
-- clean.
+`bun run publication` must:
+- deterministically render generated evidence still referenced by the manuscript;
+- compile the canonical PDF with Typst;
+- compile semantic Typst HTML from the same source;
+- localize required HTML image assets;
+- derive Markdown from the compiled HTML;
+- fail on real compilation/export failures.
 
-### D2. Make final publication the canonical artifact
+### D2. Validation
 
-Canonical paper outputs:
-- PDF;
-- HTML;
-- Markdown;
-- source/project archive;
-- compiled single-file Typst artifact if the release contract requires it.
+`bun run check` must exercise the product rather than inspect source spelling:
+- build the canonical publication;
+- lint/typecheck/build the generic web application.
 
-A separate review publication should exist only if a real consumer still requires it.
+Browser acceptance remains a separate explicit web check.
 
-Git comparison/review belongs primarily to the IDE/workbench rather than requiring a second semantic manuscript.
+Do not gate CI on literal prose, heading, dependency, implementation-string, or retired-architecture substring checks.
 
-### D3. Simplify web exports
+### D3. Pages
 
-`scripts/build_web_exports.py` should:
-- compile canonical HTML from the same paper source;
-- derive Markdown deterministically;
-- localize required assets;
-- contain no thesis semantic taxonomy assumptions.
+`bun run site` must build the publication and web app and assemble one static `site/` directory containing:
+- the generic workbench;
+- the canonical PDF/HTML/Markdown publication artifacts;
+- localized publication assets;
+- only lightweight metadata that has a real consumer or publication purpose.
 
-### D4. Rewrite build validation around the final contract
+Do not publish a redundant repository-source snapshot or semantic content index merely to preserve the previous site generator.
 
-`scripts/check_build.py` should validate:
-- canonical source exists;
-- expected top-level document structure;
-- bibliography/citations resolve;
-- referenced assets exist;
-- generated artifacts exist;
-- no manuscript-only semantic registry is required;
-- evidence manifest has required provenance;
-- DarkFactory SHA in evidence matches the submodule when the practical/evidence phase is complete.
+### D4. Evidence generation
 
-Avoid validation rules that encode individual terms or prose choices.
-
-### D5. Align site generation with the generic IDE
-
-`scripts/build_site.py` should publish:
-- the current generic web app;
-- canonical paper artifacts;
-- repository source tree;
-- a simple publication manifest;
-- a heading/content index derived from actual structural headings.
-
-The site generator should use the final thesis title and should not require level-4 semantic articles or a second review manuscript.
-
-### D6. Simplify figure/data generation
-
-`scripts/fetch_external_assets.py` should fetch only externally sourced assets still used by the paper, with explicit provenance.
-
-Consolidate deterministic locally rendered figures into clearly named build scripts.
-
-Retire phase-numbered generators once their data model is stable.
+Keep generated evidence code only where a figure remains referenced by the manuscript. Use stable Bun/TypeScript scripts and retire phase-specific Python generators when their output is unused.
 
 ## Workstream E — Direct school-guide reconciliation
 
@@ -315,23 +294,21 @@ Read the school PDF directly and resolve:
 
 Then encode only verified requirements in `SCHOOL_RULES.md` and the Typst presentation layer.
 
-## Workstream F — Generic IDE completion
+## Workstream F — Generic IDE
 
 Authority:
 - `web/PLAN.md`
 
-Keep this work independent from manuscript content.
+The generic IDE completion lane was merged in PR #152.
 
-Complete:
+Preserve:
 - guided GitHub authentication;
-- cross-surface tab drag/drop;
+- cross-surface tab movement;
 - draggable/persistent root sidebar/panel sizing;
 - real-browser acceptance;
-- generic workbench validation.
+- generic repository behavior independent from thesis-specific assumptions.
 
-Typst editing remains source editing through Monaco.
-
-Canonical paper compilation remains a repository pipeline responsibility.
+Typst editing remains source editing through Monaco. Canonical paper compilation remains a repository pipeline responsibility.
 
 ## Workstream G — Workflow and release cleanup
 
@@ -339,7 +316,6 @@ Primary files:
 - `.github/workflows/ci.yml`
 - `.github/workflows/deploy-docs.yml`
 - `.github/workflows/release.yml`
-- `.github/workflows/agent.yml`
 
 Final workflow responsibilities:
 
@@ -361,7 +337,7 @@ Publish:
 Publish the canonical submission/publication artifact set tied to an exact commit SHA.
 
 ### Automation surface
-Keep only repository-triggered automation that serves the final product.
+Keep only CI, Pages deployment, and explicit exact-revision Release automation.
 
 Use minimal permissions and simple triggers.
 
@@ -407,22 +383,17 @@ Deliver as a PR for review.
 ### Phase 4 — Publication pipeline
 Can overlap with Phases 1–3 where file ownership is independent.
 
-- simplify Makefile/scripts;
-- align site manifest/content index;
-- establish canonical artifact set;
-- add compiled single-file Typst generation if required;
-- make validators test the final repository contract.
+- use the root Bun workspace as the only orchestration layer;
+- keep PDF/HTML/Markdown as the canonical final publication set;
+- remove duplicate review artifacts and obsolete Make/Python/shared-pipeline machinery;
+- validate through real compilation, web checks, browser acceptance, Pages assembly, and exact-revision release.
 
 Deliver as a PR for review.
 
 ### Phase 5 — IDE + workflows
-Runs independently where possible.
+The generic IDE lane is merged. Keep CI/Pages/Release aligned with the root Bun workspace and preserve browser acceptance in the canonical gate.
 
-- finish `web/PLAN.md`;
-- simplify CI/Pages/Release workflows around the final commands/artifacts;
-- keep paper and IDE validation in one canonical CI gate.
-
-Deliver as a PR for review.
+Deliver workflow changes with the publication-pipeline PR when they share the same command surface.
 
 ### Phase 6 — Final integration
 After all review PRs are accepted.
@@ -448,10 +419,9 @@ A PR is ready for review only when its relevant validation passes and its diff c
 
 The final repository should support a small, obvious command surface that covers:
 
-- canonical publication build;
-- repository validation;
-- generic web validation;
-- Pages build;
-- release artifact generation.
+- `bun run publication`;
+- `bun run check`;
+- `bun run web:acceptance`;
+- `bun run site`.
 
-The exact command names may be simplified during Workstream D, but CI and documentation must use the same canonical commands.
+CI, Pages, Release, and documentation must invoke this same command surface rather than maintain a second orchestration path.

@@ -23,41 +23,23 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Set up Typst
         uses: typst-community/setup-typst@v5
 
-      - name: Install web dependencies
-        run: bun install --cwd web
+      - name: Install workspace dependencies
+        run: bun install
 
-      - name: Validate generic web workbench
-        run: bun run --cwd web check
+      - name: Build publication and validate web
+        run: bun run check
 
       - name: Install Chromium for browser acceptance
         run: cd web && bunx playwright install --with-deps chromium
 
       - name: Run browser acceptance
-        run: bun run --cwd web acceptance
+        run: bun run web:acceptance
 
-      - name: Validate Make web target
-        if: github.event_name != 'push'
-        run: make web-check
-
-      - name: Validate canonical repository contract
-        run: make ci BOOK=DarkFactory
-
-      - name: Validate canonical Pages/site target
-        if: github.event_name != 'push'
-        run: make site BOOK=DarkFactory
+      - name: Assemble Pages output
+        run: bun run site:assemble
