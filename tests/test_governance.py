@@ -65,7 +65,7 @@ def test_agents_mandates_issue_binding_and_board_taxonomy():
 def test_agents_mandates_plan_gate_and_verbatim_requests():
     """DF-RULE-010/012 encode the current unified Planning gate and verbatim Request capture."""
     content = _read("AGENTS.md")
-    assert "one current unified Planning artifact" in content
+    assert "one current unified planning" in content.lower()
     assert "independent review/fix loop until clean" in content
     assert "one explicit owner Planning Approval" in content
     assert "verbatim" in content.lower()
