@@ -8,6 +8,8 @@ DarkFactory executes delivery as a declarative graph of agent, gate, automation 
 
 Planning, implementation, review/fix, alignment and deterministic effects are orchestrated by the graph/runtime. Static CI checks may remain external and are observed through check-reference nodes.
 
+Execution is serializable per durable run identity. Concurrent ingress for the same run cannot execute the same transition concurrently or overwrite a newer persisted transition. External effects are separately serialized by deterministic effect identity and reconciled after ambiguous interruption.
+
 ## Consequences
 
-Execution state is durable and resumable. Workflow topology has one declarative source rather than duplicated script orchestration.
+Execution state is durable and resumable. Workflow topology has one declarative source rather than duplicated script orchestration, and duplicate/out-of-order ingress cannot create duplicate logical mutations.
