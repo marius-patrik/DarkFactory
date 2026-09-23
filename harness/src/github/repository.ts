@@ -229,9 +229,7 @@ export class GitHubRepository {
 				run.name,
 				run.status !== "completed"
 					? "pending"
-					: run.conclusion === "success" || run.conclusion === "neutral" || run.conclusion === "skipped"
-						? "success"
-						: "failure",
+					: run.conclusion === "success" ? "success" : "failure",
 			);
 		for (const status of statuses.statuses ?? [])
 			if (!values.has(status.context))
@@ -264,7 +262,8 @@ export class GitHubRepository {
 
 	async getDefaultBranchHeadSha(): Promise<string> {
 		const repoInfo = await this.#client.rest<{ default_branch?: string }>("GET", this.#path(""));
-		const defaultBranch = repoInfo.default_branch ?? "main";
+		const defaultBranch = repoInfo.default_branch;
+		if (!defaultBranch) throw new Error(`GitHub repository response did not declare a default branch for ${this.slug}`);
 		const refInfo = await this.#client.rest<{ object?: { sha?: string } }>(
 			"GET",
 			this.#path(`/git/ref/heads/${encodeURIComponent(defaultBranch)}`),
