@@ -98,7 +98,8 @@ Run on stable final owners:
 - hooks/rules;
 - provider login/accounts + CLI/TUI;
 - Epics/stacks/recovery;
-- Web/browser transport/operator surfaces.
+- Web/browser transport/operator surfaces;
+- fine-grained safe parallel chunks in isolated engine worktrees through the same graph/git substrate.
 
 Concrete TUI recovery is reused only if actual recoverable bytes exist; absence of an unproven historical recovery ref is not a blocker.
 

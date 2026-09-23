@@ -187,6 +187,8 @@ Model claims such as “pushed”, “merged”, “committed” or “resolved�
 - Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
 - Quota/provider failover is durable and does not repeat already-completed deterministic effects.
 - Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.
+- Planning decomposes work into the smallest practical independently verifiable chunks with explicit dependencies, scope/file ownership and minimum capability/tier metadata sufficient to decide safe parallelism.
+- Independent chunks may execute concurrently only through the same persisted graph runtime in isolated engine worktrees backed by the one deterministic git substrate. Verified chunk commits integrate in dependency order; sibling failure, interruption and conflict repair remain resumable without repeating completed effects.
 - Turn limits and elapsed-time limits are independent safety bounds.
 - Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.
 - The runtime remains containerizable/non-root for CI execution.
