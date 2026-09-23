@@ -4,7 +4,7 @@ title: CI readiness
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [system-audit]
+owners: [ci]
 ---
 # Rule 6 — CI readiness and verification
 

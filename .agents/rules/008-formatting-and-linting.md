@@ -4,7 +4,7 @@ title: Formatting and linting
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [tests-audit]
+owners: [hooks, ci]
 ---
 # Rule 8 — Automated formatting and linting
 

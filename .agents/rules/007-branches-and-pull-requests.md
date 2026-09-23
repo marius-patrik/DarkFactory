@@ -4,7 +4,7 @@ title: Branches and pull requests
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [harness-auth]
+owners: [git, github]
 ---
 # Rule 7 — Branch and pull request workflow
 

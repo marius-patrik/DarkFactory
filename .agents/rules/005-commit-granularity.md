@@ -4,7 +4,7 @@ title: Commit granularity
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [system-audit]
+owners: [hooks, release]
 ---
 # Rule 5 — Commit granularity
 

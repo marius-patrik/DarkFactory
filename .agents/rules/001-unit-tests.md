@@ -4,7 +4,7 @@ title: Unit tests
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [tests-audit]
+owners: [ci]
 ---
 # Rule 1 — Unit tests
 

@@ -4,7 +4,7 @@ title: English language consistency
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [system-audit]
+owners: [hooks]
 ---
 # Rule 4 — English language consistency
 

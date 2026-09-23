@@ -4,7 +4,7 @@ title: Inline docstrings and generated documentation
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [docs-site, tests-audit]
+owners: [docs, ci]
 ---
 # Rule 2 — Inline documentation and generated documentation
 
