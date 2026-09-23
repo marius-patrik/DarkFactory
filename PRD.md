@@ -4,7 +4,7 @@
 
 **DarkFactory-Paper** is the complete academic publication system for the thesis:
 
-**Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory**
+**Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje**
 
 The primary product is the thesis itself. The repository also contains the evidence, source, build pipeline, publication outputs, and generic GitHub workbench required to make the work reproducible and reviewable.
 

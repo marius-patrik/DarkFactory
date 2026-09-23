@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 PUBLICATION = {
-    "title": "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory",
+    "title": "Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje",
     "final": "prace.pdf",
     "review": "prace-review.pdf",
     "artifacts": {

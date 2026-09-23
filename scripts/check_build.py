@@ -150,7 +150,7 @@ main_source = sources[paper_file]
 require_contract(
     main_source,
     (
-        "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory",
+        "Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje",
         "DarkFactory",
         '#bibliography("bib/references.bib"',
     ),

@@ -13,16 +13,16 @@
   mesto: "Hradci Králové",
   rok: 2026,
   annotation-cs: [
-    Odborná práce vymezuje vztah mezi jazykovým modelem, agentem a harnessem v agentickém vývoji softwaru. Popisuje postupy Agentického inženýrství, zejména návrh zadání a kontextu, ověřování, orchestraci a lidskou integraci. Praktická část analyzuje pipeline DarkFactory v prostředí GitHub Actions. Na základě inspekce zdrojových kódů a automatizovaných testů popisuje řízený průchod požadavku, kontrolu rozsahu změn, checkpointing a lidské schvalovací brány.
+    Práce vymezuje vztah mezi jazykovým modelem, agentem a harnessem v AI-asistovaném vývoji softwaru. Popisuje postupy Agentického inženýrství, zejména návrh zadání a kontextu, ověřování, orchestraci a zapojení člověka. Praktická část analyzuje pipeline DarkFactory. Popisuje řízený průchod požadavku, kontrolu rozsahu změn, checkpointing a lidské schvalovací brány.
   ],
   abstract-en: [
-    This thesis defines the relationship between a language model, an agent, and a harness in agentic software development. It describes Agentic Engineering practices, especially task and context design, verification, orchestration, and human integration. The practical part analyses the DarkFactory pipeline running on GitHub Actions. Using source code inspection and automated tests, it describes a governed request workflow, change scope control, checkpointing, and human approval gates.
+    The thesis defines the relationship between a language model, an agent, and a harness in agentic software development. It describes Agentic Engineering practices, especially task and context design, verification, orchestration, and human integration. The practical part analyses the DarkFactory pipeline. It describes a governed request workflow, change scope control, checkpointing, and human approval gates.
   ],
 )
 
 #let nadpis-bez-cisla(text-nadpisu) = heading(numbering: none, outlined: true, bookmarked: false, text-nadpisu)
 
-#set document(title: "Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory", author: meta.autor)
+#set document(title: "Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje", author: meta.autor)
 #set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm), footer: none)
 #set text(font: PISMO, size: 12pt, lang: "cs", hyphenate: true)
 #set par(justify: true, leading: 1.5 * 0.65em, spacing: 16pt, first-line-indent: 1.25cm)
@@ -65,7 +65,7 @@
   #v(0.5cm)
   #image("img/logo.jpeg", width: 3cm)
   #v(1fr)
-  #text(size: 24pt, weight: "bold", hyphenate: false)[Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory]
+  #text(size: 24pt, weight: "bold", hyphenate: false)[Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje]
   #v(0.7cm)
   #text(size: 15pt, tracking: 2pt)[ODBORNÁ PRÁCE]
   #v(1fr)
@@ -105,28 +105,26 @@ V #meta.mesto dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce
 
 #heading(level: 1)[Úvod]
 
-Nástroje založené na jazykových modelech dnes doplňují kód, odpovídají na dotazy v IDE a v posledních verzích pracují přímo v repozitáři — spouštějí příkazy, testy a připravují změny k revizi @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. Část práce, kterou dosud vývojář prováděl sám, tak lze přenést na agenta.
-
-Z toho však neplyne, že by autonomní programovací agenti (coding agents) představovali běžnou praxi. Podle odhadu Gradually tvoří jejich pravidelní uživatelé jen malou část všech uživatelů generativní AI @gradually-ai-usage-2026.
+Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny v repozitáři @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak pravidelné využívání plnohodnotných agentických systémů zůstává omezeno na přibližně 0,36~% světové populace @gradually-ai-usage-2026.
 
 #figure(
   image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
-  caption: [Odhad rozdělení uživatelů generativní AI podle nejpokročilejší používané kategorie. Pravidelní uživatelé AI coding agents tvoří podle Gradually malou část celku @gradually-ai-usage-2026.],
+  caption: [Odhad rozdělení uživatelů generativní AI podle nejpokročilejší používané kategorie. Pravidelní uživatelé AI coding agents tvoří podle Gradually přibližně 0,36~% světové populace, tedy zhruba 30 milionů lidí @gradually-ai-usage-2026.],
 ) <fig-gradually-usage>
 
 Aby mohl agent samostatně pracovat na projektu, nestačí pouhé generování odpovědí. Potřebuje kontext z repozitáře, přístup k prostředí, nástroje pro spouštění testů a CI, uchování stavu mezi jednotlivými kroky a vymezený bod, v němž člověk rozhodne o přijetí výsledku @anthropic-harness-design @anthropic-managed-agents.
 
 #heading(level: 2)[Cíl a vymezení] <intro-goal>
 
-Cílem práce je ukázat, jak se jazykový model propojuje s prostředím vývoje softwaru, jakou roli při tom hraje #strong[harness] a jaké postupy umožňují využívat agenty účinně a kontrolovaně.
+Cílem práce je ukázat, jak harness dělá z jazykového modelu autonomního agenta a jaké postupy umožňují využívat agenty účinně a kontrolovaně.
 
-Praktická část analyzuje pipeline DarkFactory implementovanou v jazyce Python a ověřuje vybrané mechanismy řízení, kontroly změn a pokračování běhu na základě zdrojového kódu, testů a záznamů CI.
+Praktická část analyzuje DarkFactory, na poskytovateli nezávislou pipeline pro AI-asistovaný softwarový vývoj implementovanou v jazyce Python.
 
 #heading(level: 1)[Teoretická část]
 
 #heading(level: 2)[Jazykový model v agentním systému] <theory-first>
 
-Jazykový model (#strong[LLM]) předpovídá další token na základě předchozích. Architektura Transformer zpracovává vztahy mezi tokeny pomocí mechanismu attention @vaswani2017 @brown2020. Při inferenci model zpracuje obsah context window a vygeneruje odpověď. Sám však soubory nemění ani nespouští příkazy — provedení navržené akce zajišťuje harness @anthropic2024tooluse.
+Jazykový model (#strong[LLM]) předpovídá další token na základě #strong[kontextu]. #strong[Transformer] zpracovává vztahy mezi nimi pomocí mechanismu attention @vaswani2017 @brown2020. Při inferenci model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů. Jednotlivé volání však samo nevybírá další kontext, nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje a jejich výsledky vrací do dalšího kroku @anthropic2024tooluse.
 
 Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi vektory slov king a queen @mikolov2013linguistic.
 
@@ -137,42 +135,43 @@ Vektorové reprezentace, označované jako #strong[embeddingy], zachycují séma
 
 #heading(level: 3)[Context window a kompakce]
 
-#strong[Context window] vymezuje informace dostupné při jednom volání modelu — instrukce, části repozitáře, historii nástrojů, výsledky předchozích kroků. Samotná velikost okna nezaručuje, že model všechny podstatné informace využije; schopnost modelu informaci správně vybavit a uplatnit závisí i na jejím umístění v rámci kontextu @liu2024.
+#strong[Kontextové okno] (*context window*) tvoří pracovní kontext jednoho volání modelu. Může obsahovat instrukce, části repozitáře, historii volání nástrojů i výsledky předchozích kroků. Jeho kapacita však sama o sobě nezaručuje, že model všechny podstatné informace správně využije: úspěšnost jejich vybavení závisí také na umístění v kontextu a může s rostoucí délkou vstupu klesat @liu2024. Toto postupné zhoršování práce s nahromaděným kontextem se označuje jako #strong[context rot] @anthropic-context-engineering.
 
-Při komplexnějších úlohách proto harness vybírá, jaké informace do dalšího kroku předá. Kompakce nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků, takže není nutné do každého volání vkládat celý přepis konverzace @anthropic-context-engineering.
+Kompakce po překročení stanoveného limitu nahrazuje starší průběh strukturovaným souhrnem klíčových rozhodnutí a dosažených výsledků. Do dalšího volání tak není nutné vkládat celý přepis předchozí interakce @anthropic-context-engineering.
 
 #heading(level: 2)[Agent a harness]
-
-Tradiční integrovaná vývojová prostředí (IDE) sloužila jako pasivní editory poskytující asistenci lidskému programátorovi. Naproti tomu agentní harness nepředstavuje editor, nýbrž aktivní běhové prostředí (runtime). Jazykový model sám o sobě postrádá schopnost přímé interakce se souborovým systémem či terminálem; funguje jako bezstavový predikční modul. Harness přebírá roli operačního rozhraní: zpřístupňuje sadu povolených nástrojů, dynamicky sestavuje a komprimuje context window, udržuje perzistentní stav běhu a zaznamenává pozorování v pracovním stromu repozitáře @anthropic-harness-design @anthropic-managed-agents.
+Zásadní rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v architektuře použitého modelu, nýbrž v míře delegace provádění. Chatbot setrvává v roli externího rádce: uživatel musí manuálně kopírovat úryvky kódu, dodávat kontext a spouštět navržené příkazy. Agent naproti tomu prostřednictvím harnessu získává přímý přístup k nástrojům repozitáře. Sám prochází souborovou strukturu, upravuje kód, spouští testy a na základě chybových výstupů samostatně koriguje své změny @anthropic2024tooluse @openai-agents-sandbox. Tento posun transformuje roli člověka z přímého vykonavatele na dohlížejícího architekta.
 
 #heading(level: 3)[Smyčka]
 
-Základním mechanismem agentního provádění je iterativní řídicí smyčka. Na rozdíl od jednorázové generace odpovědi u chatbotu probíhá interakce v cyklu podle vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022. Model v každém kroku analyzuje aktuální stav kontextu, zformuluje vnitřní uvažování a navrhne konkrétní volání nástroje ve formě strukturovaného požadavku. Harness tuto akci provede v prostředí projektu, zachytí výsledek a vrátí jej modelu jako nové pozorování. Smyčka pokračuje, dokud model nedosáhne cíle nebo nenarazí na bezpečnostní limit kroků či tokenů.
+Základním mechanismem agentického systému je iterativní řídicí smyčka. Na rozdíl od jednorázové generace odpovědi u chatbota probíhá interakce v cyklu podle vzoru #strong[ReAct] (*Reasoning and Acting*) @yao2022. Model v každém kroku analyzuje aktuální stav kontextu, zformuluje vnitřní uvažování a navrhne konkrétní volání nástroje ve formě strukturovaného požadavku. Harness tuto akci provede v prostředí projektu, zachytí výsledek a vrátí jej modelu jako nové pozorování. Smyčka pokračuje, dokud model nedosáhne cíle nebo nenarazí na bezpečnostní limit kroků či tokenů.
 
 #figure(
   image("img/react-loop.svg", width: 75%),
   caption: [Agentní smyčka ReAct: model navrhne akci, harness ji zprostředkuje a vykoná v prostředí a pozorování se vrací do dalšího kroku; princip podle @yao2022.],
 ) <fig-react-loop>
 
-#heading(level: 3)[Agent a chatbot]
-
-Zásadní rozdíl mezi konverzačním chatbotem a autonomním agentem nespočívá v architektuře použitého modelu, nýbrž v míře delegace provádění. Chatbot setrvává v roli externího rádce: uživatel musí manuálně kopírovat úryvky kódu, dodávat kontext a spouštět navržené příkazy. Agent naproti tomu prostřednictvím harnessu získává přímý přístup k nástrojům repozitáře. Sám prochází souborovou strukturu, upravuje kód, spouští testy a na základě chybových výstupů samostatně koriguje své změny @anthropic2024tooluse @openai-agents-sandbox. Tento posun transformuje roli člověka z přímého vykonavatele na dohlížejícího architekta.
-
 #heading(level: 2)[Agentické inženýrství]
 
-Tradiční softwarové inženýrství se soustředí na návrh algoritmů a systémových architektur. Agentické inženýrství (#strong[Agentic Engineering]) naproti tomu představuje disciplínu zaměřenou na systematický návrh podmínek, v nichž může stochastický jazykový model vykonávat programátorské úlohy deterministicky, bezpečně a v souladu s pravidly projektu @anthropic-harness-design @anthropic-managed-agents. Zahrnuje dekompozici úloh, precizní ohraničení kontextu, konstrukci nástrojových rozhraní, verifikační zpětné vazby a mechanismy řízené integrace.
+Agentické inženýrství (#strong[Agentic Engineering]) představuje soubor postupů pro systematický návrh podmínek, v nichž může jazykový model vykonávat inženýrské úlohy účinně, kontrolovaně, opakovatelně a v souladu s pravidly projektu @anthropic-harness-design @anthropic-managed-agents. Zahrnuje dekompozici úloh, přesné ohraničení kontextu, konstrukci nástrojových rozhraní, verifikační zpětnou vazbu a mechanismy řízené integrace.
 
 #heading(level: 3)[Zadání a kontext]
 
-Spolehlivé delegování práce vyžaduje explicitní definici cíle, rozsahu a podmínek přijetí. Specifikace musí vymezit nejen to, co se má změnit, ale i jaké komponenty musí zůstat nedotčeny. Zatímco #strong[prompt engineering] formuluje instrukce a direktivy pro konkrétní inferenční krok, #strong[context engineering] dynamicky vybírá a ohraničuje informace vstupující do context window — pravidla repozitáře, relevantní symboly abstraktního syntaktického stromu (AST), historii kroků a výstupy nástrojů @openai-prompt-engineering @anthropic-context-engineering. Standardizovaný soubor AGENTS.md umožňuje tato pravidla a příkazy sestavení uchovat přímo v kořeni repozitáře @agents-md.
+Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu, omezení a podmínek přijetí. Specifikace popisuje nejen požadovaný výsledek, ale také části systému, které se měnit nemají, a způsob, jakým bude výsledek ověřen. Tento přístup, označovaný jako #strong[spec-first] nebo *spec-driven development*, dává agentovi před implementací měřitelné hranice a člověku podklad pro posouzení výsledku.
 
-Harness rozšiřuje své schopnosti prostřednictvím modulárních architektonických prvků. Rozšíření #strong[Skills] představují procedurální instrukce a skripty pro specializované doménové operace @agentskills-spec; mechanismus #strong[Hooks] zachycuje události běhu a umožňuje vynutit validační pravidla před akcí či po ní @openai-agents-lifecycle. Standard #strong[Model Context Protocol] (#strong[MCP]) sjednocuje napojení externích nástrojů a datových zdrojů na harness prostřednictvím otevřeného protokolu klient-server @mcp-specification. Tyto komponenty tvoří řízenou infrastrukturu harnessu, nikoli samostatné autonomní agenty.
+#strong[Prompt engineering] se soustředí na formulaci instrukcí, omezení, příkladů a očekávaného výstupu konkrétního inferenčního kroku. #strong[Context engineering] řeší širší a průběžný výběr, uspořádání, obnovování a kompakci informací, které má model v daném kroku k dispozici @openai-prompt-engineering @anthropic-context-engineering. Projektová pravidla a validační příkazy lze uchovat přímo v repozitáři například ve standardizovaném souboru `AGENTS.md`, takže je harness může připojit k relevantní úloze @agents-md.
+
+Specifikace a kontext se promítají do provádění prostřednictvím schopností harnessu. #strong[Nástroje] umožňují agentovi číst a upravovat soubory, vyhledávat nebo spouštět příkazy; #strong[Skills] spojují opakovaně použitelné instrukce, skripty a zdroje pro určitý typ úlohy @agentskills-spec. #strong[Hooks] reagují na události životního cyklu a mohou před akcí či po ní vynutit deterministickou kontrolu @openai-agents-lifecycle. #strong[Model Context Protocol] (#strong[MCP]) standardizuje napojení externích nástrojů a datových zdrojů prostřednictvím rozhraní klient--server @mcp-specification. Nejde o samostatné agenty, ale o řízené části runtime, jejichž výběr, oprávnění a výstupy určují, co může agent skutečně provést a ověřit.
+
+Po každé akci harness vrací agentovi pozorování, například výsledek testu, překladače nebo stav pracovního stromu. Agent podle něj upraví další krok a pokračuje, dokud nesplní podmínky přijetí nebo nenarazí na stanovený limit. Takový #strong[goal loop] mění jednorázové generování v řízený proces, v němž verifikační zpětná vazba průběžně koriguje další postup @yao2022 @anthropic-harness-design.
 
 #heading(level: 3)[Orchestrace a lidská integrace]
 
-Při řešení rozsáhlých úloh monolitický agent často selhává kvůli degradaci pozornosti v dlouhém kontextu. Proto se uplatňuje dekompozice mezi více spolupracujících agentů. Ve vzoru #strong[coordinator/subagent] hlavní agent deleguje izolovaný podúkol s čistým kontextovým oknem na specializovaného subagenta a přebírá pouze výslednou syntézu. Vzor #strong[workflow graph] definuje deterministický stavový automat či orientovaný graf závislostí a větvení mezi vývojovými fázemi; architektura #strong[swarm] pak označuje volnější spolupráci skupiny agentů s dynamickým předáváním řízení @openai-agent-orchestration @openai-swarm.
+Rozsáhlou úlohu lze rozdělit do více agentních běhů, pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat #strong[paralelní pracovníci], zatímco #strong[workflow graph] předem určuje závislosti, pořadí a větvení fází. #strong[Swarm] používá volnější koordinaci, při níž si specializovaní agenti dynamicky předávají řízení podle aktuálního stavu úlohy @openai-agent-orchestration @openai-swarm.
 
-Princip #strong[Human-in-the-loop] (#strong[HITL]) stanovuje formální kontrolní brány, kde automatizovaný postup vyžaduje explicitní lidské rozhodnutí — schválení specifikace, potvrzení implementačního plánu nebo akceptaci výsledného diffu. Integrace změn do hlavní vývojové větve vyžaduje nejen technické ověření v CI, ale především lidskou revizi a převzetí inženýrské odpovědnosti @github-branches @github-pull-requests.
+Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol.
+
+Princip #strong[human-in-the-loop] (#strong[HITL]) doplňuje automatizované smyčky o kontrolní brány, v nichž je vyžadováno explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak nadále odpovídá za záměr, architekturu a integraci, zatímco agent provádí ohraničenou implementační práci. Začlenění změn do hlavní větve vyžaduje vedle technického ověření v CI také lidskou revizi a převzetí odpovědnosti za výsledek @github-branches @github-pull-requests.
 
 #heading(level: 1)[Praktická část]
 
@@ -252,13 +251,13 @@ Softwarové inženýrství nabízí pro nasazení agentů zásadní výhodu: mo�
 
 #heading(level: 1)[Závěr]
 
-Jazykový model sám o sobě vytváří výstup pouze v rámci context window. Skutečný agent z něj vzniká až propojením s nástroji, prostředím, stavem a pozorováním — propojením, které zajišťuje harness @anthropic2024tooluse @anthropic-harness-design.
+Jazykový model sám o sobě pouze generuje výstup v závislosti na vstupním kontextu. Agent z něj vzniká až propojením s nástroji, prostředím, stavem a pozorováním, které zajišťuje harness @anthropic2024tooluse @anthropic-harness-design. Ani toto propojení však pro účinné nasazení ve vývoji softwaru nestačí bez postupů Agentického inženýrství, které vymezují rozsah autonomie, určují body lidského rozhodnutí a zajišťují ověřování výsledků.
 
-Analýza pipeline DarkFactory doložila, jak takový harness v praxi organizuje práci: řídí průchod požadavku, vytváří izolovanou větev, ověřuje výsledek testy, kontroluje rozsah změn, ukládá checkpoint a předává výsledek k lidské revizi. Stanovený cíl práce — vymezit vztah modelu, harnessu a Agentického inženýrství a ověřit vybrané mechanismy na reálném artefaktu — byl tímto naplněn.
+Analýza pipeline DarkFactory doložila, jak lze takový systém realizovat v praxi: řídí průchod požadavku, vytváří izolovanou větev, ověřuje výsledek testy, kontroluje rozsah změn, ukládá checkpoint a předává výsledek k lidské revizi.
 
 Úloha vývojáře se v tomto uspořádání posouvá od rutinního psaní kódu k preciznímu návrhu zadání, vymezení mantinelů a určení bodů, v nichž je nezbytné lidské rozhodnutí.
 
-Význam dosažených zjištění spočívá v tom, že autonomie v softwarovém inženýrství nemusí znamenat ztrátu kontroly. Správně navržený harness umožňuje delegovat netriviální vývojové úlohy na stochastické modely, aniž by byla ohrožena stabilita hlavní vývojové větve repozitáře nebo transparentnost změn. Budoucí rozvoj oboru bude proto určován nejen pokrokem v parametrické kapacitě modelů, ale především inženýrskou vyspělostí běhových prostředí a verifikačních architektur.
+Zjištění ukazují, že samotná autonomie agenta nenahrazuje řízení vývojového procesu. Správně navržený harness spolu s postupy Agentického inženýrství umožňuje delegovat netriviální vývojové úlohy na stochastické modely a současně chránit stabilitu hlavní vývojové větve i transparentnost provedených změn. Rozsah této práce však neumožňuje zobecnit výsledky na jiné harnessy ani posoudit kvalitu kódu vytvářeného různými modely.
 
 // ── Zadní část ───────────────────────────────────────────
 #pagebreak(weak: true)
