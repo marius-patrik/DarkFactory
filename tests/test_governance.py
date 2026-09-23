@@ -54,7 +54,9 @@ def test_agents_mandates_branches_prs_ci_and_protection():
 def test_agents_mandates_issue_binding_and_board_taxonomy():
     """DF-RULE-009 binds every delivery PR to Requests and defines the seven project states."""
     content = _read("AGENTS.md").lower()
-    assert "explicitly bind every request" in content
+    assert "explicitly bind every **active** request" in content
+    assert "consolidated request" in content
+    assert "failures already associated with a delivery pr/request" in content
     assert "status uses one canonical reconciliation model" in content
     for status in ("backlog", "todo", "in progress", "blocked", "done", "superseded", "dropped"):
         assert status in content, f"AGENTS.md must define the {status!r} status"
@@ -68,6 +70,23 @@ def test_agents_mandates_plan_gate_and_verbatim_requests():
     assert "one explicit owner Planning Approval" in content
     assert "verbatim" in content.lower()
     assert "no separate interpretation approval gate" in content.lower()
+
+def test_agents_supports_coherent_consolidation_and_bootstrap_repair():
+    """Large coupled work may use one Request/PR, with a narrow repair exception for df itself."""
+    content = _read("AGENTS.md").lower()
+    assert "decomposition follows delivery independence, not size alone" in content
+    assert "one request/planning record and one delivery pr" in content
+    assert "bootstrap/completion exception" in content
+    assert "active request/planning record" in content
+
+
+def test_pull_request_template_uses_dynamic_taxonomy_and_quality_contract():
+    """The PR template must not duplicate repo.df taxonomy or obsolete fixed CI job names."""
+    template = _read(".github", "PULL_REQUEST_TEMPLATE.md")
+    assert "repo.df-declared scope(s)" in template
+    assert "detected/capability-resolved quality actions" in template
+    assert "area:agents" not in template
+    assert "child Plan issue" not in template
 
 
 def test_agents_points_repository_taxonomy_to_repo_df():
@@ -86,7 +105,7 @@ def test_prd_is_the_normative_product_document_with_explicit_authority_hierarchy
     assert "Status: NORMATIVE" in prd
     for authority in (
         "`PRD.md` defines product requirements and architecture",
-        "Current Request bodies define approved feature-specific behavior",
+        "Current active Request/Planning records define approved feature-specific behavior and executable delivery scope",
         "Accepted ADRs",
         "`repo.df`, `config.df`, `docs.df`",
         "`.agents/rules/*.md`",

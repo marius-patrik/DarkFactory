@@ -45,13 +45,15 @@ permissions:
   contents: read
   issues: write
 
-# No concurrency group: a queued run is cancelled when another joins the same one, and a cancelled
-# observer is a failure nobody hears about - exactly what this workflow exists to prevent. Filing is
-# idempotent anyway, since the issue is found by a marker rather than created blindly.
+# PR/topic-branch failures already have durable check/run evidence on their bound delivery work and
+# must not create new implementation Requests. This observer opens/resolves a deduplicated incident
+# only for failures on the repository default branch (workflow_call remains available to callers).
+# No concurrency group: default-branch incident filing is idempotent by workflow marker.
 
 jobs:
   report:
     name: report-failure
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == github.event.repository.default_branch }}
     runs-on: ubuntu-latest
     env:
       # The secrets context cannot be read from a step-level `if`, so the test
