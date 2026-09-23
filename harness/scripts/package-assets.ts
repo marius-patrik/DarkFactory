@@ -50,6 +50,8 @@ export async function packageAssets(
 		join(dist, "photon_rs_bg.wasm"),
 	);
 	await cp(join(root, "assets"), join(dist, "assets"), { recursive: true });
+	// First-party skills have one canonical source under .agents/skills; never commit packaged copies under harness/assets.
+	await cp(join(dirname(root), ".agents", "skills"), join(dist, "assets", "skills"), { recursive: true });
 
 	const candidates = nativeAssetCandidates(platform, arch);
 	if (candidates.length === 0) return;
