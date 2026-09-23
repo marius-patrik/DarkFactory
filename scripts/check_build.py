@@ -119,6 +119,9 @@ required_sources = (
     Path("web/src/settings-view.tsx"),
     Path("web/src/main.tsx"),
     Path("web/src/workbench.css"),
+    Path("web/src/github/auth.ts"),
+    Path("web/src/github/auth-controller.tsx"),
+    Path("web/src/workbench/root-layout.css"),
     Path("web/src/workbench/model.ts"),
     Path("web/src/workbench/registry.tsx"),
     Path("web/src/workbench/runtime.tsx"),
@@ -238,8 +241,34 @@ for dependency in (
 app = sources[Path("web/src/app.tsx")]
 require_contract(
     app,
-    ("WorkbenchShell",),
+    ("GithubAuthController", "WorkbenchShell"),
     "workbench entry point",
+)
+
+github_auth = sources[Path("web/src/github/auth.ts")]
+require_contract(
+    github_auth,
+    (
+        "beginGithubSignIn",
+        "completeGithubSignIn",
+        "code_challenge_method",
+        "PUBLIC_GITHUB_OAUTH_CLIENT_ID",
+        "PUBLIC_GITHUB_AUTH_BROKER_URL",
+        "sessionStorage",
+    ),
+    "guided GitHub authentication",
+)
+
+root_layout = sources[Path("web/src/workbench/root-layout.css")]
+require_contract(
+    root_layout,
+    (
+        "root-resizer-column",
+        "root-resizer-row",
+        "root-resizing iframe",
+        "workspace-github-auth-button",
+    ),
+    "resizable root workbench layout",
 )
 
 settings = sources[Path("web/src/settings.ts")]
@@ -270,7 +299,9 @@ require_contract(
         "pinned: boolean",
         "state: SerializableTabState",
         "export type PersistedWorkbench",
-        "version: 1",
+        "export type WorkbenchRootSizes",
+        "export type WorkbenchDropTarget",
+        "version: 2",
     ),
     "unified workbench tab model",
 )
@@ -309,6 +340,11 @@ require_contract(
         'createWorkbenchTab("problems", { id: "problems", pinned: true })',
         'createWorkbenchTab("output", { id: "output", pinned: true })',
         "useWorkbenchShortcuts",
+        "transferTab",
+        "beginResize",
+        "root-resizer-primary",
+        "root-resizer-secondary",
+        "root-resizer-panel",
         "<Omnibar",
     ),
     "four-surface workbench shell",
@@ -322,6 +358,9 @@ require_contract(
         "LauncherButton",
         "api.fromJSON",
         "api.onDidLayoutChange",
+        "WORKBENCH_TAB_MIME",
+        "dropCrossRootTab",
+        "transferTab",
         "rightHeaderActionsComponent",
     ),
     "Dockview workbench surface",
@@ -345,8 +384,10 @@ persistence = sources[Path("web/src/workbench/persistence.ts")]
 require_contract(
     persistence,
     (
-        'const STORAGE_KEY = "workbench-layout-v1"',
-        "version: 1",
+        'const STORAGE_KEY = "workbench-layout-v2"',
+        'const LEGACY_STORAGE_KEY = "workbench-layout-v1"',
+        "version: 2",
+        "DEFAULT_ROOT_SIZES",
         "loadWorkbench",
         "saveWorkbench",
     ),

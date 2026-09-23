@@ -10,7 +10,8 @@
     "lint": "biome lint --max-diagnostics=none src rsbuild.config.ts",
     "format": "biome format --write src rsbuild.config.ts package.json tsconfig.json biome.json components.json",
     "format:check": "biome format src rsbuild.config.ts package.json tsconfig.json biome.json components.json",
-    "check": "biome lint --diagnostic-level=error --max-diagnostics=none src rsbuild.config.ts && tsc --noEmit && rsbuild build"
+    "check": "biome lint --diagnostic-level=error --max-diagnostics=none src rsbuild.config.ts && tsc --noEmit && rsbuild build",
+    "acceptance": "playwright test"
   },
   "dependencies": {
     "@dagrejs/dagre": "3.1.1",
@@ -42,6 +43,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "tailwindcss": "4.3.3",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "@playwright/test": "1.55.1"
   }
 }

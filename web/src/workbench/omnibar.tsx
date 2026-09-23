@@ -440,7 +440,9 @@ export const Omnibar = forwardRef<OmnibarControl>(function Omnibar(_, ref) {
           ref={inputRef}
           value={query}
           onFocus={() => setFocused(true)}
-          onBlur={() => window.setTimeout(() => setFocused(false), 100)}
+          onBlur={() => window.setTimeout(() => {
+            if (document.activeElement !== inputRef.current) setFocused(false);
+          }, 100)}
           onChange={(event) => {
             const next = event.target.value;
             setQuery(next);

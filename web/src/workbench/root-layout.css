@@ -1,0 +1,184 @@
+.workbench-shell {
+  --root-resizer-size: 4px;
+  grid-template-rows: 36px minmax(0, 1fr) var(--root-resizer-size) var(--panel-size) 24px;
+}
+
+.workbench-shell.panel-collapsed {
+  grid-template-rows: 36px minmax(0, 1fr) 0 0 24px;
+}
+
+.workbench-center {
+  grid-template-columns: var(--primary-size) var(--root-resizer-size) minmax(0, 1fr) var(--root-resizer-size) var(--secondary-size);
+}
+
+.primary-collapsed .workbench-center {
+  grid-template-columns: 0 0 minmax(0, 1fr) var(--root-resizer-size) var(--secondary-size);
+}
+
+.secondary-collapsed .workbench-center {
+  grid-template-columns: var(--primary-size) var(--root-resizer-size) minmax(0, 1fr) 0 0;
+}
+
+.primary-collapsed.secondary-collapsed .workbench-center {
+  grid-template-columns: 0 0 minmax(0, 1fr) 0 0;
+}
+
+.root-primary,
+.root-secondary,
+.root-panel {
+  border: 0;
+}
+
+.root-resizer {
+  position: relative;
+  z-index: 50;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: auto;
+  touch-action: none;
+  background: transparent;
+}
+
+.root-resizer::after {
+  content: "";
+  position: absolute;
+  background: var(--toolbar-border);
+  transition: background-color 90ms ease;
+}
+
+.root-resizer-column {
+  cursor: col-resize;
+}
+
+.root-resizer-column::after {
+  inset: 0 1px;
+}
+
+.root-resizer-row {
+  cursor: row-resize;
+}
+
+.root-resizer-row::after {
+  inset: 1px 0;
+}
+
+.root-resizer:hover::after,
+.root-resizer:focus-visible::after,
+.root-resizing .root-resizer::after {
+  background: var(--accent);
+}
+
+.primary-collapsed .root-resizer-primary,
+.secondary-collapsed .root-resizer-secondary,
+.panel-collapsed .root-resizer-panel {
+  display: none;
+}
+
+.workbench-shell.root-resizing,
+.workbench-shell.root-resizing * {
+  user-select: none !important;
+}
+
+.workbench-shell.root-resizing iframe {
+  pointer-events: none !important;
+}
+
+.workbench-shell.root-resizing-column,
+.workbench-shell.root-resizing-column * {
+  cursor: col-resize !important;
+}
+
+.workbench-shell.root-resizing-row,
+.workbench-shell.root-resizing-row * {
+  cursor: row-resize !important;
+}
+
+.workspace-github-auth {
+  display: grid;
+  gap: 7px;
+}
+
+.workspace-github-auth-button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.workspace-github-auth-button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.workspace-github-auth-button:disabled {
+  cursor: default;
+  opacity: .45;
+}
+
+.workspace-github-auth .workspace-help {
+  margin: 0;
+  max-width: 560px;
+  line-height: 1.45;
+}
+
+.workspace-auth-status {
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.workspace-auth-status.status-success {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--toolbar-border));
+  color: var(--text);
+}
+
+.workspace-auth-status.status-error,
+.workspace-auth-status.status-denied,
+.workspace-auth-status.status-expired {
+  color: var(--text);
+}
+
+
+.empty-workbench,
+.empty-workbench-card,
+.empty-workbench-card button {
+  pointer-events: auto;
+}
+
+.workbench-tab-dragging .empty-workbench,
+.workbench-tab-dragging .empty-workbench * {
+  pointer-events: none !important;
+}
+
+.workbench-surface .dv-watermark-container,
+.workbench-surface .dv-watermark {
+  pointer-events: none;
+}
+
+.workbench-dockview-host {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.workbench-dockview-host-empty {
+  display: none;
+}

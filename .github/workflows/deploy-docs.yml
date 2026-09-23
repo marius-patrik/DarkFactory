@@ -7,14 +7,44 @@ on:
 
 permissions:
   contents: write
-  deployments: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy-docs:
-    uses: marius-patrik/DarkFactory/.github/workflows/deploy-docs.yml@7ecba1617f553e6a34ceb31177e1ac84d08c350f
-    # Pinned so the shared scripts are checked out; without a ref the job looks for them
-    # in this repository, which carries none of the pipeline.
-    with:
-      pipeline-repo: marius-patrik/DarkFactory
-      pipeline-ref: "7ecba1617f553e6a34ceb31177e1ac84d08c350f"
-    secrets: inherit
+  deploy:
+    name: pages
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_GITHUB_OAUTH_CLIENT_ID: ${{ vars.WORKBENCH_OAUTH_CLIENT_ID }}
+      PUBLIC_GITHUB_AUTH_BROKER_URL: ${{ vars.WORKBENCH_AUTH_BROKER_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Typst
+        uses: typst-community/setup-typst@v5
+
+      - name: Build canonical Pages site
+        run: make site BOOK=DarkFactory
+
+      - name: Publish Pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: site
+          clean: true
+          commit-message: "docs: publish site from ${{ github.sha }}"

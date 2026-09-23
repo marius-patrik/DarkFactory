@@ -1,6 +1,12 @@
 import { createContext, useContext } from "react";
 import type { AppearanceMode, WorkbenchSettings } from "@/settings";
-import type { SplitDirection, WorkbenchSurface, WorkbenchTab, WorkbenchTabType } from "./model";
+import type {
+  SplitDirection,
+  WorkbenchDropTarget,
+  WorkbenchSurface,
+  WorkbenchTab,
+  WorkbenchTabType,
+} from "./model";
 
 export type WorkbenchRuntime = {
   settings: WorkbenchSettings;
@@ -9,6 +15,7 @@ export type WorkbenchRuntime = {
   setTheme: (theme: AppearanceMode) => void;
   openTab: (type: WorkbenchTabType, surface?: WorkbenchSurface, state?: Record<string, unknown>) => void;
   moveTab: (id: string, surface: WorkbenchSurface) => void;
+  transferTab: (id: string, target: WorkbenchSurface, drop: WorkbenchDropTarget) => boolean;
   splitTab: (id: string, direction: SplitDirection) => void;
   closeTab: (id: string) => void;
   setPinned: (id: string, pinned: boolean) => void;

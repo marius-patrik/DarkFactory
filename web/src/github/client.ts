@@ -262,7 +262,7 @@ async function githubGraphql<T>(
   variables: Record<string, unknown>,
   token: string | null,
 ): Promise<T> {
-  if (!token) throw new Error("A GitHub token is required for Projects.");
+  if (!token) throw new Error("Sign in with GitHub to use Projects.");
   const response = await fetch("https://api.github.com/graphql", {
     method: "POST",
     headers: {
@@ -378,7 +378,7 @@ function encodedRefPath(branch: string) {
 }
 
 function requireToken(token: string | null) {
-  if (!token) throw new Error("A GitHub token is required for remote writes.");
+  if (!token) throw new Error("Sign in with GitHub to use remote writes.");
   return token;
 }
 
@@ -482,7 +482,7 @@ export async function getGithubBlobBytes(fullName: string, sha: string, token: s
 
 
 function requireWriteToken(token: string | null) {
-  if (!token) throw new Error("Connect a GitHub token before using this write action.");
+  if (!token) throw new Error("Sign in with GitHub before using this write action.");
   return token;
 }
 

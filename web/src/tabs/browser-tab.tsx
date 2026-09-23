@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, X } from "lucide-react";
 import type { WorkbenchTab } from "@/workbench/model";
 
@@ -15,6 +15,18 @@ function normalizeUrl(input: string) {
   return url.href;
 }
 
+function browserState(tab: WorkbenchTab) {
+  const initialUrl = typeof tab.state.url === "string" ? tab.state.url : "about:blank";
+  const history = Array.isArray(tab.state.history)
+    ? tab.state.history.filter((item): item is string => typeof item === "string")
+    : [initialUrl];
+  const normalizedHistory = history.length ? history : [initialUrl];
+  const index = typeof tab.state.historyIndex === "number"
+    ? Math.max(0, Math.min(normalizedHistory.length - 1, tab.state.historyIndex))
+    : Math.max(0, normalizedHistory.length - 1);
+  return { history: normalizedHistory, index };
+}
+
 export function BrowserTab({
   tab,
   updateState,
@@ -22,20 +34,21 @@ export function BrowserTab({
   tab: WorkbenchTab;
   updateState: (patch: Record<string, unknown>) => void;
 }) {
-  const initialUrl = typeof tab.state.url === "string" ? tab.state.url : "about:blank";
-  const history = Array.isArray(tab.state.history)
-    ? tab.state.history.filter((item): item is string => typeof item === "string")
-    : [initialUrl];
-  const index = typeof tab.state.historyIndex === "number"
-    ? Math.max(0, Math.min(history.length - 1, tab.state.historyIndex))
-    : Math.max(0, history.length - 1);
-  const current = history[index] ?? initialUrl;
+  const incoming = useMemo(() => browserState(tab), [tab]);
+  const [history, setHistory] = useState<string[]>(incoming.history);
+  const [index, setIndex] = useState(incoming.index);
+  const current = history[index] ?? "about:blank";
   const [draft, setDraft] = useState(current === "about:blank" ? "" : current);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(current !== "about:blank");
   const [frameError, setFrameError] = useState("");
   const [slowFrame, setSlowFrame] = useState(false);
   const [stopped, setStopped] = useState(false);
+
+  useEffect(() => {
+    setHistory(incoming.history);
+    setIndex(incoming.index);
+  }, [incoming.history, incoming.index]);
 
   useEffect(() => {
     setDraft(current === "about:blank" ? "" : current);
@@ -54,7 +67,10 @@ export function BrowserTab({
     try {
       const url = normalizeUrl(value);
       const nextHistory = [...history.slice(0, index + 1), url];
-      updateState({ url, history: nextHistory, historyIndex: nextHistory.length - 1 });
+      const nextIndex = nextHistory.length - 1;
+      setHistory(nextHistory);
+      setIndex(nextIndex);
+      updateState({ url, history: nextHistory, historyIndex: nextIndex });
       setDraft(url === "about:blank" ? "" : url);
       setFrameError("");
       setSlowFrame(false);
@@ -69,6 +85,7 @@ export function BrowserTab({
   const step = (delta: number) => {
     const nextIndex = index + delta;
     if (nextIndex < 0 || nextIndex >= history.length) return;
+    setIndex(nextIndex);
     updateState({ url: history[nextIndex], historyIndex: nextIndex });
     setDraft(history[nextIndex]);
     setFrameError("");

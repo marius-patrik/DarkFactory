@@ -42,9 +42,23 @@ export type WorkbenchSurfaceState = {
   layout: unknown | null;
 };
 
+export type WorkbenchRootSizes = {
+  primary: number;
+  secondary: number;
+  panel: number;
+};
+
+export type WorkbenchDropDirection = "within" | "left" | "right" | "above" | "below";
+
+export type WorkbenchDropTarget = {
+  referencePanelId?: string;
+  direction: WorkbenchDropDirection;
+};
+
 export type PersistedWorkbench = {
-  version: 1;
+  version: 2;
   theme: "light" | "dark" | "oled";
+  sizes: WorkbenchRootSizes;
   surfaces: Record<WorkbenchSurface, WorkbenchSurfaceState>;
 };
 

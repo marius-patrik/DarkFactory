@@ -14,11 +14,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    uses: marius-patrik/DarkFactory/.github/workflows/ci.yml@7ecba1617f553e6a34ceb31177e1ac84d08c350f
-    # Pinned so the shared scripts are checked out; without a ref the job looks for them
-    # in this repository, which carries none of the pipeline.
-    with:
-      pipeline-repo: marius-patrik/DarkFactory
-      pipeline-ref: "7ecba1617f553e6a34ceb31177e1ac84d08c350f"
-    secrets: inherit
+  validate:
+    name: repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set up Typst
+        uses: typst-community/setup-typst@v5
+
+      - name: Install web dependencies
+        run: bun install --cwd web
+
+      - name: Validate generic web workbench
+        run: bun run --cwd web check
+
+      - name: Install Chromium for browser acceptance
+        run: cd web && bunx playwright install --with-deps chromium
+
+      - name: Run browser acceptance
+        run: bun run --cwd web acceptance
+
+      - name: Validate Make web target
+        if: github.event_name != 'push'
+        run: make web-check
+
+      - name: Validate canonical repository contract
+        run: make ci BOOK=DarkFactory
+
+      - name: Validate canonical Pages/site target
+        if: github.event_name != 'push'
+        run: make site BOOK=DarkFactory

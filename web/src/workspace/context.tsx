@@ -727,7 +727,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const createBranch = useCallback(
     async (branch: string) => {
       if (!workspace) throw new Error("No workspace is open.");
-      if (!token) throw new Error("Connect a GitHub token before creating a branch.");
+      if (!token) throw new Error("Sign in with GitHub before creating a branch.");
       const name = branch.trim();
       if (!name || /[\s~^:?*\\[\\]\\\\]/.test(name) || name.includes("..") || name.startsWith("/") || name.endsWith("/")) {
         throw new Error("Enter a valid Git branch name.");
@@ -794,7 +794,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const pushLocalCommits = useCallback(async () => {
     if (!workspace) throw new Error("No workspace is open.");
-    if (!token) throw new Error("Connect a GitHub token before pushing.");
+    if (!token) throw new Error("Sign in with GitHub before pushing.");
     if (!commits.length) throw new Error("There are no local commits to push.");
     const branch = refs.find((candidate) => candidate.kind === "branch" && candidate.name === workspace.ref);
     if (!branch) throw new Error("Push requires a branch workspace. Tags and detached refs are read-only.");

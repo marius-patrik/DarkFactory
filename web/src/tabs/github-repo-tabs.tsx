@@ -412,7 +412,7 @@ export function ProjectsTab() {
     return (
       <div className="tab-empty">
         <strong>Projects requires authentication</strong>
-        <span>Connect a GitHub token with Projects read permission.</span>
+        <span>Sign in with GitHub to use Projects.</span>
       </div>
     );
   }

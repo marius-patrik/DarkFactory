@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DockviewDefaultTab,
   DockviewReact,
@@ -10,15 +10,42 @@ import {
 } from "dockview-react";
 import { EmptyWorkbench } from "./empty-workbench";
 import { LauncherButton } from "./launcher";
-import type { WorkbenchSurface, WorkbenchTab } from "./model";
+import type { WorkbenchDropTarget, WorkbenchSurface, WorkbenchTab } from "./model";
 import { WorkbenchPanel } from "./registry";
 import { useWorkbenchRuntime } from "./runtime";
 
 function paramsOf(panel: any): WorkbenchTab | null {
-  const params = panel?.api?.getParameters?.() ?? panel?.params;
+  const apiParams = panel?.api?.getParameters?.();
+  const params =
+    apiParams && typeof apiParams.id === "string" && typeof apiParams.type === "string"
+      ? apiParams
+      : panel?.params;
   return params && typeof params.id === "string" && typeof params.type === "string"
     ? params as WorkbenchTab
     : null;
+}
+
+const WORKBENCH_TAB_MIME = "application/x-github-workbench-tab";
+
+type CrossSurfaceDrag = {
+  id: string;
+  source: WorkbenchSurface;
+};
+
+let activeCrossSurfaceDrag: CrossSurfaceDrag | null = null;
+
+function dragPayload(event: DragEvent): CrossSurfaceDrag | null {
+  const raw = event.dataTransfer?.getData(WORKBENCH_TAB_MIME);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<CrossSurfaceDrag>;
+    if (
+      typeof parsed.id === "string" &&
+      (parsed.source === "primary" || parsed.source === "main" || parsed.source === "secondary" || parsed.source === "panel")
+    ) return parsed as CrossSurfaceDrag;
+  } catch {
+  }
+  return null;
 }
 
 export function WorkbenchSurfaceView({
@@ -39,12 +66,109 @@ export function WorkbenchSurfaceView({
   runtimeRef.current = runtime;
   const [panelCount, setPanelCount] = useState(0);
   const initialized = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const beginPanelDrag = (event: DragEvent) => {
+      if (!(event.target instanceof Element) || !root.contains(event.target)) return;
+      const tabElement = event.target.closest<HTMLElement>(".dv-tab");
+      const workbenchTabElement = tabElement?.querySelector<HTMLElement>("[data-workbench-tab-id]");
+      const id = tabElement?.dataset.tabPanelId || workbenchTabElement?.dataset.workbenchTabId;
+      if (!id) return;
+      const payload = { id, source: surface } satisfies CrossSurfaceDrag;
+      activeCrossSurfaceDrag = payload;
+      root.dataset.workbenchDndStage = `source:${id}`;
+      document.documentElement.classList.add("workbench-tab-dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.setData(WORKBENCH_TAB_MIME, JSON.stringify(payload));
+        event.dataTransfer.effectAllowed = "move";
+      }
+    };
+
+    const destinationFor = (event: DragEvent): WorkbenchDropTarget => {
+      const target = event.target instanceof Element ? event.target : null;
+      const tabElement = target?.closest<HTMLElement>(".dv-tab");
+      const referencePanelId =
+        tabElement?.dataset.tabPanelId ||
+        tabElement?.querySelector<HTMLElement>("[data-workbench-tab-id]")?.dataset.workbenchTabId;
+      if (referencePanelId) {
+        return { referencePanelId, direction: "within" };
+      }
+
+      const dock = root.querySelector<HTMLElement>(".workbench-dockview");
+      const dockRect = dock?.getBoundingClientRect();
+      const rect = dockRect && dockRect.width > 0 && dockRect.height > 0
+        ? dockRect
+        : root.getBoundingClientRect();
+      const edgeX = Math.min(36, rect.width * 0.12);
+      const edgeY = Math.min(36, rect.height * 0.12);
+      let direction: WorkbenchDropTarget["direction"] = "within";
+      if (event.clientX <= rect.left + edgeX) direction = "left";
+      else if (event.clientX >= rect.right - edgeX) direction = "right";
+      else if (event.clientY <= rect.top + edgeY) direction = "above";
+      else if (event.clientY >= rect.bottom - edgeY) direction = "below";
+
+      const activeId = Array.from(root.querySelectorAll<HTMLElement>(".dv-tab.dv-active-tab"))
+        .map((element) => element.dataset.tabPanelId || element.querySelector<HTMLElement>("[data-workbench-tab-id]")?.dataset.workbenchTabId)
+        .find((id): id is string => Boolean(id));
+      return { referencePanelId: activeId, direction };
+    };
+
+    const isCrossRootDrag = (event: DragEvent) => {
+      const payload = activeCrossSurfaceDrag ?? dragPayload(event);
+      return payload && payload.source !== surface ? payload : null;
+    };
+
+    const acceptCrossRootDrag = (event: DragEvent) => {
+      const payload = isCrossRootDrag(event);
+      if (!payload) return;
+      event.preventDefault();
+      event.stopPropagation();
+      root.dataset.workbenchDndStage = `accepted:${payload.id}`;
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    };
+
+    const dropCrossRootTab = (event: DragEvent) => {
+      const payload = isCrossRootDrag(event);
+      if (!payload) return;
+      event.preventDefault();
+      event.stopPropagation();
+      root.dataset.workbenchDndStage = `drop:${payload.id}`;
+      const moved = runtimeRef.current.transferTab(payload.id, surface, destinationFor(event));
+      root.dataset.workbenchDndStage = `${moved ? "moved" : "move-failed"}:${payload.id}`;
+      activeCrossSurfaceDrag = null;
+      document.documentElement.classList.remove("workbench-tab-dragging");
+    };
+
+    root.addEventListener("dragstart", beginPanelDrag, true);
+    root.addEventListener("dragenter", acceptCrossRootDrag, true);
+    root.addEventListener("dragover", acceptCrossRootDrag, true);
+    root.addEventListener("drop", dropCrossRootTab, true);
+    return () => {
+      root.removeEventListener("dragstart", beginPanelDrag, true);
+      root.removeEventListener("dragenter", acceptCrossRootDrag, true);
+      root.removeEventListener("dragover", acceptCrossRootDrag, true);
+      root.removeEventListener("drop", dropCrossRootTab, true);
+    };
+  }, [surface]);
+
+  useEffect(() => {
+    const clearDrag = () => {
+      activeCrossSurfaceDrag = null;
+      document.documentElement.classList.remove("workbench-tab-dragging");
+    };
+    window.addEventListener("dragend", clearDrag);
+    return () => window.removeEventListener("dragend", clearDrag);
+  }, []);
 
   const components = useMemo(() => ({ workbench: (props: any) => <WorkbenchPanel props={props} /> }), []);
   const tabComponents = useMemo(() => ({
     workbenchTab: (props: any) => {
       const tab = props.params as WorkbenchTab;
-      return <DockviewDefaultTab {...props} hideClose={Boolean(tab?.pinned)} />;
+      return <DockviewDefaultTab {...props} data-workbench-tab-id={tab?.id} hideClose={Boolean(tab?.pinned)} />;
     },
   }), []);
   const HeaderActions = useMemo(() => () => <LauncherButton surface={surface} />, [surface]);
@@ -139,10 +263,17 @@ export function WorkbenchSurfaceView({
     return items;
   };
 
+  const mainEmpty = surface === "main" && panelCount === 0;
+
   return (
-    <div className={`workbench-surface workbench-surface-${surface}`}>
-      <DockviewReact
-        className="workbench-dockview"
+    <div
+      ref={rootRef}
+      className={`workbench-surface workbench-surface-${surface}${mainEmpty ? " workbench-surface-empty" : ""}`}
+      data-workbench-surface={surface}
+    >
+      <div className={`workbench-dockview-host${mainEmpty ? " workbench-dockview-host-empty" : ""}`}>
+        <DockviewReact
+          className="workbench-dockview"
         theme={{ ...dockTheme, tabAnimation: "smooth" as const }}
         components={components}
         tabComponents={tabComponents}
@@ -152,6 +283,7 @@ export function WorkbenchSurfaceView({
         onReady={(event: any) => {
           const api = event.api;
           onReady(surface, api);
+
           let restored = false;
           if (restoredLayout) {
             try {
@@ -181,8 +313,9 @@ export function WorkbenchSurfaceView({
             runtimeRef.current.layoutChanged();
           });
         }}
-      />
-      {surface === "main" && panelCount === 0 && <EmptyWorkbench />}
+        />
+      </div>
+      {mainEmpty && <EmptyWorkbench />}
     </div>
   );
 }

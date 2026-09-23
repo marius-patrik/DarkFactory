@@ -1,17 +1,85 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact 40-character commit SHA to release
+        required: true
+        type: string
+      tag:
+        description: Git tag to create for the release
+        required: true
+        type: string
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
-    uses: marius-patrik/DarkFactory/.github/workflows/release.yml@7ecba1617f553e6a34ceb31177e1ac84d08c350f
-    with:
-      pipeline-repo: marius-patrik/DarkFactory
-      pipeline-ref: "7ecba1617f553e6a34ceb31177e1ac84d08c350f"
-    secrets: inherit
+    name: exact-revision
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate requested revision
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          if ! [[ "$REVISION" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "revision must be an exact 40-character commit SHA" >&2
+            exit 1
+          fi
+
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Verify checkout identity
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: test "$(git rev-parse HEAD)" = "${REVISION,,}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Typst
+        uses: typst-community/setup-typst@v5
+
+      - name: Build and validate canonical artifacts
+        run: make ci BOOK=DarkFactory
+
+      - name: Verify release artifact set
+        run: |
+          for file in \
+            out/prace.pdf out/prace-review.pdf \
+            out/prace.html out/prace-review.html \
+            out/prace.md out/prace-review.md; do
+            test -s "$file" || { echo "missing release artifact: $file" >&2; exit 1; }
+          done
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ inputs.revision }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            out/prace.pdf out/prace-review.pdf \
+            out/prace.html out/prace-review.html \
+            out/prace.md out/prace-review.md \
+            --target "$REVISION" \
+            --title "$TAG" \
+            --generate-notes

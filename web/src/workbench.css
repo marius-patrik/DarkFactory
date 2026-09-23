@@ -306,6 +306,7 @@ a {
 }
 
 .workbench-dockview {
+  z-index: 0;
   --dv-background-color: var(--bg);
   --dv-paneview-active-outline-color: var(--accent);
   --dv-tabs-and-actions-container-background-color: var(--toolbar);
@@ -383,7 +384,7 @@ a {
 .empty-workbench {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 10;
   display: grid;
   place-items: center;
   overflow: auto;
