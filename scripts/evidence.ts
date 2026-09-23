@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-const DATA = join("paper", "data", "phase2-evidence.json");
-const OUTPUT = join("paper", "img", "generated", "gradually-ai-usage-2026.svg");
+const DATA = join("data", "phase2-evidence.json");
+const OUTPUT = join("img", "generated", "gradually-ai-usage-2026.svg");
 
 type Category = {
   key: "never" | "free" | "paid" | "coding";

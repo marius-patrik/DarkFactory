@@ -1,10 +1,9 @@
-import { copyFile, cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const WEB_DIST = join("web", "dist");
-const OUT = "out";
 const SITE = "site";
-const ARTIFACTS = ["prace.pdf", "prace.html", "prace.md"];
+const ARTIFACTS = ["ODBORNA_PRACE.pdf", "README.md"];
 
 async function requireFile(path: string) {
   const info = await stat(path).catch(() => null);
@@ -17,21 +16,21 @@ for (const path of [join(WEB_DIST, "index.html"), join(WEB_DIST, "viewer.html")]
   await requireFile(path);
 }
 for (const name of ARTIFACTS) {
-  await requireFile(join(OUT, name));
+  await requireFile(name);
 }
 
 await rm(SITE, { recursive: true, force: true });
 await cp(WEB_DIST, SITE, { recursive: true });
 
 for (const name of ARTIFACTS) {
-  await copyFile(join(OUT, name), join(SITE, name));
+  await cp(name, join(SITE, name));
 }
 
-const assets = join(OUT, "assets");
-const assetInfo = await stat(assets).catch(() => null);
-if (assetInfo?.isDirectory()) {
-  await mkdir(join(SITE, "assets"), { recursive: true });
-  await cp(assets, join(SITE, "assets"), { recursive: true });
+const images = "img";
+const imageInfo = await stat(images).catch(() => null);
+if (imageInfo?.isDirectory()) {
+  await mkdir(join(SITE, images), { recursive: true });
+  await cp(images, join(SITE, images), { recursive: true });
 }
 
 await writeFile(join(SITE, ".nojekyll"), "", "utf8");
@@ -40,11 +39,10 @@ await writeFile(
   JSON.stringify(
     {
       commit: process.env.GITHUB_SHA ?? "",
-      source: "paper/PAPER.typ",
+      source: "index.typ",
       artifacts: {
-        pdf: "prace.pdf",
-        html: "prace.html",
-        markdown: "prace.md",
+        pdf: "ODBORNA_PRACE.pdf",
+        markdown: "README.md",
       },
     },
     null,
@@ -53,4 +51,4 @@ await writeFile(
   "utf8",
 );
 
-console.log("ok: assembled Pages site with canonical publication artifacts");
+console.log("ok: assembled Pages site with PDF and Markdown publication artifacts");

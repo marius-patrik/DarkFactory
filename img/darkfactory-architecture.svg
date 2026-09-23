@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="title desc">
+  <title id="title">Architektura DarkFactory v revizi e9c10221</title>
+  <desc id="desc">GitHub Actions předává události produkčnímu pythonovskému řadiči v kontejneru. Řadič volá harness df, který používá modely a nástroje nad pracovním stromem. Ve stejné revizi existuje oddělené deklarativní grafové jádro v TypeScriptu.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#475569"/></marker>
+    <style>
+      .title{font:700 17px Carlito,Caladea,Arial,sans-serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.layer{font:700 10px Carlito,Caladea,Arial,sans-serif;letter-spacing:.55px;fill:#475569}.head{font:700 13px Carlito,Caladea,Arial,sans-serif;fill:#0f172a}.body{font:11px Carlito,Caladea,Arial,sans-serif;fill:#475569}.small{font:10px Carlito,Caladea,Arial,sans-serif;fill:#64748b}.dash{stroke-dasharray:6 5}
+    </style>
+  </defs>
+  <rect x="8" y="8" width="984" height="414" rx="12" fill="#fff" stroke="#cbd5e1"/>
+  <text x="32" y="38" class="title">Architektonické vrstvy</text><text x="968" y="37" text-anchor="end" class="rev">e9c10221</text>
+  <rect x="30" y="62" width="180" height="286" rx="9" fill="#f8fafc" stroke="#cbd5e1"/><text x="48" y="84" class="layer">GITHUB</text>
+  <g><rect x="48" y="105" width="144" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="120" y="133" text-anchor="middle" class="head">Události</text><text x="120" y="155" text-anchor="middle" class="body">issue · komentář</text></g>
+  <g><rect x="48" y="197" width="144" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="120" y="225" text-anchor="middle" class="head">Repozitář</text><text x="120" y="247" text-anchor="middle" class="body">větev · diff · testy</text></g>
+  <g><rect x="48" y="289" width="144" height="42" rx="7" fill="#fffbeb" stroke="#f59e0b"/><text x="120" y="315" text-anchor="middle" class="head">PR a revize</text></g>
+  <path d="M210 141H250" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="250" y="62" width="224" height="286" rx="9" fill="#eff6ff" stroke="#93c5fd"/><text x="268" y="84" class="layer">WORKFLOW A KONTEJNER</text>
+  <g><rect x="270" y="105" width="184" height="72" rx="7" fill="#fff" stroke="#60a5fa"/><text x="362" y="131" text-anchor="middle" class="head">agent.yml</text><text x="362" y="151" text-anchor="middle" class="body">token · checkout · build</text><text x="362" y="166" text-anchor="middle" class="small">mount /workspace</text></g>
+  <path d="M362 177V202" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <g><rect x="270" y="202" width="184" height="105" rx="7" fill="#fff" stroke="#3b82f6"/><text x="362" y="230" text-anchor="middle" class="head">Python controller</text><text x="362" y="250" text-anchor="middle" class="rev">agent_runner.py</text><text x="362" y="272" text-anchor="middle" class="body">fáze · brány · checkpoint</text><text x="362" y="292" text-anchor="middle" class="small">produkční vstupní cesta</text></g>
+  <path d="M474 254H514" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="514" y="62" width="214" height="286" rx="9" fill="#f5f3ff" stroke="#c4b5fd"/><text x="532" y="84" class="layer">HARNESS DF</text>
+  <g><rect x="534" y="105" width="174" height="72" rx="7" fill="#fff" stroke="#a78bfa"/><text x="621" y="131" text-anchor="middle" class="head">Bun / TypeScript CLI</text><text x="621" y="153" text-anchor="middle" class="body">df run · JSON stream</text></g>
+  <path d="M621 177V202" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <g><rect x="534" y="202" width="174" height="105" rx="7" fill="#fff" stroke="#8b5cf6"/><text x="621" y="228" text-anchor="middle" class="head">Agentní runtime</text><text x="621" y="250" text-anchor="middle" class="body">modelová řada</text><text x="621" y="271" text-anchor="middle" class="body">nástroje a pozorování</text><text x="621" y="292" text-anchor="middle" class="small">změny v pracovním stromu</text></g>
+  <path d="M728 254H768" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="768" y="62" width="204" height="286" rx="9" fill="#f0fdfa" stroke="#5eead4"/><text x="786" y="84" class="layer">VÝSTUPY A STAV</text>
+  <g><rect x="788" y="105" width="164" height="72" rx="7" fill="#fff" stroke="#2dd4bf"/><text x="870" y="131" text-anchor="middle" class="head">Deterministické kontroly</text><text x="870" y="153" text-anchor="middle" class="body">format · testy · diff</text></g>
+  <g><rect x="788" y="202" width="164" height="105" rx="7" fill="#fff" stroke="#14b8a6"/><text x="870" y="228" text-anchor="middle" class="head">Trvalé artefakty</text><text x="870" y="250" text-anchor="middle" class="body">git commit · draft PR</text><text x="870" y="271" text-anchor="middle" class="body">komentáře · checkpoint</text><text x="870" y="292" text-anchor="middle" class="small">základ dalšího běhu</text></g>
+  <rect x="250" y="370" width="722" height="36" rx="7" fill="#fff" stroke="#94a3b8" class="dash"/><text x="611" y="393" text-anchor="middle" class="body">Samostatná komponenta snapshotu: deklarativní TS graf → uzly, hrany, safety budgets a atomický stav <tspan class="rev">.df</tspan></text>
+  <path d="M621 348V370" stroke="#64748b" stroke-width="1.4" fill="none" class="dash" marker-end="url(#arrow)"/>
+</svg>

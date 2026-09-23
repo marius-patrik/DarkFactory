@@ -15,7 +15,7 @@
     "check": "bun run publication && bun run web:check",
     "site:assemble": "bun scripts/site.ts",
     "site": "bun run build && bun run site:assemble",
-    "clean": "rm -rf out site web/dist"
+    "clean": "rm -rf site web/dist"
   },
   "devDependencies": {
     "turndown": "7.2.4",

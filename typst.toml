@@ -1,4 +1,4 @@
 [package]
 name = "darkfactory-books"
 version = "0.5.0"
-entrypoint = "paper/PAPER.typ"
+entrypoint = "index.typ"

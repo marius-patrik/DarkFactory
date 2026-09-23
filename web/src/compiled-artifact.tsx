@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import ReactMarkdown from "react-markdown";
@@ -27,7 +27,7 @@ loader.config({ monaco });
   },
 };
 
-export type ArtifactFormat = "pdf" | "markdown" | "html";
+export type ArtifactFormat = "pdf" | "markdown";
 
 function publicationUrlTransform(url: string) {
   const value = url.trim();
@@ -239,7 +239,7 @@ export function RawArtifactView({
     return <div className="document-loading">Loading raw {format.toUpperCase()}…</div>;
   }
 
-  const language = format === "html" ? "html" : format === "markdown" ? "markdown" : "plaintext";
+  const language = format === "markdown" ? "markdown" : "plaintext";
   const editorTheme = theme === "light" ? "vs" : theme === "oled" ? "darkfactory-oled" : "vs-dark";
 
   return (
@@ -269,28 +269,11 @@ export function RawArtifactView({
   );
 }
 
-export function CompiledArtifactView({
-  path,
-  format,
-  embedded,
-  theme,
-}: {
-  path: string;
-  format: Exclude<ArtifactFormat, "pdf">;
-  embedded: boolean;
-  theme: "dark" | "light" | "oled";
-}) {
+export function CompiledArtifactView({ path, embedded }: { path: string; embedded: boolean }) {
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState("");
-  const htmlFrame = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (format !== "markdown") {
-      setMarkdown("");
-      setError("");
-      return;
-    }
-
     let disposed = false;
     setMarkdown("");
     setError("");
@@ -309,28 +292,7 @@ export function CompiledArtifactView({
     return () => {
       disposed = true;
     };
-  }, [format, path]);
-
-  useEffect(() => {
-    if (format !== "html") return;
-    htmlFrame.current?.contentDocument?.documentElement.setAttribute("data-theme", theme);
-  }, [format, theme]);
-
-  if (format === "html") {
-    return (
-      <div className={embedded ? "compiled-artifact embedded-artifact" : "compiled-artifact"}>
-        <iframe
-          ref={htmlFrame}
-          className="compiled-html-frame"
-          src={path}
-          title="Rendered HTML publication"
-          onLoad={(event) => {
-            event.currentTarget.contentDocument?.documentElement.setAttribute("data-theme", theme);
-          }}
-        />
-      </div>
-    );
-  }
+  }, [path]);
 
   if (error) {
     return (

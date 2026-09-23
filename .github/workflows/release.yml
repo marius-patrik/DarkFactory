@@ -59,7 +59,7 @@ jobs:
 
       - name: Verify release artifact set
         run: |
-          for file in out/prace.pdf out/prace.html out/prace.md; do
+          for file in ODBORNA_PRACE.pdf README.md; do
             test -s "$file" || { echo "missing release artifact: $file" >&2; exit 1; }
           done
 
@@ -69,4 +69,7 @@ jobs:
           REVISION: ${{ inputs.revision }}
           TAG: ${{ inputs.tag }}
         run: |
-          gh release create "$TAG"             out/prace.pdf out/prace.html out/prace.md             --target "$REVISION"             --title "$TAG"             --generate-notes
+          gh release create "$TAG" ODBORNA_PRACE.pdf README.md \
+            --target "$REVISION" \
+            --title "$TAG" \
+            --generate-notes
