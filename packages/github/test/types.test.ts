@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { associationSchema, issueSchema } from "../src/types.ts";
+import { GITHUB_AUTHOR_ASSOCIATIONS, associationSchema, issueSchema } from "../src/types.ts";
 
-describe("GitHub authorization payload validation", () => {
-	test("accepts only associations supported by the protocol authorization contract", () => {
-		for (const value of ["OWNER", "MEMBER", "COLLABORATOR", "AUTHOR"]) {
+describe("GitHub author-association payload validation", () => {
+	test("accepts every documented GitHub payload association and rejects unknown values", () => {
+		for (const value of GITHUB_AUTHOR_ASSOCIATIONS) {
 			expect(associationSchema.parse(value)).toBe(value);
 		}
-		expect(associationSchema.safeParse("NONE").success).toBe(false);
-		expect(associationSchema.safeParse("FIRST_TIME_CONTRIBUTOR").success).toBe(false);
+		expect(associationSchema.safeParse("AUTHOR").success).toBe(false);
+		expect(associationSchema.safeParse("TRUSTED_USER").success).toBe(false);
 	});
 
-	test("rejects an issue carrying an unsupported author association", () => {
+	test("parses outsider issue associations without granting authorization at the transport boundary", () => {
 		const base = {
 			number: 1,
 			id: 1,
@@ -23,6 +23,8 @@ describe("GitHub authorization payload validation", () => {
 			html_url: "https://example.test/issues/1",
 		};
 		expect(issueSchema.safeParse({ ...base, author_association: "OWNER" }).success).toBe(true);
-		expect(issueSchema.safeParse({ ...base, author_association: "FIRST_TIME_CONTRIBUTOR" }).success).toBe(false);
+		expect(issueSchema.safeParse({ ...base, author_association: "CONTRIBUTOR" }).success).toBe(true);
+		expect(issueSchema.safeParse({ ...base, author_association: "NONE" }).success).toBe(true);
+		expect(issueSchema.safeParse({ ...base, author_association: "UNKNOWN" }).success).toBe(false);
 	});
 });

@@ -1,9 +1,24 @@
-import { AUTHOR_ASSOCIATIONS, type AuthorAssociation } from "@darkfactory/protocol/workflow";
+import type { AuthorAssociation } from "@darkfactory/protocol/workflow";
 export type { AuthorAssociation } from "@darkfactory/protocol/workflow";
 import { z } from "zod";
 
-/** Schema for GitHub author-association values. */
-export const associationSchema: z.ZodType<AuthorAssociation> = z.enum(AUTHOR_ASSOCIATIONS);
+/** Author-association values that GitHub REST/GraphQL payloads may legitimately return. */
+export const GITHUB_AUTHOR_ASSOCIATIONS = [
+	"COLLABORATOR",
+	"CONTRIBUTOR",
+	"FIRST_TIMER",
+	"FIRST_TIME_CONTRIBUTOR",
+	"MANNEQUIN",
+	"MEMBER",
+	"NONE",
+	"OWNER",
+] as const;
+
+/** Raw GitHub author association before DarkFactory authorization policy is applied. */
+export type GitHubAuthorAssociation = (typeof GITHUB_AUTHOR_ASSOCIATIONS)[number];
+
+/** Schema for GitHub payload author-association values; authorization is a separate policy decision. */
+export const associationSchema: z.ZodType<GitHubAuthorAssociation> = z.enum(GITHUB_AUTHOR_ASSOCIATIONS);
 const userSchema = z.object({ login: z.string() }).passthrough();
 const labelSchema = z.union([z.string(), z.object({ name: z.string() }).passthrough()]);
 
