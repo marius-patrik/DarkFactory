@@ -163,7 +163,7 @@ def test_an_installation_includes_the_agent():
     issues that sat untouched because no workflow on the default branch listens for them.
     """
     installed = install.relevant_workflows(".")
-    for name in ("agent", "open-pr", "pr-approval-automerge", "verify-pr-issue", "auto-format"):
+    for name in ("agent", "open-pr", "pr-approval-automerge", "verify-pr-issue"):
         assert name in installed, f"an installation without {name} cannot run the governed flow"
 
 
@@ -467,7 +467,7 @@ class TestACallerMustPassItsSecrets:
         root = str(tmp_path)
         os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
         with open(
-            os.path.join(root, ".github", "workflows", "auto-format.yml"), "w", encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"), "w", encoding="utf-8"
         ) as handle:
             handle.write(body)
         return root
@@ -481,7 +481,7 @@ class TestACallerMustPassItsSecrets:
         root = self._caller(
             tmp_path,
             "jobs:\n  run:\n"
-            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    uses: o/p/.github/workflows/agent.yml@aaaaaaa\n"
             "    with:\n"
             "      pipeline-repo: o/p\n"
             "      pipeline-ref: aaaaaaa\n",
@@ -489,7 +489,7 @@ class TestACallerMustPassItsSecrets:
         assert install.ensure_secrets_pass(root)
 
         with open(
-            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8"
         ) as handle:
             after = handle.read()
         assert "    secrets: inherit\n" in after
@@ -499,15 +499,15 @@ class TestACallerMustPassItsSecrets:
         """An explicit list must carry the App key so the workflow can mint an installation token."""
         body = (
             "jobs:\n  run:\n"
-            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    uses: o/p/.github/workflows/agent.yml@aaaaaaa\n"
             "    with:\n      pipeline-ref: aaaaaaa\n"
             "    secrets:\n      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}\n"
         )
         root = self._caller(tmp_path, body)
-        assert install.ensure_secrets_pass(root) == [".github/workflows/auto-format.yml"]
+        assert install.ensure_secrets_pass(root) == [".github/workflows/agent.yml"]
 
         with open(
-            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8"
         ) as handle:
             after = handle.read()
         assert "DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}" in after
@@ -516,7 +516,7 @@ class TestACallerMustPassItsSecrets:
         """Repeating the line would be churn, and a caller already carrying the App key is untouched."""
         body = (
             "jobs:\n  run:\n"
-            "    uses: o/p/.github/workflows/auto-format.yml@aaaaaaa\n"
+            "    uses: o/p/.github/workflows/agent.yml@aaaaaaa\n"
             "    with:\n      pipeline-ref: aaaaaaa\n"
             "    secrets:\n"
             "      DARKFACTORY_APP_PRIVATE_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}\n"
@@ -526,7 +526,7 @@ class TestACallerMustPassItsSecrets:
         assert install.ensure_secrets_pass(root) == []
 
         with open(
-            os.path.join(root, ".github", "workflows", "auto-format.yml"), encoding="utf-8"
+            os.path.join(root, ".github", "workflows", "agent.yml"), encoding="utf-8"
         ) as handle:
             assert handle.read() == body
 

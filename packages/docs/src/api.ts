@@ -124,7 +124,7 @@ export function documentationMetadata(
 		detectors: (definition.detectors ?? []).map((entry) => entry.id),
 		commands: (definition.commands ?? []).map((entry) => entry.name),
 		graph: (definition.graph ?? []).map((entry) => ({ id: entry.id, nodeKinds: entry.nodeKinds })),
-		hooks: (definition.hooks ?? []).map((entry) => `${entry.id}:${entry.event}`),
+		hooks: (definition.hooks ?? []).flatMap((entry) => entry.events.map((event) => `${entry.id}:${event}`)),
 		verification: (definition.verification ?? []).map((entry) => entry.id),
 		docs: definition.surfaces?.docs ?? [],
 	}));

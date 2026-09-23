@@ -15,16 +15,6 @@ def _index(steps, name):
     return next(i for i, step in enumerate(steps) if step.get("name") == name)
 
 
-def test_auto_format_formats_changed_harness_files_before_committing():
-    steps = _steps(".github/workflows/auto-format.yml", "format")
-    fmt = _index(steps, "Format harness")
-    assert fmt < _index(steps, "Commit and push formatting changes")
-    step = steps[fmt]
-    assert step["if"] == "hashFiles('harness/biome.json') != ''"
-    assert step["working-directory"] == "harness"
-    assert "bun install --frozen-lockfile" in step["run"]
-    assert "biome check --write --changed" in step["run"]
-
 
 def test_ci_quality_is_detector_driven_and_aggregated():
     workflow = _workflow(".github/workflows/ci.yml")

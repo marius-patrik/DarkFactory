@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
-import { QuotaStore } from "../src/harness/quota-store.ts";
 import { ChainExhaustedError, createFailoverSupervisor, type HarnessEvent } from "../src/harness/supervisor.ts";
 import { LimitLedger } from "../src/limits/ledger.ts";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
@@ -187,22 +186,6 @@ describe("Google Gemini free-tier real fixtures classification", () => {
 	});
 });
 
-describe("QuotaStore numeric resetAt persistence", () => {
-	test("every persisted entry has a numeric resetAt", async () => {
-		const { home } = await tempWorkspace();
-		const store = new QuotaStore(home, { fallbackTtlMs: 45_000 });
-		await store.mark(
-			{ provider: "google", model: "gemini-3.8-flash", account: "default" },
-			"transient",
-			undefined,
-			1_000,
-		);
-		const raw = JSON.parse(await readFile(join(home, "limits.df"), "utf8"));
-		const entry = Object.values(raw.entries)[0] as { resetAt: number };
-		expect(typeof entry.resetAt).toBe("number");
-		expect(entry.resetAt).toBe(1_000 + 45_000);
-	});
-});
 
 describe("Supervisor waiting instead of exiting", () => {
 	test("waits when all candidates are cooling down within maxWaitMs and retries successfully", async () => {

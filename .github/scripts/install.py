@@ -85,11 +85,6 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
         # person flips to stop the agent, and a switch that needs a commit is not a switch.
         "with": {"agent-enabled": "${{ vars.AGENT_ENABLED }}"},
     },
-    "auto-format": {
-        "name": "Auto Format",
-        "on": 'push:\n    branches: ["**"]\n  workflow_dispatch:',
-        "permissions": "contents: write",
-    },
     "verify-pr-issue": {
         "name": "Verify Bound Issue",
         "on": "pull_request:\n    types: [opened, edited, synchronize, reopened]",

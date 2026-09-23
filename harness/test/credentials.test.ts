@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { accountId, FileCredentialStore, validateAccountRecord } from "@darkfactory/keychain";
 import { importCodexAccount } from "@darkfactory/keychain/import/codex";
 import { createModels, fauxProvider, type OAuthCredential, type Provider } from "@earendil-works/pi-ai";
-import { QuotaStore } from "../src/harness/quota-store.ts";
+import { LimitLedger } from "../src/limits/ledger.ts";
 
 const roots: string[] = [];
 
@@ -43,12 +43,13 @@ describe("FileCredentialStore", () => {
 
 	test("credential changes clear cooldowns for that account", async () => {
 		const root = await temporaryHome();
-		const quota = new QuotaStore(root);
+		const quota = new LimitLedger(root);
 		const candidate = { provider: "fixture", model: "model", account: "work" };
-		await quota.mark(candidate, "auth", undefined, Date.now());
+		const now = Date.now();
+		await quota.record([{ ...candidate, type: "auth", observedAt: now, resetAt: now + 60_000, source: "manual" }]);
 		const store = new FileCredentialStore(root, undefined, (provider, label) => quota.clearAccount(provider, label));
 		await store.setSlot("fixture:work", "api_key", { type: "api_key", value: "updated" });
-		expect(await quota.active(candidate)).toBeUndefined();
+		expect(await quota.forCandidate(candidate, now)).toEqual([]);
 	});
 
 	test("models accounts as named, typed multi-slot records", async () => {

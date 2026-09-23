@@ -2,15 +2,14 @@ import { test, expect } from "bun:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { DarkFactoryShell, Router, useRouter, validateRoutes } from "../src/index";
-import { memoryLocation } from "wouter/memory";
 
 const mockLocationHook = (initialPath: string) => {
-  const { hook, navigate } = memoryLocation({ path: initialPath });
-  return {
-    hook,
-    navigate,
-    searchHook: () => ""
+  let current = initialPath;
+  const navigate = (to: string) => {
+    current = to;
   };
+  const hook = () => [current, navigate] as const;
+  return { hook, navigate, searchHook: () => "" };
 };
 
 test("DarkFactoryShell renders shell", () => {

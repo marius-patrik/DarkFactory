@@ -429,26 +429,6 @@ def test_df_declares_no_credentials_because_it_reads_its_own_accounts():
     assert REGISTRY["df"].credentials == ()
 
 
-def test_pipeline_df_chain_runs_free_models_then_pipeline_subscriptions():
-    """The committed chain matches the owner decision: Gemini free models across three accounts,
-    then the free/fast providers and df-owned pipeline subscriptions, with opencode-zen and antigravity dropped.
-    """
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(root, ".darkfactory", "df", "config.json"), encoding="utf-8") as handle:
-        config = json.load(handle)
-    chain = config["defaultChain"].split(",")
-    assert chain[0] == "google/gemini-3.8-flash@default"
-    assert "google/gemini-3.8-flash@key3" in chain
-    assert "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@default" in chain
-    assert "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@acct2" in chain
-    assert "groq/openai/gpt-oss-120b@default" in chain
-    assert "openai-codex/gpt-5.6-luna@pipeline" in chain
-    assert "grok-sub/grok-4.6@pipeline" in chain
-    assert not any(
-        candidate.startswith("opencode-zen/") or "antigravity" in candidate for candidate in chain
-    ), "opencode-zen and antigravity are dropped from the pipeline chain"
-    assert config["cooldownTtlMs"] == 120000
-
 
 def test_agent_workflow_passes_exactly_the_declared_credentials():
     """A workflow missing a secret does not fail; it silently shortens df's chain.

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { DocsContentGraph } from "../src/content.ts";
 import { assertCurrentDocumentation, currentDocumentationFindings } from "../src/current.ts";
 import { renderReadmeMarkdown } from "../src/readme.ts";
+import { renderAgentsMarkdown } from "../src/agents.ts";
 
 function graph(): DocsContentGraph {
 	return {
@@ -30,6 +31,7 @@ describe("current documentation truth", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
 			expect(currentDocumentationFindings(repoRoot, content)).toEqual([]);
 			expect(() => assertCurrentDocumentation(repoRoot, content)).not.toThrow();
 		});
@@ -41,7 +43,7 @@ describe("current documentation truth", () => {
 			writeFileSync(join(repoRoot, "README.md"), "# stale\n");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
 				path: "README.md",
-				message: "committed README differs from the canonical docs home projection",
+				message: "committed README differs from the canonical repository-notes projection",
 			});
 			expect(() => assertCurrentDocumentation(repoRoot, content)).toThrow("Current documentation contract failed");
 		});
@@ -51,6 +53,7 @@ describe("current documentation truth", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
 			mkdirSync(join(repoRoot, "harness"), { recursive: true });
 			writeFileSync(join(repoRoot, "harness", "README.md"), "# retired\n");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({

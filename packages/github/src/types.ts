@@ -1,4 +1,5 @@
 import { AUTHOR_ASSOCIATIONS, type AuthorAssociation } from "@darkfactory/protocol/workflow";
+export type { AuthorAssociation } from "@darkfactory/protocol/workflow";
 import { z } from "zod";
 
 /** Schema for GitHub author-association values. */
