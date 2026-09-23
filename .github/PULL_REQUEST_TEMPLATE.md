@@ -1,36 +1,32 @@
 ## Summary
-<!-- What changed and why, in a few sentences. -->
+<!-- What changed and why. -->
 
-## Linked Issues
-<!-- Required. DF-RULE-009 (`.agents/rules/009-issue-binding-and-board-status.md`): every PR binds a tracked issue with a closing keyword. -->
+## Bound Request(s)
+<!-- Required by DF-RULE-009. Bind every active Request this PR satisfies.
+     Use Closes/Fixes/Resolves for terminal delivery and Advances for partial delivery. -->
 - Closes #
 
-## Type of Change
-<!-- Check all that apply using [x]. Must match the Conventional Commit type on the commits. -->
-- [ ] `feat`: New feature
-- [ ] `bug`: Bug fix
-- [ ] `refactor`: Code refactoring without behavioral change
-- [ ] `docs`: Documentation updates or docstring additions
-- [ ] `test`: New or updated tests
-- [ ] `chore`: Maintenance, dependency bump, or configuration
-- [ ] `ci`: Pipeline or automation changes
+## Planning and alignment
+- [ ] The current unified Planning artifact is reviewed clean and owner-approved.
+- [ ] If this is an authorized bootstrap/completion repair, the active Request records that exception and equivalent gates.
+- [ ] Implementation is within approved Planning, or every material deviation has an approved scope amendment.
+- [ ] Final alignment against the approved Planning artifact will be recorded before merge.
 
-## Area Affected
-<!-- Check all that apply using [x]. Must match the commit scope. -->
-- [ ] `area:agents`: Agent runtime, routing, providers, planning/review orchestration and model execution
-- [ ] `area:governance`: Agent rules, branch protection, required checks, project board taxonomy
-- [ ] `area:release`: Versioning modes, tagging, asset packaging, release notes
-- [ ] `area:docs`: Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces
-- [ ] `area:ci`: GitHub Actions workflows, containers, runner scripts, repository automation
+## Change classification
+<!-- Use the repository taxonomy from repo.df; do not copy a second fixed area list here. -->
+- Conventional Commit type: <!-- feat | fix | chore | docs | refactor | test | ci -->
+- Scope(s): <!-- repo.df-declared scope(s) -->
 
-## Verification Checklist
-- [ ] All commits follow Conventional Commits: `<type>(<scope>): <description>`
-- [ ] Unit tests added or updated for every behavior introduced
-- [ ] All CI jobs pass (`pipeline`, `rust`, `web`, `docs`, `verify-bound-issue`)
-- [ ] The environment-declared documentation build completes with zero warnings and zero errors
-- [ ] Implementation matches the approved child Plan issue, or a `Plan Alignment:` comment records
-      every deviation and has been approved
-- [ ] No feature branches on a preset *name* — only on capability-matrix axis values
-      (taxonomy in `.darkfactory/repo.df`)
-- [ ] `PRD.md` updated if this changes product requirements; decisions recorded as ADRs
-- [ ] No secrets, tokens, or credentials added to the tree or to workflow logs
+## Documentation impact
+- [ ] Canonical documentation was updated where required.
+- [ ] Or: `Docs: none (<reason>)` is valid for this diff under the docs-impact check.
+
+## Verification
+- [ ] Behavior changes have tests at the owning package/capability boundary.
+- [ ] Targeted tests/checks passed while implementing.
+- [ ] All applicable detected/capability-resolved quality actions pass for the current head.
+- [ ] Required GitHub checks are green, current, and match branch protection.
+- [ ] Implementation review/fix is clean.
+- [ ] Current-base/stack validity is confirmed.
+- [ ] No secret/token/private-key material was added to source, logs, issues, PR text, docs, or web assets.
+- [ ] PRD/accepted ADRs were updated only when the product/architecture contract actually changed.

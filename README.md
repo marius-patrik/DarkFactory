@@ -4,7 +4,7 @@
 
 **Autonomous, governed software delivery built around a self-hosting `df` engine, versioned capabilities and GitHub as the durable control plane.**
 
-> **Status:** the final DarkFactory architecture is settled and implementation is being completed directly against it. `PRD.md` defines the product; `PLAN.md` defines the shortest safe path to final release and fleet acceptance.
+> **Status:** the final DarkFactory architecture is settled and is being completed through one active Request/Planning contract and one integration PR. `PRD.md` defines the product; `PLAN.md` records the high-level dependency spine; live implementation steps and proof stay in GitHub.
 
 ## Product model
 
@@ -132,27 +132,29 @@ The broader GitHub-backed operator application shares the same package boundary 
 
 ## Self-hosting and completion strategy
 
-The completion program builds the final system directly.
+The completion program builds the final system directly rather than maintaining transitional production architectures.
 
-The critical path is:
+The active integration follows one dependency spine:
 
 ```text
-bootstrap routing
+green consolidated baseline
       ↓
-final package/capability foundations
+executable capability ownership
       ↓
-repo/config/state + runtime/lifecycle
+one graph + git/GitHub runtime
       ↓
-routing + natural-stop result capture
+relocate useful TypeScript
       ↓
-production graph handlers + branch repair
+direct df cutover; delete harness/Python
       ↓
-final df production engine complete
+finish operator/governance/web surfaces
       ↓
-remaining features completed through df itself
+current-truth docs + source-free release candidate
+      ↓
+exact-head fleet proof + cleanup
 ```
 
-See [PLAN.md](PLAN.md) for the authoritative completion program.
+[PLAN.md](PLAN.md) records this high-level strategy. The current GitHub Request/Planning record is the executable checklist and validation ledger.
 
 ## Distribution
 
@@ -164,7 +166,7 @@ Final releases include the CLI/runtime, official capabilities and generated adap
 
 ## Fleet acceptance
 
-The final released system is proved across six repositories:
+Before the final integration merge, an unpublished source-free candidate from the exact PR head is proved across six repositories:
 
 1. DarkFactory
 2. omnis
@@ -173,12 +175,12 @@ The final released system is proved across six repositories:
 5. template-OdbornaPrace
 6. OdbornaPrace-mono
 
-Final acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and then re-runs the declarable-graph product contract.
+Pre-merge acceptance produces `audit.df`, proves source-free install/update and df-only lifecycle/resume, validates docs/web/auth/capabilities, and re-runs the declarable-graph product contract. After merge, final publication from canonical may change provenance metadata but must not introduce behavioral source changes.
 
 ## Normative references
 
 - [PRD.md](PRD.md) — product requirements and architecture
-- [PLAN.md](PLAN.md) — optimized final-completion plan
+- [PLAN.md](PLAN.md) — repository-wide completion strategy; concrete active steps/evidence live in the GitHub Request/Planning record
 - [AGENTS.md](AGENTS.md) — projection of canonical contribution/governance rules
 - [ADRs](.agents/notes/adr/) — accepted architecture decisions
 

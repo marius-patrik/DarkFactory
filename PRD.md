@@ -2,12 +2,12 @@
 
 **Status: NORMATIVE.**
 
-DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. Execution sequencing belongs in `PLAN.md`; live state belongs in GitHub.
+DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. `PLAN.md` records repository-wide execution strategy; the active Request/Planning record carries the concrete implementation checklist, approvals and validation evidence in GitHub.
 
 ## 1. Authority
 
 1. `PRD.md` defines product requirements and architecture.
-2. Current Request bodies define approved feature-specific behavior.
+2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
 4. `repo.df`, `config.df`, `docs.df` and the workflow graph are executable declarations.
 5. `.agents/rules/*.md` define mandatory contribution/governance behavior.
@@ -355,6 +355,8 @@ The final release contains, as required:
 
 Initial installation must not require Python, a source checkout or a pre-existing df installation.
 
+Before a release-affecting delivery PR merges, an unpublished source-free candidate built from its exact head/tree must pass the applicable DarkFactory and fleet acceptance contract. Final publication occurs from canonical after merge without behavioral source changes; the published artifacts must reproduce the proven candidate behavior/assets aside from canonical source-provenance metadata.
+
 The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
 
 ## 17. Consumer/fleet model
@@ -386,7 +388,7 @@ Install/update is idempotent and drift-aware.
 
 ## 19. Final acceptance
 
-DarkFactory is final only when:
+DarkFactory is final only when the exact pre-merge candidate has passed the declared acceptance/fleet contract and the final canonical publication can reproduce it without behavioral source changes, and:
 
 - df is the only normal production orchestration/mutation engine;
 - production orchestration and mutation are owned by the final TypeScript df system;
@@ -396,8 +398,8 @@ DarkFactory is final only when:
 - real TypeScript API docs are published;
 - README generation from docs content is deterministic;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
-- released df installs/updates source-free;
-- all six repositories pass governance, detection, capability, docs/web, release and drift checks;
+- the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
+- all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
-- installed fleet acceptance is green across the supported consumer set;
-- the declarable-graph product contract passes against the installed final release.
+- installed fleet acceptance is green across the supported consumer set before merge;
+- the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.

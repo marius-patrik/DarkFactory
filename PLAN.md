@@ -10,6 +10,17 @@
 
 The closed historical Requests are evidence only. #68 is the implementation plan.
 
+## Integration discipline
+
+- #68 is the single executable checklist/validation ledger for this integration. PLAN.md must not grow a second detailed checklist.
+- The side-session dispatch that explicitly says to execute #68 is the owner Planning Approval for the narrow bootstrap/completion exception while df's own governed lifecycle is under repair.
+- Before changing implementation, the implementation orchestrator independently reviews #68 against the live tree, PRD and accepted ADRs and records the result on #68. A material plan/architecture mismatch is amended in #68 before coding.
+- One remote integration branch and one PR remain authoritative. Parallel workers may use temporary local worktrees/branches, but they do not open GitHub issues/PRs or create competing remote delivery branches.
+- The orchestrator owns shared integration files such as root manifests/lockfiles, package export maps, workflows, PRD/PLAN/rules/docs and final branch integration unless it explicitly delegates a non-overlapping edit.
+- Keep coherent Conventional Commit boundaries per step/lane. Integrate worker commits after targeted verification; do not squash unrelated work into one opaque commit merely because delivery uses one PR.
+- Run targeted tests during implementation and the full applicable gate at each numbered step. After a gate passes, update #68 checkboxes and attach concrete evidence (head SHA, commands/runs, relevant audit/provenance) before advancing.
+- PR-scoped pipeline failures stay attached to #1009/#68 as evidence. The final failure-reporting implementation must not create a new implementation Request for a failure already bound to existing work.
+
 ## Critical spine
 
 ```text

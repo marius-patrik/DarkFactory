@@ -79,8 +79,12 @@ written in English.
 
 ### Rule 5 — Commit granularity
 
-Keep commits modular, focused, and descriptive — one commit per component or coherent change. All
-commits across all branches MUST follow the Conventional Commits format
+Keep commits modular, focused, and descriptive — one commit per component or coherent change. A
+single delivery PR may contain multiple coherent commits; one PR does not imply one commit. When an
+integration/orchestrator session combines parallel worker output, preserve coherent commit boundaries
+until the final merge rather than collapsing unrelated work into one opaque commit.
+
+All commits across all branches MUST follow the Conventional Commits format
 `<type>(<scope>): <description>` (e.g. `feat(core): add substrate bus frame codec`). The allowed
 types and the area taxonomy are defined by DF-RULE-015; this rule covers granularity only.
 
@@ -94,7 +98,9 @@ Required checks are derived from the final normalized package/capability quality
 
 ### Rule 7 — Branch and pull request workflow
 
-All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.
+All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct
+mutation of the protected canonical branch is prohibited outside an explicitly authorized
+bootstrap/emergency operation recorded by the active Request/Planning record.
 
 - Branch names are lowercase, descriptive and do not depend on issue numbers.
 - The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
@@ -116,11 +122,23 @@ Lints are blocking where supported. Generated artifacts are excluded only by exp
 
 ### Rule 9 — Request binding, branch cleanup and board status
 
-Every delivery PR MUST explicitly bind every Request it satisfies.
+Every delivery PR MUST explicitly bind every **active** Request it satisfies.
 
-A PR may satisfy one Request or multiple Requests when the shared-plan/multi-Request model proves that each bound Request has valid independent or shared Planning/gate coverage. Epic membership or stack topology never implies completion by itself.
+A PR may satisfy one Request or multiple Requests when the shared-Planning/multi-Request model proves
+that every active bound Request has valid Planning/gate coverage. Epic membership or stack topology
+never implies completion by itself.
 
-Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack work is not deleted merely because another PR merged.
+When the owner deliberately consolidates tightly coupled work into one current Request, the
+consolidated Request MUST first preserve the current required behavior and relevant verbatim owner
+direction. Earlier duplicate Requests are then closed as historical traceability and do not need to
+remain separately bound by the delivery PR.
+
+Failures already associated with a delivery PR/Request MUST be recorded as check/run evidence and on
+that bound work rather than creating a new implementation Request. A standalone unbound/default-branch
+operational failure may use one deduplicated incident record when durable follow-up is required.
+
+Merged delivery branches are cleaned up when safe. A branch with unique unrepresented recovery/stack
+work is not deleted merely because another PR merged.
 
 Request/PR/project status uses one canonical reconciliation model with the seven states:
 
@@ -132,15 +150,19 @@ Request/PR/project status uses one canonical reconciliation model with the seven
 - `Superseded`
 - `Dropped`
 
-A Request reaches Done only from its own terminal evidence or explicit valid shared-plan/multi-Request completion.
+A Request reaches Done only from its own terminal evidence or explicit valid shared-Planning/
+multi-Request completion.
 
 ### Rule 10 — Reviewed Planning and implementation alignment
 
-Before implementation begins, each governed unit of work MUST have one current unified Planning artifact.
+Before implementation begins, each governed unit of work MUST have one current unified Planning
+artifact.
 
-Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified implementation approach, dependencies, recovery inputs and verification expectations.
+Planning contains the semantic interpretation of the verbatim Request plus the evidence-justified
+implementation approach, dependencies, recovery inputs and verification expectations.
 
-Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner Planning Approval.
+Planning MUST pass an independent review/fix loop until clean, followed by one explicit owner
+Planning Approval.
 
 There is no separate interpretation approval gate and plan approval gate in the final lifecycle.
 
@@ -152,7 +174,12 @@ After implementation:
 - final alignment validates the implementation against approved Planning plus approved amendments;
 - required checks/review/merge gates remain mandatory.
 
-Planning approval becomes stale after a material Request/base/dependency/recovery-context change and cannot be silently reused.
+Planning approval becomes stale after a material Request/base/dependency/recovery-context change and
+cannot be silently reused.
+
+If the governed Planning implementation itself is unavailable or is the component being repaired,
+only the narrow bootstrap/completion exception below may substitute an owner-authorized tracked
+Request as the temporary Planning record.
 
 ### Rule 11 — Pull request review approval and governed merge
 
@@ -173,39 +200,45 @@ After merge, df deterministically reconciles bound Requests/PRs/project state an
 
 ### Rule 12 — Verbatim Request capture and Planning gate
 
-Every incoming governed task MUST be represented by one or more tracked GitHub Requests before implementation.
+Every incoming governed task MUST be represented by one or more tracked GitHub Requests before
+implementation.
 
 - Preserve the user's verbatim wording.
 - Decompose genuinely independent tasks; do not split tightly coupled architecture solely to satisfy one-PR/one-issue assumptions.
+- When the owner consolidates previously separate Requests into one current Request, copy the relevant verbatim owner direction and all still-current required behavior into the consolidated Request before closing duplicates.
 - Resolve Request/Epic/dependency/recovery relationships explicitly.
 - Generate one unified Planning artifact from the verbatim Request and authoritative context.
 - Independently review/fix Planning until clean.
 - Require one explicit owner Planning Approval before implementation.
-- Subsequent delivery remains bound to the Request(s) or an explicitly approved shared-plan record.
+- Subsequent delivery remains bound to the active Request(s) or an explicitly approved shared-Planning record.
 
-There is no final separate `Interpretation` section/gate that must be approved before Planning can exist.
+There is no final separate `Interpretation` section/gate that must be approved before Planning can
+exist.
 
 ### Rule 13 — Specification sequence and when issues may exist
 
-Specification proceeds in one direction, and each stage is locked before the next begins:
+Specification proceeds in one direction, and each stage is settled before implementation depends on
+it:
 
 ```text
-PRD.md  →  ADRs (.agents/notes/adr/)  →  issues
+PRD.md  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
 ```
 
-- **An issue may only be filed for work that is settled.** Settled means one of two things: an
-  approved ADR resolving the decision the work depends on, or a concrete mechanical task whose
-  outcome is not in question (for example, "create the Bun workspace and add these named
-  dependencies").
-- **Speculative epic and decision issues are prohibited.** Filing an issue for an unanswered
-  question moves the argument into the tracker, where it fragments across comment threads instead of
-  converging in the document that owns it. Open questions live in the issues and the workflow graph,
-  not in a document that competes with the tracker.
-- **Large settled bodies of work** are tracked as `epic`-labelled issues: containers carrying the
-  scope statement, the acceptance criteria for the area, and a checklist of child `Request` issues.
-  Epics are never implemented directly — only their children are.
-- The workflow graph, GitHub parent/sub-issue relationships, and project fields are the work
-  ledger; no separate planning document shadows them.
+- **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
+  may be filed when its required outcome is settled by the PRD/accepted ADRs or when it is a concrete
+  mechanical task whose outcome is not in question.
+- **Open architecture questions stay with the owning product/ADR decision until settled.** Do not
+  create speculative decision issues merely to move an unresolved argument into the tracker.
+- **Decomposition follows delivery independence, not size alone.** A large tightly coupled body of
+  settled work may remain one Request/Planning record and one delivery PR when the owner explicitly
+  chooses one coherent integration/validation contract. Do not manufacture child Requests merely to
+  satisfy a process shape.
+- **Use an Epic when genuinely independent child Requests benefit from separate lifecycle,
+  ownership, sequencing or delivery.** Epic relationships organize Requests; they are not mandatory
+  wrappers around every large change and never waive child Planning/evidence when children exist.
+- `PLAN.md` may record repository-wide strategy and dependency order, but it is not a second live
+  work ledger. Concrete current implementation steps, checkboxes, approvals and evidence live in the
+  active Request/Planning record plus the workflow graph/GitHub/project state.
 
 ### Rule 14 — Capability-driven agent runtime and resilience
 

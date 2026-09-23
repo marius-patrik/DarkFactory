@@ -10,7 +10,9 @@ owners: [harness-auth]
 
 ## Requirement
 
-All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct mutation of the protected canonical branch is prohibited outside an explicitly authorized bootstrap/emergency operation recorded by the completion plan.
+All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct
+mutation of the protected canonical branch is prohibited outside an explicitly authorized
+bootstrap/emergency operation recorded by the active Request/Planning record.
 
 - Branch names are lowercase, descriptive and do not depend on issue numbers.
 - The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
@@ -22,7 +24,8 @@ All normal product changes MUST use dedicated delivery branches and GitHub pull 
 
 ## Rationale
 
-Topic branches preserve review traceability while dynamic base resolution and lease safety prevent automation from overwriting repository history.
+Topic branches preserve review traceability while dynamic base resolution and lease safety prevent
+automation from overwriting repository history.
 
 ## Enforcement
 
@@ -30,8 +33,12 @@ The final git/GitHub/hook capabilities and repository protection settings enforc
 
 ## Exceptions
 
-The temporary bootstrap-authoring exception in `PLAN.md` changes who may author a repair, not the required PR/check/review/merge evidence.
+When the governed df delivery path itself is unavailable or is the component under repair, an
+owner-authorized bootstrap/completion Request may permit a coordinator to author directly on one
+dedicated PR branch. This never permits direct canonical mutation, skipping required checks/review,
+or self-merging. The exception ends as soon as the governed path can represent and execute the work.
 
 ## Change control
 
-Concrete workflow/script owners may change while production ownership converges; this rule names behavior, not implementation file paths.
+Concrete workflow/script owners may change while production ownership converges; this rule names
+behavior, not implementation file paths.
