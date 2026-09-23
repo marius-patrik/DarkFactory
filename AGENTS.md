@@ -58,7 +58,7 @@ The final web rendering layer is `@darkfactory/web`; docs must not maintain a se
 
 ### Rule 3 — Product requirements and ADRs
 
-`PRD.md` is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.
+`PRD.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
 
 Executable declarations use the final DarkFactory contracts:
 

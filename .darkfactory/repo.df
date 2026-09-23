@@ -195,9 +195,9 @@
       "marius-patrik/DarkFactory",
       "marius-patrik/omnis",
       "marius-patrik/ChessWithQuests",
-      "marius-patrik/OdbornaPrace",
+      "marius-patrik/OdbornaPrace-paper",
       "marius-patrik/template-OdbornaPrace",
-      "marius-patrik/mono-OdbornaPrace"
+      "marius-patrik/OdbornaPrace-mono"
     ]
   },
   "identities": {

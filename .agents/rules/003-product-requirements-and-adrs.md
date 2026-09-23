@@ -4,13 +4,13 @@ title: Product requirements and ADRs
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [pr206, merge-gates]
+owners: [planning, docs]
 ---
 # Rule 3 — Product requirements and ADRs
 
 ## Requirement
 
-`PRD.md` is the single normative product requirements document. Current Request bodies define approved feature-specific behavior. Accepted ADRs record durable architectural decisions and rationale.
+`PRD.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
 
 Executable declarations use the final DarkFactory contracts:
 
@@ -38,4 +38,4 @@ None.
 
 ## Change control
 
-Planning/graph/package/capability changes update the owning Request/ADR/PRD rather than creating parallel specification files.
+Planning/graph/package/capability changes update the active Request/Planning record, accepted ADRs and PRD as applicable rather than creating parallel specification files.
