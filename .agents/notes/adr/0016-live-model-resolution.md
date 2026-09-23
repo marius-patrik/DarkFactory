@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`
+
 ## Decision
 
 DarkFactory discovers usable models from configured provider catalogs/accounts at runtime.

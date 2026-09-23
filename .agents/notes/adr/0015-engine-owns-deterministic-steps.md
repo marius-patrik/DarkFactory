@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-007`, `DF-RULE-018`
+
 ## Decision
 
 DarkFactory owns deterministic workspace and delivery effects, including repository state inspection, checkout/update operations, scope verification, commits, pushes, pull-request operations and deterministic verification.

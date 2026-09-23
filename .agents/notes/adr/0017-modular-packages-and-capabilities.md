@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`, `DF-RULE-017`
+
 ## Decision
 
 DarkFactory is a root Bun workspace with stable first-party package boundaries:
