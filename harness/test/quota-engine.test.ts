@@ -95,10 +95,7 @@ describe("admission control", () => {
 		await Bun.write(join(root, "usage.df"), JSON.stringify({ version: 2, events: [] }));
 		await expect(engine.admit(a)).rejects.toThrow("Invalid usage file");
 
-		await Bun.write(
-			join(root, "usage.df"),
-			JSON.stringify({ version: 1, events: [{ id: "bad", provider: "p" }] }),
-		);
+		await Bun.write(join(root, "usage.df"), JSON.stringify({ version: 1, events: [{ id: "bad", provider: "p" }] }));
 		await expect(engine.status(a)).rejects.toThrow("Invalid usage event");
 	});
 

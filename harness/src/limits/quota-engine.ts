@@ -186,7 +186,8 @@ export class QuotaEngine {
 				typeof event.outputTokens !== "number" ||
 				!Number.isFinite(event.outputTokens) ||
 				typeof event.success !== "boolean"
-			) throw new Error("Invalid usage event");
+			)
+				throw new Error("Invalid usage event");
 		}
 		return file.events as UsageEvent[];
 	}
