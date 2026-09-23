@@ -40,7 +40,15 @@ describe("LimitLedger authoritative limit state", () => {
 		await ledger.record([
 			{ ...candidate, type: "auth", observedAt: 1_000, resetAt: 9_000, source: "rule", remaining: 0 },
 			{ ...candidate, model: "other", type: "daily", observedAt: 1_000, resetAt: 9_000, source: "rule", remaining: 0 },
-			{ ...candidate, account: "personal", type: "auth", observedAt: 1_000, resetAt: 9_000, source: "rule", remaining: 0 },
+			{
+				...candidate,
+				account: "personal",
+				type: "auth",
+				observedAt: 1_000,
+				resetAt: 9_000,
+				source: "rule",
+				remaining: 0,
+			},
 		]);
 		await ledger.clearAccount("provider", "work");
 		expect(await ledger.forCandidate(candidate, 1_001)).toHaveLength(0);
