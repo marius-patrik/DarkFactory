@@ -66,11 +66,15 @@ def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
     assert "!endsWith(github.event.comment.user.login, '[bot]')" in condition
     assert "!contains(github.event.issue.labels.*.name, 'pipeline-failure')" in condition
 
+
 def test_failure_observer_only_auto_files_default_branch_incidents():
     workflow = _workflow(".github/workflows/report-failure.yml")
     condition = workflow["jobs"]["report"].get("if", "")
     assert "github.event_name != 'workflow_run'" in condition
-    assert "github.event.workflow_run.head_branch == github.event.repository.default_branch" in condition
+    assert (
+        "github.event.workflow_run.head_branch == github.event.repository.default_branch"
+        in condition
+    )
 
 
 def test_agent_image_installs_from_the_checked_in_harness_lock():

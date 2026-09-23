@@ -71,6 +71,7 @@ def test_agents_mandates_plan_gate_and_verbatim_requests():
     assert "verbatim" in content.lower()
     assert "no separate interpretation approval gate" in content.lower()
 
+
 def test_agents_supports_coherent_consolidation_and_bootstrap_repair():
     """Large coupled work may use one Request/PR, with a narrow repair exception for df itself."""
     content = _read("AGENTS.md").lower()
