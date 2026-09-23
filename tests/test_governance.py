@@ -140,7 +140,9 @@ def test_every_adr_is_a_discrete_record_with_status_and_date():
 
     records = [name for name in names if name not in ("README.md", "index.md")]
     assert records, "no discrete ADR records found"
-    assert "README.md" not in names, "the ADR directory must not maintain a second manual notes index"
+    assert (
+        "README.md" not in names
+    ), "the ADR directory must not maintain a second manual notes index"
 
     readme_content = _read("README.md")
 
@@ -156,8 +158,12 @@ def test_every_adr_is_a_discrete_record_with_status_and_date():
         assert (
             status_match.group(1).strip() == "Accepted"
         ), f"{name} must be Accepted; non-current ADRs are forbidden"
-        assert readme_content.count(f"ADR-{number}") == 1, f"ADR-{number} must be indexed exactly once in README.md"
-        assert f".agents/notes/adr/{name}" in readme_content, f"{name} canonical path must be indexed in README.md"
+        assert (
+            readme_content.count(f"ADR-{number}") == 1
+        ), f"ADR-{number} must be indexed exactly once in README.md"
+        assert (
+            f".agents/notes/adr/{name}" in readme_content
+        ), f"{name} canonical path must be indexed in README.md"
 
     assert len(numbers) == len(set(numbers)), "ADR numbers must be unique"
     assert numbers == sorted(numbers), "ADR records must remain monotonically numbered"
@@ -331,7 +337,9 @@ def test_agents_projection_matches_rule_sources():
     agents = _read("AGENTS.md")
     assert len(agents) < 32 * 1024, "Codex enforces a cumulative 32 KiB AGENTS.md limit"
     index = _index_rows(agents)
-    assert len(index) == len(_rule_files()), "the projection index must list every canonical rule exactly once"
+    assert len(index) == len(
+        _rule_files()
+    ), "the projection index must list every canonical rule exactly once"
     for name in _rule_files():
         number = name.split("-", 1)[0]
         stable_id = f"DF-RULE-{number}"
@@ -344,7 +352,9 @@ def test_agents_projection_matches_rule_sources():
         assert _normalize(requirement) in _normalize(
             agents
         ), f"{name} requirement must be projected"
-    assert agents.count("### Rule ") == len(_rule_files()), "every canonical rule must have exactly one projected heading"
+    assert agents.count("### Rule ") == len(
+        _rule_files()
+    ), "every canonical rule must have exactly one projected heading"
 
 
 def _normalize(text: str) -> str:
