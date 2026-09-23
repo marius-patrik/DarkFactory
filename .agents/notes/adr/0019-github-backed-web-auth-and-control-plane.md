@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-009`, `DF-RULE-011`, `DF-RULE-016`, `DF-RULE-018`
+
 ## Decision
 
 DarkFactory Web uses GitHub as the durable issue/PR/check/project/event/authorization control plane.

@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-003`, `DF-RULE-006`, `DF-RULE-015`
+
 ## Decision
 
 - `repo.df` is the repository/product declaration.
