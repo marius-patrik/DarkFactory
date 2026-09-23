@@ -13,10 +13,10 @@
   mesto: "Hradci Králové",
   rok: 2026,
   annotation-cs: [
-    Práce vymezuje vztah mezi jazykovým modelem, agentem a harnessem v AI-asistovaném vývoji softwaru. Popisuje postupy Agentického inženýrství, zejména návrh zadání a kontextu, ověřování, orchestraci a zapojení člověka. Praktická část analyzuje pipeline DarkFactory. Popisuje řízený průchod požadavku, kontrolu rozsahu změn, checkpointing a lidské schvalovací brány.
+    Práce zkoumá přechod od konverzační asistence k delegovanému agentnímu vývoji a roli harnessu jako běhového a integračního prostředí coding agenta. Agentické inženýrství vymezuje jako soubor postupů, které činí AI-asistovaný vývoj softwaru účinným, kontrolovaným, opakovatelným a škálovatelným. DarkFactory představuje praktický artefakt tohoto přístupu. Dostupná implementační evidence zatím podporuje pouze vybrané mechanismy; konečné vyhodnocení je podmíněno ověřením jedné pinované revize a reprodukovatelných důkazů.
   ],
   abstract-en: [
-    The thesis defines the relationship between a language model, an agent, and a harness in agentic software development. It describes Agentic Engineering practices, especially task and context design, verification, orchestration, and human integration. The practical part analyses the DarkFactory pipeline. It describes a governed request workflow, change scope control, checkpointing, and human approval gates.
+    This thesis examines the transition from conversational assistance to delegated agentic software development and the role of the harness as the coding agent's execution and integration environment. It defines Agentic Engineering as a set of practices that make AI-assisted software development effective, controlled, repeatable, and scalable. DarkFactory is presented as a practical artefact of this approach. The currently available implementation evidence supports only selected mechanisms; final evaluation depends on verification against one pinned revision and reproducible evidence.
   ],
 )
 
@@ -105,7 +105,7 @@ V #meta.mesto dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce
 
 #heading(level: 1)[Úvod]
 
-Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny v repozitáři @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak pravidelné využívání plnohodnotných agentických systémů zůstává omezeno na přibližně 0,36~% světové populace @gradually-ai-usage-2026.
+Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny v repozitáři a spouštějí příkazy @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak pravidelné využívání plnohodnotných agentických systémů zůstává omezeno na přibližně 0,36~% světové populace @gradually-ai-usage-2026.
 
 #figure(
   image("img/generated/gradually-ai-usage-2026.svg", width: 100%),
@@ -235,7 +235,7 @@ Runner ukládá checkpoint pro spolehlivé navázání rozpracovaného běhu. P�
 
 #heading(level: 2)[Diskuse]
 
-Analýza zjištěných mechanismů systému DarkFactory poskytuje konkrétní podklady pro zhodnocení teoretických konceptů Agentického inženýrství v reálném vývojovém procesu:
+Dostupný snapshot dokládá některé mechanismy relevantní pro pozdější vyhodnocení, zejména práci s trvalým stavem, oprávněními, izolací změn, automatickými kontrolami a vybranými scénáři obnovy. Neměří však účinnost jednotlivých postupů Agentického inženýrství, kvalitu práce s kontextem ani úplnost orchestrace. Konečné vyhodnocení cíle proto vyžaduje potvrzení kanonické revize DarkFactory a reprodukovatelný evidenční manifest; následující interpretace jsou z tohoto důvodu předběžné.
 
 #strong[Dělba odpovědnosti mezi modelem a harnessem.]
 Jazykový model sám o sobě postrádá pojem o čase, kauzalitě i stavu vývojového prostředí; funguje jako stochastický generátor návrhů. Výsledky ukazují, že skutečnou páteř autonomního systému tvoří deterministický harness — v tomto případě GitHub Actions workflow a pythonovský runner. Právě harness zodpovídá za přípravu izolovaného prostředí, vynucování kroků, orámování kontextu a interpretaci návratových kódů. Model tedy nepředstavuje samostatnou autonomní entitu, nýbrž výpočetní modul zasazený do přísně strukturovaného algoritmického rámce @anthropic-harness-design.
