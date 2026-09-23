@@ -31,16 +31,30 @@ edit this projection.
 
 ---
 
-### Rule 1 — Unit tests
+### Rule 1 — Tests prove invariants
 
-Every change that adds or modifies behavior MUST be accompanied by corresponding tests at the
-appropriate package/capability boundary. Behavior is verified per change or pull request, not by an
-artificial test manufactured for every commit.
+Every behavior or contract change MUST be covered at the owning package/capability boundary by tests
+that prove observable invariants, state transitions, failure behavior or integration contracts.
 
-Applicable test actions come from the canonical repository/package detection plus capability-resolution
-contract. First-party TypeScript packages/capabilities use the normalized Bun test action. Retained
-non-TypeScript tooling uses its detected/capability-provided test action. All applicable suites MUST
-pass before a push is considered green.
+Tests MUST survive valid refactors. They must not normally assert exact implementation filenames,
+source-code substrings, function/class names, workflow step labels, copied command text, or the
+presence/absence of an internal file merely because the current implementation happens to use it.
+
+Static architecture/governance tests are appropriate only for real static contracts. They MUST inspect
+semantic structure where practical: parsed manifests/configuration/YAML, schemas, dependency/import
+graphs, package exports, generated artifacts or public interfaces rather than brittle source grep.
+
+Concurrency-sensitive behavior MUST be tested concurrently. Idempotency/crash-safety claims MUST
+exercise duplicate invocation and the relevant crash window, not only call the same function twice
+after a successful journal write. Atomicity claims MUST test interruption/failure between transaction
+steps.
+
+Each final first-party package/capability MUST own or be explicitly covered by one canonical detected
+test action. Coverage that happens only because a legacy aggregate/harness test imports the package is
+not sufficient. Duplicate/shadowed test definitions and copied test blocks are forbidden.
+
+Applicable test actions come from the canonical repository/package detection plus
+capability-resolution contract. All applicable suites MUST pass before a head is considered green.
 
 ### Rule 2 — Inline documentation and generated documentation
 
@@ -90,11 +104,34 @@ types and the area taxonomy are defined by DF-RULE-015; this rule covers granula
 
 ### Rule 6 — CI readiness and verification
 
-The canonical/default branch MUST remain green on its required checks. A red canonical branch is a stop-the-line event for repository-wide delivery until restored.
+The canonical/default branch MUST remain green on its required checks. A red canonical branch is a
+stop-the-line event for repository-wide delivery until restored.
 
-A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not globally halt unrelated isolated branches whose own required checks are green. Parallel work is allowed when it cannot consume or hide the failing branch state.
+A failing topic/recovery branch blocks that branch's merge and any dependent work, but does not
+globally halt unrelated isolated branches whose own required checks are green.
 
-Required checks are derived from the final normalized package/capability quality contract and synchronized with branch protection. A branch may not merge while any required check for its current head is red, missing or stale.
+CI MUST derive one normalized quality contract from detected packages plus applicable capabilities
+and fail closed when that contract has an unresolved required gap, ambiguity or unsupported action.
+Warnings are not an acceptable substitute for required test, typecheck, lint, format or documentation
+coverage.
+
+Type safety is a first-class required quality action for TypeScript packages. Every detected
+first-party package/capability MUST be accounted for exactly once by an owning package action or an
+explicit workspace-level action whose coverage can be proven. Incidental execution through a legacy
+aggregate package does not count.
+
+The aggregate required quality check is green only when every applicable required action for the
+current head completed successfully. A required action that is missing, stale, cancelled, skipped or
+neutral is not treated as proven success unless canonical configuration explicitly marks that action
+not applicable before matrix construction.
+
+CI validation MUST be read-only with respect to the delivery branch. Formatting and other
+deterministic fixes happen in the governed mutation path before commit; CI reports drift rather than
+pushing corrective commits.
+
+Required checks are synchronized with branch protection and evaluated for the exact current head. A
+branch may not merge while any required check or required invariant is red, missing, stale or
+unevaluated.
 
 ### Rule 7 — Branch and pull request workflow
 
