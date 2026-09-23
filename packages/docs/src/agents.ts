@@ -31,7 +31,7 @@ export function renderAgentsMarkdown(graph: DocsContentGraph): string {
 	return `# Repository Development Guidelines & Agent Rules
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The rules
-below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
+below are canonical in \`.agents/rules/\` and binding on every contributor — human or agent.
 They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Related notes are derived from

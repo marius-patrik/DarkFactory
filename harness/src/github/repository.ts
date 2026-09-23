@@ -15,10 +15,11 @@ import {
 	variableSchema,
 } from "./types.ts";
 
-const AUTHORIZED = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
-/** Checks whether a GitHub association value is one of the authorized types (OWNER, MEMBER, COLLABORATOR). */
-export function isAuthorizedAssociation(value: AuthorAssociation): boolean {
-	return AUTHORIZED.has(value);
+type AuthorizedAssociation = Extract<AuthorAssociation, "OWNER" | "MEMBER" | "COLLABORATOR">;
+const AUTHORIZED: ReadonlySet<string> = new Set<AuthorizedAssociation>(["OWNER", "MEMBER", "COLLABORATOR"]);
+/** Narrows an untrusted GitHub association value to one authorized to advance governed transitions. */
+export function isAuthorizedAssociation(value: unknown): value is AuthorizedAssociation {
+	return typeof value === "string" && AUTHORIZED.has(value);
 }
 /** Tests whether a login string ends with "[bot]", identifying a GitHub bot account. */
 export function isBotLogin(login: string): boolean {
