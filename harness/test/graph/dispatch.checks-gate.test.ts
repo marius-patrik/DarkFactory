@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import type { CheckStateSource } from "../../src/graph/checks-gate.ts";
+import type { CheckStateSource, NodeHandlers } from "@darkfactory/core/graph";
 import { dispatch } from "../../src/graph/dispatch.ts";
 
 const tmpDir = path.join(__dirname, "tmp");
@@ -73,8 +73,13 @@ describe("dispatch checks-gate", () => {
 		};
 
 		try {
+			const handlers: NodeHandlers = {
+				agent: async (node) => ({ outcome: "success", outputs: { [node.id + "_done"]: true } }),
+				automation: async (node) => ({ outcome: "success", outputs: { [node.id + "_done"]: true } }),
+			};
 			await dispatch(["--event-name", "check_suite", "--event", payloadPath, "--graph", graphPath, "--runs", tmpDir], {
 				checkStateSource: stubCheckStateSource,
+				createRuntime: async () => ({ handlers }),
 			});
 
 			// capture printed JSON
@@ -84,7 +89,7 @@ describe("dispatch checks-gate", () => {
 			expect(obj.result).toBe("pass");
 
 			// verify RunState file exists and current_node matches plan
-			const runStatePath = path.join(tmpDir, "1.df");
+			const runStatePath = path.join(tmpDir, "1", "state.df");
 			const runState = JSON.parse(await fs.readFile(runStatePath, "utf8"));
 			expect(runState.current_node).toBe("next");
 

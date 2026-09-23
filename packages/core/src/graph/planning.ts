@@ -1,5 +1,5 @@
-import type { PlanningArtifact, PlanningContextPacket } from "../../../packages/protocol/src/planning.ts";
-import type { ReviewFinding } from "../../../packages/protocol/src/review.ts";
+import type { PlanningArtifact, PlanningContextPacket } from "@darkfactory/protocol/planning";
+import type { ReviewFinding } from "@darkfactory/protocol/review";
 import { contextFingerprint, type ReviewSubjectAdapter } from "./review-loop.ts";
 
 function finding(id: string, category: string, message: string, extra: Partial<ReviewFinding> = {}): ReviewFinding {

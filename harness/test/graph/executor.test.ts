@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type NodeContext, type NodeHandlers, type NodeResult, runGraph } from "../../src/graph/executor.ts";
 import type {
 	Actor,
 	AgentNode,
@@ -12,7 +11,8 @@ import type {
 	GraphNode,
 	RunState,
 	WorkflowGraph,
-} from "../../src/graph/types.ts";
+} from "@darkfactory/core/graph";
+import { type NodeContext, type NodeHandlers, type NodeResult, runGraph } from "@darkfactory/core/graph";
 
 const roots: string[] = [];
 afterEach(() => {

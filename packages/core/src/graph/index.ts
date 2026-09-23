@@ -1,5 +1,5 @@
+export * from "./effect-journal.ts";
 export * from "./checks-gate.ts";
-export { dispatch } from "./dispatch.ts";
 export * from "./events.ts";
 export * from "./executor.ts";
 export * from "./loader.ts";
@@ -8,3 +8,4 @@ export * from "./planning.ts";
 export * from "./review-loop.ts";
 export * from "./types.ts";
 export * from "./validator.ts";
+export * from "./production-handlers.ts";

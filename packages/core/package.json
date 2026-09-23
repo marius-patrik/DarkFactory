@@ -7,7 +7,9 @@
     ".": "./src/index.ts",
     "./repository-evidence": "./src/repository-evidence.ts",
     "./result-capture": "./src/result-capture.ts",
-    "./recovery": "./src/recovery.ts"
+    "./recovery": "./src/recovery.ts",
+    "./graph": "./src/graph/index.ts",
+    "./mutation-evidence": "./src/mutation-evidence.ts"
   },
   "files": [
     "src"

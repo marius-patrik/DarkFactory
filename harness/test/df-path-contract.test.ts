@@ -38,8 +38,7 @@ describe("hard .df transition in the final TypeScript system", () => {
 			"harness/src/limits/quota-engine.ts": [".lock`", ".tmp`"],
 			"harness/src/models/catalog.ts": ["${provider}.json", ".tmp`"],
 			"packages/keychain/src/vault-store.ts": [".secrets.lock", ".tmp`"],
-			"harness/src/graph/run-state.ts": ["${subject}.json", ".tmp.json", ".json`"],
-			"harness/src/graph/executor.ts": ["state.json", "events.jsonl", "result.json", ".tmp`"],
+			"packages/core/src/graph/executor.ts": ["state.json", "events.jsonl", "result.json", ".tmp`"],
 		};
 		for (const [relative, aliases] of Object.entries(contracts)) {
 			const source = await readFile(resolve(root, relative), "utf8");

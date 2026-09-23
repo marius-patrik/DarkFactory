@@ -1,4 +1,5 @@
 name: Project Board Automation
+run-name: "Project Board Automation${{ inputs.effect_id && format(' [{0}]', inputs.effect_id) || '' }}"
 
 on:
   issues:
@@ -13,6 +14,12 @@ on:
   schedule:
     - cron: "43 5 * * *"
   workflow_dispatch:
+    inputs:
+      effect_id:
+        description: "Optional deterministic graph effect identity for reconciliation."
+        required: false
+        type: string
+        default: ""
 
   # Consumers call this rather than copying it, so the scripts it runs live in one place.
   workflow_call:
