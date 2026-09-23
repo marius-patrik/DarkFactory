@@ -18,6 +18,8 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	join(".agents", "notes", "bootstrap.md"),
 	join(".agents", "notes", "vision_capture.md"),
 	join(".agents", "notes", "adr", "README.md"),
+	"_notes",
+	"_rules",
 ] as const;
 
 /** Returns deterministic current-only documentation violations without mutating the repository. */

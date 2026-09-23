@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DocsContentGraph } from "../src/content.ts";
-import { renderAgentsMarkdown } from "../src/agents.ts";
+import { AGENTS_GENERATED_MARKER, renderAgentsMarkdown } from "../src/agents.ts";
 
 const rule = (source: string, id: string, title: string, number: number, requirement: string) => ({
 	id: source.replace(/[^a-z0-9]+/giu, "-").toLowerCase(),
@@ -45,6 +45,7 @@ describe("AGENTS rules projection", () => {
 			],
 		};
 		const markdown = renderAgentsMarkdown(graph);
+		expect(markdown.startsWith(AGENTS_GENERATED_MARKER)).toBe(true);
 		expect(markdown.indexOf("DF-RULE-001")).toBeLessThan(markdown.indexOf("DF-RULE-002"));
 		expect(markdown).toContain("| `DF-RULE-001` | First | `ADR-0001` | `.agents/rules/001-first.md` |");
 		expect(markdown).toContain("### Rule 1 — First\n\nFirst invariant.");

@@ -1,6 +1,10 @@
 import type { DocsContentGraph, DocsPage } from "./content.ts";
 import { assertRuleNoteRelations } from "./relations.ts";
 
+/** Marker prepended to the committed generated repository-rules projection. */
+export const AGENTS_GENERATED_MARKER =
+	"<!-- Generated from .agents/rules/** and .agents/notes/** by @darkfactory/docs. Do not edit AGENTS.md directly. -->";
+
 function requirement(markdown: string): string {
 	const match = markdown.match(/(?:^|\n)## Requirement\n([\s\S]*?)(?=\n## Rationale\n)/u);
 	if (!match?.[1]) throw new Error("Rule is missing Requirement section");
@@ -28,8 +32,7 @@ export function renderAgentsMarkdown(graph: DocsContentGraph): string {
 	});
 	const projected = rules.map((rule) => `### ${projectedHeading(rule.page)}\n\n${requirement(rule.page.markdown)}`);
 
-	return `# Repository Development Guidelines & Agent Rules
-
+	return `${AGENTS_GENERATED_MARKER}\n\n# Repository Development Guidelines & Agent Rules\n
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The rules
 below are canonical in \`.agents/rules/\` and binding on every contributor — human or agent.
 They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a

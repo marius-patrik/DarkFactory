@@ -18,13 +18,13 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
-`docs/home.md` is the product-documentation homepage. `AGENTS.md` is the generated/indexed projection of canonical `.agents/rules/**`. Root `README.md` is the generated index/projection of current long-term `.agents/notes/**`. These surfaces have distinct roles and MUST NOT duplicate one another. CI MUST fail on deterministic projection drift.
+`docs/home.md` is the product-documentation homepage. `.agents/rules/**` is the canonical rule set and `.agents/notes/**` is the canonical current long-term note set. Root `AGENTS.md` and root `README.md` are deterministic generated projections of those directories; they are discovery/index surfaces, never authorities and never edited directly. Repository/tool discovery aliases may point to canonical directories or generated projections only when they serve a current external/conventional entry point; unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
 ## Rationale
 
-One content graph can publish product docs, rules and notes without turning README into a second product specification. Canonical records stay in their owning files while generated projections make them discoverable.
+One content graph can publish product docs, rules and notes without turning generated projections into competing authorities. Canonical records stay in their owning directories while generated indexes and supported discovery aliases make them accessible.
 
 ## Enforcement
 

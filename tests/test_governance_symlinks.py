@@ -1,9 +1,9 @@
-"""Tests that the agent-governance aliases are committed as symlinks, not as text files.
+"""Tests supported discovery aliases without turning generated projections into authorities.
 
-`AGENTS.md` is the single canonical governance document. Every other entry point an agent might
-open - `CLAUDE.md`, `CONTRIBUTING.md`, the `.claude` directory, the mirrors under `.agents/`, and
-the root `_notes` / `_rules` aliases - is a symlink pointing back at the canonical source, so there
-is exactly one copy of the rules and the notes.
+Canonical governance lives in `.agents/rules/**` and current long-term notes live in
+`.agents/notes/**`. Root `AGENTS.md` and `README.md` are generated projections. Conventional/tool
+entry points may point at those projections or canonical directories, but unsupported legacy aliases
+must not be preserved.
 
 Checking the working tree is not enough. Git stores a symlink as mode `120000` and a regular file
 as `100644`; when the mode is wrong the checkout is a small text file whose *content* is the target
@@ -29,8 +29,6 @@ EXPECTED_LINKS: Dict[str, str] = {
     ".agents/CLAUDE.md": "../AGENTS.md",
     ".agents/README.md": "../README.md",
     ".agents/notes/README.md": "../../README.md",
-    "_notes": ".agents/notes",
-    "_rules": ".agents/rules",
 }
 
 #: Git's file mode for a symbolic link.
@@ -87,11 +85,14 @@ def test_alias_points_at_the_canonical_document(alias: str, target: str):
     assert not os.path.isabs(os.readlink(path)), f"{alias} must use a relative target"
 
 
-def test_agents_is_the_only_real_governance_document():
-    """`AGENTS.md` carries the rules; every alias is a link, so the rules cannot fork."""
+def test_generated_projections_are_real_root_files():
+    """Generated root projections are files while canonical rule/note directories remain separate."""
     modes = _index_modes()
     assert modes.get("AGENTS.md") == "100644", "AGENTS.md must be the real file, not a link"
     assert os.path.getsize(os.path.join(REPO_ROOT, "AGENTS.md")) > 1000
+    assert modes.get("README.md") == "100644", "README.md must be the generated notes projection"
+    assert os.path.isdir(os.path.join(REPO_ROOT, ".agents", "rules"))
+    assert os.path.isdir(os.path.join(REPO_ROOT, ".agents", "notes"))
 
 
 def test_claude_entry_is_a_regular_import():
