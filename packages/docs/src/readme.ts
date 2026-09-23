@@ -21,7 +21,7 @@ export function renderReadmeMarkdown(graph: DocsContentGraph): string {
 
 # DarkFactory Repository Notes
 
-This README is the generated index of current long-term repository notes under `.agents/notes/**`.
+This README is the generated index of current long-term repository notes under \`.agents/notes/**\`.
 It is not the product specification or active implementation plan.
 
 - Product documentation: [\`docs/home.md\`](docs/home.md)
