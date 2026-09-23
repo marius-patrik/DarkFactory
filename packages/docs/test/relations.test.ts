@@ -67,4 +67,11 @@ describe("rule/note relationships", () => {
 		const content = graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-999")]);
 		expect(() => assertRuleNoteRelations(content)).toThrow("unknown related rule DF-RULE-999");
 	});
+
+	test("fails when a canonical rule has no accepted note", () => {
+		const content = graph([rule("DF-RULE-001")]);
+		expect(analyzeRuleNoteRelations(content).findings).toContain(
+			".agents/rules/001-test.md: canonical rule must be related by at least one accepted ADR",
+		);
+	});
 });

@@ -20,7 +20,7 @@ sites, logs, and issue threads internally consistent.
 
 ## Enforcement
 
-Unenforced. No automated gate scans natural-language content today; review is the backstop.
+Hooks/CI enforce machine-checkable language policy where deterministic (for example identifiers, generated metadata and commit conventions). Human/agent review remains the backstop for prose semantics; the repository does not claim a brittle natural-language scanner can prove every sentence is English.
 
 ## Exceptions
 
@@ -29,4 +29,4 @@ localization fixtures).
 
 ## Change control
 
-Tracking owned by `system-audit`; do not claim total mechanical enforcement until a gate exists.
+Machine-checkable enforcement is owned by hooks/CI; prose-language consistency remains a review invariant.

@@ -14,7 +14,7 @@ accepted ADR metadata; edit canonical rules/notes rather than this projection.
 | `DF-RULE-001` | Tests prove invariants | `ADR-0026` | `.agents/rules/001-unit-tests.md` |
 | `DF-RULE-002` | Inline docstrings and generated documentation | `ADR-0023` | `.agents/rules/002-inline-docs-and-generated-documentation.md` |
 | `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022` | `.agents/rules/003-product-requirements-and-adrs.md` |
-| `DF-RULE-004` | English language consistency | — | `.agents/rules/004-english-language.md` |
+| `DF-RULE-004` | English language consistency | `ADR-0027` | `.agents/rules/004-english-language.md` |
 | `DF-RULE-005` | Commit granularity | `ADR-0025` | `.agents/rules/005-commit-granularity.md` |
 | `DF-RULE-006` | CI readiness | `ADR-0021`, `ADR-0026` | `.agents/rules/006-ci-readiness.md` |
 | `DF-RULE-007` | Branches and pull requests | `ADR-0015`, `ADR-0025` | `.agents/rules/007-branches-and-pull-requests.md` |
@@ -88,6 +88,13 @@ Executable declarations use the final DarkFactory contracts:
 Only the current `repo.df`, `config.df`, and `docs.df` contracts are normative.
 
 A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
+
+Long-term notes and normative rules form one bidirectional current-truth graph:
+
+- every accepted ADR MUST declare the canonical rules it explains or constrains;
+- every canonical rule MUST be backed by at least one current accepted ADR explaining its durable rationale;
+- unknown, missing or orphaned links are documentation-currentness failures;
+- superseded/historical decisions are removed from the live notes/rules graph and remain in Git/GitHub history instead.
 
 ### Rule 4 — English language consistency
 

@@ -24,13 +24,20 @@ Only the current `repo.df`, `config.df`, and `docs.df` contracts are normative.
 
 A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
+Long-term notes and normative rules form one bidirectional current-truth graph:
+
+- every accepted ADR MUST declare the canonical rules it explains or constrains;
+- every canonical rule MUST be backed by at least one current accepted ADR explaining its durable rationale;
+- unknown, missing or orphaned links are documentation-currentness failures;
+- superseded/historical decisions are removed from the live notes/rules graph and remain in Git/GitHub history instead.
+
 ## Rationale
 
 Stable requirements, executable declarations and current architecture decisions have separate owners so no generated view can silently override product intent.
 
 ## Enforcement
 
-Governance checks ensure PRD remains the single normative product document and architecture changes are represented by ADRs.
+Governance/docs-currentness checks ensure PRD remains the single normative product document, architecture changes are represented by ADRs, and rule/note relationships are complete in both directions.
 
 ## Exceptions
 

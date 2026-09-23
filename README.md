@@ -31,5 +31,6 @@ It is not the product specification or active implementation plan.
 | `ADR-0024` | Effects are serializable and authoritative state is crash-consistent | `DF-RULE-018` | [`.agents/notes/adr/0024-serializable-effects-and-crash-consistent-state.md`](.agents/notes/adr/0024-serializable-effects-and-crash-consistent-state.md) |
 | `ADR-0025` | Each delivery branch has one integration authority | `DF-RULE-005`, `DF-RULE-007`, `DF-RULE-019` | [`.agents/notes/adr/0025-single-integration-authority.md`](.agents/notes/adr/0025-single-integration-authority.md) |
 | `ADR-0026` | Verification proves invariants and fails closed | `DF-RULE-001`, `DF-RULE-006`, `DF-RULE-008` | [`.agents/notes/adr/0026-invariant-based-verification.md`](.agents/notes/adr/0026-invariant-based-verification.md) |
+| `ADR-0027` | Repository-authored artifacts use English | `DF-RULE-004` | [`.agents/notes/adr/0027-repository-authored-artifacts-use-english.md`](.agents/notes/adr/0027-repository-authored-artifacts-use-english.md) |
 
 History that is no longer current belongs in Git and GitHub, not in the live notes index.

@@ -89,6 +89,11 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	const ruleNotes = new Map<string, readonly string[]>(
 		[...reverse.entries()].map(([ruleId, ids]) => [ruleId, [...ids].sort((a, b) => a.localeCompare(b))]),
 	);
+	for (const rule of rules) {
+		if ((ruleNotes.get(rule.id) ?? []).length === 0) {
+			findings.push(`${rule.page.source}: canonical rule must be related by at least one accepted ADR`);
+		}
+	}
 	return { rules, notes, ruleNotes, findings };
 }
 

@@ -11,18 +11,25 @@ function graph(): DocsContentGraph {
 		pages: [
 			{ id: "home", kind: "home", title: "Product home", source: "docs/home.md", markdown: "# Product home\n" },
 			{
+				id: "agents-rules-001",
+				kind: "rule",
+				title: "Rule 1 — Runtime",
+				source: ".agents/rules/001-runtime.md",
+				markdown: "---\nid: DF-RULE-001\ntitle: Runtime\n---\n# Rule 1 — Runtime\n\n## Requirement\n\nRuntime.\n\n## Rationale\n\nRuntime.\n",
+			},
+			{
 				id: "agents-notes-adr-0008",
 				kind: "adr",
 				title: "ADR-0008 — Providers are configuration-driven",
 				source: ".agents/notes/adr/0008-providers-are-config-driven.md",
-				markdown: "# ADR-0008 — Providers are configuration-driven\n\n**Status**: Accepted\n",
+				markdown: "# ADR-0008 — Providers are configuration-driven\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n",
 			},
 			{
 				id: "agents-notes-adr-0006",
 				kind: "adr",
 				title: "ADR-0006 — The pipeline runs only df",
 				source: ".agents/notes/adr/0006-the-pipeline-runs-only-df.md",
-				markdown: "# ADR-0006 — The pipeline runs only df\n\n**Status**: Accepted\n",
+				markdown: "# ADR-0006 — The pipeline runs only df\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n",
 			},
 		],
 	};
