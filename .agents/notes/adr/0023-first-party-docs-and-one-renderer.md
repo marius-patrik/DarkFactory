@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 
-**Related rules**: `DF-RULE-002`
+**Related rules**: `DF-RULE-002`, `DF-RULE-003`
 
 ## Decision
 
