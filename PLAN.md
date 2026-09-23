@@ -2,75 +2,114 @@
 
 ## Authority
 
-There is one implementation plan:
+- Architecture: `PRD.md`
+- Executable implementation/checklist contract: #68
+- Integration branch: `finish/darkfactory`
+- Integration PR: #1009
+- Target: `darkfactory`
 
-- architecture: `PRD.md`
-- executable checklist and merge contract: #68
-- branch: `finish/darkfactory`
-- PR: #1009
-- target: `darkfactory`
+The closed historical Requests are evidence only. #68 is the implementation plan.
 
-This file records only the high-level execution order. **#68 contains the concrete file moves, deletions, implementation tasks and verification gates.**
+## Critical spine
 
-The old required child Requests are closed historical records. Do not use them as implementation plans.
+```text
+Step 0  Green consolidated baseline
+  ↓
+Step 1  Executable capability architecture + missing official capability owners
+  ↓
+Step 2  One graph runtime + one git/GitHub substrate + mutation truth
+  ↓
+Step 3  Relocate remaining useful harness TypeScript into final owners
+  ↓
+Step 4  Cut production entrypoints to df, then delete harness + DarkFactory Python
+  ↓
+Step 5  Complete product lanes on final owners
+  ↓
+Step 6  Current-truth docs + exact-head source-free release candidate
+  ↓
+Step 7  DarkFactory/fleet proof + final cleanup
+```
 
+After Step 2, independent Step 5 lanes may run in parallel when they do not overlap files or consume unsettled interfaces.
 
-## Execution order
+## Step summaries
 
-### Step 0 — Stabilize the consolidated branch
+### Step 0 — Green baseline
 
-Fix consolidation regressions first and establish a known-good #1009 baseline containing the preserved #894/#899/#963 work.
+Fix the current consolidated web/type/docs errors and verify #1009 metadata/check binding. Do not start the large ownership migration from a broken consolidation baseline.
 
-### Step 1 — Finish runtime, mutation truth and shared git
+### Step 1 — Capability execution architecture
 
-Finalize one production graph/run/effect path, move conflict repair into final ownership, complete the common deterministic git substrate, and prove effect idempotency plus real graph re-entry.
+Extend the capability ABI so official capabilities can execute graph behavior through typed shared contracts while core remains the generic graph/run/effect mechanism.
 
-### Step 2 — Relocate useful harness TypeScript and delete harness
+Create the missing required official capability packages:
 
-Move working implementation by subsystem into its final package/capability owner, move tests with it, remove final-owner imports back into harness, remove harness from the workspace, then delete `harness/`.
+- docs
+- git
+- github
+- planning
+- review
+- ci
+- recovery
+- epics
+- stacks
 
-Do not rewrite working TypeScript merely to change ownership.
+Extract product-specific Planning/review/GitHub/CI behavior out of generic core ownership.
 
-### Step 3 — Replace the Python outer engine with df and delete Python
+### Step 2 — Runtime/git/GitHub foundation
 
-Make df the direct production entrypoint, move each still-required Python responsibility to its final TypeScript owner, convert workflows, remove the Python runner/scripts/tests/runtime, and retain only generic support for Python consumer repositories.
+Finish one persisted production graph path, one durable effect model, one deterministic git substrate, real branch repair/re-entry, lease-safe pushes, and evidence-backed mutation truth.
 
-### Step 4 — Finish operator and policy surfaces
+### Step 3 — Harness relocation
 
-In parallel on stable final owners:
+Move working TypeScript by subsystem into protocol/core/github/keychain/cli and official capabilities. Move tests with implementation. Final packages stop importing harness.
+
+Do **not** delete harness yet; keep only frozen deletion-bound entrypoint material until Step 4 rewires Docker/workflows.
+
+### Step 4 — Direct df cutover and legacy deletion
+
+Switch Docker and workflows directly to final df/capability entrypoints. Replace each still-required Python responsibility in its final TypeScript owner.
+
+Then, in the same phase, delete:
+
+- `harness/`
+- obsolete `.github/scripts/*.py`
+- obsolete Python tests
+- DarkFactory `pyproject.toml` / `requirements-dev.txt`
+- DarkFactory-specific Python runtime/setup
+
+Python consumer-project support remains in capability-driven CI.
+
+### Step 5 — Functional completion lanes
+
+Run on stable final owners:
 
 - hooks/rules;
-- OAuth and multi-account login;
-- CLI/operator commands;
-- TUI.
+- provider login/accounts + CLI/TUI;
+- Epics/stacks/recovery;
+- Web/browser transport/operator surfaces.
 
-### Step 5 — Finish governance, stacks and recovery
+Concrete TUI recovery is reused only if actual recoverable bytes exist; absence of an unproven historical recovery ref is not a blocker.
 
-On the single graph/git/GitHub substrate:
+### Step 6 — Truth + release candidate
 
-- Epic/Request relationships;
-- stacked PR orchestration;
-- local/recovered work intake through the ordinary governed lifecycle.
+Perform the current-only docs/ADR/README/API pass after behavior freezes.
 
-### Step 6 — Finish Web and current-only docs
+Build an **unpublished source-free release candidate** from the exact #1009 head and prove package/native/runtime/TUI/web assets in clean environments. Final publication is not required from a non-canonical PR branch.
 
-Settle the browser-safe auth/GitHub transport, finish the one reusable prebuilt web app and quota/operator surfaces, then perform the final current-truth documentation pass and docs-drift enforcement.
+### Step 7 — Exact-head and fleet proof
 
-### Step 7 — Build the final release candidate
+Prove the final candidate on DarkFactory and all six consumers, generate `audit.df`, clean branches/worktrees/stashes/recovery refs, and verify the PR base has not changed since proof.
 
-Freeze versioning only after implementation is complete. Build source-free npm/native/web/runtime artifacts from the exact #1009 head and run clean-install/platform smoke tests.
-
-### Step 8 — Fleet proof and final cleanup
-
-Run exact-head DarkFactory E2E proof, install the exact release candidate across all six consumers, fix every discovered defect on the same branch, generate `audit.df`, clean recovery/topic/worktree/stash state, and leave #1009 ready for coordinator merge.
+Any defect is fixed on `finish/darkfactory` and affected evidence is rerun.
 
 ## Rules
 
-- one issue, one implementation branch, one PR, one final merge;
-- no compatibility/parity/shadow/canary migration phase;
-- move useful harness TypeScript rather than blindly rewriting it;
-- delete DarkFactory Python rather than mechanically porting it;
-- no known defect is deferred past merge;
+- one issue, one branch, one PR, one final merge;
+- no compatibility/parity/shadow/canary migration architecture;
+- preserve/move working TypeScript instead of gratuitous rewrites;
+- delete DarkFactory Python instead of mechanically porting it;
+- one owner for every runtime/state/git/provider/credential/docs/web concern;
 - CI green alone is not completion;
-- the exact Step 0–8 checkboxes in #68 are the merge gate;
+- #68 checkboxes are the merge gate;
 - implementation workers do not merge #1009.
