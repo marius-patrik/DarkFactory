@@ -40,7 +40,7 @@ describe("detected documentation metadata", () => {
 				detectors: [{ id: "code-domain", description: "Code domain.", domains: ["code"] }],
 				commands: [{ name: "verify", description: "Verify.", execute: () => undefined }],
 				graph: [{ id: "code-nodes", nodeKinds: ["agent"] }],
-				hooks: [{ id: "pre-commit", event: "pre-commit" }],
+				hooks: [{ id: "pre-commit", events: ["pre-commit"] }],
 				verification: [{ id: "quality", description: "Quality." }],
 				surfaces: { docs: ["docs/code.md"] },
 			},
