@@ -2,7 +2,7 @@
 
 # PRD — Verified School Requirements
 
-This section records the verified school-compliance contract for DarkFactory-Paper. Product requirements, active work, roadmap, and deferred work are consolidated in this file.
+This section records the verified school-compliance contract for DarkFactory-Paper. Product requirements, current acceptance work, and repository instructions are consolidated in this file.
 
 ## Sources
 
@@ -14,7 +14,7 @@ Guide-aligned template evidence:
 
 - `marius-patrik/template-OdbornaPrace@e58ed2c7b3d2432eddfbec238ce6561163d766a0`
 
-A newer school-issued guide supersedes the 2024 guide if one is located during final reconciliation.
+The public GJKT maturity materials were rechecked on 2026-09-23. The school currently publishes 2026 maturity-work information and 2025/2026 profile-exam criteria, but no newer public general `Průvodce tvorbou odborné práce` surfaced. The verified 2024 guide therefore remains the active public formatting/methodology reference unless the school or supervisor supplies a newer authoritative guide.
 
 ## Verified objective and methodology requirements
 
@@ -73,7 +73,7 @@ The guide does not prescribe page breaks before headings. The paper may retain i
 
 ## Direct guide-text reconciliation
 
-Before final submission, check whether the school has issued a guide newer than the verified 2024 document. If so, reconcile any changed declaration, title-page, submission, or formatting requirements before publication.
+Public GJKT materials were checked again on 2026-09-23 at `https://www.gjkt.cz/maturity/`, including the currently linked 2025/2026 profile-exam evaluation criteria. No newer public general expert-paper guide was found. Continue to use the verified 2024 guide for this manuscript; if the school or supervisor provides a newer authoritative guide before submission, that guide supersedes this contract and must be reconciled before release.
 
 ## Implementation rule
 
@@ -81,7 +81,7 @@ Use this contract for active formatting. Resolve any unconfirmed school-sensitiv
 
 # PLAN — DarkFactory Paper
 
-This is the single planning document for the publication. It consolidates the durable product and thesis contract, current actionable queue, execution roadmap, and accepted deferred work. Verified school requirements are recorded in the preceding section; the canonical manuscript is `index.typ`.
+This is the single planning document for the publication. It consolidates the durable product and thesis contract and the current final-acceptance queue. Verified school requirements are recorded in the preceding section; the canonical manuscript is `index.typ`.
 
 ## Product and thesis contract — Product Requirements Document
 
@@ -165,7 +165,7 @@ Explain these as parts of the harness/runtime rather than as isolated glossary e
 
 - **Tools** — callable actions through which the agent reads, edits, executes, tests, searches, or otherwise affects its environment.
 - **Skills** — reusable task-specific instructions, scripts, and resources that can be made available when relevant.
-- **Hooks** — deterministic lifecycle handlers that enforce or trigger behavior around events such as tool execution, validation, or completion.
+- **Hooks** — lifecycle handlers that enforce or trigger behavior around events such as tool execution, validation, or completion.
 - **MCP** — a standardized protocol for connecting the harness to external tools and data sources.
 - **State and context management** — persistence of the development process outside any one inference call and selection of information for the next decision.
 - **Verification and observation** — real execution feedback such as tests, compilers, linters, CI, and repository state.
@@ -258,7 +258,7 @@ Evidence should address, where supported:
 - persistent state across inference boundaries;
 - controlled external effects;
 - bounded permissions and scope;
-- deterministic verification;
+- machine-verifiable checks and their boundary relative to model-mediated review;
 - interruption and recovery;
 - integration of agent-produced changes;
 - orchestration without loss of integration control.
@@ -517,12 +517,9 @@ Coordination ownership is:
 
 - Goal section — final-paper quality objective;
 - the **Product and thesis contract** section of this file — finished product contract;
-- planning sections — roadmap, workstreams, sequencing, and phase gates;
-- the **Current queue** section of this file — current and next actionable coordination work;
-- the **Deferred work** section of this file — accepted but intentionally deferred work;
+- the **Current action queue** section of this file — remaining final-acceptance work only;
 - `AGENTS.md` — contributor rules and document ownership;
-- school-compliance section — verified school contract and unresolved compliance conflicts;
-- Generic IDE workstream section — IDE implementation workstream.
+- school-compliance section — verified school contract and any newly supplied authoritative school requirements.
 
 ### Non-goals
 
@@ -580,471 +577,23 @@ The product is ready for final submission/release when:
 
 ## Current action queue
 
-This section is the live current/next work queue. Keep it short and current.
+Only final delivery gates remain:
 
-### In flight
+1. require the canonical CI, Chromium acceptance, and site assembly to pass on the exact final PR head;
+2. merge the accepted PR;
+3. verify `main` CI and Deploy Documentation on the merge commit;
+4. verify the live Pages deployment serves the accepted PDF/README;
+5. publish the final release from that exact merge commit using an explicitly chosen release tag.
 
-#### DarkFactory evidence and manuscript verification
-
-- verify that the `darkfactory` gitlink, bibliography reference, manuscript claims, and figures all describe the same evaluated revision `e9c10221b40589512d262a0edb95f709b923150c`;
-- preserve the distinction between the production GitHub Actions/Python controller path and the co-located TypeScript declarative graph engine;
-- complete any missing methodology/run provenance needed to reproduce the stated structural findings;
-- audit every DarkFactory-specific claim against source/tests/workflows at the pinned revision.
-
-#### Final manuscript and school review
-
-- re-read the generated `ODBORNA_PRACE.pdf` end to end and inspect it page by page;
-- verify title page, declaration, annotations, keywords, contents, page numbering, figure/table treatment, bibliography ordering, citation rendering, paragraph spacing, and heading sizes against the verified school contract;
-- check whether the school has issued a guide newer than the verified 2024 guide before final submission;
-- audit factual claims and bibliography entries thesis-wide and remove unused sources/assets.
-
-### Next
-
-1. Finish evidence/provenance reconciliation.
-2. Finish final manuscript/school review.
-3. Run `bun run check`, `bun run web:acceptance`, and `bun run site` from the accepted revision.
-4. Validate the Pages deployment.
-5. Publish the exact-revision final release only after the manuscript and evidence are accepted.
-
-### Coordination hygiene
-
-After each review cycle:
-
-- remove completed items from this section;
-- promote newly actionable work from **Deferred work**;
-- update the relevant governing section when a durable product, school, evidence, or sequencing decision changes;
-- keep this file aligned with the repository; `README.md` is generated from `index.typ` and must not become a second hand-authored source.
+Remove each item when completed; do not preserve finished phase history.
 
 ---
-
-## Execution roadmap — DarkFactory-Paper — Execution Plan
-
-The Goal section defines the quality objective for the finished academic paper.
-
-The **Product and thesis contract** section defines the finished product contract.
-
-This file defines the concrete repository work and sequencing required to satisfy the goal and product contract.
-
-the **Current queue** section of this file tracks the current/next actionable queue.
-
-the **Deferred work** section of this file tracks accepted work that is intentionally deferred until its prerequisite or phase gate is reached.
-
-### Workstream A — Build the paper from the argument
-
-Primary files:
-
-- `index.typ`
-- `bib/references.bib`
-- `img/**`
-
-#### A1. Establish the manuscript architecture
-
-Use this high-level structure as the working frame:
-
-1. Úvod
-2. Teoretická část
-   - Jazykový model
-   - Harness
-   - Agentické inženýrství
-3. Praktická část
-   - DarkFactory
-4. Výsledky a diskuse
-5. Závěr
-
-Use lower-level headings only where the argument genuinely benefits from them.
-
-The final detailed structure is judged by reading flow, not by preserving a terminology taxonomy.
-
-#### A2. Rebuild the paper around the engineering transition
-
-Use the thesis direction in the **Product and thesis contract** section as the intellectual spine.
-
-The paper should establish, with only the necessary historical context, the progression:
-
-**IDE-centered development → code completion → integrated chat → integrated agents → agent-first/ADE-style development**
-
-Use that progression to motivate the larger transition:
-
-**software engineering → Agentic Engineering**
-
-and:
-
-**IDE-centered execution → harness-centered execution**
-
-Make the chatbot → agent boundary explicit:
-
-- chatbot: conversational output while the human remains the executor;
-- coding agent: iterative repository/environment interaction through a harness, with tools, state, observations, controlled effects, verification, and continuation toward an acceptance condition.
-
-Use that transition to introduce the concrete agent capability surface without turning it into a glossary:
-
-- Tools;
-- Skills;
-- Hooks;
-- MCP;
-- state/context management;
-- execution observations and verification;
-- orchestration.
-
-The theory should then explain only what is needed to support that argument:
-
-- the relevant boundary of model inference;
-- why delegated work requires a persistent execution environment;
-- how a harness integrates state, tools, environment, effects, observations, verification, recovery, and orchestration;
-- how Agentic Engineering improves AI-assisted software engineering through prompt/context engineering, explicit goals and acceptance criteria, goal loops, tool/harness design, verification feedback, and orchestration.
-
-Agentic Engineering coverage should be practice-centered rather than definition-centered:
-
-- prompt engineering;
-- context engineering;
-- explicit specifications, constraints, and acceptance criteria;
-- goal loops driven by observations and verification;
-- tool/harness engineering, including Skills, Hooks, MCP, permissions, and state;
-- verification and feedback loops;
-- multi-agent orchestration, including coordinator/subagent patterns, parallel workers, swarms, and graphs/workflows where useful;
-- human supervision, review, and integration.
-
-The paper should explain how these practices increase the efficiency and controllability of AI-assisted software engineering. Do not present them as isolated glossary entries or imply that maximum autonomy is the goal.
-
-Current theory/visual acceptance decisions:
-
-- keep tokenization conceptual and omit BPE-specific exposition;
-- keep the embedding treatment to a concise king/queen example plus `img/vector-embedding-queen.svg`;
-- do not use the previous 3D embedding diagram;
-- keep Gradually;
-- keep ReAct;
-- allow workflow graphs for agent workflow planning without DAG-specific discussion;
-- keep Vibe Coding and Prompt Injection outside the thesis.
-
-Do not turn the historical progression into a product catalogue.
-
-Do not organize the theory as a terminology taxonomy.
-
-The conceptual emphasis should remain on the changing architecture of software development.
-
-#### A3. Build the practical DarkFactory chapter from implementation truth
-
-Use the `darkfactory` submodule as the local evidence source after pinning it to the selected canonical DarkFactory revision.
-
-Before writing practical claims:
-
-- update/fetch the submodule;
-- choose one merged canonical DarkFactory revision;
-- read its generated documentation, source, tests, workflows, package boundaries, and configuration;
-- derive the practical chapter structure from the implementation.
-
-The practical chapter should explain the architectural decisions that realize the theory, rather than enumerate files/packages.
-
-#### A4. Rebuild Results and discussion from evidence
-
-Use the pinned `darkfactory` submodule, source/tests/workflows, and cited external sources directly. Record provenance in the manuscript/bibliography where it is needed to support reproducibility rather than maintaining a parallel evidence database.
-
-Results should be derived from verified evidence, then interpreted in prose.
-
-#### A5. Write the framing last
-
-After Theory, DarkFactory, and Results are stable:
-
-- rewrite the Introduction;
-- finalize the explanatory objective and concrete practical evaluation objective;
-- finalize methodology;
-- rewrite Conclusion;
-- rewrite Czech annotation/English abstract;
-- finalize concise keywords.
-
-This ensures the front/back framing describes the paper that actually exists.
-
-#### A6. Curate sources and visuals
-
-For every bibliography entry and figure:
-
-- identify the claim or argument it supports;
-- keep it only if that contribution remains in the paper;
-- prefer original research/specifications and first-party technical documentation;
-- keep figures only when they communicate evidence/mechanism more effectively than prose.
-
-The final visual set should be intentionally small.
-
-### Workstream B — Simplify the Typst source
-
-Primary file:
-
-- `index.typ`
-
-Target:
-
-- manuscript content;
-- citations;
-- figures/tables;
-- small presentation helpers.
-
-Actions:
-
-- express document structure directly with headings;
-- express terminology directly in prose;
-- use direct bibliography labels where practical;
-- keep only formatting helpers that make the source clearer;
-- keep review/comparison behavior outside the manuscript content model;
-- keep paragraphs normally breakable;
-- follow the verified heading pagination/layout choices recorded in this file;
-- use no first-line paragraph indent;
-- use 8 pt spacing after paragraphs with 1.5 line spacing;
-- use conventional academic typography consistent with the verified school contract.
-
-The source should be easy to read as a manuscript file without understanding a secondary semantic framework.
-
-### Workstream C — Evidence support
-
-Primary files:
-
-- `darkfactory`
-- `bib/references.bib`
-- `img/darkfactory-pipeline.svg`
-- `img/darkfactory-architecture.svg`
-- `img/gradually-ai-usage-2026.svg`
-
-Established invariants:
-
-- the `darkfactory` gitlink is the authoritative evaluated implementation revision;
-- DarkFactory-specific claims and figures must match that pinned revision;
-- source provenance belongs in `bib/references.bib` and claim-local citations;
-- the Gradually adoption figure is a static manuscript asset; its provenance is the local bibliography citation;
-- generated figures that are no longer used by the manuscript are removed rather than retained historically;
-
-Do not introduce a second evidence manifest or phase-numbered evidence files that duplicate authoritative repository state.
-
-### Workstream D — Root Bun publication workspace
-
-Primary files:
-
-- `package.json`
-- `index.typ`
-- `scripts/publication.ts`
-- `scripts/site.ts`
-
-The publication architecture is established:
-
-- the repository root is the Bun workspace;
-- `index.typ` is the canonical manuscript;
-- Typst is the document compiler;
-- Bun owns orchestration;
-- `ODBORNA_PRACE.pdf` and generated root `README.md` are the canonical publication artifacts;
-- HTML is an internal temporary conversion format only for Markdown derivation and is not published;
-- no Makefile, Python build layer, duplicate review build, or source-text contract validator is maintained.
-
-Keep future changes on this single path. Do not recreate retired compatibility tooling.
-
-### Workstream E — Direct school-guide reconciliation
-
-Primary files:
-
-- school-compliance section of `AGENTS.md`
-- `index.typ`
-
-Read the school PDF directly and resolve:
-
-- title-page content;
-- declaration wording;
-- Czech/English annotation requirements;
-- keywords;
-- bibliography heading;
-- page numbering;
-- work-range/word/character-count requirement;
-- figure/table lists;
-- appendices;
-- submission artifacts;
-- page/word limits;
-- similarity/plagiarism requirements;
-- typography details.
-
-Then encode only verified requirements in the school-compliance section and the Typst presentation layer.
-
-### Workstream F — Generic IDE
-
-The generic IDE completion lane is complete and merged.
-
-Preserve:
-
-- guided GitHub authentication;
-- cross-surface tab movement;
-- draggable and persistent root sidebar/panel sizing;
-- generic repository editing/GitHub workflows;
-- real Chromium acceptance;
-- repository-agnostic behavior.
-
-Typst editing remains source editing through Monaco. Canonical paper compilation remains a repository pipeline responsibility.
-
-### Workstream G — CI, Pages, and Release
-
-Primary files:
-
-- `.github/workflows/ci.yml`
-- `.github/workflows/deploy-docs.yml`
-- `.github/workflows/release.yml`
-
-Keep exactly these product automation responsibilities:
-
-#### CI
-
-- install the root Bun workspace;
-- build the canonical publication;
-- lint/typecheck/build the generic web app;
-- run Chromium acceptance;
-- assemble the Pages output.
-
-#### Pages
-
-- build from `main`;
-- publish the generic workbench with `ODBORNA_PRACE.pdf` and generated `README.md`.
-
-#### Release
-
-- checkout an explicitly requested exact 40-character revision;
-- build the canonical publication from that revision;
-- publish `ODBORNA_PRACE.pdf` and `README.md` under the requested tag.
-
-Do not recreate the retired autonomous-agent workflow or shared DarkFactory pipeline indirection.
-
-### Execution order
-
-#### Phase 1 — Paper foundation
-
-Active until the theoretical and editorial foundation is stable enough that later work can focus on DarkFactory evidence rather than redesigning the thesis argument.
-
-- rewrite the paper around the IDE → harness and Software Engineering → Agentic Engineering transition;
-- use only light, sourced history for IDE → completion → chat → agents → agent-first/ADE development;
-- keep model theory proportionate to the runtime/engineering argument;
-- simplify `index.typ`;
-- curate bibliography/figures alongside the rewrite;
-- establish clean academic typography using the heading pagination and paragraph rhythm defined in PRD;
-- keep Practical as a clean DarkFactory boundary until evidence is pinned;
-- keep validators editorially generic rather than hard-coding level-2/3 prose structure;
-- re-read the generated PDF end-to-end before accepting the phase.
-
-Deliver as a PR for review.
-
-#### Phase 2 — DarkFactory evidence + Practical
-
-Begins from a stable DarkFactory revision.
-
-- pin submodule;
-- validate architecture;
-- write Practical;
-- refresh Results.
-
-Deliver as a PR for review.
-
-#### Phase 3 — Framing + school reconciliation
-
-After the body/evidence are stable.
-
-- finalize Introduction/objectives/RQs/methodology;
-- finalize Conclusion;
-- finalize abstract/annotation/keywords;
-- complete direct guide audit;
-- finalize typography/front/back matter.
-
-Deliver as a PR for review.
-
-#### Phase 4 — Publication pipeline
-
-Complete. The repository uses the root Bun workspace and canonical root PDF/README artifact set.
-
-#### Phase 5 — IDE + workflows
-
-Complete. The generic IDE is merged and CI/Pages/Release use the root Bun/Typst command surface.
-
-#### Phase 6 — Final integration
-
-After all review PRs are accepted.
-
-- re-read the final paper end-to-end;
-- verify every factual claim/citation/evidence link;
-- verify DarkFactory SHA/provenance;
-- run the complete build/site/release matrix;
-- inspect final PDF page by page;
-- validate Pages;
-- validate release assets from one final commit;
-- keep the final repository free of unused paper assets, scripts, and workflow paths.
-
-### Review gates
-
-Every implementation phase ends in an open PR.
-
-Workers do not merge their own PRs.
-
-A PR is ready for review only when its relevant validation passes and its diff contains only its owned workstream.
-
-### Canonical validation target
-
-The canonical command surface is:
-
-- `bun run publication`;
-- `bun run check`;
-- `bun run web:acceptance`;
-- `bun run site`.
-
-CI, Pages, Release, and contributor instructions must stay aligned with these commands.
-
----
-
-## Deferred work — Backlog
-
-This file contains **accepted work that is intentionally deferred**.
-
-Items move to the **Current queue** section of this file when their prerequisite is satisfied or they become the next actionable work. Do not implement backlog items opportunistically in unrelated PRs.
-
-### DarkFactory evidence and Practical
-
-Prerequisite: paper foundation accepted and a stable DarkFactory revision selected.
-
-- pin the `darkfactory` submodule to the canonical evaluated revision;
-- validate implementation-specific architecture figures against the pinned revision;
-- write the practical DarkFactory chapter from source/docs/tests/workflows/configuration;
-- rebuild Results and discussion from that evidence;
-- ensure manuscript, bibliography reference, figures, submodule SHA, and CI provenance agree.
-
-### School-guide reconciliation
-
-Prerequisite: stable paper body and direct access to the authoritative guide.
-
-Resolve from the guide itself:
-
-- title-page requirements;
-- declaration wording;
-- annotation/abstract and keyword requirements;
-- bibliography heading;
-- pagination;
-- length/work-range rules;
-- figure/table lists;
-- appendices;
-- submission artifacts;
-- similarity/plagiarism requirements;
-- typography details.
-
-Resolved presentation rule:
-
-- the verified school contract requires **no first-line indent** and **8 pt paragraph spacing**;
-- the manuscript and validators must preserve that rule.
-
-### Final delivery
-
-Prerequisite: manuscript, evidence, web workbench, and publication pipeline accepted.
-
-- final end-to-end manuscript edit;
-- page-by-page PDF inspection;
-- complete citation/evidence provenance audit;
-- clean-checkout build validation;
-- Pages validation;
-- release artifact validation from the same accepted commit;
-- remove unused assets/scripts/workflows;
-- publish the canonical final release.
 
 # Repository instructions — DarkFactory-Paper
 
 ## Governing document
 
-`AGENTS.md` consolidates the quality objective, verified school-compliance contract, product and thesis plan, current work, deferred work, and Generic IDE workstream.
+`AGENTS.md` consolidates the quality objective, verified school-compliance contract, durable product/thesis contract, current final-acceptance work, and repository instructions.
 - `README.md` is generated from the manuscript by the canonical build; repository instructions live here.
 
 Update the owning document when a durable decision changes. Do not recreate separate TODO, backlog, school-rules, or product-requirements documents.
