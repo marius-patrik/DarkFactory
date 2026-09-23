@@ -1,6 +1,6 @@
 import { type FC, type ReactNode, Component, type ErrorInfo, useMemo, createContext, useContext } from "react";
 import { Router as WouterRouter, Route as WouterRoute, Link, useLocation, Switch } from "wouter";
-import type { BaseLocationHook } from "wouter";
+import type { BaseLocationHook, BaseSearchHook } from "wouter";
 import { QuotaDashboardView, type QuotaDashboardState } from "./quota";
 import { PlaceholderView } from "./views/PlaceholderView";
 import { HomeView } from "./views/HomeView";
@@ -11,7 +11,7 @@ import { NotFoundView } from "./views/NotFoundView";
 export interface RouterProps {
   basename?: string;
   hook?: BaseLocationHook;
-  searchHook?: BaseLocationHook | (() => string);
+  searchHook?: BaseSearchHook;
   children?: ReactNode;
 }
 
@@ -209,7 +209,7 @@ const RouteAnnouncer: FC = () => {
 export interface DarkFactoryShellProps {
   basename?: string;
   hook?: BaseLocationHook;
-  searchHook?: BaseLocationHook | (() => string);
+  searchHook?: BaseSearchHook;
   routes?: RouteConfig[];
   /** Browser-safe quota data state. Defaults to disconnected for public/static builds. */
   quota?: QuotaDashboardState;
