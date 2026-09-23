@@ -997,7 +997,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!parts.length) throw new Error("There are no changes in this patch scope.");
 
     const ref = workspace.ref.replace(/[^A-Za-z0-9._-]+/g, "-");
-    let suffix = scope;
+    let suffix: string = scope;
     if (scope === "commit") {
       const target = commits.find((candidate) => candidate.id === commitId);
       const label = target?.message

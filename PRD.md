@@ -4,7 +4,7 @@
 
 **DarkFactory-Paper** is the complete academic publication system for the thesis:
 
-**Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory**
+**Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje**
 
 The primary product is the thesis itself. The repository also contains the evidence, source, build pipeline, publication outputs, and generic GitHub workbench required to make the work reproducible and reviewable.
 
@@ -230,7 +230,7 @@ The intended reading rhythm should make major sections visually distinct and par
 
 Target presentation:
 - every level-1 section begins on a new page;
-- every level-2 section begins on a new page;
+- level-2 sections begin on a new page except the first subsection immediately below the parent-only Theory and Practical headings; these share a page with their parent;
 - ordinary prose paragraphs use a visible first-line indent comparable to a conventional tab stop;
 - spacing between paragraphs is materially larger than the spacing between lines within a paragraph;
 - paragraph spacing and first-line indentation should create clear paragraph boundaries without turning the page into a loose web/documentation layout.
@@ -245,7 +245,7 @@ The manuscript must:
 - keep theory proportionate to the practical contribution;
 - make DarkFactory the concrete subject of Practical;
 - distinguish factual findings from interpretation;
-- answer its research questions from evidence;
+- assess its stated objectives from evidence; a separate numbered set of research questions is not required;
 - state limitations explicitly;
 - avoid unsupported generalization.
 

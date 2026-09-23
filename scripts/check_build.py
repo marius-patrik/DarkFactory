@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 BOOK = os.environ.get("BOOK", "paper")
-if BOOK == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+if BOOK == "DarkFactory" and not (Path("DarkFactory") / "PAPER.typ").exists() and Path("paper").exists():
     BOOK = "paper"
 ROOT = Path(BOOK)
 EXPECTED_PDFS = (Path("out/prace.pdf"), Path("out/prace-review.pdf"))
@@ -150,19 +150,9 @@ main_source = sources[paper_file]
 require_contract(
     main_source,
     (
-        "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
-        "#let terms = (",
-        'agent_loop: (key: "agent_loop"',
-        'language_model: (key: "language_model"',
-        'mcp: (key: "mcp"',
-        'state: (key: "state"',
-        'tools: (key: "tools"',
-        'subagent: (key: "subagent"',
-        'swarm: (key: "swarm"',
-        'DarkFactory',
+        "Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje",
+        "DarkFactory",
         '#bibliography("bib/references.bib"',
-        '<callout>',
-        '<word-stats>',
     ),
     f"{paper_file} manuscript",
 )
@@ -185,114 +175,31 @@ for stale in ("consolidate:", "scripts/consolidate_paper.py", "make consolidate"
     if stale in makefile:
         fail(f"Makefile still contains obsolete single-file transition contract: {stale}")
 
-body_start = main_source.find('#metadata("body-start")')
-body_end = main_source.find('#metadata("body-end")')
+body_start = main_source.find("#heading(level: 1)[Úvod]")
+body_end = main_source.find("#nadpis-bez-cisla[Seznam zdrojů]")
 if body_start < 0 or body_end <= body_start:
-    fail(f"{paper_file} body markers are missing or out of order")
+    fail(f"{paper_file} manuscript boundaries are missing or out of order")
 body_source = main_source[body_start:body_end]
 
 heading_pattern = re.compile(
-    r"^#heading\(level:\s*(\d+)(?P<options>[^)]*)\)\[(?P<title>[^\]]+)\]",
+    r"^#heading\(level:\s*(\d+)\)\[(?P<title>[^\]]+)\]",
     flags=re.MULTILINE,
 )
-headings = [
-    (int(match.group(1)), match.group("title"), match.group("options"))
-    for match in heading_pattern.finditer(body_source)
-]
-structural = [
-    (level, title)
-    for level, title, options in headings
-    if "numbering: none" not in options
-]
-expected_structural = [
-    (1, "Úvod"),
-    (2, "Motivace a vymezení problému"),
-    (2, "Východisko a argument práce"),
-    (2, "Cíle"),
-    (3, "Hlavní cíl"),
-    (3, "Dílčí cíle"),
-    (2, "Výzkumné otázky"),
-    (2, "Metodika"),
-    (2, "Struktura práce"),
-    (1, "Teoretická část"),
-    (2, "Jazykový model"),
-    (3, "Architektura a reprezentace"),
-    (3, "Inference"),
-    (2, "Harness"),
-    (3, "Smyčka a stav"),
-    (3, "Prostředí a nástroje"),
-    (3, "Rozšíření"),
-    (1, "Praktická část"),
-    (2, "Agentické inženýrství"),
-    (3, "Zadání a způsob práce"),
-    (3, "Řízení změny"),
-    (3, "Kvalita a ověřování"),
-    (3, "Instrukce a kontext"),
-    (3, "Řízení agentního chování"),
-    (3, "Orchestrace agentů"),
-    (2, "DarkFactory"),
-    (1, "Výsledky a diskuse"),
-    (2, "Ověření mechanismů"),
-    (2, "Ověření systému"),
-    (2, "Ověření na repozitářích"),
-    (2, "Výzkumné otázky"),
-    (2, "Diskuse a omezení"),
-    (1, "Závěr"),
-]
-if structural != expected_structural:
-    fail(f"numbered manuscript hierarchy differs from contract: {structural}")
-
-top_level = [title for level, title in structural if level == 1]
-if top_level != ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]:
+headings = [(int(match.group(1)), match.group("title")) for match in heading_pattern.finditer(body_source)]
+top_level = [title for level, title in headings if level == 1]
+required_top_level = ["Úvod", "Teoretická část", "Praktická část", "Výsledky a diskuse", "Závěr"]
+if top_level != required_top_level:
     fail(f"unexpected top-level manuscript hierarchy: {top_level}")
-
-semantic = [(level, title, options) for level, title, options in headings if "numbering: none" in options]
-if not semantic:
-    fail("no semantic article headings found")
-for level, title, options in semantic:
-    if level != 4 or "outlined: false" not in options or "bookmarked: false" not in options:
-        fail(f"semantic article heading violates presentation contract: {title}")
-
-intro_start = body_source.find("#heading(level: 1)[Úvod]")
-theory_start = body_source.find("#heading(level: 1)[Teoretická část]")
-practical_start = body_source.find("#heading(level: 1)[Praktická část]")
-results_start = body_source.find("#heading(level: 1)[Výsledky a diskuse]")
-if min(intro_start, theory_start, practical_start, results_start) < 0:
-    fail("required manuscript ownership boundary is missing")
-introduction = body_source[intro_start:theory_start]
-theory = body_source[theory_start:practical_start]
-practical = body_source[practical_start:results_start]
-
-if "#benchmark_snapshot" not in introduction or "Artificial Analysis Intelligence Index v4.3.2" not in introduction:
-    fail("Artificial Analysis benchmark must be present in Introduction")
-if "#benchmark_snapshot" in theory or "Artificial Analysis Intelligence Index v4.3.2" in theory:
-    fail("Artificial Analysis benchmark must not remain in Theory")
-if "<concept-vibe_coding>" not in introduction or "Vibe Coding" not in introduction:
-    fail("Vibe Coding evidence must be owned by Introduction")
-if re.search(r"heading\([^\n]*\)\[Vibe Coding\]", practical):
-    fail("Vibe Coding must not remain a standalone Practical article")
-
-for title in (
-    "Velký jazykový model (LLM)",
-    "Transformer",
-    "Tokenizér",
-    "Token",
-    "Vektorová reprezentace (Embedding)",
-    "Poskytovatel modelu (Model Provider)",
-    "Inferenční engine (Inference Engine)",
-    "Teplota (Temperature)",
-    "Kontextové okno (Context Window)",
-    "Mezipaměť klíčů a hodnot (KV Cache)",
-    "Degradace kontextu (Context Rot)",
-):
-    if not any(level == 4 and semantic_title == title for level, semantic_title, _ in semantic):
-        fail(f"accepted Model/Inference semantic article missing or numbered incorrectly: {title}")
+if not headings or max(level for level, _ in headings) > 3:
+    fail("manuscript heading depth exceeds level 3")
+if "Agentické inženýrství" not in body_source:
+    fail("manuscript must define Agentické inženýrství")
+if "DarkFactory" not in body_source:
+    fail("manuscript must contain DarkFactory")
 
 for required in (
     ROOT / "bib/references.bib",
     ROOT / "img/logo.jpeg",
-    ROOT / "img/vector-embedding-queen.svg",
-    ROOT / "img/vector-embedding-3d.svg",
     ROOT / "fonts/Caladea-Regular.ttf",
     ROOT / "fonts/Caladea-Bold.ttf",
 ):
@@ -305,7 +212,6 @@ require_contract(
         "class HeadingIndexParser",
         "def typst_manuscript_index",
         "MANUSCRIPT_TOP_LEVEL",
-        "Velký jazykový model (LLM)",
         "def semantic_content_index",
         '"content_index": "content-index.json"',
     ),

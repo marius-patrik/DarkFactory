@@ -1,6 +1,6 @@
 # DarkFactory-Paper
 
-**Agentický vývoj softwaru: návrh a ověření harnessu DarkFactory**
+**Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje**
 
 Typst thesis source, evidence, publication pipeline, and generic GitHub workbench for the DarkFactory academic project.
 

@@ -13,7 +13,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 PUBLICATION = {
-    "title": "AI-asistovaný softwarový vývoj – Agentické inženýrství a harness DarkFactory",
+    "title": "Agentický Inženýrství - DarkFactory: pipeline pro automatizaci softwarového vývoje",
     "final": "prace.pdf",
     "review": "prace-review.pdf",
     "artifacts": {
@@ -37,7 +37,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 book_name = args.book
-if book_name == "DarkFactory" and not Path("DarkFactory").exists() and Path("paper").exists():
+if book_name == "DarkFactory" and not (Path("DarkFactory") / "PAPER.typ").exists() and Path("paper").exists():
     book_name = "paper"
 BOOK_ROOT = Path(book_name)
 DEFAULT_TEMPLATE = args.default_template
@@ -274,10 +274,10 @@ def typst_manuscript_index(source_path: Path | None = None) -> list[dict[str, ob
     if source_path is None:
         source_path = Path("paper/PAPER.typ") if Path("paper/PAPER.typ").exists() else Path("main.typ")
     source = source_path.read_text(encoding="utf-8")
-    body_start = source.find('#metadata("body-start")')
-    body_end = source.find('#metadata("body-end")')
+    body_start = source.find("#heading(level: 1)[Úvod]")
+    body_end = source.find("#nadpis-bez-cisla[Seznam zdrojů]")
     if body_start < 0 or body_end <= body_start:
-        raise SystemExit(f"{source_path} body markers are missing or out of order")
+        raise SystemExit(f"{source_path} manuscript boundaries are missing or out of order")
 
     body = source[body_start:body_end]
     heading_pattern = re.compile(
@@ -315,21 +315,6 @@ def typst_manuscript_index(source_path: Path | None = None) -> list[dict[str, ob
         raise SystemExit(
             f"{source_path} web hierarchy differs from manuscript contract: {top_level}"
         )
-
-    semantic_titles = {
-        str(entry["title"])
-        for entry in entries
-        if entry["level"] == 4 and not str(entry["title"])[0].isdigit()
-    }
-    for required in (
-        "Velký jazykový model (LLM)",
-        "Vektorová reprezentace (Embedding)",
-        "Kontextové okno (Context Window)",
-        "Agentní smyčka (Agent Loop)",
-        "Vývoj řízený specifikací (Spec-Driven Development)",
-    ):
-        if required not in semantic_titles:
-            raise SystemExit(f"{source_path} web index is missing semantic article: {required}")
 
     return entries
 
