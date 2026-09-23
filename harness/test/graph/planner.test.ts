@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { type GraphEvent, type PlanAction, plan, type RunState, validateGraph } from "@darkfactory/core/graph";
 import graphJson from "../../assets/graph.darkfactory.json";
-import { type GraphEvent, type PlanAction, plan, type RunState, validateGraph } from "../../src/graph/index.ts";
 
 const graph = validateGraph(graphJson);
 const state = (node: string, extra: Partial<RunState> = {}): RunState => ({

@@ -1,22 +1,42 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import {
+	type CheckStateSource,
+	type ChecksGateResult,
+	evaluateChecksGate,
+	type NodeHandlers,
+	type PlanAction,
+	type RunState,
+	runGraph,
+	type TranslatedEvent,
+	translateGitHubEvent,
+	validateGraph,
+	type WorkflowGraph,
+} from "@darkfactory/core/graph";
 import { GitHubClient } from "../github/client.ts";
 import { GitHubRepository } from "../github/repository.ts";
 import { bundledGraphPath } from "./assets.ts";
-import { type CheckStateSource, type ChecksGateResult, evaluateChecksGate } from "./checks-gate.ts";
-import { type TranslatedEvent, translateGitHubEvent } from "./events.ts";
-import { plan } from "./planner.ts";
-import { loadRunState, saveRunState } from "./run-state.ts";
-import { validateGraph } from "./validator.ts";
 
-/**
- * Options for the dispatch command.
- * Controls input paths, output behavior, and overrides.
- */
+/** Options for the graph dispatch command. */
 export interface DispatchOptions {
 	eventName: string;
 	eventPath: string;
 	graphPath?: string;
 	runsPath?: string;
+	eventId?: string;
+}
+
+export interface DispatchRuntime {
+	handlers: NodeHandlers;
+	onAction?: (action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState) => void | Promise<void>;
+}
+
+export interface DispatchRuntimeInput {
+	subject: string;
+	runDir: string;
+	graph: WorkflowGraph;
+	translated: TranslatedEvent & { kind: "event" };
 }
 
 interface GitHubTokenEnv {
@@ -29,11 +49,7 @@ interface GitHubRepoEnv {
 }
 
 function parseArgs(argv: string[]): DispatchOptions {
-	const args: DispatchOptions = {
-		eventName: "",
-		eventPath: "",
-	};
-
+	const args: DispatchOptions = { eventName: "", eventPath: "" };
 	let i = 0;
 	while (i < argv.length) {
 		const arg = argv[i++];
@@ -50,18 +66,26 @@ function parseArgs(argv: string[]): DispatchOptions {
 			case "--runs":
 				if (i < argv.length) args.runsPath = argv[i++];
 				break;
+			case "--event-id":
+				if (i < argv.length) args.eventId = argv[i++];
+				break;
 		}
 	}
-
+	if (!args.eventName) throw new Error("graph dispatch requires --event-name <name>");
+	if (!args.eventPath) throw new Error("graph dispatch requires --event <file>");
 	return args;
 }
 
-async function readJsonFile(path: string): Promise<unknown> {
-	return JSON.parse(await readFile(path, "utf8"));
+function stableEventId(eventName: string, rawPayload: string, explicit?: string): string {
+	if (explicit?.trim()) return explicit.trim();
+	const runId = process.env.GITHUB_RUN_ID?.trim();
+	const repository = process.env.GITHUB_REPOSITORY?.trim() ?? "";
+	const identity = runId ? ["github-run", repository, eventName, runId] : ["payload", eventName, rawPayload];
+	return createHash("sha256").update(JSON.stringify(identity)).digest("hex");
 }
 
 function extractSubject(translated: TranslatedEvent & { kind: "event" }): string {
-	return `${translated.subject.number}`;
+	return String(translated.subject.number);
 }
 
 function githubCheckSource(token: string, repository: string): CheckStateSource {
@@ -72,110 +96,81 @@ function githubCheckSource(token: string, repository: string): CheckStateSource 
 }
 
 /**
- * Dispatch a workflow based on a GitHub event.
- * @param argv - Command line arguments passed to the dispatch command.
- * @param options - Optional overrides, such as a custom check state source.
- * @returns A promise that resolves when dispatch processing is complete.
+ * Dispatch one GitHub event through the real persisted graph executor.
+ *
+ * Actionable events require a production runtime. Planner-only command emission is intentionally unsupported.
  */
 export async function dispatch(
 	argv: string[],
-	options?: {
+	options: {
 		checkStateSource?: CheckStateSource;
-	},
+		createRuntime?: (input: DispatchRuntimeInput) => Promise<DispatchRuntime>;
+	} = {},
 ): Promise<void> {
 	const opts = parseArgs(argv);
-
-	// Load the event payload
-	const eventPayload = await readJsonFile(opts.eventPath);
-
-	// Translate the GitHub event
+	const rawPayload = await readFile(opts.eventPath, "utf8");
+	const eventPayload = JSON.parse(rawPayload) as unknown;
 	const translated = translateGitHubEvent(opts.eventName, eventPayload);
-
-	// Handle skip case
 	if (translated.kind === "skip") {
 		console.log(JSON.stringify({ type: "skip", reason: translated.reason }));
 		return;
 	}
+	translated.event.event_id = stableEventId(opts.eventName, rawPayload, opts.eventId);
 
-	// Load the graph
 	const graphPath = opts.graphPath ?? bundledGraphPath();
 	const document = JSON.parse(await readFile(graphPath, "utf8")) as unknown;
-	const workflowGraph = validateGraph(
+	const graph = validateGraph(
 		document && typeof document === "object" && "graph" in document ? (document as { graph: unknown }).graph : document,
 	);
 
-	// For checks.completed events, evaluate the checks gate if tokens are present
 	let gateResult: ChecksGateResult | undefined;
-
 	if (translated.event.type === "checks.completed") {
 		const env: GitHubTokenEnv & GitHubRepoEnv = {
 			GH_TOKEN: process.env.GH_TOKEN,
 			GITHUB_TOKEN: process.env.GITHUB_TOKEN,
 			GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
 		};
-
-		if (env.GH_TOKEN || env.GITHUB_TOKEN) {
-			if (env.GITHUB_REPOSITORY) {
-				const checkStateSource: CheckStateSource =
-					options?.checkStateSource ?? githubCheckSource((env.GH_TOKEN || env.GITHUB_TOKEN)!, env.GITHUB_REPOSITORY);
-
-				gateResult = await evaluateChecksGate(workflowGraph, checkStateSource, translated.subject.ref ?? "");
-
-				if (gateResult.conclusion === "pending") {
-					console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
-					return;
-				}
-
-				// Update the conclusion based on gate result
-				(translated.event as { type: "checks.completed"; conclusion: string }).conclusion =
-					gateResult.conclusion === "required_green" ? "required_green" : "failed";
+		const token = env.GH_TOKEN || env.GITHUB_TOKEN;
+		const source =
+			options.checkStateSource ??
+			(token && env.GITHUB_REPOSITORY ? githubCheckSource(token, env.GITHUB_REPOSITORY) : undefined);
+		if (source) {
+			gateResult = await evaluateChecksGate(graph, source, translated.subject.ref ?? "");
+			if (gateResult.conclusion === "pending") {
+				console.log(JSON.stringify({ type: "none", reason: "required checks pending" }));
+				return;
 			}
+			translated.event.conclusion = gateResult.conclusion === "required_green" ? "required_green" : "failed";
 		}
 	}
 
-	// Get the subject number
 	const subject = extractSubject(translated);
-
-	// Load or create RunState
 	const runsDir = opts.runsPath ?? ".darkfactory/runs";
-	const runState = await loadRunState(runsDir, subject, workflowGraph);
+	const runDir = join(runsDir, subject);
+	if (!options.createRuntime) throw new Error("graph dispatch requires a production runtime for actionable events");
+	const runtime = await options.createRuntime({ subject, runDir, graph, translated });
+	const state = await runGraph(graph, runDir, runtime.handlers, translated.event, {
+		...(runtime.onAction ? { onAction: runtime.onAction } : {}),
+	});
 
-	// Plan the action
-	const action = plan(workflowGraph, translated.event, runState);
+	const isChecksEvent = translated.event.type === "checks.completed";
+	const checksPass = gateResult
+		? gateResult.conclusion === "required_green"
+		: translated.event.type === "checks.completed" && translated.event.conclusion === "required_green";
 
-	// Advance the run state to the selected node before persisting
-	if (action.type !== "none") {
-		if (action.type === "run" && action.nodes.length > 0) {
-			const firstNode = action.nodes[0];
-			if (firstNode) runState.current_node = firstNode;
-		} else if (action.type === "gate" || action.type === "hint" || action.type === "comment") {
-			runState.current_node = action.node;
-		}
-	}
-
-	// Prepare the base output
-	const baseOutput = {
-		subject,
-		event: translated.event.type,
-		current_node: runState.current_node,
-		action: action.type,
-		commands: action.type === "run" && action.nodes ? action.nodes.map((id) => `bun df run --node ${id}`) : [],
-	};
-
-	// If this is a checks.completed event with a non‑pending gate result, emit the checks JSON
-	const output =
-		translated.event.type === "checks.completed" && gateResult && gateResult.conclusion !== "pending"
-			? {
-					...baseOutput,
-					type: "checks",
-					result: gateResult.conclusion === "required_green" ? "pass" : "fail",
-				}
-			: baseOutput;
-
-	// Print the output
-	console.log(JSON.stringify(output));
-
-	await saveRunState(runsDir, subject, runState);
+	console.log(
+		JSON.stringify({
+			type: isChecksEvent ? "checks" : "executed",
+			...(isChecksEvent ? { result: checksPass ? "pass" : "fail" } : {}),
+			subject,
+			event: translated.event.type,
+			event_id: translated.event.event_id,
+			run_id: state.run_id,
+			current_node: state.current_node,
+			quota_blocked: state.quota_blocked ?? false,
+			processed: state.processed_events?.includes(translated.event.event_id ?? "") ?? false,
+		}),
+	);
 }
 
-export type { TranslatedEvent } from "./events.ts";
+export type { TranslatedEvent } from "@darkfactory/core/graph";

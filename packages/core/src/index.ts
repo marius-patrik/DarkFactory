@@ -2,7 +2,7 @@
  * DarkFactory execution kernel: configuration, workflow graph/run state, routing mechanisms and deterministic orchestration primitives.
  */
 export * from "../../../harness/src/config.ts";
-export * from "../../../harness/src/graph/index.ts";
+export * from "./graph/index.ts";
 export {
 	ChainExhaustedError,
 	FailoverSupervisor,

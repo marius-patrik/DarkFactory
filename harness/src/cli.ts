@@ -9,6 +9,14 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { formatCaptureSchema } from "@darkfactory/cli/capture-schema";
 import {
+	type GraphEvent,
+	type ProductionModelEffects,
+	ProductionQuotaExhaustedError,
+	plan,
+	type RunState,
+	validateGraph,
+} from "@darkfactory/core/graph";
+import {
 	defaultDfHome,
 	exportCredentialAccount,
 	FileCredentialStore,
@@ -32,7 +40,7 @@ import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
 import { GitHubRepository } from "./github/repository.ts";
 import { bundledGraphPath } from "./graph/assets.ts";
-import { type GraphEvent, plan, type RunState, validateGraph } from "./graph/index.ts";
+import { createProductionRuntimeFactory } from "./graph/runtime-composition.ts";
 import { parseCandidate, parseChain, resolveRouting } from "./harness/routing.ts";
 import { validateCandidateCredentials } from "./harness/runtime.ts";
 import {
@@ -69,6 +77,7 @@ import type {
 } from "./router/types.ts";
 import { secretsCommand } from "./secrets/cli.ts";
 import { runWorkspaceCli } from "./workspace/cli.ts";
+import { runGit } from "./workspace/git.ts";
 
 function usage(): string {
 	return [
@@ -1079,6 +1088,7 @@ async function createCliSupervisor(
 	taskKind?: TaskKind,
 	eventHandler?: (event: HarnessEvent) => void,
 	capabilityEscalation?: CapabilityEscalationPolicy,
+	cwd = process.cwd(),
 ) {
 	const faux = fauxProviders(args.includes("--faux") || process.env.DF_FAUX === "1");
 	const providers = providerList(registry, faux.providers);
@@ -1136,7 +1146,7 @@ async function createCliSupervisor(
 		);
 	return createFailoverSupervisor({
 		chain: available,
-		cwd: process.cwd(),
+		cwd,
 		home: defaultDfHome(),
 		resume: option(args, "--resume"),
 		policy: { allow: options(args, "--allow"), deny: options(args, "--deny"), headless: args[0] === "run" },
@@ -1165,6 +1175,108 @@ async function createCliSupervisor(
 		store,
 		onEvent: eventHandler ?? ((event) => renderEvent(event, json)),
 	});
+}
+
+function graphTaskKind(nodeId: string): TaskKind {
+	if (nodeId === "implement") return "implement";
+	if (nodeId === "planning") return "plan";
+	if (nodeId.endsWith("-fix")) return "fix";
+	if (nodeId.includes("review") || nodeId === "plan-alignment") return "review";
+	return "chat";
+}
+
+function targetGraphRepository(repoDir: string): GitHubRepository {
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("graph dispatch requires GH_TOKEN or GITHUB_TOKEN for GitHub effects");
+	const configured = process.env.GITHUB_REPOSITORY?.trim();
+	let slug = configured;
+	if (!slug?.includes("/")) {
+		const remote = runGit(repoDir, ["remote", "get-url", "origin"]).trim();
+		const match = remote.match(/github\.com(?::|\/)([^/]+)\/([^/]+?)(?:\.git)?$/u);
+		if (!match?.[1] || !match[2]) {
+			throw new Error("Cannot determine GitHub repository from GITHUB_REPOSITORY or origin");
+		}
+		slug = match[1] + "/" + match[2];
+	}
+	const [owner, repo] = slug.split("/");
+	if (!owner || !repo) throw new Error("Invalid target repository slug");
+	return new GitHubRepository(new GitHubClient({ token }), owner, repo);
+}
+
+async function graphSupervisor(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	config: DfConfig,
+	prompt: string,
+	options: { nodeId: string; chain?: string[]; reasoning?: string; timeout?: string; workdir?: string },
+) {
+	const args = [
+		"run",
+		"--kind",
+		graphTaskKind(options.nodeId),
+		...(options.reasoning === "hard" ? ["--reasoning", "hard"] : []),
+	];
+	let chain: Candidate[];
+	let escalation: CapabilityEscalationPolicy | undefined;
+	if (options.chain?.length) chain = options.chain.map(parseCandidate);
+	else {
+		const route = await resolveCliRoute(registry, store, config, args, prompt);
+		chain = executableChainFor(route);
+		escalation = capabilityEscalationFor(route);
+	}
+	return createCliSupervisor(
+		registry,
+		store,
+		config,
+		args,
+		chain,
+		false,
+		estimateTask(prompt),
+		graphTaskKind(options.nodeId),
+		undefined,
+		escalation,
+		options.workdir ?? process.cwd(),
+	);
+}
+
+function graphModelEffects(
+	registry: ProviderRegistry,
+	store: FileCredentialStore,
+	config: DfConfig,
+): ProductionModelEffects {
+	return {
+		async runPrompt(prompt, options) {
+			let supervisor: Awaited<ReturnType<typeof createCliSupervisor>> | undefined;
+			try {
+				supervisor = await graphSupervisor(registry, store, config, prompt, options);
+				const budget = options.timeout ? makeRunDeadline(options.timeout, Date.now()) : undefined;
+				return await supervisor.prompt(prompt, 100, budget);
+			} catch (error) {
+				if (error instanceof ChainExhaustedError && error.exitCode === 2) {
+					const candidate = error.reasons.at(-1)?.candidate ?? supervisor?.activeCandidate;
+					if (candidate) throw new ProductionQuotaExhaustedError(error.message, candidate);
+				}
+				throw error;
+			} finally {
+				supervisor?.session.dispose();
+			}
+		},
+		async extractJudgement(options) {
+			let supervisor: Awaited<ReturnType<typeof createCliSupervisor>> | undefined;
+			try {
+				supervisor = await graphSupervisor(registry, store, config, options.answer, { nodeId: "review" });
+				return (await supervisor.extractJudgement(options)).value;
+			} catch (error) {
+				if (error instanceof ChainExhaustedError && error.exitCode === 2) {
+					const candidate = error.reasons.at(-1)?.candidate ?? supervisor?.activeCandidate;
+					if (candidate) throw new ProductionQuotaExhaustedError(error.message, candidate);
+				}
+				throw error;
+			} finally {
+				supervisor?.session.dispose();
+			}
+		},
+	};
 }
 
 async function runCommand(
@@ -1387,7 +1499,15 @@ async function chatCommand(
 	}
 }
 
-async function graphCommand(args: string[]): Promise<void> {
+async function graphCommand(
+	args: string[],
+	runtime?: {
+		registry: ProviderRegistry;
+		store: FileCredentialStore;
+		config: DfConfig;
+		ledger: LimitLedger;
+	},
+): Promise<void> {
 	const subcommand = args[0];
 	const graphPath =
 		subcommand === "validate" ? (args[1] ?? bundledGraphPath()) : (option(args, "--graph") ?? bundledGraphPath());
@@ -1402,8 +1522,24 @@ async function graphCommand(args: string[]): Promise<void> {
 		return;
 	}
 	if (subcommand === "dispatch") {
+		if (!runtime) throw new Error("graph dispatch requires the initialized df runtime");
 		const { dispatch } = await import("./graph/dispatch.ts");
-		await dispatch(args.slice(1));
+		const repoDir = process.cwd();
+		const runsRoot = option(args, "--runs") ?? join(repoDir, ".darkfactory", "runs");
+		const repository = targetGraphRepository(repoDir);
+		const quota = new QuotaEngine(
+			defaultDfHome(),
+			runtime.ledger,
+			new Map(runtime.registry.entries.map((entry) => [entry.id, entry])),
+		);
+		const createRuntime = createProductionRuntimeFactory({
+			repoDir,
+			runsRoot,
+			repository,
+			quota,
+			model: graphModelEffects(runtime.registry, runtime.store, runtime.config),
+		});
+		await dispatch(args.slice(1), { createRuntime: (input) => createRuntime(input) });
 		return;
 	}
 	if (subcommand !== "plan") throw new Error(`Unknown graph command: ${subcommand ?? ""}`);
@@ -1458,7 +1594,7 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
  * @throws {Error} If an unknown command is provided or a command handler fails
  */
 export async function main(args = process.argv.slice(2)): Promise<void> {
-	if (args[0] === "graph") return graphCommand(args.slice(1));
+	if (args[0] === "graph" && args[1] !== "dispatch") return graphCommand(args.slice(1));
 	const home = defaultDfHome();
 	const config = await loadDfConfig(home);
 	const providerConfig = await loadProviderConfig(home);
@@ -1476,6 +1612,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 	switch (command) {
 		case "__packaging-smoke":
 			return packagingSmoke();
+		case "graph":
+			return graphCommand(args.slice(1), { registry, store, config, ledger });
 		case "providers":
 			return providersCommand(registry);
 		case "models":

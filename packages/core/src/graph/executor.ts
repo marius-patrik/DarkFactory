@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ReviewRuntimeState, ReviewSubject } from "../../../packages/protocol/src/review.ts";
+import type { ReviewRuntimeState, ReviewSubject } from "@darkfactory/protocol/review";
 import { plan } from "./planner.ts";
 import { planningReviewAdapter } from "./planning.ts";
 import {
@@ -29,6 +29,8 @@ export interface NodeResult {
 export interface NodeContext {
 	/** Directory owned by this run (or this fan-out child) for scratch files. */
 	runDir: string;
+	/** Durable workflow run identity. */
+	runId: string;
 	/** The run's outputs so far; for a fan-out child it also holds the item under `foreach.as`. */
 	outputs: Record<string, unknown>;
 	/** The fan-out item, for a child of a `foreach` node. */
@@ -39,6 +41,8 @@ export interface NodeContext {
 	iteration: number;
 	/** Safety-budget alerts the planner raised for this run. */
 	alerts?: string[];
+	/** Stable identity of the external ingress event driving this execution call. */
+	eventId?: string;
 	/** Durable generic review state for reviewer/fixer nodes. */
 	review?: ReviewRuntimeState;
 }
@@ -132,6 +136,7 @@ async function runForeach(
 	runDir: string,
 	handlers: NodeHandlers,
 	iteration: number,
+	eventId?: string,
 ): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
 	const spec = node.foreach!;
 	const items = state.outputs[spec.items];
@@ -157,9 +162,11 @@ async function runForeach(
 			const item = items[index];
 			const result = await invoke(handlers, node, {
 				runDir: childDir,
+				runId: `${state.run_id}/${node.id}/${index}`,
 				outputs: { ...state.outputs, [as]: item },
 				item,
 				iteration,
+				...(eventId ? { eventId } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
 			});
@@ -188,6 +195,7 @@ async function runForeach(
 		type: "children.completed",
 		node: node.id,
 		outcome: results.every((result) => result.outcome === "success") ? "all_done" : "any_failed",
+		...(eventId ? { event_id: eventId } : {}),
 	};
 }
 
@@ -230,13 +238,30 @@ export async function runGraph(
 	state.hints ??= [];
 	state.iterations ??= {};
 	state.reviews ??= {};
+	state.processed_events ??= [];
 	const save = () => writeJson(statePath, state);
+	const ingressEventId = event.event_id;
+	if (ingressEventId) state.active_event_id = ingressEventId;
+	if (ingressEventId && state.processed_events.includes(ingressEventId)) return state;
+	const finishIngress = async (): Promise<RunState> => {
+		delete state.resume_event;
+		delete state.active_event_id;
+		delete state.pending_action;
+		if (ingressEventId && !state.processed_events!.includes(ingressEventId)) state.processed_events!.push(ingressEventId);
+		await save();
+		return state;
+	};
 	await save();
 	await record({ type: "event", event });
+	if (state.pending_action) {
+		await options.onAction?.(state.pending_action, state);
+		delete state.pending_action;
+		return finishIngress();
+	}
 
 	const maxSteps = options.maxSteps ?? 1000;
 	let steps = 0;
-	let current: GraphEvent = event;
+	let current: GraphEvent = ingressEventId && state.resume_event?.event_id === ingressEventId ? state.resume_event : event;
 	for (;;) {
 		refreshReviewContexts(graph, state);
 		const currentNode = graph.nodes.find((node) => node.id === state.current_node);
@@ -252,19 +277,18 @@ export async function runGraph(
 			state.reviews[currentNode.approves_review] = approveReview(review, options.now?.() ?? new Date());
 		}
 		await record({ type: "action", action });
-		if (action.type === "none") {
-			await save();
-			return state;
-		}
+		if (action.type === "none") return finishIngress();
 		if (action.type !== "run") {
 			state.current_node = action.node;
 			if (action.type === "hint" && !state.hints.includes(action.node)) state.hints.push(action.node);
 			if (action.type === "gate" || action.type === "comment")
 				state.blocked_since ??= (options.now?.() ?? new Date()).toISOString();
 			if (action.type === "comment" && /quota/iu.test(action.message)) state.quota_blocked = true;
+			state.pending_action = action;
 			await save();
 			await options.onAction?.(action, state);
-			return state;
+			delete state.pending_action;
+			return finishIngress();
 		}
 		const nodeId = action.nodes[0];
 		const node = graph.nodes.find((candidate) => candidate.id === nodeId);
@@ -279,7 +303,7 @@ export async function runGraph(
 		await save();
 		if (node.kind === "check-reference" || node.kind === "gate") {
 			// Nothing to execute: the run waits for the checks (or gate) event.
-			return state;
+			return finishIngress();
 		}
 		if (node.kind === "agent" && node.requires_review_approval) {
 			const review = state.reviews[node.requires_review_approval];
@@ -287,7 +311,7 @@ export async function runGraph(
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
 		if (node.foreach) {
-			current = await runForeach(node, action, state, runDir, handlers, iteration);
+			current = await runForeach(node, action, state, runDir, handlers, iteration, ingressEventId);
 		} else {
 			const reviewConfig = node.kind === "agent" ? node.review : undefined;
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
@@ -297,8 +321,10 @@ export async function runGraph(
 				throw new Error(`Review fix node ${node.id} has no findings or owner feedback to fix`);
 			const result = await invoke(handlers, node, {
 				runDir,
+				runId: state.run_id,
 				outputs: state.outputs,
 				iteration,
+				...(ingressEventId ? { eventId: ingressEventId } : {}),
 				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
@@ -333,9 +359,19 @@ export async function runGraph(
 				}
 			}
 			state.outputs = { ...state.outputs, ...result.outputs };
+			if (result.outcome === "quota_exhausted" && node.kind === "agent" && node.quota_policy) {
+				state.checkpoints ??= [];
+				const existing = state.checkpoints.find((checkpoint) => checkpoint.run_id === state.run_id && checkpoint.node === node.id);
+				if (existing) existing.eligible = false;
+				else state.checkpoints.push({ run_id: state.run_id, node: node.id, eligible: false });
+			}
+			if (node.kind === "automation" && node.side_effects?.clear_checkpoints && result.outcome === "success") {
+				state.checkpoints = [];
+			}
 			refreshReviewContexts(graph, state);
-			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs };
+			current = { type: "node.completed", node: node.id, outcome: result.outcome, outputs: result.outputs, ...(ingressEventId ? { event_id: ingressEventId } : {}) };
 		}
+		state.resume_event = current;
 		await save();
 		await record({ type: "event", event: current });
 	}

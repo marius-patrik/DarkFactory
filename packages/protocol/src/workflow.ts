@@ -112,7 +112,7 @@ export interface Actor {
 }
 
 /** Normalized external event consumed by the graph runtime. */
-export type GraphEvent =
+export type GraphEvent = (
 	| { type: "issues.opened" | "issues.labeled" | "comment"; actor: Actor; body?: string; label?: string }
 	| { type: "review"; state: string; actor: Actor }
 	| {
@@ -123,7 +123,11 @@ export type GraphEvent =
 	  }
 	| { type: "checks.completed"; conclusion: "required_green" | "failed" }
 	| { type: "schedule"; schedule: string; now?: string }
-	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" };
+	| { type: "children.completed"; node: string; outcome: "all_done" | "any_failed" }
+) & {
+	/** Stable identity of the external ingress event. Internal node events inherit the ingress identity. */
+	event_id?: string;
+};
 
 /** Persisted resumable workflow-run state. */
 export interface RunState {
@@ -138,6 +142,14 @@ export interface RunState {
 	checkpoints?: { run_id: string; node: string; eligible: boolean }[];
 	children?: { run_id: string; node: string; eligible: boolean }[];
 	reviews?: Partial<Record<ReviewSubject, ReviewRuntimeState>>;
+	/** Last durable internal event for crash-safe continuation of the current ingress. */
+	resume_event?: GraphEvent;
+	/** External ingress event identities that completed without an unhandled effect failure. */
+	processed_events?: string[];
+	/** External ingress event currently being processed; cleared when that ingress is durable. */
+	active_event_id?: string;
+	/** Durable gate/comment/hint effect awaiting successful external application. */
+	pending_action?: Exclude<PlanAction, { type: "run" } | { type: "none" }>;
 }
 
 /** Deterministic action emitted by graph planning. */

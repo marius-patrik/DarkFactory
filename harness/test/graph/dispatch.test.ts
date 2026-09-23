@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { NodeHandlers } from "@darkfactory/core/graph";
 
 describe("dispatch", () => {
 	let tmpDir!: string;
@@ -39,9 +40,14 @@ describe("dispatch", () => {
 		delete process.env.GITHUB_REPOSITORY;
 	});
 
+	const handlers: NodeHandlers = {
+		agent: async (node) => ({ outcome: "success", outputs: { [node.id + "_done"]: true } }),
+		automation: async (node) => ({ outcome: "success", outputs: { [node.id + "_done"]: true } }),
+	};
+
 	async function runDispatch(args: string[]) {
 		const { dispatch } = await import("../../src/graph/dispatch.ts");
-		await dispatch(args);
+		await dispatch(args, { createRuntime: async () => ({ handlers }) });
 	}
 
 	async function mkdtemp(): Promise<string> {
@@ -136,13 +142,15 @@ describe("dispatch", () => {
 		const out = JSON.parse(output[0]!);
 		expect(out.subject as string).toBe("42");
 		expect(out.event as string).toBe("checks.completed");
-		expect(out.action as string).toBe("run");
-		expect(out.commands as string[]).toEqual(["bun df run --node trigger"]);
+		expect(out.type as string).toBe("checks");
+		expect(out.result as string).toBe("pass");
+		expect(out.current_node as string).toBe("trigger");
+		expect(out.processed as boolean).toBe(true);
 
 		// State file created
 		const files = await readdir(join(tmpDir!, runsDir));
-		expect(files.length).toBe(1);
-		const state = JSON.parse(await readFile(join(tmpDir!, runsDir, files[0]!), "utf8"));
+		expect(files).toEqual(["42"]);
+		const state = JSON.parse(await readFile(join(tmpDir!, runsDir, "42", "state.df"), "utf8"));
 		expect(state.current_node as string).toBe("trigger");
 	});
 });
