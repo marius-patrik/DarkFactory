@@ -21,6 +21,8 @@ Directly checked against the 2024 guide on 2026-09-22:
 - §2.4, p. 9 places methodology in the Practical part. It should identify the subject, tools, procedure and analysis in enough detail to permit repetition, without reporting results.
 - §2.5, pp. 9–10 permits combined Results and Discussion but distinguishes factual results from interpretation.
 - §2.6, p. 10 requires the Conclusion to assess achievement of the objective without introducing new ideas.
+- §5, pp. 25–27 permits either the Harvard system or numeric references, requires one system to be used consistently, and assigns the choice to the supervisor according to disciplinary convention.
+- §5.2.1, p. 26 permits numeric references in square brackets, round brackets, or superscript. The selected form for this paper is a full-size number in round parentheses; superscript citation indices are not used.
 
 Editorial application: state the explanatory objective and concrete DarkFactory evaluation objective in the Introduction; place methodology under Practical; discuss findings against the objectives without artificial O1–O3 references. This verifies these structural requirements only, not full school compliance.
 
@@ -45,7 +47,7 @@ Editorial application: state the explanatory objective and concrete DarkFactory 
 | Figures/tables | combined Seznam obrázků a tabulek when applicable |
 | Figure captions | 10 pt |
 | Code/raw text | 10 pt monospace permitted |
-| Citations | ISO 690; numeric or author-date according to supervisor/guide choice |
+| Citations | ISO 690 numeric; full-size numbers in round parentheses, never superscript; one system used consistently |
 | Bibliography | final heading wording confirmed from direct guide text |
 | Appendices | numbered when present; Seznam příloh when applicable |
 | Theory | sourced explanation of necessary knowledge/concepts |

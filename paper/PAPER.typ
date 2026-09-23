@@ -54,7 +54,6 @@
   text(fill: rgb("#222222"), it),
 )
 #show link: set text(fill: rgb("#222222"))
-#show cite: it => super(it)
 #set table(stroke: 0.5pt, inset: (x: 5pt, y: 4pt))
 #set figure(numbering: "1")
 
