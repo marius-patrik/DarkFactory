@@ -186,9 +186,14 @@ Model claims such as “pushed”, “merged”, “committed” or “resolved�
 - Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.
 - Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
 - Quota/provider failover is durable and does not repeat already-completed deterministic effects.
+- Execution is serializable per durable run identity: concurrent ingress for the same run cannot lose state, run the same node concurrently, or overwrite a newer transition.
+- External effects are serializable per deterministic effect identity. Concurrent callers of the same effect cannot both enter the mutation; crash recovery reconciles external evidence before retrying.
+- Transport retries are method/effect aware. A mutation is never blindly replayed after an ambiguous transport/server outcome; the engine reconciles external state or uses an operation with equivalent conditional/idempotent semantics first.
+- Authoritative state uses crash-consistent transactions appropriate to its scope. A rename-only single-file update is not described as durable across power loss unless file and directory durability are actually established; logically multi-file state commits through one generation/transaction boundary.
 - Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.
 - Planning decomposes work into the smallest practical independently verifiable chunks with explicit dependencies, scope/file ownership and minimum capability/tier metadata sufficient to decide safe parallelism.
 - Independent chunks may execute concurrently only through the same persisted graph runtime in isolated engine worktrees backed by the one deterministic git substrate. Verified chunk commits integrate in dependency order; sibling failure, interruption and conflict repair remain resumable without repeating completed effects.
+- Quota admission is atomic with respect to concurrent model calls: declared/learned capacity is reserved before dispatch and settled/released from observed usage so parallel chunks cannot all consume the same remaining slot.
 - Turn limits and elapsed-time limits are independent safety bounds.
 - Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.
 - The runtime remains containerizable/non-root for CI execution.
@@ -197,7 +202,7 @@ Model claims such as “pushed”, “merged”, “committed” or “resolved�
 
 Production GitHub interaction uses `@darkfactory/github`; production shell/subprocess `gh` mutation is not allowed.
 
-Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. Models may assist conflict resolution but do not own deterministic git state.
+Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. A push contract identifies both the expected old remote SHA and the new local SHA, verifies the resulting remote ref, and refuses stale remote state. Models may assist conflict resolution but do not own deterministic git state.
 
 GitHub webhook/workflow events are triggers, not authoritative lifecycle snapshots. Status, labels,
 project fields, bindings and cleanup decisions are reconciled from current GitHub/runtime state so
@@ -218,6 +223,8 @@ The repository default branch is always discovered from repository state/config,
 ## 11. Keychain and machine credentials
 
 `@darkfactory/keychain` is the sole machine/harness credential owner.
+
+Credential/account/vault updates are transactionally serialized. Multi-file vault representations cannot expose a mixed generation after interruption. Replicated/synchronized secret state converges deterministically regardless of merge direction, represents deletion explicitly so removed secrets cannot be resurrected by stale replicas, and does not resolve equal-version conflicts by caller-local preference.
 
 It covers:
 
