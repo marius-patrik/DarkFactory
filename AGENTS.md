@@ -4,32 +4,32 @@ DarkFactory is developed by an autonomous agent pipeline under human approval ga
 below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
 They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
-index back to each canonical file for rationale and enforcement. Edit `.agents/rules/*.md`; do not
-edit this projection.
+index back to each canonical file for rationale and enforcement. Related notes are derived from
+accepted ADR metadata; edit canonical rules/notes rather than this projection.
 
 ## Index
 
-| ID | Rule | Canonical file |
-|---|---|---|
-| `DF-RULE-001` | Tests prove invariants | `.agents/rules/001-unit-tests.md` |
-| `DF-RULE-002` | Inline docstrings and generated documentation | `.agents/rules/002-inline-docs-and-generated-documentation.md` |
-| `DF-RULE-003` | Product requirements and ADRs | `.agents/rules/003-product-requirements-and-adrs.md` |
-| `DF-RULE-004` | English language consistency | `.agents/rules/004-english-language.md` |
-| `DF-RULE-005` | Commit granularity | `.agents/rules/005-commit-granularity.md` |
-| `DF-RULE-006` | CI readiness | `.agents/rules/006-ci-readiness.md` |
-| `DF-RULE-007` | Branches and pull requests | `.agents/rules/007-branches-and-pull-requests.md` |
-| `DF-RULE-008` | Formatting and linting | `.agents/rules/008-formatting-and-linting.md` |
-| `DF-RULE-009` | Issue binding, branch auto-deletion, and board status | `.agents/rules/009-issue-binding-and-board-status.md` |
-| `DF-RULE-010` | Approved delivery plan | `.agents/rules/010-approved-delivery-plan.md` |
-| `DF-RULE-011` | Review approval and auto-merge | `.agents/rules/011-review-approval-and-auto-merge.md` |
-| `DF-RULE-012` | Request capture and confirmation | `.agents/rules/012-request-capture-and-confirmation.md` |
-| `DF-RULE-013` | Specification and work tracking | `.agents/rules/013-specification-and-work-tracking.md` |
-| `DF-RULE-014` | Agent runtime and resilience | `.agents/rules/014-agent-runtime-and-resilience.md` |
-| `DF-RULE-015` | Repository taxonomy | `.agents/rules/015-repository-taxonomy.md` |
-| `DF-RULE-016` | Security and secrets | `.agents/rules/016-security-and-secrets.md` |
-| `DF-RULE-017` | Final architecture, DRY, and deletion | `.agents/rules/017-final-architecture-dry-and-deletion.md` |
-| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `.agents/rules/018-concurrency-atomicity-and-idempotency.md` |
-| `DF-RULE-019` | Orchestrated integration and worker isolation | `.agents/rules/019-orchestrated-integration-and-worker-isolation.md` |
+| ID | Rule | Related notes | Canonical file |
+|---|---|---|---|
+| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | `.agents/rules/001-unit-tests.md` |
+| `DF-RULE-002` | Inline docstrings and generated documentation | `ADR-0023` | `.agents/rules/002-inline-docs-and-generated-documentation.md` |
+| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022` | `.agents/rules/003-product-requirements-and-adrs.md` |
+| `DF-RULE-004` | English language consistency | — | `.agents/rules/004-english-language.md` |
+| `DF-RULE-005` | Commit granularity | `ADR-0025` | `.agents/rules/005-commit-granularity.md` |
+| `DF-RULE-006` | CI readiness | `ADR-0021`, `ADR-0026` | `.agents/rules/006-ci-readiness.md` |
+| `DF-RULE-007` | Branches and pull requests | `ADR-0015`, `ADR-0025` | `.agents/rules/007-branches-and-pull-requests.md` |
+| `DF-RULE-008` | Formatting and linting | `ADR-0026` | `.agents/rules/008-formatting-and-linting.md` |
+| `DF-RULE-009` | Issue binding, branch auto-deletion, and board status | `ADR-0019` | `.agents/rules/009-issue-binding-and-board-status.md` |
+| `DF-RULE-010` | Approved delivery plan | `ADR-0013` | `.agents/rules/010-approved-delivery-plan.md` |
+| `DF-RULE-011` | Review approval and auto-merge | `ADR-0013`, `ADR-0019` | `.agents/rules/011-review-approval-and-auto-merge.md` |
+| `DF-RULE-012` | Request capture and confirmation | `ADR-0013` | `.agents/rules/012-request-capture-and-confirmation.md` |
+| `DF-RULE-013` | Specification and work tracking | `ADR-0013`, `ADR-0022` | `.agents/rules/013-specification-and-work-tracking.md` |
+| `DF-RULE-014` | Agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | `.agents/rules/014-agent-runtime-and-resilience.md` |
+| `DF-RULE-015` | Repository taxonomy | `ADR-0021` | `.agents/rules/015-repository-taxonomy.md` |
+| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | `.agents/rules/016-security-and-secrets.md` |
+| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | `.agents/rules/017-final-architecture-dry-and-deletion.md` |
+| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | `.agents/rules/018-concurrency-atomicity-and-idempotency.md` |
+| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | `.agents/rules/019-orchestrated-integration-and-worker-isolation.md` |
 
 
 ---
