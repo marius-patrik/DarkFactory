@@ -10,9 +10,7 @@ owners: [git, github]
 
 ## Requirement
 
-All normal product changes MUST use dedicated delivery branches and GitHub pull requests. Direct
-mutation of the protected canonical branch is prohibited outside an explicitly authorized
-bootstrap/emergency operation recorded by the active Request/Planning record.
+All product changes MUST reach the protected canonical branch through a reviewed delivery branch and GitHub pull request. Direct mutation of canonical is prohibited. A bootstrap/emergency exception may change who authors the delivery branch when df itself is unavailable, but it never bypasses the PR, checks, review or merge gate.
 
 - Branch names are lowercase, descriptive and do not depend on issue numbers.
 - The repository's actual canonical/default branch is resolved dynamically; `main` is never assumed.
