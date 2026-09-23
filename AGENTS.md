@@ -1,7 +1,7 @@
 # Repository Development Guidelines & Agent Rules
 
-DarkFactory is developed by an autonomous agent pipeline under human approval gates. The sixteen
-rules below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
+DarkFactory is developed by an autonomous agent pipeline under human approval gates. The rules
+below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
 They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Edit `.agents/rules/*.md`; do not
@@ -27,6 +27,9 @@ edit this projection.
 | `DF-RULE-014` | Agent runtime and resilience | `.agents/rules/014-agent-runtime-and-resilience.md` |
 | `DF-RULE-015` | Repository taxonomy | `.agents/rules/015-repository-taxonomy.md` |
 | `DF-RULE-016` | Security and secrets | `.agents/rules/016-security-and-secrets.md` |
+| `DF-RULE-017` | Final architecture, DRY, and deletion | `.agents/rules/017-final-architecture-dry-and-deletion.md` |
+| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `.agents/rules/018-concurrency-atomicity-and-idempotency.md` |
+| `DF-RULE-019` | Orchestrated integration and worker isolation | `.agents/rules/019-orchestrated-integration-and-worker-isolation.md` |
 
 
 ---
@@ -66,7 +69,7 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
-The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
+`docs/home.md` is the product-documentation homepage. `AGENTS.md` is the generated/indexed projection of canonical `.agents/rules/**`. Root `README.md` is the generated index/projection of current long-term `.agents/notes/**`. These surfaces have distinct roles and MUST NOT duplicate one another. CI MUST fail on deterministic projection drift.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
@@ -331,3 +334,72 @@ The web auth broker may hold only credentials required for confidential user-tok
 GitHub user authority and GitHub App installation authority remain distinct.
 
 Secret-bearing recovery material remains preserved locally and blocked from publication rather than leaked or discarded.
+
+
+### Rule 17 — Final architecture, DRY, and deletion
+
+The repository targets the current final architecture directly.
+
+- Every concern has one final owner and one source of truth. Duplicate implementations, registries,
+  state stores, config contracts, command maps and generated/manual copies are forbidden.
+- Reuse or move working code when it already implements the required behavior, but delete its old
+  owner once the final owner is live. Final packages MUST NOT forward implementation to a
+  deletion-bound/legacy tree.
+- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are
+  forbidden unless an **external supported contract explicitly required by PRD.md** needs them.
+  Previous internal architecture is never a compatibility target and is not preserved "just in case".
+- Delete unreachable/dead code, stale configuration, unused assets, obsolete tests, superseded docs,
+  abandoned feature flags and transitional adapters instead of documenting or testing their presence.
+- Abstract repeated mechanisms and invariants once at the lowest stable owner. Do not create
+  speculative abstractions for one caller or hide unrelated behavior behind a generic helper merely
+  to reduce line count.
+- Public exports are intentional product/extension contracts. Keep internal helpers private; tests do
+  not justify widening an API.
+- Package/capability dependencies remain explicit and acyclic. Historical implementation belongs in
+  Git/issues, not live source.
+
+### Rule 18 — Concurrency, atomicity, and idempotency
+
+Authoritative state and external effects MUST remain correct under duplicate delivery, concurrent
+execution, interruption and ambiguous transport failure.
+
+- Serialize authoritative transitions at the identity they mutate (run, effect, account, branch,
+  worktree, quota reservation, release, etc.). Check-then-act without an atomic claim/lease/CAS is not
+  sufficient.
+- A deterministic external effect ID may produce at most one logical mutation. Concurrent duplicates
+  cannot both enter the mutation; crash recovery reconciles observed external state before retrying.
+- Remote writes use expected-old-version/SHA or equivalent conditional semantics and fail closed on
+  stale state.
+- Mutation retries are method/effect aware. After an ambiguous write outcome, reconcile first; never
+  blindly replay a non-idempotent POST/write because a transport or 5xx response failed.
+- Authoritative file/state updates are crash-consistent. Multi-file logical state uses one
+  generation/transaction boundary; lock recovery cannot delete a replacement owner's lock.
+- Replicated state converges deterministically regardless of merge direction and represents deletion
+  explicitly until it is safe to compact.
+- Quota/capacity is reserved atomically before concurrent work is dispatched and settled from observed
+  usage.
+- Webhook/events are triggers, not authoritative snapshots; reconciliation derives desired state from
+  current evidence so stale/out-of-order events cannot roll state backward.
+- Concurrency, idempotency and atomicity claims are tested at the actual race/crash windows with
+  simultaneous actors and fault injection.
+
+### Rule 19 — Orchestrated integration and worker isolation
+
+Parallel implementation has one integration authority per delivery branch.
+
+- The orchestrator alone advances the authoritative remote delivery branch and owns integration.
+- Parallel workers use isolated local worktrees/branches with explicit prerequisites and disjoint
+  subsystem/path ownership. They do not create competing remote delivery branches/PRs or mutate the
+  integration branch.
+- Shared integration surfaces (root manifests/lockfiles, package export maps, workflow/config,
+  PRD/PLAN/rules/docs and generated projections) stay orchestrator-owned unless one non-overlapping
+  edit is explicitly delegated.
+- Workers return a coherent commit SHA, changed-file set, targeted verification and assumptions.
+  The orchestrator integrates those commits in dependency order, resolves shared files semantically
+  and re-runs affected gates.
+- A dependent lane starts only after the interface it consumes is integrated and verified on the
+  authoritative branch. Do not parallelize across unsettled shared interfaces.
+- Keep coherent Conventional Commit boundaries. One delivery PR does not justify one opaque commit.
+- CI is read-only on delivery branches; background automation does not race the orchestrator by
+  pushing formatter/fix commits.
+- Each implementation gate records exact-head evidence before downstream work treats it as satisfied.

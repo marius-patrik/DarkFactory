@@ -120,7 +120,7 @@ The final compiler combines:
 
 TypeDoc may be used internally for TypeScript extraction.
 
-The docs homepage and this README are rendered from the same semantic content graph so they cannot drift independently.
+`docs/home.md` is the product homepage. Root `README.md` is instead generated as an index of current long-term `.agents/notes/**`, while `AGENTS.md` projects canonical `.agents/rules/**`. The compiler validates each projection against its own canonical source.
 
 ## DarkFactory Web
 
@@ -179,7 +179,8 @@ Pre-merge acceptance produces `audit.df`, proves source-free install/update and 
 
 - [PRD.md](../PRD.md) — product requirements and architecture
 - [PLAN.md](../PLAN.md) — repository-wide completion strategy; concrete active steps/evidence live in the GitHub Request/Planning record
-- [AGENTS.md](../AGENTS.md) — projection of canonical contribution/governance rules
+- [AGENTS.md](../AGENTS.md) — projection/index of canonical contribution/governance rules
+- [README.md](../README.md) — generated index of current long-term repository notes
 - [ADRs](../.agents/notes/adr/) — accepted architecture decisions
 
 ## License

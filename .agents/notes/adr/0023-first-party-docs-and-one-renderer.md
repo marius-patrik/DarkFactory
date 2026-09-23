@@ -9,9 +9,9 @@
 - The compiler builds one typed content graph from canonical Markdown, ADRs/rules, TypeScript/TSDoc API extraction, capability-contributed documentation and repository/graph/workflow metadata.
 - TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 - `@darkfactory/web` is the only first-party web renderer.
-- The same canonical homepage source renders the docs homepage and committed `README.md`.
+- `docs/home.md` remains the product homepage. Root `README.md` is a deterministic index/projection of current `.agents/notes/**`, analogous to `AGENTS.md` as the rules projection; it is not a duplicate product homepage.
 - Consumer repositories use the released web bundle plus repository-specific compiled content/data.
 
 ## Consequences
 
-Documentation has one compiler, one configuration contract, one semantic content source and one first-party renderer.
+Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections.

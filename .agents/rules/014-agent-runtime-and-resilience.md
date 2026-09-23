@@ -33,7 +33,7 @@ Core/router/runtime tests plus capability adapter tests and live df-only accepta
 
 ## Exceptions
 
-Retained Python orchestration is deletion/reference-only until its final TypeScript owner lands and is never an extension or compatibility target.
+Previous internal runtime implementations are not compatibility targets. External compatibility exists only when the PRD explicitly promises it; otherwise old orchestration is deleted when its final owner is live.
 
 ## Change control
 

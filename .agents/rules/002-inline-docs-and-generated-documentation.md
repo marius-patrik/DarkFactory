@@ -18,17 +18,17 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
-The same canonical homepage/content graph MUST render both the published docs homepage and committed `README.md`. CI MUST fail on deterministic README projection drift.
+`docs/home.md` is the product-documentation homepage. `AGENTS.md` is the generated/indexed projection of canonical `.agents/rules/**`. Root `README.md` is the generated index/projection of current long-term `.agents/notes/**`. These surfaces have distinct roles and MUST NOT duplicate one another. CI MUST fail on deterministic projection drift.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
 ## Rationale
 
-One content graph prevents API docs, README and the published site from becoming independent sources of product truth.
+One content graph can publish product docs, rules and notes without turning README into a second product specification. Canonical records stay in their owning files while generated projections make them discoverable.
 
 ## Enforcement
 
-Docs/API/README checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings.
+Docs/API/projection checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings; README/AGENTS projections must match their canonical notes/rules.
 
 ## Exceptions
 
