@@ -171,7 +171,7 @@ Rozsáhlou úlohu lze rozdělit do více agentních běhů, pokud mají podúloh
 
 Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol.
 
-#strong[Goal loop] tvoří nadřazenou řídicí smyčku vůči jednotlivým cyklům agentní smyčky: po více akcích vyhodnocuje postup k cíli a podle podmínek přijetí rozhoduje o změně strategie, pokračování nebo ukončení běhu @yao2022 @anthropic-harness-design.
+#strong[Goal loop] tvoří nadřazenou řídicí smyčku vůči jednotlivým cyklům agentní smyčky: když model ve standardní smyčce ReAct označí svůj krok za dokončený, harness porovná dosažený stav s cílem a podmínkami přijetí a rozhodne, zda běh ukončit, nebo úlohu vrátit agentovi k další iteraci či změně strategie @yao2022 @anthropic-harness-design.
 
 Princip #strong[human-in-the-loop] (#strong[HITL]) doplňuje automatizované smyčky o kontrolní brány, v nichž je vyžadováno explicitní lidské rozhodnutí, například schválení specifikace, potvrzení implementačního plánu nebo přijetí výsledného diffu. Vývojář tak nadále odpovídá za záměr, architekturu a integraci, zatímco agent provádí ohraničenou implementační práci. Začlenění změn do hlavní větve vyžaduje vedle technického ověření v CI také lidskou revizi a převzetí odpovědnosti za výsledek @github-branches @github-pull-requests.
 
