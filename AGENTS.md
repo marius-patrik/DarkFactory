@@ -155,6 +155,11 @@ Request/PR/project status uses one canonical reconciliation model with the seven
 A Request reaches Done only from its own terminal evidence or explicit valid shared-Planning/
 multi-Request completion.
 
+Webhook/event payloads are triggers, not authoritative lifecycle snapshots. Before mutating status,
+labels, project fields, PR bindings or branch cleanup, reconciliation MUST derive the desired state
+from current GitHub/runtime evidence. Delayed or out-of-order events must be idempotent and must not
+roll a newer status backward.
+
 ### Rule 10 — Reviewed Planning and implementation alignment
 
 Before implementation begins, each governed unit of work MUST have one current unified Planning

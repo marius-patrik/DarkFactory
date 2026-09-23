@@ -41,11 +41,17 @@ Request/PR/project status uses one canonical reconciliation model with the seven
 A Request reaches Done only from its own terminal evidence or explicit valid shared-Planning/
 multi-Request completion.
 
+Webhook/event payloads are triggers, not authoritative lifecycle snapshots. Before mutating status,
+labels, project fields, PR bindings or branch cleanup, reconciliation MUST derive the desired state
+from current GitHub/runtime evidence. Delayed or out-of-order events must be idempotent and must not
+roll a newer status backward.
+
 ## Rationale
 
 Explicit current bindings preserve why a PR exists without forcing superseded duplicate issues to
 remain active. Failure evidence stays attached to the work that owns it instead of fragmenting the
-tracker.
+tracker. Treating events as triggers prevents concurrent label/project events from overwriting newer
+repository truth with stale webhook state.
 
 ## Enforcement
 

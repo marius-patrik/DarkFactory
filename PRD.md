@@ -199,6 +199,10 @@ Production GitHub interaction uses `@darkfactory/github`; production shell/subpr
 
 Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. Models may assist conflict resolution but do not own deterministic git state.
 
+GitHub webhook/workflow events are triggers, not authoritative lifecycle snapshots. Status, labels,
+project fields, bindings and cleanup decisions are reconciled from current GitHub/runtime state so
+delayed or out-of-order events are idempotent and cannot roll newer state backward.
+
 Capabilities provide higher-level behaviors such as:
 
 - GitHub Request/PR/project operations;
