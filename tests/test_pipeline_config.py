@@ -287,10 +287,11 @@ def test_request_template_requires_verbatim_wording():
 def test_request_template_describes_the_current_single_planning_gate():
     """Issue intake must not advertise the retired Interpretation + child Plan two-gate lifecycle."""
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
-    assert "one unified **Planning** artifact" in content
-    assert "one explicit owner **Planning Approval**" in content
-    assert "There is no separate" in content
-    assert "child **Plan** issue is created" not in content
+    normalized = " ".join(content.split())
+    assert "one unified **Planning** artifact" in normalized
+    assert "one explicit owner **Planning Approval**" in normalized
+    assert "There is no separate" in normalized
+    assert "child **Plan** issue is created" not in normalized
 
 
 def test_epic_template_is_optional_and_does_not_reference_retired_decisions():

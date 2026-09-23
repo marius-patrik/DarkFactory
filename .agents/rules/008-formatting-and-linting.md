@@ -16,11 +16,13 @@ The canonical detection + capability-resolution contract determines the formatte
 
 Formatting/linting commands MUST be derived from the same normalized package/capability result used by local verification and CI. Do not maintain a second workflow-specific command map.
 
+The mutation path applies deterministic formatting before creating a commit. CI validates the resulting tree but MUST NOT asynchronously create/push formatter commits that advance an active delivery branch after the orchestrator has integrated or proven a head.
+
 Lints are blocking where supported. Generated artifacts are excluded only by explicit canonical policy.
 
 ## Rationale
 
-One detected quality contract keeps local mutation, graph verification and CI from disagreeing about what “formatted” or “lint clean” means.
+One detected quality contract keeps local mutation, graph verification and CI from disagreeing about what “formatted” or “lint clean” means. Applying formatting before commit also prevents background automation from racing lease-safe integration or invalidating exact-head evidence.
 
 ## Enforcement
 
