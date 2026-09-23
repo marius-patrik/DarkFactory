@@ -3,6 +3,7 @@ import {
   BASE_SHA,
   installGithubMock,
   MOCK_REPOSITORY,
+  PUBLIC_REPOSITORY,
 } from "./github-mock";
 
 type Surface = "primary" | "main" | "secondary" | "panel";
@@ -187,6 +188,7 @@ test("tabs move across root Dockview surfaces, existing groups, splits, and relo
 });
 
 test("anonymous public repository and Browser history/reload/blocked fallback work", async ({ page }) => {
+  await installGithubMock(page);
   await page.route("https://example.com/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>example</body></html>" }),
   );
@@ -199,9 +201,9 @@ test("anonymous public repository and Browser history/reload/blocked fallback wo
   });
 
   await page.getByRole("button", { name: /Open Repository/ }).first().click();
-  await page.getByRole("textbox", { name: "Repository" }).fill("marius-patrik/DarkFactory-Paper");
+  await page.getByRole("textbox", { name: "Repository" }).fill(PUBLIC_REPOSITORY);
   await page.getByRole("button", { name: "Open", exact: true }).click();
-  await expect(page.locator(".workspace-repository-button")).toContainText("marius-patrik/DarkFactory-Paper", {
+  await expect(page.locator(".workspace-repository-button")).toContainText(PUBLIC_REPOSITORY, {
     timeout: 20_000,
   });
 

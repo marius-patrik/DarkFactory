@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
 export const MOCK_REPOSITORY = "acme/private";
+export const PUBLIC_REPOSITORY = "acme/public";
 export const BASE_SHA = "1111111111111111111111111111111111111111";
 const BASE_TREE = "2222222222222222222222222222222222222222";
 const README_BLOB = "3333333333333333333333333333333333333333";
@@ -15,6 +16,16 @@ const repository = {
   html_url: "https://github.com/acme/private",
   owner: { login: "acme" },
   permissions: { admin: true, maintain: true, push: true, triage: true, pull: true },
+};
+
+const publicRepository = {
+  ...repository,
+  id: 43,
+  name: "public",
+  full_name: PUBLIC_REPOSITORY,
+  private: false,
+  html_url: "https://github.com/acme/public",
+  permissions: { admin: false, maintain: false, push: false, triage: false, pull: true },
 };
 
 const user = {
@@ -209,6 +220,23 @@ export async function installGithubMock(page: Page): Promise<GithubMock> {
 
     if (path === `/repos/${MOCK_REPOSITORY}` && method === "GET") {
       return json(route, repository);
+    }
+
+    if (path === `/repos/${PUBLIC_REPOSITORY}` && method === "GET") {
+      return json(route, publicRepository);
+    }
+    if (path === `/repos/${PUBLIC_REPOSITORY}/commits/main` && method === "GET") {
+      return json(route, commit(BASE_SHA));
+    }
+    if (path.startsWith(`/repos/${PUBLIC_REPOSITORY}/git/trees/`) && method === "GET") {
+      const sha = decodeURIComponent(path.split("/").at(-1) || BASE_TREE);
+      return json(route, trees.get(sha) ?? tree(sha));
+    }
+    if (path === `/repos/${PUBLIC_REPOSITORY}/branches` && method === "GET") {
+      return json(route, [{ name: "main", commit: { sha: BASE_SHA } }]);
+    }
+    if (path === `/repos/${PUBLIC_REPOSITORY}/tags` && method === "GET") {
+      return json(route, []);
     }
 
     if (path === `/repos/${MOCK_REPOSITORY}/branches` && method === "GET") {
