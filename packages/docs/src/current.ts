@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DocsContentGraph } from "./content.ts";
 import { renderReadmeMarkdown } from "./readme.ts";
+import { renderAgentsMarkdown } from "./agents.ts";
 
 /** One deterministic violation of the repository's current-only documentation contract. */
 export interface DocumentationTruthFinding {
@@ -36,6 +37,17 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 		const expected = renderReadmeMarkdown(graph);
 		if (actual !== expected) {
 			findings.push({ path: "README.md", message: "committed README differs from the canonical repository-notes projection" });
+		}
+	}
+
+	const agentsPath = join(repoRoot, "AGENTS.md");
+	if (!existsSync(agentsPath)) {
+		findings.push({ path: "AGENTS.md", message: "generated AGENTS projection is missing" });
+	} else {
+		const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
+		const expected = renderAgentsMarkdown(graph);
+		if (actual !== expected) {
+			findings.push({ path: "AGENTS.md", message: "committed AGENTS differs from the canonical repository-rules projection" });
 		}
 	}
 

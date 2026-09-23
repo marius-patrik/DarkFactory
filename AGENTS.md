@@ -11,7 +11,7 @@ edit this projection.
 
 | ID | Rule | Canonical file |
 |---|---|---|
-| `DF-RULE-001` | Unit tests | `.agents/rules/001-unit-tests.md` |
+| `DF-RULE-001` | Tests prove invariants | `.agents/rules/001-unit-tests.md` |
 | `DF-RULE-002` | Inline docstrings and generated documentation | `.agents/rules/002-inline-docs-and-generated-documentation.md` |
 | `DF-RULE-003` | Product requirements and ADRs | `.agents/rules/003-product-requirements-and-adrs.md` |
 | `DF-RULE-004` | English language consistency | `.agents/rules/004-english-language.md` |
@@ -19,7 +19,7 @@ edit this projection.
 | `DF-RULE-006` | CI readiness | `.agents/rules/006-ci-readiness.md` |
 | `DF-RULE-007` | Branches and pull requests | `.agents/rules/007-branches-and-pull-requests.md` |
 | `DF-RULE-008` | Formatting and linting | `.agents/rules/008-formatting-and-linting.md` |
-| `DF-RULE-009` | Issue binding and board status | `.agents/rules/009-issue-binding-and-board-status.md` |
+| `DF-RULE-009` | Issue binding, branch auto-deletion, and board status | `.agents/rules/009-issue-binding-and-board-status.md` |
 | `DF-RULE-010` | Approved delivery plan | `.agents/rules/010-approved-delivery-plan.md` |
 | `DF-RULE-011` | Review approval and auto-merge | `.agents/rules/011-review-approval-and-auto-merge.md` |
 | `DF-RULE-012` | Request capture and confirmation | `.agents/rules/012-request-capture-and-confirmation.md` |
