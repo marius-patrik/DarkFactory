@@ -4,7 +4,7 @@ title: Request capture and confirmation
 status: normative
 applies_to: [agents, automation]
 activation: always
-owners: [merge-gates]
+owners: [planning, github]
 ---
 # Rule 12 — Verbatim Request capture and Planning gate
 

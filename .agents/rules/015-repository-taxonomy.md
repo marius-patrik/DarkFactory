@@ -4,7 +4,7 @@ title: Repository taxonomy
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [system-audit, cli-release]
+owners: [github, hooks]
 ---
 # Rule 15 — Commits, repository taxonomy and domains
 

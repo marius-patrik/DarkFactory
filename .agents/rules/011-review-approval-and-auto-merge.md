@@ -4,7 +4,7 @@ title: Review approval and auto-merge
 status: normative
 applies_to: [agents, automation]
 activation: always
-owners: [harness-auth, system-audit]
+owners: [review, github]
 ---
 # Rule 11 — Pull request review approval and governed merge
 

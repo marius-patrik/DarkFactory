@@ -4,7 +4,7 @@ title: Specification and work tracking
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [workflow-graph]
+owners: [planning, epics]
 ---
 # Rule 13 — Specification sequence and work tracking
 

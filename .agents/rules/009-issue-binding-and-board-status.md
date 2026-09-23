@@ -4,7 +4,7 @@ title: Issue binding, branch auto-deletion, and board status
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [system-audit]
+owners: [github, epics]
 ---
 # Rule 9 — Request binding, branch cleanup and board status
 

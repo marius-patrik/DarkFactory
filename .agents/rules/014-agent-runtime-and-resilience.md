@@ -4,7 +4,7 @@ title: Agent runtime and resilience
 status: normative
 applies_to: [agents, automation]
 activation: always
-owners: [rotation]
+owners: [core, capability]
 ---
 # Rule 14 — Capability-driven agent runtime and resilience
 

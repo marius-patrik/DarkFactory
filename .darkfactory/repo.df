@@ -68,13 +68,13 @@
       }
     },
     "release": {
-      "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
+      "$comment": "Release actions are declared per ecosystem. Final first-party package/native/web publication follows PRD.md and the release capability.",
       "python": {
         "enabled": false,
         "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
       },
       "node": {
-        "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
+        "$comment": "Node package/native/web publishing is enabled when the final release surface is complete and proven.",
         "enabled": false
       }
     },
@@ -290,7 +290,7 @@
     }
   },
   "release": {
-    "$comment": "Final package/capability distribution and publishing behavior is defined by #360.",
+    "$comment": "Final package/capability distribution and publishing behavior is defined by PRD.md and the release capability.",
     "metadata": "ignore"
   }
 }

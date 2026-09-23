@@ -4,7 +4,7 @@ title: Approved delivery plan
 status: normative
 applies_to: [agents, automation]
 activation: always
-owners: [merge-gates]
+owners: [planning, review]
 ---
 # Rule 10 — Reviewed Planning and implementation alignment
 

@@ -4,7 +4,7 @@ title: Security and secrets
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
-owners: [harness-auth]
+owners: [keychain, auth]
 ---
 # Rule 16 — Security, authentication and secrets
 
