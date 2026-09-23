@@ -36,6 +36,8 @@ Step 4  Cut production entrypoints to df, then delete harness + DarkFactory Pyth
   ↓
 Step 5  Complete product lanes on final owners
   ↓
+Step 5.5 Deep correctness/DRY/concurrency/verification audit
+  ↓
 Step 6  Current-truth docs + exact-head source-free release candidate
   ↓
 Step 7  DarkFactory/fleet proof + final cleanup
@@ -103,6 +105,14 @@ Run on stable final owners:
 
 Concrete TUI recovery is reused only if actual recoverable bytes exist; absence of an unproven historical recovery ref is not a blocker.
 
+### Step 5.5 — Correctness and verification audit
+
+Before docs/release freeze, audit the **live final architecture**, not the migration history. Remove dead/duplicate owners and unnecessary abstraction; prove run/effect/state serializability, idempotent external mutation under crash and concurrent duplicate invocation, atomic authoritative storage, lease-safe git/worktree behavior, convergent credential state, and atomic quota admission.
+
+Rewrite or delete brittle tests that freeze internal filenames/source strings/workflow text. Package/capability tests prove observable invariants and race/failure windows. The normalized quality contract fails closed on missing/ambiguous coverage and includes first-class TypeScript typechecking. CI is read-only and exact-head.
+
+The detailed findings, required stress/fault-injection proof and completion checklist live only in #68.
+
 ### Step 6 — Truth + release candidate
 
 Perform the current-only docs/ADR/README/API pass after behavior freezes.
@@ -119,9 +129,12 @@ Any defect is fixed on `finish/darkfactory` and affected evidence is rerun.
 
 - one issue, one branch, one PR, one final merge;
 - no compatibility/parity/shadow/canary migration architecture;
+- compatibility/legacy/deprecated/internal migration surfaces are deleted once their final owner exists; retaining one requires a concrete external contract explicitly justified by the PRD, not speculative future use;
+- never add wrappers, aliases, fallback paths, dual-write/read paths or legacy tests merely to reduce short-term migration work;
 - preserve/move working TypeScript instead of gratuitous rewrites;
 - delete DarkFactory Python instead of mechanically porting it;
 - one owner for every runtime/state/git/provider/credential/docs/web concern;
-- CI green alone is not completion;
-- #68 checkboxes are the merge gate;
+- tests prove behavioral/architectural invariants rather than current implementation text/layout;
+- CI green alone is not completion; a green check with unresolved quality gaps is a failure of CI;
+- #68 checkboxes, including Gate 5.5, are the merge gate;
 - implementation workers do not merge #1009.
