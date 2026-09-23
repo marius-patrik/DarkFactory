@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`, `DF-RULE-018`
+
 ## Decision
 
 Provider/model/account availability is determined by DarkFactory's quota engine.
