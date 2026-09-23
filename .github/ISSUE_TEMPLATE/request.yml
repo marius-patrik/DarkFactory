@@ -8,10 +8,11 @@ body:
       value: |
         This repository runs an autonomous agent pipeline (see `AGENTS.md`).
 
-        What happens after you submit: the agent classifies this request, posts an
-        **Interpretation** comment, and waits. Nothing is planned or implemented until you reply
-        `approve`. Once you do, a child **Plan** issue is created and linked as a sub-issue; you
-        approve that too before any code is written.
+        What happens after you submit: DarkFactory preserves the verbatim request, resolves its
+        Request/Epic/dependency context, and creates one unified **Planning** artifact. Planning is
+        independently reviewed and automatically fixed/re-reviewed until clean, then waits for one
+        explicit owner **Planning Approval** before implementation begins. There is no separate
+        Interpretation approval or mandatory child Plan issue.
 
   - type: textarea
     id: verbatim_request

@@ -220,8 +220,11 @@ def test_repo_settings_enables_bot_pr_approval():
 def test_issue_templates_present():
     """Request, epic, and decision templates all exist, plus the chooser config."""
     template_dir = os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE")
-    for name in ("request.yml", "epic.yml", "decision.yml", "config.yml", "configure.yml"):
+    for name in ("request.yml", "epic.yml", "config.yml", "configure.yml"):
         assert os.path.isfile(os.path.join(template_dir, name)), f"{name} must exist"
+    assert not os.path.exists(
+        os.path.join(template_dir, "decision.yml")
+    ), "speculative architecture decision issues are forbidden; use PRD/accepted ADRs"
 
 
 def test_no_step_condition_reads_the_secrets_context():
@@ -279,6 +282,23 @@ def test_request_template_requires_verbatim_wording():
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
     assert "Verbatim User Request" in content
     assert 'labels: ["Request"]' in content
+
+
+def test_request_template_describes_the_current_single_planning_gate():
+    """Issue intake must not advertise the retired Interpretation + child Plan two-gate lifecycle."""
+    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
+    assert "one unified **Planning** artifact" in content
+    assert "one explicit owner **Planning Approval**" in content
+    assert "There is no separate" in content
+    assert "child **Plan** issue is created" not in content
+
+
+def test_epic_template_is_optional_and_does_not_reference_retired_decisions():
+    """Epics organize independent Requests; they are not mandatory wrappers or D1-D8 gates."""
+    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "epic.yml"))
+    assert "not mandatory wrappers" in content
+    assert "D1-D8" not in content
+    assert "never implemented directly" not in content
 
 
 def _declared_areas() -> Dict[str, str]:

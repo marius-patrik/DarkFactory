@@ -1,15 +1,15 @@
 name: "Epic"
-description: "A container issue tracking a whole area of work. Epics are never implemented directly."
+description: "An optional container for genuinely independent Requests that benefit from shared scope and relationships."
 title: "Epic: "
 labels: ["epic", "Backlog"]
 body:
   - type: markdown
     attributes:
       value: |
-        An epic holds scope, acceptance criteria for the whole area, and a checklist of child
-        `Request` issues. Per `.agents/rules/013-specification-and-work-tracking.md` (DF-RULE-013), epics are never implemented directly - only their
-        children are. The work ledger is GitHub parent/sub-issue relationships and project fields,
-        not a separate roadmap document.
+        Use an Epic only when genuinely independent Requests benefit from separate lifecycle,
+        ownership, sequencing or delivery while sharing one larger scope. Epics organize
+        relationships; they are not mandatory wrappers around large work and never waive each child
+        Request's own Planning, evidence, and completion gates.
 
   - type: textarea
     id: scope
@@ -24,9 +24,9 @@ body:
     attributes:
       label: "Entry Gate"
       description: >
-        What must be true before this epic may leave `Backlog`: decisions resolved (D1-D8 in
-        `PRD.md`), epics completed, spikes measured.
-      placeholder: "Blocked by D4 (sandbox isolation) and E1 (harness registry)."
+        What must be true before this epic or its children may leave `Backlog`: required product
+        behavior is settled in PRD/accepted ADRs and any explicit dependencies are resolved.
+      placeholder: "Blocked by the accepted runtime ADR and Request #123."
     validations:
       required: true
 
@@ -45,7 +45,7 @@ body:
     id: children
     attributes:
       label: "Child Requests"
-      description: "Checklist of child `Request` issues. Fill in as they are filed."
+      description: "Optional checklist of genuinely independent child Requests. Leave empty when one coherent Request is the better delivery unit."
       placeholder: |
         - [ ] #0 Request: ...
     validations:

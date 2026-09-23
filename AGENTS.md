@@ -215,7 +215,7 @@ implementation.
 There is no final separate `Interpretation` section/gate that must be approved before Planning can
 exist.
 
-### Rule 13 — Specification sequence and when issues may exist
+### Rule 13 — Specification sequence and work tracking
 
 Specification proceeds in one direction, and each stage is settled before implementation depends on
 it:
