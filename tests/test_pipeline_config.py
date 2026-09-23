@@ -296,7 +296,24 @@ def test_request_area_list_matches_the_manifest():
     """The request dropdown mirrors repo.df because GitHub issue forms cannot resolve it dynamically."""
     declared = _declared_areas()
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
-    pattern = r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"
+    pattern = r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$'
+    found = {
+        match.group("name"): match.group("description")
+        for match in re.finditer(pattern, content, re.MULTILINE)
+    }
+    assert found
+    assert found == declared
+
+
+def test_pull_request_template_uses_manifest_taxonomy_without_copying_it():
+    """PRs reference repo.df instead of maintaining a second static area list or capability matrix."""
+    content = _read(os.path.join(REPO_ROOT, ".github", "PULL_REQUEST_TEMPLATE.md"))
+    assert "Closes #" in content
+    assert "repo.df-declared scope(s)" in content
+    assert "detected/capability-resolved quality actions" in content
+    assert "capability-matrix" not in content
+    assert not re.search(r"^- \[ \] `area:[a-z]+`:", content, re.MULTILINE)
+
 
 def test_gitignore_excludes_agent_checkpoint():
     """The checkpoint file is runtime state and must never be committed."""
