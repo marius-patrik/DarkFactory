@@ -85,6 +85,23 @@ describe("declared limits", () => {
 });
 
 describe("admission control", () => {
+	test("corrupt authoritative usage state fails closed instead of resetting usage to zero", async () => {
+		const { engine, root } = await engineFor([
+			provider("p", [{ type: "rate", dimension: "requests", limit: 5, windowMs: MIN, source: "docs" }]),
+		]);
+		await Bun.write(join(root, "usage.df"), "{broken");
+		await expect(engine.status(a)).rejects.toThrow("Invalid usage file JSON");
+
+		await Bun.write(join(root, "usage.df"), JSON.stringify({ version: 2, events: [] }));
+		await expect(engine.admit(a)).rejects.toThrow("Invalid usage file");
+
+		await Bun.write(
+			join(root, "usage.df"),
+			JSON.stringify({ version: 1, events: [{ id: "bad", provider: "p" }] }),
+		);
+		await expect(engine.status(a)).rejects.toThrow("Invalid usage event");
+	});
+
 	test("5 RPM: the 6th request waits exactly until the oldest request leaves the window", async () => {
 		const { engine } = await engineFor([
 			provider("p", [{ type: "rate", dimension: "requests", limit: 5, windowMs: MIN, source: "docs" }]),

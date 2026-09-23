@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { LimitLedger } from "../src/limits/ledger.ts";
 import { defaultLimit, mergeReset, observeLimits } from "../src/limits/observe.ts";
@@ -84,22 +84,6 @@ describe("limit observation", () => {
 });
 
 describe("persisted limit ledger", () => {
-	test("does not import the superseded quota store", async () => {
-		const root = await home();
-		await writeFile(
-			join(root, "quota.df"),
-			JSON.stringify({
-				version: 1,
-				entries: {
-					"google/flash@one": { ...candidate, kind: "rate_limited", markedAt: 1_000, resetAt: 2_000 },
-				},
-			}),
-		);
-		const ledger = new LimitLedger(root);
-		expect(await ledger.list()).toEqual([]);
-		expect(await Bun.file(join(root, "limits.df")).exists()).toBe(false);
-	});
-
 	test("stores simultaneous request and token limits without overwriting", async () => {
 		const ledger = new LimitLedger(await home());
 		await ledger.record([

@@ -160,12 +160,35 @@ export class QuotaEngine {
 	}
 
 	private async events(): Promise<UsageEvent[]> {
+		let raw: unknown;
 		try {
-			const raw = JSON.parse(await readFile(this.path, "utf8")) as UsageStoreFile;
-			return raw.version === 1 && Array.isArray(raw.events) ? raw.events : [];
-		} catch {
-			return [];
+			raw = JSON.parse(await readFile(this.path, "utf8")) as unknown;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+			if (error instanceof SyntaxError) throw new Error("Invalid usage file JSON");
+			throw error;
 		}
+		if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid usage file");
+		const file = raw as { version?: unknown; events?: unknown };
+		if (file.version !== 1 || !Array.isArray(file.events)) throw new Error("Invalid usage file");
+		for (const value of file.events) {
+			if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid usage event");
+			const event = value as Record<string, unknown>;
+			if (
+				typeof event.id !== "string" ||
+				typeof event.provider !== "string" ||
+				typeof event.account !== "string" ||
+				typeof event.model !== "string" ||
+				typeof event.timestamp !== "number" ||
+				!Number.isFinite(event.timestamp) ||
+				typeof event.inputTokens !== "number" ||
+				!Number.isFinite(event.inputTokens) ||
+				typeof event.outputTokens !== "number" ||
+				!Number.isFinite(event.outputTokens) ||
+				typeof event.success !== "boolean"
+			) throw new Error("Invalid usage event");
+		}
+		return file.events as UsageEvent[];
 	}
 
 	/** Records one model request; safe across concurrent df processes and prunes events older than the longest window. */
