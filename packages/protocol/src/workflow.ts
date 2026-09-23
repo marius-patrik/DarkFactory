@@ -16,7 +16,9 @@ export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
 /** Supported workflow graph node categories. */
 export type NodeKind = "agent" | "gate" | "automation" | "check-reference";
 /** GitHub author associations accepted by authorization contracts. */
-export type AuthorAssociation = "OWNER" | "MEMBER" | "COLLABORATOR" | "AUTHOR";
+export const AUTHOR_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR", "AUTHOR"] as const;
+/** GitHub author association accepted by authorization contracts. */
+export type AuthorAssociation = (typeof AUTHOR_ASSOCIATIONS)[number];
 
 /** Fields shared by all workflow graph nodes. */
 export interface BaseNode {

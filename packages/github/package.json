@@ -15,5 +15,8 @@
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
     "zod": "4.1.5"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }

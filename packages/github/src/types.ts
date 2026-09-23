@@ -1,9 +1,8 @@
+import { AUTHOR_ASSOCIATIONS, type AuthorAssociation } from "@darkfactory/protocol/workflow";
 import { z } from "zod";
 
 /** Schema for GitHub author-association values. */
-export const associationSchema = z.string();
-/** GitHub author association represented by browser-safe contracts. */
-export type AuthorAssociation = z.infer<typeof associationSchema>;
+export const associationSchema: z.ZodType<AuthorAssociation> = z.enum(AUTHOR_ASSOCIATIONS);
 const userSchema = z.object({ login: z.string() }).passthrough();
 const labelSchema = z.union([z.string(), z.object({ name: z.string() }).passthrough()]);
 
