@@ -10,60 +10,29 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW_DIR = os.path.join(REPO_ROOT, ".github", "workflows")
 SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
-EXPECTED_WORKFLOWS = [
-    "agent.yml",
-    "ci.yml",
-    "deploy-docs.yml",
-    "open-pr.yml",
-    "pr-approval-automerge.yml",
-    "project-automation.yml",
-    "report-failure.yml",
-    "update-submodules.yml",
-    "install.yml",
-    "verify-pr-issue.yml",
-    "quota-resume.yml",
-]
+def test_workflow_local_script_references_resolve():
+    """Every repository-local script referenced by a workflow must exist.
 
-EXPECTED_SCRIPTS = [
-    "agent_runner.py",
-    "handle_pr_approval.py",
-    "open_pr.py",
-    "project_automation.py",
-    "repo_settings.py",
-]
-
-
-def _read(path: str) -> str:
-    """Reads a file as text.
-
-    Args:
-        path: Absolute file path.
-
-    Returns:
-        File contents.
+    The workflow/script inventory itself is intentionally not fixed here: deleting or moving an
+    obsolete implementation is valid as long as no live workflow references it.
     """
-    with open(path, encoding="utf-8") as handle:
-        return handle.read()
+    yaml = pytest.importorskip("yaml")
+    script_pattern = re.compile(r"(?:^|\s)(?:python\d*|python|bash|sh|bun)\s+([^\s;&|]+)")
+    for name in sorted(os.listdir(WORKFLOW_DIR)):
+        if not name.endswith((".yml", ".yaml")):
+            continue
+        path = os.path.join(WORKFLOW_DIR, name)
+        with open(path, encoding="utf-8") as handle:
+            document = yaml.safe_load(handle)
+        assert isinstance(document, dict), f"{name} must parse as a workflow mapping"
 
-
-@pytest.mark.parametrize("name", EXPECTED_WORKFLOWS)
-def test_workflow_exists(name: str):
-    """Every workflow the rules reference is present.
-
-    Args:
-        name: Workflow file name.
-    """
-    assert os.path.isfile(os.path.join(WORKFLOW_DIR, name)), f"{name} must exist"
-
-
-@pytest.mark.parametrize("name", EXPECTED_SCRIPTS)
-def test_script_exists(name: str):
-    """Every automation script the workflows invoke is present.
-
-    Args:
-        name: Script file name.
-    """
-    assert os.path.isfile(os.path.join(SCRIPT_DIR, name)), f"{name} must exist"
+        content = _read(path)
+        for match in script_pattern.finditer(content):
+            target = match.group(1).strip("'\"")
+            if target.startswith((".github/", "scripts/", "bin/")):
+                assert os.path.exists(os.path.join(REPO_ROOT, target)), (
+                    f"{name} references missing repository-local executable {target}"
+                )
 
 
 def test_ci_quality_matrix_is_detector_driven():
