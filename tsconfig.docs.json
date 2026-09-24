@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "packages/*/src",
+    "capabilities/**/*.ts",
+    "harness/src"
+  ],
+  "exclude": [
+    "**/test/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}

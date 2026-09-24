@@ -8,7 +8,7 @@
   "api": {
     "typescript": {
       "name": "DarkFactory API",
-      "tsconfig": "tsconfig.json"
+      "tsconfig": "tsconfig.docs.json"
     }
   }
 }
