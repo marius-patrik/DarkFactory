@@ -7,7 +7,7 @@ from agent_runner import handle_interpret, handle_plan
 @patch("agent_runner.run_gh")
 @patch("agent_runner.run_agent_prompt")
 @patch("agent_runner.classify_type_and_area")
-@patch("agent_runner.default_branch")
+@patch("agent_runner.development_branch")
 def test_handle_interpret_includes_footer(mock_branch, mock_classify, mock_prompt, mock_run_gh):
     mock_classify.return_value = ("feat", "area:agents")
     mock_prompt.return_value = "Mocked Interpretation"
