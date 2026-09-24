@@ -24,7 +24,7 @@ The closed historical Requests are evidence only. #68 is the implementation plan
 ## Critical spine
 
 ```text
-Step 0  Green consolidated baseline
+Step 0  Classified consolidated baseline
   ↓
 Step 1  Executable capability architecture + missing official capability owners
   ↓
@@ -47,9 +47,9 @@ After Step 2, independent Step 5 lanes may run in parallel when they do not over
 
 ## Step summaries
 
-### Step 0 — Green baseline
+### Step 0 — Classified consolidated baseline
 
-Fix the current consolidated web/type/docs errors and verify #1009 metadata/check binding. Do not start the large ownership migration from a broken consolidation baseline.
+Verify #1009 binding and classify every current failure before large ownership work. Preserved/final package, docs, governance and web regressions are fixed immediately; red checks confined to code explicitly scheduled for deletion/relocation stay attached to Steps 3–4 instead of being polished as final architecture. The exact final merge head must still be completely green.
 
 ### Step 1 — Capability execution architecture
 
