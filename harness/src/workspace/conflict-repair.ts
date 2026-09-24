@@ -207,12 +207,7 @@ export async function repairBranchConflicts(options: ConflictRepairOptions): Pro
 	});
 
 	const failedActions = verification.filter(
-		(v) =>
-			!v.action.supported ||
-			!v.action.command ||
-			!v.result ||
-			v.result.exitCode !== 0 ||
-			v.result.timedOut,
+		(v) => !v.action.supported || !v.action.command || !v.result || v.result.exitCode !== 0 || v.result.timedOut,
 	);
 	if (failedActions.length > 0) {
 		try {

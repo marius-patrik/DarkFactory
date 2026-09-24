@@ -56,7 +56,10 @@ export interface SkillDriftItem {
  * @returns The first existing skills directory, or undefined when df was installed without skills.
  */
 export function bundledSkillsDir(): string | undefined {
-	const candidates = [join(import.meta.dir, "../../../.agents/skills"), join(dirname(process.execPath), "assets/skills")];
+	const candidates = [
+		join(import.meta.dir, "../../../.agents/skills"),
+		join(dirname(process.execPath), "assets/skills"),
+	];
 	return candidates.find((candidate) => existsSync(candidate));
 }
 

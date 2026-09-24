@@ -227,9 +227,7 @@ export class GitHubRepository {
 		for (const run of runs.check_runs ?? [])
 			values.set(
 				run.name,
-				run.status !== "completed"
-					? "pending"
-					: run.conclusion === "success" ? "success" : "failure",
+				run.status !== "completed" ? "pending" : run.conclusion === "success" ? "success" : "failure",
 			);
 		for (const status of statuses.statuses ?? [])
 			if (!values.has(status.context))

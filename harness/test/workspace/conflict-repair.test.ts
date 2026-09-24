@@ -164,5 +164,4 @@ describe("conflict-repair: deterministic update and model conflict resolution", 
 
 		expect(() => pushWithLease(localRepo, "origin", "feat/lease", expected)).toThrow(/stale lease/iu);
 	});
-
 });
