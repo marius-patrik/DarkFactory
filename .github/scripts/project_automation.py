@@ -1866,11 +1866,20 @@ def _handle_pull_request_event(payload: Dict[str, Any], client: Any) -> None:
 
 
 def _handle_push_event(payload: Dict[str, Any], client: Any) -> None:
-    """Processes a ``push`` event on the default branch or darkfactory."""
+    """Processes a push on the repository's default or development branch."""
     ref = payload.get("ref", "")
     repo_data = payload.get("repository", {})
     default_branch = repo_data.get("default_branch", "main")
-    allowed_refs = {f"refs/heads/{default_branch}", "refs/heads/main", "refs/heads/darkfactory"}
+    try:
+        import manifest as manifest_module
+
+        development_branch = manifest_module.load(".").development_branch
+    except Exception:  # noqa: BLE001 - event handling must survive a missing manifest
+        development_branch = default_branch
+    allowed_refs = {
+        f"refs/heads/{default_branch}",
+        f"refs/heads/{development_branch}",
+    }
 
     if ref not in allowed_refs:
         return

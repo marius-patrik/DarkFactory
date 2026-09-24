@@ -607,7 +607,7 @@ def test_no_agent_heading_names_a_single_provider():
     assert not offenders, f"agent headings name a provider: {offenders}"
 
 
-def test_pull_requests_target_the_declared_default_branch():
+def test_pull_requests_target_the_declared_development_branch():
     """`pr create --base main` fails outright where the trunk is called something else.
 
     The failure is reached only at the very end of an implementation run, after the agent has done
@@ -621,12 +621,12 @@ def test_pull_requests_target_the_declared_default_branch():
         for line in source.split("\n")
         if ("origin/main" in line or '"main"' in line or "base=main" in line)
         and not line.strip().startswith("#")
-        # `default_branch()` falls back to "main" for a repository with no manifest, which is the
+        # `development_branch()` falls back to "main" for a repository with no manifest, which is the
         # one place the literal is right.
         and line.strip() != 'return "main"'
     ]
     assert not offenders, f"a branch name is hardcoded: {offenders}"
-    assert "default_branch()" in source
+    assert "development_branch()" in source
 
 
 class TestPlansPostedBeforeTheMarker:
@@ -2410,7 +2410,7 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
-        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
         )
@@ -2451,7 +2451,7 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
-        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module, "handle_plan_alignment", lambda *a, **k: alignment_calls.append(a)
         )
@@ -2479,7 +2479,7 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py", "extra.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], ["extra.py"]))
-        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module, "dispatch_stage", lambda repo, payload: dispatch_calls.append(payload)
         )
@@ -2524,7 +2524,7 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
-        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
         )
@@ -2558,7 +2558,7 @@ class TestRunSelfReviewIterationAndFindings:
         monkeypatch.setattr(module, "get_pr_changed_files", lambda *a, **k: ["file.py"])
         monkeypatch.setattr(module, "parse_plan_files", lambda *a, **k: {"file.py"})
         monkeypatch.setattr(module, "check_scope", lambda *a, **k: (["file.py"], []))
-        monkeypatch.setattr(module, "default_branch", lambda *a, **k: "main")
+        monkeypatch.setattr(module, "development_branch", lambda *a, **k: "main")
         monkeypatch.setattr(
             module, "block_entity", lambda num, repo, is_pr: blocked_calls.append((num, is_pr))
         )

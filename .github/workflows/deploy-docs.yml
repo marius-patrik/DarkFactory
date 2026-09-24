@@ -2,7 +2,7 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: ["darkfactory"]
+    branches: [main]
   workflow_dispatch:
   workflow_call:
     inputs:

@@ -334,6 +334,7 @@ def render_manifest(
             "display_name": repo,
             "project_title": repo,
             "default_branch": branch,
+            "development_branch": branch,
             "description": description,
             "topics": [],
         },
