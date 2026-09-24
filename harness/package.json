@@ -1,0 +1,39 @@
+{
+  "name": "@darkfactory/harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "df": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "bun run ./scripts/build.ts",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome ci ."
+  },
+  "dependencies": {
+    "@darkfactory/capability": "workspace:*",
+    "@darkfactory/cli": "workspace:*",
+    "@darkfactory/core": "workspace:*",
+    "@darkfactory/keychain": "workspace:*",
+    "@darkfactory/protocol": "workspace:*",
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1",
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-tui": "0.85.1",
+    "@silvia-odwyer/photon-node": "0.3.4",
+    "commander": "^15.0.0",
+    "jose": "6.1.0",
+    "libsodium-wrappers": "0.8.2",
+    "zod": "4.1.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.2",
+    "typedoc": "0.28.20"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@darkfactory/protocol",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./model": "./src/model.ts",
+    "./workflow": "./src/workflow.ts",
+    "./planning": "./src/planning.ts",
+    "./review": "./src/review.ts",
+    "./quota": "./src/quota.ts",
+    "./result-capture": "./src/result-capture.ts",
+    "./recovery": "./src/recovery.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "zod": "4.1.5"
+  }
+}

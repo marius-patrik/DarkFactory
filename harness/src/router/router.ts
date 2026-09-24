@@ -1,0 +1,336 @@
+import type { Candidate } from "../failover.ts";
+import { parseChain } from "../harness/routing.ts";
+import type { LimitLedger } from "../limits/ledger.ts";
+import type { QuotaEngine } from "../limits/quota-engine.ts";
+import { assessCandidate, estimateTask } from "../limits/routing.ts";
+import type { OutcomeStore } from "./outcomes.ts";
+import { type CheapClassifier, classifyTaskWithDiagnostics } from "./profile.ts";
+import { minimumTierFor, tierRank } from "./tiers.ts";
+import type {
+	ModelCapability,
+	RankedCandidate,
+	RouteResult,
+	RouterConfig,
+	RouterInput,
+	RouterPolicy,
+	TaskNeed,
+	TaskProfile,
+} from "./types.ts";
+
+const candidateKey = (value: Candidate) => `${value.provider}/${value.model}@${value.account}`;
+const DEFAULT_TIER_ORDER = {
+	small: ["tight", "standard", "bulk"],
+	medium: ["standard", "bulk", "tight"],
+	large: ["bulk", "standard", "tight"],
+} as const;
+
+function matches(policy: RouterPolicy, profile: TaskProfile): boolean {
+	const match = policy.match;
+	return (
+		(!match.kind || match.kind.includes(profile.kind)) &&
+		(!match.size || match.size.includes(profile.size)) &&
+		(!match.sensitivity || match.sensitivity.includes(profile.sensitivity)) &&
+		(!match.needs || match.needs.every((need) => profile.needs.includes(need)))
+	);
+}
+
+function missingNeed(model: ModelCapability, need: TaskNeed, profile: TaskProfile): boolean {
+	if (need === "tools") return !model.tools;
+	if (need === "reasoning") return !model.reasoning;
+	if (need === "vision") return !model.modalities.includes("image");
+	if (need === "long_context") return model.contextWindow < profile.contextTokens;
+	if (need === "image_gen") return !model.modalities.includes("image_gen");
+	return !model.modalities.includes("video_gen");
+}
+
+function firstCandidate(value: string): Candidate {
+	const first = parseChain(value)[0];
+	if (!first) throw new Error(`Failover chain is empty: ${value}`);
+	return first;
+}
+
+function untilIso(until: number | undefined, state: string): string {
+	if (until === undefined) throw new Error(`Quota status ${state} is missing its until timestamp`);
+	return new Date(until).toISOString();
+}
+
+export interface RouteDependencies {
+	quota?: QuotaEngine;
+	config: RouterConfig;
+	models: readonly ModelCapability[];
+	ledger?: LimitLedger;
+	outcomes?: OutcomeStore;
+	sensitiveChain?: string;
+	hardReasoningChain?: string;
+	defaultChain?: string;
+	classify?: CheapClassifier;
+	now?: () => number;
+}
+
+function dataCollectionError(
+	profile: TaskProfile,
+	allowedCollections: readonly string[],
+	models: readonly ModelCapability[],
+): Error {
+	const decisions = models
+		.map((model) => {
+			const collection = model.collection ?? "unknown";
+			const allowed = allowedCollections.includes(collection);
+			return `${candidateKey(model.candidate)}: data.collection=${JSON.stringify(collection)} (${allowed ? "allowed" : "rejected"})`;
+		})
+		.join("; ");
+	const policyKey = profile.sensitivity === "sensitive" ? "sensitive" : "normal";
+	return new Error(
+		`No provider allowed for ${profile.sensitivity} work: data collection must be one of ${allowedCollections
+			.map((collection) => JSON.stringify(collection))
+			.join(
+				", ",
+			)}. Candidate decisions: ${decisions || "no candidates configured"}. Configure router.dataCollection.${policyKey} and provider data.collection metadata.`,
+	);
+}
+
+export async function routeTask(input: RouterInput, dependencies: RouteDependencies): Promise<RouteResult> {
+	const classified = await classifyTaskWithDiagnostics(input, dependencies.config, dependencies.classify);
+	const profile = classified.profile;
+	const explicit = input.explicitChain ?? input.explicitModel;
+	const graph = input.node?.chain ?? input.node?.model;
+	const constrained = profile.sensitivity === "sensitive" ? dependencies.sensitiveChain : undefined;
+
+	const hard =
+		input.reasoning === "hard" || input.node?.reasoning === "hard" ? dependencies.hardReasoningChain : undefined;
+	const source: RouteResult["source"] = explicit
+		? "explicit"
+		: graph
+			? "graph"
+			: constrained
+				? "sensitive"
+				: hard
+					? "hard"
+					: "policy";
+	const policy =
+		source === "policy" ? dependencies.config.policies.find((entry) => matches(entry, profile)) : undefined;
+	const forced = explicit ?? graph ?? constrained ?? hard;
+	const useGenerationCatalog =
+		!!policy &&
+		!policy.prefer.candidates &&
+		!dependencies.config.candidates &&
+		(profile.needs.includes("image_gen") || profile.needs.includes("video_gen"));
+	const preferred = forced
+		? parseChain(forced)
+		: (policy?.prefer.candidates?.map(firstCandidate) ??
+			dependencies.config.candidates?.map(firstCandidate) ??
+			(useGenerationCatalog ? [] : dependencies.defaultChain ? parseChain(dependencies.defaultChain) : []));
+	const byKey = new Map(dependencies.models.map((model) => [candidateKey(model.candidate), model]));
+	const universe: ModelCapability[] =
+		forced || preferred.length > 0
+			? preferred.map(
+					(candidate): ModelCapability =>
+						byKey.get(candidateKey(candidate)) ?? {
+							candidate,
+							contextWindow: Number.MAX_SAFE_INTEGER,
+							tools: true,
+							reasoning: true,
+							modalities: ["text"],
+							quality: {},
+							limitTier: "standard",
+						},
+				)
+			: [...dependencies.models];
+	const allowedCollections =
+		profile.sensitivity === "sensitive"
+			? (dependencies.config.dataCollection?.sensitive ?? ["none"])
+			: (dependencies.config.dataCollection?.normal ?? ["none", "logging", "training", "unknown"]);
+	const collectionRejected = universe.filter((model) => !allowedCollections.includes(model.collection ?? "unknown"));
+	const filtered = universe.filter((model) => allowedCollections.includes(model.collection ?? "unknown"));
+
+	if (!forced && dependencies.models.length === 0) {
+		throw new Error(
+			"No usable model: add an account for a configured provider (df account set <provider>:<label> <slot> --type api_key), enable an anonymous provider, or check routing.enabled/routing.exclude in the provider config",
+		);
+	}
+	if (filtered.length === 0) {
+		throw dataCollectionError(profile, allowedCollections, universe);
+	}
+
+	const capabilityTiers = dependencies.config.capabilityTiers ?? [];
+	const defaultCapabilityTier = dependencies.config.defaultTier ?? capabilityTiers[0]?.id ?? "standard";
+	const minCapabilityTier = minimumTierFor(
+		profile.difficulty,
+		profile.minTier,
+		dependencies.config.difficultyTiers,
+		defaultCapabilityTier,
+	);
+	const configuredMinRank = tierRank(minCapabilityTier, capabilityTiers);
+	if (capabilityTiers.length > 0 && configuredMinRank < 0)
+		throw new Error(`Unknown minimum capability tier: ${minCapabilityTier}`);
+	const capabilityRank = (model: ModelCapability): number => {
+		if (capabilityTiers.length === 0) return 0;
+		const rank = tierRank(model.capabilityTier ?? defaultCapabilityTier, capabilityTiers);
+		return rank < 0 ? Number.MAX_SAFE_INTEGER : rank;
+	};
+
+	const penalties =
+		dependencies.outcomes && dependencies.config.learning?.enabled !== false
+			? await dependencies.outcomes.penalties(profile.kind, dependencies.now?.())
+			: new Map<string, number>();
+	const preference = new Map(preferred.map((candidate, index) => [candidateKey(candidate), index]));
+	const tierOrder = policy?.prefer.tiers ?? [...DEFAULT_TIER_ORDER[profile.size]];
+	const forcedOrder = !!forced || !!policy?.prefer.candidates;
+	const scored = filtered
+		.map((model, index) => {
+			const preferredIndex = preference.get(candidateKey(model.candidate));
+			const tierIndex = tierOrder.indexOf(model.limitTier);
+			const qualityKind = policy?.prefer.quality ?? profile.kind;
+			const quality = model.quality[qualityKind] ?? 0;
+			const learning = penalties.get(candidateKey(model.candidate)) ?? 0;
+			const missing = profile.needs.find((need) => missingNeed(model, need, profile));
+			const modelCapabilityRank = capabilityRank(model);
+			const belowMinimum =
+				configuredMinRank >= 0 &&
+				modelCapabilityRank !== Number.MAX_SAFE_INTEGER &&
+				modelCapabilityRank < configuredMinRank;
+			const unknownCapabilityTier = capabilityTiers.length > 0 && modelCapabilityRank === Number.MAX_SAFE_INTEGER;
+			const capabilityPenalty = missing || belowMinimum || unknownCapabilityTier ? 10_000 : 0;
+			const orderScore =
+				preferredIndex === undefined ? 1_000 : forcedOrder ? preferredIndex * 100 : preferredIndex / 10_000;
+			const score =
+				orderScore +
+				(forced ? 0 : tierIndex < 0 ? 300 : tierIndex * 100) -
+				(forced ? 0 : quality) +
+				learning +
+				(forced ? 0 : capabilityPenalty) +
+				index / 100_000;
+			return {
+				model,
+				score,
+				quality,
+				learning,
+				missing,
+				modelCapabilityRank,
+				belowMinimum,
+				unknownCapabilityTier,
+			};
+		})
+		.sort((a, b) => {
+			const aEligible = !a.missing && !a.belowMinimum && !a.unknownCapabilityTier;
+			const bEligible = !b.missing && !b.belowMinimum && !b.unknownCapabilityTier;
+			if (aEligible !== bEligible) return aEligible ? -1 : 1;
+			if (aEligible && bEligible && a.modelCapabilityRank !== b.modelCapabilityRank)
+				return a.modelCapabilityRank - b.modelCapabilityRank;
+			return a.score - b.score;
+		});
+	const now = dependencies.now?.() ?? Date.now();
+	const isForced = !!forced;
+	const adjusted = await Promise.all(
+		scored.map(async (item) => {
+			const missing = forced && (source === "explicit" || source === "graph") ? undefined : item.missing;
+			let skip: string | undefined = missing ? `missing ${missing}` : undefined;
+			if (!skip && item.unknownCapabilityTier)
+				skip = `unknown capability tier ${item.model.capabilityTier ?? defaultCapabilityTier}`;
+			if (!skip && item.belowMinimum)
+				skip = `capability tier ${item.model.capabilityTier ?? defaultCapabilityTier} is below required ${minCapabilityTier}`;
+			if (!skip && dependencies.ledger) {
+				const entries = await dependencies.ledger.forCandidate(item.model.candidate, now);
+				const estimate = estimateTask(input.prompt, profile.size, profile.contextTokens);
+				const verdict = assessCandidate(item.model.candidate, estimate, entries, item.model);
+				if (!verdict.eligible) skip = verdict.reason ?? "limited";
+			}
+			let quotaStatus: Awaited<ReturnType<NonNullable<typeof dependencies.quota>["status"]>> | undefined;
+			if (dependencies.quota) {
+				quotaStatus = await dependencies.quota.status(item.model.candidate, now);
+				if (quotaStatus.state === "unavailable") {
+					skip = `unavailable (${quotaStatus.reason}) until ${untilIso(quotaStatus.until, quotaStatus.state)}`;
+				} else if (quotaStatus.state === "exhausted") {
+					skip = `quota exhausted until ${untilIso(quotaStatus.until, quotaStatus.state)}`;
+				} else if (quotaStatus.state === "waiting") {
+					if (!isForced) item.score += 50;
+				} else if (quotaStatus.state === "available" && !isForced) {
+					const enforcedItems = quotaStatus.items.filter((entry) => entry.enforced && entry.limit && entry.limit > 0);
+					let fraction = 1;
+					if (enforcedItems.length > 0) {
+						fraction = Math.min(...enforcedItems.map((entry) => (entry.remaining ?? 0) / (entry.limit ?? 1)));
+					}
+					item.score -= 10 * fraction;
+				}
+			}
+			return { item, skip, quotaStatus };
+		}),
+	);
+	adjusted.sort((a, b) => {
+		const aEligible = !a.skip;
+		const bEligible = !b.skip;
+		if (aEligible !== bEligible) return aEligible ? -1 : 1;
+		if (aEligible && bEligible && a.item.modelCapabilityRank !== b.item.modelCapabilityRank)
+			return a.item.modelCapabilityRank - b.item.modelCapabilityRank;
+		return a.item.score - b.item.score;
+	});
+	const ranked: RankedCandidate[] = [];
+	for (const entry of adjusted) {
+		const { item, skip, quotaStatus } = entry;
+		const details: string[] = [
+			...classified.details.map((detail) => `profile: ${detail}`),
+			`capacity tier ${item.model.limitTier}`,
+			`capability tier ${item.model.capabilityTier ?? defaultCapabilityTier}; required >= ${minCapabilityTier}`,
+			`difficulty ${profile.difficulty ?? "unspecified"}`,
+			`quality ${item.quality}`,
+			`data collection ${item.model.collection ?? "unknown"} allowed`,
+		];
+		if (item.learning > 0) details.push(`recent-failure penalty ${item.learning.toFixed(2)}`);
+		if (!skip && quotaStatus) {
+			if (quotaStatus.state === "waiting") {
+				details.push(`waiting until ${untilIso(quotaStatus.until, quotaStatus.state)}`);
+			} else if (quotaStatus.state === "available") {
+				const enforcedItems = quotaStatus.items.filter(
+					(candidate) => candidate.enforced && candidate.limit && candidate.limit > 0,
+				);
+				let fraction = 1;
+				if (enforcedItems.length > 0) {
+					fraction = Math.min(...enforcedItems.map((candidate) => (candidate.remaining ?? 0) / (candidate.limit ?? 1)));
+				}
+				const percent = Math.round(fraction * 100);
+				details.push(`capacity ${percent}%`);
+			}
+		}
+		ranked.push({
+			candidate: item.model.candidate,
+			rank: ranked.length + 1,
+			status: skip ? "skipped" : "chosen",
+			reason: skip ?? (source === "policy" ? `policy ${policy?.id ?? "default"}` : `${source} selection`),
+			score: item.score,
+			details,
+			capabilityTier: item.model.capabilityTier ?? defaultCapabilityTier,
+		});
+	}
+	const rejected: RankedCandidate[] = collectionRejected.map((model, index) => {
+		const collection = model.collection ?? "unknown";
+		return {
+			candidate: model.candidate,
+			rank: index + 1,
+			status: "skipped",
+			reason: `data collection ${JSON.stringify(collection)} is not allowed for ${profile.sensitivity} work`,
+			score: Number.POSITIVE_INFINITY,
+			capabilityTier: model.capabilityTier ?? defaultCapabilityTier,
+			details: [
+				...classified.details.map((detail) => `profile: ${detail}`),
+				`capacity tier ${model.limitTier}`,
+				`capability tier ${model.capabilityTier ?? defaultCapabilityTier}; required >= ${minCapabilityTier}`,
+				`data collection ${JSON.stringify(collection)} rejected; allowed: ${allowedCollections
+					.map((allowed) => JSON.stringify(allowed))
+					.join(", ")}`,
+			],
+		};
+	});
+	const selectedCapabilityTier = ranked.find((item) => item.status === "chosen")?.capabilityTier;
+	return {
+		profile,
+		source: source === "policy" && !policy ? "default" : source,
+		...(policy ? { policy: policy.id } : {}),
+		...(profile.difficulty ? { difficulty: profile.difficulty } : {}),
+		minCapabilityTier,
+		...(selectedCapabilityTier ? { selectedCapabilityTier } : {}),
+		capabilityTierOrder: capabilityTiers.map((tier) => tier.id),
+		ranked,
+		rejected,
+		chain: ranked.filter((item) => item.status === "chosen").map((item) => item.candidate),
+	};
+}

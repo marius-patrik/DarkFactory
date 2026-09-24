@@ -1,0 +1,12 @@
+/** @packageDocumentation
+ * Public `df` command and operator-surface package boundary.
+ */
+export {
+	executableChainFor,
+	exitCodeFor,
+	main,
+	parseDurationMs,
+	redactToolInput,
+} from "../../../harness/src/cli.ts";
+export * from "./registry.ts";
+export * from "./capture-schema.ts";

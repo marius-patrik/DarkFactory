@@ -1,0 +1,84 @@
+name: "User Request"
+description: "File a user request for a new feature, bug fix, or enhancement."
+title: "Request: "
+labels: ["Request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository runs an autonomous agent pipeline (see `AGENTS.md`).
+
+        What happens after you submit: the agent classifies this request, posts an
+        **Interpretation** comment, and waits. Nothing is planned or implemented until you reply
+        `approve`. Once you do, a child **Plan** issue is created and linked as a sub-issue; you
+        approve that too before any code is written.
+
+  - type: textarea
+    id: verbatim_request
+    attributes:
+      label: "Verbatim User Request"
+      description: >
+        The exact, unedited wording of the request. Do not summarize or clean it up - DF-RULE-012
+        `AGENTS.md` requires the verbatim text so intent is never lost in paraphrase.
+      placeholder: "e.g. the input bar should be switchable between a global HUD and one per pane"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Area / Component"
+      description: "Primary area affected. See `.agents/rules/015-repository-taxonomy.md` for the full taxonomy."
+      options:
+        - "agents - Agent runtime, routing, providers, planning/review orchestration and model execution (area:agents)"
+        - "governance - Agent rules, branch protection, required checks, project board taxonomy (area:governance)"
+        - "release - Versioning modes, tagging, asset packaging, release notes (area:release)"
+        - "docs - Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces (area:docs)"
+        - "ci - GitHub Actions workflows, containers, runner scripts, repository automation (area:ci)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "Request Type"
+      description: "Maps to the Conventional Commit type used on every commit for this work."
+      options:
+        - "feat (new feature)"
+        - "bug (bug fix)"
+        - "refactor (refactoring / code health)"
+        - "docs (documentation)"
+        - "chore (maintenance / dependencies)"
+        - "test (test improvements)"
+        - "ci (pipeline / automation)"
+    validations:
+      required: true
+
+  - type: input
+    id: parent_epic
+    attributes:
+      label: "Parent Epic"
+      description: "Issue number of the epic this belongs to, if any."
+      placeholder: "#12"
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: "Proposed Acceptance Criteria"
+      description: "Observable conditions that make this complete. One checkbox per condition."
+      placeholder: |
+        - [ ] Behaviour is reachable by toggling a documented setting, not by brand-specific code
+        - [ ] Unit tests cover the new behaviour
+        - [ ] The environment-declared documentation build passes with zero warnings
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context"
+      description: "Error traces, screenshots, prior art, or references."
+    validations:
+      required: false

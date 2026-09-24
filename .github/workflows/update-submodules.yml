@@ -1,0 +1,106 @@
+name: Update Submodules
+
+# A super-repository records each submodule at one commit and nothing moves it, so the pointers
+# drift until someone clones with --recurse-submodules and gets month-old work. This moves them.
+on:
+  schedule:
+    # Daily, early enough that a morning clone is current.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+  # Consumers call this rather than copying it, so the script it runs lives in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-submodules-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: update-submodules
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Rate limits
+        # are per *user*, shared across every token a person holds, so a busy session used to
+        # exhaust the pipeline's quota along with the person's. Only Projects v2 still needs a
+        # person's token, because GitHub scopes project permissions to organisations and these
+        # boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.repository == 'marius-patrik/DarkFactory' && 'develop' || '' }}
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pin and update the submodules
+        id: update
+        run: |
+          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/submodules.py" | tee "$RUNNER_TEMP/report.md"
+
+      - name: Nothing to do
+        if: steps.update.outputs.moved != 'true'
+        run: echo "Every submodule already matched its branch."
+
+      - name: Commit the moved pointers
+        if: steps.update.outputs.moved == 'true'
+        run: |
+          git config user.name "darkfactory-pipeline[bot]"
+          git config user.email "darkfactory-pipeline[bot]@users.noreply.github.com"
+          git add .gitmodules .
+          git commit -m "chore(ci): advance the submodules to their branch tips
+
+          $(cat "$RUNNER_TEMP/report.md")"
+          git push

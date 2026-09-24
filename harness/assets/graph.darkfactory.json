@@ -1,0 +1,466 @@
+{
+  "$schema": "../src/graph/graph.schema.json",
+  "version": 1,
+  "checks": [
+    {
+      "name": "pipeline",
+      "required": true
+    },
+    {
+      "name": "harness",
+      "required": true
+    },
+    {
+      "name": "verify-bound-issue",
+      "required": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "request-intake",
+      "kind": "automation",
+      "script": "request-intake",
+      "description": "Drop bot ingress, classify the request, and add it to the board.",
+      "trigger": {
+        "event": "issues.opened|issues.labeled"
+      },
+      "filter": {
+        "ignore_bots": true
+      },
+      "outputs": ["request_issue", "planning_context"],
+      "board_status": {
+        "done": "Backlog"
+      }
+    },
+    {
+      "id": "planning",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["request_issue", "planning_context"],
+      "outputs": ["plan_artifact"],
+      "timeout": "10m",
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "Backlog"
+      }
+    },
+    {
+      "id": "planning-review",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["planning_context", "plan_artifact"],
+      "outputs": ["planning_findings", "planning_review_clean"],
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "Backlog"
+      },
+      "review": {
+        "subject": "planning",
+        "phase": "review",
+        "context": "planning_context",
+        "artifact": "plan_artifact",
+        "findings": "planning_findings",
+        "clean": "planning_review_clean"
+      }
+    },
+    {
+      "id": "planning-fix",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["planning_context", "plan_artifact", "planning_findings"],
+      "outputs": ["plan_artifact"],
+      "timeout": "10m",
+      "review": {
+        "subject": "planning",
+        "phase": "fix",
+        "context": "planning_context",
+        "artifact": "plan_artifact",
+        "findings": "planning_findings"
+      },
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "Backlog"
+      }
+    },
+    {
+      "id": "planning-gate",
+      "kind": "gate",
+      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+      "outputs": ["planning_feedback"],
+      "on_reject": {
+        "action": "route_to",
+        "target": "planning-fix"
+      },
+      "board_status": {
+        "blocked": "Backlog",
+        "rejected": "Backlog"
+      },
+      "approves_review": "planning"
+    },
+    {
+      "id": "implement",
+      "kind": "agent",
+      "identity": "pipeline",
+      "reasoning": "hard",
+      "chain": ["google/gemini-3.8-flash@default", "openai-codex/gpt-5.6-sol@default"],
+      "inputs": ["plan_artifact", "review_feedback"],
+      "outputs": ["pr_number", "branch", "implementation_context", "implementation_artifact"],
+      "timeout": "20m",
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "In Progress"
+      },
+      "requires_review_approval": "planning"
+    },
+    {
+      "id": "self-review",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["implementation_context", "implementation_artifact", "pr_number", "branch"],
+      "outputs": ["review_findings", "review_clean", "deviation_detected"],
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "In Progress"
+      },
+      "review": {
+        "subject": "implementation",
+        "phase": "review",
+        "context": "implementation_context",
+        "artifact": "implementation_artifact",
+        "findings": "review_findings",
+        "clean": "review_clean"
+      }
+    },
+    {
+      "id": "review-fix",
+      "kind": "agent",
+      "identity": "pipeline",
+      "reasoning": "hard",
+      "inputs": ["implementation_context", "implementation_artifact", "review_findings", "pr_number", "branch"],
+      "outputs": ["implementation_artifact", "pr_number", "branch"],
+      "timeout": "20m",
+      "review": {
+        "subject": "implementation",
+        "phase": "fix",
+        "context": "implementation_context",
+        "artifact": "implementation_artifact",
+        "findings": "review_findings"
+      },
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "In Progress"
+      }
+    },
+    {
+      "id": "deviation-gate",
+      "kind": "gate",
+      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "requester_can_approve": true,
+      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+      "reminder_after_days": 7,
+      "outputs": ["review_feedback"],
+      "on_reject": {
+        "action": "revert_deviation",
+        "target": "implement"
+      },
+      "board_status": {
+        "blocked": "Blocked",
+        "rejected": "Blocked"
+      }
+    },
+    {
+      "id": "plan-alignment",
+      "kind": "agent",
+      "identity": "pipeline",
+      "inputs": ["pr_number", "plan_artifact"],
+      "outputs": ["aligned"],
+      "quota_policy": {
+        "on_exhaustion": "checkpoint_and_block",
+        "resume": "sweep_or_command"
+      },
+      "board_status": {
+        "running": "In Progress",
+        "quota_blocked": "Blocked",
+        "done": "In Progress"
+      }
+    },
+    {
+      "id": "merge-gate",
+      "kind": "gate",
+      "author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
+      "allow_review_state": ["APPROVED"],
+      "command": "^\\s*(?:/df\\s+|/)(?:approve|reject|revise)\\s*$",
+      "outputs": ["review_feedback"],
+      "on_reject": {
+        "action": "route_to",
+        "target": "implement"
+      },
+      "board_status": {
+        "blocked": "Blocked"
+      }
+    },
+    {
+      "id": "merge",
+      "kind": "automation",
+      "script": "pr-merge",
+      "inputs": ["pr_number"],
+      "side_effects": {
+        "close_bound_issues": true,
+        "clear_checkpoints": true
+      },
+      "board_status": {
+        "done": "Done"
+      }
+    },
+    {
+      "id": "resume-sweep",
+      "kind": "automation",
+      "script": "quota-resume",
+      "trigger": {
+        "schedule": "*/15 * * * *"
+      }
+    },
+    {
+      "id": "board-sync",
+      "kind": "automation",
+      "script": "board-sync",
+      "trigger": {
+        "event": "issues|pull_request|push:darkfactory",
+        "schedule": "43 5 * * *"
+      },
+      "filter": {
+        "ignore_bots": true
+      }
+    },
+    {
+      "id": "pipeline",
+      "kind": "check-reference",
+      "check": "pipeline",
+      "required": true
+    },
+    {
+      "id": "harness",
+      "kind": "check-reference",
+      "check": "harness",
+      "required": true
+    },
+    {
+      "id": "verify-bound-issue",
+      "kind": "check-reference",
+      "check": "verify-bound-issue",
+      "required": true
+    }
+  ],
+  "edges": [
+    {
+      "from": "request-intake",
+      "to": "planning",
+      "on": {
+        "event": "issues.opened|issues.labeled",
+        "filter": {
+          "label": "Request",
+          "ignore_bots": true
+        }
+      }
+    },
+    {
+      "from": "request-intake",
+      "to": "planning",
+      "on": {
+        "node_outcome": "success"
+      }
+    },
+    {
+      "from": "planning",
+      "to": "planning-review",
+      "on": {
+        "node_outcome": "success"
+      }
+    },
+    {
+      "from": "implement",
+      "to": "self-review",
+      "on": {
+        "node_outcome": "success"
+      }
+    },
+    {
+      "from": "planning-review",
+      "to": "planning-gate",
+      "on": {
+        "node_outcome": "success",
+        "when": "planning_review_clean == true"
+      }
+    },
+    {
+      "from": "planning-review",
+      "to": "planning-fix",
+      "on": {
+        "node_outcome": "success",
+        "when": "planning_review_clean == false"
+      },
+      "loop": {
+        "kind": "planning_revision",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "planning-fix",
+      "to": "planning-review",
+      "on": {
+        "node_outcome": "success"
+      },
+      "loop": {
+        "kind": "review_fix",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "planning-gate",
+      "to": "planning-fix",
+      "on": {
+        "gate_outcome": "rejected"
+      },
+      "loop": {
+        "kind": "gate_revision",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "planning-gate",
+      "to": "implement",
+      "on": {
+        "gate_outcome": "approved"
+      }
+    },
+    {
+      "from": "self-review",
+      "to": "deviation-gate",
+      "on": {
+        "node_outcome": "success",
+        "when": "deviation_detected == true"
+      }
+    },
+    {
+      "from": "self-review",
+      "to": "review-fix",
+      "on": {
+        "node_outcome": "success",
+        "when": "review_clean == false && deviation_detected == false"
+      },
+      "loop": {
+        "kind": "self_review",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "self-review",
+      "to": "plan-alignment",
+      "on": {
+        "node_outcome": "success",
+        "when": "review_clean == true && deviation_detected == false"
+      }
+    },
+    {
+      "from": "review-fix",
+      "to": "self-review",
+      "on": {
+        "node_outcome": "success"
+      },
+      "loop": {
+        "kind": "review_fix",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "deviation-gate",
+      "to": "self-review",
+      "on": {
+        "gate_outcome": "approved"
+      },
+      "loop": {
+        "kind": "self_review",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "deviation-gate",
+      "to": "implement",
+      "on": {
+        "gate_outcome": "rejected"
+      },
+      "loop": {
+        "kind": "deviation_rework",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "plan-alignment",
+      "to": "merge-gate",
+      "on": {
+        "checks": "required_green",
+        "when": "aligned == true"
+      }
+    },
+    {
+      "from": "plan-alignment",
+      "to": "implement",
+      "on": {
+        "checks": "failed"
+      },
+      "loop": {
+        "kind": "ci_repair",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "merge-gate",
+      "to": "implement",
+      "on": {
+        "gate_outcome": "rejected"
+      },
+      "loop": {
+        "kind": "gate_revision",
+        "safety_budget": 5
+      }
+    },
+    {
+      "from": "merge-gate",
+      "to": "merge",
+      "on": {
+        "gate_outcome": "approved"
+      }
+    }
+  ]
+}

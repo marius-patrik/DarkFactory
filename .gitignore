@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+build/
+dist/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / Bun
+node_modules/
+.bun/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+
+# MkDocs
+site/
+.properdocs-source/
+
+# Agent pipeline
+.antigravity_checkpoint.json
+
+# IDE / Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# The runner mounts the webhook payload into the workspace; it is not repository content.
+event.json
+
+# Harness test workspaces created when tests run from the repository root
+.harness-test-*/

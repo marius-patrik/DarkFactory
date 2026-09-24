@@ -1,0 +1,235 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  merge_group:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: darkfactory-quality-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has-actions: ${{ steps.matrix.outputs.has-actions }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out pinned DarkFactory runtime
+        if: github.repository != 'marius-patrik/DarkFactory'
+        uses: actions/checkout@v4
+        with:
+          repository: "marius-patrik/DarkFactory"
+          ref: "main"
+          path: .darkfactory-runtime
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
+
+      - name: Resolve detected quality matrix
+        id: matrix
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun "$ROOT/packages/cli/src/bin.ts" ci matrix             --repo "$GITHUB_WORKSPACE"             --capabilities-root "$ROOT/capabilities" > "$RUNNER_TEMP/darkfactory-quality.json"
+          jq -c '.matrix' "$RUNNER_TEMP/darkfactory-quality.json"             | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
+          if [ "$(jq '.matrix | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
+            echo "has-actions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-actions=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$(jq '.gaps | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
+            echo "::warning::DarkFactory detected unsupported or missing deterministic actions:"
+            jq -r '.gaps[] | "  \(.packageId) \(.kind): \(.reason // .description)"'               "$RUNNER_TEMP/darkfactory-quality.json"
+          fi
+
+  quality-run:
+    name: ${{ matrix.id }}
+    needs: detect
+    if: needs.detect.outputs.has-actions == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Bun
+        if: matrix.packageManager == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set up Node
+        if: matrix.ecosystem == 'node' && matrix.packageManager != 'bun'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Enable Corepack
+        if: matrix.packageManager == 'pnpm' || matrix.packageManager == 'yarn'
+        run: corepack enable
+
+      - name: Set up Python
+        if: matrix.ecosystem == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.version || '3.13' }}
+
+      - name: Install Python package manager
+        if: matrix.packageManager == 'uv' || matrix.packageManager == 'poetry' || matrix.packageManager == 'pipenv'
+        env:
+          DF_PACKAGE_MANAGER: ${{ matrix.packageManager }}
+        run: python -m pip install "$DF_PACKAGE_MANAGER"
+
+      - name: Set up Rust
+        if: matrix.ecosystem == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Set up Go
+        if: matrix.ecosystem == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Set up Deno
+        if: matrix.ecosystem == 'deno'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Set up Typst
+        if: matrix.ecosystem == 'typst'
+        uses: typst-community/setup-typst@v5
+
+      - name: Set up Lean
+        if: matrix.ecosystem == 'lean'
+        uses: leanprover/lean-action@v1
+        with:
+          build: false
+          test: false
+
+      - name: Set up TeX Live
+        if: matrix.ecosystem == 'latex'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+
+      - name: Install package dependencies
+        if: matrix.setupCommand != ''
+        env:
+          DF_SETUP_COMMAND: ${{ matrix.setupCommand }}
+          DF_SETUP_CWD: ${{ matrix.setupCwd }}
+        run: |
+          cd "$GITHUB_WORKSPACE/$DF_SETUP_CWD"
+          bash -lc "$DF_SETUP_COMMAND"
+
+      - name: Run detected quality action
+        env:
+          DF_ACTION_COMMAND: ${{ matrix.command }}
+          DF_ACTION_CWD: ${{ matrix.cwd }}
+          DF_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: |
+          cd "$GITHUB_WORKSPACE/$DF_ACTION_CWD"
+          bash -lc "$DF_ACTION_COMMAND"
+
+  docs-check:
+    name: docs-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs.df
+        id: docs
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/docs.df" ] || [ -f "$GITHUB_WORKSPACE/.darkfactory/docs.df" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out pinned DarkFactory runtime
+        if: steps.docs.outputs.present == 'true' && github.repository != 'marius-patrik/DarkFactory'
+        uses: actions/checkout@v4
+        with:
+          repository: "marius-patrik/DarkFactory"
+          ref: "main"
+          path: .darkfactory-runtime
+
+      - name: Set up Bun
+        if: steps.docs.outputs.present == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install DarkFactory runtime
+        if: steps.docs.outputs.present == 'true'
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun install --frozen-lockfile --cwd "$ROOT"
+
+      - name: Build native documentation
+        if: steps.docs.outputs.present == 'true'
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
+            ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          fi
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
+
+      - name: No documentation configured
+        if: steps.docs.outputs.present != 'true'
+        run: echo "No docs.df; native documentation check is not applicable."
+
+  quality:
+    name: quality
+    if: always()
+    needs: [detect, quality-run, docs-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce detected quality result
+        env:
+          DF_DETECT_RESULT: ${{ needs.detect.result }}
+          DF_HAS_ACTIONS: ${{ needs.detect.outputs.has-actions }}
+          DF_QUALITY_RESULT: ${{ needs.quality-run.result }}
+          DF_DOCS_RESULT: ${{ needs.docs-check.result }}
+        run: |
+          test "$DF_DETECT_RESULT" = "success"
+          test "$DF_DOCS_RESULT" = "success"
+          if [ "$DF_HAS_ACTIONS" = "true" ]; then
+            test "$DF_QUALITY_RESULT" = "success"
+          else
+            test "$DF_QUALITY_RESULT" = "skipped"
+          fi

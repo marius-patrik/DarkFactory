@@ -1,0 +1,243 @@
+name: Install Pipeline
+
+# Installing the GitHub App grants access; this puts the pipeline in the repository. Run it once
+# per consumer and everything derivable is generated: the callers, a starter manifest shaped by
+# what the repository actually contains, the labels, the board and its Status options.
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "Repository to install into, as owner/name."
+        required: true
+        type: string
+      ref:
+        description: "Pipeline commit to pin. Empty means this workflow's own commit."
+        required: false
+        type: string
+        default: ""
+      apply-settings:
+        description: "Also reconcile labels, board and repository settings."
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: install-${{ inputs.repository }}
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: install
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Name the target repository
+        # `repositories:` takes bare names, and the input is `owner/name`.
+        run: echo "TARGET_NAME=${TARGET#*/}" >> "$GITHUB_ENV"
+        env:
+          TARGET: ${{ inputs.repository }}
+
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Rate limits
+        # are per *user*, shared across every token a person holds, so a busy session used to
+        # exhaust the pipeline's quota along with the person's. Only Projects v2 still needs a
+        # person's token, because GitHub scopes project permissions to organisations and these
+        # boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          # This is the one workflow that writes to a repository other than the one it runs in, so
+          # it is the one that has to say which. An installation token is scoped to the running
+          # repository unless a target is named, and a token scoped to DarkFactory pushing to a
+          # consumer fails as `Permission to <target> denied to darkfactory-pipeline[bot]` - which
+          # reads like a missing installation rather than a token that was never asked to cover it.
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.TARGET_NAME }}
+
+      - name: Check out the pipeline
+        uses: actions/checkout@v4
+        with:
+          path: .darkfactory-pipeline
+
+      - name: Check out the target repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository }}
+          path: target
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Describe the target
+        id: target
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ inputs.repository }}" \
+            --jq '"branch=" + .default_branch, "description=" + (.description // "")' \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Generate the installation
+        id: generate
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
+          TARGET_ROOT: ${{ github.workspace }}/target
+          TARGET_REPOSITORY: ${{ inputs.repository }}
+          TARGET_BRANCH: ${{ steps.target.outputs.branch }}
+          TARGET_DESCRIPTION: ${{ steps.target.outputs.description }}
+          PIPELINE_REPO: ${{ github.repository }}
+          PIPELINE_REF: ${{ inputs.ref || github.sha }}
+        run: python3 .darkfactory-pipeline/.github/scripts/install.py
+
+      - name: Apply the declared licence
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
+          TARGET_ROOT: ${{ github.workspace }}/target
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: python3 .darkfactory-pipeline/.github/scripts/licensing.py
+
+      - name: File the issue the installation pull request binds
+        id: install-issue
+        if: steps.generate.outputs.written == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Every pull request binds a tracked issue, and `verify-bound-issue` is a required check -
+          # so an installation pull request without one can never merge into a protected branch,
+          # which is precisely what happened to ChessWithQuests.
+          #
+          # It is deliberately not the configuration issue. That one is a standing invitation to
+          # change settings and must stay open; this one is the installation itself, and closes
+          # with it.
+          MARKER="<!-- darkfactory: installation -->"
+          EXISTING=$(gh issue list --repo "${{ inputs.repository }}" --state open --limit 100 \
+            --search "darkfactory: installation in:body" --json number --jq '.[0].number // ""')
+          if [ -z "$EXISTING" ]; then
+            # `gh issue create` has no --json: it prints the issue URL, and the number is its last
+            # path segment. Asking for --json made it fail, the fallback searched an index that had
+            # not seen the new issue yet, and the binding came out as a bare `Closes #`.
+            URL=$(gh issue create --repo "${{ inputs.repository }}" \
+              --title "Install the DarkFactory pipeline" \
+              --body "$MARKER
+          Adds the caller workflows and the manifest, pinned to \`${{ inputs.ref || github.sha }}\`.
+
+          The workflows are callers rather than copies: every job body comes from the pinned
+          pipeline commit, so adopting an update is a one-line change here.
+
+          Filed by the install workflow so its pull request has something to bind. Configuring the
+          pipeline is a separate, standing issue.")
+            EXISTING="${URL##*/}"
+          fi
+
+          # An empty binding is worse than none: the pull request opens, `verify-bound-issue` fails
+          # on `Closes #`, and the cause is three steps upstream.
+          case "$EXISTING" in
+            ''|*[!0-9]*)
+              echo "Could not determine the installation issue number (got '$EXISTING')." >&2
+              exit 1
+              ;;
+          esac
+          echo "number=$EXISTING" >> "$GITHUB_OUTPUT"
+
+      - name: Open a pull request on the target
+        if: steps.generate.outputs.written == 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="install/darkfactory-pipeline"
+          git config user.name "darkfactory-pipeline[bot]"
+          git config user.email "darkfactory-pipeline[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add .github
+          git commit -m "feat(ci): install the DarkFactory pipeline
+
+          The workflows are callers rather than copies: every job body comes from
+          the pinned pipeline commit, so adopting an update is a one-line change.
+
+          The manifest is a starting point shaped by what this repository
+          contains. Its areas describe domains and are meant to be edited."
+          git push -u origin "$BRANCH" --force
+          BODY="Generated by the pipeline's install workflow. Review the areas in \`.darkfactory/repo.df\` before merging - they drive labels, commit scopes and agent routing.
+
+          Closes #${{ steps.install-issue.outputs.number }}"
+
+          # A reinstall pushes to the same branch, so a pull request is usually already open, and it
+          # has to be *updated* rather than skipped. The body carries the issue binding and
+          # `verify-bound-issue` is a required check, so a pull request opened before the binding
+          # existed stays unmergeable forever if a reinstall only reports that one is already there.
+          gh pr create --repo "${{ inputs.repository }}" --head "$BRANCH" \
+            --title "feat(ci): install the DarkFactory pipeline" --body "$BODY" \
+            || gh pr edit "$BRANCH" --repo "${{ inputs.repository }}" \
+                 --title "feat(ci): install the DarkFactory pipeline" --body "$BODY"
+
+      - name: Nothing to write
+        if: steps.generate.outputs.written != 'true'
+        run: echo "Every file was already present; this repository is installed."
+
+      - name: Open the configuration issue
+        if: steps.generate.outputs.written == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
+          TARGET_REPOSITORY: ${{ inputs.repository }}
+          PIPELINE_REPO: ${{ github.repository }}
+          TARGET_ROOT: ${{ github.workspace }}/target
+        run: |
+          # A reinstall must not file a second one, so the marker in the body is the identity.
+          EXISTING=$(gh issue list --repo "${{ inputs.repository }}" --state all --limit 100 \
+            --search "darkfactory: configuration in:body" --json number --jq '.[0].number // ""')
+          if [ -n "$EXISTING" ]; then
+            echo "Configuration issue already open at #$EXISTING."
+            exit 0
+          fi
+          python3 - > "$RUNNER_TEMP/config-issue.md" <<'PY'
+          import os
+          import install
+
+          print(
+              install.configuration_issue(
+                  os.environ["TARGET_REPOSITORY"],
+                  os.environ["PIPELINE_REPO"],
+                  needs_submodules=os.path.isfile(
+                      os.path.join(os.environ["TARGET_ROOT"], ".gitmodules")
+                  ),
+              )
+          )
+          PY
+          gh issue create --repo "${{ inputs.repository }}" \
+            --title "Configure the DarkFactory pipeline" \
+            --body-file "$RUNNER_TEMP/config-issue.md"
+
+      - name: Reconcile labels, board and settings
+        if: inputs.apply-settings
+        working-directory: target
+        env:
+          # Both tokens, because this step needs both. `repo_settings` picks per call: Projects v2,
+          # `/pages` and secret listing need permissions the App does not hold, and everything else
+          # is the App's work and should not spend a person's quota - rate limits are per user and
+          # shared across every token they hold.
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+          # Which repository is being configured. `repo_settings.py` reads this and otherwise falls
+          # back to the directory it lives in - the pipeline checkout - so without it every install
+          # reconciled DarkFactory against itself and reported success.
+          DARKFACTORY_REPO_ROOT: ${{ github.workspace }}/target
+          PYTHONPATH: ${{ github.workspace }}/.darkfactory-pipeline/.github/scripts
+        run: |
+          python3 "${{ github.workspace }}/.darkfactory-pipeline/.github/scripts/repo_settings.py" \
+            --apply --skip-protection

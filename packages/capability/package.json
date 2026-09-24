@@ -1,0 +1,20 @@
+{
+  "name": "@darkfactory/capability",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./abi": "./src/abi.ts",
+    "./adapters": "./src/adapters.ts",
+    "./loader": "./src/loader.ts",
+    "./actions": "./src/actions.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/protocol": "workspace:*"
+  }
+}

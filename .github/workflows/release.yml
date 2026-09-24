@@ -1,0 +1,230 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      bump:
+        description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
+        required: false
+        type: string
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Explicit bump: patch, minor, major, proud (pridever only), or an exact version"
+        required: false
+        type: string
+
+# The version, the notes, the assets and the metadata check are all decided by
+# `.github/scripts/release.py`, which reads the mode from `.darkfactory/repo.df`. This workflow
+# only sequences them, so changing versioning scheme never means editing a workflow.
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # Tags decide the current version, so a shallow clone would compute the wrong next one.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        # A repository with no Python has no requirements file, which is every paper. The pipeline
+        # scripts need only the standard library, so the plan is still readable.
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          else
+            echo "No requirements-dev.txt; nothing to install."
+          fi
+
+      - name: Resolve the next release
+        id: resolve
+        env:
+          REQUESTED_BUMP: ${{ inputs.bump }}
+        run: |
+          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
+            --repo-root . \
+            --notes-out "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/release.json"
+          cat "$RUNNER_TEMP/release.json"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          print(f"version={data['version'] or ''}")
+          print(f"tag={data['tag'] or ''}")
+          print(f"warranted={'true' if data['version'] else 'false'}")
+          PY
+
+      - name: Report that no release is warranted
+        if: steps.resolve.outputs.warranted != 'true'
+        run: |
+          echo "No release-worthy commits since the last tag." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify package metadata agrees with the release
+        if: steps.resolve.outputs.warranted == 'true'
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          problems = data["metadata_problems"]
+          if problems:
+              print("Package metadata disagrees with the release version:")
+              for problem in problems:
+                  print(f"  - {problem}")
+              sys.exit(1)
+          print("Package metadata is conformant.")
+          PY
+
+      - name: Detect the paper domain
+        if: steps.resolve.outputs.warranted == 'true'
+        id: paper
+        # The release job builds the same artifacts CI does, so it needs the same toolchains. A
+        # paper's asset is its PDF, which cannot be produced without a typesetting engine.
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, sys
+          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
+          import environment
+
+          env = environment.configure(".")
+          print(f"typst={str(env.has('typst')).lower()}")
+          print(f"latex={str(env.has('latex')).lower()}")
+          PY
+
+      - name: Set up Typst
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
+        uses: typst-community/setup-typst@v5
+
+      - name: Set up TeX Live
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+
+      - name: Decide which build tooling is needed
+        if: steps.resolve.outputs.warranted == 'true'
+        id: tooling
+        # Read once into an output rather than testing inline: a suppressed error in a conditional
+        # silently takes the "nothing needed" branch, which is how a missing build backend went
+        # unnoticed across three repositories.
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+
+          steps = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))["steps"]
+          commands = " ".join(step.get("command") or "" for step in steps)
+          print(f"python={'true' if 'python -m build' in commands else 'false'}")
+          PY
+
+      - name: Install the build backend
+        # The pipeline provides the tooling its own default commands need. Requiring every consumer
+        # to remember `build` in its requirements file is how this failed in three repositories.
+        if: steps.tooling.outputs.python == 'true'
+        run: python -m pip install --upgrade build
+
+      - name: Build release assets
+        if: steps.resolve.outputs.warranted == 'true'
+        run: |
+          python - <<'PY' > "$RUNNER_TEMP/steps.sh"
+          import json, os, shlex
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          for step in data["steps"]:
+              if step.get("command"):
+                  print(f"( cd {shlex.quote(step['cwd'])} && {step['command']} )")
+          PY
+          # Only where a document is going to be written; an unconditional mkdir leaves a stray
+          # directory that setuptools then discovers as a rival top-level package.
+          if [ "${{ steps.paper.outputs.typst }}" = "true" ] \
+             || [ "${{ steps.paper.outputs.latex }}" = "true" ]; then
+            mkdir -p out
+          fi
+          if [ -s "$RUNNER_TEMP/steps.sh" ]; then
+            echo "Build steps:"; cat "$RUNNER_TEMP/steps.sh"
+            bash -euxo pipefail "$RUNNER_TEMP/steps.sh"
+          else
+            echo "Nothing to build; this release carries no assets."
+          fi
+
+      - name: Collect release assets
+        if: steps.resolve.outputs.warranted == 'true'
+        id: assets
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          import sys
+          sys.path.insert(0, os.environ.get("PIPELINE_SCRIPTS", ".github/scripts"))
+          import release
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/release.json"))
+          found = release.collect_assets(".", data["steps"])
+          print("files<<EOF")
+          for path in found:
+              print(path)
+          print("EOF")
+          PY
+
+      - name: Create the tag and the release
+        if: steps.resolve.outputs.warranted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists; nothing to do."
+            exit 0
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          mapfile -t ASSETS < <(printf '%s' "${{ steps.assets.outputs.files }}" | sed '/^$/d')
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${ASSETS[@]}"
+
+          {
+            echo "## Released \`$TAG\`"
+            echo
+            echo "Assets: ${#ASSETS[@]}"
+          } >> "$GITHUB_STEP_SUMMARY"

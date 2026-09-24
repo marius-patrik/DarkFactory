@@ -1,0 +1,23 @@
+{
+  "name": "@darkfactory/capability-release",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./capability.ts",
+    "./artifacts": "./artifacts.ts",
+    "./versioning": "./versioning.ts"
+  },
+  "files": [
+    "capability.ts",
+    "artifacts.ts",
+    "versioning.ts"
+  ],
+  "scripts": {
+    "test": "bun test *.test.ts"
+  },
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/capability": "workspace:*"
+  }
+}

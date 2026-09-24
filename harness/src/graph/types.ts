@@ -1,0 +1,20 @@
+export type {
+	Actor,
+	AgentNode,
+	AuthorAssociation,
+	AutomationNode,
+	BaseNode,
+	CanonicalStatus,
+	CheckReferenceNode,
+	EdgeOn,
+	GateNode,
+	GraphEdge,
+	GraphEvent,
+	GraphNode,
+	LoopKind,
+	NodeKind,
+	PlanAction,
+	RunState,
+	WorkflowGraph,
+} from "@darkfactory/protocol/workflow";
+export { CANONICAL_STATUSES } from "@darkfactory/protocol/workflow";

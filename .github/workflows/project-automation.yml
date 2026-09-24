@@ -1,0 +1,105 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, closed, reopened]
+  pull_request:
+    types: [opened, edited, synchronize, closed, ready_for_review, reopened]
+  push:
+    branches: [develop]
+  # Membership is reconciled on a schedule as well as on demand. An item reaches a board only by
+  # passing through a lifecycle event, so anything opened while the automation was unable to write
+  # is absent and stays absent - the boards are never wrong, only quietly incomplete.
+  schedule:
+    - cron: "43 5 * * *"
+  workflow_dispatch:
+
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  repository-projects: write
+
+# One issue or pull request at a time. Opening an issue fires `opened` and `labeled` together, and
+# two runs adding the same item raced: the loser failed, filed a failure issue, and that issue's own
+# events started the next race. Queued rather than cancelled - each run reconciles the full item
+# state, so the one that runs last is correct.
+concurrency:
+  group: project-automation-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  automate-project:
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test
+      # is hoisted to the job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Only
+        # Projects v2 needs a person's token, because GitHub scopes project permissions to
+        # organisations and these boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Project Board Automation
+        run: |
+          python3 "${PIPELINE_SCRIPTS:-.github/scripts}/project_automation.py"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+          PROJECT_OWNER: ${{ github.repository_owner }}
+          # Only a fallback now: which boards to write to comes from the manifest, so an unset
+          # variable no longer silently points every repository at project 1.
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}

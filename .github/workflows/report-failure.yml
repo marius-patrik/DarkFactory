@@ -1,0 +1,106 @@
+name: Report Pipeline Failure
+
+# Runs after another workflow finishes, rather than inside it: a workflow that fails partway
+# through cannot be relied on to report its own failure, and a job appended to each one would have
+# to be repeated in every workflow.
+on:
+  workflow_run:
+    # Matched by *display name*. A name matching no workflow is not an error - it simply never
+    # fires - which is how failures of the agent went unreported for as long as this said "Agent"
+    # and the workflow had been renamed "Autonomous Agent". A test now checks every name here
+    # against the workflows that exist.
+    workflows:
+      - Autonomous Agent
+      - Auto Format
+      - Branch Policy
+      - CI
+      - Deploy Documentation
+      - Install Pipeline
+      - Open Pull Request
+      - PR Approval and Auto-Merge
+      - Preview Documentation
+      - Project Board Automation
+      - Release
+      - Update Submodules
+      - Verify Bound Issue
+    types: [completed]
+
+  # Consumers call this rather than copying it, so the script it runs lives in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  contents: read
+  issues: write
+
+# No concurrency group: a queued run is cancelled when another joins the same one, and a cancelled
+# observer is a failure nobody hears about - exactly what this workflow exists to prevent. Filing is
+# idempotent anyway, since the issue is found by a marker rather than created blindly.
+
+jobs:
+  report:
+    name: report-failure
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test
+      # is hoisted to the job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Only
+        # Projects v2 needs a person's token, because GitHub scopes project permissions to
+        # organisations and these boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: File or resolve the failure issue
+        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/report_failure.py"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_ID: ${{ github.event.workflow_run.id }}

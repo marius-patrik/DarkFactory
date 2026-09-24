@@ -1,0 +1,98 @@
+# Containerized df CI Agent
+# Provides full parity between local execution and GitHub Actions CI.
+
+FROM python:3.12-slim-bookworm
+
+LABEL maintainer="marius-patrik"
+LABEL description="Containerized df agent environment with Python 3.12, Bun, dev tools, and GitHub CLI."
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# 1. Install base utilities, D-Bus, Secret Service, unzip (for the Bun installer),
+# and GitHub CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    jq \
+    unzip \
+    ca-certificates \
+    gnupg \
+    dbus-x11 \
+    gnome-keyring \
+    libsecret-tools \
+    tmux \
+    && mkdir -p -m 755 /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/* \
+    && git config --global --add safe.directory '*'
+
+# 2. Install Bun (pinned), the runtime the df agent harness runs on
+ARG BUN_VERSION=1.4.2
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v${BUN_VERSION}" \
+    && bun --version
+
+# 3. Install the df agent harness, the pipeline's only agent harness.
+#
+# The runner resolves every agent call through the `df` binary, which owns model choice and
+# in-flight failover across its own chain itself — external coding-agent CLIs are not installed.
+# The harness source ships with the pipeline checkout (`harness/`, landed separately), so it is
+# copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
+# relative to the source tree, which the wrapper below executes in place.
+COPY package.json /opt/darkfactory/
+COPY harness/ /opt/darkfactory/harness/
+COPY packages/ /opt/darkfactory/packages/
+COPY capabilities/ /opt/darkfactory/capabilities/
+RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
+RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
+    && chmod +x /usr/local/bin/df \
+    && df --help >/dev/null
+
+# Record which harness is present so the build log answers "what can this image drive?"
+RUN set -eux; \
+    echo "=== agent harness in this image ==="; \
+    if command -v df >/dev/null 2>&1; then \
+      echo "  present: df -> $(command -v df)"; \
+    else \
+      echo "  ABSENT:  df"; \
+    fi
+
+# 4. Setup project workspace and install Python test / build dependencies
+WORKDIR /workspace
+
+COPY pyproject.toml requirements-dev.txt /workspace/
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements-dev.txt
+
+# 5. Create the unprivileged user the agent runs as
+#
+# PRD.md D4 states that agent processes execute with non-root privileges. The image had
+# no USER directive, so they ran as root.
+#
+# uid 1001 matches the GitHub runner's own user, so the bind-mounted workspace is writable without
+# relaxing its permissions.
+ARG AGENT_UID=1001
+ARG AGENT_GID=1001
+RUN groupadd --gid ${AGENT_GID} agent \
+    && useradd --uid ${AGENT_UID} --gid ${AGENT_GID} --create-home --shell /bin/bash agent \
+    && mkdir -p /home/agent/.codex /home/agent/.grok /home/agent/.config \
+    && chown -R agent:agent /home/agent /workspace
+
+ENV HOME=/home/agent
+
+# 6. Copy runner entrypoint and scripts
+COPY .github/scripts/ /usr/local/share/darkfactory-scripts/
+COPY .github/scripts/agent_runner.py /usr/local/bin/darkfactory-agent-runner
+RUN chmod +x /usr/local/bin/darkfactory-agent-runner
+
+ENV PYTHONPATH="/usr/local/share/darkfactory-scripts:/workspace/.github/scripts:${PYTHONPATH}"
+
+# Everything below runs unprivileged. Placed after the installs so package managers still have
+# the root they need at build time.
+USER agent
+
+ENTRYPOINT ["dbus-run-session", "--", "python3", "/usr/local/bin/darkfactory-agent-runner"]

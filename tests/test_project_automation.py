@@ -1,0 +1,1751 @@
+"""Unit tests for the project board automation."""
+
+import os
+import subprocess
+from typing import Any, Dict, List, Optional, Tuple
+
+import pytest
+
+import project_automation
+from project_automation import (
+    STATUS_NAMES,
+    GitHubProjectClient,
+    determine_status_from_labels,
+    extract_bound_issues,
+    extract_closing_issues,
+    process_event,
+)
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = "marius-patrik/DarkFactory"
+
+
+@pytest.fixture(autouse=True)
+def reset_global_state():
+    """Resets global rate limit and mutation tracking between tests."""
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
+    project_automation.FAILURES = []
+    yield
+    project_automation.RATE_LIMITED = False
+    project_automation.MUTATIONS_PERFORMED = 0
+    project_automation.GRAPHQL_REMAINING = None
+    project_automation.FAILURES = []
+
+
+class FakeProjectClient:
+    """Records board mutations instead of performing them."""
+
+    def __init__(self) -> None:
+        self.added_items: List[Tuple[str, str]] = []
+        self.edited_statuses: List[Tuple[str, str]] = []
+        self.status_labels: List[Tuple[str, int, str]] = []
+        self.added_labels: List[Tuple[str, int, str]] = []
+        self.closed_issues: List[Tuple[str, int]] = []
+
+    def track(self, url: str, status: str, content_id: Optional[str] = None) -> None:
+        """Adds an item and sets its status, as the real client does."""
+        item_id = self.add_item(url)
+        self.edit_status(item_id, status)
+
+    def add_item(self, url: str, content_id: Optional[str] = None) -> str:
+        """Records an item addition and returns a synthetic id."""
+        item_id = f"item-{len(self.added_items) + 1}"
+        self.added_items.append((url, item_id))
+        return item_id
+
+    def edit_status(self, item_id: str, status_name: str) -> bool:
+        """Records a status change."""
+        self.edited_statuses.append((item_id, status_name))
+        return True
+
+    def set_status_label(
+        self,
+        repo: str,
+        issue_number: int,
+        status_name: str,
+        existing_labels: Optional[List[Any]] = None,
+    ) -> None:
+        """Records an exclusive status-label assignment."""
+        self.status_labels.append((repo, issue_number, status_name))
+
+    def add_issue_label(self, repo: str, issue_number: int, label: str) -> None:
+        """Records a label addition, routing status labels through the exclusive setter."""
+        if label in set(STATUS_NAMES):
+            self.set_status_label(repo, issue_number, label)
+            return
+        self.added_labels.append((repo, issue_number, label))
+
+    def close_issue(self, repo: str, issue_number: int, reason: str = "completed") -> None:
+        """Records an issue closure."""
+        self.closed_issues.append((repo, issue_number))
+
+
+def test_extract_bound_issues_various_formats():
+    """Terminal and nonterminal Request bindings are recognised in documented forms."""
+    assert extract_bound_issues("Closes #123") == [123]
+    assert extract_bound_issues("Fixes #45 and resolves #67") == [45, 67]
+    assert extract_bound_issues("CLOSED #10") == [10]
+    assert extract_bound_issues("Advances #11") == [11]
+    assert extract_bound_issues(f"Resolves https://github.com/{REPO}/issues/89") == [89]
+    assert extract_bound_issues(f"Advances https://github.com/{REPO}/issues/90") == [90]
+    assert extract_bound_issues("Just discussing issue #123 without keyword") == []
+    assert extract_bound_issues("") == []
+    assert extract_bound_issues(None) == []
+
+
+def test_extract_bound_issues_deduplicates_and_sorts():
+    """Repeated references collapse to one sorted list."""
+    assert extract_bound_issues("Advances #7, fixes #3, resolves #7") == [3, 7]
+
+
+def test_extract_closing_issues_excludes_nonterminal_bindings():
+    """Only GitHub closing syntax carries terminal completion intent."""
+    assert extract_closing_issues("Advances #7, fixes #3, closes #9") == [3, 9]
+
+
+def test_determine_status_from_labels_precedence():
+    """Terminal statuses outrank active ones so stale labels cannot win on closed items."""
+    assert determine_status_from_labels(["bug", "Blocked"]) == "Blocked"
+    assert determine_status_from_labels(["enhancement", "In Progress"]) == "In Progress"
+    assert determine_status_from_labels(["Backlog"]) == "Backlog"
+    assert determine_status_from_labels(["ToDo"]) == "ToDo"
+    assert determine_status_from_labels(["Done"], closed=True) == "Done"
+    assert determine_status_from_labels(["Superseded"], closed=True) == "Superseded"
+    assert determine_status_from_labels(["Dropped"], closed=True) == "Dropped"
+    assert determine_status_from_labels(["random", "label"]) == "ToDo"
+    assert determine_status_from_labels([]) == "ToDo"
+
+
+def test_determine_status_prefers_terminal_over_stale_in_progress_when_closed():
+    """On a closed item a Done label must win outright over stale In Progress."""
+    assert determine_status_from_labels(["In Progress", "Done"], closed=True) == "Done"
+    assert determine_status_from_labels(["In Progress", "Dropped"], closed=True) == "Dropped"
+
+
+def test_determine_status_ignores_terminal_labels_on_open_items():
+    """A stale Done on an open item must not pin the board; active labels still count."""
+    assert determine_status_from_labels(["Done"]) == "ToDo"
+    assert determine_status_from_labels(["In Progress", "Done"]) == "In Progress"
+    assert determine_status_from_labels(["Dropped", "Blocked"]) == "Blocked"
+
+
+def test_determine_status_accepts_to_do_spelling():
+    """`To Do` and `ToDo` mean the same column."""
+    assert determine_status_from_labels(["To Do"]) == "ToDo"
+
+
+def test_issue_opened_is_tracked_with_label_derived_status():
+    """A new issue lands on the board at the status its labels imply."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "opened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 1,
+            "html_url": f"https://github.com/{REPO}/issues/1",
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert len(client.added_items) == 1
+    assert client.edited_statuses == [("item-1", "In Progress")]
+
+
+def test_issue_closed_moves_to_done_and_clears_stale_status_labels():
+    """Closing an active issue marks it Done exclusively, removing `In Progress`."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 1,
+            "html_url": f"https://github.com/{REPO}/issues/1",
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Done")]
+    assert client.status_labels == [(REPO, 1, "Done")]
+
+
+def test_issue_closed_as_dropped_is_not_forced_to_done():
+    """An explicitly dropped issue keeps its terminal status when it closes."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 2,
+            "html_url": f"https://github.com/{REPO}/issues/2",
+            "labels": [{"name": "Dropped"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Dropped")]
+    assert client.status_labels == [(REPO, 2, "Dropped")]
+
+
+def test_pr_opened_does_not_move_bound_issues_to_in_progress():
+    """A draft PR opening must not flip the Request past the approval gate."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "opened",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "html_url": f"https://github.com/{REPO}/pull/9",
+            "body": "Implements the feature. Closes #5",
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert client.status_labels == []
+    assert ("item-1", "In Progress") in client.edited_statuses
+    assert all(num != 5 for _, num, _ in client.status_labels)
+
+
+def test_pr_ready_for_review_moves_bound_issues_to_in_progress():
+    """Marking the PR ready is the first board signal that bound work is active."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "ready_for_review",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "html_url": f"https://github.com/{REPO}/pull/9",
+            "body": "Implements the feature. Closes #5",
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert client.status_labels == [(REPO, 5, "In Progress")]
+    assert ("item-1", "In Progress") in client.edited_statuses
+
+
+def test_issue_reopened_with_checkpoint_stays_blocked(tmp_path, monkeypatch):
+    """Reopening must not wipe quota-blocked resume state when a checkpoint exists."""
+    checkpoint = tmp_path / ".antigravity_checkpoint.json"
+    checkpoint.write_text('{"issue_number": 7, "completed_steps": ["plan"]}', encoding="utf-8")
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 7,
+            "html_url": f"https://github.com/{REPO}/issues/7",
+            "labels": [{"name": "Request"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Blocked")]
+    assert client.status_labels == [(REPO, 7, "Blocked")]
+
+
+def test_issue_reopened_without_checkpoint_goes_to_todo(tmp_path, monkeypatch):
+    """A plain reopen with no checkpoint returns to ToDo."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 8,
+            "html_url": f"https://github.com/{REPO}/issues/8",
+            "labels": [{"name": "Request"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "ToDo")]
+    assert client.status_labels == [(REPO, 8, "ToDo")]
+
+
+def test_open_issue_with_stale_done_label_is_stripped_to_todo():
+    """Label events on an open issue must not honour a stale Done label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "labeled",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 3,
+            "state": "open",
+            "html_url": f"https://github.com/{REPO}/issues/3",
+            "labels": [{"name": "Request"}, {"name": "Done"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "ToDo")]
+    assert client.status_labels == [(REPO, 3, "ToDo")]
+
+
+def test_pr_merged_marks_everything_done_and_closes_issues():
+    """Merging reconciles the PR, its issues, their labels, and their open state."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "html_url": f"https://github.com/{REPO}/pull/9",
+            "body": "Fixes the bug. Resolves #5",
+            "merged": True,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert client.status_labels == [(REPO, 5, "Done")]
+    assert client.closed_issues == [(REPO, 5)]
+    assert ("item-1", "Done") in client.edited_statuses
+
+
+def test_pr_closed_unmerged_is_dropped_not_done():
+    """Abandoning a PR must never look like success on the board."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "html_url": f"https://github.com/{REPO}/pull/9",
+            "body": "Closes #5",
+            "merged": False,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Dropped")]
+    assert client.status_labels == []
+    assert client.closed_issues == []
+
+
+def test_push_to_main_closes_issues_referenced_in_commit_messages():
+    """A direct push that carries a closing keyword still reconciles the board."""
+    client = FakeProjectClient()
+    payload = {
+        "ref": "refs/heads/main",
+        "repository": {"full_name": REPO},
+        "commits": [{"message": "fix(core): correct frame codec\n\nCloses #12"}],
+    }
+    process_event("push", payload, client=client)
+    assert client.status_labels == [(REPO, 12, "Done")]
+    assert client.closed_issues == [(REPO, 12)]
+
+
+def test_push_with_nonterminal_binding_does_not_close_issue():
+    """A commit saying Advances must not turn a partial Request terminal."""
+    client = FakeProjectClient()
+    payload = {
+        "ref": "refs/heads/main",
+        "repository": {"full_name": REPO},
+        "commits": [{"message": "feat(core): partial slice\n\nAdvances #12"}],
+    }
+    process_event("push", payload, client=client)
+    assert client.status_labels == []
+    assert client.closed_issues == []
+
+
+def test_push_to_other_branches_is_ignored():
+    """Only the default branch reconciles the board."""
+    client = FakeProjectClient()
+    payload = {
+        "ref": "refs/heads/feature/x",
+        "repository": {"full_name": REPO},
+        "commits": [{"message": "Closes #12"}],
+    }
+    process_event("push", payload, client=client)
+    assert client.closed_issues == []
+
+
+def test_reconciliation_uses_labels_not_a_blanket_todo(monkeypatch: pytest.MonkeyPatch):
+    """Self-healing must not promote backlog items into the ready queue."""
+    from project_automation import reconcile_unassigned_statuses
+
+    items = {
+        "items": [
+            {"id": "i1", "labels": ["epic", "Backlog"], "content": {"title": "epic"}},
+            {"id": "i2", "labels": ["bug"], "content": {"title": "untriaged"}},
+            {"id": "i3", "labels": [], "status": "Done", "content": {"title": "already set"}},
+            {"id": "i4", "labels": [], "content": {"title": "closed", "closed": True}},
+        ]
+    }
+
+    class Recorder(GitHubProjectClient):
+        """Captures status writes without touching the API."""
+
+        def __init__(self) -> None:
+            super().__init__(owner="o", project_number=1)
+            self.writes: List[Tuple[str, str]] = []
+
+        def run_gh(self, args: List[str]) -> str:
+            """Returns a canned item listing."""
+            import json as _json
+
+            return _json.dumps(items)
+
+        def edit_status(self, item_id: str, status_name: str) -> bool:
+            """Records the write."""
+            self.writes.append((item_id, status_name))
+            return True
+
+    client = Recorder()
+    reconcile_unassigned_statuses(client)
+    # i3 is open with a stale terminal "Done" status and no terminal label, so reconciliation
+    # corrects it to "ToDo". i4 is closed with nothing to say it finished, so it is settled as
+    # Dropped rather than skipped: a closed item's status is a fact the board must agree with,
+    # not a judgement to preserve.
+    assert client.writes == [
+        ("i1", "Backlog"),
+        ("i2", "ToDo"),
+        ("i3", "ToDo"),
+        ("i4", "Dropped"),
+    ]
+
+
+def test_reconciliation_with_board_group():
+    """Status reconciliation iterates over all boards in a BoardGroup."""
+    from project_automation import BoardGroup, reconcile_unassigned_statuses
+
+    items = {
+        "items": [
+            {"id": "i1", "labels": ["Backlog"], "content": {"title": "item1"}},
+        ]
+    }
+
+    class Recorder(GitHubProjectClient):
+        def __init__(self, num: int) -> None:
+            super().__init__(owner="o", project_number=num)
+            self.writes: List[Tuple[str, str]] = []
+
+        def run_gh(self, args: List[str]) -> str:
+            import json as _json
+
+            return _json.dumps(items)
+
+        def edit_status(self, item_id: str, status_name: str) -> bool:
+            self.writes.append((item_id, status_name))
+            return True
+
+    b1, b2 = Recorder(1), Recorder(2)
+    group = BoardGroup([b1, b2])
+    reconcile_unassigned_statuses(group)
+    assert b1.writes == [("i1", "Backlog")]
+    assert b2.writes == [("i1", "Backlog")]
+
+    # Empty BoardGroup completes without raising
+    empty_group = BoardGroup([])
+    reconcile_unassigned_statuses(empty_group)
+
+
+def test_status_field_ids_are_not_hardcoded():
+    """Board ids are resolved at runtime; a hardcoded id breaks on every board rebuild."""
+    path = os.path.join(REPO_ROOT, ".github", "scripts", "project_automation.py")
+    with open(path, encoding="utf-8") as handle:
+        source = handle.read()
+    assert "PVTSSF_" not in source, "Status field id must be discovered, not hardcoded"
+    assert "field-list" in source, "Status field must be resolved via `gh project field-list`"
+
+
+def test_client_caches_discovery_lookups(monkeypatch: pytest.MonkeyPatch):
+    """Field discovery runs once per process, not once per mutation."""
+    calls: List[List[str]] = []
+
+    def fake_run_gh(self: GitHubProjectClient, args: List[str]) -> str:
+        calls.append(args)
+        if args[1] == "field-list":
+            return (
+                '{"fields":[{"id":"F1","name":"Status","options":'
+                '[{"id":"o1","name":"ToDo"},{"id":"o2","name":"Done"}]}]}'
+            )
+        return '{"id":"P1"}'
+
+    monkeypatch.setattr(GitHubProjectClient, "run_gh", fake_run_gh)
+    client = GitHubProjectClient(owner="o", project_number=1)
+    assert client.status_option_id("ToDo") == "o1"
+    assert client.status_option_id("Done") == "o2"
+    assert client.status_field_id == "F1"
+    assert sum(1 for args in calls if args[1] == "field-list") == 1
+
+
+class TestBoardResolution:
+    """Boards come from the declaration, and a failed write is never reported as success."""
+
+    def setup_method(self):
+        """Clears failures recorded by an earlier test."""
+        project_automation.FAILURES.clear()
+
+    def test_an_item_reaches_every_declared_board(self):
+        """A repository's own board and the global one are different projects."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        group = project_automation.BoardGroup([first, second])
+        group.track("https://github.com/o/r/issues/1", "In Progress")
+        assert [url for url, _ in first.added_items] == ["https://github.com/o/r/issues/1"]
+        assert [url for url, _ in second.added_items] == ["https://github.com/o/r/issues/1"]
+
+    def test_labels_and_closures_happen_once_not_once_per_board(self):
+        """A label belongs to the issue, not to a board; applying it twice is wrong."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        group = project_automation.BoardGroup([first, second])
+        group.set_status_label(REPO, 7, "Done")
+        group.close_issue(REPO, 7)
+        assert first.status_labels == [(REPO, 7, "Done")] and second.status_labels == []
+        assert first.closed_issues == [(REPO, 7)] and second.closed_issues == []
+
+    def test_board_group_delegates_run_gh(self):
+        """A board group delegates command execution to its first client."""
+        calls = []
+
+        class RecordingClient(FakeProjectClient):
+            def run_gh(self, args):
+                calls.append(args)
+                return "ok"
+
+        group = project_automation.BoardGroup([RecordingClient()])
+        assert group.run_gh(["issue", "list"]) == "ok"
+        assert calls == [["issue", "list"]]
+
+    def test_empty_board_group_run_gh_executes_subprocess(self, monkeypatch):
+        """When no clients are present, BoardGroup executes subprocess directly."""
+        seen = []
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda cmd, **kwargs: seen.append(cmd) or type("R", (), {"stdout": "done\n"})(),
+        )
+        group = project_automation.BoardGroup([])
+        assert group.run_gh(["issue", "list"]) == "done"
+        assert seen == [["gh", "issue", "list"]]
+
+    def test_board_group_properties_and_single_actions(self):
+        """BoardGroup forwards owner and project_number and adds labels once."""
+        first, second = FakeProjectClient(), FakeProjectClient()
+        first.owner = "custom-owner"
+        first.project_number = 42
+        group = project_automation.BoardGroup([first, second])
+        assert group.owner == "custom-owner"
+        assert group.project_number == 42
+        group.add_issue_label(REPO, 10, "area:ci")
+        assert first.added_labels == [(REPO, 10, "area:ci")]
+        assert second.added_labels == []
+
+    def test_a_declared_board_that_does_not_exist_is_a_failure(self, monkeypatch):
+        """Silence here is what let every write fail unnoticed for days."""
+        # Board discovery now uses GraphQL first; keep this test focused on the CLI fallback.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R", (), {"stdout": '{"projects": [{"title": "Global", "number": 17}]}'}
+            )(),
+        )
+
+        class Loaded:
+            project_title = "DarkFactory"
+            global_board_title = "Global"
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+        numbers = project_automation.resolve_boards("marius-patrik")
+        assert numbers == [17]
+        assert any("DarkFactory" in failure for failure in project_automation.FAILURES)
+
+    def test_resolve_boards_include_scoped_and_include_global_filter_independently(
+        self, monkeypatch
+    ):
+        """Each board group can be resolved on its own, for cross-repository routing."""
+        # The project list below is the deliberately canned source for this test.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R",
+                (),
+                {
+                    "stdout": (
+                        '{"projects": ['
+                        '{"title": "DarkFactory", "number": 11}, '
+                        '{"title": "Global", "number": 17}'
+                        "]}"
+                    )
+                },
+            )(),
+        )
+
+        class Loaded:
+            project_title = "DarkFactory"
+            global_board_title = "Global"
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        assert project_automation.resolve_boards("marius-patrik") == [11, 17]
+        assert project_automation.resolve_boards("marius-patrik", include_scoped=False) == [17]
+        assert project_automation.resolve_boards("marius-patrik", include_global=False) == [11]
+
+    def test_a_recorded_failure_makes_the_run_fail(self):
+        """The whole point: a broken board must not report success."""
+        project_automation._fail("adding https://example/1 to project 16: boom")
+        assert project_automation.FAILURES
+
+
+class TestSettledStatus:
+    """A closed item's status is not a judgement; it is a fact the board must agree with."""
+
+    def test_an_open_item_is_never_overridden(self):
+        """An open item's status is exactly the judgement the board exists to record."""
+        assert project_automation.settled_status(False, False, ["In Progress"]) is None
+
+    def test_a_merged_pull_request_is_done(self):
+        """Merging is the definition of finished."""
+        assert project_automation.settled_status(True, True, []) == "Done"
+
+    def test_closed_without_merging_is_dropped(self):
+        """Closed without implementation is dropped, not done."""
+        assert project_automation.settled_status(True, False, []) == "Dropped"
+
+    @pytest.mark.parametrize("label", ["Done", "Superseded", "Dropped"])
+    def test_a_terminal_label_is_believed(self, label):
+        """An item closed as superseded must not be flattened into dropped."""
+        assert project_automation.settled_status(True, False, [label]) == label
+
+    def test_a_stale_in_progress_label_does_not_survive_closing(self):
+        """The exact drift found on the board: closed items still showing In Progress."""
+        assert project_automation.settled_status(True, False, ["In Progress"]) == "Dropped"
+
+
+class TestTokenSelection:
+    """Only Projects v2 needs a person's token; everything else belongs to the App."""
+
+    def test_board_calls_use_the_project_token(self, monkeypatch):
+        """Projects v2 permissions are org-scoped, so a user-owned board needs the user's token."""
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "user"
+
+    @pytest.mark.parametrize("args", [["issue", "edit"], ["api", "repos/o/r"], ["pr", "view"]])
+    def test_repository_calls_use_the_app_token(self, args, monkeypatch):
+        """The quota that starved the automation was spent on exactly these calls."""
+        monkeypatch.setenv("GH_TOKEN", "app")
+        monkeypatch.setenv("GH_PROJECT_TOKEN", "user")
+        assert project_automation._env_for(args)["GH_TOKEN"] == "app"
+
+    def test_without_a_project_token_nothing_is_overridden(self, monkeypatch):
+        """A repository that never configured one must still work as it did before."""
+        monkeypatch.setenv("GH_TOKEN", "only")
+        monkeypatch.delenv("GH_PROJECT_TOKEN", raising=False)
+        assert project_automation._env_for(["project", "item-list"])["GH_TOKEN"] == "only"
+
+
+class TestMembershipReconciliation:
+    """A board is never wrong, only quietly incomplete; nothing looked twice until now."""
+
+    def setup_method(self):
+        """Clears failures recorded by an earlier test."""
+        project_automation.FAILURES.clear()
+
+    def _client(self, issues, prs):
+        """Builds a recorder returning canned listings.
+
+        Args:
+            issues: Open issues to return.
+            prs: Open pull requests to return.
+
+        Returns:
+            A client double recording every track call.
+        """
+
+        class Recorder(FakeProjectClient):
+            def __init__(self):
+                super().__init__()
+                self.tracked = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(issues if args[0] == "issue" else prs)
+
+            def track(self, url, status):
+                self.tracked.append((url, status))
+
+        return Recorder()
+
+    def test_every_open_item_reaches_the_boards(self):
+        """Both boards, because track goes through the group covering own and global."""
+        client = self._client(
+            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [{"number": 2, "url": "https://x/pull/2", "labels": [], "isDraft": False}],
+        )
+        assert project_automation.reconcile_membership(client, "o/r") == 2
+        assert ("https://x/issues/1", "Backlog") in client.tracked
+
+    def test_an_open_pull_request_is_work_in_flight(self):
+        """Whatever its labels say, an open pull request is not merely ToDo."""
+        client = self._client([], [{"number": 2, "url": "https://x/pull/2", "labels": []}])
+        project_automation.reconcile_membership(client, "o/r")
+        assert client.tracked == [("https://x/pull/2", "In Progress")]
+
+    def test_a_repository_with_nothing_open_tracks_nothing(self):
+        """Reconciling a quiet repository must cost a listing and no writes."""
+        client = self._client([], [])
+        assert project_automation.reconcile_membership(client, "o/r") == 0
+        assert client.tracked == []
+
+    def test_a_failed_listing_is_recorded_rather_than_swallowed(self):
+        """A silent failure here leaves a board incomplete and says nothing."""
+
+        class Broken(FakeProjectClient):
+            def run_gh(self, args):
+                raise RuntimeError("boom")
+
+            def track(self, url, status):
+                pass
+
+        project_automation.reconcile_membership(Broken(), "o/r")
+        assert project_automation.FAILURES
+
+    def test_membership_reconciliation_tracks_all_boards_in_group(self):
+        """Membership reconciliation works with BoardGroup, tracking across all clients."""
+        first = self._client(
+            [{"number": 1, "url": "https://x/issues/1", "labels": [{"name": "Backlog"}]}],
+            [],
+        )
+        second = self._client([], [])
+        group = project_automation.BoardGroup([first, second])
+        assert project_automation.reconcile_membership(group, "o/r") == 1
+        assert ("https://x/issues/1", "Backlog") in first.tracked
+        assert ("https://x/issues/1", "Backlog") in second.tracked
+
+    def test_membership_reconciliation_with_empty_group(self, monkeypatch):
+        """Reconciling with an empty BoardGroup runs without error."""
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda cmd, **kwargs: type("R", (), {"stdout": "[]"})(),
+        )
+        group = project_automation.BoardGroup([])
+        assert project_automation.reconcile_membership(group, "o/r") == 0
+
+
+class TestFailuresSayWhatWentWrong:
+    """`str()` of a subprocess failure names the command and the exit status and nothing else."""
+
+    def test_captured_stderr_reaches_the_message(self):
+        """The line explaining the failure is the line that was being dropped."""
+        exc = subprocess.CalledProcessError(
+            1, ["gh", "project", "list"], stderr="unknown owner type\n"
+        )
+        detail = project_automation._detail(exc)
+        assert "unknown owner type" in detail
+        assert "returned non-zero exit status 1" in detail
+
+    def test_stdout_is_used_when_there_is_no_stderr(self):
+        """`gh` does not always fail on stderr."""
+        exc = subprocess.CalledProcessError(1, ["gh"], output="API rate limit already exceeded")
+        assert "API rate limit already exceeded" in project_automation._detail(exc)
+
+    def test_bytes_output_does_not_break_the_message(self):
+        """A failure reported without `text=True` must still be readable."""
+        exc = subprocess.CalledProcessError(1, ["gh"], stderr=b"boom\n")
+        assert "boom" in project_automation._detail(exc)
+
+    def test_an_exception_with_no_output_renders_as_itself(self):
+        """Most exceptions carry nothing captured, and must not gain empty parentheses."""
+        assert project_automation._detail(ValueError("plain")) == "plain"
+
+
+class TestRateLimitingAndQuotaReserve:
+    """Rate limits pause cleanly; a run may write freely except for the live quota safety reserve."""
+
+    def test_is_rate_limited_recognises_indicators(self):
+        """Standard rate-limit messages across GraphQL and REST are detected."""
+        for phrase in [
+            "unknown owner type",
+            "API rate limit exceeded",
+            "secondary rate limit",
+            "was submitted too quickly",
+            "too many requests",
+            "quota exceeded",
+        ]:
+            exc = subprocess.CalledProcessError(1, ["gh"], stderr=phrase)
+            assert project_automation.is_rate_limited(exc)
+
+    def test_resolve_boards_pauses_on_rate_limit(self, monkeypatch):
+        """When listing projects hits a rate limit, RATE_LIMITED is set and FAILURES is empty."""
+        # Avoid a real GraphQL request before exercising the mocked CLI failure path.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient,
+            "resolve_projects",
+            lambda self, owner: {},
+        )
+        monkeypatch.setattr(project_automation, "FAILURES", [])
+        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: (_ for _ in ()).throw(
+                subprocess.CalledProcessError(1, ["gh"], stderr="unknown owner type")
+            ),
+        )
+        boards = project_automation.resolve_boards()
+        assert boards == []
+        assert project_automation.RATE_LIMITED is True
+        assert project_automation.FAILURES == []
+
+    def test_track_skips_when_item_already_matches(self, monkeypatch):
+        """Check-before-write idempotency: no mutations when status already matches."""
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {"https://github.com/o/r/issues/1": ("item-1", "Done")}
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: pytest.fail("should not mutate")
+        )
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
+        client.track("https://github.com/o/r/issues/1", "Done")
+
+    def test_track_edits_without_add_when_status_differs(self, monkeypatch):
+        """When an item is already present with a different status, only edit_status is called."""
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {"https://github.com/o/r/issues/1": ("item-1", "ToDo")}
+        edited = []
+        monkeypatch.setattr(client, "add_item", lambda url: pytest.fail("should not add"))
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+        )
+        client.track("https://github.com/o/r/issues/1", "In Progress")
+        assert edited == [("item-1", "In Progress")]
+
+    def test_long_reconciliation_is_not_truncated_by_an_artificial_cap(self, monkeypatch):
+        """No fixed per-run mutation count remains: a long run processes every item it is given."""
+        assert not hasattr(project_automation, "MUTATION_BUDGET")
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {}
+        monkeypatch.setattr(client, "load_existing_items", lambda: {})
+        added = []
+        edited = []
+        monkeypatch.setattr(
+            client,
+            "add_item",
+            lambda url, content_id=None: added.append(url) or f"item-{len(added)}",
+        )
+        monkeypatch.setattr(
+            client, "edit_status", lambda item_id, st: edited.append((item_id, st)) or True
+        )
+
+        # Well past the old default budget of 25 - every item must still be written.
+        urls = [f"https://github.com/o/r/issues/{i}" for i in range(40)]
+        for url in urls:
+            client.track(url, "ToDo")
+
+        assert added == urls
+        assert len(edited) == 40
+
+    def test_writes_pause_at_the_safety_reserve(self, monkeypatch):
+        """At or below QUOTA_MINIMUM, track() defers instead of writing - the only remaining gate."""
+        monkeypatch.setattr(
+            project_automation, "GRAPHQL_REMAINING", project_automation.QUOTA_MINIMUM
+        )
+        client = GitHubProjectClient(project_number=10)
+        client._items_cache = {}
+        monkeypatch.setattr(
+            client, "load_existing_items", lambda: pytest.fail("should not query the board")
+        )
+        monkeypatch.setattr(client, "add_item", lambda *a, **k: pytest.fail("should not add"))
+        monkeypatch.setattr(client, "edit_status", lambda *a, **k: pytest.fail("should not edit"))
+
+        client.track("https://github.com/o/r/issues/1", "ToDo")
+
+        assert project_automation.can_mutate() is False
+
+    def test_malformed_quota_header_pauses_mutations_rather_than_assuming_unlimited(
+        self, monkeypatch
+    ):
+        """An unparseable x-ratelimit-remaining header is treated as unsafe, not as unlimited quota."""
+        monkeypatch.setattr(project_automation, "RATE_LIMITED", False)
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", None)
+        monkeypatch.setattr(project_automation, "FAILURES", [])
+
+        class FakeHeaders:
+            def get(self, key, default=None):
+                return "not-a-number" if key == "x-ratelimit-remaining" else default
+
+        class FakeResponse:
+            headers = FakeHeaders()
+
+            def read(self):
+                return b'{"data": {}}'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc_info):
+                return False
+
+        monkeypatch.setattr(
+            project_automation.urllib.request, "urlopen", lambda *a, **k: FakeResponse()
+        )
+
+        client = project_automation.GitHubGraphQLClient(token="test-token")
+        client.execute("query { viewer { login } }")
+
+        assert project_automation.GRAPHQL_REMAINING is None
+        assert project_automation.RATE_LIMITED is True
+        assert project_automation.FAILURES
+        assert project_automation.can_mutate() is False
+
+    def test_historical_closed_items_reconciliation(self):
+        """Reconciliation tracks historical closed issues and PRs with settled statuses."""
+        issues = [
+            {
+                "number": 1,
+                "url": "https://x/issues/1",
+                "state": "CLOSED",
+                "stateReason": "COMPLETED",
+                "labels": [{"name": "Done"}],
+            },
+            {
+                "number": 2,
+                "url": "https://x/issues/2",
+                "state": "CLOSED",
+                "stateReason": "NOT_PLANNED",
+                "labels": [],
+            },
+            {
+                "number": 3,
+                "url": "https://x/issues/3",
+                "state": "OPEN",
+                "labels": [{"name": "Backlog"}],
+            },
+        ]
+        prs = [
+            {
+                "number": 4,
+                "url": "https://x/pull/4",
+                "state": "MERGED",
+                "mergedAt": "2026-01-01T00:00:00Z",
+                "labels": [],
+            },
+            {
+                "number": 5,
+                "url": "https://x/pull/5",
+                "state": "CLOSED",
+                "labels": [],
+            },
+        ]
+
+        class Recorder(FakeProjectClient):
+            def __init__(self):
+                super().__init__()
+                self.tracked = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(issues if args[0] == "issue" else prs)
+
+            def track(self, url, status):
+                self.tracked.append((url, status))
+
+        client = Recorder()
+        count = project_automation.reconcile_membership(client, "o/r")
+        assert count == 5
+        assert ("https://x/issues/1", "Done") in client.tracked
+        assert ("https://x/issues/2", "Dropped") in client.tracked
+        assert ("https://x/issues/3", "Backlog") in client.tracked
+        assert ("https://x/pull/4", "Done") in client.tracked
+        assert ("https://x/pull/5", "Dropped") in client.tracked
+
+    def test_reconcile_unassigned_statuses_overrides_stale_in_progress_with_done_label(self):
+        """On a closed item, a Done label wins over a stale In Progress board status."""
+        from project_automation import reconcile_unassigned_statuses
+
+        items = {
+            "items": [
+                {
+                    "id": "item-96",
+                    "status": "In Progress",
+                    "labels": ["Request", "Done"],
+                    "content": {
+                        "title": "record in architecture",
+                        "number": 96,
+                        "closed": True,
+                    },
+                },
+                {
+                    "id": "item-196",
+                    "status": "In Progress",
+                    "labels": ["Done"],
+                    "content": {
+                        "title": "secondary harness tokens",
+                        "number": 196,
+                        "closed": True,
+                    },
+                },
+            ]
+        }
+
+        class Recorder(GitHubProjectClient):
+            def __init__(self):
+                super().__init__(owner="o", project_number=17)
+                self.writes = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(items)
+
+            def edit_status(self, item_id, status_name):
+                self.writes.append((item_id, status_name))
+                return True
+
+        client = Recorder()
+        reconcile_unassigned_statuses(client)
+        assert client.writes == [("item-96", "Done"), ("item-196", "Done")]
+
+    def test_reconcile_strips_stale_terminal_label_on_open_items(self):
+        """An open item carrying Done must lose that label and not stay Done on the board."""
+        from project_automation import reconcile_unassigned_statuses
+
+        items = {
+            "items": [
+                {
+                    "id": "item-open",
+                    "status": "Done",
+                    "labels": ["Request", "Done"],
+                    "content": {
+                        "title": "still open",
+                        "number": 50,
+                        "closed": False,
+                        "url": "https://github.com/o/r/issues/50",
+                    },
+                },
+                {
+                    "id": "item-active",
+                    "status": "In Progress",
+                    "labels": ["Request", "Done", "In Progress"],
+                    "content": {
+                        "title": "actively working",
+                        "number": 51,
+                        "closed": False,
+                        "url": "https://github.com/o/r/issues/51",
+                    },
+                },
+            ]
+        }
+
+        class Recorder(GitHubProjectClient):
+            def __init__(self):
+                super().__init__(owner="o", project_number=17)
+                self.writes = []
+                self.status_labels = []
+
+            def run_gh(self, args):
+                import json as _json
+
+                return _json.dumps(items)
+
+            def edit_status(self, item_id, status_name):
+                self.writes.append((item_id, status_name))
+                return True
+
+            def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
+                self.status_labels.append((repo, issue_number, status_name))
+
+        client = Recorder()
+        reconcile_unassigned_statuses(client)
+        assert ("item-open", "ToDo") in client.writes
+        assert ("o/r", 50, "ToDo") in client.status_labels
+        assert ("o/r", 51, "In Progress") in client.status_labels
+        assert ("item-active", "Done") not in client.writes
+
+    def test_push_to_darkfactory_branch_closes_issues(self):
+        """Pushes to darkfactory branch are recognized when default_branch is darkfactory."""
+        client = FakeProjectClient()
+        payload = {
+            "ref": "refs/heads/darkfactory",
+            "repository": {"full_name": REPO, "default_branch": "darkfactory"},
+            "commits": [{"message": "fix(ci): fix darkfactory automation\n\nCloses #68"}],
+        }
+        process_event("push", payload, client=client)
+        assert client.status_labels == [(REPO, 68, "Done")]
+        assert client.closed_issues == [(REPO, 68)]
+
+    def test_enforce_board_taxonomy_mutation_payload(self):
+        """Enforcing board taxonomy submits canonical 7 options without id fields."""
+        executed = []
+
+        class MockGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                executed.append((query, variables))
+                return {
+                    "updateProjectV2Field": {
+                        "projectV2Field": {
+                            "id": "F_123",
+                            "name": "Status",
+                            "options": [
+                                {"id": f"opt-{opt['name']}", "name": opt["name"]}
+                                for opt in variables["input"]["singleSelectOptions"]
+                            ],
+                        }
+                    }
+                }
+
+        client = MockGraphQL(token="test-token")
+        existing_options = [{"id": "opt-old-1", "name": "Backlog"}]
+        result = client.enforce_board_taxonomy("F_123", existing_options)
+
+        assert len(executed) == 1
+        query, variables = executed[0]
+        assert "mutation EnforceTaxonomy" in query
+        options = variables["input"]["singleSelectOptions"]
+        assert len(options) == 7
+        # Verify no option has an 'id' attribute in the input
+        for opt in options:
+            assert "id" not in opt
+            assert "name" in opt
+            assert "color" in opt
+            assert "description" in opt
+            assert opt["name"] in project_automation.STATUS_NAMES
+
+        # Verify returned mapping contains all 7 canonical options
+        for name in project_automation.STATUS_NAMES:
+            assert name in result
+            assert result[name] == f"opt-{name}"
+
+    def test_rest_client_set_status_label_preserves_domain_labels(self):
+        """REST client exclusively replaces status labels while keeping domain labels intact."""
+        calls = []
+
+        rest = project_automation.GitHubRestClient(token="test-token")
+
+        def mock_request(method, path, data=None):
+            calls.append((method, path, data))
+            if method == "POST":
+                # GitHub answers "add labels" with every label now on the issue.
+                return [{"name": "bug"}, {"name": "area:governance"}, {"name": "In Progress"}] + [
+                    {"name": n} for n in data["labels"]
+                ]
+            return None
+
+        rest.request = mock_request
+        rest.set_status_label("o/r", 42, "Done")
+
+        assert calls[0] == ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]})
+        assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in calls
+        assert not [
+            c for c in calls if c[0] == "PUT"
+        ], "replacing the label set races other writers"
+        assert not [c for c in calls if c[0] == "DELETE" and "Done" in c[1]]
+
+    def test_status_label_never_removes_labels_added_after_the_event(self):
+        """#227: type/area labels added 9s earlier were wiped by a PUT built from the event payload."""
+        calls = []
+        rest = project_automation.GitHubRestClient(token="test-token")
+
+        def mock_request(method, path, data=None):
+            calls.append((method, path, data))
+            if method == "POST":
+                return [{"name": "Request"}, {"name": "ci"}, {"name": "area:ci"}, {"name": "ToDo"}]
+            return None
+
+        rest.request = mock_request
+        stale_payload_labels = [{"name": "Request"}]
+        rest.set_status_label("o/r", 227, "ToDo", stale_payload_labels)
+
+        removed = [c[1] for c in calls if c[0] == "DELETE"]
+        assert removed == [], f"only other status labels may be removed, removed {removed}"
+        assert not [c for c in calls if c[0] == "PUT"]
+
+    def test_quota_reconciliation_threshold_blocks_bulk_scan(self, monkeypatch):
+        """When GraphQL quota is below 1000, bulk reconciliation is deferred to preserve event quota."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 850)
+        assert project_automation.can_reconcile() is False
+        assert project_automation.can_mutate() is True
+
+        # When quota is above threshold, reconciliation is permitted
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 1500)
+        assert project_automation.can_reconcile() is True
+
+    def test_quota_minimum_blocks_all_mutations(self, monkeypatch):
+        """When GraphQL quota drops to 50 or below, all mutations are stopped."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 45)
+        assert project_automation.can_mutate() is False
+        assert project_automation.can_reconcile() is False
+
+    def test_track_with_content_id_uses_fast_path_without_loading_items(self, monkeypatch):
+        """When content_id is provided, track() bypasses expensive board item fetching."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-1")
+        client._status_field_id = "f-1"
+
+        load_called = []
+        monkeypatch.setattr(client, "load_existing_items", lambda: load_called.append(True) or {})
+
+        added = []
+        monkeypatch.setattr(
+            client.graphql, "add_item", lambda pid, cid: added.append((pid, cid)) or "item-99"
+        )
+
+        edited = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: edited.append((iid, oid)) or True,
+        )
+
+        client.track(
+            "https://github.com/o/r/issues/10", "ToDo", content_id="NODE_456", fast_path=True
+        )
+
+        # Must NOT have fetched existing board items
+        assert load_called == []
+        # Must have added directly with content_id and updated status
+        assert added == [("PVT_123", "NODE_456")]
+        assert edited == [("item-99", "opt-1")]
+
+    def test_historical_reconciliation_preloads_and_diffs_in_memory_without_redundant_mutations(
+        self, monkeypatch
+    ):
+        """In historical reconciliation (fast_path=False), board cache is preloaded and matching items require 0 mutations."""
+        client = project_automation.GitHubProjectClient(project_number=10)
+        client._project_id = "PVT_123"
+        # Preloaded cache with 1 matching item and 1 outdated item
+        client._items_cache = {
+            "https://github.com/o/r/issues/1": ("item-1", "Done"),
+            "https://github.com/o/r/issues/2": ("item-2", "Backlog"),
+        }
+        monkeypatch.setattr(client, "status_option_id", lambda s: "opt-done")
+        client._status_field_id = "f-1"
+
+        mutations = []
+        monkeypatch.setattr(
+            client.graphql,
+            "update_item_status",
+            lambda pid, iid, fid, oid: mutations.append((iid, oid)) or True,
+        )
+        monkeypatch.setattr(
+            client.graphql,
+            "add_item",
+            lambda pid, cid: pytest.fail("add_item should not be called for existing items"),
+        )
+
+        # 1. Matching historical item -> 0 mutations
+        client.track(
+            "https://github.com/o/r/issues/1", "Done", content_id="NODE_1", fast_path=False
+        )
+        assert mutations == []
+
+        # 2. Outdated historical item -> exactly 1 status edit
+        client.track(
+            "https://github.com/o/r/issues/2", "Done", content_id="NODE_2", fast_path=False
+        )
+        assert mutations == [("item-2", "opt-done")]
+
+
+class TestScopedBoardRouting:
+    """Cross-repository reconciliation must never leak another repo's items onto this repo's
+    scoped board - only the Global board aggregates other repositories' items."""
+
+    def test_schedule_routes_other_repos_through_global_board_only(self, monkeypatch):
+        """Exact routing table: the current repo gets scoped+Global, every other repo gets
+        Global only."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/current")
+
+        # resolve_boards() falls back to subprocess `gh` when the GraphQL client returns nothing;
+        # force that path deterministically instead of depending on real network reachability.
+        monkeypatch.setattr(
+            project_automation.GitHubGraphQLClient, "resolve_projects", lambda self, owner: {}
+        )
+        monkeypatch.setattr(
+            project_automation.subprocess,
+            "run",
+            lambda *a, **k: type(
+                "R",
+                (),
+                {
+                    "stdout": (
+                        '{"projects": ['
+                        '{"title": "Scoped", "number": 11}, '
+                        '{"title": "Global", "number": 17}'
+                        "]}"
+                    )
+                },
+            )(),
+        )
+
+        class Loaded:
+            project_title = "Scoped"
+            global_board_title = "Global"
+            data = {"app": {"installed_on": ["o/current", "o/other"]}}
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        reconciled = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile_membership",
+            lambda client, repo, state=None: reconciled.append(
+                (repo, [member.project_number for member in client.clients])
+            )
+            or 0,
+        )
+        monkeypatch.setattr(
+            project_automation, "reconcile_unassigned_statuses", lambda client: None
+        )
+        corrected = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile",
+            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
+                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
+            )
+            or {},
+        )
+
+        process_event("schedule", {})
+
+        assert reconciled == [("o/current", [11, 17]), ("o/other", [17])]
+
+    def test_global_client_is_built_once_for_several_other_repos(self, monkeypatch):
+        """The Global-only client is resolved lazily and reused, not rebuilt per repo."""
+        monkeypatch.setattr(project_automation, "GRAPHQL_REMAINING", 5000)
+        monkeypatch.setenv("GITHUB_REPOSITORY", "o/current")
+
+        resolve_calls = []
+        real_resolve_boards = project_automation.resolve_boards
+
+        def counting_resolve_boards(owner=project_automation.PROJECT_OWNER, **kwargs):
+            resolve_calls.append(kwargs)
+            if kwargs.get("include_scoped") is False:
+                return [17]
+            return [11, 17]
+
+        monkeypatch.setattr(project_automation, "resolve_boards", counting_resolve_boards)
+
+        class Loaded:
+            data = {"app": {"installed_on": ["o/current", "o/other-a", "o/other-b"]}}
+
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "manifest",
+            type("M", (), {"load": staticmethod(lambda root: Loaded())}),
+        )
+
+        reconciled = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile_membership",
+            lambda client, repo, state=None: reconciled.append(
+                (repo, [member.project_number for member in client.clients])
+            )
+            or 0,
+        )
+        monkeypatch.setattr(
+            project_automation, "reconcile_unassigned_statuses", lambda client: None
+        )
+        corrected = []
+        monkeypatch.setattr(
+            project_automation,
+            "reconcile",
+            lambda client=None, repo_slugs=None, state="all", **kwargs: corrected.append(
+                (tuple(repo_slugs or ()), [member.project_number for member in client.clients])
+            )
+            or {},
+        )
+
+        process_event("schedule", {})
+
+        assert reconciled == [
+            ("o/current", [11, 17]),
+            ("o/other-a", [17]),
+            ("o/other-b", [17]),
+        ]
+        # Exactly one scoped-out resolution for the Global-only client, reused for both other repos.
+        assert [c for c in resolve_calls if c.get("include_scoped") is False] == [
+            {"include_scoped": False}
+        ]
+
+
+class TestAddItemRace:
+    """Adding an item another run already added returns that item instead of failing."""
+
+    def test_already_exists_is_resolved_to_the_existing_item(self):
+        calls = []
+
+        class RacingGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                calls.append(query)
+                if "addProjectV2ItemById" in query:
+                    raise RuntimeError("GraphQL error: Content already exists in this project")
+                return {
+                    "node": {
+                        "projectItems": {
+                            "nodes": [
+                                {"id": "PVTI_other", "project": {"id": "PVT_other"}},
+                                {"id": "PVTI_mine", "project": {"id": "PVT_1"}},
+                            ]
+                        }
+                    }
+                }
+
+        client = RacingGraphQL(token="test-token")
+        assert client.add_item("PVT_1", "I_1") == "PVTI_mine"
+        assert len(calls) == 2
+
+    def test_other_add_errors_still_fail(self, monkeypatch):
+        failures = []
+        monkeypatch.setattr(project_automation, "_fail", lambda message: failures.append(message))
+
+        class BrokenGraphQL(project_automation.GitHubGraphQLClient):
+            def execute(
+                self, query: str, variables: Optional[Dict[str, Any]] = None
+            ) -> Dict[str, Any]:
+                raise RuntimeError("GraphQL error: Resource not accessible by integration")
+
+        assert BrokenGraphQL(token="test-token").add_item("PVT_1", "I_1") is None
+        assert failures and "Resource not accessible" in failures[0]
+
+
+class TestExpectedStatusTable:
+    """Table-driven unit tests for pure expected_status across all canonical states."""
+
+    @pytest.mark.parametrize(
+        "item,kwargs,expected",
+        [
+            # Pull requests:
+            # - merged PR -> Done
+            ({"is_pr": True, "state": "closed", "merged": True}, {}, "Done"),
+            ({"is_pr": True, "state": "merged", "merged": True}, {}, "Done"),
+            (
+                {
+                    "type": "PullRequest",
+                    "state": "closed",
+                    "merged_at": "2026-09-14T00:00:00Z",
+                },
+                {},
+                "Done",
+            ),
+            # - PR closed unmerged -> Dropped
+            ({"is_pr": True, "state": "closed", "merged": False}, {}, "Dropped"),
+            # - PR closed unmerged with duplicate/superseded -> Superseded
+            (
+                {"is_pr": True, "state": "closed", "merged": False, "labels": ["Superseded"]},
+                {},
+                "Superseded",
+            ),
+            (
+                {"is_pr": True, "state": "closed", "merged": False, "labels": ["duplicate"]},
+                {},
+                "Superseded",
+            ),
+            # - PR open ready / draft -> In Progress
+            ({"is_pr": True, "state": "open", "draft": False}, {}, "In Progress"),
+            ({"is_pr": True, "state": "open", "draft": True}, {}, "In Progress"),
+            ({"is_pr": True, "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            # - PR open but blocked by label or checkpoint
+            ({"is_pr": True, "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
+            ({"is_pr": True, "state": "open"}, {"checkpoint": True}, "Blocked"),
+            # Issues:
+            # - issue closed completed -> Done
+            ({"kind": "Issue", "state": "closed", "state_reason": "completed"}, {}, "Done"),
+            ({"kind": "Issue", "state": "closed", "labels": ["Done"]}, {}, "Done"),
+            # - issue closed with bound PR merged -> Done
+            ({"kind": "Issue", "state": "closed"}, {"bound_prs": [{"merged": True}]}, "Done"),
+            # - issue closed not planned -> Dropped
+            ({"kind": "Issue", "state": "closed", "state_reason": "not_planned"}, {}, "Dropped"),
+            ({"kind": "Issue", "state": "closed", "labels": ["Dropped"]}, {}, "Dropped"),
+            # - issue closed as duplicate or superseded -> Superseded
+            ({"kind": "Issue", "state": "closed", "state_reason": "duplicate"}, {}, "Superseded"),
+            (
+                {"kind": "Issue", "state": "closed", "state_reason": "superseded"},
+                {},
+                "Superseded",
+            ),
+            ({"kind": "Issue", "state": "closed", "labels": ["Superseded"]}, {}, "Superseded"),
+            # - closed issue without implementation / no reason -> Dropped
+            ({"kind": "Issue", "state": "closed"}, {}, "Dropped"),
+            # - closed issue with stale In Progress label -> Dropped
+            ({"kind": "Issue", "state": "closed", "labels": ["In Progress"]}, {}, "Dropped"),
+            # - open issue with quota checkpoint or Blocked label -> Blocked
+            ({"kind": "Issue", "state": "open", "labels": ["Blocked"]}, {}, "Blocked"),
+            ({"kind": "Issue", "state": "open"}, {"checkpoint": True}, "Blocked"),
+            # - open issue with bound PR ready / In Progress label -> In Progress
+            ({"kind": "Issue", "state": "open", "labels": ["In Progress"]}, {}, "In Progress"),
+            (
+                {"kind": "Issue", "state": "open"},
+                {"bound_prs": [{"state": "open", "draft": False}]},
+                "In Progress",
+            ),
+            # - open issue with Backlog label -> Backlog
+            ({"kind": "Issue", "state": "open", "labels": ["Backlog"]}, {}, "Backlog"),
+            # - open issue with ToDo label or untriaged -> ToDo
+            ({"kind": "Issue", "state": "open", "labels": ["ToDo"]}, {}, "ToDo"),
+            ({"kind": "Issue", "state": "open", "labels": []}, {}, "ToDo"),
+            # - open issue with stale terminal Done label -> ToDo
+            ({"kind": "Issue", "state": "open", "labels": ["Done"]}, {}, "ToDo"),
+        ],
+    )
+    def test_expected_status_cases(self, item, kwargs, expected):
+        assert project_automation.expected_status(item, **kwargs) == expected
+
+
+def test_event_handler_merged_pr_closes_bound_issue():
+    """Event handler: merged PR closes bound issues and marks both Done."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 99,
+            "html_url": f"https://github.com/{REPO}/pull/99",
+            "body": "Resolves #42",
+            "merged": True,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert (REPO, 99, "Done") in client.status_labels
+    assert (REPO, 42, "Done") in client.status_labels
+    assert (REPO, 42) in client.closed_issues
+    assert ("item-1", "Done") in client.edited_statuses
+
+
+def test_event_handler_merged_partial_pr_does_not_close_advanced_request():
+    """A merged partial PR stays terminal itself without completing an advanced Request."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 100,
+            "html_url": f"https://github.com/{REPO}/pull/100",
+            "body": "Advances #42",
+            "merged": True,
+            "labels": [],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert (REPO, 100, "Done") in client.status_labels
+    assert all(issue_number != 42 for _, issue_number, _ in client.status_labels)
+    assert (REPO, 42) not in client.closed_issues
+
+
+def test_event_handler_issue_closed_not_planned():
+    """Event handler: issue closed as not_planned is Dropped on board and label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 77,
+            "html_url": f"https://github.com/{REPO}/issues/77",
+            "state": "closed",
+            "state_reason": "not_planned",
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Dropped")]
+    assert client.status_labels == [(REPO, 77, "Dropped")]
+
+
+def test_event_handler_closed_unmerged_pr_is_dropped():
+    """Event handler: closed unmerged PR is Dropped with Dropped label."""
+    client = FakeProjectClient()
+    payload = {
+        "action": "closed",
+        "repository": {"full_name": REPO},
+        "pull_request": {
+            "number": 88,
+            "html_url": f"https://github.com/{REPO}/pull/88",
+            "body": "Some abandoned work",
+            "merged": False,
+            "labels": [{"name": "In Progress"}],
+        },
+    }
+    process_event("pull_request", payload, client=client)
+    assert ("item-1", "Dropped") in client.edited_statuses
+    assert (REPO, 88, "Dropped") in client.status_labels
+
+
+def test_reconciliation_fixes_all_audited_faults():
+    """Reconciliation repairs missing label, status mismatch, closed-not-terminal, and missing member."""
+    repo_issues = [
+        {
+            "number": 101,
+            "url": f"https://github.com/{REPO}/issues/101",
+            "labels": [{"name": "bug"}],
+            "state": "open",
+            "title": "no status label",
+        },
+        {
+            "number": 102,
+            "url": f"https://github.com/{REPO}/issues/102",
+            "labels": [{"name": "In Progress"}],
+            "state": "closed",
+            "stateReason": "COMPLETED",
+            "title": "label mismatch and closed not terminal",
+        },
+        {
+            "number": 103,
+            "url": f"https://github.com/{REPO}/issues/103",
+            "labels": [{"name": "ToDo"}],
+            "state": "open",
+            "title": "open terminal on board",
+        },
+        {
+            "number": 104,
+            "url": f"https://github.com/{REPO}/issues/104",
+            "labels": [{"name": "Backlog"}],
+            "state": "open",
+            "title": "missing member",
+        },
+        {
+            "number": 105,
+            "url": f"https://github.com/{REPO}/issues/105",
+            "labels": [{"name": "ToDo"}, {"name": "In Progress"}],
+            "state": "open",
+            "title": "multiple status labels",
+        },
+    ]
+    repo_prs = []
+
+    board_items_map = {
+        f"https://github.com/{REPO}/issues/101": ("item-101", "ToDo"),
+        f"https://github.com/{REPO}/issues/102": ("item-102", "ToDo"),
+        f"https://github.com/{REPO}/issues/103": ("item-103", "Done"),
+        f"https://github.com/{REPO}/issues/105": ("item-105", "In Progress"),
+    }
+
+    class AuditedFakeClient(FakeProjectClient):
+        def __init__(self):
+            super().__init__()
+            self.project_number = 16
+            self.owner = "marius-patrik"
+            self.board_items = dict(board_items_map)
+
+        def load_existing_items(self):
+            return dict(self.board_items)
+
+        def run_gh(self, args):
+            import json as _json
+
+            if args[0] == "issue":
+                return _json.dumps(repo_issues)
+            elif args[0] == "pr":
+                return _json.dumps(repo_prs)
+            return "[]"
+
+        def add_item(self, url, content_id=None):
+            item_id = f"item-{len(self.board_items) + 100}"
+            self.board_items[url] = (item_id, None)
+            self.added_items.append((url, item_id))
+            return item_id
+
+        def edit_status(self, item_id, status_name):
+            for u, (iid, st) in list(self.board_items.items()):
+                if iid == item_id:
+                    self.board_items[u] = (iid, status_name)
+            self.edited_statuses.append((item_id, status_name))
+            return True
+
+        def set_status_label(self, repo, issue_number, status_name, existing_labels=None):
+            self.status_labels.append((repo, issue_number, status_name))
+            for iss in repo_issues:
+                if iss["number"] == issue_number:
+                    filtered = [
+                        l
+                        for l in iss["labels"]
+                        if (l.get("name") if isinstance(l, dict) else str(l))
+                        not in project_automation.STATUS_LABELS
+                    ]
+                    filtered.append({"name": status_name})
+                    iss["labels"] = filtered
+
+    client = AuditedFakeClient()
+    result = project_automation.reconcile(
+        client=client,
+        owner="marius-patrik",
+        repo_slugs=[REPO],
+        dry_run=False,
+    )
+    corrections = result["corrections"]
+    assert corrections["missing_from_board"] == 1
+    assert corrections["closed_not_terminal"] == 1
+    assert corrections["open_terminal"] == 1
+    assert corrections["no_status_label"] == 1
+    assert corrections["label_mismatch"] == 1
+    assert corrections["multiple_status_labels"] == 1
+
+    for iss in repo_issues:
+        url = iss["url"]
+        assert url in client.board_items
+        _, current_status = client.board_items[url]
+        exp = project_automation.expected_status(iss)
+        assert current_status == exp
+        status_labels = {
+            l["name"]
+            for l in iss["labels"]
+            if (l.get("name") if isinstance(l, dict) else str(l))
+            in project_automation.STATUS_LABELS
+        }
+        assert status_labels == {exp}
+
+    second_result = project_automation.reconcile(
+        client=client,
+        owner="marius-patrik",
+        repo_slugs=[REPO],
+        dry_run=True,
+    )
+    for k, v in second_result["corrections"].items():
+        assert v == 0, f"Expected 0 for {k} on second run, got {v}"
+
+
+def test_label_writes_never_replace_non_status_labels():
+    """Assigning a status label preserves non-status labels such as area, kind, bug."""
+    requested = []
+
+    class FakeRest:
+        def request(self, method, path, json_data=None):
+            requested.append((method, path, json_data))
+            if method == "POST":
+                return [
+                    {"name": "bug"},
+                    {"name": "area:ci"},
+                    {"name": "In Progress"},
+                    {"name": "Done"},
+                ]
+            return {}
+
+    rest = FakeRest()
+    project_automation.GitHubRestClient.set_status_label(
+        rest,
+        "o/r",
+        42,
+        "Done",
+    )
+    assert ("POST", "/repos/o/r/issues/42/labels", {"labels": ["Done"]}) in requested
+    assert ("DELETE", "/repos/o/r/issues/42/labels/In%20Progress", None) in requested
+    assert not any(p.endswith("bug") or p.endswith("area%3Aci") for _, p, _ in requested)

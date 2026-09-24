@@ -1,0 +1,51 @@
+name: Verify Bound Issue
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
+
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+
+jobs:
+  verify-bound-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR description binds a tracking issue
+        run: |
+          python3 -c '
+          import re, sys, os
+
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          if event_name != "pull_request":
+              print(f"Skipping check for non-pull_request event: {event_name}")
+              sys.exit(0)
+
+          body = os.environ.get("PR_BODY", "")
+          pattern = r"(?i)\b(?:advance|advances|advanced|close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+(?:#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)\b"
+
+          matches = re.findall(pattern, body)
+          if not matches:
+              print("❌ ERROR: Every pull request must explicitly bind a tracking issue in the description.", file=sys.stderr)
+              print("   Partial delivery: Advances #123", file=sys.stderr)
+              print("   Terminal delivery: Closes #123, Fixes #123, Resolves #123", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"✅ Bound issue syntax verified: {matches}")
+          '
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}

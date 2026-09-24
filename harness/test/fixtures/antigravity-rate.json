@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 429,
+    "message": "Too many requests; rate limit exceeded",
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [{ "retryDelay": "2.5s" }]
+  }
+}

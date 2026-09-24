@@ -1,0 +1,748 @@
+"""Harness registry — the agent pipeline's adapter layer over coding-agent CLIs.
+
+The pipeline runs ``df``, DarkFactory's own Bun harness, as its only agent harness: every agent
+call goes through ``df run``, which owns model choice and in-flight failover across its own
+chain. The older external CLI entries below are kept for now — they are deleted with the Python
+pipeline later — but none of them is in the default chain, none is installed into the agent
+image, and ``agent.yml`` no longer forwards ``AGENT_HARNESS_CHAIN``/``AGENT_HARNESS_CONFIG``,
+so the removed CLIs cannot be re-enabled in DarkFactory's own workflows.
+
+A harness is described declaratively — a binary, how to turn a prompt into an argv, and a model
+fallback chain — so adding one is a data change and swapping one is a configuration change.
+
+Invocation shapes are the real, verified flags for each CLI, but CLIs move. Every field is
+overridable at runtime through ``AGENT_HARNESS_CONFIG`` (a JSON object keyed by harness name), so a
+flag rename never requires a code change or a container rebuild:
+
+.. code-block:: json
+
+    {
+      "claude": {"pools": ["claude-opus-5"], "extra_args": ["--add-dir", "/workspace"]},
+      "grok":   {"binary": "grok-cli"}
+    }
+
+Order comes from ``AGENT_HARNESS_CHAIN`` (comma-separated names, first wins). Harnesses whose binary
+is absent from ``PATH`` are skipped rather than failed, so one image can carry a subset.
+
+Environment:
+    AGENT_HARNESS_CHAIN: Ordered harness names. Default: every registered harness, in ``ORDER``.
+    AGENT_HARNESS_CONFIG: JSON overrides, keyed by harness name.
+    AGENT_MODEL_CHAIN: Global model override applied to whichever harness runs first.
+"""
+
+import json
+import os
+import shutil
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+#: Placeholder substituted with the prompt text when building argv.
+PROMPT = "{{PROMPT}}"
+
+#: Placeholder substituted with the model id. Templates omitting it run the harness default.
+MODEL = "{{MODEL}}"
+
+#: Placeholder substituted with the print-mode timeout (Go duration string, e.g. ``15m0s``).
+TIMEOUT = "{{TIMEOUT}}"
+
+#: Placeholder substituted with a file holding the prompt text. Harnesses taking ``--prompt-file``
+#: (``df``) receive the prompt by path rather than as an argv element, so long prompts never meet
+#: an argument-length limit. The runner writes the file and passes its path via ``prompt_file``.
+PROMPT_FILE = "{{PROMPT_FILE}}"
+
+#: Optional semantic task kind passed only to harnesses whose template declares it.
+#: When omitted, df keeps its existing TypeScript inference path.
+KIND = "{{KIND}}"
+
+
+@dataclass(frozen=True)
+class LoginFile:
+    """A CLI subscription login stored in a file under HOME."""
+
+    env: str
+    path: str
+    rotates: bool = True
+
+
+@dataclass(frozen=True)
+class Auth:
+    """How a harness obtains a usable credential.
+
+    Authentication was special-cased. One harness exchanged a Google refresh token in
+    ``agent_runner``, and every other harness was assumed to find something usable already sitting
+    in the environment. Adding a harness that refreshes therefore meant editing the runner, which
+    is the opposite of the registry being the place a harness is described.
+
+    Declaring it keeps the answer beside the harness that needs it.
+
+    Attributes:
+        kind: ``"static"`` when the environment already holds a usable credential, or
+            ``"oauth_refresh"`` when it holds a *refresh* token to be exchanged first.
+        env: Environment variable holding that credential.
+        accounts: How many accounts of this provider the pipeline can carry. Accounts are
+            numbered: the first uses the declared names, and the *n*-th appends ``_n`` to each of
+            them. Adding an account is therefore adding a secret. This is a ceiling, not a count -
+            a workflow cannot pass secrets that might exist, so it has to name a bounded set, and
+            the runner uses whichever of them are actually populated.
+        alternatives: Further variables that satisfy the same need, tried in order after ``env``.
+            Several providers accept either of two names - Kimi reads ``MOONSHOT_API_KEY`` or
+            ``KIMI_API_KEY`` - and expressing that was the only reason a harness could not be
+            described by a declaration.
+        token_url: Token endpoint, for ``oauth_refresh``.
+        client_id_env: Environment variable holding the OAuth client id, where one is required.
+        client_secret_env: Environment variable holding the client secret, likewise.
+        rotates: Whether the provider issues a new refresh token on each exchange, so the stored
+            one must be replaced. Declared rather than assumed: the existing implementation reads
+            only ``access_token`` from the response and passes the original refresh token straight
+            back, which is correct for a provider that does not rotate and silently strands the
+            credential for one that does.
+        note: Human-readable explanation, for logs and documentation.
+    """
+
+    kind: str = "static"
+    env: str = ""
+    accounts: int = 3
+    alternatives: Sequence[str] = ()
+    token_url: str = ""
+    client_id_env: str = ""
+    client_secret_env: str = ""
+    rotates: bool = False
+    note: str = ""
+    login_file: Optional[LoginFile] = None
+
+    @staticmethod
+    def _numbered(names: Sequence[str], account: int) -> Tuple[str, ...]:
+        """Renames a set of variables for one account.
+
+        The first account uses the declared names unchanged, so every repository configured before
+        accounts existed keeps working with the secrets it already holds.
+
+        Args:
+            names: Declared variable names.
+            account: 1-based account number.
+
+        Returns:
+            The names for that account.
+        """
+        if account <= 1:
+            return tuple(names)
+        return tuple(f"{name}_{account}" for name in names)
+
+    def env_names(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns every variable that can authenticate one account, in preference order.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            ``env`` followed by ``alternatives``, renamed for the account, empties dropped.
+        """
+        declared = tuple(name for name in (self.env, *self.alternatives) if name)
+        return self._numbered(declared, account)
+
+    def login_file_names(self, account: int = 1) -> Tuple[str, ...]:
+        return self._numbered((self.login_file.env,) if self.login_file else (), account)
+
+    def credential_names(self, account: int = 1) -> Tuple[str, ...]:
+        return self.env_names(account) + self.login_file_names(account)
+
+    def companion_names(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns the OAuth companions for one account.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            Client id and secret variable names, renamed for the account.
+        """
+        declared = tuple(name for name in (self.client_id_env, self.client_secret_env) if name)
+        return self._numbered(declared, account)
+
+    def secret_names(self) -> Tuple[str, ...]:
+        """Returns every variable a caller must be able to pass, for every account.
+
+        The client id and secret are companions rather than alternatives: neither authenticates on
+        its own, so neither belongs in :meth:`env_names`, but a workflow passing secrets by name
+        has to pass them or the exchange cannot be made. Keeping the two lists apart is what lets
+        :meth:`is_satisfied` stay correct while the secrets block stays complete.
+
+        Returns:
+            Credentials and companions, account by account, in order.
+        """
+        names: List[str] = []
+        for account in range(1, max(1, self.accounts) + 1):
+            names.extend(self.credential_names(account))
+            names.extend(self.companion_names(account))
+        return tuple(names)
+
+    def is_satisfied(self, account: int = 1) -> bool:
+        """Reports whether the environment holds what this method needs for one account.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            ``True`` when any declared variable is populated, or when nothing is declared and the
+            harness authenticates by other means.
+        """
+        names = self.credential_names(account)
+        return True if not names else any(os.environ.get(name) for name in names)
+
+
+@dataclass(frozen=True)
+class Harness:
+    """One coding-agent CLI the pipeline can drive.
+
+    Attributes:
+        name: Registry key, also the value used in ``AGENT_HARNESS_CHAIN``.
+        binary: Executable name looked up on ``PATH``.
+        template: argv template after the binary, using the ``PROMPT``/``MODEL``/``TIMEOUT``
+            placeholders.
+        pools: Models that draw on *separate quota pools*, tried in order. This is not a model
+            fallback chain and must not be used as one: dropping from a stronger model to a weaker
+            one on the same pool buys nothing, because the pool is what ran out. Antigravity is the
+            case that makes the distinction real - its Gemini and Claude models bill against two
+            different pools, so moving between them is a quota move exactly like moving to another
+            account. Claude's own opus and sonnet share one pool, so it declares one model.
+            A node's configured model replaces this list. Empty means "run the harness default".
+        env_keys: Overrides the credential variables derived from ``auth``. Left empty in the
+            registry - the declaration is the source - and kept as a field because
+            ``AGENT_HARNESS_CONFIG`` can set it, which is the point of the registry being
+            overridable without a rebuild.
+        auth: How the credential is obtained. Every harness declares one; ``None`` is reserved for
+            a harness defined entirely through ``AGENT_HARNESS_CONFIG``, which may authenticate by
+            means the registry has never heard of.
+        install: Shell that installs the binary into the agent image. Declared here so adding a
+            harness is one entry rather than an entry plus a Dockerfile edit that can disagree
+            with it.  Kept for non-Nix fallback; the Nix flake is the primary installer.
+        nix_attr: Attribute name in the Nix flake's ``packages`` output that installs this
+            harness.  Defaults to the harness name.  The test suite asserts that every harness
+            with a ``nix_attr`` has a corresponding flake package and vice versa, so the
+            declaration and the build cannot disagree.
+        extra_args: Appended verbatim to every invocation.
+        description: Human-readable note for logs and documentation.
+    """
+
+    name: str
+    binary: str
+    template: Sequence[str]
+    pools: Sequence[str] = ()
+    env_keys: Sequence[str] = ()
+    extra_args: Sequence[str] = ()
+    auth: Optional["Auth"] = None
+    install: str = ""
+    nix_attr: str = ""
+    description: str = ""
+    login_file: Optional[LoginFile] = None
+
+    def __post_init__(self) -> None:
+        """Propagates the login file to the auth declaration when defined here.
+
+        A harness describes how it authenticates through `auth`, but a login file is a property of
+        the CLI harness itself, so declaring it here is what keeps the answer beside the binary
+        that needs it.
+        """
+        if self.login_file and self.auth is None:
+            object.__setattr__(self, "auth", Auth(kind="static", login_file=self.login_file))
+        elif self.login_file and self.auth and not self.auth.login_file:
+            object.__setattr__(self, "auth", replace(self.auth, login_file=self.login_file))
+
+    def install_command(self) -> str:
+        """Returns the shell that installs this harness, or an empty string when it declares none.
+
+        Returns:
+            A shell command, or `""` for a harness the image does not install.
+        """
+        return self.install
+
+    def is_available(self) -> bool:
+        """Reports whether the harness binary is present on ``PATH``.
+
+        Returns:
+            ``True`` when the binary can be executed.
+        """
+        return shutil.which(self.binary) is not None
+
+    def credentials_for(self, account: int = 1) -> Tuple[str, ...]:
+        """Returns the environment variables that can authenticate one account.
+
+        The answer comes from the ``auth`` declaration, so a harness names its credentials once.
+        An explicit ``env_keys`` still wins, because a runtime override exists precisely to
+        contradict what is compiled in - and an override names one account, since a person writing
+        `AGENT_HARNESS_CONFIG` is describing the credential they hold.
+
+        Args:
+            account: 1-based account number.
+
+        Returns:
+            Credential variable names in preference order.
+        """
+        if self.env_keys:
+            return tuple(self.env_keys) if account <= 1 else ()
+        return self.auth.credential_names(account) if self.auth else ()
+
+    @property
+    def credentials(self) -> Tuple[str, ...]:
+        """Returns the first account's credential variables."""
+        return self.credentials_for(1)
+
+    def accounts(self) -> Tuple[int, ...]:
+        """Returns the accounts this harness actually holds a credential for.
+
+        Declared accounts are a ceiling; which of them exist is a question about the environment,
+        answered here rather than assumed, so a repository holding one key behaves exactly as it
+        did before accounts existed.
+
+        Returns:
+            1-based account numbers, in order, or ``(1,)`` for a harness naming no credentials at
+            all - which authenticates by other means and must not be skipped.
+        """
+        declared = max(1, self.auth.accounts if self.auth and not self.env_keys else 1)
+        present = [
+            account
+            for account in range(1, declared + 1)
+            if any(os.environ.get(name) for name in self.credentials_for(account))
+        ]
+        if present:
+            return tuple(present)
+        return () if self.credentials_for(1) else (1,)
+
+    def is_authenticated(self) -> bool:
+        """Reports whether the harness holds a credential for at least one account.
+
+        A harness naming no credentials is assumed to authenticate by other means (an OAuth file,
+        a keyring entry) and reports ``True``.
+
+        Returns:
+            ``True`` when the harness looks usable.
+        """
+        return bool(self.accounts())
+
+    def build_argv(
+        self,
+        prompt: str,
+        model: Optional[str],
+        timeout: str,
+        prompt_file: Optional[str] = None,
+        kind: Optional[str] = None,
+    ) -> List[str]:
+        """Renders the argv for one invocation.
+
+        Placeholder arguments are substituted; any argument still containing ``MODEL`` when no model
+        was supplied is dropped along with an immediately preceding flag, so a template can express
+        an optional model without a second template. A template carrying ``PROMPT_FILE`` receives
+        the prompt by path: the runner writes the prompt to a file and passes it here, falling back
+        to the prompt text itself when no file was written.
+
+        Args:
+            prompt: Prompt text.
+            model: Model id, or ``None`` to use the harness default.
+            timeout: Print-mode timeout as a Go duration string.
+            prompt_file: Path of the file holding the prompt, for ``PROMPT_FILE`` templates.
+            kind: Optional semantic task kind for templates carrying ``KIND``.
+
+        Returns:
+            Full argv including the binary.
+        """
+        argv: List[str] = [self.binary]
+        pending_flag: Optional[str] = None
+
+        for token in self.template:
+            if PROMPT_FILE in token:
+                token = token.replace(PROMPT_FILE, prompt_file or prompt)
+            if MODEL in token:
+                if model is None:
+                    pending_flag = None
+                    continue
+                token = token.replace(MODEL, model)
+            elif KIND in token:
+                if kind is None:
+                    pending_flag = None
+                    continue
+                token = token.replace(KIND, kind)
+            elif token.startswith("-"):
+                if pending_flag is not None:
+                    argv.append(pending_flag)
+                pending_flag = token
+                continue
+
+            if pending_flag is not None:
+                argv.append(pending_flag)
+                pending_flag = None
+            argv.append(token.replace(PROMPT, prompt).replace(TIMEOUT, timeout))
+
+        if pending_flag is not None:
+            argv.append(pending_flag)
+        argv.extend(self.extra_args)
+        return argv
+
+
+#: Built-in registry. Flags verified against each CLI's own ``--help``.
+REGISTRY: Dict[str, Harness] = {
+    "df": Harness(
+        name="df",
+        binary="df",
+        # The prompt travels by file so long prompts never meet an argument-length limit, and
+        # ``--json`` so the runner can parse the event stream into the final answer text.
+        template=[
+            "run",
+            "--json",
+            "--prompt-file",
+            PROMPT_FILE,
+            "--kind",
+            KIND,
+            "--timeout",
+            TIMEOUT,
+        ],
+        # No pools: df owns model choice and in-flight failover across its own chain, so there is
+        # nothing for the runner to fall back between. No auth declaration either: df reads its own
+        # accounts from DF_HOME, configured by the runner's setup step before dispatch.
+        pools=(),
+        auth=None,
+        description="DarkFactory's own agent harness (df run)",
+    ),
+    "antigravity": Harness(
+        name="antigravity",
+        install="curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir /usr/local/bin",
+        nix_attr="antigravity",
+        binary="agy",
+        template=[
+            "--print",
+            PROMPT,
+            "--model",
+            MODEL,
+            "--dangerously-skip-permissions",
+            "--print-timeout",
+            TIMEOUT,
+        ],
+        # Two pools, not two tiers: these bill separately, so exhausting one leaves the other.
+        pools=("gemini-3.8-flash-high", "claude-opus-4-6-thinking"),
+        auth=Auth(
+            kind="oauth_refresh",
+            env="ANTIGRAVITY_REFRESH_TOKEN",
+            token_url="https://oauth2.googleapis.com/token",
+            client_id_env="ANTIGRAVITY_CLIENT_ID",
+            client_secret_env="ANTIGRAVITY_CLIENT_SECRET",
+            # Google does not issue a new refresh token on a refresh_token grant, so the stored one
+            # stays valid. Stated rather than relied upon, because the code that assumed it also
+            # discarded the field it would have arrived in.
+            rotates=False,
+            note="Google OAuth; exchanged for a short-lived access token each run.",
+        ),
+        description="Google Antigravity CLI",
+    ),
+    "claude": Harness(
+        name="claude",
+        install="npm install -g @anthropic-ai/claude-code",
+        nix_attr="claude",
+        binary="claude",
+        template=[
+            "--print",
+            PROMPT,
+            "--model",
+            MODEL,
+            "--output-format",
+            "text",
+            "--dangerously-skip-permissions",
+        ],
+        # One pool. Dropping opus to sonnet does not find quota, it just answers worse.
+        pools=("opus",),
+        auth=Auth(
+            kind="static",
+            env="CLAUDE_CODE_OAUTH_TOKEN",
+            alternatives=("ANTHROPIC_API_KEY",),
+            # `claude setup-token` mints a long-lived token against a subscription, so there is
+            # nothing to exchange and nothing to rotate. An ANTHROPIC_API_KEY works too and bills
+            # per token instead.
+            note="Long-lived subscription token, or an API key.",
+        ),
+        description="Anthropic Claude Code",
+    ),
+    "gemini": Harness(
+        name="gemini",
+        install="npm install -g @google/gemini-cli",
+        binary="gemini",
+        template=["-p", PROMPT, "--model", MODEL, "--yolo"],
+        # Five pools, not five tiers: the free quota is separate per model and moves between them.
+        pools=(
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-3-flash-preview",
+        ),
+        auth=Auth(
+            kind="static",
+            env="GEMINI_API_KEY",
+            alternatives=("GOOGLE_API_KEY",),
+            note="Gemini API key, under either of the two names the CLI accepts.",
+        ),
+        description="Google Gemini CLI",
+    ),
+    "codex": Harness(
+        name="codex",
+        install="npm install -g @openai/codex",
+        binary="codex",
+        template=[
+            "exec",
+            PROMPT,
+            "--model",
+            MODEL,
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--skip-git-repo-check",
+        ],
+        pools=(),
+        auth=Auth(
+            kind="static",
+            env="OPENAI_API_KEY",
+            note="OpenAI API key or subscription login file.",
+        ),
+        login_file=LoginFile(env="CODEX_AUTH_JSON", path=".codex/auth.json"),
+        description="OpenAI Codex CLI",
+    ),
+    "kimi": Harness(
+        name="kimi",
+        install="npm install -g @moonshot-ai/kimi-cli",
+        binary="kimi",
+        template=["--prompt", PROMPT, "--model", MODEL, "--output-format", "text", "--yolo"],
+        pools=(),
+        auth=Auth(
+            kind="static",
+            env="MOONSHOT_API_KEY",
+            alternatives=("KIMI_API_KEY",),
+            note="Moonshot API key, under either of the two names the CLI accepts.",
+        ),
+        login_file=LoginFile(env="KIMI_AUTH_JSON", path=".kimi-code/credentials/kimi-code.json"),
+        description="Moonshot Kimi CLI",
+    ),
+    "grok": Harness(
+        name="grok",
+        install="curl -fsSL https://raw.githubusercontent.com/xai-org/grok-cli/main/install.sh | bash",
+        binary="grok",
+        template=["--single", PROMPT, "--model", MODEL, "--always-approve"],
+        pools=(),
+        auth=Auth(
+            kind="static",
+            env="XAI_API_KEY",
+            alternatives=("GROK_API_KEY",),
+            note="xAI API key, under either of the two names the CLI accepts.",
+        ),
+        login_file=LoginFile(env="GROK_AUTH_JSON", path=".grok/auth.json"),
+        description="xAI Grok Build",
+    ),
+    "cursor": Harness(
+        name="cursor",
+        install="curl -fsSL https://cursor.com/install | bash",
+        binary="cursor-agent",
+        template=["--print", PROMPT, "--model", MODEL, "--force"],
+        pools=(),
+        auth=Auth(
+            kind="static",
+            env="CURSOR_API_KEY",
+            note="Cursor API key.",
+        ),
+        description="Cursor CLI (cursor-agent)",
+    ),
+    "opencode": Harness(
+        name="opencode",
+        install="npm install -g opencode-ai",
+        binary="opencode",
+        template=["run", PROMPT, "--model", MODEL, "--auto"],
+        pools=(),
+        auth=Auth(
+            kind="static",
+            env="OPENCODE_API_KEY",
+            alternatives=("ANTHROPIC_API_KEY", "OPENAI_API_KEY"),
+            # opencode routes to whichever provider the model names, so any one of the
+            # three is enough and which one depends on the model, not on the harness.
+            note="Any provider key opencode can route with.",
+        ),
+        description="opencode (model given as provider/model)",
+    ),
+}
+
+#: Default order when ``AGENT_HARNESS_CHAIN`` is unset.
+#:
+#: The pipeline runs df as its only agent harness. The older external CLI entries stay registered
+#: but out of the default chain: they are not installed in the image, and ``agent.yml`` does not
+#: forward the chain overrides, so they cannot be re-enabled in DarkFactory's own workflows.
+ORDER: List[str] = [
+    "df",
+]
+
+
+def _overrides() -> Dict[str, Dict[str, Any]]:
+    """Parses ``AGENT_HARNESS_CONFIG``.
+
+    Returns:
+        Mapping of harness name to overridden fields; empty when unset or malformed.
+    """
+    raw = os.environ.get("AGENT_HARNESS_CONFIG", "").strip()
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except json.JSONDecodeError as exc:
+        print(f"AGENT_HARNESS_CONFIG is not valid JSON, ignoring: {exc}")
+        return {}
+
+
+def get_harness(name: str) -> Optional[Harness]:
+    """Returns a harness with runtime overrides applied.
+
+    Args:
+        name: Registry key.
+
+    Returns:
+        The harness, or ``None`` when the name is unknown and no override defines it.
+    """
+    override = _overrides().get(name, {})
+    base = REGISTRY.get(name)
+
+    if base is None:
+        required = {"binary", "template"}
+        if not required.issubset(override):
+            return None
+        base = Harness(
+            name=name,
+            binary=override["binary"],
+            template=tuple(override["template"]),
+            description=override.get("description", "user-defined harness"),
+        )
+
+    fields = {}
+    for key in ("binary", "description"):
+        if key in override:
+            fields[key] = override[key]
+    for key in ("template", "pools", "env_keys", "extra_args"):
+        if key in override:
+            fields[key] = tuple(override[key])
+    return replace(base, **fields) if fields else base
+
+
+def credential_env_names() -> List[str]:
+    """Returns every secret name the registry can use, in chain order, without repeats.
+
+    Three places used to spell this list out - the registry, ``agent.yml``'s ``workflow_call``
+    secrets, and every consumer's hand-written caller - with nothing keeping them equal. A workflow
+    that forgets a name does not fail; it silently shortens the fallback chain, which is the least
+    visible way for this to go wrong. Deriving the list is what makes the guard test possible.
+
+    Returns:
+        Credential and OAuth companion variable names, in the order harnesses are tried.
+    """
+    names: List[str] = []
+    for name in ORDER:
+        harness = REGISTRY.get(name)
+        if harness is None or harness.auth is None:
+            continue
+        for env_name in harness.auth.secret_names():
+            if env_name not in names:
+                names.append(env_name)
+    return names
+
+
+def configured_order() -> List[str]:
+    """Returns the harness order from the environment, falling back to :data:`ORDER`.
+
+    Returns:
+        Ordered harness names, including any defined only in ``AGENT_HARNESS_CONFIG``.
+    """
+    raw = os.environ.get("AGENT_HARNESS_CHAIN", "").strip()
+    if raw:
+        return [part.strip() for part in raw.split(",") if part.strip()]
+    return ORDER + [name for name in _overrides() if name not in ORDER]
+
+
+@dataclass(frozen=True)
+class Attempt:
+    """One invocation the runner may make: a harness, a model, and an account to pay for it.
+
+    Attributes:
+        harness: The harness to run.
+        model: Model id, or ``None`` to use the harness default.
+        account: 1-based account whose credential this attempt uses.
+    """
+
+    harness: Harness
+    model: Optional[str]
+    account: int = 1
+
+    @property
+    def label(self) -> str:
+        """Renders the attempt for logs, naming the account but never its credential."""
+        model = f"/{self.model}" if self.model else ""
+        account = f" (account {self.account})" if self.account > 1 else ""
+        return f"{self.harness.name}{model}{account}"
+
+
+def resolve_attempts(
+    model: Optional[str] = None,
+    require_available: bool = True,
+) -> List[Attempt]:
+    """Flattens the configured harnesses into an ordered list of attempts.
+
+    Every rung of this ladder is a *quota* move. The account is innermost, so an exhausted quota is
+    answered by the same harness and model on a different account before anything else is tried; an
+    exhausted account is not an exhausted harness, and falling through to another harness while an
+    unused account sits in the environment is the wrong move.
+
+    Pools come next, and only where a harness genuinely has more than one - Antigravity's Gemini
+    and Claude models bill separately. This is deliberately not a model fallback: answering an
+    exhausted quota with a weaker model on the same pool does not find capacity, it just answers
+    worse, so models are configured per node rather than degraded here.
+
+    Args:
+        model: The model to run, from the node's configuration. Replaces the pools of the first
+            available harness, so a caller can pin a model without knowing which harness will run.
+        require_available: Skip harnesses whose binary is absent from ``PATH``.
+
+    Returns:
+        Ordered attempts.
+    """
+    attempts: List[Attempt] = []
+    override_applied = False
+
+    for name in configured_order():
+        harness = get_harness(name)
+        if harness is None:
+            print(f"Unknown harness {name!r} in chain; skipping.")
+            continue
+        if require_available and not harness.is_available():
+            print(f"Harness {name!r} unavailable ({harness.binary} not on PATH); skipping.")
+            continue
+
+        accounts = harness.accounts()
+        if not accounts:
+            print(f"Harness {name!r} has no credentials in {list(harness.credentials)}; skipping.")
+            continue
+
+        pools: Sequence[Optional[str]]
+        if model and not override_applied:
+            pools = [model]
+            override_applied = True
+        else:
+            pools = list(harness.pools) or [None]
+
+        for pool in pools:
+            attempts.extend(Attempt(harness, pool, account) for account in accounts)
+
+    return attempts
+
+
+def describe_chain() -> str:
+    """Renders the resolved chain for logs and issue comments.
+
+    Returns:
+        A human-readable multi-line description, or a notice when nothing is usable.
+    """
+    attempts = resolve_attempts()
+    if not attempts:
+        return "No harness is available: no configured CLI is on PATH with credentials."
+    lines = []
+    for attempt in attempts:
+        model = f" model `{attempt.model}`" if attempt.model else ""
+        account = f" account {attempt.account}" if attempt.account > 1 else ""
+        lines.append(f"- `{attempt.harness.name}` ({attempt.harness.binary}){model}{account}")
+    return "\n".join(lines)

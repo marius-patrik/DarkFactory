@@ -1,0 +1,24 @@
+{
+  "name": "@darkfactory/core",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./repository-evidence": "./src/repository-evidence.ts",
+    "./result-capture": "./src/result-capture.ts",
+    "./recovery": "./src/recovery.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "bun test test"
+  },
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/protocol": "workspace:*",
+    "@earendil-works/pi-ai": "0.85.1",
+    "zod": "4.1.5"
+  }
+}

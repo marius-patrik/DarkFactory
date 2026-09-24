@@ -1,0 +1,15 @@
+node_modules/
+.bun-cache/
+.df-home-*/
+.debug-home/
+.task-temp/
+.task-bun-cache/
+.harness-test-*/
+.cli-test-*/
+.router-test-*/
+.verify-home-*/
+.fixture-home-*/
+.smoke-home-*/
+.smoke-*/
+dist/
+.harness-test-*/

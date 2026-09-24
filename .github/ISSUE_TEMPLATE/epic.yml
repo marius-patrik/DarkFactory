@@ -1,0 +1,52 @@
+name: "Epic"
+description: "A container issue tracking a whole area of work. Epics are never implemented directly."
+title: "Epic: "
+labels: ["epic", "Backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An epic holds scope, acceptance criteria for the whole area, and a checklist of child
+        `Request` issues. Per `.agents/rules/013-specification-and-work-tracking.md` (DF-RULE-013), epics are never implemented directly - only their
+        children are. The work ledger is GitHub parent/sub-issue relationships and project fields,
+        not a separate roadmap document.
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: "Scope"
+      description: "What this epic covers, and - just as importantly - what it does not."
+    validations:
+      required: true
+
+  - type: textarea
+    id: gate
+    attributes:
+      label: "Entry Gate"
+      description: >
+        What must be true before this epic may leave `Backlog`: decisions resolved (D1-D8 in
+        `PRD.md`), epics completed, spikes measured.
+      placeholder: "Blocked by D4 (sandbox isolation) and E1 (harness registry)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Acceptance Criteria"
+      description: "How we know the whole epic is done, not just any single child."
+      placeholder: |
+        - [ ] Adding a new brand preset requires zero code changes
+        - [ ] Performance budget from D7 is met and measured in CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: children
+    attributes:
+      label: "Child Requests"
+      description: "Checklist of child `Request` issues. Fill in as they are filed."
+      placeholder: |
+        - [ ] #0 Request: ...
+    validations:
+      required: false

@@ -1,0 +1,139 @@
+name: Auto Format
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+
+    steps:
+      - name: Mint an installation token for the App
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        # Checked out with the App's token so that the formatting commit triggers the checks.
+        # GitHub deliberately runs no workflow for a push made with GITHUB_TOKEN, so a formatting
+        # commit pushed that way advances the pull request's head to a commit **nothing ever
+        # checks** - and a protected branch then waits forever for contexts that will never report.
+        # Every consumer's installation pull request sat in exactly that state: green checks on the
+        # commit before, none at all on the head, and no way to tell from the pull request why.
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install formatter
+        run: |
+          python -m pip install --upgrade pip
+          pip install "black>=24.0.0"
+
+      - name: Format Python
+        # Only where there is Python to format; a paper repository has none.
+        if: hashFiles('**/*.py') != ''
+        run: black .
+
+      - name: Format Rust
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo fmt --all
+
+      - name: Format web sources
+        if: hashFiles('package.json') != ''
+        run: npm run --if-present format
+
+      - name: Setup Bun for harness
+        if: hashFiles('harness/biome.json') != ''
+        uses: oven-sh/setup-bun@v2
+
+      - name: Format harness
+        # Only files this branch changed against the default branch: the one-time full reformat lands as its own pull
+        # request (plans/repository-truth.md Q1), so formatting every file here would conflict with every open branch.
+        if: hashFiles('harness/biome.json') != ''
+        working-directory: harness
+        run: |
+          bun install --frozen-lockfile
+          git fetch --no-tags origin "${{ github.event.repository.default_branch }}"
+          bun x biome check --write --changed --since="origin/${{ github.event.repository.default_branch }}" --no-errors-on-unmatched .
+
+      - name: Commit and push formatting changes
+        run: |
+          # Tracked files only, and never submodules. `git add -A` staged the `.pipeline` gitlink
+          # whenever the checked-out submodule differed from the recorded pointer, so the formatter
+          # committed a change it had not made - and did it again on the next run, and the next,
+          # because the difference was still there. A formatter that never converges keeps moving
+          # the head of every pull request it touches.
+          git add -u -- . ':(exclude,attr:submodule)'
+          if git diff --cached --quiet; then
+            echo "No formatting changes needed. Codebase is clean."
+            exit 0
+          fi
+          echo "Formatting changes detected. Committing..."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Deliberately no `[skip ci]`. This commit becomes the head of the pull request, and a
+          # head that skipped CI can never satisfy a required check: the previous head's green runs
+          # do not carry over, so the pull request sits BLOCKED with every check reported against a
+          # commit that is no longer current, and nothing in the UI explains it. Both protected
+          # consumers were stuck exactly there.
+          git commit -m "style(ci): auto-format codebase"
+          if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
+            git push origin "${{ github.ref_name }}"
+          else
+            echo "Default branch; direct push skipped to comply with branch protection."
+          fi

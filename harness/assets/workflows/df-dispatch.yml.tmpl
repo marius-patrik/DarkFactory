@@ -1,0 +1,31 @@
+name: DarkFactory Dispatch
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  repository_dispatch:
+    types: [agent-dispatch]
+  workflow_dispatch:
+    inputs:
+      target-repo:
+        description: "Target repository to run against"
+        required: false
+        type: string
+        default: ""
+      event-name:
+        description: "Event name"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  dispatch:
+    uses: {{pipeline_repo}}/.github/workflows/agent.yml@{{pipeline_ref}}
+    with:
+      pipeline-ref: "{{pipeline_ref}}"
+      pipeline-repo: "{{pipeline_repo}}"
+    secrets: inherit

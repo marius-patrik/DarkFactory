@@ -1,0 +1,235 @@
+name: Autonomous Agent
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  repository_dispatch:
+    types: [agent-dispatch]
+  workflow_dispatch:
+    inputs:
+      target-repo:
+        description: "Target repository to run against"
+        required: false
+        type: string
+        default: ""
+      event-name:
+        description: "Event name"
+        required: false
+        type: string
+        default: ""
+  # Consumers call this rather than copying the runner. Secrets do not cross a workflow_call
+  # boundary on their own - a called workflow sees the caller's secrets only when they are passed -
+  # so every credential the agent can use is declared here and marked optional. A repository that
+  # has three of the twelve gets a shorter fallback chain, not a failure.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the runner and the container definition."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+      agent-enabled:
+        description: "Whether the agent should run. Mirrors the AGENT_ENABLED repository variable."
+        required: false
+        type: string
+        default: ""
+    secrets:
+    # Generated from the df container setup - `agent_runner.df_setup_secret_names()` - and asserted
+    # against it by a test. The pipeline runs df as its only agent harness, so only the secrets df's
+    # setup consumes are declared: API keys saved with `df account set` and subscription account records
+    # loaded with `df account load`. A workflow that omits one does not fail; df runs with a
+    # shorter chain. The harness chain itself is fixed to df: AGENT_HARNESS_CHAIN and
+    # AGENT_HARNESS_CONFIG are deliberately not forwarded, so the removed external CLIs cannot be
+    # re-enabled in DarkFactory's own workflows.
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+      GEMINI_API_KEY: {required: false}
+      GEMINI_API_KEY_2: {required: false}
+      GEMINI_API_KEY_3: {required: false}
+      OPENROUTER_API_KEY: {required: false}
+      OPENROUTER_API_KEY_2: {required: false}
+      GROQ_API_KEY: {required: false}
+      DF_ACCOUNT_OPENAI_CODEX: {required: false}
+      DF_ACCOUNT_GROK_SUB: {required: false}
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  repository-projects: write
+  actions: write
+
+jobs:
+  run-agent:
+    # The agent stays off until at least one harness has credentials. Set the repository variable
+    # AGENT_ENABLED to "true" once a harness secret is configured; until then every issue would
+    # otherwise start a container build that cannot authenticate. `secrets` is not available in a
+    # job-level `if`, which is why this gate is a variable and the runner re-checks at dispatch.
+    #
+    # Comments written by a bot (the agent's own Interpretation, plan and review comments, board
+    # automation) are skipped here rather than inside the container: the runner ignores them anyway,
+    # and reaching that check cost a container build and two OAuth refreshes per comment.
+    if: (vars.AGENT_ENABLED == 'true' || inputs.agent-enabled == 'true') && !endsWith(github.event.comment.user.login, '[bot]') && !contains(github.event.issue.labels.*.name, 'pipeline-failure')
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test
+      # is hoisted to the job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Mint an installation token for the App
+        # Repository work - reading an issue, commenting, opening a pull request - is what the App
+        # is installed for, and an installation has its own rate limit. Doing it with a person's
+        # token spends a quota shared with everything else that person runs, which is how the agent
+        # came to fail on `gh issue view` while a human was working in the same account.
+        #
+        # Projects v2 is the exception: GitHub scopes project permissions to organisations, so a
+        # user-owned board still needs GH_PROJECT_TOKEN. That is the only thing that does.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Delegate to Central DarkFactory
+        id: delegate
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          PIPELINE="${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}"
+          if [ "${{ github.repository }}" != "$PIPELINE" ]; then
+            echo "Delegating agent run from ${{ github.repository }} to central pipeline in $PIPELINE..."
+            gh api "repos/$PIPELINE/dispatches" \
+              -f event_type="agent-dispatch" \
+              -F client_payload[repository]="${{ github.repository }}" \
+              -F client_payload[event_name]="${{ github.event_name }}" \
+              -F client_payload[payload]=@$GITHUB_EVENT_PATH
+            echo "delegated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "delegated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve target environment
+        id: target-env
+        if: steps.delegate.outputs.delegated != 'true'
+        env:
+          INPUT_TARGET_REPO: ${{ inputs.target-repo }}
+          INPUT_EVENT_NAME: ${{ inputs.event-name }}
+        run: |
+          python3 - << 'PY'
+          import json, os
+
+          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
+              event = json.load(f)
+
+          payload = event.get("client_payload", {}) if isinstance(event, dict) else {}
+          target_repo = payload.get("repository") or os.environ.get("INPUT_TARGET_REPO") or os.environ.get("GITHUB_REPOSITORY") or ""
+          event_name = payload.get("event_name") or os.environ.get("INPUT_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or ""
+          owner = target_repo.partition("/")[0] if target_repo else ""
+
+          if event.get("action") == "agent-dispatch" or "client_payload" in event:
+              inner = payload.get("payload")
+              if inner:
+                  if isinstance(inner, str):
+                      try:
+                          inner = json.loads(inner)
+                      except Exception:
+                          pass
+                  with open("/tmp/event.json", "w", encoding="utf-8") as f:
+                      if isinstance(inner, (dict, list)):
+                          json.dump(inner, f)
+                      else:
+                          f.write(str(inner))
+                  event_path = "/tmp/event.json"
+              else:
+                  event_path = os.environ["GITHUB_EVENT_PATH"]
+          else:
+              event_path = os.environ["GITHUB_EVENT_PATH"]
+
+          is_external = "true" if target_repo != os.environ.get("GITHUB_REPOSITORY") else "false"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"repo={target_repo}\n")
+              f.write(f"owner={owner}\n")
+              f.write(f"event_name={event_name}\n")
+              f.write(f"event_path={event_path}\n")
+              f.write(f"is_external={is_external}\n")
+          PY
+
+      - name: Checkout repository
+        # Checked out with the App's token, so the branches the agent pushes are pushed by the App
+        # and the checks on them run. A push made with GITHUB_TOKEN triggers no workflow at all,
+        # which is why a person's token was reached for here in the first place.
+        if: steps.delegate.outputs.delegated != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.target-env.outputs.repo }}
+          token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Check out the pinned pipeline
+        if: steps.delegate.outputs.delegated != 'true' && (inputs.pipeline-ref != '' || steps.target-env.outputs.is_external == 'true')
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo || 'marius-patrik/DarkFactory' }}
+          ref: ${{ inputs.pipeline-ref || 'darkfactory' }}
+          path: .darkfactory-pipeline
+
+      - name: Build agent container
+        # The image is built from the pipeline's definition, so every consumer runs the same
+        # runner; the repository being worked on is still the caller's checkout, mounted below.
+        if: steps.delegate.outputs.delegated != 'true'
+        run: |
+          CONTEXT="."
+          [ -d .darkfactory-pipeline ] && CONTEXT=".darkfactory-pipeline"
+          docker build -t darkfactory-agent -f "$CONTEXT/docker/Dockerfile.agent" "$CONTEXT"
+
+      - name: Dispatch agent in container
+        if: steps.delegate.outputs.delegated != 'true'
+        # Values reach the container through the step environment and `-e NAME`, never through the
+        # script text: an expression is pasted into the shell before it runs, so a login file's JSON
+        # lost its quotes on the way in, and a `$(...)` inside any value would have been executed.
+        env:
+          AGENT_MODEL_CHAIN: ${{ vars.AGENT_MODEL_CHAIN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_API_KEY_2: ${{ secrets.OPENROUTER_API_KEY_2 }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DF_ACCOUNT_OPENAI_CODEX: ${{ secrets.DF_ACCOUNT_OPENAI_CODEX }}
+          DF_ACCOUNT_GROK_SUB: ${{ secrets.DF_ACCOUNT_GROK_SUB }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+        run: |
+          cp "${{ steps.target-env.outputs.event_path }}" "${{ github.workspace }}/event.json"
+          docker run --rm \
+            -e AGENT_MODEL_CHAIN \
+            -e GEMINI_API_KEY \
+            -e GEMINI_API_KEY_2 \
+            -e GEMINI_API_KEY_3 \
+            -e OPENROUTER_API_KEY \
+            -e OPENROUTER_API_KEY_2 \
+            -e GROQ_API_KEY \
+            -e DF_ACCOUNT_OPENAI_CODEX \
+            -e DF_ACCOUNT_GROK_SUB \
+            -e GH_TOKEN \
+            -e GH_PROJECT_TOKEN \
+            -e GITHUB_EVENT_PATH="/workspace/event.json" \
+            -e GITHUB_EVENT_NAME="${{ steps.target-env.outputs.event_name }}" \
+            -e GITHUB_REPOSITORY="${{ steps.target-env.outputs.repo }}" \
+            -e GITHUB_REPOSITORY_OWNER="${{ steps.target-env.outputs.owner }}" \
+            -e PROJECT_NUMBER \
+            -v "${{ github.workspace }}:/workspace" \
+            darkfactory-agent dispatch
+

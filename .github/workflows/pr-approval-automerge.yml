@@ -1,0 +1,101 @@
+name: PR Approval and Auto-Merge
+
+on:
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+  # Consumers call this rather than copying it, so the scripts it runs live in one place.
+  workflow_call:
+    inputs:
+      pipeline-ref:
+        description: "Commit SHA of the pipeline repository to run. Empty means this repository."
+        required: false
+        type: string
+        default: ""
+      pipeline-repo:
+        description: "Repository holding the shared scripts."
+        required: false
+        type: string
+        default: "marius-patrik/DarkFactory"
+    secrets:
+      DARKFACTORY_APP_PRIVATE_KEY: {required: false}
+      GH_PROJECT_TOKEN: {required: false}
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+  repository-projects: write
+
+jobs:
+  on-approval:
+    runs-on: ubuntu-latest
+    env:
+      # The secrets context cannot be read from a step-level `if`, so the test is hoisted to the
+      # job, where it can.
+      HAS_APP_KEY: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY != '' }}
+    steps:
+      - name: Mint an installation token for the App
+        # Issue and pull request work belongs to the App, which has its own rate limit. Rate limits
+        # are per *user*, shared across every token a person holds, so a busy session used to
+        # exhaust the pipeline's quota along with the person's. Only Projects v2 still needs a
+        # person's token, because GitHub scopes project permissions to organisations and these
+        # boards are user-owned.
+        id: app-token
+        if: env.HAS_APP_KEY == 'true'
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.DARKFACTORY_APP_ID || '4861004' }}
+          private-key: ${{ secrets.DARKFACTORY_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned pipeline
+        if: inputs.pipeline-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.pipeline-repo }}
+          ref: ${{ inputs.pipeline-ref }}
+          path: .darkfactory-pipeline
+
+      - name: Put the pipeline scripts on the path
+        run: |
+          if [ -d .darkfactory-pipeline/.github/scripts ]; then
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.darkfactory-pipeline/.github/scripts" >> "$GITHUB_ENV"
+          else
+            echo "PYTHONPATH=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+            echo "PIPELINE_SCRIPTS=$GITHUB_WORKSPACE/.github/scripts" >> "$GITHUB_ENV"
+          fi
+
+      - name: Handle Approval and Auto-Merge
+        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/handle_pr_approval.py"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          # The proxy approval must come from github-actions[bot], which is neither the App nor
+          # the maintainer. Whichever of the two opened the pull request is its author, and GitHub
+          # rejects an author approving their own.
+          BOT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || 1 }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # `pull_request_review` events carry no `issue` object, so `IS_PR` derived from it
+          # is empty there and native approvals never reached the merge path. Reviews are
+          # detected by event name instead; `PR_NUMBER` resolves from either payload.
+          IS_PR: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          REVIEW_STATE: ${{ github.event.review.state }}
+          # Who may approve (owner decision 9c): the Request author or an
+          # OWNER/MEMBER/COLLABORATOR, never a bot. Replaces the hardcoded allowlist.
+          APPROVER_ASSOCIATION: ${{ github.event.comment.author_association || github.event.review.author_association }}
+          APPROVER_TYPE: ${{ github.event.comment.user.type || github.event.review.user.type }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login || github.event.pull_request.user.login }}

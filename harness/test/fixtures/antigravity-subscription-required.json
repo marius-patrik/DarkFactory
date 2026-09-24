@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 403,
+    "message": "This method is unavailable for the current plan",
+    "status": "SUBSCRIPTION_REQUIRED"
+  }
+}
