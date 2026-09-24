@@ -33,11 +33,6 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
         "on": "push:\n    branches: [{branch}]\n  pull_request:\n  workflow_dispatch:",
         "permissions": "contents: read",
     },
-    "deploy-docs": {
-        "name": "Deploy Documentation",
-        "on": "push:\n    branches: [{branch}]\n  workflow_dispatch:",
-        "permissions": "contents: write\n  deployments: write",
-    },
     "release": {
         "name": "Release",
         "on": "push:\n    branches: [{branch}]\n  workflow_dispatch:",
@@ -106,11 +101,6 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
             "pull-requests: write\n  contents: write\n  issues: write\n"
             "  repository-projects: write"
         ),
-    },
-    "preview-docs": {
-        "name": "Preview Documentation",
-        "on": "pull_request:\n    types: [opened, synchronize, reopened, closed]",
-        "permissions": "contents: write\n  deployments: write\n  pull-requests: write",
     },
     "open-pr": {
         "name": "Open Pull Request",
@@ -189,8 +179,6 @@ def relevant_workflows(root: str = ".") -> List[str]:
         "auto-format",
         # The reporting half.
         "ci",
-        "deploy-docs",
-        "preview-docs",
         "release",
         "project-automation",
         "report-failure",
@@ -495,10 +483,10 @@ Set `AGENT_ENABLED` to `true` only once you want the runner working.
 
 ### 3. Documentation
 
-If this repository should publish a site, enable Pages on the `gh-pages` branch and allow the
-default branch to deploy to the `github-pages` environment. A deploy from a branch the environment
-does not permit fails **with no steps and no error text**, which is hard to read as a permissions
-problem.
+If this repository should publish a site, set GitHub Pages to the GitHub Actions source and allow the
+ default branch to deploy to the `github-pages` environment. A deploy from a branch the environment
+ does not permit fails **with no steps and no error text**, which is hard to read as a permissions
+ problem.
 {submodule_note}
 ### 4. Branch protection
 

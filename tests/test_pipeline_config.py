@@ -344,31 +344,16 @@ def test_gitignore_excludes_agent_checkpoint():
 
 
 def test_pages_source_matches_the_deploy_workflow():
-    """The manifest and the deploy workflow must agree, or the first deploy silently 404s.
-
-    This is not hypothetical. The first push to this repository built the documentation
-    successfully and then failed with `HttpError: Not Found` from `actions/deploy-pages`, because
-    Pages had never been enabled. Codifying the source is only half the fix; the other half is
-    that the codified source and the workflow that publishes to it cannot disagree.
-    """
+    """The manifest and the deploy workflow must agree on the Actions publishing path."""
     import manifest as manifest_module
 
     payload = manifest_module.load(REPO_ROOT).pages_payload()
     workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
 
-    if payload["build_type"] == "legacy":
-        branch = payload["source"]["branch"]
-        assert f"branch: {branch}" in workflow, (
-            f"the manifest publishes Pages from {branch!r}, but deploy-docs.yml does not "
-            "push to it"
-        )
-        assert "upload-pages-artifact" not in workflow, (
-            "the manifest declares a branch source, so the workflow must not also use the "
-            "Actions build type; Pages has exactly one source"
-        )
-    else:
-        assert "upload-pages-artifact" in workflow
-        assert "deploy-pages" in workflow
+    assert payload["build_type"] == "workflow"
+    assert "upload-pages-artifact" in workflow
+    assert "deploy-pages" in workflow
+    assert "gh-pages" not in workflow
 
 
 def test_pages_deploy_does_not_clobber_pull_request_previews():
@@ -534,9 +519,9 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 def test_the_deploy_workflow_uses_the_native_docs_compiler():
     """Deploy consumes docs.df through the shared DarkFactory compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "pipeline-ref" in content
-    assert "folder: site" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "upload-pages-artifact" in content
+    assert "deploy-pages" in content
 
 
 def test_the_deploy_workflow_has_no_second_paper_renderer():
@@ -547,14 +532,15 @@ def test_the_deploy_workflow_has_no_second_paper_renderer():
     assert "texlive-latex" not in content
 
 
-def test_the_deploy_workflow_is_callable():
-    """Consumers call the shared native documentation workflow."""
+def test_the_deploy_workflow_is_main_actions_release():
+    """The production documentation workflow is a direct main-branch deployment."""
     yaml = pytest.importorskip("yaml")
     with open(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"), encoding="utf-8") as handle:
         document = yaml.safe_load(handle)
     triggers = document[True] if True in document else document["on"]
-    assert "workflow_call" in triggers
-    assert "pipeline-ref" in triggers["workflow_call"]["inputs"]
+    assert "workflow_call" not in triggers
+    assert triggers["push"]["branches"] == ["main"]
+    assert "workflow_dispatch" in triggers
 
 
 def test_native_docs_owners_are_present():
@@ -613,7 +599,7 @@ def test_the_agent_image_is_built_from_the_pipeline():
 #:
 #: `install.yml` reaches into a consumer to write its callers, so a consumer calling it would be
 #: asking to be installed into itself. It is the one workflow that is deliberately not shared.
-NOT_CALLABLE = {"install.yml", "ci.yml", "branch-policy.yml"}
+NOT_CALLABLE = {"install.yml", "ci.yml", "branch-policy.yml", "deploy-docs.yml", "preview-docs.yml"}
 
 
 def test_every_shared_workflow_is_callable():
@@ -663,20 +649,22 @@ def test_open_pr_forwards_its_dispatch_inputs_to_callers():
     assert dispatch <= called, f"not forwardable to callers: {sorted(dispatch - called)}"
 
 
-def test_preview_deploys_and_tears_down_in_one_workflow():
-    """A preview left behind after merge accumulates forever, and the switcher then offers it."""
+def test_preview_validates_without_publishing():
+    """PR documentation validates locally; production Pages remains main-only."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert "target-folder: pr-" in content, "previews live under pr-<N>/ beside the site"
-    assert "closed" in content and "git rm" in content, "the preview must be removed on close"
-    assert "branch: gh-pages" in content, "preview and deploy must share one Pages source"
+    assert "Validate documentation projections" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "deploy-pages" not in content
+    assert "gh-pages" not in content
+    assert "target-folder: pr-" not in content
 
 
 def test_preview_uses_the_same_native_docs_compiler():
     """Preview and deploy render the same docs.df content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "target-folder: pr-" in content
-    assert "pipeline-ref" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "--check" in content
+    assert "deploy-pages" not in content
 
 
 def test_a_failed_project_lookup_never_creates_a_board():

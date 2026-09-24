@@ -118,10 +118,9 @@ class TestIdentity:
 class TestPages:
     """The Pages source must match the deploy workflow or the first deploy 404s."""
 
-    def test_a_branch_source_produces_a_legacy_payload(self):
+    def test_the_actions_source_is_declared(self):
         payload = manifest_module.load(REPO_ROOT).pages_payload()
-        assert payload["build_type"] == "legacy"
-        assert payload["source"]["branch"] == "gh-pages"
+        assert payload["build_type"] == "workflow"
 
     def test_an_undeclared_source_defaults_to_the_actions_build(self, tmp_path):
         _write_manifest(tmp_path, {})
