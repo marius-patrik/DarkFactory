@@ -1,91 +1,33 @@
-name: Preview Documentation
+name: Validate Documentation
 
 on:
   pull_request:
-    branches: [develop]
-    types: [opened, synchronize, reopened, closed]
-  workflow_call:
-    inputs:
-      pipeline-ref:
-        description: "Commit SHA of DarkFactory to use. Empty means this repository."
-        required: false
-        type: string
-        default: ""
-      pipeline-repo:
-        description: "Repository containing the shared DarkFactory docs compiler."
-        required: false
-        type: string
-        default: "marius-patrik/DarkFactory"
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: preview-${{ github.event.pull_request.number }}
+  group: docs-validation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: preview
-    if: >-
-      github.event.action != 'closed' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+  validate:
+    name: validate-docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check out pinned DarkFactory
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-runtime
-
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install DarkFactory workspace
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          cd "$ROOT"
-          bun install --frozen-lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Validate documentation projections
+        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE" --check
 
       - name: Build documentation
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
-
-      - name: Publish preview
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: site
-          target-folder: pr-${{ github.event.pull_request.number }}
-          commit-message: "docs(preview): publish preview for #${{ github.event.pull_request.number }}"
-
-  teardown:
-    name: preview-teardown
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remove preview
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          if ! git ls-remote --exit-code "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" refs/heads/gh-pages >/dev/null 2>&1; then
-            echo "No gh-pages branch; nothing to remove."
-            exit 0
-          fi
-          git clone --depth 1 --branch gh-pages "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" pages
-          cd pages
-          [ -d "pr-${PR}" ] || exit 0
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -rq "pr-${PR}"
-          git commit -m "docs(preview): remove preview for #${PR}"
-          git push origin gh-pages
+        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"
