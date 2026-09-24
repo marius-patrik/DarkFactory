@@ -47,7 +47,7 @@ HOMEPAGE = MANIFEST.homepage
 
 TOPICS: List[str] = MANIFEST.topics
 
-#: Project board Status options, in column order. Mirrors `.agents/rules/009-issue-binding-and-board-status.md` and
+#: Project board Status options, in column order. Mirrors `.agents/notes/rules/009-issue-binding-and-board-status.md` and
 #: ``project_automation.STATUS_NAMES``; the test suite asserts the two stay in sync.
 STATUS_OPTIONS: List[str] = [
     "Backlog",
@@ -205,15 +205,53 @@ class Runner:
         if not self.apply:
             print(f"  would call: {printable}")
             return None
+        body = json.dumps(fields)
+        env = _env_for(args)
         result = subprocess.run(
             ["gh"] + args + ["--input", "-"],
-            input=json.dumps(fields),
+            input=body,
             capture_output=True,
             text=True,
             env=_env_for(args),
         )
+
+        # GitHub CLI can occasionally turn an HTTP API failure into the opaque
+        # "unexpected end of JSON input" error and discard the actual response. Retry the same
+        # request with curl so repository-administration calls are both reliable and diagnosable.
+        if result.returncode != 0 and "unexpected end of JSON input" in (
+            (result.stderr or "") + (result.stdout or "")
+        ):
+            token = env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
+            if token:
+                result = subprocess.run(
+                    [
+                        "curl",
+                        "--fail-with-body",
+                        "--silent",
+                        "--show-error",
+                        "--location",
+                        "--request",
+                        method,
+                        "--header",
+                        "Accept: application/vnd.github+json",
+                        "--header",
+                        f"Authorization: Bearer {token}",
+                        "--header",
+                        "X-GitHub-Api-Version: 2026-03-10",
+                        "--header",
+                        "Content-Type: application/json",
+                        f"https://api.github.com/{path}",
+                        "--data-binary",
+                        "@-",
+                    ],
+                    input=body,
+                    capture_output=True,
+                    text=True,
+                    env=_env_for(args),
+                )
+
         if result.returncode != 0:
-            detail = (result.stderr or result.stdout).strip().splitlines()
+            detail = (result.stdout or result.stderr).strip().splitlines()
             first = detail[0] if detail else "unknown error"
             if kwargs.get("allow_fail"):
                 print(f"  note: {printable} -> {first}")
@@ -274,6 +312,12 @@ class Runner:
         if not data:
             return None
         return (data.get("user") or {}).get("projectV2", {}).get("id")
+
+
+def apply_default_branch(run: Runner) -> None:
+    """Makes the manifest's stable branch the repository's GitHub default."""
+    print(f"\n== Default branch ({MANIFEST.default_branch}) ==")
+    run.api("PATCH", f"repos/{SLUG}", {"default_branch": MANIFEST.default_branch})
 
 
 def apply_repository_settings(run: Runner) -> None:
@@ -552,32 +596,64 @@ def apply_status_options(run: Runner, field_id: str, existing: List[str]) -> Non
     print(f"  Status options set to {applied}")
 
 
-def apply_branch_protection(run: Runner) -> None:
-    """Protects ``main`` with required checks, strict up-to-date, and one approving review.
-
-    Args:
-        run: Command runner.
-    """
-    print(f"\n== Branch protection ({MANIFEST.default_branch}) ==")
+def _protect_branch(
+    run: Runner,
+    branch: str,
+    checks: List[str],
+    *,
+    approvals: int,
+    enforce_admins: bool,
+    strict: bool,
+    resolve_conversations: bool,
+) -> None:
+    """Applies one branch-protection policy."""
+    print(f"\n== Branch protection ({branch}) ==")
     run.api(
         "PUT",
-        f"repos/{SLUG}/branches/{MANIFEST.default_branch}/protection",
+        f"repos/{SLUG}/branches/{branch}/protection",
         {
-            "required_status_checks": {"strict": True, "contexts": REQUIRED_CHECKS},
-            "enforce_admins": False,
+            "required_status_checks": {"strict": strict, "contexts": checks},
+            "enforce_admins": enforce_admins,
             "required_pull_request_reviews": {
                 "dismiss_stale_reviews": True,
                 "require_code_owner_reviews": False,
                 "require_last_push_approval": False,
-                "required_approving_review_count": 1,
+                "required_approving_review_count": approvals,
             },
             "restrictions": None,
             "required_linear_history": False,
             "allow_force_pushes": False,
             "allow_deletions": False,
             "block_creations": False,
-            "required_conversation_resolution": True,
+            "required_conversation_resolution": resolve_conversations,
         },
+    )
+
+
+def apply_branch_protection(run: Runner) -> None:
+    """Protects the development branch and, when separate, the stable release branch."""
+    development = MANIFEST.development_branch
+    default = MANIFEST.default_branch
+
+    if development != default:
+        _protect_branch(
+            run,
+            default,
+            ["main-source"],
+            approvals=0,
+            enforce_admins=True,
+            strict=False,
+            resolve_conversations=False,
+        )
+
+    _protect_branch(
+        run,
+        development,
+        REQUIRED_CHECKS,
+        approvals=1,
+        enforce_admins=False,
+        strict=True,
+        resolve_conversations=True,
     )
 
 
@@ -597,8 +673,9 @@ def sync_protected_checks(run: Runner) -> None:
     Args:
         run: Command runner.
     """
-    print(f"\n== Required checks ({MANIFEST.default_branch}) ==")
-    path = f"repos/{SLUG}/branches/{MANIFEST.default_branch}/protection"
+    branch = MANIFEST.development_branch
+    print(f"\n== Required checks ({branch}) ==")
+    path = f"repos/{SLUG}/branches/{branch}/protection"
     existing = run.gh(["api", path], allow_fail=True)
     if not existing:
         print("  not protected; leaving it that way")
@@ -756,10 +833,26 @@ def main() -> None:
         action="store_true",
         help="Skip branch protection (useful before the first CI run has ever reported)",
     )
+    parser.add_argument(
+        "--branches-only",
+        action="store_true",
+        help="Reconcile only the GitHub default branch and branch protection.",
+    )
     args = parser.parse_args()
 
     run = Runner(apply=args.apply)
     print(f"Target: {SLUG}   mode: {'APPLY' if args.apply else 'PLAN'}")
+
+    apply_default_branch(run)
+    if args.branches_only:
+        apply_branch_protection(run)
+        if run.failures:
+            print(f"\n{len(run.failures)} operation(s) failed:", file=sys.stderr)
+            for failure in run.failures:
+                print(f"  - {failure}", file=sys.stderr)
+            sys.exit(1)
+        print("\nDone.")
+        return
 
     apply_repository_settings(run)
     apply_actions_permissions(run)

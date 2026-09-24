@@ -7,7 +7,7 @@ on:
   pull_request:
     types: [opened, edited, synchronize, closed, ready_for_review, reopened]
   push:
-    branches: [darkfactory]
+    branches: [develop]
   # Membership is reconciled on a schedule as well as on demand. An item reaches a board only by
   # passing through a lifecycle event, so anything opened while the automation was unable to write
   # is absent and stays absent - the boards are never wrong, only quietly incomplete.

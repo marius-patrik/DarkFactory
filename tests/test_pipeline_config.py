@@ -10,36 +10,60 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW_DIR = os.path.join(REPO_ROOT, ".github", "workflows")
 SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
+EXPECTED_WORKFLOWS = [
+    "agent.yml",
+    "ci.yml",
+    "deploy-docs.yml",
+    "open-pr.yml",
+    "pr-approval-automerge.yml",
+    "project-automation.yml",
+    "report-failure.yml",
+    "update-submodules.yml",
+    "install.yml",
+    "verify-pr-issue.yml",
+    "quota-resume.yml",
+]
+
+EXPECTED_SCRIPTS = [
+    "agent_runner.py",
+    "handle_pr_approval.py",
+    "open_pr.py",
+    "project_automation.py",
+    "repo_settings.py",
+]
+
 
 def _read(path: str) -> str:
-    """Reads a UTF-8 repository file used by a semantic/static contract test."""
+    """Reads a file as text.
+
+    Args:
+        path: Absolute file path.
+
+    Returns:
+        File contents.
+    """
     with open(path, encoding="utf-8") as handle:
         return handle.read()
 
 
-def test_workflow_local_script_references_resolve():
-    """Every repository-local script referenced by a workflow must exist.
+@pytest.mark.parametrize("name", EXPECTED_WORKFLOWS)
+def test_workflow_exists(name: str):
+    """Every workflow the rules reference is present.
 
-    The workflow/script inventory itself is intentionally not fixed here: deleting or moving an
-    obsolete implementation is valid as long as no live workflow references it.
+    Args:
+        name: Workflow file name.
     """
-    yaml = pytest.importorskip("yaml")
-    script_pattern = re.compile(r"(?:^|\s)(?:python\d*|python|bash|sh|bun)\s+([^\s;&|]+)")
-    for name in sorted(os.listdir(WORKFLOW_DIR)):
-        if not name.endswith((".yml", ".yaml")):
-            continue
-        path = os.path.join(WORKFLOW_DIR, name)
-        with open(path, encoding="utf-8") as handle:
-            document = yaml.safe_load(handle)
-        assert isinstance(document, dict), f"{name} must parse as a workflow mapping"
+    assert os.path.isfile(os.path.join(WORKFLOW_DIR, name)), f"{name} must exist"
 
-        content = _read(path)
-        for match in script_pattern.finditer(content):
-            target = match.group(1).strip("'\"")
-            if target.startswith((".github/", "scripts/", "bin/")):
-                assert os.path.exists(os.path.join(REPO_ROOT, target)), (
-                    f"{name} references missing repository-local executable {target}"
-                )
+
+@pytest.mark.parametrize("name", EXPECTED_SCRIPTS)
+def test_script_exists(name: str):
+    """Every automation script the workflows invoke is present.
+
+    Args:
+        name: Script file name.
+    """
+    assert os.path.isfile(os.path.join(SCRIPT_DIR, name)), f"{name} must exist"
 
 
 def test_ci_quality_matrix_is_detector_driven():
@@ -62,11 +86,11 @@ def test_ci_has_one_aggregate_quality_context():
 
 
 def test_python_actions_and_docs_have_separate_final_owners():
-    """Capability actions execute in the matrix while docs.df uses the native compiler."""
+    """Capability actions execute in the matrix while .agents/docs.df uses the native compiler."""
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "pytest -v tests" not in ci
     assert "DF_ACTION_COMMAND" in ci
-    assert "docs.df" in ci
+    assert ".agents/docs.df" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
@@ -195,11 +219,8 @@ def test_repo_settings_enables_bot_pr_approval():
 def test_issue_templates_present():
     """Request, epic, and decision templates all exist, plus the chooser config."""
     template_dir = os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE")
-    for name in ("request.yml", "epic.yml", "config.yml", "configure.yml"):
+    for name in ("request.yml", "epic.yml", "decision.yml", "config.yml", "configure.yml"):
         assert os.path.isfile(os.path.join(template_dir, name)), f"{name} must exist"
-    assert not os.path.exists(
-        os.path.join(template_dir, "decision.yml")
-    ), "speculative architecture decision issues are forbidden; use PRD/accepted ADRs"
 
 
 def test_no_step_condition_reads_the_secrets_context():
@@ -253,28 +274,10 @@ def test_the_configuration_template_carries_the_install_marker():
 
 
 def test_request_template_requires_verbatim_wording():
-    """DF-RULE-012 (`.agents/rules/012-request-capture-and-confirmation.md`) depends on the template asking for the unedited request."""
+    """DF-RULE-012 (`.agents/notes/rules/012-request-capture-and-planning.md`) depends on the template asking for the unedited request."""
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
     assert "Verbatim User Request" in content
     assert 'labels: ["Request"]' in content
-
-
-def test_request_template_describes_the_current_single_planning_gate():
-    """Issue intake must not advertise the retired Interpretation + child Plan two-gate lifecycle."""
-    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
-    normalized = " ".join(content.split())
-    assert "one unified **Planning** artifact" in normalized
-    assert "one explicit owner **Planning Approval**" in normalized
-    assert "There is no separate" in normalized
-    assert "child **Plan** issue is created" not in normalized
-
-
-def test_epic_template_is_optional_and_does_not_reference_retired_decisions():
-    """Epics organize independent Requests; they are not mandatory wrappers or D1-D8 gates."""
-    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "epic.yml"))
-    assert "not mandatory wrappers" in content
-    assert "D1-D8" not in content
-    assert "never implemented directly" not in content
 
 
 def _declared_areas() -> Dict[str, str]:
@@ -288,27 +291,47 @@ def _declared_areas() -> Dict[str, str]:
     return manifest.load(REPO_ROOT).areas
 
 
-def test_request_area_list_matches_the_manifest():
-    """The request dropdown mirrors repo.df because GitHub issue forms cannot resolve it dynamically."""
+@pytest.mark.parametrize(
+    "path, pattern",
+    [
+        (
+            os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
+            r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$',
+        ),
+        (
+            os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
+            r"^- \[ \] `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
+        ),
+    ],
+)
+def test_area_lists_match_the_manifest(path, pattern):
+    """Every hand-written area list must agree with the one declaration of the taxonomy.
+
+    The dropdown and the PR template are static files GitHub renders itself, so they cannot be
+    generated at render time the way the documentation nav is. The taxonomy itself is asserted
+    against the manifest alone; the product document no longer carries a hardcoded area list.
+    Without this test they simply drift again - which is exactly how they came to list another
+    repository's areas.
+    """
     declared = _declared_areas()
-    content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
-    pattern = r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$'
+    content = _read(os.path.join(REPO_ROOT, path))
     found = {
         match.group("name"): match.group("description")
         for match in re.finditer(pattern, content, re.MULTILINE)
     }
-    assert found
-    assert found == declared
+    assert found, f"{path} lists no areas at all"
+    assert found == declared, (
+        f"{path} disagrees with .darkfactory/repo.df; "
+        f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
+    )
 
 
-def test_pull_request_template_uses_manifest_taxonomy_without_copying_it():
-    """PRs reference repo.df instead of maintaining a second static area list or capability matrix."""
+def test_pull_request_template_enforces_binding_and_matrix_rule():
+    """The PR checklist carries the two rules reviewers most often forget."""
     content = _read(os.path.join(REPO_ROOT, ".github", "PULL_REQUEST_TEMPLATE.md"))
     assert "Closes #" in content
-    assert "repo.df-declared scope(s)" in content
-    assert "detected/capability-resolved quality actions" in content
-    assert "capability-matrix" not in content
-    assert not re.search(r"^- \[ \] `area:[a-z]+`:", content, re.MULTILINE)
+    assert "capability-matrix" in content
+    assert "Conventional Commits" in content
 
 
 def test_gitignore_excludes_agent_checkpoint():
@@ -320,31 +343,16 @@ def test_gitignore_excludes_agent_checkpoint():
 
 
 def test_pages_source_matches_the_deploy_workflow():
-    """The manifest and the deploy workflow must agree, or the first deploy silently 404s.
-
-    This is not hypothetical. The first push to this repository built the documentation
-    successfully and then failed with `HttpError: Not Found` from `actions/deploy-pages`, because
-    Pages had never been enabled. Codifying the source is only half the fix; the other half is
-    that the codified source and the workflow that publishes to it cannot disagree.
-    """
+    """The manifest and the deploy workflow must agree on the Actions publishing path."""
     import manifest as manifest_module
 
     payload = manifest_module.load(REPO_ROOT).pages_payload()
     workflow = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
 
-    if payload["build_type"] == "legacy":
-        branch = payload["source"]["branch"]
-        assert f"branch: {branch}" in workflow, (
-            f"the manifest publishes Pages from {branch!r}, but deploy-docs.yml does not "
-            "push to it"
-        )
-        assert "upload-pages-artifact" not in workflow, (
-            "the manifest declares a branch source, so the workflow must not also use the "
-            "Actions build type; Pages has exactly one source"
-        )
-    else:
-        assert "upload-pages-artifact" in workflow
-        assert "deploy-pages" in workflow
+    assert payload["build_type"] == "workflow"
+    assert "upload-pages-artifact" in workflow
+    assert "deploy-pages" in workflow
+    assert "gh-pages" not in workflow
 
 
 def test_pages_deploy_does_not_clobber_pull_request_previews():
@@ -431,44 +439,63 @@ def test_runtime_checkout_is_skipped_when_running_in_place():
     assert "if: github.repository != 'marius-patrik/DarkFactory'" in content
 
 
-def test_workflows_trigger_on_the_declared_default_branch():
-    """DarkFactory's default branch is named after itself, so a consumer that adds it as a
-    remote gets a `darkfactory` branch with nothing to rename. Workflows that still watch
-    `main` would simply never fire.
-    """
+def test_workflows_separate_development_from_release_pushes():
+    """Quality runs on develop; production release/deploy runs on main."""
     import manifest as manifest_module
 
-    branch = manifest_module.load(REPO_ROOT).default_branch
-    for name in ("ci.yml", "deploy-docs.yml", "release.yml", "project-automation.yml"):
+    manifest = manifest_module.load(REPO_ROOT)
+    assert manifest.default_branch == "main"
+    assert manifest.development_branch == "develop"
+
+    for name in ("ci.yml", "project-automation.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
-        if "branches:" not in content:
-            continue
-        assert (
-            f'["{branch}"]' in content or f"[{branch}]" in content or "**" in content
-        ), f"{name} does not trigger on {branch!r}"
+        assert "[develop]" in content, f"{name} must follow the development branch"
+
+    for name in ("deploy-docs.yml", "release.yml"):
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        assert "[main]" in content, f"{name} must follow the stable release branch"
 
 
-def test_branch_protection_targets_the_declared_default_branch():
-    """Protecting a branch that is not the default protects nothing."""
+def test_branch_protection_models_both_branch_roles():
+    """The release lane and integration lane have different protection contracts."""
     content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
-    assert "branches/main/protection" not in content, "the branch must not be hardcoded"
     assert "MANIFEST.default_branch" in content
+    assert "MANIFEST.development_branch" in content
+    assert '"main-source"' in content
+
+
+def test_main_source_gate_requires_develop_from_the_same_repository():
+    """A PR to main is a release promotion, not a general contribution path."""
+    content = _read(os.path.join(WORKFLOW_DIR, "branch-policy.yml"))
+    assert "branches: [main]" in content
+    assert "HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}" in content
+    assert 'test "$HEAD_BRANCH" = "develop"' in content
+    assert 'test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"' in content
+
+
+def test_repository_settings_fall_back_from_opaque_gh_api_failures():
+    """Administration writes retry through raw REST if GitHub CLI loses the response body."""
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert '"unexpected end of JSON input"' in content
+    assert '"curl"' in content
+    assert '"--fail-with-body"' in content
+    assert '"X-GitHub-Api-Version: 2026-03-10"' in content
 
 
 def test_the_docs_job_uses_the_native_docs_contract():
-    """The direct docs-check job detects docs.df and runs the first-party compiler."""
+    """The direct docs-check job detects .agents/docs.df and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
     ]
-    assert "docs.df" in docs_job
+    assert ".agents/docs.df" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
     assert "packages/web" not in docs_job
 
 
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
-    """A repository without docs.df reports a successful no-op docs check."""
+    """A repository without .agents/docs.df reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
@@ -489,11 +516,11 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 
 
 def test_the_deploy_workflow_uses_the_native_docs_compiler():
-    """Deploy consumes docs.df through the shared DarkFactory compiler and renderer."""
+    """Deploy consumes .agents/docs.df through the shared DarkFactory compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
-    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "pipeline-ref" in content
-    assert "folder: site" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "upload-pages-artifact" in content
+    assert "deploy-pages" in content
 
 
 def test_the_deploy_workflow_has_no_second_paper_renderer():
@@ -504,19 +531,20 @@ def test_the_deploy_workflow_has_no_second_paper_renderer():
     assert "texlive-latex" not in content
 
 
-def test_the_deploy_workflow_is_callable():
-    """Consumers call the shared native documentation workflow."""
+def test_the_deploy_workflow_is_main_actions_release():
+    """The production documentation workflow is a direct main-branch deployment."""
     yaml = pytest.importorskip("yaml")
     with open(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"), encoding="utf-8") as handle:
         document = yaml.safe_load(handle)
     triggers = document[True] if True in document else document["on"]
-    assert "workflow_call" in triggers
-    assert "pipeline-ref" in triggers["workflow_call"]["inputs"]
+    assert "workflow_call" not in triggers
+    assert triggers["push"]["branches"] == ["main"]
+    assert "workflow_dispatch" in triggers
 
 
 def test_native_docs_owners_are_present():
     """The current compiler, renderer and native configuration all exist."""
-    assert os.path.isfile(os.path.join(REPO_ROOT, "docs.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, ".agents/docs.df"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
@@ -570,7 +598,7 @@ def test_the_agent_image_is_built_from_the_pipeline():
 #:
 #: `install.yml` reaches into a consumer to write its callers, so a consumer calling it would be
 #: asking to be installed into itself. It is the one workflow that is deliberately not shared.
-NOT_CALLABLE = {"install.yml", "ci.yml"}
+NOT_CALLABLE = {"install.yml", "ci.yml", "branch-policy.yml", "deploy-docs.yml", "preview-docs.yml"}
 
 
 def test_every_shared_workflow_is_callable():
@@ -620,20 +648,22 @@ def test_open_pr_forwards_its_dispatch_inputs_to_callers():
     assert dispatch <= called, f"not forwardable to callers: {sorted(dispatch - called)}"
 
 
-def test_preview_deploys_and_tears_down_in_one_workflow():
-    """A preview left behind after merge accumulates forever, and the switcher then offers it."""
+def test_preview_validates_without_publishing():
+    """PR documentation validates locally; production Pages remains main-only."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert "target-folder: pr-" in content, "previews live under pr-<N>/ beside the site"
-    assert "closed" in content and "git rm" in content, "the preview must be removed on close"
-    assert "branch: gh-pages" in content, "preview and deploy must share one Pages source"
+    assert "Validate documentation projections" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "deploy-pages" not in content
+    assert "gh-pages" not in content
+    assert "target-folder: pr-" not in content
 
 
 def test_preview_uses_the_same_native_docs_compiler():
-    """Preview and deploy render the same docs.df content graph."""
+    """Preview and deploy render the same .agents/docs.df content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
-    assert 'bun "$ROOT/scripts/build-docs.ts"' in content
-    assert "target-folder: pr-" in content
-    assert "pipeline-ref" in content
+    assert "bun scripts/build-docs.ts" in content
+    assert "--check" in content
+    assert "deploy-pages" not in content
 
 
 def test_a_failed_project_lookup_never_creates_a_board():
@@ -682,8 +712,8 @@ def test_repository_documents_name_the_native_docs_contract():
     """Normative repository text points at the current documentation owners."""
     agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
     prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
-    assert "docs.df" in agents
-    assert "docs.df" in prd
+    assert ".agents/docs.df" in agents
+    assert ".agents/docs.df" in prd
     assert "@darkfactory/docs" in prd
     assert "@darkfactory/web" in prd
 
@@ -1097,30 +1127,8 @@ def test_bot_comments_do_not_start_an_agent_container():
     assert condition.count("!endsWith") == 1
 
 
-def _user_first_lines(name: str) -> List[str]:
-    """Returns the token lines in one workflow that reach for the user's token before the App's.
-
-    Args:
-        name: Workflow file name.
-
-    Returns:
-        The offending lines, stripped.
-    """
-    lines = []
-    for line in _read(os.path.join(WORKFLOW_DIR, name)).splitlines():
-        stripped = line.strip()
-        if not stripped.startswith(("GH_TOKEN:", "token:")):
-            continue
-        if "GH_PROJECT_TOKEN" not in stripped:
-            continue
-        app = stripped.find("app-token.outputs.token")
-        if app == -1 or app > stripped.index("GH_PROJECT_TOKEN"):
-            lines.append(stripped)
-    return lines
-
-
 def test_ci_docs_job_runs_the_native_bun_compiler():
-    """docs.df is compiled by the Bun workspace in the direct docs-check job."""
+    """.agents/docs.df is compiled by the Bun workspace in the direct docs-check job."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     block = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))

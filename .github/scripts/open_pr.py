@@ -77,12 +77,12 @@ def _default_base() -> str:
     """Returns the branch a pull request should target by default.
 
     Returns:
-        The declared default branch, or `main` when no manifest can be read.
+        The declared development branch, or `main` when no manifest can be read.
     """
     try:
         import manifest
 
-        return manifest.load(".").default_branch
+        return manifest.load(".").development_branch
     except Exception:  # noqa: BLE001 - the CLI must still parse without a manifest
         return "main"
 

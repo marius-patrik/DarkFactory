@@ -181,15 +181,27 @@ class Manifest:
 
     @property
     def default_branch(self) -> str:
-        """Returns the branch protection and the pipeline's own triggers apply to.
+        """Returns the repository's canonical GitHub default branch.
 
-        DarkFactory's default branch is named after the repository rather than `main`, so a
-        consumer that adds it as a remote gets a `darkfactory` branch without renaming anything.
+        This is the stable branch used for repository-level protection and release publication.
+        Repositories with a separate integration branch declare it as `development_branch`.
 
         Returns:
-            The declared default branch, or `main`.
+            The declared GitHub default branch, or `main`.
         """
         return str(self._identity.get("default_branch") or "main")
+
+    @property
+    def development_branch(self) -> str:
+        """Returns the branch implementation work integrates into.
+
+        Repositories without a separate release branch develop directly on their GitHub default
+        branch, so this falls back to :attr:`default_branch`.
+
+        Returns:
+            The declared development branch, or the GitHub default branch.
+        """
+        return str(self._identity.get("development_branch") or self.default_branch)
 
     @property
     def agent_slug(self) -> str:

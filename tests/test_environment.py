@@ -257,19 +257,16 @@ class TestPlans:
         assert plan["python"]["versions"] == ["3.10", "3.11", "3.12", "3.13"]
         assert plan["rust"]["versions"] == []
 
-    def test_darkfactory_documentation_is_owned_by_docs_df(self):
+    def test_darkfactory_documentation_is_owned_by_agents_docs_df(self):
         with open(os.path.join(REPO_ROOT, ".darkfactory", "repo.df"), encoding="utf-8") as handle:
             repository = json.load(handle)
-        with open(os.path.join(REPO_ROOT, "docs.df"), encoding="utf-8") as handle:
+        with open(os.path.join(REPO_ROOT, ".agents", "docs.df"), encoding="utf-8") as handle:
             docs = json.load(handle)
 
         assert "documentation" not in repository.get("environment", {})
         assert docs["version"] == 1
-        assert docs["home"] == "docs/home.md"
-        assert "entryPoints" not in docs["api"]["typescript"]
-        assert docs["api"]["typescript"][
-            "tsconfig"
-        ], "docs.df owns TypeDoc settings while package entrypoints come from repository detection"
+        assert docs["home"] == ".agents/PRD.md"
+        assert "api" not in docs
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})
