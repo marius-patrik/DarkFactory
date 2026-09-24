@@ -49,6 +49,18 @@ describe("current documentation truth", () => {
 		});
 	});
 
+	test("fails when a required projection alias is missing", () => {
+		withRepo((repoRoot) => {
+			const content = graph();
+			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
+				path: "CONTRIBUTING.md",
+				message: "required projection discovery alias is missing",
+			});
+		});
+	});
+
 	test("rejects copied projection aliases while allowing the canonical files to remain generated", () => {
 		withRepo((repoRoot) => {
 			const content = graph();

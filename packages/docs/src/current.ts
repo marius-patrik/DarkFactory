@@ -42,8 +42,17 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 
 	for (const alias of PROJECTION_ALIASES) {
 		const absolute = join(repoRoot, alias.path);
-		if (!existsSync(absolute)) continue;
-		if (!lstatSync(absolute).isSymbolicLink()) {
+		let stat;
+		try {
+			stat = lstatSync(absolute);
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				findings.push({ path: alias.path.replaceAll("\\", "/"), message: "required projection discovery alias is missing" });
+				continue;
+			}
+			throw error;
+		}
+		if (!stat.isSymbolicLink()) {
 			findings.push({
 				path: alias.path.replaceAll("\\", "/"),
 				message: "projection discovery alias must remain a symlink, not a copied document",
