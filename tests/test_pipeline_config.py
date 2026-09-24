@@ -489,6 +489,15 @@ def test_main_source_gate_requires_develop_from_the_same_repository():
     assert 'test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"' in content
 
 
+def test_repository_settings_fall_back_from_opaque_gh_api_failures():
+    """Administration writes retry through raw REST if GitHub CLI loses the response body."""
+    content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
+    assert '"unexpected end of JSON input"' in content
+    assert '"curl"' in content
+    assert '"--fail-with-body"' in content
+    assert '"X-GitHub-Api-Version: 2026-03-10"' in content
+
+
 def test_the_docs_job_uses_the_native_docs_contract():
     """The direct docs-check job detects docs.df and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
