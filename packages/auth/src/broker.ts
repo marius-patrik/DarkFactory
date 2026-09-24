@@ -32,11 +32,17 @@ export interface AuthTokenStore {
 	get(sessionId: string): Promise<BrokerTokenRecord | undefined>;
 	set(sessionId: string, record: BrokerTokenRecord): Promise<void>;
 	delete(sessionId: string): Promise<void>;
+	/**
+	 * Serializes a complete read/remote-operation/write transaction for one session.
+	 * Persistent implementations must provide equivalent cross-process/distributed serialization.
+	 */
+	withSessionLock<T>(sessionId: string, task: () => Promise<T>): Promise<T>;
 }
 
 /** In-memory broker token store for tests and single-process deployments. */
 export class MemoryAuthTokenStore implements AuthTokenStore {
 	readonly #records = new Map<string, BrokerTokenRecord>();
+	readonly #queues = new Map<string, Promise<unknown>>();
 
 	async get(sessionId: string): Promise<BrokerTokenRecord | undefined> {
 		return this.#records.get(sessionId);
@@ -48,6 +54,20 @@ export class MemoryAuthTokenStore implements AuthTokenStore {
 
 	async delete(sessionId: string): Promise<void> {
 		this.#records.delete(sessionId);
+	}
+
+	async withSessionLock<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
+		const previous = this.#queues.get(sessionId) ?? Promise.resolve();
+		const current = (async () => {
+			await previous.catch(() => undefined);
+			return task();
+		})();
+		const settled = current.catch(() => undefined);
+		this.#queues.set(sessionId, settled);
+		void settled.finally(() => {
+			if (this.#queues.get(sessionId) === settled) this.#queues.delete(sessionId);
+		});
+		return current;
 	}
 }
 
@@ -139,15 +159,17 @@ export async function refreshBrokerSession(
 	store: AuthTokenStore,
 	now = Date.now(),
 ): Promise<BrowserSession> {
-	const current = await store.get(sessionId);
-	if (!current) throw new Error("Unknown authentication session");
-	if (!current.token.refresh_token) throw new Error("Authentication session is not refreshable");
-	if (current.refreshExpiresAt !== undefined && current.refreshExpiresAt <= now)
-		throw new Error("Authentication refresh token has expired");
-	const token = await refreshAccessToken(config, current.token.refresh_token);
-	const record = recordFromToken(token, now, current.userId);
-	await store.set(sessionId, record);
-	return sessionFromRecord(sessionId, record, config, now);
+	return store.withSessionLock(sessionId, async () => {
+		const current = await store.get(sessionId);
+		if (!current) throw new Error("Unknown authentication session");
+		if (!current.token.refresh_token) throw new Error("Authentication session is not refreshable");
+		if (current.refreshExpiresAt !== undefined && current.refreshExpiresAt <= now)
+			throw new Error("Authentication refresh token has expired");
+		const token = await refreshAccessToken(config, current.token.refresh_token);
+		const record = recordFromToken(token, now, current.userId);
+		await store.set(sessionId, record);
+		return sessionFromRecord(sessionId, record, config, now);
+	});
 }
 
 /** Revokes one broker-owned session. Local broker state is deleted only after remote revocation succeeds. */
@@ -156,8 +178,10 @@ export async function revokeBrokerSession(
 	sessionId: string,
 	store: AuthTokenStore,
 ): Promise<void> {
-	const current = await store.get(sessionId);
-	if (!current) return;
-	await revokeAccessToken(config, current.token.access_token);
-	await store.delete(sessionId);
+	await store.withSessionLock(sessionId, async () => {
+		const current = await store.get(sessionId);
+		if (!current) return;
+		await revokeAccessToken(config, current.token.access_token);
+		await store.delete(sessionId);
+	});
 }

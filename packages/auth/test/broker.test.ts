@@ -70,4 +70,49 @@ describe("@darkfactory/auth confidential broker", () => {
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
 		expect(await store.get("session")).toBeDefined();
 	});
+	test("concurrent rotating refreshes serialize per session and consume the latest refresh token", async () => {
+		const store = new MemoryAuthTokenStore();
+		await store.set("session", {
+			token: { access_token: "access-0", refresh_token: "refresh-0", token_type: "bearer" },
+			refreshExpiresAt: 100_000,
+		});
+		const config = { clientId: "client", clientSecret: "secret" };
+		const bodies: string[] = [];
+		let releaseFirst!: () => void;
+		const firstGate = new Promise<void>((resolve) => {
+			releaseFirst = resolve;
+		});
+		let call = 0;
+		globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+			call += 1;
+			bodies.push(String(init?.body ?? ""));
+			if (call === 1) await firstGate;
+			return new Response(
+				JSON.stringify({
+					access_token: `access-${call}`,
+					refresh_token: `refresh-${call}`,
+					token_type: "bearer",
+					expires_in: 3600,
+					refresh_token_expires_in: 7200,
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		}) as typeof fetch;
+
+		const first = refreshBrokerSession(config, "session", store, 1_000);
+		while (bodies.length === 0) await Bun.sleep(1);
+		const second = refreshBrokerSession(config, "session", store, 2_000);
+		await Bun.sleep(10);
+		expect(bodies).toHaveLength(1);
+
+		releaseFirst();
+		await first;
+		await second;
+
+		expect(bodies).toHaveLength(2);
+		expect(bodies[0]).toContain("refresh_token=refresh-0");
+		expect(bodies[1]).toContain("refresh_token=refresh-1");
+		expect((await store.get("session"))?.token.refresh_token).toBe("refresh-2");
+	});
+
 });
