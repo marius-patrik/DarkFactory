@@ -59,6 +59,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.repository == 'marius-patrik/DarkFactory' && 'develop' || '' }}
           submodules: recursive
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token || secrets.GH_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
