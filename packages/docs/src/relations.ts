@@ -97,6 +97,8 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		rules.push({ id, title, page });
 	}
 
+	if (rules.length === 0) findings.push(".agents/rules: at least one canonical rule is required");
+
 	const ruleNumbers = rules
 		.map((rule) => Number(ruleNumber(rule.id)))
 		.filter((number) => Number.isFinite(number));
@@ -133,6 +135,8 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 	for (const page of graph.pages.filter((candidate) => candidate.kind === "note")) {
 		findings.push(`${page.source}: current long-term notes must be accepted numbered ADRs under .agents/notes/adr/`);
 	}
+
+	if (notes.length === 0) findings.push(".agents/notes/adr: at least one accepted ADR is required");
 
 	const reverse = new Map<string, string[]>();
 	for (const rule of rules) reverse.set(rule.id, []);

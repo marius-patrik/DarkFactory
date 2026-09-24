@@ -12,7 +12,25 @@ function graph(): DocsContentGraph {
 		version: 1,
 		site: { name: "DarkFactory" },
 		home: "home",
-		pages: [{ id: "home", kind: "home", title: "DarkFactory", source: "docs/home.md", markdown: "# DarkFactory\n" }],
+		pages: [
+			{ id: "home", kind: "home", title: "DarkFactory", source: "docs/home.md", markdown: "# DarkFactory\n" },
+			{
+				id: "rule-001",
+				kind: "rule",
+				title: "Rule 1 — Test",
+				source: ".agents/rules/001-test.md",
+				markdown:
+					"---\nid: DF-RULE-001\ntitle: Test\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Test\n\n## Requirement\n\nTest.\n\n## Rationale\n\nTest.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nTest.\n",
+			},
+			{
+				id: "adr-0001",
+				kind: "adr",
+				title: "ADR-0001 — Test",
+				source: ".agents/notes/adr/0001-test.md",
+				markdown:
+					"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest.\n",
+			},
+		],
 		workflows: [],
 	};
 }
