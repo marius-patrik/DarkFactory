@@ -44,7 +44,7 @@ async function fixture(withApi = false): Promise<string> {
 	await writeFile(join(root, "AGENTS.md"), "# Rules projection\n");
 	await writeFile(
 		join(root, ".agents", "rules", "001-test.md"),
-		"---\\nid: DF-RULE-001\\ntitle: Fixture rule\\nstatus: normative\\n---\\n# Rule 1 — Fixture rule\\n\\n## Requirement\\n\\nFixture requirement.\\n\\n## Rationale\\n\\nFixture rationale.\\n\\n## Enforcement\\n\\nFixture enforcement.\\n\\n## Exceptions\\n\\nNone.\\n\\n## Change control\\n\\nDeliberate.\\n",
+		"---\nid: DF-RULE-001\ntitle: Fixture rule\nstatus: normative\n---\n# Rule 1 — Fixture rule\n\n## Requirement\n\nFixture requirement.\n\n## Rationale\n\nFixture rationale.\n\n## Enforcement\n\nFixture enforcement.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 	);
 	await writeFile(
 		join(root, ".agents", "notes", "adr", "0001-test.md"),
