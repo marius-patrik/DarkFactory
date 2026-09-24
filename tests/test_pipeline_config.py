@@ -10,6 +10,12 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW_DIR = os.path.join(REPO_ROOT, ".github", "workflows")
 SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
+
+def _read(path: str) -> str:
+    """Reads a UTF-8 repository file used by a semantic/static contract test."""
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
 def test_workflow_local_script_references_resolve():
     """Every repository-local script referenced by a workflow must exist.
 

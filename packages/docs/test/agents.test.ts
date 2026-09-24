@@ -21,6 +21,18 @@ ${requirement}
 ## Rationale
 
 Because.
+
+## Enforcement
+
+By test.
+
+## Exceptions
+
+None.
+
+## Change control
+
+Change deliberately.
 `,
 });
 
@@ -40,7 +52,7 @@ describe("AGENTS rules projection", () => {
 					kind: "adr",
 					title: "ADR-0001 — Test decision",
 					source: ".agents/notes/adr/0001-test.md",
-					markdown: "# ADR-0001 — Test decision\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`, `DF-RULE-002`\n\n## Decision\n\nTest.\n",
+					markdown: "# ADR-0001 — Test decision\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`, `DF-RULE-002`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest consequence.\n",
 				},
 			],
 		};

@@ -15,14 +15,14 @@ function graph(): DocsContentGraph {
 				kind: "rule",
 				title: "Rule 1 — Runtime",
 				source: ".agents/rules/001-runtime.md",
-				markdown: "---\nid: DF-RULE-001\ntitle: Runtime\n---\n# Rule 1 — Runtime\n\n## Requirement\n\nRuntime.\n\n## Rationale\n\nRuntime.\n",
+				markdown: "---\nid: DF-RULE-001\ntitle: Runtime\n---\n# Rule 1 — Runtime\n\n## Requirement\n\nRuntime.\n\n## Rationale\n\nRuntime.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 			},
 			{
 				id: "agents-notes-adr-0008",
 				kind: "adr",
 				title: "ADR-0008 — Providers are configuration-driven",
 				source: ".agents/notes/adr/0008-providers-are-config-driven.md",
-				markdown: "# ADR-0008 — Providers are configuration-driven\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n",
+				markdown: "# ADR-0008 — Providers are configuration-driven\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nDecision.\n\n## Consequences\n\nConsequence.\n",
 			},
 			{
 				id: "agents-notes-adr-0006",
