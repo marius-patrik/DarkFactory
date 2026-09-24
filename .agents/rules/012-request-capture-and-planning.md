@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-012
-title: Request capture and Planning
+title: Verbatim Request capture and Planning gate
 status: normative
 applies_to: [agents, automation]
 activation: always

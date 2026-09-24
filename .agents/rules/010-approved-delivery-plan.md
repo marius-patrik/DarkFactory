@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-010
-title: Approved delivery plan
+title: Reviewed Planning and implementation alignment
 status: normative
 applies_to: [agents, automation]
 activation: always

@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-013
-title: Specification and work tracking
+title: Specification sequence and work tracking
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

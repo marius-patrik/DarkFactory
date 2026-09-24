@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-011
-title: Review approval and governed merge
+title: Pull request review approval and governed merge
 status: normative
 applies_to: [agents, automation]
 activation: always

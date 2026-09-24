@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-009
-title: Issue binding, branch auto-deletion, and board status
+title: Request binding, branch cleanup and board status
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

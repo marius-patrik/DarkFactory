@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-015
-title: Repository taxonomy
+title: Commits, repository taxonomy and domains
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

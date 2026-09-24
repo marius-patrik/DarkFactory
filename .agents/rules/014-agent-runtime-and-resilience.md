@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-014
-title: Agent runtime and resilience
+title: Capability-driven agent runtime and resilience
 status: normative
 applies_to: [agents, automation]
 activation: always
