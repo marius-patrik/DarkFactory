@@ -2,16 +2,16 @@
 
 **Status: NORMATIVE.**
 
-DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. `PLAN.md` records repository-wide execution strategy; the active Request/Planning record carries the concrete implementation checklist, approvals and validation evidence in GitHub.
+DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. The active Request/Planning record carries the concrete implementation checklist, approvals and validation evidence in GitHub.
 
 ## 1. Authority
 
-1. `PRD.md` defines product requirements and architecture.
+1. `.agents/PRD.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
-4. `repo.df`, `config.df`, `docs.df` and the workflow graph are executable declarations.
-5. `.agents/rules/*.md` define mandatory contribution/governance behavior.
-6. Generated docs/README/web views are projections, not independent sources of truth.
+4. `repo.df`, `.darkfactory/config.df`, `.agents/docs.df` and the workflow graph are executable declarations.
+5. `.agents/notes/rules/*.md` define mandatory contribution/governance behavior.
+6. Generated docs/web views and `.agents/AGENTS.md` are projections, not independent sources of truth.
 
 A material deviation from this document requires owner approval and an accepted ADR.
 
@@ -135,7 +135,7 @@ The final system must not rely on one ever-growing repository-specific language/
 The repository declaration rules are:
 
 - repository declaration is `repo.df`;
-- runtime/user/provider configuration is `config.df`;
+- runtime/user/provider configuration is `config.df`; this repository keeps it at `.darkfactory/config.df`;
 - accepted location is `.darkfactory/<name>.df` or root `<name>.df`;
 - both locations for the same logical file is an error;
 - only the current `repo.df` / `config.df` contracts are read;
@@ -143,11 +143,11 @@ The repository declaration rules are:
 
 ### 7.2 Documentation configuration
 
-Documentation uses `docs.df` as the native DarkFactory configuration.
+Documentation uses `.agents/docs.df` as the native DarkFactory configuration.
 
-`docs.df` is the only DarkFactory documentation configuration contract.
+`.agents/docs.df` is the only DarkFactory documentation configuration contract.
 
-Documentation configuration does not move into `repo.df` or `config.df`.
+Documentation configuration does not move into `repo.df` or `.darkfactory/config.df`.
 
 ### 7.3 State
 
@@ -278,7 +278,7 @@ Browser artifacts cannot contain/import the GitHub App private key, confidential
 
 It compiles one typed content graph from:
 
-- canonical Markdown/root documents;
+- canonical Markdown documents under `.agents/`;
 - ADRs and rules;
 - actual TypeScript/TSDoc API extraction;
 - capability-contributed documentation;
@@ -289,7 +289,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-`docs/home.md` is the canonical product-documentation homepage. Root `README.md` is a deterministic generated index of the current accepted long-term notes under `.agents/notes/**`; root `AGENTS.md` is the deterministic generated projection/index of canonical `.agents/rules/**`. Neither root projection is an authored product/specification source. CI fails when either projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
+`.agents/PRD.md` is the canonical product-documentation homepage. Root `README.md` is a symlink to this canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical `.agents/notes/rules/**`, with ADR links derived from `.agents/notes/adr/**`. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
 
 ## 14. DarkFactory Web
 
@@ -407,7 +407,7 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
 - real TypeScript API docs are published;
-- README/AGENTS generation from canonical notes/rules is deterministic and current;
+- generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` remains a symlink to the canonical product document;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
 - all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;

@@ -7,14 +7,14 @@ export interface DocsSiteConfig {
 	description?: string;
 }
 
-/** TypeScript API extraction settings owned by docs.df. */
+/** TypeScript API extraction settings owned by .agents/docs.df. */
 export interface DocsTypeScriptApiConfig {
 	entryPoints?: string[];
 	tsconfig: string;
 	name?: string;
 }
 
-/** API extraction configuration owned by docs.df. */
+/** API extraction configuration owned by .agents/docs.df. */
 export interface DocsApiConfig {
 	typescript?: DocsTypeScriptApiConfig;
 }
@@ -27,25 +27,24 @@ export interface DocsConfig {
 	api?: DocsApiConfig;
 }
 
-const CONFIG_PATHS = [join(".darkfactory", "docs.df"), "docs.df"] as const;
+const CONFIG_PATH = join(".agents", "docs.df");
 
-/** Resolves docs.df from .darkfactory/ or the repository root, rejecting ambiguous dual definitions. */
+/** Resolves the documentation configuration at .agents/docs.df. */
 export function resolveDocsConfigPath(repoRoot: string): string {
-	const matches = CONFIG_PATHS.map((candidate) => join(repoRoot, candidate)).filter((candidate) => existsSync(candidate));
-	if (matches.length > 1) throw new Error("Both .darkfactory/docs.df and docs.df exist; only one is allowed.");
-	if (matches.length === 0) throw new Error("No docs.df found in .darkfactory/ or the repository root.");
-	return matches[0]!;
+	const candidate = join(repoRoot, CONFIG_PATH);
+	if (!existsSync(candidate)) throw new Error("No .agents/docs.df found.");
+	return candidate;
 }
 
 function parseTypeScriptApiConfig(value: unknown): DocsTypeScriptApiConfig | undefined {
 	if (value === undefined) return undefined;
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("docs.df api.typescript must be an object.");
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(".agents/docs.df api.typescript must be an object.");
 	const record = value as Record<string, unknown>;
 	if (record.entryPoints !== undefined && (!Array.isArray(record.entryPoints) || record.entryPoints.some((entry) => typeof entry !== "string" || !entry.trim()))) {
-		throw new Error("docs.df api.typescript.entryPoints must be a string array when supplied.");
+		throw new Error(".agents/docs.df api.typescript.entryPoints must be a string array when supplied.");
 	}
-	if (typeof record.tsconfig !== "string" || !record.tsconfig.trim()) throw new Error("docs.df api.typescript.tsconfig must be a non-empty string.");
-	if (record.name !== undefined && (typeof record.name !== "string" || !record.name.trim())) throw new Error("docs.df api.typescript.name must be a non-empty string.");
+	if (typeof record.tsconfig !== "string" || !record.tsconfig.trim()) throw new Error(".agents/docs.df api.typescript.tsconfig must be a non-empty string.");
+	if (record.name !== undefined && (typeof record.name !== "string" || !record.name.trim())) throw new Error(".agents/docs.df api.typescript.name must be a non-empty string.");
 	return {
 		...(Array.isArray(record.entryPoints) && record.entryPoints.length > 0 ? { entryPoints: record.entryPoints.map((entry) => String(entry).trim().replaceAll("\\", "/")) } : {}),
 		tsconfig: record.tsconfig.trim().replaceAll("\\", "/"),
@@ -53,25 +52,25 @@ function parseTypeScriptApiConfig(value: unknown): DocsTypeScriptApiConfig | und
 	};
 }
 
-/** Parses and validates the JSON-encoded docs.df contract. */
+/** Parses and validates the JSON-encoded .agents/docs.df contract. */
 export function parseDocsConfig(source: string): DocsConfig {
 	let value: unknown;
 	try {
 		value = JSON.parse(source);
 	} catch (error) {
-		throw new Error(`docs.df is not valid JSON: ${String(error)}`);
+		throw new Error(`.agents/docs.df is not valid JSON: ${String(error)}`);
 	}
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("docs.df must contain an object.");
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(".agents/docs.df must contain an object.");
 	const record = value as Record<string, unknown>;
-	if (record.version !== 1) throw new Error("docs.df version must be 1.");
-	if (!record.site || typeof record.site !== "object" || Array.isArray(record.site)) throw new Error("docs.df site must be an object.");
+	if (record.version !== 1) throw new Error(".agents/docs.df version must be 1.");
+	if (!record.site || typeof record.site !== "object" || Array.isArray(record.site)) throw new Error(".agents/docs.df site must be an object.");
 	const site = record.site as Record<string, unknown>;
-	if (typeof site.name !== "string" || !site.name.trim()) throw new Error("docs.df site.name must be a non-empty string.");
-	if (site.description !== undefined && typeof site.description !== "string") throw new Error("docs.df site.description must be a string.");
-	if (typeof record.home !== "string" || !record.home.trim()) throw new Error("docs.df home must be a non-empty repository-relative path.");
+	if (typeof site.name !== "string" || !site.name.trim()) throw new Error(".agents/docs.df site.name must be a non-empty string.");
+	if (site.description !== undefined && typeof site.description !== "string") throw new Error(".agents/docs.df site.description must be a string.");
+	if (typeof record.home !== "string" || !record.home.trim()) throw new Error(".agents/docs.df home must be a non-empty repository-relative path.");
 	let api: DocsApiConfig | undefined;
 	if (record.api !== undefined) {
-		if (!record.api || typeof record.api !== "object" || Array.isArray(record.api)) throw new Error("docs.df api must be an object.");
+		if (!record.api || typeof record.api !== "object" || Array.isArray(record.api)) throw new Error(".agents/docs.df api must be an object.");
 		const typescript = parseTypeScriptApiConfig((record.api as Record<string, unknown>).typescript);
 		api = typescript ? { typescript } : {};
 	}
@@ -86,7 +85,7 @@ export function parseDocsConfig(source: string): DocsConfig {
 	};
 }
 
-/** Loads and validates the repository's native docs.df configuration. */
+/** Loads and validates the repository's .agents/docs.df configuration. */
 export function loadDocsConfig(repoRoot: string): DocsConfig {
 	return parseDocsConfig(readFileSync(resolveDocsConfigPath(repoRoot), "utf8"));
 }

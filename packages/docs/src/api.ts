@@ -133,7 +133,7 @@ export function documentationMetadata(
 
 /**
  * Compiles documentation using TypeScript API entry points from the canonical repository detector/action resolver.
- * docs.df continues to own TypeDoc settings; detected package evidence owns which exported APIs are present.
+ * `.agents/docs.df` owns TypeDoc settings; detected package evidence owns which exported APIs are present.
  */
 export async function compileDocsContentGraphWithDetectedApi(
 	repoRoot: string,
@@ -154,12 +154,14 @@ export async function compileDocsContentGraphWithDetectedApi(
 
 	if (!configured) return finalize(compileDocsContentGraph(repoRoot, config));
 
-	const entryPoints = resolution.packages.flatMap(({ actions }) => {
-		const action = actions.docs_extract;
-		const actionMetadata = action.metadata;
-		if (!action.supported || actionMetadata?.extractor !== "typedoc" || !Array.isArray(actionMetadata.entryPoints)) return [];
-		return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
-	});
+	const entryPoints = configured.entryPoints?.length
+		? configured.entryPoints
+		: resolution.packages.flatMap(({ actions }) => {
+			const action = actions.docs_extract;
+			const actionMetadata = action.metadata;
+			if (!action.supported || actionMetadata?.extractor !== "typedoc" || !Array.isArray(actionMetadata.entryPoints)) return [];
+			return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
+		});
 	const uniqueEntryPoints = [...new Set(entryPoints)].sort();
 	if (uniqueEntryPoints.length === 0) return finalize(compileDocsContentGraph(repoRoot, config));
 

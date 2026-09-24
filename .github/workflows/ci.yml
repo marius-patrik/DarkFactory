@@ -168,10 +168,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect docs.df
+      - name: Detect .agents/docs.df
         id: docs
         run: |
-          if [ -f "$GITHUB_WORKSPACE/docs.df" ] || [ -f "$GITHUB_WORKSPACE/.darkfactory/docs.df" ]; then
+          if [ -f "$GITHUB_WORKSPACE/.agents/docs.df" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
@@ -209,7 +209,7 @@ jobs:
 
       - name: No documentation configured
         if: steps.docs.outputs.present != 'true'
-        run: echo "No docs.df; native documentation check is not applicable."
+        run: echo "No .agents/docs.df; native documentation check is not applicable."
 
   quality:
     name: quality

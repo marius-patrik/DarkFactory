@@ -11,7 +11,7 @@ DarkFactory implementation targets the final architecture directly.
 - Missing behavior is implemented in its final TypeScript package/capability owner.
 - Useful existing TypeScript is moved/reused rather than rewritten solely to change ownership.
 - Duplicate production implementations are not maintained in parallel.
-- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are forbidden unless an external supported contract explicitly required by `PRD.md` needs them.
+- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are forbidden unless an external supported contract explicitly required by `.agents/PRD.md` needs them.
 - Previous internal architecture is not a compatibility target and is never kept "just in case".
 - Dead/unreachable code, stale configuration, unused assets, obsolete tests, superseded docs and transitional adapters are deleted rather than documented or tested into permanence.
 - Shared mechanisms are abstracted once at the lowest stable owner when repetition represents the same invariant; speculative abstraction and API widening solely for tests are avoided.

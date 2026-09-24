@@ -40,11 +40,11 @@ describe("documentation impact policy", () => {
 
 	test("classifies product and governance contracts deterministically", () => {
 		const result = classifyDocumentationImpact(
-			["repo.df", ".github/workflows/ci.yml", ".agents/rules/001-current.md"],
+			["repo.df", ".github/workflows/ci.yml", ".agents/notes/rules/001-current.md"],
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".agents/rules/001-current.md"]);
+		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md"]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {
@@ -85,7 +85,7 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.df", "docs/home.md"], evidence);
+		const result = evaluateDocumentationImpact(["repo.df", ".agents/docs.df"], evidence);
 		expect(result.findings).toEqual([]);
 	});
 

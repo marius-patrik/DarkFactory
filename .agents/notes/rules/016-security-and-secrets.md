@@ -6,7 +6,7 @@ applies_to: [agents, automation, contributors]
 activation: always
 owners: [keychain, auth]
 ---
-# Rule 16 — Security, authentication and secrets
+# Rule 16 — Security and secrets
 
 ## Requirement
 

@@ -18,7 +18,7 @@ The repository targets the current final architecture directly.
   owner once the final owner is live. Final packages MUST NOT forward implementation to a
   deletion-bound/legacy tree.
 - Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are
-  forbidden unless an **external supported contract explicitly required by PRD.md** needs them.
+  forbidden unless an **external supported contract explicitly required by `.agents/PRD.md`** needs them.
   Previous internal architecture is never a compatibility target and is not preserved "just in case".
 - Delete unreachable/dead code, stale configuration, unused assets, obsolete tests, superseded docs,
   abandoned feature flags and transitional adapters instead of documenting or testing their presence.

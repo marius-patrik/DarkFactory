@@ -4,7 +4,7 @@ import type {
 	CapabilityToolDefinition,
 	JsonSchema,
 } from "./abi.ts";
-import { assertCapabilityCompatible } from "./compatibility.ts";
+import { assertCapabilityCompatible } from "./abi-version.ts";
 
 /** Serializable tool metadata exposed by generated adapters. */
 export interface CapabilityToolManifest {

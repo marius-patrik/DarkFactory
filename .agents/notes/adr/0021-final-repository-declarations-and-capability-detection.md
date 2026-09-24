@@ -8,7 +8,7 @@
 
 - `repo.df` is the repository/product declaration.
 - `config.df` is runtime/user/provider configuration.
-- `docs.df` is documentation configuration.
+- `.agents/docs.df` is documentation configuration.
 - `repo.df` and `config.df` may live at repository root or under `.darkfactory/`; defining the same logical file in both places is an error.
 - Only the current `.df` contracts are read by the final system.
 - Repository/package/ecosystem/domain evidence is detected by the TypeScript runtime.

@@ -90,7 +90,7 @@ describe("detected documentation metadata", () => {
 				version: 1,
 				site: { name: "Fixture" },
 				home: "home",
-				pages: [{ id: "home", kind: "home", title: "Home", source: "docs/home.md", markdown: "# Home\n" }],
+				pages: [{ id: "home", kind: "home", title: "Home", source: ".agents/PRD.md", markdown: "# Home\n" }],
 				workflows: [],
 			};
 			const capabilities = [

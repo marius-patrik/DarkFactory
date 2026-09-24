@@ -10,19 +10,19 @@ owners: [planning, docs]
 
 ## Requirement
 
-`PRD.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
+`.agents/PRD.md` is the single normative product requirements document. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope. Accepted ADRs record durable architectural decisions and rationale.
 
 Executable declarations use the final DarkFactory contracts:
 
 - `repo.df` for repository/product declaration;
-- `config.df` for runtime/user/provider configuration;
-- `docs.df` for native documentation configuration;
+- `config.df` for runtime/user/provider configuration, kept at `.darkfactory/config.df` in this repository;
+- `.agents/docs.df` for native documentation configuration;
 - the declarable workflow graph for execution topology;
-- `.agents/rules/*.md` for mandatory contribution/governance behavior.
+- `.agents/notes/rules/*.md` for mandatory contribution/governance behavior.
 
-Only the current `repo.df`, `config.df`, and `docs.df` contracts are normative.
+Only the current `repo.df`, `config.df`, and `.agents/docs.df` contracts are normative.
 
-A material deviation from PRD MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
+A material deviation from `.agents/PRD.md` MUST be owner-approved and recorded as an accepted numbered ADR before implementation.
 
 Long-term notes and normative rules form one bidirectional current-truth graph:
 

@@ -4,11 +4,5 @@
     "name": "DarkFactory",
     "description": "Autonomous, governed software delivery built around a self-hosting df engine, versioned capabilities and GitHub as the durable control plane."
   },
-  "home": "docs/home.md",
-  "api": {
-    "typescript": {
-      "name": "DarkFactory API",
-      "tsconfig": "tsconfig.docs.json"
-    }
-  }
+  "home": ".agents/PRD.md"
 }

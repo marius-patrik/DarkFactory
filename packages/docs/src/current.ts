@@ -1,8 +1,7 @@
-import { existsSync, lstatSync, readFileSync, readlinkSync } from "node:fs";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 import { renderAgentsMarkdown } from "./agents.ts";
 import type { DocsContentGraph } from "./content.ts";
-import { renderReadmeMarkdown } from "./readme.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
 /** One deterministic violation of the repository's current-only documentation contract. */
@@ -11,16 +10,25 @@ export interface DocumentationTruthFinding {
 	message: string;
 }
 
-const PROJECTION_ALIASES = [
-	{ path: ".claude", target: ".agents" },
-	{ path: "CONTRIBUTING.md", target: "AGENTS.md" },
-	{ path: join(".agents", "README.md"), target: "../README.md" },
-	{ path: join(".agents", "AGENTS.md"), target: "../AGENTS.md" },
-	{ path: join(".agents", "CLAUDE.md"), target: "../AGENTS.md" },
+const CURRENT_ALIASES = [
+	{ path: "README.md", target: ".agents/PRD.md" },
+	{ path: "CONTRIBUTING.md", target: ".agents/AGENTS.md" },
 	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
 ] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
+	"AGENTS.md",
+	"CLAUDE.md",
+	"PLAN.md",
+	"PRD.md",
+	"docs.df",
+	join(".darkfactory", "docs.df"),
+	join("docs", "home.md"),
+	"tsconfig.docs.json",
+	".claude",
+	join(".agents", "README.md"),
+	join(".agents", "CLAUDE.md"),
+	join(".agents", "rules"),
 	"properdocs.yml",
 	"mkdocs.yml",
 	"harness/README.md",
@@ -31,24 +39,34 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"_rules",
 ] as const;
 
+function pathExists(path: string): boolean {
+	try {
+		lstatSync(path);
+		return true;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+		throw error;
+	}
+}
+
 /** Returns deterministic current-only documentation violations without mutating the repository. */
 export function currentDocumentationFindings(repoRoot: string, graph: DocsContentGraph): readonly DocumentationTruthFinding[] {
 	const findings: DocumentationTruthFinding[] = [];
 
 	for (const path of RETIRED_DOCUMENTATION_PATHS) {
-		if (existsSync(join(repoRoot, path))) {
+		if (pathExists(join(repoRoot, path))) {
 			findings.push({ path: path.replaceAll("\\", "/"), message: "retired documentation surface must not exist" });
 		}
 	}
 
-	for (const alias of PROJECTION_ALIASES) {
+	for (const alias of CURRENT_ALIASES) {
 		const absolute = join(repoRoot, alias.path);
-		let stat;
+		let stat: ReturnType<typeof lstatSync>;
 		try {
 			stat = lstatSync(absolute);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				findings.push({ path: alias.path.replaceAll("\\", "/"), message: "required projection discovery alias is missing" });
+				findings.push({ path: alias.path.replaceAll("\\", "/"), message: "required documentation discovery alias is missing" });
 				continue;
 			}
 			throw error;
@@ -56,25 +74,15 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 		if (!stat.isSymbolicLink()) {
 			findings.push({
 				path: alias.path.replaceAll("\\", "/"),
-				message: "projection discovery alias must remain a symlink, not a copied document",
+				message: "documentation discovery alias must remain a symlink, not a copied document",
 			});
 			continue;
 		}
 		if (readlinkSync(absolute) !== alias.target) {
 			findings.push({
 				path: alias.path.replaceAll("\\", "/"),
-				message: `projection discovery alias must target ${alias.target}`,
+				message: `documentation discovery alias must target ${alias.target}`,
 			});
-		}
-	}
-
-	const claudePath = join(repoRoot, "CLAUDE.md");
-	if (!existsSync(claudePath)) {
-		findings.push({ path: "CLAUDE.md", message: "Claude discovery import is missing" });
-	} else {
-		const claude = readFileSync(claudePath, "utf8").replaceAll("\r\n", "\n").trim();
-		if (claude !== "@AGENTS.md") {
-			findings.push({ path: "CLAUDE.md", message: "Claude discovery import must be exactly @AGENTS.md" });
 		}
 	}
 
@@ -82,26 +90,25 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 	for (const message of relations.findings) findings.push({ path: ".agents", message });
 	if (relations.findings.length > 0) return findings;
 
-	const readmePath = join(repoRoot, "README.md");
-	if (!existsSync(readmePath)) {
-		findings.push({ path: "README.md", message: "generated README projection is missing" });
-	} else {
-		const actual = readFileSync(readmePath, "utf8").replaceAll("\r\n", "\n");
-		const expected = renderReadmeMarkdown(graph);
-		if (actual !== expected) {
-			findings.push({ path: "README.md", message: "committed README differs from the canonical repository-notes projection" });
+	const agentsPath = join(repoRoot, ".agents", "AGENTS.md");
+	let agentsStat: ReturnType<typeof lstatSync>;
+	try {
+		agentsStat = lstatSync(agentsPath);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection is missing" });
+			return findings;
 		}
+		throw error;
 	}
-
-	const agentsPath = join(repoRoot, "AGENTS.md");
-	if (!existsSync(agentsPath)) {
-		findings.push({ path: "AGENTS.md", message: "generated AGENTS projection is missing" });
-	} else {
-		const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
-		const expected = renderAgentsMarkdown(graph);
-		if (actual !== expected) {
-			findings.push({ path: "AGENTS.md", message: "committed AGENTS differs from the canonical repository-rules projection" });
-		}
+	if (!agentsStat.isFile()) {
+		findings.push({ path: ".agents/AGENTS.md", message: "generated AGENTS projection must be a regular file" });
+		return findings;
+	}
+	const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
+	const expected = renderAgentsMarkdown(graph);
+	if (actual !== expected) {
+		findings.push({ path: ".agents/AGENTS.md", message: "committed AGENTS differs from the canonical repository-rules projection" });
 	}
 
 	return findings;

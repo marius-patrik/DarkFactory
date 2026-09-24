@@ -38,12 +38,10 @@ function normalizePath(path: string): string {
 
 function isDocumentationFile(path: string): boolean {
 	return (
-		path === "README.md" ||
-		path === "PRD.md" ||
-		path === "PLAN.md" ||
-		path === "AGENTS.md" ||
-		path.startsWith("docs/") ||
-		path.startsWith(".agents/rules/") ||
+		path === ".agents/PRD.md" ||
+		path === ".agents/AGENTS.md" ||
+		path === ".agents/docs.df" ||
+		path.startsWith(".agents/notes/rules/") ||
 		path.startsWith(".agents/notes/adr/")
 	);
 }
@@ -52,10 +50,9 @@ function isProductContractFile(path: string): boolean {
 	return (
 		path === "repo.df" ||
 		path === "config.df" ||
-		path === "docs.df" ||
+		path === ".agents/docs.df" ||
 		path === ".darkfactory/repo.df" ||
 		path === ".darkfactory/config.df" ||
-		path === ".darkfactory/docs.df" ||
 		path === "package.json" ||
 		/^packages\/[^/]+\/package\.json$/u.test(path) ||
 		/^capabilities\/[^/]+\/capability\.(?:ts|js|mjs)$/u.test(path)
@@ -64,8 +61,8 @@ function isProductContractFile(path: string): boolean {
 
 function isGovernanceFile(path: string): boolean {
 	return (
-		path === "AGENTS.md" ||
-		path.startsWith(".agents/rules/") ||
+		path === ".agents/AGENTS.md" ||
+		path.startsWith(".agents/notes/rules/") ||
 		path.startsWith(".agents/notes/adr/") ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("harness/assets/workflows/")
@@ -97,7 +94,7 @@ export function classifyDocumentationImpact(
 
 	for (const path of files) {
 		if (apiEntries.has(path)) impactKinds.add("public-api");
-		if (isProductContractFile(path) || path === "PRD.md" || path === "docs/home.md") impactKinds.add("product");
+		if (isProductContractFile(path) || path === ".agents/PRD.md") impactKinds.add("product");
 		if (isGovernanceFile(path)) impactKinds.add("governance");
 	}
 

@@ -14,7 +14,7 @@ Specification proceeds in one direction, and each stage is settled before implem
 it:
 
 ```text
-PRD.md  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
+.agents/PRD.md  →  accepted ADRs when a durable architecture decision is required  →  Request/Planning
 ```
 
 - **Issues track settled intent and executable work, not unresolved architecture debates.** An issue
@@ -29,9 +29,9 @@ PRD.md  →  accepted ADRs when a durable architecture decision is required  →
 - **Use an Epic when genuinely independent child Requests benefit from separate lifecycle,
   ownership, sequencing or delivery.** Epic relationships organize Requests; they are not mandatory
   wrappers around every large change and never waive child Planning/evidence when children exist.
-- `PLAN.md` may record repository-wide strategy and dependency order, but it is not a second live
-  work ledger. Concrete current implementation steps, checkboxes, approvals and evidence live in the
-  active Request/Planning record plus the workflow graph/GitHub/project state.
+The active Request/Planning record is the single live work ledger. Concrete current implementation
+steps, checkboxes, approvals and evidence live there with the workflow graph and GitHub/project
+state.
 
 ## Rationale
 
