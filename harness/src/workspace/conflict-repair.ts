@@ -3,8 +3,7 @@ import { join, resolve } from "node:path";
 import { type CommitIdentity, commitChunk } from "./commitChunk.ts";
 import { createWorktree } from "./createWorktree.ts";
 import { runGit } from "./git.ts";
-import { hasConflicts, resolveDefaultBranch } from "./gitWorkspace.ts";
-import { pushBranch } from "./pushBranch.ts";
+import { hasConflicts, pushWithLease, resolveDefaultBranch } from "./gitWorkspace.ts";
 import { type DetectedVerificationResult, runDetectedVerification } from "./runVerify.ts";
 import { updateBranch } from "./updateBranch.ts";
 
@@ -85,6 +84,16 @@ export async function repairBranchConflicts(options: ConflictRepairOptions): Pro
 		base: defaultBranch,
 		workRoot: worktreesDir,
 	});
+	let expectedRemoteSha: string;
+	try {
+		expectedRemoteSha = runGit(worktreePath, ["rev-parse", `refs/remotes/origin/${options.branch}`]);
+	} catch (error) {
+		return {
+			status: "failed",
+			defaultBranch,
+			error: `Conflict repair requires an existing observed remote branch ${options.branch}: ${(error as Error).message}`,
+		};
+	}
 
 	// 3. Attempt deterministic git update first
 	let conflictedFiles: string[] = [];
@@ -197,7 +206,14 @@ export async function repairBranchConflicts(options: ConflictRepairOptions): Pro
 		timeoutMs: options.verifyTimeoutMs,
 	});
 
-	const failedActions = verification.filter((v) => v.result && (v.result.exitCode !== 0 || v.result.timedOut));
+	const failedActions = verification.filter(
+		(v) =>
+			!v.action.supported ||
+			!v.action.command ||
+			!v.result ||
+			v.result.exitCode !== 0 ||
+			v.result.timedOut,
+	);
 	if (failedActions.length > 0) {
 		try {
 			runGit(worktreePath, ["merge", "--abort"]);
@@ -244,11 +260,15 @@ export async function repairBranchConflicts(options: ConflictRepairOptions): Pro
 	}
 
 	try {
-		pushBranch({
-			worktree: worktreePath,
-			remote: "origin",
-			branch: options.branch,
-		});
+		const pushedSha = pushWithLease(worktreePath, "origin", options.branch, expectedRemoteSha);
+		if (pushedSha !== commitSha) {
+			return {
+				status: "failed",
+				defaultBranch,
+				conflictedFiles,
+				error: `Pushed SHA ${pushedSha} does not match repaired commit ${commitSha}.`,
+			};
+		}
 	} catch (error) {
 		return {
 			status: "failed",

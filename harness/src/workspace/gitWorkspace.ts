@@ -447,7 +447,7 @@ export function abortOperation(worktree: string): void {
  * @param branch - The target branch.
  * @param expectedOldSHA - The exact expected old SHA on the remote. If remote has moved, push is refused.
  */
-export function pushWithLease(worktree: string, remote: string, branch: string, expectedOldSHA: string): void {
+export function pushWithLease(worktree: string, remote: string, branch: string, expectedOldSHA: string): string {
 	if (!branch) {
 		throw new Error("Branch name is required for push with lease.");
 	}
@@ -459,12 +459,19 @@ export function pushWithLease(worktree: string, remote: string, branch: string, 
 	if (!expectedOldSHA || !/^[0-9a-fA-F]{4,64}$/.test(expectedOldSHA)) {
 		throw new Error(`Invalid expected SHA for push with lease: ${expectedOldSHA}`);
 	}
+	const localSha = runGit(worktree, ["rev-parse", "HEAD"]);
 	try {
 		runGit(worktree, ["push", `--force-with-lease=${branch}:${expectedOldSHA}`, remote, `HEAD:refs/heads/${branch}`]);
 	} catch (error) {
-		if (error instanceof GitError && error.stderr.includes("stale info")) {
+		if (error instanceof GitError && /stale info|rejected|fetch first/iu.test(error.stderr)) {
 			throw new Error(`Push refused: remote branch '${branch}' has been updated independently (stale lease).`);
 		}
 		throw error;
 	}
+	runGit(worktree, ["fetch", remote, `refs/heads/${branch}:refs/remotes/${remote}/${branch}`]);
+	const remoteSha = runGit(worktree, ["rev-parse", `refs/remotes/${remote}/${branch}`]);
+	if (remoteSha !== localSha) {
+		throw new Error(`Push verification failed for ${remote}/${branch}: expected ${localSha}, observed ${remoteSha}`);
+	}
+	return remoteSha;
 }

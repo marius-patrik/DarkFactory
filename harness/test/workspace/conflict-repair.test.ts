@@ -139,4 +139,30 @@ describe("conflict-repair: deterministic update and model conflict resolution", 
 			expect(result.error).toContain("Unresolved conflict markers remain");
 		}
 	});
+	test("lease-safe push refuses stale remote state", () => {
+		runGit(localRepo, ["checkout", "-b", "feat/lease"]);
+		writeFileSync(join(localRepo, "lease.txt"), "initial\n");
+		runGit(localRepo, ["add", "lease.txt"]);
+		runGit(localRepo, ["commit", "-m", "lease initial"]);
+		runGit(localRepo, ["push", "origin", "feat/lease"]);
+		const expected = runGit(localRepo, ["rev-parse", "HEAD"]);
+
+		const other = join(baseDir, "other");
+		runGit(baseDir, ["clone", remoteRepo, other]);
+		runGit(other, ["config", "user.name", "Other"]);
+		runGit(other, ["config", "user.email", "other@example.com"]);
+		runGit(other, ["checkout", "feat/lease"]);
+		writeFileSync(join(other, "lease.txt"), "remote advanced\n");
+		runGit(other, ["add", "lease.txt"]);
+		runGit(other, ["commit", "-m", "advance remote"]);
+		runGit(other, ["push", "origin", "feat/lease"]);
+
+		writeFileSync(join(localRepo, "lease.txt"), "local rewrite\n");
+		runGit(localRepo, ["add", "lease.txt"]);
+		runGit(localRepo, ["commit", "-m", "local rewrite"]);
+
+		const { pushWithLease } = require("../../src/workspace/gitWorkspace.ts") as typeof import("../../src/workspace/gitWorkspace.ts");
+		expect(() => pushWithLease(localRepo, "origin", "feat/lease", expected)).toThrow(/stale lease/iu);
+	});
+
 });
