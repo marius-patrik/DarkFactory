@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { CapabilityDefinition, CapabilityModule } from "./abi.ts";
-import { definitionFromModule } from "./compatibility.ts";
+import { definitionFromModule } from "./abi-version.ts";
 
 const ENTRYPOINTS = ["capability.ts", "capability.js", "capability.mjs"] as const;
 
