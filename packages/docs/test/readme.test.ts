@@ -29,7 +29,7 @@ function graph(): DocsContentGraph {
 				kind: "adr",
 				title: "ADR-0006 — The pipeline runs only df",
 				source: ".agents/notes/adr/0006-the-pipeline-runs-only-df.md",
-				markdown: "# ADR-0006 — The pipeline runs only df\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n",
+				markdown: "# ADR-0006 — The pipeline runs only df\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nDecision.\n\n## Consequences\n\nConsequence.\n",
 			},
 		],
 	};

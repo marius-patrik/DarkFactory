@@ -50,13 +50,13 @@ export interface SkillDriftItem {
 }
 
 /**
- * Directory holding the bundled skills: the source tree when running from a checkout, or the `assets/skills` folder
+ * Directory holding first-party skills: canonical `.agents/skills` in a checkout, or packaged `assets/skills`
  * shipped next to the compiled `df` binary (the same places workflow templates are read from).
  *
  * @returns The first existing skills directory, or undefined when df was installed without skills.
  */
 export function bundledSkillsDir(): string | undefined {
-	const candidates = [join(import.meta.dir, "../../assets/skills"), join(dirname(process.execPath), "assets/skills")];
+	const candidates = [join(import.meta.dir, "../../../.agents/skills"), join(dirname(process.execPath), "assets/skills")];
 	return candidates.find((candidate) => existsSync(candidate));
 }
 

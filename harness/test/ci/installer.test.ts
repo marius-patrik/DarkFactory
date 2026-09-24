@@ -11,7 +11,7 @@ import {
 	updateWorkflows,
 } from "../../src/ci/installer.ts";
 
-const bundledSkillPath = (name: string) => join(import.meta.dir, "../../assets/skills", name, "SKILL.md");
+const bundledSkillPath = (name: string) => join(import.meta.dir, "../../../.agents/skills", name, "SKILL.md");
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
 	await mkdir(join(temp, ".darkfactory"), { recursive: true });
@@ -135,7 +135,7 @@ describe("Workflow installer & updater", () => {
 });
 
 describe("Bundled skills installer & drift", () => {
-	it("discovers bundled skills from harness/assets/skills", async () => {
+	it("discovers first-party skills from canonical .agents/skills", async () => {
 		const skills = await discoverBundledSkills();
 		expect(skills.length).toBeGreaterThanOrEqual(1);
 		expect(skills).toContain("darkfactory-auth");

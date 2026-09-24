@@ -5,9 +5,9 @@ import { join } from "node:path";
 // Paths come from this file, never from process.cwd(): the suite runs from harness/ and from the repository root.
 const harnessDir = join(import.meta.dir, "..", "..");
 const repoDir = join(harnessDir, "..");
-const skillsDir = join(harnessDir, "assets", "skills");
+const skillsDir = join(repoDir, ".agents", "skills");
 
-/** Bundled skills; each chunk that adds one appends its name. */
+/** Canonical first-party skills. */
 const EXPECTED_SKILLS = ["darkfactory-auth", "df-operator", "pipeline-operations", "provider-onboarding"];
 
 /** Top-level df commands named in the CLI's usage() text. */
@@ -29,8 +29,8 @@ function skillCommands(markdown: string): string[] {
 
 const skillPath = (name: string) => join(skillsDir, name, "SKILL.md");
 
-describe("bundled skills", () => {
-	test("the bundled skill directories are exactly the expected skills", () => {
+describe("canonical first-party skills", () => {
+	test("the canonical skill directories are exactly the expected skills", () => {
 		const dirs = readdirSync(skillsDir, { withFileTypes: true })
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name);
@@ -57,10 +57,8 @@ describe("bundled skills", () => {
 		expect(content).not.toContain("gh secret set");
 	});
 
-	test("this repository's installed darkfactory-auth skill is the bundled one", () => {
-		expect(readFileSync(join(repoDir, ".agents", "skills", "darkfactory-auth", "SKILL.md"), "utf8")).toBe(
-			readFileSync(skillPath("darkfactory-auth"), "utf8"),
-		);
+	test("the canonical darkfactory-auth skill is readable from the repository note tree", () => {
+		expect(readFileSync(skillPath("darkfactory-auth"), "utf8")).toContain("name: darkfactory-auth");
 	});
 
 	test("the command check recognises unknown commands", () => {

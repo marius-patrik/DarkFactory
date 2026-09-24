@@ -29,17 +29,21 @@ describe("packageAssets without a native pi-tui module", () => {
 		const { join } = await import("node:path");
 		const { existsSync } = await import("node:fs");
 		const { packageAssets } = await import("../scripts/package-assets.ts");
-		const root = await mkdtemp(join(tmpdir(), "df-pack-"));
+		const repository = await mkdtemp(join(tmpdir(), "df-pack-"));
+		const root = join(repository, "harness");
 		try {
 			await makeDir(join(root, "node_modules", "@silvia-odwyer", "photon-node"), { recursive: true });
 			await writeFile(join(root, "node_modules", "@silvia-odwyer", "photon-node", "photon_rs_bg.wasm"), "wasm");
 			await makeDir(join(root, "assets"), { recursive: true });
 			await writeFile(join(root, "assets", "a.json"), "{}");
+			await makeDir(join(repository, ".agents", "skills", "fixture"), { recursive: true });
+			await writeFile(join(repository, ".agents", "skills", "fixture", "SKILL.md"), "# fixture\n");
 			await packageAssets(root, "linux", "x64");
 			expect(existsSync(join(root, "dist", "photon_rs_bg.wasm"))).toBe(true);
 			expect(existsSync(join(root, "dist", "assets", "a.json"))).toBe(true);
+			expect(existsSync(join(root, "dist", "assets", "skills", "fixture", "SKILL.md"))).toBe(true);
 		} finally {
-			await rm(root, { recursive: true, force: true });
+			await rm(repository, { recursive: true, force: true });
 		}
 	});
 });

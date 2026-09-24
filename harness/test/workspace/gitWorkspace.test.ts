@@ -215,7 +215,9 @@ test("pushWithLease sanitizes branch name and expected SHA against command injec
 test("merge and rebase throw proper errors for genuine git failures other than conflicts", async () => {
 	await expect(merge(repo(), "non-existent-branch")).rejects.toThrow(/Git merge failed/);
 	await expect(rebase(repo(), "non-existent-branch")).rejects.toThrow(/Git rebase failed/);
-	test("rebase conflict state reports commit SHAs instead of commit object text", () => {
+});
+
+test("rebase conflict state reports commit SHAs instead of commit object text", () => {
 		const root = mkdtempSync(join(tmpdir(), "df-git-rebase-"));
 		try {
 			runGit(root, ["init", "-b", "darkfactory"]);
@@ -270,5 +272,3 @@ test("merge and rebase throw proper errors for genuine git failures other than c
 			rmSync(root, { recursive: true, force: true });
 		}
 	});
-
-});
