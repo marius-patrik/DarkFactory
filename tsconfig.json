@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["bun"],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "packages/*/src",
+    "packages/*/test",
+    "capabilities/**/*.ts",
+    "harness/src",
+    "harness/test",
+    "scripts/**/*.ts"
+  ]
+}

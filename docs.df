@@ -8,7 +8,7 @@
   "api": {
     "typescript": {
       "name": "DarkFactory API",
-      "tsconfig": "harness/tsconfig.json"
+      "tsconfig": "tsconfig.json"
     }
   }
 }
