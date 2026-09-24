@@ -12,7 +12,6 @@ SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
 EXPECTED_WORKFLOWS = [
     "agent.yml",
-    "auto-format.yml",
     "ci.yml",
     "deploy-docs.yml",
     "open-pr.yml",
@@ -448,7 +447,7 @@ def test_workflows_separate_development_from_release_pushes():
     assert manifest.default_branch == "main"
     assert manifest.development_branch == "develop"
 
-    for name in ("ci.yml", "auto-format.yml", "project-automation.yml"):
+    for name in ("ci.yml", "project-automation.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
         assert "[develop]" in content, f"{name} must follow the development branch"
 
@@ -720,11 +719,10 @@ def test_repository_documents_name_the_native_docs_contract():
 
 
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
-#: App. `ci`, `auto-format`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
+#: App. `ci`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
 #: only within their own repository with `GITHUB_TOKEN`, which has its own quota and needs no App.
 APP_AUTHENTICATED_WORKFLOWS = [
     "agent.yml",
-    "auto-format.yml",
     "install.yml",
     "open-pr.yml",
     "pr-approval-automerge.yml",
@@ -1078,20 +1076,6 @@ def test_a_reinstall_updates_the_pull_request_it_finds():
     assert "already exists" not in step, "reporting it and moving on is what left them unmergeable"
 
 
-def test_a_formatting_commit_can_still_be_checked():
-    """GitHub runs no workflow for a push made with `GITHUB_TOKEN`.
-
-    So a formatting commit pushed that way advances a pull request's head to a commit **nothing
-    ever checks**, and a protected branch then waits forever for contexts that will never report.
-    Every consumer's installation pull request sat in that state: green checks on the commit before,
-    none at all on the head, and nothing in the pull request explaining it.
-    """
-    content = _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
-    assert "create-github-app-token" in content, "the formatter must be able to push as the App"
-    checkout = content.split("Checkout repository", 1)[1].split("\n      - name:", 1)[0]
-    assert "app-token.outputs.token" in checkout, "and must check out with that token"
-
-
 def test_no_gh_call_in_repo_settings_bypasses_the_token_chooser():
     """Reaching for subprocess directly is how a call comes to use the wrong token.
 
@@ -1127,52 +1111,6 @@ def test_the_install_issue_number_is_validated_before_it_is_used():
     )
     assert "--json number --jq .number" not in step, "gh issue create has no --json"
     assert "exit 1" in step, "an unusable number must stop the run, not reach the pull request"
-
-
-class TestTheFormatterDoesNotBlockItsOwnChecks:
-    """Its commit becomes the head of a pull request, so what it does to that head matters."""
-
-    def _step(self) -> str:
-        """Returns the commands of the formatter's commit step, without its comments.
-
-        The comments explain what must not be there, and quote it to do so, so a test reading them
-        would fail on the explanation rather than on the behaviour.
-
-        Returns:
-            The step's command lines.
-        """
-        step = (
-            _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
-            .split("Commit and push formatting changes", 1)[1]
-            .split("\n      - name:", 1)[0]
-        )
-        return "\n".join(line for line in step.splitlines() if not line.strip().startswith("#"))
-
-    def test_the_commit_does_not_skip_ci(self):
-        """A head that skipped CI can never satisfy a required check.
-
-        The previous head's green runs do not carry over, so the pull request sits BLOCKED with
-        every check reported against a commit that is no longer current — and nothing in the UI
-        explains it. Both protected consumers were stuck exactly there.
-        """
-        assert "[skip ci]" not in self._step()
-
-    def test_submodules_are_not_staged(self):
-        """`git add -A` staged a gitlink the formatter had not touched.
-
-        The checked-out submodule differed from the recorded pointer, so every run committed that
-        difference, and the next run found it again. A formatter that never converges keeps moving
-        the head of every pull request it touches.
-        """
-        step = self._step()
-        assert "git add -A" not in step
-        assert "exclude,attr:submodule" in step
-
-    def test_the_default_branch_is_not_hardcoded(self):
-        """A consumer's default branch is not this repository's."""
-        step = self._step()
-        assert '"darkfactory"' not in step
-        assert "default_branch" in step
 
 
 def test_bot_comments_do_not_start_an_agent_container():
