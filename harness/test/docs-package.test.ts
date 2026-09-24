@@ -42,7 +42,10 @@ async function fixture(withApi = false): Promise<string> {
 	await writeFile(join(root, "PRD.md"), "# Product\n");
 	await writeFile(join(root, "PLAN.md"), "# Plan\n");
 	await writeFile(join(root, "AGENTS.md"), "# Rules projection\n");
-	await writeFile(join(root, ".agents", "rules", "001-test.md"), "# Rule\n");
+	await writeFile(
+		join(root, ".agents", "rules", "001-test.md"),
+		"---\\nid: DF-RULE-001\\ntitle: Fixture rule\\nstatus: normative\\n---\\n# Rule 1 — Fixture rule\\n\\n## Requirement\\n\\nFixture requirement.\\n\\n## Rationale\\n\\nFixture rationale.\\n\\n## Enforcement\\n\\nFixture enforcement.\\n\\n## Exceptions\\n\\nNone.\\n\\n## Change control\\n\\nDeliberate.\\n",
+	);
 	await writeFile(join(root, ".agents", "notes", "adr", "0001-test.md"), "# ADR-0001 — Test\n\n**Status**: Accepted\n");
 	await writeFile(join(root, ".agents", "notes", "adr", "README.md"), "# Decisions\n");
 	await writeFile(
@@ -91,7 +94,6 @@ describe("@darkfactory/docs", () => {
 			"agents",
 			"agents-rules-001-test",
 			"agents-notes-adr-0001-test",
-			"agents-notes-adr-readme",
 		]);
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
 	});
@@ -124,11 +126,14 @@ describe("@darkfactory/docs", () => {
 		expect(JSON.parse(await readFile(join(site, "content.json"), "utf8")).api.name).toBe("Fixture API");
 	});
 
-	test("renders README from the canonical home page", async () => {
+	test("renders README as the canonical notes index", async () => {
 		const root = await fixture();
-		expect(renderReadmeMarkdown(compileDocsContentGraph(root))).toBe(
-			`${README_GENERATED_MARKER}\n\n# Home\n\nSee [the PRD](PRD.md).\n`,
-		);
+		const markdown = renderReadmeMarkdown(compileDocsContentGraph(root));
+		expect(markdown.startsWith(README_GENERATED_MARKER)).toBe(true);
+		expect(markdown).toContain("# DarkFactory Repository Notes");
+		expect(markdown).toContain("ADR-0001");
+		expect(markdown).toContain("DF-RULE-001");
+		expect(markdown).not.toContain("# Home");
 	});
 
 	test("the repository README is the exact generated homepage projection", async () => {
