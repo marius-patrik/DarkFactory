@@ -53,7 +53,7 @@ The final first-party package boundaries are:
 - `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms and config resolution;
 - `@darkfactory/capability` — capability ABI, discovery/loader/resolution and deterministic adapter/build tooling;
 - `@darkfactory/github` — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;
-- `@darkfactory/keychain` — machine/harness credential custody and authentication;
+- `@darkfactory/keychain` — machine/runtime credential custody and authentication;
 - `@darkfactory/auth` — human/browser GitHub App authentication and sessions;
 - `@darkfactory/docs` — headless documentation compiler/content graph;
 - `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
@@ -107,7 +107,7 @@ One canonical TypeScript capability definition is the implementation source. Bui
 - standalone MCP server form;
 - supported Claude/Codex/agent skills/plugins/manifests.
 
-There must not be independent handwritten implementations of the same capability for each harness.
+There must not be independent handwritten implementations of the same capability for each runtime surface, agent integration, or consumer.
 
 Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.
 
@@ -222,7 +222,7 @@ The repository default branch is always discovered from repository state/config,
 
 ## 11. Keychain and machine credentials
 
-`@darkfactory/keychain` is the sole machine/harness credential owner.
+`@darkfactory/keychain` is the sole machine/runtime credential owner.
 
 Credential/account/vault updates are transactionally serialized. Multi-file vault representations cannot expose a mixed generation after interruption. Replicated/synchronized secret state converges deterministically regardless of merge direction, represents deletion explicitly so removed secrets cannot be resurrected by stale replicas, and does not resolve equal-version conflicts by caller-local preference.
 

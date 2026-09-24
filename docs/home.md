@@ -42,7 +42,7 @@ The final DarkFactory architecture is a root Bun workspace:
 | `@darkfactory/core` | Execution kernel, graph/run state, routing/provider mechanisms and configuration resolution |
 | `@darkfactory/capability` | Capability ABI, discovery/loader/resolution and generated adapter/build tooling |
 | `@darkfactory/github` | Typed GitHub REST/GraphQL substrate |
-| `@darkfactory/keychain` | Machine/harness credentials, OAuth, tokens, refresh, secure storage and GitHub App credentials |
+| `@darkfactory/keychain` | Machine/runtime credentials, OAuth, tokens, refresh, secure storage and GitHub App credentials |
 | `@darkfactory/auth` | Human/browser GitHub App authentication and web sessions |
 | `@darkfactory/docs` | Headless documentation compiler and content graph |
 | `@darkfactory/cli` | `df` CLI, command composition and TUI |
@@ -95,7 +95,7 @@ Two packages deliberately separate trust boundaries.
 
 ### `@darkfactory/keychain`
 
-Owns all machine/harness credential custody: provider keys/OAuth, refresh tokens, multi-account slots, imported CLI credentials, GitHub App private-key/JWT/installation tokens, local user credentials, redaction and secret scanning.
+Owns all machine/runtime credential custody: provider keys/OAuth, refresh tokens, multi-account slots, imported CLI credentials, GitHub App private-key/JWT/installation tokens, local user credentials, redaction and secret scanning.
 
 Capabilities declare credential requirements rather than reading raw environment variables or keychains themselves.
 
