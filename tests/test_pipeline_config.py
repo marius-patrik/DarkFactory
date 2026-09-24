@@ -455,29 +455,38 @@ def test_runtime_checkout_is_skipped_when_running_in_place():
     assert "if: github.repository != 'marius-patrik/DarkFactory'" in content
 
 
-def test_workflows_trigger_on_the_declared_default_branch():
-    """DarkFactory's default branch is named after itself, so a consumer that adds it as a
-    remote gets a `darkfactory` branch with nothing to rename. Workflows that still watch
-    `main` would simply never fire.
-    """
+def test_workflows_separate_development_from_release_pushes():
+    """Quality runs on develop; production release/deploy runs on main."""
     import manifest as manifest_module
 
-    branch = manifest_module.load(REPO_ROOT).default_branch
-    for name in ("ci.yml", "deploy-docs.yml", "release.yml", "project-automation.yml"):
+    manifest = manifest_module.load(REPO_ROOT)
+    assert manifest.default_branch == "main"
+    assert manifest.development_branch == "develop"
+
+    for name in ("ci.yml", "auto-format.yml", "project-automation.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
-        if "branches:" not in content:
-            continue
-        assert (
-            f'["{branch}"]' in content or f"[{branch}]" in content or "**" in content
-        ), f"{name} does not trigger on {branch!r}"
+        assert "[develop]" in content, f"{name} must follow the development branch"
+
+    for name in ("deploy-docs.yml", "release.yml"):
+        content = _read(os.path.join(WORKFLOW_DIR, name))
+        assert "[main]" in content, f"{name} must follow the stable release branch"
 
 
-def test_branch_protection_targets_the_declared_default_branch():
-    """Protecting a branch that is not the default protects nothing."""
+def test_branch_protection_models_both_branch_roles():
+    """The release lane and integration lane have different protection contracts."""
     content = _read(os.path.join(SCRIPT_DIR, "repo_settings.py"))
-    assert "branches/main/protection" not in content, "the branch must not be hardcoded"
     assert "MANIFEST.default_branch" in content
+    assert "MANIFEST.development_branch" in content
+    assert '"main-source"' in content
 
+
+def test_main_source_gate_requires_develop_from_the_same_repository():
+    """A PR to main is a release promotion, not a general contribution path."""
+    content = _read(os.path.join(WORKFLOW_DIR, "branch-policy.yml"))
+    assert "branches: [main]" in content
+    assert 'HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}' in content
+    assert 'test "$HEAD_BRANCH" = "develop"' in content
+    assert 'test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"' in content
 
 def test_the_docs_job_uses_the_native_docs_contract():
     """The direct docs-check job detects docs.df and runs the first-party compiler."""
