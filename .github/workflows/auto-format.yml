@@ -2,7 +2,7 @@ name: Auto Format
 
 on:
   push:
-    branches: ["**"]
+    branches: [develop]
   workflow_dispatch:
 
   # Consumers call this rather than copying it, so the scripts it runs live in one place.

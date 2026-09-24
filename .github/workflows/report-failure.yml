@@ -12,6 +12,7 @@ on:
     workflows:
       - Autonomous Agent
       - Auto Format
+      - Branch Policy
       - CI
       - Deploy Documentation
       - Install Pipeline

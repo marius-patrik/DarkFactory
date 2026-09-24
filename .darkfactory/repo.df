@@ -6,7 +6,8 @@
     "display_name": "DarkFactory",
     "project_title": "DarkFactory",
     "agent_slug": "darkfactory-agent",
-    "default_branch": "darkfactory",
+    "default_branch": "main",
+    "development_branch": "develop",
     "description": "Self-hosting autonomous software delivery built around a declarable workflow graph, versioned capabilities and GitHub as the durable control plane.",
     "topics": [
       "agentic-coding",
