@@ -35,9 +35,9 @@
     "ref": null
   },
   "versioning": {
-    "mode": "semver",
+    "mode": "manual",
     "tag_prefix": "v",
-    "initial": "0.1.0"
+    "initial": "3a.1.0"
   },
   "environment": {
     "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
@@ -166,9 +166,9 @@
     ]
   },
   "pages": {
-    "$comment": "Branch source rather than the Actions build type, so per-pull-request previews can live under pr-<N>/ on the same site. GitHub Pages has exactly one source.",
-    "build_type": "legacy",
-    "branch": "gh-pages",
+    "$comment": "GitHub Actions publishes the main branch site; no generated branch is retained.",
+    "build_type": "workflow",
+    "branch": "main",
     "path": "/"
   },
   "app": {

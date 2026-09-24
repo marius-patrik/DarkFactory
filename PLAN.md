@@ -221,7 +221,7 @@ Protected categories while active:
 - canonical `darkfactory`;
 - open PR heads;
 - recovery refs explicitly required by an open Request;
-- deployment refs such as `gh-pages`.
+- deployment configuration and generated Pages artifacts.
 
 Before release freeze and before #68 closure require:
 

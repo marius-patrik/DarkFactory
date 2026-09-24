@@ -4,21 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      pipeline-ref:
-        description: "Commit SHA of DarkFactory to use. Empty means this repository."
-        required: false
-        type: string
-        default: ""
-      pipeline-repo:
-        description: "Repository containing the shared DarkFactory docs compiler."
-        required: false
-        type: string
-        default: "marius-patrik/DarkFactory"
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -30,41 +20,28 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check out pinned DarkFactory
-        if: inputs.pipeline-ref != ''
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.pipeline-repo }}
-          ref: ${{ inputs.pipeline-ref }}
-          path: .darkfactory-runtime
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install DarkFactory workspace
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          cd "$ROOT"
-          bun install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Build documentation
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
+        run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"
 
-      - name: Publish to gh-pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: site
-          clean: true
-          clean-exclude: |
-            pr-*
-          commit-message: "docs: publish site from ${{ github.sha }}"
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

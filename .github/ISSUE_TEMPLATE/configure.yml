@@ -126,8 +126,8 @@ body:
     attributes:
       label: "Publishing"
       description: >
-        Pages must be enabled on `gh-pages` and the default branch must be permitted to deploy to
-        the `github-pages` environment. A deploy from a branch the environment forbids fails with
+        Pages must use the GitHub Actions source and the default branch must be permitted to deploy
+        to the `github-pages` environment. A deploy from a branch the environment forbids fails with
         no steps and no error text, which is hard to read as a permissions problem.
     validations:
       required: false

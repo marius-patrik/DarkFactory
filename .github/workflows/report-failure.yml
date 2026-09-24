@@ -18,7 +18,7 @@ on:
       - Install Pipeline
       - Open Pull Request
       - PR Approval and Auto-Merge
-      - Preview Documentation
+      - Validate Documentation
       - Project Board Automation
       - Release
       - Update Submodules
