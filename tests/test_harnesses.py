@@ -429,7 +429,6 @@ def test_df_declares_no_credentials_because_it_reads_its_own_accounts():
     assert REGISTRY["df"].credentials == ()
 
 
-
 def test_agent_workflow_passes_exactly_the_declared_credentials():
     """A workflow missing a secret does not fail; it silently shortens df's chain.
 

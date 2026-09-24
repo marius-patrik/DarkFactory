@@ -16,6 +16,7 @@ def _read(path: str) -> str:
     with open(path, encoding="utf-8") as handle:
         return handle.read()
 
+
 def test_workflow_local_script_references_resolve():
     """Every repository-local script referenced by a workflow must exist.
 

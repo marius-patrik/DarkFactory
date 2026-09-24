@@ -15,7 +15,6 @@ def _index(steps, name):
     return next(i for i, step in enumerate(steps) if step.get("name") == name)
 
 
-
 def test_ci_quality_is_detector_driven_and_aggregated():
     workflow = _workflow(".github/workflows/ci.yml")
     jobs = workflow["jobs"]
