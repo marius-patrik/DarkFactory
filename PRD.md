@@ -289,9 +289,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-The docs homepage and committed `README.md` are two renderers of the same canonical semantic content. CI fails when the README projection drifts.
-
-README is therefore not an independent product-description source.
+`docs/home.md` is the canonical product-documentation homepage. Root `README.md` is a deterministic generated index of the current accepted long-term notes under `.agents/notes/**`; root `AGENTS.md` is the deterministic generated projection/index of canonical `.agents/rules/**`. Neither root projection is an authored product/specification source. CI fails when either projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
 
 ## 14. DarkFactory Web
 
@@ -409,7 +407,7 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
 - real TypeScript API docs are published;
-- README generation from docs content is deterministic;
+- README/AGENTS generation from canonical notes/rules is deterministic and current;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
 - all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
