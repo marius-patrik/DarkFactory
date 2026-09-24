@@ -49,8 +49,8 @@
   city: "Hradci Králové",
   year: 2026,
 
-  title: "Praktický dopad AI na softwarové inženýrství - AI agenti a agentické inženýrství",
-  practical-title: "DarkFactory: Pipeline pro automatizované AI-asistované softwarové inženýrství",
+  title: "AI asistované softwarové inženýrství",
+  practical-title: "DarkFactory",
 
   annotation-cs: [
     Práce zkoumá přechod od konverzační asistence k delegovanému agentnímu vývoji a roli harnessu jako běhového a integračního prostředí coding agenta. Cílem je vysvětlit, jak propojení jazykového modelu s nástroji, stavem, verifikací a lidskými kontrolními body umožňuje řízené provádění softwarových úloh v praxi. Agentické inženýrství práce vymezuje jako soubor postupů, které činí AI-asistovaný vývoj účinným, kontrolovaným, opakovatelným a škálovatelným. Teoretická část vychází z odborných publikací a dokumentace nástrojů. Praktická část analyzuje systém DarkFactory prostřednictvím statické inspekce workflow, runneru, kontejnerového prostředí, deklarativního grafu a testů v přesně určené revizi `e9c10221`. Analýza dokládá fázované řízení požadavku, schvalovací brány, izolaci změn, automatické spouštění testů, seberevizi a obnovu běhu po vyčerpání kvóty. Výsledky ukazují, že praktická autonomie nevzniká pouze schopnostmi modelu, ale především návrhem harnessu a přesným rozdělením odpovědnosti mezi automatizované mechanismy a lidské rozhodování. Dostupná evidence však neměří kvalitu práce různých modelů ani provozní úspěšnost systému. Závěry jsou proto omezeny na strukturální vlastnosti této jediné reprodukovatelně pinované revize.
