@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CapabilityDefinition } from "@darkfactory/capability";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import { documentationMetadata } from "../../packages/docs/src/api.ts";
-import { type DocsContentGraph, includeCapabilityDocumentation } from "../../packages/docs/src/content.ts";
+import { documentationMetadata } from "../src/api.ts";
+import { type DocsContentGraph, includeCapabilityDocumentation } from "../src/content.ts";
 
 describe("detected documentation metadata", () => {
 	test("projects repository and capability evidence without a second detector", () => {

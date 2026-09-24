@@ -15,5 +15,8 @@
     "@darkfactory/protocol": "workspace:*",
     "@darkfactory/core": "workspace:*",
     "@darkfactory/capability": "workspace:*"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }

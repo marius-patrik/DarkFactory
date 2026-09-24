@@ -4,7 +4,7 @@ import {
 	CommandRegistry,
 	type CoreCliCommandDefinition,
 	createCommandRegistry,
-} from "../../packages/cli/src/registry.ts";
+} from "../src/registry.ts";
 
 const context: CapabilityRuntimeContext = {
 	repositoryRoot: "/repo",

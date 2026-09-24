@@ -4,7 +4,7 @@ import {
 	classifyDocumentationImpact,
 	evaluateDocumentationImpact,
 	parseDocsNoneAnnotation,
-} from "../../packages/docs/src/impact.ts";
+} from "../src/impact.ts";
 
 const evidence: RepositoryEvidence = {
 	root: "/repo",
