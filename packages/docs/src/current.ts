@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { DocsContentGraph } from "./content.ts";
 import { renderReadmeMarkdown } from "./readme.ts";
@@ -10,6 +10,15 @@ export interface DocumentationTruthFinding {
 	path: string;
 	message: string;
 }
+
+
+const PROJECTION_ALIASES = [
+	{ path: "CONTRIBUTING.md", target: "AGENTS.md" },
+	{ path: join(".agents", "README.md"), target: "../README.md" },
+	{ path: join(".agents", "AGENTS.md"), target: "../AGENTS.md" },
+	{ path: join(".agents", "CLAUDE.md"), target: "../AGENTS.md" },
+	{ path: join(".agents", "notes", "README.md"), target: "../../README.md" },
+] as const;
 
 const RETIRED_DOCUMENTATION_PATHS = [
 	"properdocs.yml",
@@ -29,6 +38,19 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 	for (const path of RETIRED_DOCUMENTATION_PATHS) {
 		if (existsSync(join(repoRoot, path))) {
 			findings.push({ path: path.replaceAll("\\", "/"), message: "retired documentation surface must not exist" });
+		}
+	}
+
+
+	for (const alias of PROJECTION_ALIASES) {
+		const absolute = join(repoRoot, alias.path);
+		if (!existsSync(absolute)) continue;
+		if (!lstatSync(absolute).isSymbolicLink()) {
+			findings.push({ path: alias.path.replaceAll("\\", "/"), message: "projection discovery alias must remain a symlink, not a copied document" });
+			continue;
+		}
+		if (readlinkSync(absolute) !== alias.target) {
+			findings.push({ path: alias.path.replaceAll("\\", "/"), message: `projection discovery alias must target ${alias.target}` });
 		}
 	}
 

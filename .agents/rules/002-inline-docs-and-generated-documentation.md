@@ -14,11 +14,10 @@ Public source APIs MUST be documented inline.
 
 - **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
 - **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
-- **Python**: any retained Python tooling exposes typed Google-style docstrings on public helpers.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `docs.df` is the only DarkFactory documentation configuration contract.
 
-`docs/home.md` is the product-documentation homepage. `.agents/rules/**` is the canonical rule set and `.agents/notes/**` is the canonical current long-term note set. Root `AGENTS.md` and root `README.md` are deterministic generated projections of those directories; they are discovery/index surfaces, never authorities and never edited directly. Repository/tool discovery aliases may point to canonical directories or generated projections only when they serve a current external/conventional entry point; unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
+`docs/home.md` is the product-documentation homepage. `.agents/rules/**` is the canonical rule set and `.agents/notes/**` is the canonical current long-term note set. Root `AGENTS.md` and root `README.md` are deterministic generated projections of those directories; they are discovery/index surfaces, never authorities and never edited directly. Repository/tool discovery aliases may point to canonical directories or generated projections only when they serve a current external/conventional entry point; aliases remain links/includes rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 

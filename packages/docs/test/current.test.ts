@@ -49,6 +49,21 @@ describe("current documentation truth", () => {
 		});
 	});
 
+
+	test("rejects copied projection aliases while allowing the canonical files to remain generated", () => {
+		withRepo((repoRoot) => {
+			const content = graph();
+			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			mkdirSync(join(repoRoot, ".agents"), { recursive: true });
+			writeFileSync(join(repoRoot, ".agents", "README.md"), renderReadmeMarkdown(content));
+			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
+				path: ".agents/README.md",
+				message: "projection discovery alias must remain a symlink, not a copied document",
+			});
+		});
+	});
+
 	test("fails when a retired documentation surface returns", () => {
 		withRepo((repoRoot) => {
 			const content = graph();

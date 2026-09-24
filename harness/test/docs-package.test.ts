@@ -46,8 +46,7 @@ async function fixture(withApi = false): Promise<string> {
 		join(root, ".agents", "rules", "001-test.md"),
 		"---\\nid: DF-RULE-001\\ntitle: Fixture rule\\nstatus: normative\\n---\\n# Rule 1 — Fixture rule\\n\\n## Requirement\\n\\nFixture requirement.\\n\\n## Rationale\\n\\nFixture rationale.\\n\\n## Enforcement\\n\\nFixture enforcement.\\n\\n## Exceptions\\n\\nNone.\\n\\n## Change control\\n\\nDeliberate.\\n",
 	);
-	await writeFile(join(root, ".agents", "notes", "adr", "0001-test.md"), "# ADR-0001 — Test\n\n**Status**: Accepted\n");
-	await writeFile(join(root, ".agents", "notes", "adr", "README.md"), "# Decisions\n");
+	await writeFile(\n\t\tjoin(root, ".agents", "notes", "adr", "0001-test.md"),\n\t\t"# ADR-0001 — Test\\n\\n**Status**: Accepted\\n\\n**Related rules**: `DF-RULE-001`\\n\\n## Decision\\n\\nFixture decision.\\n\\n## Consequences\\n\\nFixture consequence.\\n",\n\t);
 	await writeFile(
 		join(root, ".github", "workflows", "ci.yml"),
 		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",
@@ -136,7 +135,7 @@ describe("@darkfactory/docs", () => {
 		expect(markdown).not.toContain("# Home");
 	});
 
-	test("the repository README is the exact generated homepage projection", async () => {
+	test("the repository README is the exact generated notes projection", async () => {
 		const root = resolve(import.meta.dir, "..", "..");
 		expect(await readFile(join(root, "README.md"), "utf8")).toBe(renderReadmeMarkdown(compileDocsContentGraph(root)));
 	});
