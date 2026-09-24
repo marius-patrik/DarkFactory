@@ -12,5 +12,8 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/capability": "workspace:*"
+  },
+  "scripts": {
+    "test": "bun test capability.test.ts"
   }
 }
