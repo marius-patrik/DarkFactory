@@ -65,7 +65,7 @@
     },
     "formatting": {
       "python": {
-        "command": "black --check --diff --line-length 100 ."
+        "command": "black --check --line-length 100 ."
       }
     },
     "release": {
