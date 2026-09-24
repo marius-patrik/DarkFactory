@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-007
-title: Branches and pull requests
+title: Branch and pull request workflow
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

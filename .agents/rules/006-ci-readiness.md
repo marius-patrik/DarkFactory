@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-006
-title: CI readiness
+title: CI readiness and verification
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

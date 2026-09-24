@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-008
-title: Formatting and linting
+title: Automated formatting and linting
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always

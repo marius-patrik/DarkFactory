@@ -1,6 +1,6 @@
 ---
 id: DF-RULE-002
-title: Inline docstrings and generated documentation
+title: Inline documentation and generated documentation
 status: normative
 applies_to: [agents, automation, contributors]
 activation: always
