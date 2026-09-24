@@ -1,8 +1,8 @@
 import { existsSync, lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
+import { renderAgentsMarkdown } from "./agents.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { renderReadmeMarkdown } from "./readme.ts";
-import { renderAgentsMarkdown } from "./agents.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
 
 /** One deterministic violation of the repository's current-only documentation contract. */
@@ -10,7 +10,6 @@ export interface DocumentationTruthFinding {
 	path: string;
 	message: string;
 }
-
 
 const PROJECTION_ALIASES = [
 	{ path: "CONTRIBUTING.md", target: "AGENTS.md" },
@@ -41,16 +40,21 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 		}
 	}
 
-
 	for (const alias of PROJECTION_ALIASES) {
 		const absolute = join(repoRoot, alias.path);
 		if (!existsSync(absolute)) continue;
 		if (!lstatSync(absolute).isSymbolicLink()) {
-			findings.push({ path: alias.path.replaceAll("\\", "/"), message: "projection discovery alias must remain a symlink, not a copied document" });
+			findings.push({
+				path: alias.path.replaceAll("\\", "/"),
+				message: "projection discovery alias must remain a symlink, not a copied document",
+			});
 			continue;
 		}
 		if (readlinkSync(absolute) !== alias.target) {
-			findings.push({ path: alias.path.replaceAll("\\", "/"), message: `projection discovery alias must target ${alias.target}` });
+			findings.push({
+				path: alias.path.replaceAll("\\", "/"),
+				message: `projection discovery alias must target ${alias.target}`,
+			});
 		}
 	}
 

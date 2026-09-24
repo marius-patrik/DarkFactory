@@ -46,7 +46,10 @@ async function fixture(withApi = false): Promise<string> {
 		join(root, ".agents", "rules", "001-test.md"),
 		"---\\nid: DF-RULE-001\\ntitle: Fixture rule\\nstatus: normative\\n---\\n# Rule 1 — Fixture rule\\n\\n## Requirement\\n\\nFixture requirement.\\n\\n## Rationale\\n\\nFixture rationale.\\n\\n## Enforcement\\n\\nFixture enforcement.\\n\\n## Exceptions\\n\\nNone.\\n\\n## Change control\\n\\nDeliberate.\\n",
 	);
-	await writeFile(\n\t\tjoin(root, ".agents", "notes", "adr", "0001-test.md"),\n\t\t"# ADR-0001 — Test\\n\\n**Status**: Accepted\\n\\n**Related rules**: `DF-RULE-001`\\n\\n## Decision\\n\\nFixture decision.\\n\\n## Consequences\\n\\nFixture consequence.\\n",\n\t);
+	await writeFile(
+		join(root, ".agents", "notes", "adr", "0001-test.md"),
+		"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nFixture decision.\n\n## Consequences\n\nFixture consequence.\n",
+	);
 	await writeFile(
 		join(root, ".github", "workflows", "ci.yml"),
 		"name: CI\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n",

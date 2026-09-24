@@ -49,7 +49,6 @@ describe("current documentation truth", () => {
 		});
 	});
 
-
 	test("rejects copied projection aliases while allowing the canonical files to remain generated", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
