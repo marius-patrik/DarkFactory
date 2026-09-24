@@ -212,7 +212,7 @@ class Runner:
             input=body,
             capture_output=True,
             text=True,
-            env=env,
+            env=_env_for(args),
         )
 
         # GitHub CLI can occasionally turn an HTTP API failure into the opaque
@@ -247,7 +247,7 @@ class Runner:
                     input=body,
                     capture_output=True,
                     text=True,
-                    env=env,
+                    env=_env_for(args),
                 )
 
         if result.returncode != 0:
