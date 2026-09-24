@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { repairBranchConflicts } from "../../src/workspace/conflict-repair.ts";
 import { runGit } from "../../src/workspace/git.ts";
+import { pushWithLease } from "../../src/workspace/gitWorkspace.ts";
 
 describe("conflict-repair: deterministic update and model conflict resolution", () => {
 	let baseDir: string;
@@ -161,7 +162,6 @@ describe("conflict-repair: deterministic update and model conflict resolution", 
 		runGit(localRepo, ["add", "lease.txt"]);
 		runGit(localRepo, ["commit", "-m", "local rewrite"]);
 
-		const { pushWithLease } = require("../../src/workspace/gitWorkspace.ts") as typeof import("../../src/workspace/gitWorkspace.ts");
 		expect(() => pushWithLease(localRepo, "origin", "feat/lease", expected)).toThrow(/stale lease/iu);
 	});
 
