@@ -13,17 +13,19 @@ const outputDir = resolve(option("--out") ?? join(repoRoot, "site"));
 const check = process.argv.includes("--check");
 let graph = await compileDocsContentGraphWithDetectedApi(repoRoot, { capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities") });
 
-if (check) assertCurrentDocumentation(repoRoot, graph);
-
-if (!check) {
-	await writeFile(join(repoRoot, "README.md"), renderReadmeMarkdown(graph));
-	await writeFile(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(graph));
-	graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
-		capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities"),
-	});
+if (check) {
+	assertCurrentDocumentation(repoRoot, graph);
+	console.log(`Checked ${graph.pages.length} documentation pages${graph.api ? " plus API reference" : ""}`);
+	process.exit(0);
 }
+
+await writeFile(join(repoRoot, "README.md"), renderReadmeMarkdown(graph));
+await writeFile(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(graph));
+graph = await compileDocsContentGraphWithDetectedApi(repoRoot, {
+	capabilitiesRoot: resolve(import.meta.dir, "..", "capabilities"),
+});
 await renderDocsSite(graph, outputDir);
 await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
 await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");
 
-console.log(`${check ? "Checked" : "Built"} ${graph.pages.length} documentation pages${graph.api ? " plus API reference" : ""}${check ? "" : ` into ${outputDir}`}`);
+console.log(`Built ${graph.pages.length} documentation pages${graph.api ? " plus API reference" : ""} into ${outputDir}`);
