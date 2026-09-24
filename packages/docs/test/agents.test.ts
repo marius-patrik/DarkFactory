@@ -11,6 +11,9 @@ const rule = (source: string, id: string, title: string, number: number, require
 id: ${id}
 title: ${title}
 status: normative
+applies_to: [agents]
+activation: always
+owners: [docs]
 ---
 # Rule ${number} — ${title}
 

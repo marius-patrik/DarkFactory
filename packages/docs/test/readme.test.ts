@@ -15,7 +15,7 @@ function graph(): DocsContentGraph {
 				kind: "rule",
 				title: "Rule 1 — Runtime",
 				source: ".agents/rules/001-runtime.md",
-				markdown: "---\nid: DF-RULE-001\ntitle: Runtime\nstatus: normative\n---\n# Rule 1 — Runtime\n\n## Requirement\n\nRuntime.\n\n## Rationale\n\nRuntime.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
+				markdown: "---\nid: DF-RULE-001\ntitle: Runtime\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Runtime\n\n## Requirement\n\nRuntime.\n\n## Rationale\n\nRuntime.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 			},
 			{
 				id: "agents-notes-adr-0008",
