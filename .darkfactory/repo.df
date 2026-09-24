@@ -35,9 +35,9 @@
     "ref": null
   },
   "versioning": {
-    "mode": "semver",
+    "mode": "manual",
     "tag_prefix": "v",
-    "initial": "0.1.0"
+    "initial": "3a.1.0"
   },
   "environment": {
     "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
