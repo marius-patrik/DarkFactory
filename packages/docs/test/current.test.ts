@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocsContentGraph } from "../src/content.ts";
@@ -26,12 +26,29 @@ function withRepo(run: (repoRoot: string) => void): void {
 	}
 }
 
+
+function writeProjectionAliases(repoRoot: string, omit?: string): void {
+	const aliases = [
+		["CONTRIBUTING.md", "AGENTS.md"],
+		[".agents/README.md", "../README.md"],
+		[".agents/AGENTS.md", "../AGENTS.md"],
+		[".agents/CLAUDE.md", "../AGENTS.md"],
+		[".agents/notes/README.md", "../../README.md"],
+	] as const;
+	for (const [path, target] of aliases) {
+		if (path === omit) continue;
+		mkdirSync(join(repoRoot, path, ".."), { recursive: true });
+		symlinkSync(target, join(repoRoot, path));
+	}
+}
+
 describe("current documentation truth", () => {
 	test("accepts the canonical README projection", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
 			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			writeProjectionAliases(repoRoot);
 			expect(currentDocumentationFindings(repoRoot, content)).toEqual([]);
 			expect(() => assertCurrentDocumentation(repoRoot, content)).not.toThrow();
 		});
@@ -41,6 +58,8 @@ describe("current documentation truth", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), "# stale\n");
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			writeProjectionAliases(repoRoot);
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
 				path: "README.md",
 				message: "committed README differs from the canonical repository-notes projection",
@@ -66,6 +85,7 @@ describe("current documentation truth", () => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
 			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			writeProjectionAliases(repoRoot, ".agents/README.md");
 			mkdirSync(join(repoRoot, ".agents"), { recursive: true });
 			writeFileSync(join(repoRoot, ".agents", "README.md"), renderReadmeMarkdown(content));
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
@@ -80,6 +100,7 @@ describe("current documentation truth", () => {
 			const content = graph();
 			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
 			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			writeProjectionAliases(repoRoot);
 			mkdirSync(join(repoRoot, "harness"), { recursive: true });
 			writeFileSync(join(repoRoot, "harness", "README.md"), "# retired\n");
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
