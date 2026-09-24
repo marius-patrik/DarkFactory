@@ -71,6 +71,12 @@ function graph(pages: readonly DocsPage[]): DocsContentGraph {
 }
 
 describe("rule/note relationships", () => {
+	test("fails closed when canonical governance disappears entirely", () => {
+		const findings = analyzeRuleNoteRelations(graph([])).findings;
+		expect(findings).toContain(".agents/rules: at least one canonical rule is required");
+		expect(findings).toContain(".agents/notes/adr: at least one accepted ADR is required");
+	});
+
 	test("derives the reverse relation from ADR metadata", () => {
 		const analysis = assertRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001")]));
 		expect(analysis.notes[0]?.ruleIds).toEqual(["DF-RULE-001"]);
