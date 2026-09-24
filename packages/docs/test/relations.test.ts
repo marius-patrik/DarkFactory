@@ -13,6 +13,9 @@ function rule(id: string): DocsPage {
 id: ${id}
 title: Test
 status: normative
+applies_to: [agents]
+activation: always
+owners: [ci]
 ---
 # Rule ${number} — Test
 
@@ -100,10 +103,19 @@ describe("rule/note relationships", () => {
 		expect(findings).toContain(".agents/rules/099-test.md: filename must start with canonical rule number 001-");
 	});
 
-	test("allows concise index titles to differ from prose headings", () => {
+	test("fails when rule index metadata and prose heading titles drift", () => {
 		const concise = rule("DF-RULE-001");
 		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
-		expect(() => assertRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")]))).not.toThrow();
+		expect(analyzeRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")])).findings).toContain(
+			".agents/rules/001-test.md: rule heading title must match front-matter title",
+		);
+	});
+
+	test("fails when rule numbering is not contiguous", () => {
+		const findings = analyzeRuleNoteRelations(
+			graph([rule("DF-RULE-001"), rule("DF-RULE-003"), adr("ADR-0001", "DF-RULE-001"), adr("ADR-0002", "DF-RULE-003")]),
+		).findings;
+		expect(findings.some((finding) => finding.includes("rule numbers must be contiguous from 001"))).toBe(true);
 	});
 
 	test("fails on incomplete rule or ADR records", () => {

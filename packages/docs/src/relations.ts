@@ -71,6 +71,7 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 			id = ruleFrontMatterField(page.markdown, "id");
 			title = ruleFrontMatterField(page.markdown, "title");
 			status = ruleFrontMatterField(page.markdown, "status");
+			for (const field of ["applies_to", "activation", "owners"]) ruleFrontMatterField(page.markdown, field);
 		} catch (error) {
 			findings.push(`${page.source}: ${error instanceof Error ? error.message : String(error)}`);
 			continue;
@@ -85,12 +86,23 @@ export function analyzeRuleNoteRelations(graph: DocsContentGraph): RuleNoteRelat
 		if (!heading?.[1] || Number(heading[1]) !== Number(number)) {
 			findings.push(`${page.source}: rule heading number must match ${id}`);
 		}
+		if (heading?.[2]?.trim() !== title) {
+			findings.push(`${page.source}: rule heading title must match front-matter title`);
+		}
 		for (const section of ["Requirement", "Rationale", "Enforcement", "Exceptions", "Change control"]) {
 			if (!hasSection(page.markdown, section)) findings.push(`${page.source}: canonical rule is missing non-empty ${section} section`);
 		}
 		if (ruleIds.has(id)) findings.push(`${page.source}: duplicate rule id ${id}`);
 		ruleIds.add(id);
 		rules.push({ id, title, page });
+	}
+
+	const ruleNumbers = rules
+		.map((rule) => Number(ruleNumber(rule.id)))
+		.filter((number) => Number.isFinite(number));
+	const expectedRuleNumbers = Array.from({ length: ruleNumbers.length }, (_, index) => index + 1);
+	if (ruleNumbers.some((number, index) => number !== expectedRuleNumbers[index])) {
+		findings.push(`.agents/rules: rule numbers must be contiguous from 001; found ${ruleNumbers.join(", ")}`);
 	}
 
 	const notes: DocsNoteRelationEntry[] = [];
