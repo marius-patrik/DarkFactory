@@ -488,6 +488,7 @@ def test_main_source_gate_requires_develop_from_the_same_repository():
     assert 'test "$HEAD_BRANCH" = "develop"' in content
     assert 'test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"' in content
 
+
 def test_the_docs_job_uses_the_native_docs_contract():
     """The direct docs-check job detects docs.df and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
@@ -603,7 +604,7 @@ def test_the_agent_image_is_built_from_the_pipeline():
 #:
 #: `install.yml` reaches into a consumer to write its callers, so a consumer calling it would be
 #: asking to be installed into itself. It is the one workflow that is deliberately not shared.
-NOT_CALLABLE = {"install.yml", "ci.yml"}
+NOT_CALLABLE = {"install.yml", "ci.yml", "branch-policy.yml"}
 
 
 def test_every_shared_workflow_is_callable():
