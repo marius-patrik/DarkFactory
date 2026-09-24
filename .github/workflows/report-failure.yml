@@ -11,7 +11,6 @@ on:
     # against the workflows that exist.
     workflows:
       - Autonomous Agent
-      - Auto Format
       - Branch Policy
       - CI
       - Deploy Documentation

@@ -80,11 +80,6 @@ WORKFLOWS: Dict[str, Dict[str, str]] = {
         # person flips to stop the agent, and a switch that needs a commit is not a switch.
         "with": {"agent-enabled": "${{ vars.AGENT_ENABLED }}"},
     },
-    "auto-format": {
-        "name": "Auto Format",
-        "on": 'push:\n    branches: ["**"]\n  workflow_dispatch:',
-        "permissions": "contents: write",
-    },
     "verify-pr-issue": {
         "name": "Verify Bound Issue",
         "on": "pull_request:\n    types: [opened, edited, synchronize, reopened]",
@@ -176,7 +171,6 @@ def relevant_workflows(root: str = ".") -> List[str]:
         "open-pr",
         "pr-approval-automerge",
         "verify-pr-issue",
-        "auto-format",
         # The reporting half.
         "ci",
         "release",
@@ -578,13 +572,9 @@ def ensure_secrets_pass(root: str) -> List[str]:
     """Adds `secrets: inherit` to a caller that passes none.
 
     A called workflow sees none of its caller's secrets unless they are passed, and a caller written
-    before that mattered passes nothing. The failure is silent and specific: `auto-format` cannot
-    mint an installation token without `DARKFACTORY_APP_PRIVATE_KEY`, so it pushes its formatting
-    commit with `GITHUB_TOKEN` - and GitHub runs no workflow for such a push, so the pull request's
-    head becomes a commit nothing checks and a protected branch waits forever.
-
-    Generated callers have always emitted this line. It is repaired here because a repository whose
-    callers predate it cannot be fixed by writing files that already exist.
+    before that mattered passes nothing. Generated callers emit this line so reusable workflows that
+    require App/user authority receive only the credentials their declared interface expects. It is
+    repaired here because an existing customized caller is not overwritten wholesale during reinstall.
 
     Args:
         root: Repository root.
