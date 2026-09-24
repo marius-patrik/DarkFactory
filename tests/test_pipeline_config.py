@@ -484,7 +484,7 @@ def test_main_source_gate_requires_develop_from_the_same_repository():
     """A PR to main is a release promotion, not a general contribution path."""
     content = _read(os.path.join(WORKFLOW_DIR, "branch-policy.yml"))
     assert "branches: [main]" in content
-    assert 'HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}' in content
+    assert "HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}" in content
     assert 'test "$HEAD_BRANCH" = "develop"' in content
     assert 'test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"' in content
 
