@@ -251,6 +251,22 @@ class TestDfPromptFile:
         timeout_index = seen["argv"].index("--timeout")
         assert seen["argv"][timeout_index : timeout_index + 2] == ["--timeout", "5m0s"]
 
+    def test_discussion_denies_tools_at_the_df_boundary(self, monkeypatch):
+        """Discussion uses df's enforced deny policy rather than a prompt-only restriction."""
+        seen = []
+
+        def fake_run(argv, **kwargs):
+            seen.append(list(argv))
+            return subprocess.CompletedProcess(
+                argv, 0, stdout=_stream({"type": "text_delta", "delta": "answer"}), stderr=""
+            )
+
+        monkeypatch.setattr(agent_runner.subprocess, "run", fake_run)
+        assert agent_runner.run_agent_prompt("explain", kind="chat") == "answer"
+        assert seen[0][-2:] == ["--deny", "*"]
+        assert agent_runner.run_agent_prompt("implement", kind="implement") == "answer"
+        assert "--deny" not in seen[1]
+
     def test_a_json_answer_after_tools_is_returned(self, monkeypatch):
         """End to end: event stream in, final text out."""
 
