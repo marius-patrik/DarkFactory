@@ -135,7 +135,7 @@ The completion program builds the final system directly rather than maintaining 
 The active integration follows one dependency spine:
 
 ```text
-green consolidated baseline
+classified consolidated baseline
       ↓
 executable capability ownership
       ↓
@@ -152,7 +152,7 @@ current-truth docs + source-free release candidate
 exact-head fleet proof + cleanup
 ```
 
-[PLAN.md](../PLAN.md) records this high-level strategy. The current GitHub Request/Planning record is the executable checklist and validation ledger.
+[PLAN.md](../PLAN.md) records this high-level strategy. The current GitHub Request/Planning record is the executable checklist and validation ledger. Intermediate red checks confined to code already scheduled for deletion/relocation are classified against that work rather than polished into a transitional architecture; the exact final merge head must be fully green.
 
 ## Distribution
 
