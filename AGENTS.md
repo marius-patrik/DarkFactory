@@ -433,6 +433,7 @@ The repository root is a Bun workspace. Typst remains the manuscript compiler; B
 
 Canonical commands:
 
+- `bun run dev` — watch the canonical `index.typ` source and rerun `bun run build` after saves, regenerating publication and web outputs;
 - `bun run publication` — generate the PDF and root Markdown publication;
 - `bun run check` — build the publication and lint/typecheck/build the web workspace;
 - `bun run web:acceptance` — execute real Chromium acceptance;
