@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { resolveDfFile } from "../utils/resolver.ts";
@@ -108,7 +108,7 @@ export function getInProgressOperation(worktree: string): "rebase" | "merge" | "
 export function isWorktreeDirty(worktree: string): boolean {
 	const stdout = runGit(worktree, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
 	const entries = stdout.split("\0");
-	const changed: string[] = [];
+	const changed: { status: string; path: string }[] = [];
 	for (let index = 0; index < entries.length; index++) {
 		const entry = entries[index] ?? "";
 		if (entry.length < 4) continue;
@@ -116,17 +116,18 @@ export function isWorktreeDirty(worktree: string): boolean {
 		const path = entry.slice(3);
 		if (status.includes("R") || status.includes("C")) index++;
 		if (!path.startsWith(".df-task/") && !path.startsWith(".df-")) {
-			changed.push(path);
+			changed.push({ status, path });
 		}
 	}
 
 	if (changed.length === 0) return false;
 
-	// If we are in-progress of rebase/merge/cherry-pick, those dirty files are expected
 	const op = getInProgressOperation(worktree);
-	if (op !== "none") return false;
+	if (op === "none") return true;
 
-	return true;
+	// Conflict resolution may legitimately dirty tracked files, but unrelated untracked files
+	// remain unsafe and must never be hidden merely because a merge/rebase/cherry-pick is active.
+	return changed.some((entry) => entry.status === "??");
 }
 
 /**
@@ -286,17 +287,14 @@ export function getConflictState(worktree: string): GitConflictState {
 	if (operation === "rebase") {
 		try {
 			const gitDir = getGitDir(worktree);
-			const rebaseMerge = join(gitDir, "rebase-merge");
-			if (existsSync(rebaseMerge)) {
-				const headNameFile = join(rebaseMerge, "head-name");
-				if (existsSync(headNameFile)) {
-					head = runGit(worktree, ["cat-file", "-p", `HEAD`]);
-				}
-				const ontoFile = join(rebaseMerge, "onto");
-				if (existsSync(ontoFile)) {
-					base = runGit(worktree, ["cat-file", "-p", "onto"]);
-				}
-			}
+			const rebaseDir = existsSync(join(gitDir, "rebase-merge"))
+				? join(gitDir, "rebase-merge")
+				: join(gitDir, "rebase-apply");
+			const origHeadFile = join(rebaseDir, "orig-head");
+			const ontoFile = join(rebaseDir, "onto");
+			if (existsSync(origHeadFile)) head = readFileSync(origHeadFile, "utf8").trim();
+			else head = runGit(worktree, ["rev-parse", "ORIG_HEAD"]);
+			if (existsSync(ontoFile)) base = readFileSync(ontoFile, "utf8").trim();
 		} catch (error) {
 			throw new Error(`Failed to retrieve rebase state details: ${(error as Error).message}`);
 		}
