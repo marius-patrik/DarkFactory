@@ -72,9 +72,11 @@ function graph(pages: readonly DocsPage[]): DocsContentGraph {
 
 describe("rule/note relationships", () => {
 	test("fails closed when canonical governance disappears entirely", () => {
-		const findings = analyzeRuleNoteRelations(graph([])).findings;
+		const empty = graph([]);
+		const findings = analyzeRuleNoteRelations(empty).findings;
 		expect(findings).toContain(".agents/rules: at least one canonical rule is required");
 		expect(findings).toContain(".agents/notes/adr: at least one accepted ADR is required");
+		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
 	test("derives the reverse relation from ADR metadata", () => {
