@@ -52,6 +52,12 @@ jobs:
           cd "$ROOT"
           bun install --frozen-lockfile
 
+      - name: Validate current documentation projections
+        run: |
+          ROOT="$GITHUB_WORKSPACE"
+          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
+
       - name: Build documentation
         run: |
           ROOT="$GITHUB_WORKSPACE"
