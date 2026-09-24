@@ -44,4 +44,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Reconcile default branch and protection
-        run: python3 .github/scripts/repo_settings.py --apply --branches-only
+        run: python3 "${PIPELINE_SCRIPTS:-.github/scripts}/repo_settings.py" --apply --branches-only
