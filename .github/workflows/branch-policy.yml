@@ -1,0 +1,47 @@
+name: Branch Policy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [develop]
+    paths:
+      - ".darkfactory/repo.df"
+      - ".github/scripts/manifest.py"
+      - ".github/scripts/repo_settings.py"
+      - ".github/workflows/branch-policy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  main-source:
+    name: main-source
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - name: Require the repository develop branch
+        run: |
+          test "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+          test "$HEAD_BRANCH" = "develop"
+
+  reconcile:
+    name: reconcile-branch-policy
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      GH_PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+    steps:
+      - name: Require repository-administration credentials
+        run: test -n "$GH_PROJECT_TOKEN"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Reconcile default branch and protection
+        run: python3 .github/scripts/repo_settings.py --apply --branches-only
