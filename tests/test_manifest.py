@@ -37,12 +37,15 @@ class TestIdentity:
         loaded = manifest_module.load(REPO_ROOT)
         assert loaded.slug == "marius-patrik/DarkFactory"
         assert loaded.homepage == "https://marius-patrik.github.io/DarkFactory/"
+        assert loaded.default_branch == "main"
+        assert loaded.development_branch == "develop"
 
     def test_identity_is_read_from_the_manifest(self, tmp_path):
         _write_manifest(tmp_path, {"identity": {"owner": "acme", "repo": "widget"}})
         loaded = manifest_module.load(str(tmp_path))
         assert loaded.slug == "acme/widget"
         assert loaded.homepage == "https://acme.github.io/widget/"
+        assert loaded.development_branch == loaded.default_branch == "main"
 
     def test_the_agent_slug_defaults_from_the_repository_name(self, tmp_path):
         _write_manifest(tmp_path, {"identity": {"owner": "acme", "repo": "Widget"}})
