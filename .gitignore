@@ -4,9 +4,6 @@ web/node_modules/
 web/dist/
 web/package-lock.json
 
-*.pdf
-!/ODBORNA_PRACE.pdf
-
 .DS_Store
 Thumbs.db
 .vscode/
