@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CapabilityPackageContext } from "@darkfactory/capability";
+import type { CapabilityActionDefinition, CapabilityPackageContext } from "@darkfactory/capability";
 import { capability } from "./capability.ts";
 
 function pkg(overrides: Partial<CapabilityPackageContext> = {}): CapabilityPackageContext {
@@ -18,8 +18,10 @@ function pkg(overrides: Partial<CapabilityPackageContext> = {}): CapabilityPacka
 	};
 }
 
-function action(kind: string, ecosystem: string) {
-	return capability.actions?.find((entry) => entry.kind === kind && entry.ecosystems?.includes(ecosystem));
+function action(kind: string, ecosystem: string): CapabilityActionDefinition | undefined {
+	return (capability.actions as readonly CapabilityActionDefinition[] | undefined)?.find(
+		(entry) => entry.kind === kind && entry.ecosystems?.includes(ecosystem),
+	);
 }
 
 describe("code capability", () => {
@@ -51,7 +53,7 @@ describe("code capability", () => {
 
 	test("declares deterministic quality actions for supported code ecosystems", () => {
 		for (const ecosystem of ["node", "python", "rust", "go", "deno"]) {
-			expect(capability.actions?.some((entry) => entry.kind === "test" && entry.ecosystems?.includes(ecosystem))).toBe(true);
+			expect((capability.actions as readonly CapabilityActionDefinition[] | undefined)?.some((entry) => entry.kind === "test" && entry.ecosystems?.includes(ecosystem))).toBe(true);
 		}
 	});
 });

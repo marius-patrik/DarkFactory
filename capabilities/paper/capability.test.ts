@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { CapabilityActionDefinition } from "@darkfactory/capability";
 import { capability } from "./capability.ts";
 
 describe("paper capability", () => {
@@ -10,10 +11,11 @@ describe("paper capability", () => {
 
 	test("uses the same deterministic build semantics for verification and release per paper ecosystem", () => {
 		for (const ecosystem of ["typst", "latex"]) {
-			const verification = capability.actions?.find(
+			const actions = capability.actions as readonly CapabilityActionDefinition[] | undefined;
+			const verification = actions?.find(
 				(entry) => entry.kind === "test" && entry.ecosystems?.includes(ecosystem),
 			);
-			const release = capability.actions?.find(
+			const release = actions?.find(
 				(entry) => entry.kind === "release" && entry.ecosystems?.includes(ecosystem),
 			);
 			expect(verification?.command).toBeDefined();
