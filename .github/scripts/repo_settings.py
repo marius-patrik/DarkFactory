@@ -205,15 +205,53 @@ class Runner:
         if not self.apply:
             print(f"  would call: {printable}")
             return None
+        body = json.dumps(fields)
+        env = _env_for(args)
         result = subprocess.run(
             ["gh"] + args + ["--input", "-"],
-            input=json.dumps(fields),
+            input=body,
             capture_output=True,
             text=True,
-            env=_env_for(args),
+            env=env,
         )
+
+        # GitHub CLI can occasionally turn an HTTP API failure into the opaque
+        # "unexpected end of JSON input" error and discard the actual response. Retry the same
+        # request with curl so repository-administration calls are both reliable and diagnosable.
+        if result.returncode != 0 and "unexpected end of JSON input" in (
+            (result.stderr or "") + (result.stdout or "")
+        ):
+            token = env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
+            if token:
+                result = subprocess.run(
+                    [
+                        "curl",
+                        "--fail-with-body",
+                        "--silent",
+                        "--show-error",
+                        "--location",
+                        "--request",
+                        method,
+                        "--header",
+                        "Accept: application/vnd.github+json",
+                        "--header",
+                        f"Authorization: Bearer {token}",
+                        "--header",
+                        "X-GitHub-Api-Version: 2026-03-10",
+                        "--header",
+                        "Content-Type: application/json",
+                        f"https://api.github.com/{path}",
+                        "--data-binary",
+                        "@-",
+                    ],
+                    input=body,
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                )
+
         if result.returncode != 0:
-            detail = (result.stderr or result.stdout).strip().splitlines()
+            detail = (result.stdout or result.stderr).strip().splitlines()
             first = detail[0] if detail else "unknown error"
             if kwargs.get("allow_fail"):
                 print(f"  note: {printable} -> {first}")
