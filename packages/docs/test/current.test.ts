@@ -29,6 +29,7 @@ function withRepo(run: (repoRoot: string) => void): void {
 
 function writeProjectionAliases(repoRoot: string, omit?: string): void {
 	const aliases = [
+		[".claude", ".agents"],
 		["CONTRIBUTING.md", "AGENTS.md"],
 		[".agents/README.md", "../README.md"],
 		[".agents/AGENTS.md", "../AGENTS.md"],
@@ -40,6 +41,7 @@ function writeProjectionAliases(repoRoot: string, omit?: string): void {
 		mkdirSync(join(repoRoot, path, ".."), { recursive: true });
 		symlinkSync(target, join(repoRoot, path));
 	}
+	writeFileSync(join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
 }
 
 describe("current documentation truth", () => {
@@ -91,6 +93,20 @@ describe("current documentation truth", () => {
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
 				path: ".agents/README.md",
 				message: "projection discovery alias must remain a symlink, not a copied document",
+			});
+		});
+	});
+
+	test("rejects a stale Claude discovery import", () => {
+		withRepo((repoRoot) => {
+			const content = graph();
+			writeFileSync(join(repoRoot, "README.md"), renderReadmeMarkdown(content));
+			writeFileSync(join(repoRoot, "AGENTS.md"), renderAgentsMarkdown(content));
+			writeProjectionAliases(repoRoot);
+			writeFileSync(join(repoRoot, "CLAUDE.md"), "@some-other-file.md\n");
+			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
+				path: "CLAUDE.md",
+				message: "Claude discovery import must be exactly @AGENTS.md",
 			});
 		});
 	});

@@ -12,6 +12,7 @@ export interface DocumentationTruthFinding {
 }
 
 const PROJECTION_ALIASES = [
+	{ path: ".claude", target: ".agents" },
 	{ path: "CONTRIBUTING.md", target: "AGENTS.md" },
 	{ path: join(".agents", "README.md"), target: "../README.md" },
 	{ path: join(".agents", "AGENTS.md"), target: "../AGENTS.md" },
@@ -64,6 +65,16 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 				path: alias.path.replaceAll("\\", "/"),
 				message: `projection discovery alias must target ${alias.target}`,
 			});
+		}
+	}
+
+	const claudePath = join(repoRoot, "CLAUDE.md");
+	if (!existsSync(claudePath)) {
+		findings.push({ path: "CLAUDE.md", message: "Claude discovery import is missing" });
+	} else {
+		const claude = readFileSync(claudePath, "utf8").replaceAll("\r\n", "\n").trim();
+		if (claude !== "@AGENTS.md") {
+			findings.push({ path: "CLAUDE.md", message: "Claude discovery import must be exactly @AGENTS.md" });
 		}
 	}
 
