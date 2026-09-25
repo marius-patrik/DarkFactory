@@ -118,6 +118,7 @@ V #meta.city dne #box(width: 4.5cm, repeat("…")) #h(1fr) Podpis autora práce:
 
 
 //intro
+//TODO: add a mention that for the purpose of this thesis the word Agentic is translated to czech as "Agentické" being an anglicism in the czech langauge, but this is not yet established so I am the one coining this the point is that agentni is not the same as agentic, agentic is a property of the system, agentni is a property of the agent. Agentic engineering is about designing systems that are agentic, not about designing agents. The word "agentické" is used to describe the engineering practices that make a system agentic, not to describe the agents themselves or something that belongs to them.
 #heading(level: 1)[Úvod]
 
 Nástroje založené na velkých jazykových modelech prošly rychlým vývojem: od doplňování kódu při psaní v editoru přes konverzační chatboty až po autonomní agenty, kteří pomocí nástrojů samostatně provádějí změny a spouštějí příkazy v běhovém prostředí @github-copilot-completion @github-copilot-chat @github-copilot-agent @openai-codex-2025 @openai-codex-app-2026. S rostoucími schopnostmi modelů roste i jejich adopce, avšak většina uživetelů nemá představu čeho tyto nástroje jsou skutečně schopny. Většina populace se s generativní AI setkává jenom na povrchu prostřednictvím chatbotů a to bezplatným tedy omezeným přístupem. Odhad zdroje klade počet uživatelů chatbotů na 28% populace zatímco pravidelné užití AI coding agents pouze na 0,36~% světové populace@gradually-ai-usage-2026.
@@ -142,7 +143,7 @@ Praktická část analyzuje DarkFactory, jednoduchou produkční pipeline pro AI
 
 #heading(level: 2)[Jazykový model v agentním systému] <theory-first>
 
-Jazykový model (#strong[LLM]) předpovídá další token na základě předešlých obsaženém v #strong[kontextu]. #strong[Transformer] využívá mechanismu attention @vaswani2017 @brown2020 pro zpracování vztahů mezi jednotlivými tokeny. Při inferenci model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů. Jednotlivé volání však samo nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje a pomocí rekursivního procesu zvaného ReAct dělá z jednotné generace souvislou konverzaci @anthropic2024tooluse.
+Jazykový model (#strong[LLM]) předpovídá další token na základě předešlých obsaženém v #strong[kontextu]. #strong[Transformer] využívá mechanismu attention @vaswani2017 @brown2020 pro zpracování vztahů mezi jednotlivými tokeny. Při inferenci model zpracuje obsah kontextového okna a vytvoří posloupnost výstupních tokenů. Samotná #strong[Inference] však nemění soubory, nespouští příkazy ani neuchovává stav mezi kroky. Tyto činnosti zajišťuje harness, který modelu zpřístupňuje nástroje a pomocí rekursivního procesu zvaného ReAct dělá z jednotné generace souvislou konverzaci @anthropic2024tooluse.
 
 Vektorové reprezentace, označované jako #strong[embeddingy], zachycují sémantické vztahy ve vektorovém prostoru. Známým příkladem je vztah mezi vektory slov král, královna, muž a žena @mikolov2013linguistic. Tento vztah schematicky znázorňuje @fig-embedding-queen.
 
@@ -192,7 +193,7 @@ Spolehlivé delegování práce začíná explicitním vymezením cíle, rozsahu
 
  Pokud mají podúlohy jasné hranice a jejich výsledky lze znovu integrovat, rozsáhlou úlohu lze rozdělit do více agentních běhů. Ve vzoru #strong[coordinator/subagent] koordinátor deleguje dílčí úkol specializovanému subagentovi s vlastním kontextem a přebírá jeho výsledek. Nezávislé podúlohy mohou zpracovat paralelní pracovníci. #strong[Workflow graph] předem určuje závislosti, pořadí a větvení fází @openai-agent-orchestration. #strong[Agent Swarm] dynamicky rozkládá úlohu na heterogenní podproblémy a spouští specializované agenty paralelně pod řízením orchestrátoru @kimi-k25-swarm.
 
-Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol. Orchestrace je však nezbytná pro rozsáhlé úlohy, které by nebylo možné implementovat v rozsahu jednoho kontextového okna, spolehání na kompakci by vedlo ke katastrofické divergenci a kdybyse soustředil na celek nebyl by schopen efektivně implementovat jednotné části zadaní.
+Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináší užitek jen tehdy, když jsou omezeny vzájemné závislosti a koordinátor dokáže odhalit konflikty, ověřit dílčí výstupy a posoudit sloučený výsledek vůči společným podmínkám přijetí. Orchestrace proto zahrnuje nejen rozdělení práce, ale také správu kontextu, pořadí kroků, sdíleného stavu a integračních kontrol. Orchestrace je však nezbytná pro rozsáhlé úlohy, které by nebylo možné implementovat v rozsahu jednoho kontextového okna, spolehání na kompakci by vedlo ke katastrofické divergenci a kdybyse agent soustředil na celek nebyl by schopen efektivně implementovat jednotné části zadaní.
 
 #strong[Goal loop] označuje nadřazenou řídicí smyčku: po dílčím dokončení ReAct smyčky harness porovná pozorovaný stav s cílem a podmínkami přijetí a podle výsledku běh ukončí, nebo zahájí další iteraci či změnu strategie. @yao2022.
 
@@ -214,7 +215,7 @@ Více agentů samo o sobě nezaručuje lepší výsledek. Paralelizace přináš
 
 #heading(level: 2)[Metodika] <practical-first>
 
-Praktická část popisuje a ověřuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a prováděním změn produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
+Praktická část implementuje záměrně jednoduchou produkční pipeline, v níž je vývojovým prostředím přímo GitHub a harness produkční coding agent. Cílem je ukázat, jak lze spojit události GitHubu, automatizované plánování, izolovanou práci v kontejneru a lidskou integraci do jednoho opakovatelného procesu.
 
 Předmětem analýzy jsou čtyři navazující vrstvy:
 1. *GitHub jako zdroj pravdy:* issue a jeho komentáře uchovávají požadavek, schválení, plán a zpětnou vazbu; větev, commit a pull request uchovávají změnu a její průběžnou revizi.
@@ -226,11 +227,11 @@ Předmětem analýzy jsou čtyři navazující vrstvy:
 
 #heading(level: 2)[Architektura produkčního běhu]
 
-DarkFactory nepotřebuje pro základní průchod samostatný server, databázi ani dlouho běžícího agenta. GitHub slouží jako rozhraní i jako trvalý stavový systém, každá práce agenta probíhá jako izolovaný běh v GitHub Actions.
+DarkFactory nepotřebuje pro základní průchod samostatný server, databázi ani běžícího agenta na vlastním počítači. GitHub slouží jako rozhraní i jako trvalý stavový systém, každá práce agenta probíhá jako izolovaný běh v GitHub Actions.
 
 #figure(
   image("img/darkfactory-architecture.svg", width: 92%),
-  caption: [Jednoduchá produkční architektura: GitHub poskytuje události a vývojový stav, Docker odděluje běh a produkční harness `agy` `claude` `codex` či `opencode` nebo později vlastní `df` zajišťují model, nástroje a pozorování @darkfactory-e9c10221.],
+  caption: [Architektura: GitHub poskytuje události a vývojový stav, Docker odděluje běh a produkční harness `agy` `claude` `codex` či `opencode` nebo později vlastní `df` zajišťují model, nástroje a pozorování @darkfactory-e9c10221.],
 ) <fig-darkfactory-architecture>
 
 #figure(
