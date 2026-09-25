@@ -28,7 +28,12 @@ Five modes are supported:
     changes.
 
 `manual`
-    The version is whatever the `VERSION` file says. Nothing is derived; the file is the decision.
+    The `VERSION` file is the owner's control. A value that differs from the last release is
+    released verbatim, because naming a version is a decision no commit log can make. A value that
+    already matches the last release is treated as "carry on from here": the pipeline classifies
+    the commits since that release and advances the file itself, in whatever scheme the file is
+    written in. That way the file never has to be edited by hand before a promotion, and a
+    promoted branch that has nothing worth releasing says so instead of re-releasing.
 
 Under every automatic mode an explicit request still wins, so a human can force a bump the commit
 log would not have produced.
@@ -58,8 +63,14 @@ _HEADER = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s
 
 _BREAKING_TRAILER = re.compile(r"^BREAKING[ -]CHANGE:", re.MULTILINE)
 
-#: A release tag: optional `v`, then two or three dot-separated numbers.
-_TAG = re.compile(r"^v?(?P<nums>\d+(?:\.\d+){1,2})$")
+#: A release version: two or three dot-separated components whose first may carry a scheme suffix
+#: (`3a.1.0`), so a repository's own numbering is legible to the comparison instead of invisible to
+#: it. A tag is this with the prefix in front, which is stripped before parsing.
+_VERSION = re.compile(r"^(?P<nums>\d+[a-z]*(?:\.\d+){1,2})$")
+
+#: The first component of a version: a number optionally followed by the scheme letter, so `3a` is
+#: major number 3 on scheme `a`. The letter is never interpreted, only carried through.
+_HEAD = re.compile(r"^(?P<number>\d+)(?P<scheme>[a-z]*)$")
 
 
 class VersioningError(ValueError):
@@ -119,37 +130,103 @@ def classify_commits(subjects: Iterable[str]) -> Optional[str]:
     return result
 
 
-def _parse(tag: str) -> Optional[List[int]]:
-    """Turns a release tag into its numeric components.
+def _parse(tag: str) -> Optional[Tuple[str, List[int]]]:
+    """Turns a release tag or version into its scheme letter and its numbers.
 
     Args:
-        tag: Tag name, with or without a leading `v`.
+        tag: A tag name or bare version, with or without a leading `v`.
 
     Returns:
-        The components as integers, padded to three, or `None` if the tag is not a release tag.
+        The scheme letter (`""` when there is none) and the components padded to three, or `None`
+        when the input is not a release version.
     """
-    match = _TAG.match(tag.strip())
+    match = _VERSION.match(tag.strip().lstrip("v"))
     if not match:
         return None
-    parts = [int(piece) for piece in match.group("nums").split(".")]
-    while len(parts) < 3:
-        parts.append(0)
-    return parts
+    head, *rest = match.group("nums").split(".")
+    first = _HEAD.match(head)
+    if not first:  # pragma: no cover - unreachable while _VERSION requires this shape
+        return None
+    numbers = [int(first.group("number"))] + [int(part) for part in rest]
+    while len(numbers) < 3:
+        numbers.append(0)
+    return first.group("scheme"), numbers
 
 
-def latest_tag(tags: Sequence[str]) -> Optional[str]:
+def _render(scheme: str, major: int, minor: int, patch: int) -> str:
+    """Rebuilds a version from its scheme letter and numbers.
+
+    Args:
+        scheme: The scheme letter, or `""` for a plain numeric version.
+        major: The most significant component.
+        minor: The middle component.
+        patch: The least significant component.
+
+    Returns:
+        The version string, e.g. `3a.2.0`.
+    """
+    return f"{major}{scheme}.{minor}.{patch}"
+
+
+def bump_version(current: str, bump: Optional[str]) -> Optional[str]:
+    """Applies a bump to a version without changing the scheme it is written in.
+
+    A repository that versions itself `3a.1.0` gets `3a.2.0` and not `3.2.0`: the letter is part of
+    the version, and nothing here decides what it means. A bump to the major component moves the
+    number and keeps the letter, because a genuinely new scheme is a decision the `VERSION` file
+    exists to record explicitly.
+
+    Args:
+        current: The version being bumped.
+        bump: `"major"`, `"minor"`, or `"patch"`; `None` warrants no release.
+
+    Returns:
+        The bumped version, or `None` when nothing is warranted or `current` is unparseable.
+
+    Raises:
+        VersioningError: If the bump is not a size this module understands.
+    """
+    if bump is None:
+        return None
+    if bump not in BUMPS:
+        raise VersioningError(f"unknown bump {bump!r}; expected one of {list(BUMPS)}")
+    parsed = _parse(current)
+    if parsed is None:
+        return None
+    scheme, numbers = parsed
+    major, minor, patch = numbers
+    if bump == "major":
+        return _render(scheme, major + 1, 0, 0)
+    if bump == "minor":
+        return _render(scheme, major, minor + 1, 0)
+    return _render(scheme, major, minor, patch + 1)
+
+
+def latest_tag(tags: Sequence[str], prefer: Optional[str] = None) -> Optional[str]:
     """Picks the highest release tag from a list, ignoring anything that is not one.
 
     Args:
         tags: Candidate tag names.
+        prefer: A scheme letter to narrow the candidates to, such as the `a` of a declared
+            `3a.1.0`. Narrowing keeps a repository on the release line it says it is on instead of
+            comparing it against a superseded scheme that happens to sort lower or higher.
 
     Returns:
         The highest tag, or `None` when the repository has never been released.
     """
-    parsed = [(nums, tag) for tag in tags if (nums := _parse(tag)) is not None]
+    parsed = []
+    for tag in tags:
+        result = _parse(tag)
+        if result is not None:
+            parsed.append((result[1], result[0], tag))
     if not parsed:
         return None
-    return max(parsed)[1]
+    if prefer is not None:
+        same_scheme = [entry for entry in parsed if entry[1] == prefer]
+        if same_scheme:
+            parsed = same_scheme
+    numbers, scheme, tag = max(parsed, key=lambda entry: (entry[0], entry[1]))
+    return tag
 
 
 def next_version(
@@ -185,12 +262,14 @@ def next_version(
     if mode == "calver":
         day = today or datetime.datetime.now(datetime.timezone.utc).date()
         stamp = f"{day.year}.{day.month:02d}"
-        parts = _parse(current) if current else None
-        if parts and current and current.startswith(f"{stamp}."):
-            return f"{stamp}.{parts[2] + 1}"
+        parsed = _parse(current) if current else None
+        numbers = parsed[1] if parsed else None
+        if numbers and current and current.startswith(f"{stamp}."):
+            return f"{stamp}.{numbers[2] + 1}"
         return f"{stamp}.0"
 
-    major, minor, patch = _parse(current) if current else (0, 0, 0)
+    parsed = _parse(current) if current else None
+    major, minor, patch = parsed[1] if parsed else (0, 0, 0)
 
     if mode == "pridever":
         if bump == "proud":
@@ -284,8 +363,8 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
             any of `BUMPS`, `"proud"`, or an exact version string.
 
     Returns:
-        A mapping with `mode`, `current`, `next`, `tag` and `bump`. `next` is `None` when no
-        release is warranted.
+        A mapping with `mode`, `current`, `current_tag`, `next`, `tag` and `bump`. `next` is `None`
+        when no release is warranted.
 
     Raises:
         VersioningError: If `manual` mode is selected but no `VERSION` file exists.
@@ -295,22 +374,43 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
     prefix = str(config["tag_prefix"])
 
     tags = git_tags(repo_root)
-    current_tag = latest_tag(tags)
-    current = current_tag.lstrip("v") if current_tag else None
+    declared = read_manual_version(repo_root)
+    parsed_declared = _parse(declared) if declared else None
+    # The declared version says which release line this repository is on, so the comparison is
+    # narrowed to that line rather than weighed against a superseded scheme.
+    prefer = parsed_declared[0] if parsed_declared else None
+    current_tag = latest_tag(tags, prefer=prefer)
+    current = None
+    if current_tag:
+        current = current_tag[len(prefix) :] if current_tag.startswith(prefix) else current_tag
 
     if mode == "manual":
-        declared = read_manual_version(repo_root)
         if declared is None:
             raise VersioningError(
                 "manual versioning requires a VERSION file at the repository root"
             )
-        upcoming = declared if declared != current else None
+        if declared != current:
+            # The file names something other than what is already released: that is the owner's
+            # decision, and it wins over anything the commit log implies.
+            return {
+                "mode": mode,
+                "current": current,
+                "current_tag": current_tag,
+                "next": declared,
+                "tag": f"{prefix}{declared}",
+                "bump": "declared",
+            }
+        # The file agrees with the last release, so the pipeline keeps it moving instead of asking a
+        # human to edit it before every promotion.
+        bump = classify_commits(commits_since(repo_root, current_tag))
+        upcoming = bump_version(current, bump) if current else None
         return {
             "mode": mode,
             "current": current,
+            "current_tag": current_tag,
             "next": upcoming,
             "tag": f"{prefix}{upcoming}" if upcoming else None,
-            "bump": "manual" if upcoming else None,
+            "bump": bump,
         }
 
     bump: Optional[str]
@@ -319,6 +419,7 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
         return {
             "mode": mode,
             "current": current,
+            "current_tag": current_tag,
             "next": upcoming,
             "tag": f"{prefix}{upcoming}",
             "bump": "explicit",
@@ -336,6 +437,7 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
     return {
         "mode": mode,
         "current": current,
+        "current_tag": current_tag,
         "next": upcoming,
         "tag": f"{prefix}{upcoming}" if upcoming else None,
         "bump": bump,
