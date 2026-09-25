@@ -246,8 +246,9 @@
       }
     },
     "release": {
-      "$comment": "Final package/capability distribution and publishing behavior is defined by PRD.md and the release capability.",
-      "metadata": "ignore"
+      "$comment": "Final package/capability distribution and publishing behavior is defined by PRD.md and the release capability. `record_issue` is the Request every `chore(release): record <version>` pull request binds: the release job cannot merge one itself, because `develop` requires a review and only an authorized human may approve, so this is the standing target that keeps the version record inside the governed path.",
+      "metadata": "ignore",
+      "record_issue": 1113
     }
   },
   "docs": {
