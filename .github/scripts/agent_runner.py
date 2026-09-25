@@ -2379,6 +2379,17 @@ def run_agent_prompt(
         _post_agent_failure_notice(notice, checkpoint_context)
         raise RuntimeError(notice)
 
+    if not tried:
+        # The chat path skips every harness that cannot serve a tool-free discussion reply, so a
+        # chain without df leaves nothing attempted. Falling through would report quota exhaustion
+        # across an empty list, which is both untrue and unactionable.
+        err = (
+            "[DarkFactory Agent Execution Error]: No harness can serve a discussion reply. "
+            "Only df answers chat, and it is not on PATH."
+        )
+        print(redact_secrets(err), file=sys.stderr)
+        return err
+
     if last_rotatable == "auth":
         # Every credential in the chain was rejected. This is not quota - resuming the same
         # stale secrets would fail the same way - so there is no checkpoint and no `Blocked`
@@ -4492,13 +4503,29 @@ def handle_plan_alignment(pr_number: int, plan_number: int, request_number: int,
         print(f"Plan alignment divergence detected on PR #{pr_number}")
 
 
+def agent_mention_handle() -> str:
+    """Returns the handle a human types to address the agent, without the ``[bot]`` suffix.
+
+    The command hint and the mention matcher both read this, so the handle the docs tell a
+    person to type cannot drift from the one the matcher accepts.
+
+    Returns:
+        The declared bot login with any ``[bot]`` suffix removed, or an empty string when the
+        manifest declares no identity.
+    """
+    identity = _MANIFEST.identities.get("app") or _MANIFEST.identities.get("automation") or {}
+    login = str(identity.get("login") or _MANIFEST.app.get("slug") or "")
+    return login.removesuffix("[bot]")
+
+
 #: One-time hint posted when free text merely mentions a command word.
 COMMAND_HINT_BODY = (
     HINT_MARKER
     + "\nThat looks like approval feedback, but only a command on its own line counts as a "
     "decision. Reply with `/df approve` (or `/approve`) to approve, `/df reject` (alias "
     "`/df revise`, or `/reject` / `/revise`) to send the stage back with feedback, or `/df resume` "
-    "(or `/resume`) to resume a stopped run. Address the bot directly for a discussion reply."
+    "(or `/resume`) to resume a stopped run. Address "
+    f"@{agent_mention_handle()} directly for a discussion reply."
 )
 
 
@@ -4540,9 +4567,7 @@ def is_direct_agent_mention(body: str) -> bool:
     Returns:
         Whether the comment starts with the exact declared bot login or App slug.
     """
-    identity = _MANIFEST.identities.get("app") or _MANIFEST.identities.get("automation") or {}
-    login = str(identity.get("login") or _MANIFEST.app.get("slug") or "")
-    slug = login.removesuffix("[bot]")
+    slug = agent_mention_handle()
     return bool(
         slug
         and re.match(r"@" + re.escape(slug) + r"(?:\[bot\])?(?=$|[\s,:!?])", body.strip(), re.I)
@@ -4700,8 +4725,11 @@ def dispatch_event(event_path: str, event_name: str):
                 )
                 return
             if "pipeline-failure" in lowered_labels:
+                # A failure report carries only the pipeline-failure label, so it matches neither the
+                # Request nor the Plan branch of resume_item and would be silently dropped. The
+                # escape hatch exists to unblock the report itself, so unblock it directly.
                 if command == "resume":
-                    resume_item(issue_num, is_pr, repo, labels)
+                    unblock_entity(issue_num, repo, is_pr=is_pr, target_status="In Progress")
                 return
             if command in ("approve", "resume"):
                 print(f"Approval comment on #{issue_num} from @{comment_user}.")

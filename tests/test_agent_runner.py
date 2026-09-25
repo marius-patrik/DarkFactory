@@ -1561,14 +1561,19 @@ class TestPipelineFailureComments:
         assert calls["implement"] == []
 
     def test_only_a_resume_command_is_processed(self, monkeypatch, tmp_path):
-        """A report without a Request/Plan stage cannot be unblocked by a chat reply."""
+        """A report without a Request/Plan stage is unblocked by resume itself.
+
+        The failure report carries only `pipeline-failure`, so it matches neither branch of
+        resume_item. The escape hatch exists to unblock the report, so it has to unblock it
+        directly or `/df resume` on a failure report does nothing at all.
+        """
         calls = _dispatch_issue_comment(
             monkeypatch,
             tmp_path,
             _issue_comment_payload("/df resume", labels=("pipeline-failure",)),
         )
         assert calls["respond"] == []
-        assert calls["unblock"] == []
+        assert len(calls["unblock"]) == 1
 
     def test_an_unauthorized_resume_cannot_unblock_a_failure(self, monkeypatch, tmp_path):
         """Authorization precedes failure-report handling."""
@@ -3046,3 +3051,41 @@ def test_checkpoint_and_notify_exhaustion_includes_resume_time_and_instructions(
     assert "/df resume" in comment_body
     assert len(recorded_blocks) == 1
     assert recorded_blocks[0][3] == 1742054400.0
+
+
+class TestDiscussionWithoutDf:
+    """A chat reply must report why it could not run, not blame quota."""
+
+    def test_a_chain_without_df_says_so_instead_of_reporting_quota(self, monkeypatch):
+        """Skipping every non-df attempt must not fall through to the exhaustion notice.
+
+        The chat path skips harnesses that cannot serve a tool-free reply, so a chain without df
+        leaves nothing attempted. Reporting quota exhaustion across an empty list is untrue and
+        gives the operator nothing to act on.
+        """
+        monkeypatch.setattr(
+            agent_runner,
+            "resolve_attempts",
+            lambda **_: [
+                agent_runner.harnesses.Attempt(
+                    agent_runner.harnesses.get_harness("claude"), None, 1
+                )
+            ],
+        )
+        result = agent_runner.run_agent_prompt("explain", kind="chat")
+        assert result.startswith("[DarkFactory Agent Execution Error]")
+        assert "discussion reply" in result
+        assert "quota" not in result.lower()
+
+
+class TestCommandHintNamesTheHandle:
+    """The hint must tell a person the handle the matcher actually accepts."""
+
+    def test_the_hint_names_the_declared_handle(self, monkeypatch):
+        handle = agent_runner.agent_mention_handle()
+        assert handle
+        assert f"@{handle}" in agent_runner.COMMAND_HINT_BODY
+
+    def test_the_named_handle_is_the_one_the_matcher_accepts(self, monkeypatch):
+        handle = agent_runner.agent_mention_handle()
+        assert agent_runner.is_direct_agent_mention(f"@{handle}: explain this")
