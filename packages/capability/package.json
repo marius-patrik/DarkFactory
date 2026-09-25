@@ -16,5 +16,8 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@darkfactory/protocol": "workspace:*"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }

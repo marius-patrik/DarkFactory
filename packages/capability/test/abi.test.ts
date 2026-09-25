@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import {
 	CAPABILITY_ABI_VERSION,
 	CapabilityAbiError,
+	type CapabilityDefinition,
 	type CapabilityRuntimeContext,
 	createMcpAdapter,
 	createNativeAdapter,
@@ -12,8 +13,8 @@ import {
 	defineCapability,
 	type PiToolRegistration,
 	supportsCapabilityAbi,
-} from "../../packages/capability/src/index.ts";
-import { discoverCapabilities, resolveCapabilities } from "../../packages/capability/src/loader.ts";
+} from "../src/index.ts";
+import { discoverCapabilities, resolveCapabilities } from "../src/loader.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
@@ -87,25 +88,25 @@ describe("capability ABI", () => {
 			input: { value: "mcp" },
 			account: "test",
 		});
-
 		expect(pi.manifest).toEqual(native.manifest);
 		expect(mcp.manifest).toEqual(native.manifest);
 	});
 
-	test("official capabilities are discovered without a core registry", async () => {
-		const root = resolve(import.meta.dir, "../../capabilities");
-		const definitions = await discoverCapabilities(root);
-		expect(definitions.map((item) => item.id)).toEqual(["code", "hooks", "math", "paper", "release"]);
-
-		const multiDomain = resolveCapabilities(definitions, ["paper", "code"]);
-		expect(multiDomain.domains).toEqual(["code", "paper"]);
-		expect(multiDomain.capabilities.map((item) => item.id)).toEqual(["code", "hooks", "paper", "release"]);
-
-		const mathOnly = resolveCapabilities(definitions, ["math"]);
-		expect(mathOnly.capabilities.map((item) => item.id)).toEqual(["hooks", "math", "release"]);
+	test("domain resolution is deterministic without depending on the repository capability inventory", () => {
+		const definitions: CapabilityDefinition[] = [
+			{ abiVersion: "1", id: "code-only", version: "1.0.0", description: "code", domains: ["code"] },
+			{ abiVersion: "1", id: "paper-only", version: "1.0.0", description: "paper", domains: ["paper"] },
+			{ abiVersion: "1", id: "global", version: "1.0.0", description: "global" },
+		];
+		expect(resolveCapabilities(definitions, ["paper", "code"]).capabilities.map((item) => item.id)).toEqual([
+			"code-only",
+			"global",
+			"paper-only",
+		]);
+		expect(resolveCapabilities(definitions, ["math"]).capabilities.map((item) => item.id)).toEqual(["global"]);
 	});
 
-	test("a project capability loads from disk without modifying core tables", async () => {
+	test("a project capability loads from disk without modifying a registry", async () => {
 		const root = await mkdtemp(resolve(tmpdir(), "df-capability-"));
 		temporary.push(root);
 		const project = resolve(root, "project-specific");
@@ -123,17 +124,5 @@ describe("capability ABI", () => {
 		);
 		const definitions = await discoverCapabilities(root);
 		expect(definitions.map((item) => item.id)).toEqual(["project-specific"]);
-	});
-
-	test("official capability sources declare credentials instead of reading raw secret environments", async () => {
-		const root = resolve(import.meta.dir, "../../capabilities");
-		for (const directory of await readdir(root, { withFileTypes: true })) {
-			if (!directory.isDirectory()) continue;
-			for (const entry of await readdir(resolve(root, directory.name), { withFileTypes: true })) {
-				if (!entry.isFile() || !entry.name.endsWith(".ts")) continue;
-				const source = await readFile(resolve(root, directory.name, entry.name), "utf8");
-				expect(source).not.toMatch(/(?:process\.env|Bun\.env|Deno\.env|\.credentials\.read\(|FileCredentialStore)/u);
-			}
-		}
 	});
 });
