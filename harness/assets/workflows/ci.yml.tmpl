@@ -168,10 +168,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect docs.df
+      - name: Detect combined configuration docs block
         id: docs
+        env:
+          DF_CONFIG_DIR: ${{ env.DF_CONFIG_DIR }}
         run: |
-          if [ -f "$GITHUB_WORKSPACE/docs.df" ] || [ -f "$GITHUB_WORKSPACE/.darkfactory/docs.df" ]; then
+          ROOT_REPO=false
+          ROOT_CONFIG=false
+          ROOT_EMPTY=false
+          FOLDER_REPO=false
+          FOLDER_CONFIG=false
+          FOLDER_EMPTY=false
+          [ -f "$GITHUB_WORKSPACE/repo.dfconfig" ] && ROOT_REPO=true
+          [ -f "$GITHUB_WORKSPACE/config.dfconfig" ] && ROOT_CONFIG=true
+          [ -f "$GITHUB_WORKSPACE/.dfconfig" ] && ROOT_EMPTY=true
+          CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
+          case "$CONFIG_DIR" in
+            /*) FOLDER="$(realpath -m "$CONFIG_DIR")" ;;
+            *) FOLDER="$(realpath -m "$GITHUB_WORKSPACE/$CONFIG_DIR")" ;;
+          esac
+          if [ "$FOLDER" != "$GITHUB_WORKSPACE" ]; then
+            [ -f "$FOLDER/repo.dfconfig" ] && FOLDER_REPO=true
+            [ -f "$FOLDER/config.dfconfig" ] && FOLDER_CONFIG=true
+            [ -f "$FOLDER/.dfconfig" ] && FOLDER_EMPTY=true
+          fi
+          COUNT=0
+          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$ROOT_EMPTY" "$FOLDER_REPO" "$FOLDER_CONFIG" "$FOLDER_EMPTY"; do
+            [ "$PRESENT" = true ] && COUNT=$((COUNT + 1))
+          done
+          if [ "$COUNT" -gt 1 ]; then
+            echo "Ambiguous DarkFactory configuration: keep only one repo.dfconfig, config.dfconfig, or .dfconfig candidate." >&2
+            exit 1
+          fi
+          if [ "$COUNT" -eq 1 ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
@@ -205,11 +234,11 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
           fi
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
 
       - name: No documentation configured
         if: steps.docs.outputs.present != 'true'
-        run: echo "No docs.df; native documentation check is not applicable."
+        run: echo "No combined configuration docs block; native documentation check is not applicable."
 
   quality:
     name: quality

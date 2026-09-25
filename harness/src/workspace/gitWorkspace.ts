@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { resolveDfFile } from "../utils/resolver.ts";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import { GitError, runGit } from "./git.ts";
 
 /**
@@ -38,37 +38,37 @@ export interface GitStatusResult {
 }
 
 /**
- * Resolves the canonical repository default branch from repo.df.
+ * Resolves the canonical repository default branch from the combined configuration's repo block.
  *
  * @param repoDir - Path to the repository.
  * @returns The resolved default branch name.
- * @throws {Error} If repo.df cannot be found, parsed, or does not specify identity.default_branch.
+ * @throws {Error} If the configuration or repo block is unavailable or identity.default_branch is missing.
  */
 export async function resolveDefaultBranch(repoDir: string): Promise<string> {
-	const path = resolveDfFile(repoDir, "repo");
+	const path = resolveConfigDocumentPath(repoDir);
+	if (!path) throw new Error(`No combined DarkFactory configuration found in ${repoDir}`);
 	let content: string;
 	try {
 		content = await readFile(path, "utf8");
 	} catch (error) {
-		throw new Error(`Failed to read repo.df file at ${path}: ${(error as Error).message}`);
+		throw new Error(`Failed to read combined configuration at ${path}: ${(error as Error).message}`);
 	}
 
-	let parsed: unknown;
+	let repo: Record<string, unknown> | undefined;
 	try {
-		parsed = JSON.parse(content);
+		const document = parseConfigDocument(content, path);
+		repo = configBlock(document, "repo", path);
 	} catch (error) {
-		throw new Error(`Failed to parse repo.df at ${path}: ${(error as Error).message}`);
+		throw new Error(`Failed to parse combined configuration at ${path}: ${(error as Error).message}`);
 	}
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error(`repo.df at ${path} must contain an object`);
-	}
-	const identity = (parsed as { identity?: unknown }).identity;
+	if (!repo) throw new Error(`Combined configuration at ${path} is missing the repo block`);
+	const identity = repo.identity;
 	const branch =
 		identity && typeof identity === "object" && !Array.isArray(identity)
 			? (identity as { default_branch?: unknown }).default_branch
 			: undefined;
 	if (typeof branch !== "string" || !branch.trim()) {
-		throw new Error(`repo.df at ${path} is missing a non-empty identity.default_branch`);
+		throw new Error(`repo block at ${path} is missing a non-empty identity.default_branch`);
 	}
 	return branch.trim();
 }
@@ -108,7 +108,7 @@ export function getInProgressOperation(worktree: string): "rebase" | "merge" | "
 export function isWorktreeDirty(worktree: string): boolean {
 	const stdout = runGit(worktree, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
 	const entries = stdout.split("\0");
-	const changed: string[] = [];
+	const changed: { status: string; path: string }[] = [];
 	for (let index = 0; index < entries.length; index++) {
 		const entry = entries[index] ?? "";
 		if (entry.length < 4) continue;
@@ -116,17 +116,18 @@ export function isWorktreeDirty(worktree: string): boolean {
 		const path = entry.slice(3);
 		if (status.includes("R") || status.includes("C")) index++;
 		if (!path.startsWith(".df-task/") && !path.startsWith(".df-")) {
-			changed.push(path);
+			changed.push({ status, path });
 		}
 	}
 
 	if (changed.length === 0) return false;
 
-	// If we are in-progress of rebase/merge/cherry-pick, those dirty files are expected
 	const op = getInProgressOperation(worktree);
-	if (op !== "none") return false;
+	if (op === "none") return true;
 
-	return true;
+	// Conflict resolution may legitimately dirty tracked files, but unrelated untracked files
+	// remain unsafe and must never be hidden merely because a merge/rebase/cherry-pick is active.
+	return changed.some((entry) => entry.status === "??");
 }
 
 /**
@@ -286,17 +287,14 @@ export function getConflictState(worktree: string): GitConflictState {
 	if (operation === "rebase") {
 		try {
 			const gitDir = getGitDir(worktree);
-			const rebaseMerge = join(gitDir, "rebase-merge");
-			if (existsSync(rebaseMerge)) {
-				const headNameFile = join(rebaseMerge, "head-name");
-				if (existsSync(headNameFile)) {
-					head = runGit(worktree, ["cat-file", "-p", `HEAD`]);
-				}
-				const ontoFile = join(rebaseMerge, "onto");
-				if (existsSync(ontoFile)) {
-					base = runGit(worktree, ["cat-file", "-p", "onto"]);
-				}
-			}
+			const rebaseDir = existsSync(join(gitDir, "rebase-merge"))
+				? join(gitDir, "rebase-merge")
+				: join(gitDir, "rebase-apply");
+			const origHeadFile = join(rebaseDir, "orig-head");
+			const ontoFile = join(rebaseDir, "onto");
+			if (existsSync(origHeadFile)) head = readFileSync(origHeadFile, "utf8").trim();
+			else head = runGit(worktree, ["rev-parse", "ORIG_HEAD"]);
+			if (existsSync(ontoFile)) base = readFileSync(ontoFile, "utf8").trim();
 		} catch (error) {
 			throw new Error(`Failed to retrieve rebase state details: ${(error as Error).message}`);
 		}
@@ -447,7 +445,7 @@ export function abortOperation(worktree: string): void {
  * @param branch - The target branch.
  * @param expectedOldSHA - The exact expected old SHA on the remote. If remote has moved, push is refused.
  */
-export function pushWithLease(worktree: string, remote: string, branch: string, expectedOldSHA: string): void {
+export function pushWithLease(worktree: string, remote: string, branch: string, expectedOldSHA: string): string {
 	if (!branch) {
 		throw new Error("Branch name is required for push with lease.");
 	}
@@ -459,12 +457,19 @@ export function pushWithLease(worktree: string, remote: string, branch: string, 
 	if (!expectedOldSHA || !/^[0-9a-fA-F]{4,64}$/.test(expectedOldSHA)) {
 		throw new Error(`Invalid expected SHA for push with lease: ${expectedOldSHA}`);
 	}
+	const localSha = runGit(worktree, ["rev-parse", "HEAD"]);
 	try {
 		runGit(worktree, ["push", `--force-with-lease=${branch}:${expectedOldSHA}`, remote, `HEAD:refs/heads/${branch}`]);
 	} catch (error) {
-		if (error instanceof GitError && error.stderr.includes("stale info")) {
+		if (error instanceof GitError && /stale info|rejected|fetch first/iu.test(error.stderr)) {
 			throw new Error(`Push refused: remote branch '${branch}' has been updated independently (stale lease).`);
 		}
 		throw error;
 	}
+	runGit(worktree, ["fetch", remote, `refs/heads/${branch}:refs/remotes/${remote}/${branch}`]);
+	const remoteSha = runGit(worktree, ["rev-parse", `refs/remotes/${remote}/${branch}`]);
+	if (remoteSha !== localSha) {
+		throw new Error(`Push verification failed for ${remote}/${branch}: expected ${localSha}, observed ${remoteSha}`);
+	}
+	return remoteSha;
 }

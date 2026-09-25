@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadIdentities, validateIdentities, IdentitiesValidationError } from "../../src/identities/index.ts";
+import { IdentitiesValidationError, loadIdentities, validateIdentities } from "../../src/identities/index.ts";
 
 describe("validateIdentities", () => {
 	it("validates a complete and valid identities manifest", () => {
@@ -136,12 +136,14 @@ describe("loadIdentities", () => {
 			await writeFile(
 				manifestFile,
 				JSON.stringify({
-					identities: {
-						app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
-						google: {
-							name: "Gemini",
-							trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-							verified: true,
+					repo: {
+						identities: {
+							app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
+							google: {
+								name: "Gemini",
+								trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+								verified: true,
+							},
 						},
 					},
 				}),
@@ -156,9 +158,7 @@ describe("loadIdentities", () => {
 	});
 
 	it("throws IdentitiesValidationError when manifest file does not exist", async () => {
-		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(
-			IdentitiesValidationError,
-		);
+		expect(loadIdentities("/non/existent/path/manifest.json")).rejects.toThrow(IdentitiesValidationError);
 	});
 
 	it("throws IdentitiesValidationError when manifest JSON is invalid", async () => {

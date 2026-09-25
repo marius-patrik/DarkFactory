@@ -30,6 +30,7 @@ def _df_environment(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("DF_HOME", raising=False)
+    monkeypatch.delenv("DF_CONFIG_DIR", raising=False)
     monkeypatch.setattr(agent_runner, "_DF_SETUP_HOME", None, raising=False)
     for name in agent_runner.df_setup_secret_names():
         monkeypatch.delenv(name, raising=False)
@@ -379,32 +380,46 @@ class TestDfSetup:
             "DF_ACCOUNT_GROK_SUB",
         ] in [call[0] for call in calls]
 
-    def test_the_target_repo_config_is_copied_into_df_home(self, monkeypatch, tmp_path):
+    def test_the_target_repo_config_selects_the_combined_document(self, monkeypatch, tmp_path):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        config_dir = tmp_path / ".darkfactory" / "df"
+        config_dir = tmp_path / ".darkfactory"
         config_dir.mkdir(parents=True)
-        (config_dir / "config.json").write_text('{"defaultChain": "x"}', encoding="utf-8")
+        (config_dir / "repo.dfconfig").write_text('{"providers":{"defaultChain":"x"}}', encoding="utf-8")
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
         self._record(monkeypatch)
         df_home = agent_runner.setup_df_accounts()
-        copied = os.path.join(df_home, "config.json")
-        assert os.path.isfile(copied)
-        with open(copied, encoding="utf-8") as handle:
-            assert json.load(handle) == {"defaultChain": "x"}
+        assert os.path.isdir(df_home)
+        assert os.environ["DF_CONFIG_DIR"] == str(config_dir)
+        assert not os.path.exists(os.path.join(df_home, "config.json"))
+
+    def test_root_config_is_selected_when_present(self, monkeypatch, tmp_path):
+        """The canonical root document takes precedence over the default folder."""
+        (tmp_path / "repo.dfconfig").write_text('{"providers":{"defaultChain":"x"}}', encoding="utf-8")
+        monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
+        assert agent_runner.find_df_config() == str(tmp_path / "repo.dfconfig")
+
+    def test_ambiguous_root_and_folder_config_fails_closed(self, monkeypatch, tmp_path):
+        (tmp_path / "repo.dfconfig").write_text("{}", encoding="utf-8")
+        folder = tmp_path / ".darkfactory"
+        folder.mkdir()
+        (folder / "config.dfconfig").write_text("{}", encoding="utf-8")
+        monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
+        with pytest.raises(ValueError, match="root and configured-folder"):
+            agent_runner.find_df_config()
 
     def test_the_pipeline_config_is_the_fallback(self, monkeypatch, tmp_path):
         """Args:
         monkeypatch: Pytest monkeypatch fixture.
         tmp_path: Pytest-provided empty directory.
         """
-        fallback = tmp_path / ".darkfactory-pipeline" / ".darkfactory" / "df"
+        fallback = tmp_path / ".darkfactory-pipeline" / ".darkfactory"
         fallback.mkdir(parents=True)
-        (fallback / "config.json").write_text('{"defaultChain": "y"}', encoding="utf-8")
+        (fallback / "repo.dfconfig").write_text('{"providers":{"defaultChain":"y"}}', encoding="utf-8")
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
-        assert agent_runner.find_df_config() == str(fallback / "config.json")
+        assert agent_runner.find_df_config() == str(fallback / "repo.dfconfig")
 
     def test_a_missing_df_binary_is_a_notice_not_a_failure(self, monkeypatch):
         """Args:

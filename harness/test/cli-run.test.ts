@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { FileCredentialStore } from "@darkfactory/keychain";
 import { redactToolInput } from "../src/cli.ts";
@@ -17,22 +17,29 @@ async function run(
 	prompt: string,
 	options: { args?: string[]; config?: Record<string, unknown>; setup?: (home: string) => Promise<void> } = {},
 ) {
-	const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
-	temporary.push(home);
-	if (options.config) await writeFile(join(home, "config.df"), JSON.stringify(options.config), "utf8");
+	const workspace = await mkdtemp(join(process.cwd(), ".cli-test-"));
+	temporary.push(workspace);
+	const home = join(workspace, "home");
+	await mkdir(home);
+	if (options.config) {
+		await writeFile(join(workspace, "repo.dfconfig"), JSON.stringify({ repo: {}, providers: options.config }), "utf8");
+	}
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
-	const child = Bun.spawn([process.execPath, "run", "src/cli.ts", "run", "--faux", "--json", ...args, prompt], {
-		cwd: process.cwd(),
-		env: {
-			DF_HOME: home,
-			DF_FAUX: "1",
-			PATH: process.env.PATH ?? "",
-			SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+	const child = Bun.spawn(
+		[process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "run", "--faux", "--json", ...args, prompt],
+		{
+			cwd: workspace,
+			env: {
+				DF_HOME: home,
+				DF_FAUX: "1",
+				PATH: process.env.PATH ?? "",
+				SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+			},
+			stdout: "pipe",
+			stderr: "pipe",
 		},
-		stdout: "pipe",
-		stderr: "pipe",
-	});
+	);
 	const [stdout, stderr, exitCode] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
@@ -43,24 +50,29 @@ async function run(
 
 describe("df run", () => {
 	test("df route explains a route and df run emits the route before the session", async () => {
-		const home = await mkdtemp(join(process.cwd(), ".cli-test-"));
-		temporary.push(home);
+		const workspace = await mkdtemp(join(process.cwd(), ".cli-test-"));
+		temporary.push(workspace);
+		const home = join(workspace, "home");
+		await mkdir(home);
 		await writeFile(
-			join(home, "config.df"),
+			join(workspace, "repo.dfconfig"),
 			JSON.stringify({
-				defaultChain: "faux/echo@test",
-				router: {
-					policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }],
-					capabilityTiers: [{ id: "light", match: ["faux/*"] }],
-					defaultTier: "light",
-					difficultyTiers: { easy: "light", medium: "light", hard: "light" },
+				repo: {},
+				providers: {
+					defaultChain: "faux/echo@test",
+					router: {
+						policies: [{ id: "chat", match: { kind: ["chat"] }, prefer: { candidates: ["faux/echo@test"] } }],
+						capabilityTiers: [{ id: "light", match: ["faux/*"] }],
+						defaultTier: "light",
+						difficultyTiers: { easy: "light", medium: "light", hard: "light" },
+					},
 				},
 			}),
 			"utf8",
 		);
 		const invoke = async (...command: string[]) => {
-			const child = Bun.spawn([process.execPath, "run", "src/cli.ts", ...command], {
-				cwd: process.cwd(),
+			const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), ...command], {
+				cwd: workspace,
 				env: {
 					DF_HOME: home,
 					DF_FAUX: "1",

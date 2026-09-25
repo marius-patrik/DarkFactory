@@ -65,16 +65,12 @@ def declared(root: str = ".") -> Dict[str, object]:
     Returns:
         Mapping with `spdx`, `holder` and `year`, defaulted where the manifest is silent.
     """
-    import manifest as manifest_module
+    try:
+        from .resolver import load_config_block
+    except ImportError:
+        from resolver import load_config_block
 
-    path = manifest_module.resolve_manifest_path(root)
-    block: Dict[str, object] = {}
-    if os.path.isfile(path):
-        try:
-            with open(path, encoding="utf-8") as handle:
-                block = json.load(handle).get("license", {}) or {}
-        except (OSError, json.JSONDecodeError) as exc:
-            print(f"Could not read the licence declaration: {exc}", file=sys.stderr)
+    block = load_config_block(root, "repo").get("license", {}) or {}
     return {
         "spdx": str(block.get("spdx", NONE)),
         "holder": str(block.get("holder", "")),

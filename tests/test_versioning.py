@@ -170,9 +170,7 @@ def _init_repo(path, mode, commits):
     subprocess.run(["git", "init", "-q", "-b", "main", str(path)], check=True)
     for key, value in (("user.email", "t@example.com"), ("user.name", "T")):
         subprocess.run(["git", "-C", str(path), "config", key, value], check=True)
-    github = path / ".darkfactory"
-    github.mkdir()
-    (github / "repo.df").write_text(json.dumps({"versioning": {"mode": mode}}))
+    (path / "repo.dfconfig").write_text(json.dumps({"repo": {"versioning": {"mode": mode}}}))
     for index, message in enumerate(commits):
         (path / f"f{index}.txt").write_text(message)
         subprocess.run(["git", "-C", str(path), "add", "-A"], check=True)
@@ -248,5 +246,5 @@ class TestResolve:
 
     def test_a_repository_without_a_manifest_defaults_to_semver(self, tmp_path):
         _init_repo(tmp_path, "semver", [FEATURE])
-        os.remove(tmp_path / ".darkfactory" / "repo.df")
+        os.remove(tmp_path / "repo.dfconfig")
         assert versioning.resolve(str(tmp_path))["mode"] == "semver"

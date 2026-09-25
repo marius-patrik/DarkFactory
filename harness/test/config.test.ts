@@ -30,16 +30,30 @@ describe("local configuration and credential sources", () => {
 		).toEqual({});
 	});
 
+	test("loads the empty-basename configuration alias", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, ".dfconfig"), JSON.stringify({ providers: { defaultChain: "faux/echo@test" } }));
+		expect((await loadDfConfig(temp)).defaultChain).toBe("faux/echo@test");
+	});
+
+	test("does not load legacy configuration paths", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "repo.df"), JSON.stringify({ providers: { defaultChain: "legacy/model@test" } }));
+		expect(await loadDfConfig(temp)).toEqual({});
+	});
+
 	test("loads chains and a relative account key path", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "repo.dfconfig"),
 			JSON.stringify({
-				defaultChain: "google/custom@default",
-				cooldownTtlMs: 12_345,
-				hardReasoningChain: "anthropic/hard@work",
-				sensitiveChain: "local/private@main",
-				credentialFiles: { "google:default": "secrets/gemini_api_key" },
+				providers: {
+					defaultChain: "google/custom@default",
+					cooldownTtlMs: 12_345,
+					hardReasoningChain: "anthropic/hard@work",
+					sensitiveChain: "local/private@main",
+					credentialFiles: { "google:default": "secrets/gemini_api_key" },
+				},
 			}),
 		);
 		const config = await loadDfConfig(temp);
@@ -90,43 +104,45 @@ describe("local configuration and credential sources", () => {
 
 	test("rejects malformed config without exposing its contents", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
-		await writeFile(join(temp, "config.df"), "{secret-content");
-		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid config.df JSON");
-		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
+		await writeFile(join(temp, "config.dfconfig"), "{secret-content");
+		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid DarkFactory configuration JSON");
+		await writeFile(join(temp, "config.dfconfig"), JSON.stringify({ providers: { cooldownTtlMs: 0 } }));
 		await expect(loadDfConfig(temp)).rejects.toThrow("positive integer");
 	});
 
 	test("validates and loads router policies, model overrides, and learning bounds", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "config.dfconfig"),
 			JSON.stringify({
-				router: {
-					classifier: "cheap/classifier@default",
-					candidates: ["acme/fast@work"],
-					models: {
-						"acme/fast": {
-							tools: true,
-							modalities: ["text", "image_gen"],
-							quality: { review: 4 },
-							limitTier: "tight",
-							capabilityTier: "light",
+				providers: {
+					router: {
+						classifier: "cheap/classifier@default",
+						candidates: ["acme/fast@work"],
+						models: {
+							"acme/fast": {
+								tools: true,
+								modalities: ["text", "image_gen"],
+								quality: { review: 4 },
+								limitTier: "tight",
+								capabilityTier: "light",
+							},
 						},
+						capabilityTiers: [
+							{ id: "light", match: ["acme/fast"] },
+							{ id: "deep", match: ["acme/deep"] },
+						],
+						defaultTier: "light",
+						difficultyTiers: { easy: "light", medium: "deep", hard: "deep" },
+						policies: [
+							{
+								id: "review",
+								match: { kind: ["review"], needs: ["tools"] },
+								prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
+							},
+						],
+						learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
 					},
-					capabilityTiers: [
-						{ id: "light", match: ["acme/fast"] },
-						{ id: "deep", match: ["acme/deep"] },
-					],
-					defaultTier: "light",
-					difficultyTiers: { easy: "light", medium: "deep", hard: "deep" },
-					policies: [
-						{
-							id: "review",
-							match: { kind: ["review"], needs: ["tools"] },
-							prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
-						},
-					],
-					learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
 				},
 			}),
 		);
@@ -142,8 +158,8 @@ describe("local configuration and credential sources", () => {
 		expect(config.router?.difficultyTiers).toEqual({ easy: "light", medium: "deep", hard: "deep" });
 		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp2, "config.df"),
-			JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
+			join(temp2, "config.dfconfig"),
+			JSON.stringify({ providers: { router: { policies: [], candidates: ["missing-account/model"] } } }),
 		);
 		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
 	});
@@ -151,24 +167,26 @@ describe("local configuration and credential sources", () => {
 	test("rejects invalid capability-tier mappings", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "config.dfconfig"),
 			JSON.stringify({
-				router: {
-					policies: [],
-					capabilityTiers: [{ id: "light", match: ["acme/*"] }],
-					defaultTier: "missing",
-					difficultyTiers: { easy: "light", medium: "missing", hard: "light" },
+				providers: {
+					router: {
+						policies: [],
+						capabilityTiers: [{ id: "light", match: ["acme/*"] }],
+						defaultTier: "missing",
+						difficultyTiers: { easy: "light", medium: "missing", hard: "light" },
+					},
 				},
 			}),
 		);
 		await expect(loadDfConfig(temp)).rejects.toThrow('Default capability tier "missing" is not declared');
 	});
 
-	test("throws error when both .darkfactory/config.df and root config.df exist simultaneously", async () => {
+	test("rejects root and fallback-folder configuration candidates together", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await mkdir(join(temp, ".darkfactory"));
-		await writeFile(join(temp, ".darkfactory", "config.df"), "{}");
-		await writeFile(join(temp, "config.df"), "{}");
-		await expect(loadDfConfig(temp)).rejects.toThrow("exist; only one is allowed");
+		await writeFile(join(temp, ".darkfactory", "config.dfconfig"), JSON.stringify({ providers: {} }));
+		await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ providers: {} }));
+		await expect(loadDfConfig(temp)).rejects.toThrow("candidates exist in both the repository root");
 	});
 });

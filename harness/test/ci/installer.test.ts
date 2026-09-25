@@ -11,11 +11,10 @@ import {
 	updateWorkflows,
 } from "../../src/ci/installer.ts";
 
-const bundledSkillPath = (name: string) => join(import.meta.dir, "../../assets/skills", name, "SKILL.md");
+const bundledSkillPath = (name: string) => join(import.meta.dir, "../../../.agents/skills", name, "SKILL.md");
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
-	await mkdir(join(temp, ".darkfactory"), { recursive: true });
-	await writeFile(join(temp, ".darkfactory", "repo.df"), JSON.stringify({ upstream: { repo, ref } }));
+	await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ repo: { upstream: { repo, ref } } }));
 }
 
 describe("Workflow installer & updater", () => {
@@ -107,7 +106,7 @@ describe("Workflow installer & updater", () => {
 	it("updates managed files and reports drift", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-ci-install-"));
 		try {
-			// Install with old ref from repo.df upstream.
+			// Install with old ref from repo.dfconfig upstream.
 			await writeUpstream(temp, "my-org/my-df", "old-ref");
 			await installWorkflows(temp);
 
@@ -115,7 +114,7 @@ describe("Workflow installer & updater", () => {
 			let drift = await checkWorkflowsDrift(temp);
 			expect(drift.every((d) => d.status === "in_sync")).toBe(true);
 
-			// Change only the final repo.df upstream ref.
+			// Change only the final repo.dfconfig upstream ref.
 			await writeUpstream(temp, "my-org/my-df", "new-ref");
 
 			// Check drift - should detect outdated
@@ -135,7 +134,7 @@ describe("Workflow installer & updater", () => {
 });
 
 describe("Bundled skills installer & drift", () => {
-	it("discovers bundled skills from harness/assets/skills", async () => {
+	it("discovers first-party skills from canonical .agents/skills", async () => {
 		const skills = await discoverBundledSkills();
 		expect(skills.length).toBeGreaterThanOrEqual(1);
 		expect(skills).toContain("darkfactory-auth");

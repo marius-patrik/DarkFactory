@@ -1,7 +1,7 @@
 """Reads the repository declaration consumed by shared DarkFactory automation.
 
 Repository-specific identity, taxonomy, project, release and authorization settings live in
-`repo.df`. Detectable package/runtime facts are discovered rather than duplicated in this declaration.
+`repo.dfconfig`. Detectable package/runtime facts are discovered rather than duplicated in this declaration.
 """
 
 import json
@@ -9,27 +9,27 @@ import os
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 try:
-    from .resolver import resolve_df_file
+    from .resolver import load_config_block, resolve_config_document_path
 except ImportError:
-    from resolver import resolve_df_file
+    from resolver import load_config_block, resolve_config_document_path
 
 #: Repository declaration filename.
-MANIFEST_PATH = "repo.df"
+MANIFEST_PATH = "repo.dfconfig"
 
 
 def resolve_manifest_path(root: str) -> str:
-    """Returns the active repo.df path.
+    """Returns the active combined configuration path.
 
     Args:
         root: Absolute path to the repository root.
 
     Returns:
-        The path to the repository declaration.
+        The path to the combined configuration document.
 
     Raises:
-        ValueError: If the manifest cannot be resolved.
+        ValueError: If configuration discovery is ambiguous.
     """
-    return resolve_df_file(root, "repo")
+    return resolve_config_document_path(root)
 
 
 #: Area labels used when a repository declares none. Deliberately about the pipeline itself, since
@@ -112,7 +112,7 @@ DEFAULT_IDENTITIES: Dict[str, Any] = {
 
 
 class Manifest:
-    """The parsed contents of a repository's repo.df.
+    """The parsed contents of a repository's combined `repo` block.
 
     Attributes:
         root: Absolute path to the repository root.
@@ -529,48 +529,20 @@ class Manifest:
         return not self.upstream["repo"]
 
 
-def resolve_manifest_path(root: str) -> str:
-    """Returns the path to the manifest.
-
-    Args:
-        root: Absolute path to the repository root.
-
-    Returns:
-        The path to the manifest file.
-
-    Raises:
-        ValueError: If the manifest cannot be resolved.
-    """
-    try:
-        return resolve_df_file(root, "repo")
-    except ValueError as e:
-        if "Both" in str(e):
-            raise
-        return os.path.join(root, ".darkfactory", "repo.df")
-
-
 def load(root: str = ".") -> Manifest:
-    """Loads a repository's manifest.
+    """Loads a repository's `repo` block from the combined configuration.
 
     Args:
         root: Path to the repository root.
 
     Returns:
-        The manifest, with defaults applied when the file is absent or unreadable.
+        The manifest with defaults applied when the block is absent.
+
+    Raises:
+        ValueError: If configuration discovery or parsing is ambiguous or malformed.
     """
     root = os.path.abspath(root)
-    path = resolve_manifest_path(root)
-
-    data: Dict[str, Any] = {}
-    if path and os.path.isfile(path):
-        try:
-            with open(path, encoding="utf-8") as handle:
-                loaded = json.load(handle)
-            if isinstance(loaded, dict):
-                data = loaded
-        except (OSError, ValueError):
-            data = {}
-    return Manifest(root=root, data=data)
+    return Manifest(root=root, data=load_config_block(root, "repo"))
 
 
 def main() -> None:  # pragma: no cover - thin CLI wrapper

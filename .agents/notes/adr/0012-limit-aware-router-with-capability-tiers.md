@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`
+
 ## Decision
 
 The router selects candidates using task kind, required capabilities, context, sensitivity/data policy, live quota and configured capability tiers.

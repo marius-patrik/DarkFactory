@@ -34,11 +34,13 @@ async function fixture(): Promise<string> {
 	await mkdir(join(root, "proofs"), { recursive: true });
 	await writeFile(join(root, "proofs", "lakefile.lean"), "package Proofs\n");
 	await writeFile(
-		join(root, "repo.df"),
+		join(root, "repo.dfconfig"),
 		JSON.stringify({
-			environment: {
-				linting: { python: { command: "ruff check ." } },
-				testing: { python: { versions: ["3.12"] } },
+			repo: {
+				environment: {
+					linting: { python: { command: "ruff check ." } },
+					testing: { python: { versions: ["3.12"] } },
+				},
 			},
 		}),
 	);
@@ -61,7 +63,7 @@ describe("repository evidence and capability actions", () => {
 		expect(evidence.domains).toContain("code");
 	});
 
-	test("resolves actions only from repo.df overrides and capability contributions", async () => {
+	test("resolves actions only from repo.dfconfig overrides and capability contributions", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
 		const resolution = resolveRepositoryActions(evidence, [codeCapability, paperCapability, mathCapability]);
@@ -76,7 +78,7 @@ describe("repository evidence and capability actions", () => {
 		});
 
 		const python = resolution.packages.find((entry) => entry.package.id === "python:python")!;
-		expect(python.actions.lint.source).toBe("repo.df");
+		expect(python.actions.lint.source).toBe("repo.dfconfig");
 		expect(python.actions.lint.command).toBe("ruff check .");
 		expect(python.actions.test.command).toBe("pytest");
 		expect(python.actions.test.metadata).toEqual({ versions: ["3.12"] });

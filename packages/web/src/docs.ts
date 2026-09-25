@@ -17,7 +17,6 @@ function pageHref(from: DocsPage, to: DocsPage): string {
 
 function renderInline(raw: string, page: DocsPage, graph: DocsContentGraph): string {
 	const sourceMap = new Map(graph.pages.map((candidate) => [posix.normalize(candidate.source), candidate]));
-	sourceMap.set("README.md", graph.pages.find((candidate) => candidate.id === graph.home)!);
 	let output = "";
 	let cursor = 0;
 	const links = /\[([^\]]+)\]\(([^)]+)\)/gu;
