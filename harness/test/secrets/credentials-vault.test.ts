@@ -17,7 +17,7 @@ beforeEach(async () => {
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.email", "t@t.com"]).exited;
 	await Bun.spawn(["git", "-C", dataRepo, "config", "user.name", "t"]).exited;
 	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.dfconfig"), JSON.stringify({ providers: { dataRepo } }), "utf8");
+	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ providers: { dataRepo } }), "utf8");
 });
 
 afterEach(async () => {
@@ -45,7 +45,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 			key,
 		);
 
-		const store = new FileCredentialStore(dfHome);
+		const store = new FileCredentialStore(dfHome, undefined, undefined, undefined, root);
 		await store.setSlot(accountId("google", "default"), "api_key", { type: "api_key", value: "vault:GEMINI_API_KEY" });
 
 		// Stored raw still vault: reference
@@ -75,7 +75,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 		const key = generateVaultKey();
 		await writeFile(join(dfHome, "vault-key.df"), key, { mode: 0o600 } as never);
 		await saveVault(dataRepo, { version: 1, entries: [] }, key);
-		const store = new FileCredentialStore(dfHome);
+		const store = new FileCredentialStore(dfHome, undefined, undefined, undefined, root);
 		await store.setSlot(accountId("google", "default"), "api_key", { type: "api_key", value: "vault:MISSING" });
 		await expect(store.forAccount("google", "default").read("google")).rejects.toThrow("Vault secret not found");
 	});
@@ -101,7 +101,7 @@ describe("vault: credential source for df account set --from-vault", () => {
 		);
 		// Simulate `df account set google:default api_key --from-vault MY_VAULT_KEY`
 		// Use FileCredentialStore directly as CLI does
-		const store = new FileCredentialStore(dfHome);
+		const store = new FileCredentialStore(dfHome, undefined, undefined, undefined, root);
 		const vaultName = "MY_VAULT_KEY";
 		await store.setSlot("google:default", "api_key", { type: "api_key", value: `vault:${vaultName}` });
 		const cred = await store.forAccount("google", "default").read("google");

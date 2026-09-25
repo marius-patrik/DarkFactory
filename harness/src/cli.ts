@@ -1566,6 +1566,7 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
 		args.filter((arg) => arg !== "--insecure-file-key"),
 		{
 			dfHome: home,
+			repositoryRoot: process.cwd(),
 			allowFileKey,
 			stdin: async () => {
 				try {

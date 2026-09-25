@@ -25,6 +25,7 @@ import { isGitRepo, syncDataRepo } from "./sync.ts";
 
 export interface SecretsCommandDeps {
 	dfHome: string;
+	repositoryRoot?: string;
 	allowFileKey?: boolean;
 	stdin?: () => Promise<string>;
 	githubClient?: (repoSlug: string) => { client: GitHubClient; repository: GitHubRepository };
@@ -72,7 +73,7 @@ export async function secretsCommand(args: string[], deps: SecretsCommandDeps): 
 	}
 	const subcommand = args[0];
 	const keychainOpts: KeychainOptions = { dfHome: deps.dfHome, allowFileKey: deps.allowFileKey };
-	const dataRepoPath = await resolveDataRepoPath(deps.dfHome, process.cwd());
+	const dataRepoPath = await resolveDataRepoPath(deps.dfHome, deps.repositoryRoot ?? process.cwd());
 	const storeOpts: VaultStoreOptions = { dfHome: deps.dfHome, dataRepoPath };
 
 	switch (subcommand) {

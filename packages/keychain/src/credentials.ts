@@ -14,8 +14,8 @@ import { resolveDataRepoPath } from "./vault-store.ts";
 
 const VAULT_PREFIX = "vault:";
 
-async function resolveVaultValue(home: string, vaultName: string): Promise<string | undefined> {
-	const dataRepoPath = await resolveDataRepoPath(home);
+async function resolveVaultValue(home: string, vaultName: string, repositoryRoot = process.cwd()): Promise<string | undefined> {
+	const dataRepoPath = await resolveDataRepoPath(home, repositoryRoot);
 	try {
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
 		let key: string | undefined;
@@ -42,11 +42,11 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 	}
 }
 
-async function resolveSlotValue(home: string, raw: string): Promise<string> {
+async function resolveSlotValue(home: string, raw: string, repositoryRoot = process.cwd()): Promise<string> {
 	if (!raw.startsWith(VAULT_PREFIX)) return raw;
 	const vaultName = raw.slice(VAULT_PREFIX.length);
 	if (!vaultName) return raw;
-	const resolved = await resolveVaultValue(home, vaultName);
+	const resolved = await resolveVaultValue(home, vaultName, repositoryRoot);
 	if (resolved === undefined) throw new Error(`Vault secret not found: ${vaultName}`);
 	return resolved;
 }
@@ -307,7 +307,11 @@ function toPiCredential(account: AccountRecord): Credential | undefined {
 	return undefined;
 }
 
-async function resolveAccountVaultSlots(home: string, account: AccountRecord): Promise<AccountRecord> {
+async function resolveAccountVaultSlots(
+	home: string,
+	account: AccountRecord,
+	repositoryRoot = process.cwd(),
+): Promise<AccountRecord> {
 	let changed = false;
 	const resolved: AccountRecord = { ...account, slots: { ...account.slots } };
 	for (const [name, slot] of Object.entries(resolved.slots)) {
@@ -318,7 +322,7 @@ async function resolveAccountVaultSlots(home: string, account: AccountRecord): P
 		) {
 			const raw = (slot as { value: string }).value;
 			const vaultName = raw.slice(VAULT_PREFIX.length);
-			const resolvedValue = await resolveVaultValue(home, vaultName);
+			const resolvedValue = await resolveVaultValue(home, vaultName, repositoryRoot);
 			if (resolvedValue === undefined) throw new Error(`Vault secret not found: ${vaultName}`);
 			(resolved.slots[name] as { type: string; value: string }).value = resolvedValue;
 			changed = true;
@@ -338,6 +342,7 @@ export class FileCredentialStore {
 		private readonly fallback?: CredentialFallback,
 		private readonly onAccountChanged?: (provider: string, label: string) => Promise<void>,
 		readonly borrowed?: BorrowedCredentialCoordinator,
+		readonly repositoryRoot = process.cwd(),
 	) {
 		this.home = home;
 		this.path = join(home, "credentials.df");
@@ -457,16 +462,16 @@ export class FileCredentialStore {
 	): Promise<ProviderHeaders> {
 		let account = await this.readAccount(accountId(provider, label));
 		if (!account) return {};
-		account = await resolveAccountVaultSlots(this.home, account);
+		account = await resolveAccountVaultSlots(this.home, account, this.repositoryRoot);
 		const headers: ProviderHeaders = {};
 		const cookies: string[] = [];
 		for (const [name, slot] of Object.entries(account.slots)) {
-			if (slot.type === "header") headers[name] = await resolveSlotValue(this.home, slot.value);
-			if (slot.type === "cookie") cookies.push(await resolveSlotValue(this.home, slot.value));
+			if (slot.type === "header") headers[name] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
+			if (slot.type === "cookie") cookies.push(await resolveSlotValue(this.home, slot.value, this.repositoryRoot));
 		}
 		for (const [headerName, slotName] of Object.entries(slotHeaders)) {
 			const slot = account.slots[slotName];
-			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = await resolveSlotValue(this.home, slot.value);
+			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
 		}
 		if (cookies.length > 0) headers.Cookie = cookies.join("; ");
 		return headers;
@@ -475,7 +480,7 @@ export class FileCredentialStore {
 	async getSlot(provider: string, label: string, slotName: string): Promise<CredentialSlot | undefined> {
 		const slot = (await this.readAccount(accountId(provider, label)))?.slots[slotName];
 		if (!slot || slot.type === "oauth") return slot;
-		const resolved = await resolveSlotValue(this.home, slot.value);
+		const resolved = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
 		return resolved === slot.value ? slot : ({ ...slot, value: resolved } as CredentialSlot);
 	}
 
@@ -486,7 +491,7 @@ export class FileCredentialStore {
 	): Promise<Credential | undefined> {
 		throwIfAborted(options);
 		let account = await this.readAccount(accountId(provider, label), options);
-		if (account) account = await resolveAccountVaultSlots(this.home, account);
+		if (account) account = await resolveAccountVaultSlots(this.home, account, this.repositoryRoot);
 		if (account?.metadata?.ownership === "borrowed") {
 			if (this.borrowed) {
 				const plan = await this.borrowed.prepare(account, options);
