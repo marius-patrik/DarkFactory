@@ -8,7 +8,8 @@
     "./abi": "./src/abi.ts",
     "./adapters": "./src/adapters.ts",
     "./loader": "./src/loader.ts",
-    "./actions": "./src/actions.ts"
+    "./actions": "./src/actions.ts",
+    "./registry": "./src/registry.ts"
   },
   "files": [
     "src"

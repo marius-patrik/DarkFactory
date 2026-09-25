@@ -1,4 +1,5 @@
 import type { TaskKind } from "@darkfactory/protocol/model";
+import type { GraphNode } from "@darkfactory/protocol/workflow";
 
 /** Current capability ABI compatibility version. */
 export const CAPABILITY_ABI_VERSION = "1" as const;
@@ -70,10 +71,36 @@ export interface CapabilityDetectorDefinition {
 	domains?: readonly string[];
 }
 
+/** Scoped execution context supplied to a capability-owned graph handler. */
+export interface CapabilityGraphContext extends CapabilityRuntimeContext {
+	runDir: string;
+	runId: string;
+	outputs: Readonly<Record<string, unknown>>;
+	item?: unknown;
+	feedback?: string;
+	iteration: number;
+	eventId?: string;
+	alerts?: readonly string[];
+}
+
+/** Result returned by a capability-owned graph handler. */
+export interface CapabilityGraphResult {
+	outcome: "success" | "failure" | "quota_exhausted";
+	outputs: Record<string, unknown>;
+}
+
+/** Executes one graph node kind contributed by a capability. */
+export type CapabilityGraphHandler = (
+	node: GraphNode,
+	context: CapabilityGraphContext,
+) => Promise<CapabilityGraphResult> | CapabilityGraphResult;
+
 /** Declares graph-node kinds contributed by a capability. */
 export interface CapabilityGraphContribution {
 	id: string;
 	nodeKinds: readonly string[];
+	/** Executable handler used by the capability graph registry for each declared node kind. */
+	handler?: CapabilityGraphHandler;
 }
 
 /** Declares a deterministic verification action. */
@@ -219,6 +246,16 @@ export function defineCapability<const T extends CapabilityDefinition>(definitio
 		for (const requirement of command.credentialRequirements ?? [])
 			if (!requirementIds.has(requirement))
 				throw new Error(`command ${command.name} references undeclared credential requirement ${requirement}`);
+
+	const graphIds = new Set<string>();
+	for (const graph of definition.graph ?? []) {
+		identifier(graph.id, "graph contribution id");
+		if (graphIds.has(graph.id)) throw new Error(`capability ${definition.id} contains duplicate graph contribution ${graph.id}`);
+		graphIds.add(graph.id);
+		if (graph.nodeKinds.length === 0) throw new Error(`graph contribution ${graph.id} must declare at least one node kind`);
+		if (new Set(graph.nodeKinds).size !== graph.nodeKinds.length)
+			throw new Error(`graph contribution ${graph.id} contains duplicate node kinds`);
+	}
 
 	const hookIds = new Set<string>();
 	for (const hook of definition.hooks ?? []) {

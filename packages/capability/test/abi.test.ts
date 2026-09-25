@@ -7,6 +7,7 @@ import {
 	CapabilityAbiError,
 	type CapabilityDefinition,
 	type CapabilityRuntimeContext,
+	createCapabilityGraphRegistry,
 	createMcpAdapter,
 	createNativeAdapter,
 	createPiAdapter,
@@ -104,6 +105,63 @@ describe("capability ABI", () => {
 			"paper-only",
 		]);
 		expect(resolveCapabilities(definitions, ["math"]).capabilities.map((item) => item.id)).toEqual(["global"]);
+	});
+
+	test("graph contributions compose into one deterministic registry", async () => {
+		const definition = defineCapability({
+			abiVersion: CAPABILITY_ABI_VERSION,
+			id: "graph-fixture",
+			version: "1.0.0",
+			description: "Graph handler fixture.",
+			graph: [
+				{
+					id: "agent-nodes",
+					nodeKinds: ["agent"],
+					async handler(node, runtime) {
+						return { outcome: "success", outputs: { node: node.id, runId: runtime.runId } };
+					},
+				},
+			],
+		});
+		const registry = createCapabilityGraphRegistry([definition]);
+		const handler = registry.resolve("agent");
+		expect(handler).toBeDefined();
+		expect(
+			await handler?.(
+				{ id: "example", kind: "agent" },
+				{ ...context, runDir: "/run", runId: "run-1", outputs: {}, iteration: 1 },
+			),
+		).toEqual({ outcome: "success", outputs: { node: "example", runId: "run-1" } });
+		expect(registry.registrations().map((entry) => [entry.capabilityId, entry.nodeKind])).toEqual([
+			["graph-fixture", "agent"],
+		]);
+	});
+
+	test("graph registry rejects missing handlers and ambiguous node ownership", () => {
+		const missingHandler = defineCapability({
+			abiVersion: CAPABILITY_ABI_VERSION,
+			id: "metadata-only",
+			version: "1.0.0",
+			description: "Metadata-only graph fixture.",
+			graph: [{ id: "agent-nodes", nodeKinds: ["agent"] }],
+		});
+		expect(() => createCapabilityGraphRegistry([missingHandler])).toThrow("must declare a handler");
+
+		const first = defineCapability({
+			abiVersion: CAPABILITY_ABI_VERSION,
+			id: "first-owner",
+			version: "1.0.0",
+			description: "First graph owner.",
+			graph: [{ id: "agent-nodes", nodeKinds: ["agent"], handler: () => ({ outcome: "success", outputs: {} }) }],
+		});
+		const second = defineCapability({
+			abiVersion: CAPABILITY_ABI_VERSION,
+			id: "second-owner",
+			version: "1.0.0",
+			description: "Second graph owner.",
+			graph: [{ id: "agent-nodes", nodeKinds: ["agent"], handler: () => ({ outcome: "success", outputs: {} }) }],
+		});
+		expect(() => createCapabilityGraphRegistry([first, second])).toThrow("Ambiguous graph node kind agent");
 	});
 
 	test("a project capability loads from disk without modifying a registry", async () => {
