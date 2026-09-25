@@ -1,0 +1,19 @@
+{
+  "name": "@darkfactory/capability-docs",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./capability.ts"
+  },
+  "files": [
+    "capability.ts"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@darkfactory/capability": "workspace:*"
+  },
+  "scripts": {
+    "test": "bun test capability.test.ts"
+  }
+}
