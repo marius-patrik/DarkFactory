@@ -360,7 +360,9 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
         assert manifest_module.load(str(tmp_path)).repo == filename
         assert manifest_module.load_config_block(str(tmp_path), "docs") == document["docs"]
-        assert manifest_module.load_config_block(str(tmp_path), "providers") == document["providers"]
+        assert (
+            manifest_module.load_config_block(str(tmp_path), "providers") == document["providers"]
+        )
 
     def test_repo_consumer_does_not_read_provider_fields(self, tmp_path):
         (tmp_path / "repo.dfconfig").write_text(

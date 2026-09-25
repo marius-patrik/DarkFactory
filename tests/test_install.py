@@ -123,7 +123,12 @@ def test_legacy_manifest_path_is_not_selected(tmp_path):
         json.dumps({"repo": {"identity": {"owner": "legacy"}}}), encoding="utf-8"
     )
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
-    assert json.loads((tmp_path / "repo.dfconfig").read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "o"
+    assert (
+        json.loads((tmp_path / "repo.dfconfig").read_text(encoding="utf-8"))["repo"]["identity"][
+            "owner"
+        ]
+        == "o"
+    )
 
 
 def test_existing_custom_folder_config_is_not_duplicated(tmp_path, monkeypatch):
