@@ -175,7 +175,9 @@ describe("production graph effects", () => {
 			workspace: {
 				changedFiles: async () => ["src/foo.ts"],
 				scopeCheck: async () => ({ ok: true }),
-				runDetectedVerification: async () => [{ id: "test", success: true }],
+				runDetectedVerification: async () => [
+					{ action: { kind: "test", command: "bun test" }, result: { exitCode: 0, timedOut: false } },
+				],
 			},
 			loadPlanningContext: async () => ({
 				request: { issue: 1, body: "test", version: "1", acceptanceCriteria: [] },
