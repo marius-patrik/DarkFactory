@@ -48,8 +48,14 @@ def test_auth_without_a_repository_is_a_usage_error(tmp_path, monkeypatch, capsy
     """
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.setenv("DF_CONFIG_DIR", ".darkfactory")
+    # Ensure manifest load fails by putting a dummy file in a way that it won't be found
+    # or just use a path that doesn't have a config file.
+    # The `manifest.load(".")` inside `_repos` is trying to load from the current directory,
+    # which is `tmp_path`.
     assert darkfactory.main(["auth"]) == 2
-    assert "pass --repo" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "No repository given and no manifest here" in err
 
 
 def test_status_reports_what_is_missing_rather_than_failing(monkeypatch, capsys):

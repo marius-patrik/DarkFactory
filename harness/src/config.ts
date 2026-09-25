@@ -4,6 +4,7 @@ import type { CredentialFallback } from "@darkfactory/keychain";
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import { assertTierConfiguration } from "./router/tiers.ts";
+import { readFileSync } from "node:fs";
 import type {
 	CapabilityTier,
 	DifficultyTierMapping,
@@ -16,8 +17,6 @@ import type {
 	TaskNeed,
 	TaskSize,
 } from "./router/types.ts";
-
-// Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
 
 /**
  * The DarkFactory configuration loaded from config.json.
@@ -360,3 +359,4 @@ export function localCredentialFallback(
 		return { type: "api_key", key };
 	};
 }
+

@@ -69,6 +69,12 @@ import type {
 } from "./router/types.ts";
 import { secretsCommand } from "./secrets/cli.ts";
 import { runWorkspaceCli } from "./workspace/cli.ts";
+import {
+	resolveRelease,
+	recordVersion,
+	writeNotes,
+	type ResolvedRelease,
+} from "./release/index.ts";
 
 function usage(): string {
 	return [
@@ -95,6 +101,7 @@ function usage(): string {
 		"  df secrets init|import-key|export-key|list|rm|sync|doctor [--insecure-file-key]",
 		"  df secrets set NAME [--from-stdin] | get NAME [--reveal] | push <owner/repo> [--only NAME] [--dry-run]",
 		"  df workspace <status|diff|log|fetch|continue|abort> [options]",
+		"  df release [--repo-root .] [--bump patch|minor|major|proud|<version>] [--sync-metadata] [--record-version <version>] [--released-tag <tag>] [--notes-out <path>]",
 	].join("\n");
 }
 
@@ -1449,6 +1456,46 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
 	);
 }
 
+async function releaseCommand(args: string[]): Promise<void> {
+	const repoRoot = option(args, "--repo-root") ?? ".";
+	const bump = option(args, "--bump") ?? process.env.REQUESTED_BUMP ?? undefined;
+	const syncMetadata = args.includes("--sync-metadata");
+	const recordVersionArg = option(args, "--record-version");
+	const releasedTag = option(args, "--released-tag");
+	const notesOut = option(args, "--notes-out");
+
+	if (recordVersionArg) {
+		const result = await recordVersion(repoRoot, recordVersionArg, releasedTag);
+		console.log(JSON.stringify(result, null, 2));
+		return;
+	}
+
+	const resolved = await resolveRelease(repoRoot, bump);
+
+	if (syncMetadata && resolved.version) {
+		const synced = await syncReleaseMetadata(repoRoot, resolved);
+		Object.assign(resolved, synced);
+	}
+
+	if (notesOut && resolved.notes) {
+		writeNotes(resolved.notes, notesOut);
+	}
+
+	// Output JSON compatible with the workflow's expectations
+	console.log(JSON.stringify({
+		version: resolved.version,
+		tag: resolved.tag,
+		notes: resolved.notes,
+		mode: resolved.mode,
+		bump: resolved.bump,
+		previous: resolved.previous,
+		steps: resolved.steps,
+		metadata_problems: resolved.metadataProblems,
+		metadata_synced: resolved.metadataSynced ?? [],
+		warranted: resolved.version !== null,
+	}, null, 2));
+}
+
 /**
  * The main CLI entry point. Parses command-line arguments and dispatches to the appropriate
  * command handler. Supports chat, run, route, account, login, limits, quota, providers, models,
@@ -1488,6 +1535,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":
 			return routeCommand(registry, store, config, args.slice(1));
+		case "release":
+			return releaseCommand(args.slice(1));
 		case "account":
 			if (args[1] === "set") return accountSetCommand(store, args.slice(2));
 			if (args[1] === "import") return accountImportCommand(registry, store, args.slice(2));
