@@ -295,11 +295,18 @@ export class GitHubRepository {
 	}
 
 	async listVariables(): Promise<GitHubVariable[]> {
-		const data = await this.#client.rest<{ variables?: unknown[] }>(
-			"GET",
-			this.#path("/actions/variables?per_page=100"),
-		);
-		return parseArray(variableSchema, data.variables ?? [], "variable");
+		const variables: GitHubVariable[] = [];
+		// A repository can hold more than one page of variables, and a sweep that silently read
+		// only the first hundred would leave the rest recorded as blocked forever.
+		for (let page = 1; ; page++) {
+			const data = await this.#client.rest<{ variables?: unknown[] }>(
+				"GET",
+				this.#path(`/actions/variables?per_page=100&page=${page}`),
+			);
+			const batch = parseArray(variableSchema, data.variables ?? [], "variable");
+			variables.push(...batch);
+			if (batch.length < 100) return variables;
+		}
 	}
 	async getVariable(name: string): Promise<GitHubVariable> {
 		return parse(
@@ -316,6 +323,15 @@ export class GitHubRepository {
 	}
 	async deleteVariable(name: string): Promise<void> {
 		await this.#client.rest("DELETE", this.#path(`/actions/variables/${encodeURIComponent(name)}`));
+	}
+	/**
+	 * Sends a `repository_dispatch` event, which is how the pipeline asks a workflow to act.
+	 *
+	 * @param eventType Event name the workflow subscribes to.
+	 * @param payload Value delivered as `client_payload` to the workflow.
+	 */
+	async dispatchRepositoryEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
+		await this.#client.rest("POST", this.#path("/dispatches"), { event_type: eventType, client_payload: payload });
 	}
 }
 

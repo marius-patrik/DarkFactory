@@ -47,6 +47,7 @@ import { runDoctorIdentities } from "./identities/index.ts";
 import { LimitLedger } from "./limits/ledger.ts";
 import { QuotaEngine } from "./limits/quota-engine.ts";
 import { buildQuotaReport } from "./limits/quota-report.ts";
+import { sweepQuotaResumes } from "./limits/resume-sweep.ts";
 import { estimateTask } from "./limits/routing.ts";
 import { type CatalogResult, isRunnableCatalogModel, ModelCatalog } from "./models/catalog.ts";
 import { ModelPoller } from "./models/poller.ts";
@@ -78,6 +79,7 @@ function usage(): string {
 		"  df route [--kind kind] [--size size] [--difficulty easy|medium|hard] [--min-tier id] [--need capability] [--json] <prompt>",
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
+		"  df resume [--repo owner/name]        # resume runs blocked on quota whose models have reset",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -1268,6 +1270,31 @@ async function runCommand(
 	}
 }
 
+/**
+ * Resumes runs that stopped on quota once their models' quota has reset.
+ *
+ * The blocked run is recorded in a `DF_QUOTA_*` repository variable; this sweeps those records and
+ * dispatches the `resume` stage for each one whose reset time has passed.
+ *
+ * @param args Command arguments; `--repo` overrides the repository from the environment.
+ * @returns Process exit code.
+ */
+async function resumeCommand(args: string[]): Promise<void> {
+	const slug = option(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO ?? "";
+	if (!slug.includes("/")) throw new Error("df resume needs --repo owner/name or GITHUB_REPOSITORY");
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df resume needs GH_TOKEN or GITHUB_TOKEN");
+	const [owner, name] = slug.split("/");
+	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
+	const result = await sweepQuotaResumes({
+		repo,
+		now: new Date(),
+		log: (message) => console.error(message),
+	});
+	const resumed = result.resumed.map((item) => `#${item}`).join(", ") || "none";
+	console.log(`Resumed ${result.resumed.length} quota-blocked item(s): ${resumed}`);
+}
+
 async function quotaCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1484,6 +1511,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return accountsCommand(store);
 		case "limits":
 			return limitsCommand(ledger, args.slice(1));
+		case "resume":
+			return resumeCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":
