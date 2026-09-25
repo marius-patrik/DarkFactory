@@ -14,6 +14,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import environment
@@ -34,6 +35,11 @@ NOTE_SECTIONS: Tuple[Tuple[str, str], ...] = (
 
 #: `type(scope)!: subject`
 _COMMIT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s*(?P<subject>.+)$")
+
+#: The identity automation-authored commits carry. The same one the pipeline uses everywhere else,
+#: so a record commit is attributable to the pipeline rather than to whichever runner produced it.
+BOT_NAME = "github-actions[bot]"
+BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
 
 
 class ReleaseError(RuntimeError):
@@ -277,9 +283,10 @@ def resolve_release(root: str, requested: Optional[str] = None) -> Dict[str, Any
             "metadata_problems": [],
         }
 
-    tags = versioning.git_tags(root)
-    previous_tag = versioning.latest_tag(tags)
-    messages = versioning.commits_since(root, previous_tag)
+    # The tag the decision was measured against, not a freshly recomputed one: measuring the notes
+    # window against a different tag than the version decision used is how a release ends up
+    # describing commits that are already published.
+    messages = versioning.commits_since(root, decision.get("current_tag"))
 
     return {
         "version": version,
@@ -291,6 +298,177 @@ def resolve_release(root: str, requested: Optional[str] = None) -> Dict[str, Any
         "steps": plan_assets(root),
         "metadata_problems": check_metadata(root, version),
     }
+
+
+def _git(root: str, *args: str) -> str:
+    """Runs one git command in the repository and returns its output.
+
+    Args:
+        root: Repository root.
+        *args: Arguments passed to `git`.
+
+    Returns:
+        The command's standard output, stripped.
+
+    Raises:
+        ReleaseError: If git fails, with its error output attached.
+    """
+    result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise ReleaseError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def _gh(root: str, *args: str) -> str:
+    """Runs one GitHub CLI command and returns its output.
+
+    Args:
+        root: Repository root, used as the working directory.
+        *args: Arguments passed to `gh`.
+
+    Returns:
+        The command's standard output, stripped.
+
+    Raises:
+        ReleaseError: If the command fails, with its error output attached.
+    """
+    result = subprocess.run(["gh", *args], cwd=root, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise ReleaseError(f"gh {' '.join(args)} failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def record_version(root: str, version: str, released_tag: Optional[str] = None) -> Dict[str, Any]:
+    """Records a released version on a delivery branch for the development branch.
+
+    The `VERSION` file is the owner's control over the next number, which only works while it is
+    also a record of the last one. A file that still names an already-released version reads as an
+    explicit choice of that version, and the next promotion tries to release it again. So the
+    release job writes what it actually released onto its own branch and opens the governed pull
+    request against the development branch; it never pushes to a protected branch itself.
+
+    Recording the same version twice is a no-op, so a re-run after a completed release neither
+    commits again nor asks for a second review. The pull request binds `release.record_issue`,
+    because every pull request to `develop` has to name a tracking issue to pass its required check;
+    without one the version is still committed and the omission is reported rather than opening a
+    request that can only sit at `REVIEW_REQUIRED`.
+
+    Args:
+        root: Repository root.
+        version: The version that was released.
+        released_tag: The tag that was published, quoted in the pull request body.
+
+    Returns:
+        `{"recorded": bool, "version": str, "branch": str | None, "base": str, "issue": int | None,
+        "pull_request": str | None, "reason": str | None}`.
+
+    Raises:
+        ReleaseError: If the repository declares no development branch, or git fails.
+    """
+    loaded = manifest_module.load(root)
+    base = loaded.development_branch
+    if not base:
+        raise ReleaseError(
+            "recording a release needs repo.identity.development_branch in the manifest"
+        )
+
+    declared = versioning.read_manual_version(root)
+    issue = (loaded.data.get("release", {}) or {}).get("record_issue")
+    result: Dict[str, Any] = {
+        "recorded": False,
+        "version": version,
+        "branch": None,
+        "base": base,
+        "issue": issue,
+        "pull_request": None,
+        "reason": None,
+    }
+    if declared == version:
+        result["reason"] = f"VERSION already records {version}"
+        return result
+
+    branch = f"release/record-{version}"
+    _git(root, "fetch", "origin", base)
+    _git(root, "checkout", "-B", branch, f"origin/{base}")
+    with open(os.path.join(root, "VERSION"), "w", encoding="utf-8") as handle:
+        handle.write(f"{version}\n")
+    _git(root, "add", "VERSION")
+    # The identity is passed on the command rather than configured on the runner: a release job
+    # that inherits nobody's git identity fails at the commit, after the release is already public.
+    _git(
+        root,
+        "-c",
+        f"user.name={BOT_NAME}",
+        "-c",
+        f"user.email={BOT_EMAIL}",
+        "commit",
+        "-q",
+        "-m",
+        f"chore(release): record {version}",
+    )
+    _git(root, "push", "--force-with-lease", "origin", f"{branch}:{branch}")
+    result["recorded"] = True
+    result["branch"] = branch
+
+    if not issue:
+        result["reason"] = (
+            "no release.record_issue in the manifest, so no pull request was opened; "
+            f"{version} is committed on {branch}"
+        )
+        return result
+
+    open_prs = _gh(
+        root,
+        "pr",
+        "list",
+        "--head",
+        branch,
+        "--state",
+        "open",
+        "--json",
+        "number",
+        "--jq",
+        "[.[].number]",
+    )
+    if open_prs.strip() not in {"", "[]"}:
+        result["pull_request"] = open_prs.strip()
+        result["reason"] = f"a pull request for {branch} is already open"
+        return result
+
+    body = "\n".join(
+        [
+            "## Summary",
+            "",
+            f"The release job published `{released_tag or version}` and this records it in `VERSION`.",
+            "",
+            "Without this the file keeps naming an already-released version, which the resolver",
+            "reads as an explicit choice of that version, so the next promotion would try to",
+            "release it again.",
+            "",
+            f"- Released: `{released_tag or version}`",
+            f"- Base: `{base}`",
+            "- One file: `VERSION`",
+            "",
+            "## Bound Request(s)",
+            "",
+            f"- Advances #{issue}",
+            "",
+        ]
+    )
+    result["pull_request"] = _gh(
+        root,
+        "pr",
+        "create",
+        "--base",
+        base,
+        "--head",
+        branch,
+        "--title",
+        f"chore(release): record {version}",
+        "--body",
+        body,
+    )
+    return result
 
 
 def main() -> None:  # pragma: no cover - thin CLI wrapper
@@ -309,8 +487,26 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
         action="store_true",
         help="rewrite every package manifest's version to match the release",
     )
+    parser.add_argument(
+        "--record-version",
+        metavar="VERSION",
+        help="record an already-released version on a delivery branch for the development branch",
+    )
+    parser.add_argument(
+        "--released-tag",
+        metavar="TAG",
+        help="the tag published alongside --record-version, quoted in the pull request",
+    )
     parser.add_argument("--notes-out", help="write the release notes to this file")
     args = parser.parse_args()
+
+    if args.record_version:
+        print(
+            json.dumps(
+                record_version(args.repo_root, args.record_version, args.released_tag), indent=2
+            )
+        )
+        return
 
     resolved = resolve_release(args.repo_root, args.bump)
 

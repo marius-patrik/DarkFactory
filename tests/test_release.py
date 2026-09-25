@@ -264,6 +264,150 @@ class TestResolveRelease:
         assert resolved["metadata_problems"], "a package at 9.9.9 cannot ship as 0.1.0 unnoticed"
 
 
+class TestRecordVersion:
+    """The recorded version is what stops the next promotion re-releasing an old number."""
+
+    def _origin(self, tmp_path, manifest=None, version="3a.1.0"):
+        """Builds a repository with a bare `origin` so a push has somewhere to land.
+
+        Args:
+            tmp_path: Test directory.
+            manifest: Repository block for `repo.dfconfig`.
+            version: Contents for the `VERSION` file, or `None` for no file.
+
+        Returns:
+            The path of the working repository.
+        """
+        remote = tmp_path / "remote.git"
+        subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+        work = tmp_path / "work"
+        _repo(work, manifest or {}, [])
+        if version is not None:
+            _write(work, "VERSION", f"{version}\n")
+        subprocess.run(["git", "-C", str(work), "add", "-A"], check=True)
+        subprocess.run(
+            ["git", "-C", str(work), "commit", "-q", "-m", "chore(ci): seed"], check=True
+        )
+        identity = (manifest or {}).get("identity", {})
+        branch = identity.get("development_branch") or identity.get("default_branch") or "main"
+        subprocess.run(["git", "-C", str(work), "branch", "-M", branch], check=True)
+        subprocess.run(["git", "-C", str(work), "remote", "add", "origin", str(remote)], check=True)
+        subprocess.run(["git", "-C", str(work), "push", "-q", "origin", branch], check=True)
+        return work
+
+    def _gh_stub(self, tmp_path, monkeypatch, prs="[]"):
+        """Puts a `gh` stub on PATH that records its arguments and reports no open pull request.
+
+        Args:
+            tmp_path: Test directory.
+            monkeypatch: Pytest monkeypatch fixture.
+            prs: JSON the `pr list` stub reports as open pull requests.
+
+        Returns:
+            The path of the file the stub appends its arguments to.
+        """
+        bindir = tmp_path / "bin"
+        bindir.mkdir(exist_ok=True)
+        log = tmp_path / "gh.log"
+        (bindir / "gh").write_text(
+            "#!/bin/sh\n"
+            f'printf "%s\\n" "$*" >> "{log}"\n'
+            'case "$*" in\n'
+            f'  *"pr list"*) printf "%s" {prs!r} ;;\n'
+            "esac\n"
+        )
+        (bindir / "gh").chmod(0o755)
+        monkeypatch.setenv("PATH", f"{bindir}{os.pathsep}{os.environ['PATH']}")
+        return log
+
+    def test_a_stale_version_is_recorded_on_its_own_branch(self, tmp_path, monkeypatch):
+        """The record must not land on the protected branch itself."""
+        self._gh_stub(tmp_path, monkeypatch)
+        work = self._origin(tmp_path, {"identity": {"development_branch": "develop"}})
+        result = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert result["recorded"] is True
+        assert result["branch"] == "release/record-3a.2.0"
+        assert result["base"] == "develop"
+        assert (work / "VERSION").read_text() == "3a.2.0\n"
+        remote = tmp_path / "remote.git"
+        assert (
+            subprocess.run(
+                ["git", "-C", str(remote), "rev-parse", "--verify", "release/record-3a.2.0"],
+                capture_output=True,
+            ).returncode
+            == 0
+        )
+
+    def test_recording_the_same_version_twice_changes_nothing(self, tmp_path, monkeypatch):
+        """A re-run after a completed release must not ask for a second review."""
+        log = self._gh_stub(tmp_path, monkeypatch)
+        work = self._origin(
+            tmp_path,
+            {
+                "identity": {"development_branch": "develop"},
+                "release": {"record_issue": 1113},
+            },
+        )
+        release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        first = subprocess.run(
+            ["git", "-C", str(work), "rev-parse", "HEAD"], capture_output=True, text=True
+        ).stdout
+        again = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert again["recorded"] is False
+        assert again["pull_request"] is None
+        second = subprocess.run(
+            ["git", "-C", str(work), "rev-parse", "HEAD"], capture_output=True, text=True
+        ).stdout
+        assert first == second
+        assert log.read_text().count("pr create") == 1
+
+    def test_an_existing_pull_request_is_reused(self, tmp_path, monkeypatch):
+        """A release that re-runs while its record request is open must not open a second."""
+        log = self._gh_stub(tmp_path, monkeypatch, prs='[{"number": 42}]')
+        work = self._origin(
+            tmp_path,
+            {
+                "identity": {"development_branch": "develop"},
+                "release": {"record_issue": 1113},
+            },
+        )
+        result = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert result["pull_request"] == '[{"number": 42}]'
+        assert "pr create" not in log.read_text()
+
+    def test_without_a_bound_issue_the_version_is_still_recorded(self, tmp_path, monkeypatch):
+        """`verify-bound-issue` would reject the request, so it is reported rather than opened."""
+        log = self._gh_stub(tmp_path, monkeypatch)
+        work = self._origin(tmp_path, {"identity": {"development_branch": "develop"}})
+        result = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert result["recorded"] is True
+        assert result["issue"] is None
+        assert result["pull_request"] is None
+        assert "record_issue" in result["reason"]
+        assert not log.exists(), "no pull request may be opened without a bound issue"
+
+    def test_the_pull_request_binds_the_configured_issue(self, tmp_path, monkeypatch):
+        log = self._gh_stub(tmp_path, monkeypatch)
+        work = self._origin(
+            tmp_path,
+            {
+                "identity": {"development_branch": "develop"},
+                "release": {"record_issue": 1113},
+            },
+        )
+        result = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert result["issue"] == 1113
+        assert "Advances #1113" in log.read_text()
+
+    def test_a_repository_with_one_branch_records_against_it(self, tmp_path, monkeypatch):
+        """With no separate development branch the default branch is the integration lane."""
+        self._gh_stub(tmp_path, monkeypatch)
+        work = self._origin(tmp_path, {"identity": {"default_branch": "trunk"}})
+        result = release.record_version(str(work), "3a.2.0", "v3a.2.0")
+        assert result["base"] == "trunk"
+        assert result["recorded"] is True
+
+
 class TestPaperReleases:
     """A paper releases its PDF, and its version lives in `typst.toml` like any other manifest."""
 
