@@ -11,7 +11,7 @@ describe("detected documentation metadata", () => {
 	test("projects repository and capability evidence without a second detector", () => {
 		const evidence: RepositoryEvidence = {
 			root: "/repo",
-			repoDfPath: "/repo/.darkfactory/repo.df",
+			repoDfPath: "/repo/repo.df",
 			repoDf: { identity: { default_branch: "darkfactory" } },
 			packages: [
 				{
@@ -40,7 +40,7 @@ describe("detected documentation metadata", () => {
 				detectors: [{ id: "code-domain", description: "Code domain.", domains: ["code"] }],
 				commands: [{ name: "verify", description: "Verify.", execute: () => undefined }],
 				graph: [{ id: "code-nodes", nodeKinds: ["agent"] }],
-				hooks: [{ id: "pre-commit", event: "pre-commit" }],
+				hooks: [{ id: "pre-commit", events: ["pre-commit"] }],
 				verification: [{ id: "quality", description: "Quality." }],
 				surfaces: { docs: ["docs/code.md"] },
 			},
@@ -48,7 +48,7 @@ describe("detected documentation metadata", () => {
 
 		expect(documentationMetadata(evidence, definitions)).toEqual({
 			repository: {
-				repoDfPath: ".darkfactory/repo.df",
+				repoDfPath: "repo.df",
 				defaultBranch: "darkfactory",
 				ecosystems: ["node"],
 				domains: ["code"],
@@ -90,7 +90,7 @@ describe("detected documentation metadata", () => {
 				version: 1,
 				site: { name: "Fixture" },
 				home: "home",
-				pages: [{ id: "home", kind: "home", title: "Home", source: "docs/home.md", markdown: "# Home\n" }],
+				pages: [{ id: "home", kind: "home", title: "Home", source: ".agents/PRD.md", markdown: "# Home\n" }],
 				workflows: [],
 			};
 			const capabilities = [

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import { parseChain } from "../harness/routing.ts";
-import { resolveDfFile } from "../utils/resolver.ts";
 import { loadIdentities } from "./loader.ts";
 
 export interface DoctorIdentitiesOptions {
@@ -21,8 +21,9 @@ function getOption(args: string[], name: string): string | undefined {
 }
 
 export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {}): Promise<DoctorIdentitiesResult> {
-	const configPath = options.configPath ?? resolveDfFile(process.cwd(), "config");
-	const manifestPath = options.manifestPath ?? resolveDfFile(process.cwd(), "repo");
+	const configPath = options.configPath ?? resolveConfigDocumentPath(process.cwd());
+	if (!configPath) throw new Error("df doctor identities: no combined DarkFactory configuration found");
+	const manifestPath = options.manifestPath ?? configPath;
 	const reader = options.reader ?? ((p) => readFile(p, "utf8"));
 
 	let configRaw: string;
@@ -32,26 +33,19 @@ export async function checkDoctorIdentities(options: DoctorIdentitiesOptions = {
 		throw new Error(`df doctor identities: cannot read config at ${configPath}: ${(err as Error).message}`);
 	}
 
-	let configData: { defaultChain?: string; hardReasoningChain?: string; sensitiveChain?: string };
+	let configData: Record<string, unknown>;
 	try {
-		configData = JSON.parse(configRaw) as {
-			defaultChain?: string;
-			hardReasoningChain?: string;
-			sensitiveChain?: string;
-		};
-	} catch {
-		throw new Error(`df doctor identities: invalid JSON in config at ${configPath}`);
+		const document = parseConfigDocument(configRaw, configPath);
+		configData = configBlock(document, "providers", configPath) ?? {};
+	} catch (error) {
+		throw new Error(`df doctor identities: ${(error as Error).message}`);
 	}
 
-	if (!configData || typeof configData !== "object") {
-		throw new Error(`df doctor identities: config at ${configPath} missing defaultChain`);
-	}
-
-	// Collect providers from any configured chains
 	const chainStrings: string[] = [];
-	if (configData.defaultChain) chainStrings.push(configData.defaultChain);
-	if (configData.hardReasoningChain) chainStrings.push(configData.hardReasoningChain);
-	if (configData.sensitiveChain) chainStrings.push(configData.sensitiveChain);
+	for (const key of ["defaultChain", "hardReasoningChain", "sensitiveChain"] as const) {
+		const chain = configData[key];
+		if (typeof chain === "string" && chain) chainStrings.push(chain);
+	}
 
 	if (chainStrings.length === 0) {
 		// No chains configured; candidates are derived from provider configs.

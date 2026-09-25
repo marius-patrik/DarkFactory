@@ -28,7 +28,7 @@ beforeEach(async () => {
 	await git(dataRepo, "config", "user.email", "t@t.com");
 	await git(dataRepo, "config", "user.name", "t");
 	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
+	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ providers: { dataRepo } }), "utf8");
 });
 
 afterEach(async () => {
@@ -60,12 +60,12 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		const origLog = console.log;
 		console.log = (...a: unknown[]) => logs.push(a.join(" "));
 		try {
-			await secretsCommand(["get", "MY_KEY"], { dfHome, allowFileKey: true });
+			await secretsCommand(["get", "MY_KEY"], { dfHome, repositoryRoot: root, allowFileKey: true });
 			expect(logs.join("\n")).toBe("***");
 			expect(logs.join("\n")).not.toContain("super-secret");
 
 			logs.length = 0;
-			await secretsCommand(["get", "MY_KEY", "--reveal"], { dfHome, allowFileKey: true });
+			await secretsCommand(["get", "MY_KEY", "--reveal"], { dfHome, repositoryRoot: root, allowFileKey: true });
 			expect(logs.join("\n")).toBe("super-secret");
 		} finally {
 			console.log = origLog;
@@ -95,7 +95,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		const origLog = console.log;
 		console.log = (...a: unknown[]) => logs.push(a.join(" "));
 		try {
-			await secretsCommand(["list"], { dfHome, allowFileKey: true });
+			await secretsCommand(["list"], { dfHome, repositoryRoot: root, allowFileKey: true });
 			expect(logs.join("\n")).not.toContain("hidden");
 			expect(logs.join("\n")).toContain("A");
 		} finally {
@@ -149,6 +149,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		try {
 			await secretsCommand(["push", "owner/repo", "--only", "GEMINI_API_KEY"], {
 				dfHome,
+				repositoryRoot: root,
 				allowFileKey: true,
 				githubClient: sharedFactory,
 			});
@@ -176,6 +177,7 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		try {
 			await secretsCommand(["push", "owner/repo", "--dry-run"], {
 				dfHome,
+				repositoryRoot: root,
 				allowFileKey: true,
 				githubClient: dryFactory as never,
 			});
@@ -228,7 +230,12 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		const origLog = console.log;
 		console.log = (...a: unknown[]) => logs.push(a.join(" "));
 		try {
-			await secretsCommand(["doctor"], { dfHome, allowFileKey: true, githubClient: factory as never });
+			await secretsCommand(["doctor"], {
+				dfHome,
+				repositoryRoot: root,
+				allowFileKey: true,
+				githubClient: factory as never,
+			});
 			const out = logs.join("\n");
 			expect(out).toContain("vault-key");
 			expect(out).toContain("vault-file");
@@ -251,13 +258,14 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		try {
 			await secretsCommand(["set", "NEW_SECRET", "--from-stdin"], {
 				dfHome,
+				repositoryRoot: root,
 				allowFileKey: true,
 				stdin: async () => "injected-value",
 			});
 			expect(logs.join("\n")).not.toContain("injected-value");
 			// Verify stored and not leaked via get without reveal
 			logs.length = 0;
-			await secretsCommand(["get", "NEW_SECRET"], { dfHome, allowFileKey: true });
+			await secretsCommand(["get", "NEW_SECRET"], { dfHome, repositoryRoot: root, allowFileKey: true });
 			expect(logs.join("\n")).toBe("***");
 			expect(logs.join("\n")).not.toContain("injected-value");
 		} finally {

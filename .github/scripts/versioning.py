@@ -1,8 +1,8 @@
 """Computes the next release version under a configurable versioning mode.
 
 The pipeline releases on merge to `main`, but what a version number *means* is a per-project
-choice, so the scheme is data rather than code. A repository declares its mode in
-`.darkfactory/manifest.json`; this module turns "what landed since the last tag" into "what the next
+choice, so the scheme is data rather than code. A repository declares its mode in the combined
+configuration's `repo` block; this module turns "what landed since the last tag" into "what the next
 tag is called" under that mode.
 
 Five modes are supported:
@@ -78,13 +78,12 @@ def load_config(repo_root: str) -> Dict[str, object]:
     Raises:
         VersioningError: If the declared mode is not one this module implements.
     """
-    import manifest as manifest_module
+    try:
+        from .resolver import load_config_block
+    except ImportError:
+        from resolver import load_config_block
 
-    manifest_path = manifest_module.resolve_manifest_path(repo_root)
-    config: Dict[str, object] = {}
-    if os.path.isfile(manifest_path):
-        with open(manifest_path, encoding="utf-8") as handle:
-            config = dict(json.load(handle).get("versioning", {}))
+    config: Dict[str, object] = dict(load_config_block(repo_root, "repo").get("versioning", {}))
 
     mode = str(config.get("mode", "semver"))
     if mode not in MODES:

@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import manifest as manifest_module
 
-#: Everything repository-specific comes from `repo.df`, so this script is
+#: Everything repository-specific comes from `repo.dfconfig`, so this script is
 #: identical in every repository that uses the pipeline.
 #:
 #: Consumers carry no copy of these scripts - they call the pipeline at a pinned commit - so the
@@ -47,7 +47,7 @@ HOMEPAGE = MANIFEST.homepage
 
 TOPICS: List[str] = MANIFEST.topics
 
-#: Project board Status options, in column order. Mirrors `.agents/rules/009-issue-binding-and-board-status.md` and
+#: Project board Status options, in column order. Mirrors `.agents/notes/rules/009-issue-binding-and-board-status.md` and
 #: ``project_automation.STATUS_NAMES``; the test suite asserts the two stay in sync.
 STATUS_OPTIONS: List[str] = [
     "Backlog",

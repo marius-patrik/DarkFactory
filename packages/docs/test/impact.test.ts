@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import {
-	classifyDocumentationImpact,
-	evaluateDocumentationImpact,
-	parseDocsNoneAnnotation,
-} from "../src/impact.ts";
+import { classifyDocumentationImpact, evaluateDocumentationImpact, parseDocsNoneAnnotation } from "../src/impact.ts";
 
 const evidence: RepositoryEvidence = {
 	root: "/repo",
@@ -40,11 +36,11 @@ describe("documentation impact policy", () => {
 
 	test("classifies product and governance contracts deterministically", () => {
 		const result = classifyDocumentationImpact(
-			["repo.df", ".github/workflows/ci.yml", ".agents/rules/001-current.md"],
+			["repo.dfconfig", ".github/workflows/ci.yml", ".agents/notes/rules/001-current.md"],
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".agents/rules/001-current.md"]);
+		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md", "repo.dfconfig"]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {
@@ -85,8 +81,21 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.df", "docs/home.md"], evidence);
+		const result = evaluateDocumentationImpact(["repo.dfconfig", ".agents/PRD.md"], evidence);
 		expect(result.findings).toEqual([]);
+	});
+
+	test("classifies the configured configuration folder as product contract", () => {
+		const previous = process.env.DF_CONFIG_DIR;
+		process.env.DF_CONFIG_DIR = "configuration";
+		try {
+			const result = classifyDocumentationImpact(["configuration/repo.dfconfig"], evidence);
+			expect(result.documentationFiles).toEqual(["configuration/repo.dfconfig"]);
+			expect(result.impactKinds).toEqual(["product"]);
+		} finally {
+			if (previous === undefined) delete process.env.DF_CONFIG_DIR;
+			else process.env.DF_CONFIG_DIR = previous;
+		}
 	});
 
 	test("requires exact Docs: none justification for internal-only changes", () => {

@@ -7,7 +7,6 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./content": "./src/content.ts",
-    "./readme": "./src/readme.ts",
     "./api": "./src/api.ts",
     "./current": "./src/current.ts",
     "./impact": "./src/impact.ts"

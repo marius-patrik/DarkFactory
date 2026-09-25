@@ -133,10 +133,19 @@ describe("vault file format and atomic writes", () => {
 		const custom = join(tempRoot, "custom-data");
 		await Bun.spawn(["mkdir", "-p", custom]).exited;
 		await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-		await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo: custom }), "utf8");
-		const resolved = await resolveDataRepoPath(dfHome);
+		await writeFile(join(tempRoot, "config.dfconfig"), JSON.stringify({ providers: { dataRepo: custom } }), "utf8");
+		const resolved = await resolveDataRepoPath(dfHome, tempRoot);
 		expect(resolved).toBe(custom);
-		const def = await resolveDataRepoPath(join(tempRoot, "nonexistent-home"));
+		await Bun.spawn(["mkdir", "-p", join(tempRoot, ".darkfactory")]).exited;
+		await writeFile(
+			join(tempRoot, ".darkfactory", "repo.dfconfig"),
+			JSON.stringify({ providers: { dataRepo: "ambiguous" } }),
+			"utf8",
+		);
+		await expect(resolveDataRepoPath(dfHome, tempRoot)).rejects.toThrow("candidates exist in both the repository root");
+		await rm(join(tempRoot, "config.dfconfig"));
+		await rm(join(tempRoot, ".darkfactory"), { recursive: true, force: true });
+		const def = await resolveDataRepoPath(join(tempRoot, "nonexistent-home"), tempRoot);
 		expect(def.endsWith("data-df")).toBe(true);
 	});
 

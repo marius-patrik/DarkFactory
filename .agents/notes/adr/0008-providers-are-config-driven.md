@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`, `DF-RULE-017`
+
 ## Decision
 
 Provider behavior is declared through configuration and generic dialect/runtime mechanisms.

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runGit } from "../../src/workspace/git.ts";
 import {
@@ -37,16 +38,16 @@ afterEach(() => {
 	temp = undefined;
 });
 
-test("resolveDefaultBranch reads identity.default_branch from .darkfactory/repo.df", async () => {
-	const dfDir = join(repo(), ".darkfactory");
-	mkdirSync(dfDir, { recursive: true });
-	const repoDfPath = join(dfDir, "repo.df");
+test("resolveDefaultBranch reads identity.default_branch from the repo block", async () => {
+	const repoDfPath = join(repo(), "repo.dfconfig");
 
 	writeFileSync(
 		repoDfPath,
 		JSON.stringify({
-			identity: {
-				default_branch: "darkfactory-dev",
+			repo: {
+				identity: {
+					default_branch: "darkfactory-dev",
+				},
 			},
 		}),
 	);
@@ -56,18 +57,18 @@ test("resolveDefaultBranch reads identity.default_branch from .darkfactory/repo.
 });
 
 test("resolveDefaultBranch throws if default_branch is missing or empty", async () => {
-	const dfDir = join(repo(), ".darkfactory");
-	mkdirSync(dfDir, { recursive: true });
-	const repoDfPath = join(dfDir, "repo.df");
+	const repoDfPath = join(repo(), "repo.dfconfig");
 
-	writeFileSync(repoDfPath, JSON.stringify({}));
+	writeFileSync(repoDfPath, JSON.stringify({ repo: {} }));
 	expect(resolveDefaultBranch(repo())).rejects.toThrow("missing a non-empty identity.default_branch");
 
 	writeFileSync(
 		repoDfPath,
 		JSON.stringify({
-			identity: {
-				default_branch: "  ",
+			repo: {
+				identity: {
+					default_branch: "  ",
+				},
 			},
 		}),
 	);
@@ -214,4 +215,64 @@ test("pushWithLease sanitizes branch name and expected SHA against command injec
 test("merge and rebase throw proper errors for genuine git failures other than conflicts", async () => {
 	await expect(merge(repo(), "non-existent-branch")).rejects.toThrow(/Git merge failed/);
 	await expect(rebase(repo(), "non-existent-branch")).rejects.toThrow(/Git rebase failed/);
+});
+
+test("rebase conflict state reports commit SHAs instead of commit object text", () => {
+	const root = mkdtempSync(join(tmpdir(), "df-git-rebase-"));
+	try {
+		runGit(root, ["init", "-b", "darkfactory"]);
+		runGit(root, ["config", "user.name", "Test"]);
+		runGit(root, ["config", "user.email", "test@example.com"]);
+		writeFileSync(join(root, "file.txt"), "base\n");
+		runGit(root, ["add", "file.txt"]);
+		runGit(root, ["commit", "-m", "base"]);
+		runGit(root, ["checkout", "-b", "feature"]);
+		writeFileSync(join(root, "file.txt"), "feature\n");
+		runGit(root, ["commit", "-am", "feature"]);
+		const featureHead = runGit(root, ["rev-parse", "HEAD"]);
+		runGit(root, ["checkout", "darkfactory"]);
+		writeFileSync(join(root, "file.txt"), "main\n");
+		runGit(root, ["commit", "-am", "main"]);
+		const onto = runGit(root, ["rev-parse", "HEAD"]);
+		runGit(root, ["checkout", "feature"]);
+		try {
+			runGit(root, ["rebase", "darkfactory"]);
+		} catch {}
+		const state = getConflictState(root);
+		expect(state.operation).toBe("rebase");
+		expect(state.head).toBe(featureHead);
+		expect(state.base).toBe(onto);
+		expect(state.head).toMatch(/^[0-9a-f]{40}$/);
+		expect(state.base).toMatch(/^[0-9a-f]{40}$/);
+		runGit(root, ["rebase", "--abort"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("untracked unrelated files remain dirty during a conflict operation", () => {
+	const root = mkdtempSync(join(tmpdir(), "df-git-dirty-"));
+	try {
+		runGit(root, ["init", "-b", "darkfactory"]);
+		runGit(root, ["config", "user.name", "Test"]);
+		runGit(root, ["config", "user.email", "test@example.com"]);
+		writeFileSync(join(root, "file.txt"), "base\n");
+		runGit(root, ["add", "file.txt"]);
+		runGit(root, ["commit", "-m", "base"]);
+		runGit(root, ["checkout", "-b", "feature"]);
+		writeFileSync(join(root, "file.txt"), "feature\n");
+		runGit(root, ["commit", "-am", "feature"]);
+		runGit(root, ["checkout", "darkfactory"]);
+		writeFileSync(join(root, "file.txt"), "main\n");
+		runGit(root, ["commit", "-am", "main"]);
+		runGit(root, ["checkout", "feature"]);
+		try {
+			runGit(root, ["merge", "darkfactory"]);
+		} catch {}
+		writeFileSync(join(root, "unrelated.txt"), "do not hide me\n");
+		expect(isWorktreeDirty(root)).toBe(true);
+		runGit(root, ["merge", "--abort"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
 });

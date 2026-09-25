@@ -36,26 +36,38 @@ function normalizePath(path: string): string {
 	return path.trim().replaceAll("\\", "/").replace(/^\.\//u, "");
 }
 
+function configDocumentPaths(): ReadonlySet<string> {
+	const directory = (process.env.DF_CONFIG_DIR?.trim() || ".darkfactory")
+		.replaceAll("\\", "/")
+		.replace(/^\.\//u, "")
+		.replace(/\/$/u, "");
+	return new Set(
+		[
+			"repo.dfconfig",
+			"config.dfconfig",
+			".dfconfig",
+			`${directory}/repo.dfconfig`,
+			`${directory}/config.dfconfig`,
+			`${directory}/.dfconfig`,
+		]
+			.map(normalizePath)
+			.filter((path, index, paths) => paths.indexOf(path) === index),
+	);
+}
+
 function isDocumentationFile(path: string): boolean {
 	return (
-		path === "README.md" ||
-		path === "PRD.md" ||
-		path === "PLAN.md" ||
-		path === "AGENTS.md" ||
-		path.startsWith("docs/") ||
-		path.startsWith(".agents/rules/") ||
+		path === ".agents/PRD.md" ||
+		path === ".agents/AGENTS.md" ||
+		configDocumentPaths().has(path) ||
+		path.startsWith(".agents/notes/rules/") ||
 		path.startsWith(".agents/notes/adr/")
 	);
 }
 
 function isProductContractFile(path: string): boolean {
 	return (
-		path === "repo.df" ||
-		path === "config.df" ||
-		path === "docs.df" ||
-		path === ".darkfactory/repo.df" ||
-		path === ".darkfactory/config.df" ||
-		path === ".darkfactory/docs.df" ||
+		configDocumentPaths().has(path) ||
 		path === "package.json" ||
 		/^packages\/[^/]+\/package\.json$/u.test(path) ||
 		/^capabilities\/[^/]+\/capability\.(?:ts|js|mjs)$/u.test(path)
@@ -64,8 +76,8 @@ function isProductContractFile(path: string): boolean {
 
 function isGovernanceFile(path: string): boolean {
 	return (
-		path === "AGENTS.md" ||
-		path.startsWith(".agents/rules/") ||
+		path === ".agents/AGENTS.md" ||
+		path.startsWith(".agents/notes/rules/") ||
 		path.startsWith(".agents/notes/adr/") ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("harness/assets/workflows/")
@@ -73,11 +85,7 @@ function isGovernanceFile(path: string): boolean {
 }
 
 function publicApiEntryPoints(evidence: RepositoryEvidence): ReadonlySet<string> {
-	return new Set(
-		evidence.packages
-			.flatMap((pkg) => pkg.apiEntryPoints)
-			.map(normalizePath),
-	);
+	return new Set(evidence.packages.flatMap((pkg) => pkg.apiEntryPoints).map(normalizePath));
 }
 
 /**
@@ -97,7 +105,7 @@ export function classifyDocumentationImpact(
 
 	for (const path of files) {
 		if (apiEntries.has(path)) impactKinds.add("public-api");
-		if (isProductContractFile(path) || path === "PRD.md" || path === "docs/home.md") impactKinds.add("product");
+		if (isProductContractFile(path) || path === ".agents/PRD.md") impactKinds.add("product");
 		if (isGovernanceFile(path)) impactKinds.add("governance");
 	}
 

@@ -68,7 +68,7 @@ def test_governed_stage_declares_existing_task_kind(
 def test_classify_area(text: str, expected_area: str):
     """The classifier routes requests to the repository's declared area taxonomy.
 
-    The taxonomy comes from `.darkfactory/repo.df`, so these cases assert DarkFactory's own
+    The taxonomy comes from the `repo` block in `repo.dfconfig`, so these cases assert DarkFactory's own
     areas; a repository adopting the pipeline declares its own and gets its own routing.
 
     Args:
@@ -158,7 +158,7 @@ def test_format_conventional_commit_maps_bug_to_fix():
 
 
 def test_generate_branch_name_excludes_issue_numbers():
-    """DF-RULE-007 (`.agents/rules/007-branches-and-pull-requests.md`) forbids issue numbers in branch names."""
+    """DF-RULE-007 (`.agents/notes/rules/007-branches-and-pull-requests.md`) forbids issue numbers in branch names."""
     name = generate_branch_name("Plan: Add cell matrix buffer for #42")
     assert "42" not in name
     assert name == name.lower()
@@ -2050,7 +2050,7 @@ class TestDeterministicScopeCheck:
         module = agent_runner_module()
         plan_text = (
             "## Scope\n"
-            "Build the shared `@darkfactory/web` shell using current `repo.df` state.\n"
+            "Build the shared `@darkfactory/web` shell using current `repo.dfconfig` state.\n"
             "Inspect `packages/web` and choose the concrete files from the current tree.\n"
         )
         assert module.parse_plan_files(plan_text)

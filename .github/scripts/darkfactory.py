@@ -36,6 +36,8 @@ def _repos(args: argparse.Namespace) -> List[str]:
         import manifest
 
         loaded = manifest.load(".")
+    except ValueError:
+        raise
     except Exception:  # noqa: BLE001 - a missing manifest is a usage error, not a crash
         return []
 
@@ -136,7 +138,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             ),
             (
                 "pipeline installed",
-                _has_path(repo, ".darkfactory/repo.df") or _has_path(repo, "repo.df"),
+                _has_config_document(repo),
                 "run the install workflow",
             ),
         ]
@@ -182,6 +184,41 @@ def _has_path(repo: str, path: str) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def _has_config_document(repo: str) -> bool:
+    """Reports whether a remote repository has one unambiguous combined configuration.
+
+    Args:
+        repo: `owner/name`.
+
+    Returns:
+        True when exactly one supported configuration candidate exists.
+
+    Raises:
+        ValueError: If multiple root or folder aliases exist.
+    """
+    config_dir = os.environ.get("DF_CONFIG_DIR", "").strip() or ".darkfactory"
+    candidates = list(
+        dict.fromkeys(
+            os.path.normpath(path)
+            for path in (
+                "repo.dfconfig",
+                "config.dfconfig",
+                ".dfconfig",
+                os.path.join(config_dir, "repo.dfconfig"),
+                os.path.join(config_dir, "config.dfconfig"),
+                os.path.join(config_dir, ".dfconfig"),
+            )
+        )
+    )
+    present = [candidate for candidate in candidates if _has_path(repo, candidate)]
+    if len(present) > 1:
+        raise ValueError(
+            f"Ambiguous DarkFactory configuration in {repo}: {', '.join(present)}; keep only "
+            "one repo.dfconfig, config.dfconfig, or .dfconfig candidate."
+        )
+    return bool(present)
 
 
 def cmd_license(args: argparse.Namespace) -> int:

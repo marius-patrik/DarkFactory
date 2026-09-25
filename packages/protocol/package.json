@@ -11,7 +11,9 @@
     "./review": "./src/review.ts",
     "./quota": "./src/quota.ts",
     "./result-capture": "./src/result-capture.ts",
-    "./recovery": "./src/recovery.ts"
+    "./recovery": "./src/recovery.ts",
+    "./mutation-evidence": "./src/mutation-evidence.ts",
+    "./config-document": "./src/config-document.ts"
   },
   "files": [
     "src"
@@ -19,5 +21,8 @@
   "license": "GPL-3.0",
   "dependencies": {
     "zod": "4.1.5"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }

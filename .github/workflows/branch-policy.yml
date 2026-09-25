@@ -7,7 +7,8 @@ on:
   push:
     branches: [develop]
     paths:
-      - ".darkfactory/repo.df"
+      - "repo.df"
+      - "config.df"
       - ".github/scripts/manifest.py"
       - ".github/scripts/repo_settings.py"
       - ".github/workflows/branch-policy.yml"

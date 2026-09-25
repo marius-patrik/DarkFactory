@@ -1,8 +1,9 @@
 """Generates the current DarkFactory consumer installation.
 
-The installer writes the caller workflows and repo.df declaration required by the shared DarkFactory
-pipeline. Detectable repository facts come from environment detection; repository-specific intent
-such as areas remains declarative. Generated caller workflows pin the selected DarkFactory commit.
+The installer writes the caller workflows and canonical root `repo.dfconfig` combined configuration required
+by the shared DarkFactory pipeline. Detectable repository facts come from environment detection;
+repository-specific intent such as areas remains declarative. Generated caller workflows pin the
+selected DarkFactory commit.
 
 The governed knowledge layout uses canonical .agents paths and contains only current records.
 """
@@ -291,7 +292,7 @@ def render_manifest(
     description: str = "",
     pipeline_repo: str = "marius-patrik/DarkFactory",
 ) -> str:
-    """Renders a starter `.darkfactory/repo.df` from what the repository is made of.
+    """Renders the canonical root `repo.dfconfig` combined configuration.
 
     Args:
         owner: Repository owner login.
@@ -353,7 +354,22 @@ def render_manifest(
             "something.",
             "release": {"python": {"enabled": False}},
         }
-    return json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+    return (
+        json.dumps(
+            {
+                "repo": manifest,
+                "docs": {
+                    "version": 1,
+                    "site": {"name": repo, "description": description},
+                    "home": ".agents/PRD.md",
+                },
+                "providers": {},
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
 
 
 class SelfInstall(Exception):
@@ -419,7 +435,7 @@ def plan(
         f".github/workflows/{name}.yml": render_caller(name, pipeline_repo, ref, branch, installed)
         for name in installed
     }
-    files[os.path.join(".darkfactory", "repo.df")] = render_manifest(
+    files[manifest.MANIFEST_PATH] = render_manifest(
         owner, repo, ref, root, branch, description, pipeline_repo
     )
     return files
@@ -462,7 +478,7 @@ it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 
-`.darkfactory/repo.df` carries a starter set. Areas drive **labels, Conventional Commit scopes
+`repo.dfconfig` carries a starter set. Areas drive **labels, Conventional Commit scopes
 and agent routing**, so they are worth getting right. Replace them with this repository's own
 domains, then re-run the install workflow to reconcile the labels.
 
@@ -495,7 +511,7 @@ python .github/scripts/repo_settings.py --apply
 ---
 
 Close this issue when the four are done. The pipeline is [{pipeline_repo}](https://github.com/{pipeline_repo});
-this repository pins a commit of it in `.darkfactory/repo.df`, and bumping that pin is how
+this repository pins a commit of it in `repo.dfconfig`, and bumping that pin is how
 {name} adopts an update.
 """
 
@@ -638,17 +654,17 @@ def ensure_secrets_pass(root: str) -> List[str]:
 
 
 def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
-    """Fills in missing repo.df keys without overwriting repository choices.
+    """Fills in missing `repo` block keys without overwriting repository choices.
 
     The upstream pin is updated because moving that pin is the purpose of reinstall/update.
 
     Args:
         root: Repository root.
         ref: Pipeline commit to pin.
-        planned: The repo.df this installation would generate.
+        planned: The combined configuration this installation would generate.
 
     Returns:
-        True when repo.df changed.
+        True when the combined configuration changed.
     """
     path = manifest.resolve_manifest_path(root)
     if not os.path.isfile(path):
@@ -656,14 +672,22 @@ def reconcile_manifest(root: str, ref: str, planned: str) -> bool:
 
     with open(path, encoding="utf-8") as handle:
         current = json.load(handle)
+    if not isinstance(current, dict):
+        raise ValueError(f"DarkFactory configuration at {path} must contain an object.")
+    current_repo = current.get("repo")
+    if not isinstance(current_repo, dict):
+        raise ValueError(f"DarkFactory configuration at {path} is missing the repo block.")
+    planned_repo = json.loads(planned).get("repo")
+    if not isinstance(planned_repo, dict):
+        raise ValueError("Generated DarkFactory configuration is missing the repo block.")
     before = json.dumps(current, sort_keys=True)
 
-    for key, value in json.loads(planned).items():
-        if key not in current:
-            current[key] = value
+    for key, value in planned_repo.items():
+        if key not in current_repo:
+            current_repo[key] = value
 
     if ref:
-        current.setdefault("upstream", {})["ref"] = ref
+        current_repo.setdefault("upstream", {})["ref"] = ref
 
     if json.dumps(current, sort_keys=True) == before:
         return False
@@ -691,6 +715,11 @@ def write(files: Dict[str, str], root: str = ".") -> List[str]:
     written: List[str] = []
     for relative, content in sorted(files.items()):
         target = os.path.join(root, relative)
+        if relative == manifest.MANIFEST_PATH:
+            selected = manifest.resolve_manifest_path(root)
+            if os.path.isfile(selected) and os.path.abspath(selected) != os.path.abspath(target):
+                print(f"  kept {os.path.relpath(selected, root)} (selected configuration alias)")
+                continue
         if os.path.exists(target):
             print(f"  kept {relative} (already present)")
             continue
@@ -721,8 +750,8 @@ def main() -> None:  # pragma: no cover - thin CLI wrapper
     # opposite, and both go through the same path so neither is a special case.
     written += retarget(root, ref)
     written += ensure_secrets_pass(root)
-    if reconcile_manifest(root, ref, files[os.path.join(".darkfactory", "repo.df")]):
-        written.append(os.path.join(".darkfactory", "repo.df"))
+    if reconcile_manifest(root, ref, files[manifest.MANIFEST_PATH]):
+        written.append(os.path.relpath(manifest.resolve_manifest_path(root), root))
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
             handle.write(f"written={'true' if written else 'false'}\n")

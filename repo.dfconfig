@@ -1,0 +1,321 @@
+{
+  "repo": {
+    "$comment": "Repository-specific declarations that DarkFactory cannot infer reliably.",
+    "identity": {
+      "owner": "marius-patrik",
+      "repo": "DarkFactory",
+      "display_name": "DarkFactory",
+      "project_title": "DarkFactory",
+      "agent_slug": "darkfactory-agent",
+      "default_branch": "main",
+      "development_branch": "develop",
+      "description": "Self-hosting autonomous software delivery built around a declarable workflow graph, versioned capabilities and GitHub as the durable control plane.",
+      "topics": [
+        "agentic-coding",
+        "agentic-development",
+        "ai-agents",
+        "autonomous-agents",
+        "automation",
+        "dark-factory",
+        "developer-tools",
+        "orchestration",
+        "template",
+        "template-repository",
+        "workspace"
+      ]
+    },
+    "license": {
+      "$comment": "The licence is declared here and the file is written from GitHub's canonical text, so it cannot drift from the wording it claims to be. `spdx` must be one of the identifiers licensing.OFFERED lists; NONE means deliberately not licensed for reuse, which is different from having forgotten to choose.",
+      "spdx": "GPL-3.0",
+      "holder": "Patrik Marius",
+      "year": "2026"
+    },
+    "upstream": {
+      "$comment": "DarkFactory is its own upstream; consumer installation/update uses released DarkFactory artifacts.",
+      "repo": null,
+      "ref": null
+    },
+    "versioning": {
+      "mode": "manual",
+      "tag_prefix": "v",
+      "initial": "3a.1.0"
+    },
+    "environment": {
+      "$comment": "Detection handles the rest. pyproject.toml here carries only tooling configuration, so the package identity is declared rather than parsed.",
+      "ignore": [
+        "harness"
+      ],
+      "packages": [
+        {
+          "path": ".",
+          "ecosystem": "python",
+          "manifest": "pyproject.toml",
+          "name": "darkfactory"
+        }
+      ],
+      "testing": {
+        "python": {
+          "command": "pytest",
+          "versions": [
+            "3.10",
+            "3.11",
+            "3.12",
+            "3.13"
+          ]
+        }
+      },
+      "formatting": {
+        "python": {
+          "command": "black --check --line-length 100 ."
+        }
+      },
+      "release": {
+        "$comment": "Release actions are declared per ecosystem. #360 enables the final first-party package/native/web release artifacts.",
+        "python": {
+          "enabled": false,
+          "$comment": "pyproject.toml is tooling-only; DarkFactory does not publish a Python package."
+        },
+        "node": {
+          "$comment": "Node package/native/web publishing is enabled by #360 when the final release surface is complete.",
+          "enabled": false
+        }
+      },
+      "setup": {
+        "python": {
+          "command": "python -m pip install -r requirements-dev.txt"
+        }
+      }
+    },
+    "areas": {
+      "$comment": "Area labels, commit scopes and agent routing all read this one list, so they cannot drift apart. Declaration order is match order - the first area whose keywords hit wins - so specific areas come before general ones. A consumer repository replaces this block wholesale with its own domains.",
+      "$default": "ci",
+      "agents": {
+        "description": "Agent runtime, routing, providers, planning/review orchestration and model execution",
+        "keywords": [
+          "agent",
+          "harness",
+          "persona",
+          "provider",
+          "llm",
+          "prompt",
+          "approval",
+          "model",
+          "quota"
+        ]
+      },
+      "governance": {
+        "description": "Agent rules, branch protection, required checks, project board taxonomy",
+        "keywords": [
+          "governance",
+          "rule",
+          "protection",
+          "policy",
+          "board",
+          "taxonomy",
+          "label",
+          "permission"
+        ]
+      },
+      "release": {
+        "description": "Versioning modes, tagging, asset packaging, release notes",
+        "keywords": [
+          "release",
+          "version",
+          "versioning",
+          "tag",
+          "semver",
+          "changelog",
+          "package",
+          "artifact"
+        ]
+      },
+      "docs": {
+        "description": "Documentation compiler, TSDoc/API reference, architecture records and shared web documentation surfaces",
+        "keywords": [
+          "doc",
+          "docs",
+          "documentation",
+          "tsdoc",
+          "typedoc",
+          "content",
+          "readme",
+          "site"
+        ]
+      },
+      "ci": {
+        "description": "GitHub Actions workflows, containers, runner scripts, repository automation",
+        "keywords": [
+          "ci",
+          "action",
+          "workflow",
+          "pipeline",
+          "docker",
+          "runner",
+          "automation",
+          "container"
+        ]
+      }
+    },
+    "board": {
+      "$comment": "Boards are owned by the account, not by a repository. Every board listed here is linked to this repository so it appears in its Projects tab; the global board aggregates issues from every repository using this pipeline.",
+      "global_title": "Global",
+      "link_boards": [
+        "Global",
+        "DarkFactory",
+        "Omnis",
+        "ChessWithQuests"
+      ]
+    },
+    "pages": {
+      "$comment": "GitHub Actions publishes the main branch site; no generated branch is retained.",
+      "build_type": "workflow",
+      "branch": "main",
+      "path": "/"
+    },
+    "app": {
+      "$comment": "The pipeline's own GitHub App. The id and client id are public identifiers, not secrets; the private key lives in the DARKFACTORY_APP_PRIVATE_KEY repository secret. Note that a GitHub App cannot write user-owned Projects v2 - GitHub scopes project permissions to organizations - so board work still uses GH_PROJECT_TOKEN until these repositories move under an organization.",
+      "slug": "darkfactory-pipeline",
+      "app_id": 4861004,
+      "client_id": "Iv23li8qwSbe1MpF9kxX",
+      "private_key_secret": "DARKFACTORY_APP_PRIVATE_KEY",
+      "permissions": {
+        "repository": {
+          "actions": "write",
+          "checks": "write",
+          "contents": "write",
+          "issues": "write",
+          "metadata": "read",
+          "pull_requests": "write",
+          "workflows": "write"
+        },
+        "organization": {
+          "projects": "write"
+        }
+      },
+      "installation_id": 159771550,
+      "installed_on": [
+        "marius-patrik/DarkFactory",
+        "marius-patrik/omnis",
+        "marius-patrik/ChessWithQuests",
+        "marius-patrik/OdbornaPrace-paper",
+        "marius-patrik/template-OdbornaPrace",
+        "marius-patrik/OdbornaPrace-mono"
+      ]
+    },
+    "identities": {
+      "$comment": "repo.dfconfig-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
+      "app": {
+        "slug": "darkfactory-pipeline",
+        "login": "darkfactory-pipeline[bot]",
+        "user_id": 326069535,
+        "commit_author_email": "326069535+darkfactory-pipeline[bot]@users.noreply.github.com"
+      },
+      "claude": {
+        "name": "Claude",
+        "display_name": "Claude",
+        "trailer": "Co-authored-by: Claude <noreply@anthropic.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/claude",
+        "verified": true
+      },
+      "codex": {
+        "name": "Codex",
+        "display_name": "Codex",
+        "trailer": "Co-authored-by: Codex <noreply@openai.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/codex",
+        "verified": true
+      },
+      "openai-codex": {
+        "name": "Codex",
+        "display_name": "Codex",
+        "trailer": "Co-authored-by: Codex <noreply@openai.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/codex",
+        "verified": true
+      },
+      "google": {
+        "name": "Gemini",
+        "display_name": "Gemini",
+        "trailer": "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/gemini-code-assist",
+        "verified": true
+      },
+      "antigravity": {
+        "name": "Gemini",
+        "display_name": "Gemini",
+        "trailer": "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+        "note": "Generated with {model}",
+        "account_link": "https://github.com/gemini-code-assist",
+        "verified": true
+      },
+      "grok-sub": {
+        "name": "Grok",
+        "display_name": "Grok",
+        "trailer": null,
+        "note": "Generated with {model}",
+        "account_link": null,
+        "verified": false
+      },
+      "groq": {
+        "name": "Groq",
+        "display_name": "Groq",
+        "trailer": null,
+        "note": "Generated with {model}",
+        "account_link": null,
+        "verified": false
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "display_name": "OpenRouter",
+        "trailer": null,
+        "note": "Generated with {model}",
+        "account_link": null,
+        "verified": false
+      },
+      "opencode-zen": {
+        "name": "OpenCode Zen",
+        "display_name": "OpenCode Zen",
+        "trailer": null,
+        "note": "Generated with {model}",
+        "account_link": null,
+        "verified": false
+      },
+      "kimi": {
+        "name": "Kimi",
+        "display_name": "Kimi",
+        "trailer": null,
+        "note": "Generated with {model}",
+        "account_link": null,
+        "verified": false
+      }
+    },
+    "release": {
+      "$comment": "Final package/capability distribution and publishing behavior is defined by PRD.md and the release capability.",
+      "metadata": "ignore"
+    }
+  },
+  "docs": {
+    "version": 1,
+    "site": {
+      "name": "DarkFactory",
+      "description": "Autonomous, governed software delivery built around a self-hosting df engine, versioned capabilities and GitHub as the durable control plane."
+    },
+    "home": ".agents/PRD.md"
+  },
+  "providers": {
+    "defaultChain": "google/gemini-3.8-flash@default,google/gemini-3.8-flash@key2,google/gemini-3.8-flash@key3,google/gemini-3.7-flash@default,google/gemini-3.7-flash@key2,google/gemini-3.7-flash@key3,google/gemini-3.6-flash@default,google/gemini-3.6-flash@key2,google/gemini-3.6-flash@key3,google/gemini-3.5-flash@default,google/gemini-3.5-flash@key2,google/gemini-3.5-flash@key3,google/gemini-3-flash-preview@default,google/gemini-3-flash-preview@key2,google/gemini-3-flash-preview@key3,google/gemini-3.5-flash-lite@default,google/gemini-3.5-flash-lite@key2,google/gemini-3.5-flash-lite@key3,google/gemini-3.1-flash-lite@default,google/gemini-3.1-flash-lite@key2,google/gemini-3.1-flash-lite@key3,openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@default,openrouter/nvidia/nemotron-3-ultra-550b-a55b:free@acct2,groq/openai/gpt-oss-120b@default,openai-codex/gpt-5.6-luna@pipeline,grok-sub/grok-4.6@pipeline",
+    "cooldownTtlMs": 120000,
+    "sensitiveChain": "groq/openai/gpt-oss-120b@default,openai-codex/gpt-5.6-luna@pipeline,grok-sub/grok-4.6@pipeline",
+    "router": {
+      "policies": [],
+      "dataCollection": {
+        "sensitive": [
+          "none",
+          "unknown"
+        ]
+      }
+    }
+  }
+}

@@ -1,5 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { resolveDfFile } from "../utils/resolver.ts";
+import {
+	configBlock,
+	type DarkFactoryConfigDocument,
+	parseConfigDocument,
+	resolveConfigDocumentPath,
+} from "@darkfactory/protocol/config-document";
 import { IdentitiesValidationError, validateIdentities } from "./schema.ts";
 import type { ManifestIdentities } from "./types.ts";
 
@@ -9,7 +14,8 @@ export async function loadIdentities(
 	manifestPath?: string,
 	reader: ManifestReader = (p) => readFile(p, "utf8"),
 ): Promise<ManifestIdentities> {
-	const path = manifestPath ?? resolveDfFile(process.cwd(), "repo");
+	const path = manifestPath ?? resolveConfigDocumentPath(process.cwd());
+	if (!path) throw new IdentitiesValidationError(["No combined DarkFactory configuration found"]);
 	let raw: string;
 	try {
 		raw = await reader(path);
@@ -17,12 +23,13 @@ export async function loadIdentities(
 		throw new IdentitiesValidationError([`Could not read manifest at ${path}: ${(error as Error).message}`]);
 	}
 
-	let parsed: unknown;
+	let parsed: DarkFactoryConfigDocument;
 	try {
-		parsed = JSON.parse(raw);
-	} catch {
-		throw new IdentitiesValidationError([`Invalid JSON in manifest at ${path}`]);
+		parsed = parseConfigDocument(raw, path);
+	} catch (error) {
+		throw new IdentitiesValidationError([(error as Error).message]);
 	}
 
-	return validateIdentities(parsed);
+	const repo = configBlock(parsed, "repo", path);
+	return validateIdentities(repo ?? {});
 }

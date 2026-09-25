@@ -1,17 +1,19 @@
-# ADR-0023 — First-party docs use docs.df and one renderer
+# ADR-0023 — First-party docs use the combined docs block and one renderer
 
 **Status**: Accepted
+
+**Related rules**: `DF-RULE-002`, `DF-RULE-003`
 
 ## Decision
 
 - `@darkfactory/docs` is the headless documentation compiler/content-graph owner.
-- `docs.df` is the only DarkFactory documentation configuration contract.
+- The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract.
 - The compiler builds one typed content graph from canonical Markdown, ADRs/rules, TypeScript/TSDoc API extraction, capability-contributed documentation and repository/graph/workflow metadata.
 - TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 - `@darkfactory/web` is the only first-party web renderer.
-- The same canonical homepage source renders the docs homepage and committed `README.md`.
-- Consumer repositories use the released web bundle plus repository-specific compiled content/data.
+- `.agents/PRD.md` is the product homepage. `.agents/notes/rules/**` and `.agents/notes/adr/**` are canonical. Root `README.md` is a symlink to the canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical rules. Supported discovery aliases may point to canonical documents or generated projections, but internal legacy aliases are not retained.
+- Consumer repositories use the released web bundle plus repository-specific compiled content/data; generated sites and JSON content graphs remain CI outputs rather than committed sources.
 
 ## Consequences
 
-Documentation has one compiler, one configuration contract, one semantic content source and one first-party renderer.
+Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections.

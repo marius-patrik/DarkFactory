@@ -12,7 +12,7 @@ body:
         whenever the configuration needs to change - areas gained a new domain, a credential was
         rotated, the repository is finally ready for branch protection.
 
-        Everything in `.darkfactory/repo.df` is configurable here. Some of it is detected
+        Everything in the `repo` block of `repo.df` is configurable here. Some of it is detected
         automatically and only needs an entry when the detection is wrong; the rest is a decision
         nobody can make for you.
 
@@ -29,7 +29,7 @@ body:
     attributes:
       label: "What is changing"
       options:
-        - label: "**Areas** — the domains in `.darkfactory/repo.df`"
+        - label: "**Areas** — the domains in the `repo` block of `repo.df`"
         - label: "**Licence** — which licence this repository is under"
         - label: "**Environment** — override what detection concluded"
         - label: "**Identity** — description, topics, default branch"
@@ -47,7 +47,7 @@ body:
         Areas drive labels, Conventional Commit scopes and agent routing from one declaration, so
         they cannot disagree. Declaration order is match order: specific areas before general ones.
       placeholder: |
-        agents      — harness orchestration, providers, personas
+        agents      — runtime, routing, providers, planning/review
         governance  — rules, protection, required checks, board taxonomy
         ci          — workflows, containers, runner scripts
     validations:
@@ -112,12 +112,13 @@ body:
     attributes:
       label: "Credentials"
       description: >
-        Name what should be set; never paste a value into an issue. `GITHUB_TOKEN` cannot write
-        user-owned Projects v2, so board automation needs `GH_PROJECT_TOKEN`.
+        Declare credential requirements or integration names only; never paste a secret value into
+        an issue. Machine/provider credentials are configured through df/keychain. GitHub user and
+        GitHub App authority remain separate.
       placeholder: |
-        GH_PROJECT_TOKEN     — board writes
-        ANTHROPIC_API_KEY    — agent runner
-        AGENT_ENABLED=true   — switch the runner on
+        provider account: anthropic-work
+        GitHub App installation: required
+        user-owned Projects access: required
     validations:
       required: false
 

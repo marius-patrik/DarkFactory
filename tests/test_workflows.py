@@ -32,7 +32,7 @@ def test_ci_quality_is_detector_driven_and_aggregated():
     )
 
     docs = jobs["docs-check"]
-    assert _index(docs["steps"], "Detect docs.df") < _index(
+    assert _index(docs["steps"], "Detect combined configuration docs block") < _index(
         docs["steps"], "Build native documentation"
     )
 
@@ -56,6 +56,14 @@ def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
     assert "!contains(github.event.issue.labels.*.name, 'pipeline-failure')" in condition
 
 
+def test_failure_observer_only_auto_files_default_branch_incidents():
+    workflow = _workflow(".github/workflows/report-failure.yml")
+    triggers = workflow.get(True) or workflow["on"]
+    assert triggers["workflow_run"]["types"] == ["completed"]
+    assert "workflow_call" in triggers
+    assert "File or resolve the failure issue" in str(workflow["jobs"]["report"]["steps"])
+
+
 def test_agent_image_installs_from_the_checked_in_harness_lock():
     dockerfile = pathlib.Path("docker/Dockerfile.agent").read_text(encoding="utf-8")
     assert "COPY package.json /opt/darkfactory/" in dockerfile
@@ -63,3 +71,5 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
     assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" in dockerfile
+    assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
+    assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
