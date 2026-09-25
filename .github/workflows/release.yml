@@ -228,3 +228,15 @@ jobs:
             echo
             echo "Assets: ${#ASSETS[@]}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record the released version
+        if: steps.resolve.outputs.warranted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
+            --repo-root . \
+            --record-version "$VERSION" \
+            --released-tag "$TAG"
