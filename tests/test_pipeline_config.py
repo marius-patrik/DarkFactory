@@ -298,21 +298,10 @@ def _declared_areas() -> Dict[str, str]:
             os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
             r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$',
         ),
-        (
-            os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
-            r"^- \[ \] `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
-        ),
     ],
 )
 def test_area_lists_match_the_manifest(path, pattern):
-    """Every hand-written area list must agree with the one declaration of the taxonomy.
-
-    The dropdown and the PR template are static files GitHub renders itself, so they cannot be
-    generated at render time the way the documentation nav is. The taxonomy itself is asserted
-    against the manifest alone; the product document no longer carries a hardcoded area list.
-    Without this test they simply drift again - which is exactly how they came to list another
-    repository's areas.
-    """
+    """The hand-written issue taxonomy must agree with the one declaration of the areas."""
     declared = _declared_areas()
     content = _read(os.path.join(REPO_ROOT, path))
     found = {
@@ -326,12 +315,14 @@ def test_area_lists_match_the_manifest(path, pattern):
     )
 
 
-def test_pull_request_template_enforces_binding_and_matrix_rule():
-    """The PR checklist carries the two rules reviewers most often forget."""
+def test_pull_request_template_uses_manifest_scopes_without_copying_them():
+    """The PR template refers to the declared taxonomy instead of duplicating its area list."""
     content = _read(os.path.join(REPO_ROOT, ".github", "PULL_REQUEST_TEMPLATE.md"))
     assert "Closes #" in content
-    assert "capability-matrix" in content
-    assert "Conventional Commits" in content
+    assert "repo.dfconfig-declared scope(s)" in content
+    assert "detected/capability-resolved quality actions" in content
+    assert not re.search(r"^- \[ \] `area:[a-z]+`", content, re.MULTILINE)
+    assert "Conventional Commit type" in content
 
 
 def test_gitignore_excludes_agent_checkpoint():
