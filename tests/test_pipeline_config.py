@@ -550,7 +550,9 @@ def test_native_docs_owners_are_present():
     assert not os.path.exists(os.path.join(REPO_ROOT, "repo.df"))
     assert not os.path.exists(os.path.join(REPO_ROOT, "config.dfconfig"))
     assert not os.path.exists(os.path.join(REPO_ROOT, ".dfconfig"))
-    assert not os.path.isdir(os.path.join(REPO_ROOT, ".darkfactory"))
+    fallback = os.path.join(REPO_ROOT, ".darkfactory")
+    for filename in ("repo.df", "config.df", "repo.dfconfig", "config.dfconfig", ".dfconfig"):
+        assert not os.path.exists(os.path.join(fallback, filename))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
