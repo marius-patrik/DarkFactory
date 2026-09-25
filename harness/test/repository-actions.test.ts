@@ -67,7 +67,12 @@ describe("repository evidence and capability actions", () => {
 	test("resolves actions only from repo.dfconfig overrides and capability contributions", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
-		const resolution = resolveRepositoryActions(evidence, [codeCapability, docsCapability, paperCapability, mathCapability]);
+		const resolution = resolveRepositoryActions(evidence, [
+			codeCapability,
+			docsCapability,
+			paperCapability,
+			mathCapability,
+		]);
 		const node = resolution.packages.find((entry) => entry.package.id === "node:.")!;
 		expect(node.actions.test.command).toBe("bun run test");
 		expect(node.actions.lint.command).toBe("bun run lint");
