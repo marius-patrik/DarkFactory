@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { existsSync } from "node:fs";
+import { appendFileSync, existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
@@ -71,6 +71,7 @@ import type {
 } from "./router/types.ts";
 import { secretsCommand } from "./secrets/cli.ts";
 import { runWorkspaceCli } from "./workspace/cli.ts";
+import { describeSubmoduleMovement, pinSubmoduleBranches, updateSubmodules } from "./workspace/submodules.ts";
 
 function usage(): string {
 	return [
@@ -82,6 +83,7 @@ function usage(): string {
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
 		"  df resume [--repo owner/name]        # resume runs blocked on quota whose models have reset",
 		"  df report-failure                  # file or close the failure issue for this run",
+		"  df submodules [--root dir]         # pin and advance super-repository submodules",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -1341,6 +1343,28 @@ async function reportFailureCommand(args: string[]): Promise<void> {
 	}
 }
 
+/**
+ * Pins any unpinned submodule branch, then moves every submodule to its branch tip.
+ *
+ * Idempotent: a repository whose pointers already match produces no movement and no commit.
+ *
+ * @param args Command arguments; `--root` overrides `GITHUB_WORKSPACE`.
+ * @returns Process exit code.
+ */
+async function submodulesCommand(args: string[]): Promise<void> {
+	const root = option(args, "--root") ?? process.env.GITHUB_WORKSPACE ?? process.cwd();
+	const log = (message: string) => console.log(message);
+	pinSubmoduleBranches(root, log);
+	const moved = updateSubmodules(root);
+	const report = describeSubmoduleMovement(moved);
+	console.log(report);
+	// The workflow branches its commit on this output, so it is part of the contract rather than a
+	// convenience for whoever reads the log.
+	if (process.env.GITHUB_OUTPUT) {
+		appendFileSync(process.env.GITHUB_OUTPUT, `moved=${moved.length > 0}\n`);
+	}
+}
+
 async function quotaCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1561,6 +1585,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return resumeCommand(args.slice(1));
 		case "report-failure":
 			return reportFailureCommand(args.slice(1));
+		case "submodules":
+			return submodulesCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":
