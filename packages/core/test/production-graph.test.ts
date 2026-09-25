@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { CAPABILITY_ABI_VERSION, createCapabilityGraphRegistry, defineCapability } from "@darkfactory/capability";
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -551,6 +552,85 @@ describe("production graph effects", () => {
 			expect(stateResumed.outputs.fixed).toBe(true);
 		} finally {
 			await rm(runsRoot, { recursive: true, force: true });
+		}
+	});
+
+	test("routes capability graph handlers before core handlers", async () => {
+		const runRoot = await mkdtemp(join(tmpdir(), "df-capability-graph-"));
+		try {
+			const capability = defineCapability({
+				abiVersion: CAPABILITY_ABI_VERSION,
+				id: "test-graph",
+				version: "1.0.0",
+				description: "Graph dispatch test capability.",
+				graph: [
+					{
+						id: "agent-handler",
+						nodeKinds: ["agent"],
+						handler: (node, context) => ({
+							outcome: "success",
+							outputs: { handled: node.id, root: context.repositoryRoot, iteration: context.iteration },
+						}),
+					},
+				],
+			});
+			const registry = createCapabilityGraphRegistry([capability]);
+			const runtime = {
+				repositoryRoot: "/repo",
+				domains: ["code"],
+				credentials: { get: async () => undefined },
+			};
+			let coreCalls = 0;
+			const handlers: NodeHandlers = {
+				agent: async () => {
+					coreCalls++;
+					return { outcome: "success", outputs: { core: true } };
+				},
+				automation: async () => {
+					coreCalls++;
+					return { outcome: "success", outputs: { core: true } };
+				},
+			};
+			const graph: WorkflowGraph = {
+				version: 1,
+				checks: [],
+				nodes: [{ id: "capability-node", kind: "agent", trigger: { event: "issues.opened" } }],
+				edges: [],
+			};
+			const state = await runGraph(graph, join(runRoot, "capability"), handlers, {
+				type: "issues.opened",
+				actor: { login: "owner", association: "OWNER", is_bot: false },
+			}, {
+				capabilityGraph: registry,
+				capabilityRuntime: runtime,
+			});
+			expect(coreCalls).toBe(0);
+			expect(state.outputs).toMatchObject({ handled: "capability-node", root: "/repo", iteration: 1 });
+
+			const automationGraph: WorkflowGraph = {
+				version: 1,
+				checks: [],
+				nodes: [{ id: "core-node", kind: "automation", script: "core", trigger: { event: "issues.opened" } }],
+				edges: [],
+			};
+			const fallback = await runGraph(automationGraph, join(runRoot, "fallback"), handlers, {
+				type: "issues.opened",
+				actor: { login: "owner", association: "OWNER", is_bot: false },
+			}, {
+				capabilityGraph: registry,
+				capabilityRuntime: runtime,
+			});
+			expect(coreCalls).toBe(1);
+			expect(fallback.outputs).toEqual({ core: true });
+
+			await expect(
+				runGraph(graph, join(runRoot, "missing-runtime"), handlers, {
+					type: "issues.opened",
+					actor: { login: "owner", association: "OWNER", is_bot: false },
+				}, { capabilityGraph: registry }),
+			).rejects.toThrow("requires a scoped capability runtime context");
+		} finally {
+			await rm(runRoot, { recursive: true, force: true });
 		}
 	});
 });

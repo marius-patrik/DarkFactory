@@ -1,3 +1,8 @@
+import {
+	type CapabilityGraphContext,
+	type CapabilityGraphRegistry,
+	type CapabilityRuntimeContext,
+} from "@darkfactory/capability";
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -68,6 +73,10 @@ export interface RunGraphOptions {
 	maxSteps?: number;
 	/** Subject-specific deterministic validation layered onto model findings. */
 	reviewAdapters?: Partial<Record<ReviewSubject, ReviewSubjectAdapter>>;
+	/** Capability-owned graph handlers, composed through the capability registry. */
+	capabilityGraph?: CapabilityGraphRegistry;
+	/** Scoped runtime context supplied to capability-owned graph handlers. */
+	capabilityRuntime?: CapabilityRuntimeContext;
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
@@ -113,8 +122,30 @@ function isApprovalEvent(event: GraphEvent): boolean {
 	return /^\s*(?:\/df\s+|\/)approve\s*$/u.test(event.body ?? "");
 }
 
-async function invoke(handlers: NodeHandlers, node: GraphNode, ctx: NodeContext): Promise<NodeResult> {
+async function invoke(
+	handlers: NodeHandlers,
+	node: GraphNode,
+	ctx: NodeContext,
+	capabilityGraph?: CapabilityGraphRegistry,
+	capabilityRuntime?: CapabilityRuntimeContext,
+): Promise<NodeResult> {
 	try {
+		const capabilityHandler = capabilityGraph?.resolve(node.kind);
+		if (capabilityHandler) {
+			if (!capabilityRuntime) throw new Error("Capability graph handler has no scoped runtime context");
+			const capabilityContext: CapabilityGraphContext = {
+				...capabilityRuntime,
+				runDir: ctx.runDir,
+				runId: ctx.runId,
+				outputs: ctx.outputs,
+				item: ctx.item,
+				feedback: ctx.feedback,
+				iteration: ctx.iteration,
+				eventId: ctx.eventId,
+				alerts: ctx.alerts,
+			};
+			return await capabilityHandler(node, capabilityContext);
+		}
 		if (node.kind === "agent") return await handlers.agent(node, ctx);
 		if (node.kind === "automation") return await handlers.automation(node, ctx);
 		return { outcome: "failure", outputs: { error: `node ${node.id} of kind ${node.kind} cannot be run` } };
@@ -137,6 +168,8 @@ async function runForeach(
 	handlers: NodeHandlers,
 	iteration: number,
 	eventId?: string,
+	capabilityGraph?: CapabilityGraphRegistry,
+	capabilityRuntime?: CapabilityRuntimeContext,
 ): Promise<Extract<GraphEvent, { type: "children.completed" }>> {
 	const spec = node.foreach!;
 	const items = state.outputs[spec.items];
@@ -169,7 +202,7 @@ async function runForeach(
 				...(eventId ? { eventId } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
-			});
+			}, capabilityGraph, capabilityRuntime);
 			await writeJson(resultPath, result);
 			await appendFile(
 				join(childDir, "events.df"),
@@ -223,6 +256,9 @@ export async function runGraph(
 	event: GraphEvent,
 	options: RunGraphOptions = {},
 ): Promise<RunState> {
+	if (options.capabilityGraph && !options.capabilityRuntime) {
+		throw new Error("Capability graph registry requires a scoped capability runtime context");
+	}
 	await mkdir(runDir, { recursive: true });
 	const statePath = join(runDir, "state.df");
 	const eventsPath = join(runDir, "events.df");
@@ -311,7 +347,17 @@ export async function runGraph(
 				throw new Error(`Node ${node.id} requires a fresh approved ${node.requires_review_approval} review`);
 		}
 		if (node.foreach) {
-			current = await runForeach(node, action, state, runDir, handlers, iteration, ingressEventId);
+			current = await runForeach(
+				node,
+				action,
+				state,
+				runDir,
+				handlers,
+				iteration,
+				ingressEventId,
+				options.capabilityGraph,
+				options.capabilityRuntime,
+			);
 		} else {
 			const reviewConfig = node.kind === "agent" ? node.review : undefined;
 			const existingReview = reviewConfig ? state.reviews[reviewConfig.subject] : undefined;
@@ -328,7 +374,7 @@ export async function runGraph(
 				...(existingReview ? { review: existingReview } : {}),
 				...(action.feedback ? { feedback: action.feedback } : {}),
 				...(action.alerts ? { alerts: action.alerts } : {}),
-			});
+			}, options.capabilityGraph, options.capabilityRuntime);
 			if (reviewConfig && result.outcome === "success") {
 				if (reviewConfig.phase === "review") {
 					const adapter =

@@ -19,6 +19,7 @@
   },
   "license": "GPL-3.0",
   "dependencies": {
+    "@darkfactory/capability": "workspace:*",
     "@darkfactory/protocol": "workspace:*",
     "@earendil-works/pi-ai": "0.85.1",
     "zod": "4.1.5"

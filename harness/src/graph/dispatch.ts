@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { CapabilityGraphRegistry, CapabilityRuntimeContext } from "@darkfactory/capability";
 import {
 	type CheckStateSource,
 	type ChecksGateResult,
@@ -30,6 +31,8 @@ export interface DispatchOptions {
 export interface DispatchRuntime {
 	handlers: NodeHandlers;
 	onAction?: (action: Exclude<PlanAction, { type: "run" } | { type: "none" }>, state: RunState) => void | Promise<void>;
+	capabilityGraph?: CapabilityGraphRegistry;
+	capabilityRuntime?: CapabilityRuntimeContext;
 }
 
 export interface DispatchRuntimeInput {
@@ -151,6 +154,8 @@ export async function dispatch(
 	const runtime = await options.createRuntime({ subject, runDir, graph, translated });
 	const state = await runGraph(graph, runDir, runtime.handlers, translated.event, {
 		...(runtime.onAction ? { onAction: runtime.onAction } : {}),
+		...(runtime.capabilityGraph ? { capabilityGraph: runtime.capabilityGraph } : {}),
+		...(runtime.capabilityRuntime ? { capabilityRuntime: runtime.capabilityRuntime } : {}),
 	});
 
 	const isChecksEvent = translated.event.type === "checks.completed";
