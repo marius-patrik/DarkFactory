@@ -171,6 +171,26 @@ class TestLatestTag:
         assert versioning.latest_tag(["v1.0.0"], prefer="a") == "v1.0.0"
 
 
+class TestIsAhead:
+    """A declared version is a choice only when it actually steps past what is released."""
+
+    @pytest.mark.parametrize(
+        "candidate, current, expected",
+        [
+            ("3a.9.0", "3a.1.0", True),
+            ("3b.0.0", "3a.9.9", True),
+            ("3a.1.0", "3a.1.0", False),
+            ("3a.1.0", "3a.2.0", False),
+            ("3a.0.9", "3a.1.0", False),
+            ("1.0.0", None, True),
+            (None, "3a.1.0", False),
+            ("nightly", "3a.1.0", False),
+        ],
+    )
+    def test_comparison(self, candidate, current, expected):
+        assert versioning.is_ahead(candidate, current) is expected
+
+
 class TestBumpVersion:
     """A bump moves the number and never rewrites the scheme the repository versions itself in."""
 
@@ -312,6 +332,21 @@ class TestResolve:
         result = versioning.resolve(str(tmp_path))
         assert result["next"] == "3a.9.0", "an explicit version is the owner's decision"
         assert result["bump"] == "declared"
+
+    def test_a_stale_version_does_not_re_release_an_old_number(self, tmp_path):
+        """A file left behind by a failed record step is staleness, not a choice.
+
+        The real case: `v3a.2.0` shipped while `VERSION` still read `3a.1.0`, and the record
+        pull request never landed. Re-running the release must not treat `3a.1.0` as an explicit
+        instruction to release a version that is already published.
+        """
+        _init_repo(tmp_path, "manual", [CHORE], version="3a.1.0")
+        subprocess.run(["git", "-C", str(tmp_path), "tag", "v3a.2.0"], check=True)
+        _later(tmp_path, FEATURE)
+        result = versioning.resolve(str(tmp_path))
+        assert result["current"] == "3a.2.0"
+        assert result["next"] == "3a.3.0"
+        assert result["bump"] == "minor"
 
     def test_nothing_since_the_release_warrants_nothing(self, tmp_path):
         _init_repo(tmp_path, "manual", [FEATURE], version="3a.1.0")
