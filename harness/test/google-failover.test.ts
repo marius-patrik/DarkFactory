@@ -186,7 +186,6 @@ describe("Google Gemini free-tier real fixtures classification", () => {
 	});
 });
 
-
 describe("Supervisor waiting instead of exiting", () => {
 	test("waits when all candidates are cooling down within maxWaitMs and retries successfully", async () => {
 		const { home, cwd } = await tempWorkspace();
