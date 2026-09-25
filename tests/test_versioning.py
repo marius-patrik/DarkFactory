@@ -158,25 +158,82 @@ class TestLatestTag:
     def test_two_component_tags_are_accepted(self):
         assert versioning.latest_tag(["v1.2"]) == "v1.2"
 
+    def test_a_scheme_is_not_invisible(self):
+        # `3a.1.0` used to fail the numeric pattern, so a repository versioning itself this way
+        # compared itself against whatever plain tag happened to be lower.
+        assert versioning.latest_tag(["v0.81.0", "v3a.1.0"]) == "v3a.1.0"
 
-def _init_repo(path, mode, commits):
+    def test_the_declared_line_wins_over_a_higher_superseded_one(self):
+        # A repository that has moved to a new line is on that line, not on the old one.
+        assert versioning.latest_tag(["v0.81.0", "v3a.1.0", "v4.0.0"], prefer="a") == "v3a.1.0"
+
+    def test_a_preference_with_no_matching_tag_falls_back(self):
+        assert versioning.latest_tag(["v1.0.0"], prefer="a") == "v1.0.0"
+
+
+class TestBumpVersion:
+    """A bump moves the number and never rewrites the scheme the repository versions itself in."""
+
+    @pytest.mark.parametrize(
+        "current, bump, expected",
+        [
+            ("3a.1.0", "minor", "3a.2.0"),
+            ("3a.1.0", "patch", "3a.1.1"),
+            ("3a.1.0", "major", "4a.0.0"),
+            ("0.81.0", "minor", "0.82.0"),
+            ("0.81.0", "patch", "0.81.1"),
+            ("1.2", "minor", "1.3.0"),
+        ],
+    )
+    def test_bumps(self, current, bump, expected):
+        assert versioning.bump_version(current, bump) == expected
+
+    def test_nothing_bumped_is_no_version(self):
+        assert versioning.bump_version("3a.1.0", None) is None
+
+    def test_an_unparseable_version_yields_nothing(self):
+        assert versioning.bump_version("nightly", "minor") is None
+
+    def test_an_unknown_bump_size_is_rejected(self):
+        with pytest.raises(versioning.VersioningError):
+            versioning.bump_version("3a.1.0", "sideways")
+
+
+def _init_repo(path, mode, commits, version=None, record_issue=None):
     """Builds a throwaway git repository carrying a manifest and a commit log.
 
     Args:
         path: Directory to initialise.
         mode: Versioning mode to declare in the manifest.
         commits: Commit subjects to record, oldest first.
+        version: Contents for the `VERSION` file, or `None` for no file.
+        record_issue: Issue number for `release.record_issue`, or `None` to omit it.
     """
     subprocess.run(["git", "init", "-q", "-b", "main", str(path)], check=True)
     for key, value in (("user.email", "t@example.com"), ("user.name", "T")):
         subprocess.run(["git", "-C", str(path), "config", key, value], check=True)
-    github = path / ".darkfactory"
-    github.mkdir()
-    (github / "repo.df").write_text(json.dumps({"versioning": {"mode": mode}}))
+    repo: dict = {"versioning": {"mode": mode}}
+    if record_issue is not None:
+        repo["release"] = {"record_issue": record_issue}
+    (path / "repo.dfconfig").write_text(json.dumps({"repo": repo}))
+    if version is not None:
+        (path / "VERSION").write_text(f"{version}\n")
     for index, message in enumerate(commits):
         (path / f"f{index}.txt").write_text(message)
         subprocess.run(["git", "-C", str(path), "add", "-A"], check=True)
         subprocess.run(["git", "-C", str(path), "commit", "-q", "-m", message], check=True)
+
+
+def _later(path, message):
+    """Records one more commit, so a release can be measured against a tag.
+
+    Args:
+        path: Repository directory.
+        message: Commit subject.
+    """
+    (path / "later.txt").write_text(message)
+    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(path), "commit", "-q", "-m", message], check=True)
 
 
 class TestResolve:
@@ -236,10 +293,41 @@ class TestResolve:
         assert result["tag"] == "v7.7.7"
 
     def test_manual_mode_is_idempotent_once_tagged(self, tmp_path):
-        _init_repo(tmp_path, "manual", [FEATURE])
-        (tmp_path / "VERSION").write_text("7.7.7\n")
+        _init_repo(tmp_path, "manual", [FEATURE], version="7.7.7")
         subprocess.run(["git", "-C", str(tmp_path), "tag", "v7.7.7"], check=True)
         assert versioning.resolve(str(tmp_path))["next"] is None
+
+    def test_a_scheme_survives_the_round_trip_through_a_tag(self, tmp_path):
+        # The real repository's case: `3a.1.0` released, VERSION unchanged, a feature since.
+        _init_repo(tmp_path, "manual", [CHORE], version="3a.1.0")
+        subprocess.run(["git", "-C", str(tmp_path), "tag", "v3a.1.0"], check=True)
+        _later(tmp_path, FEATURE)
+        result = versioning.resolve(str(tmp_path))
+        assert result["current"] == "3a.1.0"
+        assert result["next"] == "3a.2.0"
+        assert result["tag"] == "v3a.2.0"
+
+    def test_a_declared_version_beats_the_commit_log(self, tmp_path):
+        _init_repo(tmp_path, "manual", [FEATURE], version="3a.9.0")
+        result = versioning.resolve(str(tmp_path))
+        assert result["next"] == "3a.9.0", "an explicit version is the owner's decision"
+        assert result["bump"] == "declared"
+
+    def test_nothing_since_the_release_warrants_nothing(self, tmp_path):
+        _init_repo(tmp_path, "manual", [FEATURE], version="3a.1.0")
+        subprocess.run(["git", "-C", str(tmp_path), "tag", "v3a.1.0"], check=True)
+        _later(tmp_path, CHORE)
+        assert versioning.resolve(str(tmp_path))["next"] is None
+
+    def test_the_resolution_reports_the_tag_it_measured_against(self, tmp_path):
+        # The notes window has to be the same tag the version decision used, or a release
+        # describes commits that are already published.
+        _init_repo(tmp_path, "manual", [CHORE], version="3a.1.0")
+        subprocess.run(["git", "-C", str(tmp_path), "tag", "v0.81.0"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "tag", "v3a.1.0"], check=True)
+        result = versioning.resolve(str(tmp_path))
+        assert result["current_tag"] == "v3a.1.0"
+        assert result["current"] == "3a.1.0"
 
     def test_an_unknown_mode_in_the_manifest_is_rejected(self, tmp_path):
         _init_repo(tmp_path, "heroic", [FEATURE])
@@ -248,5 +336,5 @@ class TestResolve:
 
     def test_a_repository_without_a_manifest_defaults_to_semver(self, tmp_path):
         _init_repo(tmp_path, "semver", [FEATURE])
-        os.remove(tmp_path / ".darkfactory" / "repo.df")
+        os.remove(tmp_path / "repo.dfconfig")
         assert versioning.resolve(str(tmp_path))["mode"] == "semver"

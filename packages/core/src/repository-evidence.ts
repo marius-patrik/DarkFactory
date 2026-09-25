@@ -2,18 +2,11 @@
  * Repository/package/domain evidence discovery owned by the DarkFactory core mechanism.
  */
 
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import { access, readFile, readdir } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
-export type RepositoryEcosystem =
-	| "node"
-	| "python"
-	| "rust"
-	| "go"
-	| "deno"
-	| "typst"
-	| "latex"
-	| "lean";
+export type RepositoryEcosystem = "node" | "python" | "rust" | "go" | "deno" | "typst" | "latex" | "lean";
 
 export type PackageManager =
 	| "bun"
@@ -57,7 +50,7 @@ export interface RepositoryPackageEvidence {
 	apiEntryPoints: readonly string[];
 }
 
-/** Explicit deterministic-action override declared in repo.df. */
+/** Explicit deterministic-action override declared in the combined configuration's repo block. */
 export interface RepositoryActionOverride {
 	command?: string;
 	enabled?: boolean;
@@ -65,7 +58,7 @@ export interface RepositoryActionOverride {
 	[key: string]: unknown;
 }
 
-/** Minimal repo.df fields used by repository evidence. Unknown product fields remain opaque. */
+/** Minimal repository fields used by evidence. Unknown product fields remain opaque. */
 export interface RepositoryDfEvidence {
 	identity?: { default_branch?: string; [key: string]: unknown };
 	upstream?: { repo?: string | null; ref?: string | null; [key: string]: unknown };
@@ -108,18 +101,6 @@ async function exists(path: string): Promise<boolean> {
 	}
 }
 
-/** Resolves one final .df config file from .darkfactory/<name>.df or root <name>.df. Both present is invalid. */
-export async function resolveDfFile(rootDir: string, name: "repo" | "config" | "docs"): Promise<string | undefined> {
-	const root = resolve(rootDir);
-	const nested = join(root, ".darkfactory", `${name}.df`);
-	const top = join(root, `${name}.df`);
-	const [hasNested, hasTop] = await Promise.all([exists(nested), exists(top)]);
-	if (hasNested && hasTop) throw new Error(`Both .darkfactory/${name}.df and ${name}.df exist`);
-	if (hasNested) return nested;
-	if (hasTop) return top;
-	return undefined;
-}
-
 function normalizeEcosystem(value: string): RepositoryEcosystem {
 	switch (value) {
 		case "python":
@@ -154,14 +135,22 @@ function normalizeExplicitPackageManager(value: string | undefined, ecosystem: R
 			return value;
 	}
 	switch (ecosystem) {
-		case "python": return "pip";
-		case "rust": return "cargo";
-		case "go": return "go";
-		case "deno": return "deno";
-		case "typst": return "typst";
-		case "latex": return "latexmk";
-		case "lean": return "lake";
-		default: return "bun";
+		case "python":
+			return "pip";
+		case "rust":
+			return "cargo";
+		case "go":
+			return "go";
+		case "deno":
+			return "deno";
+		case "typst":
+			return "typst";
+		case "latex":
+			return "latexmk";
+		case "lean":
+			return "lake";
+		default:
+			return "bun";
 	}
 }
 
@@ -169,21 +158,23 @@ function repoPath(root: string, directory: string): string {
 	return (relative(root, directory) || ".").replaceAll("\\", "/");
 }
 
-async function nodeManager(directory: string, root: string, packageJson: Record<string, unknown>): Promise<{ manager: PackageManager; managerRoot: string }> {
-	const declared = typeof packageJson.packageManager === "string" ? packageJson.packageManager.split("@")[0] : undefined;
+async function nodeManager(
+	directory: string,
+	root: string,
+	packageJson: Record<string, unknown>,
+): Promise<{ manager: PackageManager; managerRoot: string }> {
+	const declared =
+		typeof packageJson.packageManager === "string" ? packageJson.packageManager.split("@")[0] : undefined;
 	if (declared === "bun" || declared === "npm" || declared === "pnpm" || declared === "yarn")
 		return { manager: declared, managerRoot: repoPath(root, directory) };
 
 	let cursor = directory;
 	for (;;) {
-		if (await exists(join(cursor, "bun.lock")) || await exists(join(cursor, "bun.lockb")))
+		if ((await exists(join(cursor, "bun.lock"))) || (await exists(join(cursor, "bun.lockb"))))
 			return { manager: "bun", managerRoot: repoPath(root, cursor) };
-		if (await exists(join(cursor, "pnpm-lock.yaml")))
-			return { manager: "pnpm", managerRoot: repoPath(root, cursor) };
-		if (await exists(join(cursor, "yarn.lock")))
-			return { manager: "yarn", managerRoot: repoPath(root, cursor) };
-		if (await exists(join(cursor, "package-lock.json")))
-			return { manager: "npm", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "pnpm-lock.yaml"))) return { manager: "pnpm", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "yarn.lock"))) return { manager: "yarn", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "package-lock.json"))) return { manager: "npm", managerRoot: repoPath(root, cursor) };
 		if (cursor === root) break;
 		const parent = dirname(cursor);
 		if (parent === cursor || !parent.startsWith(root)) break;
@@ -192,15 +183,15 @@ async function nodeManager(directory: string, root: string, packageJson: Record<
 	return { manager: "npm", managerRoot: repoPath(root, directory) };
 }
 
-async function pythonManager(directory: string, root: string): Promise<{ manager: PackageManager; managerRoot: string }> {
+async function pythonManager(
+	directory: string,
+	root: string,
+): Promise<{ manager: PackageManager; managerRoot: string }> {
 	let cursor = directory;
 	for (;;) {
-		if (await exists(join(cursor, "uv.lock")))
-			return { manager: "uv", managerRoot: repoPath(root, cursor) };
-		if (await exists(join(cursor, "poetry.lock")))
-			return { manager: "poetry", managerRoot: repoPath(root, cursor) };
-		if (await exists(join(cursor, "Pipfile.lock")))
-			return { manager: "pipenv", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "uv.lock"))) return { manager: "uv", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "poetry.lock"))) return { manager: "poetry", managerRoot: repoPath(root, cursor) };
+		if (await exists(join(cursor, "Pipfile.lock"))) return { manager: "pipenv", managerRoot: repoPath(root, cursor) };
 		if (cursor === root) break;
 		const parent = dirname(cursor);
 		if (parent === cursor || !parent.startsWith(root)) break;
@@ -260,31 +251,36 @@ async function discoveredPackages(directory: string, root: string): Promise<Repo
 	const packageJsonPath = join(directory, "package.json");
 	if (await exists(packageJsonPath)) {
 		let parsed: Record<string, unknown> = {};
-		try { parsed = JSON.parse(await readFile(packageJsonPath, "utf8")) as Record<string, unknown>; } catch {}
+		try {
+			parsed = JSON.parse(await readFile(packageJsonPath, "utf8")) as Record<string, unknown>;
+		} catch {}
 		const { manager, managerRoot } = await nodeManager(directory, root, parsed);
-		const scripts = parsed.scripts && typeof parsed.scripts === "object" && !Array.isArray(parsed.scripts)
-			? Object.keys(parsed.scripts as Record<string, unknown>).sort()
-			: [];
-		found.push(evidence(
-			root,
-			directory,
-			"node",
-			"package.json",
-			typeof parsed.name === "string" ? parsed.name : fallbackName,
-			manager,
-			managerRoot,
-			{ scripts, apiEntryPoints: nodeApiEntryPoints(path, parsed) },
-		));
+		const scripts =
+			parsed.scripts && typeof parsed.scripts === "object" && !Array.isArray(parsed.scripts)
+				? Object.keys(parsed.scripts as Record<string, unknown>).sort()
+				: [];
+		found.push(
+			evidence(
+				root,
+				directory,
+				"node",
+				"package.json",
+				typeof parsed.name === "string" ? parsed.name : fallbackName,
+				manager,
+				managerRoot,
+				{ scripts, apiEntryPoints: nodeApiEntryPoints(path, parsed) },
+			),
+		);
 	}
 
 	const pyproject = join(directory, "pyproject.toml");
-	const pythonManifest = await exists(pyproject)
+	const pythonManifest = (await exists(pyproject))
 		? "pyproject.toml"
-		: await exists(join(directory, "setup.py"))
+		: (await exists(join(directory, "setup.py")))
 			? "setup.py"
-			: await exists(join(directory, "setup.cfg"))
+			: (await exists(join(directory, "setup.cfg")))
 				? "setup.cfg"
-				: await exists(join(directory, "requirements.txt"))
+				: (await exists(join(directory, "requirements.txt")))
 					? "requirements.txt"
 					: undefined;
 	if (pythonManifest) {
@@ -303,14 +299,34 @@ async function discoveredPackages(directory: string, root: string): Promise<Repo
 		found.push(evidence(root, directory, "rust", "Cargo.toml", fallbackName, "cargo", path));
 	if (await exists(join(directory, "go.mod")))
 		found.push(evidence(root, directory, "go", "go.mod", fallbackName, "go", path));
-	if (await exists(join(directory, "deno.json")) || await exists(join(directory, "deno.jsonc")))
-		found.push(evidence(root, directory, "deno", await exists(join(directory, "deno.json")) ? "deno.json" : "deno.jsonc", fallbackName, "deno", path));
+	if ((await exists(join(directory, "deno.json"))) || (await exists(join(directory, "deno.jsonc"))))
+		found.push(
+			evidence(
+				root,
+				directory,
+				"deno",
+				(await exists(join(directory, "deno.json"))) ? "deno.json" : "deno.jsonc",
+				fallbackName,
+				"deno",
+				path,
+			),
+		);
 	if (await exists(join(directory, "typst.toml")))
 		found.push(evidence(root, directory, "typst", "typst.toml", fallbackName, "typst", path));
 	if (await exists(join(directory, ".latexmkrc")))
 		found.push(evidence(root, directory, "latex", ".latexmkrc", fallbackName, "latexmk", path));
-	if (await exists(join(directory, "lakefile.lean")) || await exists(join(directory, "lakefile.toml")))
-		found.push(evidence(root, directory, "lean", await exists(join(directory, "lakefile.lean")) ? "lakefile.lean" : "lakefile.toml", fallbackName, "lake", path));
+	if ((await exists(join(directory, "lakefile.lean"))) || (await exists(join(directory, "lakefile.toml"))))
+		found.push(
+			evidence(
+				root,
+				directory,
+				"lean",
+				(await exists(join(directory, "lakefile.lean"))) ? "lakefile.lean" : "lakefile.toml",
+				fallbackName,
+				"lake",
+				path,
+			),
+		);
 
 	return found;
 }
@@ -323,12 +339,29 @@ async function scan(
 ): Promise<void> {
 	const rel = repoPath(root, directory);
 	if (rel !== "." && (ignored.has(rel) || rel.split("/").some((part) => ignored.has(part)))) return;
-	output.push(...await discoveredPackages(directory, root));
+	output.push(...(await discoveredPackages(directory, root)));
 	let entries;
-	try { entries = await readdir(directory, { withFileTypes: true }); } catch { return; }
+	try {
+		entries = await readdir(directory, { withFileTypes: true });
+	} catch {
+		return;
+	}
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
-		if ([".git", ".darkfactory", "node_modules", "target", "dist", "build", ".venv", "venv", "site", "__pycache__"].includes(entry.name))
+		if (
+			[
+				".git",
+				".darkfactory",
+				"node_modules",
+				"target",
+				"dist",
+				"build",
+				".venv",
+				"venv",
+				"site",
+				"__pycache__",
+			].includes(entry.name)
+		)
 			continue;
 		await scan(join(directory, entry.name), root, ignored, output);
 	}
@@ -356,13 +389,14 @@ function explicitPackages(repoDf: RepositoryDfEvidence): RepositoryPackageEviden
 /** Detects repository/package/domain evidence using final .df resolution plus filesystem manifests. */
 export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise<RepositoryEvidence> {
 	const root = resolve(rootDir);
-	const repoDfPath = await resolveDfFile(root, "repo");
+	const repoDfPath = resolveConfigDocumentPath(root);
 	let repoDf: RepositoryDfEvidence = {};
 	if (repoDfPath) {
 		try {
-			repoDf = JSON.parse(await readFile(repoDfPath, "utf8")) as RepositoryDfEvidence;
+			const document = parseConfigDocument(await readFile(repoDfPath, "utf8"), repoDfPath);
+			repoDf = (configBlock(document, "repo", repoDfPath) ?? {}) as RepositoryDfEvidence;
 		} catch (error) {
-			throw new Error(`Invalid repo.df: ${error instanceof Error ? error.message : String(error)}`);
+			throw new Error(`Invalid repo block: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
@@ -376,7 +410,7 @@ export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise
 			unique.set(pkg.id, pkg);
 			continue;
 		}
-		// repo.df packages are inserted before filesystem evidence: declarations own identity/manifest
+		// repo-block packages are inserted before filesystem evidence: declarations own identity/manifest
 		// while detection fills scripts, API exports and concrete toolchain roots.
 		unique.set(pkg.id, {
 			...pkg,

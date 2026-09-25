@@ -34,7 +34,7 @@ export interface ResolvedRepositoryAction {
 	description: string;
 	command?: string;
 	metadata?: Readonly<Record<string, unknown>>;
-	source: "repo.df" | "capability" | "unsupported";
+	source: "repo.dfconfig" | "capability" | "unsupported";
 	capabilityId?: string;
 	reason?: string;
 }
@@ -76,13 +76,20 @@ function overrideGroup(
 	const environment = evidence.repoDf.environment;
 	if (!environment) return undefined;
 	switch (kind) {
-		case "test": return environment.testing;
-		case "lint": return environment.linting;
-		case "format_check": return environment.formatting;
-		case "docs_check": return environment.docs_check;
-		case "docs_extract": return environment.docs_extract;
-		case "setup": return environment.setup;
-		case "release": return environment.release;
+		case "test":
+			return environment.testing;
+		case "lint":
+			return environment.linting;
+		case "format_check":
+			return environment.formatting;
+		case "docs_check":
+			return environment.docs_check;
+		case "docs_extract":
+			return environment.docs_extract;
+		case "setup":
+			return environment.setup;
+		case "release":
+			return environment.release;
 	}
 }
 
@@ -126,20 +133,34 @@ function resolveOne(
 	if (override) {
 		if (override.enabled === false) {
 			return {
-				kind, packageId: pkg.id, cwd: pkg.path, supported: false,
-				description: `${kind} disabled by repo.df`, source: "repo.df", reason: "disabled",
+				kind,
+				packageId: pkg.id,
+				cwd: pkg.path,
+				supported: false,
+				description: `${kind} disabled by repo block`,
+				source: "repo.dfconfig",
+				reason: "disabled",
 			};
 		}
 		if (typeof override.command === "string" && override.command.trim()) {
 			return {
-				kind, packageId: pkg.id, cwd: pkg.path, supported: true,
-				description: `${kind} declared in repo.df`, command: override.command, source: "repo.df",
+				kind,
+				packageId: pkg.id,
+				cwd: pkg.path,
+				supported: true,
+				description: `${kind} declared in repo block`,
+				command: override.command,
+				source: "repo.dfconfig",
 				metadata: override.versions ? { versions: override.versions } : undefined,
 			};
 		}
 	}
 
-	const matches: { capability: CapabilityDefinition; action: CapabilityActionDefinition; result: Pick<ResolvedRepositoryAction, "command" | "metadata"> }[] = [];
+	const matches: {
+		capability: CapabilityDefinition;
+		action: CapabilityActionDefinition;
+		result: Pick<ResolvedRepositoryAction, "command" | "metadata">;
+	}[] = [];
 	for (const capability of [...definitions].sort((a, b) => a.id.localeCompare(b.id))) {
 		for (const action of capability.actions ?? []) {
 			if (action.kind !== kind || !applies(action, pkg)) continue;
@@ -150,8 +171,12 @@ function resolveOne(
 	if (matches.length > 1) {
 		const ids = matches.map((match) => match.capability.id).join(", ");
 		return {
-			kind, packageId: pkg.id, cwd: pkg.path, supported: false,
-			description: `Ambiguous ${kind} action`, source: "unsupported",
+			kind,
+			packageId: pkg.id,
+			cwd: pkg.path,
+			supported: false,
+			description: `Ambiguous ${kind} action`,
+			source: "unsupported",
 			reason: `multiple capability contributions apply: ${ids}`,
 		};
 	}
@@ -162,20 +187,29 @@ function resolveOne(
 			...(override?.versions ? { versions: override.versions } : {}),
 		};
 		return {
-			kind, packageId: pkg.id, cwd: pkg.path, supported: true,
-			description: match.action.description, source: "capability", capabilityId: match.capability.id,
+			kind,
+			packageId: pkg.id,
+			cwd: pkg.path,
+			supported: true,
+			description: match.action.description,
+			source: "capability",
+			capabilityId: match.capability.id,
 			...(match.result.command ? { command: match.result.command } : {}),
 			...(Object.keys(metadata).length > 0 ? { metadata } : {}),
 		};
 	}
 	return {
-		kind, packageId: pkg.id, cwd: pkg.path, supported: false,
-		description: `No applicable ${kind} action`, source: "unsupported",
+		kind,
+		packageId: pkg.id,
+		cwd: pkg.path,
+		supported: false,
+		description: `No applicable ${kind} action`,
+		source: "unsupported",
 		reason: "missing action",
 	};
 }
 
-/** Resolves deterministic actions exclusively from explicit repo.df overrides and applicable capability contributions. */
+/** Resolves deterministic actions exclusively from explicit repo-block overrides and applicable capability contributions. */
 export function resolveRepositoryActions(
 	evidence: RepositoryActionEvidence,
 	definitions: readonly CapabilityDefinition[],
@@ -187,9 +221,9 @@ export function resolveRepositoryActions(
 		return { package: pkg, actions };
 	});
 	const gaps = packages.flatMap(({ actions }) =>
-		ACTION_KINDS
-			.filter((kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && !actions[kind].supported)
-			.map((kind) => actions[kind]),
+		ACTION_KINDS.filter((kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && !actions[kind].supported).map(
+			(kind) => actions[kind],
+		),
 	);
 	return { packages, gaps };
 }

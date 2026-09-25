@@ -16,5 +16,8 @@
   "dependencies": {
     "@darkfactory/protocol": "workspace:*",
     "@darkfactory/github": "workspace:*"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }

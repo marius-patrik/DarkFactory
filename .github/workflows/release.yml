@@ -27,7 +27,7 @@ on:
         type: string
 
 # The version, the notes, the assets and the metadata check are all decided by
-# `.github/scripts/release.py`, which reads the mode from `.darkfactory/repo.df`. This workflow
+# `.github/scripts/release.py`, which reads the mode from the `repo` block of `repo.df`. This workflow
 # only sequences them, so changing versioning scheme never means editing a workflow.
 permissions:
   contents: write
@@ -228,3 +228,15 @@ jobs:
             echo
             echo "Assets: ${#ASSETS[@]}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record the released version
+        if: steps.resolve.outputs.warranted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          python "${PIPELINE_SCRIPTS:-.github/scripts}/release.py" \
+            --repo-root . \
+            --record-version "$VERSION" \
+            --released-tag "$TAG"

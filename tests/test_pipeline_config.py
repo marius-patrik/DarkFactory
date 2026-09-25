@@ -12,7 +12,6 @@ SCRIPT_DIR = os.path.join(REPO_ROOT, ".github", "scripts")
 
 EXPECTED_WORKFLOWS = [
     "agent.yml",
-    "auto-format.yml",
     "ci.yml",
     "deploy-docs.yml",
     "open-pr.yml",
@@ -87,11 +86,11 @@ def test_ci_has_one_aggregate_quality_context():
 
 
 def test_python_actions_and_docs_have_separate_final_owners():
-    """Capability actions execute in the matrix while docs.df uses the native compiler."""
+    """Capability actions execute in the matrix while the combined docs block uses the native compiler."""
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "pytest -v tests" not in ci
     assert "DF_ACTION_COMMAND" in ci
-    assert "docs.df" in ci
+    assert "repo.dfconfig" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
@@ -275,7 +274,7 @@ def test_the_configuration_template_carries_the_install_marker():
 
 
 def test_request_template_requires_verbatim_wording():
-    """DF-RULE-012 (`.agents/rules/012-request-capture-and-confirmation.md`) depends on the template asking for the unedited request."""
+    """DF-RULE-012 (`.agents/notes/rules/012-request-capture-and-planning.md`) depends on the template asking for the unedited request."""
     content = _read(os.path.join(REPO_ROOT, ".github", "ISSUE_TEMPLATE", "request.yml"))
     assert "Verbatim User Request" in content
     assert 'labels: ["Request"]' in content
@@ -299,21 +298,10 @@ def _declared_areas() -> Dict[str, str]:
             os.path.join(".github", "ISSUE_TEMPLATE", "request.yml"),
             r'^\s+- "(?P<name>[a-z]+) - (?P<description>.+) \(area:(?P=name)\)"$',
         ),
-        (
-            os.path.join(".github", "PULL_REQUEST_TEMPLATE.md"),
-            r"^- \[ \] `area:(?P<name>[a-z]+)`: (?P<description>.+?)\.?$",
-        ),
     ],
 )
 def test_area_lists_match_the_manifest(path, pattern):
-    """Every hand-written area list must agree with the one declaration of the taxonomy.
-
-    The dropdown and the PR template are static files GitHub renders itself, so they cannot be
-    generated at render time the way the documentation nav is. The taxonomy itself is asserted
-    against the manifest alone; the product document no longer carries a hardcoded area list.
-    Without this test they simply drift again - which is exactly how they came to list another
-    repository's areas.
-    """
+    """The hand-written issue taxonomy must agree with the one declaration of the areas."""
     declared = _declared_areas()
     content = _read(os.path.join(REPO_ROOT, path))
     found = {
@@ -322,17 +310,19 @@ def test_area_lists_match_the_manifest(path, pattern):
     }
     assert found, f"{path} lists no areas at all"
     assert found == declared, (
-        f"{path} disagrees with .darkfactory/repo.df; "
+        f"{path} disagrees with the repo block in repo.dfconfig; "
         f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
     )
 
 
-def test_pull_request_template_enforces_binding_and_matrix_rule():
-    """The PR checklist carries the two rules reviewers most often forget."""
+def test_pull_request_template_uses_manifest_scopes_without_copying_them():
+    """The PR template refers to the declared taxonomy instead of duplicating its area list."""
     content = _read(os.path.join(REPO_ROOT, ".github", "PULL_REQUEST_TEMPLATE.md"))
     assert "Closes #" in content
-    assert "capability-matrix" in content
-    assert "Conventional Commits" in content
+    assert "repo.dfconfig-declared scope(s)" in content
+    assert "detected/capability-resolved quality actions" in content
+    assert not re.search(r"^- \[ \] `area:[a-z]+`", content, re.MULTILINE)
+    assert "Conventional Commit type" in content
 
 
 def test_gitignore_excludes_agent_checkpoint():
@@ -341,6 +331,12 @@ def test_gitignore_excludes_agent_checkpoint():
 
     content = _read(os.path.join(REPO_ROOT, ".gitignore"))
     assert agent_runner.CHECKPOINT_FILENAME in content
+
+
+def test_gitignore_excludes_generated_documentation_data():
+    """Generated documentation JSON is a CI output, never repository content."""
+    lines = _read(os.path.join(REPO_ROOT, ".gitignore")).splitlines()
+    assert ".darkfactory/generated/" in lines
 
 
 def test_pages_source_matches_the_deploy_workflow():
@@ -448,7 +444,7 @@ def test_workflows_separate_development_from_release_pushes():
     assert manifest.default_branch == "main"
     assert manifest.development_branch == "develop"
 
-    for name in ("ci.yml", "auto-format.yml", "project-automation.yml"):
+    for name in ("ci.yml", "project-automation.yml"):
         content = _read(os.path.join(WORKFLOW_DIR, name))
         assert "[develop]" in content, f"{name} must follow the development branch"
 
@@ -484,19 +480,24 @@ def test_repository_settings_fall_back_from_opaque_gh_api_failures():
 
 
 def test_the_docs_job_uses_the_native_docs_contract():
-    """The direct docs-check job detects docs.df and runs the first-party compiler."""
+    """The direct docs-check job detects the combined docs block and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
     ]
-    assert "docs.df" in docs_job
+    assert "repo.dfconfig" in docs_job
+    assert "config.dfconfig" in docs_job
+    assert ".dfconfig" in docs_job
+    assert '"repo.df"' not in docs_job
+    assert '"config.df"' not in docs_job
+    assert "DF_CONFIG_DIR" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
     assert "packages/web" not in docs_job
 
 
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
-    """A repository without docs.df reports a successful no-op docs check."""
+    """A repository without a combined configuration reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
@@ -517,7 +518,7 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 
 
 def test_the_deploy_workflow_uses_the_native_docs_compiler():
-    """Deploy consumes docs.df through the shared DarkFactory compiler and renderer."""
+    """Deploy consumes the combined docs block through the shared compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
     assert "bun scripts/build-docs.ts" in content
     assert "upload-pages-artifact" in content
@@ -545,7 +546,13 @@ def test_the_deploy_workflow_is_main_actions_release():
 
 def test_native_docs_owners_are_present():
     """The current compiler, renderer and native configuration all exist."""
-    assert os.path.isfile(os.path.join(REPO_ROOT, "docs.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "repo.dfconfig"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, "repo.df"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, "config.dfconfig"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, ".dfconfig"))
+    fallback = os.path.join(REPO_ROOT, ".darkfactory")
+    for filename in ("repo.df", "config.df", "repo.dfconfig", "config.dfconfig", ".dfconfig"):
+        assert not os.path.exists(os.path.join(fallback, filename))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
@@ -660,7 +667,7 @@ def test_preview_validates_without_publishing():
 
 
 def test_preview_uses_the_same_native_docs_compiler():
-    """Preview and deploy render the same docs.df content graph."""
+    """Preview and deploy render the same combined docs block content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
     assert "bun scripts/build-docs.ts" in content
     assert "--check" in content
@@ -711,20 +718,19 @@ def test_no_script_defaults_to_another_repository():
 
 def test_repository_documents_name_the_native_docs_contract():
     """Normative repository text points at the current documentation owners."""
-    agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
-    prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
-    assert "docs.df" in agents
-    assert "docs.df" in prd
+    agents = _read(os.path.join(REPO_ROOT, ".agents", "AGENTS.md"))
+    prd = _read(os.path.join(REPO_ROOT, ".agents", "PRD.md"))
+    assert "`docs` block" in agents
+    assert "`docs` block" in prd
     assert "@darkfactory/docs" in prd
     assert "@darkfactory/web" in prd
 
 
 #: Workflows that write to GitHub on the pipeline's behalf and must therefore authenticate as the
-#: App. `ci`, `auto-format`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
+#: App. `ci`, `verify-pr-issue`, `deploy-docs`, `preview-docs` and `release` write
 #: only within their own repository with `GITHUB_TOKEN`, which has its own quota and needs no App.
 APP_AUTHENTICATED_WORKFLOWS = [
     "agent.yml",
-    "auto-format.yml",
     "install.yml",
     "open-pr.yml",
     "pr-approval-automerge.yml",
@@ -1078,20 +1084,6 @@ def test_a_reinstall_updates_the_pull_request_it_finds():
     assert "already exists" not in step, "reporting it and moving on is what left them unmergeable"
 
 
-def test_a_formatting_commit_can_still_be_checked():
-    """GitHub runs no workflow for a push made with `GITHUB_TOKEN`.
-
-    So a formatting commit pushed that way advances a pull request's head to a commit **nothing
-    ever checks**, and a protected branch then waits forever for contexts that will never report.
-    Every consumer's installation pull request sat in that state: green checks on the commit before,
-    none at all on the head, and nothing in the pull request explaining it.
-    """
-    content = _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
-    assert "create-github-app-token" in content, "the formatter must be able to push as the App"
-    checkout = content.split("Checkout repository", 1)[1].split("\n      - name:", 1)[0]
-    assert "app-token.outputs.token" in checkout, "and must check out with that token"
-
-
 def test_no_gh_call_in_repo_settings_bypasses_the_token_chooser():
     """Reaching for subprocess directly is how a call comes to use the wrong token.
 
@@ -1129,52 +1121,6 @@ def test_the_install_issue_number_is_validated_before_it_is_used():
     assert "exit 1" in step, "an unusable number must stop the run, not reach the pull request"
 
 
-class TestTheFormatterDoesNotBlockItsOwnChecks:
-    """Its commit becomes the head of a pull request, so what it does to that head matters."""
-
-    def _step(self) -> str:
-        """Returns the commands of the formatter's commit step, without its comments.
-
-        The comments explain what must not be there, and quote it to do so, so a test reading them
-        would fail on the explanation rather than on the behaviour.
-
-        Returns:
-            The step's command lines.
-        """
-        step = (
-            _read(os.path.join(WORKFLOW_DIR, "auto-format.yml"))
-            .split("Commit and push formatting changes", 1)[1]
-            .split("\n      - name:", 1)[0]
-        )
-        return "\n".join(line for line in step.splitlines() if not line.strip().startswith("#"))
-
-    def test_the_commit_does_not_skip_ci(self):
-        """A head that skipped CI can never satisfy a required check.
-
-        The previous head's green runs do not carry over, so the pull request sits BLOCKED with
-        every check reported against a commit that is no longer current — and nothing in the UI
-        explains it. Both protected consumers were stuck exactly there.
-        """
-        assert "[skip ci]" not in self._step()
-
-    def test_submodules_are_not_staged(self):
-        """`git add -A` staged a gitlink the formatter had not touched.
-
-        The checked-out submodule differed from the recorded pointer, so every run committed that
-        difference, and the next run found it again. A formatter that never converges keeps moving
-        the head of every pull request it touches.
-        """
-        step = self._step()
-        assert "git add -A" not in step
-        assert "exclude,attr:submodule" in step
-
-    def test_the_default_branch_is_not_hardcoded(self):
-        """A consumer's default branch is not this repository's."""
-        step = self._step()
-        assert '"darkfactory"' not in step
-        assert "default_branch" in step
-
-
 def test_bot_comments_do_not_start_an_agent_container():
     """Every agent comment used to start a full run that only reached "Skipping comment ... bot".
 
@@ -1190,7 +1136,7 @@ def test_bot_comments_do_not_start_an_agent_container():
 
 
 def test_ci_docs_job_runs_the_native_bun_compiler():
-    """docs.df is compiled by the Bun workspace in the direct docs-check job."""
+    """The combined docs block is compiled by the Bun workspace in the direct docs-check job."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     block = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))

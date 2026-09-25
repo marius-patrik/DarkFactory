@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import type { CredentialFallback } from "@darkfactory/keychain";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import type { ProviderConfigFile } from "./providers/schema.ts";
 import { assertTierConfiguration } from "./router/tiers.ts";
 import type {
@@ -15,7 +16,6 @@ import type {
 	TaskNeed,
 	TaskSize,
 } from "./router/types.ts";
-import { resolveDfFile } from "./utils/resolver";
 
 // Free-tier Gemini models that returned 200 on the AI Studio key (probed 2026-09-13; ~20 requests/day each), then keyless/free providers.
 
@@ -70,7 +70,7 @@ export type ConfigReader = (path: string) => Promise<string>;
 function optionalString(record: Record<string, unknown>, name: string): string | undefined {
 	const value = record[name];
 	if (value === undefined) return undefined;
-	if (typeof value !== "string" || !value.trim()) throw new Error(`config.df ${name} must be a non-empty string`);
+	if (typeof value !== "string" || !value.trim()) throw new Error(`providers block ${name} must be a non-empty string`);
 	return value.trim();
 }
 
@@ -86,28 +86,28 @@ function stringArray(value: unknown, label: string, allowed?: readonly string[])
 		!Array.isArray(value) ||
 		value.some((entry) => typeof entry !== "string" || !entry || (allowed && !allowed.includes(entry)))
 	)
-		throw new Error(`config.df ${label} must be an array of valid strings`);
+		throw new Error(`providers block ${label} must be an array of valid strings`);
 	return [...new Set(value as string[])];
 }
 function candidateArray(value: unknown, label: string): string[] | undefined {
 	const values = stringArray(value, label);
 	if (values?.some((entry) => !/^[^/@,\s]+\/[^@,\s]+@[^@,\s]+$/u.test(entry)))
-		throw new Error(`config.df ${label} entries must be provider/model@account`);
+		throw new Error(`providers block ${label} entries must be provider/model@account`);
 	return values;
 }
 function parseRouter(value: unknown): RouterConfig | undefined {
 	if (value === undefined) return undefined;
 	if (!value || typeof value !== "object" || Array.isArray(value))
-		throw new Error("config.df router must be an object");
+		throw new Error("providers block router must be an object");
 	const record = value as Record<string, unknown>;
-	if (!Array.isArray(record.policies)) throw new Error("config.df router.policies must be an array");
+	if (!Array.isArray(record.policies)) throw new Error("providers block router.policies must be an array");
 	const policies: RouterPolicy[] = record.policies.map((raw, index) => {
 		if (!raw || typeof raw !== "object" || Array.isArray(raw))
-			throw new Error(`config.df router.policies[${index}] must be an object`);
+			throw new Error(`providers block router.policies[${index}] must be an object`);
 		const item = raw as Record<string, unknown>;
 		const id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : undefined;
 		if (!id || !item.match || typeof item.match !== "object" || !item.prefer || typeof item.prefer !== "object")
-			throw new Error(`config.df router.policies[${index}] needs id, match, and prefer`);
+			throw new Error(`providers block router.policies[${index}] needs id, match, and prefer`);
 		const match = item.match as Record<string, unknown>;
 		const prefer = item.prefer as Record<string, unknown>;
 		const kind = stringArray(match.kind, `router policy ${id} match.kind`, KINDS) as TaskKind[] | undefined;
@@ -125,7 +125,7 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 				: ((typeof prefer.quality === "string" && prefer.quality.trim() ? prefer.quality.trim() : undefined) as
 						| TaskKind
 						| undefined);
-		if (quality && !KINDS.includes(quality)) throw new Error(`config.df router policy ${id} quality is invalid`);
+		if (quality && !KINDS.includes(quality)) throw new Error(`providers block router policy ${id} quality is invalid`);
 		return {
 			id,
 			match: {
@@ -140,30 +140,30 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	let models: RouterConfig["models"];
 	if (record.models !== undefined) {
 		if (!record.models || typeof record.models !== "object" || Array.isArray(record.models))
-			throw new Error("config.df router.models must be an object");
+			throw new Error("providers block router.models must be an object");
 		models = {};
 		for (const [id, raw] of Object.entries(record.models as Record<string, unknown>)) {
 			if (!raw || typeof raw !== "object" || Array.isArray(raw))
-				throw new Error(`config.df router.models.${id} must be an object`);
+				throw new Error(`providers block router.models.${id} must be an object`);
 			const model = raw as Record<string, unknown>;
 			if (model.contextWindow !== undefined && (typeof model.contextWindow !== "number" || model.contextWindow <= 0))
-				throw new Error(`config.df router.models.${id}.contextWindow must be positive`);
+				throw new Error(`providers block router.models.${id}.contextWindow must be positive`);
 			for (const field of ["tools", "reasoning"] as const)
 				if (model[field] !== undefined && typeof model[field] !== "boolean")
-					throw new Error(`config.df router.models.${id}.${field} must be boolean`);
+					throw new Error(`providers block router.models.${id}.${field} must be boolean`);
 			if (model.limitTier !== undefined && !TIERS.includes(model.limitTier as LimitTier))
-				throw new Error(`config.df router.models.${id}.limitTier is invalid`);
+				throw new Error(`providers block router.models.${id}.limitTier is invalid`);
 			const modalities = stringArray(model.modalities, `router.models.${id}.modalities`, MODALITIES) as
 				| ModelModality[]
 				| undefined;
 			let quality: ModelCapabilityOverride["quality"];
 			if (model.quality !== undefined) {
 				if (!model.quality || typeof model.quality !== "object" || Array.isArray(model.quality))
-					throw new Error(`config.df router.models.${id}.quality must be an object`);
+					throw new Error(`providers block router.models.${id}.quality must be an object`);
 				quality = {};
 				for (const [kind, score] of Object.entries(model.quality as Record<string, unknown>)) {
 					if (!KINDS.includes(kind as TaskKind) || typeof score !== "number" || !Number.isFinite(score))
-						throw new Error(`config.df router.models.${id}.quality is invalid`);
+						throw new Error(`providers block router.models.${id}.quality is invalid`);
 					quality[kind as TaskKind] = score;
 				}
 			}
@@ -182,31 +182,33 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	}
 	const classifier = optionalString(record, "classifier");
 	if (classifier && !/^[^/@,\s]+\/[^@,\s]+@[^@,\s]+$/u.test(classifier))
-		throw new Error("config.df router.classifier must be provider/model@account");
+		throw new Error("providers block router.classifier must be provider/model@account");
 	const candidates = candidateArray(record.candidates, "router.candidates");
 	let learning: RouterConfig["learning"];
 	if (record.learning !== undefined) {
 		if (!record.learning || typeof record.learning !== "object" || Array.isArray(record.learning))
-			throw new Error("config.df router.learning must be an object");
+			throw new Error("providers block router.learning must be an object");
 		const value = record.learning as Record<string, unknown>;
 		if (value.enabled !== undefined && typeof value.enabled !== "boolean")
-			throw new Error("config.df router.learning.enabled must be boolean");
+			throw new Error("providers block router.learning.enabled must be boolean");
 		for (const field of ["windowMs", "maxPenalty", "maxRecords"] as const)
 			if (value[field] !== undefined && (typeof value[field] !== "number" || value[field] <= 0))
-				throw new Error(`config.df router.learning.${field} must be positive`);
+				throw new Error(`providers block router.learning.${field} must be positive`);
 		learning = value as RouterConfig["learning"];
 	}
 	let capabilityTiers: CapabilityTier[] | undefined;
 	if (record.capabilityTiers !== undefined) {
-		if (!Array.isArray(record.capabilityTiers)) throw new Error("config.df router.capabilityTiers must be an array");
+		if (!Array.isArray(record.capabilityTiers))
+			throw new Error("providers block router.capabilityTiers must be an array");
 		capabilityTiers = record.capabilityTiers.map((raw, index) => {
 			if (!raw || typeof raw !== "object" || Array.isArray(raw))
-				throw new Error(`config.df router.capabilityTiers[${index}] must be an object`);
+				throw new Error(`providers block router.capabilityTiers[${index}] must be an object`);
 			const tier = raw as Record<string, unknown>;
 			const id = typeof tier.id === "string" && tier.id.trim() ? tier.id.trim() : undefined;
-			if (!id) throw new Error(`config.df router.capabilityTiers[${index}].id must be a non-empty string`);
+			if (!id) throw new Error(`providers block router.capabilityTiers[${index}].id must be a non-empty string`);
 			const match = stringArray(tier.match, `router.capabilityTiers[${index}].match`);
-			if (!match) throw new Error(`config.df router.capabilityTiers[${index}].match must be an array of valid strings`);
+			if (!match)
+				throw new Error(`providers block router.capabilityTiers[${index}].match must be an array of valid strings`);
 			return { id, match };
 		});
 	}
@@ -215,12 +217,12 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	let difficultyTiers: DifficultyTierMapping | undefined;
 	if (record.difficultyTiers !== undefined) {
 		if (!record.difficultyTiers || typeof record.difficultyTiers !== "object" || Array.isArray(record.difficultyTiers))
-			throw new Error("config.df router.difficultyTiers must be an object");
+			throw new Error("providers block router.difficultyTiers must be an object");
 		const raw = record.difficultyTiers as Record<string, unknown>;
 		const difficultyTier = (name: "easy" | "medium" | "hard"): string => {
 			const value = raw[name];
 			if (typeof value !== "string" || !value.trim())
-				throw new Error(`config.df router.difficultyTiers.${name} must be a non-empty string`);
+				throw new Error(`providers block router.difficultyTiers.${name} must be a non-empty string`);
 			return value.trim();
 		};
 		difficultyTiers = {
@@ -233,7 +235,7 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 	let dataCollection: RouterConfig["dataCollection"];
 	if (record.dataCollection !== undefined) {
 		if (!record.dataCollection || typeof record.dataCollection !== "object" || Array.isArray(record.dataCollection))
-			throw new Error("config.df router.dataCollection must be an object");
+			throw new Error("providers block router.dataCollection must be an object");
 		const dc = record.dataCollection as Record<string, unknown>;
 		const normal = stringArray(dc.normal, "router.dataCollection.normal", COLLECTION_VALUES);
 		const sensitive = stringArray(dc.sensitive, "router.dataCollection.sensitive", COLLECTION_VALUES);
@@ -257,9 +259,9 @@ function parseRouter(value: unknown): RouterConfig | undefined {
 }
 
 /**
- * Loads the DarkFactory configuration from config.df in the given root directory.
- * Falls back to the default chain if config.df is missing.
- * @param root - The directory containing config.df (or .darkfactory/config.df)
+ * Loads provider/runtime settings from the combined DarkFactory configuration.
+ * Falls back to built-in defaults when the providers block is missing.
+ * @param root - The repository root containing the combined configuration.
  * @param reader - Optional custom file reader (defaults to reading files with UTF-8 encoding)
  * @returns A promise resolving to the loaded DfConfig
  */
@@ -267,13 +269,8 @@ export async function loadDfConfig(
 	root: string,
 	reader: ConfigReader = (path) => readFile(path, "utf8"),
 ): Promise<DfConfig> {
-	let path: string;
-	try {
-		path = resolveDfFile(root, "config");
-	} catch (error) {
-		if ((error as Error).message.includes("Both") && (error as Error).message.includes("exist")) throw error;
-		return {};
-	}
+	const path = resolveConfigDocumentPath(root);
+	if (!path) return {};
 	let raw: string;
 	try {
 		raw = await reader(path);
@@ -281,14 +278,8 @@ export async function loadDfConfig(
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
 		throw error;
 	}
-	let value: unknown;
-	try {
-		value = JSON.parse(raw) as unknown;
-	} catch {
-		throw new Error("Invalid config.df JSON");
-	}
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Invalid ${path}`);
-	const record = value as Record<string, unknown>;
+	const document = parseConfigDocument(raw, path);
+	const record = configBlock(document, "providers", path) ?? {};
 	const hardReasoningChain = optionalString(record, "hardReasoningChain");
 	const sensitiveChain = optionalString(record, "sensitiveChain");
 	const router = parseRouter(record.router);
@@ -297,19 +288,19 @@ export async function loadDfConfig(
 		cooldownTtlMs !== undefined &&
 		(typeof cooldownTtlMs !== "number" || !Number.isSafeInteger(cooldownTtlMs) || cooldownTtlMs <= 0)
 	) {
-		throw new Error("config.df cooldownTtlMs must be a positive integer");
+		throw new Error("providers block cooldownTtlMs must be a positive integer");
 	}
 	const maxWaitMs = record.maxWaitMs;
 	if (
 		maxWaitMs !== undefined &&
 		(typeof maxWaitMs !== "number" || !Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0)
 	) {
-		throw new Error("config.df maxWaitMs must be a positive integer");
+		throw new Error("providers block maxWaitMs must be a positive integer");
 	}
 	let credentialFiles: Record<string, string> | undefined;
 	if (record.credentialFiles !== undefined) {
 		if (!record.credentialFiles || typeof record.credentialFiles !== "object" || Array.isArray(record.credentialFiles))
-			throw new Error("config.df credentialFiles must be an object");
+			throw new Error("providers block credentialFiles must be an object");
 		credentialFiles = {};
 		for (const [account, path] of Object.entries(record.credentialFiles as Record<string, unknown>))
 			credentialFiles[account] = optionalString({ path }, "path")!;

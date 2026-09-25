@@ -70,6 +70,33 @@ def test_status_is_clean_when_everything_is_configured(monkeypatch, capsys):
         return {"variables": [{"name": "AGENT_ENABLED", "value": "true"}]}
 
     monkeypatch.setattr(darkfactory, "_gh_json", fake_json)
-    monkeypatch.setattr(darkfactory, "_has_path", lambda repo, path: True)
+    monkeypatch.setattr(darkfactory, "_has_path", lambda repo, path: path == "repo.dfconfig")
     assert darkfactory.main(["status", "--repo", "o/r"]) == 0
     assert "NO" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    ["repo.dfconfig", "config.dfconfig", ".dfconfig", "configuration/.dfconfig"],
+)
+def test_config_status_accepts_supported_root_and_folder_names(monkeypatch, candidate):
+    monkeypatch.setenv("DF_CONFIG_DIR", "configuration")
+    monkeypatch.setattr(darkfactory, "_has_path", lambda repo, path: path == candidate)
+    assert darkfactory._has_config_document("o/r")
+
+
+@pytest.mark.parametrize("candidate", ["repo.df", "config.df"])
+def test_config_status_ignores_legacy_paths(monkeypatch, candidate):
+    monkeypatch.setattr(darkfactory, "_has_path", lambda repo, path: path == candidate)
+    assert not darkfactory._has_config_document("o/r")
+
+
+def test_config_status_rejects_duplicate_candidates(monkeypatch):
+    monkeypatch.setattr(
+        darkfactory,
+        "_has_path",
+        lambda repo, path: path in {"repo.dfconfig", "configuration/.dfconfig"},
+    )
+    monkeypatch.setenv("DF_CONFIG_DIR", "configuration")
+    with pytest.raises(ValueError, match="Ambiguous DarkFactory configuration"):
+        darkfactory._has_config_document("o/r")

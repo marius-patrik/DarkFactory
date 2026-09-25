@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Related rules**: `DF-RULE-014`, `DF-RULE-016`
+
 ## Decision
 
 DarkFactory models credentials as:

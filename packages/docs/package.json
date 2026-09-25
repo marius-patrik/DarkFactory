@@ -7,7 +7,6 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
     "./content": "./src/content.ts",
-    "./readme": "./src/readme.ts",
     "./api": "./src/api.ts",
     "./current": "./src/current.ts",
     "./impact": "./src/impact.ts"
@@ -21,5 +20,8 @@
     "@darkfactory/core": "workspace:*",
     "@darkfactory/protocol": "workspace:*",
     "typedoc": "0.28.20"
+  },
+  "scripts": {
+    "test": "bun test test"
   }
 }
