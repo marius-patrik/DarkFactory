@@ -42,15 +42,23 @@ RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v
 # in-flight failover across its own chain itself — external coding-agent CLIs are not installed.
 # The harness source ships with the pipeline checkout (`harness/`, landed separately), so it is
 # copied in and its dependencies installed frozen. There is no compile step: df's assets resolve
-# relative to the source tree, which the wrapper below executes in place.
+# relative to the source tree, which the wrapper executes in place through Bun.
+#
+# `harness/scripts/df-wrapper.sh` is the single owner of the `df` PATH contract for both staged
+# layouts, so the image installs that wrapper rather than its own dispatcher and points DF_SOURCE at
+# the source entrypoint. A staged local install puts a compiled `df-bin` beside the same wrapper
+# instead, and needs no Bun at runtime.
 COPY package.json /opt/darkfactory/
 COPY harness/ /opt/darkfactory/harness/
 COPY packages/ /opt/darkfactory/packages/
 COPY capabilities/ /opt/darkfactory/capabilities/
 RUN bun install --frozen-lockfile --cwd /opt/darkfactory/harness
-RUN printf '#!/bin/sh\nexec bun /opt/darkfactory/harness/src/cli.ts "$@"\n' > /usr/local/bin/df \
+# ENV, not a profile script: the runner invokes `df` from a constructed environment, so a value
+# only a login shell reads would leave every agent call without a runtime to dispatch to.
+ENV DF_SOURCE=/opt/darkfactory/harness/src/cli.ts
+RUN cp /opt/darkfactory/harness/scripts/df-wrapper.sh /usr/local/bin/df \
     && chmod +x /usr/local/bin/df \
-    && df --help >/dev/null
+    && df providers >/dev/null
 
 # Record which harness is present so the build log answers "what can this image drive?"
 RUN set -eux; \
