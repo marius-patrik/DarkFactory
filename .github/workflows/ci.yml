@@ -185,11 +185,11 @@ jobs:
           [ -f "$GITHUB_WORKSPACE/config.dfconfig" ] && ROOT_CONFIG=true
           [ -f "$GITHUB_WORKSPACE/.dfconfig" ] && ROOT_EMPTY=true
           CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
-          if [ "$CONFIG_DIR" != "." ] && [ "$CONFIG_DIR" != "$GITHUB_WORKSPACE" ]; then
-            case "$CONFIG_DIR" in
-              /*) FOLDER="$CONFIG_DIR" ;;
-              *) FOLDER="$GITHUB_WORKSPACE/$CONFIG_DIR" ;;
-            esac
+          case "$CONFIG_DIR" in
+            /*) FOLDER="$(realpath -m "$CONFIG_DIR")" ;;
+            *) FOLDER="$(realpath -m "$GITHUB_WORKSPACE/$CONFIG_DIR")" ;;
+          esac
+          if [ "$FOLDER" != "$GITHUB_WORKSPACE" ]; then
             [ -f "$FOLDER/repo.dfconfig" ] && FOLDER_REPO=true
             [ -f "$FOLDER/config.dfconfig" ] && FOLDER_CONFIG=true
             [ -f "$FOLDER/.dfconfig" ] && FOLDER_EMPTY=true
