@@ -83,10 +83,17 @@ describe("repository evidence and capability actions", () => {
 		expect(python.actions.test.command).toBe("pytest");
 		expect(python.actions.test.metadata).toEqual({ versions: ["3.12"] });
 		expect(python.actions.docs_extract.supported).toBe(false);
-		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "docs_extract")).toBe(true);
+		expect(resolution.gaps.some((gap) => gap.packageId === "python:python" && gap.kind === "docs_extract")).toBe(false);
 
 		const paper = resolution.packages.find((entry) => entry.package.id === "typst:paper")!;
 		expect(paper.actions.test.command).toContain("typst compile");
+		expect(
+			resolution.gaps.some(
+				(gap) =>
+					gap.packageId === "typst:paper" &&
+					(gap.kind === "lint" || gap.kind === "format_check" || gap.kind === "docs_extract"),
+			),
+		).toBe(false);
 		const math = resolution.packages.find((entry) => entry.package.id === "lean:proofs")!;
 		expect(math.actions.test.command).toBe("lake build");
 
@@ -105,5 +112,6 @@ describe("repository evidence and capability actions", () => {
 		expect(action.supported).toBe(false);
 		expect(action.source).toBe("unsupported");
 		expect(action.command).toBeUndefined();
+		expect(resolution.gaps.some((gap) => gap.packageId === "node:." && gap.kind === "test")).toBe(true);
 	});
 });

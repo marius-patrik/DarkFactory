@@ -353,6 +353,18 @@ export async function captureCodeResult(options: CaptureCodeResultOptions): Prom
 		timeoutMs: options.timeoutMs,
 	});
 
+	const unavailableActions = verification.filter((v) => !v.result);
+	if (unavailableActions.length > 0) {
+		const actions = unavailableActions.map((v) => v.action.kind).join(", ");
+		return {
+			outcome: "failure",
+			changedFiles: paths,
+			scopeCheck: scopeResult,
+			verification,
+			error: `Verification unavailable: ${actions}`,
+		};
+	}
+
 	const failedActions = verification.filter((v) => v.result && (v.result.exitCode !== 0 || v.result.timedOut));
 	if (failedActions.length > 0) {
 		const errors = failedActions

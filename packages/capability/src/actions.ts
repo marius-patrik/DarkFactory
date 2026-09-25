@@ -123,6 +123,29 @@ function contributionResult(
 	};
 }
 
+function isRequiredRepositoryAction(
+	evidence: RepositoryActionEvidence,
+	pkg: CapabilityPackageContext,
+	kind: CapabilityActionKind,
+): boolean {
+	const override = explicitOverride(evidence, pkg, kind);
+	if (override?.enabled === false) return false;
+	switch (kind) {
+		case "test":
+			return true;
+		case "lint":
+			return pkg.scripts.includes("lint") || override !== undefined;
+		case "format_check":
+			return pkg.scripts.includes("format:check") || override !== undefined;
+		case "docs_check":
+		case "docs_extract":
+			return pkg.apiEntryPoints.length > 0 || override !== undefined;
+		case "setup":
+		case "release":
+			return false;
+	}
+}
+
 function resolveOne(
 	evidence: RepositoryActionEvidence,
 	definitions: readonly CapabilityDefinition[],
@@ -220,10 +243,10 @@ export function resolveRepositoryActions(
 		) as Record<CapabilityActionKind, ResolvedRepositoryAction>;
 		return { package: pkg, actions };
 	});
-	const gaps = packages.flatMap(({ actions }) =>
-		ACTION_KINDS.filter((kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && !actions[kind].supported).map(
-			(kind) => actions[kind],
-		),
+	const gaps = packages.flatMap(({ package: pkg, actions }) =>
+		ACTION_KINDS.filter(
+			(kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && isRequiredRepositoryAction(evidence, pkg, kind) && !actions[kind].supported,
+		).map((kind) => actions[kind]),
 	);
 	return { packages, gaps };
 }

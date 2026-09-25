@@ -23,6 +23,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has-actions: ${{ steps.matrix.outputs.has-actions }}
+      has-gaps: ${{ steps.matrix.outputs.has-gaps }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -63,9 +64,12 @@ jobs:
             echo "has-actions=false" >> "$GITHUB_OUTPUT"
           fi
           if [ "$(jq '.gaps | length' "$RUNNER_TEMP/darkfactory-quality.json")" -gt 0 ]; then
-            echo "::warning::DarkFactory detected unsupported or missing deterministic actions:"
+            echo "has-gaps=true" >> "$GITHUB_OUTPUT"
+            echo "::error::DarkFactory detected unsupported or missing required deterministic actions:"
             jq -r '.gaps[] | "  \(.packageId) \(.kind): \(.reason // .description)"'               "$RUNNER_TEMP/darkfactory-quality.json"
+            exit 1
           fi
+          echo "has-gaps=false" >> "$GITHUB_OUTPUT"
 
   quality-run:
     name: ${{ matrix.id }}
@@ -252,10 +256,12 @@ jobs:
         env:
           DF_DETECT_RESULT: ${{ needs.detect.result }}
           DF_HAS_ACTIONS: ${{ needs.detect.outputs.has-actions }}
+          DF_HAS_GAPS: ${{ needs.detect.outputs.has-gaps }}
           DF_QUALITY_RESULT: ${{ needs.quality-run.result }}
           DF_DOCS_RESULT: ${{ needs.docs-check.result }}
         run: |
           test "$DF_DETECT_RESULT" = "success"
+          test "$DF_HAS_GAPS" = "false"
           test "$DF_DOCS_RESULT" = "success"
           if [ "$DF_HAS_ACTIONS" = "true" ]; then
             test "$DF_QUALITY_RESULT" = "success"

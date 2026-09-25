@@ -258,6 +258,20 @@ describe("result-capture: code-node truth from observed workspace evidence", () 
 		expect(typeof result.commitSha).toBe("string");
 	});
 
+	test("fails when a required verification action has no executable result", async () => {
+		writeFileSync(join(testRepo, "feature.ts"), "export const x = 1;\n");
+		const result = await captureCodeResult({
+			worktree: testRepo,
+			workspace: {
+				...workspaceOperations,
+				runDetectedVerification: async () => [{ action: { kind: "test" } }],
+			},
+		});
+
+		expect(result.outcome).toBe("failure");
+		expect(result.error).toContain("Verification unavailable: test");
+	});
+
 	test("rejects out-of-scope changes even if model claimed success", async () => {
 		writeFileSync(join(testRepo, "unexpected.txt"), "rogue change\n");
 		const result = await captureCodeResult({
