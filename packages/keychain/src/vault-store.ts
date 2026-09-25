@@ -176,8 +176,8 @@ export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; confl
 }
 
 /** Resolve the data repo path from the combined configuration's providers block. */
-export async function resolveDataRepoPath(dfHome: string): Promise<string> {
-	const path = resolveConfigDocumentPath(dfHome);
+export async function resolveDataRepoPath(dfHome: string, repositoryRoot = process.cwd()): Promise<string> {
+	const path = resolveConfigDocumentPath(repositoryRoot);
 	if (!path) return join(dfHome, "data-df");
 	const document = parseConfigDocument(await readFile(path, "utf8"), path);
 	const providers = configBlock(document, "providers", path);

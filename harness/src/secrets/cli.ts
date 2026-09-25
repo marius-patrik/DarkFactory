@@ -72,7 +72,7 @@ export async function secretsCommand(args: string[], deps: SecretsCommandDeps): 
 	}
 	const subcommand = args[0];
 	const keychainOpts: KeychainOptions = { dfHome: deps.dfHome, allowFileKey: deps.allowFileKey };
-	const dataRepoPath = await resolveDataRepoPath(deps.dfHome);
+	const dataRepoPath = await resolveDataRepoPath(deps.dfHome, process.cwd());
 	const storeOpts: VaultStoreOptions = { dfHome: deps.dfHome, dataRepoPath };
 
 	switch (subcommand) {
