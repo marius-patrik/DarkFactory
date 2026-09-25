@@ -155,6 +155,18 @@ export class GitHubRepository {
 		if (options.state) q.set("state", options.state);
 		return parseArray(pullRequestSchema, await this.#client.collectRest(this.#path(`/pulls?${q}`)), "pull request");
 	}
+	/**
+	 * Lists issues, optionally filtered by open/closed state and labels.
+	 *
+	 * @param options State and label filters; both are omitted when unset.
+	 * @returns Matching issues, following pagination.
+	 */
+	async listIssues(options: { state?: "open" | "closed" | "all"; labels?: string[] } = {}): Promise<GitHubIssue[]> {
+		const q = new URLSearchParams({ per_page: "100" });
+		if (options.state) q.set("state", options.state);
+		for (const label of options.labels ?? []) q.append("labels", label);
+		return parseArray(issueSchema, await this.#client.collectRest(this.#path(`/issues?${q}`)), "issue");
+	}
 	async listReviews(number: number): Promise<GitHubReview[]> {
 		return parseArray(
 			reviewSchema,

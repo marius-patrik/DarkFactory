@@ -27,6 +27,7 @@ import { loginProviderAccount } from "@darkfactory/keychain/login";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
+import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
@@ -80,6 +81,7 @@ function usage(): string {
 		"  df limits [--json] | df limits clear <provider|provider:account|provider/model@account|*>",
 		"  df quota [--json] [--provider p]   # every provider/account/model: state, limits, usage and the source of each number",
 		"  df resume [--repo owner/name]        # resume runs blocked on quota whose models have reset",
+		"  df report-failure                  # file or close the failure issue for this run",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -1295,6 +1297,50 @@ async function resumeCommand(args: string[]): Promise<void> {
 	console.log(`Resumed ${result.resumed.length} quota-blocked item(s): ${resumed}`);
 }
 
+/**
+ * Turns a failed pipeline run into an issue, or closes the one a success resolves.
+ *
+ * Reads the run's outcome from the environment, as the workflow that owns a red build provides it.
+ *
+ * @param args Command arguments; `--repo` overrides the repository from the environment.
+ * @returns Process exit code; non-zero when the report itself could not be filed.
+ */
+async function reportFailureCommand(args: string[]): Promise<void> {
+	const slug = option(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO ?? "";
+	const workflow = process.env.WORKFLOW_NAME ?? "";
+	if (!slug.includes("/") || !workflow) {
+		throw new Error("df report-failure needs GITHUB_REPOSITORY and WORKFLOW_NAME");
+	}
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df report-failure needs GH_TOKEN or GITHUB_TOKEN");
+	const [owner, name] = slug.split("/");
+	const repo = new GitHubRepository(new GitHubClient({ token }), owner!, name!);
+	const log = (message: string) => console.log(message);
+
+	try {
+		if (process.env.CONCLUSION === "failure") {
+			const outcome = await reportFailure({
+				repo,
+				workflow,
+				runUrl: process.env.RUN_URL ?? "",
+				runId: process.env.RUN_ID ?? "",
+				log,
+			});
+			if (outcome.number === null) {
+				// Reporting a failure is itself a pipeline step. A step that swallows its own errors
+				// is the thing this exists to surface, so a report that could not be filed fails the
+				// run rather than logging and moving on.
+				throw new Error(`could not file a failure issue for ${workflow}`);
+			}
+			return;
+		}
+		await resolveFailure(repo, workflow, log);
+	} catch (error) {
+		console.error(`Error: ${(error as Error).message}`);
+		process.exitCode = 1;
+	}
+}
+
 async function quotaCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1513,6 +1559,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return limitsCommand(ledger, args.slice(1));
 		case "resume":
 			return resumeCommand(args.slice(1));
+		case "report-failure":
+			return reportFailureCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":
