@@ -47,9 +47,7 @@ describe("evaluateChecksGate", () => {
 	});
 
 	test("required check absent -> pending with missing", async () => {
-		const states = new Map<string, "success" | "pending" | "failure">([
-			["quality", "success"],
-		]);
+		const states = new Map<string, "success" | "pending" | "failure">([["quality", "success"]]);
 		const result = await evaluateChecksGate(graphWithChecks(requiredChecks), fakeSource(states), "main");
 		expect(result).toEqual({ conclusion: "pending", failing: [], missing: ["verify-bound-issue"], pending: [] });
 	});
