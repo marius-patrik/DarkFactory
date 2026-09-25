@@ -386,7 +386,7 @@ function explicitPackages(repoDf: RepositoryDfEvidence): RepositoryPackageEviden
 	});
 }
 
-/** Detects repository/package/domain evidence using final .df resolution plus filesystem manifests. */
+/** Detects repository/package/domain evidence using combined configuration resolution plus filesystem manifests. */
 export async function detectRepositoryEvidence(rootDir = process.cwd()): Promise<RepositoryEvidence> {
 	const root = resolve(rootDir);
 	const repoDfPath = resolveConfigDocumentPath(root);

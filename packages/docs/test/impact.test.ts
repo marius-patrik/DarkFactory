@@ -36,11 +36,11 @@ describe("documentation impact policy", () => {
 
 	test("classifies product and governance contracts deterministically", () => {
 		const result = classifyDocumentationImpact(
-			["repo.df", ".github/workflows/ci.yml", ".agents/notes/rules/001-current.md"],
+			["repo.dfconfig", ".github/workflows/ci.yml", ".agents/notes/rules/001-current.md"],
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md", "repo.df"]);
+		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md", "repo.dfconfig"]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {
@@ -81,17 +81,19 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.df", ".agents/PRD.md"], evidence);
+		const result = evaluateDocumentationImpact(["repo.dfconfig", ".agents/PRD.md"], evidence);
 		expect(result.findings).toEqual([]);
 	});
 
-	test("classifies the configured configuration folder as product contract", () => {
+	test("classifies every supported configuration filename as product contract", () => {
 		const previous = process.env.DF_CONFIG_DIR;
 		process.env.DF_CONFIG_DIR = "configuration";
 		try {
-			const result = classifyDocumentationImpact(["configuration/repo.df"], evidence);
-			expect(result.documentationFiles).toEqual(["configuration/repo.df"]);
-			expect(result.impactKinds).toEqual(["product"]);
+			for (const filename of ["repo.dfconfig", "config.dfconfig", ".dfconfig"]) {
+				const result = classifyDocumentationImpact([`configuration/${filename}`], evidence);
+				expect(result.documentationFiles).toEqual([`configuration/${filename}`]);
+				expect(result.impactKinds).toEqual(["product"]);
+			}
 		} finally {
 			if (previous === undefined) delete process.env.DF_CONFIG_DIR;
 			else process.env.DF_CONFIG_DIR = previous;

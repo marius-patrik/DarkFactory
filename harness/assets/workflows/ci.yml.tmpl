@@ -175,25 +175,29 @@ jobs:
         run: |
           ROOT_REPO=false
           ROOT_CONFIG=false
+          ROOT_EMPTY=false
           FOLDER_REPO=false
           FOLDER_CONFIG=false
-          [ -f "$GITHUB_WORKSPACE/repo.df" ] && ROOT_REPO=true
-          [ -f "$GITHUB_WORKSPACE/config.df" ] && ROOT_CONFIG=true
+          FOLDER_EMPTY=false
+          [ -f "$GITHUB_WORKSPACE/repo.dfconfig" ] && ROOT_REPO=true
+          [ -f "$GITHUB_WORKSPACE/config.dfconfig" ] && ROOT_CONFIG=true
+          [ -f "$GITHUB_WORKSPACE/.dfconfig" ] && ROOT_EMPTY=true
           CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
           if [ "$CONFIG_DIR" != "." ] && [ "$CONFIG_DIR" != "$GITHUB_WORKSPACE" ]; then
             case "$CONFIG_DIR" in
               /*) FOLDER="$CONFIG_DIR" ;;
               *) FOLDER="$GITHUB_WORKSPACE/$CONFIG_DIR" ;;
             esac
-            [ -f "$FOLDER/repo.df" ] && FOLDER_REPO=true
-            [ -f "$FOLDER/config.df" ] && FOLDER_CONFIG=true
+            [ -f "$FOLDER/repo.dfconfig" ] && FOLDER_REPO=true
+            [ -f "$FOLDER/config.dfconfig" ] && FOLDER_CONFIG=true
+            [ -f "$FOLDER/.dfconfig" ] && FOLDER_EMPTY=true
           fi
           COUNT=0
-          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$FOLDER_REPO" "$FOLDER_CONFIG"; do
+          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$ROOT_EMPTY" "$FOLDER_REPO" "$FOLDER_CONFIG" "$FOLDER_EMPTY"; do
             [ "$PRESENT" = true ] && COUNT=$((COUNT + 1))
           done
           if [ "$COUNT" -gt 1 ]; then
-            echo "Ambiguous DarkFactory configuration: keep only one repo.df or config.df candidate." >&2
+            echo "Ambiguous DarkFactory configuration: keep only one repo.dfconfig, config.dfconfig, or .dfconfig candidate." >&2
             exit 1
           fi
           if [ "$COUNT" -eq 1 ]; then

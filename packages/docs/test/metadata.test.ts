@@ -11,7 +11,7 @@ describe("detected documentation metadata", () => {
 	test("projects repository and capability evidence without a second detector", () => {
 		const evidence: RepositoryEvidence = {
 			root: "/repo",
-			repoDfPath: "/repo/repo.df",
+			repoDfPath: "/repo/repo.dfconfig",
 			repoDf: { identity: { default_branch: "darkfactory" } },
 			packages: [
 				{
@@ -48,7 +48,7 @@ describe("detected documentation metadata", () => {
 
 		expect(documentationMetadata(evidence, definitions)).toEqual({
 			repository: {
-				repoDfPath: "repo.df",
+				repoDfPath: "repo.dfconfig",
 				defaultBranch: "darkfactory",
 				ecosystems: ["node"],
 				domains: ["code"],

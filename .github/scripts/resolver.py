@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, Literal, Mapping, Optional
 
 ConfigBlock = Literal["repo", "docs", "providers"]
-CONFIG_FILENAMES = ("repo.df", "config.df")
+CONFIG_FILENAMES = ("repo.dfconfig", "config.dfconfig", ".dfconfig")
 DEFAULT_CONFIG_DIR = ".darkfactory"
 
 
@@ -40,7 +40,7 @@ def resolve_config_document_path(
         env: Environment mapping; defaults to the process environment.
 
     Returns:
-        The selected path, or the default ``<DF_CONFIG_DIR>/repo.df`` path when none exists.
+        The selected path, or the default ``<DF_CONFIG_DIR>/repo.dfconfig`` path when none exists.
     """
     repository_root = os.path.abspath(root)
     config_directory = _config_directory(repository_root, os.environ if env is None else env)
@@ -51,14 +51,14 @@ def resolve_config_document_path(
         raise ValueError(
             "Ambiguous DarkFactory configuration: candidates exist in both the repository root "
             f"({', '.join(root_candidates)}) and {config_directory} ({', '.join(folder_candidates)}); "
-            "remove all but one config.df or repo.df location."
+            "remove all but one config.dfconfig, repo.dfconfig, or .dfconfig location."
         )
     candidates = root_candidates or folder_candidates
     if len(candidates) > 1:
         scope = repository_root if root_candidates else config_directory
         raise ValueError(
             f"Ambiguous DarkFactory configuration aliases in {scope}: {', '.join(candidates)}; "
-            "keep only repo.df or config.df."
+            "keep only repo.dfconfig, config.dfconfig, or .dfconfig."
         )
     return candidates[0] if candidates else os.path.join(config_directory, CONFIG_FILENAMES[0])
 

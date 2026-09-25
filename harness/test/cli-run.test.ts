@@ -22,7 +22,7 @@ async function run(
 	const home = join(workspace, "home");
 	await mkdir(home);
 	if (options.config) {
-		await writeFile(join(workspace, "repo.df"), JSON.stringify({ repo: {}, providers: options.config }), "utf8");
+		await writeFile(join(workspace, "repo.dfconfig"), JSON.stringify({ repo: {}, providers: options.config }), "utf8");
 	}
 	await options.setup?.(home);
 	const args = options.args ?? ["--chain", "faux/echo@test"];
@@ -55,7 +55,7 @@ describe("df run", () => {
 		const home = join(workspace, "home");
 		await mkdir(home);
 		await writeFile(
-			join(workspace, "repo.df"),
+			join(workspace, "repo.dfconfig"),
 			JSON.stringify({
 				repo: {},
 				providers: {

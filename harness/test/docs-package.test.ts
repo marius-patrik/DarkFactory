@@ -34,7 +34,7 @@ async function fixture(withApi = false): Promise<string> {
 			}),
 		);
 	}
-	await writeFile(join(root, "repo.df"), JSON.stringify({ repo: {}, docs: config }));
+	await writeFile(join(root, "repo.dfconfig"), JSON.stringify({ repo: {}, docs: config }));
 	await writeFile(join(root, ".agents", "PRD.md"), "# Home\n\nSee [the PRD](./PRD.md).\n");
 	await writeFile(join(root, ".agents", "AGENTS.md"), "# Rules projection\n");
 	await writeFile(join(root, "PRD.md"), "# Product\n");
@@ -75,7 +75,7 @@ describe("@darkfactory/docs", () => {
 
 	test("resolves the combined configuration containing the docs block", async () => {
 		const root = await fixture();
-		expect(resolveDocsConfigPath(root)).toBe(join(root, "repo.df"));
+		expect(resolveDocsConfigPath(root)).toBe(join(root, "repo.dfconfig"));
 		expect(loadDocsConfig(root).site.name).toBe("Fixture");
 	});
 

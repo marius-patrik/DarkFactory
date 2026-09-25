@@ -157,7 +157,7 @@
       ]
     },
     "identities": {
-      "$comment": "repo.df-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
+      "$comment": "repo.dfconfig-defined agent and pipeline identities. Verified providers emit canonical Co-authored-by trailers; unverified providers get note-only attribution. Bot author is darkfactory-pipeline[bot].",
       "app": {
         "slug": "darkfactory-pipeline",
         "login": "darkfactory-pipeline[bot]",

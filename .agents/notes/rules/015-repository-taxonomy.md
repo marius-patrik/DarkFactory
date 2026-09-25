@@ -14,7 +14,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by `repo.df`.
+Repository area labels/scopes are declared by `repo.dfconfig`.
 
 Project classification separates:
 
@@ -33,7 +33,7 @@ Separating domain from capability preserves multi-domain repositories while keep
 
 ## Enforcement
 
-The repo.df resolver, canonical detection/capability resolution and hooks validate the taxonomy.
+The repo.dfconfig resolver, canonical detection/capability resolution and hooks validate the taxonomy.
 
 ## Exceptions
 
@@ -41,4 +41,4 @@ Consumers define their own repository areas and installed/applicable capabilitie
 
 ## Change control
 
-Taxonomy changes occur through repo.df/capability declarations; rule prose does not become a second list of consumer-specific areas.
+Taxonomy changes occur through repo.dfconfig/capability declarations; rule prose does not become a second list of consumer-specific areas.

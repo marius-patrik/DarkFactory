@@ -42,7 +42,14 @@ function configDocumentPaths(): ReadonlySet<string> {
 		.replace(/^\.\//u, "")
 		.replace(/\/$/u, "");
 	return new Set(
-		["repo.df", "config.df", `${directory}/repo.df`, `${directory}/config.df`]
+		[
+			"repo.dfconfig",
+			"config.dfconfig",
+			".dfconfig",
+			`${directory}/repo.dfconfig`,
+			`${directory}/config.dfconfig`,
+			`${directory}/.dfconfig`,
+		]
 			.map(normalizePath)
 			.filter((path, index, paths) => paths.indexOf(path) === index),
 	);

@@ -33,13 +33,13 @@ def _repo(root, manifest=None, commits=()):
 
     Args:
         root: Directory to initialise.
-        manifest: Repository block to write in root `repo.df`.
+        manifest: Repository block to write in root `repo.dfconfig`.
         commits: Commit subjects, oldest first.
     """
     subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
     for key, value in (("user.email", "t@example.com"), ("user.name", "T")):
         subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
-    _write(root, "repo.df", json.dumps({"repo": manifest or {}}))
+    _write(root, "repo.dfconfig", json.dumps({"repo": manifest or {}}))
     for index, message in enumerate(commits):
         _write(root, f"f{index}.txt", message)
         subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
@@ -61,7 +61,7 @@ def monorepo(tmp_path):
     _write(
         tmp_path, "packages/cli/package.json", json.dumps({"name": "@acme/cli", "version": "1.3.9"})
     )
-    _write(tmp_path, "repo.df", json.dumps({"repo": {}}))
+    _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
     return tmp_path
 
 
@@ -123,7 +123,7 @@ class TestAssetPlanning:
         _write(tmp_path, "README.md", "nothing to detect")
         _write(
             tmp_path,
-            "repo.df",
+            "repo.dfconfig",
             json.dumps(
                 {
                     "repo": {
@@ -144,18 +144,18 @@ class TestAssetPlanning:
 
     def test_a_declared_asset_may_be_a_bare_glob(self, tmp_path):
         _write(tmp_path, "README.md", "x")
-        _write(tmp_path, "repo.df", json.dumps({"repo": {"release": {"assets": ["out/*"]}}}))
+        _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {"release": {"assets": ["out/*"]}}}))
         assert release.plan_assets(str(tmp_path))[0]["globs"] == ["out/*"]
 
     def test_a_repository_with_no_build_plans_nothing(self, tmp_path):
         _write(tmp_path, "README.md", "a template repository")
-        _write(tmp_path, "repo.df", json.dumps({"repo": {}}))
+        _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
         assert release.plan_assets(str(tmp_path)) == []
 
     def test_declared_artifact_globs_override_the_defaults(self, monorepo):
         _write(
             monorepo,
-            "repo.df",
+            "repo.dfconfig",
             json.dumps({"repo": {"environment": {"release": {"node": {"artifacts": ["out/**"]}}}}}),
         )
         steps = [s for s in release.plan_assets(str(monorepo)) if s["ecosystem"] == "node"]
@@ -205,13 +205,13 @@ class TestMetadataConformance:
 
     def test_packages_that_declare_no_version_are_not_faulted(self, tmp_path):
         _write(tmp_path, "pyproject.toml", "[tool.black]\nline-length = 100\n")
-        _write(tmp_path, "repo.df", json.dumps({"repo": {}}))
+        _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
         assert release.check_metadata(str(tmp_path), "9.9.9") == []
 
     def test_the_check_can_be_switched_off(self, monorepo):
         _write(
             monorepo,
-            "repo.df",
+            "repo.dfconfig",
             json.dumps({"repo": {"release": {"metadata": "ignore"}}}),
         )
         assert release.check_metadata(str(monorepo), "1.4.0") == []
@@ -229,7 +229,7 @@ class TestMetadataConformance:
 
     def test_sync_handles_toml_manifests(self, tmp_path):
         _write(tmp_path, "Cargo.toml", '[package]\nname = "thing"\nversion = "0.1.0"\n')
-        _write(tmp_path, "repo.df", json.dumps({"repo": {}}))
+        _write(tmp_path, "repo.dfconfig", json.dumps({"repo": {}}))
         release.sync_metadata(str(tmp_path), "0.2.0")
         content = open(os.path.join(str(tmp_path), "Cargo.toml"), encoding="utf-8").read()
         assert 'version = "0.2.0"' in content

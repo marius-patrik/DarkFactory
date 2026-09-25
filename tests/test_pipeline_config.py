@@ -90,7 +90,7 @@ def test_python_actions_and_docs_have_separate_final_owners():
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "pytest -v tests" not in ci
     assert "DF_ACTION_COMMAND" in ci
-    assert "repo.df" in ci
+    assert "repo.dfconfig" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
@@ -321,7 +321,7 @@ def test_area_lists_match_the_manifest(path, pattern):
     }
     assert found, f"{path} lists no areas at all"
     assert found == declared, (
-        f"{path} disagrees with the repo block in repo.df; "
+        f"{path} disagrees with the repo block in repo.dfconfig; "
         f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
     )
 
@@ -494,8 +494,11 @@ def test_the_docs_job_uses_the_native_docs_contract():
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
     ]
-    assert "repo.df" in docs_job
-    assert "config.df" in docs_job
+    assert "repo.dfconfig" in docs_job
+    assert "config.dfconfig" in docs_job
+    assert ".dfconfig" in docs_job
+    assert '"repo.df"' not in docs_job
+    assert '"config.df"' not in docs_job
     assert "DF_CONFIG_DIR" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
@@ -552,7 +555,11 @@ def test_the_deploy_workflow_is_main_actions_release():
 
 def test_native_docs_owners_are_present():
     """The current compiler, renderer and native configuration all exist."""
-    assert os.path.isfile(os.path.join(REPO_ROOT, "repo.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "repo.dfconfig"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, "repo.df"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, "config.dfconfig"))
+    assert not os.path.exists(os.path.join(REPO_ROOT, ".dfconfig"))
+    assert not os.path.isdir(os.path.join(REPO_ROOT, ".darkfactory"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 

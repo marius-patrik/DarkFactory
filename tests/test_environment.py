@@ -30,13 +30,13 @@ def _write(root, relative, content):
 
 
 def _manifest(root, block):
-    """Writes canonical root `repo.df` carrying a repository environment block.
+    """Writes canonical root `repo.dfconfig` carrying a repository environment block.
 
     Args:
         root: Repository root.
         block: The `environment` object.
     """
-    _write(root, "repo.df", json.dumps({"repo": {"environment": block}}))
+    _write(root, "repo.dfconfig", json.dumps({"repo": {"environment": block}}))
 
 
 @pytest.fixture
@@ -257,15 +257,17 @@ class TestPlans:
         assert plan["rust"]["versions"] == []
 
     def test_darkfactory_uses_the_combined_docs_block(self):
-        with open(os.path.join(REPO_ROOT, "repo.df"), encoding="utf-8") as handle:
+        with open(os.path.join(REPO_ROOT, "repo.dfconfig"), encoding="utf-8") as handle:
             config = json.load(handle)
         repository = config["repo"]
         docs = config["docs"]
+        providers = config["providers"]
 
         assert "documentation" not in repository.get("environment", {})
         assert docs["version"] == 1
         assert docs["home"] == ".agents/PRD.md"
         assert "api" not in docs
+        assert providers["defaultChain"]
 
     def test_a_declared_command_overrides_the_default(self, polyglot):
         _manifest(polyglot, {"testing": {"rust": {"command": "cargo nextest run"}}})

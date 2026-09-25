@@ -34,7 +34,7 @@ export interface ResolvedRepositoryAction {
 	description: string;
 	command?: string;
 	metadata?: Readonly<Record<string, unknown>>;
-	source: "repo.df" | "capability" | "unsupported";
+	source: "repo.dfconfig" | "capability" | "unsupported";
 	capabilityId?: string;
 	reason?: string;
 }
@@ -138,7 +138,7 @@ function resolveOne(
 				cwd: pkg.path,
 				supported: false,
 				description: `${kind} disabled by repo block`,
-				source: "repo.df",
+				source: "repo.dfconfig",
 				reason: "disabled",
 			};
 		}
@@ -150,7 +150,7 @@ function resolveOne(
 				supported: true,
 				description: `${kind} declared in repo block`,
 				command: override.command,
-				source: "repo.df",
+				source: "repo.dfconfig",
 				metadata: override.versions ? { versions: override.versions } : undefined,
 			};
 		}

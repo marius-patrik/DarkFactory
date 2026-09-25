@@ -103,31 +103,40 @@ def test_writing_never_overwrites_what_is_already_there(tmp_path):
     (target / "ci.yml").write_text("name: mine\n", encoding="utf-8")
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
     assert (target / "ci.yml").read_text(encoding="utf-8") == "name: mine\n"
-    assert (tmp_path / "repo.df").is_file(), "the rest is still written"
+    assert (tmp_path / "repo.dfconfig").is_file(), "the rest is still written"
 
 
-def test_existing_root_config_alias_is_not_duplicated(tmp_path):
+@pytest.mark.parametrize("filename", ["config.dfconfig", ".dfconfig"])
+def test_existing_root_config_alias_is_not_duplicated(tmp_path, filename):
     """The accepted alias remains the single selected document during installation."""
-    alias = tmp_path / "config.df"
+    alias = tmp_path / filename
     alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
 
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
 
-    assert not (tmp_path / "repo.df").exists()
+    assert not (tmp_path / "repo.dfconfig").exists()
     assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
+
+
+def test_legacy_manifest_path_is_not_selected(tmp_path):
+    (tmp_path / "repo.df").write_text(
+        json.dumps({"repo": {"identity": {"owner": "legacy"}}}), encoding="utf-8"
+    )
+    install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
+    assert json.loads((tmp_path / "repo.dfconfig").read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "o"
 
 
 def test_existing_custom_folder_config_is_not_duplicated(tmp_path, monkeypatch):
     """A configured fallback document remains authoritative during installation."""
     folder = tmp_path / "configuration"
     folder.mkdir()
-    alias = folder / "repo.df"
+    alias = folder / "repo.dfconfig"
     alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
     monkeypatch.setenv("DF_CONFIG_DIR", "configuration")
 
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
 
-    assert not (tmp_path / "repo.df").exists()
+    assert not (tmp_path / "repo.dfconfig").exists()
     assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
 
 
@@ -342,7 +351,7 @@ class TestReinstallingAdoptsTheUpdate:
             tmp_path: Pytest temporary directory.
         """
         root = self._installed(tmp_path)
-        path = os.path.join(root, "repo.df")
+        path = os.path.join(root, "repo.dfconfig")
         with open(path, encoding="utf-8") as handle:
             config = json.load(handle)
         del config["repo"]["required_checks"]

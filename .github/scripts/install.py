@@ -1,6 +1,6 @@
 """Generates the current DarkFactory consumer installation.
 
-The installer writes the caller workflows and canonical root `repo.df` combined configuration required
+The installer writes the caller workflows and canonical root `repo.dfconfig` combined configuration required
 by the shared DarkFactory pipeline. Detectable repository facts come from environment detection;
 repository-specific intent such as areas remains declarative. Generated caller workflows pin the
 selected DarkFactory commit.
@@ -292,7 +292,7 @@ def render_manifest(
     description: str = "",
     pipeline_repo: str = "marius-patrik/DarkFactory",
 ) -> str:
-    """Renders the canonical root `repo.df` combined configuration.
+    """Renders the canonical root `repo.dfconfig` combined configuration.
 
     Args:
         owner: Repository owner login.
@@ -478,7 +478,7 @@ it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived
 
-`repo.df` carries a starter set. Areas drive **labels, Conventional Commit scopes
+`repo.dfconfig` carries a starter set. Areas drive **labels, Conventional Commit scopes
 and agent routing**, so they are worth getting right. Replace them with this repository's own
 domains, then re-run the install workflow to reconcile the labels.
 
@@ -511,7 +511,7 @@ python .github/scripts/repo_settings.py --apply
 ---
 
 Close this issue when the four are done. The pipeline is [{pipeline_repo}](https://github.com/{pipeline_repo});
-this repository pins a commit of it in `repo.df`, and bumping that pin is how
+this repository pins a commit of it in `repo.dfconfig`, and bumping that pin is how
 {name} adopts an update.
 """
 

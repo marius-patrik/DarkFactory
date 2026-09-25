@@ -1,7 +1,7 @@
 """Tests for the combined configuration's repository block.
 
 The pipeline is distributed byte-for-byte, so anything repository-specific has to come from the
-`repo` block in the selected `repo.df` or `config.df` document. These tests cover discovery,
+`repo` block in the selected `repo.dfconfig`, `config.dfconfig`, or `.dfconfig` document. These tests cover discovery,
 block selection, malformed input and repository-specific value isolation.
 """
 
@@ -24,7 +24,7 @@ def _write_manifest(root, data):
         root: Directory to treat as the repository root.
         data: Document to serialise.
     """
-    with open(os.path.join(str(root), "repo.df"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(str(root), "repo.dfconfig"), "w", encoding="utf-8") as fh:
         json.dump({"repo": data}, fh)
 
 
@@ -60,7 +60,7 @@ class TestIdentity:
         assert loaded.topics == []
 
     def test_a_malformed_manifest_fails_closed(self, tmp_path):
-        with open(os.path.join(str(tmp_path), "repo.df"), "w", encoding="utf-8") as handle:
+        with open(os.path.join(str(tmp_path), "repo.dfconfig"), "w", encoding="utf-8") as handle:
             handle.write("{ this is not json")
         with pytest.raises(ValueError, match="Invalid DarkFactory configuration JSON"):
             manifest_module.load(str(tmp_path))
@@ -280,11 +280,11 @@ class TestConfigDocumentDiscovery:
     def test_canonical_root_repo_is_selected(self, tmp_path):
         _write_manifest(tmp_path, {"identity": {"owner": "acme", "repo": "widget"}})
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == os.path.join(
-            str(tmp_path), "repo.df"
+            str(tmp_path), "repo.dfconfig"
         )
 
     def test_root_config_alias_is_selected(self, tmp_path):
-        path = tmp_path / "config.df"
+        path = tmp_path / "config.dfconfig"
         path.write_text(
             json.dumps({"repo": {"identity": {"owner": "acme", "repo": "alias"}}}),
             encoding="utf-8",
@@ -292,8 +292,17 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
         assert manifest_module.load(str(tmp_path)).repo == "alias"
 
+    def test_empty_basename_alias_is_selected(self, tmp_path):
+        path = tmp_path / ".dfconfig"
+        path.write_text(
+            json.dumps({"repo": {"identity": {"owner": "acme", "repo": "empty-alias"}}}),
+            encoding="utf-8",
+        )
+        assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
+        assert manifest_module.load(str(tmp_path)).repo == "empty-alias"
+
     def test_custom_config_directory_is_selected(self, tmp_path, monkeypatch):
-        path = tmp_path / "configuration" / "repo.df"
+        path = tmp_path / "configuration" / "repo.dfconfig"
         path.parent.mkdir()
         path.write_text(
             json.dumps({"repo": {"identity": {"owner": "acme", "repo": "custom"}}}),
@@ -303,7 +312,7 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
 
     def test_default_darkfactory_fallback_is_supported(self, tmp_path):
-        path = tmp_path / ".darkfactory" / "config.df"
+        path = tmp_path / ".darkfactory" / "config.dfconfig"
         path.parent.mkdir()
         path.write_text(
             json.dumps({"repo": {"identity": {"owner": "acme", "repo": "fallback"}}}),
@@ -312,22 +321,49 @@ class TestConfigDocumentDiscovery:
         assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
         assert manifest_module.load(str(tmp_path)).repo == "fallback"
 
-    def test_both_aliases_in_one_scope_are_rejected(self, tmp_path):
-        (tmp_path / "repo.df").write_text(json.dumps({"repo": {}}), encoding="utf-8")
-        (tmp_path / "config.df").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+    def test_duplicate_aliases_in_one_scope_are_rejected(self, tmp_path):
+        (tmp_path / "repo.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (tmp_path / "config.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (tmp_path / ".dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
         with pytest.raises(ValueError, match="Ambiguous DarkFactory configuration aliases"):
             manifest_module.resolve_manifest_path(str(tmp_path))
 
     def test_root_and_folder_candidates_are_rejected(self, tmp_path):
-        (tmp_path / "repo.df").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (tmp_path / "repo.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
         fallback = tmp_path / ".darkfactory"
         fallback.mkdir()
-        (fallback / "config.df").write_text(json.dumps({"repo": {}}), encoding="utf-8")
+        (fallback / "config.dfconfig").write_text(json.dumps({"repo": {}}), encoding="utf-8")
         with pytest.raises(ValueError, match="candidates exist in both the repository root"):
             manifest_module.resolve_manifest_path(str(tmp_path))
 
+    @pytest.mark.parametrize("filename", ["repo.df", "config.df"])
+    def test_legacy_configuration_paths_are_not_used(self, tmp_path, filename):
+        path = tmp_path / filename
+        path.write_text(
+            json.dumps({"repo": {"areas": {"legacy": "Legacy declaration"}}}),
+            encoding="utf-8",
+        )
+        assert manifest_module.resolve_manifest_path(str(tmp_path)) == os.path.join(
+            str(tmp_path), ".darkfactory", "repo.dfconfig"
+        )
+        assert manifest_module.load(str(tmp_path)).areas == manifest_module.DEFAULT_AREAS
+
+    @pytest.mark.parametrize("filename", ["repo.dfconfig", "config.dfconfig", ".dfconfig"])
+    def test_supported_names_select_the_same_combined_document(self, tmp_path, filename):
+        path = tmp_path / filename
+        document = {
+            "repo": {"identity": {"owner": "acme", "repo": filename}},
+            "docs": {"version": 1, "home": ".agents/PRD.md"},
+            "providers": {"defaultChain": "example/model@default"},
+        }
+        path.write_text(json.dumps(document), encoding="utf-8")
+        assert manifest_module.resolve_manifest_path(str(tmp_path)) == str(path)
+        assert manifest_module.load(str(tmp_path)).repo == filename
+        assert manifest_module.load_config_block(str(tmp_path), "docs") == document["docs"]
+        assert manifest_module.load_config_block(str(tmp_path), "providers") == document["providers"]
+
     def test_repo_consumer_does_not_read_provider_fields(self, tmp_path):
-        (tmp_path / "repo.df").write_text(
+        (tmp_path / "repo.dfconfig").write_text(
             json.dumps(
                 {
                     "repo": {"identity": {"owner": "repo-owner", "repo": "repo-name"}},

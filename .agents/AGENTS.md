@@ -80,7 +80,7 @@ The final web rendering layer is `@darkfactory/web`; docs must not maintain a se
 
 Executable declarations use the final DarkFactory contracts:
 
-- canonical root `repo.df` for the combined configuration, with root `config.df` accepted as the same logical document;
+- canonical root `repo.dfconfig` for the combined configuration, with root `config.dfconfig` and root `.dfconfig` accepted as the same logical document;
 - the `repo` block for repository/product declaration;
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
@@ -312,7 +312,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by `repo.df`.
+Repository area labels/scopes are declared by `repo.dfconfig`.
 
 Project classification separates:
 

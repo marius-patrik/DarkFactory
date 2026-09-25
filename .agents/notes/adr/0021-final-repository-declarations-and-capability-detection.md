@@ -6,7 +6,7 @@
 
 ## Decision
 
-- Canonical root `repo.df` owns one combined configuration document; root `config.df` is an accepted alias for that same document.
+- Canonical root `repo.dfconfig` owns one combined configuration document; root `config.dfconfig` and root `.dfconfig` are accepted aliases for that same document.
 - The `repo` block is the repository/product declaration, `providers` is runtime/user/provider configuration, and `docs` is documentation configuration.
 - Consumers select only their named block from the selected document.
 - `DF_CONFIG_DIR` (default `.darkfactory`) is a supported fallback discovery folder, but `.darkfactory` is not a committed source in this repository.

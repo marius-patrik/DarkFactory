@@ -203,10 +203,12 @@ def _has_config_document(repo: str) -> bool:
         dict.fromkeys(
             os.path.normpath(path)
             for path in (
-                "repo.df",
-                "config.df",
-                os.path.join(config_dir, "repo.df"),
-                os.path.join(config_dir, "config.df"),
+                "repo.dfconfig",
+                "config.dfconfig",
+                ".dfconfig",
+                os.path.join(config_dir, "repo.dfconfig"),
+                os.path.join(config_dir, "config.dfconfig"),
+                os.path.join(config_dir, ".dfconfig"),
             )
         )
     )
@@ -214,7 +216,7 @@ def _has_config_document(repo: str) -> bool:
     if len(present) > 1:
         raise ValueError(
             f"Ambiguous DarkFactory configuration in {repo}: {', '.join(present)}; keep only "
-            "one repo.df or config.df candidate."
+            "one repo.dfconfig, config.dfconfig, or .dfconfig candidate."
         )
     return bool(present)
 

@@ -30,10 +30,22 @@ describe("local configuration and credential sources", () => {
 		).toEqual({});
 	});
 
+	test("loads the empty-basename configuration alias", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, ".dfconfig"), JSON.stringify({ providers: { defaultChain: "faux/echo@test" } }));
+		expect((await loadDfConfig(temp)).defaultChain).toBe("faux/echo@test");
+	});
+
+	test("does not load legacy configuration paths", async () => {
+		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
+		await writeFile(join(temp, "repo.df"), JSON.stringify({ providers: { defaultChain: "legacy/model@test" } }));
+		expect(await loadDfConfig(temp)).toEqual({});
+	});
+
 	test("loads chains and a relative account key path", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "repo.df"),
+			join(temp, "repo.dfconfig"),
 			JSON.stringify({
 				providers: {
 					defaultChain: "google/custom@default",
@@ -92,16 +104,16 @@ describe("local configuration and credential sources", () => {
 
 	test("rejects malformed config without exposing its contents", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
-		await writeFile(join(temp, "config.df"), "{secret-content");
+		await writeFile(join(temp, "config.dfconfig"), "{secret-content");
 		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid DarkFactory configuration JSON");
-		await writeFile(join(temp, "config.df"), JSON.stringify({ providers: { cooldownTtlMs: 0 } }));
+		await writeFile(join(temp, "config.dfconfig"), JSON.stringify({ providers: { cooldownTtlMs: 0 } }));
 		await expect(loadDfConfig(temp)).rejects.toThrow("positive integer");
 	});
 
 	test("validates and loads router policies, model overrides, and learning bounds", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "config.dfconfig"),
 			JSON.stringify({
 				providers: {
 					router: {
@@ -146,7 +158,7 @@ describe("local configuration and credential sources", () => {
 		expect(config.router?.difficultyTiers).toEqual({ easy: "light", medium: "deep", hard: "deep" });
 		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp2, "config.df"),
+			join(temp2, "config.dfconfig"),
 			JSON.stringify({ providers: { router: { policies: [], candidates: ["missing-account/model"] } } }),
 		);
 		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
@@ -155,7 +167,7 @@ describe("local configuration and credential sources", () => {
 	test("rejects invalid capability-tier mappings", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "config.dfconfig"),
 			JSON.stringify({
 				providers: {
 					router: {
@@ -173,8 +185,8 @@ describe("local configuration and credential sources", () => {
 	test("rejects root and fallback-folder configuration candidates together", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await mkdir(join(temp, ".darkfactory"));
-		await writeFile(join(temp, ".darkfactory", "config.df"), JSON.stringify({ providers: {} }));
-		await writeFile(join(temp, "repo.df"), JSON.stringify({ providers: {} }));
+		await writeFile(join(temp, ".darkfactory", "config.dfconfig"), JSON.stringify({ providers: {} }));
+		await writeFile(join(temp, "repo.dfconfig"), JSON.stringify({ providers: {} }));
 		await expect(loadDfConfig(temp)).rejects.toThrow("candidates exist in both the repository root");
 	});
 });

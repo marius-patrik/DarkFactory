@@ -130,7 +130,7 @@ QUOTA_EXHAUSTION_PATTERNS: List[re.Pattern] = [
 
 TYPE_LABELS = ["feat", "bug", "chore", "refactor", "test", "ci", "docs"]
 # The area taxonomy is a property of the repository, not of the pipeline, so it comes from
-# `repo.df`. `repo_settings` creates the labels from the same source, which is
+# `repo.dfconfig`. `repo_settings` creates the labels from the same source, which is
 # what keeps the labels the agent applies and the labels that exist from drifting apart.
 AREA_LABELS = [name for name, _colour, _description in _MANIFEST.area_labels]
 

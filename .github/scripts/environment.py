@@ -9,7 +9,7 @@ answered once, here, instead of being re-guessed with `hashFiles` in each workfl
 Detection is the default because it cannot drift: a repository that grows a `Cargo.toml` starts
 building Rust without anyone remembering to declare it. Declaration is available for the cases
 detection cannot see - a package deliberately excluded, a build command that is not the ecosystem's
-default, an artifact produced by something bespoke. The two compose: `repo.df` overrides and extends what detection found without restating detected facts.
+default, an artifact produced by something bespoke. The two compose: `repo.dfconfig` overrides and extends what detection found without restating detected facts.
 
 Workspaces are first-class. npm, Bun, pnpm, Yarn and Cargo all express monorepos as a root manifest
 listing member globs, so a repository is walked as a tree of packages rather than a single one, and
@@ -503,7 +503,7 @@ class Environment:
 
         Returns:
             Mapping of ecosystem to `command`, `versions` and `manager`. Formatting has no matrix,
-            so `versions` is empty unless repo.df declares one.
+            so `versions` is empty unless repo.dfconfig declares one.
         """
         return self._plan("formatting", FORMAT_COMMANDS)
 

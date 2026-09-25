@@ -9,7 +9,7 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 1. `.agents/PRD.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
-4. The combined `repo.df` document (or accepted root `config.df` alias) and the workflow graph are executable declarations.
+4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
 5. `.agents/notes/rules/*.md` define mandatory contribution/governance behavior.
 6. Generated docs/web views and `.agents/AGENTS.md` are projections, not independent sources of truth.
 
@@ -134,7 +134,7 @@ The final system must not rely on one ever-growing repository-specific language/
 
 The combined configuration rules are:
 
-- root `repo.df` is canonical and root `config.df` is an accepted alias for the same logical document;
+- root `repo.dfconfig` is canonical, with root `config.dfconfig` and root `.dfconfig` accepted as aliases for the same logical document;
 - the JSON document owns `repo`, `docs`, and `providers` blocks, and every consumer selects its declared block;
 - `repo` owns repository identity and policy, `providers` owns runtime/provider settings, and `docs` owns documentation settings;
 - when root candidates exist they are selected, otherwise candidates under `DF_CONFIG_DIR` (default `.darkfactory`) are selected;

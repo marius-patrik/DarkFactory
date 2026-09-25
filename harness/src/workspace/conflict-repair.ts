@@ -13,7 +13,7 @@ export interface ConflictRepairOptions {
 	repoDir: string;
 	/** Branch that is conflicting with the base branch. */
 	branch: string;
-	/** Optional explicit default branch; resolved dynamically via repo.df if omitted. */
+	/** Optional explicit default branch; resolved dynamically via repo.dfconfig if omitted. */
 	defaultBranch?: string;
 	/** Optional directory for worktrees. */
 	worktreesDir?: string;
@@ -60,7 +60,7 @@ const DEFAULT_BOT_IDENTITY: CommitIdentity = {
  * Resolves repository base branch dynamically and performs deterministic update
  * or model-guided conflict repair.
  *
- * 1. Resolves canonical default branch from repo.df.
+ * 1. Resolves canonical default branch from repo.dfconfig.
  * 2. Attempts deterministic git merge first.
  * 3. Invokes model conflict resolution only when real conflicts require judgement.
  * 4. Reruns detected verification on the repaired worktree.

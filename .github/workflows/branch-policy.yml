@@ -7,8 +7,9 @@ on:
   push:
     branches: [develop]
     paths:
-      - "repo.df"
-      - "config.df"
+      - "repo.dfconfig"
+      - "config.dfconfig"
+      - ".dfconfig"
       - ".github/scripts/manifest.py"
       - ".github/scripts/repo_settings.py"
       - ".github/workflows/branch-policy.yml"

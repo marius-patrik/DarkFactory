@@ -13,9 +13,9 @@
 - [ ] Final alignment against the approved Planning artifact will be recorded before merge.
 
 ## Change classification
-<!-- Use the repository taxonomy from repo.df; do not copy a second fixed area list here. -->
+<!-- Use the repository taxonomy from repo.dfconfig; do not copy a second fixed area list here. -->
 - Conventional Commit type: <!-- feat | fix | chore | docs | refactor | test | ci -->
-- Scope(s): <!-- repo.df-declared scope(s) -->
+- Scope(s): <!-- repo.dfconfig-declared scope(s) -->
 
 ## Documentation impact
 - [ ] Canonical documentation was updated where required.

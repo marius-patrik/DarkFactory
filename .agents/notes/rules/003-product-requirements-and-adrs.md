@@ -14,7 +14,7 @@ owners: [planning, docs]
 
 Executable declarations use the final DarkFactory contracts:
 
-- canonical root `repo.df` for the combined configuration, with root `config.df` accepted as the same logical document;
+- canonical root `repo.dfconfig` for the combined configuration, with root `config.dfconfig` and root `.dfconfig` accepted as the same logical document;
 - the `repo` block for repository/product declaration;
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;

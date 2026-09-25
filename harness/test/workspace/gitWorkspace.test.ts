@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 test("resolveDefaultBranch reads identity.default_branch from the repo block", async () => {
-	const repoDfPath = join(repo(), "repo.df");
+	const repoDfPath = join(repo(), "repo.dfconfig");
 
 	writeFileSync(
 		repoDfPath,
@@ -57,7 +57,7 @@ test("resolveDefaultBranch reads identity.default_branch from the repo block", a
 });
 
 test("resolveDefaultBranch throws if default_branch is missing or empty", async () => {
-	const repoDfPath = join(repo(), "repo.df");
+	const repoDfPath = join(repo(), "repo.dfconfig");
 
 	writeFileSync(repoDfPath, JSON.stringify({ repo: {} }));
 	expect(resolveDefaultBranch(repo())).rejects.toThrow("missing a non-empty identity.default_branch");

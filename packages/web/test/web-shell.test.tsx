@@ -69,7 +69,7 @@ test("DarkFactoryShell renders Capabilities at /capabilities", () => {
 test("DarkFactoryShell renders Config at /config", () => {
   const { hook, searchHook } = mockLocationHook("/config");
   const output = renderToString(createElement(DarkFactoryShell, { hook, searchHook }));
-  expect(output).toContain("Configuration (repo.df)");
+  expect(output).toContain("Configuration (repo.dfconfig)");
 });
 
 test("DarkFactoryShell renders Audit at /audit", () => {

@@ -23,7 +23,7 @@ def _manifest(root, block):
         root: Repository root.
         block: The `license` object.
     """
-    with open(os.path.join(str(root), "repo.df"), "w", encoding="utf-8") as h:
+    with open(os.path.join(str(root), "repo.dfconfig"), "w", encoding="utf-8") as h:
         json.dump({"repo": {"license": block}}, h)
 
 

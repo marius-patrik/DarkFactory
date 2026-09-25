@@ -21,20 +21,20 @@ export function resolveConfigDocumentPath(
 	const configuredDirectory = env.DF_CONFIG_DIR?.trim() || ".darkfactory";
 	const configDirectory = resolve(repositoryRoot, configuredDirectory);
 	const candidatesIn = (directory: string): string[] =>
-		["repo.df", "config.df"].map((name) => join(directory, name)).filter(existsSync);
+		["repo.dfconfig", "config.dfconfig", ".dfconfig"].map((name) => join(directory, name)).filter(existsSync);
 	const rootCandidates = candidatesIn(repositoryRoot);
 	const folderCandidates = configDirectory === repositoryRoot ? [] : candidatesIn(configDirectory);
 
 	if (rootCandidates.length > 0 && folderCandidates.length > 0) {
 		throw new Error(
-			`Ambiguous DarkFactory configuration: candidates exist in both the repository root (${rootCandidates.join(", ")}) and ${configDirectory} (${folderCandidates.join(", ")}); remove all but one config.df or repo.df location.`,
+			`Ambiguous DarkFactory configuration: candidates exist in both the repository root (${rootCandidates.join(", ")}) and ${configDirectory} (${folderCandidates.join(", ")}); remove all but one config.dfconfig, repo.dfconfig, or .dfconfig location.`,
 		);
 	}
 	const candidates = rootCandidates.length > 0 ? rootCandidates : folderCandidates;
 	if (candidates.length > 1) {
 		const scope = rootCandidates.length > 0 ? repositoryRoot : configDirectory;
 		throw new Error(
-			`Ambiguous DarkFactory configuration aliases in ${scope}: ${candidates.join(", ")}; keep only repo.df or config.df.`,
+			`Ambiguous DarkFactory configuration aliases in ${scope}: ${candidates.join(", ")}; keep only repo.dfconfig, config.dfconfig, or .dfconfig.`,
 		);
 	}
 	return candidates[0];

@@ -28,9 +28,9 @@ describe("conflict-repair: deterministic update and model conflict resolution", 
 		runGit(localRepo, ["config", "user.name", "Test"]);
 		runGit(localRepo, ["config", "user.email", "test@example.com"]);
 
-		// Initial commit with repo.df defining dynamic default branch
+		// Initial commit with repo.dfconfig defining dynamic default branch
 		writeFileSync(
-			join(localRepo, "repo.df"),
+			join(localRepo, "repo.dfconfig"),
 			JSON.stringify({
 				repo: {
 					schema_version: "1.0.0",

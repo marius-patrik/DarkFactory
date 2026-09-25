@@ -1,7 +1,7 @@
 """Reads the repository declaration consumed by shared DarkFactory automation.
 
 Repository-specific identity, taxonomy, project, release and authorization settings live in
-`repo.df`. Detectable package/runtime facts are discovered rather than duplicated in this declaration.
+`repo.dfconfig`. Detectable package/runtime facts are discovered rather than duplicated in this declaration.
 """
 
 import json
@@ -14,7 +14,7 @@ except ImportError:
     from resolver import load_config_block, resolve_config_document_path
 
 #: Repository declaration filename.
-MANIFEST_PATH = "repo.df"
+MANIFEST_PATH = "repo.dfconfig"
 
 
 def resolve_manifest_path(root: str) -> str:

@@ -133,7 +133,7 @@ const CapabilitiesView: FC = () => (
 
 const ConfigView: FC = () => (
   <PlaceholderView
-    title="Configuration (repo.df)"
+    title="Configuration (repo.dfconfig)"
     description="Inspect active runtime settings, allowed task sizes, data-collection models, and failover chains."
   />
 );
