@@ -230,7 +230,12 @@ describe("secrets CLI values never printed without --reveal, push/doctor mocked"
 		const origLog = console.log;
 		console.log = (...a: unknown[]) => logs.push(a.join(" "));
 		try {
-			await secretsCommand(["doctor"], { dfHome, repositoryRoot: root, allowFileKey: true, githubClient: factory as never });
+			await secretsCommand(["doctor"], {
+				dfHome,
+				repositoryRoot: root,
+				allowFileKey: true,
+				githubClient: factory as never,
+			});
 			const out = logs.join("\n");
 			expect(out).toContain("vault-key");
 			expect(out).toContain("vault-file");
