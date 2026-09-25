@@ -73,3 +73,4 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
     assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" in dockerfile
+    assert "COPY pyproject.toml requirements-dev.txt" not in dockerfile

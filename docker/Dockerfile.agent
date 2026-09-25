@@ -61,12 +61,10 @@ RUN set -eux; \
       echo "  ABSENT:  df"; \
     fi
 
-# 4. Setup project workspace and install Python test / build dependencies
+# 4. Set up the bind-mounted project workspace. The agent runner uses only the
+# Python standard library; repository Python build metadata is not part of the
+# final df runtime image.
 WORKDIR /workspace
-
-COPY pyproject.toml requirements-dev.txt /workspace/
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements-dev.txt
 
 # 5. Create the unprivileged user the agent runs as
 #
