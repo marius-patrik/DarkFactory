@@ -30,7 +30,7 @@ def _df_environment(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setattr(harnesses.shutil, "which", lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("DF_HOME", raising=False)
-    monkeypatch.delenv("DF_CONFIG_DIR", raising=False)
+    os.environ.pop("DF_CONFIG_DIR", None)
     monkeypatch.setattr(agent_runner, "_DF_SETUP_HOME", None, raising=False)
     for name in agent_runner.df_setup_secret_names():
         monkeypatch.delenv(name, raising=False)
