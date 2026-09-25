@@ -215,8 +215,8 @@ export async function gitTags(repoRoot: string): Promise<string[]> {
 	try {
 		const result = await $`git -C ${repoRoot} tag --list`.text();
 		return result.trim().split("\n").filter((line) => line.trim().length > 0);
-	} catch {
-		return [];
+	} catch (error) {
+		throw new Error(`Failed to list git tags in ${repoRoot}: ${error instanceof Error ? error.message : error}`, { cause: error });
 	}
 }
 
@@ -231,8 +231,8 @@ export async function commitsSince(repoRoot: string, tag: string | null): Promis
 	try {
 		const result = await $`git -C ${repoRoot} log ${span} --format=%B%x00`.text();
 		return result.split("\0").map((chunk) => chunk.trim()).filter((chunk) => chunk.length > 0);
-	} catch {
-		return [];
+	} catch (error) {
+		throw new Error(`Failed to list git commits in ${repoRoot}: ${error instanceof Error ? error.message : error}`, { cause: error });
 	}
 }
 

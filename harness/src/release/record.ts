@@ -73,17 +73,26 @@ export async function recordVersion(
 	}
 
 	const branch = `release/record-${version}`;
-	await $`git -C ${repoRoot} fetch origin ${base}`;
-	await $`git -C ${repoRoot} checkout -B ${branch} origin/${base}`;
+	try {
+		await $`git -C ${repoRoot} fetch origin ${base}`;
+		await $`git -C ${repoRoot} checkout -B ${branch} origin/${base}`;
+	} catch (error) {
+		throw new Error(`Failed to fetch or checkout branch ${branch} from origin/${base}: ${error instanceof Error ? error.message : error}`, { cause: error });
+	}
 
 	const versionPath = resolvePath(repoRoot, "VERSION");
 	await Bun.write(versionPath, `${version}\n`);
-	await $`git -C ${repoRoot} add VERSION`;
+	
+	try {
+		await $`git -C ${repoRoot} add VERSION`;
 
-	// The identity is passed on the command rather than configured on the runner: a release job
-	// that inherits nobody's git identity fails at the commit, after the release is already public.
-	await $`git -C ${repoRoot} -c user.name=${BOT_NAME} -c user.email=${BOT_EMAIL} commit -q -m "chore(release): record ${version}"`;
-	await $`git -C ${repoRoot} push --force-with-lease origin ${branch}:${branch}`;
+		// The identity is passed on the command rather than configured on the runner: a release job
+		// that inherits nobody's git identity fails at the commit, after the release is already public.
+		await $`git -C ${repoRoot} -c user.name=${BOT_NAME} -c user.email=${BOT_EMAIL} commit -q -m "chore(release): record ${version}"`;
+		await $`git -C ${repoRoot} push --force-with-lease origin ${branch}:${branch}`;
+	} catch (error) {
+		throw new Error(`Failed to commit or push recorded version ${version}: ${error instanceof Error ? error.message : error}`, { cause: error });
+	}
 	result.recorded = true;
 	result.branch = branch;
 
@@ -147,7 +156,12 @@ function readManualVersion(repoRoot: string): string | null {
 /** Creates a GitHubRepository instance for the current repository. */
 async function createGitHubRepository(repoRoot: string): Promise<GitHubRepository> {
 	// Get the repository owner/name from git remote
-	const remoteUrl = await $`git -C ${repoRoot} config --get remote.origin.url`.text();
+	let remoteUrl: string;
+	try {
+		remoteUrl = await $`git -C ${repoRoot} config --get remote.origin.url`.text();
+	} catch (error) {
+		throw new Error(`Failed to read git remote origin URL: ${error instanceof Error ? error.message : error}`, { cause: error });
+	}
 	const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
 	if (!match) throw new Error("Could not determine GitHub repository from remote URL");
 	const [, owner, repo] = match;

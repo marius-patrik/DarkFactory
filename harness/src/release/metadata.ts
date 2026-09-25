@@ -4,16 +4,8 @@
 
 import { resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
-import { $ } from "bun";
 import { loadRepoManifest } from "./manifest.ts";
-
-/** Represents a package with its manifest path and version. */
-interface PackageInfo {
-	manifest: string;
-	version: string | null;
-	isWorkspaceRoot: boolean;
-	path: string;
-}
+import { configure } from "./environment.ts";
 
 /** Verifies every package manifest agrees with the version being released.
  *
@@ -30,7 +22,7 @@ export function checkMetadata(repoRoot: string, version: string): string[] {
 	const policy = String(manifest.release?.metadata ?? "warn");
 	if (policy === "ignore") return [];
 
-	const env = configureEnvironment(repoRoot);
+	const env = configure(repoRoot);
 	const problems: string[] = [];
 	for (const pkg of env.packages) {
 		if (pkg.version === null) continue;
@@ -54,7 +46,7 @@ export function checkMetadata(repoRoot: string, version: string): string[] {
  * @returns The manifests that were changed.
  */
 export function syncMetadata(repoRoot: string, version: string): string[] {
-	const env = configureEnvironment(repoRoot);
+	const env = configure(repoRoot);
 	const changed: string[] = [];
 	for (const pkg of env.packages) {
 		if (pkg.version === null || pkg.version === version) continue;
@@ -69,9 +61,10 @@ export function syncMetadata(repoRoot: string, version: string): string[] {
 		let updated: string;
 		if (pkg.manifest.endsWith(".json")) {
 			updated = content.replace(/"version"\s*:\s*"[^"]*"/, `"version": "${version}"`);
-		} else {
-			// TOML-like: version = "1.2.3"
+		} else if (pkg.manifest.endsWith(".toml")) {
 			updated = content.replace(/^(\s*version\s*=\s*)"[^"]*"/m, `$1"${version}"`);
+		} else {
+			updated = content.replace(/(version\s*[:=]\s*["'])([^"']+)(["'])/, `$1${version}$3`);
 		}
 
 		if (updated !== content) {
@@ -80,52 +73,4 @@ export function syncMetadata(repoRoot: string, version: string): string[] {
 		}
 	}
 	return changed;
-}
-
-/** Configures the environment to get package information.
- * This is a simplified version that reuses the existing environment configuration.
- */
-function configureEnvironment(repoRoot: string): { packages: PackageInfo[] } {
-	const manifest = loadRepoManifest(repoRoot);
-	// Parse package information from the manifest
-	const packages: PackageInfo[] = [];
-
-	// Find package.json files
-	const pkgJsonFiles = findPackageJsonFiles(repoRoot);
-	for (const file of pkgJsonFiles) {
-		const relPath = file.slice(repoRoot.length + 1);
-		const content = readFileSync(file, "utf8");
-		const parsed = JSON.parse(content);
-		const version = parsed.version ?? null;
-		const isWorkspaceRoot = Array.isArray(parsed.workspaces) && parsed.workspaces.length > 0;
-		packages.push({
-			manifest: relPath,
-			version,
-			isWorkspaceRoot,
-			path: relPath === "package.json" ? "." : relPath.replace(/\/package\.json$/, ""),
-		});
-	}
-
-	return { packages };
-}
-
-function findPackageJsonFiles(root: string): string[] {
-	const files: string[] = [];
-	function walk(dir: string) {
-		for (const entry of $`ls -1 ${dir}`.text().trim().split("\n")) {
-			const full = resolve(dir, entry);
-			if (entry === "package.json") {
-				files.push(full);
-			} else if (entry !== "node_modules" && !entry.startsWith(".")) {
-				try {
-					const stat = $`test -d ${full} && echo dir`.text();
-					if (stat.includes("dir")) walk(full);
-				} catch {
-					// not a directory
-				}
-			}
-		}
-	}
-	walk(root);
-	return files;
 }

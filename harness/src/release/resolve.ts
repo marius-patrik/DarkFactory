@@ -74,8 +74,8 @@ async function getCommitsSince(repoRoot: string, tag: string | null): Promise<st
 	try {
 		const result = await $`git -C ${repoRoot} log ${span} --format=%B%x00`.text();
 		return result.split("\0").map((chunk) => chunk.trim()).filter((chunk) => chunk.length > 0);
-	} catch {
-		return [];
+	} catch (error) {
+		throw new Error(`Failed to get git commits in ${repoRoot}: ${error instanceof Error ? error.message : error}`, { cause: error });
 	}
 }
 
@@ -104,6 +104,10 @@ export async function syncReleaseMetadata(
  */
 export async function writeNotes(notes: string, outPath: string): Promise<void> {
 	const dir = resolvePath(outPath, "..");
-	await $`mkdir -p ${dir}`;
+	try {
+		await $`mkdir -p ${dir}`;
+	} catch (error) {
+		throw new Error(`Failed to create directory ${dir}: ${error instanceof Error ? error.message : error}`, { cause: error });
+	}
 	await Bun.write(outPath, notes);
 }

@@ -3,7 +3,7 @@
  * Provides package detection, build planning, and ecosystem identification.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { globSync } from "node:glob";
 import { resolve, relative, sep } from "node:path";
 import { loadRepoManifest } from "./manifest.ts";
@@ -313,7 +313,12 @@ function detect(root: string): Package[] {
 			if (submodules.has(relPath)) continue;
 			const fullPath = resolve(current, entry);
 			if (!existsSync(fullPath)) continue;
-			const stat = require("node:fs").statSync(fullPath);
+			let stat;
+			try {
+				stat = statSync(fullPath);
+			} catch {
+				continue;
+			}
 			if (!stat.isDirectory()) continue;
 			walk(fullPath, depth + 1);
 		}
