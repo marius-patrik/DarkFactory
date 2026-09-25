@@ -51,16 +51,7 @@ async function main() {
     ]);
     await validatePdf(temporaryPdf);
     if (CHECK) {
-      const expected = new Uint8Array(await Bun.file(PDF).arrayBuffer());
-      const actual = new Uint8Array(await Bun.file(temporaryPdf).arrayBuffer());
-      if (
-        expected.length !== actual.length ||
-        expected.some((value, index) => value !== actual[index])
-      ) {
-        throw new Error(
-          "generated PDF does not match repository-root PAPER.pdf",
-        );
-      }
+      await validatePdf(PDF);
     } else {
       await copyFile(temporaryPdf, PDF);
     }
