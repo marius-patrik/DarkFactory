@@ -34,6 +34,8 @@ def _df_environment(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setattr(agent_runner, "_DF_SETUP_HOME", None, raising=False)
     for name in agent_runner.df_setup_secret_names():
         monkeypatch.delenv(name, raising=False)
+    yield
+    os.environ.pop("DF_CONFIG_DIR", None)
 
 
 def _stream(*events) -> str:
