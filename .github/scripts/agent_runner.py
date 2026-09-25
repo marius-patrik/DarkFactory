@@ -3213,7 +3213,7 @@ def _node_script_command(cwd: str, script: str) -> Optional[List[str]]:
 def format_repository(cwd: str) -> List[str]:
     """Runs every formatter whose manifest and executable are available.
 
-    Formatting is never a review topic (`.agents/notes/rules/008-formatting-and-linting.md`), so the agent normalizes the tree itself
+    Formatting is never a review topic (`.agents/rules/008-formatting-and-linting.md`), so the agent normalizes the tree itself
     before committing. Optional formatters are skipped when either their manifest/script or their
     executable is absent; deterministic verification remains responsible for required quality gates.
 

@@ -158,7 +158,7 @@ def test_format_conventional_commit_maps_bug_to_fix():
 
 
 def test_generate_branch_name_excludes_issue_numbers():
-    """DF-RULE-007 (`.agents/notes/rules/007-branches-and-pull-requests.md`) forbids issue numbers in branch names."""
+    """DF-RULE-007 (`.agents/rules/007-branches-and-pull-requests.md`) forbids issue numbers in branch names."""
     name = generate_branch_name("Plan: Add cell matrix buffer for #42")
     assert "42" not in name
     assert name == name.lower()

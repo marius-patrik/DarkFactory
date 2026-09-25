@@ -8,7 +8,7 @@ function rule(id: string): DocsPage {
 		id: id.toLowerCase(),
 		kind: "rule",
 		title: `Rule ${number} — Test`,
-		source: `.agents/notes/rules/${String(number).padStart(3, "0")}-test.md`,
+		source: `.agents/rules/${String(number).padStart(3, "0")}-test.md`,
 		markdown: `---
 id: ${id}
 title: Test
@@ -48,7 +48,7 @@ function adr(id: string, related: string): DocsPage {
 		id: id.toLowerCase(),
 		kind: "adr",
 		title: `${id} — Test decision`,
-		source: `.agents/notes/adr/${number}-test.md`,
+		source: `.agents/adr/${number}-test.md`,
 		markdown: `# ${id} — Test decision
 
 **Status**: Accepted
@@ -74,8 +74,8 @@ describe("rule/note relationships", () => {
 	test("fails closed when canonical governance disappears entirely", () => {
 		const empty = graph([]);
 		const findings = analyzeRuleNoteRelations(empty).findings;
-		expect(findings).toContain(".agents/notes/rules: at least one canonical rule is required");
-		expect(findings).toContain(".agents/notes/adr: at least one accepted ADR is required");
+		expect(findings).toContain(".agents/rules: at least one canonical rule is required");
+		expect(findings).toContain(".agents/adr: at least one accepted ADR is required");
 		expect(() => assertRuleNoteRelations(empty)).toThrow("Rule/note relationship contract failed");
 	});
 
@@ -89,7 +89,7 @@ describe("rule/note relationships", () => {
 		const page = adr("ADR-0001", "DF-RULE-001");
 		const content = graph([{ ...page, markdown: page.markdown.replace(/^\*\*Related rules\*\*:.+\n/mu, "") }, rule("DF-RULE-001")]);
 		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".agents/notes/adr/0001-test.md: accepted ADR must declare Related rules",
+			".agents/adr/0001-test.md: accepted ADR must declare Related rules",
 		);
 	});
 
@@ -101,21 +101,21 @@ describe("rule/note relationships", () => {
 	test("fails when a canonical rule has no accepted note", () => {
 		const content = graph([rule("DF-RULE-001")]);
 		expect(analyzeRuleNoteRelations(content).findings).toContain(
-			".agents/notes/rules/001-test.md: canonical rule must be related by at least one accepted ADR",
+			".agents/rules/001-test.md: canonical rule must be related by at least one accepted ADR",
 		);
 	});
 
 	test("fails on malformed canonical record identity", () => {
-		const badRule = { ...rule("DF-RULE-001"), source: ".agents/notes/rules/099-test.md" };
+		const badRule = { ...rule("DF-RULE-001"), source: ".agents/rules/099-test.md" };
 		const findings = analyzeRuleNoteRelations(graph([badRule, adr("ADR-0001", "DF-RULE-001")])).findings;
-		expect(findings).toContain(".agents/notes/rules/099-test.md: filename must start with canonical rule number 001-");
+		expect(findings).toContain(".agents/rules/099-test.md: filename must start with canonical rule number 001-");
 	});
 
 	test("fails when rule index metadata and prose heading titles drift", () => {
 		const concise = rule("DF-RULE-001");
 		const changed = { ...concise, markdown: concise.markdown.replace("title: Test", "title: Testing") };
 		expect(analyzeRuleNoteRelations(graph([changed, adr("ADR-0001", "DF-RULE-001")])).findings).toContain(
-			".agents/notes/rules/001-test.md: rule heading title must match front-matter title",
+			".agents/rules/001-test.md: rule heading title must match front-matter title",
 		);
 	});
 
@@ -134,11 +134,11 @@ describe("rule/note relationships", () => {
 			{ ...badAdr, markdown: badAdr.markdown.replace("## Consequences\n\nTest.\n", "") },
 		]);
 		const findings = analyzeRuleNoteRelations(content).findings;
-		expect(findings).toContain(".agents/notes/rules/001-test.md: canonical rule is missing non-empty Enforcement section");
-		expect(findings).toContain(".agents/notes/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
+		expect(findings).toContain(".agents/rules/001-test.md: canonical rule is missing non-empty Enforcement section");
+		expect(findings).toContain(".agents/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
 	});
 
-	test("rejects non-ADR long-term notes so README cannot omit them", () => {
+	test("keeps non-normative notes outside the ADR relation graph", () => {
 		const note: DocsPage = {
 			id: "note-test",
 			kind: "note",
@@ -146,8 +146,10 @@ describe("rule/note relationships", () => {
 			source: ".agents/notes/loose.md",
 			markdown: "# Loose note\n",
 		};
-		expect(analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings).toContain(
-			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs under .agents/notes/adr/",
+		const analysis = analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note]));
+		expect(analysis.findings).not.toContain(
+			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs under .agents/adr/",
 		);
+		expect(analysis.notes.map((entry) => entry.id)).toEqual(["ADR-0001"]);
 	});
 });

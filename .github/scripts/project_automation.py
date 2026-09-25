@@ -55,7 +55,7 @@ DEFAULT_REPO = os.environ.get("GITHUB_REPOSITORY", "")
 
 STATUS_FIELD_NAME = "Status"
 
-#: Canonical status taxonomy (`.agents/notes/rules/009-issue-binding-and-board-status.md`). Order is significant: it is the board column order.
+#: Canonical status taxonomy (`.agents/rules/009-issue-binding-and-board-status.md`). Order is significant: it is the board column order.
 STATUS_NAMES: List[str] = [
     "Backlog",
     "ToDo",

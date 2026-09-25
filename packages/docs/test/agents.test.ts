@@ -47,14 +47,14 @@ describe("AGENTS rules projection", () => {
 			home: "home",
 			workflows: [],
 			pages: [
-				{ id: "home", kind: "home", title: "Home", source: ".agents/PRD.md", markdown: "# Home\n" },
-				rule(".agents/notes/rules/002-second.md", "DF-RULE-002", "Second", 2, "Second invariant."),
-				rule(".agents/notes/rules/001-first.md", "DF-RULE-001", "First", 1, "First invariant."),
+				{ id: "home", kind: "home", title: "Home", source: ".agents/README.md", markdown: "# Home\n" },
+				rule(".agents/rules/002-second.md", "DF-RULE-002", "Second", 2, "Second invariant."),
+				rule(".agents/rules/001-first.md", "DF-RULE-001", "First", 1, "First invariant."),
 				{
 					id: "adr-0001",
 					kind: "adr",
 					title: "ADR-0001 — Test decision",
-					source: ".agents/notes/adr/0001-test.md",
+					source: ".agents/adr/0001-test.md",
 					markdown: "# ADR-0001 — Test decision\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`, `DF-RULE-002`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest consequence.\n",
 				},
 			],
@@ -62,7 +62,7 @@ describe("AGENTS rules projection", () => {
 		const markdown = renderAgentsMarkdown(graph);
 		expect(markdown.startsWith(AGENTS_GENERATED_MARKER)).toBe(true);
 		expect(markdown.indexOf("DF-RULE-001")).toBeLessThan(markdown.indexOf("DF-RULE-002"));
-		expect(markdown).toContain("| `DF-RULE-001` | First | `ADR-0001` | `.agents/notes/rules/001-first.md` |");
+		expect(markdown).toContain("| `DF-RULE-001` | First | `ADR-0001` | `.agents/rules/001-first.md` |");
 		expect(markdown).toContain("### Rule 1 — First\n\nFirst invariant.");
 		expect(markdown).not.toContain("Because.");
 	});
