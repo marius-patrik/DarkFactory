@@ -49,3 +49,6 @@ event.json
 
 # Harness test workspaces created when tests run from the repository root
 .harness-test-*/
+
+# uv writes this when Python tooling is invoked; the manifest is pyproject.toml
+uv.lock
