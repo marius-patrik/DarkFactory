@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="title desc">
-  <title id="title">Produkční průchod DarkFactory v revizi e9c10221</title>
-  <desc id="desc">Požadavek prochází interpretací a lidským schválením, plánováním a druhým schválením, implementací a ověřením, návrhovým pull requestem, seberevizí a lidskou integrací. Vyčerpání kvóty vede k checkpointu a obnovení.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-labelledby="title desc">
+  <title id="title">Jednoduchý průchod DarkFactory</title>
+  <desc id="desc">Požadavek v issue prochází interpretací, plánováním, implementací na větvi, automatickou review smyčkou a lidským schválením. Po merge se větev odstraní.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#475569"/></marker>
     <marker id="gate-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#b45309"/></marker>
@@ -8,23 +8,24 @@
       .title{font:700 17px Caladea,serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.phase{font:700 11px Caladea,serif;letter-spacing:.5px;fill:#475569}.head{font:700 13px Caladea,serif;fill:#0f172a}.body{font:11px Caladea,serif;fill:#475569}.gate{font:700 10px Caladea,serif;fill:#92400e}.small{font:10px Caladea,serif;fill:#64748b}
     </style>
   </defs>
-  <rect x="8" y="8" width="984" height="414" rx="12" fill="#fff" stroke="#cbd5e1"/>
-  <text x="32" y="38" class="title">Řízený průchod požadavku</text><text x="968" y="37" text-anchor="end" class="rev">e9c10221</text>
-  <rect x="28" y="58" width="944" height="142" rx="9" fill="#f8fafc" stroke="#e2e8f0"/><text x="46" y="80" class="phase">SPECIFIKACE A LIDSKÉ BRÁNY</text>
-  <path d="M190 138H220M370 138H400M550 138H580M730 138H760" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <path d="M370 138H400M730 138H760" stroke="#b45309" stroke-width="1.8" fill="none" marker-end="url(#gate-arrow)"/>
-  <g><rect x="44" y="96" width="146" height="82" rx="7" fill="#fff" stroke="#94a3b8"/><text x="117" y="124" text-anchor="middle" class="head">Požadavek</text><text x="117" y="147" text-anchor="middle" class="body">issue / komentář</text><text x="117" y="165" text-anchor="middle" class="small">GitHub událost</text></g>
-  <g><rect x="220" y="96" width="150" height="82" rx="7" fill="#eff6ff" stroke="#60a5fa"/><text x="295" y="124" text-anchor="middle" class="head">Interpretace</text><text x="295" y="147" text-anchor="middle" class="body">rozsah a kritéria</text><text x="295" y="165" text-anchor="middle" class="small">komentář agenta</text></g>
-  <g><rect x="400" y="96" width="150" height="82" rx="7" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/><text x="475" y="121" text-anchor="middle" class="gate">LIDSKÁ BRÁNA 1</text><text x="475" y="147" text-anchor="middle" class="head">Schválení</text><text x="475" y="165" text-anchor="middle" class="small">porozumění úloze</text></g>
-  <g><rect x="580" y="96" width="150" height="82" rx="7" fill="#f5f3ff" stroke="#a78bfa"/><text x="655" y="124" text-anchor="middle" class="head">Plán</text><text x="655" y="147" text-anchor="middle" class="body">soubory a kroky</text><text x="655" y="165" text-anchor="middle" class="small">kontrolovatelný rozsah</text></g>
-  <g><rect x="760" y="96" width="190" height="82" rx="7" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/><text x="855" y="121" text-anchor="middle" class="gate">LIDSKÁ BRÁNA 2</text><text x="855" y="147" text-anchor="middle" class="head">Schválení plánu</text><text x="855" y="165" text-anchor="middle" class="small">před změnou kódu</text></g>
-  <path d="M855 178V228H116V250" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <rect x="28" y="220" width="944" height="136" rx="9" fill="#f8fafc" stroke="#e2e8f0"/><text x="46" y="242" class="phase">IMPLEMENTACE, VERIFIKACE A INTEGRACE</text>
-  <path d="M190 300H220M370 300H400M550 300H580M730 300H760" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
-  <g><rect x="44" y="258" width="146" height="82" rx="7" fill="#eff6ff" stroke="#60a5fa"/><text x="117" y="286" text-anchor="middle" class="head">Větev</text><text x="117" y="309" text-anchor="middle" class="body">izolace změn</text><text x="117" y="327" text-anchor="middle" class="small">git checkout</text></g>
-  <g><rect x="220" y="258" width="150" height="82" rx="7" fill="#eef2ff" stroke="#818cf8"/><text x="295" y="286" text-anchor="middle" class="head">Implementace</text><text x="295" y="309" text-anchor="middle" class="body">df + nástroje</text><text x="295" y="327" text-anchor="middle" class="small">podle plánu</text></g>
-  <g><rect x="400" y="258" width="150" height="82" rx="7" fill="#f0fdfa" stroke="#2dd4bf"/><text x="475" y="286" text-anchor="middle" class="head">Ověření</text><text x="475" y="309" text-anchor="middle" class="body">format + testy</text><text x="475" y="327" text-anchor="middle" class="small">výstup → oprava</text></g>
-  <g><rect x="580" y="258" width="150" height="82" rx="7" fill="#f5f3ff" stroke="#a78bfa"/><text x="655" y="286" text-anchor="middle" class="head">Draft PR</text><text x="655" y="309" text-anchor="middle" class="body">commit a push</text><text x="655" y="327" text-anchor="middle" class="small">seberevize</text></g>
-  <g><rect x="760" y="258" width="190" height="82" rx="7" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/><text x="855" y="282" text-anchor="middle" class="gate">LIDSKÁ INTEGRACE</text><text x="855" y="307" text-anchor="middle" class="head">Revize a merge</text><text x="855" y="327" text-anchor="middle" class="small">připraveno k revizi</text></g>
-  <rect x="160" y="378" width="680" height="28" rx="6" fill="#fff7ed" stroke="#fdba74"/><text x="500" y="397" text-anchor="middle" class="body">Vyčerpání kvóty → checkpoint + Blocked → plánovaný sweep nebo <tspan class="rev">/resume</tspan></text>
+  <rect x="8" y="8" width="984" height="404" rx="12" fill="#fff" stroke="#cbd5e1"/>
+  <text x="32" y="38" class="title">Jednoduchý průchod požadavku</text><text x="968" y="37" text-anchor="end" class="rev">e9c10221</text>
+  <rect x="28" y="56" width="944" height="142" rx="9" fill="#f8fafc" stroke="#e2e8f0"/><text x="46" y="78" class="phase">SPECIFIKACE A LIDSKÉ BRÁNY</text>
+  <path d="M178 126H210M358 126H390M538 126H570M718 126H750" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M358 126H390M718 126H750" stroke="#b45309" stroke-width="1.8" fill="none" marker-end="url(#gate-arrow)"/>
+  <g><rect x="42" y="94" width="136" height="64" rx="7" fill="#fff" stroke="#94a3b8"/><text x="110" y="120" text-anchor="middle" class="head">Požadavek</text><text x="110" y="140" text-anchor="middle" class="body">issue / komentář</text></g>
+  <g><rect x="210" y="94" width="148" height="64" rx="7" fill="#eff6ff" stroke="#60a5fa"/><text x="284" y="120" text-anchor="middle" class="head">Interpretace</text><text x="284" y="140" text-anchor="middle" class="body">rozsah a kritéria</text></g>
+  <g><rect x="390" y="94" width="148" height="64" rx="7" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/><text x="464" y="116" text-anchor="middle" class="gate">LIDSKÁ BRÁNA</text><text x="464" y="138" text-anchor="middle" class="head">Schválení</text></g>
+  <g><rect x="570" y="94" width="148" height="64" rx="7" fill="#f5f3ff" stroke="#a78bfa"/><text x="644" y="120" text-anchor="middle" class="head">Plán</text><text x="644" y="140" text-anchor="middle" class="body">soubory a kroky</text></g>
+  <g><rect x="750" y="94" width="198" height="64" rx="7" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/><text x="849" y="116" text-anchor="middle" class="gate">LIDSKÁ BRÁNA</text><text x="849" y="138" text-anchor="middle" class="head">Schválení plánu</text></g>
+  <path d="M849 158V206H110V224" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="28" y="216" width="944" height="158" rx="9" fill="#f8fafc" stroke="#e2e8f0"/><text x="46" y="238" class="phase">IMPLEMENTACE, REVIEW A INTEGRACE</text>
+  <path d="M170 300H204M344 300H378M518 300H552M692 300H726" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <g><rect x="42" y="264" width="128" height="72" rx="7" fill="#eff6ff" stroke="#60a5fa"/><text x="106" y="291" text-anchor="middle" class="head">Větev</text><text x="106" y="312" text-anchor="middle" class="body">izolace změn</text></g>
+  <g><rect x="204" y="264" width="140" height="72" rx="7" fill="#eef2ff" stroke="#818cf8"/><text x="274" y="291" text-anchor="middle" class="head">Implementace</text><text x="274" y="312" text-anchor="middle" class="body">df + nástroje</text></g>
+  <g><rect x="378" y="264" width="140" height="72" rx="7" fill="#f0fdfa" stroke="#2dd4bf"/><text x="448" y="291" text-anchor="middle" class="head">Ověření</text><text x="448" y="312" text-anchor="middle" class="body">format + testy</text></g>
+  <g><rect x="552" y="264" width="140" height="72" rx="7" fill="#f5f3ff" stroke="#a78bfa"/><text x="622" y="291" text-anchor="middle" class="head">Draft PR</text><text x="622" y="312" text-anchor="middle" class="body">diff a scope</text></g>
+  <g><rect x="726" y="264" width="222" height="72" rx="7" fill="#fff7ed" stroke="#fb923c" stroke-width="1.5"/><text x="837" y="286" text-anchor="middle" class="gate">REVIEW ↔ FIX</text><text x="837" y="310" text-anchor="middle" class="head">Dokud není čisté</text><text x="837" y="327" text-anchor="middle" class="small">pak ready pro člověka</text></g>
+  <path d="M837 336V353H622V337" stroke="#2563eb" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="240" y="370" width="520" height="24" rx="6" fill="#ecfdf5" stroke="#6ee7b7"/><text x="500" y="386" text-anchor="middle" class="body">Schválení PR → merge → odstranění pracovní větve</text>
 </svg>
