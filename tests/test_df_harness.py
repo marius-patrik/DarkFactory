@@ -387,17 +387,22 @@ class TestDfSetup:
         """
         config_dir = tmp_path / ".darkfactory"
         config_dir.mkdir(parents=True)
-        (config_dir / "repo.dfconfig").write_text('{"providers":{"defaultChain":"x"}}', encoding="utf-8")
+        (config_dir / "repo.dfconfig").write_text(
+            '{"providers":{"defaultChain":"x"}}', encoding="utf-8"
+        )
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
         self._record(monkeypatch)
         df_home = agent_runner.setup_df_accounts()
         assert os.path.isdir(df_home)
         assert os.environ["DF_CONFIG_DIR"] == str(config_dir)
+        os.environ.pop("DF_CONFIG_DIR", None)
         assert not os.path.exists(os.path.join(df_home, "config.json"))
 
     def test_root_config_is_selected_when_present(self, monkeypatch, tmp_path):
         """The canonical root document takes precedence over the default folder."""
-        (tmp_path / "repo.dfconfig").write_text('{"providers":{"defaultChain":"x"}}', encoding="utf-8")
+        (tmp_path / "repo.dfconfig").write_text(
+            '{"providers":{"defaultChain":"x"}}', encoding="utf-8"
+        )
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
         assert agent_runner.find_df_config() == str(tmp_path / "repo.dfconfig")
 
@@ -417,7 +422,9 @@ class TestDfSetup:
         """
         fallback = tmp_path / ".darkfactory-pipeline" / ".darkfactory"
         fallback.mkdir(parents=True)
-        (fallback / "repo.dfconfig").write_text('{"providers":{"defaultChain":"y"}}', encoding="utf-8")
+        (fallback / "repo.dfconfig").write_text(
+            '{"providers":{"defaultChain":"y"}}', encoding="utf-8"
+        )
         monkeypatch.setattr(agent_runner, "WORKSPACE_DIR", str(tmp_path))
         assert agent_runner.find_df_config() == str(fallback / "repo.dfconfig")
 

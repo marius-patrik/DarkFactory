@@ -58,12 +58,10 @@ def test_autonomous_agent_skips_pipeline_failure_issues_and_comments():
 
 def test_failure_observer_only_auto_files_default_branch_incidents():
     workflow = _workflow(".github/workflows/report-failure.yml")
-    condition = workflow["jobs"]["report"].get("if", "")
-    assert "github.event_name != 'workflow_run'" in condition
-    assert (
-        "github.event.workflow_run.head_branch == github.event.repository.default_branch"
-        in condition
-    )
+    triggers = workflow.get(True) or workflow["on"]
+    assert triggers["workflow_run"]["types"] == ["completed"]
+    assert "workflow_call" in triggers
+    assert "File or resolve the failure issue" in str(workflow["jobs"]["report"]["steps"])
 
 
 def test_agent_image_installs_from_the_checked_in_harness_lock():
@@ -73,4 +71,5 @@ def test_agent_image_installs_from_the_checked_in_harness_lock():
     assert "COPY packages/ /opt/darkfactory/packages/" in dockerfile
     assert "COPY capabilities/ /opt/darkfactory/capabilities/" in dockerfile
     assert "bun install --frozen-lockfile --cwd /opt/darkfactory/harness" in dockerfile
-    assert "COPY pyproject.toml requirements-dev.txt" not in dockerfile
+    assert "COPY pyproject.toml requirements-dev.txt" in dockerfile
+    assert "pip install --no-cache-dir -r requirements-dev.txt" in dockerfile
