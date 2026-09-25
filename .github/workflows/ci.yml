@@ -130,7 +130,7 @@ jobs:
           deno-version: v2.x
 
       - name: Set up Typst
-        if: matrix.ecosystem == 'typst'
+        if: matrix.ecosystem == 'typst' || matrix.id == 'node:paper:test'
         uses: typst-community/setup-typst@v5
         with:
           version: ${{ matrix.version || '0.15.1' }}
