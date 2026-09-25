@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { qualityMatrix, resolveRepositoryActions } from "@darkfactory/capability/actions";
 import { detectRepositoryEvidence } from "@darkfactory/core/repository-evidence";
 import codeCapability from "../../capabilities/code/capability.ts";
+import docsCapability from "../../capabilities/docs/capability.ts";
 import mathCapability from "../../capabilities/math/capability.ts";
 import paperCapability from "../../capabilities/paper/capability.ts";
 
@@ -66,7 +67,7 @@ describe("repository evidence and capability actions", () => {
 	test("resolves actions only from repo.dfconfig overrides and capability contributions", async () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
-		const resolution = resolveRepositoryActions(evidence, [codeCapability, paperCapability, mathCapability]);
+		const resolution = resolveRepositoryActions(evidence, [codeCapability, docsCapability, paperCapability, mathCapability]);
 		const node = resolution.packages.find((entry) => entry.package.id === "node:.")!;
 		expect(node.actions.test.command).toBe("bun run test");
 		expect(node.actions.lint.command).toBe("bun run lint");

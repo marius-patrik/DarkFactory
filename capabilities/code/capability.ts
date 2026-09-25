@@ -53,11 +53,6 @@ function pythonSetup(pkg: CapabilityPackageContext): string {
 	}
 }
 
-function nodeDocsMetadata(pkg: CapabilityPackageContext): Readonly<Record<string, unknown>> | undefined {
-	if (pkg.apiEntryPoints.length === 0) return undefined;
-	return { extractor: "typedoc", entryPoints: pkg.apiEntryPoints, strict: true };
-}
-
 /** Official code-domain capability definition. */
 export const capability = defineCapability({
 	abiVersion: CAPABILITY_ABI_VERSION,
@@ -90,18 +85,6 @@ export const capability = defineCapability({
 			description: "Run the package formatting/check script with the detected Node package manager.",
 			ecosystems: ["node"],
 			command: nodeFormatCheck,
-		},
-		{
-			kind: "docs_check",
-			description: "Strictly validate TypeScript API documentation for the detected package.",
-			ecosystems: ["node"],
-			metadata: nodeDocsMetadata,
-		},
-		{
-			kind: "docs_extract",
-			description: "Extract TypeScript API documentation for the detected package.",
-			ecosystems: ["node"],
-			metadata: nodeDocsMetadata,
 		},
 		{
 			kind: "setup",
@@ -147,18 +130,6 @@ export const capability = defineCapability({
 			command: "cargo fmt --all -- --check",
 		},
 		{
-			kind: "docs_check",
-			description: "Check Rust documentation.",
-			ecosystems: ["rust"],
-			command: "cargo doc --no-deps",
-		},
-		{
-			kind: "docs_extract",
-			description: "Build Rust API documentation.",
-			ecosystems: ["rust"],
-			command: "cargo doc --no-deps",
-		},
-		{
 			kind: "test",
 			description: "Run Go tests.",
 			ecosystems: ["go"],
@@ -177,18 +148,6 @@ export const capability = defineCapability({
 			command: "test -z \"$(gofmt -l .)\"",
 		},
 		{
-			kind: "docs_check",
-			description: "Validate Go package documentation.",
-			ecosystems: ["go"],
-			command: "go doc ./...",
-		},
-		{
-			kind: "docs_extract",
-			description: "Extract Go package documentation.",
-			ecosystems: ["go"],
-			command: "go doc ./...",
-		},
-		{
 			kind: "test",
 			description: "Run Deno tests.",
 			ecosystems: ["deno"],
@@ -205,12 +164,6 @@ export const capability = defineCapability({
 			description: "Check Deno formatting.",
 			ecosystems: ["deno"],
 			command: "deno fmt --check",
-		},
-		{
-			kind: "docs_check",
-			description: "Validate Deno documentation.",
-			ecosystems: ["deno"],
-			command: "deno doc --lint",
 		},
 	],
 });

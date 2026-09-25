@@ -43,14 +43,6 @@ describe("code capability", () => {
 		)).toBeUndefined();
 	});
 
-	test("publishes TypeScript docs metadata only when API entry points exist", () => {
-		const docs = action("docs_check", "node");
-		expect(typeof docs?.metadata).toBe("function");
-		const metadata = docs?.metadata as (value: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined;
-		expect(metadata(pkg())).toEqual({ extractor: "typedoc", entryPoints: ["src/index.ts"], strict: true });
-		expect(metadata(pkg({ apiEntryPoints: [] }))).toBeUndefined();
-	});
-
 	test("declares deterministic quality actions for supported code ecosystems", () => {
 		for (const ecosystem of ["node", "python", "rust", "go", "deno"]) {
 			expect((capability.actions as readonly CapabilityActionDefinition[] | undefined)?.some((entry) => entry.kind === "test" && entry.ecosystems?.includes(ecosystem))).toBe(true);
