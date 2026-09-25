@@ -1848,22 +1848,46 @@ def df_setup_secret_names() -> Tuple[str, ...]:
 
 
 def find_df_config() -> Optional[str]:
-    """Locates the df chain config for this run.
+    """Locates the single combined configuration document for this run.
 
-    Repository-specific data lives in ``.darkfactory/``: the target repository's own
-    ``.darkfactory/df/config.json`` wins, falling back to the pipeline's copy checked out at
-    ``.darkfactory-pipeline/`` when a consumer has none yet.
-
-    Returns:
-        Path of the config file, or ``None`` when neither exists.
+    The target repository is checked first, then the pinned pipeline checkout. Each scope
+    supports the canonical root document, its aliases, and one ``DF_CONFIG_DIR`` folder; ambiguity
+    fails closed instead of silently selecting a copy.
     """
-    candidates = (
-        os.path.join(WORKSPACE_DIR, ".darkfactory", "df", "config.json"),
-        os.path.join(WORKSPACE_DIR, ".darkfactory-pipeline", ".darkfactory", "df", "config.json"),
-    )
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
+    names = ("repo.dfconfig", "config.dfconfig", ".dfconfig")
+
+    def candidates(root: str) -> List[str]:
+        root = os.path.abspath(os.path.normpath(root))
+        configured = os.environ.get("DF_CONFIG_DIR", "").strip() or ".darkfactory"
+        directory = configured if os.path.isabs(configured) else os.path.join(root, configured)
+        directory = os.path.abspath(os.path.normpath(directory))
+        root_candidates = [
+            os.path.join(root, name) for name in names if os.path.isfile(os.path.join(root, name))
+        ]
+        folder_candidates = (
+            []
+            if directory == root
+            else [
+                os.path.join(directory, name)
+                for name in names
+                if os.path.isfile(os.path.join(directory, name))
+            ]
+        )
+        if root_candidates and folder_candidates:
+            raise ValueError(
+                "Ambiguous DarkFactory configuration: root and configured-folder candidates both exist"
+            )
+        selected = root_candidates or folder_candidates
+        if len(selected) > 1:
+            raise ValueError(
+                "Ambiguous DarkFactory configuration aliases: keep only repo.dfconfig, config.dfconfig, or .dfconfig"
+            )
+        return selected
+
+    for root in (WORKSPACE_DIR, os.path.join(WORKSPACE_DIR, ".darkfactory-pipeline")):
+        selected = candidates(root)
+        if selected:
+            return selected[0]
     return None
 
 
@@ -1897,11 +1921,12 @@ def setup_df_accounts() -> str:
     try:
         source = find_df_config()
         if source:
-            shutil.copy(source, os.path.join(df_home, "config.json"))
-            print(f"Using df chain config from {source}.")
+            os.environ["DF_CONFIG_DIR"] = os.path.dirname(source)
+            df_env["DF_CONFIG_DIR"] = os.path.dirname(source)
+            print(f"Using df config directory from {source}.")
         else:
             print(
-                "No .darkfactory/df/config.json found; df uses its built-in default chain.",
+                "No combined DarkFactory config found; df uses its built-in default chain.",
                 file=sys.stderr,
             )
     except Exception as exc:  # noqa: BLE001 - a missing config must not stop the run
