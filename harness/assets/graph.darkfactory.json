@@ -3,11 +3,7 @@
   "version": 1,
   "checks": [
     {
-      "name": "pipeline",
-      "required": true
-    },
-    {
-      "name": "harness",
+      "name": "quality",
       "required": true
     },
     {
@@ -264,15 +260,9 @@
       }
     },
     {
-      "id": "pipeline",
+      "id": "quality",
       "kind": "check-reference",
-      "check": "pipeline",
-      "required": true
-    },
-    {
-      "id": "harness",
-      "kind": "check-reference",
-      "check": "harness",
+      "check": "quality",
       "required": true
     },
     {

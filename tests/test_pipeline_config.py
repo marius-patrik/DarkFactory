@@ -725,8 +725,8 @@ def test_no_script_defaults_to_another_repository():
 
 def test_repository_documents_name_the_native_docs_contract():
     """Normative repository text points at the current documentation owners."""
-    agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
-    prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
+    agents = _read(os.path.join(REPO_ROOT, ".agents", "AGENTS.md"))
+    prd = _read(os.path.join(REPO_ROOT, ".agents", "PRD.md"))
     assert "`docs` block" in agents
     assert "`docs` block" in prd
     assert "@darkfactory/docs" in prd

@@ -44,6 +44,9 @@ function withRepo(run: (repoRoot: string) => void): void {
 }
 
 function writeCurrentAliases(repoRoot: string, omit?: string): void {
+	mkdirSync(join(repoRoot, ".agents"), { recursive: true });
+	writeFileSync(join(repoRoot, ".agents", "PRD.md"), "# product\n");
+	writeFileSync(join(repoRoot, ".agents", "AGENTS.md"), "# rules\n");
 	const aliases = [
 		["README.md", ".agents/PRD.md"],
 		["CONTRIBUTING.md", ".agents/AGENTS.md"],
@@ -108,6 +111,19 @@ describe("current documentation truth", () => {
 		});
 	});
 
+	test("fails when a current alias points at a missing target", () => {
+		withRepo((repoRoot) => {
+			const content = graph();
+			writeCurrentAliases(repoRoot);
+			writeGeneratedAgents(repoRoot, content);
+			unlinkSync(join(repoRoot, ".agents", "PRD.md"));
+			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
+				path: "README.md",
+				message: "documentation discovery alias target is missing",
+			});
+		});
+	});
+
 	test("rejects a copied current alias", () => {
 		withRepo((repoRoot) => {
 			const content = graph();
@@ -127,6 +143,7 @@ describe("current documentation truth", () => {
 			const content = graph();
 			writeCurrentAliases(repoRoot);
 			writeFileSync(join(repoRoot, "projection.md"), renderAgentsMarkdown(content));
+			unlinkSync(join(repoRoot, ".agents", "AGENTS.md"));
 			symlinkSync("../projection.md", join(repoRoot, ".agents", "AGENTS.md"));
 			expect(currentDocumentationFindings(repoRoot, content)).toContainEqual({
 				path: ".agents/AGENTS.md",

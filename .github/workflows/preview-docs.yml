@@ -29,11 +29,5 @@ jobs:
       - name: Validate documentation projections
         run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE" --check
 
-      - name: Validate current documentation projections
-        run: |
-          ROOT="$GITHUB_WORKSPACE"
-          [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ] && ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
-
       - name: Build documentation
         run: bun scripts/build-docs.ts --repo-root "$GITHUB_WORKSPACE"

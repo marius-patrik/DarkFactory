@@ -1,5 +1,5 @@
-import { lstatSync, readFileSync, readlinkSync } from "node:fs";
-import { join } from "node:path";
+import { lstatSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { renderAgentsMarkdown } from "./agents.ts";
 import type { DocsContentGraph } from "./content.ts";
 import { analyzeRuleNoteRelations } from "./relations.ts";
@@ -90,6 +90,26 @@ export function currentDocumentationFindings(
 				path: alias.path.replaceAll("\\", "/"),
 				message: `documentation discovery alias must target ${alias.target}`,
 			});
+			continue;
+		}
+		try {
+			const resolvedAlias = realpathSync(absolute);
+			const resolvedTarget = realpathSync(resolve(dirname(absolute), alias.target));
+			if (resolvedAlias !== resolvedTarget) {
+				findings.push({
+					path: alias.path.replaceAll("\\", "/"),
+					message: `documentation discovery alias must target ${alias.target}`,
+				});
+			}
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				findings.push({
+					path: alias.path.replaceAll("\\", "/"),
+					message: "documentation discovery alias target is missing",
+				});
+				continue;
+			}
+			throw error;
 		}
 	}
 
