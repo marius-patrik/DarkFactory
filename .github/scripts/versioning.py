@@ -202,6 +202,33 @@ def bump_version(current: str, bump: Optional[str]) -> Optional[str]:
     return _render(scheme, major, minor, patch + 1)
 
 
+def is_ahead(candidate: Optional[str], current: Optional[str]) -> bool:
+    """Reports whether a version is a deliberate step past the one already released.
+
+    Both sides are compared within one scheme, so `3b.0.0` is ahead of `3a.9.9` and `3a.1.0` is not
+    ahead of `3a.2.0`. A version in a different scheme than the current release cannot be compared
+    numerically, and a declared version that names an unreleased scheme is a choice, not staleness.
+
+    Args:
+        candidate: The version being considered, or `None`.
+        current: The last released version, or `None` when nothing has been released.
+
+    Returns:
+        `True` when `candidate` names something newer than `current`.
+    """
+    if not candidate:
+        return False
+    left = _parse(candidate)
+    right = _parse(current) if current else None
+    if left is None:
+        return False
+    if right is None:
+        return True
+    if left[0] != right[0]:
+        return True
+    return left[1] > right[1]
+
+
 def latest_tag(tags: Sequence[str], prefer: Optional[str] = None) -> Optional[str]:
     """Picks the highest release tag from a list, ignoring anything that is not one.
 
@@ -389,9 +416,9 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
             raise VersioningError(
                 "manual versioning requires a VERSION file at the repository root"
             )
-        if declared != current:
-            # The file names something other than what is already released: that is the owner's
-            # decision, and it wins over anything the commit log implies.
+        if is_ahead(declared, current):
+            # The file names something newer than what is released: that is the owner's decision,
+            # and it wins over anything the commit log implies.
             return {
                 "mode": mode,
                 "current": current,
@@ -400,8 +427,9 @@ def resolve(repo_root: str, requested: Optional[str] = None) -> Dict[str, Option
                 "tag": f"{prefix}{declared}",
                 "bump": "declared",
             }
-        # The file agrees with the last release, so the pipeline keeps it moving instead of asking a
-        # human to edit it before every promotion.
+        # Either the file already matches the last release, or it names one that is behind it
+        # because a record never landed. A stale file is not a choice: treating it as one would
+        # re-release an old number, so the pipeline advances from the last release instead.
         bump = classify_commits(commits_since(repo_root, current_tag))
         upcoming = bump_version(current, bump) if current else None
         return {

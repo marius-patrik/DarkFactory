@@ -36,6 +36,11 @@ NOTE_SECTIONS: Tuple[Tuple[str, str], ...] = (
 #: `type(scope)!: subject`
 _COMMIT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s*(?P<subject>.+)$")
 
+#: The identity automation-authored commits carry. The same one the pipeline uses everywhere else,
+#: so a record commit is attributable to the pipeline rather than to whichever runner produced it.
+BOT_NAME = "github-actions[bot]"
+BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
+
 
 class ReleaseError(RuntimeError):
     """Raised when a release cannot be assembled as configured."""
@@ -388,7 +393,19 @@ def record_version(root: str, version: str, released_tag: Optional[str] = None) 
     with open(os.path.join(root, "VERSION"), "w", encoding="utf-8") as handle:
         handle.write(f"{version}\n")
     _git(root, "add", "VERSION")
-    _git(root, "commit", "-q", "-m", f"chore(release): record {version}")
+    # The identity is passed on the command rather than configured on the runner: a release job
+    # that inherits nobody's git identity fails at the commit, after the release is already public.
+    _git(
+        root,
+        "-c",
+        f"user.name={BOT_NAME}",
+        "-c",
+        f"user.email={BOT_EMAIL}",
+        "commit",
+        "-q",
+        "-m",
+        f"chore(release): record {version}",
+    )
     _git(root, "push", "--force-with-lease", "origin", f"{branch}:{branch}")
     result["recorded"] = True
     result["branch"] = branch
