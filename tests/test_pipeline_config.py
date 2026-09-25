@@ -86,11 +86,11 @@ def test_ci_has_one_aggregate_quality_context():
 
 
 def test_python_actions_and_docs_have_separate_final_owners():
-    """Capability actions execute in the matrix while .agents/docs.df uses the native compiler."""
+    """Capability actions execute in the matrix while the combined docs block uses the native compiler."""
     ci = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     assert "pytest -v tests" not in ci
     assert "DF_ACTION_COMMAND" in ci
-    assert ".agents/docs.df" in ci
+    assert "repo.df" in ci
     assert 'bun "$ROOT/scripts/build-docs.ts"' in ci
 
 
@@ -321,7 +321,7 @@ def test_area_lists_match_the_manifest(path, pattern):
     }
     assert found, f"{path} lists no areas at all"
     assert found == declared, (
-        f"{path} disagrees with .darkfactory/repo.df; "
+        f"{path} disagrees with the repo block in repo.df; "
         f"missing={set(declared) - set(found)} unexpected={set(found) - set(declared)}"
     )
 
@@ -340,6 +340,12 @@ def test_gitignore_excludes_agent_checkpoint():
 
     content = _read(os.path.join(REPO_ROOT, ".gitignore"))
     assert agent_runner.CHECKPOINT_FILENAME in content
+
+
+def test_gitignore_excludes_generated_documentation_data():
+    """Generated documentation JSON is a CI output, never repository content."""
+    lines = _read(os.path.join(REPO_ROOT, ".gitignore")).splitlines()
+    assert ".darkfactory/generated/" in lines
 
 
 def test_pages_source_matches_the_deploy_workflow():
@@ -483,19 +489,21 @@ def test_repository_settings_fall_back_from_opaque_gh_api_failures():
 
 
 def test_the_docs_job_uses_the_native_docs_contract():
-    """The direct docs-check job detects .agents/docs.df and runs the first-party compiler."""
+    """The direct docs-check job detects the combined docs block and runs the first-party compiler."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
     ]
-    assert ".agents/docs.df" in docs_job
+    assert "repo.df" in docs_job
+    assert "config.df" in docs_job
+    assert "DF_CONFIG_DIR" in docs_job
     assert 'bun "$ROOT/scripts/build-docs.ts"' in docs_job
     assert "packages/docs" not in docs_job
     assert "packages/web" not in docs_job
 
 
 def test_the_docs_job_tolerates_a_repository_with_no_documentation():
-    """A repository without .agents/docs.df reports a successful no-op docs check."""
+    """A repository without a combined configuration reports a successful no-op docs check."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     docs_job = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))
@@ -516,7 +524,7 @@ def test_repo_settings_can_configure_a_consumer_checkout():
 
 
 def test_the_deploy_workflow_uses_the_native_docs_compiler():
-    """Deploy consumes .agents/docs.df through the shared DarkFactory compiler and renderer."""
+    """Deploy consumes the combined docs block through the shared compiler and renderer."""
     content = _read(os.path.join(WORKFLOW_DIR, "deploy-docs.yml"))
     assert "bun scripts/build-docs.ts" in content
     assert "upload-pages-artifact" in content
@@ -544,7 +552,7 @@ def test_the_deploy_workflow_is_main_actions_release():
 
 def test_native_docs_owners_are_present():
     """The current compiler, renderer and native configuration all exist."""
-    assert os.path.isfile(os.path.join(REPO_ROOT, ".agents/docs.df"))
+    assert os.path.isfile(os.path.join(REPO_ROOT, "repo.df"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "docs", "src", "content.ts"))
     assert os.path.isfile(os.path.join(REPO_ROOT, "packages", "web", "src", "docs.ts"))
 
@@ -659,7 +667,7 @@ def test_preview_validates_without_publishing():
 
 
 def test_preview_uses_the_same_native_docs_compiler():
-    """Preview and deploy render the same .agents/docs.df content graph."""
+    """Preview and deploy render the same combined docs block content graph."""
     content = _read(os.path.join(WORKFLOW_DIR, "preview-docs.yml"))
     assert "bun scripts/build-docs.ts" in content
     assert "--check" in content
@@ -712,8 +720,8 @@ def test_repository_documents_name_the_native_docs_contract():
     """Normative repository text points at the current documentation owners."""
     agents = _read(os.path.join(REPO_ROOT, "AGENTS.md"))
     prd = _read(os.path.join(REPO_ROOT, "PRD.md"))
-    assert ".agents/docs.df" in agents
-    assert ".agents/docs.df" in prd
+    assert "`docs` block" in agents
+    assert "`docs` block" in prd
     assert "@darkfactory/docs" in prd
     assert "@darkfactory/web" in prd
 
@@ -1128,7 +1136,7 @@ def test_bot_comments_do_not_start_an_agent_container():
 
 
 def test_ci_docs_job_runs_the_native_bun_compiler():
-    """.agents/docs.df is compiled by the Bun workspace in the direct docs-check job."""
+    """The combined docs block is compiled by the Bun workspace in the direct docs-check job."""
     content = _read(os.path.join(WORKFLOW_DIR, "ci.yml"))
     block = content[
         content.index("  docs-check:") : content.index("  quality:", content.index("  docs-check:"))

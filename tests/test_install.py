@@ -77,8 +77,8 @@ def test_submodule_updating_is_offered_only_where_there_are_submodules(tmp_path)
 def test_a_tooling_only_pyproject_is_declared_as_packaging_nothing(tmp_path):
     """The failure that took three repositories down is pre-empted at install time."""
     (tmp_path / "pyproject.toml").write_text("[tool.black]\nline-length = 100\n", encoding="utf-8")
-    manifest = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
-    assert manifest["environment"]["release"]["python"]["enabled"] is False
+    config = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
+    assert config["repo"]["environment"]["release"]["python"]["enabled"] is False
 
 
 def test_a_real_package_is_left_to_release_normally(tmp_path):
@@ -86,14 +86,14 @@ def test_a_real_package_is_left_to_release_normally(tmp_path):
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "thing"\nversion = "1.0.0"\n', encoding="utf-8"
     )
-    manifest = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
-    assert "environment" not in manifest
+    config = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
+    assert "environment" not in config["repo"]
 
 
 def test_areas_are_offered_rather_than_asserted(tmp_path):
     """Areas describe a repository's own domains, which cannot be derived."""
-    manifest = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
-    assert "$comment" in manifest["areas"], "the starter set must say it is a starting point"
+    config = json.loads(install.render_manifest("o", "r", "abc", root=str(tmp_path)))
+    assert "$comment" in config["repo"]["areas"], "the starter set must say it is a starting point"
 
 
 def test_writing_never_overwrites_what_is_already_there(tmp_path):
@@ -103,7 +103,32 @@ def test_writing_never_overwrites_what_is_already_there(tmp_path):
     (target / "ci.yml").write_text("name: mine\n", encoding="utf-8")
     install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
     assert (target / "ci.yml").read_text(encoding="utf-8") == "name: mine\n"
-    assert (tmp_path / ".darkfactory" / "repo.df").is_file(), "the rest is still written"
+    assert (tmp_path / "repo.df").is_file(), "the rest is still written"
+
+
+def test_existing_root_config_alias_is_not_duplicated(tmp_path):
+    """The accepted alias remains the single selected document during installation."""
+    alias = tmp_path / "config.df"
+    alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
+
+    install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
+
+    assert not (tmp_path / "repo.df").exists()
+    assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
+
+
+def test_existing_custom_folder_config_is_not_duplicated(tmp_path, monkeypatch):
+    """A configured fallback document remains authoritative during installation."""
+    folder = tmp_path / "configuration"
+    folder.mkdir()
+    alias = folder / "repo.df"
+    alias.write_text(json.dumps({"repo": {"identity": {"owner": "chosen"}}}), encoding="utf-8")
+    monkeypatch.setenv("DF_CONFIG_DIR", "configuration")
+
+    install.write(install.plan("o", "r", "abc", root=str(tmp_path)), str(tmp_path))
+
+    assert not (tmp_path / "repo.df").exists()
+    assert json.loads(alias.read_text(encoding="utf-8"))["repo"]["identity"]["owner"] == "chosen"
 
 
 class TestConfigurationIssue:
@@ -137,9 +162,12 @@ def test_the_generated_manifest_makes_the_licence_a_visible_choice():
     """An absent licence block reads as an oversight; NONE reads as a decision."""
     import json
 
-    manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
-    assert manifest["license"]["spdx"] == "NONE"
-    assert "$comment" in manifest["license"], "it must say what NONE means"
+    config = json.loads(install.render_manifest("o", "r", "abc", root="."))
+    assert set(config) == {"repo", "docs", "providers"}
+    assert config["repo"]["license"]["spdx"] == "NONE"
+    assert "$comment" in config["repo"]["license"], "it must say what NONE means"
+    assert config["docs"]["home"] == ".agents/PRD.md"
+    assert config["providers"] == {}
 
 
 def _pipeline_workflow(name: str) -> dict:
@@ -237,8 +265,8 @@ def test_every_watched_name_is_a_workflow_that_exists():
 
 def test_the_generated_manifest_requires_stable_direct_contexts():
     """Generated branch protection targets the exact direct job contexts consumers report."""
-    manifest = json.loads(install.render_manifest("o", "r", "abc", root="."))
-    assert manifest["required_checks"] == ["quality", "verify-bound-issue"]
+    config = json.loads(install.render_manifest("o", "r", "abc", root="."))
+    assert config["repo"]["required_checks"] == ["quality", "verify-bound-issue"]
 
 
 def test_required_contexts_follow_installed_direct_checks():
@@ -314,22 +342,27 @@ class TestReinstallingAdoptsTheUpdate:
             tmp_path: Pytest temporary directory.
         """
         root = self._installed(tmp_path)
-        path = os.path.join(root, ".darkfactory", "repo.df")
+        path = os.path.join(root, "repo.df")
         with open(path, encoding="utf-8") as handle:
-            manifest = json.load(handle)
-        del manifest["required_checks"]
-        manifest["identity"]["display_name"] = "Chosen By Hand"
+            config = json.load(handle)
+        del config["repo"]["required_checks"]
+        config["repo"]["identity"]["display_name"] = "Chosen By Hand"
         with open(path, "w", encoding="utf-8") as handle:
-            json.dump(manifest, handle)
+            json.dump(config, handle)
 
         planned = install.render_manifest("o", "r", "bbbbbbb", root=root)
         assert install.reconcile_manifest(root, "bbbbbbb", planned)
 
         with open(path, encoding="utf-8") as handle:
             after = json.load(handle)
-        assert after["required_checks"], "the missing key is filled in"
-        assert after["identity"]["display_name"] == "Chosen By Hand", "choices are not overwritten"
-        assert after["upstream"]["ref"] == "bbbbbbb", "the pin is what a reinstall exists to move"
+        assert after["repo"]["required_checks"], "the missing key is filled in"
+        assert (
+            after["repo"]["identity"]["display_name"] == "Chosen By Hand"
+        ), "choices are not overwritten"
+        assert (
+            after["repo"]["upstream"]["ref"] == "bbbbbbb"
+        ), "the pin is what a reinstall exists to move"
+        assert after["docs"] and after["providers"] == {}, "other blocks are preserved"
 
     def test_an_up_to_date_manifest_is_left_alone(self, tmp_path):
         """A reinstall that changes nothing must produce no diff to review.

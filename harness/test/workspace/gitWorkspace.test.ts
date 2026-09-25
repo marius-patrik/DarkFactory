@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runGit } from "../../src/workspace/git.ts";
@@ -38,16 +38,16 @@ afterEach(() => {
 	temp = undefined;
 });
 
-test("resolveDefaultBranch reads identity.default_branch from .darkfactory/repo.df", async () => {
-	const dfDir = join(repo(), ".darkfactory");
-	mkdirSync(dfDir, { recursive: true });
-	const repoDfPath = join(dfDir, "repo.df");
+test("resolveDefaultBranch reads identity.default_branch from the repo block", async () => {
+	const repoDfPath = join(repo(), "repo.df");
 
 	writeFileSync(
 		repoDfPath,
 		JSON.stringify({
-			identity: {
-				default_branch: "darkfactory-dev",
+			repo: {
+				identity: {
+					default_branch: "darkfactory-dev",
+				},
 			},
 		}),
 	);
@@ -57,18 +57,18 @@ test("resolveDefaultBranch reads identity.default_branch from .darkfactory/repo.
 });
 
 test("resolveDefaultBranch throws if default_branch is missing or empty", async () => {
-	const dfDir = join(repo(), ".darkfactory");
-	mkdirSync(dfDir, { recursive: true });
-	const repoDfPath = join(dfDir, "repo.df");
+	const repoDfPath = join(repo(), "repo.df");
 
-	writeFileSync(repoDfPath, JSON.stringify({}));
+	writeFileSync(repoDfPath, JSON.stringify({ repo: {} }));
 	expect(resolveDefaultBranch(repo())).rejects.toThrow("missing a non-empty identity.default_branch");
 
 	writeFileSync(
 		repoDfPath,
 		JSON.stringify({
-			identity: {
-				default_branch: "  ",
+			repo: {
+				identity: {
+					default_branch: "  ",
+				},
 			},
 		}),
 	);

@@ -25,15 +25,33 @@ export interface TypeScriptApiExtractionOptions {
 }
 
 /** Strictly extracts TypeScript/TSDoc API metadata as TypeDoc JSON without rendering HTML. */
-export async function extractTypeScriptApi(options: TypeScriptApiExtractionOptions): Promise<JSONOutput.ProjectReflection> {
+export async function extractTypeScriptApi(
+	options: TypeScriptApiExtractionOptions,
+): Promise<JSONOutput.ProjectReflection> {
 	const app = await Application.bootstrap({
 		name: options.name,
 		entryPoints: [...options.entryPoints],
 		tsconfig: options.tsconfig,
 		skipErrorChecking: false,
 		emit: "none",
-		validation: { notExported: true, invalidLink: true, invalidPath: true, rewrittenLink: false, notDocumented: true, unusedMergeModuleWith: false },
-		requiredToBeDocumented: ["Class", "Interface", "Function", "TypeAlias", "Variable", "Enum", "EnumMember", "Accessor"],
+		validation: {
+			notExported: true,
+			invalidLink: true,
+			invalidPath: true,
+			rewrittenLink: false,
+			notDocumented: true,
+			unusedMergeModuleWith: false,
+		},
+		requiredToBeDocumented: [
+			"Class",
+			"Interface",
+			"Function",
+			"TypeAlias",
+			"Variable",
+			"Enum",
+			"EnumMember",
+			"Accessor",
+		],
 		treatWarningsAsErrors: true,
 		treatValidationWarningsAsErrors: true,
 		readme: "none",
@@ -41,12 +59,14 @@ export async function extractTypeScriptApi(options: TypeScriptApiExtractionOptio
 	const project = await app.convert();
 	if (!project || app.logger.hasErrors()) throw new Error("TypeDoc conversion failed.");
 	app.validate(project);
-	if (app.logger.hasErrors() || app.logger.hasWarnings()) throw new Error("TypeDoc validation produced errors or warnings.");
+	if (app.logger.hasErrors() || app.logger.hasWarnings())
+		throw new Error("TypeDoc validation produced errors or warnings.");
 	const directory = await mkdtemp(join(tmpdir(), "darkfactory-typedoc-"));
 	const output = join(directory, "api.json");
 	try {
 		await app.generateJson(project, output);
-		if (app.logger.hasErrors() || app.logger.hasWarnings()) throw new Error("TypeDoc JSON generation produced errors or warnings.");
+		if (app.logger.hasErrors() || app.logger.hasWarnings())
+			throw new Error("TypeDoc JSON generation produced errors or warnings.");
 		return JSON.parse(await readFile(output, "utf8")) as JSONOutput.ProjectReflection;
 	} finally {
 		await rm(directory, { recursive: true, force: true });
@@ -56,13 +76,20 @@ export async function extractTypeScriptApi(options: TypeScriptApiExtractionOptio
 function commentSummary(reflection: any): string | undefined {
 	const parts = reflection?.comment?.summary;
 	if (!Array.isArray(parts)) return undefined;
-	const summary = parts.map((part) => (typeof part?.text === "string" ? part.text : "")).join("").trim();
+	const summary = parts
+		.map((part) => (typeof part?.text === "string" ? part.text : ""))
+		.join("")
+		.trim();
 	return summary || undefined;
 }
 
 function apiSymbol(reflection: any): DocsApiSymbol {
-	const nested = [...(Array.isArray(reflection?.children) ? reflection.children : []), ...(Array.isArray(reflection?.signatures) ? reflection.signatures : [])];
-	const kind = typeof reflection?.kind === "number" ? (ReflectionKind[reflection.kind] ?? String(reflection.kind)) : "Unknown";
+	const nested = [
+		...(Array.isArray(reflection?.children) ? reflection.children : []),
+		...(Array.isArray(reflection?.signatures) ? reflection.signatures : []),
+	];
+	const kind =
+		typeof reflection?.kind === "number" ? (ReflectionKind[reflection.kind] ?? String(reflection.kind)) : "Unknown";
 	const summary = commentSummary(reflection);
 	return {
 		name: typeof reflection?.name === "string" ? reflection.name : "anonymous",
@@ -86,7 +113,10 @@ function extractionOptions(repoRoot: string, api: DocsTypeScriptApiConfig): Type
 }
 
 /** Compiles the canonical documentation graph including configured TypeScript API metadata. */
-export async function compileDocsContentGraphWithApi(repoRoot: string, config: DocsConfig = loadDocsConfig(repoRoot)): Promise<DocsContentGraph> {
+export async function compileDocsContentGraphWithApi(
+	repoRoot: string,
+	config: DocsConfig = loadDocsConfig(repoRoot),
+): Promise<DocsContentGraph> {
 	const typescript = config.api?.typescript;
 	if (!typescript?.entryPoints?.length) return compileDocsContentGraph(repoRoot, config);
 	const project = await extractTypeScriptApi(extractionOptions(repoRoot, typescript));
@@ -133,7 +163,7 @@ export function documentationMetadata(
 
 /**
  * Compiles documentation using TypeScript API entry points from the canonical repository detector/action resolver.
- * `.agents/docs.df` owns TypeDoc settings; detected package evidence owns which exported APIs are present.
+ * The combined configuration's `docs` block owns TypeDoc settings; detected package evidence owns which exported APIs are present.
  */
 export async function compileDocsContentGraphWithDetectedApi(
 	repoRoot: string,
@@ -157,11 +187,12 @@ export async function compileDocsContentGraphWithDetectedApi(
 	const entryPoints = configured.entryPoints?.length
 		? configured.entryPoints
 		: resolution.packages.flatMap(({ actions }) => {
-			const action = actions.docs_extract;
-			const actionMetadata = action.metadata;
-			if (!action.supported || actionMetadata?.extractor !== "typedoc" || !Array.isArray(actionMetadata.entryPoints)) return [];
-			return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
-		});
+				const action = actions.docs_extract;
+				const actionMetadata = action.metadata;
+				if (!action.supported || actionMetadata?.extractor !== "typedoc" || !Array.isArray(actionMetadata.entryPoints))
+					return [];
+				return actionMetadata.entryPoints.filter((entry): entry is string => typeof entry === "string");
+			});
 	const uniqueEntryPoints = [...new Set(entryPoints)].sort();
 	if (uniqueEntryPoints.length === 0) return finalize(compileDocsContentGraph(repoRoot, config));
 
@@ -177,4 +208,3 @@ export async function compileDocsContentGraphWithDetectedApi(
 	};
 	return finalize(await compileDocsContentGraphWithApi(repoRoot, detectedConfig));
 }
-

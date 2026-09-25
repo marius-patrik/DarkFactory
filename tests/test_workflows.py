@@ -32,7 +32,7 @@ def test_ci_quality_is_detector_driven_and_aggregated():
     )
 
     docs = jobs["docs-check"]
-    assert _index(docs["steps"], "Detect .agents/docs.df") < _index(
+    assert _index(docs["steps"], "Detect combined configuration docs block") < _index(
         docs["steps"], "Build native documentation"
     )
 

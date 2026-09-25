@@ -812,8 +812,7 @@ def configure(root: str) -> Environment:
     root = os.path.abspath(root)
     import manifest as manifest_module
 
-    manifest = _load_json(manifest_module.resolve_manifest_path(root))
-    declared: Dict[str, Any] = manifest.get("environment", {}) or {}
+    declared: Dict[str, Any] = manifest_module.load(root).data.get("environment", {}) or {}
 
     packages = detect(root)
 

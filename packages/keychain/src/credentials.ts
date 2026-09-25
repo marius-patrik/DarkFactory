@@ -10,10 +10,12 @@ import type {
 } from "@earendil-works/pi-ai";
 import { withFileLock } from "./storage/file-lock.ts";
 import { replaceFile } from "./storage/replace-file.ts";
+import { resolveDataRepoPath } from "./vault-store.ts";
 
 const VAULT_PREFIX = "vault:";
 
 async function resolveVaultValue(home: string, vaultName: string): Promise<string | undefined> {
+	const dataRepoPath = await resolveDataRepoPath(home);
 	try {
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
 		let key: string | undefined;
@@ -29,16 +31,10 @@ async function resolveVaultValue(home: string, vaultName: string): Promise<strin
 			}
 		}
 		if (!key) return undefined;
-		let dataRepoPath: string;
-		try {
-			const raw = await readFile(join(home, "config.df"), "utf8");
-			const cfg = JSON.parse(raw) as { dataRepo?: string };
-			dataRepoPath = cfg.dataRepo && typeof cfg.dataRepo === "string" ? cfg.dataRepo : join(home, "data-df");
-		} catch {
-			dataRepoPath = join(home, "data-df");
-		}
 		const { decryptVault } = await import("./vault-crypto.ts");
-		const envelope = JSON.parse(await readFile(join(dataRepoPath, "vault.enc.df"), "utf8")) as import("./vault.ts").EncryptedVaultEnvelope;
+		const envelope = JSON.parse(
+			await readFile(join(dataRepoPath, "vault.enc.df"), "utf8"),
+		) as import("./vault.ts").EncryptedVaultEnvelope;
 		const vault = decryptVault(envelope, key);
 		return vault.entries.find((e) => e.name === vaultName)?.value;
 	} catch {
@@ -180,14 +176,23 @@ export function isAccountAuthMetadata(value: unknown): value is AccountAuthMetad
 	if (value === undefined) return true;
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
 	const auth = value as Record<string, unknown>;
-	if (auth.scopes !== undefined && (!Array.isArray(auth.scopes) || auth.scopes.some((scope) => typeof scope !== "string"))) {
+	if (
+		auth.scopes !== undefined &&
+		(!Array.isArray(auth.scopes) || auth.scopes.some((scope) => typeof scope !== "string"))
+	) {
 		return false;
 	}
 	if (auth.audience !== undefined && typeof auth.audience !== "string") return false;
-	if (auth.refreshExpiresAt !== undefined && (typeof auth.refreshExpiresAt !== "number" || !Number.isFinite(auth.refreshExpiresAt))) {
+	if (
+		auth.refreshExpiresAt !== undefined &&
+		(typeof auth.refreshExpiresAt !== "number" || !Number.isFinite(auth.refreshExpiresAt))
+	) {
 		return false;
 	}
-	if (auth.rotationDue !== undefined && (typeof auth.rotationDue !== "string" || Number.isNaN(Date.parse(auth.rotationDue)))) {
+	if (
+		auth.rotationDue !== undefined &&
+		(typeof auth.rotationDue !== "string" || Number.isNaN(Date.parse(auth.rotationDue)))
+	) {
 		return false;
 	}
 	return true;

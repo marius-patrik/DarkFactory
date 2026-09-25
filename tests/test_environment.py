@@ -30,14 +30,13 @@ def _write(root, relative, content):
 
 
 def _manifest(root, block):
-    """Writes a `.darkfactory/repo.df` carrying an `environment` block.
+    """Writes canonical root `repo.df` carrying a repository environment block.
 
     Args:
         root: Repository root.
         block: The `environment` object.
     """
-    os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
-    _write(root, ".darkfactory/repo.df", json.dumps({"environment": block}))
+    _write(root, "repo.df", json.dumps({"repo": {"environment": block}}))
 
 
 @pytest.fixture
@@ -257,11 +256,11 @@ class TestPlans:
         assert plan["python"]["versions"] == ["3.10", "3.11", "3.12", "3.13"]
         assert plan["rust"]["versions"] == []
 
-    def test_darkfactory_documentation_is_owned_by_agents_docs_df(self):
-        with open(os.path.join(REPO_ROOT, ".darkfactory", "repo.df"), encoding="utf-8") as handle:
-            repository = json.load(handle)
-        with open(os.path.join(REPO_ROOT, ".agents", "docs.df"), encoding="utf-8") as handle:
-            docs = json.load(handle)
+    def test_darkfactory_uses_the_combined_docs_block(self):
+        with open(os.path.join(REPO_ROOT, "repo.df"), encoding="utf-8") as handle:
+            config = json.load(handle)
+        repository = config["repo"]
+        docs = config["docs"]
 
         assert "documentation" not in repository.get("environment", {})
         assert docs["version"] == 1

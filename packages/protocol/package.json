@@ -12,7 +12,8 @@
     "./quota": "./src/quota.ts",
     "./result-capture": "./src/result-capture.ts",
     "./recovery": "./src/recovery.ts",
-    "./mutation-evidence": "./src/mutation-evidence.ts"
+    "./mutation-evidence": "./src/mutation-evidence.ts",
+    "./config-document": "./src/config-document.ts"
   },
   "files": [
     "src"

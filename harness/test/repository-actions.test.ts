@@ -36,9 +36,11 @@ async function fixture(): Promise<string> {
 	await writeFile(
 		join(root, "repo.df"),
 		JSON.stringify({
-			environment: {
-				linting: { python: { command: "ruff check ." } },
-				testing: { python: { versions: ["3.12"] } },
+			repo: {
+				environment: {
+					linting: { python: { command: "ruff check ." } },
+					testing: { python: { versions: ["3.12"] } },
+				},
 			},
 		}),
 	);

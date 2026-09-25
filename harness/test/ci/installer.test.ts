@@ -14,8 +14,7 @@ import {
 const bundledSkillPath = (name: string) => join(import.meta.dir, "../../../.agents/skills", name, "SKILL.md");
 
 async function writeUpstream(temp: string, repo: string, ref: string): Promise<void> {
-	await mkdir(join(temp, ".darkfactory"), { recursive: true });
-	await writeFile(join(temp, ".darkfactory", "repo.df"), JSON.stringify({ upstream: { repo, ref } }));
+	await writeFile(join(temp, "repo.df"), JSON.stringify({ repo: { upstream: { repo, ref } } }));
 }
 
 describe("Workflow installer & updater", () => {

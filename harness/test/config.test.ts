@@ -33,13 +33,15 @@ describe("local configuration and credential sources", () => {
 	test("loads chains and a relative account key path", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
-			join(temp, "config.df"),
+			join(temp, "repo.df"),
 			JSON.stringify({
-				defaultChain: "google/custom@default",
-				cooldownTtlMs: 12_345,
-				hardReasoningChain: "anthropic/hard@work",
-				sensitiveChain: "local/private@main",
-				credentialFiles: { "google:default": "secrets/gemini_api_key" },
+				providers: {
+					defaultChain: "google/custom@default",
+					cooldownTtlMs: 12_345,
+					hardReasoningChain: "anthropic/hard@work",
+					sensitiveChain: "local/private@main",
+					credentialFiles: { "google:default": "secrets/gemini_api_key" },
+				},
 			}),
 		);
 		const config = await loadDfConfig(temp);
@@ -91,8 +93,8 @@ describe("local configuration and credential sources", () => {
 	test("rejects malformed config without exposing its contents", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(join(temp, "config.df"), "{secret-content");
-		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid config.df JSON");
-		await writeFile(join(temp, "config.df"), JSON.stringify({ cooldownTtlMs: 0 }));
+		await expect(loadDfConfig(temp)).rejects.toThrow("Invalid DarkFactory configuration JSON");
+		await writeFile(join(temp, "config.df"), JSON.stringify({ providers: { cooldownTtlMs: 0 } }));
 		await expect(loadDfConfig(temp)).rejects.toThrow("positive integer");
 	});
 
@@ -101,32 +103,34 @@ describe("local configuration and credential sources", () => {
 		await writeFile(
 			join(temp, "config.df"),
 			JSON.stringify({
-				router: {
-					classifier: "cheap/classifier@default",
-					candidates: ["acme/fast@work"],
-					models: {
-						"acme/fast": {
-							tools: true,
-							modalities: ["text", "image_gen"],
-							quality: { review: 4 },
-							limitTier: "tight",
-							capabilityTier: "light",
+				providers: {
+					router: {
+						classifier: "cheap/classifier@default",
+						candidates: ["acme/fast@work"],
+						models: {
+							"acme/fast": {
+								tools: true,
+								modalities: ["text", "image_gen"],
+								quality: { review: 4 },
+								limitTier: "tight",
+								capabilityTier: "light",
+							},
 						},
+						capabilityTiers: [
+							{ id: "light", match: ["acme/fast"] },
+							{ id: "deep", match: ["acme/deep"] },
+						],
+						defaultTier: "light",
+						difficultyTiers: { easy: "light", medium: "deep", hard: "deep" },
+						policies: [
+							{
+								id: "review",
+								match: { kind: ["review"], needs: ["tools"] },
+								prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
+							},
+						],
+						learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
 					},
-					capabilityTiers: [
-						{ id: "light", match: ["acme/fast"] },
-						{ id: "deep", match: ["acme/deep"] },
-					],
-					defaultTier: "light",
-					difficultyTiers: { easy: "light", medium: "deep", hard: "deep" },
-					policies: [
-						{
-							id: "review",
-							match: { kind: ["review"], needs: ["tools"] },
-							prefer: { candidates: ["acme/fast@work"], tiers: ["tight"] },
-						},
-					],
-					learning: { windowMs: 1_000, maxPenalty: 10, maxRecords: 50 },
 				},
 			}),
 		);
@@ -143,7 +147,7 @@ describe("local configuration and credential sources", () => {
 		const temp2 = await mkdtemp(join(tmpdir(), "df-test-"));
 		await writeFile(
 			join(temp2, "config.df"),
-			JSON.stringify({ router: { policies: [], candidates: ["missing-account/model"] } }),
+			JSON.stringify({ providers: { router: { policies: [], candidates: ["missing-account/model"] } } }),
 		);
 		await expect(loadDfConfig(temp2)).rejects.toThrow("provider/model@account");
 	});
@@ -153,22 +157,24 @@ describe("local configuration and credential sources", () => {
 		await writeFile(
 			join(temp, "config.df"),
 			JSON.stringify({
-				router: {
-					policies: [],
-					capabilityTiers: [{ id: "light", match: ["acme/*"] }],
-					defaultTier: "missing",
-					difficultyTiers: { easy: "light", medium: "missing", hard: "light" },
+				providers: {
+					router: {
+						policies: [],
+						capabilityTiers: [{ id: "light", match: ["acme/*"] }],
+						defaultTier: "missing",
+						difficultyTiers: { easy: "light", medium: "missing", hard: "light" },
+					},
 				},
 			}),
 		);
 		await expect(loadDfConfig(temp)).rejects.toThrow('Default capability tier "missing" is not declared');
 	});
 
-	test("throws error when both .darkfactory/config.df and root config.df exist simultaneously", async () => {
+	test("rejects root and fallback-folder configuration candidates together", async () => {
 		const temp = await mkdtemp(join(tmpdir(), "df-test-"));
 		await mkdir(join(temp, ".darkfactory"));
-		await writeFile(join(temp, ".darkfactory", "config.df"), "{}");
-		await writeFile(join(temp, "config.df"), "{}");
-		await expect(loadDfConfig(temp)).rejects.toThrow("exist; only one is allowed");
+		await writeFile(join(temp, ".darkfactory", "config.df"), JSON.stringify({ providers: {} }));
+		await writeFile(join(temp, "repo.df"), JSON.stringify({ providers: {} }));
+		await expect(loadDfConfig(temp)).rejects.toThrow("candidates exist in both the repository root");
 	});
 });

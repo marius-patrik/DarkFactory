@@ -6,11 +6,11 @@
 
 ## Decision
 
-- `repo.df` is the repository/product declaration.
-- `config.df` is runtime/user/provider configuration.
-- `.agents/docs.df` is documentation configuration.
-- `repo.df` and `config.df` may live at repository root or under `.darkfactory/`; defining the same logical file in both places is an error.
-- Only the current `.df` contracts are read by the final system.
+- Canonical root `repo.df` owns one combined configuration document; root `config.df` is an accepted alias for that same document.
+- The `repo` block is the repository/product declaration, `providers` is runtime/user/provider configuration, and `docs` is documentation configuration.
+- Consumers select only their named block from the selected document.
+- `DF_CONFIG_DIR` (default `.darkfactory`) is a supported fallback discovery folder, but `.darkfactory` is not a committed source in this repository.
+- Root and folder candidates may not coexist, aliases may not coexist in one scope, and separate files are never silently merged.
 - Repository/package/ecosystem/domain evidence is detected by the TypeScript runtime.
 - Versioned capabilities resolve applicable test, typecheck, lint, format, docs, setup and release actions.
 - Domain and capability are separate axes.

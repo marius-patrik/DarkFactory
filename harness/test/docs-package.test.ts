@@ -34,7 +34,7 @@ async function fixture(withApi = false): Promise<string> {
 			}),
 		);
 	}
-	await writeFile(join(root, ".agents", "docs.df"), JSON.stringify(config));
+	await writeFile(join(root, "repo.df"), JSON.stringify({ repo: {}, docs: config }));
 	await writeFile(join(root, ".agents", "PRD.md"), "# Home\n\nSee [the PRD](./PRD.md).\n");
 	await writeFile(join(root, ".agents", "AGENTS.md"), "# Rules projection\n");
 	await writeFile(join(root, "PRD.md"), "# Product\n");
@@ -60,7 +60,7 @@ afterEach(async () => {
 });
 
 describe("@darkfactory/docs", () => {
-	test("parses .agents/docs.df including TypeScript API ownership", () => {
+	test("parses the combined docs block including TypeScript API ownership", () => {
 		expect(
 			parseDocsConfig(
 				'{"version":1,"site":{"name":"Docs"},"home":".agents/PRD.md","api":{"typescript":{"entryPoints":["src/index.ts"],"tsconfig":"tsconfig.json"}}}',
@@ -73,19 +73,16 @@ describe("@darkfactory/docs", () => {
 		});
 	});
 
-	test("resolves only .agents/docs.df", async () => {
+	test("resolves the combined configuration containing the docs block", async () => {
 		const root = await fixture();
-		expect(resolveDocsConfigPath(root)).toBe(join(root, ".agents", "docs.df"));
-		await mkdir(join(root, ".darkfactory"), { recursive: true });
-		await writeFile(join(root, ".darkfactory", "docs.df"), '{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}');
-		await writeFile(join(root, "docs.df"), '{"version":1,"site":{"name":"Other"},"home":"docs/home.md"}');
-		expect(resolveDocsConfigPath(root)).toBe(join(root, ".agents", "docs.df"));
+		expect(resolveDocsConfigPath(root)).toBe(join(root, "repo.df"));
+		expect(loadDocsConfig(root).site.name).toBe("Fixture");
 	});
 
 	test("reports the canonical missing configuration path", async () => {
 		const root = await mkdtemp(join(tmpdir(), "darkfactory-docs-missing-"));
 		roots.push(root);
-		expect(() => resolveDocsConfigPath(root)).toThrow("No .agents/docs.df found.");
+		expect(() => resolveDocsConfigPath(root)).toThrow("No combined DarkFactory configuration found");
 	});
 
 	test("compiles only current canonical pages and workflow metadata", async () => {

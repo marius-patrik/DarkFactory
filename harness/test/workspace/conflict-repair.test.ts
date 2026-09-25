@@ -29,14 +29,15 @@ describe("conflict-repair: deterministic update and model conflict resolution", 
 		runGit(localRepo, ["config", "user.email", "test@example.com"]);
 
 		// Initial commit with repo.df defining dynamic default branch
-		mkdirSync(join(localRepo, ".darkfactory"), { recursive: true });
 		writeFileSync(
-			join(localRepo, ".darkfactory", "repo.df"),
+			join(localRepo, "repo.df"),
 			JSON.stringify({
-				schema_version: "1.0.0",
-				identity: {
-					name: "test-repo",
-					default_branch: "darkfactory",
+				repo: {
+					schema_version: "1.0.0",
+					identity: {
+						name: "test-repo",
+						default_branch: "darkfactory",
+					},
 				},
 			}),
 		);

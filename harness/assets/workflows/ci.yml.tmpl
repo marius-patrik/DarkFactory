@@ -168,10 +168,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect docs.df
+      - name: Detect combined configuration docs block
         id: docs
+        env:
+          DF_CONFIG_DIR: ${{ env.DF_CONFIG_DIR }}
         run: |
-          if [ -f "$GITHUB_WORKSPACE/docs.df" ] || [ -f "$GITHUB_WORKSPACE/.darkfactory/docs.df" ]; then
+          ROOT_REPO=false
+          ROOT_CONFIG=false
+          FOLDER_REPO=false
+          FOLDER_CONFIG=false
+          [ -f "$GITHUB_WORKSPACE/repo.df" ] && ROOT_REPO=true
+          [ -f "$GITHUB_WORKSPACE/config.df" ] && ROOT_CONFIG=true
+          CONFIG_DIR="${DF_CONFIG_DIR:-.darkfactory}"
+          if [ "$CONFIG_DIR" != "." ] && [ "$CONFIG_DIR" != "$GITHUB_WORKSPACE" ]; then
+            case "$CONFIG_DIR" in
+              /*) FOLDER="$CONFIG_DIR" ;;
+              *) FOLDER="$GITHUB_WORKSPACE/$CONFIG_DIR" ;;
+            esac
+            [ -f "$FOLDER/repo.df" ] && FOLDER_REPO=true
+            [ -f "$FOLDER/config.df" ] && FOLDER_CONFIG=true
+          fi
+          COUNT=0
+          for PRESENT in "$ROOT_REPO" "$ROOT_CONFIG" "$FOLDER_REPO" "$FOLDER_CONFIG"; do
+            [ "$PRESENT" = true ] && COUNT=$((COUNT + 1))
+          done
+          if [ "$COUNT" -gt 1 ]; then
+            echo "Ambiguous DarkFactory configuration: keep only one repo.df or config.df candidate." >&2
+            exit 1
+          fi
+          if [ "$COUNT" -eq 1 ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
@@ -205,11 +230,11 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/.darkfactory-runtime" ]; then
             ROOT="$GITHUB_WORKSPACE/.darkfactory-runtime"
           fi
-          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE"
+          bun "$ROOT/scripts/build-docs.ts" --repo-root "$GITHUB_WORKSPACE" --check
 
       - name: No documentation configured
         if: steps.docs.outputs.present != 'true'
-        run: echo "No docs.df; native documentation check is not applicable."
+        run: echo "No combined configuration docs block; native documentation check is not applicable."
 
   quality:
     name: quality

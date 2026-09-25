@@ -1596,7 +1596,7 @@ async function secretsCli(home: string, args: string[]): Promise<void> {
 export async function main(args = process.argv.slice(2)): Promise<void> {
 	if (args[0] === "graph" && args[1] !== "dispatch") return graphCommand(args.slice(1));
 	const home = defaultDfHome();
-	const config = await loadDfConfig(home);
+	const config = await loadDfConfig(process.cwd());
 	const providerConfig = await loadProviderConfig(home);
 	const registry = new ProviderRegistry(providerConfig);
 	const ledger = new LimitLedger(home, {

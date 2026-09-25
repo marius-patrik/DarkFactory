@@ -23,9 +23,8 @@ def _manifest(root, block):
         root: Repository root.
         block: The `license` object.
     """
-    os.makedirs(os.path.join(str(root), ".darkfactory"), exist_ok=True)
-    with open(os.path.join(str(root), ".darkfactory", "repo.df"), "w", encoding="utf-8") as h:
-        json.dump({"license": block}, h)
+    with open(os.path.join(str(root), "repo.df"), "w", encoding="utf-8") as h:
+        json.dump({"repo": {"license": block}}, h)
 
 
 def test_a_silent_manifest_declares_no_licence(tmp_path):

@@ -15,7 +15,7 @@ Public source APIs MUST be documented inline.
 - **TypeScript**: TSDoc on every exported public symbol in first-party packages and capabilities.
 - **Rust**: `///` documentation on public items, including error/panic behavior where applicable.
 
-Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. `.agents/docs.df` is the only DarkFactory documentation configuration contract.
+Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
 
 `.agents/PRD.md` is the product-documentation homepage. `.agents/notes/rules/**` is the canonical rule set and `.agents/notes/adr/**` is the canonical current long-term note set. Root `README.md` is a symlink to the canonical product document; `.agents/AGENTS.md` is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
 
@@ -27,7 +27,7 @@ One content graph can publish product docs, rules and notes without turning gene
 
 ## Enforcement
 
-Docs/API/projection checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings; `.agents/AGENTS.md` must match its canonical rules, and the root `README.md` alias must target the canonical product document.
+Docs/API/projection checks consume the canonical capability-aware detection contract and first-party docs compiler. Required API surfaces build with zero required documentation warnings; `.agents/AGENTS.md` must match its canonical rules, the root `README.md` alias must target the canonical product document, and generated site/JSON output must remain ignored and CI-only.
 
 ## Exceptions
 

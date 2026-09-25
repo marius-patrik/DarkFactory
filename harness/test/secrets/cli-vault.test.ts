@@ -28,7 +28,7 @@ beforeEach(async () => {
 	await git(dataRepo, "config", "user.email", "t@t.com");
 	await git(dataRepo, "config", "user.name", "t");
 	await Bun.spawn(["mkdir", "-p", dfHome], { stdout: "pipe" }).exited;
-	await writeFile(join(dfHome, "config.df"), JSON.stringify({ dataRepo }), "utf8");
+	await writeFile(join(dfHome, "config.df"), JSON.stringify({ providers: { dataRepo } }), "utf8");
 });
 
 afterEach(async () => {

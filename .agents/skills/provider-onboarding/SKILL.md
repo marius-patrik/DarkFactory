@@ -18,11 +18,11 @@ df models --provider <provider> --refresh
 df quota --json
 ```
 
-Never place secret values in `config.df`, source, command arguments, issues or logs. Machine credentials belong to `@darkfactory/keychain`.
+Never place secret values in the `providers` block, source, command arguments, issues or logs. Machine credentials belong to `@darkfactory/keychain`.
 
 ## Add or change a provider
 
-Provider/runtime configuration belongs to the current `config.df` contract and first-party/installed capability data. Do not create a second `providers.json`, hard-coded provider registry or provider-specific harness.
+Provider/runtime configuration belongs to the combined configuration's `providers` block and first-party/installed capability data. Do not create a second `providers.json`, hard-coded provider registry or provider-specific harness.
 
 A provider declaration supplies the data required by the shared runtime, such as:
 

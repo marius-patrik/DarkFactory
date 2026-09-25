@@ -9,7 +9,7 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 1. `.agents/PRD.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
-4. `repo.df`, `.darkfactory/config.df`, `.agents/docs.df` and the workflow graph are executable declarations.
+4. The combined `repo.df` document (or accepted root `config.df` alias) and the workflow graph are executable declarations.
 5. `.agents/notes/rules/*.md` define mandatory contribution/governance behavior.
 6. Generated docs/web views and `.agents/AGENTS.md` are projections, not independent sources of truth.
 
@@ -130,24 +130,24 @@ The final system must not rely on one ever-growing repository-specific language/
 
 ## 7. Configuration and persisted state
 
-### 7.1 Repository/runtime configuration
+### 7.1 Combined repository/runtime configuration
 
-The repository declaration rules are:
+The combined configuration rules are:
 
-- repository declaration is `repo.df`;
-- runtime/user/provider configuration is `config.df`; this repository keeps it at `.darkfactory/config.df`;
-- accepted location is `.darkfactory/<name>.df` or root `<name>.df`;
-- both locations for the same logical file is an error;
-- only the current `repo.df` / `config.df` contracts are read;
+- root `repo.df` is canonical and root `config.df` is an accepted alias for the same logical document;
+- the JSON document owns `repo`, `docs`, and `providers` blocks, and every consumer selects its declared block;
+- `repo` owns repository identity and policy, `providers` owns runtime/provider settings, and `docs` owns documentation settings;
+- when root candidates exist they are selected, otherwise candidates under `DF_CONFIG_DIR` (default `.darkfactory`) are selected;
+- two aliases in the selected scope, or candidates in both root and the configured folder, fail closed as ambiguous;
+- separate candidate files are never silently merged;
+- `.darkfactory` is a discovery fallback and is not a committed source in this repository;
 - `.df` is a filename extension, never a directory.
 
-### 7.2 Documentation configuration
+### 7.2 Documentation configuration and output
 
-Documentation uses `.agents/docs.df` as the native DarkFactory configuration.
+The `docs` block in the combined configuration is the only DarkFactory documentation configuration contract.
 
-`.agents/docs.df` is the only DarkFactory documentation configuration contract.
-
-Documentation configuration does not move into `repo.df` or `.darkfactory/config.df`.
+Generated documentation sites and JSON content graphs are CI outputs and must not be committed. The deterministic `.agents/AGENTS.md` rules projection remains governed by the documentation currentness check.
 
 ### 7.3 State
 

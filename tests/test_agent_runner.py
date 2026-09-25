@@ -68,7 +68,7 @@ def test_governed_stage_declares_existing_task_kind(
 def test_classify_area(text: str, expected_area: str):
     """The classifier routes requests to the repository's declared area taxonomy.
 
-    The taxonomy comes from `.darkfactory/repo.df`, so these cases assert DarkFactory's own
+    The taxonomy comes from the `repo` block in `repo.df`, so these cases assert DarkFactory's own
     areas; a repository adopting the pipeline declares its own and gets its own routing.
 
     Args:

@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import {
-	classifyDocumentationImpact,
-	evaluateDocumentationImpact,
-	parseDocsNoneAnnotation,
-} from "../src/impact.ts";
+import { classifyDocumentationImpact, evaluateDocumentationImpact, parseDocsNoneAnnotation } from "../src/impact.ts";
 
 const evidence: RepositoryEvidence = {
 	root: "/repo",
@@ -44,7 +40,7 @@ describe("documentation impact policy", () => {
 			evidence,
 		);
 		expect(result.impactKinds).toEqual(["governance", "product"]);
-		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md"]);
+		expect(result.documentationFiles).toEqual([".agents/notes/rules/001-current.md", "repo.df"]);
 	});
 
 	test("does not invent docs impact for an internal implementation helper", () => {
@@ -85,8 +81,21 @@ describe("documentation impact policy", () => {
 	});
 
 	test("accepts an actual docs update for classified product impact", () => {
-		const result = evaluateDocumentationImpact(["repo.df", ".agents/docs.df"], evidence);
+		const result = evaluateDocumentationImpact(["repo.df", ".agents/PRD.md"], evidence);
 		expect(result.findings).toEqual([]);
+	});
+
+	test("classifies the configured configuration folder as product contract", () => {
+		const previous = process.env.DF_CONFIG_DIR;
+		process.env.DF_CONFIG_DIR = "configuration";
+		try {
+			const result = classifyDocumentationImpact(["configuration/repo.df"], evidence);
+			expect(result.documentationFiles).toEqual(["configuration/repo.df"]);
+			expect(result.impactKinds).toEqual(["product"]);
+		} finally {
+			if (previous === undefined) delete process.env.DF_CONFIG_DIR;
+			else process.env.DF_CONFIG_DIR = previous;
+		}
 	});
 
 	test("requires exact Docs: none justification for internal-only changes", () => {

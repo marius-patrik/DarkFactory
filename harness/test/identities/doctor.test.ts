@@ -11,30 +11,26 @@ describe("doctor identities", () => {
 	it("succeeds when all providers in defaultChain have identity entries", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
 		const configPath = join(tempDir, "config.df");
-		const manifestPath = join(tempDir, "manifest.json");
+		const manifestPath = configPath;
 
 		try {
 			await writeFile(
 				configPath,
 				JSON.stringify({
-					defaultChain: FIXED_CHAIN,
-				}),
-			);
-
-			await writeFile(
-				manifestPath,
-				JSON.stringify({
-					identities: {
-						app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
-						google: {
-							name: "Gemini",
-							trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-							verified: true,
-						},
-						claude: {
-							name: "Claude",
-							trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
-							verified: true,
+					providers: { defaultChain: FIXED_CHAIN },
+					repo: {
+						identities: {
+							app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
+							google: {
+								name: "Gemini",
+								trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+								verified: true,
+							},
+							claude: {
+								name: "Claude",
+								trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
+								verified: true,
+							},
 						},
 					},
 				}),
@@ -55,30 +51,26 @@ describe("doctor identities", () => {
 	it("fails when a provider in defaultChain has no identity entry", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
 		const configPath = join(tempDir, "config.df");
-		const manifestPath = join(tempDir, "manifest.json");
+		const manifestPath = configPath;
 
 		try {
 			await writeFile(
 				configPath,
 				JSON.stringify({
-					defaultChain: `${FIXED_CHAIN},missing-provider/model-x@default`,
-				}),
-			);
-
-			await writeFile(
-				manifestPath,
-				JSON.stringify({
-					identities: {
-						app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
-						google: {
-							name: "Gemini",
-							trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-							verified: true,
-						},
-						claude: {
-							name: "Claude",
-							trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
-							verified: true,
+					providers: { defaultChain: `${FIXED_CHAIN},missing-provider/model-x@default` },
+					repo: {
+						identities: {
+							app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
+							google: {
+								name: "Gemini",
+								trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+								verified: true,
+							},
+							claude: {
+								name: "Claude",
+								trailer: "Co-authored-by: Claude <noreply@anthropic.com>",
+								verified: true,
+							},
 						},
 					},
 				}),
@@ -100,13 +92,15 @@ describe("doctor identities", () => {
 	it("passes when no chains are configured", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
 		const configPath = join(tempDir, "config.df");
-		const manifestPath = join(tempDir, "manifest.json");
+		const manifestPath = configPath;
 
 		try {
-			await writeFile(configPath, JSON.stringify({}));
 			await writeFile(
-				manifestPath,
-				JSON.stringify({ identities: { app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 } } }),
+				configPath,
+				JSON.stringify({
+					providers: {},
+					repo: { identities: { app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 } } },
+				}),
 			);
 
 			const result = await checkDoctorIdentities({ configPath, manifestPath });
@@ -123,25 +117,21 @@ describe("doctor identities", () => {
 	it("checks providers from only sensitiveChain", async () => {
 		const tempDir = await mkdtemp(join(tmpdir(), "df-doctor-test-"));
 		const configPath = join(tempDir, "config.df");
-		const manifestPath = join(tempDir, "manifest.json");
+		const manifestPath = configPath;
 
 		try {
 			await writeFile(
 				configPath,
 				JSON.stringify({
-					sensitiveChain: FIXED_CHAIN,
-				}),
-			);
-
-			await writeFile(
-				manifestPath,
-				JSON.stringify({
-					identities: {
-						app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
-						google: {
-							name: "Gemini",
-							trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-							verified: true,
+					providers: { sensitiveChain: FIXED_CHAIN },
+					repo: {
+						identities: {
+							app: { login: "darkfactory-pipeline[bot]", user_id: 326069535 },
+							google: {
+								name: "Gemini",
+								trailer: "Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
+								verified: true,
+							},
 						},
 					},
 				}),

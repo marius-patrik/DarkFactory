@@ -23,6 +23,7 @@ const RETIRED_DOCUMENTATION_PATHS = [
 	"PRD.md",
 	"docs.df",
 	join(".darkfactory", "docs.df"),
+	join(".agents", "docs.df"),
 	join("docs", "home.md"),
 	"tsconfig.docs.json",
 	".claude",
@@ -50,7 +51,10 @@ function pathExists(path: string): boolean {
 }
 
 /** Returns deterministic current-only documentation violations without mutating the repository. */
-export function currentDocumentationFindings(repoRoot: string, graph: DocsContentGraph): readonly DocumentationTruthFinding[] {
+export function currentDocumentationFindings(
+	repoRoot: string,
+	graph: DocsContentGraph,
+): readonly DocumentationTruthFinding[] {
 	const findings: DocumentationTruthFinding[] = [];
 
 	for (const path of RETIRED_DOCUMENTATION_PATHS) {
@@ -66,7 +70,10 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 			stat = lstatSync(absolute);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				findings.push({ path: alias.path.replaceAll("\\", "/"), message: "required documentation discovery alias is missing" });
+				findings.push({
+					path: alias.path.replaceAll("\\", "/"),
+					message: "required documentation discovery alias is missing",
+				});
 				continue;
 			}
 			throw error;
@@ -108,7 +115,10 @@ export function currentDocumentationFindings(repoRoot: string, graph: DocsConten
 	const actual = readFileSync(agentsPath, "utf8").replaceAll("\r\n", "\n");
 	const expected = renderAgentsMarkdown(graph);
 	if (actual !== expected) {
-		findings.push({ path: ".agents/AGENTS.md", message: "committed AGENTS differs from the canonical repository-rules projection" });
+		findings.push({
+			path: ".agents/AGENTS.md",
+			message: "committed AGENTS differs from the canonical repository-rules projection",
+		});
 	}
 
 	return findings;

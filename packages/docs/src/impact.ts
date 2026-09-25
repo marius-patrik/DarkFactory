@@ -36,11 +36,23 @@ function normalizePath(path: string): string {
 	return path.trim().replaceAll("\\", "/").replace(/^\.\//u, "");
 }
 
+function configDocumentPaths(): ReadonlySet<string> {
+	const directory = (process.env.DF_CONFIG_DIR?.trim() || ".darkfactory")
+		.replaceAll("\\", "/")
+		.replace(/^\.\//u, "")
+		.replace(/\/$/u, "");
+	return new Set(
+		["repo.df", "config.df", `${directory}/repo.df`, `${directory}/config.df`]
+			.map(normalizePath)
+			.filter((path, index, paths) => paths.indexOf(path) === index),
+	);
+}
+
 function isDocumentationFile(path: string): boolean {
 	return (
 		path === ".agents/PRD.md" ||
 		path === ".agents/AGENTS.md" ||
-		path === ".agents/docs.df" ||
+		configDocumentPaths().has(path) ||
 		path.startsWith(".agents/notes/rules/") ||
 		path.startsWith(".agents/notes/adr/")
 	);
@@ -48,11 +60,7 @@ function isDocumentationFile(path: string): boolean {
 
 function isProductContractFile(path: string): boolean {
 	return (
-		path === "repo.df" ||
-		path === "config.df" ||
-		path === ".agents/docs.df" ||
-		path === ".darkfactory/repo.df" ||
-		path === ".darkfactory/config.df" ||
+		configDocumentPaths().has(path) ||
 		path === "package.json" ||
 		/^packages\/[^/]+\/package\.json$/u.test(path) ||
 		/^capabilities\/[^/]+\/capability\.(?:ts|js|mjs)$/u.test(path)
@@ -70,11 +78,7 @@ function isGovernanceFile(path: string): boolean {
 }
 
 function publicApiEntryPoints(evidence: RepositoryEvidence): ReadonlySet<string> {
-	return new Set(
-		evidence.packages
-			.flatMap((pkg) => pkg.apiEntryPoints)
-			.map(normalizePath),
-	);
+	return new Set(evidence.packages.flatMap((pkg) => pkg.apiEntryPoints).map(normalizePath));
 }
 
 /**
