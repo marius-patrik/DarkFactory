@@ -1,13 +1,14 @@
 import { watch } from "node:fs";
 import { join, resolve } from "node:path";
 
-const PACKAGE_ROOT = resolve(import.meta.dir, "..");
-const PAPER = join(PACKAGE_ROOT, "index.typ");
+const REPOSITORY_ROOT = resolve(import.meta.dir, "..", "..");
+const PAPER_ROOT = join(REPOSITORY_ROOT, "paper");
+const PAPER = join(PAPER_ROOT, "index.typ");
 const WATCH_PATHS = [
   PAPER,
-  join(PACKAGE_ROOT, "bib"),
-  join(PACKAGE_ROOT, "img"),
-  join(PACKAGE_ROOT, "fonts"),
+  join(PAPER_ROOT, "bib"),
+  join(PAPER_ROOT, "img"),
+  join(PAPER_ROOT, "fonts"),
 ];
 const DEBOUNCE_MS = 150;
 
@@ -24,18 +25,18 @@ async function runBuild() {
   building = true;
   do {
     rebuildRequested = false;
-    console.log("[dev] building publication...");
+    console.log("[dev] building PAPER.pdf...");
     const child = Bun.spawn(["bun", "run", "publication"], {
-      cwd: PACKAGE_ROOT,
+      cwd: PAPER_ROOT,
       stdout: "inherit",
       stderr: "inherit",
     });
     const exitCode = await child.exited;
     if (exitCode === 0) {
-      console.log("[dev] publication build complete");
+      console.log("[dev] PAPER.pdf build complete");
     } else {
       console.error(
-        `[dev] publication build failed (${exitCode}); continuing to watch paper sources`,
+        `[dev] PAPER.pdf build failed (${exitCode}); continuing to watch paper sources`,
       );
     }
   } while (rebuildRequested);

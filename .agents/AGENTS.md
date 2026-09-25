@@ -1,9 +1,9 @@
-<!-- Generated from .agents/notes/rules/** and .agents/notes/adr/** by @darkfactory/docs. Do not edit .agents/AGENTS.md directly. -->
+<!-- Generated from .agents/rules/** and .agents/adr/** by @darkfactory/docs. Do not edit .agents/AGENTS.md directly. -->
 
 # Repository Development Guidelines & Agent Rules
 
 DarkFactory is developed by an autonomous agent pipeline under human approval gates. The rules
-below are canonical in `.agents/notes/rules/` and binding on every contributor — human or agent.
+below are canonical in `.agents/rules/` and binding on every contributor — human or agent.
 They are binding regardless of enforcement mechanism. CI, branch protection and tests enforce the portions already automated. This file is a
 projection of those canonical files: it carries the normative requirement text of every rule and an
 index back to each canonical file for rationale and enforcement. Related notes are derived from
@@ -13,26 +13,26 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 
 | ID | Rule | Related notes | Canonical file |
 |---|---|---|---|
-| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | `.agents/notes/rules/001-unit-tests.md` |
-| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` | `.agents/notes/rules/002-inline-docs-and-generated-documentation.md` |
-| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022`, `ADR-0023` | `.agents/notes/rules/003-product-requirements-and-adrs.md` |
-| `DF-RULE-004` | English language consistency | `ADR-0027` | `.agents/notes/rules/004-english-language.md` |
-| `DF-RULE-005` | Commit granularity | `ADR-0025` | `.agents/notes/rules/005-commit-granularity.md` |
-| `DF-RULE-006` | CI readiness and verification | `ADR-0021`, `ADR-0026` | `.agents/notes/rules/006-ci-readiness.md` |
-| `DF-RULE-007` | Branch and pull request workflow | `ADR-0015`, `ADR-0025` | `.agents/notes/rules/007-branches-and-pull-requests.md` |
-| `DF-RULE-008` | Automated formatting and linting | `ADR-0026` | `.agents/notes/rules/008-formatting-and-linting.md` |
-| `DF-RULE-009` | Request binding, branch cleanup and board status | `ADR-0019` | `.agents/notes/rules/009-issue-binding-and-board-status.md` |
-| `DF-RULE-010` | Reviewed Planning and implementation alignment | `ADR-0013` | `.agents/notes/rules/010-approved-delivery-plan.md` |
-| `DF-RULE-011` | Pull request review approval and governed merge | `ADR-0013`, `ADR-0019` | `.agents/notes/rules/011-review-approval-and-governed-merge.md` |
-| `DF-RULE-012` | Verbatim Request capture and Planning gate | `ADR-0013` | `.agents/notes/rules/012-request-capture-and-planning.md` |
-| `DF-RULE-013` | Specification sequence and work tracking | `ADR-0013`, `ADR-0022` | `.agents/notes/rules/013-specification-and-work-tracking.md` |
-| `DF-RULE-014` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | `.agents/notes/rules/014-agent-runtime-and-resilience.md` |
-| `DF-RULE-015` | Commits, repository taxonomy and domains | `ADR-0021` | `.agents/notes/rules/015-repository-taxonomy.md` |
-| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | `.agents/notes/rules/016-security-and-secrets.md` |
-| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | `.agents/notes/rules/017-final-architecture-dry-and-deletion.md` |
-| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | `.agents/notes/rules/018-concurrency-atomicity-and-idempotency.md` |
-| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | `.agents/notes/rules/019-orchestrated-integration-and-worker-isolation.md` |
-| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | `.agents/notes/rules/020-paper-authorship-and-publication.md` |
+| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | `.agents/rules/001-unit-tests.md` |
+| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` | `.agents/rules/002-inline-docs-and-generated-documentation.md` |
+| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022`, `ADR-0023` | `.agents/rules/003-product-requirements-and-adrs.md` |
+| `DF-RULE-004` | English language consistency | `ADR-0027` | `.agents/rules/004-english-language.md` |
+| `DF-RULE-005` | Commit granularity | `ADR-0025` | `.agents/rules/005-commit-granularity.md` |
+| `DF-RULE-006` | CI readiness and verification | `ADR-0021`, `ADR-0026` | `.agents/rules/006-ci-readiness.md` |
+| `DF-RULE-007` | Branch and pull request workflow | `ADR-0015`, `ADR-0025` | `.agents/rules/007-branches-and-pull-requests.md` |
+| `DF-RULE-008` | Automated formatting and linting | `ADR-0026` | `.agents/rules/008-formatting-and-linting.md` |
+| `DF-RULE-009` | Request binding, branch cleanup and board status | `ADR-0019` | `.agents/rules/009-issue-binding-and-board-status.md` |
+| `DF-RULE-010` | Reviewed Planning and implementation alignment | `ADR-0013` | `.agents/rules/010-approved-delivery-plan.md` |
+| `DF-RULE-011` | Pull request review approval and governed merge | `ADR-0013`, `ADR-0019` | `.agents/rules/011-review-approval-and-governed-merge.md` |
+| `DF-RULE-012` | Verbatim Request capture and Planning gate | `ADR-0013` | `.agents/rules/012-request-capture-and-planning.md` |
+| `DF-RULE-013` | Specification sequence and work tracking | `ADR-0013`, `ADR-0022` | `.agents/rules/013-specification-and-work-tracking.md` |
+| `DF-RULE-014` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | `.agents/rules/014-agent-runtime-and-resilience.md` |
+| `DF-RULE-015` | Commits, repository taxonomy and domains | `ADR-0021` | `.agents/rules/015-repository-taxonomy.md` |
+| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | `.agents/rules/016-security-and-secrets.md` |
+| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | `.agents/rules/017-final-architecture-dry-and-deletion.md` |
+| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | `.agents/rules/018-concurrency-atomicity-and-idempotency.md` |
+| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | `.agents/rules/019-orchestrated-integration-and-worker-isolation.md` |
+| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | `.agents/rules/020-paper-authorship-and-publication.md` |
 
 
 ---
@@ -71,7 +71,7 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
 
-`.agents/PRD.md` is the product-documentation homepage. `.agents/notes/rules/**` is the canonical rule set and `.agents/notes/adr/**` is the canonical current long-term note set. Root `README.md` is generated from the integrated Paper publication. `.agents/AGENTS.md` is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
+`.agents/PRD.md` is the product-documentation homepage. `.agents/rules/**` is the canonical rule set and `.agents/adr/**` is the canonical current long-term note set. Root `README.md` is a symlink to the canonical product document; `.agents/AGENTS.md` is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
@@ -86,7 +86,7 @@ Executable declarations use the final DarkFactory contracts:
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
 - the declarable workflow graph for execution topology;
-- `.agents/notes/rules/*.md` for mandatory contribution/governance behavior.
+- `.agents/rules/*.md` for mandatory contribution/governance behavior.
 
 `DF_CONFIG_DIR` (default `.darkfactory`) may hold the same combined document for supported discovery, but `.darkfactory` is not a committed source in this repository. Ambiguous root/folder or alias candidates fail closed and are never merged.
 
@@ -410,10 +410,8 @@ Parallel implementation has one integration authority per delivery branch.
 
 ### Rule 20 — Paper authorship and publication
 
-`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources. The Paper-specific release and CI commands are declared in `repo.dfconfig`; the generic Paper capability remains available to other repositories.
+`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
 
-The imported Paper snapshot is `marius-patrik/DarkFactory-Paper@f6a54b14a3980dc7e8eea366509e451557a85efe`. DarkFactory implementation claims in the thesis remain pinned to `e9c10221b40589512d262a0edb95f709b923150c`. The import does not include Paper history, a submodule, a second web application, or a second Paper governance file.
+The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is generated from `.agents/notes/`. `PAPER.pdf` is included in the release assets.
 
-The canonical publication command generates `paper/ODBORNA_PRACE.pdf` and the repository-root `README.md` from the thesis source. The product documentation home remains `.agents/PRD.md`; generic documentation builds do not own or overwrite the Paper README.
-
-Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
+The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.

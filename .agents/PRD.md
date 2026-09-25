@@ -1,424 +1,426 @@
-# DarkFactory — Product Requirements Document
-
-**Status: NORMATIVE.**
+<!-- Generated from .agents/adr/** by @darkfactory/docs. Do not edit .agents/PRD.md directly. -->
 
-DarkFactory is a self-hosting autonomous software-delivery system built around a declarable workflow graph, versioned capabilities and GitHub as its durable control plane. This document defines stable product outcomes and architectural constraints. The active Request/Planning record carries the concrete implementation checklist, approvals and validation evidence in GitHub.
+# Product Requirements
 
-## 1. Authority
+# ADR-0006 — The pipeline runs only df
 
-1. `.agents/PRD.md` defines product requirements and architecture.
-2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
-3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
-4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
-5. `.agents/notes/rules/*.md` define mandatory contribution/governance behavior.
-6. Generated docs/web views and `.agents/AGENTS.md` are projections, not independent sources of truth.
+**Status**: Accepted
 
-A material deviation from this document requires owner approval and an accepted ADR.
+**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 
-## 2. Product vision
+## Decision
 
-DarkFactory turns a repository into a governed autonomous software factory.
+All model-backed pipeline execution goes through the `df` runtime.
 
-A human supplies intent and approvals. DarkFactory performs planning, implementation, deterministic verification, review/fix iteration, alignment, Git/GitHub mutation, CI coordination, merge/reconciliation, release and audit through one production engine.
+- External coding-agent CLIs are not invoked directly by the production pipeline.
+- Provider/account/model selection, credentials, quota handling, failover and execution are owned by df.
+- CI and workflow orchestration call one DarkFactory runtime surface rather than provider-specific harnesses.
 
-The system must be:
+## Consequences
 
-- **self-hosting** — df is used to finish and evolve DarkFactory itself;
-- **governed** — explicit approval gates bind human intent;
-- **resumable** — interruption, quota exhaustion and conflicts do not lose completed effects;
-- **truthful** — completion/mutation claims come from observed state, not agent prose;
-- **extensible** — new project-specific behavior can be added as capabilities rather than rebuilding core;
-- **multi-domain** — one repository may contain code, papers, mathematics and other supported package types;
-- **GitHub-native** — GitHub remains the durable issue/PR/check/project/event/authorization control plane;
-- **source-free in production** — released df installs and runs without a DarkFactory source checkout.
+The production pipeline has one execution owner and one routing/credential/quota model. Provider-specific behavior is expressed through DarkFactory configuration and runtime interfaces.
 
-## 3. Actors
+---
 
-| Actor | Responsibility |
-|---|---|
-| Maintainer/operator | Supplies intent, approves Planning/scope amendments/final merge as required, operates df through CLI/TUI/web. |
-| DarkFactory engine | Executes graph/runtime mechanisms, routing, persistence, capability loading and deterministic effects. |
-| Capability | Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work. |
-| DarkFactory GitHub App | Automation identity and privileged GitHub execution identity. |
-| Authenticated web user | Human identity used by DarkFactory Web for user-attributed GitHub access/actions. |
-| Consumer repository | Supplies project-specific declarations/data while consuming released df and the shared web application. |
+# ADR-0008 — Providers are configuration-driven
 
-## 4. Workspace and package architecture
+**Status**: Accepted
 
-DarkFactory is a root Bun workspace.
+**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 
-The final first-party package boundaries are:
+## Decision
 
-- `@darkfactory/protocol` — browser/runtime-safe schemas, serialized state/event contracts and shared types;
-- `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms and config resolution;
-- `@darkfactory/capability` — capability ABI, discovery/loader/resolution and deterministic adapter/build tooling;
-- `@darkfactory/github` — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;
-- `@darkfactory/keychain` — machine/runtime credential custody and authentication;
-- `@darkfactory/auth` — human/browser GitHub App authentication and sessions;
-- `@darkfactory/docs` — headless documentation compiler/content graph;
-- `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
-- `@darkfactory/web` — the sole first-party web application/renderer.
+Provider behavior is declared through configuration and generic dialect/runtime mechanisms.
 
-Any remaining implementation under `harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
+Provider declarations cover endpoints, API dialect, authentication, credential slots, headers, model discovery and quota/error mapping. Provider-specific behavior does not get its own independent orchestration subsystem.
 
-Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
+## Consequences
 
-## 5. Capability architecture
+Adding or changing a provider is primarily a configuration/data change. Shared runtime mechanisms own transport, routing, authentication integration and failure handling.
 
-Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under root `capabilities/`.
+---
 
-The initial first-party capability set includes at least:
+# ADR-0009 — Accounts have named credential slots
 
-- code;
-- paper;
-- math;
-- docs;
-- git;
-- github;
-- planning;
-- review;
-- ci;
-- release;
-- recovery;
-- hooks;
-- epics;
-- stacks.
+**Status**: Accepted
 
-A capability may contribute:
+**Related rules**: `DF-RULE-014`, `DF-RULE-016`
 
-- setup and ecosystem/package-specific deterministic actions;
-- tools and commands;
-- graph-node behavior;
-- deterministic actions;
-- verification/quality actions;
-- hooks/rules;
-- documentation;
-- web surfaces/metadata;
-- release outputs;
-- audit records;
-- credential requirements.
+## Decision
 
-Capabilities do not own raw credential storage.
+DarkFactory models credentials as:
 
-One canonical TypeScript capability definition is the implementation source. Build tooling deterministically produces supported integration forms, including:
+`provider → accounts[] → named credential slots`.
 
-- native DarkFactory/Pi integration;
-- Pi ExtensionAPI tools/commands;
-- standalone MCP server form;
-- supported Claude/Codex/agent skills/plugins/manifests.
+An account may contain multiple required values such as access token, refresh token, API key, organization/project identifier, cookie or custom header.
 
-There must not be independent handwritten implementations of the same capability for each runtime surface, agent integration, or consumer.
+## Consequences
 
-Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.
+Routing and quota state can address accounts independently. Runtime adapters receive the selected account view without collapsing DarkFactory's full credential model.
 
-The capability ABI is versioned independently from product SemVer.
+---
 
-## 6. Domains, ecosystems and project detection
+# ADR-0011 — The quota engine is the availability authority
 
-DarkFactory retains separate concepts:
+**Status**: Accepted
 
-- **ecosystem** — toolchain/package format, such as Bun/Node, Python, Rust, Typst, LaTeX or Lean;
-- **package** — one buildable unit in a repository/workspace;
-- **domain** — the semantic kind of work, initially including `code`, `paper` and `math`;
-- **capability** — behavior DarkFactory can perform.
+**Related rules**: `DF-RULE-014`, `DF-RULE-018`
 
-Repositories may be polyglot and multi-domain simultaneously.
+## Decision
 
-Detection discovers repository/package/domain evidence. Capability resolution then selects applicable capability-contributed actions such as test, lint, format, docs, setup and release behavior.
+Provider/model/account availability is determined by DarkFactory's quota engine.
 
-The final system must not rely on one ever-growing repository-specific language/command table when behavior can be provided by a capability.
+The engine combines declared limits with observed response headers, usage data, errors and provider usage endpoints. Routing does not spend requests merely to probe availability.
 
-## 7. Configuration and persisted state
+Capacity admission is authoritative state, not an advisory preflight. Concurrent model calls reserve request/token/concurrency capacity atomically before dispatch and settle or release that reservation from observed usage. Corrupt or unreadable authoritative quota state fails closed rather than being interpreted as empty usage.
 
-### 7.1 Combined repository/runtime configuration
+## Consequences
 
-The combined configuration rules are:
+All routing and operator status surfaces consume one availability model. Quota accounting is shared across processes and supports deterministic wait/skip/failover behavior without concurrent calls consuming the same remaining capacity.
 
-- root `repo.dfconfig` is canonical, with root `config.dfconfig` and root `.dfconfig` accepted as aliases for the same logical document;
-- the JSON document owns `repo`, `docs`, and `providers` blocks, and every consumer selects its declared block;
-- `repo` owns repository identity and policy, `providers` owns runtime/provider settings, and `docs` owns documentation settings;
-- when root candidates exist they are selected, otherwise candidates under `DF_CONFIG_DIR` (default `.darkfactory`) are selected;
-- two aliases in the selected scope, or candidates in both root and the configured folder, fail closed as ambiguous;
-- separate candidate files are never silently merged;
-- `.darkfactory` is a discovery fallback and is not a committed source in this repository;
-- `.df` is a filename extension, never a directory.
+---
 
-### 7.2 Documentation configuration and output
+# ADR-0012 — Routing is limit-aware and capability-tiered
 
-The `docs` block in the combined configuration is the only DarkFactory documentation configuration contract.
+**Status**: Accepted
 
-Generated documentation sites and JSON content graphs are CI outputs and must not be committed. The deterministic `.agents/AGENTS.md` rules projection remains governed by the documentation currentness check.
+**Related rules**: `DF-RULE-014`
 
-### 7.3 State
+## Decision
 
-Df-owned config/state/result/review/audit artifacts use appropriate `.df` filenames in their owning locations.
+The router selects candidates using task kind, required capabilities, context, sensitivity/data policy, live quota and configured capability tiers.
 
-## 8. Governed Request lifecycle
+- Provider eligibility is evaluated before model strength.
+- The lowest sufficient capability tier is preferred.
+- Failure escalation moves deterministically to a stronger eligible tier.
+- Explicit graph/CLI routing remains an override subject to hard eligibility/capacity constraints.
 
-The final Request lifecycle is:
+## Consequences
 
-1. capture verbatim Request/context and relationships;
-2. generate one unified Planning artifact;
-3. independently review Planning;
-4. automatically fix/re-review Planning until clean;
-5. one explicit owner Planning Approval;
-6. implement;
-7. deterministic verification;
-8. implementation review/fix loop until clean;
-9. scope-amendment approval only when implementation/review identifies material work outside approved Planning;
-10. final alignment against approved Planning plus approved amendments;
-11. external/static checks;
-12. final review/merge authorization;
-13. merge and deterministic reconciliation.
+Lightweight models can serve appropriate work without consuming scarce high-capability capacity, while sensitive and capability-constrained work still fails closed.
 
-The lifecycle has one reviewed Planning artifact and one Planning Approval gate.
+---
 
-Planning/review/fix state is durable and resumable. Planning becomes stale when material Request, dependency, recovery or base context changes; stale approval is never silently reused.
+# ADR-0013 — df runs the workflow graph
 
-A model stopping naturally is valid completion. Code-node truth derives from engine-observed workspace/diff/scope/verification/commit evidence. Judgement prose may be structurally extracted through ordinary routed model calls.
+**Status**: Accepted
 
-Model claims such as “pushed”, “merged”, “committed” or “resolved” are not accepted as mutation proof without corresponding observed effects.
+**Related rules**: `DF-RULE-010`, `DF-RULE-011`, `DF-RULE-012`, `DF-RULE-013`, `DF-RULE-014`, `DF-RULE-018`
 
-## 9. Runtime, routing and resilience
+## Decision
 
-- Pipeline stages pass explicit semantic task kind where known.
-- Undeclared inference separates task subject from required capability; engineering work about images/video must not be misrouted to media-generation tools.
-- Routing respects sensitivity, data-collection policy, provider/account availability, capability requirements and capability tiers.
-- Capability tiers prefer the lowest sufficient tier and escalate deterministically according to the shipped routing contract.
-- Quota/provider failover is durable and does not repeat already-completed deterministic effects.
-- Execution is serializable per durable run identity: concurrent ingress for the same run cannot lose state, run the same node concurrently, or overwrite a newer transition.
-- External effects are serializable per deterministic effect identity. Concurrent callers of the same effect cannot both enter the mutation; crash recovery reconciles external evidence before retrying.
-- Transport retries are method/effect aware. A mutation is never blindly replayed after an ambiguous transport/server outcome; the engine reconciles external state or uses an operation with equivalent conditional/idempotent semantics first.
-- Authoritative state uses crash-consistent transactions appropriate to its scope. A rename-only single-file update is not described as durable across power loss unless file and directory durability are actually established; logically multi-file state commits through one generation/transaction boundary.
-- Every agent-backed logical stage has one bounded wall-clock budget across model failover and tool work.
-- Planning decomposes work into the smallest practical independently verifiable chunks with explicit dependencies, scope/file ownership and minimum capability/tier metadata sufficient to decide safe parallelism.
-- Independent chunks may execute concurrently only through the same persisted graph runtime in isolated engine worktrees backed by the one deterministic git substrate. Verified chunk commits integrate in dependency order; sibling failure, interruption and conflict repair remain resumable without repeating completed effects.
-- Quota admission is atomic with respect to concurrent model calls: declared/learned capacity is reserved before dispatch and settled/released from observed usage so parallel chunks cannot all consume the same remaining slot.
-- Turn limits and elapsed-time limits are independent safety bounds.
-- Timeout, quota exhaustion, authentication failure, model failure and user cancellation are distinct outcomes.
-- The runtime remains containerizable/non-root for CI execution.
+DarkFactory executes delivery as a declarative graph of agent, gate, automation and check-reference nodes with explicit edges and loop semantics.
 
-## 10. Git, GitHub and governance
+Planning, implementation, review/fix, alignment and deterministic effects are orchestrated by the graph/runtime. Static CI checks may remain external and are observed through check-reference nodes.
 
-Production GitHub interaction uses `@darkfactory/github`; production shell/subprocess `gh` mutation is not allowed.
+Execution is serializable per durable run identity. Concurrent ingress for the same run cannot execute the same transition concurrently or overwrite a newer persisted transition. External effects are separately serialized by deterministic effect identity and reconciled after ambiguous interruption.
 
-Deterministic workspace/git mechanisms own status/diff/log/fetch/branch/update/rebase/merge/cherry-pick/conflict continuation/abort and lease-safe pushes. A push contract identifies both the expected old remote SHA and the new local SHA, verifies the resulting remote ref, and refuses stale remote state. Models may assist conflict resolution but do not own deterministic git state.
+## Consequences
 
-GitHub webhook/workflow events are triggers, not authoritative lifecycle snapshots. Status, labels,
-project fields, bindings and cleanup decisions are reconciled from current GitHub/runtime state so
-delayed or out-of-order events are idempotent and cannot roll newer state backward.
+Execution state is durable and resumable. Workflow topology has one declarative source rather than duplicated script orchestration, and duplicate/out-of-order ingress cannot create duplicate logical mutations.
 
-Capabilities provide higher-level behaviors such as:
+---
 
-- GitHub Request/PR/project operations;
-- hooks/rule enforcement;
-- Epic/Request relationships;
-- stacked PR topology;
-- recovery intake/reconciliation.
+# ADR-0015 — The engine owns deterministic steps
 
-Static CI checks remain external to the runtime graph where appropriate; graph check-reference nodes observe them rather than duplicating them.
+**Status**: Accepted
 
-The repository default branch is always discovered from repository state/config, never hard-coded to `main`.
+**Related rules**: `DF-RULE-007`, `DF-RULE-018`
 
-## 11. Keychain and machine credentials
+## Decision
 
-`@darkfactory/keychain` is the sole machine/runtime credential owner.
+DarkFactory owns deterministic workspace and delivery effects, including repository state inspection, checkout/update operations, scope verification, commits, pushes, pull-request operations and deterministic verification.
 
-Credential/account/vault updates are transactionally serialized. Multi-file vault representations cannot expose a mixed generation after interruption. Replicated/synchronized secret state converges deterministically regardless of merge direction, represents deletion explicitly so removed secrets cannot be resurrected by stale replicas, and does not resolve equal-version conflicts by caller-local preference.
+Models perform judgement and file edits. Natural model stop is valid completion. Code-result truth is derived from observed workspace/effect state; judgement results may be structurally extracted after the model stops.
 
-It covers:
+Remote mutation uses observed evidence and conditional semantics. Git pushes identify the expected old remote SHA and the new local SHA, refuse stale remote state and verify the resulting ref. Ambiguous write outcomes are reconciled before retry rather than blindly replayed.
 
-- OS-native secure storage;
-- encrypted fallback where supported;
-- environment/import sources;
-- provider API keys;
-- provider OAuth/device/login flows;
-- access/refresh token refresh and rotation;
-- multiple accounts/credential slots;
-- borrowed external-CLI credentials without mutating the source CLI;
-- GitHub App private key/JWT/installation-token handling;
-- CLI-side GitHub user credentials;
-- scopes/audience/expiry metadata;
-- redaction;
-- secret scanning;
-- import/export;
-- diagnostics.
+## Consequences
 
-Other packages/capabilities request scoped credential handles. They do not directly inspect secret environment variables, credential files or OS keychains.
+Models are not required to print control JSON, perform git operations or submit completion tools. Mutation and completion claims are backed by observed effects, and deterministic retries cannot silently duplicate or overwrite newer external state.
 
-Secret values are never committed, written to issues/PRs, included in generated docs/static Pages assets or emitted in logs.
+---
 
-## 12. Human web authentication
+# ADR-0016 — Model resolution is live
 
-`@darkfactory/auth` is separate from keychain and owns DarkFactory Web human authentication.
+**Status**: Accepted
 
-It uses the existing DarkFactory GitHub App.
+**Related rules**: `DF-RULE-014`
 
-The normal browser flow provides:
+## Decision
 
-- GitHub App user authorization;
-- PKCE and state/CSRF protection;
-- minimal confidential token exchange/refresh broker;
-- expiring access-token/session management;
-- refresh;
-- logout/revocation;
-- session restoration.
+DarkFactory discovers usable models from configured provider catalogs/accounts at runtime.
 
-The broker is authentication infrastructure only. It has no DarkFactory project database, Request/pipeline state, model credentials or execution API.
+Provider configuration contains the minimum information required to reach and authenticate to the provider. Routing uses live/cached catalog state plus quota/runtime outcomes rather than depending on hand-maintained model inventories.
 
-Authorization derives from GitHub user permissions plus the App installation/permissions. DarkFactory does not maintain a second RBAC database.
+## Consequences
 
-Human-attributed GitHub actions retain user identity. Privileged automation remains the GitHub App/df identity.
+Model availability can change without editing routing source. Invalid or unavailable models fall out of eligibility through the shared catalog/quota mechanisms.
 
-Browser artifacts cannot contain/import the GitHub App private key, confidential broker credentials or keychain implementation.
+---
 
-## 13. Documentation
+# ADR-0017 — Modular packages and first-class capabilities
 
-`@darkfactory/docs` is the final documentation engine.
+**Status**: Accepted
 
-It compiles one typed content graph from:
+**Related rules**: `DF-RULE-014`, `DF-RULE-017`
 
-- canonical Markdown documents under `.agents/`;
-- ADRs and rules;
-- actual TypeScript/TSDoc API extraction;
-- capability-contributed documentation;
-- repository/graph/workflow metadata;
-- supported API extractors for other ecosystems.
+## Decision
 
-TypeDoc may be used internally as the TypeScript/TSDoc extractor.
+DarkFactory is a root Bun workspace with stable first-party package boundaries:
 
-Documentation builds are deterministic, strict and zero-warning for required API surfaces.
+- `@darkfactory/protocol`
+- `@darkfactory/core`
+- `@darkfactory/capability`
+- `@darkfactory/github`
+- `@darkfactory/keychain`
+- `@darkfactory/auth`
+- `@darkfactory/docs`
+- `@darkfactory/cli`
+- `@darkfactory/web`
 
-`.agents/PRD.md` is the canonical product-documentation homepage. Root `README.md` is a symlink to this canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical `.agents/notes/rules/**`, with ADR links derived from `.agents/notes/adr/**`. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
+Agentic/product behavior is implemented as versioned capabilities under root `capabilities/`. Core owns execution mechanisms; capabilities own behavior.
 
-## 14. DarkFactory Web
+Each concern has one final implementation owner. Final packages do not forward implementation to a deletion-bound legacy tree, and duplicate internal registries/state/config/command owners are not maintained for migration convenience.
 
-`@darkfactory/web` is the only first-party web UI.
+## Consequences
 
-It is a prebuilt React/TypeScript application released once per DarkFactory version and reused unchanged by consumer repositories.
+Package dependencies remain acyclic and browser-safe boundaries are explicit. Official and third-party capabilities use the same ABI/loader. No monolithic harness package is part of the public architecture, and internal historical architecture is not a compatibility surface.
 
-Preferred design stack:
+---
 
-- React;
-- TypeScript;
-- shadcn/ui;
-- lucide-animated;
-- Motion;
-- Dagre;
-- Wouter;
-- Dockview where a docking/workspace layout is materially useful.
+# ADR-0019 — GitHub backs the web control plane
 
-A consumer does not rebuild the frontend. Its Pages artifact combines the released web bundle with repository-specific compiled content/data.
+**Status**: Accepted
 
-The application remains dynamic on GitHub Pages by reading live GitHub REST/GraphQL state through browser-safe GitHub/auth interfaces.
+**Related rules**: `DF-RULE-009`, `DF-RULE-011`, `DF-RULE-016`, `DF-RULE-018`
 
-The target web surface includes, as shipped capabilities become available:
+## Decision
 
-- repository overview;
-- Requests and Planning;
-- Epics/dependencies;
-- recovery;
-- PRs/stacks;
-- checks/runs;
-- graph execution;
-- providers/accounts/quota status where safe;
-- releases;
-- capabilities;
-- project configuration;
-- audit;
-- documentation.
+DarkFactory Web uses GitHub as the durable issue/PR/check/project/event/authorization control plane.
 
-DarkFactory Web becomes the primary day-to-day operator interface. Direct use of github.com UI is optional for normal DarkFactory operation except where GitHub itself requires a consent/review surface.
+The browser application reads live GitHub state through browser-safe GitHub/auth interfaces. Human-attributed actions use the authenticated GitHub user; privileged automation uses the DarkFactory GitHub App identity.
 
-The web application is not a second state database or privileged mutation engine.
+Webhook/workflow events are triggers, not authoritative state snapshots. Reconciliation derives desired status, bindings and project state from current GitHub/runtime evidence so delayed or out-of-order events are idempotent and cannot roll newer state backward.
 
-## 15. CLI and TUI
+## Consequences
 
-The supported command is `df` from `@darkfactory/cli`.
+The web application does not maintain a second project database or privileged mutation backend. Consumer Pages deployments reuse the shared application and repository-specific compiled content/data, while reconciliation remains current-state driven rather than event-order driven.
 
-One command registry composes core/capability commands and drives:
+---
 
-- CLI dispatch/help;
-- wrapper/system-`df` coexistence;
-- interactive TUI;
-- web/operator command metadata where applicable.
+# ADR-0020 — Browser auth and machine keychain are separate trust boundaries
 
-Bare interactive `df` enters the TUI when appropriate. Headless commands remain scriptable.
+**Status**: Accepted
 
-The CLI/TUI/web surfaces consume the same protocol/state/provider/capability models.
+**Related rules**: `DF-RULE-016`, `DF-RULE-018`
 
-## 16. Installation, release and versioning
+## Decision
 
-First-party packages and official capabilities are published under the planned `darkfactory` GitHub organization.
+`@darkfactory/keychain` owns machine credentials, provider accounts, token refresh, secure storage and GitHub App machine identity.
 
-Initial first-party versioning is lockstep: one DarkFactory SemVer across first-party packages/capabilities, with a separate capability ABI version.
+`@darkfactory/auth` owns human/browser GitHub authentication and session management.
 
-The final release contains, as required:
+Browser-safe packages cannot import machine-secret/private-key implementations.
 
-- Node-compatible npm execution path;
-- supported native artifacts where CI can build **and execute** them;
-- source commit/version provenance;
-- checksums;
-- official capabilities;
-- capability adapter artifacts/MCP/plugin/skill forms;
-- graph/schema/runtime data;
-- prebuilt DarkFactory Web bundle.
+Credential/account updates are transactionally serialized. Multi-file logical credential state cannot expose mixed generations after interruption. Replicated vault state converges deterministically, represents deletion explicitly until safe compaction, and does not resolve equal-version conflicts by caller-local preference. Browser-session refresh/revoke also uses atomic state transitions so rotating refresh tokens cannot race a concurrent revocation.
 
-Initial installation must not require Python, a source checkout or a pre-existing df installation.
+## Consequences
 
-Before a release-affecting delivery PR merges, an unpublished source-free candidate built from its exact head/tree must pass the applicable DarkFactory and fleet acceptance contract. Final publication occurs from canonical after merge without behavioral source changes; the published artifacts must reproduce the proven candidate behavior/assets aside from canonical source-provenance metadata.
+Human authorization and machine automation authority remain distinct. Secret-bearing machine state never enters static/browser artifacts, and concurrent/replicated credential operations converge without resurrecting stale secrets.
 
-The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
+---
 
-## 17. Consumer/fleet model
+# ADR-0021 — Repository declarations, runtime detection and capability-resolved actions
 
-The intended fleet contains six repositories identified by stable GitHub repository identity:
+**Status**: Accepted
 
-1. DarkFactory;
-2. omnis;
-3. ChessWithQuests;
-4. OdbornaPrace-paper;
-5. template-OdbornaPrace;
-6. OdbornaPrace-mono.
+**Related rules**: `DF-RULE-003`, `DF-RULE-006`, `DF-RULE-015`
 
-Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.
+## Decision
 
-Capabilities should handle project/repository-specific setup wherever possible, including quality actions, docs, hooks, release and workflow configuration.
+- Canonical root `repo.dfconfig` owns one combined configuration document; root `config.dfconfig` and root `.dfconfig` are accepted aliases for that same document.
+- The `repo` block is the repository/product declaration, `providers` is runtime/user/provider configuration, and `docs` is documentation configuration.
+- Consumers select only their named block from the selected document.
+- `DF_CONFIG_DIR` (default `.darkfactory`) is a supported fallback discovery folder, but `.darkfactory` is not a committed source in this repository.
+- Root and folder candidates may not coexist, aliases may not coexist in one scope, and separate files are never silently merged.
+- Repository/package/ecosystem/domain evidence is detected by the TypeScript runtime.
+- Versioned capabilities resolve applicable test, typecheck, lint, format, docs, setup and release actions.
+- Domain and capability are separate axes.
+- Repository identity, taxonomy and non-detectable policy are data, not hard-coded source.
+- The canonical/default branch is discovered from repository state/configuration.
+- Detection and action resolution fail closed on malformed/unreadable declared evidence, unknown explicit declarations, ambiguous ownership and missing required quality actions.
+- Every first-party package/capability is covered exactly once by an owning action or an explicit justified workspace-level/not-applicable declaration.
 
-Install/update is idempotent and drift-aware.
+## Consequences
 
-## 18. Security requirements
+Repository behavior is determined by current declarations plus detected evidence and capability resolution. The final runtime has one strict configuration/detection model, and a green quality result proves complete resolved coverage rather than silently skipping unsupported packages/actions.
 
-- No credential/token/private key in source, logs, issues, PRs, docs or Pages assets.
-- Browser packages have enforced import boundaries from machine-secret code.
-- Third-party capabilities receive only declared/scoped credential access.
-- GitHub user authorization is not treated as GitHub App installation authority.
-- History rewriting uses lease-safe expected-old-SHA semantics; blind force push is forbidden.
-- Recovery never pushes secret-bearing local material.
-- Authentication and authorization failures fail closed.
+---
 
-## 19. Final acceptance
+# ADR-0022 — Complete the final system directly
 
-DarkFactory is final only when the exact pre-merge candidate has passed the declared acceptance/fleet contract and the final canonical publication can reproduce it without behavioral source changes, and:
+**Status**: Accepted
 
-- df is the only normal production orchestration/mutation engine;
-- production orchestration and mutation are owned by the final TypeScript df system;
-- package/capability architecture is shipped;
-- official capabilities and representative generated adapters are proven;
-- keychain/auth security boundaries are proven;
-- real TypeScript API docs are published;
-- generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` is generated from the integrated Paper publication;
-- shared web UI is deployed across the fleet without consumer frontend rebuild;
-- the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
-- all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
-- `audit.df` is internally consistent;
-- installed fleet acceptance is green across the supported consumer set before merge;
-- the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
+**Related rules**: `DF-RULE-003`, `DF-RULE-013`, `DF-RULE-017`, `DF-RULE-019`
 
-## 20. Integrated Paper domain
+## Decision
 
-The repository contains the current Paper snapshot under `paper/` as a subordinate domain of DarkFactory. `paper/index.typ` is the sole authored thesis manuscript; `paper/bib/`, `paper/fonts/`, and `paper/img/` are its supporting resources. The Paper publication command generates `paper/ODBORNA_PRACE.pdf` and the repository-root `README.md`. The product documentation home remains `.agents/PRD.md`, and the generic documentation compiler does not write the Paper README.
+DarkFactory implementation targets the final architecture directly.
 
-The imported source snapshot is `marius-patrik/DarkFactory-Paper@f6a54b14a3980dc7e8eea366509e451557a85efe`. DarkFactory-specific thesis evidence remains pinned to `e9c10221b40589512d262a0edb95f709b923150c`. The Paper requirements follow the verified school guide: A4 formatting, 2.5 cm margins with a 3 cm binding edge, justified 12 pt serif body text, 1.5 line spacing, 8 pt paragraph spacing, numbered captions, ISO 690 numeric citations, and a generated Czech/English publication.
+- Missing behavior is implemented in its final TypeScript package/capability owner.
+- Useful existing TypeScript is moved/reused rather than rewritten solely to change ownership.
+- Duplicate production implementations are not maintained in parallel.
+- Internal backward-compatibility, migration, parity, shadow, canary, fallback and alias layers are forbidden unless an external supported contract explicitly required by `.agents/PRD.md` needs them.
+- Previous internal architecture is not a compatibility target and is never kept "just in case".
+- Dead/unreachable code, stale configuration, unused assets, obsolete tests, superseded docs and transitional adapters are deleted rather than documented or tested into permanence.
+- Shared mechanisms are abstracted once at the lowest stable owner when repetition represents the same invariant; speculative abstraction and API widening solely for tests are avoided.
+- Legacy DarkFactory Python and deletion-bound harness ownership are removed once their required behavior is represented by final owners; they are not maintained as parity/fallback paths.
+- Independent final-product work proceeds concurrently whenever consumed interfaces are stable.
+- Tightly coupled final completion work may be consolidated into one owner-approved Request/Planning record and one integration PR instead of being artificially split into child delivery PRs.
+- Before that final integration PR merges, an unpublished source-free release candidate built from its exact head/tree is validated through the complete DarkFactory acceptance and declared consumer-fleet acceptance.
+- Known defects found by exact-head/fleet acceptance are fixed on the integration branch and re-proven before merge.
+- Final supported publication occurs from canonical after merge without introducing behavioral source changes; publication must reproduce the proven candidate behavior/assets aside from canonical provenance metadata.
 
-Paper-specific authorship and publication behavior is owned by DF-RULE-020. The standalone Paper web application, Paper workflows, Paper lockfile, Paper submodule, and Paper Git history are not imported; the shared web migration remains a later dependent delivery.
+## Consequences
+
+Completion sequencing is optimized for the shortest safe path to one final, proven merge. The repository remains current-only and small: unsupported internal history lives in Git/issues rather than compatibility code, and fleet defects cannot be deferred into a post-merge stabilization phase.
+
+---
+
+# ADR-0023 — First-party docs use the combined docs block and one renderer
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-002`, `DF-RULE-003`
+
+## Decision
+
+- `@darkfactory/docs` is the headless documentation compiler/content-graph owner.
+- The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract.
+- The compiler builds one typed content graph from canonical Markdown, ADRs/rules, TypeScript/TSDoc API extraction, capability-contributed documentation and repository/graph/workflow metadata.
+- TypeDoc may be used internally as the TypeScript/TSDoc extractor.
+- `@darkfactory/web` is the only first-party web renderer.
+- `.agents/PRD.md` is the product homepage. `.agents/rules/**` and `.agents/adr/**` are canonical. Root `README.md` is a symlink to the canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical rules. Supported discovery aliases may point to canonical documents or generated projections, but internal legacy aliases are not retained.
+- Consumer repositories use the released web bundle plus repository-specific compiled content/data; generated sites and JSON content graphs remain CI outputs rather than committed sources.
+
+## Consequences
+
+Documentation has one compiler/configuration contract and one first-party renderer while product docs, rules and long-term notes retain distinct canonical sources and generated discovery projections.
+
+---
+
+# ADR-0024 — Effects are serializable and authoritative state is crash-consistent
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-018`
+
+## Decision
+
+DarkFactory correctness is defined across duplicate delivery, concurrent execution, interruption and ambiguous external-write outcomes.
+
+- Authoritative transitions serialize at the identity they mutate: run, effect, account, branch/worktree, quota reservation, release and other durable state.
+- Check-then-act is insufficient without an atomic claim, lease, transaction or compare-and-set.
+- A deterministic effect identity produces at most one logical external mutation, including concurrent duplicate invocation.
+- After an ambiguous non-idempotent write outcome, DarkFactory reconciles current external state before retrying.
+- Remote mutation uses expected-old-version/SHA semantics where available and fails closed on stale state.
+- Multi-file logical state commits through one generation/transaction boundary.
+- Lock recovery cannot remove another owner's replacement lock.
+- Replicated state converges independent of merge direction and represents deletion until stale replicas can no longer resurrect it.
+- Concurrency/idempotency/atomicity claims are tested with simultaneous actors and injected failures at real durable boundaries, not only sequential replay after success.
+
+## Consequences
+
+Crash recovery and concurrency safety are one protocol rather than separate best-effort features. Advisory telemetry may use weaker durability only when it cannot authorize work, affect mutation truth, consume capacity authority or change reconciliation decisions.
+
+---
+
+# ADR-0025 — Each delivery branch has one integration authority
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-005`, `DF-RULE-007`, `DF-RULE-019`
+
+## Decision
+
+Parallel implementation uses one authoritative remote delivery branch writer.
+
+- The orchestrator alone advances the authoritative delivery branch and owns integration.
+- Parallel workers use isolated local worktrees/branches with explicit prerequisites and disjoint subsystem/path ownership.
+- Workers return coherent commits, changed-file sets, targeted verification and assumptions; they do not mutate the authoritative remote branch.
+- Shared integration surfaces remain orchestrator-owned unless one non-overlapping edit is explicitly delegated.
+- Dependent work begins only after its consumed interface is integrated and verified.
+- CI is read-only on delivery branches.
+- Each implementation gate records exact-head evidence before downstream work treats it as satisfied.
+- Coherent commit boundaries are preserved; one PR does not imply one opaque squash commit.
+
+## Consequences
+
+Parallelism improves throughput without introducing lost updates, shared-file races or evidence attached to obsolete heads. Integration authority may be transferred explicitly, but there is never more than one active authority for one delivery branch.
+
+---
+
+# ADR-0026 — Verification proves invariants and fails closed
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-001`, `DF-RULE-006`, `DF-RULE-008`
+
+## Decision
+
+Tests and CI prove product/architecture invariants rather than freezing incidental repository shape.
+
+- Behavioral tests live at the owning package/capability boundary and survive valid refactors.
+- Static tests inspect semantic structure—parsed declarations/workflows, schemas, import/dependency graphs, public exports or generated artifacts—when static structure is the actual contract.
+- Exact filenames, source substrings, internal symbol names and workflow step labels are not normally product invariants.
+- Duplicate/shadowed tests are invalid verification.
+- Concurrency/idempotency/atomicity tests exercise simultaneous actors and crash/failure windows.
+- Typecheck is a first-class TypeScript quality action.
+- CI fails closed on missing, unsupported, ambiguous or stale required quality actions and accounts for every detected first-party package/capability exactly once.
+- Required skipped/neutral/missing/stale checks are not treated as proven success unless they were explicitly declared not applicable before matrix construction.
+- CI validates but does not mutate delivery branches; deterministic formatting/fixes happen before the governed commit.
+- Release proof executes the built/source-free candidate rather than substituting source-workspace imports.
+
+## Consequences
+
+A green head means the declared invariants were actually evaluated. The suite remains useful during aggressive cleanup because it protects behavior and architecture rather than stale implementation text.
+
+---
+
+# ADR-0027 — Repository-authored artifacts use English
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-004`
+
+## Decision
+
+Repository-authored code, identifiers, comments, docstrings, commit messages, issues, pull-request text and documentation use English as the common written language.
+
+Quoted verbatim user input and fixtures/content whose meaning depends on another language are explicit exceptions.
+
+Machine enforcement is limited to surfaces that can be checked deterministically. Natural-language prose remains a review invariant rather than being protected by a brittle heuristic language detector.
+
+## Consequences
+
+Human and agent contributors share one review language across source, GitHub and generated documentation without pretending that unreliable natural-language classification is a correctness gate.
+
+---
+
+# ADR-0028 — Integrate Paper as a repository domain
+
+**Status**: Accepted
+
+**Related rules**: `DF-RULE-020`
+
+## Decision
+
+- DarkFactory has one first-party Paper domain for the thesis manuscript and its publication.
+- The Paper has one authored manuscript source and one publication owner.
+- Paper publication produces the repository release artifact `PAPER.pdf`; it does not own repository documentation Markdown.
+- The Paper uses the shared documentation, capability, CI, and release contracts.
+
+## Consequences
+
+The thesis remains a first-class repository concern without creating a second documentation owner or a second product surface.

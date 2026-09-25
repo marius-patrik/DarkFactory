@@ -29,7 +29,7 @@ body:
     id: area
     attributes:
       label: "Area / Component"
-      description: "Primary area affected. See `.agents/notes/rules/015-repository-taxonomy.md` for the full taxonomy."
+      description: "Primary area affected. See `.agents/rules/015-repository-taxonomy.md` for the full taxonomy."
       options:
         - "agents - Agent runtime, routing, providers, planning/review orchestration and model execution (area:agents)"
         - "paper - Paper manuscript, scholarly evidence and publication outputs (area:paper)"

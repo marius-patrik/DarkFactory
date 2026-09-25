@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi, renderAgentsMarkdown } from "../packages/docs/src/index.ts";
+import { assertCurrentDocumentation, compileDocsContentGraphWithDetectedApi, renderAgentsMarkdown, renderNotesMarkdown, renderPrdMarkdown } from "../packages/docs/src/index.ts";
 import { renderDocsSite } from "../packages/web/src/docs.ts";
 
 function option(name: string): string | undefined {
@@ -20,8 +20,12 @@ if (check) {
 }
 
 const agentsMarkdown = renderAgentsMarkdown(graph);
+const prdMarkdown = renderPrdMarkdown(graph);
+const readmeMarkdown = renderNotesMarkdown(graph);
 await mkdir(join(repoRoot, ".agents"), { recursive: true });
 await writeFile(join(repoRoot, ".agents", "AGENTS.md"), agentsMarkdown);
+await writeFile(join(repoRoot, ".agents", "PRD.md"), prdMarkdown);
+await writeFile(join(repoRoot, ".agents", "README.md"), readmeMarkdown);
 await renderDocsSite(graph, outputDir);
 await mkdir(join(repoRoot, ".darkfactory", "generated"), { recursive: true });
 await writeFile(join(repoRoot, ".darkfactory", "generated", "docs.json"), JSON.stringify(graph, null, 2) + "\n");
