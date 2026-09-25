@@ -26,7 +26,7 @@ describe("publishable workspace boundaries", () => {
 			private?: boolean;
 		};
 		expect(rootPackage.private).toBe(true);
-		expect(rootPackage.workspaces).toEqual(["packages/*", "capabilities/*", "harness"]);
+		expect(rootPackage.workspaces).toEqual(["packages/*", "capabilities/*", "harness", "paper"]);
 
 		const directories = (await readdir(packageRoot, { withFileTypes: true }))
 			.filter((entry) => entry.isDirectory())

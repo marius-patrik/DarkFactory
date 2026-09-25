@@ -4,7 +4,6 @@ on:
   push:
     branches: [develop]
   pull_request:
-    branches: [develop]
   merge_group:
     branches: [develop]
   workflow_dispatch:
@@ -87,7 +86,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Bun
-        if: matrix.packageManager == 'bun'
+        if: matrix.packageManager == 'bun' || matrix.setupCommand == 'bun install --frozen-lockfile'
         uses: oven-sh/setup-bun@v2
 
       - name: Set up Node
@@ -133,6 +132,8 @@ jobs:
       - name: Set up Typst
         if: matrix.ecosystem == 'typst'
         uses: typst-community/setup-typst@v5
+        with:
+          version: ${{ matrix.version || '0.15.1' }}
 
       - name: Set up Lean
         if: matrix.ecosystem == 'lean'

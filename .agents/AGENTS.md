@@ -32,6 +32,7 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 | `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | `.agents/notes/rules/017-final-architecture-dry-and-deletion.md` |
 | `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | `.agents/notes/rules/018-concurrency-atomicity-and-idempotency.md` |
 | `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | `.agents/notes/rules/019-orchestrated-integration-and-worker-isolation.md` |
+| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | `.agents/notes/rules/020-paper-authorship-and-publication.md` |
 
 
 ---
@@ -70,7 +71,7 @@ Public source APIs MUST be documented inline.
 
 Documentation MUST be generated from canonical source and architecture records. DarkFactory's documentation engine is `@darkfactory/docs`; TypeDoc may be used internally for TypeScript extraction. The `docs` block of the combined DarkFactory configuration is the only documentation configuration contract. Generated sites and JSON content graphs are CI outputs and MUST NOT be committed.
 
-`.agents/PRD.md` is the product-documentation homepage. `.agents/notes/rules/**` is the canonical rule set and `.agents/notes/adr/**` is the canonical current long-term note set. Root `README.md` is a symlink to the canonical product document; `.agents/AGENTS.md` is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
+`.agents/PRD.md` is the product-documentation homepage. `.agents/notes/rules/**` is the canonical rule set and `.agents/notes/adr/**` is the canonical current long-term note set. Root `README.md` is generated from the integrated Paper publication. `.agents/AGENTS.md` is a deterministic generated projection of the canonical rules. These discovery surfaces are never authorities and are never edited directly. Repository/tool discovery aliases may point to canonical documents or generated projections only when they serve a current external/conventional entry point; aliases remain links rather than copied authored documents, and unsupported legacy aliases are forbidden. CI MUST fail on deterministic projection drift and on missing/orphaned rule↔note relations.
 
 The final web rendering layer is `@darkfactory/web`; docs must not maintain a second frontend or theme runtime.
 
@@ -406,3 +407,13 @@ Parallel implementation has one integration authority per delivery branch.
 - CI is read-only on delivery branches; background automation does not race the orchestrator by
   pushing formatter/fix commits.
 - Each implementation gate records exact-head evidence before downstream work treats it as satisfied.
+
+### Rule 20 — Paper authorship and publication
+
+`paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources. The Paper-specific release and CI commands are declared in `repo.dfconfig`; the generic Paper capability remains available to other repositories.
+
+The imported Paper snapshot is `marius-patrik/DarkFactory-Paper@f6a54b14a3980dc7e8eea366509e451557a85efe`. DarkFactory implementation claims in the thesis remain pinned to `e9c10221b40589512d262a0edb95f709b923150c`. The import does not include Paper history, a submodule, a second web application, or a second Paper governance file.
+
+The canonical publication command generates `paper/ODBORNA_PRACE.pdf` and the repository-root `README.md` from the thesis source. The product documentation home remains `.agents/PRD.md`; generic documentation builds do not own or overwrite the Paper README.
+
+Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.

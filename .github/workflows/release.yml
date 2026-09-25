@@ -130,11 +130,23 @@ jobs:
           env = environment.configure(".")
           print(f"typst={str(env.has('typst')).lower()}")
           print(f"latex={str(env.has('latex')).lower()}")
+          versions = env.test_plan().get("typst", {}).get("versions", [])
+          print(f"typst_version={versions[0] if versions else 'latest'}")
           PY
 
       - name: Set up Typst
         if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
         uses: typst-community/setup-typst@v5
+        with:
+          version: ${{ steps.paper.outputs.typst_version }}
+
+      - name: Set up Bun
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install publication dependencies
+        if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.typst == 'true'
+        run: bun install --frozen-lockfile
 
       - name: Set up TeX Live
         if: steps.resolve.outputs.warranted == 'true' && steps.paper.outputs.latex == 'true'

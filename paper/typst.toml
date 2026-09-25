@@ -1,0 +1,4 @@
+[package]
+name = "darkfactory-paper"
+version = "0.1.0"
+entrypoint = "index.typ"

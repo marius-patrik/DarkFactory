@@ -407,10 +407,18 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - official capabilities and representative generated adapters are proven;
 - keychain/auth security boundaries are proven;
 - real TypeScript API docs are published;
-- generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` remains a symlink to the canonical product document;
+- generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` is generated from the integrated Paper publication;
 - shared web UI is deployed across the fleet without consumer frontend rebuild;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
 - all six repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
 - installed fleet acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
+
+## 20. Integrated Paper domain
+
+The repository contains the current Paper snapshot under `paper/` as a subordinate domain of DarkFactory. `paper/index.typ` is the sole authored thesis manuscript; `paper/bib/`, `paper/fonts/`, and `paper/img/` are its supporting resources. The Paper publication command generates `paper/ODBORNA_PRACE.pdf` and the repository-root `README.md`. The product documentation home remains `.agents/PRD.md`, and the generic documentation compiler does not write the Paper README.
+
+The imported source snapshot is `marius-patrik/DarkFactory-Paper@f6a54b14a3980dc7e8eea366509e451557a85efe`. DarkFactory-specific thesis evidence remains pinned to `e9c10221b40589512d262a0edb95f709b923150c`. The Paper requirements follow the verified school guide: A4 formatting, 2.5 cm margins with a 3 cm binding edge, justified 12 pt serif body text, 1.5 line spacing, 8 pt paragraph spacing, numbered captions, ISO 690 numeric citations, and a generated Czech/English publication.
+
+Paper-specific authorship and publication behavior is owned by DF-RULE-020. The standalone Paper web application, Paper workflows, Paper lockfile, Paper submodule, and Paper Git history are not imported; the shared web migration remains a later dependent delivery.
