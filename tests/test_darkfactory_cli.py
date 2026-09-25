@@ -12,11 +12,17 @@ import darkfactory
 
 
 def test_every_subcommand_is_reachable():
-    """A subcommand nobody can invoke is a behaviour nobody has."""
+    """A subcommand nobody can invoke is a behaviour nobody has.
+
+    `license` and `submodules` used to be here. Both moved to the df runtime as `df license` and
+    `df submodules`, which is also where their implementations now live, so keeping the wrappers
+    would have meant keeping a second way to reach each.
+    """
     parser = darkfactory.build_parser()
     actions = [a for a in parser._actions if hasattr(a, "choices") and a.choices]
     names = set(actions[0].choices) if actions else set()
-    assert {"describe", "auth", "status", "license", "submodules"} <= names
+    assert {"describe", "auth", "status"} <= names
+    assert not {"license", "submodules"} & names
 
 
 def test_describe_reads_the_environment_module(tmp_path, capsys):

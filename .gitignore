@@ -52,3 +52,6 @@ event.json
 
 # uv writes this when Python tooling is invoked; the manifest is pyproject.toml
 uv.lock
+
+# Test fixtures create temporary trees beside the suite; they are not repository content.
+harness/.*-test-*/

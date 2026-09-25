@@ -27,6 +27,7 @@ import { loginProviderAccount } from "@darkfactory/keychain/login";
 import type { AuthEvent, AuthPrompt, Provider } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
+import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import type { Candidate } from "./failover.ts";
@@ -84,6 +85,7 @@ function usage(): string {
 		"  df resume [--repo owner/name]        # resume runs blocked on quota whose models have reset",
 		"  df report-failure                  # file or close the failure issue for this run",
 		"  df submodules [--root dir]         # pin and advance super-repository submodules",
+		"  df license [--root dir]            # materialise LICENSE from the manifest declaration",
 		"  df providers",
 		"  df models [--provider p] [--account label] [--refresh]",
 		"  df accounts",
@@ -1365,6 +1367,28 @@ async function submodulesCommand(args: string[]): Promise<void> {
 	}
 }
 
+/**
+ * Materialises the repository's licence from what its manifest declares.
+ *
+ * A licence is configuration, not content: it is chosen once, it is the same text every project
+ * with that choice uses, and getting it wrong is a legal question rather than a stylistic one.
+ *
+ * @param args Command arguments; `--root` overrides `TARGET_ROOT`.
+ * @returns Process exit code.
+ */
+async function licenseCommand(args: string[]): Promise<void> {
+	const root = option(args, "--root") ?? process.env.TARGET_ROOT ?? process.cwd();
+	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("df license needs GH_TOKEN or GITHUB_TOKEN to fetch the canonical text");
+	const written = await applyLicence({
+		root,
+		client: new GitHubClient({ token }),
+		log: (message) => console.log(message),
+	});
+	// The install workflow branches on this, the same way the submodule sweep reports movement.
+	if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `spdx=${written ?? ""}\n`);
+}
+
 async function quotaCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
@@ -1587,6 +1611,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
 			return reportFailureCommand(args.slice(1));
 		case "submodules":
 			return submodulesCommand(args.slice(1));
+		case "license":
+			return licenseCommand(args.slice(1));
 		case "quota":
 			return quotaCommand(registry, store, ledger, config, args.slice(1));
 		case "route":

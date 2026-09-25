@@ -221,36 +221,6 @@ def _has_config_document(repo: str) -> bool:
     return bool(present)
 
 
-def cmd_license(args: argparse.Namespace) -> int:
-    """Applies the licence the manifest declares.
-
-    Args:
-        args: Parsed arguments.
-
-    Returns:
-        Process exit status.
-    """
-    import licensing
-
-    return 0 if licensing.apply(args.path) is not None or True else 1
-
-
-def cmd_submodules(args: argparse.Namespace) -> int:
-    """Pins and updates submodules.
-
-    Args:
-        args: Parsed arguments.
-
-    Returns:
-        Process exit status.
-    """
-    import submodules
-
-    submodules.pin_branches(args.path)
-    print(submodules.describe(submodules.update(args.path)))
-    return 0
-
-
 def build_parser() -> argparse.ArgumentParser:
     """Builds the argument parser.
 
@@ -275,14 +245,6 @@ def build_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status", help="why is nothing happening")
     status.add_argument("--repo", action="append", help="owner/name; repeatable")
     status.set_defaults(func=cmd_status)
-
-    lic = sub.add_parser("license", help="apply the licence the manifest declares")
-    lic.add_argument("--path", default=".", help="repository root")
-    lic.set_defaults(func=cmd_license)
-
-    subs = sub.add_parser("submodules", help="pin and update submodules")
-    subs.add_argument("--path", default=".", help="repository root")
-    subs.set_defaults(func=cmd_submodules)
 
     return parser
 
