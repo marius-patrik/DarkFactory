@@ -34,23 +34,21 @@ def temp_redaction_file():
         f.write(original)
 
 
-def test_format_check_drift_integration(temp_redaction_file, monkeypatch):
+def test_format_check_drift_integration(temp_redaction_file):
+    # Apply formatting drift
     with open(temp_redaction_file, "a") as f:
         f.write("\n\nconst bad  =   123  ;\n")
 
-    def mock_subprocess(*args, **kwargs):
-        # Return success to avoid running actual git diff or bun
-        return subprocess.CompletedProcess(args, 0, stdout="success", stderr="")
-
-    monkeypatch.setattr(subprocess, "run", mock_subprocess)
-
+    # Run the actual command (do not mock subprocess.run)
     result = subprocess.run(
         ["bun", "run", "format:check"],
-        env={**os.environ, "DF_BASE_SHA": "HEAD"},
+        env={**os.environ, "DF_BASE_SHA": "HEAD~1"},  # Compare against HEAD~1
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0
+    # biome should find the drift and return a non-zero exit code
+    assert result.returncode != 0
+    assert "Biome" in result.stderr or "Check failed" in result.stderr
 
 
 def test_get_base_branch_with_config():

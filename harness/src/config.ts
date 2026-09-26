@@ -349,14 +349,14 @@ export function localCredentialFallback(
 		if (!configured) return undefined;
 		const path = isAbsolute(configured) ? configured : resolve(home, configured);
 		let key: string;
-			try {
-				key = (await reader(path)).trim();
-			} catch (error) {
-				console.warn(`Failed to read credential file at ${path}:`, error);
-				if ((error as NodeJS.ErrnoException).code === "ENOENT")
-					throw new Error(`Credential file does not exist: ${path}`);
-				throw error;
-			}
+    try {
+      key = (await reader(path)).trim();
+    } catch (error) {
+      console.warn(`Failed to read credential file at ${path}:`, error);
+      if ((error as NodeJS.ErrnoException).code === "ENOENT")
+        throw new Error(`Credential file does not exist: ${path}`);
+      throw error;
+    }
 		if (!key) throw new Error(`Credential file is empty: ${path}`);
 		return { type: "api_key", key };
 	};
