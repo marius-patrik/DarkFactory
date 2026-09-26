@@ -8,7 +8,7 @@
 
 DarkFactory Web uses GitHub as the durable issue/PR/check/project/event/authorization control plane.
 
-The browser application reads live GitHub state through browser-safe GitHub/auth interfaces. Human-attributed actions use the authenticated GitHub user; privileged automation uses the DarkFactory GitHub App identity.
+The browser application reads live GitHub state through browser-safe GitHub/auth interfaces. That read path is declared but not yet wired: `@darkfactory/web` currently depends only on `@darkfactory/protocol`, `@darkfactory/docs` and its renderer, and imports no GitHub or auth package. Human-attributed actions use the authenticated GitHub user; privileged automation uses the DarkFactory GitHub App identity.
 
 Webhook/workflow events are triggers, not authoritative state snapshots. Reconciliation derives desired status, bindings and project state from current GitHub/runtime evidence so delayed or out-of-order events are idempotent and cannot roll newer state backward.
 

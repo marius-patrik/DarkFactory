@@ -8,7 +8,7 @@
 
 DarkFactory discovers usable models from configured provider catalogs/accounts at runtime.
 
-Provider configuration contains the minimum information required to reach and authenticate to the provider. Routing uses live/cached catalog state plus quota/runtime outcomes rather than depending on hand-maintained model inventories.
+Provider configuration contains the minimum information required to reach and authenticate to the provider. Routing uses live/cached catalog state plus quota/runtime outcomes to decide which models are usable. A declared default chain is an ordered preference list, not an inventory of what exists: each entry is still resolved against the live catalog and quota, and an entry whose model is absent or unavailable falls out of eligibility rather than being routed to.
 
 ## Consequences
 

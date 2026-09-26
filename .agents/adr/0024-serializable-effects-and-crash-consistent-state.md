@@ -15,7 +15,6 @@ DarkFactory correctness is defined across duplicate delivery, concurrent executi
 - Remote mutation uses expected-old-version/SHA semantics where available and fails closed on stale state.
 - Multi-file logical state commits through one generation/transaction boundary.
 - Lock recovery cannot remove another owner's replacement lock.
-- Replicated state converges independent of merge direction and represents deletion until stale replicas can no longer resurrect it.
 - Concurrency/idempotency/atomicity claims are tested with simultaneous actors and injected failures at real durable boundaries, not only sequential replay after success.
 
 ## Consequences
