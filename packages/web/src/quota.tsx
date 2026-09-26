@@ -12,6 +12,8 @@ export type QuotaDashboardState =
 export interface QuotaLimitView {
 	type: string;
 	dimension?: string;
+	/** Discriminates a declared limit from a learned one that shares type and dimension. */
+	pool?: string;
 	state: QuotaState;
 	remaining?: number;
 	limit?: number;
@@ -74,6 +76,7 @@ export function quotaDashboardProviders(snapshot: OperatorQuotaSnapshot): QuotaP
 				limits: model.items.map((item) => ({
 					type: item.type,
 					...(item.dimension === undefined ? {} : { dimension: item.dimension }),
+					...(item.pool === undefined ? {} : { pool: item.pool }),
 					state: item.state,
 					...(item.remaining === undefined ? {} : { remaining: item.remaining }),
 					...(item.limit === undefined ? {} : { limit: item.limit }),
@@ -132,11 +135,11 @@ const ModelQuotaCard: FC<{ model: QuotaModelView }> = ({ model }) => (
 		) : (
 			<ul aria-label="Quota limits">
 				{model.limits.map((limit) => (
-					// Keyed on content rather than the array index: two limits can share a type and
-					// dimension (different pools), and an index key is unstable when the list reorders.
-					// Two rows identical in type, dimension and reset are the same observation, so this
-					// is identifying as well as stable.
-					<li key={[limit.type, limit.dimension ?? "", limit.resetAt ?? ""].join(":")}>
+					// Keyed on content rather than the array index, which is unstable when the list
+					// reorders. `items` is a concatenation of declared limits and learned ledger
+					// entries, so two rows can share a type and dimension; `pool` is what tells them
+					// apart and is the last field that can still collide.
+					<li key={[limit.pool ?? "", limit.type, limit.dimension ?? "", limit.resetAt ?? ""].join(":")}>
 						<strong>{limit.type}</strong>
 						{limit.dimension ? " · " + limit.dimension : ""} · {stateLabel(limit.state)}
 						{" · "}remaining {knownAmount(limit.remaining)}
