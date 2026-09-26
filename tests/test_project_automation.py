@@ -1,7 +1,10 @@
 """Unit tests for the project board automation."""
 
+import json
 import os
 import subprocess
+import time
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
@@ -258,6 +261,125 @@ def test_issue_reopened_without_checkpoint_goes_to_todo(tmp_path, monkeypatch):
     process_event("issues", payload, client=client)
     assert client.edited_statuses == [("item-1", "ToDo")]
     assert client.status_labels == [(REPO, 8, "ToDo")]
+
+
+def _write_checkpoint(directory, issue_number, timestamp):
+    """Writes a checkpoint with the given timestamp, as save_checkpoint does."""
+    path = directory / ".antigravity_checkpoint.json"
+    path.write_text(
+        json.dumps({"issue_number": issue_number, "timestamp": timestamp}), encoding="utf-8"
+    )
+    return path
+
+
+def test_current_checkpoint_still_holds_an_issue_blocked(tmp_path, monkeypatch):
+    """A checkpoint written moments ago must survive, or a quota pause is not a pause.
+
+    This is the guarantee the expiry bound must not break: a reopen arriving after a quota
+    exhaustion still reports Blocked so the resume state is not wiped.
+    """
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _write_checkpoint(tmp_path, 11, now)
+    assert project_automation.checkpoint_covers_issue(11) is True
+
+
+def test_expired_checkpoint_releases_the_issue(tmp_path, monkeypatch):
+    """A checkpoint older than the bound is abandoned, not pending.
+
+    Before the bound, one quota exhaustion in a persisted state directory pinned its issue to
+    Blocked indefinitely: remove_checkpoint is reachable only from an explicit resume, so nothing
+    ever cleared it. The board's own status projection then re-applied Blocked on every subsequent
+    event, rolling the status backward from a stale artefact.
+    """
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    stale = datetime.now(timezone.utc) - timedelta(days=3)
+    _write_checkpoint(tmp_path, 12, stale.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    assert project_automation.checkpoint_covers_issue(12) is False
+
+
+def test_checkpoint_bound_is_configurable(tmp_path, monkeypatch):
+    """An operator with a longer quota horizon can widen the window without a code change."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    # 36h: outside the 24h default, inside the 48h window set below.
+    recent = datetime.now(timezone.utc) - timedelta(hours=36)
+    _write_checkpoint(tmp_path, 13, recent.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    assert project_automation.checkpoint_covers_issue(13) is False
+    monkeypatch.setattr(project_automation, "CHECKPOINT_MAX_AGE_SECONDS", 48 * 3600)
+    assert project_automation.checkpoint_covers_issue(13) is True
+
+
+def test_checkpoint_with_unparseable_timestamp_falls_back_to_file_mtime(tmp_path, monkeypatch):
+    """A missing or malformed timestamp is judged on the file's mtime, not trusted forever.
+
+    save_checkpoint always writes a timestamp, so a payload without one is either hand-written or
+    from an older writer. Falling back to mtime keeps the existing reopen guarantee for a file that
+    was just written, while still expiring an old one.
+    """
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    path = tmp_path / ".antigravity_checkpoint.json"
+    path.write_text('{"issue_number": 14}', encoding="utf-8")
+    assert project_automation.checkpoint_covers_issue(14) is True
+
+    old = time.time() - 3 * 86400
+    os.utime(path, (old, old))
+    assert project_automation.checkpoint_covers_issue(14) is False
+
+
+def test_future_timestamp_is_treated_as_current_not_expired(tmp_path, monkeypatch):
+    """Clock skew must not expire a live checkpoint."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    ahead = datetime.now(timezone.utc) + timedelta(hours=2)
+    _write_checkpoint(tmp_path, 15, ahead.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    assert project_automation.checkpoint_covers_issue(15) is True
+
+
+def test_expired_checkpoint_lets_a_reopen_return_to_todo(tmp_path, monkeypatch):
+    """End to end: an abandoned checkpoint no longer forces the board status to Blocked."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    stale = datetime.now(timezone.utc) - timedelta(days=3)
+    _write_checkpoint(tmp_path, 16, stale.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 16,
+            "html_url": f"https://github.com/{REPO}/issues/16",
+            "labels": [{"name": "Request"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "ToDo")]
+    assert client.status_labels == [(REPO, 16, "ToDo")]
+
+
+def test_checkpoint_for_another_issue_does_not_cover(tmp_path, monkeypatch):
+    """Matching stays exact — a checkpoint for one issue never blocks another."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _write_checkpoint(tmp_path, 17, now)
+    assert project_automation.checkpoint_covers_issue(18) is False
+
+
+def test_explicit_blocked_label_survives_checkpoint_expiry(tmp_path, monkeypatch):
+    """Expiry only releases the quota pause. A real Blocked label is a separate, human signal."""
+    monkeypatch.setenv("STATE_DIR", str(tmp_path))
+    stale = datetime.now(timezone.utc) - timedelta(days=3)
+    _write_checkpoint(tmp_path, 19, stale.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    client = FakeProjectClient()
+    payload = {
+        "action": "reopened",
+        "repository": {"full_name": REPO},
+        "issue": {
+            "number": 19,
+            "html_url": f"https://github.com/{REPO}/issues/19",
+            "labels": [{"name": "Request"}, {"name": "Blocked"}],
+        },
+    }
+    process_event("issues", payload, client=client)
+    assert client.edited_statuses == [("item-1", "Blocked")]
+    assert client.status_labels == [(REPO, 19, "Blocked")]
 
 
 def test_open_issue_with_stale_done_label_is_stripped_to_todo():

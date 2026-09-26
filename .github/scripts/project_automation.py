@@ -39,6 +39,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 PROJECT_OWNER = os.environ.get(
@@ -262,17 +263,53 @@ def has_terminal_status_label(labels: Sequence[Any]) -> bool:
     return bool(_label_names(labels) & {s.lower() for s in TERMINAL_STATUSES})
 
 
+#: How long a quota checkpoint keeps an issue ``Blocked`` before it is treated as abandoned.
+#:
+#: A checkpoint is a record of a pause, not a statement about the present. The quota-resume sweep runs
+#: every 15 minutes and is the only thing that clears these, so a checkpoint that has survived many
+#: sweeps is not waiting to be resumed. Without a bound, one quota exhaustion in a persisted state
+#: directory pinned its issue to ``Blocked`` forever, because ``remove_checkpoint`` is reachable only
+#: from an explicit resume. Overridable for operators with a longer quota horizon.
+CHECKPOINT_MAX_AGE_SECONDS = int(os.environ.get("DF_CHECKPOINT_MAX_AGE_SECONDS", "86400"))
+
+
+def _checkpoint_age_seconds(path: str, data: Any) -> Optional[float]:
+    """Age of a checkpoint in seconds, or None when it cannot be established.
+
+    Prefers the ``timestamp`` the agent runner writes. Falls back to the file's mtime so a checkpoint
+    with a missing or unparseable timestamp is judged on evidence that exists rather than trusted
+    indefinitely. Negative ages (clock skew, a timestamp written ahead of this host) count as zero, so
+    a fresh checkpoint is never treated as expired.
+    """
+    if isinstance(data, dict):
+        stamp = data.get("timestamp")
+        if isinstance(stamp, str) and stamp.strip():
+            try:
+                written = datetime.strptime(stamp.strip(), "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=timezone.utc
+                )
+            except ValueError:
+                written = None
+            if written is not None:
+                return max(0.0, (datetime.now(timezone.utc) - written).total_seconds())
+    try:
+        return max(0.0, time.time() - os.path.getmtime(path))
+    except OSError:
+        return None
+
+
 def checkpoint_covers_issue(issue_number: Optional[int]) -> bool:
-    """Returns True when a quota checkpoint exists for the given issue number.
+    """Returns True when a current quota checkpoint exists for the given issue number.
 
     The checkpoint file is written by the agent runner on exhaustion. Project automation reads the
-    same path so a reopen cannot wipe ``Blocked`` resume state.
+    same path so a reopen cannot wipe ``Blocked`` resume state. A checkpoint older than
+    :data:`CHECKPOINT_MAX_AGE_SECONDS` is abandoned rather than pending and does not hold the issue.
 
     Args:
         issue_number: Issue number to match against the checkpoint payload.
 
     Returns:
-        True when a readable checkpoint names this issue.
+        True when a readable, unexpired checkpoint names this issue.
     """
     if not issue_number:
         return False
@@ -295,7 +332,14 @@ def checkpoint_covers_issue(issue_number: Optional[int]) -> bool:
                 data = json.load(handle)
         except (OSError, json.JSONDecodeError):
             continue
-        if isinstance(data, dict) and data.get("issue_number") == issue_number:
+        if not (isinstance(data, dict) and data.get("issue_number") == issue_number):
+            continue
+        age = _checkpoint_age_seconds(path, data)
+        if age is None:
+            # The file exists and names this issue but its age cannot be read at all. Holding the
+            # issue Blocked on unreadable evidence is the failure this bound exists to prevent.
+            continue
+        if age <= CHECKPOINT_MAX_AGE_SECONDS:
             return True
     return False
 
