@@ -51,6 +51,24 @@ The system must be:
 
 ## 4. Workspace and package architecture
 
+DarkFactory is a DarkFactory workspace **and** a DarkFactory application. Both halves are
+required, and neither is a mode.
+
+As a workspace it hosts the framework: the concerns, the seams, the capabilities and the
+surfaces that §4.3 sets out. As an application it is a consumer of that framework with no
+private path — every folder it contains is a folder any consumer could contain, and every
+capability it uses is one it could obtain. The DarkFactory repository is therefore its own
+first consumer, and any behaviour that works only because of something specific to this
+repository is a defect in the framework rather than a property of the application.
+
+This is the structural form of §2's self-hosting requirement. Self-hosting is not only a claim
+that df can build df; it is a requirement that the workspace and the application are the same
+shape, so that "df built this" and "a consumer built this" are the same statement.
+
+The consequence to hold onto when reading the tree below: nothing in it exists for DarkFactory's
+benefit. `darkfactory/` is not the system's own directory with a privileged copy inside; it is
+what any repository's copy looks like.
+
 ### 4.1 Structure is the declaration
 
 Meaning lives in exactly one place: the code. Folders, file names, function names, signatures
