@@ -6,8 +6,9 @@ vyřešené. Nové položky přidat na konec příslušné sekce.
 
 Stav zkontrolován po commitu `1c5099d2`, 28 stran, sazba bez varování.
 
-**Celkem otevřeno: 11 položek** — z toho 4 vyžadují rozhodnutí vedoucího práce,
-zbytek je práce pro autora nebo kontrolu rodným mluvčím.
+**Celkem otevřeno: 8 položek** — všechny jsou už práce pro autora nebo kontrolu
+rodným mluvčím. Žádná nečeká na vedoucího: způsob citací byl s ním ověřen a
+zadaný rozsah písemně neexistuje.
 
 ---
 
@@ -23,7 +24,7 @@ každý vlastním commitem.
 | A2 | `Výpis 1` chyběl v seznamu součástí | ✅ `487e0b06` |
 | A3 | Anotace 128 slov | ✅ `89109fc7` |
 | A4 | Šest klíčových slov | ✅ `1d0d4fe9` |
-| A5 | Metodika jako 3.1 místo samostatné kapitoly (kap. 2.4) | ⏳ **čeká na vedoucího** — viz B4 |
+| A5 | Metodika jako 3.1 místo samostatné kapitoly (kap. 2.4) | ⏳ viz E2 — totéž |
 | A6 | Chyběla výzkumná otázka a hypotéza (kap. 2.3) | ✅ `34ad2ca1` |
 | A7 | Závěr nehodnotil naplnění cíle a neměl doporučení (kap. 2.6) | ✅ `4b53cb88` |
 | A8 | Omezení výzkumu v Diskusi (kap. 2.5) | ✅ `fbbfb7b6` |
@@ -55,8 +56,8 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | :-- | :--- | :--- |
 | C1 | Kterou revizi praktická část popisuje | ✅ rozhodnuto: `d576ec8f`, vymezení v §1.1 a §3.5 |
 | C2 | Pasáž o pozdější konsolidaci byla `draft[]` a odporovala novému vymezení | ✅ `af23eaeb` — nahrazena odkazem na rozsah |
-| C3 | Zachycené výpisy `--help` (`agy`, `codex`, `gemini`, `kimi`, `grok`, `cursor-agent`, `opencode`) jako samostatný obrázek. Výpis 1 dnes obsahuje jen deklarované argv; plné `--help` by ukázalo rozdíl mezi tím, co pipeline tvrdí, a tím, co nástroje skutečně nabízejí. Zachyty leží v `/var/folders/…/opencode/help/`. | ⏳ nabídka, nepřijata |
-| C4 | `components/bib/references.bib` obsahuje `darkfactory-e9c10221`, který už není citován a v seznamu zdrojů se proto neobjeví. ponechán záměrně — je předmětem navazující práce. | ✅ informativní |
+| C3 | Zachycené výpisy `--help` jako samostatný obrázek. Výpis 1 dnes obsahuje jen deklarované argv; plné `--help` by ukázalo rozdíl mezi tím, co pipeline tvrdí, a tím, co nástroje skutečně nabízejí. Všech osm nástrojů již je ověřeno spuštěním, takže by šlo o doplňení, ne o nový důkaz. | ⏳ nabídka, nepřijata |
+| C4 | Položka `darkfactory` v bib byla necitovaná. Nyní je repozitář zmíněn v textu §3.5, tedy citován, a odkazuje na repozitář jako celek místo na konkrétní revizi. | ✅ `6b3e85f7` |
 
 ## D. Repozitář
 
@@ -66,26 +67,26 @@ ale předmět zkoumání. Navazující práce má popsat konečnou architekturu 
 | D2 | Práce je na větvi `docs/thesis`, jejíž historie patří dokumentům. Rozhodnuto ponechat. Na větvi přibývá i cizí práce (`README.md`), s touto se nijak nepletou. | ✅ rozhodnuto |
 | D3 | `styles/draft.typ` není v dokumentu použit. Ponechán záměrně pro navazující práci; viz jeho hlavičku. | ✅ informativní |
 
-## E. Vyžaduje rozhodnutí vedoucího práce
+## E. Vyžaduje rozhodnutí vedoucího práce — vyřešeno
 
-| # | Co | Proč |
+| # | Co | Stav |
 | :-- | :--- | :--- |
-| E1 | **Způsob citací.** Průvodce připouští harvardský i číselný a volbu přenechává vedoucímu (kap. 5). Práce používá číselné, tedy ISO 690 numeric. Potvrdit. | `rules.md` §5 |
-| E2 | **Umístění metodiky.** Průvodce kap. 2.4 předpokládá metodickou část jako samostatnou kapitolu; zde je podkapitolou 3.1. Přesun je mechanický, `pages/31-practical-method.typ` je už oddělený. | viz A5 |
-| E3 | **Zadaný rozsah práce.** Hodnoticí protokol dává 10 bodů za „splnění zadaného rozsahu práce". Je k dispozici písemné zadání od vedoucího? Pokud ano, je nutné práci proti němu explicitně prověřit — dodnes se to dělalo pouze proti průvodci. | nově zjištěno |
-| E4 | **CSL šablona** `gjkt-iso690-numeric-cs.csl` — je aktuální? Bez ní by číselné citace nemusely vyhovovat požadované školní podobě. | `rules.md` §5 |
+| E1 | **Způsob citací.** Průvodce přenechává volbu vedoucímu (kap. 5). | ✅ ověřeno s vedoucím, číselné citace odpovídají očekávání |
+| E2 | **Umístění metodiky.** Viz A5 — zůstává otevřené, ale ne jako urgentní: přesun je mechanický a lze ho udělat kdykoliv. | ⏳ viz A5 |
+| E3 | **Zadaný rozsah práce.** Hodnoticí protokol dává 10 bodů za „splnění zadaného rozsahu". Písemné zadání neexistuje, takže proti němu nelze práci ověřit a položka mimo autoritu autora. | ✅ neexistuje |
+| E4 | **CSL šablona** `gjkt-iso690-numeric-cs.csl`. | ✅ součástí E1 |
 
 ## F. Kontrola před odevzdáním
 
 | # | Co | Proč |
 | :-- | :--- | :--- |
 | F1 | Nechat zkontrolovat cizím okem celou práci, nejen jazykově. | Několikrát se ukázalo, že kontrola odhalí věci, které vlastní oko přestalo vidět. |
-| F2 | Znovu srovnat výpisy proti nainstalovaným nástrojům, zejména `claude` (viz G1). Každá revize CLI může změnit přepínač. | `pages/32-practical-architecture.typ` |
+| F2 | Znovu srovnat výpisy proti nainstalovaným nástrojům. Všechny osm je ověřeno 27. září 2026, `claude` byl do té doby rozbitý a byl opraven. Každá revize CLI může změnit přepínač. | `pages/32-practical-architecture.typ` |
 | F3 | Požádat vedoucího o zpětnou vazbu k novému názvu, výzkumné otázce a oddělení dvou prací. Změna názvu a přesunutí praktické části jsou věcné krok. | práce jako celek |
 
 ## G. Předání
 
 | # | Co | Proč |
 | :-- | :--- | :--- |
-| G1 | `claude` CLI nebylo na stroji nainstalováno, jeho rozhraní vychází z oficiální dokumentace Anthropic a v práci je to tak i označeno `(dokumentace, nezachyceno)`. Při předání doplnit vlastní záchyt — nebo položku ponechat takto, protože označení je poctivé. | `Výpis 1`, jediná neověřená prvním zachycením |
-| G2 | Zachyty `--help` leží v dočasném adresáři a nejsou součástí repozitáře. Pokud C3 přijme, musí se uložit do `components/img/` nebo jinam trvale. | viz C3 |
+| G1 | `claude` CLI bylo v npm registrováno, ale nespustitelné: symlink ukazoval na neexistující cíl a nativní binárka se nikdy nestáhla, protože postinstall nikdy neběžel. Instalace byla opravena a rozhraní zachyceno z `--help` verze 2.1.283. | ✅ `6b3e85f7` |
+| G2 | Zachyty `--help` leží v dočasném adresáři a nejsou součástí repozitáře. Pokud C3 přijme, musí se uložit trvale. | ⏳ viz C3 |
