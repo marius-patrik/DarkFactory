@@ -65,22 +65,10 @@ function getBaseBranch() {
     }
   }
 
-  // Attempt fetching origin if remote refs are absent (e.g. shallow checkout / CI)
-  console.error("Attempting to fetch origin/ to resolve base branch...");
-  try {
-    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'pipe', timeout: 5000 });
-  } catch (e) {
-    console.error(`Fetch operation failed: ${e.message}`);
-    process.exit(1);
-  }
+  // Removed: automatic git fetch to prevent CI flakiness and security issues.
+  // The CI environment must have the necessary refs available.
 
-  for (const candidate of candidates) {
-    if (verifyRef(candidate)) {
-      return candidate;
-    }
-  }
-
-  console.error(`Error: Could not verify any base branch candidate.`);
+  console.error(`Error: Could not verify any base branch candidate. Ensure your CI environment has appropriate fetch depth.`);
   process.exit(1);
 }
 

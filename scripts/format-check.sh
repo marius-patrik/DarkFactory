@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+set -o pipefail
 
 BASE=$(bun scripts/get-base-branch.mjs)
 if [ -z "$BASE" ]; then
@@ -13,4 +14,7 @@ if ! git rev-parse --verify "$BASE" > /dev/null 2>&1; then
     exit 1
 fi
 
-bun x biome ci --changed --since="$BASE"
+if ! bun x biome ci --changed --since="$BASE"; then
+    echo "Biome check failed"
+    exit 1
+fi
