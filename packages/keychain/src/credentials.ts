@@ -14,7 +14,11 @@ import { resolveDataRepoPath } from "./vault-store.ts";
 
 const VAULT_PREFIX = "vault:";
 
-async function resolveVaultValue(home: string, vaultName: string, repositoryRoot = process.cwd()): Promise<string | undefined> {
+async function resolveVaultValue(
+	home: string,
+	vaultName: string,
+	repositoryRoot = process.cwd(),
+): Promise<string | undefined> {
 	const dataRepoPath = await resolveDataRepoPath(home, repositoryRoot);
 	try {
 		// Try file fallback first (0600) — used in tests with --insecure-file-key
@@ -471,7 +475,8 @@ export class FileCredentialStore {
 		}
 		for (const [headerName, slotName] of Object.entries(slotHeaders)) {
 			const slot = account.slots[slotName];
-			if (slot?.type !== "oauth" && slot?.value) headers[headerName] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
+			if (slot?.type !== "oauth" && slot?.value)
+				headers[headerName] = await resolveSlotValue(this.home, slot.value, this.repositoryRoot);
 		}
 		if (cookies.length > 0) headers.Cookie = cookies.join("; ");
 		return headers;

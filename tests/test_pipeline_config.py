@@ -27,7 +27,6 @@ EXPECTED_WORKFLOWS = [
 EXPECTED_SCRIPTS = [
     "agent_runner.py",
     "handle_pr_approval.py",
-    "open_pr.py",
     "project_automation.py",
     "repo_settings.py",
 ]

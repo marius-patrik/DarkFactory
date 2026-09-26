@@ -18,11 +18,7 @@ function context(extra: Partial<CapabilityHookContext> = {}): CapabilityHookCont
 
 describe("official hooks capability", () => {
 	test("declares the recovered F47 hook IDs and trigger points", () => {
-		expect(capability.hooks?.map((hook) => hook.id)).toEqual([
-			"tests-touched",
-			"conventional-commit",
-			"branch-name",
-		]);
+		expect(capability.hooks?.map((hook) => hook.id)).toEqual(["tests-touched", "conventional-commit", "branch-name"]);
 		expect(capability.hooks?.map((hook) => hook.events)).toEqual([
 			["pre-commit", "pr-open", "ci"],
 			["pre-commit", "ci"],
@@ -87,12 +83,9 @@ describe("official hooks capability", () => {
 		},
 	);
 
-	test.each(["Feat/X", "feature/342-thing", "feat//double", "feat/"])(
-		"branch-name rejects %s",
-		(branch) => {
-			expect(branchName(context({ branch })).status).toBe("fail");
-		},
-	);
+	test.each(["Feat/X", "feature/342-thing", "feat//double", "feat/"])("branch-name rejects %s", (branch) => {
+		expect(branchName(context({ branch })).status).toBe("fail");
+	});
 
 	test("hook definitions execute through the ABI contract", async () => {
 		const hook = capability.hooks?.find((candidate) => candidate.id === "conventional-commit");

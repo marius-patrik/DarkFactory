@@ -179,7 +179,7 @@ export function normalizeConfiguredCatalog(provider: string, value: unknown, map
 	const raw = pathValues(value, mapping.itemsPath);
 	const entries =
 		raw.length === 1 && Array.isArray(raw[0]?.value)
-			? (raw[0]!.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
+			? (raw[0]?.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
 			: raw.length === 1 && raw[0]?.value && typeof raw[0].value === "object"
 				? Object.entries(raw[0].value as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
 				: raw;
@@ -411,7 +411,7 @@ export class ModelCatalog {
 		if (
 			this.configs.get(providerId) &&
 			!this.configs.get(providerId)?.models.list &&
-			!DIALECT_DEFAULTS[this.configs.get(providerId)!.dialect]
+			!DIALECT_DEFAULTS[this.configs.get(providerId)?.dialect]
 		) {
 			return {
 				provider: providerId,

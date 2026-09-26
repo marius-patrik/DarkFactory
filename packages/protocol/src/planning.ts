@@ -53,4 +53,4 @@ export interface PlanningArtifact {
 	};
 }
 
-export { planningResultSchema, alignmentResultSchema } from "./result-capture.ts";
+export { alignmentResultSchema, planningResultSchema } from "./result-capture.ts";

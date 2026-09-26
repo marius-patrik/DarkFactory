@@ -87,7 +87,10 @@ describe("rule/note relationships", () => {
 
 	test("fails on an accepted ADR without related rules", () => {
 		const page = adr("ADR-0001", "DF-RULE-001");
-		const content = graph([{ ...page, markdown: page.markdown.replace(/^\*\*Related rules\*\*:.+\n/mu, "") }, rule("DF-RULE-001")]);
+		const content = graph([
+			{ ...page, markdown: page.markdown.replace(/^\*\*Related rules\*\*:.+\n/mu, "") },
+			rule("DF-RULE-001"),
+		]);
 		expect(analyzeRuleNoteRelations(content).findings).toContain(
 			".agents/notes/adr/0001-test.md: accepted ADR must declare Related rules",
 		);
@@ -134,8 +137,12 @@ describe("rule/note relationships", () => {
 			{ ...badAdr, markdown: badAdr.markdown.replace("## Consequences\n\nTest.\n", "") },
 		]);
 		const findings = analyzeRuleNoteRelations(content).findings;
-		expect(findings).toContain(".agents/notes/rules/001-test.md: canonical rule is missing non-empty Enforcement section");
-		expect(findings).toContain(".agents/notes/adr/0001-test.md: accepted ADR is missing non-empty Consequences section");
+		expect(findings).toContain(
+			".agents/notes/rules/001-test.md: canonical rule is missing non-empty Enforcement section",
+		);
+		expect(findings).toContain(
+			".agents/notes/adr/0001-test.md: accepted ADR is missing non-empty Consequences section",
+		);
 	});
 
 	test("rejects non-ADR long-term notes so README cannot omit them", () => {
@@ -146,7 +153,9 @@ describe("rule/note relationships", () => {
 			source: ".agents/notes/loose.md",
 			markdown: "# Loose note\n",
 		};
-		expect(analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings).toContain(
+		expect(
+			analyzeRuleNoteRelations(graph([rule("DF-RULE-001"), adr("ADR-0001", "DF-RULE-001"), note])).findings,
+		).toContain(
 			".agents/notes/loose.md: current long-term notes must be accepted numbered ADRs under .agents/notes/adr/",
 		);
 	});

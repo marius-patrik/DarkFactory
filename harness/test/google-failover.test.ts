@@ -26,7 +26,7 @@ afterEach(async () => {
 	}
 });
 
-const googleRules = BUILTIN_PROVIDER_CONFIG.providers.find((p) => p.id === "google")!.quota!.rules;
+const googleRules = BUILTIN_PROVIDER_CONFIG.providers.find((p) => p.id === "google")?.quota?.rules;
 
 describe("Google Gemini free-tier real fixtures classification", () => {
 	const now = 1_700_000_000_000;

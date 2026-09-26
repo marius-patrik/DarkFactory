@@ -137,9 +137,7 @@ describe("renderAttribution", () => {
 
 		const result = renderAttribution(usedCandidates, sampleIdentities);
 
-		expect(result.trailers).toEqual([
-			"Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-		]);
+		expect(result.trailers).toEqual(["Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>"]);
 		expect(result.footer).toBe("Generated with gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash");
 	});
 
@@ -151,9 +149,7 @@ describe("renderAttribution", () => {
 
 		const result = renderAttribution(usedCandidates, sampleIdentities);
 
-		expect(result.trailers).toEqual([
-			"Co-authored-by: Codex <noreply@openai.com>",
-		]);
+		expect(result.trailers).toEqual(["Co-authored-by: Codex <noreply@openai.com>"]);
 		expect(result.footer).toBe("Generated with gpt-5.6-luna, gpt-5.6-luna-mini");
 	});
 
@@ -166,9 +162,7 @@ describe("renderAttribution", () => {
 
 		const result = renderAttribution(usedCandidates, sampleIdentities);
 
-		expect(result.footer).toBe(
-			"Generated with gemini-3.8-flash, nemotron-3-ultra-550b-a55b:free, gpt-5.6-luna",
-		);
+		expect(result.footer).toBe("Generated with gemini-3.8-flash, nemotron-3-ultra-550b-a55b:free, gpt-5.6-luna");
 		// Verified providers emit trailers, unverified does not
 		expect(result.trailers).toEqual([
 			"Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
@@ -180,9 +174,7 @@ describe("renderAttribution", () => {
 		const usedCandidates = [{ provider: "google", model: "gemini-3.8-flash" }];
 		const result = renderAttribution(usedCandidates, sampleIdentities);
 
-		expect(result.trailers).toEqual([
-			"Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>",
-		]);
+		expect(result.trailers).toEqual(["Co-authored-by: Gemini <200291788+gemini-code-assist@users.noreply.github.com>"]);
 		expect(result.footer).toBe("Generated with gemini-3.8-flash");
 	});
 
@@ -193,18 +185,16 @@ describe("renderAttribution", () => {
 	});
 
 	it("throws error for candidate with unknown provider", () => {
-		expect(() =>
-			renderAttribution([{ provider: "unknown-provider", model: "model-x" }], sampleIdentities),
-		).toThrow("unknown-provider");
+		expect(() => renderAttribution([{ provider: "unknown-provider", model: "model-x" }], sampleIdentities)).toThrow(
+			"unknown-provider",
+		);
 	});
 });
 
 describe("botCommitAuthor", () => {
 	it("formats canonical bot author string from manifest identities", () => {
 		const author = botCommitAuthor(sampleIdentities);
-		expect(author).toBe(
-			"darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>",
-		);
+		expect(author).toBe("darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>");
 	});
 
 	it("falls back to user_id+login@users.noreply.github.com when email omitted", () => {
@@ -216,8 +206,6 @@ describe("botCommitAuthor", () => {
 				user_id: 326069535,
 			},
 		});
-		expect(author).toBe(
-			"darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>",
-		);
+		expect(author).toBe("darkfactory-pipeline[bot] <326069535+darkfactory-pipeline[bot]@users.noreply.github.com>");
 	});
 });

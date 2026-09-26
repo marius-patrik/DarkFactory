@@ -39,8 +39,8 @@ describe("config-driven provider registry", () => {
 				},
 			],
 		}) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
-		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBe("skip_thought_signature_validator");
-		expect(replay.contents[0]!.parts[1]!.thoughtSignature).toBeUndefined();
+		expect(replay.contents[0]?.parts[0]?.thoughtSignature).toBe("skip_thought_signature_validator");
+		expect(replay.contents[0]?.parts[1]?.thoughtSignature).toBeUndefined();
 	});
 
 	test("replay patching tolerates non-cloneable payload fields (abort signal, tool handlers) and leaves unrelated payloads untouched", () => {
@@ -54,9 +54,9 @@ describe("config-driven provider registry", () => {
 		const replay = prepareReplayPayload(google, payload) as typeof payload & {
 			contents: Array<{ parts: Array<{ thoughtSignature?: string }> }>;
 		};
-		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBe("skip_thought_signature_validator");
+		expect(replay.contents[0]?.parts[0]?.thoughtSignature).toBe("skip_thought_signature_validator");
 		expect(replay.config.abortSignal).toBe(abortSignal);
-		expect(payload.contents[0]!.parts[0]).not.toHaveProperty("thoughtSignature");
+		expect(payload.contents[0]?.parts[0]).not.toHaveProperty("thoughtSignature");
 		const plain = { config: { abortSignal }, contents: [{ role: "user", parts: [{ text: "hi" }] }] };
 		expect(prepareReplayPayload(google, plain)).toBe(plain);
 	});
@@ -107,7 +107,7 @@ describe("config-driven provider registry", () => {
 		const replay = prepareReplayPayload(openai, {
 			contents: [{ role: "model", parts: [{ functionCall: { name: "read", args: {} } }] }],
 		}) as { contents: Array<{ parts: Array<{ thoughtSignature?: string }> }> };
-		expect(replay.contents[0]!.parts[0]!.thoughtSignature).toBeUndefined();
+		expect(replay.contents[0]?.parts[0]?.thoughtSignature).toBeUndefined();
 	});
 	test("success: adding an OpenAI-compatible provider is only a config entry", async () => {
 		const entry = openAICompatible();
@@ -384,8 +384,8 @@ describe("config-driven provider registry", () => {
 		);
 		expect(flows).toEqual(new Set(["device_code", "pkce"]));
 		const config = BUILTIN_PROVIDER_CONFIG.providers
-			.find((entry) => entry.id === "anthropic")!
-			.auth.find((auth) => auth.kind === "oauth")!;
+			.find((entry) => entry.id === "anthropic")
+			?.auth.find((auth) => auth.kind === "oauth")!;
 		const calls: Array<{ url: string; contentType: string | null }> = [];
 		const oauth = createConfiguredOAuth(config, {
 			isHeadless: true,

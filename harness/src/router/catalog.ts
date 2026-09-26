@@ -10,7 +10,7 @@ function key(provider: string, model: string, account?: string): string {
 function globMatch(pattern: string, value: string): boolean {
 	// Escape regex special characters except '*'
 	const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-	const regexStr = "^" + escaped.replace(/\*/g, ".*") + "$";
+	const regexStr = `^${escaped.replace(/\*/g, ".*")}$`;
 	return new RegExp(regexStr, "iu").test(value);
 }
 

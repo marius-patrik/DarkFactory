@@ -19,10 +19,7 @@ export interface CliCommandMetadata {
 
 /** Executable command registered in the final @darkfactory/cli command model. */
 export interface CliCommandDefinition extends CliCommandMetadata {
-	execute(
-		args: readonly string[],
-		context: CapabilityRuntimeContext,
-	): Promise<unknown> | unknown;
+	execute(args: readonly string[], context: CapabilityRuntimeContext): Promise<unknown> | unknown;
 }
 
 /** Declares a core-owned command before it is inserted into the shared registry. */
@@ -55,7 +52,8 @@ export class CommandRegistry {
 	register(command: CliCommandDefinition): void {
 		const name = command.name.trim();
 		if (!name) throw new Error("CLI command name must not be empty");
-		if (name !== command.name) throw new Error(`CLI command name must not contain surrounding whitespace: ${command.name}`);
+		if (name !== command.name)
+			throw new Error(`CLI command name must not contain surrounding whitespace: ${command.name}`);
 		const existing = this.commands.get(name);
 		if (existing) {
 			throw new Error(`Duplicate CLI command ${name}: ${owner(existing)} and ${owner(command)}`);
@@ -90,17 +88,11 @@ export class CommandRegistry {
 
 	/** Returns deterministic command metadata for help, TUI and web/operator projections. */
 	list(): readonly CliCommandMetadata[] {
-		return [...this.commands.values()]
-			.sort((a, b) => a.name.localeCompare(b.name))
-			.map(metadata);
+		return [...this.commands.values()].sort((a, b) => a.name.localeCompare(b.name)).map(metadata);
 	}
 
 	/** Executes one registered command through the same registry used for metadata. */
-	async execute(
-		name: string,
-		args: readonly string[],
-		context: CapabilityRuntimeContext,
-	): Promise<unknown> {
+	async execute(name: string, args: readonly string[], context: CapabilityRuntimeContext): Promise<unknown> {
 		const command = this.commands.get(name);
 		if (!command) throw new Error(`Unknown DarkFactory command: ${name}`);
 		return await command.execute(args, context);

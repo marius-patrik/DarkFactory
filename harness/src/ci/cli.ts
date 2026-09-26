@@ -31,13 +31,13 @@ function hasFlag(args: string[], ...names: string[]): boolean {
 	return names.some((name) => args.includes(name));
 }
 
-function resolveRepoClient(repoPath: string, explicitRepo?: GitHubRepository): GitHubRepository | undefined {
+function resolveRepoClient(_repoPath: string, explicitRepo?: GitHubRepository): GitHubRepository | undefined {
 	if (explicitRepo) return explicitRepo;
 	const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
 	if (!token) return undefined;
 
 	const repoSlug = process.env.GITHUB_REPOSITORY ?? process.env.DF_REPO;
-	if (!repoSlug || !repoSlug.includes("/")) return undefined;
+	if (!repoSlug?.includes("/")) return undefined;
 
 	const [owner, repo] = repoSlug.split("/");
 	const client = new GitHubClient({ token });
@@ -347,8 +347,6 @@ export async function runCiCli(args: string[], context: CiCliContext = {}): Prom
 
 			return report.ok ? 0 : 1;
 		}
-
-		case "help":
 		default:
 			log(`df ci commands:
   df ci matrix  [--repo <path>] [--capabilities-root <path>]

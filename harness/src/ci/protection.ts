@@ -170,7 +170,7 @@ export async function verifyBranchProtection(
 				}
 
 				const checkRule = rules?.find((rule) => rule.type === "required_status_checks");
-				if (checkRule && checkRule.parameters) {
+				if (checkRule?.parameters) {
 					const actualChecks = checkRule.parameters.required_status_checks?.map((c) => c.context) ?? [];
 					const strict = checkRule.parameters.strict_required_status_checks_policy === true;
 					return evaluateProtection(expectedContexts, actualChecks, strict, "ruleset");

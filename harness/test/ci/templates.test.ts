@@ -43,7 +43,7 @@ describe("Workflow templates & managed headers", () => {
 			pipeline_repo: "marius-patrik/DarkFactory",
 			pipeline_ref: "darkfactory",
 		});
-		const verification = verifyWorkflowHash(rendered + "\n# user added comment\n");
+		const verification = verifyWorkflowHash(`${rendered}\n# user added comment\n`);
 		expect(verification.status).toBe("modified");
 		expect(verification.hashMatches).toBe(false);
 	});
