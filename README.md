@@ -162,8 +162,7 @@ of it, such that:
 - a change to the system is proposed, interpreted, planned, implemented, reviewed, verified and
   merged by the system, with a human approving rather than authoring;
 - every capability is reachable from every surface, and no surface holds behaviour a second
-  surface would have to reimplement;
-- the number of places where meaning is authored rather than derived is zero, and stays zero.
+  surface would have to reimplement.
 
 **The completion condition is a fixed point, not a milestone.** Self-hosting is not finished when
 the system *can* build itself; it is finished when the system's output is indistinguishable from
@@ -251,9 +250,10 @@ A feature's interface is *read* — from its names, its signatures, its position
 documentation — and never written beside it.
 
 This is the procedure that does the most work and the one most often resisted, because authoring a
-description is faster than reading one and the difference is invisible until the two disagree. The
-payoff is arithmetic rather than aesthetic: after derivation there is nothing left to write per
-surface, so adding a surface is one renderer and adding a capability is free everywhere.
+description is faster than reading one, and the difference between the two is invisible until they
+disagree — at which point the cost is not the description but everything downstream of it. What
+follows from the procedure is listed once, in §4.1; this section states only what the procedure
+obliges you to do.
 
 The requirement it places on the code is that documentation is normative. What a feature publishes
 to every surface is its own doc comments, so a comment is part of the contract and a comment that
@@ -558,12 +558,11 @@ build by putting structure in front of it. There is no second mechanism per scal
 file, a repository, a pipeline, a machine and a fleet are all shapes the same reading resolves,
 and a design that needs a separate story for each of them is a design that will not finish.
 
-Reading is *derived*, never authored. The interpreter produces a feature's interface from its
-name, its signature, its position in the tree, and its documentation, and publishes that to every
-surface. The consequence that matters most is not elegance but arithmetic: after derivation,
-there is nothing left to write per surface, so a new surface is a renderer rather than a set of
-adapters, and a new capability is reachable everywhere without anyone remembering to add it
-anywhere.
+Reading is derived rather than authored, by the procedure in §3.3: the interpreter produces a
+feature's interface from its name, its signature, its position in the tree and its documentation,
+and publishes that reading to every surface. What that buys is accounted for in §4.1; what
+remains here is the mechanism's reach, and the requirement it places on everything else in the
+system.
 
 ### 7.2 One askable feature is one file
 
