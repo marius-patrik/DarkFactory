@@ -14,7 +14,7 @@ if ! git rev-parse --verify "$BASE" > /dev/null 2>&1; then
     exit 1
 fi
 
-if ! bun x biome ci --changed --since="$BASE"; then
+if ! ./node_modules/.bin/biome ci --changed --since="$BASE"; then
     echo "Biome check failed"
     exit 1
 fi

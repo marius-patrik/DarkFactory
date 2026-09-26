@@ -63,8 +63,17 @@ def test_format_check_drift_integration(temp_redaction_file):
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmp_dir:
+        # Initialize a git repository to satisfy git command requirements
+        subprocess.run(["git", "init"], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=tmp_dir, check=True)
+
         # Clone relevant dirs
         shutil.copytree("harness", os.path.join(tmp_dir, "harness"))
+
+        # Create a commit
+        subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "initial commit"], cwd=tmp_dir, check=True)
 
         # Apply drift
         with open(os.path.join(tmp_dir, "harness", "src", "redaction.ts"), "a") as f:

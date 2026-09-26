@@ -6,7 +6,7 @@ import { execFileSync, execSync } from 'child_process';
 try {
   execSync('git --version', { stdio: 'ignore' });
 } catch {
-  console.error("Error: git command not found. Please ensure git is installed and in your PATH.");
+  console.error("Error: git command not found. This workspace requires git to be installed and available in the PATH to resolve branch metadata.");
   process.exit(1);
 }
 
