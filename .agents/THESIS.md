@@ -128,6 +128,14 @@ The test: if the build were a separate hand-written pipeline describing how to p
 system, then the system has two sources of truth about itself — what the code says and what the
 build says — and self-hosting is only true until they diverge.
 
+**Self-healing of code is the consequence, not the prerequisite.** The system already heals: it
+detects that reality has drifted from what was meant, plans the difference, applies it through
+the governed path, and verifies. That is what a delivery pipeline has always been, and naming it
+is the honest description rather than a new ambition. What does not exist yet is the engine that
+*writes* the code, and self-healing of source follows from that engine rather than preceding it.
+One thing to build, not two: a system that can build code can repair code, because repair is
+just a build whose target is the thing that is wrong.
+
 ## 3. One core interpreter package
 
 There is exactly one core interpreter package, and it is the whole of DarkFactory's mechanism.
@@ -136,6 +144,79 @@ Everything a user of the system can build, they build by putting structure in fr
 implementation for machines alongside the one for repositories. The interpreter is a forge for
 declarations, which is §4's seam applied to language rather than version control, and it is
 what makes the machine/repository distinction in §5 a non-distinction.
+
+### 3.1 What the core has to contain
+
+The test for membership is one question: **delete it — can the system still describe itself?**
+If not, it is core. If removing it only removes a feature, it is a capability. That resolves
+every case without a list to maintain, and it matches §1: the core is what remains when you
+delete all content.
+
+One file per feature, where a feature is the whole thing a caller can do — not one file per step
+of doing it. `InterpretForge` covers snapshot, stage and publish because those are one feature
+to the caller, not three.
+
+| file | the feature | status |
+| --- | --- | --- |
+| `ResolveConfig.df` | find and read the declaration | mostly present as `protocol/src/config-document.ts` |
+| `InterpretLanguage.df` | turn a declaration into meaning through a named backend | **absent** |
+| `ResolveCapabilities.df` | what can this system do *here* — discover, bind, resolve | mostly present as `capability/loader.ts` + `actions.ts` |
+| `ComposeGraph.df` | what *will* it do — the executable plan | mostly present as `graph/planner.ts` + `executor.ts` |
+| `InterpretForge.df` | change the outside world through a seam | mostly present as `workspace/gitWorkspace.ts` |
+| `Compile.df` | bind the resolved system to a version and emit it for every surface | **partial, and decoupled — see §3.3** |
+| `Converge.df` | observe reality, diff against intent, converge | **absent** |
+| `DescribeSystem.df` | render itself for a human and for an agent | partial as the `docs` package |
+
+The dependency chain is strict: `ResolveConfig → InterpretLanguage → ResolveCapabilities →
+ComposeGraph`. `Converge` needs `ResolveConfig` and `InterpretForge`; `Compile` needs
+`ResolveCapabilities`; `DescribeSystem` needs all of it.
+
+The three marked absent or decoupled are the load-bearing ones. `InterpretLanguage` exists in no
+form. `Converge` exists only as one caller — idempotent, drift-aware install. And `Compile` is
+currently *downstream* of resolution rather than part of it, which is the two-sources-of-truth
+problem §2.2 says breaks self-hosting.
+
+**`ResolveCapabilities` and `ComposeGraph` may be one file.** "What can this system do here" and
+"what will it do" might be a single resolution from the caller's side, and if so the core is
+seven files. The way to find out is to try deleting one.
+
+### 3.2 Discovery is already structural
+
+This is the encouraging part, and it is worth stating because it means the vision generalises
+something that works rather than replacing something that does not. `capability/loader.ts`
+already discovers by `readdir` over directories, loading a `capability.ts` entrypoint from each
+folder, with no list of capabilities anywhere. Dropping a folder in already adds a capability and
+taking it out already removes one.
+
+So §11's "no indices" is a matter of extending a pattern the codebase already follows, not of
+introducing one. The residue is small and identifiable: the fixed `ENTRYPOINTS` list is three
+filenames describing *how* to load rather than *what* exists, which is a different thing, and
+six `index.ts` barrels that are the genuine violation.
+
+### 3.3 Compile is release, and surfaces are resolved rather than built
+
+Every capability must be reachable through every surface: the rendered interface, the CLI, a TUI,
+GitHub through the forge, and external agent harnesses as MCP servers and plugin forms.
+
+The wrong way to do that is one adapter per capability per surface, and it is the way that
+produces drift — six implementations of the same capability, six places to forget to update one.
+The PRD already forbids it, and it is right to.
+
+The right way is the one this thesis implies: **a capability has semantics, and each surface
+renders those semantics its own way.** A capability does not have adapters. The interpreter
+resolves what a capability *is*, and the CLI, the renderer, the TUI, the forge and the MCP
+server are five renderers of that one resolution. Adding a surface is one new renderer, not one
+adapter per capability.
+
+**Compile and release are the same operation.** Compilation binds the resolved system to a
+version and emits it — for every surface, in every form, bound to that version. There is no
+"build" followed by a "release" that packages what the build happened to produce, because then
+the release describes the system independently of the system's own meaning and the two can
+diverge. A version is not a label applied at the end; it is part of what compilation resolves.
+
+This is §1 applied to distribution. If the code is buildable by semantics, then the artifacts
+are too, and the surfaces a capability appears on are a consequence of what it means rather than
+a list someone maintains.
 
 The systems layer needs an interpreter, and the instinct is to bind one — TypeScript via Bun,
 say. That is half right, and the half that is wrong matters more.
@@ -330,6 +411,12 @@ corruption.
 The practical payoff is that drift stops being a thing you discover. Installation, update,
 reconfiguration after a capability changes, recovery from a partially-applied change, and a
 consumer whose upstream moved are all the same operation: observe, compare, converge.
+
+**This is not a new thing, and calling it new would be the mistake.** A delivery pipeline that
+detects drift from the declaration, plans the difference, applies it under approval and verifies
+the result is already a healer. DarkFactory has been doing this. The name is the contribution;
+the behaviour is the existing product, which is why §2.2 can add self-healing *of code* as a
+consequence of the self-building engine rather than as a separate programme.
 
 ## 8. Declarable by nature
 

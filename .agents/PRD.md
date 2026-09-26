@@ -106,14 +106,18 @@ A capability may contribute:
 
 Capabilities do not own raw credential storage.
 
-One canonical TypeScript capability definition is the implementation source. Build tooling deterministically produces supported integration forms, including:
+One canonical TypeScript capability definition is the implementation source, and every surface a capability is reachable through is derived from it rather than written against it. Supported integration forms, including:
 
 - native DarkFactory/Pi integration;
 - Pi ExtensionAPI tools/commands;
 - standalone MCP server form;
 - supported Claude/Codex/agent skills/plugins/manifests.
 
-There must not be independent handwritten implementations of the same capability for each runtime surface, agent integration, or consumer.
+There must not be independent handwritten implementations of the same capability for each runtime surface, agent integration, or consumer. A capability has semantics; each surface is a renderer of those semantics. Adding a surface is one renderer, not one adapter per capability.
+
+Every capability is reachable through every supported surface: the rendered web interface, the CLI, a TUI, GitHub through the forge, and external agent harnesses as MCP servers and plugin/skill forms.
+
+Compiling and releasing are one operation. Compilation binds the resolved system to a version and emits it in every surface form at that version, so a version is part of what compilation resolves rather than a label applied afterwards. There is no separate build description of the system that could disagree with the system.
 
 Official capabilities use the same loader/ABI as third-party capabilities. The normal df distribution includes the official capability set so standard installation remains batteries-included.
 
