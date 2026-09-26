@@ -29,7 +29,6 @@ import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai";
 import { runCiCli } from "./ci/cli.ts";
 import { applyLicence } from "./ci/licensing.ts";
 import { reportFailure, resolveFailure } from "./ci/report-failure.ts";
-import { buildRouterCatalog } from "./router/catalog.ts";
 import { DEFAULT_ROUTER_CONFIG, type DfConfig, loadDfConfig, localCredentialFallback } from "./config.ts";
 import type { Candidate } from "./failover.ts";
 import { GitHubClient } from "./github/client.ts";
@@ -58,6 +57,7 @@ import { ProviderRegistry } from "./providers/runtime.ts";
 import { loadProviderConfig } from "./providers/schema.ts";
 import { classifyFailure } from "./quota.ts";
 import { redactErrorMessage } from "./redaction.ts";
+import { buildRouterCatalog } from "./router/catalog.ts";
 import { OutcomeStore } from "./router/outcomes.ts";
 import { routeTask } from "./router/router.ts";
 import { type CapabilityEscalationPolicy, candidateTierKey } from "./router/tiers.ts";
@@ -621,7 +621,15 @@ async function askCommand(
 	const json = args.includes("--json");
 	const chain = chainValue ? parseChain(chainValue) : await routeForPrompt(registry, config, prompt);
 	if (chain.length === 0) throw new Error("ask could not resolve a model: add an account, or pass --chain");
-	const supervisor = await createCliSupervisor(registry, store, config, ["run", ...args], chain, json, estimateTask(prompt));
+	const supervisor = await createCliSupervisor(
+		registry,
+		store,
+		config,
+		["run", ...args],
+		chain,
+		json,
+		estimateTask(prompt),
+	);
 	const result = await supervisor.prompt(prompt);
 	if (!json) process.stdout.write("\n");
 	else
