@@ -47,7 +47,7 @@ The system must be:
 | Capability | Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work. |
 | DarkFactory GitHub App | Automation identity and privileged GitHub execution identity. |
 | Authenticated web user | Human identity used by DarkFactory Web for user-attributed GitHub access/actions. |
-| Consumer repository | Supplies project-specific declarations/data while consuming released df and the shared web application. |
+| Consumer | Supplies project-specific declarations/data while consuming released df and the shared web application. A consumer is a repository, a machine, or a fleet of either. |
 
 ## 4. Workspace and package architecture
 
@@ -124,7 +124,7 @@ The capability ABI is versioned independently from product SemVer.
 The systems layer is interpreted, and interpretation is itself a capability with swappable backends. It is the same seam as any other bound system: a small vocabulary, several implementations, and a declaration that names one.
 
 - A declaration is interpreted through a named backend. TypeScript is the first-party backend for `.df`. Further backends exist so that declarations authored in another system's own language stay first-class instead of requiring translation into ours.
-- A declaration written for a bound system remains in that system's language. Where a consumer repository's machine-level configuration is authored in a foreign declaration format, DarkFactory resolves and composes it rather than re-expressing it.
+- A declaration written for a bound system remains in that system's language. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it rather than re-expressing it.
 - Backend selection is declarative. Capability availability is not conditional on which interpreter is present.
 - Interpretation is read-only with respect to the declaration. Evaluating a declaration never mutates it; applying it produces state through the ordinary governed effect path.
 
@@ -383,37 +383,36 @@ The final release contains, as required:
 
 Initial installation must not require Python, a source checkout or a pre-existing df installation.
 
-Before a release-affecting delivery PR merges, an unpublished source-free candidate built from its exact head/tree must pass the applicable DarkFactory and fleet acceptance contract. Final publication occurs from canonical after merge without behavioral source changes; the published artifacts must reproduce the proven candidate behavior/assets aside from canonical source-provenance metadata.
+Before a release-affecting delivery PR merges, an unpublished source-free candidate built from its exact head/tree must pass the applicable DarkFactory and consumer acceptance contract. Final publication occurs from canonical after merge without behavioral source changes; the published artifacts must reproduce the proven candidate behavior/assets aside from canonical source-provenance metadata.
 
 The standard installation includes official capabilities while allowing third-party capabilities through the same loader.
 
-## 17. Consumer/fleet model
+## 17. Consuming df
 
-The intended fleet contains five repositories identified by stable GitHub repository identity:
+A consumer is anything that runs released df: a repository, a machine, or a fleet of either. The
+system does not enumerate or depend on a fixed set of them, and this document does not name
+any.
 
-1. DarkFactory;
-2. ChessWithQuests;
-3. OdbornaPrace-paper;
-4. template-OdbornaPrace;
-5. OdbornaPrace-mono.
+Consumers receive released df and managed setup. They do not receive copied DarkFactory source
+trees and do not rebuild the shared web application.
 
-Consumers receive released df and managed project-specific setup. They do not receive copied DarkFactory source trees and do not rebuild the shared React application.
+Capabilities handle project-specific setup wherever possible, including quality actions,
+documentation, hooks, release and workflow configuration.
 
-Capabilities should handle project/repository-specific setup wherever possible, including quality actions, docs, hooks, release and workflow configuration.
-
-Install/update is idempotent and drift-aware.
+Install and update are idempotent and drift-aware: running them again on an already-current
+consumer is a no-op, and running them on a drifted one reconciles it without discarding
+consumer-specific declarations.
 
 ### 17.1 One model across repositories and machines
 
-The fleet is not two populations. Machine-scoped and repository-scoped work must resolve
-through one semantic model rather than a repository mode and a machine mode, and a
-machine-scoped consumer is a first-class member of the fleet rather than a separate kind of
-target.
+Machine-scoped and repository-scoped work must resolve through one semantic model rather than
+a repository mode and a machine mode. A machine-scoped consumer is not a separate kind of
+target; it is the same kind of target with a different scope.
 
-- A capability behaves identically whether it is invoked in a working tree, on a host, or in CI. There are no per-location code paths and no host-only or repo-only capability variants.
+- A capability behaves identically whether it is invoked in a working tree, on a host, or in CI. There are no per-location code paths and no host-only or repository-only capability variants.
 - A declaration means the same thing in a repository and on a machine. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it in that format (§5.1) rather than requiring it to be re-expressed.
 - The boundary between repositories, machines and hosting types is not a place the system degrades. Support is stated as one behaviour, not as a matrix of what is known to work where, because a matrix is a standing promise to maintain and each per-location special case is a place an abstraction has leaked.
-- Identifiers for repositories, machines, capabilities and providers are stable and comparable across the fleet, so a declaration written for one host resolves correctly on another.
+- Identifiers for repositories, machines, capabilities and providers are stable and comparable, so a declaration written for one target resolves correctly on another.
 
 ## 18. Security requirements
 
@@ -427,7 +426,7 @@ target.
 
 ## 19. Final acceptance
 
-DarkFactory is final only when the exact pre-merge candidate has passed the declared acceptance/fleet contract and the final canonical publication can reproduce it without behavioral source changes, and:
+DarkFactory is final only when the exact pre-merge candidate has passed the declared acceptance and consumer contract and the final canonical publication can reproduce it without behavioral source changes, and:
 
 - df is the only normal production orchestration/mutation engine;
 - production orchestration and mutation are owned by the final TypeScript df system;
@@ -436,11 +435,11 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 - keychain/auth security boundaries are proven;
 - real TypeScript API docs are published;
 - generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` remains a symlink to the canonical product document;
-- shared web UI is deployed across the fleet without consumer frontend rebuild;
+- shared web UI is deployed to consumers without a frontend rebuild per consumer;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
-- all fleet repositories pass governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
+- the supported consumer set passes governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
-- installed fleet acceptance is green across the supported consumer set before merge;
+- installed acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
 
 ### 19.1 Self-hosting acceptance

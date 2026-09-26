@@ -175,20 +175,32 @@ that something is the design.
 
 The five claims describe a position. This is the purpose behind it.
 
-**The harness decouples the work from the agent.** Agent CLIs are a means, not the system:
-they differ in tool surface, context handling, session model, quota behaviour and how they
-fail. Binding them directly into the delivery path means the pipeline's capabilities are
-whatever whichever agent happens to be installed this week, and a harness upgrade is a
-delivery risk. A harness in between fixes that — the agent becomes a replaceable execution
-backend behind a stable interface, and fallback escalates across harnesses rather than only
-across models on one of them.
+**The user does not interact with an agent, and never has to name one.** They use df. The
+agent is infrastructure, in the same way a database engine is infrastructure: it is load-bearing,
+it is chosen and swapped underneath, and it is not something a person is asked to think about
+when they describe what they want done.
 
-**That is what gets us back to software engineering, at a new scale.** The point of a harness
-is not that the agent is in the loop; it is that the *work* is expressed in terms the system
-understands — capabilities, declarations, effects, checks — and the agent is one interpreter of
-that expression. A pipeline that expresses delivery as a declared graph rather than as a
-sequence of prompts can be reasoned about, diffed, reviewed, resumed and re-run by a different
-agent without rewriting it.
+This is the sense in which the harness is *next-generation*, and it is a real property rather
+than a slogan because it has a testable consequence: **no user-facing surface names, selects,
+configures or reports an agent.** Not the CLI, not the declaration, not the web surface, not
+an error message. When an agent is missing, credentialed badly, or exhausted, the user is told
+what happened in the system's own terms and what will be tried next — never "install this CLI"
+or "that provider returned 401".
+
+Consequences that follow, and which are design constraints rather than features:
+
+- **Which agent runs is a resolution result, not an input.** df decides, from declarations and
+  observed availability. A user who wants a different model route writes a route; they do not
+  write a harness chain.
+- **The agent set can change without a user noticing or caring.** Adding, removing or upgrading
+  an agent backend is a df-internal change. The corollary is that it must not be able to change
+  what the system *does* — if a new backend behaves differently, that is a bug in the backend,
+  not a new user-visible configuration surface.
+- **The work is expressed in the system's terms, not the agent's.** Capabilities,
+  declarations, effects and checks. The agent is one interpreter of that expression, which is
+  what lets a delivery be reasoned about, diffed, reviewed, resumed, and re-run by a different
+  agent without being rewritten. A pipeline expressed as a sequence of prompts cannot do that,
+  because the prompts are the agent's interface and the agent's interface changes.
 
 **The scope is anything, not only software engineering.** A system built to express "act on a
 system through a declared interface" has no domain built into it. Repository work is the first
@@ -306,7 +318,8 @@ A thesis that cannot be falsified is a mood. These would sink it:
   insufficient construction material, self-hosting is a slogan.
 - **The friction cannot be removed.** If machine and repository remain two modes with
   location-dependent behaviour, §5 is a support matrix wearing a universal's vocabulary.
-- **Removing the agent would leave the system complete.** Then §6 is marketing after all.
+- **A user-facing surface names or selects an agent.** Then the abstraction has leaked, whatever the
+  internals do. This is the check for §6.1 and it is a grep, not a judgement call.
 - **Dynamic composition proves unaffordable.** If capability sets cannot be resolved reliably
   at load, or the errors are worse than the barrels they removed, §10 is wrong.
 - **Binding costs more than owning.** If the seam is measurably worse than calling `git`
