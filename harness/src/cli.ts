@@ -584,23 +584,49 @@ async function logoutCommand(
 	console.log(`Logged out ${providerId}/${label}.`);
 }
 
+/**
+ * Resolves the models a one-off question may be answered by.
+ *
+ * The same routing a full run uses, so `ask` and `run` agree on which model would serve a prompt:
+ * asking a question must not silently pick a worse model than running the same prompt would.
+ *
+ * @param registry Provider registry.
+ * @param config Loaded configuration, carrying the routing preferences.
+ * @param prompt The question, which is routed on.
+ * @returns Candidates in preference order; empty when nothing is usable.
+ */
+async function routeForPrompt(registry: ProviderRegistry, config: DfConfig, prompt: string): Promise<Candidate[]> {
+	const models = buildRouterCatalog({
+		providers: registry.entries,
+		capabilityTiers: config.router?.capabilityTiers,
+		defaultTier: config.router?.defaultTier,
+	});
+	if (models.length === 0) return [];
+	const route = await routeTask({ prompt }, { config: config.router ?? DEFAULT_ROUTER_CONFIG, models });
+	return route.chain;
+}
+
 async function askCommand(
 	registry: ProviderRegistry,
 	store: FileCredentialStore,
 	config: DfConfig,
 	args: string[],
 ): Promise<void> {
+	// `--chain` is optional: an ad-hoc question should not require knowing the chain, and the
+	// router already resolves the whole live catalogue when no chain is pinned. Naming one still
+	// works, for when a question should only ever be answered by a particular model.
 	const chainValue = option(args, "--chain");
-	if (!chainValue) throw new Error("ask requires --chain");
 	const prompt = removeOptions(args, ["--chain"]).join(" ").trim();
 	if (!prompt) throw new Error("ask requires a prompt");
 	const json = args.includes("--json");
+	const chain = chainValue ? parseChain(chainValue) : await routeForPrompt(registry, config, prompt);
+	if (chain.length === 0) throw new Error("ask could not resolve a model: add an account, or pass --chain");
 	const supervisor = await createCliSupervisor(
 		registry,
 		store,
 		config,
 		["run", ...args],
-		parseChain(chainValue),
+		chain,
 		json,
 		estimateTask(prompt),
 	);
