@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 function verifyRef(ref) {
   try {
-    execSync(`git rev-parse --verify "${ref}"`, { stdio: 'ignore' });
+    execFileSync('git', ['rev-parse', '--verify', ref], { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -59,7 +59,7 @@ function getBaseBranch() {
 
   // Attempt fetching origin if remote refs are absent (e.g. shallow checkout / CI)
   try {
-    execSync('git fetch origin --depth=1', { stdio: 'ignore' });
+    execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'ignore' });
     for (const candidate of candidates) {
       if (verifyRef(candidate)) {
         return candidate;

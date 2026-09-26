@@ -6,3 +6,21 @@ export function redactErrorMessage(value: unknown): string {
 	const message = value instanceof Error ? value.message : String(value);
 	return message.replace(BEARER_VALUE, "[REDACTED]").replace(SECRET_KEY_VALUE, "$1[REDACTED]");
 }
+
+
+const   badFormatting   =   123  ;
+
+
+const   badFormatting   =   123  ;
+
+
+const   badFormatting   =   123  ;
+
+
+const   badFormatting   =   123  ;
+
+
+const   badFormatting   =   123  ;
+
+
+const   badFormatting   =   123  ;
