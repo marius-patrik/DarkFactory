@@ -114,9 +114,9 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 
 	const body = firstNewline === -1 ? "" : normalized.slice(firstNewline + 1);
 	return {
-		template: match[1]!,
-		version: match[2]!,
-		hash: match[3]!.toLowerCase(),
+		template: match[1] ?? "",
+		version: match[2] ?? "",
+		hash: match[3]?.toLowerCase() ?? "",
 		headerLine: firstLine,
 		body,
 	};
