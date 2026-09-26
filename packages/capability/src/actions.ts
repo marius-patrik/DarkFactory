@@ -15,6 +15,7 @@ export interface RepositoryActionEvidence {
 	repoDf: {
 		environment?: {
 			testing?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			typecheck?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			linting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			formatting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			docs_check?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
@@ -52,6 +53,7 @@ export interface ResolvedRepositoryActions {
 }
 
 const ACTION_KINDS: readonly CapabilityActionKind[] = [
+	"typecheck",
 	"test",
 	"lint",
 	"format_check",
@@ -62,6 +64,7 @@ const ACTION_KINDS: readonly CapabilityActionKind[] = [
 ];
 
 const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>([
+	"typecheck",
 	"test",
 	"lint",
 	"format_check",
@@ -76,6 +79,8 @@ function overrideGroup(
 	const environment = evidence.repoDf.environment;
 	if (!environment) return undefined;
 	switch (kind) {
+		case "typecheck":
+			return environment.typecheck;
 		case "test":
 			return environment.testing;
 		case "lint":
@@ -250,7 +255,7 @@ export function actionsForTouchedFiles(
 export interface QualityMatrixEntry {
 	id: string;
 	packageId: string;
-	kind: "test" | "lint" | "format_check" | "docs_check";
+	kind: "test" | "typecheck" | "lint" | "format_check" | "docs_check";
 	command: string;
 	cwd: string;
 	ecosystem: string;
@@ -265,9 +270,20 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 	const result: QualityMatrixEntry[] = [];
 	for (const { package: pkg, actions } of resolution.packages) {
 		const setup = actions.setup;
-		for (const kind of ["test", "lint", "format_check", "docs_check"] as const) {
+		for (const kind of ["test", "typecheck", "lint", "format_check", "docs_check"] as const) {
 			const action = actions[kind];
-			if (!action.supported || !action.command) continue;
+			if (!action.supported) {
+				if (REQUIRED_QUALITY_ACTIONS.has(kind)) {
+					throw new Error(`Required action ${kind} not supported for package ${pkg.id}`);
+				}
+				continue;
+			}
+			if (!action.command) {
+				if (REQUIRED_QUALITY_ACTIONS.has(kind)) {
+					throw new Error(`Required action ${kind} missing command for package ${pkg.id}`);
+				}
+				continue;
+			}
 			const rawVersions = action.metadata?.versions;
 			const versions = Array.isArray(rawVersions)
 				? rawVersions.filter((value): value is string => typeof value === "string" && value.length > 0)

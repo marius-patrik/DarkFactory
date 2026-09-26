@@ -266,7 +266,7 @@ class TestPlans:
         assert "documentation" not in repository.get("environment", {})
         assert docs["version"] == 1
         assert docs["home"] == ".agents/PRD.md"
-        assert "api" not in docs
+        assert "api" in docs
         assert providers["defaultChain"]
 
     def test_a_declared_command_overrides_the_default(self, polyglot):

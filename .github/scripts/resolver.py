@@ -12,9 +12,17 @@ DEFAULT_CONFIG_DIR = ".darkfactory"
 def _config_directory(root: str, env: Mapping[str, str]) -> str:
     """Returns the configured fallback directory for a repository root."""
     configured = env.get("DF_CONFIG_DIR", "").strip() or DEFAULT_CONFIG_DIR
-    return os.path.normpath(
-        configured if os.path.isabs(configured) else os.path.join(root, configured)
-    )
+    repository_root = os.path.abspath(root)
+    if os.path.isabs(configured):
+        abs_configured = os.path.abspath(configured)
+        try:
+            common = os.path.commonpath([repository_root, abs_configured])
+            if common == repository_root:
+                return abs_configured
+        except ValueError:
+            pass
+        return os.path.join(repository_root, DEFAULT_CONFIG_DIR)
+    return os.path.normpath(os.path.join(repository_root, configured))
 
 
 def _candidates(directory: str) -> list[str]:

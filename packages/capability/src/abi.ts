@@ -144,6 +144,7 @@ export interface CapabilityPackageContext {
 /** Deterministic repository action kinds shared by doctor, CI, verification and docs. */
 export type CapabilityActionKind =
 	| "test"
+	| "typecheck"
 	| "lint"
 	| "format_check"
 	| "docs_check"

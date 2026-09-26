@@ -78,6 +78,8 @@ describe("repository evidence and capability actions", () => {
 		});
 
 		const python = resolution.packages.find((entry) => entry.package.id === "python:python")!;
+		// typecheck is required for TS, not python
+		expect(python.actions.typecheck.supported).toBe(false);
 		expect(python.actions.lint.source).toBe("repo.dfconfig");
 		expect(python.actions.lint.command).toBe("ruff check .");
 		expect(python.actions.test.command).toBe("pytest");

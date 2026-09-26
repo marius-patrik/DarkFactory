@@ -72,6 +72,7 @@ export interface RepositoryDfEvidence {
 			package_manager?: string;
 		}[];
 		testing?: Readonly<Record<string, RepositoryActionOverride>>;
+		typecheck?: Readonly<Record<string, RepositoryActionOverride>>;
 		linting?: Readonly<Record<string, RepositoryActionOverride>>;
 		formatting?: Readonly<Record<string, RepositoryActionOverride>>;
 		docs_check?: Readonly<Record<string, RepositoryActionOverride>>;

@@ -15,6 +15,10 @@ function nodeRun(pkg: CapabilityPackageContext, script: string): string | undefi
 	}
 }
 
+function nodeTypecheck(pkg: CapabilityPackageContext): string | undefined {
+	return nodeRun(pkg, "typecheck");
+}
+
 function nodeTest(pkg: CapabilityPackageContext): string | undefined {
 	return nodeRun(pkg, "test");
 }
@@ -78,6 +82,12 @@ export const capability = defineCapability({
 			description: "Run package tests with the detected Node package manager.",
 			ecosystems: ["node"],
 			command: nodeTest,
+		},
+		{
+			kind: "typecheck",
+			description: "Run package typecheck with the detected Node package manager.",
+			ecosystems: ["node"],
+			command: nodeTypecheck,
 		},
 		{
 			kind: "lint",
