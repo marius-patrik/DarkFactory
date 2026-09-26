@@ -17,7 +17,7 @@
   city: "Hradci Králové",
   year: 2026,
 
-  title: "AI asistované softwarové inženýrství",
+  title: "Vzrůst Agentického AI: úvod do agentického inženýrství a implementace software factory",
   practical-title: "DarkFactory",
 
   annotation-cs: [
