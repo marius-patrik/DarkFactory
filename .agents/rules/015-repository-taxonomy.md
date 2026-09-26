@@ -33,7 +33,13 @@ Separating domain from capability preserves multi-domain repositories while keep
 
 ## Enforcement
 
-The repo.dfconfig resolver, canonical detection/capability resolution and hooks validate the taxonomy.
+The repo.dfconfig resolver and canonical detection/capability resolution read the declared taxonomy.
+
+The `conventional-commit` hook does not. It matches the commit type against its own eleven-type
+regular expression, which is wider than the seven types this rule allows, and it validates the scope
+only against `[a-z0-9][a-z0-9-]*` without consulting the declared areas. No check compares a commit
+scope or an issue label against `repo.dfconfig`, so the requirement that both consume the same
+declared taxonomy is unverified.
 
 ## Exceptions
 

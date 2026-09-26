@@ -28,7 +28,11 @@ Centralized custody and explicit browser/machine trust boundaries minimize secre
 
 ## Enforcement
 
-Keychain/auth import-boundary, redaction, secret-scan and credential-flow tests; workflow/browser artifact audits.
+Keychain and auth import-boundary, redaction and credential-flow tests exist and enforce the custody
+and browser-trust boundaries above.
+
+Two checks this rule names do not exist. No secret scan runs over repository, generated or published
+content, and no browser artifact audit inspects built web output for embedded credentials.
 
 ## Exceptions
 

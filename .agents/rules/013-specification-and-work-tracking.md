@@ -41,9 +41,13 @@ decomposition of tightly coupled work.
 
 ## Enforcement
 
-- `tests/test_governance.py` asserts the specification sequence and Request/Planning invariants are
-  represented in the AGENTS projection.
-- Request/Epic/project reconciliation enforces the active tracking relationships.
+- The documentation content graph validates the rule and ADR relations that the AGENTS projection is
+  built from, and the projection is regenerated from those canonical sources.
+- The `verify-bound-issue` required status check and project reconciliation enforce the active
+  tracking relationships.
+
+Nothing in the tree asserts the specification sequence itself. The requirement above is stated but
+unverified by any test.
 
 ## Exceptions
 

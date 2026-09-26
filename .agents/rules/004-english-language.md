@@ -20,7 +20,9 @@ sites, logs, and issue threads internally consistent.
 
 ## Enforcement
 
-Hooks/CI enforce machine-checkable language policy where deterministic (for example identifiers, generated metadata and commit conventions). Human/agent review remains the backstop for prose semantics; the repository does not claim a brittle natural-language scanner can prove every sentence is English.
+The `hooks` capability registers three checks - `tests-touched`, `conventional-commit` and
+`branch-name` - and none of them inspects language. No CI step does either, so the machine-checkable
+half of this rule is currently unenforced. Human and agent review is the only enforcement that exists.
 
 ## Exceptions
 

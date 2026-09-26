@@ -42,10 +42,13 @@ are exercised.
 
 ## Enforcement
 
-The detected quality contract executes package/capability-owned tests. Architecture tests consume
-parsed semantic inputs or resolved dependency graphs where possible. CI fails on duplicate/shadowed
-test definitions and on detected packages without an applicable required test contract unless that
-action is explicitly declared not applicable by canonical configuration.
+The detected quality contract executes package/capability-owned tests, and a detected package with no
+applicable required test contract is reported as a gap rather than a pass. Architecture tests consume
+parsed semantic inputs or resolved dependency graphs where possible.
+
+The duplicate/shadowed test detection this rule requires is not implemented. Nothing in the suite
+rejects a shadowed, duplicated or copied test definition, so the prohibition above rests on review
+rather than on a failing check.
 
 ## Exceptions
 

@@ -38,9 +38,13 @@ contract.
 
 ## Enforcement
 
-Dependency/reachability analysis, package-boundary tests, current-truth docs checks and final
-repository audits reject duplicate/deletion-bound ownership and unexplained unreachable first-party
-code.
+`harness/test/workspace-boundaries.test.ts` verifies that the first-party package dependency graph
+read from package manifests is closed and acyclic, and the documentation currentness check rejects
+retired documentation paths and broken discovery aliases.
+
+Neither is reachability analysis. No tool in this repository walks the source import graph, so
+unreachable first-party code and source-level dependency cycles are not detected, and the duplicate
+and deletion-bound ownership this rule prohibits is caught by review rather than by a check.
 
 ## Exceptions
 
