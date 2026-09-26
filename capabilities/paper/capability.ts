@@ -16,23 +16,24 @@ export const capability = defineCapability({
 	],
 	actions: [
 		{
-			kind: "test",
-			description: "Typeset a Typst paper as its deterministic verification.",
+			kind: "typecheck",
+			description: "Typeset the Typst manuscript. Typst is statically typed, so compiling it IS the typecheck.",
 			ecosystems: ["typst"],
 			command: "mkdir -p out && typst compile main.typ out/paper.pdf",
 		},
 		{
-			kind: "test",
-			description: "Typeset a LaTeX paper as its deterministic verification.",
+			kind: "typecheck",
+			description: "Typeset the LaTeX manuscript; a clean latexmk run is the correctness check.",
 			ecosystems: ["latex"],
 			command: "mkdir -p out && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=out main.tex",
 		},
 		{
 			kind: "release",
-			description: "Build the Typst release document.",
+			description:
+				"Publish the repository-root PAPER.pdf from the manuscript source, with fonts and bibliography wired.",
 			ecosystems: ["typst"],
-			command: "mkdir -p out && typst compile main.typ out/paper.pdf",
-			metadata: { artifacts: ["out/*.pdf", "*.pdf"] },
+			command: "bun ../scripts/paper/publication.ts",
+			metadata: { artifacts: ["../../PAPER.pdf"] },
 		},
 		{
 			kind: "release",
