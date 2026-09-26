@@ -61,6 +61,12 @@ async function readJsonFile(path: string): Promise<unknown> {
 }
 
 function extractSubject(translated: TranslatedEvent & { kind: "event" }): string {
+	if (translated.event.type === "checks.completed" && translated.subject.ref) {
+		const ref = translated.subject.ref.trim();
+		if (ref.length > 0) {
+			return `${translated.subject.number}-${ref.substring(0, 7)}`;
+		}
+	}
 	return `${translated.subject.number}`;
 }
 
