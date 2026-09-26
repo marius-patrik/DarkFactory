@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import {
-	MemoryAuthTokenStore,
-	createBrokerSession,
-	refreshBrokerSession,
-	revokeBrokerSession,
-} from "../src/broker.ts";
+import { createBrokerSession, MemoryAuthTokenStore, refreshBrokerSession, revokeBrokerSession } from "../src/broker.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -19,12 +14,29 @@ describe("@darkfactory/auth confidential broker", () => {
 		globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
 			requests.push({ url: String(input), init });
 			call += 1;
-			return new Response(JSON.stringify(call === 1
-				? { access_token: "access-1", refresh_token: "refresh-1", token_type: "bearer", expires_in: 3600, refresh_token_expires_in: 7200 }
-				: { access_token: "access-2", refresh_token: "refresh-2", token_type: "bearer", expires_in: 3600, refresh_token_expires_in: 7200 }), {
-				status: 200,
-				headers: { "content-type": "application/json" },
-			});
+			return new Response(
+				JSON.stringify(
+					call === 1
+						? {
+								access_token: "access-1",
+								refresh_token: "refresh-1",
+								token_type: "bearer",
+								expires_in: 3600,
+								refresh_token_expires_in: 7200,
+							}
+						: {
+								access_token: "access-2",
+								refresh_token: "refresh-2",
+								token_type: "bearer",
+								expires_in: 3600,
+								refresh_token_expires_in: 7200,
+							},
+				),
+				{
+					status: 200,
+					headers: { "content-type": "application/json" },
+				},
+			);
 		}) as typeof fetch;
 
 		const store = new MemoryAuthTokenStore();

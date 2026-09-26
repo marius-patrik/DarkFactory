@@ -36,7 +36,7 @@ describe("Branch protection & rulesets synchronizer", () => {
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], { branch: "main" });
 		expect(result.success).toBe(true);
-		expect(JSON.parse(String(calls[1]!.init?.body))).toEqual({
+		expect(JSON.parse(String(calls[1]?.init?.body))).toEqual({
 			strict: true,
 			contexts: ["quality", "verify-bound-issue"],
 		});
@@ -47,8 +47,8 @@ describe("Branch protection & rulesets synchronizer", () => {
 		const repo = new GitHubRepository(new GitHubClient({ token: "fake-token", fetch }), "owner", "repo");
 		const result = await applyBranchProtection(repo, ["quality", "verify-bound-issue"], { branch: "main" });
 		expect(result.success).toBe(true);
-		expect(calls[1]!.url).toContain("/rulesets");
-		expect(calls[1]!.init?.method).toBe("POST");
+		expect(calls[1]?.url).toContain("/rulesets");
+		expect(calls[1]?.init?.method).toBe("POST");
 	});
 
 	it("verifies branch protection against expected required checks", async () => {

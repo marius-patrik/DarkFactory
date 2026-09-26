@@ -10,12 +10,24 @@ import {
 
 class MemoryStorage implements Storage {
 	#values = new Map<string, string>();
-	get length(): number { return this.#values.size; }
-	clear(): void { this.#values.clear(); }
-	getItem(key: string): string | null { return this.#values.get(key) ?? null; }
-	key(index: number): string | null { return [...this.#values.keys()][index] ?? null; }
-	removeItem(key: string): void { this.#values.delete(key); }
-	setItem(key: string, value: string): void { this.#values.set(key, value); }
+	get length(): number {
+		return this.#values.size;
+	}
+	clear(): void {
+		this.#values.clear();
+	}
+	getItem(key: string): string | null {
+		return this.#values.get(key) ?? null;
+	}
+	key(index: number): string | null {
+		return [...this.#values.keys()][index] ?? null;
+	}
+	removeItem(key: string): void {
+		this.#values.delete(key);
+	}
+	setItem(key: string, value: string): void {
+		this.#values.set(key, value);
+	}
 }
 
 function installStorage(name: "localStorage" | "sessionStorage"): void {
@@ -69,7 +81,11 @@ describe("@darkfactory/auth browser client", () => {
 
 	test("failed broker refresh clears expired browser state", async () => {
 		persistSession({ id: "opaque-session", expiresAt: 2_000 });
-		expect(await restoreSessionWithRefresh(async () => { throw new Error("refresh failed"); }, 3_000)).toBeNull();
+		expect(
+			await restoreSessionWithRefresh(async () => {
+				throw new Error("refresh failed");
+			}, 3_000),
+		).toBeNull();
 		expect(localStorage.getItem("df-auth-session")).toBeNull();
 	});
 

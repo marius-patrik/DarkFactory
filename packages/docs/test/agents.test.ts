@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { DocsContentGraph } from "../src/content.ts";
 import { AGENTS_GENERATED_MARKER, renderAgentsMarkdown } from "../src/agents.ts";
+import type { DocsContentGraph } from "../src/content.ts";
 
 const rule = (source: string, id: string, title: string, number: number, requirement: string) => ({
 	id: source.replace(/[^a-z0-9]+/giu, "-").toLowerCase(),
@@ -55,7 +55,8 @@ describe("AGENTS rules projection", () => {
 					kind: "adr",
 					title: "ADR-0001 — Test decision",
 					source: ".agents/notes/adr/0001-test.md",
-					markdown: "# ADR-0001 — Test decision\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`, `DF-RULE-002`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest consequence.\n",
+					markdown:
+						"# ADR-0001 — Test decision\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`, `DF-RULE-002`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest consequence.\n",
 				},
 			],
 		};

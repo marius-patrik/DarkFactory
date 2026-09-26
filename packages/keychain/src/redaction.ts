@@ -76,7 +76,8 @@ export class CredentialRedactor {
 			});
 		}
 		return findings.sort(
-			(a, b) => a.accountId.localeCompare(b.accountId) || a.slot.localeCompare(b.slot) || a.field.localeCompare(b.field),
+			(a, b) =>
+				a.accountId.localeCompare(b.accountId) || a.slot.localeCompare(b.slot) || a.field.localeCompare(b.field),
 		);
 	}
 

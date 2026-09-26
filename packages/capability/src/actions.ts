@@ -1,11 +1,11 @@
 import { join } from "node:path";
-import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
 import type {
 	CapabilityActionDefinition,
 	CapabilityActionKind,
 	CapabilityDefinition,
 	CapabilityPackageContext,
 } from "./abi.ts";
+import { discoverCapabilities, resolveCapabilities } from "./loader.ts";
 
 /** Structural repository evidence consumed by capability action resolution. */
 export interface RepositoryActionEvidence {
@@ -15,6 +15,7 @@ export interface RepositoryActionEvidence {
 	repoDf: {
 		environment?: {
 			testing?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
+			typecheck?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			linting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			formatting?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
 			docs_check?: Readonly<Record<string, { command?: string; enabled?: boolean; versions?: readonly string[] }>>;
@@ -54,6 +55,7 @@ export interface ResolvedRepositoryActions {
 const ACTION_KINDS: readonly CapabilityActionKind[] = [
 	"test",
 	"lint",
+	"typecheck",
 	"format_check",
 	"docs_check",
 	"docs_extract",
@@ -61,13 +63,7 @@ const ACTION_KINDS: readonly CapabilityActionKind[] = [
 	"release",
 ];
 
-const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>([
-	"test",
-	"lint",
-	"format_check",
-	"docs_check",
-	"docs_extract",
-]);
+const REQUIRED_QUALITY_ACTIONS = new Set<CapabilityActionKind>(["test", "typecheck", "lint", "format_check"]);
 
 function overrideGroup(
 	evidence: RepositoryActionEvidence,
@@ -82,6 +78,8 @@ function overrideGroup(
 			return environment.linting;
 		case "format_check":
 			return environment.formatting;
+		case "typecheck":
+			return environment.typecheck;
 		case "docs_check":
 			return environment.docs_check;
 		case "docs_extract":
@@ -221,9 +219,11 @@ export function resolveRepositoryActions(
 		return { package: pkg, actions };
 	});
 	const gaps = packages.flatMap(({ actions }) =>
-		ACTION_KINDS.filter((kind) => REQUIRED_QUALITY_ACTIONS.has(kind) && !actions[kind].supported).map(
-			(kind) => actions[kind],
-		),
+		ACTION_KINDS.filter(
+			(kind) =>
+				REQUIRED_QUALITY_ACTIONS.has(kind) &&
+				(!actions[kind].supported || typeof actions[kind].command !== "string" || !actions[kind].command.trim()),
+		).map((kind) => actions[kind]),
 	);
 	return { packages, gaps };
 }
@@ -250,7 +250,7 @@ export function actionsForTouchedFiles(
 export interface QualityMatrixEntry {
 	id: string;
 	packageId: string;
-	kind: "test" | "lint" | "format_check" | "docs_check";
+	kind: "test" | "typecheck" | "lint" | "format_check" | "docs_check";
 	command: string;
 	cwd: string;
 	ecosystem: string;
@@ -265,9 +265,9 @@ export function qualityMatrix(resolution: ResolvedRepositoryActions): readonly Q
 	const result: QualityMatrixEntry[] = [];
 	for (const { package: pkg, actions } of resolution.packages) {
 		const setup = actions.setup;
-		for (const kind of ["test", "lint", "format_check", "docs_check"] as const) {
+		for (const kind of ["test", "typecheck", "lint", "format_check", "docs_check"] as const) {
 			const action = actions[kind];
-			if (!action.supported || !action.command) continue;
+			if (!action || !action.supported || !action.command) continue;
 			const rawVersions = action.metadata?.versions;
 			const versions = Array.isArray(rawVersions)
 				? rawVersions.filter((value): value is string => typeof value === "string" && value.length > 0)

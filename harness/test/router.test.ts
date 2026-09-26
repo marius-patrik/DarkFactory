@@ -422,8 +422,8 @@ describe("quota-aware ranking", () => {
 			},
 		);
 		expect(result.chain.map((item) => item.provider)).toEqual(["idle", "busy"]);
-		expect(result.ranked[0]!.details).toContain("capacity 100%");
-		expect(result.ranked[1]!.details).toContain("capacity 20%");
+		expect(result.ranked[0]?.details).toContain("capacity 100%");
+		expect(result.ranked[1]?.details).toContain("capacity 20%");
 	});
 
 	test("an exhausted candidate is skipped with the time it clears", async () => {
@@ -489,7 +489,7 @@ describe("quota-aware ranking", () => {
 			{ config, models, quota, now: () => now },
 		);
 		expect(result.chain.map((item) => item.provider)).toEqual(["first", "third"]);
-		expect(result.ranked.find((item) => item.candidate.provider === "second")!.status).toBe("skipped");
+		expect(result.ranked.find((item) => item.candidate.provider === "second")?.status).toBe("skipped");
 	});
 
 	test("exposes provider data-collection in capability", () => {
@@ -766,7 +766,7 @@ describe("data–collection policy", () => {
 		expect(result.chain[0]?.provider).toBe("p1");
 		// The other two should not be in the result
 		expect(result.ranked).toHaveLength(1);
-		expect(result.ranked[0]!.candidate.provider).toBe("p1");
+		expect(result.ranked[0]?.candidate.provider).toBe("p1");
 	});
 	test("sensitive task with no none collection throws fail-closed error", async () => {
 		const models = [

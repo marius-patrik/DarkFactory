@@ -68,7 +68,7 @@ describe("Workflow installer & updater", () => {
 			const originalContent = await readFile(ciPath, "utf-8");
 
 			// User modifies the file
-			const editedContent = originalContent + "\n# custom user step\n";
+			const editedContent = `${originalContent}\n# custom user step\n`;
 			await writeFile(ciPath, editedContent);
 
 			// Run install again without --force

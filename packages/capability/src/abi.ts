@@ -145,6 +145,7 @@ export interface CapabilityPackageContext {
 export type CapabilityActionKind =
 	| "test"
 	| "lint"
+	| "typecheck"
 	| "format_check"
 	| "docs_check"
 	| "docs_extract"
@@ -160,7 +161,9 @@ export interface CapabilityActionDefinition {
 	domains?: readonly string[];
 	requiredScripts?: readonly string[];
 	command?: string | ((pkg: CapabilityPackageContext) => string | undefined);
-	metadata?: Readonly<Record<string, unknown>> | ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
+	metadata?:
+		| Readonly<Record<string, unknown>>
+		| ((pkg: CapabilityPackageContext) => Readonly<Record<string, unknown>> | undefined);
 }
 
 /** Metadata for documentation, web, release, and audit surfaces. */
