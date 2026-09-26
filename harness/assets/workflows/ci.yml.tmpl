@@ -2,8 +2,12 @@ name: CI
 
 on:
   push:
-    branches: ["{{default_branch}}"]
+    branches:
+      - "{{default_branch}}"
+      - refactor/*
+      - finish/*
   pull_request:
+    types: [opened, synchronize, reopened, base_ref_changed]
   merge_group:
   workflow_dispatch:
 

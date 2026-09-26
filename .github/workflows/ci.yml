@@ -2,11 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
+      - refactor/*
+      - finish/*
   pull_request:
-    branches: [develop]
+    types: [opened, synchronize, reopened, base_ref_changed]
   merge_group:
-    branches: [develop]
   workflow_dispatch:
 
 permissions:

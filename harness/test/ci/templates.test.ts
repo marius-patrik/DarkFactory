@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { parseManagedHeader, renderWorkflowTemplate, verifyWorkflowHash } from "../../src/ci/templates.ts";
+import * as yaml from "yaml";
 
 describe("Workflow templates & managed headers", () => {
 	it("renders detector-driven CI with pinned runtime and stable aggregate quality", () => {
@@ -12,7 +13,6 @@ describe("Workflow templates & managed headers", () => {
 		expect(rendered).toContain("# managed-by: darkfactory ci.yml@");
 		expect(rendered).toContain('repository: "marius-patrik/DarkFactory"');
 		expect(rendered).toContain('ref: "abc1234def5678"');
-		expect(rendered).toContain('branches: ["trunk"]');
 		expect(rendered).toContain("Resolve detected quality matrix");
 		expect(rendered).toContain("fromJSON(needs.detect.outputs.matrix)");
 		expect(rendered).toContain("Build native documentation");
@@ -23,6 +23,12 @@ describe("Workflow templates & managed headers", () => {
 		expect(parsed?.template).toBe("ci.yml");
 		expect(parsed?.hash.length).toBe(64);
 		expect(verifyWorkflowHash(rendered)).toMatchObject({ status: "valid", hashMatches: true });
+
+		// Assert parsed trigger structure instead of substring
+		const workflow = yaml.parse(rendered);
+		expect(workflow.on.push.branches).toEqual(["trunk", "refactor/*", "finish/*"]);
+		expect(workflow.on.pull_request.types).toEqual(["opened", "synchronize", "reopened", "base_ref_changed"]);
+		expect(workflow.on.merge_group).toBeNull();
 	});
 
 	it("generated bound-issue workflow accepts nonterminal Request bindings", () => {
