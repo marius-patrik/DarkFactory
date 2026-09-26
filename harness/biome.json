@@ -7,13 +7,7 @@
     "defaultBranch": "darkfactory"
   },
   "files": {
-    "includes": [
-      "**",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/.harness-test-*",
-      "!**/.*-test-*/"
-    ]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*", "!**/.*-test-*/"]
   },
   "formatter": {
     "indentStyle": "tab",
