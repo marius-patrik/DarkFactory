@@ -30,17 +30,20 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; ex
 	const home = await mkdtemp(join(tmpdir(), "df-cli-models-"));
 	temporary.push(home);
 	await writeFile(join(home, "providers.df"), JSON.stringify({ version: 1, providers: [provider] }), "utf8");
-	const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "models", "--provider", provider.id, ...args], {
-		cwd: process.cwd(),
-		env: {
-			DF_HOME: home,
-			DF_OFFLINE: "1",
-			PATH: process.env.PATH ?? "",
-			SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+	const child = Bun.spawn(
+		[process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "models", "--provider", provider.id, ...args],
+		{
+			cwd: process.cwd(),
+			env: {
+				DF_HOME: home,
+				DF_OFFLINE: "1",
+				PATH: process.env.PATH ?? "",
+				SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+			},
+			stdout: "pipe",
+			stderr: "pipe",
 		},
-		stdout: "pipe",
-		stderr: "pipe",
-	});
+	);
 	const [stdout, stderr, exitCode] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
@@ -101,17 +104,20 @@ describe("df models", () => {
 			}),
 			"utf8",
 		);
-		const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "models", "--provider", provider.id, "--stale"], {
-			cwd: process.cwd(),
-			env: {
-				DF_HOME: home,
-				DF_OFFLINE: "1",
-				PATH: process.env.PATH ?? "",
-				SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+		const child = Bun.spawn(
+			[process.execPath, "run", join(import.meta.dir, "../src/cli.ts"), "models", "--provider", provider.id, "--stale"],
+			{
+				cwd: process.cwd(),
+				env: {
+					DF_HOME: home,
+					DF_OFFLINE: "1",
+					PATH: process.env.PATH ?? "",
+					SYSTEMROOT: process.env.SYSTEMROOT ?? "C:\\Windows",
+				},
+				stdout: "pipe",
+				stderr: "pipe",
 			},
-			stdout: "pipe",
-			stderr: "pipe",
-		});
+		);
 		const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited]);
 		expect(exitCode).toBe(0);
 		expect(stdout).toContain(`${provider.id}	missing-model	missing from live list`);

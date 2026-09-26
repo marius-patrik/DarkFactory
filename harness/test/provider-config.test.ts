@@ -28,7 +28,6 @@ function openAICompatible(id = "fixture-cloud"): ProviderConfig {
 	};
 }
 
-
 // A missing or renamed provider is a broken fixture, not an empty config. Throwing keeps it loud;
 // a non-null assertion after optional chaining is a lint error and, worse, defers the failure to
 // the first property access.

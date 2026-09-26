@@ -11,6 +11,7 @@
   "scripts": {
     "test": "bun run --cwd harness test",
     "typecheck": "bun run --cwd harness typecheck",
+    "lint": "biome lint .",
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
     "format:check": "biome format ."
