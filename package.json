@@ -14,5 +14,10 @@
     "check": "bun run --cwd harness check",
     "docs": "bun scripts/build-docs.ts",
     "format:check": "biome ci ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.2"
   }
 }

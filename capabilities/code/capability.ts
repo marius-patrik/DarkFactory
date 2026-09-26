@@ -24,11 +24,11 @@ function nodeTypecheck(pkg: CapabilityPackageContext): string | undefined {
 }
 
 function nodeLint(pkg: CapabilityPackageContext): string | undefined {
-	return nodeRun(pkg, "lint") ?? "biome lint --config-path=../harness/biome.json .";
+	return nodeRun(pkg, "lint") ?? "biome lint .";
 }
 
 function nodeFormatCheck(pkg: CapabilityPackageContext): string | undefined {
-	return nodeRun(pkg, "format:check") ?? "biome ci --config-path=../harness/biome.json .";
+	return nodeRun(pkg, "format:check") ?? "biome ci .";
 }
 
 function nodeSetup(pkg: CapabilityPackageContext): string | undefined {
