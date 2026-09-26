@@ -10,10 +10,8 @@ Nástroje založené na velkých jazykových modelech prošly rychlým vývojem:
 
 Aby mohl agent samostatně pracovat na projektu, nestačí pouhé generování odpovědí. Potřebuje kontext z repozitáře, přístup k prostředí, nástroje pro spouštění příkazů, uchování stavu mezi jednotlivými kroky a vymezený bod, v němž člověk rozhodne o přijetí výsledku @anthropic-harness-design @anthropic-managed-agents.
 
-#box[
-  #set par(justify: true)
-  #strong[Poznámka k terminologii.] Anglické #strong[agentic] nemá v češtině ustálený překlad; pro potřeby této práce je mu přiřazeno tvořené přídavné jméno #strong[agentické]. Rozdíl mezi dvěma výrazy, které se v běžném užívání zaměňují, je přitom zásadní. #strong[Agentní] označuje vlastnost agenta, tedy toho, kdo jedná; #strong[agentický] označuje vlastnost systému, tedy toho, kdo je *schopen* jednat. Jazykový základ tomu odpovídá: anglické #strong[agentic] je odvozeno od podstatného jména #strong[agent] příponou #strong[-ic] a znamená mající schopnost, prostředky nebo pravomoc jednat, nikoli samo jednajícího @mw-agentic. V této práci je proto #strong[agentické] užíváno výhradně v druhém smyslu: agentické inženýrství není stavbou agentů, ale návrhem systémů, které se takovým chováním vyznačují.
-]
+Význam klíčových pojmů, které se v českém prostředí neustálily, je zvlášť
+sezbrán v @terminologie.
 
 
 #heading(level: 2)[Cíl, výzkumná otázka a vymezení] <intro-goal>
@@ -24,5 +22,5 @@ Z toho vychází výzkumná otázka, na kterou práce odpovídá: #emph[je prakt
 
 Praktická část popisuje DarkFactory, jednoduchou produkční pipeline pro AI-asistovaný softwarový vývoj. GitHub je v ní vývojovým prostředím, GitHub Actions zajišťuje běhy, Docker kontejner odděluje prostředí, Github Issues slouží jako plánovací/stavový systém a pythonovský řadič ve spolupráci s produkčními harnessy (#strong[`claude`], #strong[`agy`], #strong[`codex`], #strong[`opencode`]) realizuje interpretaci, plánování, implementaci, revizi a integraci změn. Jejich skutečná rozhraní uvádí @architektura.
 
-Vymezení práce je záměrné a úzké: popisuje se pouze počáteční implementace této pipeline, v níž je smyčka agenta provedena cizím nástrojem. Její rozsah odpovídá zadání a slouží jako základ, na němž navazuje navazující práce.
+Vymezení práce je záměrné a úzké: popisuje se pouze počáteční implementace této pipeline, v níž je smyčka agenta provedena cizím nástrojem. Její rozsah odpovídá zadání a slouží jako základ, na němž navazuje práce následující.
 

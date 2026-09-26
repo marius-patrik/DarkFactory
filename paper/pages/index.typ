@@ -22,6 +22,7 @@
 #set page(footer: page-footer)
 
 #include "10-intro.typ"
+#include "12-intro-terminology.typ"
 #include "20-theory.typ"
 #include "21-theory-language.typ"
 #include "22-theory-harness.typ"
