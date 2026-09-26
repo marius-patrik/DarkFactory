@@ -2541,26 +2541,26 @@ accepted ADR metadata; edit canonical rules/ADRs rather than this projection.
 
 | ID | Rule | Related notes | Canonical file |
 |---|---|---|---|
-| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | §34.001 |
-| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` | §34.002 |
-| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022`, `ADR-0023` | §34.003 |
-| `DF-RULE-004` | English language consistency | `ADR-0027` | §34.004 |
-| `DF-RULE-005` | Commit granularity | `ADR-0025` | §34.005 |
-| `DF-RULE-006` | CI readiness and verification | `ADR-0021`, `ADR-0026` | §34.006 |
-| `DF-RULE-007` | Branch and pull request workflow | `ADR-0015`, `ADR-0025` | §34.007 |
-| `DF-RULE-008` | Automated formatting and linting | `ADR-0026` | §34.008 |
-| `DF-RULE-009` | Request binding, branch cleanup and board status | `ADR-0019` | §34.009 |
-| `DF-RULE-010` | Reviewed Planning and implementation alignment | `ADR-0013` | §34.010 |
-| `DF-RULE-011` | Pull request review approval and governed merge | `ADR-0013`, `ADR-0019` | §34.011 |
-| `DF-RULE-012` | Verbatim Request capture and Planning gate | `ADR-0013` | §34.012 |
-| `DF-RULE-013` | Specification sequence and work tracking | `ADR-0013`, `ADR-0022` | §34.013 |
-| `DF-RULE-014` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | §34.014 |
-| `DF-RULE-015` | Commits, repository taxonomy and domains | `ADR-0021` | §34.015 |
-| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | §34.016 |
-| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | §34.017 |
-| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | §34.018 |
-| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | §34.019 |
-| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | §34.020 |
+| `DF-RULE-001` | Tests prove invariants | `ADR-0026` | §34.1 |
+| `DF-RULE-002` | Inline documentation and generated documentation | `ADR-0023` | §34.2 |
+| `DF-RULE-003` | Product requirements and ADRs | `ADR-0021`, `ADR-0022`, `ADR-0023` | §34.3 |
+| `DF-RULE-004` | English language consistency | `ADR-0027` | §34.4 |
+| `DF-RULE-005` | Commit granularity | `ADR-0025` | §34.5 |
+| `DF-RULE-006` | CI readiness and verification | `ADR-0021`, `ADR-0026` | §34.6 |
+| `DF-RULE-007` | Branch and pull request workflow | `ADR-0015`, `ADR-0025` | §34.7 |
+| `DF-RULE-008` | Automated formatting and linting | `ADR-0026` | §34.8 |
+| `DF-RULE-009` | Request binding, branch cleanup and board status | `ADR-0019` | §34.9 |
+| `DF-RULE-010` | Reviewed Planning and implementation alignment | `ADR-0013` | §34.10 |
+| `DF-RULE-011` | Pull request review approval and governed merge | `ADR-0013`, `ADR-0019` | §34.11 |
+| `DF-RULE-012` | Verbatim Request capture and Planning gate | `ADR-0013` | §34.12 |
+| `DF-RULE-013` | Specification sequence and work tracking | `ADR-0013`, `ADR-0022` | §34.13 |
+| `DF-RULE-014` | Capability-driven agent runtime and resilience | `ADR-0006`, `ADR-0008`, `ADR-0009`, `ADR-0011`, `ADR-0012`, `ADR-0013`, `ADR-0016`, `ADR-0017` | §34.14 |
+| `DF-RULE-015` | Commits, repository taxonomy and domains | `ADR-0021` | §34.15 |
+| `DF-RULE-016` | Security and secrets | `ADR-0009`, `ADR-0019`, `ADR-0020` | §34.16 |
+| `DF-RULE-017` | Final architecture, DRY, and deletion | `ADR-0006`, `ADR-0008`, `ADR-0017`, `ADR-0022` | §34.17 |
+| `DF-RULE-018` | Concurrency, atomicity, and idempotency | `ADR-0011`, `ADR-0013`, `ADR-0015`, `ADR-0019`, `ADR-0020`, `ADR-0024` | §34.18 |
+| `DF-RULE-019` | Orchestrated integration and worker isolation | `ADR-0022`, `ADR-0025` | §34.19 |
+| `DF-RULE-020` | Paper authorship and publication | `ADR-0028` | §34.20 |
 
 
 ---
