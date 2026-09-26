@@ -10,16 +10,21 @@ Stav zkontrolován po commitu `2422e0e7`.
 
 ## A. Školní pravidla — vyřešeno
 
-Kontrola proti `rules.md` proběhla a všechny čtyři nedostatky jsou opravené,
+Kontrola proti `rules.md` proběhla dvakrát: poprvé na sazbu a součásti textu,
+podruhé na strukturu podle kapitoly 2 a 7. Všechny nedostatky jsou opravené,
 každý vlastním commitem.
 
 | # | Co | Stav |
 | :-- | :--- | :--- |
-| A1 | Odkazy v textě u `fig-gradually-usage`, `fig-react-loop` a obou diagramů | ✅ `1051e437` |
-| A2 | `Výpis 1` chyběl v seznamu součástí textu | ✅ `487e0b06` |
-| A3 | Anotace 128 slov | ✅ `89109fc7` — nyní 161 |
-| A4 | Šest klíčových slov | ✅ `1d0d4fe9` — nyní pět |
-| A5 | Metodika jako 3.1 místo samostatné kapitoly podle kap. 2.4 průvodce | ⏳ **čeká na vedoucího** — přesun je mechanický, `pages/31-practical-method.typ` je už oddělený |
+| A1 | Odkazy v textě u čtyř součástí | ✅ `1051e437` |
+| A2 | `Výpis 1` chyběl v seznamu součástí | ✅ `487e0b06` |
+| A3 | Anotace 128 slov | ✅ `89109fc7` |
+| A4 | Šest klíčových slov | ✅ `1d0d4fe9` |
+| A5 | Metodika jako 3.1 místo samostatné kapitoly (kap. 2.4) | ⏳ **čeká na vedoucího** — přesun je mechanický |
+| A6 | Chyběla výzkumná otázka a hypotéza (kap. 2.3) | ✅ `34ad2ca1` |
+| A7 | Závěr nehodnotil naplnění cíle a neměl doporučení (kap. 2.6) | ✅ `4b53cb88` |
+| A8 | Omezení výzkumu v Diskusi (kap. 2.5) | ✅ `fbbfb7b6` |
+| A9 | Anotace a abstrakt neodpovídaly rozsahu | ✅ `0147a69b` |
 
 ## B. Jazyková a stylistická korektura — neprovedeno
 
