@@ -101,7 +101,7 @@ describe("repository evidence and capability actions", () => {
 		const root = await fixture();
 		const evidence = await detectRepositoryEvidence(root);
 		const resolution = resolveRepositoryActions(evidence, []);
-		const action = resolution.packages.find((entry) => entry.package.id === "node:.")!.actions.test;
+		const action = resolution.packages.find((entry) => entry.package.id === "node:.")?.actions.test;
 		expect(action.supported).toBe(false);
 		expect(action.source).toBe("unsupported");
 		expect(action.command).toBeUndefined();

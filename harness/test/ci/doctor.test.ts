@@ -47,7 +47,7 @@ describe("df ci doctor", () => {
 			await installWorkflows(temp);
 			const ciPath = join(temp, ".github", "workflows", "ci.yml");
 			const content = await Bun.file(ciPath).text();
-			await writeFile(ciPath, content + "\n# drift\n");
+			await writeFile(ciPath, `${content}\n# drift\n`);
 			const result = await runCiDoctor(temp);
 			expect(result.ok).toBe(false);
 			expect(result.checks.workflows.status).toBe("fail");

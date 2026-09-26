@@ -1,4 +1,5 @@
 import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
+import { readFileSync, existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { hostname } from "node:os";
 import { dirname, join } from "node:path";
@@ -176,10 +177,10 @@ export function mergeVaults(local: Vault, remote: Vault): { merged: Vault; confl
 }
 
 /** Resolve the data repo path from the combined configuration's providers block. */
-export async function resolveDataRepoPath(dfHome: string, repositoryRoot = process.cwd()): Promise<string> {
+export function resolveDataRepoPath(dfHome: string, repositoryRoot = process.cwd()): Promise<string> {
 	const path = resolveConfigDocumentPath(repositoryRoot);
-	if (!path) return join(dfHome, "data-df");
-	const document = parseConfigDocument(await readFile(path, "utf8"), path);
+	if (!path || !existsSync(path)) return join(dfHome, "data-df");
+	const document = parseConfigDocument(readFileSync(path, "utf8"), path);
 	const providers = configBlock(document, "providers", path);
 	if (typeof providers?.dataRepo === "string" && providers.dataRepo) return providers.dataRepo;
 	return join(dfHome, "data-df");

@@ -19,8 +19,16 @@ function nodeTest(pkg: CapabilityPackageContext): string | undefined {
 	return nodeRun(pkg, "test");
 }
 
+function nodeTypecheck(pkg: CapabilityPackageContext): string | undefined {
+	return nodeRun(pkg, "typecheck") ?? "tsc --noEmit";
+}
+
+function nodeLint(pkg: CapabilityPackageContext): string | undefined {
+	return nodeRun(pkg, "lint") ?? "biome lint --config-path=../harness/biome.json .";
+}
+
 function nodeFormatCheck(pkg: CapabilityPackageContext): string | undefined {
-	return nodeRun(pkg, "format:check");
+	return nodeRun(pkg, "format:check") ?? "biome ci --config-path=../harness/biome.json .";
 }
 
 function nodeSetup(pkg: CapabilityPackageContext): string | undefined {
@@ -80,10 +88,16 @@ export const capability = defineCapability({
 			command: nodeTest,
 		},
 		{
+			kind: "typecheck",
+			description: "Run TypeScript type checking.",
+			ecosystems: ["node"],
+			command: nodeTypecheck,
+		},
+		{
 			kind: "lint",
 			description: "Run the package lint script with the detected Node package manager.",
 			ecosystems: ["node"],
-			command: (pkg) => nodeRun(pkg, "lint"),
+			command: nodeLint,
 		},
 		{
 			kind: "format_check",

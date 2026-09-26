@@ -145,6 +145,7 @@ export interface CapabilityPackageContext {
 export type CapabilityActionKind =
 	| "test"
 	| "lint"
+	| "typecheck"
 	| "format_check"
 	| "docs_check"
 	| "docs_extract"

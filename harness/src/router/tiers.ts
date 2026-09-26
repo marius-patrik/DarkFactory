@@ -21,7 +21,7 @@ export function nextCapabilityTier(
 
 function globMatch(pattern: string, value: string): boolean {
 	const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-	return new RegExp("^" + escaped.replace(/\*/g, ".*") + "$", "iu").test(value);
+	return new RegExp(`^${escaped.replace(/\*/g, ".*")}$`, "iu").test(value);
 }
 
 export function capabilityTierFor(

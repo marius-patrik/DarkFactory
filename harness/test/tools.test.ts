@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ToolPolicy } from "../src/harness/tools.ts";
 
@@ -24,7 +24,10 @@ describe("ToolPolicy regression triplet", () => {
 
 	test("denied-failure: explicit command deny wins", () => {
 		const cwd = resolve("workspace");
-		const decision = new ToolPolicy({ cwd, deny: ["command:echo forbidden"] }).evaluate({ toolName: "bash", input: { command: "echo forbidden" } });
+		const decision = new ToolPolicy({ cwd, deny: ["command:echo forbidden"] }).evaluate({
+			toolName: "bash",
+			input: { command: "echo forbidden" },
+		});
 		expect(decision.allowed).toBe(false);
 		expect(decision.reason).toContain("denied by policy");
 	});

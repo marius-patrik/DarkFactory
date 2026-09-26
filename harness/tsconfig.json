@@ -11,5 +11,10 @@
     "types": ["bun"],
     "jsx": "react-jsx"
   },
-  "include": ["src", "test", "../packages/*/src", "../capabilities/*/*.ts"]
+  "include": [
+    "src",
+    "test",
+    "../packages/*",
+    "../capabilities/*"
+  ]
 }
