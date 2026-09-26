@@ -3,15 +3,11 @@
   "version": 1,
   "checks": [
     {
-      "name": "pipeline",
-      "required": true
-    },
-    {
-      "name": "harness",
-      "required": true
-    },
-    {
       "name": "verify-bound-issue",
+      "required": true
+    },
+    {
+      "name": "quality",
       "required": true
     }
   ],
@@ -244,6 +240,12 @@
       }
     },
     {
+      "id": "quality",
+      "kind": "check-reference",
+      "check": "quality",
+      "required": true
+    },
+    {
       "id": "resume-sweep",
       "kind": "automation",
       "script": "quota-resume",
@@ -262,18 +264,6 @@
       "filter": {
         "ignore_bots": true
       }
-    },
-    {
-      "id": "pipeline",
-      "kind": "check-reference",
-      "check": "pipeline",
-      "required": true
-    },
-    {
-      "id": "harness",
-      "kind": "check-reference",
-      "check": "harness",
-      "required": true
     },
     {
       "id": "verify-bound-issue",
