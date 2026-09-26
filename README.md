@@ -127,9 +127,9 @@
 ## Abstract
 
 DarkFactory is a semantic layer over systems that already exist. An author describes what a system
-*means* — its capabilities, its bindings, its identity, its shape — in ordinary TypeScript and in
-declarations the interpreter reads, and the system derives every interface from that description
-and acts on it. No second description of the system exists anywhere: not a manifest, not a build
+*means* — its capabilities, its bindings, its identity, its shape — in `.df` implementations and in
+the `.dfconfig` blocks that declare it, and the system derives every interface from that
+description and acts on it. No second description of the system exists anywhere: not a manifest, not a build
 file, not a schema, not an adapter per surface, not a hand-written set of instructions for how to
 assemble and publish it. Interfaces are read from the code that implements them, including its
 names, signatures, structure and documentation, and every user-facing surface is a projection of
@@ -410,7 +410,7 @@ Consequently:
 - Folders are named for concerns. `utils`, `helpers`, `common`, `shared`, `manager`, `core`
   and `lib` are forbidden at any depth, because a name that means "the rest" cannot be
   resolved to anything.
-- No `index.ts` or equivalent barrel exports. Re-exporting reintroduces a place where the set
+- No barrel exports of any kind, under any filename. Re-exporting reintroduces a place where the set
   of things is written down separately from the things.
 - No registry, manifest, catalogue or index enumerates features. Discovery is structural: a
   folder is discovered by existing.
@@ -423,17 +423,30 @@ A binding is a declaration beside its implementation. The declaration states wha
 bound to; the implementation carries the code. Both are read by the same interpreter, and a
 binding with no implementation in the current backend is an error rather than a silent absence.
 
-- `*.dfconfig` — a configuration document: named blocks of data, resolved per scope. The filename
-  is not part of its meaning; any stem is accepted and none is canonical.
-- `.df` — a declaration that participates in composition: code that names a backend, or otherwise
-  carries meaning the interpreter must read rather than fetch.
-- `.ts` — an implementation, written in TypeScript with the declaration's meaning carried
-  through `import ... with { type: "df" }`.
+There are exactly two kinds of file in the system, and they are two kinds of *thing*:
 
-The three are distinguished by what the interpreter does with them, not by how much they say.
-A `.dfconfig` block is read. A `.df` is interpreted. A `.ts` is run. Data that belongs to no
-system — fixtures, lockfiles, third-party manifests — stays `.json`, and a `.dfconfig` block is
-promoted to a `.df` only once something must *interpret* it rather than read it.
+- **`*.dfconfig` — declaration.** A document of named blocks that says what the system *is*: its
+  identity, its pipeline, its providers, its models, and which backend each seam is bound to. It is
+  read. The filename is not part of its meaning — any stem is accepted and none is canonical.
+- **`.df` — implementation.** Every mechanism and every feature the system has. It is interpreted
+  and then run. There is no other extension, and no file in the system is called anything else.
+
+**Declaration and implementation are separated by kind rather than by adjacency.** A seam's
+binding — that `Change` is bound to git — is a fact about the system and belongs in a `.dfconfig`
+block. The organ that implements it is a `.df` file. These are not two spellings of the same thing
+in neighbouring files; they are data and code, and the separation survives a backend being replaced
+because nothing in the `.df` knows which seam it serves.
+
+**There is no `.ts`.** The repository contains no file under that extension, and the absence is
+the point: a third kind would reintroduce exactly the ambiguity this design removes, because
+"is this declaration or implementation?" would become a question about a filename rather than
+something the reader can see. `.df` is TypeScript, so `tsc`, every editor and every language server
+works on the whole system once `tsc` is told what `.df` is — one configuration, and then no
+per-file ceremony for the rest of the repository's life.
+
+Data that belongs to no system — fixtures, lockfiles, third-party manifests — stays `.json`, and a
+block is promoted from a `.dfconfig` to code only once something must *interpret* it rather than
+read it.
 
 **Configuration is one convention, not four.** An earlier shape of this document gave the root
 a `*.dfconfig`, a graph file, and two `.json` files, which is three places to name a thing and
@@ -445,8 +458,9 @@ is block *content*.
 
 ```
 /                                       any repository that adopts DarkFactory
-├── *.dfconfig                           one per scope, any filename; resolves config blocks
-│                                         blocks: repo · graph · providers · models · docs · …
+├── *.dfconfig                           one per scope, any filename; all declaration
+│                                         blocks: repo · graph · providers · models · docs ·
+│                                         bindings: which backend each seam is bound to
 │
 └── darkfactory/
     │
@@ -461,8 +475,8 @@ is block *content*.
     │
     ├── Change/                         the only way the world is read or altered
     │   ├── ReadState.df  Snapshot.df  Stage.df  Publish.df  OpenChange.df  Identify.df
-    │   ├── git/        git.df · git.ts
-    │   ├── github/     github.df · github.ts
+    │   ├── git/        git.df                        the organ
+    │   ├── github/     github.df                     the organ
     │   └── local/      local.df · (emitted by Compiler.df)
     │
     ├── Execution/                      running, gating, and healing
@@ -485,25 +499,25 @@ is block *content*.
     │
     ├── Browse/                         the seam both the human and the agent navigate
     │   ├── Browse.df                  the interface
-    │   ├── tauri/      tauri.df · tauri.ts      one process, N presenters, one session
-    │   └── headless/   headless.df · headless.ts   for an agent that only needs to act
+    │   ├── tauri/      tauri.df                 one process, N presenters, one session
+    │   └── headless/   headless.df               for an agent that only needs to act
     │
     ├── Capabilities/                   content
-    │   ├── code/       GenerateDocs.ts  ExplainCode.ts  ReviewDiff.ts …
-    │   ├── planning/   PlanWork.ts  ScopeWork.ts …
-    │   ├── review/     ReviewChange.ts  ProposeChange.ts …
+    │   ├── code/       GenerateDocs.df  ExplainCode.df  ReviewDiff.df …
+    │   ├── planning/   PlanWork.df  ScopeWork.df …
+    │   ├── review/     ReviewChange.df  ProposeChange.df …
     │   ├── docs/  hooks/  math/  paper/  release/
-    │   ├── resolve/    resolve.df · ResolveCapability.ts  BindCapability.ts  RankCapabilities.ts
-    │   └── github/     OpenIssue.ts  CommentOnIssue.ts  ReconcileState.ts …
+    │   ├── resolve/    ResolveCapability.df  BindCapability.df  RankCapabilities.df
+    │   └── github/     OpenIssue.df  CommentOnIssue.df  ReconcileState.df …
     │
     └── Surfaces/                       projections; no behaviour of their own
-        ├── Terminal/   terminal.df · terminal.ts     CLI and TUI
-        ├── Renderer/   renderer.df · renderer.ts     the human's window
-        ├── Docs/       docs.df · docs.ts
-        ├── MCP/        mcp.df · mcp.ts               an agent's presenter, no window
-        ├── Claude/     claude.df · claude.ts         plugin and skill forms
-        ├── Codex/      codex.df · codex.ts
-        └── GitHub/     github.df · github.ts
+        ├── Terminal/   terminal.df                 CLI and TUI
+        ├── Renderer/   renderer.df                 the human's window
+        ├── Docs/       docs.df
+        ├── MCP/        mcp.df                      an agent's presenter, no window
+        ├── Claude/     claude.df                    plugin and skill forms
+        ├── Codex/      codex.df
+        └── GitHub/     github.df
 ```
 
 Every surface is a projection of one derived resolution and contains no per-feature
@@ -820,15 +834,24 @@ nicety; it is the mechanism.
 
 ## 15 The systems layer: `.df`
 
-`.df` is TypeScript with a framework-provided standard library, and it means exactly one thing:
-*this file participates in system composition*.
+`.df` is TypeScript with a framework-provided standard library, and it is the only extension the
+system's own code carries. There is no `.ts` anywhere in the tree, so the whole of DarkFactory is
+one language under one name, and `tsc` is configured once to treat `.df` as what it is.
 
 **We invent no syntax.** If a construct cannot be expressed in TypeScript it does not go in
-`.df`; the only additions are the extension and the loader, and `tsc` remains the type system, so
-every editor, language server and published library works unchanged. The property this buys is
-the migration story: **a feature starts life as ordinary TypeScript and joins the system by being
-renamed, not rewritten.** An experiment that does not work is a deleted file rather than a
-reverted design, and nothing joins until it has survived being ordinary code.
+`.df`; the additions are the extension and the loader, and `tsc` remains the type system, so every
+editor, language server and published library works on the entire system unchanged.
+
+**The rename happens once, at the boundary, and only inward.** A prototype is written as ordinary
+TypeScript wherever is convenient — a scratch file, a REPL, another repository — and joins the
+system by becoming a `.df` file, and after that its extension never changes again. Nothing has to
+be rewritten to join, and an experiment that does not work is a deleted file rather than a
+reverted design. What the single extension buys is that there is exactly one place a reader looks
+to learn what a file is, and exactly one convention to teach.
+
+The import attribute the design once required — `with { type: "df" }` — is gone with it. It
+existed to mark a file as participating in composition, and the extension already says so; a marker
+repeated in two places is the thing §3.2 forbids.
 
 The objection is well-founded and a mature system with an existing language is right to keep it:
 owning a language means owning a parser, a type system, an error story and a compiler "to arrive
@@ -929,7 +952,8 @@ A capability may contribute:
 
 Capabilities do not own raw credential storage.
 
-One canonical TypeScript capability definition is the implementation source, and every surface a capability is reachable through is derived from it rather than written against it. Supported integration forms, including:
+One canonical `.df` capability definition is the implementation source, and every surface a
+capability is reachable through is derived from it rather than written against it. Supported integration forms, including:
 
 - native integration;
 - `Surfaces/MCP/` server form;
@@ -3060,11 +3084,12 @@ every adjacent problem would be larger, worse, and would have reimplemented orga
 to avoid.
 
 **Not a new language.** The systems layer is TypeScript with a framework-provided standard library.
-No parser, no type system, no error-reporting story, no compiler. A capability starts life as
-ordinary TypeScript and joins the system by being renamed, and an experiment that does not work is
-a deleted file rather than a reverted design. Inventing a language would mean owning a toolchain to
-describe a system that already has a perfectly good one, and it would put a syntax between an
-author and the system — which is a small version of the problem this design exists to remove.
+No parser, no type system, no error-reporting story, no compiler, and no second extension. A
+prototype is ordinary TypeScript and joins by becoming a `.df` file, once, at the boundary.
+Inventing a language would mean owning a toolchain to describe a system that already has a
+perfectly good one, and it would put a syntax between an author and the system — which is a small
+version of the problem this design exists to remove. Two extensions for one language would do the
+same thing more quietly, and that is why there is only one.
 
 **Not a permission model.** Identity is about *proving who you are* and is deliberately general;
 who is *allowed* to do what is a different concern with a different owner, and conflating them
