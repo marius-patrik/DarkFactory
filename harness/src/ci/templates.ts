@@ -113,10 +113,14 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 	}
 
 	const body = firstNewline === -1 ? "" : normalized.slice(firstNewline + 1);
+	// The pattern requires all three groups, so a partial match is a malformed header rather than
+	// one to assert through. Validating once removes three non-null assertions.
+	const [, template, version, hash] = match;
+	if (!template || !version || !hash) return null;
 	return {
-		template: match[1]!,
-		version: match[2]!,
-		hash: match[3]?.toLowerCase(),
+		template,
+		version,
+		hash: hash.toLowerCase(),
 		headerLine: firstLine,
 		body,
 	};

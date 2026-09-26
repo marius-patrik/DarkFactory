@@ -355,8 +355,12 @@ export function isExhaustedQuota(detail: string | undefined): boolean {
 export function proseResetAt(message: string, now: number): number | undefined {
 	const match = /try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|d|h|m|s)\b\s*)+)/i.exec(message);
 	if (!match) return undefined;
+	// The capture group is guaranteed by the pattern, but `noUncheckedIndexedAccess` types it as
+	// optional and `for…of` rejects a possibly-undefined iterable.
+	const durations = match[1];
+	if (!durations) return undefined;
 	let total = 0;
-	for (const part of match[1]?.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
+	for (const part of durations.matchAll(/(\d+(?:\.\d+)?)\s*(ms|d|h|m|s)\b/gi)) {
 		const unit = part[2]?.toLowerCase();
 		total +=
 			Number(part[1]) *

@@ -3,6 +3,14 @@ import { createBrokerSession, MemoryAuthTokenStore, refreshBrokerSession, revoke
 
 const originalFetch = globalThis.fetch;
 
+// `typeof fetch` in this environment carries a `preconnect` member alongside the call signature, so a
+// bare async arrow is not assignable. One helper, one cast, instead of a cast per stub.
+function stubFetch(status: number): typeof fetch {
+	const handler = async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+		new Response(null, { status });
+	return Object.assign(handler, { preconnect: () => {} }) as typeof fetch;
+}
+
 afterEach(() => {
 	globalThis.fetch = originalFetch;
 });
@@ -69,7 +77,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 204 })) as typeof fetch;
+		globalThis.fetch = stubFetch(204);
 		await revokeBrokerSession(config, "session", store);
 		expect(await store.get("session")).toBeUndefined();
 	});
@@ -78,7 +86,7 @@ describe("@darkfactory/auth confidential broker", () => {
 		const store = new MemoryAuthTokenStore();
 		await store.set("session", { token: { access_token: "access", token_type: "bearer" } });
 		const config = { clientId: "client", clientSecret: "secret" };
-		globalThis.fetch = (async () => new Response(null, { status: 500 })) as typeof fetch;
+		globalThis.fetch = stubFetch(500);
 		await expect(revokeBrokerSession(config, "session", store)).rejects.toThrow("revocation failed");
 		expect(await store.get("session")).toBeDefined();
 	});
