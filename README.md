@@ -51,7 +51,7 @@
 - [19 Capability architecture](#19-capability-architecture)
 - [20 Domains, ecosystems and project detection](#20-domains-ecosystems-and-project-detection)
 - [21 Configuration and persisted state](#21-configuration-and-persisted-state)
-  - [21.1 Combined repository/runtime configuration](#211-combined-repositoryruntime-configuration)
+  - [21.1 Configuration](#211-configuration)
   - [21.2 Documentation configuration and output](#212-documentation-configuration-and-output)
   - [21.3 State](#213-state)
 - [22 Governed Request lifecycle](#22-governed-request-lifecycle)
@@ -423,22 +423,30 @@ A binding is a declaration beside its implementation. The declaration states wha
 bound to; the implementation carries the code. Both are read by the same interpreter, and a
 binding with no implementation in the current backend is an error rather than a silent absence.
 
-- `.df` — a declaration: a binding, a scope configuration, a pipeline graph, or a
-  configuration that performs no behaviour of its own.
+- `*.dfconfig` — a configuration document: named blocks of data, resolved per scope. The filename
+  is not part of its meaning; any stem is accepted and none is canonical.
+- `.df` — a declaration that participates in composition: code that names a backend, or otherwise
+  carries meaning the interpreter must read rather than fetch.
 - `.ts` — an implementation, written in TypeScript with the declaration's meaning carried
   through `import ... with { type: "df" }`.
 
-Data that is merely data stays `.json`. A file is promoted to `.df` only once compilation must
-*interpret* it rather than read it.
+The three are distinguished by what the interpreter does with them, not by how much they say.
+A `.dfconfig` block is read. A `.df` is interpreted. A `.ts` is run. Data that belongs to no
+system — fixtures, lockfiles, third-party manifests — stays `.json`, and a `.dfconfig` block is
+promoted to a `.df` only once something must *interpret* it rather than read it.
+
+**Configuration is one convention, not four.** An earlier shape of this document gave the root
+a `*.dfconfig`, a graph file, and two `.json` files, which is three places to name a thing and
+three ways for a repository to spell a convention it inherited rather than chose. Everything a
+scope declares is now a block in one document, so the only thing that varies between repositories
+is block *content*.
 
 ### 6.3 The tree
 
 ```
 /                                       any repository that adopts DarkFactory
-├── repo.dfconfig                       this scope's configuration; any *.dfconfig, one per scope
-├── graph.df                            the pipeline: nodes, edges, convergence
-├── providers.json                      provider configuration — data
-├── models.json                         model catalog and preference order — data
+├── *.dfconfig                           one per scope, any filename; resolves config blocks
+│                                         blocks: repo · graph · providers · models · docs · …
 │
 └── darkfactory/
     │
@@ -836,7 +844,7 @@ are not replacing a mature system's language, we are making it reachable.
 1. this document defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
 3. Accepted ADRs in §35 record durable decisions and rationale.
-4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
+4. The scope's `*.dfconfig` document and the blocks it declares are executable declarations. No filename is canonical; see §21.1.
 5. §34 defines mandatory contribution/governance behavior.
 6. Generated docs/web views and §36 are projections, not independent sources of truth.
 
@@ -957,18 +965,36 @@ The final system must not rely on one ever-growing repository-specific language/
 
 
 
-### 21.1 Combined repository/runtime configuration
+### 21.1 Configuration
 
-The combined configuration rules are:
+Configuration is one convention. A scope resolves exactly one `*.dfconfig` document, the document
+owns named blocks, and a consumer selects a block rather than a file.
 
-- root `repo.dfconfig` is canonical, with root `config.dfconfig` and root `.dfconfig` accepted as aliases for the same logical document;
-- the JSON document owns `repo`, `docs`, and `providers` blocks, and every consumer selects its declared block;
-- `repo` owns repository identity and policy, `providers` owns runtime/provider settings, and `docs` owns documentation settings;
-- when root candidates exist they are selected, otherwise candidates under `DF_CONFIG_DIR` (default `.darkfactory`) are selected;
-- two aliases in the selected scope, or candidates in both root and the configured folder, fail closed as ambiguous;
-- separate candidate files are never silently merged;
-- `.darkfactory` is a discovery fallback and is not a committed source in this repository;
-- `.df` is a filename extension, never a directory.
+The rules are:
+
+- **No filename is canonical.** Any stem is accepted. `repo.dfconfig` is a convention this repository
+  happens to follow, not a requirement, and a repository that names its configuration
+  `system.dfconfig` or `config.dfconfig` is not making a mistake.
+- The document owns named blocks — `repo`, `graph`, `providers`, `models`, `docs`, and whatever else
+  a declaration defines — and every consumer selects the block it needs. `repo` owns repository
+  identity and policy, `providers` owns runtime and provider settings, `models` owns the catalog and
+  preference order, `graph` owns the pipeline, and `docs` owns documentation configuration and output.
+- **The pipeline is the `graph` block, not a separate graph file.** Topology, nodes, edges and
+  convergence are configuration like anything else, and giving them their own format would be a
+  second convention for a repository to inherit rather than choose.
+- **An unknown block is an error, not a no-op.** A misspelled block must fail loudly rather than
+  silently disable a setting, because a block that does nothing and a block that is absent are
+  indistinguishable at runtime and only one of them is what the author meant.
+- When root candidates exist they are selected; otherwise candidates under `DF_CONFIG_DIR` (default
+  `.darkfactory`) are accepted for supported discovery. `.darkfactory` is a fallback and is not a
+  committed source in this repository.
+- **Two `*.dfconfig` in the selected scope, or candidates in both root and the configured folder,
+  fail closed as ambiguous.** A repository with two configuration documents is not a repository with
+  a rich configuration; it is a repository that has not decided. This is I1 applied to configuration.
+- Blocks are never merged across documents, for the reason §3.2 gives: merging two declarations is
+  how a second source of meaning appears.
+- `.df` and `.dfconfig` are filename extensions, never directories.
+
 
 ### 21.2 Documentation configuration and output
 
@@ -1416,7 +1442,7 @@ this document is the single normative product requirements document. Current act
 
 Executable declarations use the final DarkFactory contracts:
 
-- canonical root `repo.dfconfig` for the combined configuration, with root `config.dfconfig` and root `.dfconfig` accepted as the same logical document;
+- one root `*.dfconfig` per scope for the combined configuration, with any filename stem accepted and none canonical;
 - the `repo` block for repository/product declaration;
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
@@ -1904,7 +1930,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by `repo.dfconfig`.
+Repository area labels/scopes are declared by the `repo` block.
 
 Project classification separates:
 
@@ -1923,7 +1949,7 @@ Separating domain from capability preserves multi-domain repositories while keep
 
 #### Enforcement
 
-The repo.dfconfig resolver, canonical detection/capability resolution and hooks validate the taxonomy.
+The configuration resolver, canonical detection/capability resolution and hooks validate the taxonomy.
 
 #### Exceptions
 
@@ -1931,7 +1957,7 @@ Consumers define their own repository areas and installed/applicable capabilitie
 
 #### Change control
 
-Taxonomy changes occur through repo.dfconfig/capability declarations; rule prose does not become a second list of consumer-specific areas.
+Taxonomy changes occur through configuration and capability declarations; rule prose does not become a second list of consumer-specific areas.
 
 ### 34.16 DF-RULE-016 — Security and secrets
 
@@ -2349,7 +2375,7 @@ Human authorization and machine automation authority remain distinct. Secret-bea
 
 #### Decision
 
-- Canonical root `repo.dfconfig` owns one combined configuration document; root `config.dfconfig` and root `.dfconfig` are accepted aliases for that same document.
+- One root `*.dfconfig` owns one combined configuration document, with any filename stem accepted and none canonical; root `config.dfconfig` and root `.dfconfig` are accepted aliases for that same document.
 - The `repo` block is the repository/product declaration, `providers` is runtime/user/provider configuration, and `docs` is documentation configuration.
 - Consumers select only their named block from the selected document.
 - `DF_CONFIG_DIR` (default `.darkfactory`) is a supported fallback discovery folder, but `.darkfactory` is not a committed source in this repository.
@@ -2602,7 +2628,7 @@ this document is the single normative product requirements document. Current act
 
 Executable declarations use the final DarkFactory contracts:
 
-- canonical root `repo.dfconfig` for the combined configuration, with root `config.dfconfig` and root `.dfconfig` accepted as the same logical document;
+- one root `*.dfconfig` per scope for the combined configuration, with any filename stem accepted and none canonical;
 - the `repo` block for repository/product declaration;
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
@@ -2834,7 +2860,7 @@ Commits use Conventional Commits: `<type>(<scope>): <description>`.
 
 Allowed base types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and `ci`.
 
-Repository area labels/scopes are declared by `repo.dfconfig`.
+Repository area labels/scopes are declared by the `repo` block.
 
 Project classification separates:
 
