@@ -29,8 +29,7 @@ function getBaseBranch() {
   let configDevBranch = null;
 
   try {
-    const __dirname = dirname(fileURLToPath(import.meta.url));
-    const configPath = join(__dirname, '..', 'repo.dfconfig');
+    const configPath = join(process.cwd(), 'repo.dfconfig');
     const config = JSON.parse(readFileSync(configPath, 'utf-8'));
     configDevBranch = config?.repo?.identity?.development_branch;
     configDefaultBranch = config?.repo?.identity?.default_branch;
@@ -70,6 +69,10 @@ function getBaseBranch() {
   }
 
   const fallback = configDefaultBranch ? `origin/${configDefaultBranch}` : (configDevBranch ? `origin/${configDevBranch}` : 'origin/main');
+  if (process.env.CI) {
+    console.error(`Error: Could not verify any base branch candidate in CI environment.`);
+    process.exit(1);
+  }
   console.error(`Warning: Could not verify any base branch candidate. Falling back to ${fallback}.`);
   return fallback;
 }
