@@ -2116,7 +2116,7 @@ exact-head evidence are invariants.
 
 `paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
 
-The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is generated from `.agents/notes/`. `PAPER.pdf` is included in the release assets.
+The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository prose; this document is. `PAPER.pdf` is included in the release assets.
 
 The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
 
@@ -2939,7 +2939,7 @@ Parallel implementation has one integration authority per delivery branch.
 
 `paper/index.typ` is the sole authored thesis manuscript. `paper/bib/`, `paper/fonts/`, and `paper/img/` contain its supporting bibliography, font, and image resources.
 
-The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository Markdown; the repository README is generated from `.agents/notes/`. `PAPER.pdf` is included in the release assets.
+The canonical publication command generates the repository-root `PAPER.pdf` artifact. The Paper does not generate or own repository prose; this document is. `PAPER.pdf` is included in the release assets.
 
 The Paper uses the shared documentation, capability, CI, and release contracts. Manuscript prose and supporting assets change only on explicit author request. The author reviews thesis changes before they are staged or delivered.
 
