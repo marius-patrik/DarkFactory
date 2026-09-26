@@ -26,7 +26,8 @@ describe("publishable workspace boundaries", () => {
 			private?: boolean;
 		};
 		expect(rootPackage.private).toBe(true);
-		expect(rootPackage.workspaces).toEqual(["packages/*", "capabilities/*", "harness"]);
+		// ADR-0028: the Paper is a first-party domain, so `paper` is part of the final set.
+		expect(rootPackage.workspaces).toEqual(["packages/*", "capabilities/*", "harness", "paper"]);
 
 		const directories = (await readdir(packageRoot, { withFileTypes: true }))
 			.filter((entry) => entry.isDirectory())

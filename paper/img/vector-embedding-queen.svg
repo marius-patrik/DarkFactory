@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <rect x="1" y="1" width="898" height="518" fill="#fff"/>
+  <g font-family="Times New Roman, Liberation Serif, serif" fill="#111" stroke="#111">
+    <line x1="165" y1="410" x2="770" y2="410" stroke-width="2.2" marker-end="url(#arrow)"/>
+    <line x1="165" y1="410" x2="165" y2="95" stroke-width="2.2" marker-end="url(#arrow)"/>
+    <text x="775" y="440" text-anchor="end" font-size="20" font-weight="700" stroke="none">Pohlaví</text>
+    <text x="125" y="110" transform="rotate(-90 125 110)" text-anchor="end" font-size="20" font-weight="700" stroke="none">Královský status</text>
+    <line x1="300" y1="365" x2="625" y2="365" stroke-width="2.4" stroke-dasharray="10 7" marker-end="url(#arrow)"/>
+    <line x1="300" y1="180" x2="625" y2="180" stroke-width="2.4" stroke-dasharray="10 7" marker-end="url(#arrow)"/>
+    <line x1="300" y1="360" x2="300" y2="195" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <line x1="625" y1="360" x2="625" y2="195" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <circle cx="300" cy="365" r="9" fill="#fff" stroke-width="3"/>
+    <circle cx="625" cy="365" r="9" fill="#111" stroke-width="2"/>
+    <circle cx="300" cy="180" r="9" fill="#fff" stroke-width="3"/>
+    <circle cx="625" cy="180" r="9" fill="#111" stroke-width="2"/>
+    <g font-size="21" font-weight="700" stroke="none">
+      <text x="279" y="395" text-anchor="end">muž</text>
+      <text x="647" y="395">žena</text>
+      <text x="279" y="165" text-anchor="end">král</text>
+      <text x="647" y="165">královna</text>
+    </g>
+    <rect x="200" y="455" width="500" height="45" rx="5" fill="#fff" stroke-width="1.3"/>
+    <text x="450" y="484" text-anchor="middle" font-size="20" font-weight="700" stroke="none">v(král) − v(muž) + v(žena) ≈ v(královna)</text>
+  </g>
+</svg>

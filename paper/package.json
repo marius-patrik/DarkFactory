@@ -1,0 +1,21 @@
+{
+  "name": "darkfactory-paper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun ../scripts/paper/watch.ts",
+    "publication": "bun ../scripts/paper/publication.ts",
+    "test": "bun run typecheck && (cd .. && bun test tests/paper)",
+    "typecheck": "bun x tsc -p tsconfig.json",
+    "lint": "biome lint ../scripts/paper ../tests/paper",
+    "format": "biome format --write ../scripts/paper ../tests/paper package.json tsconfig.json types",
+    "format:check": "biome format ../scripts/paper ../tests/paper package.json tsconfig.json types",
+    "check": "bun run test && bun run lint && bun run format:check && bun run publication -- --check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.2"
+  }
+}

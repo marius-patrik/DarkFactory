@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-labelledby="title desc">
+  <title id="title">Jednoduchá architektura DarkFactory</title>
+  <desc id="desc">GitHub poskytuje vývojové prostředí a události, GitHub Actions spouští workflow, Docker izoluje běh pythonovského runneru a harness df poskytuje modelu nástroje a pozorování.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L10 5L0 9Z" fill="#475569"/></marker>
+    <style>
+      .title{font:700 17px Caladea,serif;fill:#0f172a}.rev{font:700 11px 'Courier New',monospace;fill:#1d4ed8}.layer{font:700 10px Caladea,serif;letter-spacing:.55px;fill:#475569}.head{font:700 13px Caladea,serif;fill:#0f172a}.body{font:11px Caladea,serif;fill:#475569}.small{font:10px Caladea,serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect x="8" y="8" width="984" height="404" rx="12" fill="#fff" stroke="#cbd5e1"/>
+  <text x="32" y="38" class="title">Jednoduchá produkční architektura</text><text x="968" y="37" text-anchor="end" class="rev">e9c10221</text>
+  <rect x="30" y="70" width="220" height="286" rx="9" fill="#f8fafc" stroke="#cbd5e1"/><text x="48" y="94" class="layer">GITHUB JAKO VÝVOJOVÉ PROSTŘEDÍ</text>
+  <g><rect x="50" y="120" width="180" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="140" y="148" text-anchor="middle" class="head">Issue a komentáře</text><text x="140" y="170" text-anchor="middle" class="body">požadavek · plán · brány</text></g>
+  <g><rect x="50" y="220" width="180" height="72" rx="7" fill="#fff" stroke="#94a3b8"/><text x="140" y="248" text-anchor="middle" class="head">Git + pull request</text><text x="140" y="270" text-anchor="middle" class="body">větev · diff · merge</text></g>
+  <path d="M250 180H286" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="286" y="70" width="220" height="286" rx="9" fill="#eff6ff" stroke="#93c5fd"/><text x="304" y="94" class="layer">GITHUB ACTIONS</text>
+  <g><rect x="306" y="120" width="180" height="102" rx="7" fill="#fff" stroke="#60a5fa"/><text x="396" y="151" text-anchor="middle" class="head">Workflow</text><text x="396" y="174" text-anchor="middle" class="body">checkout · build · dispatch</text><text x="396" y="196" text-anchor="middle" class="small">izolovaný běh pro každý krok</text></g>
+  <g><rect x="306" y="250" width="180" height="52" rx="7" fill="#dbeafe" stroke="#60a5fa"/><text x="396" y="282" text-anchor="middle" class="body">event → další běh</text></g>
+  <path d="M506 180H542" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="542" y="70" width="218" height="286" rx="9" fill="#f5f3ff" stroke="#c4b5fd"/><text x="560" y="94" class="layer">DOCKER A PYTHON</text>
+  <g><rect x="562" y="120" width="178" height="102" rx="7" fill="#fff" stroke="#8b5cf6"/><text x="651" y="150" text-anchor="middle" class="head">agent_runner.py</text><text x="651" y="174" text-anchor="middle" class="body">interpretace · plán</text><text x="651" y="194" text-anchor="middle" class="body">implementace · review</text></g>
+  <g><rect x="562" y="250" width="178" height="52" rx="7" fill="#ede9fe" stroke="#8b5cf6"/><text x="651" y="282" text-anchor="middle" class="body">/workspace</text></g>
+  <path d="M760 180H796" stroke="#475569" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <rect x="796" y="70" width="174" height="286" rx="9" fill="#f0fdfa" stroke="#5eead4"/><text x="814" y="94" class="layer">HARNESS DF</text>
+  <g><rect x="814" y="120" width="138" height="102" rx="7" fill="#fff" stroke="#14b8a6"/><text x="883" y="150" text-anchor="middle" class="head">Produkční</text><text x="883" y="174" text-anchor="middle" class="body">model</text><text x="883" y="194" text-anchor="middle" class="body">nástroje</text></g>
+  <g><rect x="814" y="250" width="138" height="52" rx="7" fill="#ccfbf1" stroke="#14b8a6"/><text x="883" y="282" text-anchor="middle" class="body">pozorování</text></g>
+  <rect x="30" y="378" width="940" height="24" rx="6" fill="#fff7ed" stroke="#fdba74"/><text x="500" y="394" text-anchor="middle" class="small">GitHub Secrets → workflow → prostředí kontejneru; stav zůstává v issue, větvi a pull requestu</text>
+</svg>
