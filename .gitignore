@@ -55,3 +55,6 @@ uv.lock
 
 # Test fixtures create temporary trees beside the suite; they are not repository content.
 harness/.*-test-*/
+
+# opencode agent state (goal locks, session checkpoints) — local runtime, not source
+.opencode/
