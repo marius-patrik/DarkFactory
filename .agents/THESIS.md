@@ -59,6 +59,73 @@ consequence is a real obligation: the interpreter's input surface is a published
 carries a compatibility promise that internal refactors do not.
 
 
+### 1.1 The moat
+
+**There is exactly one place meaning can live, and the system reads it from there.**
+
+That is the whole moat, and the earlier wording obscured it. "The code is buildable by
+semantics" describes a capability; "and self-healing" put a consequence beside it as though it
+were a co-equal claim. It is not a co-equal claim — a delivery pipeline that detects drift,
+plans the difference, applies it under approval and verifies the result has been a healer all
+along, and naming that correctly is bookkeeping rather than achievement.
+
+Everything else in this document follows from the constraint rather than adding to it. The
+interface is derived, so it cannot drift. Surfaces are free, because after derivation there is
+nothing left to write per surface. Self-healing works, because intent is derivable instead of
+recorded twice. Self-building works, because the system emits itself from the meaning it read.
+Compilation is release, because a version is part of the resolution.
+
+It is a moat and not a principle because of what it does to the *next* unit of work. Every
+comparable system writes meaning twice — a schema, a manifest, a config layer, a docs site, an
+adapter per surface, a build description — and each second site drifts, because two things
+existing is the normal condition and drift is the default outcome, not a failure anyone guards
+against. Here one site is the correct number, capability *N+1* gets cheaper as the corpus
+grows, and the corpus grows without anyone maintaining it by hand. A competitor starting today
+has no corpus and every one of those second sites still to invent.
+
+**The falsifier.** Count the sites where meaning is authored rather than derived. The moat's
+strength is inversely proportional to that count, and the target is zero. The count is the
+moat's only honest scoreboard, and it is what distinguishes a thesis that is load-bearing from
+one that is decoration.
+
+**The way it fails.** A constraint with no teeth gets abandoned under pressure. The moment a
+capability is needed in a week, the path of least resistance is to hand-author a manifest, add
+an index, special-case a surface; it works, it ships, and the count never comes back down. So
+the counter is not documentation, it is latency: **derivation must be faster than authoring.**
+Not correct — faster. If writing the manifest takes an afternoon and deriving it takes a week,
+this is a preference and the count will drift within a quarter. A change that needs new authored
+meaning is a change that has not been designed yet; if someone reaches for a manifest, the
+interpreter is missing something.
+
+### 1.2 The invariants that implement it
+
+Properties, not features, each paired with the thing that would catch its violation. A property
+with no check is an aspiration, so each of these names its enforcement. The right-hand column is
+the measured position in the current tree, because an invariant nobody has checked is a claim
+rather than a constraint.
+
+| # | invariant | held by | today |
+| --- | --- | --- | --- |
+| I1 | No file describes a feature except the feature | enumeration-only files are rejected | **14 barrels, 2 catalogues, 1 registry** |
+| I2 | Derivation is total — every feature is derived | a tree walk comparing derived against discovered, across overloads, re-exports and conditionals | unverifiable until I1 |
+| I3 | The published interface is the code's own | a feature with no doc comment is an error, not a blank | **41 of 155 files have none** |
+| I4 | Effects pass through a seam | a check rejecting direct fs/net/process outside the seams | **51 files bypass one** |
+| I5 | Nothing is published that was not compiled from a resolution | every artifact carries its resolution identity, verified before publish | partial |
+| I6 | Discovery is structural only | a test that adding a feature requires editing nothing else | **holds** — `loader.ts` discovers by `readdir` |
+| I7 | Drift is measured against derivation | convergence accepts only derived inputs, never a recorded copy of intent | violated — recovery diffs against persisted state |
+| I8 | The system is a fixed point | self-hosting acceptance: compiling the system with itself yields the same resolution | violated |
+| I9 | Presentation holds no behaviour | a surface must not be importable by a non-surface | new |
+
+One of nine holds. That is the honest starting position, and it is a more useful thing to know
+than a list of intentions — the shape of the work is I1 and I3 first, because they are the two
+the count is made of, and I7 and I8 after, because they are consequences that cannot be
+demonstrated until there is something to be a consequence of.
+
+I4 is worth its own note. Fifty-one files reach the filesystem or the network directly, which
+means the current seams are documentation rather than boundaries: `Change/` and `Identity/` do
+not yet exist as constraints, only as intentions. Until they do, "the seam is the only way out"
+cannot be enforced, and therefore cannot be depended on by anything above it.
+
 ## 2. Self-hosting is the engine, not a milestone
 
 **DarkFactory is implemented in DarkFactory, and maintained by DarkFactory via DarkFactory.**

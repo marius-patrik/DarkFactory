@@ -51,23 +51,146 @@ The system must be:
 
 ## 4. Workspace and package architecture
 
-DarkFactory is a root Bun workspace.
+### 4.1 Structure is the declaration
 
-The final first-party package boundaries are:
+Meaning lives in exactly one place: the code. Folders, file names, function names, signatures
+and doc comments are the declaration, and the interpreter reads meaning from them. Nothing
+describes a feature except the feature.
 
-- `@darkfactory/protocol` — browser/runtime-safe schemas, serialized state/event contracts and shared types;
-- `@darkfactory/core` — execution kernel, graph/run state, provider/router mechanisms and config resolution;
-- `@darkfactory/capability` — capability ABI, discovery/loader/resolution and deterministic adapter/build tooling;
-- `@darkfactory/github` — typed GitHub REST/GraphQL substrate with explicit browser/server-safe entrypoints;
-- `@darkfactory/keychain` — machine/runtime credential custody and authentication;
-- `@darkfactory/auth` — human/browser GitHub App authentication and sessions;
-- `@darkfactory/docs` — headless documentation compiler/content graph;
-- `@darkfactory/cli` — `df` command, command composition and interactive TUI ownership;
-- `@darkfactory/web` — the sole first-party web application/renderer.
+Consequently:
 
-Any remaining implementation under `harness/` is deletion-bound source during the rebuild. It is not a public package, documentation surface, or final architecture boundary.
+- There is no privileged core subset. A top-level folder declares a *concern*; the set of
+  concerns is itself content, so a concern can be added or removed without amending this
+  specification. The question "is this core or content?" is not asked, because what a thing
+  needs is already answered by where it sits and what it sits beside.
+- One file is one askable feature — the unit a caller can request on its own. Not one step
+  inside a larger operation, and not one abstraction grouping several asks.
+- Folders are named for concerns. `utils`, `helpers`, `common`, `shared`, `manager`, `core`
+  and `lib` are forbidden at any depth, because a name that means "the rest" cannot be
+  resolved to anything.
+- No `index.ts` or equivalent barrel exports. Re-exporting reintroduces a place where the set
+  of things is written down separately from the things.
+- No registry, manifest, catalogue or index enumerates features. Discovery is structural: a
+  folder is discovered by existing.
+- Doc comments are normative. What a feature publishes to every surface is its own
+  documentation, so a comment is part of the contract and not decoration.
 
-Package dependencies must remain acyclic. Browser-safe entrypoints cannot import machine-secret/private-key/runtime-only implementations.
+### 4.2 Declaration and implementation are separate files
+
+A binding is a declaration beside its implementation. The declaration states what a thing is
+bound to; the implementation carries the code. Both are read by the same interpreter, and a
+binding with no implementation in the current backend is an error rather than a silent absence.
+
+- `.df` — a declaration: a binding, a scope configuration, a pipeline graph, or a
+  configuration that performs no behaviour of its own.
+- `.ts` — an implementation, written in TypeScript with the declaration's meaning carried
+  through `import ... with { type: "df" }`.
+
+Data that is merely data stays `.json`. A file is promoted to `.df` only once compilation must
+*interpret* it rather than read it.
+
+### 4.3 The tree
+
+```
+/                                       any repository that adopts DarkFactory
+├── repo.dfconfig                       this scope's configuration; any *.dfconfig, one per scope
+├── graph.df                            the pipeline: nodes, edges, convergence
+├── providers.json                      provider configuration — data
+├── models.json                         model catalog and preference order — data
+│
+└── darkfactory/
+    │
+    ├── Meaning/                        reading code and declarations into a resolution
+    │   ├── InterpretLanguage.df        read code and declarations into meaning
+    │   ├── DeriveInterface.df          code, names, signatures and comments → the interface
+    │   ├── ResolveConfig.df            find the declaration for a scope
+    │   ├── ResolveReference.df         follow a name through structure
+    │   ├── SelectBackend.df            given an intent, choose the implementation
+    │   ├── ComposeGraph.df             resolved capabilities → the executable plan
+    │   └── Compiler.df                 bind to a version; emit every surface; emit the local Change backend
+    │
+    ├── Change/                         the only way the world is read or altered
+    │   ├── ReadState.df  Snapshot.df  Stage.df  Publish.df  OpenChange.df  Identify.df
+    │   ├── git/        git.df · git.ts
+    │   ├── github/     github.df · github.ts
+    │   └── local/      local.df · (emitted by Compiler.df)
+    │
+    ├── Execution/                      running, gating, and healing
+    │   ├── ExecuteGraph.df  ResumeRun.df  EmitEvent.df  EnforceGate.df
+    │   ├── Converge.df                 observe, diff against derived intent, converge
+    │   ├── DeriveEnvironment.df  RecordTranscript.df
+    │   ├── AllocateAgent.df  RankCandidates.df  ResolveModel.df  EnforceQuota.df
+    │   ├── RecordSpend.df  AttributeRun.df  BindProvider.df
+    │   └── DiagnoseRun.df
+    │
+    ├── Identity/                       proving and being someone; not agent-specific
+    │   ├── identity/  DeclareIdentity.df  RevokeIdentity.df  AttributeUse.df
+    │   ├── proof/     BearerToken.df  OAuthGrant.df  ClientCertificate.df  SshKey.df
+    │   │              Passkey.df  TimeBasedCode.df  DeliveredCode.df
+    │   │              SessionCookie.df  SignedRequest.df
+    │   ├── acquire/   LoginFlow.df  ExchangeDeviceCode.df  ApproveRequest.df
+    │   │              PresentChallenge.df  AwaitChallenge.df
+    │   └── hold/      LocalSeal.df  RemoteVault.df  SplitSecret.df
+    │                  ReassembleSecret.df  BindHolder.df  RotateProof.df
+    │
+    ├── Browse/                         the seam both the human and the agent navigate
+    │   ├── Browse.df                  the interface
+    │   ├── tauri/      tauri.df · tauri.ts      one process, N presenters, one session
+    │   └── headless/   headless.df · headless.ts   for an agent that only needs to act
+    │
+    ├── Capabilities/                   content
+    │   ├── code/       GenerateDocs.ts  ExplainCode.ts  ReviewDiff.ts …
+    │   ├── docs/       …
+    │   ├── hooks/      …
+    │   ├── math/       …
+    │   ├── paper/      …
+    │   ├── release/    …
+    │   ├── resolve/    resolve.df · ResolveCapability.ts  BindCapability.ts  RankCapabilities.ts
+    │   └── github/     OpenIssue.ts  CommentOnIssue.ts …
+    │
+    └── Surfaces/                       projections; no behaviour of their own
+        ├── Terminal/   terminal.df · terminal.ts     CLI and TUI
+        ├── Renderer/   renderer.df · renderer.ts     the human's window
+        ├── Docs/       docs.df · docs.ts
+        ├── MCP/        mcp.df · mcp.ts               an agent's presenter, no window
+        ├── Claude/     claude.df · claude.ts         plugin and skill forms
+        ├── Codex/      codex.df · codex.ts
+        └── GitHub/     github.df · github.ts
+```
+
+Every surface is a projection of one derived resolution and contains no per-feature
+implementation. A surface is added by adding a folder; it is never added by adding an adapter
+to each capability.
+
+### 4.4 Identity is not scoped to a caller
+
+Identity is a first-class concern of the system rather than a property of the execution
+runtime. `df` on an unconfigured machine, the Renderer completing a GitHub App login, an
+external Claude or Codex plugin, and an agent in CI all need to prove who they are, and each
+obtains it through the same `Identity/` concern.
+
+An identity is a declaration plus one or more proofs, and a proof is not restricted to a
+stored secret. A proof may be stored, derived, or exist only for the duration of a flow. The
+system must support at minimum: long-lived bearer tokens, OAuth grants, mTLS client
+certificates, SSH keys, passkeys, time-based one-time codes, codes delivered to another
+channel, and opaque session cookies. An identity is acquired through a flow that may require a
+human or a second device, so acquisition is part of the concern and not an assumption of prior
+provisioning.
+
+### 4.5 Rules the structure must satisfy
+
+- Adding or removing a file changes only what that file names. No other file requires
+  modification, and no build description, index or list is updated.
+- Discovery is by filesystem structure alone, and a discovered folder is usable without being
+  registered.
+- Package dependency direction is acyclic and follows structure, so that a folder's
+  requirements are visible from where it sits.
+- A surface exposes every feature. A feature that cannot be reached from a surface does not
+  exist.
+- Compilation is release: the resolved system is bound to a version, and every artifact is
+  emitted at that version. A version is part of what compilation resolves.
+- The build description of the system is the system. There is no second hand-written
+  description of how it is assembled, bundled, signed or published.
 
 ## 5. Capability architecture
 
