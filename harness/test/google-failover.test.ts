@@ -26,7 +26,14 @@ afterEach(async () => {
 	}
 });
 
-const googleRules = BUILTIN_PROVIDER_CONFIG.providers.find((p) => p.id === "google")?.quota?.rules;
+// Every case below classifies against the real Google quota rules, so their absence is a
+// broken fixture rather than an empty rule set. Throwing keeps that loud: defaulting to `[]`
+// would let classifyFailure fall through to its default classification and quietly turn 15
+// assertions into tautologies.
+const googleProvider = BUILTIN_PROVIDER_CONFIG.providers.find((p) => p.id === "google");
+if (!googleProvider) throw new Error("Missing test provider google");
+const googleRules = googleProvider.quota?.rules;
+if (!googleRules) throw new Error("Google provider declares no quota rules");
 
 describe("Google Gemini free-tier real fixtures classification", () => {
 	const now = 1_700_000_000_000;

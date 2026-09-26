@@ -177,11 +177,13 @@ function mappedString(value: unknown, path: string | undefined, key?: string): s
 
 export function normalizeConfiguredCatalog(provider: string, value: unknown, mapping: ModelListConfig): CatalogModel[] {
 	const raw = pathValues(value, mapping.itemsPath);
+	const sole = raw.length === 1 ? raw[0] : undefined;
+	const soleValue = sole?.value;
 	const entries =
-		raw.length === 1 && Array.isArray(raw[0]?.value)
-			? (raw[0]?.value as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
-			: raw.length === 1 && raw[0]?.value && typeof raw[0].value === "object"
-				? Object.entries(raw[0].value as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
+		sole && Array.isArray(soleValue)
+			? (soleValue as unknown[]).map((entry, index) => ({ key: String(index), value: entry }))
+			: sole && soleValue && typeof soleValue === "object"
+				? Object.entries(soleValue as Record<string, unknown>).map(([key, entry]) => ({ key, value: entry }))
 				: raw;
 	const byId = new Map<string, CatalogModel>();
 	for (const entry of entries) {
@@ -408,11 +410,8 @@ export class ModelCatalog {
 		if (!provider) throw new Error(`Unknown provider ${providerId}`);
 		// Providers with no catalog endpoint have an upstream-maintained static catalog.
 		// Never let a prior cached static revision hide newly shipped models.
-		if (
-			this.configs.get(providerId) &&
-			!this.configs.get(providerId)?.models.list &&
-			!DIALECT_DEFAULTS[this.configs.get(providerId)?.dialect]
-		) {
+		const config = this.configs.get(providerId);
+		if (config && !config.models.list && !DIALECT_DEFAULTS[config.dialect]) {
 			return {
 				provider: providerId,
 				models: provider.getModels().map((model) => ({ id: model.id, name: model.name })),

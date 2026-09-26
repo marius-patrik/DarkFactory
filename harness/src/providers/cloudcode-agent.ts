@@ -24,7 +24,11 @@ function serialize(context: Context): { userMessage: string; history?: Array<{ c
 			break;
 		}
 	if (userIndex < 0) throw new Error("cloudcode-agent requires a user message");
-	const userMessage = contentText(context.messages[userIndex]?.content);
+	// Bound because `noUncheckedIndexedAccess` keeps the indexed element possibly-undefined; the
+	// `userIndex < 0` guard above does not narrow it.
+	const userEntry = context.messages[userIndex];
+	if (!userEntry) throw new Error("cloudcode-agent requires a user message");
+	const userMessage = contentText(userEntry.content);
 	if (!userMessage) throw new Error("cloudcode-agent requires a non-empty user message");
 	const history = context.messages.flatMap((message, index) =>
 		index === userIndex ? [] : [{ content: `[${message.role}]\n${contentText(message.content)}` }],

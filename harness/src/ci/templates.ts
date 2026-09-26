@@ -116,7 +116,7 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 	return {
 		template: match[1]!,
 		version: match[2]!,
-		hash: match[3]?.toLowerCase(),
+		hash: match[3]!.toLowerCase(),
 		headerLine: firstLine,
 		body,
 	};

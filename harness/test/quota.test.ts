@@ -3,6 +3,18 @@ import { fauxAssistantMessage, ModelsError } from "@earendil-works/pi-ai";
 import { BUILTIN_PROVIDER_CONFIG } from "../src/providers/schema.ts";
 import { classifyFailure, nextPacificMidnight, proseResetAt } from "../src/quota.ts";
 
+// These cases classify against the real Google quota rules, so their absence is a broken
+// fixture rather than an empty rule set. Throwing keeps that loud: defaulting to `[]` would
+// let classifyFailure fall through to its default classification and make the assertions
+// tautological.
+function googleQuotaRules() {
+	const provider = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google");
+	if (!provider) throw new Error("Missing test provider google");
+	const rules = provider.quota?.rules;
+	if (!rules) throw new Error("Google provider declares no quota rules");
+	return rules;
+}
+
 function providerError(message: string, status?: number, headers?: Record<string, string>): Error {
 	const error = new Error(message) as Error & { status?: number; headers?: Headers };
 	error.name = "APIError";
@@ -104,7 +116,7 @@ describe("classifyFailure", () => {
 	});
 
 	test("provider-specific request-shape errors are classified as transient candidates", () => {
-		const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")?.quota?.rules;
+		const rules = googleQuotaRules();
 		const error = providerError("Function call is missing a thought_signature in functionCall parts", 400);
 		expect(classifyFailure({ error }, { rules, model: "gemini-3.5-flash-lite" }).kind).toBe("transient");
 	});
@@ -120,7 +132,7 @@ describe("classifyFailure", () => {
 	});
 
 	describe("AI Studio daily free-tier regression triplet", () => {
-		const rules = BUILTIN_PROVIDER_CONFIG.providers.find((entry) => entry.id === "google")?.quota?.rules;
+		const rules = googleQuotaRules();
 		const now = Date.parse("2026-07-10T12:00:00Z");
 		const quotaId = "GenerateRequestsPerDayPerProjectPerModel-FreeTier";
 		test("success: daily QuotaFailure is quota_exhausted and uses RetryInfo", () => {
