@@ -15,4 +15,5 @@ Směr vývoje, který práce záměrně nepopisuje, je vymezen v @intro-goal. Zd
 přesnější dodat, kde popsaný průchod končí: je popsán stav, v němž pythonovský runner
 volal cizí produkční CLI @darkfactory-d576ec8f. Popsaná architektura je tudíž
 mezníkem, nikoli vyvrcholením, a její popis nenahrazuje posouzení této meze, které
-patří do @diskuse.
+patří do @diskuse. Projekt @darkfactory se od tohoto stavu posunul dál; kam se posunul
+a proč, je předmětem práce následující, a zde to záměrně není rozvedeno.

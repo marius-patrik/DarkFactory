@@ -1,7 +1,7 @@
 // 3.2 Architecture of a production run.
 #heading(level: 2)[Architektura produkčního běhu] <architektura>
 
-DarkFactory nepotřebuje pro základní průchod samostatný server, databázi ani běžícího agenta na vlastním počítači. GitHub slouží jako rozhraní i jako trvalý stavový systém, každá práce agenta probíhá jako izolovaný běh v GitHub Actions. Členění do čtyř vrstev znázorňuje @fig-darkfactory-architecture a pořadí jednotlivých kroků @fig-darkfactory-pipeline.
+Pro základní průchod nepotřebuje DarkFactory nic, co by muselo běžet trvale na vlastním počítači. Všechno, co pipeline potřebuje, už existuje: GitHub slouží jako rozhraní i jako trvalý stavový systém a každá práce agenta probíhá jako izolovaný běh v GitHub Actions. Členění do čtyř vrstev znázorňuje @fig-darkfactory-architecture a pořadí jednotlivých kroků @fig-darkfactory-pipeline.
 
 #figure(
   image("/components/img/darkfactory-architecture.svg", width: 92%),
@@ -20,13 +20,12 @@ Pythonový runner není náhradou harnessu. Je rozhodovací a integrační vrstv
 Každý harness je tak definován deklarativně: binář, způsob, jak se z promptu sestaví příkazová řádka, a způsob přihlášení. Přidání harnessu je tak změna dat, nikoli kódu. @fig-harness-interfaces uvádí rozhraní skutečně používaná v popisované revizi; `<prompt>` je zadání, `<model>` vybraný model a `<dur>` časový limit.
 
 // The invocation each harness is declared with, together with the version of the tool
-// against which the declaration was checked. `<ver>` is the version captured on
-// 2026-09-27; `claude` could not be captured locally and rests on its published
-// documentation, which is marked as such rather than presented as a capture.
+// against which the declaration was checked. All eight were captured first-hand on
+// 2026-09-27 by running `--help` on the installed CLI, not read from documentation.
 #let harness-interfaces = (
   "antigravity   agy 1.2.10",
   "  --print <prompt> --model <model> --dangerously-skip-permissions --print-timeout <dur>",
-  "claude        claude (dokumentace, nezachyceno)",
+  "claude        claude 2.1.283",
   "  --print <prompt> --model <model> --output-format text --dangerously-skip-permissions",
   "gemini        gemini 0.55.1",
   "  -p <prompt> --model <model> --yolo",
@@ -44,7 +43,7 @@ Každý harness je tak definován deklarativně: binář, způsob, jak se z prom
 
 #figure(
   raw(block: true, harness-interfaces.join("\n")),
-  caption: [Rozhraní produkčních harnessů: název v registru, binář a ověřená verze, poté příkazová řádka, kterou z bináře runner sestavuje. Deklarace odpovídá revizi @darkfactory-d576ec8f, verze byly zkontrolovány 27. září 2026.],
+  caption: [Rozhraní produkčních harnessů: název v registru, binář a ověřená verze, poté příkazová řádka, kterou z bináře runner sestavuje. Deklarace odpovídá revizi @darkfactory-d576ec8f; všechny verze byly ověřeny spuštěním `--help` na nainstalovaném nástroji 27. září 2026.],
 ) <fig-harness-interfaces>
 
 Sleduje se tím vlastní argument práce. Harness není abstraktní pojem, ale konkrétní program s konkrétní volbou přepínačů, a právě tato volba určuje, zda model smí spouštět příkazy bez dotazu a v jakém formátu vrací odpověď.
