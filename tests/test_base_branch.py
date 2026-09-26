@@ -31,48 +31,35 @@ def test_format_check_drift_integration():
 
     try:
         with open(target_file, "w") as f:
-            f.write(original + "\n\nconst   badFormatting   =   123  ;\n")
-
-        subprocess.run(["git", "add", target_file], check=True)
-
-        env = os.environ.copy()
-        env["DF_BASE_SHA"] = "HEAD~1"
+            f.write(original + "\n\nconst bad  =   123  ;\n")
 
         result = subprocess.run(
-            "bun run format:check", shell=True, capture_output=True, text=True, env=env
+            "DF_BASE_SHA=HEAD^^ bun run format:check", shell=True, capture_output=True, text=True
         )
         assert result.returncode != 0
 
     finally:
         with open(target_file, "w") as f:
             f.write(original)
-        subprocess.run(["git", "checkout", target_file], capture_output=True)
 
 
 def test_get_base_branch_with_config():
     import json
+    import tempfile
 
-    with open("repo.dfconfig", "r") as f:
-        config_content = f.read()
-
-    try:
+    with tempfile.TemporaryDirectory() as tmp_dir:
         dummy_config = {
-            "repo": {
-                "identity": {"default_branch": "custom-default", "development_branch": "custom-dev"}
-            }
+            "repo": {"identity": {"default_branch": "HEAD^", "development_branch": "HEAD^"}}
         }
-        with open("repo.dfconfig", "w") as f:
+        with open(os.path.join(tmp_dir, "repo.dfconfig"), "w") as f:
             json.dump(dummy_config, f)
 
         env = os.environ.copy()
         env.pop("DF_BASE_SHA", None)
         env.pop("GITHUB_BASE_REF", None)
+        env["DF_CONFIG_PATH"] = os.path.join(tmp_dir, "repo.dfconfig")
 
-        result = subprocess.run(
-            ["bun", "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
-        )
+        script_path = os.path.abspath("scripts/get-base-branch.mjs")
+        result = subprocess.run(["bun", script_path], env=env, capture_output=True, text=True)
         assert result.returncode == 0
-
-    finally:
-        with open("repo.dfconfig", "w") as f:
-            f.write(config_content)
+        assert "HEAD^" in result.stdout
