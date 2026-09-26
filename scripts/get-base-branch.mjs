@@ -1,10 +1,10 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execFileSync, execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 try {
-  execSync('git --version', { stdio: 'ignore' });
+  execFileSync('git', ['--version'], { stdio: 'ignore' });
 } catch {
   console.error("Error: git command not found. This workspace requires git to be installed and available in the PATH to resolve branch metadata.");
   process.exit(1);
@@ -28,8 +28,16 @@ function verifyRef(ref) {
 
 function getBaseBranch() {
   if (process.env.DF_BASE_SHA) {
-    if (REF_REGEX.test(process.env.DF_BASE_SHA) && verifyRef(process.env.DF_BASE_SHA)) {
-      return process.env.DF_BASE_SHA;
+    if (REF_REGEX.test(process.env.DF_BASE_SHA)) {
+      if (verifyRef(process.env.DF_BASE_SHA)) {
+        return process.env.DF_BASE_SHA;
+      } else {
+        console.error(`Error: DF_BASE_SHA '${process.env.DF_BASE_SHA}' provided but not found in repository.`);
+        process.exit(1);
+      }
+    } else {
+      console.error(`Error: DF_BASE_SHA '${process.env.DF_BASE_SHA}' has invalid format.`);
+      process.exit(1);
     }
   }
 
@@ -43,7 +51,11 @@ function getBaseBranch() {
   let configDevBranch = null;
 
   try {
-    const configPath = process.env.DF_CONFIG_PATH || join(process.cwd(), 'repo.dfconfig');
+    const configPath = process.env.DF_CONFIG_PATH ? join(process.cwd(), process.env.DF_CONFIG_PATH) : join(process.cwd(), 'repo.dfconfig');
+    if (!configPath.startsWith(process.cwd())) {
+        console.error(`Error: Security violation - config path '${configPath}' is outside the workspace.`);
+        process.exit(1);
+    }
     const content = readFileSync(configPath, 'utf-8');
     let config;
     try {

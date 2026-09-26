@@ -12,14 +12,32 @@ def get_bun_path():
 
 
 def test_get_base_branch_fallback():
-    env = os.environ.copy()
-    env.pop("DF_BASE_SHA", None)
-    env.pop("GITHUB_BASE_REF", None)
-    result = subprocess.run(
-        [get_bun_path(), "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
-    )
-    assert result.returncode == 0
-    assert result.stdout.strip() in ["origin/main", "main", "origin/develop", "develop", "HEAD~1"]
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Initialize a git repository with at least 2 commits
+        subprocess.run(["git", "init"], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=tmp_dir, check=True)
+        with open(os.path.join(tmp_dir, "test.txt"), "w") as f:
+            f.write("first")
+        subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "first"], cwd=tmp_dir, check=True)
+        with open(os.path.join(tmp_dir, "test.txt"), "a") as f:
+            f.write("second")
+        subprocess.run(["git", "add", "."], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "second"], cwd=tmp_dir, check=True)
+
+        env = os.environ.copy()
+        env.pop("DF_BASE_SHA", None)
+        env.pop("GITHUB_BASE_REF", None)
+        # Point to the script in the original directory
+        script_path = os.path.abspath("scripts/get-base-branch.mjs")
+        result = subprocess.run(
+            [get_bun_path(), script_path], env=env, capture_output=True, text=True, cwd=tmp_dir
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == "HEAD~1"
 
 
 def test_get_base_branch_malicious_input():
@@ -28,8 +46,7 @@ def test_get_base_branch_malicious_input():
     result = subprocess.run(
         [get_bun_path(), "scripts/get-base-branch.mjs"], env=env, capture_output=True, text=True
     )
-    assert result.returncode == 0
-    assert result.stdout.strip() in ["origin/main", "main", "origin/develop", "develop", "HEAD~1"]
+    assert result.returncode != 0
 
 
 @pytest.fixture
