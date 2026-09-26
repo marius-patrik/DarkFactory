@@ -60,8 +60,8 @@ function isDocumentationFile(path: string): boolean {
 		path === ".agents/PRD.md" ||
 		path === ".agents/AGENTS.md" ||
 		configDocumentPaths().has(path) ||
-		path.startsWith(".agents/notes/rules/") ||
-		path.startsWith(".agents/notes/adr/")
+		path.startsWith(".agents/rules/") ||
+		path.startsWith(".agents/adr/")
 	);
 }
 
@@ -77,8 +77,8 @@ function isProductContractFile(path: string): boolean {
 function isGovernanceFile(path: string): boolean {
 	return (
 		path === ".agents/AGENTS.md" ||
-		path.startsWith(".agents/notes/rules/") ||
-		path.startsWith(".agents/notes/adr/") ||
+		path.startsWith(".agents/rules/") ||
+		path.startsWith(".agents/adr/") ||
 		path.startsWith(".github/workflows/") ||
 		path.startsWith("harness/assets/workflows/")
 	);

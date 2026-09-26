@@ -16,8 +16,8 @@ const roots: string[] = [];
 async function fixture(withApi = false): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), "darkfactory-docs-"));
 	roots.push(root);
-	await mkdir(join(root, ".agents", "notes", "rules"), { recursive: true });
-	await mkdir(join(root, ".agents", "notes", "adr"), { recursive: true });
+	await mkdir(join(root, ".agents", "rules"), { recursive: true });
+	await mkdir(join(root, ".agents", "adr"), { recursive: true });
 	await mkdir(join(root, ".github", "workflows"), { recursive: true });
 	const config: any = { version: 1, site: { name: "Fixture", description: "Fixture docs" }, home: ".agents/PRD.md" };
 	if (withApi) {
@@ -41,11 +41,11 @@ async function fixture(withApi = false): Promise<string> {
 	await writeFile(join(root, "PLAN.md"), "# Plan\n");
 	await writeFile(join(root, "AGENTS.md"), "# Rules projection\n");
 	await writeFile(
-		join(root, ".agents", "notes", "rules", "001-test.md"),
+		join(root, ".agents", "rules", "001-test.md"),
 		"---\nid: DF-RULE-001\ntitle: Fixture rule\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Fixture rule\n\n## Requirement\n\nFixture requirement.\n\n## Rationale\n\nFixture rationale.\n\n## Enforcement\n\nFixture enforcement.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nDeliberate.\n",
 	);
 	await writeFile(
-		join(root, ".agents", "notes", "adr", "0001-test.md"),
+		join(root, ".agents", "adr", "0001-test.md"),
 		"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nFixture decision.\n\n## Consequences\n\nFixture consequence.\n",
 	);
 	await writeFile(
@@ -88,11 +88,7 @@ describe("@darkfactory/docs", () => {
 	test("compiles only current canonical pages and workflow metadata", async () => {
 		const root = await fixture();
 		const graph = compileDocsContentGraph(root, loadDocsConfig(root));
-		expect(graph.pages.map((page) => page.id)).toEqual([
-			"home",
-			"agents-notes-rules-001-test",
-			"agents-notes-adr-0001-test",
-		]);
+		expect(graph.pages.map((page) => page.id)).toEqual(["home", "agents-rules-001-test", "agents-adr-0001-test"]);
 		expect(graph.pages[0]?.source).toBe(".agents/PRD.md");
 		expect(graph.pages.some((page) => page.source === "AGENTS.md" || page.source === ".agents/AGENTS.md")).toBe(false);
 		expect(graph.workflows).toEqual([{ source: ".github/workflows/ci.yml", name: "CI", jobs: ["test"] }]);
@@ -101,7 +97,7 @@ describe("@darkfactory/docs", () => {
 	test("rejects non-current ADRs", async () => {
 		const root = await fixture();
 		await writeFile(
-			join(root, ".agents", "notes", "adr", "0002-not-current.md"),
+			join(root, ".agents", "adr", "0002-not-current.md"),
 			"# ADR-0002 — Not current\n\n**Status**: Proposed\n",
 		);
 		expect(() => compileDocsContentGraph(root)).toThrow("ADR must have Status: Accepted");
@@ -122,7 +118,7 @@ describe("@darkfactory/docs", () => {
 		expect(await readFile(join(site, "index.html"), "utf8")).toContain("See");
 		const apiPage = await readFile(join(site, "api", "index.html"), "utf8");
 		expect(apiPage).toContain("FixtureApi");
-		expect(apiPage).toContain('href="../agents-notes-rules-001-test/"');
+		expect(apiPage).toContain('href="../agents-rules-001-test/"');
 		expect(JSON.parse(await readFile(join(site, "content.json"), "utf8")).api.name).toBe("Fixture API");
 	});
 });

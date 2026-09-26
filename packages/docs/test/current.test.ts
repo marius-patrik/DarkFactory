@@ -17,7 +17,7 @@ function graph(): DocsContentGraph {
 				id: "rule-001",
 				kind: "rule",
 				title: "Rule 1 — Test",
-				source: ".agents/notes/rules/001-test.md",
+				source: ".agents/rules/001-test.md",
 				markdown:
 					"---\nid: DF-RULE-001\ntitle: Test\nstatus: normative\napplies_to: [agents]\nactivation: always\nowners: [docs]\n---\n# Rule 1 — Test\n\n## Requirement\n\nTest.\n\n## Rationale\n\nTest.\n\n## Enforcement\n\nTest.\n\n## Exceptions\n\nNone.\n\n## Change control\n\nTest.\n",
 			},
@@ -25,7 +25,7 @@ function graph(): DocsContentGraph {
 				id: "adr-0001",
 				kind: "adr",
 				title: "ADR-0001 — Test",
-				source: ".agents/notes/adr/0001-test.md",
+				source: ".agents/adr/0001-test.md",
 				markdown:
 					"# ADR-0001 — Test\n\n**Status**: Accepted\n\n**Related rules**: `DF-RULE-001`\n\n## Decision\n\nTest.\n\n## Consequences\n\nTest.\n",
 			},
@@ -184,8 +184,8 @@ describe("current documentation truth", () => {
 				".claude",
 				join(".agents", "README.md"),
 				join(".agents", "CLAUDE.md"),
-				join(".agents", "rules"),
-				join(".agents", "notes", "adr", "README.md"),
+				join(".agents", "notes", "adr"),
+				join(".agents", "notes", "rules"),
 			]) {
 				const absolute = join(repoRoot, path);
 				mkdirSync(join(absolute, ".."), { recursive: true });
@@ -205,8 +205,8 @@ describe("current documentation truth", () => {
 				".claude",
 				".agents/README.md",
 				".agents/CLAUDE.md",
-				".agents/rules",
-				".agents/notes/adr/README.md",
+				".agents/notes/adr",
+				".agents/notes/rules",
 			]) {
 				expect(findings).toContainEqual({ path, message: "retired documentation surface must not exist" });
 			}

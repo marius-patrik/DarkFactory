@@ -8,9 +8,9 @@ DarkFactory is a self-hosting autonomous software-delivery system built around a
 
 1. `.agents/PRD.md` defines product requirements and architecture.
 2. Current active Request/Planning records define approved feature-specific behavior and executable delivery scope.
-3. Accepted ADRs under `.agents/notes/adr/` record durable decisions and rationale.
+3. Accepted ADRs under `.agents/adr/` record durable decisions and rationale.
 4. The combined `repo.dfconfig` document (or accepted root `config.dfconfig` or `.dfconfig` alias) and the workflow graph are executable declarations.
-5. `.agents/notes/rules/*.md` define mandatory contribution/governance behavior.
+5. `.agents/rules/*.md` define mandatory contribution/governance behavior.
 6. Generated docs/web views and `.agents/AGENTS.md` are projections, not independent sources of truth.
 
 A material deviation from this document requires owner approval and an accepted ADR.
@@ -289,7 +289,7 @@ TypeDoc may be used internally as the TypeScript/TSDoc extractor.
 
 Documentation builds are deterministic, strict and zero-warning for required API surfaces.
 
-`.agents/PRD.md` is the canonical product-documentation homepage. Root `README.md` is a symlink to this canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical `.agents/notes/rules/**`, with ADR links derived from `.agents/notes/adr/**`. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
+`.agents/PRD.md` is the canonical product-documentation homepage. Root `README.md` is a symlink to this canonical product document; `.agents/AGENTS.md` is the deterministic generated projection of canonical `.agents/rules/**`, with ADR links derived from `.agents/adr/**`. CI fails when the generated projection drifts from its canonical directory or when rule↔note relations are incomplete or contradictory.
 
 ## 14. DarkFactory Web
 

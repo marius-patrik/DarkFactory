@@ -473,7 +473,7 @@ def configuration_issue(repo: str, pipeline_repo: str, needs_submodules: bool = 
 The pipeline is installed and everything derivable has been generated. Four things need you.
 
 If this repository keeps notes - runbooks, captures, or a decision log - the canonical location is
-`.agents/notes/`, with one ADR per decision under `.agents/notes/adr/`, exactly as DarkFactory does
+`.agents/notes/`, with one ADR per decision under `.agents/adr/`, exactly as DarkFactory does
 it. The convention is what is shared; the notes themselves stay yours.
 
 ### 1. Areas — the one thing that cannot be derived

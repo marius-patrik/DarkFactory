@@ -175,12 +175,11 @@ export function compileDocsContentGraph(
 	api?: DocsApiReference,
 ): DocsContentGraph {
 	const pages: DocsPage[] = [markdownPage(repoRoot, config.home, "home", "home")];
-	const rulesRoot = join(repoRoot, ".agents", "notes", "rules");
+	const rulesRoot = join(repoRoot, ".agents", "rules");
 	for (const name of markdownFiles(rulesRoot))
-		pages.push(markdownPage(repoRoot, join(".agents", "notes", "rules", name), "rule"));
-	const adrRoot = join(repoRoot, ".agents", "notes", "adr");
-	for (const name of markdownFiles(adrRoot))
-		pages.push(markdownPage(repoRoot, join(".agents", "notes", "adr", name), "adr"));
+		pages.push(markdownPage(repoRoot, join(".agents", "rules", name), "rule"));
+	const adrRoot = join(repoRoot, ".agents", "adr");
+	for (const name of markdownFiles(adrRoot)) pages.push(markdownPage(repoRoot, join(".agents", "adr", name), "adr"));
 	const workflowRoot = join(repoRoot, ".github", "workflows");
 	const workflows = existsSync(workflowRoot)
 		? readdirSync(workflowRoot, { withFileTypes: true })

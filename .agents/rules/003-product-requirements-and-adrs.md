@@ -19,7 +19,7 @@ Executable declarations use the final DarkFactory contracts:
 - the `providers` block for runtime/user/provider configuration;
 - the `docs` block for native documentation configuration;
 - the declarable workflow graph for execution topology;
-- `.agents/notes/rules/*.md` for mandatory contribution/governance behavior.
+- `.agents/rules/*.md` for mandatory contribution/governance behavior.
 
 `DF_CONFIG_DIR` (default `.darkfactory`) may hold the same combined document for supported discovery, but `.darkfactory` is not a committed source in this repository. Ambiguous root/folder or alias candidates fail closed and are never merged.
 
