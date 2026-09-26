@@ -7,4 +7,10 @@ Implementace pipeline DarkFactory ukázala jednoduchou produkční realizaci tě
 
 Úloha vývojáře se v tomto uspořádání posouvá od rutinního provádění kódu k formulaci zadání, schvalování plánu, definování akceptačních podmínek a rozhodování, zda je výsledek připraven k integraci. Práce tedy nepopisuje plnou autonomii agenta, ale kontrolované předání vybrané části softwarového inženýrství.
 
-Zjištění zároveň ukazují meze této realizace. Modelové review může být opakované, ale není deterministickou zárukou správnosti; opakovaný nález bez progresu vede k blokaci. 
+Zjištění zároveň ukazují meze této realizace. Modelové review může být opakované, ale není deterministickou zárukou správnosti; opakovaný nález bez progresu vede k blokaci.
+
+Cíle práce se podařilo naplnit v rozsahu, který si sama vymezila. Hypotéza byla potvrzena, ovšem v užší podobě, než byla formulována: řízená autonomie je dosažitelná i bez vlastního harnessu, ale její kvalita zůstává omezena kvalitou cizí smyčky, kterou autor neovládá. Současně se potvrdilo, že popsaná struktura procesu je vůči volbě nástroje invariantní, což je tvrzení, z něhož lze prokazatelně vycházet.
+
+Pro další výzkum z toho vyplývají tři směry. První je vlastní harness: popsat architekturu, kterou si tato práce záměrně neřešila, a porovnat její výsledky s výsledky cizích nástrojů na stejných úlohách. Druhý je měření: dosavadní zjištění jsou kvalitativní, chybí jim měření, která by umožnila říci, o kolik se cyklus zkrátil a kde přesně review smyčka nachází nejvíce nálezů. Třetí je přenositelnost: ověřit, zda popsaná struktura platí i pro jiný stavový podklad než issue, což by ukázalo, že je opravdu zásadní, a ne pouze vlastností GitHubu.
+
+V praxi má práce přímý dopad v podobě jednoduchého pravidla: delegovat agentovi až to, co lze zkontrolovat, a ponechat mu vlastní smyčku jen tam, kde je výhodná. Kdo takovou pipeline staví, nemusí začínat vlastním harnessem; začíná stavem uloženým mimo model, dvěma branami před vznikem větve a oddělenou kontrolou výstupu.
