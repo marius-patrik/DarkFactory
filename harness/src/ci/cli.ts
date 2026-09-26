@@ -13,6 +13,10 @@ export interface CiCliContext {
 	error?: (msg: string) => void;
 }
 
+function getOption(args: string[], name: string): string | undefined {
+	return getOptions(args, name)[0];
+}
+
 function getOptions(args: string[], name: string): string[] {
 	const values: string[] = [];
 	for (let i = 0; i < args.length; i++) {
