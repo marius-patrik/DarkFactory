@@ -147,10 +147,15 @@ what makes the machine/repository distinction in §5 a non-distinction.
 
 ### 3.1 What the core has to contain
 
-The test for membership is one question: **delete it — can the system still describe itself?**
-If not, it is core. If removing it only removes a feature, it is a capability. That resolves
-every case without a list to maintain, and it matches §1: the core is what remains when you
-delete all content.
+The core is **not the set of things the system does. It is the set of things that let it do
+anything at all.** Those are different, and confusing them is how a core becomes a product with
+a core attached.
+
+The test for membership follows from that: **delete it — can the system still support an
+arbitrary capability?** If not, it is core. If removing it only removes one shipped feature, it
+is a capability, and it should leave. A core that grows to cover every case is no longer able
+to support the case nobody thought of, because everything in it was decided by someone who had
+not met it yet.
 
 One file per feature, where a feature is the whole thing a caller can do — not one file per step
 of doing it. `InterpretForge` covers snapshot, stage and publish because those are one feature
@@ -160,25 +165,32 @@ to the caller, not three.
 | --- | --- | --- |
 | `ResolveConfig.df` | find and read the declaration | mostly present as `protocol/src/config-document.ts` |
 | `InterpretLanguage.df` | turn a declaration into meaning through a named backend | **absent** |
-| `ResolveCapabilities.df` | what can this system do *here* — discover, bind, resolve | mostly present as `capability/loader.ts` + `actions.ts` |
-| `ComposeGraph.df` | what *will* it do — the executable plan | mostly present as `graph/planner.ts` + `executor.ts` |
+| `ComposeGraph.df` | what it will do — the executable plan | mostly present as `graph/planner.ts` + `executor.ts` |
 | `InterpretForge.df` | change the outside world through a seam | mostly present as `workspace/gitWorkspace.ts` |
 | `Compile.df` | bind the resolved system to a version and emit it for every surface | **partial, and decoupled — see §3.3** |
 | `Converge.df` | observe reality, diff against intent, converge | **absent** |
-| `DescribeSystem.df` | render itself for a human and for an agent | partial as the `docs` package |
 
-The dependency chain is strict: `ResolveConfig → InterpretLanguage → ResolveCapabilities →
-ComposeGraph`. `Converge` needs `ResolveConfig` and `InterpretForge`; `Compile` needs
-`ResolveCapabilities`; `DescribeSystem` needs all of it.
+The dependency chain is strict: `ResolveConfig → InterpretLanguage → ComposeGraph`. `Converge`
+needs `ResolveConfig` and `InterpretForge`; `Compile` needs the graph.
 
-The three marked absent or decoupled are the load-bearing ones. `InterpretLanguage` exists in no
-form. `Converge` exists only as one caller — idempotent, drift-aware install. And `Compile` is
+Three are load-bearing and absent or decoupled. `InterpretLanguage` exists in no form.
+`Converge` exists only as one caller — idempotent, drift-aware install. And `Compile` is
 currently *downstream* of resolution rather than part of it, which is the two-sources-of-truth
 problem §2.2 says breaks self-hosting.
 
-**`ResolveCapabilities` and `ComposeGraph` may be one file.** "What can this system do here" and
-"what will it do" might be a single resolution from the caller's side, and if so the core is
-seven files. The way to find out is to try deleting one.
+**What was cut, and why it is the right cut.** `ResolveCapabilities` — discovering, binding and
+resolving what this system can do here — is real, it is needed, and it is *not core*. It is a
+capability, and it should be written against the core rather than inside it, so that a consumer
+who resolves capabilities differently is not fighting the core to do it. The same reasoning
+demotes `DescribeSystem`: rendering is a surface, and §3.3 says surfaces are renderers. The
+first-party renderer ships as the first surface, not as core.
+
+That is the discipline this section exists to enforce. Every candidate for core has to survive
+the question *would a consumer ever need this to be different?* If yes, it is content. `forge`
+survives it — a consumer may substitute a different world — so the interface is core and its
+backends are not. `Converge` survives it: converging toward intent is what the system is for.
+`ResolveCapabilities` does not survive it, and was only in the list because it is the thing we
+happen to need first.
 
 ### 3.2 Discovery is already structural
 
@@ -192,6 +204,13 @@ So §11's "no indices" is a matter of extending a pattern the codebase already f
 introducing one. The residue is small and identifiable: the fixed `ENTRYPOINTS` list is three
 filenames describing *how* to load rather than *what* exists, which is a different thing, and
 six `index.ts` barrels that are the genuine violation.
+
+**This is also the evidence for the demotion above.** Capability resolution is already
+self-contained, structural, and independent of the interpreter — `loader.ts` needs a directory
+and a convention, not an evaluator. That is what a capability looks like from the inside: it
+depends on a small, stable contract rather than on the core's machinery, which is exactly the
+property that lets it leave. Something that had to be inside the core to work would have been
+the thing worth fighting to keep there.
 
 ### 3.3 Compile is release, and surfaces are resolved rather than built
 
