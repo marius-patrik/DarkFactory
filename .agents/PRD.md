@@ -29,7 +29,7 @@ The system must be:
 - **resumable** — interruption, quota exhaustion and conflicts do not lose completed effects;
 - **truthful** — completion/mutation claims come from observed state, not agent prose;
 - **AI-first** — the agent is a first-class operator of the same abstractions as any other caller, its capability set is presented rather than fixed, and its mutations are staged and reversible. Removing the agent must leave the system incomplete, otherwise this is a system with an agent attached;
-- **extensible** — new project-specific behavior can be added as capabilities rather than rebuilding core;
+- **extensible** — new project-specific behavior can be added as capabilities rather than rebuilding the framework;
 - **unfrictional across machines, repositories and hosting types** — one semantic model with no location-dependent behaviour. A capability behaves identically in a working tree, on a host or in CI, and a declaration means the same thing in a repository and on a machine. Support matrices are not sufficient: each row is a promise to maintain and each per-location special case is a place an abstraction has leaked;
 - **multi-domain** — one repository may contain code, papers, mathematics and other supported package types;
 - **declarable** — anything config-shaped in nature is data rather than code, resolved through inspectable layers, and bound systems are reached through seams rather than reimplemented;
@@ -42,11 +42,11 @@ The system must be:
 
 | Actor | Responsibility |
 |---|---|
-| Maintainer/operator | Supplies intent, approves Planning/scope amendments/final merge as required, operates df through CLI/TUI/web. |
-| DarkFactory engine | Executes graph/runtime mechanisms, routing, persistence, capability loading and deterministic effects. |
+| Maintainer/operator | Supplies intent, approves Planning/scope amendments/final merge as required, operates df through `Surfaces/Terminal/` and `Surfaces/Renderer/`. |
+| DarkFactory engine | Executes graph/runtime mechanisms, routing, persistence and deterministic effects. |
 | Capability | Implements agentic/product behavior such as planning, review, git, docs, CI, recovery or domain-specific work. |
 | DarkFactory GitHub App | Automation identity and privileged GitHub execution identity. |
-| Authenticated web user | Human identity used by DarkFactory Web for user-attributed GitHub access/actions. |
+| Authenticated human user | Human identity used by `Surfaces/Renderer/` for user-attributed GitHub access/actions. |
 | Consumer | Supplies project-specific declarations/data while consuming released df and the shared web application. A consumer is a repository, a machine, or a fleet of either. |
 
 ## 4. Workspace and package architecture
@@ -158,13 +158,11 @@ Data that is merely data stays `.json`. A file is promoted to `.df` only once co
     │
     ├── Capabilities/                   content
     │   ├── code/       GenerateDocs.ts  ExplainCode.ts  ReviewDiff.ts …
-    │   ├── docs/       …
-    │   ├── hooks/      …
-    │   ├── math/       …
-    │   ├── paper/      …
-    │   ├── release/    …
+    │   ├── planning/   PlanWork.ts  ScopeWork.ts …
+    │   ├── review/     ReviewChange.ts  ProposeChange.ts …
+    │   ├── docs/  hooks/  math/  paper/  release/
     │   ├── resolve/    resolve.df · ResolveCapability.ts  BindCapability.ts  RankCapabilities.ts
-    │   └── github/     OpenIssue.ts  CommentOnIssue.ts …
+    │   └── github/     OpenIssue.ts  CommentOnIssue.ts  ReconcileState.ts …
     │
     └── Surfaces/                       projections; no behaviour of their own
         ├── Terminal/   terminal.df · terminal.ts     CLI and TUI
@@ -212,24 +210,32 @@ provisioning.
 
 ## 5. Capability architecture
 
-Core owns mechanisms. Agentic/product behavior belongs in versioned capabilities under root `capabilities/`.
+Agentic and product behaviour belongs in versioned capabilities under `Capabilities/`. Mechanisms belong to the
+concern that owns them, and there is no privileged subset: which concern a thing belongs to is answered by what
+it needs, not by an internal package boundary. Version control is reached through the `Change/` seam and is not a
+capability; neither is environment derivation or convergence, which are `Execution/`.
 
 The initial first-party capability set includes at least:
 
 - code;
-- paper;
-- math;
 - docs;
-- git;
-- github;
+- hooks;
+- math;
+- paper;
+- release;
 - planning;
 - review;
-- ci;
-- release;
-- recovery;
-- hooks;
-- epics;
-- stacks.
+- resolve;
+- github.
+
+`resolve` — discovering, binding and ranking capabilities — ships as a capability so a consumer may resolve
+differently without contending with the mechanism. The normal distribution includes it, so a standard
+installation is batteries-included without the concern being privileged.
+
+`github` appears in two places for two different reasons, and the distinction is required rather than
+incidental. `Change/github/` is the seam binding that lets the system act on a GitHub repository. 
+`Capabilities/github/` is GitHub as a place work comes from and goes to: issues and pull requests as requirement
+intake, review destination and reconciliation. Neither substitutes for the other.
 
 A capability may contribute:
 
@@ -240,7 +246,7 @@ A capability may contribute:
 - verification/quality actions;
 - hooks/rules;
 - documentation;
-- web surfaces/metadata;
+- surface metadata;
 - release outputs;
 - audit records;
 - credential requirements.
@@ -249,14 +255,14 @@ Capabilities do not own raw credential storage.
 
 One canonical TypeScript capability definition is the implementation source, and every surface a capability is reachable through is derived from it rather than written against it. Supported integration forms, including:
 
-- native DarkFactory/Pi integration;
-- Pi ExtensionAPI tools/commands;
-- standalone MCP server form;
+- native integration;
+- `Surfaces/MCP/` server form;
 - supported Claude/Codex/agent skills/plugins/manifests.
 
 There must not be independent handwritten implementations of the same capability for each runtime surface, agent integration, or consumer. A capability has semantics; each surface is a renderer of those semantics. Adding a surface is one renderer, not one adapter per capability.
 
-Every capability is reachable through every supported surface: the rendered web interface, the CLI, a TUI, GitHub through the forge, and external agent harnesses as MCP servers and plugin/skill forms.
+Every capability is reachable through every supported surface: `Surfaces/Renderer/`, `Surfaces/Terminal/`, the
+GitHub surface, and external agent harnesses as MCP servers and plugin/skill forms.
 
 Compiling and releasing are one operation. Compilation binds the resolved system to a version and emits it in every surface form at that version, so a version is part of what compilation resolves rather than a label applied afterwards. There is no separate build description of the system that could disagree with the system.
 
@@ -517,7 +523,7 @@ The target web surface includes, as shipped capabilities become available:
 - audit;
 - documentation.
 
-DarkFactory Web becomes the primary day-to-day operator interface. Direct use of github.com UI is optional for normal DarkFactory operation except where GitHub itself requires a consent/review surface.
+`Surfaces/Renderer/` is the primary day-to-day operator interface. Direct use of the GitHub UI is optional for normal DarkFactory operation except where GitHub itself requires a consent/review surface.
 
 The web application is not a second state database or privileged mutation engine.
 
@@ -536,7 +542,8 @@ carries no per-feature implementation. It drives:
 
 Bare interactive `df` enters the TUI when appropriate. Headless commands remain scriptable.
 
-The CLI/TUI/web surfaces consume the same protocol/state/provider/capability models.
+Every surface consumes the same derived resolution. No surface holds a model, a state store or a capability
+catalogue of its own, so none can present something another surface cannot.
 
 ## 16. Installation, release and versioning
 
@@ -553,7 +560,7 @@ The final release contains, as required:
 - official capabilities;
 - capability adapter artifacts/MCP/plugin/skill forms;
 - graph/schema/runtime data;
-- prebuilt DarkFactory Web bundle.
+- prebuilt `Surfaces/Renderer/` bundle.
 
 Initial installation must not require Python, a source checkout or a pre-existing df installation.
 
@@ -604,19 +611,47 @@ DarkFactory is final only when the exact pre-merge candidate has passed the decl
 
 - df is the only normal production orchestration/mutation engine;
 - production orchestration and mutation are owned by the final TypeScript df system;
-- package/capability architecture is shipped;
-- official capabilities and representative generated adapters are proven;
-- keychain/auth security boundaries are proven;
+- the §4 architecture is shipped and the tree is a restructure, not a parallel implementation;
+- official capabilities are proven and reachable from every surface;
+- identity custody and human-authentication boundaries are proven, across every supported proof type and
+  acquisition flow, with split custody exercised rather than merely implemented;
 - real TypeScript API docs are published;
 - generated `.agents/AGENTS.md` is deterministic and current from canonical rules/ADRs; root `README.md` remains a symlink to the canonical product document;
-- shared web UI is deployed to consumers without a frontend rebuild per consumer;
+- `Surfaces/Renderer/` is deployed to consumers without a frontend rebuild per consumer;
 - the source-free pre-merge candidate installs/updates cleanly, and the canonical publication reproduces that behavior;
 - the supported consumer set passes governance, detection, capability, docs/web, release-candidate and drift checks before the integration merge;
 - `audit.df` is internally consistent;
 - installed acceptance is green across the supported consumer set before merge;
 - the declarable-graph product contract passes against the installed exact-head candidate and is re-smoked against the canonical publication.
 
-### 19.1 Self-hosting acceptance
+### 19.1 Invariant acceptance
+
+The thesis's invariants are not aspirations and are not satisfied by review. Each is a check that runs, and
+DarkFactory is not final while any of them can fail:
+
+- **I1 — no authored meaning.** A check rejects any file whose purpose is to enumerate what exists, and the
+  count of sites where meaning is authored rather than derived is zero.
+- **I2 — derivation is total.** A tree walk compares the derived feature set against the discovered set across
+  overloads, re-exports and conditionals, and any asymmetry between what a surface shows and what the system
+  can invoke fails the build.
+- **I3 — the published interface is the code's own.** A feature with no doc comment is a build error, and each
+  surface is checked to render the comment its feature publishes.
+- **I4 — effects pass through a seam.** A check rejects direct filesystem, network and process access outside
+  the seams. This is the precondition for the rest and is accepted first.
+- **I5 — nothing is published uncompiled.** Every released artifact carries its resolution identity and is
+  verified against it before publish.
+- **I6 — discovery is structural.** A test adds a feature and asserts that no other file changed.
+- **I7 — drift is measured against derivation.** Convergence is exercised against derived inputs only; a
+  recorded copy of intent that can be compared instead of re-derivation fails the build.
+- **I8 — the system is a fixed point.** The system compiled by itself resolves to itself, byte-identical, with
+  no maintenance pass between.
+- **I9 — presentation holds no behaviour.** A surface cannot be imported by a non-surface.
+
+I4 and I8 are the two that are expensive to add later and cheap to require now, because both are structural:
+once effects bypass the seams, nothing resting on them can be enforced, and once a second build description
+exists, the fixed point stops being reachable at any price.
+
+### 19.2 Self-hosting acceptance
 
 Self-hosting is a claim with a completion condition, not a milestone. It is met when a change
 to DarkFactory is proposed, interpreted, planned, implemented, reviewed, verified and merged
