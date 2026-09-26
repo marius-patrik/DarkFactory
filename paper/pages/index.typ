@@ -26,6 +26,7 @@
 #include "21-theory-language.typ"
 #include "22-theory-harness.typ"
 #include "23-theory-agentic.typ"
+#include "24-theory-factory.typ"
 
 #include "30-practical.typ"
 #include "31-practical-method.typ"
