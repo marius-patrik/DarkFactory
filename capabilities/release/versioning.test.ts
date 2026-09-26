@@ -34,11 +34,9 @@ describe("release lockstep versioning", () => {
 			"invalid-package-version",
 			"duplicate-package",
 		]);
-		expect(() =>
-			assertLockstepPackageVersions("1.4.0", [
-				{ name: "@darkfactory/core", version: "1.3.0" },
-			]),
-		).toThrow("does not match canonical");
+		expect(() => assertLockstepPackageVersions("1.4.0", [{ name: "@darkfactory/core", version: "1.3.0" }])).toThrow(
+			"does not match canonical",
+		);
 	});
 
 	test("final publication rejects development and prerelease versions", () => {

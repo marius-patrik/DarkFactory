@@ -26,9 +26,7 @@ export function resolveConfigDocumentPath(
 			.filter((path) => existsSync(path));
 	const rootCandidates = candidatesIn(repositoryRoot);
 	const folderCandidates =
-		configDirectory === repositoryRoot || !existsSync(configDirectory)
-			? []
-			: candidatesIn(configDirectory);
+		configDirectory === repositoryRoot || !existsSync(configDirectory) ? [] : candidatesIn(configDirectory);
 
 	if (rootCandidates.length > 0 && folderCandidates.length > 0) {
 		throw new Error(

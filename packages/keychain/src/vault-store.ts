@@ -1,11 +1,10 @@
-import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { hostname } from "node:os";
 import { dirname, join } from "node:path";
+import { configBlock, parseConfigDocument, resolveConfigDocumentPath } from "@darkfactory/protocol/config-document";
 import { withFileLock } from "./storage/file-lock.ts";
 import { replaceFile } from "./storage/replace-file.ts";
-import { decryptVault, encryptVault } from "./vault-crypto.ts";
 import {
 	type EncryptedVaultEnvelope,
 	emptyPushMap,
@@ -17,6 +16,7 @@ import {
 	type VaultMeta,
 	vaultToMeta,
 } from "./vault.ts";
+import { decryptVault, encryptVault } from "./vault-crypto.ts";
 
 export interface VaultStoreOptions {
 	dfHome: string;

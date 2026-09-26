@@ -75,31 +75,44 @@ function recordFromToken(token: GitHubTokenResponse, now: number, userId?: strin
 	};
 }
 
-function sessionFromRecord(sessionId: string, record: BrokerTokenRecord, config: AuthBrokerConfig, now: number): BrowserSession {
+function sessionFromRecord(
+	sessionId: string,
+	record: BrokerTokenRecord,
+	config: AuthBrokerConfig,
+	now: number,
+): BrowserSession {
 	const configuredExpiry = now + (config.sessionTtlMs ?? 8 * 60 * 60 * 1_000);
-	const expiresAt = record.accessExpiresAt === undefined ? configuredExpiry : Math.min(configuredExpiry, record.accessExpiresAt);
+	const expiresAt =
+		record.accessExpiresAt === undefined ? configuredExpiry : Math.min(configuredExpiry, record.accessExpiresAt);
 	return { id: sessionId, expiresAt, ...(record.userId ? { userId: record.userId } : {}) };
 }
 
 /** Exchanges an authorization code for GitHub user tokens. The returned token must remain broker-side. */
-export function exchangeCodeForToken(config: AuthBrokerConfig, payload: TokenExchangeRequest): Promise<GitHubTokenResponse> {
-	return tokenRequest(new URLSearchParams({
-		client_id: config.clientId,
-		client_secret: config.clientSecret,
-		code: payload.code,
-		code_verifier: payload.codeVerifier,
-		redirect_uri: payload.redirectUri,
-	}));
+export function exchangeCodeForToken(
+	config: AuthBrokerConfig,
+	payload: TokenExchangeRequest,
+): Promise<GitHubTokenResponse> {
+	return tokenRequest(
+		new URLSearchParams({
+			client_id: config.clientId,
+			client_secret: config.clientSecret,
+			code: payload.code,
+			code_verifier: payload.codeVerifier,
+			redirect_uri: payload.redirectUri,
+		}),
+	);
 }
 
 /** Refreshes a GitHub user token. The returned token must remain broker-side. */
 export function refreshAccessToken(config: AuthBrokerConfig, refreshToken: string): Promise<GitHubTokenResponse> {
-	return tokenRequest(new URLSearchParams({
-		client_id: config.clientId,
-		client_secret: config.clientSecret,
-		grant_type: "refresh_token",
-		refresh_token: refreshToken,
-	}));
+	return tokenRequest(
+		new URLSearchParams({
+			client_id: config.clientId,
+			client_secret: config.clientSecret,
+			grant_type: "refresh_token",
+			refresh_token: refreshToken,
+		}),
+	);
 }
 
 /** Revokes a GitHub user access token using the confidential application credential. */

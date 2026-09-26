@@ -1,21 +1,21 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
 import type { CapabilityDefinition } from "@darkfactory/capability";
 import { resolveRepositoryActions } from "@darkfactory/capability/actions";
 import { discoverCapabilities, resolveCapabilities } from "@darkfactory/capability/loader";
 import { detectRepositoryEvidence, type RepositoryEvidence } from "@darkfactory/core/repository-evidence";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
-import { Application, ReflectionKind, type JSONOutput } from "typedoc";
+import { Application, type JSONOutput, ReflectionKind } from "typedoc";
+import { type DocsConfig, type DocsTypeScriptApiConfig, loadDocsConfig } from "./config.ts";
 import {
 	compileDocsContentGraph,
-	includeCapabilityDocumentation,
 	type DocsApiReference,
 	type DocsApiSymbol,
 	type DocsCapabilitySummary,
 	type DocsContentGraph,
 	type DocsRepositorySummary,
+	includeCapabilityDocumentation,
 } from "./content.ts";
-import { loadDocsConfig, type DocsConfig, type DocsTypeScriptApiConfig } from "./config.ts";
 
 /** Inputs required to extract a TypeScript API model. */
 export interface TypeScriptApiExtractionOptions {

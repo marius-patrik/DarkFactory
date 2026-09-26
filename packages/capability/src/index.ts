@@ -3,6 +3,6 @@
  * Filesystem discovery is intentionally isolated at @darkfactory/capability/loader.
  */
 export * from "./abi.ts";
-export * from "./compatibility.ts";
-export * from "./adapters.ts";
 export * from "./actions.ts";
+export * from "./adapters.ts";
+export * from "./compatibility.ts";

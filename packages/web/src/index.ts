@@ -5,14 +5,14 @@
  * protocol/GitHub/auth contracts and never imports machine-secret keychain implementations.
  */
 export type { RouteResult, TaskProfile } from "@darkfactory/protocol/model";
-export { DarkFactoryShell, Router, Route, useRouter, RouteLink, type RouteConfig } from "./web-shell";
 export {
-	QuotaDashboardView,
-	quotaDashboardModels,
-	quotaDashboardProviders,
 	type QuotaAccountView,
 	type QuotaDashboardState,
+	QuotaDashboardView,
 	type QuotaLimitView,
 	type QuotaModelView,
 	type QuotaProviderView,
+	quotaDashboardModels,
+	quotaDashboardProviders,
 } from "./quota";
+export { DarkFactoryShell, Route, type RouteConfig, RouteLink, Router, useRouter } from "./web-shell";

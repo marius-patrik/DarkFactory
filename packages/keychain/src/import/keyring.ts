@@ -35,12 +35,14 @@ export function parseKeychainDump(dump: string): { service: string; account: str
 	}
 	if (service) items.push({ service, account });
 	const seen = new Set<string>();
-	return items.filter((item) => {
-		const key = `${item.service}${item.account ?? ""}`;
-		if (seen.has(key)) return false;
-		seen.add(key);
-		return true;
-	}).map((item) => ({ service: item.service, account: item.account }));
+	return items
+		.filter((item) => {
+			const key = `${item.service}${item.account ?? ""}`;
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		})
+		.map((item) => ({ service: item.service, account: item.account }));
 }
 
 /** `decodeKeychainPayload` port (credential-source.ts:148-156). */
@@ -76,7 +78,9 @@ export class OsClaudeKeyringAdapter implements ClaudeKeyring {
 	async read(service: string): Promise<string | undefined> {
 		if (process.platform !== "darwin") return undefined;
 		try {
-			const { stdout } = await execFileAsync("security", ["find-generic-password", "-s", service, "-w"], { encoding: "utf8" });
+			const { stdout } = await execFileAsync("security", ["find-generic-password", "-s", service, "-w"], {
+				encoding: "utf8",
+			});
 			return stdout.trim() || undefined;
 		} catch {
 			return undefined;
