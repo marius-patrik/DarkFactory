@@ -8,18 +8,18 @@ Stav zkontrolován po commitu `2422e0e7`.
 
 ---
 
-## A. Školní pravidla — nedoplněno
+## A. Školní pravidla — vyřešeno
 
-Podrobnosti a citace v `rules.md`. Počítáno do hodnocení (viz `guide.md`,
-*Hodnocení*).
+Kontrola proti `rules.md` proběhla a všechny čtyři nedostatky jsou opravené,
+každý vlastním commitem.
 
-| # | Co | Kde | Váha |
-| :-- | :--- | :--- | :--- |
-| A1 | Čtyři očíslované součásti nemají odkaz v textě: `fig-gradually-usage`, `fig-react-loop`, `fig-darkfactory-architecture`, `fig-darkfactory-pipeline` | `rules.md` R1 | 5 b (odkazování) |
-| A2 | Seznam součástí textu není kompletní — neobsahuje `Výpis 1` | `rules.md` R2 | 1 b |
-| A3 | Anotace má 128 slov, doporučeno 150–250 | `rules.md` R3 | 2 b |
-| A4 | Šest klíčových slov, průvodce uvádí přibližně pět | `rules.md` R4 | 1 b |
-| A5 | Metodika je podkapitolou 3.1, průvodce (kap. 2.4) ji předpokládá jako samostatnou kapitolu. Potvrdit s vedoucím; přesun je mechanický, soubor `pages/31-practical-method.typ` je už oddělený | `pages/31-practical-method.typ` | 1 b (členění) |
+| # | Co | Stav |
+| :-- | :--- | :--- |
+| A1 | Odkazy v textě u `fig-gradually-usage`, `fig-react-loop` a obou diagramů | ✅ `1051e437` |
+| A2 | `Výpis 1` chyběl v seznamu součástí textu | ✅ `487e0b06` |
+| A3 | Anotace 128 slov | ✅ `89109fc7` — nyní 161 |
+| A4 | Šest klíčových slov | ✅ `1d0d4fe9` — nyní pět |
+| A5 | Metodika jako 3.1 místo samostatné kapitoly podle kap. 2.4 průvodce | ⏳ **čeká na vedoucího** — přesun je mechanický, `pages/31-practical-method.typ` je už oddělený |
 
 ## B. Jazyková a stylistická korektura — neprovedeno
 

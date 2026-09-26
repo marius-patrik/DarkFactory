@@ -104,17 +104,17 @@ Pravidla, která se nejčastěji porušují:
 
 ---
 
-## Aktuální stav — co je nutné dořešit
+## Aktuální stav — kontrola provedena
 
-Následující body vyplývají z kontrolního průchodu těmito pravidly. Každý je
-očíslován, aby se na ně dalo odkazovat.
+Kontrolní průchod těmito pravidly. Oba body, které byly vadné, jsou opravené;
+zbytek pravidel v tabulkách výše byl splněn už při vzniku práce.
 
-| # | Problém | Pravidlo | Kde |
+| # | Problém | Pravidlo | Stav |
 | :-- | :--- | :--- | :--- |
-| R1 | Čtyři ze šesti očíslovaných součástí **nemají odkaz v textě**: `fig-gradually-usage`, `fig-react-loop`, `fig-darkfactory-architecture`, `fig-darkfactory-pipeline` | kap. 6 — odkaz povinný | `pages/10-intro.typ`, `22-theory-harness.typ`, `32-practical-architecture.typ` |
-| R2 | **Seznam součástí textu není kompletní** — obsahuje jen obrázky a tabulky, ale `Výpis 1` (rozhraní harnessů) je také číslovaná součást | kap. 4 — automatický seznam včetně čísel stran; hodnotí se „je kompletní" | `pages/91-figure-list.typ` |
-| R3 | **Anotace má 128 slov**, doporučený rozsah je 150–250 | kap. 2.1 | `components/metadata.typ` |
-| R4 | **Šest klíčových slov**, průvodce uvádí přibližně pět | kap. 2.1 | `pages/02-annotation.typ` |
+| R1 | Čtyři ze šesti očíslovaných součástí neměly odkaz v textě | kap. 6 — odkaz povinný | ✅ opraveno, `1051e437` |
+| R2 | Seznam součástí textu neobsahoval `Výpis 1` | kap. 4 — seznam kompletní | ✅ opraveno, `487e0b06` |
+| R3 | Anotace měla 128 slov, doporučeno 150–250 | kap. 2.1 | ✅ opraveno, `89109fc7` |
+| R4 | Šest klíčových slov, doporučeno přibližně pět | kap. 2.1 | ✅ opraveno, `1d0d4fe9` |
 
-R1 a R2 jsou hodnotitelné položky formální části, R3 a R4 jsou hodnotitelné
-samostatně. Viz `guide.md`, oddíl *Hodnocení*, kde jsou uvedeny váhy.
+Zbývá otevřená otázka mimo školní pravidla: kterou revizi praktická část
+popisuje. Viz `TODO.md`, sekce C.
