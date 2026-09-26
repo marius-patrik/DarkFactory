@@ -33,15 +33,18 @@ def test_get_base_branch_malicious_input():
 
 
 @pytest.fixture
-def temp_redaction_file():
+def temp_redaction_file(tmp_path):
     target_file = os.path.join("harness", "src", "redaction.ts")
-    with open(target_file, "r") as f:
-        original = f.read()
+    temp_dir = tmp_path / "redaction_backup"
+    temp_dir.mkdir()
+    temp_file = temp_dir / "redaction.ts"
+
+    shutil.copy2(target_file, temp_file)
+
     try:
         yield target_file
     finally:
-        with open(target_file, "w") as f:
-            f.write(original)
+        shutil.copy2(temp_file, target_file)
 
 
 def test_format_check_drift_integration(temp_redaction_file):
@@ -55,6 +58,7 @@ def test_format_check_drift_integration(temp_redaction_file):
         env={**os.environ, "DF_BASE_SHA": "HEAD~1"},  # Compare against HEAD~1
         capture_output=True,
         text=True,
+        cwd="harness",
     )
     # biome should find the drift and return a non-zero exit code
     assert result.returncode != 0

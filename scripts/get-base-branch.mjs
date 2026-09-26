@@ -58,10 +58,7 @@ function getBaseBranch() {
     // Config missing, unreadable, or malformed
   }
 
-  // Fall back to standard default branches instead of origin/darkfactory
-  candidates.push('origin/develop', 'develop', 'origin/main', 'main', 'HEAD~1');
-
-  // Check candidates
+  // Check candidates from GITHUB_BASE_REF or repo.dfconfig
   for (const candidate of candidates) {
     if (verifyRef(candidate)) {
       return candidate;
@@ -69,26 +66,21 @@ function getBaseBranch() {
   }
 
   // Attempt fetching origin if remote refs are absent (e.g. shallow checkout / CI)
+  console.error("Attempting to fetch origin/ to resolve base branch...");
   try {
-    console.error("Attempting to fetch origin/ to resolve base branch...");
     execFileSync('git', ['fetch', 'origin', '--depth=1'], { stdio: 'pipe', timeout: 5000 });
-    for (const candidate of candidates) {
-      if (verifyRef(candidate)) {
-        return candidate;
-      }
-    }
   } catch (e) {
     console.error(`Fetch operation failed: ${e.message}`);
+    process.exit(1);
   }
 
-  const fallback = configDefaultBranch ? `origin/${configDefaultBranch}` : (configDevBranch ? `origin/${configDevBranch}` : 'origin/main');
-  
-  if (verifyRef(fallback)) {
-    console.error(`Warning: Could not verify any primary candidate. Falling back to ${fallback}.`);
-    return fallback;
+  for (const candidate of candidates) {
+    if (verifyRef(candidate)) {
+      return candidate;
+    }
   }
 
-  console.error(`Error: Could not verify any base branch candidate (including fallback ${fallback}).`);
+  console.error(`Error: Could not verify any base branch candidate.`);
   process.exit(1);
 }
 

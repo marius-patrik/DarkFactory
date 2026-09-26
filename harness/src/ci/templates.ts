@@ -109,7 +109,7 @@ export function parseManagedHeader(content: string): (ManagedHeader & { headerLi
 	const firstLine = firstNewline === -1 ? normalized.trim() : normalized.slice(0, firstNewline).trim();
 
 	const match = firstLine.match(MANAGED_HEADER_REGEX);
-	if (!match || !match[1] || !match[2] || !match[3]) {
+	if (!match) {
 		return null;
 	}
 
