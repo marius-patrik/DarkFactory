@@ -30,8 +30,7 @@
   - [6.4 Identity is not scoped to a caller](#64-identity-is-not-scoped-to-a-caller)
   - [6.5 Rules the structure must satisfy](#65-rules-the-structure-must-satisfy)
 - [7 Interpretation](#7-interpretation)
-  - [7.1 Reading is the whole of the mechanism](#71-reading-is-the-whole-of-the-mechanism)
-  - [7.2 One askable feature is one file](#72-one-askable-feature-is-one-file)
+  - [7.1 One askable feature is one file](#71-one-askable-feature-is-one-file)
 - [8 Bind, never reimplement](#8-bind-never-reimplement)
   - [8.1 The interpreter is the same seam applied to language](#81-the-interpreter-is-the-same-seam-applied-to-language)
 - [9 Remove the friction](#9-remove-the-friction)
@@ -535,40 +534,31 @@ provisioning.
 
 ## 7 Interpretation
 
-Reading is the whole of df's mechanism rather than one part of it. Every scale a consumer
-works at — a function, a file, a repository, a pipeline, a machine, a fleet — is a shape the
-same reading resolves, with no separate mechanism per scale.
+Reading is the whole of df's mechanism rather than one part of it, and it is the *same* reading
+at every scale. A function, a file, a repository, a pipeline, a machine and a fleet are shapes it
+resolves, and a design that needs a separate story for each of them is a design that will not
+finish. §9 is where that sameness pays off across locations; the claim here is only that there is
+one mechanism and not several.
 
 Reading is itself bound through the same seam as any other system: a small vocabulary, several
-implementations, and a declaration that names one. §6.1 of the thesis carries the argument in
-full; the requirement here is that no declaration language is privileged.
+implementations, and a declaration that names one. §8.1 carries that argument in full; the requirement
+here is that no declaration language is privileged.
 
 A feature's interface is **derived** rather than authored. It is read from the feature's names,
 its signatures, its position in the tree and its documentation, and published to every surface.
 No file states what a feature is, and no surface implements one.
 
 - A declaration is interpreted through a named backend. TypeScript is the first-party backend for `.df`. Further backends exist so that declarations authored in another system's own language stay first-class instead of requiring translation into ours.
-- A declaration written for a bound system remains in that system's language. Where a consumer's machine-level configuration is authored in a foreign declaration format, df resolves and composes it rather than re-expressing it.
+- A declaration written for a bound system remains in that system's language. What that
+  means when a consumer's machine-level configuration is authored in another format is a
+  requirement, and it is stated in §31.1.
 - Backend selection is declarative. Capability availability is not conditional on which interpreter is present.
 - Interpretation is read-only with respect to the declaration. Evaluating a declaration never mutates it; applying it produces state through the ordinary governed effect path.
 - The interpreter is declarable: which backend interprets a declaration, and the systems layer and interpreter revision it loads, are chosen by declaration rather than hardcoded. A system that can describe its own configuration can describe the thing doing the describing.
 
 This is what lets the system span machines and repositories under one semantic model: the interpreter is chosen per declaration, not per location.
 
-### 7.1 Reading is the whole of the mechanism
-
-The system has one mechanism: it reads meaning out of structure. Everything a user builds, they
-build by putting structure in front of it. There is no second mechanism per scale — a function, a
-file, a repository, a pipeline, a machine and a fleet are all shapes the same reading resolves,
-and a design that needs a separate story for each of them is a design that will not finish.
-
-Reading is derived rather than authored, by the procedure in §3.3: the interpreter produces a
-feature's interface from its name, its signature, its position in the tree and its documentation,
-and publishes that reading to every surface. What that buys is accounted for in §4.1; what
-remains here is the mechanism's reach, and the requirement it places on everything else in the
-system.
-
-### 7.2 One askable feature is one file
+### 7.1 One askable feature is one file
 
 A file is the unit a caller can request on its own. Not one step inside a larger operation, and
 not an abstraction grouping several requests — the two mistakes are mirror images and the test
