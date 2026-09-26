@@ -134,7 +134,7 @@ describe("dispatch", () => {
 		}
 
 		const out = JSON.parse(output[0]!);
-		expect(out.subject as string).toBe("42");
+		expect(out.subject as string).toBe("42-abc123");
 		expect(out.event as string).toBe("checks.completed");
 		expect(out.action as string).toBe("run");
 		expect(out.commands as string[]).toEqual(["bun df run --node trigger"]);

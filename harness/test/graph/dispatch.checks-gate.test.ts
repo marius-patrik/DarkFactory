@@ -84,7 +84,7 @@ describe("dispatch checks-gate", () => {
 			expect(obj.result).toBe("pass");
 
 			// verify RunState file exists and current_node matches plan
-			const runStatePath = path.join(tmpDir, "1.df");
+			const runStatePath = path.join(tmpDir, "1-abc123.df");
 			const runState = JSON.parse(await fs.readFile(runStatePath, "utf8"));
 			expect(runState.current_node).toBe("next");
 

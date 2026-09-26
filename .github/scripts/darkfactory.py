@@ -92,7 +92,11 @@ def cmd_auth(args: argparse.Namespace) -> int:
 
     repos = _repos(args)
     if not repos:
-        print("No repository given and no manifest here; pass --repo owner/name.", file=sys.stderr)
+        print(
+            "No repository given and no manifest here; pass --repo owner/name.",
+            file=sys.stderr,
+            flush=True,
+        )
         return 2
     credentials.collect(repos, args.only)
     return 0
@@ -112,7 +116,11 @@ def cmd_status(args: argparse.Namespace) -> int:
     """
     repos = _repos(args)
     if not repos:
-        print("No repository given and no manifest here; pass --repo owner/name.", file=sys.stderr)
+        print(
+            "No repository given and no manifest here; pass --repo owner/name.",
+            file=sys.stderr,
+            flush=True,
+        )
         return 2
 
     incomplete = False
