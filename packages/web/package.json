@@ -12,7 +12,10 @@
     "src"
   ],
   "scripts": {
-    "test": "bun test test/quota.test.ts"
+    "test": "bun test test/quota.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome lint .",
+    "format:check": "biome ci ."
   },
   "license": "GPL-3.0",
   "dependencies": {

@@ -1,10 +1,9 @@
 {
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": true,
-    "defaultBranch": "darkfactory"
+    "useIgnoreFile": true
   },
   "files": {
     "includes": ["**", "!**/node_modules", "!**/dist", "!**/.harness-test-*"]

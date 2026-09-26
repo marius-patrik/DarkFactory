@@ -23,6 +23,9 @@
     "zod": "4.1.5"
   },
   "scripts": {
-    "test": "bun test test"
+    "test": "bun test test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome lint .",
+    "format:check": "biome ci ."
   }
 }

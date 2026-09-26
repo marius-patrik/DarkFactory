@@ -14,7 +14,10 @@
     "versioning.ts"
   ],
   "scripts": {
-    "test": "bun test *.test.ts"
+    "test": "bun test *.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome lint .",
+    "format:check": "biome ci ."
   },
   "license": "GPL-3.0",
   "dependencies": {
