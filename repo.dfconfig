@@ -310,7 +310,44 @@
     "cooldownTtlMs": 120000,
     "sensitiveChain": "groq/openai/gpt-oss-120b@default,openai-codex/gpt-5.6-luna@pipeline,grok-sub/grok-4.6@pipeline",
     "router": {
-      "policies": [],
+      "policies": [
+        {
+          "id": "prefer-free-and-space-bunny",
+          "match": {
+            "sensitivity": [
+              "normal"
+            ]
+          },
+          "prefer": {
+            "preferModels": [
+              "space-bunny",
+              "qwen3.6-plus",
+              "gpt-oss"
+            ],
+            "preferProviders": [
+              "opencode-zen",
+              "kilo-gateway",
+              "groq",
+              "openrouter",
+              "google",
+              "grok-sub",
+              "openai-codex"
+            ],
+            "preferFree": true
+          }
+        },
+        {
+          "id": "sensitive",
+          "match": {
+            "sensitivity": [
+              "sensitive"
+            ]
+          },
+          "prefer": {
+            "preferFree": false
+          }
+        }
+      ],
       "dataCollection": {
         "sensitive": [
           "none",
